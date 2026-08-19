@@ -301,16 +301,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
-- **🔴 THE APP SOFT-LOCKS ON THE FIRST WALL PRESS — do not playtest until this is fixed.** An
-  adversarial review measured it: `get_tree().paused` is held for the whole session (§1.6), `Main`
-  has no `process_mode` so it is PAUSABLE, and a tween bound to a PAUSABLE node under a paused tree
-  never advances. `main.gd`'s `_animate_camera()` awaited such a tween, so every wall-view move
-  hung with `_move_in_flight` and `input_locked` stuck true — reachable from Wall, New Run, Back
-  falling through to wall view, the Info toggle, and wall-view→picture entry. **Partly fixed:** that
-  tween is now created on `%Camera2D` (PROCESS_MODE_ALWAYS), matching `WallTransition`. **NOT fully
-  fixed:** a regression test that leaves the tree paused, as the real game runs, still HANGS the
-  suite, so at least one more await in that path does not survive a paused tree. Find it before
-  anything else.
 - **🔴 `Pacing.wait()` never fires in the shipped game.** `SceneTreeTimer` has no node binding —
   `process_always = false` keys on the TREE's pause flag, which §1.6 holds permanently on, so a
   `PROCESS_MODE_ALWAYS` screen does NOT rescue its timers. Measured: `time_left` does not move at

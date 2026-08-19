@@ -62,9 +62,19 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
 - **`Camera2D.zoom` here is DIRECT MAGNIFICATION**: the visible span is `window_size / zoom`.
-- **The wall pauses the whole tree at construction and never clears it** (§1.6). Every test that
-  builds a `Wall` must set `get_tree().paused = false` immediately, or the whole run hangs with no
-  banner.
+- **The wall pauses the whole tree at construction and never clears it** (§1.6), so the shipped
+  game runs entirely under `get_tree().paused == true`. A `Tween` bound to a PAUSABLE node never
+  advances there, and `await tween.finished` never returns: that is how a total soft-lock on the
+  first Wall press shipped with a green suite. Any tween driving the wall goes on `%Camera2D`
+  (PROCESS_MODE_ALWAYS), never on `Main`, which has no `process_mode`.
+- ⚠ **A test that unpauses cannot see any of that.** Most Wall-building suites do set
+  `get_tree().paused = false` right after `add_child()`, and must — they run alongside ~38 others
+  that need frames. But that workaround is a blind spot, not a rule: it is why the soft-lock,
+  `Pacing.wait()` and reduced motion's resting zoom all stayed invisible. **Anything asserting the
+  PAUSE MODEL itself belongs in `TestWallPause`**, the one suite that runs dead last and alone and
+  leaves the tree paused — and it must drive each move without `await`, polling `process_frame`
+  under a bounded escape, so a move that never returns fails a check instead of hanging the run
+  with no banner.
 
 ## Defect ids cited from code
 

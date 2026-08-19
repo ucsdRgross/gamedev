@@ -1,6 +1,6 @@
 ---
 name: plan-run
-description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the eight ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
+description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the nine ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
 ---
 
 # Running a plan with an overseer and implementer subagents
@@ -70,7 +70,7 @@ restore it, watch it pass, report both observations.
 ⚠ When a fix makes an existing test fail, **investigate before adjusting it** — one run found a
 tolerance that had been calibrated to the bug, so it passed *because* the defect existed.
 
-## The eight ways a test passes while proving nothing
+## The nine ways a test passes while proving nothing
 
 1. `await some_timer` instead of `await some_timer.timeout` — awaiting a non-signal resolves instantly.
 2. **Lambdas capture outer locals by value.** `var fired = false` then `func(): fired = true` writes
@@ -86,6 +86,11 @@ tolerance that had been calibrated to the bug, so it passed *because* the defect
 8. **A new test that breaks a DIFFERENT suite** — global state left behind (pause flags, a live node,
    a running tween). If the banner reports a failure you cannot find in your own suite, suspect your
    fixture's side effects.
+9. **A fixture that clears the very global state the feature runs under.** Every `Main`-based test
+   in solatro wrote `get_tree().paused = false` right after `add_child()`; the shipped game holds
+   the tree paused for the whole session. That one habit hid a total soft-lock, a timer that never
+   fires, and a camera resting at the wrong zoom — all three green, for a whole run. Ask what
+   ambient state the real product runs under, and whether the fixture just turned it off.
 
 ## Traps that are not about tests
 

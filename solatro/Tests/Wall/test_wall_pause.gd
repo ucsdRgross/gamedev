@@ -22,6 +22,7 @@ extends TestSuite
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
+const MAIN_SCENE := preload("res://Levels/main.tscn")
 
 func suite_name() -> String:
 	return "WALL PAUSE"
@@ -42,6 +43,8 @@ func _ready() -> void:
 	behavior_section("PACING VS A BARE TIMER UNDER PAUSE")
 	await test_pacing_wait_does_not_tick_while_paused()
 	await test_bare_create_timer_ticks_while_paused()
+	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
+	await test_real_wall_moves_complete_under_the_paused_tree()
 	finish()
 
 # ------------------------------------------------------------------ fixture
@@ -183,3 +186,79 @@ func test_bare_create_timer_ticks_while_paused() -> void:
 	get_tree().create_timer(0.1).timeout.connect(func() -> void: fired[0] = true)
 	await get_tree().create_timer(0.5, true).timeout
 	check(fired[0], "a bare create_timer(0.1) DID fire within 0.5s while paused")
+
+# ------------------------------------------------------------------ U8
+
+## U8 (§1.6, PICTURE_WALL.md C5): the shipped pause model end to end -- a REAL `Main`, driven
+## through the moves a player makes, with the tree LEFT PAUSED exactly as the game runs it.
+##
+## ⚠ THIS TEST MUST NEVER UNPAUSE, and that is the whole point of it. Every other Main-based suite
+## writes `get_tree().paused = false` straight after `add_child()` as a concurrency workaround; the
+## game never does. That one habit hid a TOTAL SOFT-LOCK for the whole run: `Main` has no
+## `process_mode`, so it is PAUSABLE, and a Tween bound to a PAUSABLE node under a paused tree never
+## advances -- so `_animate_camera()`'s `await tween.finished` never returned, `_move_in_flight` and
+## `input_locked` stuck true, every handler dead-ended on its own guard, and only Alt+F4 got out.
+## The suite stayed green throughout. This suite is the one place the assertion can live, because it
+## already runs dead last and alone (see the header) and already leaves the tree paused.
+##
+## Each move is driven WITHOUT `await` and polled under a BOUNDED escape, so a move that never
+## completes fails this check instead of hanging the whole run with no banner.
+func test_real_wall_moves_complete_under_the_paused_tree() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO `get_tree().paused = false` here, deliberately -- see this function's doc comment.
+	check(get_tree().paused, "sanity: the tree is paused, as the real game holds it all session")
+	check(main._current_focus == &"start_menu", "sanity: cold launch focused start_menu",
+			str(main._current_focus))
+
+	# The first Wall press: focused picture -> wall view, the move that soft-locked the app.
+	var wall_view_done := await _drive_move(func() -> void: await main._go_to_wall_view())
+	check(wall_view_done,
+			"the first Wall press COMPLETES under the paused tree (a tween bound to a PAUSABLE "
+			+ "node would never advance and this move would never return)")
+	check(not main._move_in_flight, "...and _move_in_flight cleared, so a second move is possible")
+	check(not main.wall.input_locked, "...and input is answered again")
+	check(main._current_focus == &"", "...and the wall is actually in wall view",
+			str(main._current_focus))
+
+	# Wall view -> a picture: the same `_animate_camera()` path in the other direction.
+	var enter_done := await _drive_move(func() -> void: await main._focus_picture(&"map"))
+	check(enter_done, "entering a picture from wall view completes under the paused tree")
+	check(not main._move_in_flight, "...and _move_in_flight cleared")
+	check(main._current_focus == &"map", "...and the picture is focused", str(main._current_focus))
+
+	# Picture -> picture: the `WallTransition` branch, whose own tween is already camera-bound.
+	var hop_done := await _drive_move(func() -> void: await main._focus_picture(&"deck"))
+	check(hop_done, "a picture-to-picture move completes under the paused tree")
+	check(not main._move_in_flight, "...and _move_in_flight cleared")
+	check(main._current_focus == &"deck", "...and the destination is focused",
+			str(main._current_focus))
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## Starts `body` as a coroutine and polls for its return under a bounded wall-clock escape, so a
+## move that never completes reports FALSE instead of hanging the run. `process_frame` is the one
+## signal that still fires while the tree is paused, which is what makes the poll possible at all.
+func _drive_move(body: Callable, budget_ms: int = 8000) -> bool:
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	_drive(body, done)
+	var started := Time.get_ticks_msec()
+	var polls := 0
+	while not done[0] and Time.get_ticks_msec() - started < budget_ms:
+		await get_tree().process_frame
+		polls += 1
+	# Trap 5 ([[tests-that-prove-nothing]]): `polls == 0` means the coroutine returned before a
+	# single frame passed, which no real move can do -- every one of them takes tens of frames. It
+	# is what `if _move_in_flight: return` does when an EARLIER move is stuck, so without this a
+	# soft-locked wall reports every LATER move as "completed instantly" and the check goes green
+	# on the strength of the very defect it exists to catch. Measured: with the soft-lock restored,
+	# moves 2 and 3 polled 0 frames and claimed success until this clause was added.
+	return done[0] and polls > 0
+
+func _drive(body: Callable, done: Array[bool]) -> void:
+	await body.call()
+	done[0] = true
