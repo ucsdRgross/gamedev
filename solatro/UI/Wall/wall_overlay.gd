@@ -26,7 +26,10 @@ func _ready() -> void:
 	_back_button.text = TRANSLATION.find('WALL_BACK')
 	_forward_button.text = TRANSLATION.find('WALL_FORWARD')
 	_wall_button.text = TRANSLATION.find('WALL_OVERVIEW')
-	_info_button.text = TRANSLATION.find('WALL_INFO')
+	# MINOR: the magnifying glass J1/Q135 name, not the word. The localised string stays as the
+	# button's TOOLTIP, so the control is still named for a screen reader and still translatable.
+	_info_button.icon = magnifier_icon()
+	_info_button.tooltip_text = TRANSLATION.find('WALL_INFO')
 	_back_button.pressed.connect(_on_back_pressed)
 	_forward_button.pressed.connect(_on_forward_pressed)
 	_wall_button.pressed.connect(_on_wall_pressed)
@@ -84,6 +87,48 @@ func refresh(stack: FocusStack, picture_count: int = 2) -> void:
 ## press are the same path.
 func toggle_info() -> void:
 	_info_button.button_pressed = not _info_button.button_pressed
+
+## MINOR (ADVERSARIAL_REVIEW): J1 and Q135's note both call the Info control "a magnifying glass",
+## and it shipped as the word "Info". Built procedurally rather than as an asset, the same idiom
+## (and for the same reason) as `WallPicture.shared_frame_texture()`: the project's font is a
+## bitmap face with no glyph for a magnifier, and a one-icon PNG is a dependency this does not need.
+##
+## Drawn in WHITE so `Button.icon`'s own `modulate`/theme tinting is what colours it, and cached
+## statically -- one texture for however many overlays exist.
+const _ICON_SIZE := 64
+const _ICON_LENS_CENTRE := Vector2(25.0, 25.0)
+const _ICON_LENS_RADIUS := 16.0
+const _ICON_STROKE := 5.0
+const _ICON_HANDLE_FROM := Vector2(36.0, 36.0)
+const _ICON_HANDLE_TO := Vector2(57.0, 57.0)
+
+static var _magnifier_icon : ImageTexture = null
+
+static func magnifier_icon() -> ImageTexture:
+	if _magnifier_icon: return _magnifier_icon
+	# `Image.create()` zero-fills, i.e. fully transparent already -- no explicit fill, and so no
+	# colour literal for the PALETTE scan to flag on a line that is not a colour CHOICE.
+	var img := Image.create(_ICON_SIZE, _ICON_SIZE, false, Image.FORMAT_RGBA8)
+	var half_stroke := _ICON_STROKE * 0.5
+	for y : int in _ICON_SIZE:
+		for x : int in _ICON_SIZE:
+			var p := Vector2(float(x) + 0.5, float(y) + 0.5)
+			# The lens is a RING: inside the annulus of half-stroke either side of the radius.
+			var on_lens := absf(p.distance_to(_ICON_LENS_CENTRE) - _ICON_LENS_RADIUS) <= half_stroke
+			var on_handle := _distance_to_segment(p, _ICON_HANDLE_FROM, _ICON_HANDLE_TO) 					<= half_stroke + 0.5
+			if on_lens or on_handle:
+				img.set_pixel(x, y, Color.WHITE)
+	_magnifier_icon = ImageTexture.create_from_image(img)
+	return _magnifier_icon
+
+## Shortest distance from `p` to the segment `a`-`b`, so the handle is a capsule of even width
+## rather than a stack of per-row pixels that thins out on the diagonal.
+static func _distance_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var length_squared := ab.length_squared()
+	if length_squared <= 0.0: return p.distance_to(a)
+	var t := clampf((p - a).dot(ab) / length_squared, 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 func _on_back_pressed() -> void:
 	back_pressed.emit()

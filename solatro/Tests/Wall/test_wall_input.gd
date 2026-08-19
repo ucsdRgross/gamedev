@@ -28,6 +28,8 @@ func _ready() -> void:
 	behavior_section("SPATIAL SELECTION (I5, I6)")
 	_test_arrow_selection_is_spatial()
 	_test_selection_wraps()
+	behavior_section("THE INFO CONTROL IS THE GLASS, NOT THE WORD (MINOR, J1/Q135)")
+	_test_the_info_button_wears_the_magnifying_glass()
 	behavior_section("THE SELECTION IS ACTUALLY DRAWN (MINOR, ADVERSARIAL_REVIEW.md, F11/Q105=b)")
 	_test_the_selected_picture_is_the_one_visibly_lifted()
 	behavior_section("HELD-STICK REPEAT (M9, ADVERSARIAL_REVIEW.md, I7/Q116=a)")
@@ -1292,3 +1294,40 @@ func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
 	check(bottom.position.is_equal_approx(bottom.rect.centre),
 			"...and only that one")
 	_teardown(wall, [top, bottom])
+
+# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+
+## MINOR (ADVERSARIAL_REVIEW.md, J1, Q135's note): the Info control is "a top-right magnifying
+## glass"; it shipped wearing the word "Info". The icon is built procedurally
+## (`WallOverlay.magnifier_icon()`, the `WallPicture.shared_frame_texture()` idiom) because the
+## project's font has no magnifier glyph.
+##
+## ⚠ This asserts the WIRING and the icon's STRUCTURE only. Whether the drawing reads as a
+## magnifying glass is a by-eye question (CLAUDE.md rule 4) and was answered by rendering it and
+## looking: a closed circular lens ring with an even-width diagonal handle. No test can make that
+## claim, so none here pretends to.
+func _test_the_info_button_wears_the_magnifying_glass() -> void:
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var info_button : Button = overlay.get_node(^"%InfoButton")
+
+	check(info_button.icon != null, "the Info button carries an icon at all (J1)")
+	check(info_button.text == "",
+			"...and no longer wears the WORD -- the glass IS the label", info_button.text)
+	check(info_button.tooltip_text == TRANSLATION.find(&"WALL_INFO"),
+			"the localised string survives as the tooltip, so the control is still named for a "
+			+ "screen reader and still translatable", info_button.tooltip_text)
+
+	# Structure, not looks: an icon that is entirely transparent, or entirely opaque, is not a
+	# drawing of anything -- and either would sail past a mere "icon != null" check.
+	var img := info_button.icon.get_image()
+	var opaque := 0
+	for y : int in img.get_height():
+		for x : int in img.get_width():
+			if img.get_pixel(x, y).a > 0.5: opaque += 1
+	var total := img.get_width() * img.get_height()
+	check(total > 0, "the icon has pixels to inspect", "total=%d" % total)
+	check(opaque > 0 and opaque < total,
+			"the icon is a DRAWING -- partly opaque, partly transparent, not a blank or a solid "
+			+ "block", "opaque=%d of %d" % [opaque, total])
+	overlay.queue_free()
