@@ -185,6 +185,12 @@ func _test_cursor_appears_only_after_a_key_press() -> void:
 
 ## S36's own done-when: the Wall button hides itself while only one picture exists (nothing to
 ## overview), and reappears once a second picture is packed.
+##
+## ⚠ Driven through `overlay.refresh()` -- the call `Main` actually makes -- not through
+## `Wall.refresh_overlay()`, which was this test's only caller anywhere and has been deleted.
+## A component whose sole consumer is the test that covers it is the built-but-not-wired shape
+## wearing a green tick: production passed `_pictures.size()` straight to the overlay in all four
+## of its call sites and never went near the wall's own accessor.
 func _test_wall_button_hidden_with_one_picture() -> void:
 	var wall := _build_wall()
 	var pictures : Array[WallPicture] = [_add_picture(wall, &"only", Vector2.ZERO)]
@@ -192,11 +198,11 @@ func _test_wall_button_hidden_with_one_picture() -> void:
 	var wall_button : Button = overlay.get_node(^"%WallButton")
 	var fs := FocusStack.new()
 	fs.visit(&"only")
-	wall.refresh_overlay(fs)
+	overlay.refresh(fs, pictures.size())
 	check(not wall_button.visible, "the Wall button is hidden while only one picture exists")
 
 	pictures.append(_add_picture(wall, &"other", Vector2(500, 0)))
-	wall.refresh_overlay(fs)
+	overlay.refresh(fs, pictures.size())
 	check(wall_button.visible, "the Wall button reappears once a second picture is packed")
 	_teardown(wall, pictures)
 

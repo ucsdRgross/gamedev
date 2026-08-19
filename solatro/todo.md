@@ -361,9 +361,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   `retarget()`s an in-flight transition, both of which `_on_window_resized()` does.
 - **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the
   stored value (C3).
-- **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls
-  `overlay.refresh(...)` directly in all three places. Wire them or strike them.
-
 - **Wall view never shows the whole wall, by design, and it may be too much.** `Q5`=b fills and
   crops, and `G10` supplies pan to reach what falls outside — but at 16:9 four of twelve pictures
   are cut by the frame, more at 32:9, and GAP-018=(a) keeps `view_margin` as extra crop, which makes it more pronounced. Wants an owner

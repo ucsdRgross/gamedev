@@ -488,11 +488,6 @@ func move_selection(direction: Vector2) -> void:
 	selected_id = new_id
 	_render_selection()
 
-## S36's own done-when: how many pictures currently exist to overview -- the only piece of state
-## only the wall itself knows, needed by the overlay's Wall-button visibility (refresh_overlay()).
-func picture_count() -> int:
-	return %Pictures.get_child_count()
-
 ## G9 (Q5=b): wall view's own camera framing -- FILL AND CROP the whole wall's extent (the union of
 ## every packed picture's frame outer rect) into the window, the SAME larger-of-two-axis-ratios
 ## formula WallPicture.focused_scale() already uses for a single picture at rest (H3), just applied
@@ -747,12 +742,6 @@ func finish_music_crossfade() -> void:
 	old_fg.volume_db = -80.0
 	_music_active = 1 - _music_active
 	_music_player(_music_active).volume_db = 0.0
-
-## S36's own done-when ("the wall button is hidden while only one picture exists"): forwards to the
-## overlay, adding the one piece of state only the wall itself knows.
-func refresh_overlay(stack: FocusStack) -> void:
-	var overlay : WallOverlay = %Overlay
-	overlay.refresh(stack, picture_count())
 
 ## §1.8 "window restored from minimise" (E7, Q208=b): every frozen picture texture may have been
 ## discarded by the GPU while the window was minimised, so every picture is force-rendered once.
