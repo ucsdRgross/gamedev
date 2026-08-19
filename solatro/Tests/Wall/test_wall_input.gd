@@ -18,6 +18,7 @@ extends TestSuite
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
+const WALL_OVERLAY_SCENE := preload("res://UI/Wall/wall_overlay.tscn")
 
 func suite_name() -> String:
 	return "WALL INPUT"
@@ -60,6 +61,8 @@ func _ready() -> void:
 	await _test_click_enters_an_unfocused_picture_immediately()
 	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
 	_test_most_recent_device_wins_controller_after_mouse()
+	behavior_section("TOUCH TARGETS REACH THE REAL CONTROLS (M6, ADVERSARIAL_REVIEW.md, GAP-004=b)")
+	_test_every_overlay_control_meets_the_clamped_touch_target()
 	behavior_section("TOUCH (I11, I12, I13, S23)")
 	_test_pinch_is_derived_from_two_touches()
 	_test_magnify_gesture_is_never_listened_for()
@@ -1084,3 +1087,52 @@ func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 			+ "camera by nothing", "start=%s now=%s" % [start, camera.position])
 	_press_left(wall, bare_wall, false)
 	_teardown(wall, [left, right])
+
+# ------------------------------------------------------------------ M6 (ADVERSARIAL_REVIEW.md)
+
+## M6 (ADVERSARIAL_REVIEW.md, GAP-004=b, I8c): `WallInput.touch_target_px()` had NO CALLER -- the
+## overlay's buttons were whatever size the scene authored (80x32), and GAP-004's clamp, which its
+## own answer calls "a contract, not a guard clause", never ran on anything. `_test_touch_target_
+## size_is_clamped()` below pins the FORMULA; this pins the fact that a real control obeys it.
+##
+## Driven through a DELIBERATELY LARGE `wall_touch_target_min_px` rather than the machine's own DPI:
+## the real reading on this box already produces a target the authored 80 px width happens to
+## exceed, so a same-DPI assertion would pass against a `_ready()` that did nothing at all. The
+## floor is raised past every authored dimension, so only a real clamp can satisfy it -- and it also
+## proves the KNOB is read, not just some constant.
+func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
+	backup_real_settings()
+	var settings := SettingsManager.settings
+	var real_min := settings.wall_touch_target_min_px
+	var real_max := settings.wall_touch_target_max_px
+	settings.wall_touch_target_max_px = 400.0
+	settings.wall_touch_target_min_px = 120.0   # larger than every authored offset in the scene
+
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(), settings)
+	check(target >= 120.0,
+			"fixture: the raised floor really is what the clamp returns, so the assertions below "
+			+ "cannot be satisfied by the scene's own authored sizes", "target=%.1f" % target)
+
+	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton",
+			&"%InfoButton"]
+	var previous_right := -INF
+	for path : StringName in names:
+		var button : Button = overlay.get_node(NodePath(path))
+		check(button.size.x >= target and button.size.y >= target,
+				"%s is at least the clamped touch target on BOTH axes" % path,
+				"size=%s target=%.1f" % [button.size, target])
+	# The three left-hand buttons grew; they must not have grown INTO each other.
+	for path : StringName in [&"%BackButton", &"%ForwardButton", &"%WallButton"]:
+		var button : Button = overlay.get_node(NodePath(path))
+		check(button.position.x >= previous_right,
+				"%s still starts at or after the previous button ends -- growing the row kept its "
+				% path + "authored gap instead of overlapping",
+				"left=%.1f previous_right=%.1f" % [button.position.x, previous_right])
+		previous_right = button.position.x + button.size.x
+
+	overlay.queue_free()
+	settings.wall_touch_target_min_px = real_min
+	settings.wall_touch_target_max_px = real_max
+	restore_real_settings()

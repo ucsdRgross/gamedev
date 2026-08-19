@@ -45,9 +45,10 @@ static func route(event: InputEvent, picture: WallPicture) -> bool:
 
 ## GAP-004=b (I8c, §1.9's literal formula): the clamped touch-target size in px. `dpi` is passed in
 ## rather than read from `DisplayServer.screen_get_dpi()` internally so a caller (or a test) can
-## supply a synthetic value -- the live call site is `WallInput.touch_target_px(DisplayServer.
-## screen_get_dpi(), settings)`. THE CLAMP IS MANDATORY: DPI is unreliable on multi-monitor Windows
-## (primary screen's DPI reported for all) and on Android.
+## supply a synthetic value. The live call site is `WallOverlay._apply_touch_targets()`, which grows
+## every overlay control to at least this size (M6 -- until then this function had no caller at all
+## and this comment named one that did not exist). THE CLAMP IS MANDATORY: DPI is unreliable on
+## multi-monitor Windows (primary screen's DPI reported for all) and on Android.
 static func touch_target_px(dpi: float, settings: PlayerSettings) -> float:
 	return clampf(mm_to_px(settings.wall_touch_target_mm, dpi), settings.wall_touch_target_min_px,
 			settings.wall_touch_target_max_px)

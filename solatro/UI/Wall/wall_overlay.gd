@@ -31,6 +31,39 @@ func _ready() -> void:
 	_forward_button.pressed.connect(_on_forward_pressed)
 	_wall_button.pressed.connect(_on_wall_pressed)
 	_info_button.toggled.connect(_on_info_toggled)
+	_apply_touch_targets()
+
+## M6 (ADVERSARIAL_REVIEW) / GAP-004=b / I8c: `WallInput.touch_target_px()` had NO CALLER, and its
+## own doc comment named a live call site that did not exist -- every overlay control was whatever
+## size the scene happened to author, so GAP-004's MANDATORY clamp never ran on anything. This is
+## that call site: no control may be smaller than the clamped 9 mm target on either axis.
+##
+## GROWS the authored layout rather than replacing it: each button keeps its authored top-left and
+## the row keeps its authored GAP, both read back off the scene instead of re-typed here (a
+## re-typed offset is a §1.8 literal, and it would silently stop matching the scene). The Info
+## button is anchored to the RIGHT edge, so it grows leftward from its own authored right edge and
+## stays in the corner J1 puts it in.
+##
+## ⚠ `custom_minimum_size` alone does NOT resize a manually-positioned Control until Godot's own
+## deferred layout pass -- the exact trap `InfoCard._resize_to_content()` documents -- so `size` is
+## set explicitly as well, and a caller reading `size` straight after `_ready()` sees the real one.
+func _apply_touch_targets() -> void:
+	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
+			SettingsManager.settings)
+	var row : Array[Button] = [_back_button, _forward_button, _wall_button]
+	var gap := row[1].position.x - (row[0].position.x + row[0].size.x)
+	var x := row[0].position.x
+	for button : Button in row:
+		_grow_to(button, target)
+		button.position.x = x
+		x += button.size.x + gap
+	var info_right := _info_button.position.x + _info_button.size.x
+	_grow_to(_info_button, target)
+	_info_button.position.x = info_right - _info_button.size.x
+
+func _grow_to(button: Button, target: float) -> void:
+	button.size = Vector2(maxf(button.size.x, target), maxf(button.size.y, target))
+	button.custom_minimum_size = button.size
 
 ## F8 (Q65=c): Back and Forward VISIBLY disable themselves -- `Button.disabled`, not merely a press
 ## that silently does nothing -- whenever the given stack has nothing behind/ahead of the current
