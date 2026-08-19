@@ -450,15 +450,16 @@ func test_mid_flight_resize_retargets_without_a_visible_snap() -> void:
 
 # ------------------------------------------------------------------ T12 (S18 reduced motion)
 
-## T12 (K8, Q172=a): with wall_reduced_motion on, camera zoom is CONSTANT across the whole scan --
-## no zoom-out/zoom-in dance at all, matching S18's own done-when ("every transition is a cross-fade
-## and no zoom occurs"). PICTURE_WALL.md C2: the zoom being fixed is only HALF of Q172=a's own
-## text -- "replaces all of it with a cross-fade at a fixed zoom" still means the camera must ARRIVE
-## at the destination; a constant zoom that also holds POSITION at the permanent midpoint (the
-## original bug) satisfies this test's old assertion while leaving the camera parked between the two
-## pictures forever, for every transition afterward too. Added: the FINAL sample's position must
-## equal the destination's own centre, exactly like an ordinary (non-reduced) transition's own
-## landing guarantee.
+## T12 (K8, Q172=a) + GAP-019 = (c), owner-answered: with wall_reduced_motion on the camera does not
+## move AT ALL -- zoom and position are both constant across the whole scan, held at the SOURCE's own
+## resting pose while the two screens cross-fade in place.
+##
+## ⚠ THE ARRIVAL IS NOT ASSERTED HERE ANY MORE, AND THAT IS THE POINT OF (c). The camera reaches the
+## destination by a CUT when the fade completes (`Main._focus_picture()` -> `_settle_camera()`),
+## which this pure-function scan cannot see. An earlier version of this row asserted the final
+## sample's position equalled the destination's centre; under (c) that would be asserting the travel
+## the owner chose to remove. `TestWallPause`'s reduced-motion rows own the arrival, on a real
+## `Main` -- neither half can see the other, so both exist.
 func test_reduced_motion_removes_all_zoom() -> void:
 	var settings := _settings()
 	settings.wall_reduced_motion = true
@@ -480,12 +481,24 @@ func test_reduced_motion_removes_all_zoom() -> void:
 			"camera zoom never changes across the whole scan under reduced motion -- no zoom-out/"
 			+ "zoom-in dance occurs", "first=%.4f" % first_zoom)
 
-	var last_entry : Dictionary = scan[scan.size() - 1]
-	var last_sample : WallTransition.Sample = last_entry["sample"]
-	check(last_sample.camera_position.is_equal_approx(dest.centre),
-			"the FINAL sample's camera position equals the destination's own centre -- the camera "
-			+ "must ARRIVE, not park at the permanent midpoint forever (C2)",
-			"got=%s want=%s" % [last_sample.camera_position, dest.centre])
+	var first_pos := first_sample.camera_position
+	var all_still := true
+	for entry : Dictionary in scan:
+		var sample : WallTransition.Sample = entry["sample"]
+		if not sample.camera_position.is_equal_approx(first_pos):
+			all_still = false
+			break
+	check(all_still,
+			"camera POSITION never changes either -- GAP-019=(c), the cross-fade happens in place "
+			+ "and the camera cuts to the destination only when it completes",
+			"first=%s" % first_pos)
+	check(first_pos.is_equal_approx(source.centre),
+			"...and the pose it holds is the SOURCE's own, not a midpoint between the two",
+			"got=%s want=%s" % [first_pos, source.centre])
+	# Without this the two "never changes" checks above would both pass on a scan that never ran.
+	check(dest.centre.distance_to(source.centre) > 1.0,
+			"sanity: the two pictures are far apart, so a travelling camera would fail the above",
+			"source=%s dest=%s" % [source.centre, dest.centre])
 
 # ------------------------------------------------------------------ T13 (Phase 3 soak)
 

@@ -334,6 +334,12 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(absf(camera.zoom.x - expected) < 0.001,
 			"reduced motion RESTS at the destination's focused zoom, frame off-screen",
 			"zoom=%.4f expected=%.4f" % [camera.zoom.x, expected])
+	# GAP-019 = (c): the camera never moves DURING a reduced-motion cross-fade, so the only thing
+	# that ever brings it to the destination is the cut on landing. T12 pins the not-moving half and
+	# cannot see this one.
+	check(camera.position.distance_to(main._rects[&"map"].centre) < 0.5,
+			"...and at the destination's own centre -- the cut on landing is what gets it there",
+			"camera=%s dest=%s" % [camera.position, main._rects[&"map"].centre])
 	# Without this the check above could pass on a layout where the two happen to coincide.
 	check(expected - wide > 0.1,
 			"sanity: the focused zoom and the wall zoom are far apart in this fixture, so the "

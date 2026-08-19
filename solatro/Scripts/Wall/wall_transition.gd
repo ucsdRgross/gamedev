@@ -178,35 +178,37 @@ static func _find_input_unlock_time(total: float, source_rect: PictureRect, dest
 ## The pure core (see the class doc comment). `total` is `total_duration()`'s own return value,
 ## passed in rather than re-derived so a caller/test can hold it fixed across many samples.
 ##
-## S18 (K8, Q172=a): with `wall_reduced_motion` on, the whole zoom-out/travel/zoom-in dance is
-## replaced by a cross-fade AT A FIXED ZOOM -- held at the SAME "show both frames" framing
-## `_wide_zoom()` already computes for the ordinary transition's own peak, for the ENTIRE duration
-## (T12: zoom is constant throughout). ⚠ PICTURE_WALL.md C2: "at a fixed zoom" fixes the
-## ZOOM, not the POSITION -- Q172=a still requires the camera to ARRIVE at the destination, same as
-## every ordinary transition. Position TRAVELS in a straight line from the source's own centre to
-## the destination's, exactly like the ordinary branch's own travel phase, just with zoom held
-## constant instead of also zooming out/in. The actual cross-fade (blending the two SCREENS'
-## opacity) is driven by `_apply()` below, from this SAME `elapsed`/`total` pair -- not built here,
-## since `sample_at()` is the pure, engine-free core (NAMES.md scopes THIS class to the camera tween
-## and clock alone, but `_apply()` already holds real `WallPicture` references for the landing
-## handoff, so the opacity push belongs there, not as a second untested code path in `Main`). Both
-## frames are guaranteed in view by `_wide_zoom()`'s own construction, so the pause/unpause/
-## input-unlock booleans below all latch on the very first sample -- correct for a cross-fade, which
-## has no real "travel" to wait through.
+## S18 (K8, Q172=a) + GAP-019, owner-answered (c): with `wall_reduced_motion` on there is NO CAMERA
+## MOVE AT ALL. The camera holds the SOURCE's own resting pose -- position and zoom both -- for the
+## entire duration while the two screens cross-fade in place, and `Main._focus_picture()` CUTS it to
+## the destination's resting pose the instant the fade completes (`_settle_camera()`). Q172=a's
+## "fixed zoom" and H3/`Q27`'s "no frame is ever visible at rest" cannot both hold across a move
+## between differently-sized pictures, and (c) is the reading that spends the discontinuity on a
+## single cut at the end rather than on a zoom-out, a slide and a zoom-in.
+## ⚠ The arrival is therefore NOT in this function any more. T12 pins that the camera never moves
+## here; `TestWallPause`'s reduced-motion rows pin that it ends up at the destination's resting pose,
+## and neither half can see the other.
+## The actual cross-fade (blending the two SCREENS' opacity) is driven by `_apply()` below from this
+## same `elapsed`/`total` pair -- not built here, since `sample_at()` is the pure, engine-free core.
 static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		dest_rect: PictureRect, window_size: Vector2, settings: PlayerSettings) -> Sample:
 	var s := Sample.new()
 
 	if settings.wall_reduced_motion:
-		var t := 0.0 if total <= 0.0 else clampf(elapsed / total, 0.0, 1.0)
-		s.camera_position = source_rect.centre.lerp(dest_rect.centre, t)
-		s.camera_zoom = _wide_zoom(source_rect, dest_rect, window_size,
-				settings.wall_frame_reveal_margin)
-		var visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
-		s.source_frame_in_view = visible.encloses(WallPacker.frame_outer_rect(source_rect))
-		s.dest_visible = visible.intersects(
-				Rect2(dest_rect.centre - dest_rect.size * 0.5, dest_rect.size))
-		s.dest_frame_in_view = visible.encloses(WallPacker.frame_outer_rect(dest_rect))
+		# GAP-019 = (c): the camera does not move. It sits where it already is -- the source's own
+		# resting pose -- for every `elapsed`, and Main cuts it to the destination on landing.
+		s.camera_position = source_rect.centre
+		s.camera_zoom = WallPicture.focused_scale(source_rect.size, window_size,
+				settings.wall_overfill_margin)
+		# ⚠ NOT derived from a visible-rect test here, deliberately. The source overfills the window
+		# at its resting pose (H3/Q27), so a geometric test would report the destination as never
+		# visible and never unlock input or unpause the destination's screen at all. A cross-fade
+		# has no travel to wait through and the destination is VISIBLY FADING IN, so it must be live
+		# from the first frame: these three are true by construction of the cross-fade, not by
+		# where the camera happens to be pointing.
+		s.source_frame_in_view = true
+		s.dest_visible = true
+		s.dest_frame_in_view = true
 		return s
 
 	# S28 (J10=Q137 override, "with Info mode on a transition is a pure TRAVEL -- the camera never

@@ -98,7 +98,7 @@ contract, not an incident — the id is what the comment is pointing at:
 | A1–A4 | The info card lives on the wall; the Info button has a consumer; `PinchTracker` is wired; `NAMES.md`'s `Wall` signals are declared and emitted. |
 | B1–B2 | `WallPacker` rejects intersection independently of `gap_px`; the selected lift is a knob, not a literal. |
 | C1 | Alt-tab re-renders every FROZEN picture — never the focused one, which must stay `UPDATE_ALWAYS`. |
-| C2 | Reduced motion still ARRIVES at the destination, and cross-fades. |
+| C2 | Reduced motion cross-fades IN PLACE (no camera move at all, GAP-019=c) and still ARRIVES at the destination — by a cut on landing, not by travel. |
 | C3 | Info mode never survives a quit. |
 | C4 | `wall_jump_N` enters through the same path a click does, in placement order. |
 | C5 | One move at a time (`Q56`=b); input is inert mid-move and unlocks early (I12/C13). |

@@ -299,6 +299,16 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Picture wall
 
+- **🔴 The full suite intermittently HANGS, in clusters, and it is not any one change.** Three
+  consecutive runs stalled at 30 of 39 suites with no banner (every suite that finished passed; the
+  stall is in the concurrency, since `PIXELS`, `OUTLINE`, `INTERACTION`, `WALL INPUT` and
+  `WALL PAUSE` each complete cleanly when run ALONE). Bisected: it still hung with the change under
+  test reverted, then a clean HEAD ran green twice, then the same change ran green twice — 3 hangs
+  and 4 passes with no code difference between them, clustered in time. So "no banner" here is NOT
+  reliably attributable to the change that produced it, which is exactly what
+  [[one-fix-at-a-time]] says a hang normally IS. Suspect the shared render/GPU state or a
+  `await_siblings_except` race rather than any suite's logic. ⚠ Until this is understood, a single
+  hung run is not evidence against a change — re-run before bisecting, which costs ~7 minutes each.
 - **🔴 PIXELS has a SECOND intermittent check, and this one is NOT ruled on.** With the rotated-ball
   row gone, run 2 of 3 failed `t=0.00: at rest the mask and the drawn face agree exactly` with
   **0 mask-without-art, 3773 art-without-mask** — the mask polygon was valid (the "hands its rig to
