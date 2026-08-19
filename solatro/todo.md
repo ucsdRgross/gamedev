@@ -301,10 +301,10 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
-- **🔴 Reduced motion leaves the camera at wide zoom permanently** — `sample_at()`'s reduced branch
-  returns `_wide_zoom` for every elapsed including the last, and nothing re-poses the camera after,
-  so every destination rests at ~0.44 zoom instead of ~1.11 with its frame showing (violates
-  H3/Q27/S37). T12 asserts the final POSITION but not the final ZOOM.
+- **GAP-019 — owner call.** What does the camera do DURING a reduced-motion cross-fade? `Q172`=a's
+  "fixed zoom" and H3/`Q27`'s "no frame visible at rest" cannot both hold across a move between two
+  differently-sized pictures. Three defensible framings, all visible on every navigation; the
+  resting-pose half is already fixed and is not in dispute.
 - **The frame nine-slice never applies in the real game.** `wall_picture.gd`'s
   `entry.frame_texture == shared_frame_texture()` is reference identity, and the texture loaded from
   `layout_default.tres` is a different instance, so patch margins are never set and the bevel smears.
@@ -314,6 +314,10 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   it permanently — Back greys out while a picture is still behind you.
 - **The Info toggle drives the shared camera with no re-entrancy guard**, so it can fight a live
   transition and settle on the wrong picture's pose.
+- **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so a move
+  between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
+  on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself
+  is still framed on the picture being left. Same shape as the reduced-motion defect above.
 
 - **GAP-018 — owner call.** Is `WallLayout.view_margin` (0.06) EXTRA CROP on wall view, as its own
   field comment says, or vestigial from `Q5`'s option (c), the fit-with-margin the owner did NOT

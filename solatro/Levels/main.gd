@@ -410,6 +410,18 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		_focus_stack.visit(id)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size())
+	# H3/Q27/S37 ("no frame is ever visible at rest"): a move ENDS at its destination's resting
+	# pose, whatever route it took to get there. The ordinary branch already lands exactly here, so
+	# this is a no-op for it -- but `sample_at()`'s reduced-motion branch holds `_wide_zoom` for
+	# EVERY elapsed including the last (T12/Q172=a: zoom is constant for the whole transition), and
+	# its info-mode branch holds the SOURCE's info zoom, so both used to rest wherever the tween
+	# stopped rather than where the destination belongs. Reduced motion left every picture resting
+	# at wall zoom with its own frame showing, which is the state H3 exists to forbid.
+	# ⚠ Deliberately `_settle_camera()`, the SAME function a resize settles to (G8/Q25=a), not a
+	# second copy of the resting-pose arithmetic -- two representations of one fact drift.
+	# GAP-019 is the open question about what the camera does DURING a reduced-motion cross-fade;
+	# where it comes to rest is not in dispute in any of that gap's options.
+	_settle_camera()
 	_move_in_flight = false
 	wall.unlock_input()   # backstop: the early unlock above may never have had a frame to fire in
 	_settle_after_deferred_resize()

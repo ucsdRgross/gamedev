@@ -268,6 +268,26 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(main._current_focus == &"deck", "...and the destination is focused",
 			str(main._current_focus))
 
+	# H3/Q27/S37 under REDUCED MOTION (K8/Q172=a). `sample_at()`'s reduced branch holds `_wide_zoom`
+	# for every elapsed INCLUDING THE LAST, so before `_focus_picture()` settled the camera every
+	# destination came to rest at wall zoom with its own frame showing -- the one state H3 forbids,
+	# on every transition. T12 pins the zoom DURING the transition; this pins where it ENDS, and
+	# neither half is visible from the other.
+	SettingsManager.settings.wall_reduced_motion = true
+	var reduced_done := await _drive_move(func() -> void: await main._focus_picture(&"map"))
+	check(reduced_done, "a reduced-motion move completes under the paused tree")
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var expected := WallPicture.focused_scale(main._rects[&"map"].size, main._window_size,
+			SettingsManager.settings.wall_overfill_margin)
+	var wide := main.wall.wall_view_zoom(main._window_size)
+	check(absf(camera.zoom.x - expected) < 0.001,
+			"reduced motion RESTS at the destination's focused zoom, frame off-screen",
+			"zoom=%.4f expected=%.4f" % [camera.zoom.x, expected])
+	# Without this the check above could pass on a layout where the two happen to coincide.
+	check(expected - wide > 0.1,
+			"sanity: the focused zoom and the wall zoom are far apart in this fixture, so the "
+			+ "check above can actually fail", "focused=%.4f wall=%.4f" % [expected, wide])
+
 	main.queue_free()
 	restore_settings_snapshot(snap)
 	restore_real_settings()

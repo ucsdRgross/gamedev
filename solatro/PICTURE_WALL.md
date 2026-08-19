@@ -96,4 +96,5 @@ contract, not an incident — the id is what the comment is pointing at:
 ## Open
 
 Tracked in [todo.md](todo.md) under "Picture wall". `GAP-018` (is `WallLayout.view_margin` extra crop
-or vestigial?) is open and owner-facing; every other gap in `design/picture-wall/gaps/` is answered.
+or vestigial?) and `GAP-019` (what the camera does during a reduced-motion cross-fade) are open and
+owner-facing; every other gap in `design/picture-wall/gaps/` is answered.
