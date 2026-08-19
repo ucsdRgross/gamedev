@@ -918,7 +918,7 @@ func _spotlight_section(section: ScoringSection) -> void:
 			# held. `spotlight_reveal_beat_fraction()` is rise + hold, and the tuning tool's `_beat()`
 			# reads the same accessor so the two cannot disagree about how long a reveal lasts.
 			if view:
-				await Pacing.wait(get_delay()
+				await Pacing.wait(self, get_delay()
 						* SettingsManager.settings.spotlight_reveal_beat_fraction()).timeout
 			# THE REVEAL IS OVER — scoring happens next, so the light and the dim fade (GAP-006).
 			# ⚠ The forced set is deliberately NOT cleared here: `Q16`=(c) keeps it up for the whole

@@ -301,13 +301,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
-- **🔴 `Pacing.wait()` never fires in the shipped game.** `SceneTreeTimer` has no node binding —
-  `process_always = false` keys on the TREE's pause flag, which §1.6 holds permanently on, so a
-  `PROCESS_MODE_ALWAYS` screen does NOT rescue its timers. Measured: `time_left` does not move at
-  all while paused. `game.gd`'s scoring cascade awaits one, so a hand stalls mid-reveal forever.
-  ⚠ This means S6's entire sweep made things worse, and `TestWallPause`'s U5 asserts the broken
-  behaviour as correct. The fix is a design decision: a node-bound `Timer` child respects
-  `process_mode` and would freeze with its screen, which is what D6/Q75=b actually wanted.
 - **🔴 Reduced motion leaves the camera at wide zoom permanently** — `sample_at()`'s reduced branch
   returns `_wide_zoom` for every elapsed including the last, and nothing re-poses the camera after,
   so every destination rests at ~0.44 zoom instead of ~1.11 with its frame showing (violates

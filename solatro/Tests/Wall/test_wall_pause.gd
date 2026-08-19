@@ -41,7 +41,7 @@ func _ready() -> void:
 	test_wall_view_leaves_zero_live()
 	test_info_mode_does_not_pause_focused_screen()
 	behavior_section("PACING VS A BARE TIMER UNDER PAUSE")
-	await test_pacing_wait_does_not_tick_while_paused()
+	await test_pacing_wait_freezes_with_its_own_screen()
 	await test_bare_create_timer_ticks_while_paused()
 	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
 	await test_real_wall_moves_complete_under_the_paused_tree()
@@ -162,19 +162,39 @@ func test_info_mode_does_not_pause_focused_screen() -> void:
 
 # ------------------------------------------------------------------ U5, U6
 
-## U5 (D6, Q75=b): Pacing.wait must NOT fire within a bounded escape window while the tree is
-## paused. ⚠ Exactly the trap ASSUMPTIONS.md's pause-model-spike entry names: `await some_timer`
-## (missing `.timeout`) resolves IMMEDIATELY and would make this pass while asserting nothing --
-## `.timeout` is awaited explicitly below. ⚠ A SECOND, DIFFERENT trap of the same shape lives here
-## too: a GDScript lambda captures an outer local BY VALUE, so `func(): fired = true` writes a
-## throwaway copy and the outer `fired` never moves -- `not fired` then holds regardless of whether
-## the timer actually fired, which is exactly as vacuous as the missing-`.timeout` slip. `fired` is
-## a one-element typed Array below so the closure mutates the SAME boxed value the check reads.
-func test_pacing_wait_does_not_tick_while_paused() -> void:
-	var fired : Array[bool] = [false]
-	Pacing.wait(0.1).timeout.connect(func() -> void: fired[0] = true)
+## U5 (D6, Q75=b): Pacing.wait freezes with ITS OWN SCREEN, which is the contract D6 asked for --
+## NOT with the tree. Both halves are asserted, because either alone is satisfied by a broken
+## implementation: a timer that never fires passes the frozen half, and a bare `create_timer` passes
+## the live half.
+##
+## ⚠ This test used to assert "Pacing.wait does not fire while paused" and called that correct. It
+## was measuring a `SceneTreeTimer`, which has NO node binding: `process_always = false` keys on the
+## TREE's pause flag, and §1.6 holds that on for the whole session -- so the helper never fired in
+## ANY screen and `game.gd`'s scoring cascade stalled mid-reveal forever, with this check green.
+## "Does not fire while the tree is paused" is indistinguishable from "does not fire" when the tree
+## is ALWAYS paused; only a per-screen fixture can tell them apart, which is what this is now.
+##
+## ⚠ Two vacuity traps live in this shape, both from ASSUMPTIONS.md's pause-model-spike entry:
+## `await some_timer` without `.timeout` resolves IMMEDIATELY, and a GDScript lambda captures an
+## outer local BY VALUE so `func(): fired = true` writes a throwaway copy. `.timeout` is explicit
+## and every flag is a one-element typed Array below.
+func test_pacing_wait_freezes_with_its_own_screen() -> void:
+	_focus_only(_pictures[0])
+	var live : Node = _pictures[0].screen_root
+	var frozen : Node = _pictures[1].screen_root
+	check(live.process_mode == Node.PROCESS_MODE_ALWAYS
+			and frozen.process_mode == Node.PROCESS_MODE_PAUSABLE,
+			"sanity: the fixture really is one live screen and one frozen one")
+
+	var live_fired : Array[bool] = [false]
+	var frozen_fired : Array[bool] = [false]
+	Pacing.wait(live, 0.1).timeout.connect(func() -> void: live_fired[0] = true)
+	Pacing.wait(frozen, 0.1).timeout.connect(func() -> void: frozen_fired[0] = true)
 	await get_tree().create_timer(0.5, true).timeout   # escape hatch -- bare timer, ticks regardless
-	check(not fired[0], "Pacing.wait(0.1) did NOT fire within a 0.5s escape while paused")
+	check(live_fired[0],
+			"Pacing.wait FIRES inside the live screen even though the tree is paused -- the whole "
+			+ "show depends on this and it did not happen with a SceneTreeTimer")
+	check(not frozen_fired[0], "...and does NOT fire inside a frozen screen (D6's own half)")
 
 ## U6 (D6): the trap this whole design defends against, kept green ON PURPOSE -- a BARE
 ## create_timer ticks straight through the pause (process_always defaults true), exactly why every
@@ -228,6 +248,18 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(enter_done, "entering a picture from wall view completes under the paused tree")
 	check(not main._move_in_flight, "...and _move_in_flight cleared")
 	check(main._current_focus == &"map", "...and the picture is focused", str(main._current_focus))
+
+	# D6/Q75=b AT THE PRODUCT LEVEL: `map` is focused, so `map_scene` is the live screen and
+	# `menu_scene` is frozen. This is `Pacing`'s real call-site condition -- game code waiting from
+	# inside the screen the player is looking at, under the tree the game actually runs paused.
+	var live_fired : Array[bool] = [false]
+	var frozen_fired : Array[bool] = [false]
+	Pacing.wait(main.map_scene, 0.1).timeout.connect(func() -> void: live_fired[0] = true)
+	Pacing.wait(main.menu_scene, 0.1).timeout.connect(func() -> void: frozen_fired[0] = true)
+	await get_tree().create_timer(0.5, true).timeout   # escape hatch -- bare timer, ticks regardless
+	check(live_fired[0],
+			"a real screen's Pacing.wait fires while that screen is the focused one")
+	check(not frozen_fired[0], "...and an unfocused screen's does not")
 
 	# Picture -> picture: the `WallTransition` branch, whose own tween is already camera-bound.
 	var hop_done := await _drive_move(func() -> void: await main._focus_picture(&"deck"))

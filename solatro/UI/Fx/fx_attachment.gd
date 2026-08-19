@@ -643,7 +643,7 @@ static func warm(parent: Node) -> void:
 		quad.material = mat
 		quad.modulate = Color(1.0, 1.0, 1.0, 0.0)   # drawn, and therefore compiled, but invisible
 		parent.add_child(quad)
-		Pacing.wait(0.5).timeout.connect(quad.queue_free)
+		Pacing.wait(quad, 0.5).timeout.connect(quad.queue_free)
 
 ## Rebuild the quad set from whatever the host's statuses ask for. Idempotent and GENERIC: it
 ## reads FxRequests and never names an effect. Quads are keyed by request id, so a refresh

@@ -212,6 +212,18 @@
   targets a real `.timeout` signal or a coroutine call. **TEST_PLAN.md's U5 and U6 are exactly
   this shape** (asserting on a `Pacing.wait(...)` await) and will walk straight into the same
   false result at S12 unless they also await `.timeout`.
+  ⚠ **SUPERSEDED READING (the measurement stands, the conclusion did not).** Q-D's "`Pacing.wait()`
+  correctly did NOT fire while paused -- `pacing.gd` IS pause-respecting, as designed" is the right
+  number read the wrong way. §1.6 holds the tree paused for the WHOLE SESSION, so "does not fire
+  while the tree is paused" means "does not fire", in every screen, live or frozen -- and
+  `game.gd`'s scoring cascade awaits one. A `SceneTreeTimer` cannot express D6's contract at all,
+  because it has no node and so cannot tell a frozen screen from a paused tree. `Pacing.wait()` now
+  takes the waiting NODE and returns a `Timer` child of it, which obeys that node's effective
+  process mode. Measured under a real focused screen and the real paused tree: `Pacing.wait` inside
+  the live screen fires at its nominal delay; inside an unfocused screen it does not; a `Timer`
+  child of the real `Game` node fires. That is D6/`Q75`=b's intent exactly, and it is why this was
+  fixed as a defect rather than filed as a gap -- the alternative (timers running on through a
+  freeze) is `Q75`=(c), which the owner rejected, so only one option was defensible.
 - **S11 (E7, Q208=b) — `NOTIFICATION_APPLICATION_FOCUS_IN` is the "restore from minimise" hook.**
   §1.8's row requires re-rendering every picture "on window restore from minimise", but neither
   DESIGN.md nor PLAN.md names an engine event for it, and Godot has no dedicated un-minimise signal

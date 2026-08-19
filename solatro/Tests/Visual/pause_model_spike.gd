@@ -109,7 +109,7 @@ class TimerNodeD extends Node2D:
 		_run_pacing()
 		_run_bare()
 	func _run_pacing() -> void:
-		await Pacing.wait(0.3).timeout      # process_always = false -- the pause-respecting helper S6 built
+		await Pacing.wait(self, 0.3).timeout      # process_always = false -- the pause-respecting helper S6 built
 		pacing_fired = true
 		pacing_fired_at_msec = Time.get_ticks_msec()
 	func _run_bare() -> void:

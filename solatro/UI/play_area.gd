@@ -860,7 +860,7 @@ func popup_meld(result : Scoring.Result) -> void:
 		if data in data_card:
 			var anim_time := data_card[data].anim_jump()
 			wait_time = anim_time if anim_time > wait_time else wait_time
-	await Pacing.wait(wait_time).timeout
+	await Pacing.wait(self, wait_time).timeout
 	
 func reset_meld(result : Scoring.Result) -> void:
 	flush_rebuild() #reads data_card
@@ -887,5 +887,5 @@ func popup_score(result : Scoring.Result) -> void:
 	# scroll content, so a global-space combo_pos stays put; the old PlayArea-root parent + z=100
 	# scheme is gone (see LAYERING.md).
 	overlay_layer.add_child(score_name_popup)
-	await Pacing.wait(CardEnvironment.CURRENT.get_delay()*.3).timeout
+	await Pacing.wait(self, CardEnvironment.CURRENT.get_delay()*.3).timeout
 	score_name_popup.queue_free()
