@@ -336,10 +336,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   now cuts to the destination's own info pose on landing — so the resting state is right and what
   remains is a single cut at the end, exactly the shape GAP-019=(c) chose deliberately for reduced
   motion. Left as-is unless the cut reads badly in playtest.
-- **`Wall.wall_view_zoom()` calls `Wall.load_layout()` on every invocation**, and it sits on the
-  mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
-  resolve per input event, and it means wall framing reads the file rather than the layout `Main`
-  actually packed.
 - **The map still BUILDS a full preview-card `InfoEntry` on every booster hover with Info mode off**,
   and `Main` frees it immediately. The leak is gone; the waste is not. Fixing that properly means
   either the map learning about Info mode (which `map.gd`'s own comment forbids — "the map has no

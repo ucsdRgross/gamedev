@@ -49,6 +49,7 @@ func _ready() -> void:
 	behavior_section("ROUTING (I1, I2, S19)")
 	await _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels()
 	await _test_touch_events_route_to_the_same_place_a_click_does()
+	_test_view_margin_is_read_once_not_per_call()
 	await _test_non_focused_picture_never_receives_input()
 	behavior_section("MOUSE (I8, S20)")
 	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
@@ -1080,6 +1081,31 @@ func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 
 	wp.teardown()
 	await _teardown_camera_rig(rig)
+
+## The layout is read from disk ONCE per wall, not on every framing call.
+##
+## ⚠ `wall_view_zoom()` sits on the pointer hot path -- `pan_by()` -> `clamp_pan()` calls it for
+## every mouse-motion event of a drag -- and `Wall.load_layout()` does a `ResourceLoader.exists()`
+## file-system stat before its cached load. Asserted by CHANGING THE CACHE and watching the answer
+## follow it: if the margin were re-read per call the poisoned value would be ignored and the two
+## results would match. Reading the field back instead would only re-state the assignment.
+func _test_view_margin_is_read_once_not_per_call() -> void:
+	var wall := _build_wall()
+	var pictures : Array[WallPicture] = [_add_picture(wall, &"a", Vector2.ZERO),
+			_add_picture(wall, &"b", Vector2(600, 0))]
+	var window := Vector2(1152, 648)
+	var first := wall.wall_view_zoom(window)
+	check(first > 0.0, "sanity: the wall frames a real extent", str(first))
+	check(is_equal_approx(wall.view_margin(), Wall.load_layout().view_margin),
+			"the cached margin is the layout's own value", str(wall.view_margin()))
+
+	# Poison the cache with a margin nothing on disk has.
+	wall._view_margin_cache = 3.0
+	var second := wall.wall_view_zoom(window)
+	check(not is_equal_approx(first, second),
+			"the framing follows the CACHED margin -- so it is not re-read from disk per call",
+			"first=%.4f second=%.4f" % [first, second])
+	_teardown(wall, pictures)
 
 func _test_every_wall_action_has_at_least_one_binding() -> void:
 	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward", &"wall_info"]

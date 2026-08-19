@@ -506,8 +506,24 @@ func wall_view_zoom(window_size: Vector2) -> float:
 	# CONDITIONAL on the aspects differing (H3/DEFECT 1): at a matching aspect fill and fit
 	# coincide exactly, which is what makes G10's "panning is off" an exact zero rather than a
 	# stray few per cent of slack.
-	return WallPicture.focused_scale(extent.size, window_size,
-			1.0 + Wall.load_layout().view_margin)
+	return WallPicture.focused_scale(extent.size, window_size, 1.0 + view_margin())
+
+## `WallLayout.view_margin`, read from disk ONCE per wall and cached.
+##
+## ⚠ This is on the POINTER HOT PATH: `wall_view_zoom()` is called from `clamp_pan()`, which
+## `pan_by()` calls for every mouse-motion event of a drag, and again per picture in the resize
+## loop. `Wall.load_layout()` does a `ResourceLoader.exists()` -- a file-system stat -- before the
+## cached load, so an uncached read meant one stat per motion event for as long as the player held
+## the drag. The layout does not change within a session (the S34 tool edits the file from its own
+## scene, which gets its own `Wall`), so once is the right number of times.
+func view_margin() -> float:
+	if _view_margin_cache < 0.0:
+		_view_margin_cache = Wall.load_layout().view_margin
+	return _view_margin_cache
+
+## Negative until `view_margin()` has read the layout. Not a tunable -- a "not yet loaded" marker,
+## and `view_margin` is a non-negative fraction so no real value can collide with it.
+var _view_margin_cache : float = -1.0
 
 ## M5/S13 (H4, H5, QR7=c, Q34=c): the camera zoom this tracker last saw, or -1 before the first
 ## frame. Compared per frame rather than hooked to a signal because `Camera2D.zoom` has none, and
