@@ -28,10 +28,10 @@ func _ready() -> void:
 	implementation_section("SCORE PACKING FORMAT")
 	test_scores_packing()
 	behavior_section("SAVE / RESUME ON DISK")
-	backup_real_save()   # move any real run.tres aside so disk tests run full, then restore
+	backup_real_save(suite_tag())   # move any real run.tres aside so disk tests run full, then restore
 	test_disk_round_trip()
 	test_game_state_round_trip()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = real_run
 	finish()
 

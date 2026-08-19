@@ -37,7 +37,7 @@ func _ready() -> void:
 	# which also clears it — a save left behind would make `GameView` RESUME a played-out board
 	# instead of dealing (`row cards = 0`, which reads as a board-build bug and is really a stale
 	# save).
-	_SAVE_GUARD.backup_real_save()
+	_SAVE_GUARD.backup_real_save("reveal_shot")
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
@@ -210,7 +210,7 @@ func _ready() -> void:
 		print("[reveal_shot] no skill-free board card to stamp the probe onto")
 	SettingsManager.settings.spotlight_separation_mode = _prev_mode
 	# Put the player's run back exactly as it was — see the note in `_ready`.
-	_SAVE_GUARD.restore_real_save()
+	_SAVE_GUARD.restore_real_save("reveal_shot")
 	print("[reveal_shot] done (separation mode restored to %d)" % _prev_mode)
 	get_tree().quit()
 

@@ -311,15 +311,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   look at real renders before anything builds on the composition.
 - **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
   a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).
-- **⚠ The suite's run-save park is not per-suite, and it makes the banner flaky.**
-  `backup_real_save()`/`restore_real_save()` in `Tests/Support/test_base.gd` are STATIC and share one
-  `REAL_RUN_BAK`, and `restore_real_save()` DELETES `user://run_save/run.tres` before restoring.
-  `PERSISTENCE FUZZ`, `RUN MANAGER`, `LEAK CANARY` and `TestWallFocus`'s lost-run test all use it and
-  none of them `await_siblings_except`, so one suite's park/restore swallows another's file —
-  observed as `fuzz iter N wrote run.tres -- no file on disk` and a torn `Parse Error: Unterminated
-  string`. `_settings_bak_path()` three lines away is per-suite for exactly this reason and says so.
-  Pre-existing; it makes the gate intermittently untrustworthy, which matters more than the failure
-  itself.
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
   hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
   action test, but no real stick has driven it.

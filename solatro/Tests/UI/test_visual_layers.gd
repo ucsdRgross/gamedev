@@ -1496,7 +1496,7 @@ var _prev_save_info : RunState = null
 ## Callers needing a deterministic global stream call `seed()` BEFORE this — `new_run` uses its
 ## own RNG, so the order is safe.
 func _stand_up_view() -> GameView:
-	backup_real_save()
+	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
@@ -1515,6 +1515,6 @@ func _teardown_view(view: GameView) -> void:
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info

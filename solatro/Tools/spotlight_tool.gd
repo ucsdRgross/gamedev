@@ -969,7 +969,7 @@ func _maybe_trace() -> void:
 	EventLog.begin()
 	# ⚠ PARK THE PLAYER'S SAVE FIRST — `new_run()` clears and rewrites `user://run_save/run.tres`,
 	# and the trace's Game keeps saving over it on every submit. Restored before quit below.
-	_SAVE_GUARD.backup_real_save()
+	_SAVE_GUARD.backup_real_save("spotlight_tool")
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
@@ -1002,7 +1002,7 @@ func _maybe_trace() -> void:
 	EventLog.event(EventLog.CH_ACT, "SCENARIOS done")
 	var dir := EventLog.save("spotlight_trace")
 	EventLog.end()
-	_SAVE_GUARD.restore_real_save()
+	_SAVE_GUARD.restore_real_save("spotlight_tool")
 	print("=== SPOTLIGHT TRACE: %d events, %d shots ===" % [EventLog.count(), _shots])
 	print("logs:  " + dir)
 	print(EventLog.summary())

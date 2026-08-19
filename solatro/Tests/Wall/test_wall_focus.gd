@@ -356,7 +356,7 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 ## GameView's own behaviour -- `_on_run_lost()`'s own logic never reads anything ABOUT the screen,
 ## only whether it exists).
 ##
-## `backup_real_save()`/`restore_real_save()` (`test_base.gd`, the same pattern
+## `backup_real_save(suite_tag())`/`restore_real_save(suite_tag())` (`test_base.gd`, the same pattern
 ## `test_run_manager.gd`/`test_leak_canary.gd` already use) park the real
 ## `user://run_save/run.tres` for the call's duration -- `_on_run_lost()` calls
 ## `RunManager.clear_save()`, which deletes that file. Paired tightly around ONE synchronous call
@@ -365,13 +365,13 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 ##
 ## ⚠ Q157's OTHER half ("the map is replaced only when a new run starts") is not exercised here --
 ## `_on_new_run()` ends in `await _go_to_wall_view()`, which would hold this test's own exposure
-## window open across a real camera animation while `backup_real_save()`'s park is still shared,
+## window open across a real camera animation while `backup_real_save(suite_tag())`'s park is still shared,
 ## global (not per-suite like the settings backup), and genuinely un-scoped against whichever OTHER
 ## suite might also be mid-save at that moment. That half remains evidenced by code review alone
 ## (ASSUMPTIONS.md): `_on_new_run()`'s own `game_wp.detach_screen()` line is the one place either
 ## picture is ever actually replaced.
 func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
-	backup_real_save()
+	backup_real_save(suite_tag())
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	get_tree().paused = false
@@ -393,7 +393,7 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 	check(is_instance_valid(lose_screen_stand_in),
 			"...and it was never freed either")
 
-	restore_real_save()
+	restore_real_save(suite_tag())
 	main.queue_free()
 
 # ------------------------------------------------------------------ A1 (PICTURE_WALL.md)

@@ -120,29 +120,54 @@ func _check_cat(ok: bool, cat: Category, ctx: String, detail: String) -> void:
 
 ## Disk-test isolation. The save/load suites write and delete user://run_save/run.tres —
 ## the SAME file a real run uses. Rather than skip when a real save exists (which made the
-## tests dependent on unrelated player state), the disk suites call backup_real_save()
-## before touching disk and restore_real_save() after, so they ALWAYS run full and a real
+## tests dependent on unrelated player state), the disk suites call backup_real_save(tag)
+## before touching disk and restore_real_save(tag) after, so they ALWAYS run full and a real
 ## run is preserved. The backup uses a non-.tres suffix so has_save() (which keys on
 ## run.tres) never sees it.
 const REAL_RUN_PATH := "user://run_save/run.tres"
-const REAL_RUN_BAK := "user://run_save/run.tres.testbak"
+
+## ⚠ PER-CALLER BACKUP PATH, and it is `tag` that makes it one. A single shared
+## `run.tres.testbak` let suites that do not `await_siblings_except` run concurrently and park or
+## restore across each other: one suite's restore deleted `run.tres` and moved ITS backup home
+## while another was mid-write, which surfaced as `fuzz iter N wrote run.tres -- no file on disk`
+## and a torn `Parse Error: Unterminated string`, intermittently, in a DIFFERENT suite than the one
+## at fault. That made the whole suite banner untrustworthy, which is worse than any single failure.
+## `_settings_bak_path()` below already derived a per-suite name for exactly this reason; this is
+## the same fix for the run save.
+##
+## Pass a tag unique to the PURPOSE, not to the moment: a suite passes `suite_tag()` (its own name),
+## an external harness passes its own literal. Two callers sharing a tag share a backup, which is
+## the bug.
+static func run_bak_path(tag: String) -> String:
+	return "user://run_save/run.tres.%s.testbak" % tag
 
 ## ⚠ STATIC: harnesses outside the test tree (`spotlight_tool -- --trace`, `reveal_shot`) run
 ## `RunManager.new_run()` too, and each hand-rolled its own park before this was callable — one of
 ## them not at all, silently overwriting the player's run (reveal_shot.gd records the symptom).
-static func backup_real_save() -> void:
+static func backup_real_save(tag: String) -> void:
+	# Self-healing, matching backup_real_settings(): an ABORTED earlier run may have left the real
+	# file parked under this tag, so put it back before parking again — otherwise that run's
+	# throwaway save becomes "the real one" and the player's run is lost for good.
+	restore_real_save(tag)
 	if FileAccess.file_exists(REAL_RUN_PATH):
 		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_PATH),
-				ProjectSettings.globalize_path(REAL_RUN_BAK))
+				ProjectSettings.globalize_path(run_bak_path(tag)))
 
-static func restore_real_save() -> void:
-	if not FileAccess.file_exists(REAL_RUN_BAK):
+static func restore_real_save(tag: String) -> void:
+	var bak := run_bak_path(tag)
+	if not FileAccess.file_exists(bak):
 		return
 	# a test may have left its own run.tres behind — clear it before restoring the real one
 	if FileAccess.file_exists(REAL_RUN_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(REAL_RUN_PATH))
-	DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_RUN_BAK),
+	DirAccess.rename_absolute(ProjectSettings.globalize_path(bak),
 			ProjectSettings.globalize_path(REAL_RUN_PATH))
+
+## The tag a SUITE parks under — its own name, so no two suites can collide. Mirrors
+## `_settings_bak_path()`'s derivation; kept public so a diagnostic scene that subclasses TestSuite
+## can use it too.
+func suite_tag() -> String:
+	return suite_name().to_lower().replace(" ", "_")
 
 ## Settings isolation. SettingsManager writes user://settings.tres on EVERY knob
 ## write (on_settings_changed -> save_settings), so a suite that scribbles on the live

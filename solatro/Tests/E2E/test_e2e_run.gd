@@ -28,7 +28,7 @@ func _ready() -> void:
 	TestLog.line("============ END-TO-END RUN TEST PASS ============")
 	behavior_section("FULL SHOW LOOP, HEADLESS")
 	# Always run full: move any real run.tres aside so the scenarios can write/clear freely.
-	backup_real_save()
+	backup_real_save(suite_tag())
 	var real_run: RunState = RunManager.run
 	var real_save_info: RunState = Main.save_info
 	await run_win_and_resume_scenario()
@@ -37,7 +37,7 @@ func _ready() -> void:
 	# save_state can land after clear_save and resurrect run.tres.
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
-	restore_real_save()   # put the player's real run.tres back
+	restore_real_save(suite_tag())   # put the player's real run.tres back
 	RunManager.run = real_run
 	Main.save_info = real_save_info
 	finish()

@@ -43,7 +43,7 @@ func _ready() -> void:
 	# deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ INTERACTION TEST PASS ============")
-	backup_real_save()
+	backup_real_save(suite_tag())
 	# the shared park-the-file isolation (TestSuite): every knob write during this suite lands
 	# in a throwaway settings.tres, so even an abort can't strand the player's real knobs
 	backup_real_settings()
@@ -98,7 +98,7 @@ func _teardown_view() -> void:
 	# join any in-flight background save BEFORE clearing, then put reality back
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 

@@ -29,7 +29,7 @@ func _ready() -> void:
 	TestLog.line("============ PERSISTENCE FUZZ TEST PASS ============")
 	behavior_section("SAVE DOCUMENT ROUND-TRIP FUZZ")
 	# Always run full: move any real run.tres aside first, restore it at the end.
-	backup_real_save()
+	backup_real_save(suite_tag())
 	var real_run: RunState = RunManager.run
 	var rng := RandomNumberGenerator.new()
 	for iter in ITERATIONS:
@@ -40,7 +40,7 @@ func _ready() -> void:
 	RunManager.run = null
 	if FileAccess.file_exists(RunManagerClass.RUN_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(RunManagerClass.RUN_PATH))
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = real_run
 	finish()
 

@@ -171,7 +171,7 @@ func _ready() -> void:
 	implementation_section("PRODUCTION SESSION CANARY")
 	# Isolation: the cycles write run.tres + settings.tres and swap the run singletons —
 	# park the real ones and restore after (same discipline as VISUAL LAYERS / E2E).
-	backup_real_save()
+	backup_real_save(suite_tag())
 	backup_real_settings()
 	var real_run : RunState = RunManager.run
 	var real_save_info : RunState = Main.save_info
@@ -222,7 +222,7 @@ func _ready() -> void:
 
 	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = real_run
 	Main.save_info = real_save_info
 	finish()

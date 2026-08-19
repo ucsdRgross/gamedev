@@ -47,7 +47,7 @@ func _run_soak() -> void:
 
 	# Disk-test isolation (test_base.gd's own established convention) -- RunManager.new_run() /
 	# save_run() below write to the SAME path a real run uses.
-	backup_real_save()
+	backup_real_save("wall_game_freeze_soak")
 	var real_save_info : RunState = Main.save_info
 
 	var cards := TestDecks.seeded_deck()
@@ -115,4 +115,4 @@ func _run_soak() -> void:
 	viewports.queue_free()
 	RunManager._shutdown_saver()
 	Main.save_info = real_save_info
-	restore_real_save()
+	restore_real_save("wall_game_freeze_soak")

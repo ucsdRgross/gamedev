@@ -988,7 +988,7 @@ func test_focus_inspector_all_input_modes() -> void:
 # prop-tick sync regression fails the check instead of hanging the suite.
 # ==============================================================================
 func test_game_view_submit_with_props() -> void:
-	backup_real_save()
+	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
 	# FROZEN test deck, never Decks/deck.gd: this seeded run's observations (the 424242 deal
@@ -1065,7 +1065,7 @@ func test_game_view_submit_with_props() -> void:
 	# join any in-flight background save BEFORE clearing, then put reality back (E2E pattern)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
@@ -1174,7 +1174,7 @@ func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void
 			   "" if margin >= 0.0 else "  (SCROLLING REQUIRED — supported, not a failure)"])
 
 func test_all_kinds_live_in_game_view() -> void:
-	backup_real_save()
+	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
 	# The run only bootstraps a valid save — the board below is fully crafted, so the
@@ -1280,7 +1280,7 @@ func test_all_kinds_live_in_game_view() -> void:
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
-	restore_real_save()
+	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
