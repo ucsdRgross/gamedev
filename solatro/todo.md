@@ -342,6 +342,39 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
   resolve per input event, and it means wall framing reads the file rather than the layout `Main`
   actually packed.
+- **The map builds a full preview-card `InfoEntry` on every booster hover even with Info mode OFF**
+  (`map.gd`'s unconditional `info_hovered.emit(MapHoverPanel.get_info(...))`), and
+  `Main._on_screen_info_hovered()` then drops it — orphaning a `FlowContainer` of `ControlCard`s in
+  ObjectDB per hover-enter. Info mode is force-cleared every launch, so OFF is the normal state.
+  `_on_picture_hovered()` already checks the flag BEFORE building; the map path did not get it.
+- **In wall view the Back BUTTON is greyed out while Escape still works.** The wall-view Back branch
+  uses `FocusStack.current()`; the button's enabled state still uses `can_back()` (needs two
+  entries). Cold launch → Escape → wall view is the common case where they diverge, against
+  `Main._ready()`'s own stated invariant that the key and the button cannot. See GAP-020.
+- **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
+  locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
+  `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
+  PICTURE_WALL.md's wiring table nor this list until now.
+- **`WallTransition` re-reads the LIVE `PlayerSettings` every frame**, so toggling `wall_info_mode`
+  (or `wall_reduced_motion`) mid-transition switches `sample_at()`'s branch inside the running
+  tween and the camera jumps for the rest of the move. `_settle_camera()` repairs the resting pose,
+  so it is a visible artefact rather than a dead end — but `_on_info_toggled()`'s comment claims the
+  camera is left to whichever move owns it, and that is only true of the RESTING pose.
+- **`Wall.apply_layout()` never kills a previous animated tween**, so a resize during an animated
+  re-pack leaves the old tween writing toward pre-resize targets and `WallPicture.rect` permanently
+  disagrees with what is drawn. Latent while nothing triggers an unlock.
+- **`begin_music_crossfade()` early-returns without arming the background player when both pictures
+  share a stream, but `finish_music_crossfade()` flips `_music_active` regardless** — so moving
+  between two pictures with the same track silences the music entirely. Latent: nothing in
+  `layout_default.tres` authors `music` yet.
+- **`_repack_wall()` never calls `update_wall_view_size()`** for repositioned pictures and never
+  `retarget()`s an in-flight transition, both of which `_on_window_resized()` does.
+- **`WallInput.route()` applies the half-viewport shift only to `InputEventMouse`**, so raw
+  `InputEventScreenTouch`/`ScreenDrag` land offset by half a viewport. Masked on desktop by
+  `emulate_mouse_from_touch`.
+- **`wall_info` has no joypad binding** — the mirror of the `wall_back`/`wall_forward` item above.
+- **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the
+  stored value (C3).
 - **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls
   `overlay.refresh(...)` directly in all three places. Wire them or strike them.
 

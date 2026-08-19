@@ -7,6 +7,7 @@ script = ExtResource("1_wo")
 
 [node name="BackButton" type="Button" parent="."]
 unique_name_in_owner = true
+focus_mode = 0
 offset_left = 12.0
 offset_top = 12.0
 offset_right = 92.0
@@ -15,6 +16,7 @@ disabled = true
 
 [node name="ForwardButton" type="Button" parent="."]
 unique_name_in_owner = true
+focus_mode = 0
 offset_left = 100.0
 offset_top = 12.0
 offset_right = 180.0
@@ -23,6 +25,7 @@ disabled = true
 
 [node name="WallButton" type="Button" parent="."]
 unique_name_in_owner = true
+focus_mode = 0
 offset_left = 188.0
 offset_top = 12.0
 offset_right = 268.0
@@ -30,6 +33,7 @@ offset_bottom = 44.0
 
 [node name="InfoButton" type="Button" parent="."]
 unique_name_in_owner = true
+focus_mode = 0
 toggle_mode = true
 anchor_left = 1.0
 anchor_right = 1.0

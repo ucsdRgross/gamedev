@@ -38,6 +38,11 @@ existing; if you delete one, the feature silently stops existing and its unit te
 | `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no card |
 | `Wall.apply_layout()` | `Main._build_pictures()` **and** `_repack_wall()`/`_on_window_resized()` | `_placement_order` stays empty, so all nine `wall_jump_N` keys are inert until something else happens to re-pack |
 
+**Every overlay control is `FOCUS_NONE`.** A `Control` holding GUI focus eats `ui_up/down/left/right`
+and `ui_accept` before `_unhandled_input` runs, so one mouse click on an overlay button used to kill
+wall-view arrow selection and Enter-to-enter for the rest of the session. They are mouse/touch
+affordances; each also has its own `wall_*` action for the keyboard.
+
 **Every `wall_*` InputMap action needs BOTH a reader and a binding.** `wall_back`/`wall_forward`
 shipped with readers missing *and* empty event lists. `TestWallInput` asserts both halves.
 

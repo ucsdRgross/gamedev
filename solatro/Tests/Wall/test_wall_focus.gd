@@ -37,6 +37,8 @@ func _ready() -> void:
 	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
 	test_back_visibly_disabled_at_bottom_of_stack()
 	test_forward_visibly_disabled_with_nothing_ahead()
+	behavior_section("THE OVERLAY NEVER TAKES KEYBOARD FOCUS")
+	test_overlay_buttons_cannot_take_focus()
 	behavior_section("WALL STATE DOES NOT SURVIVE A QUIT (S30, F13)")
 	test_wall_state_does_not_survive_a_quit()
 	behavior_section("UNLOCK MID-SESSION (S38, F12)")
@@ -1020,3 +1022,31 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
 	restore_real_settings()
+
+# ------------------------------------------------------------------ overlay focus
+
+## I9/Q103=a/Q115=a: the WALL owns arrow selection and `ui_accept`, read in its own
+## `_unhandled_input`. A `Control` that holds GUI focus consumes `ui_up/down/left/right` (focus
+## neighbour navigation) and `ui_accept` (press the focused button) BEFORE `_unhandled_input` ever
+## runs -- so with Godot's default `FOCUS_ALL` on these four Buttons, clicking any one of them with
+## the mouse silently killed wall-view arrow selection and Enter-to-enter for the rest of the
+## session. The overlay's controls are mouse/touch affordances; every one of them also has its own
+## `wall_*` InputMap action for the keyboard, so none of them needs focus.
+##
+## Asserted BEHAVIOURALLY -- grab_focus() is called and must not take -- rather than by reading the
+## property back, which would only re-state the scene file at itself.
+func test_overlay_buttons_cannot_take_focus() -> void:
+	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
+	add_child(overlay)
+	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton",
+			&"%InfoButton"]
+	check(names.size() == 4, "sanity: all four overlay controls are covered", str(names.size()))
+	for path : StringName in names:
+		var button : Button = overlay.get_node(NodePath(path))
+		# `disabled` alone would refuse focus, so clear it first: this must hold for a button the
+		# player can actually click, which is the only way the defect was reachable.
+		button.disabled = false
+		button.grab_focus()
+		check(not button.has_focus(),
+				"%s cannot take keyboard focus, so it cannot swallow the wall's arrows" % path)
+	overlay.queue_free()
