@@ -32,6 +32,7 @@ func _ready() -> void:
 	test_restore_from_minimise_rerenders()
 	test_layout_is_loaded_from_disk_not_hardcoded()
 	test_filter_swaps_on_zoom_not_pan()
+	await test_the_wall_actually_drives_the_filter_swap_as_the_camera_zooms()
 	behavior_section("OVERFILL MARGIN (H3, GAP-011)")
 	test_overfill_margin_knob_actually_changes_the_scale()
 	test_overfill_margin_only_applies_when_aspect_mismatches()
@@ -222,6 +223,51 @@ func test_filter_swaps_on_zoom_not_pan() -> void:
 	wp.update_filter(true)
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 			"a zoom change flips the filter to LINEAR")
+
+## M5 (ADVERSARIAL_REVIEW.md, S13, QR7=c, H4/H5, Q34=c): `update_filter(true)` had NO CALLER, so the
+## focused picture sampled NEAREST through every zoom and S13 was dead. The test above pins the
+## METHOD; this pins the WIRING -- a REAL camera zoom, on a REAL `Wall`, across REAL frames. It goes
+## red if `Wall._process()`'s tracking is removed.
+##
+## Q34=c is the half most easily lost: a pure PAN must leave the filter alone. Asserted after a
+## position change large enough that any position-sensitive implementation would have flipped it.
+func test_the_wall_actually_drives_the_filter_swap_as_the_camera_zooms() -> void:
+	var wp := _pictures[0]
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	var camera : Camera2D = _wall.get_node(^"%Camera2D")
+	# Exactly ONE focused picture, by construction: `_focused_picture()` returns the FIRST it finds,
+	# so an earlier test leaving another one focused would silently point this test at the wrong
+	# picture and it would then prove nothing about `wp` at all.
+	for other : WallPicture in _pictures:
+		if other != wp: other.unfocus(Vector2(100.0, 100.0))
+	wp.focus()
+
+	# One settling frame so the tracker has a zoom to compare against, then a frame at rest.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+			"at rest the focused picture samples NEAREST (H5)")
+
+	camera.zoom = camera.zoom * 1.5
+	await get_tree().process_frame
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+			"the frame the camera ZOOMED, the wall swapped the focused picture to LINEAR -- "
+			+ "nothing called update_filter(true) at all before M5")
+
+	await get_tree().process_frame
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+			"and it snaps back to NEAREST the moment the zoom stops changing (QR7=c)")
+
+	camera.position += Vector2(500.0, 500.0)
+	await get_tree().process_frame
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
+			"Q34=c: a pure PAN never flips the filter -- only zoom does")
+
+	wp.unfocus(Vector2(100.0, 100.0))
+	camera.zoom = camera.zoom * 1.5
+	await get_tree().process_frame
+	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+			"H5: with nothing focused the picture stays LINEAR unconditionally, zoom or not")
 
 # ------------------------------------------------------------------ GAP-011 (H3)
 

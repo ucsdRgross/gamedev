@@ -414,6 +414,29 @@ func wall_view_zoom(window_size: Vector2) -> float:
 	return WallPicture.focused_scale(extent.size, window_size,
 			SettingsManager.settings.wall_overfill_margin)
 
+## M5/S13 (H4, H5, QR7=c, Q34=c): the camera zoom this tracker last saw, or -1 before the first
+## frame. Compared per frame rather than hooked to a signal because `Camera2D.zoom` has none, and
+## the design's own trigger is a FRAME ("any frame where zoom changed"), not an event.
+var _last_camera_zoom : float = -1.0
+
+## M5 (ADVERSARIAL_REVIEW): `update_filter(true)` had NO CALLER, so the focused picture sampled
+## NEAREST through every zoom and S13 was dead -- exactly the shimmer QR7=c/H4/H5 exist to suppress.
+## This is that call site: the wall owns both the camera and the pictures, which is why
+## `WallPicture.update_filter()`'s own doc already names "the wall's camera tracking, S12/S13" as
+## the caller.
+##
+## Q34=c: ZOOM, not position -- a pure pan must never flip the filter, so this compares zoom alone.
+## Only the FOCUSED picture is told; everything else is unconditionally LINEAR, which `unfocus()`
+## already sets once (H5). Runs while the tree is paused because the wall root is
+## `PROCESS_MODE_ALWAYS` (§1.6) -- the transition's whole zoom happens under that pause.
+func _process(_delta: float) -> void:
+	var camera : Camera2D = %Camera2D
+	var zoom := camera.zoom.x
+	var zoom_changed := _last_camera_zoom >= 0.0 and not is_equal_approx(zoom, _last_camera_zoom)
+	_last_camera_zoom = zoom
+	var focused := _focused_picture()
+	if focused: focused.update_filter(zoom_changed)
+
 ## M4/G10 (Q1 note, Q3 note): a pan drag is in progress -- the left button went down on BARE WALL
 ## in wall view and has not come up. Latched here rather than read off `Input` so a synthetic event
 ## sequence drives exactly the same path a real pointer does.
