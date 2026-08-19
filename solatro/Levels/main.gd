@@ -571,9 +571,17 @@ func _on_continue() -> void:
 	# process exit -- L8, "a frozen act does NOT survive a quit"): the show restarts fresh, same
 	# as before this run existed. M2/M3 still apply uniformly -- every launch reveals wall view,
 	# with the same GAP-014 reveal scale as _on_new_run().
-	if save_info.pending_node_id >= 0:
-		enter_game()
+	# M3/Q62=a: "that reveal happens on EVERY launch" -- no exception for a resume, so the reveal
+	# runs FIRST and the show is re-entered after it lands.
+	# ⚠ ORDER AND `await` BOTH MATTER. This used to call `enter_game()` UN-AWAITED and then reveal.
+	# `enter_game()` is a coroutine: calling it without `await` runs it as far as its first await --
+	# which is inside `_focus_picture()`, AFTER `_move_in_flight = true` -- and returns. The reveal
+	# below then hit its own `if _move_in_flight: return` and did nothing at all, so continuing a
+	# run that was quit mid-show silently skipped M2/M3 while this function's own comment claimed
+	# it applied uniformly.
 	await _go_to_wall_view(SettingsManager.settings.wall_reveal_delay_scale)
+	if save_info.pending_node_id >= 0:
+		await enter_game()
 
 ## S31 (L2): entering a show. If the `game` picture already holds a LIVE screen (a previous
 ## mid-act freeze -- the player left via Back/Wall instead of winning/losing), this RESUMES it --

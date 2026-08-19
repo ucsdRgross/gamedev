@@ -45,6 +45,7 @@ func _ready() -> void:
 	await test_bare_create_timer_ticks_while_paused()
 	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
 	await test_real_wall_moves_complete_under_the_paused_tree()
+	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	finish()
 
 # ------------------------------------------------------------------ fixture
@@ -337,6 +338,51 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	main.queue_free()
 	restore_settings_snapshot(snap)
 	restore_real_settings()
+
+## M2/M3 (Q61=a, Q62=a, GAP-014): continuing a run that was quit MID-SHOW still reveals wall view.
+##
+## ⚠ The END STATE is identical whether this works or not -- `game` ends up focused either way --
+## so this samples `_current_focus` THROUGHOUT the call and asserts wall view was actually passed
+## through. `_on_continue()` used to call `enter_game()` un-awaited: that coroutine ran as far as
+## its first await, leaving `_move_in_flight` true, so the reveal below it returned on its own guard
+## and never happened. A test asserting only "game is focused at the end" would pass on the defect.
+func test_continue_after_a_mid_show_quit_still_reveals_wall_view() -> void:
+	backup_real_settings()
+	backup_real_save(suite_tag())
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause. As ever.
+
+	# A save that says "quit mid-show" -- the one branch that skipped the reveal.
+	RunManager.new_run([] as Array[CardData], [] as Array[CardData])
+	RunManager.run.pending_node_id = 5
+	RunManager.save_run()
+
+	var seen : Array[StringName] = []
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	_drive(func() -> void: await main._on_continue(), done)
+	var started := Time.get_ticks_msec()
+	while not done[0] and Time.get_ticks_msec() - started < 20000:
+		if seen.is_empty() or seen[-1] != main._current_focus: seen.append(main._current_focus)
+		await get_tree().process_frame
+	if seen.is_empty() or seen[-1] != main._current_focus: seen.append(main._current_focus)
+
+	check(done[0], "_on_continue() completes under the paused tree", str(seen))
+	# Trap 5: a sampler whose body never ran would make the next check vacuous.
+	check(seen.size() >= 2, "sanity: the sampler saw the focus actually change", str(seen))
+	check(seen.has(&""),
+			"the wall-view reveal happens even when the run was quit mid-show (M3: EVERY launch)",
+			str(seen))
+	check(main._current_focus == &"game",
+			"...and the show is re-entered afterwards, not left in wall view", str(seen))
+	check(seen.find(&"") < seen.find(&"game"),
+			"...in that order: reveal first, then the show", str(seen))
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+	restore_real_save(suite_tag())
 
 ## Starts `body` as a coroutine and polls for its return under a bounded wall-clock escape, so a
 ## move that never completes reports FALSE instead of hanging the run. `process_frame` is the one

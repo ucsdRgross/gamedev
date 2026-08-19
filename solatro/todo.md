@@ -318,6 +318,29 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
   on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself
   is still framed on the picture being left. Same shape as the reduced-motion defect above.
+- **Back pressed IN WALL VIEW skips a picture and pushes it onto Forward.** In wall view
+  `_current_focus` is `&""` but the stack's top is still the picture just left, so `back()` steps
+  past it: leave `map`, press Back once, land on `start_menu`, and `map` is now in the FORWARD list
+  having never been revisited. A single unraced press — distinct from the double-press item above.
+  Violates `Q65`=a.
+- **The info card never follows the window.** `info_card.gd` computes its position from
+  `get_viewport_rect()` inside `_resize_to_content()`, which only runs from `show_entry()`; nothing
+  connects `size_changed` and `Main._on_window_resized()` does not touch it. Shrink the window and
+  the card sits off the bottom edge while Info mode still reports it shown. `Q129`=a says anchored
+  to the window.
+- **`wall_back`/`wall_forward` are joypad-only** — `project.godot` binds buttons 9 and 10 and no key,
+  while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
+  button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`
+  actions, so PICTURE_WALL.md's "BOTH a reader and a binding" is not actually enforced.
+- **`WallPicture.reposition()` drops the selection lift** — it writes `position = rect.centre`,
+  discarding `set_selected()`'s `wall_selected_lift`, so a re-pack silently un-lifts the selected
+  picture and nothing re-renders the selection.
+- **`Wall.wall_view_zoom()` calls `Wall.load_layout()` on every invocation**, and it sits on the
+  mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
+  resolve per input event, and it means wall framing reads the file rather than the layout `Main`
+  actually packed.
+- **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls
+  `overlay.refresh(...)` directly in all three places. Wire them or strike them.
 
 - **GAP-018 — owner call.** Is `WallLayout.view_margin` (0.06) EXTRA CROP on wall view, as its own
   field comment says, or vestigial from `Q5`'s option (c), the fit-with-margin the owner did NOT
