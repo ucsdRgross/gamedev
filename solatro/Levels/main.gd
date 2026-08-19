@@ -136,8 +136,10 @@ func _build_pictures() -> void:
 	for e : PictureEntry in layout.pictures: by_id[e.id] = e
 	var viewports : Node = wall.get_node(^"%Viewports")
 	var pictures_root : Node = wall.get_node(^"%Pictures")
+	var rects_by_id : Dictionary[StringName, PictureRect] = {}
 	for rect : PictureRect in rects:
 		_rects[rect.id] = rect
+		rects_by_id[rect.id] = rect
 		_entries[rect.id] = by_id[rect.id]
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 		pictures_root.add_child(wp)
@@ -146,6 +148,13 @@ func _build_pictures() -> void:
 		elif rect.id == &"map": live_screen = map_scene
 		wp.build(rect, by_id[rect.id], viewports, live_screen)
 		_pictures[rect.id] = wp
+	# C4/I7 (Q104=a): `wall_jump_N` means the Nth picture AS PLACED, and `_placement_order` is
+	# recorded by `apply_layout()` alone. Building the pictures directly (as this does, so each one
+	# lands at its final rect with no animation) left that order EMPTY, so all nine number keys were
+	# inert from cold launch until an unlock or a resize happened to call `apply_layout()` for some
+	# other reason. The geometry half is a no-op here -- every picture was just built at exactly
+	# this rect -- but the placement order is not, and this is its one call site.
+	wall.apply_layout(rects_by_id, false)
 
 ## S38 (K2, K3, K4, K11): reacts to `ProfileManager.picture_unlocked` -- recomputes the layout's
 ## unlocked id set (`ProfileManager.is_unlocked()` already honours `wall_unlock_all`, K11's debug

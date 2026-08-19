@@ -233,6 +233,7 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(main._current_focus == &"start_menu", "sanity: cold launch focused start_menu",
 			str(main._current_focus))
 
+
 	# The first Wall press: focused picture -> wall view, the move that soft-locked the app.
 	var wall_view_done := await _drive_move(func() -> void: await main._go_to_wall_view())
 	check(wall_view_done,
@@ -242,6 +243,40 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(not main.wall.input_locked, "...and input is answered again")
 	check(main._current_focus == &"", "...and the wall is actually in wall view",
 			str(main._current_focus))
+	# C4/I7 (Q104=a): the number keys mean the Nth picture AS PLACED, and only `apply_layout()`
+	# records that order. `_build_pictures()` builds each picture at its final rect directly, so
+	# nothing recorded it and all nine keys were inert from cold launch until an unlock or a resize
+	# happened to call `apply_layout()` for an unrelated reason. Asserted on a COLD `Main` -- in wall
+	# view, where no focused screen can consume the action first, and with nothing having called
+	# `apply_layout()` for any other reason yet.
+	var jumped : Array[StringName] = [&""]   # boxed -- lambdas capture locals BY VALUE
+	main.wall.picture_enter_requested.connect(func(id: StringName) -> void: jumped[0] = id)
+	var placed_ids : Array[StringName] = []
+	placed_ids.assign(main._pictures.keys())   # typed: keys() is untyped Variant under -Werror
+	var jump := InputEventAction.new()
+	jump.action = &"wall_jump_2"
+	jump.pressed = true
+	# ⚠ This starts a REAL navigation -- `picture_enter_requested` is wired straight to
+	# `Main._focus_picture()`. Driven and awaited like any other move, or it leaves
+	# `_move_in_flight` true and every later step in this test refuses on its own guard (measured:
+	# it did, and took 9 checks down with it).
+	var jump_done := await _drive_move(func() -> void:
+			main.wall._unhandled_input(jump)
+			while main._move_in_flight:
+				await get_tree().process_frame)
+	check(jumped[0] != &"",
+			"wall_jump_2 reaches a real picture on a COLD launch, with no unlock or resize first",
+			str(jumped[0]))
+	check(jumped[0] == placed_ids[1],
+			"...and it is the SECOND picture in placement order", str(jumped[0]))
+	check(jump_done and main._current_focus == placed_ids[1],
+			"...and the wall actually navigated there", str(main._current_focus))
+	# Back to wall view, so the next step starts where it says it does.
+	var back_to_wall := await _drive_move(func() -> void: await main._go_to_wall_view())
+	# The STATE is the precondition the next step needs; whether this particular move had frames to
+	# run is not (from wall view it is a legitimate no-op, which `_drive_move` reports as false).
+	check(main._current_focus == &"", "sanity: back in wall view for the next step",
+			"focus=%s move_ran=%s" % [main._current_focus, back_to_wall])
 
 	# Wall view -> a picture: the same `_animate_camera()` path in the other direction.
 	var enter_done := await _drive_move(func() -> void: await main._focus_picture(&"map"))

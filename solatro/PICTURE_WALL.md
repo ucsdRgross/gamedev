@@ -36,6 +36,7 @@ existing; if you delete one, the feature silently stops existing and its unit te
 | `Wall.back_requested` etc. | connected in `Main._ready()` | the key/button does nothing at all |
 | `WallTransition.input_unlocked` | connected to `wall.unlock_input` in `Main._focus_picture()` | input stays locked until landing, defeating C13 |
 | `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no card |
+| `Wall.apply_layout()` | `Main._build_pictures()` **and** `_repack_wall()`/`_on_window_resized()` | `_placement_order` stays empty, so all nine `wall_jump_N` keys are inert until something else happens to re-pack |
 
 **Every `wall_*` InputMap action needs BOTH a reader and a binding.** `wall_back`/`wall_forward`
 shipped with readers missing *and* empty event lists. `TestWallInput` asserts both halves.
