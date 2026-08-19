@@ -23,6 +23,12 @@ var current_entry : InfoEntry = null
 
 func _ready() -> void:
 	visible = false
+	# Q129=a: "anchored to the bottom of the WINDOW". An anchor recomputed only inside
+	# `show_entry()` is not an anchor -- the card stayed wherever the window used to be, and a
+	# shrink left it off the bottom edge while Info mode still reported it shown. Nothing else
+	# listens on the card's behalf: `Main._on_window_resized()` re-packs the WALL and never touches
+	# the overlay.
+	get_viewport().size_changed.connect(_reposition_to_window)
 
 ## J1/J5: populates title/body/visual and grows the card to fit them (J4/Q130), then shows it.
 ## Q130: "shows a copy of the hovered item as a visual beside the description" -- `entry.visual`,
@@ -85,5 +91,12 @@ func _resize_to_content() -> void:
 	# `window.y`, only the top edge (`window.y - card_h`) moves as `card_h` changes, never the
 	# reverse. Recomputed every `show_entry()`, not just once, since a different entry can be a
 	# different height (this IS J4's own effect: differing content -> differing on-screen size).
+	_reposition_to_window()
+
+## Q129=a: bottom-centred against the CURRENT window, growing UPWARD as content gets taller (J12:
+## "scrolls upward over the whole picture") -- the bottom edge stays on `window.y`, only the top
+## edge moves. Split out of `_resize_to_content()` so a resize can re-anchor without recomputing
+## font metrics: the card's SIZE comes from its content and two knobs, never from the window.
+func _reposition_to_window() -> void:
 	var window := get_viewport_rect().size
-	position = Vector2((window.x - width) * 0.5, window.y - card_h)
+	position = Vector2((window.x - size.x) * 0.5, window.y - size.y)

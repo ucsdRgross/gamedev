@@ -313,11 +313,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   picture just left (the stack's own top); the alternative is that Back is inert there, which also
   needs the overlay's Back button to learn about wall view. The shipped behaviour was neither — it
   stepped PAST that picture and filed it under Forward — and that half is fixed.
-- **The info card never follows the window.** `info_card.gd` computes its position from
-  `get_viewport_rect()` inside `_resize_to_content()`, which only runs from `show_entry()`; nothing
-  connects `size_changed` and `Main._on_window_resized()` does not touch it. Shrink the window and
-  the card sits off the bottom edge while Info mode still reports it shown. `Q129`=a says anchored
-  to the window.
 - **`wall_back`/`wall_forward` are joypad-only** — `project.godot` binds buttons 9 and 10 and no key,
   while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
   button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`

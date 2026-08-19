@@ -37,6 +37,8 @@ func _ready() -> void:
 	_test_toggling_info_mode_mid_transition_retargets_immediately()
 	behavior_section("THE FOCUSED SCREEN STAYS LIVE AT THE INFO ZOOM (design J11)")
 	_test_focused_screen_stays_live_through_info_zoom_code_path()
+	behavior_section("THE CARD FOLLOWS THE WINDOW (Q129=a)")
+	await _test_card_re_anchors_when_the_window_changes()
 	behavior_section("THE MAP'S HOVER STILL WORKS AFTER MIGRATION (J7)")
 	_test_map_hover_still_produces_info_entry()
 	finish()
@@ -331,3 +333,41 @@ func _line_export(max_depth: int) -> Dictionary:
 		nodes.append({"id": i, "pos": Vector2(i * 10, 0), "depth": i,
 				"landmass": 0, "height": 0.5, "biome": -1, "out": outs})
 	return {"start": 0, "end": max_depth, "max_depth": max_depth, "biomes": [], "nodes": nodes}
+
+# ------------------------------------------------------------------ Q129=a (re-anchor)
+
+## Q129=a: the card is anchored to the bottom of the WINDOW, so it follows one that changes shape.
+##
+## ⚠ Its position was computed only inside `_resize_to_content()`, which runs only from
+## `show_entry()`. Nothing connected `size_changed` and `Main._on_window_resized()` never touches
+## the overlay, so the card stayed wherever the window used to be -- and a SHRINK left it below the
+## bottom edge, invisible, while Info mode still reported it as shown.
+##
+## Hosted in its OWN SubViewport rather than resizing the real window: `get_viewport_rect()` reads
+## whichever viewport the card is in, `size_changed` fires for a SubViewport just the same, and
+## ~38 other suites are running concurrently against the real one.
+func _test_card_re_anchors_when_the_window_changes() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var card : InfoCard = INFO_CARD_SCENE.instantiate()
+	viewport.add_child(card)
+	card.show_entry(_entry("Anchored", "Bottom-centred on the window."))
+	var before := card.position
+	check(is_instance_valid(card) and card.visible, "sanity: the card is really shown to begin with")
+	check(is_equal_approx(before.y + card.size.y, 720.0),
+			"sanity: it starts sitting on the bottom edge of a 1280x720 viewport", str(before))
+
+	# Taller AND narrower, so both axes have to move: a card that only tracked one would pass a
+	# single-axis check.
+	viewport.size = Vector2i(900, 1000)
+	await get_tree().process_frame
+
+	check(card.position != before, "the card MOVED when the window changed", str(card.position))
+	check(is_equal_approx(card.position.y + card.size.y, 1000.0),
+			"...to sit on the NEW bottom edge", str(card.position))
+	check(is_equal_approx(card.position.x, (900.0 - card.size.x) * 0.5),
+			"...still centred horizontally in the new width", str(card.position))
+
+	card.queue_free()
+	viewport.queue_free()
