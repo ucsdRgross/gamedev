@@ -313,7 +313,14 @@ func _animate_camera(target_pos: Vector2, target_zoom: float, audio_source_centr
 	wall.begin_music_crossfade(audio_dest_entry)
 	# MINOR (PICTURE_WALL.md): the AUTHORED travel curve (Q53=b), not a typed-in literal -- this
 	# helper is the wall-view <-> picture move, which is travel with no zoom leg of its own.
-	var tween := create_tween()
+	#
+	# ⚠ BOUND TO THE CAMERA, NOT TO `Main`. A bare `create_tween()` binds to this node, and `Main`
+	# has no `process_mode` (so PAUSABLE) while §1.6 holds `get_tree().paused = true` for the whole
+	# session -- a tween bound to a PAUSABLE node under a paused tree NEVER ADVANCES, so the
+	# `await tween.finished` below never returned and the app soft-locked on the first Wall press,
+	# with `_move_in_flight` and `input_locked` stuck true forever. `%Camera2D` is
+	# PROCESS_MODE_ALWAYS, which is why `WallTransition` already creates its own tween on the camera.
+	var tween := camera.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(camera, "position", target_pos, duration) \
 			.set_trans(settings.wall_travel_trans).set_ease(settings.wall_travel_ease)

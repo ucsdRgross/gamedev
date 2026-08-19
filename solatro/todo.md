@@ -301,6 +301,37 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
+- **🔴 THE APP SOFT-LOCKS ON THE FIRST WALL PRESS — do not playtest until this is fixed.** An
+  adversarial review measured it: `get_tree().paused` is held for the whole session (§1.6), `Main`
+  has no `process_mode` so it is PAUSABLE, and a tween bound to a PAUSABLE node under a paused tree
+  never advances. `main.gd`'s `_animate_camera()` awaited such a tween, so every wall-view move
+  hung with `_move_in_flight` and `input_locked` stuck true — reachable from Wall, New Run, Back
+  falling through to wall view, the Info toggle, and wall-view→picture entry. **Partly fixed:** that
+  tween is now created on `%Camera2D` (PROCESS_MODE_ALWAYS), matching `WallTransition`. **NOT fully
+  fixed:** a regression test that leaves the tree paused, as the real game runs, still HANGS the
+  suite, so at least one more await in that path does not survive a paused tree. Find it before
+  anything else.
+- **🔴 `Pacing.wait()` never fires in the shipped game.** `SceneTreeTimer` has no node binding —
+  `process_always = false` keys on the TREE's pause flag, which §1.6 holds permanently on, so a
+  `PROCESS_MODE_ALWAYS` screen does NOT rescue its timers. Measured: `time_left` does not move at
+  all while paused. `game.gd`'s scoring cascade awaits one, so a hand stalls mid-reveal forever.
+  ⚠ This means S6's entire sweep made things worse, and `TestWallPause`'s U5 asserts the broken
+  behaviour as correct. The fix is a design decision: a node-bound `Timer` child respects
+  `process_mode` and would freeze with its screen, which is what D6/Q75=b actually wanted.
+- **🔴 Reduced motion leaves the camera at wide zoom permanently** — `sample_at()`'s reduced branch
+  returns `_wide_zoom` for every elapsed including the last, and nothing re-poses the camera after,
+  so every destination rests at ~0.44 zoom instead of ~1.11 with its frame showing (violates
+  H3/Q27/S37). T12 asserts the final POSITION but not the final ZOOM.
+- **The frame nine-slice never applies in the real game.** `wall_picture.gd`'s
+  `entry.frame_texture == shared_frame_texture()` is reference identity, and the texture loaded from
+  `layout_default.tres` is a different instance, so patch margins are never set and the bevel smears.
+  Introduced by C6 (the game now loads the .tres); every by-eye fixture assigns the shared texture
+  directly, so snapshots look right and the product does not.
+- **Back/Forward mutate the focus stack before the one-move guard**, so a double press desynchronises
+  it permanently — Back greys out while a picture is still behind you.
+- **The Info toggle drives the shared camera with no re-entrancy guard**, so it can fight a live
+  transition and settle on the wrong picture's pose.
+
 - **GAP-018 — owner call.** Is `WallLayout.view_margin` (0.06) EXTRA CROP on wall view, as its own
   field comment says, or vestigial from `Q5`'s option (c), the fit-with-margin the owner did NOT
   pick? It is wired as extra crop now. Flipping costs one authored number: `view_margin = 0.0` in
