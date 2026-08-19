@@ -42,6 +42,8 @@ func _ready() -> void:
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("THE SELECTION LIFT IS PART OF WHERE A PICTURE IS")
+	test_selection_lift_survives_a_repack_and_yields_to_focus()
 	behavior_section("FRAME NINE-SLICE (S24, QR4=b, C6)")
 	test_nine_slice_applies_to_the_layout_the_game_actually_loads()
 	behavior_section("DRAWN EXTENT TRACKS THE RECT, NOT THE RENDER TARGET")
@@ -634,3 +636,44 @@ func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
 			"an 8px frame texture gets a REAL corner it can actually carry, not the shared 14 "
 			+ "and not zero", str(tiny_frame.patch_margin_left))
 	tiny_wp.teardown()
+
+# ------------------------------------------------------------------ selection lift
+
+## F11/Q70=c: the lift is part of WHERE a picture is, so it survives a re-pack -- and it yields to
+## focus, because a focused picture is not in wall view.
+##
+## ⚠ Two halves that used to contradict each other. `reposition()` wrote `position = rect.centre`
+## flat, silently un-lifting a selected picture with nothing re-rendering the selection afterwards;
+## and `focus()` never cleared the lift, so a picture entered from the keyboard stayed 14 units high
+## for as long as the player was inside it. Both are now derived in one place from
+## `is_selected and not is_focused`.
+func test_selection_lift_survives_a_repack_and_yields_to_focus() -> void:
+	var wp := _pictures[0]
+	var lift : Vector2 = SettingsManager.settings.wall_selected_lift
+	check(lift != Vector2.ZERO, "sanity: the lift is non-zero, so this test can fail", str(lift))
+	wp.unfocus(wp.rect.size * 0.25)
+	wp.set_selected(true)
+	check(wp.position.is_equal_approx(wp.rect.centre + lift),
+			"a selected picture in wall view is lifted", str(wp.position))
+
+	# THE RE-PACK: a new rect while the selection is live.
+	var moved := PictureRect.new(wp.rect.id, wp.rect.centre + Vector2(90, 70), wp.rect.size,
+			wp.rect.frame_px)
+	wp.reposition(moved)
+	check(wp.position.is_equal_approx(moved.centre + lift),
+			"...and it is STILL lifted after a re-pack, at its new centre", str(wp.position))
+
+	# Entering it drops the lift; leaving it brings the lift back, because it is still selected.
+	wp.focus()
+	check(wp.position.is_equal_approx(moved.centre),
+			"focusing it drops the lift -- a focused picture is not in wall view", str(wp.position))
+	wp.unfocus(moved.size * 0.25)
+	check(wp.position.is_equal_approx(moved.centre + lift),
+			"...and leaving it restores the lift, because the selection never went away",
+			str(wp.position))
+
+	wp.set_selected(false)
+	check(wp.position.is_equal_approx(moved.centre),
+			"deselecting puts it back down", str(wp.position))
+	wp.reposition(_pictures[0].rect)
+	wp.focus()

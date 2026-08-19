@@ -247,7 +247,7 @@ func focus() -> void:
 	# camera sits at `rect.centre` while the picture is drawn 14 units above, showing a strip of
 	# frame and bare wall along the bottom edge. H3/Q27/S37 forbids exactly that. A mouse-only
 	# player never saw it, because a click never selects.
-	position = rect.centre
+	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.size = _design_size
 	_rescale_screen()
@@ -267,6 +267,8 @@ func focus() -> void:
 ## update_wall_view_size(), never left at full design_size while off-focus.
 func unfocus(footprint_px: Vector2) -> void:
 	is_focused = false
+	# Leaving focus is exactly when a still-selected picture's lift becomes visible again.
+	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	update_wall_view_size(footprint_px)
 	# D3/D8 (§1.6): back to PAUSABLE the instant this picture stops being the live one — wall view
@@ -340,7 +342,22 @@ func update_filter(zoom_changed_this_frame: bool) -> void:
 ## (0, -14), the exact prior literal) -- promoted for the same §1.8 reason `wall_overfill_margin`/
 ## `wall_light_offset` already were.
 func set_selected(selected: bool) -> void:
-	position = rect.centre + (SettingsManager.settings.wall_selected_lift if selected else Vector2.ZERO)
+	is_selected = selected
+	_apply_position()
+
+## F11/Q70=c: whether the wall-view selection cursor is on this picture. Kept so the lift SURVIVES
+## a re-pack -- `reposition()` used to write `position = rect.centre` flat and silently un-lift the
+## selected picture, with nothing re-rendering the selection afterwards.
+var is_selected : bool = false
+
+## The single home for "where this picture actually sits": its rect's centre, plus the selection
+## lift when it is BOTH selected and not focused. Focus wins because the lift is a wall-view
+## affordance and a focused picture is not in wall view -- deriving it here rather than writing
+## `position` from four places is what stops the two rules disagreeing (a focused picture used to
+## keep a stale lift, and a re-pack used to drop a live one).
+func _apply_position() -> void:
+	var lift := SettingsManager.settings.wall_selected_lift if (is_selected and not is_focused) 			else Vector2.ZERO
+	position = rect.centre + lift
 
 ## S38 (K2-K4): re-applies a NEW packed rect to an ALREADY-BUILT picture -- the geometry-only
 ## subset of build() (position, frame outer rect, screen/shadow scale). The viewport, screen_root
@@ -349,7 +366,7 @@ func set_selected(selected: bool) -> void:
 ## "the wall re-packs silently" while a screen is focused, off-screen either way).
 func reposition(new_rect: PictureRect) -> void:
 	rect = new_rect
-	position = rect.centre
+	_apply_position()
 	_apply_rect_geometry(rect)
 
 func _apply_rect_geometry(r: PictureRect) -> void:

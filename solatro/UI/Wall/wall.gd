@@ -359,7 +359,13 @@ func _focused_picture() -> WallPicture:
 func _picture_at(wall_pos: Vector2) -> StringName:
 	for child : Node in %Pictures.get_children():
 		var wp := child as WallPicture
-		if wp and wp.rect and WallPacker.frame_outer_rect(wp.rect).has_point(wall_pos):
+		if not wp or not wp.rect: continue
+		# ⚠ Offset by where the picture is actually DRAWN, not by its rect alone. The selection lift
+		# (F11/Q70=c) moves a picture off its rect, so hit-testing the bare rect put the selected
+		# picture's click box `wall_selected_lift` away from the picture the player can see.
+		var frame := WallPacker.frame_outer_rect(wp.rect)
+		frame.position += wp.position - wp.rect.centre
+		if frame.has_point(wall_pos):
 			return wp.rect.id
 	return &""
 

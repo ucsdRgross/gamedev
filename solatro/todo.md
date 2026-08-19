@@ -344,12 +344,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   while `wall.gd` claims Tab and `I`. A keyboard-only player has no Forward except the overlay
   button. `TestWallInput` only asserts "at least one binding" and covers 4 of the 13 `wall_*`
   actions, so PICTURE_WALL.md's "BOTH a reader and a binding" is not actually enforced.
-- **`WallPicture.reposition()` drops the selection lift** — it writes `position = rect.centre`,
-  discarding `set_selected()`'s `wall_selected_lift`, so a re-pack silently un-lifts the selected
-  picture and nothing re-renders the selection. (`focus()` doing the same is now DELIBERATE and
-  tested — a focused picture is not in wall view. Only the re-pack case is still wrong.)
-- **`Wall._picture_at()` hit-tests `wp.rect`, not the lifted draw position**, so while a picture is
-  selected in wall view its click box sits `wall_selected_lift` away from where it is drawn.
 - **`Wall.wall_view_zoom()` calls `Wall.load_layout()` on every invocation**, and it sits on the
   mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
   resolve per input event, and it means wall framing reads the file rather than the layout `Main`
