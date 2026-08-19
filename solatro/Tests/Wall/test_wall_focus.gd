@@ -61,6 +61,8 @@ func _ready() -> void:
 	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
 	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, ADVERSARIAL_REVIEW.md, J7, Q133=b)")
 	await test_hovering_a_picture_in_info_mode_describes_it()
+	behavior_section("ONE MOVE AT A TIME (C5, ADVERSARIAL_REVIEW.md, Q56=b, §1.6)")
+	await test_a_second_destination_mid_move_is_ignored()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -873,3 +875,72 @@ func _hover_wall_at(main: Main, wall_pos: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = main.wall.get_viewport().canvas_transform * wall_pos
 	main.wall._unhandled_input(motion)
+
+# ------------------------------------------------------------------ C5 (ADVERSARIAL_REVIEW.md)
+
+## C5 (ADVERSARIAL_REVIEW.md, Q56=b, §1.6) -- the regression test this fix has owed since it landed.
+## `Main._focus_picture()` news a `WallTransition` PER CALL, so `request()`'s own `is_active` guard
+## could never see the other one: two clicks in wall view ran two tweens on one `Camera2D`, both
+## landed, and both called `focus()`, leaving TWO `PROCESS_MODE_ALWAYS` screen roots. §1.6's "exactly
+## one" is the invariant the whole Phase-3 gate exists to protect, and Q56=b is its input rule: "a
+## new destination is ignored until" the in-flight move finishes.
+##
+## Both paths that drive the shared camera are pressed mid-move, because `_go_to_wall_view()` racing
+## an enter fights it for position and zoom exactly as two enters did.
+##
+## ⚠ WHY THIS TOOK SO LONG TO WRITE, recorded so the next reader does not rediscover it: every
+## earlier attempt held a real `Main` across a transition, and a real `Main` puts a real `Map` in the
+## tree, which is a `CardEnvironment`. While `CardEnvironment.CURRENT` was set, any preview
+## `CardVisual` another suite built took `card_visual.gd`'s no-anchor branch and died on a Nil
+## `global_position` -- failing a DIFFERENT suite, which no wall check could see
+## ([[tests-that-prove-nothing]] trap 8). That was a real latent crash in `card_visual.gd`, not a
+## test problem, and it is now guarded, so this fixture is finally safe to write.
+##
+## The strongest assertion here is the ALWAYS count, not `_current_focus`: the manual red-proof of
+## this fix reported `focused=[&"deck", &"game"]`, i.e. TWO focused pictures at once, which a
+## single-id check would have missed entirely.
+func test_a_second_destination_mid_move_is_ignored() -> void:
+	backup_real_settings()
+	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
+	SettingsManager.settings.wall_transition_delay = 0.001
+
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
+	get_tree().paused = false
+
+	# One REAL move, deliberately not awaited: it runs to its own first await, by which point the
+	# transition is live -- the only window in which a second request can race it.
+	main._focus_picture(&"map")
+	check(main._active_transition != null and main._active_transition.is_active,
+			"sanity: a real transition is in flight, so there is a move to interrupt")
+
+	main._focus_picture(&"deck")          # a second click on a different picture
+	main._go_to_wall_view()               # ...and the OTHER camera-driving path, for good measure
+	check(main._transition_dest_id == &"map",
+			"Q56=b: the in-flight transition still targets its ORIGINAL destination -- the second "
+			+ "request was ignored, not queued and not retargeted", str(main._transition_dest_id))
+
+	for _i : int in range(60):
+		if main._current_focus == &"map": break
+		await get_tree().process_frame
+	check(main._current_focus == &"map",
+			"it lands on the picture the FIRST request asked for", str(main._current_focus))
+
+	var focused : Array[StringName] = []
+	var always : Array[StringName] = []
+	for id : StringName in main._pictures:
+		var wp : WallPicture = main._pictures[id]
+		if wp.is_focused: focused.append(id)
+		if wp.screen_root and wp.screen_root.process_mode == Node.PROCESS_MODE_ALWAYS:
+			always.append(id)
+	check(focused.size() == 1,
+			"§1.6: EXACTLY ONE picture is focused after the race -- two concurrent transitions used "
+			+ "to leave two", str(focused))
+	check(always.size() <= 1,
+			"...and at most one live screen root is PROCESS_MODE_ALWAYS, which is the invariant "
+			+ "the Phase-3 gate exists to protect", str(always))
+
+	main.queue_free()
+	SettingsManager.settings.wall_transition_delay = real_transition_delay
+	restore_real_settings()
