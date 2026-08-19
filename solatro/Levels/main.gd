@@ -155,6 +155,13 @@ func _build_pictures() -> void:
 	# other reason. The geometry half is a no-op here -- every picture was just built at exactly
 	# this rect -- but the placement order is not, and this is its one call site.
 	wall.apply_layout(rects_by_id, false)
+	# GAP-002, the same rule `_repack_wall()` and `_on_window_resized()` follow: a picture's render
+	# target is its wall-view footprint. Every picture is built at full `_design_size` and nothing
+	# sized them down, so from cold launch until the first resize the whole wall rendered at design
+	# resolution -- five oversized SubViewports, ~7x the pixels each. Nothing is focused yet here;
+	# `_ready()` focuses start_menu straight after, and `focus()` restores its full size.
+	for id : StringName in _pictures:
+		_pictures[id].update_wall_view_size(_footprint(_rects[id]))
 
 ## S38 (K2, K3, K4, K11): reacts to `ProfileManager.picture_unlocked` -- recomputes the layout's
 ## unlocked id set (`ProfileManager.is_unlocked()` already honours `wall_unlock_all`, K11's debug
@@ -187,6 +194,20 @@ func _repack_wall(_unlocked_id: StringName) -> void:
 			wp.build(rect, by_id[rect.id], viewports)
 			_pictures[rect.id] = wp
 	wall.apply_layout(rects_by_id, _current_focus == &"")
+	# GAP-002 ("one property, written when the footprint changes"): a re-pack changes every
+	# unfocused picture's wall-view footprint just as a resize does, so each one's render target
+	# follows. `_on_window_resized()` has always done this; this path never did, so an unlock left
+	# every already-built picture rendering at whatever resolution its PREVIOUS footprint asked for.
+	# The focused picture is skipped -- it renders at full `_design_size` and `focus()` owns that.
+	for id : StringName in _pictures:
+		var wp : WallPicture = _pictures[id]
+		if not wp.is_focused: wp.update_wall_view_size(_footprint(_rects[id]))
+	# Q26=a, same as a resize: a transition in flight is RETARGETED to the new geometry and
+	# CONTINUES. Without this an unlock landing mid-move left the transition animating toward rects
+	# that no longer exist, and `retarget()`'s only caller was the resize handler.
+	if _active_transition and _active_transition.is_active:
+		_active_transition.retarget(_rects[_current_focus], _rects[_transition_dest_id],
+				_window_size)
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_print_wall_debug_readout()

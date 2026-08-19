@@ -327,6 +327,26 @@ func test_unlock_reaction_leaves_the_real_focus_stack_valid() -> void:
 			"sanity: the re-pack actually ran -- start_menu's rect is a fresh object, not the "
 			+ "pre-unlock one (a vacuous re-pack would make this check meaningless)")
 
+	# GAP-002: an unlock re-pack changes every unfocused picture's wall-view FOOTPRINT, so its
+	# render target must follow -- exactly as `_on_window_resized()` has always made it. This path
+	# never did, so an unlock left every already-built picture rendering at the resolution its
+	# PREVIOUS footprint asked for. The focused picture is excluded: it renders at full design size
+	# and focus() owns that.
+	var checked_any := false
+	for id : StringName in main._pictures:
+		var wp : WallPicture = main._pictures[id]
+		if wp.is_focused: continue
+		checked_any = true
+		var want := main._footprint(main._rects[id])
+		var floor_px : int = SettingsManager.settings.wall_view_min_texture_px
+		var want_px := Vector2i(maxi(int(want.x), floor_px), maxi(int(want.y), floor_px))
+		check(wp.viewport.size == want_px,
+				"%s's render target followed the unlock re-pack's new footprint" % id,
+				"viewport=%s want=%s" % [wp.viewport.size, want_px])
+	check(checked_any,
+			"sanity: at least one unfocused picture was actually checked -- an all-focused wall "
+			+ "would make the loop above assert nothing")
+
 	# Back must retrace the SAME three real ids in the SAME order as before the unlock --
 	# COMPLETELY UNAFFECTED by every picture's rect being freshly rebuilt underneath it and a
 	# brand-new picture appearing, because _repack_wall() never touches _focus_stack (it only

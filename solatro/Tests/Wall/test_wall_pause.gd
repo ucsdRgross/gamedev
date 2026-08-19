@@ -238,6 +238,22 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 	check(main._current_focus == &"start_menu", "sanity: cold launch focused start_menu",
 			str(main._current_focus))
 
+	# GAP-002 at COLD LAUNCH: every picture is built at full `_design_size`, and nothing sized the
+	# unfocused ones down until the first resize -- five oversized SubViewports rendering ~7x the
+	# pixels they are shown at, for the whole opening of the game.
+	var floor_px : int = SettingsManager.settings.wall_view_min_texture_px
+	var sized := 0
+	for id : StringName in main._pictures:
+		var wp : WallPicture = main._pictures[id]
+		if wp.is_focused: continue
+		sized += 1
+		var want := main._footprint(main._rects[id])
+		var want_px := Vector2i(maxi(int(want.x), floor_px), maxi(int(want.y), floor_px))
+		check(wp.viewport.size == want_px,
+				"%s renders at its wall-view footprint from cold launch, not at design size" % id,
+				"viewport=%s want=%s design=%s" % [wp.viewport.size, want_px, wp._design_size])
+	check(sized > 0, "sanity: unfocused pictures existed to check", str(sized))
+
 
 	# The first Wall press: focused picture -> wall view, the move that soft-locked the app.
 	var wall_view_done := await _drive_move(func() -> void: await main._go_to_wall_view())
