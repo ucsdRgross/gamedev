@@ -628,6 +628,11 @@ func _wall_extent() -> Rect2:
 ## (`Main`) has; this method only repositions what already exists. The `FocusStack` is never read
 ## or written here (K4's own "Back still works because the stack holds ids, not positions") --
 ## nothing in this method can invalidate it, by construction, since it never touches an id, only a
+
+## The re-pack tween currently animating pictures into new rects, or null. Kept so a SECOND
+## re-pack can kill it -- see `apply_layout()`.
+var _layout_tween : Tween = null
+
 ## rect.
 func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> void:
 	# `rects` is built by iterating WallPacker's own returned Array, so its key order IS
@@ -635,6 +640,15 @@ func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> 
 	# appends a newly-unlocked picture, and `wall_jump_N` means the Nth picture as PLACED
 	# (I7/Q104=a), not the Nth node added (PICTURE_WALL.md C4).
 	_placement_order.assign(rects.keys())
+	# ⚠ KILL ANY LIVE RE-PACK FIRST. A previous animated call's tween is still writing `position`,
+	# `%Frame` and `%Screen.scale` toward targets computed against the OLD rects and the OLD
+	# `viewport.size`. `WallPicture.rect` is updated immediately (animate_reposition()'s own
+	# contract), so leaving that tween running means the picture's rect -- which hit-testing,
+	# `_wall_extent()` and the camera framing all read -- permanently disagrees with what is drawn.
+	# A resize landing during an animated unlock re-pack is the reachable case.
+	if _layout_tween and _layout_tween.is_valid():
+		_layout_tween.kill()
+	_layout_tween = null
 	var pictures := _pictures_by_id()
 	var tween : Tween = null
 	for id : StringName in rects:
@@ -650,6 +664,7 @@ func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> 
 		if tween == null:
 			tween = create_tween()
 			tween.set_parallel(true)
+			_layout_tween = tween
 		wp.animate_reposition(tween, new_rect, SettingsManager.settings.wall_transition_delay)
 
 ## S39 (E9, Q210=a -- "yes, behind the same debug gate as the leak sentinel"): a live count of

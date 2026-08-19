@@ -42,6 +42,8 @@ func _ready() -> void:
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("A SECOND RE-PACK CANCELS THE FIRST")
+	await test_a_second_repack_kills_the_first_ones_tween()
 	behavior_section("MOVING BETWEEN TWO PICTURES THAT SHARE A TRACK (S33)")
 	test_a_crossfade_between_pictures_sharing_a_track_keeps_playing()
 	behavior_section("THE SELECTION LIFT IS PART OF WHERE A PICTURE IS")
@@ -507,11 +509,19 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 			+ "the OTHER half of the gate this test does not flip")
 
 	backup_real_settings()
+	# ⚠ CONSTRUCTING A `Main` CLEARS THE SHARED `wall_info_mode` (C3, main.gd's own startup rule),
+	# and WALL FOCUS's info-toggle test sets that same flag on the same live `PlayerSettings` and
+	# then awaits a camera move. This suite does not wait for it, so a Main built here during that
+	# await clobbered its flag and failed it -- measured, 2 runs in 3, in a suite this test does not
+	# touch. Preserved and put straight back: production really does clear it, so the fix belongs on
+	# whichever side is the interloper, and that is this one.
+	var info_mode_before : bool = SettingsManager.settings.wall_info_mode
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	# Main._ready() -> Wall._ready() sets get_tree().paused = true GLOBALLY -- undone immediately,
 	# same established reason every Wall/Main-building test in this suite family documents.
 	get_tree().paused = false
+	SettingsManager.settings.wall_info_mode = info_mode_before
 
 	var settings := SettingsManager.settings
 	var prev := settings.wall_debug_readout
@@ -719,3 +729,59 @@ func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
 
 	a.stop()
 	b.stop()
+
+# ------------------------------------------------------------------ overlapping re-packs
+
+## K3/K4: a second `apply_layout()` must cancel the first one's animation.
+##
+## ⚠ `animate_reposition()` updates `WallPicture.rect` IMMEDIATELY and lets the tween catch up
+## visually -- that is its stated contract. So a live tween from an earlier re-pack keeps writing
+## `position`/`%Frame`/`%Screen.scale` toward targets computed from the OLD rects, while `rect`
+## already says something else. Hit-testing, `_wall_extent()` and the camera framing all read
+## `rect`, so the picture ends up permanently drawn somewhere its own rect denies. A resize landing
+## during an animated unlock re-pack is the reachable case.
+func test_a_second_repack_kills_the_first_ones_tween() -> void:
+	backup_real_settings()
+	var settings := SettingsManager.settings
+	var prev_delay : float = settings.wall_transition_delay
+	var wp := _pictures[0]
+	var start := wp.rect
+	var far := PictureRect.new(start.id, start.centre + Vector2(1200, 900), start.size,
+			start.frame_px)
+	var near := PictureRect.new(start.id, start.centre + Vector2(40, 30), start.size,
+			start.frame_px)
+
+	# ⚠ THE FIRST ANIMATION MUST OUTLIVE THE SECOND, or this test is vacuous. Both tweens write
+	# `position` every frame and the later-created one's write lands last, so with equal durations
+	# the second simply paints over the first and the picture ends up correct ANYWAY -- measured:
+	# an earlier version of this test passed with the kill removed. A long first and a short second
+	# is what leaves the stale tween still writing after the real one has finished.
+	settings.wall_transition_delay = 2.0
+	var by_id : Dictionary[StringName, PictureRect] = {}
+	by_id[start.id] = far
+	_wall.apply_layout(by_id, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(_wall._layout_tween != null and _wall._layout_tween.is_valid(),
+			"sanity: the first, LONG re-pack really is animating")
+
+	settings.wall_transition_delay = 0.05
+	var second : Dictionary[StringName, PictureRect] = {}
+	second[start.id] = near
+	_wall.apply_layout(second, true)
+	# Long enough for the SHORT second tween to have finished and the LONG first one to still be
+	# running if it was never killed.
+	for _i : int in range(30):
+		await get_tree().process_frame
+
+	check(wp.rect.centre.is_equal_approx(near.centre),
+			"the picture's rect is the SECOND re-pack's", str(wp.rect.centre))
+	check(wp.position.distance_to(near.centre) < 40.0,
+			"...and it is DRAWN there, not dragged onward by the first re-pack's surviving tween",
+			"drawn=%s second=%s first=%s" % [wp.position, near.centre, far.centre])
+
+	settings.wall_transition_delay = prev_delay
+	var restore : Dictionary[StringName, PictureRect] = {}
+	restore[start.id] = start
+	_wall.apply_layout(restore, false)
+	restore_real_settings()

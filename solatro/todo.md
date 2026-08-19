@@ -350,9 +350,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
   PICTURE_WALL.md's wiring table nor this list until now.
-- **`Wall.apply_layout()` never kills a previous animated tween**, so a resize during an animated
-  re-pack leaves the old tween writing toward pre-resize targets and `WallPicture.rect` permanently
-  disagrees with what is drawn. Latent while nothing triggers an unlock.
 - **`_repack_wall()` never calls `update_wall_view_size()`** for repositioned pictures and never
   `retarget()`s an in-flight transition, both of which `_on_window_resized()` does.
 - **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the

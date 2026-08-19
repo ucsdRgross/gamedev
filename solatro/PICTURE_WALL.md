@@ -64,6 +64,10 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
 - **`focused_scale()` applies its margin only when the aspects DIFFER.** That conditionality is what
   makes G10's "panning is off when everything fits" an exact zero rather than a few per cent of
   slack. Do not make it unconditional.
+- **Constructing a `Main` CLEARS the shared `wall_info_mode`** (C3, its own startup rule). Every
+  concurrently-running suite sees that, so a test that builds one while another suite is mid-await
+  on that flag will fail the OTHER suite. Preserve and restore it around any `Main` a suite builds
+  for some unrelated reason.
 - **A live `Main` puts a real `Map` in the tree, and `Map` is a `CardEnvironment`,** so
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
