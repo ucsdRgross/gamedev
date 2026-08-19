@@ -42,6 +42,8 @@ func _ready() -> void:
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("DRAWN EXTENT TRACKS THE RECT, NOT THE RENDER TARGET")
+	test_screen_draws_at_rect_size_through_every_render_target_change()
 	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
 	test_debug_memory_readout_counts_screens_and_viewports()
 	test_debug_readout_gated_by_wall_debug_readout_flag()
@@ -524,3 +526,54 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 	settings.wall_debug_readout = prev
 	restore_real_settings()
 	main.queue_free()
+
+# ------------------------------------------------------------------ drawn extent
+
+## What a picture DRAWS must equal its `PictureRect`, in every render-target state.
+##
+## ⚠ `%Screen`/`%Shadow` are `Sprite2D`s whose texture IS the `SubViewport` render target, so their
+## drawn size is `viewport.size * scale` -- NOT `design_size * scale`. Every scale site here used to
+## divide by `_design_size`, which is only equal to `viewport.size` while a picture is focused.
+## GAP-002 rewrites `viewport.size` to the wall-view footprint on `unfocus()` and on every resize,
+## so an unfocused picture collapsed to `rect.size * footprint / design_size` -- measured on a real
+## `Main`, a 1152x648 picture drew 385x216 inside its own full-size 1200x696 frame after one Wall
+## press, and shrank again on every resize.
+##
+## Asserted through the ENGINE's own `Sprite2D.get_rect()` rather than by re-deriving the scale:
+## an assertion on the scale field would re-prove this test's own arithmetic and could not fail for
+## the mismatch it exists to catch ([[tests-that-prove-nothing]] trap 6).
+func test_screen_draws_at_rect_size_through_every_render_target_change() -> void:
+	var wp := _pictures[0]
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	var shadow : Sprite2D = wp.get_node(^"%Shadow")
+
+	# An explicit arbitrary render-target size first: earlier tests in this suite have already
+	# unfocused this picture, so "straight out of build()" would be a lie about the state.
+	wp.update_wall_view_size(Vector2(100, 100))
+	_check_drawn(wp, screen, shadow, "with the render target at an arbitrary small size")
+	wp.focus()
+	_check_drawn(wp, screen, shadow, "focused (render target back at design_size)")
+	# The wall-view footprint a real `Main` passes: much smaller than the rect, which is the whole
+	# point -- GAP-002 spends render-target pixels on what is actually on screen.
+	wp.unfocus(wp.rect.size * 0.25)
+	_check_drawn(wp, screen, shadow, "unfocused (render target shrunk to the footprint)")
+	# The resize path: `Main._on_window_resized()` calls this directly on every unfocused picture,
+	# with no focus()/unfocus() around it.
+	wp.update_wall_view_size(wp.rect.size * 0.1)
+	_check_drawn(wp, screen, shadow, "after a bare update_wall_view_size(), as a resize does")
+	# And a re-pack to a genuinely different rect while the render target stays small.
+	var moved := PictureRect.new(wp.rect.id, wp.rect.centre + Vector2(40, 40),
+			wp.rect.size * 1.7, wp.rect.frame_px)
+	wp.reposition(moved)
+	_check_drawn(wp, screen, shadow, "after a re-pack to a bigger rect")
+	wp.focus()
+
+func _check_drawn(wp: WallPicture, screen: Sprite2D, shadow: Sprite2D, when: String) -> void:
+	var drawn := screen.get_rect().size * screen.scale
+	check(drawn.is_equal_approx(wp.rect.size),
+			"the screen sprite draws exactly rect.size %s" % when,
+			"drawn=%s rect=%s viewport=%s" % [drawn, wp.rect.size, wp.viewport.size])
+	var shadow_drawn := shadow.get_rect().size * shadow.scale
+	check(shadow_drawn.is_equal_approx(wp.rect.size),
+			"...and the shadow sprite does too %s" % when,
+			"drawn=%s rect=%s" % [shadow_drawn, wp.rect.size])

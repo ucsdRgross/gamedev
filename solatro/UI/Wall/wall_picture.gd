@@ -145,10 +145,8 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 		_frame.patch_margin_right = _FRAME_CORNER_PX
 		_frame.patch_margin_bottom = _FRAME_CORNER_PX
 
-	var view_scale := rect.size / Vector2(entry.design_size)
 	_screen.centered = true
 	_screen.position = Vector2.ZERO
-	_screen.scale = view_scale
 	_screen.texture = viewport.get_texture()
 	# H5 baseline: every picture starts non-focused, and H5 says non-focused always samples LINEAR
 	# -- explicit because CanvasItem.texture_filter otherwise inherits the PROJECT default, which
@@ -161,8 +159,10 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	# that exact prior value, so this changes no observable behaviour at the default).
 	_shadow.centered = true
 	_shadow.position = SettingsManager.settings.wall_light_offset
-	_shadow.scale = view_scale
 	_shadow.texture = viewport.get_texture()
+	# Both sprites read the SAME render target, so both need the same scale -- and it can only be
+	# computed once the texture is assigned. See `_rescale_screen()`.
+	_rescale_screen()
 	# GAP-013 (owner-answered a): ONE authored opacity for the whole wall, same "one value for
 	# everyone" shape `wall_light_offset` already set for shadows -- was a typed literal here
 	# (`Color(0.0, 0.0, 0.0, 0.35)`, since S10), which §1.8 forbids for a visible design choice.
@@ -225,6 +225,7 @@ func focus() -> void:
 	is_focused = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.size = _design_size
+	_rescale_screen()
 	# D4 (§1.6): the live screen's root is flipped to ALWAYS. screen_root may be null (Q214=a) if
 	# this picture has no scene, in which case there is nothing to flip.
 	if screen_root:
@@ -268,6 +269,23 @@ func set_screen_alpha(alpha: float) -> void:
 func update_wall_view_size(footprint_px: Vector2) -> void:
 	var min_px := SettingsManager.settings.wall_view_min_texture_px
 	viewport.size = Vector2i(maxi(int(footprint_px.x), min_px), maxi(int(footprint_px.y), min_px))
+	_rescale_screen()
+
+## %Screen and %Shadow are `Sprite2D`s whose texture IS this picture's `SubViewport` render target,
+## so what they DRAW is `viewport.size * scale` -- the render-target resolution, never
+## `_design_size`. GAP-002 rewrites `viewport.size` to the wall-view footprint whenever the
+## footprint changes, so a scale computed against `_design_size` (as every site here used to) makes
+## the picture collapse to `rect.size * footprint / design_size` the moment it is unfocused:
+## measured, a 1152x648 picture drew at 385x216 inside its own full-size frame after one Wall press,
+## and every unfocused picture on the wall shrank again on every resize. The scale that keeps a
+## picture exactly `rect.size` on the wall is `rect.size / viewport.size`, and it has to be
+## recomputed wherever EITHER of those moves.
+func _rescale_screen() -> void:
+	var render_size := Vector2(viewport.size)
+	if render_size.x <= 0.0 or render_size.y <= 0.0: return
+	var view_scale := rect.size / render_size
+	_screen.scale = view_scale
+	_shadow.scale = view_scale
 
 ## "window restored from minimise": re-render every FROZEN texture, size UNCHANGED. E7 and Q208=b
 ## both say every *frozen* picture -- "the GPU may have discarded them" -- and PLAN.md §1.8's table
@@ -313,9 +331,7 @@ func _apply_rect_geometry(r: PictureRect) -> void:
 	var frame_rect := WallPacker.frame_outer_rect(r)
 	_frame.position = frame_rect.position - r.centre
 	_frame.size = frame_rect.size
-	var view_scale := r.size / Vector2(_design_size)
-	_screen.scale = view_scale
-	_shadow.scale = view_scale
+	_rescale_screen()
 
 ## S38 (K3): tweens this picture from its CURRENT rect to `new_rect` over `duration`, added to the
 ## given (already-created) `tween` -- position, frame geometry and screen/shadow scale all move
@@ -328,7 +344,9 @@ func _apply_rect_geometry(r: PictureRect) -> void:
 ## sequence.
 func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) -> void:
 	var frame_rect := WallPacker.frame_outer_rect(new_rect)
-	var view_scale := new_rect.size / Vector2(_design_size)
+	# Same `rect.size / viewport.size` as `_rescale_screen()`; `viewport.size` does not move during
+	# a reposition, so the tween target is stable for the whole duration.
+	var view_scale := new_rect.size / Vector2(viewport.size)
 	rect = new_rect
 	tween.tween_property(self, "position", new_rect.centre, duration)
 	tween.tween_property(_frame, "position", frame_rect.position - new_rect.centre, duration)

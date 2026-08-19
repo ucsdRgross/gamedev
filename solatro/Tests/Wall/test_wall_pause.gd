@@ -261,6 +261,17 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 			"a real screen's Pacing.wait fires while that screen is the focused one")
 	check(not frozen_fired[0], "...and an unfocused screen's does not")
 
+	# The postage-stamp defect, at product level: leaving a picture shrinks its render target
+	# (GAP-002), and the sprite that shows it draws `viewport.size * scale`. Every picture on the
+	# wall must still draw exactly its own rect, focused or not.
+	for id : StringName in main._pictures:
+		var wp : WallPicture = main._pictures[id]
+		var scr : Sprite2D = wp.get_node(^"%Screen")
+		var drawn := scr.get_rect().size * scr.scale
+		check(drawn.is_equal_approx(wp.rect.size),
+				"%s draws exactly its rect after a real enter-and-leave" % id,
+				"drawn=%s rect=%s viewport=%s" % [drawn, wp.rect.size, wp.viewport.size])
+
 	# Picture -> picture: the `WallTransition` branch, whose own tween is already camera-bound.
 	var hop_done := await _drive_move(func() -> void: await main._focus_picture(&"deck"))
 	check(hop_done, "a picture-to-picture move completes under the paused tree")

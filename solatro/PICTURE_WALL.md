@@ -62,6 +62,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
 - **`Camera2D.zoom` here is DIRECT MAGNIFICATION**: the visible span is `window_size / zoom`.
+- **`%Screen` and `%Shadow` draw `viewport.size * scale`, not `design_size * scale`.** Their texture
+  IS the picture's `SubViewport` render target, and `ViewportTexture.get_size()` is always
+  `viewport.size` — which GAP-002 rewrites to the wall-view footprint on every `unfocus()` and every
+  resize. Any scale computed against `_design_size` collapses the picture the moment it is
+  unfocused. `WallPicture._rescale_screen()` is the one place that arithmetic lives; call it
+  wherever `rect` or `viewport.size` moves.
 - **The wall pauses the whole tree at construction and never clears it** (§1.6), so the shipped
   game runs entirely under `get_tree().paused == true`. A `Tween` bound to a PAUSABLE node never
   advances there, and `await tween.finished` never returns: that is how a total soft-lock on the
