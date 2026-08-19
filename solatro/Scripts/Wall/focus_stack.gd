@@ -42,6 +42,14 @@ func forward() -> StringName:
 	_back.append(id)
 	return id
 
+## The picture the history currently sits on -- `_back`'s top -- WITHOUT moving the cursor. &"" on
+## an empty stack. Needed because wall view is never an entry (Q66=b), so while the wall is shown
+## `Main._current_focus` is &"" but this is still the picture the player left: the step "back" from
+## wall view is THIS id, and reaching it with `back()` would skip past it and push it onto the
+## forward list as something never revisited.
+func current() -> StringName:
+	return &"" if _back.is_empty() else _back[-1]
+
 func can_back() -> bool:
 	return _back.size() >= 2
 

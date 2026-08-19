@@ -534,6 +534,16 @@ func _on_back_pressed() -> void:
 	# Back greyed out while a picture was still behind you. The guard has to be on the HANDLER,
 	# because the handler is what mutates.
 	if _move_in_flight: return
+	# In WALL VIEW the stack's top is still the picture the player just left (Q66=b: wall view is
+	# never an entry), so the one step back from here is THAT picture. `back()` would step past it
+	# and push it onto the forward list -- measured: leave `map`, press Back once, land on
+	# `start_menu`, and `map` is now "ahead of you" having never been revisited. GAP-020 records the
+	# alternative reading (Back inert in wall view) if the owner prefers it.
+	if _current_focus == &"":
+		var top := _focus_stack.current()
+		if top != &"":
+			await _focus_picture(top, false)
+		return
 	var target := _focus_stack.back()
 	if target == &"":
 		await _go_to_wall_view()

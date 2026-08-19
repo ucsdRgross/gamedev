@@ -336,6 +336,20 @@ func test_real_wall_moves_complete_under_the_paused_tree() -> void:
 			"sanity: the focused zoom and the wall zoom are far apart in this fixture, so the "
 			+ "check above can actually fail", "focused=%.4f wall=%.4f" % [expected, wide])
 
+	# Back FROM WALL VIEW (GAP-020, option a). The stack's top is still `map` -- wall view is never
+	# an entry (Q66=b) -- so one Back returns THERE. `back()` would step past it and file it under
+	# Forward as a picture never revisited, which is what used to happen on a single unraced press.
+	await _drive_move(func() -> void: await main._go_to_wall_view())
+	check(main._current_focus == &"" and main._focus_stack.current() == &"map",
+			"sanity: in wall view, with the stack still sitting on map",
+			"focus=%s top=%s" % [main._current_focus, main._focus_stack.current()])
+	await _drive_move(func() -> void: await main._on_back_pressed())
+	check(main._current_focus == &"map",
+			"Back from wall view returns to the picture just left, not past it",
+			str(main._current_focus))
+	check(not main._focus_stack.can_forward(),
+			"...and nothing was invented in the forward list on the way")
+
 	main.queue_free()
 	restore_settings_snapshot(snap)
 	restore_real_settings()

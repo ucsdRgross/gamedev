@@ -311,11 +311,10 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   between two differently-sized pictures reveals the wrong amount of the destination's bottom frame
   on arrival. Masked at rest now that `_focus_picture()` settles the camera, but the arrival itself
   is still framed on the picture being left. Same shape as the reduced-motion defect above.
-- **Back pressed IN WALL VIEW skips a picture and pushes it onto Forward.** In wall view
-  `_current_focus` is `&""` but the stack's top is still the picture just left, so `back()` steps
-  past it: leave `map`, press Back once, land on `start_menu`, and `map` is now in the FORWARD list
-  having never been revisited. A single unraced press — distinct from the double-press item above.
-  Violates `Q65`=a.
+- **GAP-020 — owner call.** What does Back do while wall view is showing? It now returns to the
+  picture just left (the stack's own top); the alternative is that Back is inert there, which also
+  needs the overlay's Back button to learn about wall view. The shipped behaviour was neither — it
+  stepped PAST that picture and filed it under Forward — and that half is fixed.
 - **The info card never follows the window.** `info_card.gd` computes its position from
   `get_viewport_rect()` inside `_resize_to_content()`, which only runs from `show_entry()`; nothing
   connects `size_changed` and `Main._on_window_resized()` does not touch it. Shrink the window and
