@@ -47,6 +47,7 @@ func _ready() -> void:
 	await test_real_wall_moves_complete_under_the_paused_tree()
 	await test_a_second_back_during_a_move_does_not_eat_a_history_entry()
 	await test_info_toggled_mid_transition_does_not_hijack_the_camera()
+	await test_double_info_press_inside_one_animation_still_rests_correctly()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	finish()
 
@@ -441,6 +442,54 @@ func test_info_toggled_mid_transition_does_not_hijack_the_camera() -> void:
 	check(camera.position.distance_to(want_pos) < 1.0,
 			"the camera rests on the DESTINATION's info pose, not the source's",
 			"camera=%s dest=%s source=%s" % [camera.position, want_pos, source_pos])
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## H3/Q27/S37: two Info presses inside ONE info animation still come to rest correctly posed.
+##
+## ⚠ The second press flips `wall_info_mode` and is then refused by the one-move guard, so the tween
+## already in flight keeps travelling to the pose for the mode the player just abandoned. With no
+## settle at the end, the camera stayed at the INFO pose while the mode read OFF and the button read
+## un-pressed -- a band of frame and bare wall along the bottom of the window, until the player
+## resized, navigated, or pressed Info twice more.
+func test_double_info_press_inside_one_animation_still_rests_correctly() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings("wall_")
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+	SettingsManager.settings.wall_reduced_motion = false
+	await _drive_move(func() -> void: await main._focus_picture(&"map"))
+	check(main._current_focus == &"map", "sanity: focused on a real picture, Info off",
+			str(main._current_focus))
+
+	# Press Info, then press it AGAIN while the first animation is still running.
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	_drive(func() -> void: await main._on_info_toggled(true), done)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(main._move_in_flight, "sanity: the first toggle really is animating when the second lands")
+	await main._on_info_toggled(false)
+	check(not SettingsManager.settings.wall_info_mode,
+			"sanity: the second press did change the mode back to OFF")
+	var started := Time.get_ticks_msec()
+	while not done[0] and Time.get_ticks_msec() - started < 8000:
+		await get_tree().process_frame
+	check(done[0], "the first toggle's animation completes")
+
+	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
+	var rect : PictureRect = main._rects[&"map"]
+	var focused_pos := rect.centre
+	var info := WallPicture.info_zoom_state(rect, main._window_size, SettingsManager.settings)
+	var info_pos : Vector2 = info["position"]
+	check(focused_pos.distance_to(info_pos) > 1.0,
+			"sanity: the two poses actually differ, so this can fail",
+			"focused=%s info=%s" % [focused_pos, info_pos])
+	check(camera.position.distance_to(focused_pos) < 1.0,
+			"the camera rests at the ORDINARY focused pose, matching Info now being off",
+			"camera=%s focused=%s info=%s" % [camera.position, focused_pos, info_pos])
 
 	main.queue_free()
 	restore_settings_snapshot(snap)

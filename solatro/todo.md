@@ -299,6 +299,21 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Picture wall
 
+- **🔴 The suite is not reliably green, and it is NOT the picture wall.** `PIXELS`'
+  `test_balls_ignore_their_hosts_rotation` ("host at N deg: every ball still sits within 2.0 art
+  units of the UPRIGHT spec") fails intermittently on Box B. Measured over 8 consecutive serialised
+  full runs of one unchanged build: green, then red 7 times, with the detail varying run to run
+  (`90 deg, 3 missing, worst 2.15` / `2.77` / `3.39`; `45 deg, 4 missing, worst 0.00`). **Reproduced
+  at HEAD with the working tree reverted**, so it is independent of any picture-wall change.
+  ⚠ The test's own doc comment already records the underlying phenomenon as non-reproducible
+  ("that displacement appears on an UNCHANGED build, once in five consecutive runs"), and the
+  response was to promote it from a snapshot to a hard `check()` on every run — so a known
+  nondeterministic GPU behaviour is now a pass/fail gate for the whole suite. Deliberately NOT
+  "fixed" by widening `BALL_TOLERANCE`: that is a tolerance fitted to the symptom, and this check
+  exists specifically to decide the FX_HANDOFF §1b quad-extent performance lever. Owner call whether
+  it stays a gate, becomes a `warn()`, or gets a retry/settle.
+
+
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
 - **GAP-019 — owner call.** What does the camera do DURING a reduced-motion cross-fade? `Q172`=a's

@@ -515,6 +515,14 @@ func _on_info_toggled(active: bool) -> void:
 		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
 				_window_size, settings.wall_overfill_margin), dest_rect.centre, dest_rect.centre,
 				_entries[_current_focus])
+	# H3/Q27/S37, same reason `_focus_picture()` ends this way: a move ENDS at the resting pose for
+	# whatever the wall shows NOW. A second Info press lands DURING this animation -- it flips
+	# `wall_info_mode` and is then refused by the guard above -- so the tween finishes travelling to
+	# a pose for the mode the player has already changed their mind about. Without this the camera
+	# stayed at the info pose with Info reading OFF: a ~76px band of frame and bare wall along the
+	# bottom, permanently, and the control that caused it looking un-pressed.
+	# `_settle_camera()` reads `wall_info_mode` itself, so it lands on whichever pose is current.
+	_settle_camera()
 	_move_in_flight = false
 	# A resize that arrived while this move owned the camera deferred its settle to whoever was
 	# moving -- which is this, exactly as for the other two movers.
