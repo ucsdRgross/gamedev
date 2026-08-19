@@ -405,6 +405,23 @@ func _pictures_by_id() -> Dictionary[StringName, WallPicture]:
 ## own Control focus state already persists on the same node instance (ASSUMPTIONS.md).
 func enter_wall_view(from_id: StringName) -> void:
 	selected_id = from_id
+	# MINOR (ADVERSARIAL_REVIEW, "entering wall view leaves nothing visibly selected"): this set the
+	# id and stopped, so arriving in wall view showed no cursor on anything until the first arrow
+	# press moved it somewhere else. F11/Q69=a is "exactly one picture is selected in wall view,
+	# ALWAYS" -- the selection exists on arrival, so it has to be applied to the picture on arrival.
+	# `_render_selection()` still honours Q105=b: a mouse-only session sees nothing until the first
+	# directional input latches `selection_visible`.
+	_render_selection()
+
+## MINOR (ADVERSARIAL_REVIEW, "`selection_visible` has no renderer"): Q105=b says the cursor renders
+## only AFTER the first directional input, so a mouse-only player never sees a keyboard cursor --
+## but nothing read the flag, so `set_selected()`'s lift was applied whenever a selection moved,
+## visible or not. This is the one place that turns (`selected_id`, `selection_visible`) into what
+## is actually drawn: exactly one picture lifted, and only once the cursor has been earned.
+func _render_selection() -> void:
+	var pictures := _pictures_by_id()
+	for id : StringName in pictures:
+		pictures[id].set_selected(selection_visible and id == selected_id)
 
 ## Q98=a (I4, TEST_PLAN I5): moves the selection to the geometrically NEAREST OTHER picture whose
 ## centre lies at least partly in `direction`'s half-plane from the current selection. Q106=a
@@ -419,6 +436,7 @@ func move_selection(direction: Vector2) -> void:
 	if pictures.is_empty(): return
 	if selected_id == &"" or not pictures.has(selected_id):
 		selected_id = pictures.keys()[0]
+		_render_selection()
 		return
 	var dir := direction.normalized()
 	var current : PictureRect = pictures[selected_id].rect
@@ -442,9 +460,8 @@ func move_selection(direction: Vector2) -> void:
 			wrap_id = id
 	var new_id := best_id if best_id != &"" else wrap_id
 	if new_id == &"": return
-	if pictures.has(selected_id): pictures[selected_id].set_selected(false)
 	selected_id = new_id
-	pictures[selected_id].set_selected(true)
+	_render_selection()
 
 ## S36's own done-when: how many pictures currently exist to overview -- the only piece of state
 ## only the wall itself knows, needed by the overlay's Wall-button visibility (refresh_overlay()).

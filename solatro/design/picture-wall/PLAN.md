@@ -247,7 +247,7 @@ static func route(event: InputEvent, picture: WallPicture) -> bool
 ### 1.10 The transition
 
 One `Tween` on the camera (`WallTransition`), phases overlapping (`Q47`=b), total duration
-`settings.base_delay * settings.wall_transition_delay_scale`, **never** `Game.get_delay()`
+`settings.base_delay * settings.wall_transition_delay`, **never** `Game.get_delay()`
 (`Q46`=b — it compresses to 0 on an act cancel).
 
 | Phase | Share | Curve |

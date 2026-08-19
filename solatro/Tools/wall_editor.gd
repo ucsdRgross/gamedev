@@ -36,7 +36,7 @@ extends Node2D
 ##
 ## ⚠ EDITOR FACTS, same category as `fx_editor.gd`'s own header (each cost real time there):
 ##  * **Every script this tool loads/builds must be `@tool`** (`WallLayout`, `PictureEntry`,
-##    `WallPicture` — `WallFrame` does not exist as a script; `%Frame` is a bare `NinePatchRict`
+##    `WallPicture` — `WallFrame` does not exist as a script; `%Frame` is a bare `NinePatchRect`
 ##    node, so there is nothing to annotate). A non-`@tool` script loads in the editor as a
 ##    PLACEHOLDER: reads still work, but a method call throws "Attempt to call a method on a
 ##    placeholder instance", and — the sharper trap — SAVING a `.tres` whose script is a

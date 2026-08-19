@@ -75,8 +75,8 @@ signal landed(picture_id: StringName)
 signal input_unlocked
 
 ## Q46=b (§1.10 as amended -- see ASSUMPTIONS.md): total duration is base_delay times the wall's
-## OWN multiplier, `wall_transition_delay` (S8; §1.10's literal `wall_transition_delay_scale` names
-## a knob that was never built and NAMES.md does not fix -- a stale name, not a second knob).
+## OWN multiplier, `wall_transition_delay` (S8). §1.10 used to name a `wall_transition_delay_scale`
+## that was never built; that stale name is now corrected at source, so there is one knob, not two.
 ## NEVER `Game.get_delay()`, which compresses to 0.0 on an act cancel (T2's own trap).
 static func total_duration(settings: PlayerSettings) -> float:
 	return settings.base_delay * settings.wall_transition_delay

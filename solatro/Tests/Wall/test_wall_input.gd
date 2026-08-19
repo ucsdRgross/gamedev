@@ -28,6 +28,8 @@ func _ready() -> void:
 	behavior_section("SPATIAL SELECTION (I5, I6)")
 	_test_arrow_selection_is_spatial()
 	_test_selection_wraps()
+	behavior_section("THE SELECTION IS ACTUALLY DRAWN (MINOR, ADVERSARIAL_REVIEW.md, F11/Q105=b)")
+	_test_the_selected_picture_is_the_one_visibly_lifted()
 	behavior_section("HELD-STICK REPEAT (M9, ADVERSARIAL_REVIEW.md, I7/Q116=a)")
 	await _test_a_held_direction_repeats_after_the_configured_delay()
 	behavior_section("CURSOR VISIBILITY (I9)")
@@ -1244,3 +1246,49 @@ func _test_a_held_direction_repeats_after_the_configured_delay() -> void:
 	settings.wall_selection_repeat_delay = real_delay
 	restore_real_settings()
 	_teardown(wall, [top, middle, bottom])
+
+# ------------------------------------------------------------------ MINOR (ADVERSARIAL_REVIEW.md)
+
+## MINOR (ADVERSARIAL_REVIEW.md): two findings, one cause -- nothing turned (`selected_id`,
+## `selection_visible`) into what is actually DRAWN. Entering wall view set the id and lifted
+## nothing, so arriving showed no cursor at all (F11/Q69=a: "exactly one picture is selected in wall
+## view, always"); and `selection_visible` had no renderer, so the lift was applied whether or not
+## Q105=b said the cursor had been earned yet.
+##
+## Asserted on the LIFT ITSELF -- `WallPicture.position` against `rect.centre` -- not on the two
+## flags, which is the whole point: the flags were already right, and reading them back would
+## re-prove a variable assignment while being unable to fail for the bug ([[tests-that-prove-nothing]]
+## trap 6).
+func _test_the_selected_picture_is_the_one_visibly_lifted() -> void:
+	var wall := _build_wall()
+	var top := _add_picture(wall, &"top", Vector2(0, -300))
+	var bottom := _add_picture(wall, &"bottom", Vector2(0, 300))
+	var lift : Vector2 = SettingsManager.settings.wall_selected_lift
+	check(not lift.is_zero_approx(),
+			"fixture: the lift is a real, visible offset, so 'lifted' and 'not lifted' differ",
+			str(lift))
+
+	wall.enter_wall_view(&"top")
+	check(top.position.is_equal_approx(top.rect.centre),
+			"Q105=b: arriving by MOUSE lifts nothing -- the cursor has not been earned yet",
+			"%s vs %s" % [str(top.position), str(top.rect.centre)])
+
+	var down := InputEventAction.new()
+	down.action = &"ui_down"
+	down.pressed = true
+	wall._unhandled_input(down)
+	check(bottom.position.is_equal_approx(bottom.rect.centre + lift),
+			"the first directional input LIFTS the newly selected picture",
+			"%s vs %s" % [str(bottom.position), str(bottom.rect.centre + lift)])
+	check(top.position.is_equal_approx(top.rect.centre),
+			"...and puts the one it left back down -- exactly one picture is lifted (F11/Q69=a)")
+
+	# Re-entering wall view now that the cursor IS earned must show it, which is the half that was
+	# missing outright.
+	wall.enter_wall_view(&"top")
+	check(top.position.is_equal_approx(top.rect.centre + lift),
+			"entering wall view shows the selection on the picture you came FROM (F10/F11)",
+			"%s vs %s" % [str(top.position), str(top.rect.centre + lift)])
+	check(bottom.position.is_equal_approx(bottom.rect.centre),
+			"...and only that one")
+	_teardown(wall, [top, bottom])

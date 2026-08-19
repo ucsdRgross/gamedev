@@ -347,7 +347,7 @@
   frame textures), not authored content.
 - **S14 (Q46=b, §1.10) — the coordinator's ruling: total duration is `settings.base_delay *
   settings.wall_transition_delay`, using the EXISTING S8-built knob.** §1.10's own text names
-  `settings.wall_transition_delay_scale`, which does not exist and which NAMES.md does not fix --
+  `settings.wall_transition_delay_scale`, which never existed (§1.10 is now corrected at source) --
   S8 built `wall_transition_delay` (default 0.6), the name `DESIGN.md` §5 and NAMES.md both fix, and
   NAMES.md is normative for settings keys. §1.10's stale name is a documentation bug against its own
   source (gap-protocol rule 4), not a reason to add a second knob. At defaults, `1.0 * 0.6 = 0.6`,
