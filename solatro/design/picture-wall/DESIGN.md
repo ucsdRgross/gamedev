@@ -1228,11 +1228,8 @@ nothing for a scale factor to do.
 | `wall_frame_reveal_margin` | 0.08 | extra share of the picture's size revealed beyond the frame at the zoom-out stop | Q35, Q48 |
 | `wall_reduced_motion` | false | replaces transitions with cross-fades | Q172 |
 | `wall_info_mode` | false | Info mode toggle | Q135 |
-| `wall_frame_thickness_fraction` | 0.06 | frame thickness as a fraction of the picture's shorter side | Q36 |
-| `wall_live_screen_cap` | 5 | LRU cap on instantiated screens | Q203, Q204 |
 | `wall_unlock_all` | false | debug — unlocks every picture without touching the profile file | Q159 |
 | `wall_view_min_texture_px` | 64 | floor on a wall-view texture's short axis | Q87, GAP-002 |
-| `wall_design_height` | 648 | screen design resolution height; width derived from aspect | Q29, Q30 |
 | `wall_selection_repeat_delay` | 0.4 s | held-stick repeat delay | Q116 |
 | `wall_debug_readout` | false | debug instrumentation, debug builds only | Q210 |
 | `wall_touch_target_mm` | 9.0 | touch target size in millimetres | Q123, GAP-004 |

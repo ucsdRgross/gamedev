@@ -340,8 +340,8 @@ func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) ->
 ## honour first -- UNREACHABLE today (E8/Q203=a, the owner-answered default: "all screens stay
 ## instantiated for the whole session," so nothing ever tears one down and nothing calls this),
 ## kept genuinely implemented so the fallback is a measurement away rather than a rewrite if
-## `wall_live_screen_cap` (already an exported knob, currently unconsulted by anything) ever gets
-## wired to a real LRU eviction. Delegates to `screen_root.get_wall_state()` if the live screen
+## a real LRU eviction is ever built (Q203=b, the branch Q203=a rejected -- its cap knob was struck
+## in the M9 pass rather than left unread). Delegates to `screen_root.get_wall_state()` if the live screen
 ## OPTS IN to that optional per-screen method -- nothing in this repo implements it yet, because
 ## nothing needs to while E8 holds; returns `{}` for a screen that does not, which is itself a
 ## valid, honest blob (nothing beyond what freezing already preserves would need restoring for it).

@@ -105,7 +105,7 @@
   no-overlap invariant (P10/P12), both of which hold under any anisotropic split.
 - **S4 (PLAN.md §1.3 rule 2) — the window-aspect stretch holds a picture's HEIGHT fixed and
   derives its width** (`WallPacker._picture_size`), matching the "height is the anchor, width
-  derived" convention `PlayerSettings.wall_design_height` already documents. Rule 2's original text
+  derived" shape `Q30` itself uses. Rule 2's original text
   ("stretched to the window aspect") never named which axis is the anchor; this predates GAP-009
   and was never resolved by it either. Not a gap: the two conventions in this project already point
   the same way, and P8/P9 pin the resulting behaviour (aspect ratio matches window; keep_aspect
@@ -1323,3 +1323,25 @@ press alone does nothing, it only arms a drag.
 Touch needs no second path. `input_devices/pointing/emulate_mouse_from_touch` is left at its
 default (true, and absent from `project.godot`), so a one-finger drag arrives as these same mouse
 events, and a two-finger drag is consumed by the pinch tracker first.
+
+## M9 -- three §5 knobs STRUCK rather than wired
+
+`ADVERSARIAL_REVIEW.md` asks for each unread knob to be wired "or cite the design text saying it is
+not needed". Three are the second case, and are deleted from `PlayerSettings` and from `DESIGN.md`
+§5 -- the same call GAP-008 made for `wall_gap`, `wall_view_margin`, `wall_ellipse_aspect_min` and
+`wall_ellipse_aspect_max`, whose value lived somewhere else.
+
+- **`wall_frame_thickness_fraction`** is `Q36`'s option **(b)**, "a fraction of the picture's
+  shorter side". The owner's own answer note rejects it: *"should be authored per picture. different
+  pictures have different frame widths..."* -- which is `PictureEntry.frame_px`, what the packer and
+  P6 already use. Two homes, and the note picks the other one.
+- **`wall_live_screen_cap`** is `Q204`'s N, and `Q204` is gated on `Q203`=**b** (an LRU cap).
+  `Q203`=**a** -- every screen stays instantiated for the session. The question is inactive, so its
+  answer's knob has nothing to configure. `WallPicture.write_state_blob()` remains as the contract
+  a future eviction would honour.
+- **`wall_design_height`** is `Q30`'s value, and `Q30` is gated on `Q29`=**a** (one shared design
+  resolution). `Q29`=**b** -- per-screen, authored, i.e. `PictureEntry.design_size`. Same shape as
+  the first: inactive question, second home.
+
+The remaining two of the five were WIRED, not struck: `WallLayout.view_margin` (see GAP-018) and
+`wall_selection_repeat_delay` (Q116=a's repeat, `Wall._tick_selection_repeat()`).

@@ -76,9 +76,9 @@ static func frame_outer_rect(rect: PictureRect) -> Rect2:
 	return _outer_rect(rect.centre, rect.size, rect.frame_px)
 
 ## Rule 2: design_size * size_multiplier, then stretched to the window's raw aspect by holding
-## the HEIGHT fixed and deriving the width -- the same "height is the anchor, width follows"
-## convention `wall_design_height` documents on PlayerSettings. `keep_aspect` skips the stretch
-## entirely.
+## the HEIGHT fixed and deriving the width -- "height is the anchor, width follows" (Q30's own
+## shape, applied per picture because Q29=b makes `PictureEntry.design_size` the one home for it).
+## `keep_aspect` skips the stretch entirely.
 static func _picture_size(entry: PictureEntry, window_aspect: float) -> Vector2:
 	var base := Vector2(entry.design_size) * entry.size_multiplier
 	if entry.keep_aspect: return base

@@ -515,33 +515,26 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_info_mode = value
 		settings_changed.emit()
-## Frame thickness as a fraction of the picture's shorter side (`Q36`).
-@export var wall_frame_thickness_fraction : float = 0.06:
-	set(value):
-		wall_frame_thickness_fraction = value
-		settings_changed.emit()
-## LRU cap on instantiated screens (`Q203`, `Q204`).
-@export var wall_live_screen_cap : int = 5:
-	set(value):
-		wall_live_screen_cap = value
-		settings_changed.emit()
 ## Floor on a wall-view texture's short axis, in px -- feeds `SubViewport.size` (`Vector2i`)
 ## directly, so this stays an integer pixel count (`Q87`, GAP-002).
 @export var wall_view_min_texture_px : int = 64:
 	set(value):
 		wall_view_min_texture_px = value
 		settings_changed.emit()
-## Screen design resolution height; width is derived from aspect (`Q29`, `Q30`). Matches
-## `PictureEntry.design_size`'s `Vector2i` height component, hence an integer here too.
-@export var wall_design_height : int = 648:
-	set(value):
-		wall_design_height = value
-		settings_changed.emit()
 ## Held-stick repeat delay, in seconds (`Q116`).
 @export var wall_selection_repeat_delay : float = 0.4:
 	set(value):
 		wall_selection_repeat_delay = value
 		settings_changed.emit()
+## M9 (ADVERSARIAL_REVIEW): three §5 rows were STRUCK here rather than wired, because the source
+## answers put their value somewhere else or rejected the feature outright -- the same call GAP-008
+## made for `wall_gap`/`wall_view_margin`/`wall_ellipse_aspect_min`/`_max`. See
+## `ASSUMPTIONS.md` for the citations:
+##   `wall_frame_thickness_fraction` -- `Q36`'s note: "should be authored per picture"
+##                                      (`PictureEntry.frame_px`); this was `Q36`'s option (b).
+##   `wall_live_screen_cap`          -- `Q204` is gated on `Q203`=b; `Q203`=a keeps every screen.
+##   `wall_design_height`            -- `Q30` is gated on `Q29`=a; `Q29`=b is per-screen
+##                                      (`PictureEntry.design_size`).
 ## Debug instrumentation, debug builds only (`Q210`).
 @export var wall_debug_readout : bool = false:
 	set(value):
