@@ -510,11 +510,15 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_reduced_motion = value
 		settings_changed.emit()
-## Info mode toggle (`Q135`).
-@export var wall_info_mode : bool = false:
-	set(value):
-		wall_info_mode = value
-		settings_changed.emit()
+## Info mode toggle (`Q135`). ⚠ SESSION STATE, NOT A SAVED SETTING -- deliberately NOT `@export`
+## and deliberately silent. `J1`/`Q135` and PLAN.md §4's anti-scope item 9 both say info mode does
+## not survive a quit, so persisting it was never wanted; every toggle nevertheless wrote the whole
+## of `user://settings.tres` (every setter here emits `settings_changed`, which `SettingsManager`
+## saves on) and woke the four listeners that recompute card sizes and FX styling, none of which
+## read this. Without `@export` it is not stored, so C3 holds by construction rather than by the
+## startup clear -- which STAYS anyway, because a `settings.tres` written by an older build still
+## carries the key and `ResourceLoader` will happily set it on load.
+var wall_info_mode : bool = false
 ## Floor on a wall-view texture's short axis, in px -- feeds `SubViewport.size` (`Vector2i`)
 ## directly, so this stays an integer pixel count (`Q87`, GAP-002).
 @export var wall_view_min_texture_px : int = 64:

@@ -37,6 +37,8 @@ func _ready() -> void:
 	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
 	test_back_visibly_disabled_at_bottom_of_stack()
 	test_forward_visibly_disabled_with_nothing_ahead()
+	behavior_section("INFO MODE IS SESSION STATE, NOT A SAVED SETTING (C3, J1/Q135)")
+	test_toggling_info_mode_does_not_write_the_settings_file()
 	behavior_section("BACK'S BUTTON AGREES WITH BACK'S KEY IN WALL VIEW (GAP-020=a)")
 	test_back_button_is_enabled_in_wall_view_whenever_the_key_works()
 	behavior_section("THE OVERLAY NEVER TAKES KEYBOARD FOCUS")
@@ -1136,4 +1138,39 @@ func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
 
 	SettingsManager.settings.wall_info_mode = false
 	main.queue_free()
+	restore_real_settings()
+
+# ------------------------------------------------------------------ C3 (not persisted)
+
+## C3 / J1 / Q135 / PLAN.md §4 anti-scope 9: info mode does not survive a quit. It is now session
+## state -- not `@export`ed and not emitting -- so that holds BY CONSTRUCTION rather than by the
+## startup clear.
+##
+## ⚠ Every other setter on `PlayerSettings` emits `settings_changed`, and `SettingsManager` SAVES on
+## that, so toggling Info used to write the whole of `user://settings.tres` (and wake the four
+## listeners that recompute card sizes and FX styling, none of which read it). Asserted by deleting
+## the file and watching whether a toggle recreates it -- and then flipping a REAL saved knob to
+## prove the file would have appeared if anything had asked for it, so this cannot pass by the save
+## path being broken outright.
+func test_toggling_info_mode_does_not_write_the_settings_file() -> void:
+	backup_real_settings()
+	var path := "user://settings.tres"
+	var real := ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(real)
+	check(not FileAccess.file_exists(path), "sanity: no settings file to begin with")
+
+	SettingsManager.settings.wall_info_mode = true
+	check(not FileAccess.file_exists(path),
+			"toggling Info mode did NOT write the settings file")
+	SettingsManager.settings.wall_info_mode = false
+	check(not FileAccess.file_exists(path), "...nor did toggling it back")
+
+	# A genuinely saved knob, to prove the save path is alive and this test can fail.
+	var prev : int = SettingsManager.settings.wall_view_min_texture_px
+	SettingsManager.settings.wall_view_min_texture_px = prev + 1
+	check(FileAccess.file_exists(path),
+			"sanity: a REAL setting still writes the file, so the check above is not vacuous")
+	SettingsManager.settings.wall_view_min_texture_px = prev
+
 	restore_real_settings()
