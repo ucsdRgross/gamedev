@@ -330,10 +330,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 
-- **GAP-019 — owner call.** What does the camera do DURING a reduced-motion cross-fade? `Q172`=a's
-  "fixed zoom" and H3/`Q27`'s "no frame visible at rest" cannot both hold across a move between two
-  differently-sized pictures. Three defensible framings, all visible on every navigation; the
-  resting-pose half is already fixed and is not in dispute.
 - **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so the
   approach to a differently-sized destination is framed on the picture being LEFT. `J10`/`Q137`
   ("the camera never leaves the info zoom") is what asks for one fixed value, and `_settle_camera()`
@@ -363,9 +359,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   `layout_default.tres` authors `music` yet.
 - **`_repack_wall()` never calls `update_wall_view_size()`** for repositioned pictures and never
   `retarget()`s an in-flight transition, both of which `_on_window_resized()` does.
-- **`WallInput.route()` applies the half-viewport shift only to `InputEventMouse`**, so raw
-  `InputEventScreenTouch`/`ScreenDrag` land offset by half a viewport. Masked on desktop by
-  `emulate_mouse_from_touch`.
 - **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the
   stored value (C3).
 - **`Wall.refresh_overlay()` and `Wall.picture_count()` have no production caller** — `Main` calls

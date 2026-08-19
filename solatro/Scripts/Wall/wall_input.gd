@@ -44,8 +44,19 @@ static func route(event: InputEvent, picture: WallPicture) -> bool:
 	# scaled by it too -- measured directly: Tests/Visual/wall_input_route_spike.gd showed the
 	# offset landing at half_vp/zoom, not a constant half_vp, when passed that way). Non-positional
 	# events (keyboard, actions) pass through xformed_by() unchanged and need no shift.
+	# ⚠ EVERY positional event, not just mouse ones. `InputEventScreenTouch` and
+	# `InputEventScreenDrag` carry a `position` too and do NOT descend from `InputEventMouse`, so a
+	# raw touch reached the focused screen offset by half a viewport. Masked on desktop by
+	# `emulate_mouse_from_touch` (which converts them before they ever get here) and invisible to
+	# every test, all of which feed mouse events -- but the wall's own pinch tracker reads real
+	# `InputEventScreenTouch`, so the raw ones do arrive on a touch device.
+	var half_viewport := Vector2(picture.viewport.size) * 0.5
 	if local_event is InputEventMouse:
-		(local_event as InputEventMouse).position += Vector2(picture.viewport.size) * 0.5
+		(local_event as InputEventMouse).position += half_viewport
+	elif local_event is InputEventScreenTouch:
+		(local_event as InputEventScreenTouch).position += half_viewport
+	elif local_event is InputEventScreenDrag:
+		(local_event as InputEventScreenDrag).position += half_viewport
 	picture.viewport.push_input(local_event, true)
 	return true
 

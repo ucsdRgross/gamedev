@@ -48,6 +48,7 @@ func _ready() -> void:
 	_test_dragging_pans_nothing_when_the_whole_wall_already_fits()
 	behavior_section("ROUTING (I1, I2, S19)")
 	await _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels()
+	await _test_touch_events_route_to_the_same_place_a_click_does()
 	await _test_non_focused_picture_never_receives_input()
 	behavior_section("MOUSE (I8, S20)")
 	_test_wheel_reaches_the_focused_screen_but_never_the_wall()
@@ -1034,6 +1035,46 @@ func _test_wall_info_asks_for_an_info_toggle() -> void:
 ## list, so even a wired reader could never fire from a real controller. Asserts that the bindings
 ## exist and that BOTH input families reach all four navigation actions -- never which button or
 ## keycode, since Q102=a makes them rebindable and pinning one would turn a rebind into a failure.
+## I1's claim for TOUCH. `InputEventScreenTouch`/`ScreenDrag` carry a `position` but do NOT descend
+## from `InputEventMouse`, so route()'s half-viewport shift skipped them and a raw touch landed half
+## a viewport away. Every other routing test feeds mouse events, which is why nothing saw it;
+## `emulate_mouse_from_touch` hides it on desktop, but `Wall`'s own pinch tracker reads real
+## `InputEventScreenTouch`, so raw ones do reach this path on a touch device.
+func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
+	var rig := _camera_rig()
+	var design_size := Vector2i(200, 150)
+	var rect := PictureRect.new(&"t", Vector2(300, -150), Vector2(design_size) * Vector2(0.8, 1.0),
+			Vector4(10, 10, 10, 10))
+	var entry := PictureEntry.new()
+	entry.id = &"t"
+	entry.design_size = design_size
+	entry.scene = _button_screen(design_size)
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	rig.viewport.add_child(wp)
+	wp.build(rect, entry, rig.pictures_viewports)
+	wp.focus()
+	var screen : Sprite2D = wp.get_node(^"%Screen")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+
+	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
+	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:
+			if e is InputEventScreenTouch: landed[0] = (e as InputEventScreenTouch).position)
+
+	var target := Vector2(150.0, 40.0)
+	var half_vp := Vector2(wp.viewport.size) * 0.5
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = screen.get_global_transform_with_canvas() * (target - half_vp)
+	check(WallInput.route(touch, wp), "route() reports the touch as routed")
+	check(landed[0].distance_to(target) < 0.5,
+			"a TOUCH aimed at a viewport pixel lands there, same as a click",
+			"landed=%s want=%s" % [landed[0], target])
+
+	wp.teardown()
+	await _teardown_camera_rig(rig)
+
 func _test_every_wall_action_has_at_least_one_binding() -> void:
 	var actions : Array[StringName] = [&"wall_overview", &"wall_back", &"wall_forward", &"wall_info"]
 	for action : StringName in actions:
