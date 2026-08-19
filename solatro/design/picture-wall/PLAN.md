@@ -229,9 +229,14 @@ static func route(event: InputEvent, picture: WallPicture) -> bool
 ```
 
 - Only the **focused** picture is ever routed to (`Q95`=a).
-- The local transform is the `%Screen` sprite's `get_global_transform_with_canvas()` inverse, scaled
-  by `SubViewport.size / (sprite.texture.get_size() * sprite.scale)`; hand the result to
-  `SubViewport.push_input(local_event, true)`.
+- The local transform is the `%Screen` sprite's `get_global_transform_with_canvas()` inverse **and
+  nothing else**; hand the result to `SubViewport.push_input(local_event, true)`, shifted by half
+  `SubViewport.size` for positional events because the sprite is centred.
+  ⚠ This bullet used to specify that inverse **scaled by
+  `SubViewport.size / (sprite.texture.get_size() * sprite.scale)`**, and that was wrong at source:
+  the sprite's texture IS the render target, so `texture.get_size()` IS `SubViewport.size` and the
+  expression reduces to `1 / sprite.scale` — dividing by a scale the inverse has already removed.
+  It is the identity only at `sprite.scale == 1`, i.e. only at exactly 16:9.
 - **The wall reads input in `_unhandled_input` only**, so a focused screen always gets first refusal
   (`Q100`=a, and the existing `world_map_controller.gd:217` pattern).
 - Bindings are exactly `NAMES.md`'s action table. Nothing is hard-coded to a keycode except the

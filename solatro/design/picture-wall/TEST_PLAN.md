@@ -104,7 +104,13 @@ own code could ever say.
 
 | # | Test | Fixture | Proves |
 |---|---|---|---|
-| I1 | a click routes to the right screen coordinate | a `Button` at a known spot inside a picture; click its wall-space centre at zoom 0.5, 1.0, 2.0 → assert the button reports pressed **at all three** | I1, GAP-001 — the risk that caused the gap |
+| I1 | a click routes to the right screen coordinate | a **small, off-centre** `Button` inside a picture whose `rect.size` is **not** its `design_size` (so `%Screen.scale != 1`); at zoom 0.5, 1.0, 2.0 aim at the button's own pixel and at three off-centre probe points → assert the button reports pressed **and** each probe lands on the pixel it was aimed at | I1, GAP-001 — the risk that caused the gap |
+⚠ **I1's own row used to read "click its wall-space centre", and that made the test unable to fail.**
+A scale error in `route()` is zero at the sprite's centre (it is the fixed point) and the fixture
+also used `rect.size == design_size`, making the scale exactly 1. Both halves had to be wrong for it
+to pass, and the routing defect it existed to catch shipped green for a whole run. Any routing test
+must probe OFF-CENTRE at a NON-UNIT scale.
+
 | I2 | non-focused pictures never receive input | click over a background picture → assert its viewport got zero events | I2, `Q95`=a |
 | I3 | the focused screen gets first refusal on `ui_cancel` | a screen that consumes Escape → assert the wall does NOT go back | I5, `Q100`=a |
 | I4 | a screen that ignores Escape lets Back through | → assert the wall goes back | I5, `Q100`=a |

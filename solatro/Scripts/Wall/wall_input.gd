@@ -18,17 +18,23 @@ static func route(event: InputEvent, picture: WallPicture) -> bool:
 	if not picture.is_focused: return false
 	var screen : Sprite2D = picture.get_node(^"%Screen")
 	if not screen.texture: return false
-	# §1.9's literal formula: the %Screen sprite's own global-transform-with-canvas inverse (wall
-	# space -> the sprite's local/native-texture space, already correct for whatever zoom the
-	# camera is currently at -- the GAP-001 risk this class exists to defend against), SCALED by
-	# SubViewport.size / (sprite.texture.get_size() * sprite.scale) -- corrects for the sprite's
-	# texture tracking the viewport's own LIVE render resolution (which GAP-002's wall-view
-	# footprint clamp can shrink below the sprite's own display size) rather than a fixed design
-	# size.
-	var inverse := screen.get_global_transform_with_canvas().affine_inverse()
-	var scale_factor := Vector2(picture.viewport.size) \
-			/ (Vector2(screen.texture.get_size()) * screen.scale)
-	var local_event := event.xformed_by(inverse.scaled(scale_factor))
+	# The %Screen sprite's own global-transform-with-canvas inverse, and NOTHING ELSE. A centred
+	# Sprite2D's local space is already its texture's pixel space, and this texture is the
+	# SubViewport's own render target, so that inverse lands viewport pixels directly -- at
+	# whatever zoom the camera is currently at, which is the GAP-001 risk this class exists for.
+	#
+	# ⚠ PLAN.md §1.9 additionally specifies scaling that inverse by
+	# `SubViewport.size / (sprite.texture.get_size() * sprite.scale)`, and that formula is wrong at
+	# source. `sprite.texture` IS the render target, so `texture.get_size()` IS `viewport.size` and
+	# the whole expression reduces to `1.0 / sprite.scale` -- while the inverse has ALREADY removed
+	# that scale. It divided by the sprite's own scale twice, which is the identity only when that
+	# scale is exactly 1.0. `WallPacker` makes it 1.0 only at exactly 16:9, so every click inside a
+	# focused screen was displaced at any other window shape, by more the further from the screen's
+	# centre. Measured at aspect 1.6: viewport pixel (920, 115) arrived at (958.2, 115.0) and
+	# (64, 64) at (7.1, 64.0), while the exact centre was correct -- which is why a centre-clicking
+	# test never saw it. §1.9's formula is SUPERSEDED here, not simplified.
+	var local_event := event.xformed_by(
+			screen.get_global_transform_with_canvas().affine_inverse())
 	# %Screen is CENTERED (S10, §1.7's own construction) -- its own local origin (0,0) is the
 	# MIDDLE of the viewport's native pixel rect, not its top-left corner, so the transform above
 	# lands "sprite-centred" local coordinates for a POSITIONAL event. SubViewport.push_input(event,

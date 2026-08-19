@@ -329,8 +329,12 @@ func _button_screen(design_size: Vector2i) -> PackedScene:
 	root.size = Vector2(design_size)
 	var button := Button.new()
 	button.name = "TheButton"
-	button.size = Vector2(60, 40)
-	button.position = Vector2(design_size) * 0.5 - button.size * 0.5
+	# ⚠ SMALL and OFF-CENTRE, both deliberately. A button filling the middle of the screen is
+	# pressed by any routing transform that is even roughly right, and the exact centre is the ONE
+	# point every wrong scale factor maps correctly (it is the fixed point of a scale about the
+	# centre). I1 used to be exactly that shape and could not fail; see its own comment.
+	button.size = Vector2(24, 24)
+	button.position = Vector2(design_size) * Vector2(0.85, 0.25) - button.size * 0.5
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	root.add_child(button)
 	# ⚠ PackedScene.pack() silently DROPS any child whose `.owner` is not the root being packed --
@@ -371,14 +375,25 @@ func _teardown_camera_rig(rig: CameraRig) -> void:
 
 # ------------------------------------------------------------------ I1, I2 (S19 routing)
 
-## I1 (GAP-001 -- the risk that caused it): a click at the WALL-SPACE centre of a focused picture's
-## Button correctly reaches and presses it at THREE different camera zoom levels (0.5, 1.0, 2.0) --
-## proving WallInput.route()'s transform is correct as zoom changes, not just coincidentally right
-## at 1.0.
+## I1 (GAP-001 -- the risk that caused it): a click aimed at a known viewport pixel of a focused
+## picture lands on THAT pixel, at three camera zoom levels (0.5, 1.0, 2.0) -- and presses a small,
+## off-centre Button placed there.
+##
+## ⚠ THIS TEST WAS VACUOUS AND FOUND NOTHING FOR A WHOLE RUN. It used `rect.size == design_size`,
+## which makes `%Screen.scale` exactly (1, 1), and it clicked the sprite's exact CENTRE, whose local
+## coordinate is (0, 0) -- and `f * (0, 0) == (0, 0)` for every factor `f`. Both halves had to be
+## wrong for it to pass; either one alone would have caught `route()` dividing by the sprite's scale
+## twice. `TEST_PLAN.md` §10's I1 row literally specifies "click its wall-space centre", so the
+## vacuity was authored, not accidental. The rect below is now a NON-square multiple of the design
+## size, so the scale is (0.8, 1.0) -- the shape a non-16:9 window actually produces -- and every
+## probe point is off-centre.
 func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() -> void:
 	var rig := _camera_rig()
 	var design_size := Vector2i(200, 150)
-	var rect := PictureRect.new(&"a", Vector2(300, -150), Vector2(design_size),
+	# NOT Vector2(design_size): a rect equal to the design size makes %Screen.scale exactly 1 and
+	# hides every scale-dependent routing error. WallPacker produces this shape at any window
+	# aspect other than 16:9.
+	var rect := PictureRect.new(&"a", Vector2(300, -150), Vector2(design_size) * Vector2(0.8, 1.0),
 			Vector4(10, 10, 10, 10))
 	var entry := PictureEntry.new()
 	entry.id = &"a"
@@ -390,6 +405,15 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 	wp.focus()
 	var button : Button = wp.screen_root.get_node(^"TheButton")
 	var screen : Sprite2D = wp.get_node(^"%Screen")
+	check(not screen.scale.is_equal_approx(Vector2.ONE),
+			"sanity: %Screen.scale is NOT 1 in this fixture, so a scale error can actually show",
+			str(screen.scale))
+	# The screen root is a Control at (0, 0) sized to the design, so its own gui_input position IS
+	# the viewport pixel the event landed on -- read directly rather than inferred from whether a
+	# widget happened to react.
+	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
+	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:
+			if e is InputEventMouseButton: landed[0] = (e as InputEventMouseButton).position)
 
 	for zoom : float in [0.5, 1.0, 2.0]:
 		rig.camera.zoom = Vector2(zoom, zoom)
@@ -404,15 +428,32 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 		# disconnect() below has something it actually accepts.
 		var handler := func() -> void: pressed[0] = true
 		button.pressed.connect(handler)
+		var target := button.position + button.size * 0.5
 		var event := InputEventMouseButton.new()
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = true
-		event.position = screen.get_global_transform_with_canvas() * Vector2.ZERO
+		var half_vp := Vector2(wp.viewport.size) * 0.5
+		event.position = screen.get_global_transform_with_canvas() * (target - half_vp)
 		var handled := WallInput.route(event, wp)
 		check(handled, "zoom %.1f: route() reports the event as routed" % zoom)
-		check(pressed[0], "zoom %.1f: the button at the picture's known spot reports pressed" % zoom,
+		check(pressed[0],
+				"zoom %.1f: the small off-centre button at the aimed pixel reports pressed" % zoom,
 				"event.position=%s" % event.position)
 		button.pressed.disconnect(handler)
+
+		# Three points spread across the screen, none of them the centre, checked as COORDINATES.
+		# A scale error is zero at the centre and grows outward, so a corner is where it shows.
+		for probe : Vector2 in [Vector2(12, 12), Vector2(design_size) - Vector2(12, 12),
+				Vector2(design_size.x - 12, 12)]:
+			landed[0] = Vector2.INF
+			var probe_event := InputEventMouseButton.new()
+			probe_event.button_index = MOUSE_BUTTON_LEFT
+			probe_event.pressed = true
+			probe_event.position = screen.get_global_transform_with_canvas() * (probe - half_vp)
+			WallInput.route(probe_event, wp)
+			check(landed[0].is_equal_approx(probe),
+					"zoom %.1f: a click aimed at viewport pixel %s lands there" % [zoom, probe],
+					"landed=%s" % landed[0])
 
 	wp.teardown()
 	await _teardown_camera_rig(rig)
