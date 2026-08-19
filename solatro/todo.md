@@ -354,11 +354,12 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
   mouse-motion path via `pan_by()` → `clamp_pan()`. Cached by the loader, but it is a disk-path
   resolve per input event, and it means wall framing reads the file rather than the layout `Main`
   actually packed.
-- **The map builds a full preview-card `InfoEntry` on every booster hover even with Info mode OFF**
-  (`map.gd`'s unconditional `info_hovered.emit(MapHoverPanel.get_info(...))`), and
-  `Main._on_screen_info_hovered()` then drops it — orphaning a `FlowContainer` of `ControlCard`s in
-  ObjectDB per hover-enter. Info mode is force-cleared every launch, so OFF is the normal state.
-  `_on_picture_hovered()` already checks the flag BEFORE building; the map path did not get it.
+- **The map still BUILDS a full preview-card `InfoEntry` on every booster hover with Info mode off**,
+  and `Main` frees it immediately. The leak is gone; the waste is not. Fixing that properly means
+  either the map learning about Info mode (which `map.gd`'s own comment forbids — "the map has no
+  business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
+  of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
+  rule. Left as waste on a hover-enter path, deliberately.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither

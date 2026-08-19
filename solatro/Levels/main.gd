@@ -534,7 +534,18 @@ func _on_info_toggled(active: bool) -> void:
 ## "shows nothing until something is hovered" is about the card's own state, not a reason to make
 ## every screen check a flag before it speaks.
 func _on_screen_info_hovered(entry: InfoEntry) -> void:
-	if not SettingsManager.settings.wall_info_mode: return
+	if not SettingsManager.settings.wall_info_mode:
+		# ⚠ FREE THE DROPPED ENTRY'S VISUAL. A screen "has no business deciding whether Info mode
+		# wants it shown" (map.gd's own comment), so it builds the entry eagerly -- and for a
+		# booster node that is a container holding one live preview card per card in the pack.
+		# `InfoEntry` is RefCounted, but `entry.visual` is a NODE that was never added to any tree,
+		# so dropping the reference here orphaned it in ObjectDB for the rest of the session. Info
+		# mode is force-cleared at every launch (C3 above), so OFF is the normal state and this is
+		# the normal path: once per hover-enter, and route planning sweeps the same nodes again and
+		# again.
+		if entry and entry.visual and is_instance_valid(entry.visual):
+			entry.visual.queue_free()
+		return
 	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
 	info_card.show_entry(entry)
 

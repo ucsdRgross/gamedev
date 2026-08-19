@@ -63,6 +63,7 @@ func _ready() -> void:
 	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
 	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, PICTURE_WALL.md, J1, J6)")
 	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
+	await test_a_dropped_info_entry_does_not_leak_its_visual()
 	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, PICTURE_WALL.md, J7, Q133=b)")
 	await test_hovering_a_picture_in_info_mode_describes_it()
 	behavior_section("ONE MOVE AT A TIME (C5, PICTURE_WALL.md, Q56=b, §1.6)")
@@ -1091,3 +1092,48 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 	check(back_button.disabled,
 			"...but an EMPTY stack still disables it in wall view -- there is nothing to go back to")
 	overlay.queue_free()
+
+# ------------------------------------------------------------------ dropped-entry leak
+
+## An entry the wall DROPS (Info mode off) must not leave its visual behind.
+##
+## ⚠ `map.gd` builds the entry eagerly and unconditionally -- deliberately, because a screen "has no
+## business deciding whether Info mode wants it shown" -- and for a booster node `get_info()`'s
+## visual is a container holding one live preview card per card in the pack. `InfoEntry` is
+## RefCounted so the entry itself goes, but `entry.visual` is a NODE that was never added to any
+## tree: dropping the reference orphaned it in ObjectDB for the whole session. Info mode is
+## force-cleared at every launch (C3), so OFF is the NORMAL state and this was the normal path.
+func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
+	backup_real_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false   # concurrency workaround, same as every other Main fixture here
+	SettingsManager.settings.wall_info_mode = false
+
+	var visual := Node2D.new()
+	var entry := InfoEntry.new()
+	entry.title = "Dropped"
+	entry.body = "Info mode is off, so nothing shows this."
+	entry.visual = visual
+	check(is_instance_valid(visual), "sanity: the visual exists before the hover")
+
+	main._on_screen_info_hovered(entry)
+	await get_tree().process_frame   # queue_free() lands at the end of the frame
+	check(not is_instance_valid(visual),
+			"the dropped entry's visual is freed, not orphaned in ObjectDB for the session")
+
+	# And the opposite half: an entry the wall SHOWS must keep its visual.
+	SettingsManager.settings.wall_info_mode = true
+	var kept := Node2D.new()
+	var shown := InfoEntry.new()
+	shown.title = "Shown"
+	shown.body = "Info mode is on."
+	shown.visual = kept
+	main._on_screen_info_hovered(shown)
+	await get_tree().process_frame
+	check(is_instance_valid(kept),
+			"...while an entry that IS shown keeps its visual -- the free is not unconditional")
+
+	SettingsManager.settings.wall_info_mode = false
+	main.queue_free()
+	restore_real_settings()
