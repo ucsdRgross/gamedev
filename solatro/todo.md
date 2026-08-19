@@ -353,10 +353,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how the subsystem is put together.
 - **`Wall.apply_layout()` never kills a previous animated tween**, so a resize during an animated
   re-pack leaves the old tween writing toward pre-resize targets and `WallPicture.rect` permanently
   disagrees with what is drawn. Latent while nothing triggers an unlock.
-- **`begin_music_crossfade()` early-returns without arming the background player when both pictures
-  share a stream, but `finish_music_crossfade()` flips `_music_active` regardless** — so moving
-  between two pictures with the same track silences the music entirely. Latent: nothing in
-  `layout_default.tres` authors `music` yet.
 - **`_repack_wall()` never calls `update_wall_view_size()`** for repositioned pictures and never
   `retarget()`s an in-flight transition, both of which `_on_window_resized()` does.
 - **Every Info toggle writes `user://settings.tres`**, even though startup deliberately discards the

@@ -704,11 +704,20 @@ func start_music(entry: PictureEntry) -> void:
 ## blend per frame. A no-op when `dest_entry.music` is literally the SAME stream already playing in
 ## the foreground (e.g. stepping back and forth between two pictures that share a track) -- no
 ## restart, no audible glitch.
+## True between a `begin_music_crossfade()` that actually ARMED the background player and the
+## `finish_music_crossfade()` that resolves it. False when `begin` took its no-op early return --
+## `finish` flipped `_music_active` unconditionally, so stepping between two pictures that SHARE a
+## track promoted the silent, never-armed player to foreground and the music stopped dead. That is
+## the exact glitch the early return exists to prevent.
+var _crossfade_armed : bool = false
+
 func begin_music_crossfade(dest_entry: PictureEntry) -> void:
 	var fg := _music_player(_music_active)
 	if dest_entry != null and dest_entry.music != null and fg.stream == dest_entry.music \
 			and fg.playing:
+		_crossfade_armed = false
 		return
+	_crossfade_armed = true
 	var bg := _music_player(1 - _music_active)
 	bg.stream = dest_entry.music if dest_entry != null else null
 	bg.volume_db = -80.0
@@ -737,6 +746,9 @@ func update_travel_music(source_centre: Vector2, dest_centre: Vector2, camera_po
 ## foreground player outright (never left merely quiet) and flips which player is foreground, so the
 ## next crossfade's "background" player is the one that just finished fading out.
 func finish_music_crossfade() -> void:
+	# Nothing was armed, so there is nothing to resolve and nothing to swap.
+	if not _crossfade_armed: return
+	_crossfade_armed = false
 	var old_fg := _music_player(_music_active)
 	old_fg.stop()
 	old_fg.volume_db = -80.0

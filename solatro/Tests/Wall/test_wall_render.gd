@@ -42,6 +42,8 @@ func _ready() -> void:
 	test_build_reparents_a_live_screen_unchanged()
 	behavior_section("SCREEN PERSISTENCE (S39, E8, Q203=a)")
 	test_screen_root_survives_repeated_focus_unfocus_cycles()
+	behavior_section("MOVING BETWEEN TWO PICTURES THAT SHARE A TRACK (S33)")
+	test_a_crossfade_between_pictures_sharing_a_track_keeps_playing()
 	behavior_section("THE SELECTION LIFT IS PART OF WHERE A PICTURE IS")
 	test_selection_lift_survives_a_repack_and_yields_to_focus()
 	behavior_section("FRAME NINE-SLICE (S24, QR4=b, C6)")
@@ -677,3 +679,43 @@ func test_selection_lift_survives_a_repack_and_yields_to_focus() -> void:
 			"deselecting puts it back down", str(wp.position))
 	wp.reposition(_pictures[0].rect)
 	wp.focus()
+
+# ------------------------------------------------------------------ shared-track crossfade
+
+## S33: stepping between two pictures that share a music track must not stop the music.
+##
+## ⚠ `begin_music_crossfade()` early-returns without arming the background player when the
+## destination's stream is ALREADY the one playing -- deliberately, so a shared track does not
+## restart and glitch. But `finish_music_crossfade()` flipped `_music_active` regardless, promoting
+## the silent, never-armed player to foreground: the music stopped dead, which is precisely the
+## glitch the early return exists to prevent. Latent only because nothing in
+## `layout_default.tres` authors `music` yet.
+func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
+	var track := AudioStreamGenerator.new()   # a real, playable stream; no asset needed
+	var entry := PictureEntry.new()
+	entry.id = &"shared"
+	entry.music = track
+
+	_wall.start_music(entry)
+	var playing_before : AudioStreamPlayer = _wall.get_node(^"%MusicA")
+	if not playing_before.playing:
+		playing_before = _wall.get_node(^"%MusicB")
+	check(playing_before.playing and playing_before.stream == track,
+			"sanity: the shared track is playing before the move")
+
+	# The move: same entry as destination, i.e. the same stream.
+	_wall.begin_music_crossfade(entry)
+	_wall.update_travel_music(Vector2.ZERO, Vector2(100, 0), Vector2(50, 0))
+	_wall.finish_music_crossfade()
+
+	var a : AudioStreamPlayer = _wall.get_node(^"%MusicA")
+	var b : AudioStreamPlayer = _wall.get_node(^"%MusicB")
+	var live := a if a.playing else b
+	check(live.playing and live.stream == track,
+			"the shared track is STILL playing after the move -- the crossfade did not swap to a "
+			+ "silent player", "A(playing=%s) B(playing=%s)" % [a.playing, b.playing])
+	check(live.volume_db > -40.0,
+			"...and it is audible, not left faded out", "volume_db=%.1f" % live.volume_db)
+
+	a.stop()
+	b.stop()
