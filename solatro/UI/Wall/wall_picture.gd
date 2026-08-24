@@ -226,6 +226,10 @@ func focus() -> void:
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.size = _design_size
+	# Focused renders at full design size, so the canvas override has nothing to do — cleared
+	# rather than left at a 1:1 identity, so `WallInput.route()` maps into a plain viewport.
+	viewport.size_2d_override = Vector2i.ZERO
+	viewport.size_2d_override_stretch = false
 	_rescale_screen()
 	# The live screen's root is flipped to ALWAYS. `screen_root` may be null when this picture has
 	# no scene, in which case there is nothing to flip.
@@ -264,9 +268,18 @@ func set_screen_alpha(alpha: float) -> void:
 ## zoom — no resolution manager, one property written when the footprint changes. Each axis is
 ## clamped below by `wall_view_min_texture_px` so a tiny footprint never asks the GPU for a
 ## degenerate render target.
+##
+## ⚠ **`size_2d_override` IS WHAT MAKES THE SCREEN SHRINK RATHER THAN CROP.** `size` alone is the
+## render RESOLUTION, and a screen laid out for its `design_size` does not re-flow into a smaller
+## one — it keeps its own metrics and the viewport shows the top-left corner of it. Measured: at a
+## 385x216 target a 1152x648 start menu rendered as a giant "S". The override keeps the CANVAS at
+## `_design_size` while `size` stays the render target, and `size_2d_override_stretch` is what
+## makes the two map onto each other.
 func update_wall_view_size(footprint_px: Vector2) -> void:
 	var min_px := settings().wall_view_min_texture_px
 	viewport.size = Vector2i(maxi(int(footprint_px.x), min_px), maxi(int(footprint_px.y), min_px))
+	viewport.size_2d_override = _design_size
+	viewport.size_2d_override_stretch = true
 	_rescale_screen()
 
 ## Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`.

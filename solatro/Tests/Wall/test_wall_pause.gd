@@ -51,6 +51,7 @@ func _ready() -> void:
 	await test_a_picture_entered_from_the_keyboard_does_not_stay_lifted()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
 	await test_the_info_zoom_reads_its_own_duration_scale()
+	await test_the_opening_reveal_reads_wall_reveal_delay_scale()
 	finish()
 
 # ------------------------------------------------------------------ fixture
@@ -435,6 +436,56 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 func _pin_transition_clock() -> void:
 	SettingsManager.settings.base_delay = 1.0
 	SettingsManager.settings.wall_transition_delay = 0.6
+
+## The opening reveal runs LONGER than an ordinary Wall press, by `wall_reveal_delay_scale`.
+##
+## ⚠ Driven through `_on_new_run()`, the REAL call site, not through `_go_to_wall_view()` directly.
+## Calling the helper would prove the parameter is plumbed and say nothing about whether the launch
+## path passes the knob at all — which is exactly the gap that left this knob with no reader for a
+## whole run.
+##
+## ⚠ Compared as a RATIO of two measured durations, for the same reason the info-zoom test is:
+## "still running after N frames" passes with the knob ignored, because the unscaled clock is
+## already longer than any small frame count.
+func test_the_opening_reveal_reads_wall_reveal_delay_scale() -> void:
+	backup_real_settings()
+	backup_real_save(suite_tag())
+	var snap := snapshot_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+	SettingsManager.settings.wall_reduced_motion = false
+	_pin_transition_clock()
+
+	var slow_ms := await _time_opening_reveal(main, 4.0)
+	# Back onto a picture: the reveal is a zoom OUT, and from wall view there is nothing to animate.
+	await _drive_move(func() -> void: await main._focus_picture(&"start_menu"))
+	check(main._current_focus == &"start_menu",
+			"sanity: re-focused before the second reveal, or it would measure nothing",
+			str(main._current_focus))
+	var fast_ms := await _time_opening_reveal(main, 0.1)
+
+	check(slow_ms > fast_ms * 3.0,
+			"the opening reveal's LENGTH tracks wall_reveal_delay_scale",
+			"scale 4.0 took %d ms, scale 0.1 took %d ms" % [slow_ms, fast_ms])
+	check(main._current_focus == &"",
+			"...and a reveal ends in wall view", str(main._current_focus))
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_save(suite_tag())
+	restore_real_settings()
+
+## Runs one opening reveal at `scale` through `_on_new_run()` and returns its length in ms.
+func _time_opening_reveal(main: Main, scale: float) -> int:
+	SettingsManager.settings.wall_reveal_delay_scale = scale
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	var started := Time.get_ticks_msec()
+	_drive(func() -> void:
+			await main._on_new_run([] as Array[CardData], [] as Array[CardData]), done)
+	while not done[0] and Time.get_ticks_msec() - started < 20000:
+		await get_tree().process_frame
+	return Time.get_ticks_msec() - started
 
 ## The info zoom runs on `wall_info_zoom_scale`, not on the plain transition clock.
 ##

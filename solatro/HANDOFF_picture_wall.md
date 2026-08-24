@@ -166,6 +166,36 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
     the texture-filter update and the selection repeat bail on that -- silently. The soak now
     guards it directly.
 
+- id: S52
+  description: >
+    The wall editor opened at a ROUNDED preview_aspect (1.7778), which lands 1.4e-05 past
+    is_equal_approx -- so focused_scale() applied its 2% overfill margin at what is really a
+    matching aspect and cropped real UI. It made start_menu look like its button row overflowed,
+    which it does not (widest content ends at x=1148 of 1152).
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Red-then-green: neutralised, the soak reports "1.77780000 vs 1.77777778". preview_aspect
+    is now seeded from the live window in _ready().'
+  notes: >
+    Generalises: any caller handing WallPacker a rounded aspect rather than window.x / window.y
+    crops 2% off every focused picture. Main computes it exactly, so the game was never affected.
+
+- id: S53
+  description: >
+    Bug hunt through authoring extremes an author can reach but no fixture had used --
+    size_multiplier 0.05 and 8.0, a frame thicker than its own picture, keep_aspect at a 3.0
+    window, and a 16x9 design size. No defects found; the cases are now guarded.
+  files_touched: [solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Soak 83 checks / 0 problems, asserting non-overlap, finite rects and the
+    wall_view_min_texture_px floor at each extreme. 17_fat_frame.png confirms the case is not
+    vacuous -- a real 400px frame renders and pushes its neighbours away.'
+  notes: ''
+
 - id: S51
   description: >
     CONFIRMED DEFECT IN THE SHIPPED GAME: every unfocused picture shows an enlarged top-left CROP
@@ -176,27 +206,31 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
   files_touched: [solatro/UI/Wall/wall_picture.gd]
   verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
   verification_kind: snapshot
-  status: pending
-  evidence: 'Soak prints "WALL-VIEW RESOLUTION: (1152, 648) design -> (385, 216) footprint (33% of
-    each axis)"; 16_wall_view_resolution.png shows a giant "S" where the start menu should be,
-    against 01_defaults.png which is correct at full design size.'
+  status: done
+  evidence: >
+    Fixed with SubViewport.size_2d_override = design_size + size_2d_override_stretch, so the screen
+    LAYS OUT at design size and RENDERS into the footprint. Rendered and read by eye: the whole
+    start menu, board and map now appear scaled down where a giant "S" used to be. Red-then-green:
+    neutralised, the soak reports "override (0, 0), size (385, 216)" on two checks.
   notes: >
-    Likely fix: SubViewport.size_2d_override = design_size with size_2d_override_stretch = true, so
-    the screen LAYS OUT at design size and RENDERS into the smaller target. Untried. Needs a by-eye
-    pass, and it changes how every picture on the wall renders. Until it lands,
-    wall_view_min_texture_px is tuning the resolution of a crop.
+    focus() CLEARS the override, because a focused picture renders 1:1 and WallInput.route() maps
+    into a plain viewport -- a stale override would displace every click inside a focused screen.
+    Guarded by the soak in both directions.
 
 - id: S50
   description: >
-    wall_reveal_delay_scale has no SUITE test. It is now previewable (S49's play_reveal button) and
-    the soak asserts its duration ratio, but nothing in all_tests covers Main's own opening reveal.
-  files_touched: [solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_pause.gd]
+    wall_reveal_delay_scale had no SUITE test -- nothing covered Main's own opening reveal. Added
+    one that drives _on_new_run() (the REAL call site, not _go_to_wall_view directly) at two scales
+    and compares the measured durations.
+  files_touched: [solatro/Tests/Wall/test_wall_pause.gd]
   verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
   verification_kind: suite
-  status: pending
-  evidence: 'grep: only Main._on_new_run()/_on_continue() read it; no Tests/Wall file mentions it.'
-  notes: 'The duration-ratio shape S48 landed for wall_info_zoom_scale applies directly -- and note
-    S48 first shipped a WEAKER form that passed with the knob ignored.'
+  status: done
+  evidence: 'Red-then-green: with both Main call sites neutralised the check reports
+    "scale 4.0 took 762 ms, scale 0.1 took 811 ms" -- a constant clock.'
+  notes: 'Driven through _on_new_run(), not _go_to_wall_view(): the helper would prove the parameter
+    is plumbed and say nothing about whether the launch path passes the knob at all, which is
+    exactly the gap that left this knob unread.'
 ```
 
 ## Verified vs assumed

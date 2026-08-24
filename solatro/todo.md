@@ -345,20 +345,13 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   makes it more pronounced. Wants an owner look at real renders before anything builds on it.
 - **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
   a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).
-- 🔴 **CONFIRMED: every unfocused picture on the wall shows an enlarged TOP-LEFT CROP of its
-  screen, not the screen.** Measured: `update_wall_view_size()` takes the render target from
-  1152x648 to 385x216 (33% per axis) and the screen does not re-flow into it — the start menu shows
-  a giant "S", the board shows "Deck / Goal: 1" at four times size. **This is the shipped game, not
-  a tool artefact:** `Main._build_pictures()`, `_repack_wall()` and `_on_window_resized()` all make
-  the identical call on every non-focused picture, at cold launch and on every re-pack.
-  Reproduce: `Tests/Visual/wall_editor_soak.tscn`, read `16_wall_view_resolution.png` against
-  `01_defaults.png`. Likely fix: `SubViewport.size_2d_override = design_size` with
-  `size_2d_override_stretch = true`, so the screen LAYS OUT at its design size and RENDERS into the
-  smaller target — untried, and it needs a by-eye pass. Until then `wall_view_min_texture_px` is
-  tuning the resolution of a crop.
-- **`start_menu`'s button row overflows its own picture** — at a focused rest pose the `Profile` and
-  `Language` buttons are clipped by the window edge. A `menu.tscn` layout issue, not a wall one,
-  but the wall is where it becomes visible. See `Tools/wall_editor.tscn`, `preview_focus_id`.
+- ⚠ **`start_menu` does NOT overflow its picture — an earlier note here said it did and was wrong.**
+  Its widest content ends at x=1148 of a 1152 design width. The clipping seen in the tool was the
+  tool's own rounded `preview_aspect` default (1.7778) landing 1.4e-05 past `is_equal_approx`, so
+  `focused_scale()` applied its 2% overfill margin at what is really a matching aspect. Fixed by
+  seeding `preview_aspect` from the live window. **The lesson generalises: any caller that hands
+  `WallPacker` a rounded aspect instead of `window.x / window.y` will crop 2% off every focused
+  picture.** `Main` computes it exactly, so the game is unaffected.
 - **Nothing has ever HEARD a wall transition** — no `PictureEntry.music` is authored on any entry,
   so the crossfade has never had a stream to blend. The machinery is now previewable (the tool hosts
   the real `Wall`, and `_move_to()` drives `begin_music_crossfade()`/`update_travel_music()`/

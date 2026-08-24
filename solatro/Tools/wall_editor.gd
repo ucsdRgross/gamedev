@@ -76,6 +76,12 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 
 ## Window aspect ratio to pack against. The range runs well outside `WallLayout`'s own ellipse
 ## clamps so the clamping itself is visible at the extremes.
+##
+## ⚠ SEEDED FROM THE LIVE WINDOW in `_ready()`, never left at a rounded literal. `focused_scale()`
+## skips its overfill margin only when the two axis ratios are EXACTLY equal, and a rounded aspect
+## misses that by ~1.4e-05 — just past `is_equal_approx` — so the margin fires and crops 2% off a
+## focused picture that the game shows uncropped. Measured: the start menu's `Profile` and
+## `Language` buttons lost their outer edges, which reads as a menu-layout bug and is not one.
 @export_range(0.5, 4.0, 0.01) var preview_aspect : float = 1.7778:
 	set(v):
 		preview_aspect = v
@@ -266,6 +272,8 @@ func _ready() -> void:
 	# opt out, exactly as `Wall`, `%Camera2D` and `%Overlay` do in `wall.tscn`.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_previous_editor_settings = WallPicture.editor_settings
+	var window := _viewport_size()
+	if window.y > 0.0: preview_aspect = window.x / window.y
 	_apply_preview_settings()
 	_build_preview_scaffold()
 	if layout:

@@ -38,6 +38,7 @@ func _ready() -> void:
 	await _case_reduced_motion()
 	await _case_the_real_wall_is_what_is_hosted()
 	await _case_wall_view_render_resolution()
+	await _case_authoring_extremes()
 
 	print("\n======== WALL EDITOR SOAK: %d checks, %d problem(s) ========" % [_checks, _problems.size()])
 	for line : String in _problems:
@@ -58,6 +59,13 @@ func _case_defaults_on_open() -> void:
 			"%s -> %s" % [_editor.preview_source_id, _editor.preview_dest_id])
 	_check(_editor.preview_source_id != _editor.preview_dest_id,
 			"...and the seeded pair is two DIFFERENT pictures")
+	# ⚠ The default must be the LIVE window aspect, not a rounded literal: `focused_scale()` skips
+	# its overfill margin only on EXACT ratio equality, so a rounded default crops 2% off every
+	# focused picture and makes real UI look like it overflows.
+	var window := Vector2(get_viewport().get_visible_rect().size)
+	_check(is_equal_approx(_editor.preview_aspect, window.x / window.y),
+			"preview_aspect opens at the REAL window aspect, not a rounded literal",
+			"%.8f vs %.8f" % [_editor.preview_aspect, window.x / window.y])
 	_check(_overlay() != null, "the real overlay exists")
 	_check(_info_card() != null, "the real info card exists")
 	_shot("01_defaults")
@@ -218,6 +226,17 @@ func _case_extreme_knobs() -> void:
 	_check(_visible_rect_inside_picture(_editor.layout.home_id),
 			"a focused picture at rest covers the whole window -- no frame at any edge",
 			_coverage_detail(_editor.layout.home_id))
+	# ⚠ AT A MATCHING ASPECT THE MARGIN MUST NOT FIRE. `focused_scale()` only skips it on EXACT
+	# ratio equality, and a rounded `preview_aspect` misses that by ~1.4e-05 -- so the picture gets
+	# cropped 2% and real UI loses its outer edges, which the game never does.
+	var window := Vector2(get_viewport().get_visible_rect().size)
+	_editor.preview_aspect = window.x / window.y
+	await _settle()
+	var rect := _editor._rect_for(_editor.layout.home_id)
+	var visible := _camera_visible_rect()
+	_check(is_equal_approx(visible.size.x, rect.size.x) and is_equal_approx(visible.size.y, rect.size.y),
+			"at a matching aspect a focused picture is shown WHOLE -- no overfill crop",
+			"visible %s vs picture %s" % [visible.size, rect.size])
 	_editor.preview_settings.wall_overfill_margin = 1.25
 	await _settle()
 	_shot("09_overfill_1.25_focused")
@@ -383,9 +402,101 @@ func _case_wall_view_render_resolution() -> void:
 	print("  WALL-VIEW RESOLUTION: %s design -> %s footprint (%.0f%% of each axis)"
 			% [before, after,
 			100.0 * float(after.x) / maxf(float(before.x), 1.0)])
+	# ⚠ THE GUARD FOR THE CROP. `size` is the render RESOLUTION; `size_2d_override` is what keeps
+	# the CANVAS at design size so the screen shrinks instead of showing its top-left corner.
+	# Without it a 1152x648 start menu rendered as a giant "S" at this target.
+	var vp : SubViewport = (_editor._preview_pictures[home] as WallPicture).viewport
+	_check(vp.size_2d_override == Vector2i(1152, 648),
+			"an unfocused picture LAYS OUT at design size while rendering at its footprint",
+			"override %s, size %s" % [vp.size_2d_override, vp.size])
+	_check(vp.size_2d_override_stretch,
+			"...and the override actually stretches onto the render target")
 	_shot("16_wall_view_resolution")
+
+	# Focused renders 1:1, so the override must be OFF -- `WallInput.route()` maps into a plain
+	# viewport and a stale override would displace every click inside a focused screen.
+	await _editor._move_to(home)
+	var focused_vp : SubViewport = (_editor._preview_pictures[home] as WallPicture).viewport
+	_check(focused_vp.size_2d_override == Vector2i.ZERO,
+			"a FOCUSED picture clears the override -- input routing depends on it",
+			str(focused_vp.size_2d_override))
+	await _editor._move_to(&"")
 	_editor.preview_wall_view_resolution = false
 	await _settle()
+
+## Values an AUTHOR can reach through the Inspector but no fixture has ever used. Each one is a
+## field on `PictureEntry`, so any of them can be typed into `layout_default.tres` tomorrow.
+func _case_authoring_extremes() -> void:
+	await _editor._move_to(&"")
+	var entry : PictureEntry = _editor.layout.pictures[0]
+	var keep := {"size": entry.size_multiplier, "design": entry.design_size,
+			"frame": entry.frame_px, "aspect": entry.keep_aspect}
+
+	for mult : float in [0.05, 8.0]:
+		entry.size_multiplier = mult
+		_editor._repack()
+		await _settle()
+		_check(_editor._last_rects.size() == _editor.unlocked_ids.size(),
+				"every picture still packs at size_multiplier %.2f" % mult)
+		_check(not _overlapping(), "...and none overlap at size_multiplier %.2f" % mult)
+		_check(_finite_rects(), "...and every rect is finite at size_multiplier %.2f" % mult)
+	entry.size_multiplier = keep["size"]
+
+	# A frame thicker than the picture it surrounds -- the packer measures gaps against frame OUTER
+	# rects, so this is the case where the frame, not the picture, decides the layout.
+	entry.frame_px = Vector4(400, 400, 400, 400)
+	_editor._repack()
+	await _settle()
+	_check(not _overlapping(), "a frame thicker than its picture still packs without overlap")
+	_check(_finite_rects(), "...and produces finite rects")
+	_shot("17_fat_frame")
+	entry.frame_px = keep["frame"]
+
+	# keep_aspect: the picture must NOT stretch to the window, at an aspect far from its own.
+	entry.keep_aspect = true
+	_editor.preview_aspect = 3.0
+	_editor._repack()
+	await _settle()
+	var rect := _editor._rect_for(entry.id)
+	_check(rect != null and is_equal_approx(rect.size.x / rect.size.y,
+			float(entry.design_size.x) / float(entry.design_size.y)),
+			"keep_aspect holds the AUTHORED aspect at a 3.0 window",
+			"%s vs design %s" % [rect.size if rect else "null", entry.design_size])
+	_shot("18_keep_aspect")
+	entry.keep_aspect = keep["aspect"]
+
+	# A tiny design size: the render target must still clear wall_view_min_texture_px.
+	entry.design_size = Vector2i(16, 9)
+	_editor._repack()
+	await _settle()
+	var wp : WallPicture = _editor._preview_pictures[entry.id]
+	var floor_px : int = _editor.preview_settings.wall_view_min_texture_px
+	_check(wp.viewport.size.x >= 1 and wp.viewport.size.y >= 1,
+			"a 16x9 design size never asks the GPU for a degenerate target",
+			str(wp.viewport.size))
+	_editor.preview_wall_view_resolution = true
+	await _settle()
+	wp = _editor._preview_pictures[entry.id]
+	_check(wp.viewport.size.x >= floor_px and wp.viewport.size.y >= floor_px,
+			"...and wall_view_min_texture_px is the floor it clamps to",
+			"%s vs floor %d" % [wp.viewport.size, floor_px])
+	_editor.preview_wall_view_resolution = false
+	entry.design_size = keep["design"]
+	_editor.preview_aspect = _window_aspect()
+	_editor._repack()
+	await _settle()
+
+func _window_aspect() -> float:
+	var w := Vector2(get_viewport().get_visible_rect().size)
+	return w.x / w.y if w.y > 0.0 else 1.0
+
+func _finite_rects() -> bool:
+	for rect : PictureRect in _editor._last_rects:
+		if not (is_finite(rect.centre.x) and is_finite(rect.centre.y)
+				and is_finite(rect.size.x) and is_finite(rect.size.y)):
+			return false
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0: return false
+	return true
 
 func _all_ids() -> Array[StringName]:
 	var out : Array[StringName] = []
