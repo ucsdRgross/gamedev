@@ -5,81 +5,55 @@ metadata:
   type: feedback
 ---
 
-**When a fact gets a SECOND representation, write the check that compares them — at that moment, not
-after it bites.** Re-reading does not work and has now demonstrably not worked eight times.
+**When a fact gets a SECOND representation, write the check that compares them — at that moment,
+not after it bites.** Re-reading does not work; it has demonstrably not worked eight times.
 
 ## The measurement
 
-Every gap filed on the Solatro spotlight stream, plus every non-gap miss in its review session,
-fits one table. The columns are two places that had to agree; the last column is always the same.
+Every gap filed on the spotlight stream, plus every non-gap miss in its review, fits one table: two
+places that had to agree, and a third column that always read *nothing*. A chart's polarity vs a
+plan's default; an answer vs the code; a doc's knob table vs the shipped properties; an exit code
+vs the pixels; a still frame vs movement over time; a tool's `--shoot-all` vs its `--verify`.
 
-| Miss | Representation A | Representation B | Compared by |
-|---|---|---|---|
-| GAP-001 | chart A8's polarity | `PLAN` §1.4's default | nothing |
-| GAP-003 | chart O11's premise | `Q134`/`Q135`/`Q214` | nothing |
-| GAP-004 | `Q73` dims the HUD | `Q74`–`Q76` exempt things above it | nothing |
-| GAP-005 | `Q246` filters the CUE | `Q16`/chart E drive the BEAM | nothing |
-| GAP-006 | `QR2`=(d) | `Q16`'s free text, `Q82` stranded | nothing |
-| GAP-007 | `Q176` (form) | `Q174`/`Q175` (fidelity) | nothing |
-| GAP-008 | `Q111`'s mechanism | `Q111`'s own stated rationale | nothing |
-| `Q85` | the answer | `SpotlightDirector`'s code | nothing |
-| §16 knob table | the design table | the shipped properties | nothing |
-| column reveal | chart D4, `Q46`, `Q52` | an invented `return -1` | nothing |
-| blank PNG ×2 | exit code 0 | the pixels | nothing |
-| dead cascade | a still frame | movement over time | nothing |
-| tool disagreement | `--shoot-all` | `--verify` | nothing |
+⚠ **NOT ONE was "the agent did not read it".** Two were read in-session and contradicted an hour
+later. **The failure is BINDING, not reading** — a 2400-line design re-read at session start binds
+nothing to the line of code written later.
 
-⚠ **NOT ONE of these is "the agent did not read it".** `Q85` and §16 were both read in-session and
-then contradicted an hour later. The failure is **binding**, not reading — and a 2400-line design
-re-read at session start binds nothing to the line of code written later.
-
-## The sub-pattern that explains why they survive review
-
-⚠ **The two things that disagree are almost always of DIFFERENT KINDS.** A chart vs an answer, a doc
-table vs a property list, an exit code vs a pixel, an answer vs its own rationale. **Same-kind
-disagreements get caught** — two answers that conflict are noticed, because one tool reads both.
-Cross-kind ones survive indefinitely because **no single tool reads both representations**, so there
-is no place the contradiction can surface.
+⚠ **The two things that disagree are almost always of DIFFERENT KINDS.** Same-kind disagreements get
+caught, because one tool reads both. Cross-kind ones survive indefinitely because no single tool
+reads both representations, so the contradiction has nowhere to surface.
 
 ## How to apply
 
-1. **At the moment you create the second representation, write the comparison.** Adding a knob table
-   to a doc? The test that asserts each row resolves goes in the same commit. Adding a tool that
-   mirrors shipped behaviour? The assertion that both use one source goes in with it.
-2. **Prefer deleting the second representation.** The best seam check is no seam: `circle_radius` as
-   a `const` AND a §16 row was two truths; one `FxSpotlightStyle` property is one. `CardVisual.
-   spotlight_center()` beats an offset copied into the director.
-3. **Existing seam checks on this repo, as precedent** — `test_the_design_16_knob_table_is_implemented`
-   (doc table ↔ properties), the glow/light uniform-seam tests (style writes ↔ shader declares),
-   `designloop check`'s `unclaimed` (answers ↔ plan steps), `dag audit` and `stale` (answers ↔
-   charts), G1.7 (headless ↔ windowed logs), the engine-error scan (stderr ↔ the suite banner).
-4. **An answer that states BOTH a mechanism and a reason is two representations.** `Q111`=(a) said
-   "nearest" *because* "non-crossing", and on a column the mechanism defeats the reason. When
-   implementing, check the mechanism still produces the reason in the case at hand — GAP-008.
+1. **Create a second representation → write the comparison in the same commit.** A knob table in a
+   doc? The test asserting each row resolves ships with it.
+2. **Better: delete the second representation.** The best seam check is no seam — one
+   `FxSpotlightStyle` property beats a `const` plus a doc row.
+3. **Precedent here:** `test_the_design_16_knob_table_is_implemented` (doc table ↔ properties), the
+   glow/light uniform-seam tests (style writes ↔ shader declares), `designloop check`'s `unclaimed`
+   (answers ↔ plan steps), the engine-error scan (stderr ↔ suite banner), `doc_check.py`
+   (docs ↔ disk).
+4. **An answer stating BOTH a mechanism and a reason is two representations.** "Nearest" *because*
+   "non-crossing" — on a column the mechanism defeats the reason. Check the mechanism still produces
+   the reason in the case at hand.
 
-## The variant that bit twice in one day: a rule stated with an EXAMPLE
+## A rule stated with an EXAMPLE is two representations
 
-⚠ **When a rule arrives with a worked example, the example is one representation and the general rule
-is another — and they can differ.** GAP-008: the owner's fan was described for a single column
-(*"middle of top gets first `-1-`, 2nd row gets `-212-`"*). I implemented "partition the bar by ROW",
-which reproduces the example exactly and is wrong for every other shape; on a set with depths
-interleaved across columns it inverted the x order and produced three crossings. The correct reading
-was "partition by COLUMN, fan by depth inside each".
+⚠ The example and the general rule can differ. A fan described for one column
+(*"middle of top gets first `-1-`, 2nd row gets `-212-`"*) admits "partition by ROW", which
+reproduces the example exactly and is wrong for every other shape — on interleaved depths it
+inverted the x order. The right reading was "partition by COLUMN, fan by depth inside each".
 
-⚠ **The test did not catch it because I tested the two shapes the rule was DESCRIBED with — a column
-and a row — and both readings agree on those.** Only an interleaved set separates them, and that was
-the one case with no test. **When implementing a rule from an example, the test that matters is the
-case the example does not cover**; write down which readings you were choosing between, and test the
-input that tells them apart.
+⚠ **Testing the shapes the rule was DESCRIBED with proves nothing: every candidate reading agrees on
+those.** Write down which readings you were choosing between, and test the input that separates them
+— the case the example does not cover.
 
-## The evidence hierarchy, and the part that is new
+## Evidence hierarchy
 
 **green suite < printed counts < a rendered pixel < movement measured over time.**
 
-⚠ **[[verify-visuals-by-eye]] is necessary and NOT sufficient: a still frame cannot show a pulse, a
-travel, a retire, or a cascade that never advances.** Three misses in one session were invisible to a
-PNG by construction — the per-section pulse, the retire beat throwing every frame, and a cascade
-stuck on section 0 — because a still of a working loop and a still of a dead one are identical.
-**Anything with a DURATION needs an instrument that samples over time**, and it should report what
-MOVED (`sections=4/4 show_flips=14 max_dim=0.75`) rather than that it did not crash.
-`Tools/spotlight_tool.tscn -- --verify` is this repo's example.
+⚠ **[[verify-visuals-by-eye]] is necessary and NOT sufficient.** A still cannot show a pulse, a
+travel, a retire, or a cascade that never advances — a still of a working loop and of a dead one are
+identical. Three misses in one session were invisible to a PNG by construction. **Anything with a
+DURATION needs an instrument that samples over time**, reporting what MOVED
+(`sections=4/4 show_flips=14 max_dim=0.75`), not that it did not crash.

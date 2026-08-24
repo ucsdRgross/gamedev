@@ -82,6 +82,24 @@ HISTORY_PHRASE = re.compile(
     r"cost (me|us|\w+) (a|an|\d+|two|three|several)|wasted|for a whole phase|"
     r"I (had|was|filed|took|reasoned)|we (forgot|assumed)|turned out to be|"
     r"was purged|has been (renamed|retired) )", re.I)
+# A DESIGN-PROCESS ID: a questionnaire answer, a gap file, a plan step, a flowchart node, or the
+# design documents themselves. These name a conversation the reader of the code cannot see and
+# which the code outlives. State the RULE the answer produced; the design docs keep the provenance.
+DESIGN_ID = re.compile(
+    r"(?<![\w-])(Q\d{1,3}|QR\d{1,2}|GAP-\d{3}|"
+    r"PLAN\.md|DESIGN\.md|TEST_PLAN\.md|NAMES\.md|ASSUMPTIONS\.md)(?![\w-])")
+# The same ids inside a STRING LITERAL — an Inspector group label, a button caption, a localisation
+# value. A layering breach, not a style nit: it puts the design conversation on screen in front of
+# someone with no way to read it. Always an error, never summarised.
+DESIGN_ID_IN_STRING = re.compile(
+    r"""["']([^"'\n]*(?<![\w-])(?:Q\d{1,3}|QR\d{1,2}|GAP-\d{3})(?![\w-])[^"'\n]*)["']""")
+# ⚠ Two exemptions from BOTH design-id checks. TEST files: a test's job is defending one decision,
+# so naming it — in an assertion message or the comment above it — says which decision just broke,
+# and nobody outside the suite reads either. DESIGNLOOP: question ids are that project's SUBJECT
+# MATTER, so there is no other layer for them to leak from.
+DESIGN_ID_SKIP = ("Tests/", "/test/", "/tests/", "designloop/")
+# This file defines the patterns, so it necessarily contains examples of them.
+SELF = ".claude/tools/doc_check.py"
 
 errors: list[str] = []
 warns: list[str] = []
@@ -267,8 +285,9 @@ def check_changed(paths: list[Path], names: set[str]) -> None:
 
     ⚠ **STYLE FINDINGS ARE DELIBERATELY EXCLUDED.** This runs unattended at a task boundary, and the
     repo carries a standing backlog of hundreds of dated and over-long comments (todo.md). Reporting
-    those on every edit trains the reader to skip the report, which costs the two findings that are
-    always real: a reference that resolves to nothing, and an absolute path.
+    those on every edit trains the reader to skip the report, which costs the findings that are
+    always real: a reference that resolves to nothing, an absolute path, and a design-process id
+    that has escaped into the code.
     """
     docs = [p for p in paths if p.suffix == ".md"]
     code = [p for p in paths if p.suffix in {".gd", ".gdshader", ".mjs", ".py"}]
@@ -276,7 +295,14 @@ def check_changed(paths: list[Path], names: set[str]) -> None:
         check_file_refs(docs, names)
         check_abs_paths(docs)
     for path in code:
+        for i, text in design_ids_in_strings(path):
+            err(f"{rel(path)}:{i}: the string \"{text}\" carries a design-process id — it reaches "
+                f"a reader who cannot look it up")
         for i, text in comment_lines(path):
+            m = None if design_id_exempt(path) else DESIGN_ID.search(text)
+            if m:
+                err(f"{rel(path)}:{i}: cites '{m.group(0)}' — a design-process id names a document "
+                    f"the reader of this code cannot see; state the RULE instead")
             m = ABSPATH.search(text)
             if m:
                 err(f"{rel(path)}:{i}: hard-codes '{m.group(0)}' — machine-profiles.md is the only "
@@ -296,6 +322,29 @@ def check_changed(paths: list[Path], names: set[str]) -> None:
                     continue
                 if base not in names:
                     err(f"{rel(path)}:{i}: references '{ref}', which does not exist")
+
+
+def design_id_exempt(path: Path) -> bool:
+    return rel(path) == SELF or any(k in path.as_posix() for k in DESIGN_ID_SKIP)
+
+
+def design_ids_in_strings(path: Path) -> list[tuple[int, str]]:
+    """(line, text) for every design-process id inside a string literal — the layering breach.
+
+    An `@export_group("Content mode (GAP-017=c)")` is an Inspector heading; a localisation value is
+    a caption. Either way the design conversation ends up on screen in front of someone with no
+    access to it. See DESIGN_ID_STRING_SKIP for the two exemptions.
+    """
+    if design_id_exempt(path):
+        return []
+    out = []
+    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        if raw.strip().startswith(("#", "//", "*")):
+            continue
+        m = DESIGN_ID_IN_STRING.search(raw)
+        if m:
+            out.append((i, m.group(1)[:60]))
+    return out
 
 
 def code_files() -> list[Path]:
@@ -344,6 +393,8 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
     def style_hit(kind: str, detail: str) -> None:
         style.setdefault(kind, []).append(detail)
     for path in files:
+        for i, text in design_ids_in_strings(path):
+            style_hit("design id in a string", f"{rel(path)}:{i}: {text}")
         comments = comment_lines(path)
         commented = {i for i, _ in comments}
 
@@ -364,6 +415,9 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
                 style_hit("dated", f"{rel(path)}:{i}")
             if HISTORY_PHRASE.search(text):
                 style_hit("history", f"{rel(path)}:{i}: {text[:70]}")
+            m = None if design_id_exempt(path) else DESIGN_ID.search(text)
+            if m:
+                style_hit("design id", f"{rel(path)}:{i} cites {m.group(0)}")
             m = LINE_REF.search(text)
             if m:
                 style_hit("line ref", f"{rel(path)}:{i} cites {m.group(0)}")
@@ -416,8 +470,12 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
         "long block": f"over {COMMENT_BLOCK_MAX} lines — say what it is FOR, point at the doc",
         "line ref": "a line number is a dead reference waiting to happen; name the symbol",
         "restated": "state it once, point at that name from the other site",
+        "design id": "names a doc the code's reader cannot see; state the rule the answer produced",
+        "design id in a string": "on screen in front of a reader who cannot look it up — a "
+                                 "layering breach, not a style nit",
     }
-    for kind in ("restated", "line ref", "history", "long block", "dated"):
+    for kind in ("design id in a string", "design id", "restated", "line ref", "history",
+                 "long block", "dated"):
         hits = style.get(kind)
         if not hits:
             continue

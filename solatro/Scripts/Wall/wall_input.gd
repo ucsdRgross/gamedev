@@ -1,55 +1,40 @@
 class_name WallInput
 extends RefCounted
-## Converts a wall-space event to the focused picture's SubViewport space and hands it over
-## (NAMES.md; PLAN.md §1.9). GAP-001=b: SubViewportContainer is documented as distorting when
-## scaled, and the camera scales every picture continuously, so this routing is ours, never the
-## engine's.
+## Converts a wall-space event to the focused picture's SubViewport space and hands it over.
+## `SubViewportContainer` distorts when scaled and the camera scales every picture continuously,
+## so this routing is ours, never the engine's.
 ##
-## The wall calls this from its own `_unhandled_input` ONLY (never `_input`), so a focused screen's
-## own Controls always get FIRST REFUSAL (Q100=a) -- the same `_unhandled_input` pattern
-## `world_map_controller.gd:217` already uses. That wiring lives on `Wall` itself
-## (`UI/Wall/wall.gd:_unhandled_input`) -- NAMES.md scopes THIS class to routing alone; S19 pins
-## `route()`'s own contract directly.
+## `Wall` calls this from `_unhandled_input` only, never `_input`, so a focused screen's own
+## Controls get first refusal.
 
-## Q95=a (I2): only the FOCUSED picture is ever routed to. A non-focused `picture`'s SubViewport
-## never receives `push_input` from here, regardless of where `event` targets in wall space --
-## returns false outright, before touching the viewport at all.
+## Routes `event` into `picture` if it is focused. A non-focused picture's SubViewport never
+## receives `push_input` from here, wherever the event targets in wall space.
 static func route(event: InputEvent, picture: WallPicture) -> bool:
 	if not picture.is_focused: return false
 	var screen : Sprite2D = picture.get_node(^"%Screen")
 	if not screen.texture: return false
-	# The %Screen sprite's own global-transform-with-canvas inverse, and NOTHING ELSE. A centred
-	# Sprite2D's local space is already its texture's pixel space, and this texture is the
-	# SubViewport's own render target, so that inverse lands viewport pixels directly -- at
-	# whatever zoom the camera is currently at, which is the GAP-001 risk this class exists for.
+	# The %Screen sprite's global-transform-with-canvas inverse, and NOTHING ELSE. A centred
+	# Sprite2D's local space is already its texture's pixel space, and that texture is the
+	# SubViewport's render target, so the inverse lands viewport pixels directly at whatever zoom
+	# the camera is currently at.
 	#
-	# ⚠ PLAN.md §1.9 additionally specifies scaling that inverse by
-	# `SubViewport.size / (sprite.texture.get_size() * sprite.scale)`, and that formula is wrong at
-	# source. `sprite.texture` IS the render target, so `texture.get_size()` IS `viewport.size` and
-	# the whole expression reduces to `1.0 / sprite.scale` -- while the inverse has ALREADY removed
-	# that scale. It divided by the sprite's own scale twice, which is the identity only when that
-	# scale is exactly 1.0. `WallPacker` makes it 1.0 only at exactly 16:9, so every click inside a
-	# focused screen was displaced at any other window shape, by more the further from the screen's
-	# centre. Measured at aspect 1.6: viewport pixel (920, 115) arrived at (958.2, 115.0) and
-	# (64, 64) at (7.1, 64.0), while the exact centre was correct -- which is why a centre-clicking
-	# test never saw it. §1.9's formula is SUPERSEDED here, not simplified.
+	# ⚠ Do NOT additionally scale by `viewport.size / (texture.get_size() * sprite.scale)`. The
+	# texture IS the render target, so that expression reduces to `1.0 / sprite.scale` — which the
+	# inverse has already removed. Dividing by the sprite scale twice is the identity only at
+	# scale 1.0, which `WallPacker` produces only at exactly 16:9; at any other window shape every
+	# click lands displaced, further off the further it is from the screen centre. Measured at
+	# aspect 1.6: viewport pixel (920, 115) arrived at (958.2, 115.0). The centre stays correct,
+	# which is why a centre-clicking test cannot see it.
 	var local_event := event.xformed_by(
 			screen.get_global_transform_with_canvas().affine_inverse())
-	# %Screen is CENTERED (S10, §1.7's own construction) -- its own local origin (0,0) is the
-	# MIDDLE of the viewport's native pixel rect, not its top-left corner, so the transform above
-	# lands "sprite-centred" local coordinates for a POSITIONAL event. SubViewport.push_input(event,
-	# true) and every Control inside it read TOP-LEFT-origin viewport pixels, so it needs shifting
-	# by half the viewport's own size -- applied to the ALREADY-transformed position, not via
-	# xformed_by()'s own `local_ofs` parameter, which offsets BEFORE the transform (so it gets
-	# scaled by it too -- measured directly: Tests/Visual/wall_input_route_spike.gd showed the
-	# offset landing at half_vp/zoom, not a constant half_vp, when passed that way). Non-positional
-	# events (keyboard, actions) pass through xformed_by() unchanged and need no shift.
-	# ⚠ EVERY positional event, not just mouse ones. `InputEventScreenTouch` and
-	# `InputEventScreenDrag` carry a `position` too and do NOT descend from `InputEventMouse`, so a
-	# raw touch reached the focused screen offset by half a viewport. Masked on desktop by
-	# `emulate_mouse_from_touch` (which converts them before they ever get here) and invisible to
-	# every test, all of which feed mouse events -- but the wall's own pinch tracker reads real
-	# `InputEventScreenTouch`, so the raw ones do arrive on a touch device.
+	# %Screen is CENTERED, so its local origin is the MIDDLE of the viewport's pixel rect while
+	# `push_input` and every Control inside read TOP-LEFT-origin pixels. Shift by half the viewport
+	# size, applied to the ALREADY-transformed position — NOT via `xformed_by()`'s `local_ofs`,
+	# which offsets before the transform and so gets scaled by it (landing at half_vp/zoom).
+	# ⚠ EVERY positional event, not just mouse ones: `InputEventScreenTouch` and
+	# `InputEventScreenDrag` carry a `position` and do NOT descend from `InputEventMouse`. On
+	# desktop `emulate_mouse_from_touch` converts them first, so only a real touch device shows it.
+	# Non-positional events (keyboard, actions) need no shift.
 	var half_viewport := Vector2(picture.viewport.size) * 0.5
 	if local_event is InputEventMouse:
 		(local_event as InputEventMouse).position += half_viewport
@@ -60,12 +45,11 @@ static func route(event: InputEvent, picture: WallPicture) -> bool:
 	picture.viewport.push_input(local_event, true)
 	return true
 
-## GAP-004=b (I8c, §1.9's literal formula): the clamped touch-target size in px. `dpi` is passed in
-## rather than read from `DisplayServer.screen_get_dpi()` internally so a caller (or a test) can
-## supply a synthetic value. The live call site is `WallOverlay._apply_touch_targets()`, which grows
-## every overlay control to at least this size (M6 -- until then this function had no caller at all
-## and this comment named one that did not exist). THE CLAMP IS MANDATORY: DPI is unreliable on
-## multi-monitor Windows (primary screen's DPI reported for all) and on Android.
+## The clamped touch-target size in px, used by `WallOverlay._apply_touch_targets()` to grow every
+## overlay control. `dpi` is a parameter rather than an internal
+## `DisplayServer.screen_get_dpi()` call so a caller can supply a synthetic value.
+## ⚠ THE CLAMP IS MANDATORY: DPI is unreliable on multi-monitor Windows, which reports the primary
+## screen's DPI for all of them, and on Android.
 static func touch_target_px(dpi: float, settings: PlayerSettings) -> float:
 	return clampf(mm_to_px(settings.wall_touch_target_mm, dpi), settings.wall_touch_target_min_px,
 			settings.wall_touch_target_max_px)
@@ -75,26 +59,21 @@ static func touch_target_px(dpi: float, settings: PlayerSettings) -> float:
 static func mm_to_px(mm: float, dpi: float) -> float:
 	return mm / 25.4 * dpi
 
-## GAP-003=a (I8b): pinch is derived BY HAND from two tracked `InputEventScreenTouch` ids' distance
-## delta -- `InputEventMagnifyGesture` is NEVER listened for (`feed()` below simply does not match
-## on that event type, so it is structurally a no-op, not a skipped check). One instance tracks one
-## in-progress two-finger gesture; `Wall` owns the live one (`UI/Wall/wall.gd`'s `_pinch` field,
-## fed from `_unhandled_input`) -- NAMES.md only fixes `WallInput.route()`'s own contract, not this
-## nested class's identifiers.
+## Derives pinch BY HAND from two tracked `InputEventScreenTouch` ids' distance delta.
+## `InputEventMagnifyGesture` is never listened for — it does not fire on Windows. One instance
+## tracks one in-progress two-finger gesture; `Wall` owns the live one.
 class PinchTracker:
 	enum Gesture { NONE, PINCH_OUT, PINCH_IN }
 
 	var _ids : Array[int] = []
 	var _positions : Dictionary[int, Vector2] = {}
 	var _base_distance : float = 0.0
-	## Q119=a: pinch is a ONE-SHOT request (enter on pinch-out, wall view on pinch-in), like a
-	## button press, never a continuous stream -- latches once the threshold is first crossed and
-	## does not re-fire while the same two fingers keep moving further apart/together.
+	## Pinch is ONE-SHOT, like a button press, never a continuous stream: latches when the
+	## threshold is first crossed and does not re-fire while the same two fingers keep moving.
 	var _fired := false
 
 	## Feed one input event through the tracker; returns the gesture it just detected, if any.
-	## `threshold_px` is `settings.wall_pinch_threshold_px`, passed in rather than read off a stored
-	## settings reference so the tracker itself carries no dependency beyond `InputEvent` shapes.
+	## `threshold_px` is a parameter so the tracker carries no dependency beyond `InputEvent`.
 	func feed(event: InputEvent, threshold_px: float) -> Gesture:
 		if event is InputEventScreenTouch:
 			var t := event as InputEventScreenTouch
@@ -124,7 +103,6 @@ class PinchTracker:
 					if delta <= -threshold_px:
 						_fired = true
 						return Gesture.PINCH_IN
-		# Deliberately no branch for InputEventMagnifyGesture (GAP-003=a) -- it does not fire on
-		# Windows and must not be relied on; any event type this tracker does not recognise, that
-		# one included, falls through to here and changes nothing.
+		# Deliberately no branch for InputEventMagnifyGesture — it does not fire on Windows. Any
+		# unrecognised event type falls through here and changes nothing.
 		return Gesture.NONE

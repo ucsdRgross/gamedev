@@ -734,6 +734,13 @@ the thing, and it must carry every normative contract:
 Writing "the plan deliberately contains no implementation detail" is not restraint. It is an
 unfinished plan with a justification attached.
 
+⚠ **THE PLAN CARRIES THE IDS; THE CODE NEVER DOES.** Everything above says the plan quotes answers
+and cites node ids — and it should. But that stops at the plan's edge. A `Q183=a` or `GAP-017=c` in
+a comment, a doc comment, or an `@export_group("…")` label names a document the reader of the code
+cannot open, and Godot renders both of those last two as Inspector UI. **The code gets the RULE the
+answer produced.** Traceability is the plan's job, and `PLAN.md`'s `(implements …)` line is where
+the checker reads it. See [[design-ids-stay-out-of-code]].
+
 ⚠ **QUOTE A FREE-TEXT ANSWER; NEVER SUMMARISE IT.** An answer with no lettered option is prose, and
 the plan's habit of compressing everything into a contract line destroys it: Spotlight's `Q16` became
 *"Q16 whole act"* in the plan and *"stays set for the whole act"* in the design, and **both dropped

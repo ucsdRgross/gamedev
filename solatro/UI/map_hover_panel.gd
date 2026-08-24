@@ -31,17 +31,12 @@ var _engaged : bool = false
 # msec timestamp to hide at; < 0 = not scheduled.
 var _hide_at : float = -1.0
 
-## S29 (picture-wall, Q133=b): the SAME title/body text `show_for_node()` below builds, factored
-## out so `get_info()` can hand it to an `InfoEntry` without duplicating the role/biome/fame text
-## logic. `WorldGraphNode` is vendored (`addons/worldgen/`) and cannot itself implement
-## `get_info()` (§1.8-adjacent repo rule: vendored code is not edited), so this class -- the thing
-## that already knows how to read one -- stands in as the "hoverable" for Q133=b's purposes.
-## Returns `{"title": String, "body": String, "booster": BoosterTemplate}` (`booster` null unless
-## this is a booster node -- callers that care about the preview cards check it).
+## The title/body text for `node`, as `{"title": String, "body": String, "booster":
+## BoosterTemplate}` — `booster` is null unless this is a booster node. Shared by `get_info()` and
+## `show_for_node()` so the role/biome/fame logic exists once.
 ##
-## STATIC (like `get_info()`/`_populate_preview_visual()` below): none of the three read any
-## `self` state (no `title_label`/`%Cards`/etc), so a caller wanting only `get_info()` (`map.gd`'s
-## live hover routing) never needs to instantiate a whole `MapHoverPanel` scene just to reach it.
+## STATIC, like `get_info()` and `_populate_preview_visual()`: none of the three read `self`, so
+## reaching `get_info()` never means instantiating a whole `MapHoverPanel` scene.
 static func _describe_node(node: WorldGraphNode, run: RunState,
 		lap_target: WorldGraphNode) -> Dictionary:
 	var role : String = node.meta.get(MapNodeRoles.ROLE_KEY, "")
@@ -64,12 +59,11 @@ static func _describe_node(node: WorldGraphNode, run: RunState,
 		lines.append("3 acts to reach it — or the tour ends.")
 	return {"title": title, "body": "\n".join(lines), "booster": booster}
 
-## S29 (Q132=a, Q133=b, Q130, picture-wall): the map's own `get_info()` stand-in (see
-## `_describe_node()` above for why it lives here rather than on `WorldGraphNode`). For a booster
-## node, `entry.visual` is a FRESH `FlowContainer` -- "an optional COPY of the hovered thing"
-## (§1.11), never a live reference into this panel's own %Cards -- populated by the SAME
-## `CardsViewer` listing logic `_populate_cards()` below already uses, just aimed at this new
-## container instead. Every other node gets `visual = null` (nothing to preview).
+## A map node's `InfoEntry`. Lives here rather than on `WorldGraphNode`, which is vendored and so
+## not edited.
+## ⚠ For a booster node `entry.visual` is a FRESH `FlowContainer`, never a live reference into this
+## panel's own `%Cards`: the caller takes ownership of it and frees it. Every other node gets
+## `visual = null`.
 static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraphNode) -> InfoEntry:
 	var described := _describe_node(node, run, lap_target)
 	var entry := InfoEntry.new()
@@ -84,15 +78,13 @@ static func get_info(node: WorldGraphNode, run: RunState, lap_target: WorldGraph
 		entry.visual = null
 	return entry
 
-## Kicks off the SAME preview-card listing `_populate_cards()` uses (`CardsViewer`), aimed at
-## `container` instead of this panel's own `%Cards`. Deliberately NOT awaited by `get_info()`
-## itself, which must stay synchronous (PLAN.md §1.11's fixed `func get_info() -> InfoEntry`
-## signature has no `await`) -- safe in practice, not merely assumed: `_populate_cards()`'s own
-## comment already establishes that `get_possible_preview_cards()` never actually suspends today
-## (no mod implements an `on_get_possible_*` hook that would make it), so calling this coroutine
-## without awaiting it still runs it to completion SYNCHRONOUSLY before `get_info()`'s own caller
-## regains control, in this codebase as it stands. If a future mod ever makes it genuinely async,
-## `entry.visual` starts EMPTY and fills in a frame or two late, rather than being wrong.
+## The same preview-card listing `_populate_cards()` uses, aimed at `container` rather than this
+## panel's `%Cards`.
+## ⚠ Deliberately NOT awaited by `get_info()`, whose signature is synchronous. Safe because
+## `get_possible_preview_cards()` never actually suspends today — no mod implements a hook that
+## would make it — so this coroutine runs to completion before the caller regains control. If a
+## mod ever makes it genuinely async, `entry.visual` starts EMPTY and fills a frame late rather
+## than being wrong.
 static func _populate_preview_visual(container: Node, booster: BoosterTemplate) -> void:
 	var viewer := CardsViewer.new(container)
 	var cards := await booster.get_possible_preview_cards()

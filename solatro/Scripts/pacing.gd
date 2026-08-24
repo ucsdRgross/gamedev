@@ -1,14 +1,13 @@
 class_name Pacing
 extends RefCounted
-## Pause-respecting timer for game code (PLAN.md §1.6, D6, `Q75`=b) — not wall-specific, which is
-## why it lives here rather than under Scripts/Wall/.
+## Pause-respecting timer for game code. Not wall-specific, which is why it lives here rather
+## than under Scripts/Wall/.
 ##
-## ⚠ **Returns a NODE because a `SceneTreeTimer` cannot express the contract.** It has no node
-## binding: `process_always` keys on the TREE's pause flag, which §1.6 holds on for the whole
-## session — so `create_timer(secs, false)` never fires at all, in any screen. A `Timer` child obeys
-## its host's effective process mode, which is what makes a frozen screen's pacing freeze and a live
-## screen's run, and makes a screen frozen MID-WAIT resume with the time it had left (L4).
-## See PICTURE_WALL.md's landmine for the same rule from the wall's side.
+## ⚠ **Returns a NODE because a `SceneTreeTimer` cannot express the contract.** A scene-tree timer
+## has no node binding: `process_always` keys on the TREE's pause flag, which the wall holds on for
+## the whole session, so `create_timer(secs, false)` never fires in any screen. A `Timer` child
+## obeys its HOST's effective process mode — so a frozen screen's pacing freezes, a live screen's
+## runs, and a screen frozen mid-wait resumes with the time it had left.
 
 ## Godot rejects a `Timer.wait_time` of zero. This is the engine's floor, NOT a tunable: a caller
 ## asking for 0 means "next frame", and at any frame rate this delivers that.

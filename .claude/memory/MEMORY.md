@@ -13,6 +13,7 @@
 **Working agreements**
 - [No git staging](no-git-staging.md) — never `git add` or commit; the owner uses GitHub Desktop
 - [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments, kept short
+- [Design ids stay out of code](design-ids-stay-out-of-code.md) — no `Q183=a`/`GAP-017` in a comment, never in a user-facing string
 - [Verify visuals by eye](verify-visuals-by-eye.md) — describe the rendered image; a still cannot verify a duration
 - [No mocks in tools](no-mocks-in-tools.md) — harnesses host the real scene and real data
 - [General, not shape-specific](general-not-shape-specific.md) — no one-silhouette hacks; offer the general form first

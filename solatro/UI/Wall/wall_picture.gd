@@ -1,67 +1,71 @@
 @tool
-## S34 (Q185=a, §1j): the layout tool builds REAL `WallPicture` instances for its live preview
-## (Q180's own default, "no mocks in tools" -- CLAUDE.md rule 5) -- a non-`@tool` script would load
-## as a PLACEHOLDER the moment the tool's own scene is open in the editor, and calling `build()` on
-## a placeholder throws "Attempt to call a method on a placeholder instance" (the exact
-## `spotlight_tool.gd` lesson this repo already learned once for `spotlight_reveal_beat_fraction`).
+## ⚠ `@tool` because the layout tool builds REAL `WallPicture` instances for its live preview. A
+## non-`@tool` script loads as a PLACEHOLDER while that tool's scene is open in the editor, and
+## calling `build()` on a placeholder throws "Attempt to call a method on a placeholder instance".
 class_name WallPicture
 extends Node2D
-## One picture: frame + screen sprite + its own SubViewport (PLAN.md §1.7; NAMES.md). A Sprite2D
-## showing a ViewportTexture, never a SubViewportContainer (GAP-001=b -- N5 pins the absence).
+## One picture: frame + screen sprite + its own SubViewport. A `Sprite2D` showing a
+## `ViewportTexture`, never a `SubViewportContainer`, which distorts when scaled.
 ##
-## ⚠ THE SUBVIEWPORT IS NOT A CHILD OF THIS NODE. NAMES.md's `%Viewports` is a container that lives
-## once on `wall.tscn` itself, sibling to `%Pictures` (which is where WallPicture instances live) --
-## build() is handed that container and parents the SubViewport there, so this node's own children
-## are only %Shadow / %Frame / %Screen, exactly as NAMES.md fixes.
+## ⚠ THE SUBVIEWPORT IS NOT A CHILD OF THIS NODE. `%Viewports` lives once on `wall.tscn`, sibling
+## to `%Pictures`; `build()` is handed that container and parents the SubViewport there. This
+## node's own children are only %Shadow / %Frame / %Screen.
+
+## ⚠ PUBLIC so an editor-side tool can assign its own tunable instance and have every knob it
+## drags reach the real wall. Null in the shipped game, which then reads `SettingsManager`.
+##
+## ⚠ **THE OVERRIDE WINS IN BOTH CONTEXTS.** Making it editor-only is the bug `LightLayer` already
+## paid for: the moment a tool scene is PLAYED rather than previewed, the wall would silently read
+## the player's saved `settings.tres` while the tool's own panel kept showing its own resource —
+## two instances, two sets of numbers, and the preview stops being evidence about anything.
+static var editor_settings : PlayerSettings = null
+
+## Which `PlayerSettings` the wall reads. The ONE place that answers it: `Wall`, `InfoCard` and
+## `WallInput`'s callers all come through here rather than re-deriving the rule.
+static func settings() -> PlayerSettings:
+	if editor_settings: return editor_settings
+	return FxAttachment.settings()
 
 @onready var _shadow : Sprite2D = %Shadow
 @onready var _frame : NinePatchRect = %Frame
 @onready var _screen : Sprite2D = %Screen
 
-## The SubViewport build() creates for this picture -- exposed so a caller can free it explicitly
-## (it lives under `viewports_parent`, not under this node, so queue_free()ing this node alone
-## would leak it).
+## The SubViewport `build()` creates. Public so a caller can free it explicitly: it lives under
+## `viewports_parent`, so `queue_free()`ing this node alone would leak it.
 var viewport : SubViewport = null
 
-## §1.8's "focused / live" state, tracked so a caller can ask without re-deriving it. build()
-## leaves this false -- construction is the "never yet rendered" row, not the "focused" one.
+## Whether this is the live picture. Tracked so a caller can ask without re-deriving it.
+## `build()` leaves it false — construction is "never yet rendered", not "focused".
 var is_focused : bool = false
 
 ## Remembered from build() so focus() can restore full design resolution without needing the
 ## caller to hand PictureEntry back in every time.
 var _design_size : Vector2i
 
-## §1.6's "screen root" — entry.scene instantiated under `viewport`, or null if the entry had no
-## scene (Q214=a, e.g. &"book"). PROCESS_MODE_PAUSABLE by default (D3); focus()/unfocus() flip
-## exactly this node between ALWAYS and PAUSABLE (D4). Nothing else in the chain needs an explicit
-## override: WallPicture's own root is also explicit-PAUSABLE (wall_picture.tscn), so the ALWAYS
-## inherited from Wall/%Pictures/%Viewports is cut off at these two points, never reaching further.
+## `entry.scene` instantiated under `viewport`, or null when the entry has no scene.
+## `PROCESS_MODE_PAUSABLE` by default; `focus()`/`unfocus()` flip exactly this node between ALWAYS
+## and PAUSABLE. Nothing else in the chain needs an override: `WallPicture`'s own root is
+## explicitly PAUSABLE in the scene, so the ALWAYS inherited from Wall/%Pictures/%Viewports is cut
+## off at these two points and reaches no further.
 var screen_root : Node = null
 
-## The packed rect build() was given -- kept so a caller (S36's `Wall`: spatial selection, wall-view
-## framing/pan) can read id/centre/size/frame_px back without re-deriving them from this node's own
-## children. Not fixed by NAMES.md; same category as `screen_root` above (ASSUMPTIONS.md).
+## The packed rect `build()` was given, kept so a caller can read id/centre/size/frame_px back
+## without re-deriving them from this node's children.
 var rect : PictureRect = null
 
-## GAP-015 (owner-answered a, L3): the entry's own `background_texture`, remembered from build() so
-## `attach_screen()`/`detach_screen()` can show/hide it as `screen_root` comes and goes -- a live
-## screen always wins (it is freed/rebuilt by S31's own `attach_screen()`/`detach_screen()`
-## lifecycle, this field is just what "no GameView" falls back to). Null when the entry has none.
+## The entry's `background_texture`, remembered so `attach_screen()`/`detach_screen()` can show and
+## hide it as `screen_root` comes and goes. A live screen always wins; this is the fallback. Null
+## when the entry authored none.
 var _background_texture : Texture2D = null
 ## The Sprite2D actually showing `_background_texture` inside `viewport`, or null when there is
 ## none to show (no texture authored, or a live screen currently covers it).
 var _background : Sprite2D = null
 
-## S24 (QR4=b, GAP-013): the ONE shared frame texture every framed picture references -- a simple
-## beveled profile (light near the outer edge, dark near the inner edge closest to the picture),
-## generated once and cached, never per-picture. Placeholder art: QR4=b's own text defers "the
-## shader and art pass", so the actual pixels here are scaffolding, same category as
-## `Tests/Visual`'s `_swatch_texture()` helpers -- not an author-tunable number under §1.8, since
-## nothing downstream can vary it per picture (GAP-013 parks "colour" as unresolved; this is the
-## fallback all framed pictures share until that lands). `_FRAME_CORNER_PX` is the fixed corner
-## size (in TEXTURE pixels, not wall units) `%Frame`'s 9-slice patch margins are set to below --
-## it travels WITH the texture as one bundle, not a second knob that could drift out of sync with
-## the pixels it describes.
+## The ONE shared frame texture every framed picture references: a bevel profile, light at the
+## outer edge and dark at the inner, generated once and cached. Placeholder art pending a shader
+## and art pass, and not per-picture — `PictureEntry.frame_colour` is what varies per picture.
+## `_FRAME_CORNER_PX` is the 9-slice corner size in TEXTURE pixels, kept beside the texture it
+## describes rather than as a separate knob that could drift out of sync with these pixels.
 const _FRAME_TEXTURE_SIZE := 40
 const _FRAME_CORNER_PX := 14
 static var _shared_frame_texture : ImageTexture = null
@@ -88,23 +92,19 @@ static func _frame_corner_px(tex: Texture2D) -> int:
 	var smallest := mini(int(tex.get_width()), int(tex.get_height()))
 	return mini(_FRAME_CORNER_PX, smallest / 2)
 
-## Builds this picture from its packed rect and authored entry: sizes/positions %Frame to the rect
-## grown by frame_px (drawn first -- entirely outside the picture rect, Q38=a), creates this
-## picture's SubViewport (size = design_size, filter forced to NEAREST -- the trap this repo has
-## hit four times) and parents it under `viewports_parent`, then points %Screen and %Shadow at its
-## ViewportTexture. `entry.scene` may be null ("registered but unbuilt", Q214=a) -- the viewport
-## then simply renders nothing, which is correct and expected, not an error.
+## Builds this picture from its packed rect and authored entry: sizes %Frame to the rect grown by
+## `frame_px` (drawn entirely OUTSIDE the picture rect), creates the SubViewport under
+## `viewports_parent`, and points %Screen and %Shadow at its `ViewportTexture`.
 ##
-## S30 (B7, Q211=a, Q141=a): `live_screen`, when given, is an ALREADY-INSTANTIATED, PERSISTENT
-## node (`start_menu`/`map`/`deck` -- built once, kept alive for the whole session, never freed
-## and rebuilt) REPARENTED here rather than instantiated fresh from `entry.scene`. "Screens are
-## reparented unchanged" (PLAN §4 anti-scope item 1) -- this is the literal reparenting, not a
-## copy. Takes priority over `entry.scene` if both are somehow given (should never happen in
-## practice: an entry either owns a fresh-per-use scene, `game`/S31's own case, or a live screen
-## the caller already built -- never both).
+## `entry.scene` may be null — "registered but unbuilt". The viewport then renders nothing, which
+## is expected, not an error.
 ##
-## §1.8's "never yet rendered" row: every picture starts at UPDATE_ONCE regardless of eventual
-## focus (Q78=b) -- N3 pins that every texture is non-null before any focus() call happens.
+## `live_screen`, when given, is an ALREADY-INSTANTIATED, session-long node (start_menu / map /
+## deck) REPARENTED here rather than instantiated fresh from `entry.scene`, and takes priority over
+## it. An entry has one or the other, never both.
+##
+## Every picture starts at UPDATE_ONCE regardless of eventual focus, so every texture is non-null
+## before any `focus()` call.
 func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 		live_screen: Node = null) -> void:
 	rect = p_rect
@@ -113,8 +113,8 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 
 	viewport = SubViewport.new()
 	viewport.size = entry.design_size
-	# ⚠ MUST be set explicitly -- a SubViewport defaults to LINEAR and does NOT inherit the
-	# project's texture-filter setting (§1c; N1 pins this).
+	# ⚠ MUST be set explicitly: a SubViewport defaults to LINEAR and does NOT inherit the
+	# project's texture-filter setting.
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	viewports_parent.add_child(viewport)
@@ -130,30 +130,23 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 		viewport.add_child(screen_root)
 	else:
-		# GAP-015 (L3): no live screen at construction -- show the authored background, if any.
+		# No live screen at construction -- show the authored background, if any.
 		_show_background()
 
 	var frame_rect := WallPacker.frame_outer_rect(rect)
 	_frame.position = frame_rect.position - rect.centre
 	_frame.size = frame_rect.size
 	_frame.texture = entry.frame_texture
-	# GAP-013 (owner-answered a): per-picture tint over the shared bevel texture -- white (the
-	# default) leaves the shared texture's own baked tone untouched.
+	# Per-picture tint over the shared bevel texture; white leaves its baked tone untouched.
 	_frame.modulate = entry.frame_colour
-	# S24 (QR4=b): genuine nine-slice -- corners hold at a FIXED pixel size regardless of how far
-	# this picture's own frame stretches the rect, only the edge bands between them stretch.
+	# Nine-slice: corners hold at a FIXED pixel size however far the frame stretches the rect;
+	# only the edge bands between them stretch.
 	#
-	# ⚠ This used to be `entry.frame_texture == shared_frame_texture()`, REFERENCE identity, and it
-	# was never true in the real game. C6 made the game load `layout_default.tres`, whose
-	# `frame_texture` deserialises as a DIFFERENT ImageTexture instance from the one this class
-	# generates -- so the branch never ran and a 40x40 bevel smeared across a ~1330x745 NinePatchRect
-	# on every picture. Every by-eye fixture assigns the shared texture directly, which is why the
-	# snapshots looked right and the product did not.
-	#
-	# The thing the identity check was actually protecting is in `_frame_corner_px()`: a margin can
-	# never exceed half its own texture, so a small swatch gets a smaller (still valid) corner
-	# instead of a degenerate one. That is a property of the texture, which is checkable; being the
-	# same OBJECT is not.
+	# ⚠ Gate this on the texture EXISTING, never on `entry.frame_texture == shared_frame_texture()`
+	# reference identity. A texture loaded from `layout_default.tres` deserialises as a different
+	# `ImageTexture` instance from the one this class generates, so an identity check never fires in
+	# the real game and the 40x40 bevel smears across the whole NinePatchRect. `_frame_corner_px()`
+	# carries the property that check was reaching for: a margin never exceeds half its texture.
 	if entry.frame_texture:
 		var corner := _frame_corner_px(entry.frame_texture)
 		_frame.patch_margin_left = corner
@@ -164,57 +157,46 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_screen.centered = true
 	_screen.position = Vector2.ZERO
 	_screen.texture = viewport.get_texture()
-	# H5 baseline: every picture starts non-focused, and H5 says non-focused always samples LINEAR
-	# -- explicit because CanvasItem.texture_filter otherwise inherits the PROJECT default, which
-	# this project sets to NEAREST (pixel art) and would be wrong here without this line.
+	# Every picture starts non-focused, and non-focused always samples LINEAR. Explicit because
+	# `CanvasItem.texture_filter` otherwise inherits the project default of NEAREST.
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
-	# S25 (B10, Q7=b): the shadow's own offset is ONE authored light position, shared by every
-	# picture on the wall regardless of its own location -- `wall_light_offset` (GAP-011's own
-	# precedent: was a typed literal here, `SHADOW_OFFSET`, promoted to a knob; default (18, 26) is
-	# that exact prior value, so this changes no observable behaviour at the default).
+	# ONE authored light position, shared by every picture on the wall whatever its location.
 	_shadow.centered = true
-	_shadow.position = SettingsManager.settings.wall_light_offset
+	_shadow.position = settings().wall_light_offset
 	_shadow.texture = viewport.get_texture()
 	# Both sprites read the SAME render target, so both need the same scale -- and it can only be
 	# computed once the texture is assigned. See `_rescale_screen()`.
 	_rescale_screen()
-	# GAP-013 (owner-answered a): ONE authored opacity for the whole wall, same "one value for
-	# everyone" shape `wall_light_offset` already set for shadows -- was a typed literal here
-	# (`Color(0.0, 0.0, 0.0, 0.35)`, since S10), which §1.8 forbids for a visible design choice.
-	_shadow.self_modulate = Color(0.0, 0.0, 0.0, SettingsManager.settings.wall_shadow_opacity)
+	# ONE authored shadow opacity for the whole wall, like `wall_light_offset` above.
+	_shadow.self_modulate = Color(0.0, 0.0, 0.0, settings().wall_shadow_opacity)
 
-## S31 (L2: "GameView is still built fresh per show and freed after, exactly as main.gd does
-## now"): swaps this ALREADY-BUILT picture's `screen_root` for a NEW live node, freeing whatever
-## was there before (if anything). Unlike `build()`'s own `live_screen` parameter (set ONCE, for a
-## session-long PERSISTENT screen -- menu/map/deck, S30), this is for a picture whose CONTENT is
-## rebuilt per-use while the picture itself (frame, position, viewport) stays put on the wall --
-## `game`, a fresh `GameView` per show. The frame/viewport/shadow are untouched; only the screen
-## content changes.
+## Swaps this already-built picture's `screen_root` for a new live node, freeing whatever was
+## there. Unlike `build()`'s `live_screen` — set once, for a session-long screen — this is for a
+## picture whose CONTENT is rebuilt per use while the picture itself stays put on the wall, as
+## `game` gets a fresh `GameView` per show. Frame, viewport and shadow are untouched.
 func attach_screen(live_screen: Node) -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
-	# GAP-015 (L3): a live screen always wins over the authored background.
+	# A live screen always wins over the authored background.
 	_hide_background()
 	screen_root = live_screen
 	# D3 (§1.6): every screen root is PAUSABLE by default — only focus() promotes it to ALWAYS.
 	screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 	viewport.add_child(screen_root)
 
-## S31 (L2): frees the current `screen_root` (if any), leaving this picture showing its authored
-## background (GAP-015=a) or, absent one, the same "registered but unbuilt" rendering (Q214=a) an
-## un-scened `entry.scene` already produces.
+## Frees the current `screen_root`, leaving this picture showing its authored background — or,
+## with none authored, the same "registered but unbuilt" rendering an absent `scene` produces.
 func detach_screen() -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
 	screen_root = null
-	# GAP-015 (L3): "GameView is still built fresh per show and freed after" -- the moment it is
-	# gone, this picture is back to "no GameView", so the authored background (if any) reappears.
+	# With the live screen gone, the authored background (if any) reappears.
 	_show_background()
 
-## GAP-015 (L3): shows `_background_texture` inside `viewport`, stretched to exactly fill its
-## resolution (`_design_size`) the same way `%Screen` reads the WHOLE viewport regardless of the
-## texture's own native size. A no-op when there is no texture to show, or one is already showing.
+## Shows `_background_texture` inside `viewport`, stretched to fill `_design_size` exactly, the
+## same way `%Screen` reads the WHOLE viewport whatever the texture's native size. A no-op with no
+## texture, or with one already showing.
 func _show_background() -> void:
 	if _background or not _background_texture: return
 	_background = Sprite2D.new()
@@ -226,87 +208,74 @@ func _show_background() -> void:
 		_background.scale = Vector2(_design_size) / tex_size
 	viewport.add_child(_background)
 
-## GAP-015 (L3): removes the authored background the instant a real screen takes over -- never
-## drawn BEHIND a live screen_root, since `_show_background()`/`attach_screen()`/`build()` already
-## keep the two mutually exclusive.
+## Removes the authored background the instant a real screen takes over — it is never drawn behind
+## a live `screen_root`.
 func _hide_background() -> void:
 	if not _background: return
 	if is_instance_valid(_background): _background.queue_free()
 	_background = null
 
-## §1.8 "focused / live": UPDATE_ALWAYS, full design_size. The caller (S12+) is responsible for
-## ensuring exactly one picture is focused at a time -- this method only enacts the state, it does
-## not arbitrate focus.
+## Makes this the live picture: UPDATE_ALWAYS at full `design_size`. The CALLER guarantees exactly
+## one picture is focused at a time; this only enacts the state, it does not arbitrate focus.
 func focus() -> void:
 	is_focused = true
-	# F11/Q70=c: the selection LIFT is a wall-view affordance, and a focused picture is not in wall
-	# view. `set_selected(true)` offsets `position` by `wall_selected_lift` and only
-	# `_render_selection()` ever clears it -- which runs from `enter_wall_view()`/`move_selection()`,
-	# neither of which happens on the way IN. So a picture entered from the keyboard or a controller
-	# (arrow to select, then ui_accept) stayed lifted for as long as the player was inside it: the
-	# camera sits at `rect.centre` while the picture is drawn 14 units above, showing a strip of
-	# frame and bare wall along the bottom edge. H3/Q27/S37 forbids exactly that. A mouse-only
-	# player never saw it, because a click never selects.
+	# ⚠ Re-apply position: the selection LIFT is a wall-view affordance and a focused picture is
+	# not in wall view. Without this a picture entered by keyboard or controller stays lifted while
+	# the camera sits at `rect.centre`, showing a strip of frame and bare wall along the bottom
+	# edge. A mouse-only player never sees it, because a click never selects.
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	viewport.size = _design_size
 	_rescale_screen()
-	# D4 (§1.6): the live screen's root is flipped to ALWAYS. screen_root may be null (Q214=a) if
-	# this picture has no scene, in which case there is nothing to flip.
+	# The live screen's root is flipped to ALWAYS. `screen_root` may be null when this picture has
+	# no scene, in which case there is nothing to flip.
 	if screen_root:
 		screen_root.process_mode = Node.PROCESS_MODE_ALWAYS
-	# H5: becoming focused starts "at rest" -- no zoom has changed yet this frame.
+	# Becoming focused starts at rest -- no zoom has changed yet this frame.
 	update_filter(false)
-	# PICTURE_WALL.md C2: a picture becoming focused is always fully opaque -- a reduced-
-	# motion cross-fade (WallTransition._apply()) may have left this picture's own alpha mid-fade
-	# if the transition landed exactly here; the resting/focused state is never partially faded.
+	# A focused picture is always fully opaque: a reduced-motion cross-fade may have left this
+	# alpha mid-fade, and no resting state is ever partially faded.
 	set_screen_alpha(1.0)
 
-## §1.8 "any other" (non-focused): UPDATE_DISABLED -- render_target_update_mode stops, but the
-## already-rendered texture persists on the GPU (Q82=a); sized down to the wall-view footprint via
-## update_wall_view_size(), never left at full design_size while off-focus.
+## Drops this out of focus: UPDATE_DISABLED, so rendering stops but the already-rendered texture
+## persists on the GPU. Sized down to the wall-view footprint, never left at full `design_size`.
 func unfocus(footprint_px: Vector2) -> void:
 	is_focused = false
 	# Leaving focus is exactly when a still-selected picture's lift becomes visible again.
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	update_wall_view_size(footprint_px)
-	# D3/D8 (§1.6): back to PAUSABLE the instant this picture stops being the live one — wall view
-	# (D8) is simply every picture in this state at once, nothing extra required to enforce it.
+	# Back to PAUSABLE the instant this stops being the live picture. Wall view is simply every
+	# picture in this state at once — nothing extra enforces it.
 	if screen_root:
 		screen_root.process_mode = Node.PROCESS_MODE_PAUSABLE
-	# H5: everything non-focused samples LINEAR, unconditionally -- never NEAREST, regardless of
-	# zoom state (update_filter()'s zoom branching only applies to the FOCUSED picture).
+	# Everything non-focused samples LINEAR unconditionally; `update_filter()`'s zoom branching
+	# applies only to the FOCUSED picture.
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	# PICTURE_WALL.md C2: same reasoning as focus() above -- a picture leaving focus (wall
-	# view shows it next) is never left mid-fade from a reduced-motion cross-fade.
+	# Same reasoning as focus() above -- never left mid-fade from a reduced-motion cross-fade.
 	set_screen_alpha(1.0)
 
-## PICTURE_WALL.md C2: the ONE thing `WallTransition._apply()` needs to drive a reduced-
-## motion cross-fade -- `%Screen`'s own opacity, exposed narrowly rather than the whole private
-## node, same "expose exactly what a caller needs" shape `screen_root`/`rect` already use.
+## `%Screen`'s opacity — the one thing `WallTransition._apply()` needs to drive a reduced-motion
+## cross-fade. Exposed narrowly rather than the whole private node.
 func set_screen_alpha(alpha: float) -> void:
 	_screen.modulate.a = alpha
 
-## GAP-002 / Q86=a, Q87=b: "no resolution manager -- it is one property, written when the
-## footprint changes." `SubViewport.size` is set directly from the picture's on-screen pixel
-## footprint at wall-view zoom, each axis independently clamped below by
-## `SettingsManager.settings.wall_view_min_texture_px` so a tiny footprint never asks the GPU for
-## an unreasonably small (or zero) render target.
+## Sets `SubViewport.size` straight from this picture's on-screen pixel footprint at wall-view
+## zoom — no resolution manager, one property written when the footprint changes. Each axis is
+## clamped below by `wall_view_min_texture_px` so a tiny footprint never asks the GPU for a
+## degenerate render target.
 func update_wall_view_size(footprint_px: Vector2) -> void:
-	var min_px := SettingsManager.settings.wall_view_min_texture_px
+	var min_px := settings().wall_view_min_texture_px
 	viewport.size = Vector2i(maxi(int(footprint_px.x), min_px), maxi(int(footprint_px.y), min_px))
 	_rescale_screen()
 
-## %Screen and %Shadow are `Sprite2D`s whose texture IS this picture's `SubViewport` render target,
-## so what they DRAW is `viewport.size * scale` -- the render-target resolution, never
-## `_design_size`. GAP-002 rewrites `viewport.size` to the wall-view footprint whenever the
-## footprint changes, so a scale computed against `_design_size` (as every site here used to) makes
-## the picture collapse to `rect.size * footprint / design_size` the moment it is unfocused:
-## measured, a 1152x648 picture drew at 385x216 inside its own full-size frame after one Wall press,
-## and every unfocused picture on the wall shrank again on every resize. The scale that keeps a
-## picture exactly `rect.size` on the wall is `rect.size / viewport.size`, and it has to be
-## recomputed wherever EITHER of those moves.
+## Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`.
+## ⚠ Both sprites' texture IS the SubViewport render target, so what they draw is
+## `viewport.size * scale` — the render-target resolution, NEVER `_design_size`. Since
+## `update_wall_view_size()` rewrites `viewport.size` to the wall-view footprint, a scale computed
+## against `_design_size` collapses the picture to `rect.size * footprint / design_size` the moment
+## it unfocuses. The correct scale is `rect.size / viewport.size`, recomputed wherever either
+## moves.
 func _rescale_screen() -> void:
 	var render_size := Vector2(viewport.size)
 	if render_size.x <= 0.0 or render_size.y <= 0.0: return
@@ -314,56 +283,44 @@ func _rescale_screen() -> void:
 	_screen.scale = view_scale
 	_shadow.scale = view_scale
 
-## "window restored from minimise": re-render every FROZEN texture, size UNCHANGED. E7 and Q208=b
-## both say every *frozen* picture -- "the GPU may have discarded them" -- and PLAN.md §1.8's table
-## paraphrases that as "every picture", which is where PICTURE_WALL.md C1 came from.
+## Re-renders a FROZEN texture at unchanged size, for a window restored from minimise — the GPU
+## may have discarded it.
 ##
-## ⚠ A FOCUSED picture is not frozen: it is UPDATE_ALWAYS and has nothing to restore. Forcing
-## UPDATE_ONCE on it renders one more frame and then stops forever, because nothing calls focus()
-## again until the player leaves and re-enters -- so alt-tabbing during a show turned the live game
-## into a still image for the rest of the session. Guarded here rather than at the call site so the
-## invariant cannot be lost by a future second caller.
+## ⚠ A FOCUSED picture is NOT frozen: it is UPDATE_ALWAYS and has nothing to restore. Forcing
+## UPDATE_ONCE on it renders one more frame and then stops forever, since nothing calls `focus()`
+## again until the player leaves and re-enters — turning a live game into a still image for the
+## rest of the session. Guarded here, not at the call site, so a second caller cannot lose it.
 func mark_for_rerender() -> void:
 	if is_focused: return
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
-## §1.7's filter swap (QR7=c, Q34, chart H5): crisp NEAREST at rest, LINEAR only while the camera's
-## zoom is actively changing THIS FRAME -- pure pan/translation must never flip it. The caller (the
-## wall's camera tracking, S12/S13) reports whether zoom changed; meaningful only while this
-## picture is focused, but harmless to call regardless.
+## Crisp NEAREST at rest, LINEAR only while the camera's zoom is actively changing THIS FRAME —
+## a pure pan must never flip it. The caller reports whether zoom changed. Meaningful only while
+## focused, but harmless to call regardless.
 func update_filter(zoom_changed_this_frame: bool) -> void:
 	_screen.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if zoom_changed_this_frame \
 			else CanvasItem.TEXTURE_FILTER_NEAREST
 
-## S36 (F11, Q70=c): the wall-view selection highlight -- "shape and motion, not colour," a lift off
-## the wall. Only the lift half is built here: the frame GLOW half needs actual frame art/shader
-## inputs S24 ("frame art parameters") deferred (QR4=b, GAP-013) rather than built, so this stays
-## provisional. PICTURE_WALL.md B2: the lift AMOUNT is `PlayerSettings.wall_selected_lift` (default
-## (0, -14), the exact prior literal) -- promoted for the same §1.8 reason `wall_overfill_margin`/
-## `wall_light_offset` already were.
+## The wall-view selection highlight: shape and motion, not colour — a lift off the wall by
+## `wall_selected_lift`. Only the lift half exists; the frame glow half awaits the frame art pass.
 func set_selected(selected: bool) -> void:
 	is_selected = selected
 	_apply_position()
 
-## F11/Q70=c: whether the wall-view selection cursor is on this picture. Kept so the lift SURVIVES
-## a re-pack -- `reposition()` used to write `position = rect.centre` flat and silently un-lift the
-## selected picture, with nothing re-rendering the selection afterwards.
+## Whether the wall-view selection cursor is on this picture. Stored, not derived, so the lift
+## survives a re-pack — see `_apply_position()`.
 var is_selected : bool = false
 
-## The single home for "where this picture actually sits": its rect's centre, plus the selection
-## lift when it is BOTH selected and not focused. Focus wins because the lift is a wall-view
-## affordance and a focused picture is not in wall view -- deriving it here rather than writing
-## `position` from four places is what stops the two rules disagreeing (a focused picture used to
-## keep a stale lift, and a re-pack used to drop a live one).
+## The single home for where this picture sits: its rect's centre, plus the selection lift when it
+## is BOTH selected and not focused — focus wins, because the lift is a wall-view affordance.
+## Everything that moves the picture goes through here, so the two rules cannot disagree.
 func _apply_position() -> void:
-	var lift := SettingsManager.settings.wall_selected_lift if (is_selected and not is_focused) 			else Vector2.ZERO
+	var lift := settings().wall_selected_lift if (is_selected and not is_focused) 			else Vector2.ZERO
 	position = rect.centre + lift
 
-## S38 (K2-K4): re-applies a NEW packed rect to an ALREADY-BUILT picture -- the geometry-only
-## subset of build() (position, frame outer rect, screen/shadow scale). The viewport, screen_root
-## and every render-gating flag (focus, filter, process_mode) are untouched -- only WHERE this
-## picture sits on the wall changes, which is exactly what a re-pack after an unlock needs (K4:
-## "the wall re-packs silently" while a screen is focused, off-screen either way).
+## Applies a NEW packed rect to an already-built picture: the geometry-only subset of `build()`.
+## The viewport, `screen_root` and every render-gating flag are untouched — only WHERE this
+## picture sits changes, which is all a silent re-pack after an unlock needs.
 func reposition(new_rect: PictureRect) -> void:
 	rect = new_rect
 	_apply_position()
@@ -375,15 +332,12 @@ func _apply_rect_geometry(r: PictureRect) -> void:
 	_frame.size = frame_rect.size
 	_rescale_screen()
 
-## S38 (K3): tweens this picture from its CURRENT rect to `new_rect` over `duration`, added to the
-## given (already-created) `tween` -- position, frame geometry and screen/shadow scale all move
-## together, so a live re-pack reads as one smooth resize+slide rather than a size pop. `rect`
-## itself is updated to `new_rect` IMMEDIATELY (not at tween completion) so any code reading
-## `wp.rect` mid-tween (hit-testing, selection) already sees the picture's real destination -- the
-## same "state updates now, the tween is only a visual catch-up" contract `focus()`/`unfocus()`
-## already use elsewhere in this class. Caller is responsible for `tween.set_parallel(true)` so
-## multiple pictures (and this picture's own several tweened properties) animate together, not in
-## sequence.
+## Tweens this picture from its current rect to `new_rect` over `duration`, on the given tween:
+## position, frame geometry and both scales move together, so a live re-pack reads as one resize
+## and slide rather than a size pop.
+## `rect` is updated IMMEDIATELY, not at completion, so hit-testing and selection read the real
+## destination mid-tween — state updates now, the tween is only visual catch-up.
+## ⚠ The caller must `tween.set_parallel(true)`, or these properties animate in sequence.
 func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) -> void:
 	var frame_rect := WallPacker.frame_outer_rect(new_rect)
 	# Same `rect.size / viewport.size` as `_rescale_screen()`; `viewport.size` does not move during
@@ -396,41 +350,29 @@ func animate_reposition(tween: Tween, new_rect: PictureRect, duration: float) ->
 	tween.tween_property(_screen, "scale", view_scale, duration)
 	tween.tween_property(_shadow, "scale", view_scale, duration)
 
-## S39 (E10, Q143=a): the "unload to a placeholder" state-blob CONTRACT a torn-down screen would
-## honour first -- UNREACHABLE today (E8/Q203=a, the owner-answered default: "all screens stay
-## instantiated for the whole session," so nothing ever tears one down and nothing calls this),
-## kept genuinely implemented so the fallback is a measurement away rather than a rewrite if
-## a real LRU eviction is ever built (Q203=b, the branch Q203=a rejected -- its cap knob was struck
-## in the M9 pass rather than left unread). Delegates to `screen_root.get_wall_state()` if the live screen
-## OPTS IN to that optional per-screen method -- nothing in this repo implements it yet, because
-## nothing needs to while E8 holds; returns `{}` for a screen that does not, which is itself a
-## valid, honest blob (nothing beyond what freezing already preserves would need restoring for it).
+## The state blob a torn-down screen would hand over before being unloaded.
+## ⚠ UNREACHABLE today: every screen stays instantiated for the whole session, so nothing tears one
+## down and nothing calls this. Implemented anyway so screen eviction, if it is ever built, is a
+## measurement away rather than a rewrite. Delegates to `screen_root.get_wall_state()` when the
+## live screen opts into that method; nothing implements it yet. `{}` is a valid blob — it means
+## freezing already preserves everything that screen needs.
 func write_state_blob() -> Dictionary:
 	if screen_root and screen_root.has_method(&"get_wall_state"):
 		return screen_root.call(&"get_wall_state")
 	return {}
 
-## H3 (Q27=c): the scale that makes a picture of `native_size` OVERFILL `window_size` on every
-## axis at rest -- "fill and crop" (the LARGER of the two axis ratios), never "fit" (the smaller
-## one, which is exactly what would leave a frame sliver visible whenever the aspects don't match,
-## the defect H3 exists to rule out). Pure function of its three inputs; no picture/camera state.
+## The scale at which a picture of `native_size` OVERFILLS `window_size` on every axis at rest —
+## fill and crop, the LARGER of the two axis ratios. Never "fit", which leaves a frame sliver
+## visible whenever the aspects differ. A pure function of its three inputs.
 ##
-## ⚠ H3's own words: the picture overfills "WHENEVER ITS ASPECT DOES NOT MATCH" the window's. The
-## margin is CONDITIONAL, not unconditional -- when the two axis ratios are already equal (the
-## picture's own aspect matches the window's exactly), fill and fit already coincide and there is
-## nothing to hide, so the returned scale is the EXACT fill ratio, margin untouched. Measured
-## defect, not theorised: the first version applied the margin unconditionally, and it cropped
-## REAL UI at an ordinary 16:9-in-16:9 case (the start-menu picture's own bottom button row,
-## sliced at both edges) -- exactly the "2% crop on real UI" risk GAP-011's own filing named,
-## just not confined to the extreme aspect it was written about.
+## ⚠ The margin is CONDITIONAL. When the two axis ratios are already equal there is no frame to
+## hide, so the exact fill ratio is returned with the margin untouched. Applied unconditionally it
+## crops REAL UI in the ordinary 16:9-in-16:9 case — the start-menu's bottom button row loses a
+## slice at both edges.
 ##
-## GAP-011 (owner-answered a): `overfill_margin` is `PlayerSettings.wall_overfill_margin`
-## (default 1.02) -- a REQUIRED parameter, never a literal or default value here, because §1.8
-## forbids a typed-in-a-.gd number for anything an author could reasonably argue with (the margin
-## is a visible design choice, not a float epsilon like `wall_packer.gd`'s `_EPS`; that was the
-## exact miscategorisation GAP-011 corrects). Callers read the live knob (`SettingsManager.
-## settings.wall_overfill_margin`, or a `settings: PlayerSettings` already in scope) and pass it
-## in -- this function stays pure and untestable-only-by-eye either way.
+## `overfill_margin` is a REQUIRED parameter, never defaulted here: it is a visible design choice
+## and lives in `PlayerSettings.wall_overfill_margin`. Callers pass the live knob in, which keeps
+## this function pure.
 static func focused_scale(native_size: Vector2, window_size: Vector2,
 		overfill_margin: float) -> float:
 	var x_ratio := window_size.x / native_size.x
@@ -440,21 +382,15 @@ static func focused_scale(native_size: Vector2, window_size: Vector2,
 		return fill
 	return fill * overfill_margin
 
-## S28 (J2/Q128 override -- "zooms out just enough to reveal the BOTTOM frame only. Top, left and
-## right stay covered"): camera position/zoom for a picture in Info mode, as a `{"position":
-## Vector2, "zoom": float}` dictionary (`WallTransition.phase_bounds()`'s own return-shape
-## precedent, not a new nested class for two values).
+## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`:
+## just enough reveal to show the BOTTOM frame, with top, left and right still covered.
 ##
-## Zoom is UNCHANGED from `focused_scale()`'s own at-rest fill value -- only the camera POSITION
-## shifts downward. This is provably correct for EVERY frame_px, not just a symmetric one: at
-## rest, H3 already guarantees the whole frame (all four edges) sits outside the visible rect, so
-## `frame.top < visible_top_rest` always holds; shifting the camera straight down by `delta > 0`
-## only INCREASES `visible_top` (`visible_top_rest + delta`), which can never cross back below
-## `frame.top` (a fixed value the shift never touches) -- so the top edge cannot be revealed by
-## ANY positive downward shift, regardless of how large. `delta` is chosen as the SMALLEST shift
-## that brings the bottom frame edge into view plus `wall_frame_reveal_margin`'s own clearance
-## (reused rather than a second near-identical knob -- ASSUMPTIONS.md): the same "extra share of
-## the picture's size revealed" role it already plays for the transition's own zoom-out stop.
+## Zoom is UNCHANGED from `focused_scale()`'s at-rest value — only POSITION shifts downward. That
+## is correct for every `frame_px`, symmetric or not: at rest the whole frame sits outside the
+## visible rect, so `frame.top < visible_top`; shifting down by `delta > 0` only increases
+## `visible_top`, which can never cross back below the fixed `frame.top`. `delta` is the SMALLEST
+## shift bringing the bottom frame edge into view plus `wall_frame_reveal_margin`'s clearance,
+## reused rather than duplicated as a second near-identical knob.
 static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 		settings: PlayerSettings) -> Dictionary:
 	var zoom := focused_scale(rect.size, window_size, settings.wall_overfill_margin)
@@ -464,16 +400,13 @@ static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 	var delta := maxf(target_bottom - visible_bottom_rest, 0.0)
 	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
 
-## M8 (PICTURE_WALL.md) / J7 / Q133=b: the `get_info()` interface, which NO `WallPicture`
-## implemented -- so Info mode on the wall itself described nothing, however many pictures were
-## hovered. The strings are resolved HERE, not stored on the entry: `InfoEntry`'s own contract is
-## "already localised by the caller", and the keys follow the same `<THING>` / `<THING>_DESCRIPTION`
-## pair `localization.csv` already uses for every card.
+## This picture's info-mode entry. Strings are resolved HERE, not stored on the entry —
+## `InfoEntry` is "already localised by the caller" — under the same `<THING>` /
+## `<THING>_DESCRIPTION` key pair `localization.csv` uses for every card.
 ##
-## Q130 ("shows a copy of the hovered item as a visual beside the description"): the visual is a
-## `TextureRect` on this picture's OWN live `ViewportTexture` -- a real copy of the thing being
-## hovered, not a stand-in. `InfoCard.show_entry()` takes ownership of it and frees it on the next
-## entry or on `reset()`, which is why a fresh one is built per call rather than cached.
+## The visual is a `TextureRect` on this picture's own live `ViewportTexture`: a real copy of the
+## thing hovered, not a stand-in. `InfoCard.show_entry()` takes ownership and frees it on the next
+## entry, which is why a fresh one is built per call rather than cached.
 func get_info() -> InfoEntry:
 	var entry := InfoEntry.new()
 	var key := String(rect.id).to_upper()
@@ -488,9 +421,7 @@ func get_info() -> InfoEntry:
 		entry.visual = preview
 	return entry
 
-## The on-card size of `get_info()`'s preview. A `PlayerSettings` knob would be §5's business and
-## §5 has no row for it; this is the card's own internal layout, the same category as
-## `_FRAME_TEXTURE_SIZE` above.
+## The on-card size of `get_info()`'s preview — internal card layout, not a player-tunable knob.
 const _INFO_PREVIEW_SIZE := Vector2(160.0, 90.0)
 
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain

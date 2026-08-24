@@ -58,8 +58,10 @@ gone by the time you know you wanted it.
   be judged until someone drives it; two adversarial reviews traced journeys, neither played it.
 - ⬜ **Picture wall: decide what unlocks `book`** — until it exists a whole subsystem is dead code
   ("Picture wall" below).
-- ⬜ **Picture wall: look at real renders and rule on wall-view composition** at 16:9 and 32:9
-  ("Picture wall" below).
+- ⬜ **Picture wall: rule on wall-view composition** at 16:9 and 32:9 — now judgeable live in
+  `Tools/wall_editor.tscn` (F6), not only from snapshots ("Picture wall" below).
+- ⬜ **Picture wall: playtest the shell** — navigate, resize, alt-tab, controller, Info. The only
+  remaining gate; nothing about how it FEELS has been checked by anything.
 - ⬜ **Playtest the universal palette** (below) — the fire and ball colours changed.
 - ⬜ **Playtest the shader FX** (FX_SHADER_PLAN §10, 17 steps).
 - ⬜ **Delete FX_SHADER_PLAN.md + FX_HANDOFF.md** once that playtest passes. Their residue is
@@ -343,6 +345,37 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   makes it more pronounced. Wants an owner look at real renders before anything builds on it.
 - **At 32:9 the ellipse clamp saves the layout but does not compose it** — nothing is stretched into
   a pancake, but the result is upper-heavy with empty bottom corners (`TEST_PLAN.md` §10 item 7).
+- 🔴 **CONFIRMED: every unfocused picture on the wall shows an enlarged TOP-LEFT CROP of its
+  screen, not the screen.** Measured: `update_wall_view_size()` takes the render target from
+  1152x648 to 385x216 (33% per axis) and the screen does not re-flow into it — the start menu shows
+  a giant "S", the board shows "Deck / Goal: 1" at four times size. **This is the shipped game, not
+  a tool artefact:** `Main._build_pictures()`, `_repack_wall()` and `_on_window_resized()` all make
+  the identical call on every non-focused picture, at cold launch and on every re-pack.
+  Reproduce: `Tests/Visual/wall_editor_soak.tscn`, read `16_wall_view_resolution.png` against
+  `01_defaults.png`. Likely fix: `SubViewport.size_2d_override = design_size` with
+  `size_2d_override_stretch = true`, so the screen LAYS OUT at its design size and RENDERS into the
+  smaller target — untried, and it needs a by-eye pass. Until then `wall_view_min_texture_px` is
+  tuning the resolution of a crop.
+- **`start_menu`'s button row overflows its own picture** — at a focused rest pose the `Profile` and
+  `Language` buttons are clipped by the window edge. A `menu.tscn` layout issue, not a wall one,
+  but the wall is where it becomes visible. See `Tools/wall_editor.tscn`, `preview_focus_id`.
+- **Nothing has ever HEARD a wall transition** — no `PictureEntry.music` is authored on any entry,
+  so the crossfade has never had a stream to blend. The machinery is now previewable (the tool hosts
+  the real `Wall`, and `_move_to()` drives `begin_music_crossfade()`/`update_travel_music()`/
+  `finish_music_crossfade()`); what is missing is audio to point it at.
+- **The editor's INSPECTOR preview still cannot drive four knobs** (`wall_selection_repeat_delay`,
+  `wall_debug_readout`, `wall_reveal_delay_scale`, `wall_unlock_all`) because `Wall` is not `@tool`
+  and loads there as a placeholder. All four work when the tool is RUN (F6), which hosts the real
+  `wall.tscn`. Making `Wall` `@tool` would close this, but it would also instantiate the shipped
+  autoload-facing shell in the editor — not attempted.
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
   hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
   action test, but no real stick has driven it.
+- **`deck`, `settings` and `book` are registered ids with no screen** — they pack, frame and accept
+  navigation, and draw whatever `background_texture` they are given, or nothing. Building their
+  contents is out of scope for this stream; the wall does not need changing to host them.
+- **The suite intermittently HANGS at 30 of 39 suites with no banner**, in clusters, and every suite
+  involved completes when run alone — so it is in the concurrency. RE-RUN before bisecting: a hung
+  run is not reliably attributable to the change that produced it (`HANDOFF_picture_wall.md` S44).
+- **PIXELS' mask-vs-art bound has never been ruled on** (0 mask-without-art, 3773 art-without-mask at
+  rest). Its own comment forbids raising it to go green, so it stands as written (S41).

@@ -1,22 +1,20 @@
 class_name FocusStack
 extends RefCounted
-## The Back/Forward history for the picture wall -- ids only, no geometry, no node references.
-## PLAN.md §1.4. Two arrays: `_back` is the visited history with the LAST element as the current
-## picture; `_forward` holds what a `back()` can still `forward()` back to, cleared on every new
-## `visit()` exactly as a browser clears redo history on a fresh navigation.
+## The Back/Forward history for the picture wall — ids only, no geometry, no node references.
+## `_back` is the visited history with its LAST element as the current picture; `_forward` holds
+## what a `back()` can still return to, cleared on every new `visit()` as a browser clears redo.
 ##
-## Depth is bounded by the number of DISTINCT ids ever visited, never by a fixed cap (Q64): `visit`
-## on an id already in `_back` MOVES it to the top instead of appending a second entry, so `_back`
-## can never hold more entries than there are distinct pictures to hold.
+## Depth is bounded by the number of DISTINCT ids visited, never by a fixed cap: `visit` on an id
+## already present moves it to the top rather than appending a second entry.
 ##
-## Wall view is never an entry (Q66=b) -- there is no method here for it. The caller simply stops
-## calling `visit()` while the wall is shown; the stack is unaffected either way.
+## Wall view is never an entry — there is no method here for it. The caller simply stops calling
+## `visit()` while the wall is shown.
 
 var _back : Array[StringName] = []
 var _forward : Array[StringName] = []
 
-## Navigate to `id`. If it is already in the history, MOVES it to the top rather than duplicating
-## it (Q64). Clears the forward list, as a browser does on any new navigation.
+## Navigate to `id`. If already in the history, MOVES it to the top rather than duplicating it.
+## Clears the forward list, as a browser does on any new navigation.
 func visit(id: StringName) -> void:
 	_forward.clear()
 	var existing := _back.find(id)
@@ -25,7 +23,7 @@ func visit(id: StringName) -> void:
 	_back.append(id)
 
 ## Retraces to the picture visited just before the current one. &"" when there is nothing below
-## the current entry -- the caller's contract is to go to wall view (Q65=a).
+## the current entry, which the caller reads as "go to wall view".
 func back() -> StringName:
 	if _back.size() < 2:
 		return &""
@@ -42,11 +40,10 @@ func forward() -> StringName:
 	_back.append(id)
 	return id
 
-## The picture the history currently sits on -- `_back`'s top -- WITHOUT moving the cursor. &"" on
-## an empty stack. Needed because wall view is never an entry (Q66=b), so while the wall is shown
-## `Main._current_focus` is &"" but this is still the picture the player left: the step "back" from
-## wall view is THIS id, and reaching it with `back()` would skip past it and push it onto the
-## forward list as something never revisited.
+## The picture the history sits on — `_back`'s top — WITHOUT moving the cursor. &"" on an empty
+## stack. Wall view is not an entry, so while the wall is shown this is still the picture the
+## player left, and stepping "back" from wall view goes HERE; `back()` would skip past it and
+## strand it on the forward list.
 func current() -> StringName:
 	return &"" if _back.is_empty() else _back[-1]
 

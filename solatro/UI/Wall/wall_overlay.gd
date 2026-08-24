@@ -1,15 +1,12 @@
 class_name WallOverlay
 extends CanvasLayer
-## The persistent overlay -- Back, Forward, Wall (GAP-016, owner-answered a: TOP-LEFT, moved off
-## the bottom band that used to sit directly over start_menu's Profile/Options and the map's Deck
-## button, making them unreachable by mouse) and the top-right Info toggle (NAMES.md; PLAN.md S35,
-## implements B8, F7, F8, F9). Its own CanvasLayer (Q202=a) so it never rides the wall camera,
-## mounted at `%Overlay` inside wall.tscn. Owns no navigation state itself -- it only reports presses
-## via signals and reflects a FocusStack's shape back out through refresh().
+## The persistent overlay: Back, Forward and Wall in the TOP-LEFT — never the bottom, which would
+## sit over start_menu's Profile/Options and the map's Deck button — plus the top-right Info
+## toggle. Its own CanvasLayer so it never rides the wall camera, mounted at `%Overlay` inside
+## wall.tscn. Owns no navigation state: it reports presses and reflects a `FocusStack` back out
+## through `refresh()`.
 
-## Emitted when the corresponding control is pressed. `Main` (`Levels/main.gd`) is the consumer of
-## all four -- `back_pressed`/`forward_pressed`/`wall_pressed` drive navigation, `info_toggled`
-## drives Info mode (PICTURE_WALL.md A2).
+## Emitted when the corresponding control is pressed. `Main` consumes all four.
 signal back_pressed
 signal forward_pressed
 signal wall_pressed
@@ -26,8 +23,8 @@ func _ready() -> void:
 	_back_button.text = TRANSLATION.find('WALL_BACK')
 	_forward_button.text = TRANSLATION.find('WALL_FORWARD')
 	_wall_button.text = TRANSLATION.find('WALL_OVERVIEW')
-	# MINOR: the magnifying glass J1/Q135 name, not the word. The localised string stays as the
-	# button's TOOLTIP, so the control is still named for a screen reader and still translatable.
+	# A magnifying glass, not the word. The localised string stays as the TOOLTIP, so the control
+	# is still named for a screen reader and still translatable.
 	_info_button.icon = magnifier_icon()
 	_info_button.tooltip_text = TRANSLATION.find('WALL_INFO')
 	_back_button.pressed.connect(_on_back_pressed)
@@ -36,23 +33,19 @@ func _ready() -> void:
 	_info_button.toggled.connect(_on_info_toggled)
 	_apply_touch_targets()
 
-## M6 (PICTURE_WALL.md) / GAP-004=b / I8c: `WallInput.touch_target_px()` had NO CALLER, and its
-## own doc comment named a live call site that did not exist -- every overlay control was whatever
-## size the scene happened to author, so GAP-004's MANDATORY clamp never ran on anything. This is
-## that call site: no control may be smaller than the clamped 9 mm target on either axis.
+## Grows every overlay control to at least `WallInput.touch_target_px()` on both axes.
 ##
 ## GROWS the authored layout rather than replacing it: each button keeps its authored top-left and
-## the row keeps its authored GAP, both read back off the scene instead of re-typed here (a
-## re-typed offset is a §1.8 literal, and it would silently stop matching the scene). The Info
-## button is anchored to the RIGHT edge, so it grows leftward from its own authored right edge and
-## stays in the corner J1 puts it in.
+## the row keeps its authored GAP, both read back off the scene rather than re-typed here, so they
+## cannot drift from it. The Info button is anchored RIGHT, so it grows leftward from its authored
+## right edge and stays in the corner.
 ##
-## ⚠ `custom_minimum_size` alone does NOT resize a manually-positioned Control until Godot's own
-## deferred layout pass -- the exact trap `InfoCard._resize_to_content()` documents -- so `size` is
-## set explicitly as well, and a caller reading `size` straight after `_ready()` sees the real one.
+## ⚠ `custom_minimum_size` alone does NOT resize a manually-positioned Control until Godot's
+## deferred layout pass — see `InfoCard._resize_to_content()` — so `size` is set explicitly too,
+## and a caller reading `size` straight after `_ready()` sees the real one.
 func _apply_touch_targets() -> void:
 	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
-			SettingsManager.settings)
+			WallPicture.settings())
 	var row : Array[Button] = [_back_button, _forward_button, _wall_button]
 	var gap := row[1].position.x - (row[0].position.x + row[0].size.x)
 	var x := row[0].position.x
@@ -68,40 +61,35 @@ func _grow_to(button: Button, target: float) -> void:
 	button.size = Vector2(maxf(button.size.x, target), maxf(button.size.y, target))
 	button.custom_minimum_size = button.size
 
-## F8 (Q65=c): Back and Forward VISIBLY disable themselves -- `Button.disabled`, not merely a press
-## that silently does nothing -- whenever the given stack has nothing behind/ahead of the current
-## picture. Call whenever focus changes; the scene's own defaults (both `disabled = true`) already
-## match a fresh stack, so this only needs calling on CHANGE, not at construction.
-## S36's own done-when: the Wall button additionally HIDES itself outright (not merely disables)
-## while `picture_count` is 1 or fewer -- nothing to overview with just one picture on the wall.
-## Defaults to 2 (i.e. visible) so callers that only care about Back/Forward -- F8/F9's own tests --
-## are unaffected by the new parameter.
-## GAP-020 = (a), owner-answered: in WALL VIEW, Back returns to the picture just left -- the stack's
-## own top -- so it is available whenever the stack has ANY entry, not only when it has two.
-## `can_back()` asks "is there something below the current picture", which is the right question
-## only while a picture is focused. Without `in_wall_view` the button was greyed out on the
-## commonest first-minute journey (cold launch -> Escape -> wall view) while the Escape key and the
-## joypad Back still worked -- and `Main._ready()`'s own comment promises the key and the button
-## cannot diverge, because they are deliberately the same handler.
+## Reflects `stack` back onto the controls. Call whenever focus changes; the scene's defaults
+## already match a fresh stack, so this is only needed on CHANGE.
+##
+## Back and Forward VISIBLY disable (`Button.disabled`) rather than silently doing nothing. The
+## Wall button HIDES outright while `picture_count` is 1 or fewer — nothing to overview with one
+## picture.
+##
+## ⚠ `in_wall_view` changes what "can go back" MEANS. `can_back()` asks whether anything sits
+## below the current picture, which is the right question only while a picture is focused. In wall
+## view Back returns to the picture just left — the stack's top — so it is live whenever the stack
+## has ANY entry. Without this the button greys out on cold launch -> Escape while the Escape key
+## and joypad Back, which share this handler, still work.
 func refresh(stack: FocusStack, picture_count: int = 2, in_wall_view: bool = false) -> void:
 	_back_button.disabled = not (stack.current() != &"" if in_wall_view else stack.can_back())
 	_forward_button.disabled = not stack.can_forward()
 	_wall_button.visible = picture_count > 1
 
-## M3 (PICTURE_WALL.md): the `wall_info` key's way in. Flips the REAL toggle button rather than
-## writing `wall_info_mode` from a second place, so the mode and what the button shows can never
-## disagree -- setting `button_pressed` fires `toggled`, and from there a key press and a mouse
-## press are the same path.
+## The `wall_info` key's way in. Flips the REAL toggle button rather than writing
+## `wall_info_mode` from a second place, so the mode and what the button shows cannot disagree:
+## setting `button_pressed` fires `toggled`, making key and mouse the same path.
 func toggle_info() -> void:
 	_info_button.button_pressed = not _info_button.button_pressed
 
-## MINOR (PICTURE_WALL.md): J1 and Q135's note both call the Info control "a magnifying glass",
-## and it shipped as the word "Info". Built procedurally rather than as an asset, the same idiom
-## (and for the same reason) as `WallPicture.shared_frame_texture()`: the project's font is a
-## bitmap face with no glyph for a magnifier, and a one-icon PNG is a dependency this does not need.
+## The Info button's magnifying glass. Built procedurally, the same idiom as
+## `WallPicture.shared_frame_texture()`: the project's font is a bitmap face with no magnifier
+## glyph, and a one-icon PNG is a dependency this does not need.
 ##
-## Drawn in WHITE so `Button.icon`'s own `modulate`/theme tinting is what colours it, and cached
-## statically -- one texture for however many overlays exist.
+## Drawn WHITE so `Button.icon`'s theme tinting colours it, and cached statically — one texture
+## however many overlays exist.
 const _ICON_SIZE := 64
 const _ICON_LENS_CENTRE := Vector2(25.0, 25.0)
 const _ICON_LENS_RADIUS := 16.0
@@ -113,8 +101,8 @@ static var _magnifier_icon : ImageTexture = null
 
 static func magnifier_icon() -> ImageTexture:
 	if _magnifier_icon: return _magnifier_icon
-	# `Image.create()` zero-fills, i.e. fully transparent already -- no explicit fill, and so no
-	# colour literal for the PALETTE scan to flag on a line that is not a colour CHOICE.
+	# `Image.create()` zero-fills, so this is already fully transparent — no explicit fill, and
+	# so no colour literal on a line that is not a colour choice.
 	var img := Image.create(_ICON_SIZE, _ICON_SIZE, false, Image.FORMAT_RGBA8)
 	var half_stroke := _ICON_STROKE * 0.5
 	for y : int in _ICON_SIZE:

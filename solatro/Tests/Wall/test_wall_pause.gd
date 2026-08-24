@@ -50,6 +50,7 @@ func _ready() -> void:
 	await test_double_info_press_inside_one_animation_still_rests_correctly()
 	await test_a_picture_entered_from_the_keyboard_does_not_stay_lifted()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
+	await test_the_info_zoom_reads_its_own_duration_scale()
 	finish()
 
 # ------------------------------------------------------------------ fixture
@@ -421,6 +422,56 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 	restore_settings_snapshot(snap)
 	restore_real_settings()
 
+## Pins the transition clock so a move is guaranteed to outlive the two-frame wait the
+## "is it still in flight?" preconditions below do.
+##
+## ⚠ Without this the test reads its DURATION off the machine's saved `settings.tres`. A dev box
+## tuned for speed (`base_delay = 0.1`, `wall_transition_delay = 0.001`) makes a move last 0.0001 s
+## — one frame — so the precondition fails and the real assertions after it never get to run. The
+## failure looks like a product bug and is entirely a property of whoever last used the game.
+##
+## Both keys are restored by `restore_settings_snapshot()`, so the caller must snapshot with NO
+## prefix: `base_delay` is not a `wall_` key.
+func _pin_transition_clock() -> void:
+	SettingsManager.settings.base_delay = 1.0
+	SettingsManager.settings.wall_transition_delay = 0.6
+
+## The info zoom runs on `wall_info_zoom_scale`, not on the plain transition clock.
+##
+## ⚠ ASSERTED BY COMPARING TWO MEASURED DURATIONS, not by "is it still running after N frames".
+## That weaker form passes with the knob ignored, because the UNSCALED clock is already longer than
+## any small frame count -- the fixture would be chosen so the implementation passes either way.
+## A ratio between a large scale and a tiny one cannot be produced by a constant duration.
+func test_the_info_zoom_reads_its_own_duration_scale() -> void:
+	backup_real_settings()
+	var snap := snapshot_settings()
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	# NO unpause.
+	SettingsManager.settings.wall_reduced_motion = false
+	_pin_transition_clock()
+	await _drive_move(func() -> void: await main._focus_picture(&"map"))
+
+	var slow_ms := await _time_info_toggle(main, true, 4.0)
+	var fast_ms := await _time_info_toggle(main, false, 0.05)
+	check(slow_ms > fast_ms * 4.0,
+			"the info zoom's LENGTH tracks wall_info_zoom_scale, not a fixed clock",
+			"scale 4.0 took %d ms, scale 0.05 took %d ms" % [slow_ms, fast_ms])
+
+	main.queue_free()
+	restore_settings_snapshot(snap)
+	restore_real_settings()
+
+## Runs one info toggle at `scale` and returns how many milliseconds it took to complete.
+func _time_info_toggle(main: Main, active: bool, scale: float) -> int:
+	SettingsManager.settings.wall_info_zoom_scale = scale
+	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
+	var started := Time.get_ticks_msec()
+	_drive(func() -> void: await main._on_info_toggled(active), done)
+	while not done[0] and Time.get_ticks_msec() - started < 20000:
+		await get_tree().process_frame
+	return Time.get_ticks_msec() - started
+
 ## C5/Q56=b: the Info toggle is a camera move like any other, so it does not fight a live one.
 ##
 ## ⚠ It used to await `_animate_camera()` without checking or setting `_move_in_flight`, so a toggle
@@ -428,11 +479,12 @@ func test_a_second_back_during_a_move_does_not_eat_a_history_entry() -> void:
 ## with the camera on the SOURCE picture's info pose, ~99% off-screen, input unlocked.
 func test_info_toggled_mid_transition_does_not_hijack_the_camera() -> void:
 	backup_real_settings()
-	var snap := snapshot_settings("wall_")
+	var snap := snapshot_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	# NO unpause.
 	SettingsManager.settings.wall_reduced_motion = false
+	_pin_transition_clock()
 
 	# Start a real move, then toggle Info while it is genuinely in flight.
 	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
@@ -521,11 +573,12 @@ func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
 ## resized, navigated, or pressed Info twice more.
 func test_double_info_press_inside_one_animation_still_rests_correctly() -> void:
 	backup_real_settings()
-	var snap := snapshot_settings("wall_")
+	var snap := snapshot_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	# NO unpause.
 	SettingsManager.settings.wall_reduced_motion = false
+	_pin_transition_clock()
 	await _drive_move(func() -> void: await main._focus_picture(&"map"))
 	check(main._current_focus == &"map", "sanity: focused on a real picture, Info off",
 			str(main._current_focus))

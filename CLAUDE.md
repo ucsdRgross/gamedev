@@ -41,14 +41,16 @@ Docs describe the system as it is now, for someone about to change it.
 
 `py .claude/tools/doc_check.py` enforces the mechanical half — dangling `[[memory links]]`, an
 index out of sync with disk, references to files that do not exist, hard-coded absolute paths,
-and dated lines. It covers **code comments as well as `.md` files**: a comment is a doc that lives
+dated lines, and **design-process ids that have escaped into the code** (`Q183=a`, `GAP-017=c`,
+`PLAN.md §1.8` — see [[design-ids-stay-out-of-code]]). It covers **code comments as well as `.md` files**: a comment is a doc that lives
 in a source file, and a comment deferring to a doc is only useful if the doc resolves. Run it after
 any docs change. The judgement half is the `/docs` skill.
 
 A **`Stop` hook runs `--changed --warn-only` at every task boundary** — only the files you touched,
 only the findings that are always bugs, and it never blocks. ⚠ **A silent hook is not a clean
 repo:** it says nothing about the standing style backlog (hundreds of dated and over-long comments,
-`solatro/todo.md`). Run the full check by hand for that.
+~900 design-id citations from earlier work streams, `solatro/todo.md`). Run the full check by hand
+for that.
 
 ## Hard rules (they override defaults)
 
@@ -57,7 +59,11 @@ repo:** it says nothing about the standing style backlog (hundreds of dated and 
 2. **Never kill a process by image name or wildcard.** A hook blocks it
    (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
    with unsaved work. An explicit verified `-Id <pid>` passes.
-3. **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use the Edit tool.
+3. **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use the Edit
+   tool, or a python heredoc writing `encoding='utf-8'`. A hook blocks it
+   (`.claude/hooks/block-source-rewrite.ps1`): `Set-Content`/`Out-File`/`Add-Content` aimed at a
+   source extension is refused. `Copy-Item`/`Move-Item` are byte copies and pass — that is how you
+   park and restore a file around a deliberate red-then-green run.
 4. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
    the image, describe what it actually shows — or say UNVERIFIED.
 5. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot

@@ -1,7 +1,7 @@
 class_name PlayerProfile
 extends Resource
-## One save slot's unlocked-picture record. PLAN.md §1.5, Q151=b. Slot 0 is the only slot in v1
-## (Q213=a), but the format is keyed by slot from day one so a later multi-slot save needs no
-## migration. Saved to user://profile.tres by ProfileManager.
+## One save slot's unlocked-picture record, saved to `user://profile.tres` by `ProfileManager`.
+## Keyed by slot even though slot 0 is the only slot today, so adding more needs no migration.
 
-@export var unlocked : Dictionary[int, Array] = {}   ## slot index -> Array[StringName] (Q151=b)
+## Slot index -> Array[StringName] of unlocked picture ids.
+@export var unlocked : Dictionary[int, Array] = {}

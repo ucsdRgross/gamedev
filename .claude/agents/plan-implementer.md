@@ -77,7 +77,14 @@ skipped check as a pass.
 - **Warnings are errors** — type every array element and every for-loop variable.
 - **User-facing strings** go through `TRANSLATION.find` + the localisation CSV, never a literal.
 - **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`.
-- **`##` purpose comments** on every new method. Delete commented-out code rather than leaving it.
+- **`##` purpose comments** on every new method, stating the RULE in as few words as carry it.
+  Delete commented-out code rather than leaving it.
+- ⚠ **NEVER write a design-process id into the code** — no `Q183=a`, `GAP-017=c`, `S34`,
+  `PLAN.md §1.10`. Not in a comment, and never in a string literal or an `@export_group("…")` label,
+  which Godot renders as Inspector UI. Write what the answer DECIDED; the citation goes in your
+  `STEP:` report, which is where it is read. Test assertion messages are the one exemption.
+- **Comments carry rules, not history** — keep the ⚠ and the measured number, drop the plot.
+- Verify both with `py .claude/tools/doc_check.py --changed` before reporting.
 - **Never kill a process by image name or wildcard** — an explicit verified `-Id <pid>` is fine.
 - **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use Edit.
 - **The Godot suite runs WINDOWED** and needs an explicit killing timeout: a parse error in the test

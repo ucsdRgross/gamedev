@@ -43,6 +43,36 @@ func _ready() -> void:
 	await _settle()
 	_save("wall_editor_after_aspect_change.png")
 
+	# A FOCUSED picture at rest -- the state a player is in most of the time, and the one wall view
+	# cannot show. H3: it must fill the window edge to edge, with NO frame and NO bare wall at any
+	# edge. A too-small wall_overfill_margin shows as a sliver; that is the whole point of looking.
+	editor.preview_aspect = 1.7778
+	editor.preview_focus_id = editor.layout.home_id
+	await _settle()
+	_save("wall_editor_focused_at_rest.png")
+
+	# The wall-view selection cursor: exactly one picture lifted by wall_selected_lift. Back to
+	# wall view first, since the lift is a wall-view affordance and a focused picture suppresses it.
+	editor.preview_focus_id = &""
+	editor.preview_selected_id = editor.layout.home_id
+	await _settle()
+	_save("wall_editor_selection_lift.png")
+	editor.preview_selected_id = &""
+
+	# Info mode, back at an ordinary window shape. The camera should drop to the home picture's
+	# info pose -- its BOTTOM frame edge revealed, top/left/right still covered -- with the real
+	# InfoCard anchored to the bottom of the WINDOW showing that picture's own get_info() entry.
+	# Both halves are by-eye: nothing here asserts a pose, and a pose that is arithmetically right
+	# can still read wrong.
+	editor.preview_focus_id = editor.layout.home_id
+	editor.preview_info_mode = true
+	await _settle()
+	_save("wall_editor_info_mode.png")
+
+	editor.preview_info_mode = false
+	await _settle()
+	_save("wall_editor_info_mode_off.png")
+
 	# §3 Phase 8 gate ("tool opens, writes the resource, and re-opens with the same layout") --
 	# a real write, then a SEPARATE fresh disk read (CACHE_MODE_IGNORE, never the same in-memory
 	# object) proving the file genuinely landed with the edited content, not merely that

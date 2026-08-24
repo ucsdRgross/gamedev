@@ -15,6 +15,9 @@ Keep lines of code low by REMOVING old unused code outright (no dormant paths), 
 - **Facts that change nothing for the reader** — who reported it, what the old behaviour was, which session it landed in. Git has that.
 - **The same fact restated at a second site.** State it once where it is enforced; elsewhere point at that name.
 - **Line-number references** (`scoring.gd:811`) — they are dead references waiting to happen.
+- **Design-process ids** (`Q183=a`, `GAP-017=c`, `S34`, `PLAN.md §1.8`) — they name a document the
+  reader cannot see. State the rule the answer produced. Full rule, and why the traceability
+  instinct produces this: [[design-ids-stay-out-of-code]].
 
 **Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
 

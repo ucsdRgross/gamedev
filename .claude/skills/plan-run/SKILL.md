@@ -10,12 +10,10 @@ executes them. The split: **one session holds the plan and never reads code; sub
 and never hold the plan.** That keeps the overseer's context plan-shaped across dozens of commits,
 which is what lets a long run survive.
 
-⚠ **The pattern's known blind spot, and the reason half this document exists:** the overseer verifies
-what it can *observe*, and the implementer optimises to the *done-when it is handed*. Neither owns
-"does this actually do anything in the running game." A run using this pattern shipped a gesture
-tracker with no caller, an info card mounted nowhere, four dead input actions, and a layout tool
-editing a file the game never loaded — **every one with passing tests.** Everything below aims at
-that failure.
+⚠ **The pattern's known blind spot, and the reason half this document exists:** the overseer
+verifies what it can *observe*, and the implementer optimises to the *done-when it is handed*.
+Neither owns "does this actually do anything in the running game." See [[built-but-not-wired]] for
+what that shipped. Everything below aims at that failure.
 
 ## Setup
 
@@ -49,6 +47,11 @@ but it MUST carry:
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
+⚠ **The brief hands the implementer design ids, and they come back out in the code unless you say
+so** — including into `@export_group` labels Godot renders as Inspector headings. **The citation
+belongs in the `STEP:` report and in `PLAN.md`; the code gets the rule.**
+[[design-ids-stay-out-of-code]].
+
 ## The verification hierarchy — weakest to strongest
 
 Each layer caught things the one above it missed.
@@ -61,6 +64,10 @@ Each layer caught things the one above it missed.
 
 **Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
 after the work is already "complete".
+
+**Also run `py .claude/tools/doc_check.py --changed` at every phase boundary.** A design id leaked
+into a comment or a string survives every other layer here — it never fails a test and never breaks
+a journey — and it is the one thing an overseer can check without reading code.
 
 ## Red-then-green is mandatory
 
@@ -76,32 +83,10 @@ tolerance that had been calibrated to the bug, so it passed *because* the defect
 
 ## The ten ways a test passes while proving nothing
 
-1. `await some_timer` instead of `await some_timer.timeout` — awaiting a non-signal resolves instantly.
-2. **Lambdas capture outer locals by value.** `var fired = false` then `func(): fired = true` writes
-   to a copy. Box it in a one-element `Array`.
-3. **A fixture chosen so the implementation passes** — a symmetric pair hiding an asymmetric defect,
-   or "settle every item" so the interesting one is never in the interesting state.
-4. **A leak that is not a check failure** — a class extending `Node` needs an explicit `.free()`.
-5. **A loop or sampler whose body never runs.** Assert the sample count is non-zero *before*
-   asserting anything about its contents.
-6. **An assertion on a local the production path never touches** — it re-proves a data structure's
-   own arithmetic while being unable to fail for the wiring bug it exists to catch.
-7. **A tolerance calibrated to a bug.**
-8. **A new test that breaks a DIFFERENT suite** — global state left behind (pause flags, a live node,
-   a running tween). If the banner reports a failure you cannot find in your own suite, suspect your
-   fixture's side effects.
-9. **A fixture that clears the very global state the feature runs under.** Every `Main`-based test
-   in solatro wrote `get_tree().paused = false` right after `add_child()`; the shipped game holds
-   the tree paused for the whole session. That one habit hid a total soft-lock, a timer that never
-   fires, and a camera resting at the wrong zoom — all three green, for a whole run. Ask what
-   ambient state the real product runs under, and whether the fixture just turned it off.
-
-10. **Two competing mechanisms with the SAME observable.** A test can pass because the WRONG
-   mechanism happens to produce the right answer. Measured: a re-pack test passed with its fix
-   removed, because the stale tween and the correct one wrote the same property every frame and the
-   later one landed last — the defect was real and invisible. Separate the two before asserting
-   (there, by making the stale animation outlive the correct one) or the test is measuring which
-   writer ran second.
+**[[tests-that-prove-nothing]] carries the list.** Read it before writing a step brief and before
+accepting one. The two that bite hardest in this pattern: a fixture that clears the ambient global
+state the real product runs under (a pause flag, an autoload), and two competing mechanisms with the
+SAME observable, where the test measures which writer ran second.
 
 ## Traps that are not about tests
 
@@ -110,10 +95,7 @@ tolerance that had been calibrated to the bug, so it passed *because* the defect
   overseer's own runs.
 - **A banner can report a failure that is not a check** ("0 behavior, 0 implementation") — that is an
   unexpected engine error. Read the newest engine log's backtrace.
-- **A single-suite run is a debugging aid, never a verification.** Only the full suite with a real
-  banner counts; "no banner" is a crash, and a crash is a failure of the change that produced it.
-- **One critical fix at a time**, full suite between each. Six independent fixes landing together
-  became one unfixable state that crashed the engine, with no way to tell which caused it.
+- **One critical fix at a time**, full suite between each — [[one-fix-at-a-time]].
 - **A tunable literal in a source file is a defect**, even when it looks like an epsilon. Sweep
   touched files for numeric and colour literals at the end of every step.
 - **Diff your identifiers against the registry before reporting.** Invented names and signals stop

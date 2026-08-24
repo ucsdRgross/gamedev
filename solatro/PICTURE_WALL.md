@@ -114,10 +114,83 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   under a bounded escape, so a move that never returns fails a check instead of hanging the run
   with no banner.
 
-## Defect ids cited from code
+## Tuning it — `Tools/wall_editor.tscn`
 
-Code comments across this subsystem cite ids from the two reviews this run produced. Each id names a
-contract, not an incident — the id is what the comment is pointing at:
+**Every wall number is an editable field here, not a constant.** Open the scene and edit the
+`WallEditor` root in the Inspector; the wall re-packs on every change. There is no custom UI — the
+Inspector already gives arrays, undo and nested resources.
+
+| Panel | What it holds |
+|---|---|
+| `layout` | `gap_px`, the ellipse clamps, `view_margin`, `home_id`, and every `PictureEntry`: `slot` (placement ORDER — the packer resolves the angles), `size_multiplier`, `design_size`, `frame_px`, `frame_colour`, `keep_aspect`, `music`, `background_texture`. |
+| `preview_settings` | A standalone `PlayerSettings`. Transition duration and phase fractions, easing curves, overfill margin, shadow offset/opacity, info-card size, reveal scale, touch targets. |
+| `preview_aspect` | 0.5–4.0, re-packs live. The clamps only do something at the extremes. |
+| `unlocked_ids` | Seeded with EVERY id. Delete some to simulate a partial unlock. |
+| Transition preview | `preview_source_id`/`preview_dest_id` are seeded with the longest move on the wall; `play_transition` runs the real `WallTransition`. |
+| Focus | `preview_focus_id` focuses that picture through the real `WallPicture.focus()` and poses the camera at its resting pose — the state a player is in most of the time, and the only place a too-small `wall_overfill_margin` shows as a sliver of frame at a window edge. `&""` is wall view. `preview_selected_id` drives the real `set_selected()`, so `wall_selected_lift` is visible. `preview_wall_view_resolution` renders unfocused pictures at their wall-view footprint, as the game does. |
+| Gestures | `preview_pinch` routes real touch through the real `WallInput.PinchTracker`, so `wall_pinch_threshold_px` is tunable against actual fingers. Needs a touch device or `emulate_mouse_from_touch` off; `gesture_log` shows what the tracker saw. |
+| Info mode | `preview_info_mode` ANIMATES the camera to `preview_info_id`'s info pose (bottom frame revealed, the other three edges covered) and shows the real `InfoCard`. The ONLY way to reach `wall_info_mode` from an Inspector — it is not `@export`ed on `PlayerSettings`, being session state that must never persist. With it on, `play_transition` previews the INFO transition: a pure travel at constant zoom. |
+| Overlay | The REAL overlay from the hosted `wall.tscn`, with its info card. Back / Forward / Wall / Info are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knobs are live. |
+| Save | `save_now` writes `Assets/Wall/layout_default.tres` — the resource the game boots from. `revert_now` reloads it. `preview_settings` is NOT saved. |
+
+`save_now` / `revert_now` / `play_transition` are booleans acting as BUTTONS: they run on the rising
+edge and reset themselves.
+
+⚠ **PREVIEW vs F6 differ, deliberately.** In the Inspector the tool draws empty frames, builds no
+`InfoCard`, and the camera does not follow — the editor's 2D view is the user's own; `menu.tscn` /
+`map.tscn` are not safe to instantiate there; and `InfoCard` is not `@tool`, so it would load as a
+placeholder and throw on any call. **Run it (F6) for real screens, the info card, and transitions.**
+Geometry, framing, packing and the info camera POSE are live in both.
+
+⚠ **Info mode ANIMATES, over `wall_transition_delay * wall_info_zoom_scale`.** It is not a snap in
+the game and must not be one here — a tool whose timing differs from the product cannot be used to
+judge timing. `wall_info_zoom_scale` defaults to 1.0, i.e. exactly an ordinary wall move; drop it
+below 1.0 for a snappier reveal, since the info pose only shifts the camera a little way down.
+
+`Tests/Visual/wall_editor_soak.tscn` drives the tool through aspects 0.5–4.0, `gap_px` 0 and 200,
+overfill 1.0 and 1.25, one/two/all pictures, reduced motion, the info animation, and every overlay
+button including a press landing mid-move — 55 checks plus a screenshot per case. Run it after
+touching the tool.
+
+⚠ **RUN (F6), THE TOOL HOSTS THE REAL `wall.tscn`** — surface, camera, pictures, viewports,
+overlay, info card and both music players. Not a stand-in and not a re-derivation: the wall's own
+input runs, so arrow selection with its held repeat, click-to-enter, `wall_jump_N`, pinch and the
+Back/Forward/Wall/Info actions all reach the preview, and every knob goes through the same code the
+game runs it through. **`knobs_this_preview_does_not_drive` is empty when run.**
+
+⚠ **The global pause is KEPT.** `Wall._ready()` pauses the whole tree and the tool leaves it
+paused, because that is what freezes an unfocused screen in the real game. `WallEditor` is
+`PROCESS_MODE_ALWAYS`, as `Wall`, `%Camera2D` and `%Overlay` already are in `wall.tscn`.
+
+⚠ **The EDITOR preview keeps the hand-built scaffold**, because `Wall` is not `@tool` and would
+load as a placeholder. Four knobs are inert there and the tool names them in
+`knobs_this_preview_does_not_drive`: `wall_selection_repeat_delay`, `wall_debug_readout`,
+`wall_reveal_delay_scale`, `wall_unlock_all`.
+
+⚠ **Every non-focused picture is really `unfocus()`ed, never skipped.** A stale `is_focused` makes
+`Wall._focused_picture()` non-null, and both the texture-filter update and the selection repeat bail
+whenever anything is focused — silently, with no other symptom.
+
+⚠ **It is NOT in `all_tests.tscn` and never will be.** The suite carries only the two `Tests/Visual`
+scenes that assert on pixels (`test_pixels`, `test_outline`); everything else under `Tests/Visual`
+is a hand-run diagnostic that renders, screenshots and prints. That is why the wall-editor runs look
+different from a suite run — they are a different kind of instrument.
+
+⚠ **Wall view is framed with `layout.view_margin`, exactly as `Wall.wall_view_zoom()` frames it —
+NOT with `wall_overfill_margin`, which is a picture's own overfill when focused.** Using the picture
+knob here framed the preview ~4% tighter than the game and made `view_margin` do nothing, which
+would have made this tool useless for the one composition call it exists to support.
+
+⚠ **The tool assigns `WallPicture.editor_settings`, and that override wins PREVIEWED OR PLAYED.**
+Making it editor-only is the bug `LightLayer` already paid for: a played tool scene would read the
+player's `settings.tres` while the panel showed its own resource. `_exit_tree()` restores whatever
+was there before, and nothing here writes `user://settings.tres`.
+
+## The contracts the reviews established
+
+⚠ **Code does NOT cite these ids** — a comment states the rule and the design docs keep the
+provenance (`.claude/memory/design-ids-stay-out-of-code.md`). This table is the index from a review
+id to the contract it produced, for anyone reading the review documents.
 
 | Id | The contract it pins |
 |---|---|
@@ -133,6 +206,7 @@ contract, not an incident — the id is what the comment is pointing at:
 
 ## Open
 
-Tracked in [todo.md](todo.md) under "Picture wall". `GAP-018` (is `WallLayout.view_margin` extra crop
-or vestigial?) and `GAP-019` (what the camera does during a reduced-motion cross-fade) are open and
-owner-facing; every other gap in `design/picture-wall/gaps/` is answered.
+Tracked in [todo.md](todo.md) under "Picture wall", with the stream's state in
+[HANDOFF_picture_wall.md](HANDOFF_picture_wall.md). Every gap in `design/picture-wall/gaps/` is
+answered. What is left is the playtest, what unlocks `book`, and the two composition calls — all
+three of them owner calls, and the composition ones are now judgeable live in the tool above.

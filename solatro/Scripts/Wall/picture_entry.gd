@@ -1,39 +1,35 @@
 @tool
-## S34 (Q185=a, §1j): the layout tool loads/saves `layout_default.tres` directly, and a non-`@tool`
-## script loads in the editor as a PLACEHOLDER -- reads still work but the editor SILENTLY DROPS
-## any property it could not see on save (the exact `fx_editor.gd` lesson this repo already
-## learned once, cited in its own header comment). `PlayerSettings` already carries the identical
-## marker for the identical reason.
+## ⚠ `@tool` because the layout tool loads and saves `layout_default.tres` directly. A non-`@tool`
+## script loads in the editor as a PLACEHOLDER: reads work, but the editor SILENTLY DROPS any
+## property it could not see when saving. `PlayerSettings` carries the same marker for the same
+## reason.
 class_name PictureEntry
 extends Resource
-## One picture's authored data — id, scene, placement order, size multiplier, frame thickness.
-## Read by WallPacker (PLAN.md §1.3 as amended by GAP-009) to place it and by WallPicture (S10) to
-## build it.
-## PLAN.md §1.1 — every field, its type and its default are specified there; this transcribes it,
-## EXCEPT `ring` (GAP-009: rings are rejected, the field is deleted, nothing ever read it),
-## `slot`'s meaning (GAP-009 authored it as an angle in degrees; GAP-010's amendment -- rebalancing
-## is now UNCONDITIONAL -- demoted it further: `slot` is a placement-ORDER key only, its numeric
-## value never surviving into the resolved angle for any unlock set, complete or partial -- see
-## ASSUMPTIONS.md), and three fields GAP-015 settled `PictureEntry` is EXTENSIBLE for: `music`
-## (S33/Q167=c), `background_texture` (GAP-015=a, L3) and `frame_colour` (GAP-013=a, QR4=b) --
-## PLAN.md §1.1 and NAMES.md are both updated to match this resource, not the other way round.
+## One picture's authored data. Read by `WallPacker` to place it and `WallPicture` to build it.
 
-@export var id : StringName = &""              ## NAMES.md picture ids; unique within a WallLayout
-@export var scene : PackedScene = null         ## null = registered but unbuilt (&"book", Q214=a)
-@export var slot : int = 0                     ## GAP-010 (amended): placement-ORDER key, not an angle
-@export var size_multiplier : float = 1.0      ## Q16=c, any positive value
-@export var design_size : Vector2i = Vector2i(1152, 648)   ## per-screen, Q29=b
-@export var frame_px : Vector4 = Vector4(24, 24, 24, 24)   ## L,T,R,B in wall units; Q36, Q37=a
-@export var frame_texture : Texture2D = null   ## null = no drawn frame (Q35=c) but geometry stands
+## Unique within a `WallLayout`.
+@export var id : StringName = &""
+## The screen this picture hosts. null = registered but unbuilt.
+@export var scene : PackedScene = null
+## Placement-ORDER key, not an angle: the packer derives every angle itself, so this value only
+## decides where the picture falls in the sequence.
+@export var slot : int = 0
+## Scales this picture relative to the others. Any positive value.
+@export var size_multiplier : float = 1.0
+## The authored resolution of `scene`, per picture.
+@export var design_size : Vector2i = Vector2i(1152, 648)
+## Frame thickness, L/T/R/B, in wall units.
+@export var frame_px : Vector4 = Vector4(24, 24, 24, 24)
+## null = no frame is drawn, but the frame GEOMETRY still occupies its space.
+@export var frame_texture : Texture2D = null
 @export var unlocked_by_default : bool = false
-@export var keep_aspect : bool = false         ## true = never stretched to window aspect (Q32=b)
-@export var music : AudioStream = null         ## S33, Q167=c; null = silent, same convention as frame_texture
-## GAP-013 (owner-answered a): per-picture frame tint, applied as `%Frame.modulate` over the one
-## shared bevel texture (S24) -- mirrors how `frame_px` (size) already varies per picture while the
-## texture stays shared. White = no tint, i.e. the shared texture's own baked tone unchanged, which
-## is "the current neutral placeholder tone" the answer names as the default.
+## true = the picture is never stretched to the window aspect.
+@export var keep_aspect : bool = false
+## Plays while this picture is focused. null = silent.
+@export var music : AudioStream = null
+## Per-picture tint over the one shared frame texture, applied as `%Frame.modulate`. White leaves
+## the texture's own tone unchanged.
 @export var frame_colour : Color = Color(1.0, 1.0, 1.0, 1.0)
-## GAP-015 (owner-answered a): the board's authored resting image, shown inside this picture's own
-## SubViewport whenever it has no live screen (`screen_root == null`, L3) -- null = nothing drawn,
-## the same "registered but unbuilt" look an absent `scene`/`live_screen` already produces.
+## The resting image shown inside this picture whenever it has no live screen. null = nothing
+## drawn, the same look an absent `scene` produces.
 @export var background_texture : Texture2D = null

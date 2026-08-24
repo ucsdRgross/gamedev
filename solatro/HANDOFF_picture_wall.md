@@ -5,10 +5,14 @@
 throughout every defect it ever shipped.
 
 **State:** all criticals and majors from two independent adversarial reviews are fixed, each with a
-red-then-green proof and a full suite between. The three open gaps are answered. What remains is
-one owner call on a flaky test, one on what unlocks `book`, two composition questions that want
-real renders, and the playtest itself. **Nobody has played it.** Every claim below comes from
-tests, probes and rendered snapshots.
+red-then-green proof and a full suite between. The three open gaps are answered. **The suite is
+green: `ALL 39 SUITES: 3116 CHECKS PASSED`.** What remains is one owner call on what unlocks
+`book`, two composition questions that want real renders, and the playtest itself. **Nobody has
+played it.** Every claim below comes from tests, probes and rendered snapshots.
+
+**The layout tool is now the way to playtest composition.** `Tools/wall_editor.tscn` run with F6
+hosts the real screens and opens on the whole wall with every field populated — see
+PICTURE_WALL.md. S43's composition calls can be made in it directly rather than from snapshots.
 
 **Entry docs:** solatro/PICTURE_WALL.md (how it is put together, and the landmines),
 solatro/todo.md ("Picture wall" — everything still open),
@@ -36,6 +40,35 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
   status: blocked
   evidence: 'Observed failing in 1 of 3 consecutive runs of an unchanged build; clean in the other 2.'
   notes: 'Owner call. Reads like a capture/settle race in _real_card()/_shoot(), not a bad bound.'
+
+- id: S45
+  description: >
+    WALL PAUSE read its transition DURATION off the machine's saved settings.tres, so two
+    "is the move still in flight?" preconditions failed on any box tuned for speed and the
+    real assertions behind them never ran. Both now pin the clock and snapshot with no prefix.
+  files_touched: [solatro/Tests/Wall/test_wall_pause.gd]
+  verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
+  verification_kind: suite
+  status: done
+  evidence: 'Was 2 FAILED on 3 of 3 runs (base_delay 0.1 x wall_transition_delay 0.001 = 0.0001s,
+    one frame). Now ALL 39 SUITES: 3116 CHECKS PASSED, with settings.tres restored unchanged.'
+  notes: 'Any test whose precondition is a DURATION must set that duration itself.'
+
+- id: S46
+  description: >
+    The wall editor previewed against the wrong settings in both modes and showed empty frames.
+    It now assigns WallPicture.editor_settings (an override that wins previewed OR played, the
+    LightLayer idiom), opens on every picture unlocked with the transition pair seeded, and
+    hosts the real screens when run.
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/UI/Wall/wall_picture.gd,
+    solatro/UI/Wall/wall.gd, solatro/UI/Wall/info_card.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_snapshot.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Editor mode: packed 6/6, zero SCRIPT ERRORs (was 10x wall_light_offset on Nil).
+    F6: packed 6/6 with menu, map and game rendering inside their frames.'
+  notes: 'Info mode is covered too: `preview_info_mode` is the only Inspector route to
+    `wall_info_mode`, which is not exported on PlayerSettings by design.'
 
 - id: S42
   description: >
@@ -74,6 +107,96 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
     Every suite involved (PIXELS, OUTLINE, INTERACTION, WALL INPUT, WALL PAUSE) completes
     when run ALONE, so it is in the concurrency. Re-run before bisecting: a hung run here is
     NOT reliably attributable to the change that produced it.
+
+- id: S47
+  description: >
+    The wall editor now hosts the REAL overlay and info card, drives them from a real FocusStack,
+    and is exercised by wall_editor_soak.tscn. Two product defects surfaced and were fixed:
+    InfoCard sized itself ignoring the preview image BESIDE its text (card 74px vs a 90px visual,
+    so it scrolled content it had room for, and the body was measured at full card width instead
+    of the narrower text column); and setting info mode outside the button left the button
+    reading un-pressed.
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/UI/Wall/info_card.gd,
+    solatro/UI/Wall/wall_overlay.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Soak 52 checks / 0 problems; both fixes proven red-then-green (card 74 vs visual 90
+    when neutralised; wall framing 0.32210 vs 0.31579/0.47368 when the view_margin fix was
+    neutralised). Suite ALL 39 SUITES: 3122 CHECKS PASSED.'
+  notes: 'The soak is a diagnostic, not a suite member -- run it by hand after touching the tool.'
+
+- id: S48
+  description: >
+    Info mode SNAPPED in the tool while the game animated it, so the reveal read as instant and
+    could not be judged. The tool now tweens to the info pose, and wall_info_zoom_scale is a new
+    knob for that leg alone (default 1.0 = exactly an ordinary wall move, so nothing changes
+    until it is tuned). Pinch is previewable through the real PinchTracker.
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/Scripts/player_settings.gd,
+    solatro/Levels/main.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Soak 55 checks / 0 problems. Animation proven red-then-green: neutralised, the camera
+    is already at the info pose two frames in (mid (0.0, 82.19) vs target (0.0, 82.19)).
+    Suite ALL 39 SUITES: 3094 CHECKS PASSED.'
+  notes: 'wall_info_zoom_scale is a NEW knob at its no-op default -- it wants an owner ruling in
+    the playtest, not a silent number. Its suite test measures TWO durations and compares them:
+    the weaker "is it still running after N frames" form passed with the knob ignored, because the
+    unscaled clock is already longer than any small frame count.'
+
+- id: S49
+  description: >
+    The wall editor now HOSTS the real wall.tscn when run (F6), keeping its global pause, with the
+    tool itself PROCESS_MODE_ALWAYS. Owner ruling: the tool must have the same functionality as the
+    game. Every knob now reaches the code the game runs it through -- selection repeat,
+    wall_debug_readout, wall_unlock_all and wall_reveal_delay_scale were all inert before.
+    A play_reveal button drives the last of those.
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Soak 66 checks / 0 problems, including a held-direction repeat, the debug readout, an
+    unlock_all widening and a reveal duration ratio. Editor mode still clean (hand-built scaffold;
+    Wall is not @tool). Suite ALL 39 SUITES: 3139 CHECKS PASSED.'
+  notes: >
+    Found and fixed while wiring it: _apply_focus() was SKIPPING unfocus() on non-focused pictures
+    whenever preview_wall_view_resolution was off, so whatever was focused last kept is_focused
+    true forever. Wall._focused_picture() then reported a focused picture in wall view, and both
+    the texture-filter update and the selection repeat bail on that -- silently. The soak now
+    guards it directly.
+
+- id: S51
+  description: >
+    CONFIRMED DEFECT IN THE SHIPPED GAME: every unfocused picture shows an enlarged top-left CROP
+    of its screen, not the screen. update_wall_view_size() takes the render target from 1152x648 to
+    385x216 and the screen does not re-flow into it. Main._build_pictures(), _repack_wall() and
+    _on_window_resized() all make the identical call, so this is wall view at cold launch and after
+    every re-pack.
+  files_touched: [solatro/UI/Wall/wall_picture.gd]
+  verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
+  verification_kind: snapshot
+  status: pending
+  evidence: 'Soak prints "WALL-VIEW RESOLUTION: (1152, 648) design -> (385, 216) footprint (33% of
+    each axis)"; 16_wall_view_resolution.png shows a giant "S" where the start menu should be,
+    against 01_defaults.png which is correct at full design size.'
+  notes: >
+    Likely fix: SubViewport.size_2d_override = design_size with size_2d_override_stretch = true, so
+    the screen LAYS OUT at design size and RENDERS into the smaller target. Untried. Needs a by-eye
+    pass, and it changes how every picture on the wall renders. Until it lands,
+    wall_view_min_texture_px is tuning the resolution of a crop.
+
+- id: S50
+  description: >
+    wall_reveal_delay_scale has no SUITE test. It is now previewable (S49's play_reveal button) and
+    the soak asserts its duration ratio, but nothing in all_tests covers Main's own opening reveal.
+  files_touched: [solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_pause.gd]
+  verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
+  verification_kind: suite
+  status: pending
+  evidence: 'grep: only Main._on_new_run()/_on_continue() read it; no Tests/Wall file mentions it.'
+  notes: 'The duration-ratio shape S48 landed for wall_info_zoom_scale applies directly -- and note
+    S48 first shipped a WEAKER form that passed with the knob ignored.'
 ```
 
 ## Verified vs assumed
@@ -100,13 +223,14 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
 
 **Assumed, not checked:** anything about how the wall FEELS — transition timing, the reveal's
 "longer, slower", whether GAP-019=(c)'s cut reads as abrupt, whether the 14px selection lift is
-legible. All of it needs the playtest.
+legible, whether the info pose reveals the right amount of frame. All of it needs the playtest,
+and all of it is now reachable from `Tools/wall_editor.tscn` on F6.
 
 ## Open bugs
 
 See `todo.md` "Picture wall" — it is the live list and is not duplicated here. Nothing on it is a
-known crash or soft-lock; the two 🔴 entries are both about the TEST SUITE's reliability, not the
-game.
+known crash or soft-lock. The one remaining suite-reliability item is S44 (the intermittent hang);
+S41's PIXELS check is a bound nobody has ruled on, not a failure it produces every run.
 
 ## Files touched
 
@@ -115,9 +239,11 @@ the wall subsystem is `Levels/main.gd`, `UI/Wall/*`, `Scripts/Wall/*`, `Scripts/
 
 ## Next up
 
-1. **S40 — playtest.** Everything else is waiting behind knowing how it actually plays.
+1. **S40 — playtest**, now easiest through `Tools/wall_editor.tscn` (F6) for composition and the
+   real game for feel. Everything else waits behind knowing how it plays.
 2. **S42 — what unlocks `book`.** Until this exists, a whole subsystem is dead code.
-3. **S41 — the PIXELS mask check.** The suite is not trustworthy run-to-run until it is settled.
+3. **S43 — composition at 16:9 and 32:9**, rulable live in the tool.
+4. **S41 / S44 — suite reliability.** Neither blocks play.
 
 Opening prompt for the next agent:
 
@@ -129,7 +255,9 @@ Opening prompt for the next agent:
 
 ## References
 
-- `design/picture-wall/DESIGN.md` — cited by question id (`Q56`, `J1`, `G10`) from code throughout.
+- `design/picture-wall/DESIGN.md` — the provenance for every wall decision. ⚠ **Code no longer cites
+  question ids**; the design docs keep the traceability and the code states the rule. See
+  `.claude/memory/design-ids-stay-out-of-code.md`.
 - `design/picture-wall/gaps/GAP-018.md`, `GAP-019.md`, `GAP-020.md` — all three answered.
-- `.claude/skills/plan-run/SKILL.md` — the nine ways a test passes while proving nothing.
+- `.claude/memory/tests-that-prove-nothing.md` — the ten ways a test passes while proving nothing.
 - `.claude/memory/running-godot-scenes.md` — how to run the suite and what a banner does not prove.
