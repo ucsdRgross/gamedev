@@ -1,0 +1,1452 @@
+﻿Soltāro 
+Patience-mania tableau-mania Circus Solitaire (circus theme) Cardaganza The  Greatest Deck/Cardshow/Showitaire Show in Circustaire
+https://www.youtube.com/watch?v=h8zJ5xhz7uM
+Stranger Things Theme Song (C418 REMIX)
+Void Stranger OST - Void Symphony
+https://www.youtube.com/watch?v=XNOYiR8qk84 Neon Nightlife (Disconauts)
+Baltro but solitaire mechanics
+Reference zachtronics solitaire collection and hempuli solitaire mystery
+
+
+  
+
+Play field should look something like this, every click of deck causes new cards to drop down, your amount of rounds remaining go down, and slots on right score whatever you put on it
+Score slot can be used as free space between deck clicks
+
+
+Mulligan incoming cards by clicking on them and pressing discard button
+Rearrange incoming cards
+
+
+Other than that every other mechanic can be taken straight from balatro, jokers and consumables
+Different decks influence starting deck and rules you can combine and pick up decks with
+
+
+Face cards are all 10 when adding to total
+  
+ 
+
+
+2 for every 15
+2 for every 31
+2 for pair
+6 for triple
+12 for quad
+3-7 for run of 3 to 7 cards
+
+
+Magic deck: each card suit is an element, cast spells by submitting elemental combinations
+Survivor deck: each suit is stuff like food and water and sword,
+
+
+
+
+
+
+In deadman wonderland they have to collect all the number cards to progress to stage 2, where they have to face the remaining boss face cards
+We can do something similar by having an FTL like map but each location is marked by a single special card you collect which has special effects
+card suit and rank determines location difficulty and type
+start with full deck of cards all visible but face down like in minesweeper, can only click a card with face down card next to it, on click battle for the card but also reveal adjacent cards, win when you uncover all cards
+some squares on map are special locations like shops, or maybe do something like all 7s are shops
+maybe something like a square shape with rings of probability where higher cards more likely to show in middle
+
+
+
+
+All revealed cards do their abilities
+
+
+Can pickup stack from anywhere, but if stack is illegal can only be placed on submission spot
+
+
+
+
+Clicking on card on map makes it first card to appear in drop-down area of subsequent match
+Instead of currency, cards are the currency and are traded
+gold cards are heavy and always go to bottom of deck
+Frankenstein card: when submitted, combines with bottom and top card and becomes a 3 card merged stack and remains in submission zone after scoring
+Sliced bread card: on submission, if there is a same suit card later down the stack, gain a point for each card in between
+
+
+Seals:
+Double trigger
+Trigger even when hidden
+Trigger when in deck
+Money on trigger
+
+
+Card materials:
+Heavy card, sinks to bottom of deck
+Light card, rises to top of deck
+Earth, Air, Water, Fire
+
+
+
+
+No special submit slot, entire board is considered for submission on final score, using entry cards like jokers
+Similar to base solitaire where you constantly draw through deck, and finally submit by pressing score button, which will evaluate entire board state, after which everything is reset
+
+
+5 column wide board also allows for row wide poker hands
+
+
+only pick up legal stacks (moving stacks becomes more difficult with time)
+
+
+15s too hard to see, should be an ability, not default
+
+
+base scoring should be vertical runs (with min size) and horizontal poker hands
+
+
+Elemental card types that have custom movement, like always being on top or bottom of stack
+
+
+match ends when you run out of cards in deck or you reach required score
+
+
+pressing submit scores everything and clears cards on board, with upper cards coming down to start new board state without getting wiped
+
+
+for now legal stack will be ascending or descending order, cannot stack same suit
+
+
+ability where poker hands are also considered vertically
+
+
+cards come down on their own and cannot be dragged down normally
+
+
+Submission attempts to evaluate top down, 1 row at a time, 5 cards at a time, from top to bottom
+This way poker hands are evaluated first, with runs being simultaneously calculated per column 1 at a time
+
+
+something like all vertical scores are multiplied with all horizontal scores at the end
+
+
+Board state should be an array
+
+
+Trigger card effects in order from field effects, deck top down (cards that will be drawn soon first, actual order invisible to player), then left right top down including input at top, then discarded deck top down (recent discards first)
+
+
+
+
+All row scoring first, then score all 5 lanes at same time with same scoring at that row repeated for different col score
+So Runs are scored simultaneously for all 5 lanes at that row, which returns a list of scored cards, which then go through the card effect loop
+Results return list of cards that should be elevated
+
+
+Scored cards rise up, card effects do a little hop n shake when triggered, and triggered effects also show their parent card in the preview
+
+
+  
+
+New map design idea
+Choose from next 3 card options, which will cause player to move up a tier, play a match, and repeat, always keeping the triangle shape
+Moving left means you permanently lose access to both right lanes, moving middle means you lose left and right lanes
+Every few rows is a boss phase, which can be visually designed to look like terrain as well
+Might make sense to make it so fights only happen on these boss phases
+Easy to implement by rendering 2d to 3d viewport and tilting the viewport
+
+
+Score points refer to whether they are col or row points with a – or | next to their number
+Score |1| point and -2- 
+
+
+Card ideas
+When this card is scored, this card and the 4 cards above it are scored as a poker hand
+Every 5 cards per column is scored as a poker hand
+Spiderweb, 1 point per card diagonal to this card and in a cross shape
+
+
+Skill types can be divided into:
+new ways to score points
+different ways to reposition cards 
+ways to increase points scored from existing cards
+Changing rules of the game
+deck manipulation to get cards you want
+ways to get rid of cards that you don’t want
+Changing how other skills work
+persisting effects that go to next game?
+creating mini games?
+creating temporary cards
+Cards that come at a price
+
+
+Dot art based background star flow
+
+
+Some way to guarantee that new cards you choose show up first or sooner
+
+
+At round end, discarded board swirl into score numbers as they are calculated
+
+
+Null cards that take up space and also are highlighted when selected to show hover over null space
+
+
+The Secret to good 2D Graphics for your Games (youtube.com)
+
+
+TODO list:
+* Make workable game prototype
+   * Menu
+      * Settings
+         * TASK copy balatro menu and settings for now
+   * Actual map
+      * Choose cards to add to deck
+         * TASK star wars scroll, cards move down as you select them, creates more cards on top
+      * Go from one match to the next
+         * TASK return from end of match to map
+      * Increment total score needed to win per match
+         * TASK games won tracker on map
+         * Might need an infinite number class? (or balance around smaller numbers? Big numbers are funner though)
+            * Do this later
+   * Deck viewer
+      * TASK way to view deck when you hover over deck, generate a bunch of temporary cards
+         * Keeping cards loaded may be excessive in cases of massive decks
+         * Instead dynamically create temporary cards as you scroll through, so that only a portion of cards are ever loaded
+      * FUTURE TASK when creating a way to view future cards, show it either in deck viewer or above insert slots (above insert slots sounds way better actually)
+      * FUTURE TASK deck viewer sorter
+   * Deck Maker
+      * TASK create a way to create new decks and save them for testing purposes
+   * Save ability
+* Implement more card abilities
+   * Implement active abilities needing to be visible to trigger
+      * Hidden trigger, activates even when hidden
+   * Implement deck trigger
+      * Deck triggers show up on top of deck slot as they trigger
+         * Some sort of activate condition function that every active card has which keeps track of whenever a card can activate, deck trigger would modify it
+   * Make it so only first scored poker hand actually scores, ignoring later poker hands
+      * Implement scoring poker hand modification
+   * Implement card ability which is any card can be placed on this card
+      * Make it so card stacking rules can be modified by abilities
+   * Hippo card
+      * Make it so clicking on cards can be modified by abilities
+   * Card types such as elemental cards that move around
+
+
+Every 5 rows make row red
+Increase points by layer
+Only score first poker hand
+Check scoring in deck and discard
+Add all cards to map
+
+
+
+
+
+
+Quests like tft 16
+More emphasis on extremely random conditions causing permanent affects? More emphasis on the “unlocking” aspect maybe? Effect that upgrades itself into better versions of itself if you meet conditions
+Is this any different from effects in general?
+
+
+
+
+Pip resolver/comparator class to determine interactions between different pips
+Each pip gets its own class to determine visuals
+
+
+Use resolver class to determine when card abilities should allow stacking
+Goes through all cards and gathers all allow and deny affects into a whitelist and blacklist, if blacklist returns true then no allow, if whitelist returns true then allow
+
+
+Big question, are there cases where pips can have their own abilities outside of how resolver class handles it
+Yes, technically if you think about adding new scoring methods
+Solved by having each new class have static scoring methods that can be added during scoring as defaults for that pip
+Anything else? (wild cards?) pip effects should be permanently active
+Wild should be its own pip… which tracks previous pip inside itself
+Example: pip randomly chooses itself from existing pips on the same board/row/col
+Would need to update itself after board updates every time, and visuals would change if want to go with cycling visual, and there needs to be somewhere for final logic of choosing random number to be (would a getter setter be enough?)
+Honestly worrying about different pips at this point is probably too early, only really need a good system for dealing with stacking and scoring rules for now which should be covered by resolver class for now and isn't hardcoded 
+
+
+Everything should be deterministic, so need some system for the random numbers
+
+
+Need to add 
+* QOL: show all active ability button, half open eye button that opens all the way up and causes all cards with eye stamp or are generally always active to push cards stacked on top downwards so that that the active card is fully visible, except probably not active while picking stack up
+   * May make more sense to just have particle effects like glowing for active cards (or motion like the hovering effect?)
+* QOL: compress all cards button, convert entire board into a compressed sheet with main card art removed except for pips, instead showing just ability names in bright white text, dimmer if ability is not active. Basically a flavorless version that maximizes efficiency? Even picking up a stack will be like picking up a stiff column
+
+
+Exchange Voucher: Special Card usable from deck which can be swapped with any card on screen
+* Idea here is that all buttons should themselves be cards, and shops should utilize the game board with stuff like reroll shop itself be a tappable card
+
+
+Need to implement card tapping on right clicks. Make card visibly dimmer? Cant rotate card because no space. Best method is probably have all tappable cards specifically add a glowing border to themselves to show they are interactable, which is removed when it is spent
+
+
+I am thinking to remove card parenting in terms of node parent. Currently adds too many headaches, especially in terms of bottom cards inheriting attributes from top card, which is too hard to control if not implemented ourselves especially with tweens
+
+
+Sin of gluttony card: hippo card on crack, no cap on value, can be fed from anywhere including decks, permanently consumes card and will not return it
+
+
+Some sort of uniqueness multiplier that increases with every unique effect triggered
+
+
+Create texture class static to hold all images and their hvframes in one file
+
+
+Create a Rules “Deck” that is normally hidden from the player
+Holds all the cards that determine default rule set, each default rule set is actually its own card 
+This makes it easy to change the rules by just changing the cards in the rules deck
+Default stacking cards ruleset card
+Default scoring cards ruleset card
+Etc.
+There can be a metagame where player tries to modify the default ruleset deck during a run, adding their own cards or removing certain cards
+Negative “boss battle” effects can just be temporary cards added to this ruleset deck, the card would literally be defined as being destroyed after a game
+The Universal/Fundamental/Rule Deck 
+Voucher types would just go directly in main playing deck instead
+Baba is you type nonsense, what determines what cards are visible from the ruleset deck would also be defined by card effects, a “Label/Evident” type card would announce its effect on the board as an active effect even when the universal deck is not visible  
+Everything in the game is built on card effects lol
+Universal deck goes last in all mods order probably
+These cards would have random suit and rank for in case player is able to extract them to their playing field
+
+
+Consideration to make all decks their own solitaire board which can be played as if actually solitaire in order to change around order of rules or cover rules or extract cards to be moved outside of the deck, but vetoing it as of now because it sounds extremely messy to deal with as player will have zero way to decide the card layout on board unlike main board, which can easily lead to unsolvable boards most of the time in these side games
+
+
+Immutable rules 
+Cards have a suit, rank, stamp slot, skill slot, and card type
+Cards can have 1 parent and 1 child card, a stack
+There exists a board with 2 zones, a deck, a discard deck, and rule set deck
+On game creation rule set deck is parsed to decide board layout
+the scoring section will not be implemented by cards (ok maybe we can also have this done by cards? Alt win con of somehow manipulating UI hard enough to force a win? Problem is no good way to manipulate other than duplicating or removing functionality, so only have them as card effects if it can be duplicated or removed)
+
+
+This means even input cards should have their functionality as an ability, on turn start pass child cards to same column board card, then take random card from deck
+
+
+this means even number of input and boards cards should be decided dynamically on game creation by iterating through rule deck, for example a rule dictating there should be 5 input cards, and 5 board cards (wait but shouldn’t this be immutable?, that means actual rule set cards should be 5 sets of +1 input card at top of board, and a possibly separate +1 board zone card, which will allow modification)
+Better to implement this early to allow effects that respect not guaranteed 5 columns
+
+
+Idea: card that can force a linked on trigger card to trigger whenever tapped, probably via stacking, probably hard to implement in a good way though since cards realistically only trigger in specific scenarios that can’t be met by just tapping a card 
+
+
+A rulesets card pack that can be unlocked and allow cards that change fundament rules of the game
+Theoretically well designed enough to allow player to create custom rule decks that can even implement default solitaire (seems like design scope creep, ruleset deck feels like it can just be way to make certain cards into global effects instead)
+
+
+Vampire survivors prestige points system, each win gives you more points, which can be used in a menu to change odds of cards appearing or apply debuffs for more pointd
+
+
+Tappable cards will have a halo to show they are tappable, with progress bar type rays to show remaining taps left, for example 1 tap remaining = |_._._._._|, 2 tap remaining = |_._.|._._|, 3 = |_._|_._|_._|
+Basically imagine if a an actual halo didn’t change size but had black lines depending on remaining uses
+
+
+Eye stamp that allows card to be active despite covered shows a miniature version of skill art inside the stamp
+
+
+Deck where rule deck is empty and all the rules are part of main deck
+
+
+
+
+Triangle map can have holes in it, should contain card packs instead of individual cards as well
+
+
+Spreadsheet of cards, title, rarity, cost in cards, descriptions, tags
+Rarer cards have different borders maybe and their shines will be different? Or do holographic type effects?
+
+
+Power sort cards. Create a bunch of base effects that are common, then make better and better versions of those effects which will be separate cards. Rarity is determined by how these cards climb in effect value
+
+
+Shop will show some cards at the top to buy, and cost will be stack of cards at the bottom randomly chosen to be equivalent to cards cost from deck, method to remove cards from the deck, while card packs on map add more, shop can also sell packs too, refresh will have increasing card costs
+
+
+Note: monetization systems of progression systems in game also work outside of monetization which can be seen with levels, equipment, prestige, unlocks, etc. You can maximize player retention by slow dripping these systems to the player. Don’t go overboard in the amount of different systems as it becomes too much for a player to keep track of, but there is no real drawback in how deep a system can get. Ex: infinite levels, infinite prestige, no limit on types of equipment.
+QOL should exist for systems that are time consuming and take time away from the actual fun parts of the game (gacha games do this by introducing QOL to “skip” old mechanics as they introduce more mechanics)
+
+
+For our game planned mechanics are
+Card unlocks (Balatro has card unlocks based off of doing certain things in game. I’m thinking we can have a dual system of certain actions unlocking specific cards, and cards that unlock after reaching certain scored points or wins threshold with no specific condition to unlock (or achievement system where stuff like “play 20 unique cards” and “win 5 games” all count towards the same game pass, so order you achieve doesn’t matter. Unlocking common cards could be by overall generic progress, while rarer cards would be unlocked by playing specific genres)
+Prestige system (wins give currency which can be used to meta progress the game, see Vampire Survivors. Stuff like more starting cards or more rerolls or undos or starting game with specific cards, but I am leaning more towards some way to manipulate the percentages of cards and events spawning on the map to give the player a way to change the map themselves. Good place to unlock true vision that allows seeing rule deck and true descriptions of cards (maybe allow buying cards that will show up? Or new packs that will show up with specific effects, like new card packs). Maybe also have super expensive option to reset all card unlocks and lose all current points to level up? Or spend points to unlock custom deck editor)
+Deck unlocks (same as balatro here, except I think we can combine this with balatro gimmick runs? Instead of entire other tab)
+Ascensions (same as balatro and slay the spire here. There is a bit of overlap with prestige system here so need to be careful not to overlap? Technically prestige systems sometimes allow debuff effects in exchange for more points, which overlaps with ascension debuffs. Can probably just have each ascension choose a card with a negative effect to go into deck or rules deck. This would be a good place to have all the environmental hazard cards from boss fights to be added to deck permanently)
+Community engagement via Lore and cosmetics??? And SECRETS!? (not sure if this is really worth spending time into. Wins or certain actions unlock pieces of paper containing bits of overall lore full of drama and romance! I likely don’t have time for cosmetics, which would be unlocking more background variety most likely and being able to choose it. Lore could also instead be a campaign more of some sort, but wtf would the story even be about for such an abstract game? It would be like making a campaign story for tetris or something) (have secrets and mysteries in the game, don't even need to have an answer since it drives engagement regardless…)
+
+
+Eye of god card: allows seeing all decks and true descriptions
+Hand of god card: allow moving cards to any location on board, and can shift order of cards in a deck
+Foot of god card: can switch location with any card on screen
+(can also go with third eye, third hand, third foot motif)
+
+
+Balatro did a thing where they included discord link in game to their own personal discord so they could directly manage the community https://gdcvault.com/play/1035036/-Balatro-Turning-Low-Resolution
+
+
+Card power/costs need to be on an exponential curve, stronger and stronger cards would be cheaper than if it scaled linearly, because the more something costs, the less flexible it is while still needing to be powerful. In other words how flexible a card is is part of its budget. Cheap cards need to be not too powerful since they are maximally flexible
+
+
+scoring is the most important aspect of the game as it contextualizes what all cards are trying to do 
+Do to this, it can be more useful to recontexualize points system as damage against some antagonist, kind of like slay the spire or how tcg has enemy health pool
+Row and col scorers should therefore be rebalanced to be more of a combo system, where scores increment by 1 for each unique effect triggered, and shift to much higher emphasis in card effects during a turn that do direct damage for fulfilling certain conditions and which shifts current board in a way that’s hard to undo, rewarding player for activating all effects and in a specific order with passives and buffs. TLDR slay the spire is good reference on how to recontexualize point gain, cards are ammo which can be buffed to do more damage, adding more excitement outside of submissions
+Flat points from scoring, while row combo and col combo are multiplied into the flat points
+
+
+avalanche, after scoring all cards on board attack the scoreboard, reducing goal score by amount of cards
+
+
+
+
+
+
+After seeing Titanium Court I think a more stylized static look with less 3d motion could be good, no more hovering animation except for side to side. 3d motion reserved for special cases. Picking up a stack will be static too as well. In exchange should go heavy on sfx effects
+
+
+Use card art as part of background
+
+
+Add additional status array to cardData, which can be dictionary of status effect name and associated value such as number, which will be processed by rule card for each effect
+
+
+Have a game law rules button (Question Mark Symbol) at top right, but have it grayed out and unselectable with hover hint that player cannot see it yet
+
+
+When attacking, all cards rise up and begin hovering effect
+
+
+On game end, cards from everywhere tornado into the main deck
+
+
+Crunchy sounds, inscription act 2? Cards slightly attracted to cursor, active cards feel alive
+Data layer populates both ui and card layer
+Party effects?
+
+
+When an effect plays, have pop up of the art itself on screen in the background like it is being performed
+
+
+Circus theme, instead of upper and lower play zones, instead its Grand Entrance and The Ring
+Cards are performers, skills are instead feats
+Scoring is now themed as exciting the whole audience, with cheering based off of scoring. Gain tips for overscoring. Player is Ringmaster. Game laws are now conventions maybe?  
+Suits are now based on clowns and background dancers and flames and juggling balls and hoops and nails/knives. Aces are the actual performers? Should cap be 10?
+Main menu can be traveling troupe?
+List of circus skills - Wikipedia
+
+
+If we introduce concept of performance rings, we can have stacks with effects that activate after a square amount of rings increase in score. For example First Ring is the first 5x5 square, scores here are 1x. Second Ring is 2x score so cards past the first 5 rows and the 6-10 rows, Third Ring is 3x score at 11-15 rows and so on
+
+
+3 submits as reference to 3 acts/performance?
+
+
+Leader/champion cards: starts game already on board in free slot (or already on entrance) and doesn’t leave on submit.  
+Ringmaster: no suit or rank, has type saying it starts game already in entrance which is typical for leaders, has stamp can always be picked up, can be placed anywhere as long as no cards on top, and skill that it remains on board after submission (maybe swap skill and stamp?)
+Optional flavor debuffs such as fear of fire/knives (cannot be placed on fire/knife cards)
+Different starting decks can have different leader cards which incentives different builds
+Magician: card creation and deletion
+Acrobatics: card movement
+Animal trainer: stacking focus including eating cards and cards autoi moving through field
+Clowns: pip manipulation
+Dancer, skill tricks: specific formation focus
+Escape artist/stuntsmen: negative effects focus
+Fortune teller: deck manipulation
+Special effects: points/combo manipulation (fireworks)
+Conessions/food: positive effects focus
+Costume designer: equipment/clothing/stamp focus 
+Producer/manager: token cards like gold money cards and basic cards
+
+
+Cards have groups they belong to and leaders can boost by grouping
+
+
+Hat instead of stamp? Could also be general equipment though like shoes
+
+
+Types
+First act: shows up alone before any other cards
+2nd act: shows up alone after half the deck is drawn
+Final act: shows up after all other cards are drawn
+
+
+Preview is a presentation stage, text scrolls but not card
+Attraction packs instead of expansion packs
+Cue instead of tap
+
+
+Cards with skills will idly move and peak over the card they are blocked by
+Blocked active cards will likely need to have bottom row moved down so at least upper half of art shows
+
+
+carnival as meta shop
+
+
+Scored basic cards summon objects of their suit based on their rank at their column or row which will move across the board and interact with other cards
+For example knives and hoops will move horizontally across their scored row while balls and fire will drop down 
+Gain mult for every hoop that passes through an animal or acrobat, knives that miss a stuntsmen, ball that hits juggler or animal, fire buffs cards it passes through
+Firework suit directly adds points to its column based on its rank
+Better balance is probably randomly chosen for horizontal scoring, knives for hitting non feat cards and hoops for hitting feat cards. Balls buff feat cards and fire buffs non feat cards, but balls and fire will attempt to spread their buffs as evenly across the column as possible. Fire is dynamic so balls will need juggle animation, maybe simple go around in a circle above the card
+Does imply most feat cards should be alive in some way, and that they be somewhat individualized to 
+Cards will dynamically jump up to pass through hoop and duck down when knife comes
+
+
+Electric suit, buffs cards that are connected and chained in a certain way
+
+
+Reuse the heck out of card art
+
+
+Game laws can be viewed as pure text before gaining access to the rule deck
+This is so prop card abilities can be explained
+ Cards without feats are prop cards
+
+
+Spending points in metashop to manipulate overall odds also increases amount needed to score per show
+(After all, with more attractions, more people are gonna show up!)
+
+
+Since these deckbuilding roguelites are constantly facing an increasing number, optimization leads to hyperfocusing on methods to directly increase numbers. Can there be alt win cons other than hitting high scores to branch out the possibility space away from just bigger numbers? Deck optimization also leads to weird case where most fun part of the game is specifically when you haven't cut down your deck to specific cards and your strategy is not yet optimal, so your wins are very narrow and skill goes into narrowly avoiding losing, with optimized deck with crazy effects being the reward in a sense but also takes control away from the player as it in a sense plays itself with no more input from player
+Possibly allow multiple win conditions to win related to specific formations, but then how does this scale? 
+For example maybe have 1 flush to win, but you cant just go X flushes to win since there is hard cap on flushes you can ever play
+Tying wins to card formations is also untenable since if they manage to craft a good enough deck they are guaranteed to win no matter what by always having the formation setup
+Ahh this is what balatro boss blinds with negative effects are for. They test the overall resilience of your deck and punishes hyperfocusing. Same with slay the spire enemies all having unique gimmicks.
+In our case we can perform at different towns with different cases or have hazards.
+For example knifetown wouldn’t be impressed with knife scoring and those don’t gain points, same with firetown, juggletown, hooptown. Performing at a volcano might cause lava hazards.
+Only issue here is with triangle map players may have too much variety in choosing their hazard effect, but may be fine if we make sure to limit amount of towns that can be gone to, or maybe funnel them via impassible mountains and forests
+
+
+Add +1 reroll per game, for the rest of this game repeated actions will not have the same results.
+Idea of once active, stays active for rest of the game and can no longer be activated or deactivated again
+
+
+Active is now rebranded as spotlight/focus. Cards that are unblocked are in the spotlight
+Spotlight should come with either text or icon in description to make clear that conditions are triggered on active, and will make clear what effects dont need spotlight to trigger anyways, such as on Next effect
+Will make the always active stamp less crucial since not all cards need to be in spotlight to activate
+
+
+
+
+shoot cards will need to shift down to accommodate putting stacks in starting zone
+When holding cards, having cursor over where zone is causes control representing zone to expand, therefore shifting all cards in the stack down
+Controls also can’t be as wide as actual card to allow clicking on board itself to drag it around?
+
+
+Background shows card art for every card in play moving around as if launched from cannons around edges of screen fruit ninja style, some with spin factor
+
+
+Double everything deck, ranks are doubled which doubles deck size, double the initial slots, double score required, card packs need to be doubled too
+
+
+Card pack opening shows all possible cards from that pack in background, maybe even make it slot machine styled? Of course results are always fixed based on seed
+
+
+Big numbers means we should never do single digit numbers, yugioh logic, bigger numbers are always cooler
+
+
+Custom deck as final deck
+
+
+Goofy travel animations for cards, like spinning or bouncing across screen for pieces with abilities
+Also slotting into place like folders in cabinet, jumping into it’s slot 
+Smoother looking the better for satisfaction
+Idea is that cards are alive 
+
+
+Instead of mana bar have mana cards similar to mtg, any card can be resource
+
+
+Mystery box: Game start become a random skill
+Pandora Box: Game start become random skill, Game end reset to Pandora Box
+Utter Chaos: Become random skill on every next
+
+
+Final act has extra points multiplier, or each act has increasing multiplier?
+
+
+Cards can get debuffs mewgenics style?! Exhausted: Lose rank on round end if it showed up on board? Cancer? Parasites!? 
+Idea to reward player for winning fast or few cards? Might be fun but might reward min-maxing more than desirable… ok got it, effects for winning early should be card effects, get extra gold cards for winning faster or buff cards in remaining deck 
+Cheat Day: cards remaining in deck get rank up
+
+
+Common card: double chances of rares
+Rare card: double chances of epics
+Epic card: double chances of legendary
+
+
+existence of Level rules, rules specific to the level, and stands in for rule deck? May be necessary for shop levels. easiest way I can think of is to just replace rules deck with level deck, but this is probably wrong method since stuff like scoring to beat level exists outside of rule deck. Making rule deck also create entire game UI from scratch is scope creep, so that means no level deck and it will be hardcoded as its own level
+
+
+Make rules deck not special from normal deck by giving rule cards special card type where skill on top is always global spotlight
+Other types such as returning to certain decks when something happens
+
+
+Means on data selected method needs to handle overriding somehow
+
+
+Scoring done outside of main game carries over to next game
+
+
+Game rules determine what next and submit button do. Different rules deck per scenario. Permanently changed if you edit it for the run.
+
+
+Genie scenario, make a wish. Choose a card to create copy in your hand, etc.
+
+
+Requires game class to be even more flexible
+Retire button in settings to end run early
+
+
+Storyteller, preserve some points for next game
+
+
+screen shake on score, as scoring happens and with bigger scores, shift screen over to cards away from the buttons
+
+
+Cards cannot retire until being scored or ability activated, more likely cannot retire until an ability activation, if no ability then no condition
+
+
+All effects share same charge system where applicable, allowing anything with charges to gain more or less from different sources
+Example, acrobatic card that has 1 charge but can be triggered by tap, but if you dont use it then it will be used on next for however remaining charges are there
+
+
+Card packs but instead of choosing cards, you can mulligan the results, arena style? 
+Card pack contents can be previewed to see what you are mulliganing for
+You can increase this mulligan count
+Have card effect that allows mulliganing entrance cards when tapped
+Results have chance to be upgraded and include bonus types and stamps on top, which may need its own viewer
+If you have never seen the effect before, the viewer only shows question mark for the option
+
+
+Map can sometimes have single high rarity cards lying around instead of usual card pack
+
+
+Make encounters mini solitaire games somehow?
+
+
+Cards that can resist being moved?
+
+
+Looking at contents of card description requires holding button or pressing info toggle button, for looking inside deck view for card packs as well, necessary since we need left click and right click reserved for other functionality…, middle click for mouse only?
+
+
+HONK: on tap, makes a honk noise, unlimited use (tap trigger)
+
+
+Lots of secret melds to find (implies cards having secret on add to deck effects to add new rules)
+
+
+Disaster card packs on the board to choose from
+
+
+Literal spotlights on effect actives instead of just generic shining effect, may require some dimming? (dimming whole screen on submit)
+
+
+Have game on a “level”/”act”/”world” system similar to one step from eden where you are traveling through the world through different biomes. Each biome affects the map gen in different ways.
+Umamusume fame based progress. Every 10 levels you must have a certain level of fame to progress to the next stage
+Theme is going on tour, with fog of war to reduce vision of further choices
+Negative weather effects have thematic of “the show must go on“
+Go back to FTL roots and have constellation type map, cannot backtrack, thematic is going on tour around the world and hitting different cities to build fame, cities in crazy locations, environmental hazards, etc. surprise weather effects as you go through areas
+With this setup, players start with planning their tour maybe by deciding what cities to go through. Beginner players can plan small tours, but longer and longer routes through more cities as they finish tours. 
+Cards packs or rarer individual cards as options
+
+
+Events can recycle prestige point system by having an event where you gain temporary prestige points to allocate on something, instead of it being strictly pre game
+
+
+Events based on actions you’ve taken throughout game, sacrificing too many talents causes union strike, or choose to lose portion of basic cards if you have too many cards for tax evasion
+Events that are mini games where score is not the main purpose, but alternate win con puzzle such as trigger 5 times to win event
+
+
+World tour, go from one end of world map to another, build up as much fame as possible before you reach final city. Steel ball run!? Build up more fame by doing as many performances as possible at different cities, score over required limit increases score necessary on next city. Have small towns and big cities with different score requirements to count as beating the show, winning ramps up future cities/show requirements (basically player balances declaring they can reach certain score/fame vs just straight up losing if they fail to reach it)
+Odds of better rarity cards increases with total fame
+Finishing final city wins the game and unlocks endless mode to finish off, which just repeats final city until you lose to see what your highest score is, with guaranteed repeating choices between each show
+Maybe dont even have a final city and circle the map? Or you have to return to where you started after reaching big enough city? Some sort of system where points youve already traveled can be returned to after enough time has passed?
+
+
+Maximum effort/Exhaust stamp, double points or flat points from this card on score, only refreshes if card is not played/scored on next show (kind of like glass card)
+
+
+Gate progress behind reaching certain high scores, and those types of high scores require extreme luck or playing complicated cards, more complicated cards award more points in general, so game pushes player to build incredibly dynamic decks with lots of animated cards. Rewards larger and larger maps maybe?
+
+
+Booster packs are called talent packs instead
+
+
+There is an argument that discards are a lot of fun, and we use that as main method to build up the board instead. Have option to discard some of the cards in entrance repeatedly until you get what you want, then allow it to drop down type of deal. This allows a more direct way to have cards go straight to discard. This seems like it could be an obtainable upgrade though, adding more discards, and allowing more discards per discard. Game could start with allowing 1 card to discard per turn (this should probably be a joker actually) allows gambling for better entrance hand
+
+
+Use waveform collapse or min-conflicts procedural generation to fill in normally generated map for the 2d pixel visuals. For example filling in the biomes. Start with villages and etc pre filled in.
+Idea: use extrude 2d shader combined with heightmap of flat biome map to create a top down 3d topographical map using a single image, like those miniature models. Can also just use flat sprites.
+We can introduce slopes with extrude shader if we have each layer above the first cut off 1 layer of pixels around their edge as we go up, replacing the space with slope
+
+
+Forbidden solitaire type variant where you just click on cards to stack to hand? (for events maybe?)
+
+
+Deck viewer needs to show order of effects even when deck is randomized, so have an effect viewer only for skills I guess? (this could be a skill I guess)
+
+
+Have duplicate rule cards during creation use ranks as identifiers, for example zone adder 1 would have rank 1, and 5 as 5, and so on
+
+
+1 free undo per turn that doesn't carry over, baked in by default
+
+
+As player plays more, unlock more biomes and extend possible route. Mewgenics system though which is not good… maybe its ok because we have endless mode after beating last city so player gets to maximize 
+
+
+Press bribery/memory wipe card. You get an extra life if you fail a city and keep going as if you won. Straight up lets you win if you save it to the end maybe?
+
+
+Clicking on map node shows preview and a separate button to go to it
+
+
+Supposed to implement own random number generator so i can fine tune and make it unchangeable by engine. Seed offsets themselves need to be random instead of same for every seed, or use proper generator Correlated randomness in Slay the Spire 2 - Andy Tockman 
+
+
+Game needs to yak shave, player goes in trying to pull of a certain strategy but the find themself wanton to try a surprising new strategy that shows up instead
+
+
+Multithread precreate map with random seed when game is started but before player even presses play, do for each size…?
+
+
+Hype mechanic, choose to double fame required to defeat next show.
+Higher fame means better chances of goodies
+
+
+Presentation card: moving cards in ascending order gives multiplier points
+
+
+Card pack shows at least 1 guaranteed card from the pack from map preview
+
+
+Battle cat findings: branching path campaigns. Paths have multiple levels following a theme, can unlock other paths as you go down one path. Doing out of order can help you since one path can give you solution to other path. Bring your own cats to solve the levels.
+Takeaway: paths can be escalating difficulty. Split into rouge like map campaigns and puzzle levels closer to traditional klondlike, puzzle levels may be preset or have wins counter, but can also have escalating difficulty by modifying to become harder and harder. Can also serve to teach mechanics with tutorial levels? Also have battle levels where board has preset mechanics and restrictions and you bring your own deck from what you have unlocked so far, mechanics can also have escalating difficulty.
+
+
+Chess based cards:
+pawn: if stacked on card above it, switches place with it (moving up). Can switch with card 2 above if bottommost card. If stacked on diagonals upward, replaces that card with itself, discarding the card (capture)
+Other pieces can stack anywhere that would follow chess rules, discarding and taking place of the card they get put on.
+King: moves like king, doesn’t capture, only swaps with cards around it. Will automatically move out of the way if in check by another chess card any time you take an action. Ton of points if captured by a chess card. (Alt win con type card, might require capture to not discard card directly since otherwise single chess piece can capture entire board, have it be actual capture and increase rank by capture hippo style to cap how many times a chess piece moves, or just stick with swap only)
+
+
+freaky class cards, any cards that don’t have normal rank numbers (freakshow)
+
+
+Digital card, cannot discard from board
+
+
+audience has patience system, moving cards drops patience, triggering unique special effects delay patience drop, at 0 patience cards automatically drop, keeps games bounded turn wise and makes each action valuable while keeping pressure off player to make perfect board
+Clown cards, each unique clown card increases patience by one when on board, collect them all to maximize patience and get set bonus to have chance to not consume patience.
+Patience display should be something like progress bar so it is clear that 1/3 means 1 more action, not 2 since 0/3 isnt a thing
+
+
+
+
+Warm colors closer than cold colors
+Foreground should be warm
+This is why UI elements are always cold coded, so actual art pops out
+
+
+Here is the compiled list of Mika Pikazo's core artistic techniques and their specific visual reasons and effects:
+1. High-Contrast Street Art Palettes
+* Technique: Utilizing pure, hyper-saturated neons like pinks, cyans, and intense yellows.
+* Effect: Recreates the intense visual noise of South American street murals on a digital canvas.
+2. Chromatic Aberration
+* Technique: Intentionally splitting the red, green, and blue (RGB) color channels at the outer canvas edges.
+* Effect: Mimics 3D glass filters and camera lens flaws, causing characters to step forward from the background.
+3. High-Saturation Chromatic Contrast
+* Technique: Pairing opposing color wheel opposites like hot magenta next to bright cyan.
+* Effect: Exploits human optics where warm wavelengths physically advance and cool wavelengths recede.
+4. Hard-Edge Vector Shading
+* Technique: Applying sharp, posterized shading using hard brushes for roughly 90% of the artwork.
+* Effect: Mimics commercial South American advertising and poster designs to produce a distinct graphic punch.
+5. Blending Modes (Hard Mix & Vivid Light)
+* Technique: Layering ultra-bright, secondary colors directly into shadow borders.
+* Effect: Generates an emissive, self-illuminating look that mimics glowing neon signage or LED displays.
+6. "Reverse Contrast" Isolation
+* Technique: Surrounding flat, lightly shaded skin with hyper-dense background elements.
+* Effect: Forces the viewer’s brain to instantly look at the clean face as a resting spot amidst visual chaos.
+7. Rhythmic Asymmetric Compositions
+* Technique: Packing scenes with floating debris, geometry, halftones, and chaotic clothing folds.
+* Effect: Translates the musical movement, kinetic energy, and layering of Rio’s Carnival into static art.
+8. Outer Canvas Digital Noise
+* Technique: Frame-overlaying heavy digital film grain, screen tones, and analog texture filters.
+* Effect: Replicates the raw, stylized texture of independent Latin American cinema and analog projections.
+Yes, a Dr. Seuss color palette can absolutely work with a Mika Pikazo-styled art piece. While it sounds like an impossible contradiction, mixing them creates a highly striking, avant-garde fusion.
+In the art community, this approach is often called a high-fidelity, low-saturation style. It takes the hyper-dense, complex digital composition of an artist like Pikazo and strips away the aggressive neon glare, replacing it with a mature, editorial vibe.
+Here is a breakdown of how these two opposing styles interact when forced together:
+________________
+
+
+How the Elements Interact
+[ Pikazo's Digital Structure ] + [ Dr. Seuss's Ink Palette ] = [ The "Neo-Vintage" Fusion ]
+ - Chaotic, floating debris       - Muted avocado greens        - High-energy motion
+ - Hard-edge vector shading       - Dusty mustard yellows       - Restrained, mature colors
+ - Chromatic aberration splits    - Off-white paper background  - Striking graphic readability
+
+
+1. The Shading Becomes Bold Graphic Art
+Pikazo relies on hard-edged vector shadows for roughly 90% of her character rendering rather than smooth airbrush gradients. Because Dr. Seuss also used flat, unshaded color fills inside his ink lines, his palette adapts perfectly to her hard brushwork. Instead of her neon "Hard Mix" glowing highlights, the flat, muted Seussian tones make the illustration look like a premium, silk-screened streetwear poster.
+2. Chromatic Aberration Becomes "Anachronistic"
+If you apply Pikazo's signature RGB color channel splitting to a Seuss palette, something fascinating happens. Instead of looking like a glowing 3D LED screen, the color distortion mimics a misaligned mid-century printing press (where the physical ink plates shifted slightly on the paper). The artwork still "pops out" and retains its three-dimensional illusion, but it feels like a vintage comic book artifact rather than a digital VTuber stream.
+3. The Reverse Contrast Effect is Amplified
+Pikazo creates focus by surrounding a clean character face with chaotic background debris. If you use a Seuss color scheme—such as a muted sage green, a dusty yellow, and a single striking pop of flat brick red—the visual hierarchy becomes incredibly clean. The viewer's brain can navigate Pikazo's intense background chaos much faster because the desaturated Seussian colors keep the scene from causing sensory overload.
+________________
+
+
+How to Execute This Fusion (A Step-by-Step Formula)
+If you want to create an illustration using this cross-over style, follow this specific blueprint:
+* * The Canvas Background: Do not start with pure digital white. Use an off-white, light cream, or slightly textured parchment color to anchor the Dr. Seuss mid-century storybook aesthetic.
+* The Color Mix: Limit yourself to 3 or 4 flat colors. Pick a muted avocado green, a soft sky blue, and a dusty ochre yellow.
+* The "Pop" Accent: Pick one highly iconic, unmuted color—like a sharp Seussian cherry red—and use it strictly for the character's eyes, a piece of jewelry, or a central article of clothing.
+* The Lineart & Shading: Draw with dense, chaotic, Pikazo-style asymmetric clothing and floating geometric shards, using crisp black outlines. Shade exclusively with sharp, flat, hard-edged shapes.
+* The Final Polish: Apply the chromatic aberration filter to the outer edges of the canvas, but overlay a heavy digital noise grain to simulate paper fibers rather than digital screen noise.
+* Link to art style conversation: https://share.google/aimode/lo5X9mPcegmfNgEYx
+Blend in filmography elements, entering scene starts with film grain then becomes clear, like that effect where viewer is watching a film on screen but then it transitions to the real scene at moment of filming. Scene transitions looks like film strip slowing down then speeding up again to new scene. Undo becomes film rewinding, but with retro feel. For example if all new scenes comes from above, undo comes from below.
+Record Scratch effect
+
+
+Allow user to gain undos per x turns by tracking how many theyve gained from round vs current round, since going back into past reduces round number but they may have already gained undo from future round number. Limited undos from start soft punishes playing for too long though which might be fine.
+
+
+Rock paper scissors suits
+Can only place on card if it would not lose rock paper scissors against that card. On draws, if its rank is higher.
+Likely flavor it as some traditional version of rock paper scissors or go elemental
+
+
+Deck view top has its own section that shows all cards with effects in order, but hides ranks and suits if there are duplicates (use question mark pips as placeholders for every single effect that is not relevant to if effect will apply from deck, but get rid of question marks when there is only one possible card it can be), only if effects are triggerable from deck (requires being able to sort by deck triggering cards)
+
+
+Each unique suit activation effect also increases combo, incentivizing large suit variety
+
+
+Negative ranks means props score negatively? Introduce negative shader effect so show objects under its effects actually reduce score (but increase combo!)
+
+
+Stacking should be a rank pip mod based rule (standard pips checks for different pip and number). More likely rule when picking up stack just checks stack rules from selection’s topmost card suit’s own stack checker, same as how scoring determines cascade action but not meld rules.
+At this point just allow picking up stack from anywhere? No pickup rules? How to pickup RPS cards? Just evaluate downwards or opposite way?
+
+
+Spotlight update (cards being scored are automatically in spotlight) (spotlight passes over cards being scored) This way scoring rules cards are automatically active when they are part of scored hand
+
+
+Art needs outlines because card type background is not guaranteed color since it can by any card type
+
+
+Idea of randomized scoring card that changes allowed melds every game (american mahjong does this)
+Same with trending talents or abilities that score extra that game
+
+
+Game inspirations
+Mahjong
+* new scoring melds based on classic hands, basically extension of poker hands
+   * Small straights (3), triples, pairs
+   * Use non classic suits to stand in for dragons (this means we have more than 3 ranked suits and more than 3 dragons) winds are a lot more questionable since hard to force directionality
+   * 14 is a bit extreme though, so possibly go with mini hands, such as 1 triplet and a pair as a hand, going up with each triplet
+   * Does not need to be sorted
+* Half the fun is discarding, so additional ability to discard anything not part of mahjong hand (single card with no connection to any other card in its column), and automatically causing either drop down or draw onto top of column where discard was done
+* From mah jongg, idea of scoring cards that change each overall game with random themed melds to favor certain hands over others that game, and allows players to aim for different strategy each game
+
+
+Swirl shaders for clouds https://www.shadertoy.com/view/3cyXRt https://www.shadertoy.com/view/wXcXDM
+
+
+Color shifted Gaussian glow with grain https://animationobsessive.substack.com/p/dangerous-light
+
+
+UI similar to Kirby cork board map, but have circus style posters instead
+
+
+Undo reveals full frame border covering entire image by zooming out, also use this for screen transitions, zoom out to reveal border, then pan to a differently framed image, then zoom back in. Non static frames? Or have normal mapped frames with lighting. Clouds could technically be a type of frame for map
+Confetti in cone, long trailer slips from above?
+
+
+Have all UI be diegetic by panning camera around in 2d space to simulate looking at a wall where everything is, kind of like memory photos
+Main room itself is a museum 
+start screen itself is also in a frame, zooms out upon choosing a tent
+Choose from 3 tents  
+photos can be dynamic like they are in a film
+Descriptions are floating notecards/labels over everything at bottom of screen when using info mode
+Possibly have it so each info card created goes into its own tab history, so you can view multiple info cards next to each other at the same time side by side
+
+
+Thinking that all movement should be bouncier with back tween, add anticipation to everything
+
+
+Have mult just be +1 per activated effect
+
+
+Robert boudin built many impossible clockwork machines, use clockwork machine thematic in design
+
+
+mystery clock
+Singing lesson
+Marvelous orange tree
+Pastrycook of Palau’s royale 
+Ethereal suspension
+
+
+Bullet catching 
+Endless bag/hankerchiefs/endless bottle
+Food eating contest
+Dog that can perform 113 tricks
+Free gifts to random audiences (free pigs!)
+Dancing babies, ventriloquism
+Spirit medium, ghosts, auto moving card stacking
+Teleportation using boxes
+Levitation
+Presentation as part of plays and stories
+Fake prop versions, set pieces 
+Stories told with magic influenced film (combining illusion and narrative)
+
+
+golden witch spawns gold cards that explode at end of act
+add protagonist and villains into deck that play out story on board, narrative play based
+
+
+talk to dead (discard or deleted cards? Secret removed cards deck)
+ghosts vanishing items, changing color of objects, painting objects
+Crystal ball to divine questions and answers of audience members from sealed envelopes (assistants did research on audience beforehand than conveyed information via earpiece)
+Money-making schemes, did ads via local people portraits and sold self help books
+Middle eastern vibe with robes and turbans (dancing flute snakes?)
+Bribery, blackmail, tax evasion
+
+
+Disappearing birdcages, creating birds
+sitting in chair then disappearing
+Multiplying balls in hand
+Expanding dice that became huge
+
+
+smaller boxes within boxes
+self playing instruments
+cutting head off and floating it around stage
+Orchestra, music bands
+
+
+Velocipede bicycle
+Human cannonball
+https://en.wikipedia.org/wiki/Vaudeville
+vaudeville bill is a line-up of seven to ten unrelated live stage acts that made up a single variety show. Popular from the 1890s to the 1930s, the bill featured a fast-paced mix of comedy, music, acrobatics, magic, and novelty performances, building up to a major headliner.Structure of a Vaudeville BillShows were carefully ordered to grab attention early, calm the crowd in the middle, and finish with a massive grand finale. A typical program followed this flow:Opening act: A "dumb act" (non-speaking performers like acrobats or jugglers) that did not get ruined by late-arriving guests.Early slots: Singers, dancers, or novelty acts (like pet tricks or instrumentalists).Middle acts: Sketches, dramatic playlets, or rising comics.The penultimate act: A major star or high-energy flash act.The closing act: A lesser act or short film meant to clear the theatre as people left.Common Types of ActsHeadliners: Top-tier comedians, vocalists, or famous actors.Novelty: Magicians, ventriloquists, escape artists, and strongmen.Visual: Acrobats, contortionists, and trained
+
+
+Noah’s ark box, after water poured into it, lots of animals comes out (dogs in costumes)
+
+
+Cards in the shape of flowers
+
+
+Sleight of hand tricks (deck manipulation during card movements? Cards end up in incorrect locations on purpose while they are moving)
+
+
+cards from mouth, bricks from hats
+Roast chicken to live chicken
+Spreading out cards while blindfolded then stabbing correct cards with knife
+(Flip all cards on board, randomize positions, then reveal top cards?)
+
+
+Prepping props and cards in hidden locations hours in advance in public situations for any spontaneous tricks
+Fake book covers
+
+
+Linking metal rings
+Straight jacket over flaming spikes
+Locked in box and thrown over Niagara Falls
+Standing in Tornado of fire
+
+
+Locked in jail, nailed into crates, shut in safes, bound in chains, secured with manacles
+Trapeze artist, prince of air
+King of cards, king of handcuffs
+Lockpicking
+Buried alive
+(Remove from play via consuming but only for a set period of time) (escape from inside a sea creature)
+Metamorphosis (switching two peoples places from within locked containers)
+Elephant disappearing act
+3 minutes to escape from inside glass water tank
+Walking through walls
+
+
+Cards magically rise out of deck
+Disembodied princess
+Floating ball illusion, pass hoop around ball to show no connections
+Fake blood poured during sawing in half trick to imply something went wrong
+
+
+Indian rope trick, rope rises on its own into sky and someone climbs it
+Tire trick, someone climbs into row of tires, tires are removed to show person missing, then rebuilt into a stack and person reappears 
+
+
+Fire that remains lit after being submerged, cigarette under river
+
+
+Human card index, audience asks for any type of card and he produces it, menus, driving licenses,marriage certificates, rail tickets, receipts, banking bonds, union cards, signs, birth certificates, burial permits, advertising flyers, dry cleaning ticket, movie card, money, divorce papers, bank book, army discharge, taxie card, prescription, liberty bonds, oil shares, nva card, racing card, rent, Jewish card, Masonic card, warning card, insurance card, World Series ticket
+Over 40 pockets, hundreds of items, 40 pounds
+
+
+bull fighting 
+straight up pretending to kill a person with gore and saw, then carts off body without ever revealing if alive
+The expert at the card table
+Signing a card for it to reappear later (signed card, when it disappears from board, next created card will be the card itself)
+
+
+Crooked gamblers had more natural ways to sleight of hand, art of misdirection
+Cups and balls
+
+
+Dead list (name for graveyard deck) (gets its own picture board)
+Backstage 
+Grand entrance 
+The ring
+Magic deck (rules)
+Rest area
+
+
+Mentalist (pick something but it only shows up at later time, rewarding prediction of game state)
+Magic musicals
+Turning back time to undo an “accident”
+
+
+Walking on hands, cartwheel, body contorting, splits, somersaults 
+Chariot races, gladiators, animal baiting, arena
+tumblers, dancers, musicians, jesters,  caravans, dwarves, aerialists 
+Rope walking, pretending to fall, funambulists, in league with devils and sorcerers
+Mountebanks walked slack ropes, rope dancers
+Bad luck for hubris of risky performances
+Coal walking, drinking boiling oil, strongman balance eight people, swallow fire
+Upright walking dogs, costumed monkeys, dancing turkeys, cats play dulcimer
+Acrobats dressed as fierce animals lions and tigers
+Trained bears and bear costumes
+Puppets, gaudy costumes always, shapely performers
+Potion selling, saltimbanques for leapers 
+Merchants and pickpockets loved circus for bringing people (pickpocket card adds extra card to deck if never scored)
+Stage short playlets or pantomimes, precursor to clowns, commedia dell’arte before circus
+Putting head and arm into lion mouth
+French trapeze, German Icarian games, Anglo-Saxon carpet acrobatics and horseback, Spaniards supple and light, Japanese balancing, Arabs fiery 
+Circus managers touted ethnic diversity, skin would be bronzed with makeup, circus displayed the world (diversity instead of combo)
+Tight knit community refusing to be connected to mundane audience, they only mingled with other performers and did not venture into city
+“The ring is freedom; it has neither beginning or end”
+Running away to join circus was a common dream of glamour and adventure and freedom
+Early circus no net, injuries extremely common but performed anyways for the show! (injury stacking status effect? Potential death mechanic where card gets removed if too many injuries)
+Addictive applause (applause gets more impactful with score) oohs and ahhs for individual high scoring 
+
+
+Horse riders wearing military uniforms, standing and headstands on horse back
+Counting, mind reading, playing dead
+Canvas covers required to prevent wet weather that made performance impossible
+Mechanical automatons and magnets
+Woman with extremely long hair, zebras
+Full ring in center and entire theatre stage on the side for combination spectacles
+Leaping over a horse 40 times back and forth without stopping
+Standing split on horseback, firing gun at pots while standing on running horse
+Gambling halls, using whips on both animals and performers to work harder
+Platform with performers carried by 8 horses
+Catching thrown oranges on forks from horseback, having horses play dead
+Juggling fruit, bottles, glasses of wine and hoops
+Stacking people on shoulders of horse rider
+Stage productions featuring shipwrecks and battles
+Ampitheaters doubled as makeshift hospitals in downtime (add medical element?)
+Hippodramas, plays where horses were also treated as actors with leading roles
+Performer pretending to be drunk audience member at first, enters ring and slowly transforms into the act during performance by removing clothing one at a time to reveal full costume
+(Plays and dramas done by triggering specific effects in specific order on stage, like a specific type of quest? Next section of quest only doable after previous one fulfilled)
+Riders wearing skin colored body suit for sexual appeal brought lots of audience members
+Monkeys on horseback going over hurdles, gymnasts balancing each other on poles
+Daring woman on horseback seen as dominatrices with power
+Having young men dressed as women to attract bigger audience
+(talents doing tricks on top of other carrier type talents earns more points)
+
+
+Floor that can become filled with water and become a swimming pool for diving
+Iron jaw act, holding up massive weights between teeth while suspended from rafters
+3 ring act was too fast distracting noisy, 1 single act at a time was preferred and allowed following specific performers and their careers
+Parade through the city to announce arrival while tents are being set up
+Additional rings of circus originally added to accommodate larger audience since adding more seats directly led to complaints of being unable to see acts since back seats were too far away, so added more rings to expand amount of seats without making seats too far, each seat has a closest ring viewer can focus on, but can still technically see other rings so they don't feel they are missing out, and viewers feel like they saw more and got more value from their ticket
+Stuffing titles into circus name such as PT Barnum's great traveling exposition and worlds fair menageri caravan hippodrome polytechnic institute national portrait gallery hall of classic statuary mechanics and fine art garden of zoology and ornithology
+4 tents for 1 ticket, menagerie, museum, minstrel singers, and main ring
+Manager, assistant manager, advertiser, treasurer, equestrian director, riding master, band leader, lion performer, elephant man, doorkeeper, head ostler, grooms, tent men
+Lions forming pedestals, lions on seesaws, pistol fired by lion, lion riding bicycle
+Hippodrome track outside circus ring, horses elephant camel chariot wheelbarrow races
+Circus personnels not allowed flashy dress and needed to be neat modest quiet polite like ladies and gentlemen, ringlings, to distinguish from other circus as being more moral and upright
+Lighting with electricity powered by generators allowed night shows
+Ballet of the elephants, circus polka, 50 ballerinas on 50 elephants
+Clown fire house skit, slapstick skit where clown house burns down, midget fire engine rushes in, clowns run around scorched
+Cavalcade, formal parade of riders, mud shows
+Peanut vendors, palm leaf fans for sale boys, candy sellers, popcorn peddlers, toy balloons, red lemonade man
+Flamboyant pseudonyms: equescurriculum, hippolymiad, cirqzooladon, egyptian caravans, paris pavilions, nickled-plated. Mighty, overwhelming, colossal, extensive, unequal. Mammoth national circus, super combined circuses. (randomized circus names, similar to mewgenics?)
+Jungle animals, panthers leopards
+Steam organ or steam calliope, psalter, fifie, drum, bassoon, hand organ, jews-harp, viol, french horn, flue, tin whistle, harmonica, accordion
+Diving into flaming cauldron
+Glare of electric light, blue, green, yellow, pink, red purple fire. Roman candles, rockets, pinwheels, gunpowder, dynamite, nitroglycerine
+Great procession, automaton gymnasts, mechanical trapezists, globe and ball jugglers, on top of cages and chariots, knights in shining armour, goddess of liberty, mythological and historical figures
+At night paraded under calcium lights, limelight (older word for spotlight)
+
+
+Crossing niagra falls on hemp cable 1000 ft long 270 ft above, carrying 38 foot balance pole, did headstands and somersault
+Blindfolded on stilts, balancing on chair, pushed own 5 year old daughter across rope in wheelbarrow
+Trapeze got more and more complicated, adding catcher and someone who sent trapeze back to flyer, adding somersaults, pirouette or twist for more flair
+Nets added changed audience fear into awe, after gruesome fall of famous performer, but would still easily break necks if not fallen on properly and rope burns
+Aeralists popularity coincided with craze for balloon rides
+The risk of the act is what makes the act exciting from vicarious experience, so performers would incorporate deliberate ‘mistakes’ on purpose such as wobbling, teetering, and missing steps then catching themself to cause gasps, excitement enhanced by secret guilt for wanting performer to fall
+Female aerialists seen as ethereal angelic or transgressors compared to muscular men, skin colored clothing gave way to just showing more skin
+Aerial ballet, dangling ropes called ‘the web’ by performers
+Full arm plunge to hurl body in circle literally dislocated shoulder every single time, snapping back with muscles. Long hair gracefully following parabola of the body like a comet’s tail
+strenuousness of act caused constant relentless pain from being in state of constant injury with permanently bruised wrists and skin that was raw bloody scarred and with festering abscesses, sometimes entering ring on crutches due to falls spraining legs
+Triple somersault extremely dangerous since flyer blacks out after 2nd turn and requires catcher to grasp, then perfectly time release so swinger recatches their own trapeze as it swings back
+Wire act only 7 feet off ground but twice as long, no balance bar or umbrella, used for dancing and singing
+Forward somersault more difficult than backwards because cannot see wire, flip flaps and springs to standing position, dance spanish tango with a cape on wire
+2nd person doing handstands on top of wire walker, famous wire act with 7 men forming human pyramid
+Crossing wire on bicycle, using fake leg to wire walk due to amputation
+Faking a free fall but ankles had slipped through straps during fall
+
+
+20 tigers in a single act, animal trainers flaunted their wounds without hiding
+Polar bears, buffalo, hairless horse, steer with 3 horns and 3 eyes,7 foot horse, clown elephant, dwarf cow, mini zebra 30 inches high, trained goats, pigeons, ponies, hyenas, giraffe, rhino, hippo, kangaroo, anteater, elk, deer, emu, cheetahs, sea lions, wolves, horned horses, rats
+Elephants were only for wealthy circuses
+Pyramid made of lions, dogs dancing in dresses, horses rescuing or serving humans
+Often used lots of fake blood to signal savageness and heroic performer taming the beasts, gorier the better
+Make animals perform rage, to growl and claw and hurl themselves at tamer, enraged animals subdued by human mastery, pretending to be scared of the enraged animals
+Bringing lamb into lion cage peacefully
+Peaceful animal variation, perfect harmony of all animals performing tricks without any noise or aggressiveness 
+Animal walking on revolving globes, tiger walking tightrope, dancing elephant, bear riding bicycle, sea lions playing catch, tiger leaping on trainer’s back, puma through flaming hoops, hugging tiger
+Animal king, hunter costume and large muscles, idea that animals sees humans as gods
+Sitting up tiger and rolling ball, wrestling act with tiger
+Tarzan
+
+
+Skill arts should never be abstract, but relate to real circus props or performers in some way. Mahjong ruleset could be represented by a dragon for example. American mahjong by an eagle.
+Higher tier tricks with better rewards always have increased chances of failing. This adds a layer where player manages risk with risk lowering cards. Maybe have this be opt in for players by introducing risk with doubled points?
+
+
+Clowns had their own extended acts called entrees in center of the ring
+Clowns are the ‘soul of the circus’
+Intellectually and emotionally complex, clowns play with situations characters and words like jugglers play with clubs knives rings
+Only performer who is versatile agile deft can manage pratfalls, only insightful actor can inhabit persona of clown
+3 types of clowns
+1. Elegant whiteface clown with ruffled neck piece and pointed cap
+2. Hapless auguste, baggy trousers, oversized shoes, punched-down hat
+3. The grotesque, wide variety of personas from mischievous baby to menacing monster
+Clown prototypes from commedia dellarte characters: the innocent, the devious cheat, the buffoon, the country yokel, the comic servant
+Commedia skits were satirical and reflected anxieties, and required audience to identify and sympathize with them, laughing at the clown is laughing at themselves, clowns are completely open about their intentions and vulnerable
+Famous clowns: joseph grimaldi, jean-gaspard deburau, cunning harlequin, prancing merry andrew, pierrot
+Pierrot was variation of a zanni or comic servant, some were simple and unworldly, others sly and devious 
+Little man in a confusing world enduring theme for clowns
+Changing social norms provided material for satire
+Exaggerated facial make up necessity for projecting emotion in a large theatre
+White face and evocation of innocence and purity (color themed clowns?)
+(clowns caricaturized different characters for their acts, so any nonstandard circus character could be represented by a clown, such as clown farmers or clown businessmen or clown death or clown angels)
+Clown was poet in action, he is the story he enacts, adoration devotion crucifixion
+Circus as ‘an enormous bowl in which circular forms unroll’, not stop to reflect but flow on and through endlessly like music, the gift of surrender symbolically
+Clowns made fun of other parts of the circus, such as clown to the rope act made fun of rope walkers, or spoofed horse riders (clowns are like jokers, can stand in for other cards)
+Speaking clowns in smaller circuses where they could be heard, had banter full of puns and misunderstandings and were bawdy, like standup comedy acts
+Auguste clown, acts drunk messy happy in oversized suit, later becomes tramp clown, whiteface clown aspired for success and future but auguste clown was defeated from the start
+Whiteface clown tries to accomplish fantastic task for audience, but forever interrupted by intruding grotesques and augustes who create a ruling disorder
+Dan rice irreverent gadfly clown ‘yankee dan’, talking singing dancing clown with political satire songs, patter fast talk burlesque parody versions of Shakespearean plots
+‘Successful clown must possess more intellect, ability, and originality than a comedian, he must be a crack mimic, an elocutionist, a satirist, and so ready witted that he, to the ringmaster, is a stupid fool, a buffoon; to the audience a wise man whose every remark is impregnated with philosophy as well as humor’
+Clown performances featured physical pranks, pantomime, and slapstick, and became buffoons
+Grock, funniest clown in the world, infinitely mobile face, deft miming, cockney outburst
+Tramp clown, sad bumbler trying to make way in the cruel world, ‘Weary Willie’, futile efforts, powerlessness and deep-seated faith, down on their luck, caricaturizes people feeling bad and inspire going back into battle
+New clowns, make audience think instead of laugh, see world in new way, new vaudeville, seek deep connection with audience, good clowns make you laugh, great clowns make you cry too
+Clowns and jesters as transgressive figures who upset rules of everyday life
+Krusty from simpsons, clown who shortchanges the rube, exposes the weary willie, is scary
+
+
+Human cannonball originally military idea, shooting soldiers from cannons to parachute down, but vetoed since parachuters could be shot. Actually used compressed air, used charge and smoke to fake explosion
+Falling from tall height into a net as an act itself the great fall, being launched as human bolt from a ballista into a target
+Human gun carriage, cannon woman
+Instead of iron jaw, hang by long braided hair and juggling or contortion
+Motorcars driven across prostrate body, merry go rounds supported by diaphragm, blocks of granite on torso shattered by sledgehammers while lying on nails, catching a cannonball with back of the neck
+Finger balancing, entire weight on one finger, and juggling kids with feet at same time, risley act
+Juggling plates hoops knives bowling pins clubs fruit, eggs were insanely difficult
+Japanese indian chinese jugglers dominated and made act exotic
+Sword swallowing, shooting a gun barrel while down the throat, swallowing electric light
+Posturers, india-rubber men, elastic incomprehensible, nondescripts, flexible bones, shape-changers, gargoyles, costumes like serpents
+Walking up and down ladder while playing violin
+Human corkscrew, go through tiny hoop, tennis racket, keyholes, strait jackets, packanatomicalization, stuffing in tiny box
+Conjoined twins, legless, armless, hirsute, tiny, tall
+Tattooed, fake like bird girl or mermaid, overeating, starving, piercing
+Bearded lady, human pincushion, human skye terrier boy covered in hair, vitiligo, ugliest man 
+Called prodigies instead of freaks, humanity gone askew
+Snake Trainer, Giants and Giantess, Armless and Legless Girl, Comedy Jugglers, Sword Swallower, Tattooed Strong Man, Magician, Fat Girl, Rubber-armed Man, Long Haired Girl, Smallest Man, Living Skeleton, Pueblo Indian Sculptor, World’s Smallest Performers, Midget Musician, South American Troubadours, Black-face Minstrels and Human Dynamo
+Fun house mirrors (skills that modify nearby other effects in some way)
+Human cigarette factory, rolling and lighting cigarette with purely mouth
+Roller skating
+Incorporate rock n roll music into contemporary circus
+
+
+Each act/trigger has chance of creating injury. Each injury stack increases chance of retiring/death permanently.
+Lose stack of injury if goes through an act without performing.
+Net card increase chance of injury but lowers chance of retiring.
+Also have some sort of chance to crit to increase score
+
+
+5 suits to start with sounds more balanced than 4 suits. Makes flush harder and allows an anti-flush hand
+
+
+Solitaire
+* Initial delt cards known as ‘layout’ or ‘tableau’
+* Stack of face down cards known as ‘pile’, first card may be face up, or all face up
+* Placing cards on another is known as ‘building’, requires ‘legal move’
+* Card place before play begins are known as ‘foundations’, object of a solitaire is to build up the foundation
+* Empty space known as ‘space’ or ‘gap’
+* Cards not used in initial layout are called ‘stock’
+* Unused cards go into ‘waste pile’
+* No more legal moves requires ‘redeals’ shuffling unused cards
+* Some games allow one cheat to move an obstructing card, cheat known as ‘merci’
+Accordion/Methuselah/Tower of Babel/Idle Year Solitaire
+* Compact game, goal is single pile of 52, chance of winning 1/1000
+* Draw a card, create a new pile if it doesn't match card on top of newest pile by suit or rank. Can only match and stack on newest created pile, not earlier piles
+* If top cards of piles are matching and are 3 cards apart (1st and 4th pile), or adjacent, then piles can be combined, newer cards go on top of older cards when combining, so right cards go on left cards
+* Variation where all cards are placed first created since 1 at a time is nearly impossible to win, focuses purely on creating stacks by matching card directly to left or 3 to left, can choose to match whenever in any order
+* Skill in game is based on figuring out order to combine piles to adjacent left or 3rd left so everything becomes 1 pile
+Calculation Solitaire
+* Suits don’t matter. Start with ace, 2, 3, 4 cards, 1 waste pile for each.
+* Ace stacks in 1s, 2 pile stacks in 2s, 3 stacks in 3s, 4 stacks in 4s, looping around
+* Cards that don’t fit go on top one of the waste piles. Top card in waste pile can be moved to foundation pile if legal. Cannot modify waste pile otherwise.
+* Usually want to reserve a waste pile for kings since they always go last, and create reverse order stacks in the waste piles
+* Reveal 1 card at a time from stock
+Canfield/Demon Thirteen Solitaire 
+* 13 cards in a pile, with card on top always face up. Called ‘reserve’ or ‘heel’ or ‘demon’
+* 4 cards as tableau to stack on. Can only stack 1 rank lower and opposite color. Can move entire stack if it follows this rule.
+* Above tableau, place 1 face up card as base foundation. Total of 4 foundations, 1 for each suit
+* Go through remaining 34 card stock 3 at a time. Can only use top card of the 3, then 2nd one if top card is used and so on. If remaining is 2, the 2 can be used separately.
+* If a card of equivalent rank to foundation base shows up in reserve or stock, it goes into the foundation.
+* Foundation can only be built with same suit and next rank
+* Up to 2 redeals allowed in variants, 1 at a time version instead of 3, and forced reserve card on empty spaces. Apparently moving stacks lowers chances of winning?
+Klondlike Solitaire
+* Similar to Canfield (gets confused with a lot), but you build up piles of 4 suits starting from ace during play
+* Initial layout is 7 piles, 1 card in first, 2 card in second, 7 cards in seventh. Only top card of each pile is visible.
+* stack opposite colors and -1 lower rank 
+* Go through stock 3 cards at a time, with only access to top of 3, then below if you use top. Also has alternative of going through one card at a time with no redeals.
+* When you move a face up card off, you can reveal the bottom to be face up.
+* Empty spaces only filled in with king headed stack. Automatically place aces in foundation, then choose when to increase the stacks from layout
+La Belle Lucie/Midnight Oil/Clover Leaf/the Fan/Alexander the Great Solitaire
+* 17 piles of 3 cards and one 1 card pile
+* Goal is to stack ace to king of each suit in foundation piles.
+* Only interact with top cards of each pile, move to foundation or stack cards that are lower rank by one and same suit
+* Variations allow easier rules like opposite color stacking
+* Three tries to win, redeal has you picking up all cards shuffling then distributing in threes again
+* If one card left over on redeal, make 2 pairs
+* If no moves or redeals left, one merci allowed by shifting a card position up or down one
+Poker Patience/Poker Squares Solitaire
+* Lay out 25 cards to form a 5x5 square, making 10 poker hands from the 5 rows and 5 columns.
+* You can place cards anywhere and expand in any direction, but each new card placed must be connected to a previously placed card adjacently or diagonally. This means first card placed can become any card in final square
+* Flushes are rare in poker but easier in poker patience
+* Win if total added score across rows and columns is 200 if Barry Scoring
+* Counting long diagonals is additional variation, the 2 longest diagonals
+* PvP version has one player call out next card, and both players building their own square with same cards in same order
+Poker Hand
+	UK Scoring
+	Barry Scoring
+	Pair
+	1
+	2
+	Two Pair
+	3
+	5
+	Three of a kind
+	6
+	10
+	Straight
+	12
+	25
+	Flush
+	5
+	15
+	Full House
+	10
+	50
+	Four of a kind
+	16
+	70
+	Straight/Royal Flush
+	30
+	100
+	* This has good chance of replacing current game setup. Have entrance top 5 cards as normal, but allow choosing in whatever order where to place in a 5x5 card grid below it, by picking up entrance card and placing it somewhere in the grid
+   * Each game has you fill up 3 different 5x5 grids next to each other. Card effects can influence other rings. Choose which ring the new 5 cards go into, but must commit to single ring once chosen. (cannot allow choosing freely across rings, since with fixed deck can always just place in exact same spots) (super wide screens get super wide pictures on wall)
+   * Allow super long rows across multiple rings
+   * This format makes game easier to design, but puts a ton more focus on card orders and placing cards in order similar to noita
+   * Card effects that can bounce cards to other rings or swap places
+   * No restriction on cards needing to be near other cards to be placed. (Alternatively have no restriction but have shifting mechanic. First card placed can have any next card played 5 away to determine final position of each card. Much harder to do grid based mechanics with however. First card with this behavior is basically always middle card no matter what.)
+   * Background becomes deterministic in size. Increase amount of rings relative to cards in deck? Every 25 cards unlocks new rings (This might not be correct way to do this, since extremely high count deck would have too many rings to manage possibly, so might need a max amount of rings). 25 card deck is automatically incorrect since if deck size matches ring size then player can always place cards in exact locations. Force column matching? 5 cards dropping down can only ever be in same column as ring? But this doesn't allow control over columns at all. Create restriction that each column can only accept 1 card in general then, but it can be from any entrance card. Card effect that rewards entrance cards crossing each other’s paths to their destination column? Entrance cards are global by default, during final perform, if entrance cards are good then choose to end early. Alternatively, each ring has its own entrance of 5 cards, and player can choose to play in literally any order between the rings, triggering effects whenever
+   * It does mean all cards are always revealed though. Allow stacking cards on top of other cards anyways? This allows 3d element, so theoretical additional rows and columns on top of existing
+   * Grid based effects become much more intuitive. Card effects can be global or withing ring only.
+   * Allow using trigger effects from other rings while placing in chosen ring?
+   * Reuse as much existing architecture as possible, the 5x5 is 5 stacked zones, each zone allows card stacking on top of cards, with existing covering mechanic. Possibly remove high card scoring? (No, high card necessary always in cases where rank is not normal)
+   * Allows mechanics such as alternative ring layouts that are not 5x5, and prefilling zones with cards or hazards
+   * Immediately scoring completed col/rows vs scoring all at the end, or have card effects that trigger when completion happens they are in. Reward finishing hands early vs late.
+   * Continue using effect triggers as mult
+   * Allows built in pvp mode, both players start with same deck, then aim for highest score
+   * Unused entrance cards stay for next round and are not replaced
+   * Theoretically easier to program an AI for to play the game since spots are guaranteed and not dependent on existing stacks
+   * Mahjong hands can check if ring has 4 triplets and a pair across the 5 rows, or across 5 cols
+   * Manipulate what an empty zone does to next card placed on it. Mancala effect for example, certain zones now increase ranks temporarily, so zones show +X if placed on
+
+
+* https://en.wikipedia.org/wiki/Poker_squares
+* Poker shuffle: allows shifting cards before all 25 cards are set anywhere. Basically allows making perfect hand no matter what
+        
+Spite and Malice/Cat and Mouse Solitaire
+* 2 player canfield, play with any amount of card decks, doesn’t need to be complete
+* Each player gets 26 cards (20 for faster), only top card is face up at any time, goal is to get rid of the 26 cards
+* Dealer gives each player 5 cards from remaining stock, then players replenish their hands from middle
+* Dispose of cards by putting into communal foundation 1-Q, suits irrelevant, king is wild card, max of 4 communal foundations at any time, complete are set aside and new foundation can be created
+* Each player gets personal waste piles, only hand cards go here, 1 discard per end of turn, can only stack on waste pile if rank is same or lower by one, top waste card can be moved to foundation
+* At end of turn replenish hand to 5, but if you use up all 5 before end of turn, you draw another 5 and keep going
+* Malice part is preventing enemy from using up their reserve which you can see top card of
+
+
+Beggar My Neighbor/Beat Your Neighbor Out of Doors/Strip Jack Naked
+* 2-6 players
+* Each player gets dealt same amount of cards face down
+* Player puts 1 card from top of their pile face up in center. If 2-10 rank, next player does the same.
+* If face card, next player has to pay ‘forfeit’, 4 cards for ace, 3 for K, 2 for Q, 1 for J
+* If all forfeit are non face, face player gets entire middle pile and puts it at bottom of their deck
+* If one of forfeit is face, then they stop and next player plays the new forfeit based on new face, and whole pile will go to new face card player
+* Purely luck based
+Snap, Animals, and Slapjack
+* Each player goes in a circle revealing their top card in front of them. If newest card matches rank with any other pile, first to call ‘snap’ wins both piles. Ties means both piles go in middle as one and game continues, then calling out ‘snap pool’ means you win the middle pile too. Miscalls means your pile goes in center for next ‘snap pool
+* Animals variation has each matching player trying to call matching rank players animal name, whoever says it first wins. Choose extremely long animal name for an edge.
+* Slapjack, everyone places a card in middle, if jack, first to slap middle pile wins
+* War, players put down card at same time, higher rank wins both. On rank ties, enter war and place down additional face down cards which winner of next card placing rank comparison wins
+Go Fish/Authors
+* Goal is to have most sets or no more cards in hand.
+* Players take turn asking other player if they have x rank card, if player has it they have to hand over the cards. If not the asker has to go fish and take 1 card from stock. Must have 1 of x rank card to ask for same rank cards.
+* Author version requires asking both rank and suit together for 1 card only
+Cheat
+* Get rid of all cards in hand, announcing what you put down face down. Lie about what you are putting down. Say something like 3 6’s when actually putting down 5 random cards.
+* Calling out cheat, if cheater is cheating they pick up whole pile, if telling truth caller has to pick up pile
+* Next player can claim to be playing cards one rank higher or lower or same rank, or variation requires that next player always plays one rank higher which is less flexible
+Old Maid
+* Goal is to not have the queen in your hand. Discard strictly pairs from your hand. Players take turns picking out a card from opponent hand.
+Spit/Speed
+* No turn order, players try to get rid of their cards as fast as possible while making legal stacking rules onto cards in center. Start with triangle stock pile you can access during round and a draw pile
+
+
+Rummy
+* Improve original hand, discarding and picking up other discards or from stock
+* Scoring melds are 3 same suit consecutive sequence (run), or 3-4 same rank (sets/group/book)
+* First to make whole hand into melds with 1 card to discard wins
+* 10 cards in a hand
+* You can immediately place combinations you made to guarantee it counts for scoring if someone else wins, but opens risk of others adding to the combination to get their own points
+* Can choose to have certain cards be wild cards
+Gin Rummy
+* Choose to attempt to end game early if you are mostly done with combinations. Rewarded if you have more complete combinations than other players. Gin means going for complete hand
+500 Rummy
+* Ignore turn order to add to existing melds, and take more than top of discard pile, take as much as you want
+* You can steal turns if you notice other player discards a card that could have been added to another meld
+
+
+Canasta
+* Certain types of cards can stand in for wild cards, like 2s
+Crazy Eights
+* Basically uno. Eights are wild cards, choose a next suit. Must stack matching suit or rank in middle. If cannot play, draw up to 3 for a card to place in the middle
+Mau Mau
+* Crazy Eight variant. 2-6 ranks removed. Jacks are wild. Draw forever until card you need. Must say Mau to win once out of cards, or Mau Mau if last card is wild.
+Neuner
+* Same as Mau Mau, but 9s are wild plus an added Joker, and you can draw whenever you want.
+Switch/Two Four Jack
+* Closest to Uno. Ace wild. 2s are +2 and can chain stacking. 4 is +4 and can chain. 8 skips player turn. Jack reverse turn order.
+
+
+Fan tan/Sevens
+* Each player pays 1 chip to pay. First person to have no cards remaining gets all chips.
+* Cards evenly distributed among players. Each turn, player plays 1 card. 7s are foundation cards. Can only add to 7s with 1 rank higher or lower of same suit. If player has no card to play, they must forfeit 1 chip to pot
+* Trump Fan Tan variant has 1 suit as the wild. If a wild suit takes place of another card, that card now has to be played in the wild foundation
+* Crazy Tan variant has each player start with a few cards and a draw deck. Every time someone cant make a move, they draw a card and skip. Each skip increases cards needing to be drawn by +1 for next player, until someone makes a move to avoid drawing. Allows playing entire run of cards in a single turn, or multiple same ranks, or multiple parallel runs if really crazy.
+
+
+Whist (Trick Taking Game)
+* First card revealed is the trump suit. 
+* Each player puts a card in the middle on their turn. First card placed is the leading suit. Person who put in highest ranked card of the leading suit wins the trick and takes all the cards. If a trump suit is played instead, then highest played trump suit card wins the trick. Winner of a trick starts the next trick with the leading card.
+* Winner is who has won most tricks once game is over
+Three-Handed Whist
+German (Two-Handed) Whist
+Bid Whist
+
+
+Oh Hell!/Pshaw/Blackout/Up the Creek without a Paddle/Nomination Whist
+* Same as Whist, but you declare exactly how many tricks you intend to win after seeing hand. Maximum bid is amount of cards in hand. Players can only bid up to maximum of cards in hand. Last bidder cannot bid amount that leads to number of bidded tricks being same as total possible tricks, which guarantees someone loses.
+* Play is clockwise instead of winner decides next trick
+* Each trick you win is 1 point, hitting bid is 10 points.
+* Bid mechanic sounds like a good mechanic to add to the showitaire game. Allow betting board before play to gain extra points if you hit exact amount of melds. This or have cards which score extra points or mult if an exact amount of specific melds are hit.
+Romanian Whist
+* Bid Whist variation where each round has different amount of cards in hand, must play trump suits if cannot play leading suit
+Ninety-Nine
+* Start with 12 cards. Discard 3 cards to determine your bid. Each club is +3, heart is +2, spade is +1, diamond is +0. Your 3 discarded cards added together is tricks you want to win.
+Euchre and Spades
+* 2v2 Trick Taking, with special scoring
+Mini-Bridge and Contract Bridge
+* 2v2 Trick Taking with auctioning system for bids to win trump suit rights and attacker/defender mechanics
+Hearts
+* Trick taking where each round has you pass 3 cards to another player, left right center nil.
+* Special as you want to avoid scoring points from winning tricks that contain hearts or queen of spades, each heart you own is worth 1 point, queen of spades (black maria) is 13 points
+* Boss mechanic where certain suits causes meld to be worth 0 or negative if scored
+Pinochle
+* Melds consist of runs (A-K-Q-J-10), marriages (King–Queen), pinochle (J diamond + Q heart), sets (4 Qs)
+* Trick taking goal is to grab cards that can build into melds at the end
+* Add meld variants such as marriages to game that requires cards to be exactly adjacent instead of just in saw row/col, priest marriage clown
+Auction Pinochle
+* Only bid winner decides trump suit and can score meld, so other players are defenders and playing together against bidder
+Setback/Pitch/Cinch/Smear/High-Low-Jack
+* Different cards are worth different points, and players bid on how many tricks they can win containing cards worth those points
+
+
+Cribbage
+* Phase 1: playing cards, create a stack up to 31 points.
+   * Ace is 1, face cards are 10, number cards are worth their rank
+   * Score crib points by having total be 15 exactly, pairing your opponent’s last card, first card is jack, creating a sequence of 3+ cards (doesn't have to be adjacent, but needs to be consecutive, worth points in size of sequence for each time sequence is increased)
+* Phase 2: scoring hand from cards played in phase 1
+   * Combinations of 15, pairs, sequences/runs, 4 card flushes, 5 card flush, a jack
+President/Rich Man Poor Man/Landlord and Scum/Warlord and Scumbags
+* Climbing game. Each turn requires playing card of equal or higher rank or passing. 2s are highest, down to 3, suit irrelevant.
+* Each player must match amount of cards placed down by first player. If first player places 3 cards of same rank, all following players have to place their own 3 cards of same rank to end turn while following increasing rank rules.
+* Goal is to be last player to play something so you can lead with your low cards next round, which requires saving your pairs and triplets.
+* First player to empty hand is winner and starts next hand, last player to empty hand loses points and does the menial card shuffling and dealing labor. Scum has to give their two highest cards to the winner.
+* Palace variant has you playing with 3 private cards, 3 face up cards, and 3 face down cards, which can only be played when you have used up previous set.
+
+
+Blackjack
+* Score 21 from cards to win. Going over 21 loses instantly. Advanced in terms of betting
+Poker, Stud Poker, Texas Hold ‘Em, Omaha
+* Not much more variety in terms of melds, variety is in information and betting
+* Betting system of current entrance set vs next entrance set?
+
+
+https://www.youtube.com/@GatherTogetherGames/videos
+Monopoly
+* Certain squares requires sacrificing/paying a card to it to unlock first
+Tetris
+* Score based on tetris piece shapes, match based on same suit or rank?
+* Bonus icons, certain tiles on board have random preset shape tetris piece it wants on top of it. Allow rotation
+Pyramid/Wish Solitaire/Golf Solitaire
+* Allow removing pairs from board if matching or adds to 13
+* Allow removing a card from board if it matches specific entrance card in some way, such as lower or higher rank by 1
+Free Cell Solitaire
+* Potential free slots or reserve space which cards can be kept. Maybe via stacking, and can be grabbed anytime. Cannon card? Can only move stacked card to another ring?
+Devil’s Grip Solitaire
+* Stacking with strictly +3 rank, but which row matters for which card starts the sequence
+Beehive Solitaire
+* Allows removing 4 of a kind swarm
+31/99
+* Each card represents extremely specific point values, such as ace being 1 or 11, 10 being -10, King being 99, rank cards worth their rank, goal is to add to a goal amount
+Game of life
+* Loaned cards? Temporary cards that last a few rounds
+Risk
+* Sets of 3 can trigger effects such as increased ranks
+Sudoku
+* If ranks in grid follow sudoku rules, bonus
+Minesweeper
+* Rings prefilled with random bombs. Tiles are numbered surrounding a card and indicate nearby bombs. Placing a card on a bomb lowers value
+Checkers
+* Allow cards to hop over existing cards (frog card?)
+Wordle/Decoder
+* Card with effect sets a randomized goal rank/suit combo, and indicates if last placed card is wrong, incorrect position, or correct position. First correctly placed row/col wins.
+
+
+https://boardgamegeek.com/boardgame/371947/3-ring-circus
+* Cards care about cards to the left right of it and what type they are to increase value
+
+
+Copy autochess in that multiple copies of a class or type of card in a single ring creates special effects, scaling with copies of the card type. Can have the current hoop/ball/fire/knife effects and other prop based effects rely on this type of combo in its ring to work?
+
+
+Entrance card variants that only allows placing cards next to each other when placing on grid as a boss 
+Potential replay mechanic, on game end (replay entire round sped up?)

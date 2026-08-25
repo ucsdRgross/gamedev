@@ -1,0 +1,127 @@
+Name,Mod,Effect,Art,Rarity,Cost,Groups,Pseudocode,Reference,Balance,Funness,Note,,,,,,,,
+Hoops,Suit,"Base suit. When a Hoops card scores and not talented, hoop props (count based on rank) sweep the scored row; every talent (skill) card a hoop passes through scores again. 
+
+Stacking rule: different suit and adjacent rank","Gold hoop. Prop big enough to pass through cards, cards with talent jump through hoop",Common,1,suit;prop;combo,already added,"Chinese hoop diving; Astley's 42-foot ring, the circus circle itself",Dead in talent-poor rows; a talented card never fires its own hoop; fires only on scoring melds.,reward talentfull decks,,,,,,,,,
+Knives,Suit,"Base suit. Knife props (count based on rank) launch from the OPPOSITE row edge and score plain (non-skill) prop cards they pass; the spawner scores itself by design. (points for missing talent)
+
+Stacking rule: different suit and adjacent rank",knife. Knife prop passes over cards. Talents dodge when knife passes through by spinning.,Common,1,suit;prop;combo,already added,knife throwing,Anti-synergy with talent-stuffed rows; rewards keeping cheap cards you would otherwise cut.,reward talentless decks,,,,,,,,,
+Balls,Suit,"Base suit. Ball props (count based on rank) arc down the column (mancala walk picks talent targets at spawn) and drop the Juggling status: a Juggling card pays out column score when it later scores.
+
+Stacking rule: different suit and adjacent rank",ball. Card with ball status juggle same amount of balls as stacks,Common,1,suit;prop;status;combo,already added,juggling,Payout needs the target to score AGAIN; a cleared board wastes the setup.,reward talentfull decks,,,,,,,,,
+Flames,Suit,"Base suit. Fire props arc down the column dropping Flaming: a Flamingcard's spawned prop effects are buffed based on amount of fire stacks. Each burning prop has its own effect multiplied by amount of fire stacks. Flaming cannot be directly applied to fire suit cards or talents. Props inherit stacks from their spawner card.
+
+Stacking rule: different suit and adjacent rank",fire. Cards and props have burning effect when they have fire stacks.,Common,1,suit;prop;status;combo,already added,fire juggling and flaming hoops,Multiplies suit COUNT only; worthless on cards that will not score again this act.,reward talentless decks,,,,,,,,,
+Fireworks,Suit,"When a Fireworks card scores, the rocket rises its column and banks the column score directly based on its rank. 
+
+1: Has higher base score per rank, so something like 2-5 score x rank, could be random
+
+Or 2: Each firework suit trigger adds +1 firework to next firework suit trigger 
+
+Stacking rule: different suit and adjacent rank","rocket as suit or sparkly glitter. firework rocket leaving behind sparkles (embers) hits the score label and explodes, adding score. Card experiences recoil from firing rockets",Uncommon,1,suit;prop;combo,"# IMPLEMENTED: PipSuitFirework (special, excluded from PipSuit.STANDARD)
+class PipSuitFirework extends PipSuit:
+  func spawn_props(origin : Vector3i, count : int) -> Array[PropSpawner]:
+    var s : PropSpawner = PropSpawner.new()  # rises, banks col score at top
+    s.modifiers = [PropBankColumn.new()]
+    return [s]",Ruggieri family pyrotechnics — the royal fireworks of 18th-century Europe,Does not scale with board state,always reliable to splash/tech since no connection with board state,,,,,,,,,
+Electricity,Suit,"On Score and not talented, scores points based on own rank and ranks of all connected electric suit cards (orthogonal + diagonals).
+
+Stacking rule: different suit and adjacent rank",Blue lightning arc on suit. Props create connected lightning arcs between all connected cards on score in one prop tick. Cards briefly sieze and shrink as if stunned,Uncommon,1,suit;prop;formation;combo,"class PipSuitElectric extends PipSuit:
+  func spawn_props(origin : Vector3i, count : int) -> Array[PropSpawner]:
+    var s : PropSpawner = PropSpawner.new()
+    s.modifiers = [PropChainHop.new()]  # NEW PropModifier: route recomputed per hop,
+    return [s]                          # pays game.add_line_score per link","Bailey lit the circus by electricity in 1879, before most towns had it",wants dense boards for exponential scaling,Connect as much electricity cards together as possible,,,,,,,,,
+Rock Paper Scissors,Suit,"On game start, randomly becomes rock or paper or scissors (even distribution makes sense here for balancing reasons, but at same time all one type should be rare enough, but no evening causes high chance of something being uneven)
+
+Stacking rule: When stacking on another card, has to win RPS to stack if other card is also RPS. if not RPS can stack normally since it should fulfull different suit rule. On draw (RR,PP,SS) higher number wins. 
+Pickup logic requires that it evaluates from top to down to maintain rules",Likely flavor it as some traditional version of rock paper scissors or go elemental,Uncommon,1,suit,,,"no prop, but technically easier stacking rules, but not consistent since you cant guarentee what suit each card will be. Guarentees stacking elligibility if normal ranks go out of control",RPS lol,,,,,,,,,
+Best Bower,Suit,"Wild suit, counts as every single suit for melds. flush enabler, stack anywhere
+
+Randomly selects prop from entire game to trigger effect of if no talent","Grinning Jester
+
+Uses material from every possible suit for coloring",Rare,2,suit;prop;chaos,"class PipSuitBower extends PipSuit:
+  func on_compare_suits(a, b) -> float:
+    if in_scoring_pass(): return 1.0  # matches all suits for melds
+    return NAN                        # stacking uses real comparisons
+  func spawn_props(origin, count): return []","The Joker — born as Euchre's Best Bower in 1860s America, the deck's newest card",randomness,randomness,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+Integer numbers (default),Rank,"base is A-K (1-13), but could be -99 to 99 instead? 
+
+Instead of showing negative symbol, entire card becomes covered in a negative shader. Negative causes inverted versions of everything, with negative shaded props which causes score reductions
+However, all negative version effects are unique when compared to positive versions for sake of increasing combo
+
+Negative is a status effect that automatically applies on negative numbers and clears when 0 or positive",Normal poker numbers A-K,Common,1,rank;status,TODO,expand on standard poker deck,meets requirements for poker hands,allowing up to 99 and negatives makes more chaotic,,,,,,,,,
+Roman Numerals (clockwork),Rank,"1-12 roman numerals. Capped at these numbers, since they wrap around when increased or decrease.
+
+Time effect: advances by +1 per player action","Roman Numerals
+
+(not clock since clock is too small)",Uncommon,1,rank;time,TODO,"Circus Maximus, Rome — the original circus",limited to just 1-12 compared to integers,Time your card movements to get most out of this rank,,,,,,,,,
+Blank,Rank,"Effectively 0. Always returns true and passes stacking rules, but cannot participate in rank based effects and melds",No art,Common,1,rank;stack;freakshow,"class PipRankBlank extends PipRank:
+  func on_compare_ranks(a, b): return 0.0    # always stackable
+  func on_compare_suits(a, b): return NAN    # incomparable: never a flush
+  # excluded from melds by returning no rank value to Scoring",Blank stock cards printed in real decks; the sideshow blow-off mystery tent,A permanently dead scoring slot; every Blank lowers your ceiling.,Teaches the deepest lesson — position is worth points you cannot see.,,,,,,,,,
+Wild (copycat/understudy),Rank,"Effectively 0. Is simultaneously any rank you already have in your deck when participating in rank based effects like stacking and melds. Behaves like blank if nothing available to copy.
+
+Cannot act like a rank you do not already have in your deck",rapidly fluctuates between all ranks in the deck. No art if nothing to copy (blank),Rare,3,rank;copy,"class PipRankWild extends PipRank:
+  var mimic : PipRank
+  func on_anything(...) -> void:  # cheap: recompute only on revision change
+    mimic = pick_from_row_hash(data, game.state.revision)  # deterministic, no RNG
+  func on_compare_ranks(a, b): return mimic.on_compare_ranks(a, b)",,"Unlike Blank, doesnt always pass stacking rules",Better version of Blank,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+Decimal numbers (Half-Step),Hat,"Causes rank number to evaluate as both itself and +1 for all purposes, while counting as a separate number (another same rank with decimal hat would still evaluate as duplicate). Can be double counted for multiple effects, a 3, 2.5, 2 counts as 2 pairs since it evaluates as 3,3,2,2 and also evaluates as straight (3) too","art shows "".5""
+
+Will take material color from suit like rank does",Common,1,hat;rank;stack;freak,"class PipRankHeadliner extends PipRankNumeral:
+  func on_compare_ranks(a, b) -> float:
+    # answer both 1-adjacent and 13-adjacent as valid neighbors
+    if is_ace(a): return best_of(compare_as(1, b), compare_as(14, b))
+    return NAN  # fall through to numeric",math,"Takes a hat space, but should work with every rank type",Allows much more freedom,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+mahjong,rank/suit,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+paper,Type,no effect,paper,common,0,type,"# IMPLEMENTED: TypePaper — the no-op default type
+class TypePaper extends CardModifierType:
+  pass  # exists so every card has a type slot filled",The printed playing card itself — cheap stock democratized the deck,It is the absence of an effect — strictly outclassed by any real material.,The floor everything else is measured against.,,,,,,,,,
+Iron,Type,"Sinks to bottom of any stack, respecting physical weight","Shiny Iron
+
+Can be chains or weighted balls, like escape artist cuffs",Uncommon,1,type;heavy,,,,,,,,,,,,,
+Gold,Type,"Sinks to bottom of any stack, stops when encountering other heavy cards. Heavier than iron. +2 cost when being traded in at shops","Shiny Gold colored card
+
+Chinese money type embelishments too if not too noisy",Uncommon,1,type;heavy;economy,,"Chinese money-suited cards — coins and strings of coins as suits, 1,100 years of precedent","Hard to stack, since it will always go to bottom of a stack, while being reliable in that it will always show up last when drawn from deck",A way to invest into better cards when trading,Gold generation should be its own talent (midas touch talent?),,,,,,,,
+Diamond,Type,x2 score on this card. +3 cost when traded in at shops,"Shiny diamond
+
+jewelry embelishments",Rare,2,type;mult;economy,,,,,,,,,,,,,
+glass,Type,"spotlights cards behind it
+
+Breaks if a heavy card passes through it",transparent (minecraft glass where its 0 colored pixels except for shininess),Uncommon,1,type;fragile,,,,,,,,,,,,,
+Balloon,Type,"opposite of heavy card, always raise to top of stack
+might be too difficult to use outside of starting game with balloons since it permanently covers a stack",,,,,,,,,,,,,,,,,
+Water,Type,always flows sideways into lower level column than itself,"A card of rippling water, reflections of its neighbors on its face",Uncommon,2,type;movement,"class TypeWater extends CardModifierType:
+  func on_next() -> void:
+    var dest : int = shortest_adjacent_column(data)
+    if dest != -1:
+      game.defer(func(): Board.move_stack(game.state, data, Board.ColumnEnd.new(1, dest)))",Early materials list; Vietnamese water puppetry — performers hidden waist-deep,It WILL wander out of the meld you were building; water does not take direction.,Self-leveling boards — it patches your thin columns while you look elsewhere.,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+?PropArtist,Hat,Suits effect still apply even if card is talented,,Common,1,,,,,,,,,,,,,,
+Kuroko,Hat,this card is unseen — it does not block Spotlight beneath it AND cannot be targeted by effects.,Kuroko headgear,Rare,3,stamp;spotlight;protection,"class StampKuroko extends CardModifierStamp:
+  func blocks_spotlight() -> bool: return false
+  func is_targetable() -> bool: return false  # hazard target-pickers skip it",Kabuki stagehands the audience agrees not to see,Untargetable includes YOUR targeted buffs; kindness cannot find it either.,invisible scaffolding for tall builds.,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+Fifteen (cribbage),Talent,"Spotlight:checks cards in scoring hand that add up to 15 (this way it can work for both row and col check, orthogonal) 
+No way to tie break realistically, so order is first found going in order of hand, or score every single possible unique 15 found from combinations
+
+2: This card melds with any adjacent neighbors whose ranks sum to 15 with it (the demoted cribbage rule — an ability, not a default). Has to also be part of the 15 hand version.",Number 15 (over cribbage board?),Uncommon,2,meld;,"class PipRankFifteen extends PipRankNumeral:
+  func on_score_row(row : Array[CardData]) -> void:
+    for pair : Array[CardData] in neighbor_sums(row, data, 15):
+      game.add_line_score(row_of(data), FIFTEEN_PTS)
+      game.register_combo(combo_key())","Cribbage — invented by Sir John Suckling, 17th-century poet and card sharp",Requires ranks to be low for best chance of scoring 15,player has to look for possible 15s,"cribbage has more possible melds, could make it a ruleset instead similar to poker melds?",,,,,,,,
+The Half Card,Talent,"On drop, splits into two halves (2 other cards) across the diagonal [/], bottom half is a seperate card.
+Split means one card has rank and hat, other card only suit, changing how stacking rules work.
+Bottom half is not real card that can exist in deck (is technically separate talent maybe that gets exhausted at game end) Top half reverts back into original card (this means technically 3 cards implemented here, since we have whole and the 2 halves)
+On score, if bottom half is stacked on top half, they recombine and score their own meld, moving column down since 2 cards became one.
+
+2: alternate version where it turns into 2 cards with rank split in half. Automatically adds 0.5 hat if odd maybe to get 0.5 hat benefit immediately","lying down person inside box, head on left.",Uncommon,1,meld;create;exhaust;stack,,"Johnny Eck, 'The Amazing Half-Boy' — performer, artist, sawing-gag legend",,,,,,,,,,,
