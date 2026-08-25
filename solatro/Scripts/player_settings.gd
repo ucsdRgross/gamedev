@@ -486,7 +486,12 @@ signal patience_max_increased(delta: int)
 	set(value):
 		wall_reduced_motion = value
 		settings_changed.emit()
-## Whether info mode is on. Session state: NOT `@export`, so it is never saved or loaded, and
+## Whether info mode is on FOR THE PICTURE CURRENTLY FOCUSED. Info mode is per screen — the map
+## can be left in info mode while the board is not — so the owner of the wall keeps a flag per
+## picture and writes the focused one here on every focus change. Everything downstream reads this
+## single value, so nothing else has to know the mode is per screen.
+##
+## Session state: NOT `@export`, so it is never saved or loaded, and
 ## toggling it must not emit `settings_changed` (nothing recomputes off it, and a save per toggle
 ## would rewrite the whole settings file).
 var wall_info_mode : bool = false
@@ -574,6 +579,29 @@ var wall_info_mode : bool = false
 @export var wall_shadow_opacity : float = 0.35:
 	set(value):
 		wall_shadow_opacity = value
+		settings_changed.emit()
+## Whether a screen's own description popup shows while Info mode is OFF.
+##
+## true  — the popup behaves as it always has when Info mode is off, and MIGRATES to the info card
+##         when Info mode is on. One description, two places to read it depending on the mode.
+## false — there is no popup at all; a description is only ever visible in Info mode.
+##
+## Either way the popup NEVER shows while Info mode is on: one card describes one thing, and two
+## panels describing the same card is what having a single info card replaced.
+@export var wall_screen_popups : bool = true:
+	set(value):
+		wall_screen_popups = value
+		settings_changed.emit()
+## How much of the info card is allowed to OVERLAP the bottom of the screen, in screen px. Info
+## mode zooms out until the whole screen fits in the window ABOVE the card; this is the one part
+## the card may cover, so it reads as sitting in FRONT of the picture rather than floating in a
+## band of its own. 0 leaves the screen entirely clear of the card.
+##
+## ⚠ The reserve is measured against `wall_info_card_max_height`, NOT the card's live height. The
+## card sizes itself to its content, and a camera that tracked that would re-zoom on every hover.
+@export var wall_info_card_overlap : float = 24.0:
+	set(value):
+		wall_info_card_overlap = value
 		settings_changed.emit()
 ## Multiplier on the transition clock for the info-mode zoom, in and out. 1.0 makes entering info
 ## mode take exactly as long as an ordinary wall move; below 1.0 it snaps in faster, which suits a

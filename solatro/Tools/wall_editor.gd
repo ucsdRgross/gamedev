@@ -133,6 +133,9 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 @export var preview_focus_id : StringName = &"":
 	set(v):
 		preview_focus_id = v
+		# Info mode is PER PICTURE, so entering one restores its own state rather than carrying the
+		# previous picture's over.
+		preview_info_mode = _info_by_picture.get(v, false)
 		_apply_focus()
 ## Which picture carries the wall-view selection cursor, or `&""` for none. Drives the real
 ## `WallPicture.set_selected()`, so `wall_selected_lift` is visible. Ignored while a picture is
@@ -170,6 +173,7 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 	set(v):
 		preview_info_mode = v
 		if preview_settings: preview_settings.wall_info_mode = v
+		if preview_focus_id != &"": _info_by_picture[preview_focus_id] = v
 		# ⚠ Keep the overlay's own toggle in step. The button is the source of truth in the game —
 		# `Main` presses it rather than writing the flag — so a tool that sets the flag from the
 		# Inspector without moving the button reproduces exactly the divergence that rule prevents:
@@ -241,6 +245,13 @@ var _overlay : WallOverlay = null
 var _info_card : InfoCard = null
 ## Real Back/Forward history behind the overlay's own buttons. Seeded from `preview_focus_id`.
 var _focus_stack : FocusStack = null
+## Info mode per picture — the tool keeps the same book-keeping `Main` does, or toggling it here
+## would behave differently from the game.
+var _info_by_picture : Dictionary[StringName, bool] = {}
+## The last card each picture was showing — the same book-keeping `Main` does, so the tool cannot
+## behave differently from the game. Entries here are DETACHED and owned by this tool.
+var _info_entry_by_picture : Dictionary[StringName, InfoEntry] = {}
+var _info_entry_owner : StringName = &""
 ## True while a preview move owns the camera. The overlay stays PRESSABLE throughout on purpose —
 ## the game locks wall INPUT during a move, not the overlay's buttons, and whether that is right is
 ## one of the things this tool exists to let you feel.
@@ -282,7 +293,15 @@ func _ready() -> void:
 	else:
 		layout = _load_or_seed_layout()   # setter itself seeds + repacks
 
+## Frees a DETACHED entry's visual — a Node outside the tree that nothing else will collect.
+func _free_entry(entry: InfoEntry) -> void:
+	if entry and entry.visual and is_instance_valid(entry.visual):
+		entry.visual.queue_free()
+
 func _exit_tree() -> void:
+	for stashed_id : StringName in _info_entry_by_picture:
+		_free_entry(_info_entry_by_picture[stashed_id])
+	_info_entry_by_picture.clear()
 	WallPicture.editor_settings = _previous_editor_settings
 
 func _process(delta: float) -> void:
@@ -472,7 +491,32 @@ func _repack() -> void:
 func _live_screen(id: StringName) -> Node:
 	if use_placeholder_content or Engine.is_editor_hint(): return null
 	var scene : PackedScene = LIVE_SCREENS.get(id)
-	return scene.instantiate() if scene else null
+	if scene == null: return null
+	var screen := scene.instantiate()
+	_listen_for_info(screen)
+	return screen
+
+## ⚠ A HOSTED SCREEN PUBLISHES DESCRIPTIONS AND NOTHING HERE HEARD THEM. `Main` connects
+## `GameView.info_requested` and `Map.info_hovered`; this tool hosts the same screens and did not,
+## so clicking a card in the preview raised an entry into the void and the card never changed.
+##
+## Duck-typed on the signal NAME rather than the class: the two screens use different ones, and a
+## third would need no change here.
+func _listen_for_info(screen: Node) -> void:
+	for signal_name : StringName in [&"info_requested", &"info_hovered"]:
+		if screen.has_signal(signal_name):
+			screen.connect(signal_name, _on_screen_info)
+
+## A hosted screen described something. Shown on the tool's own info card, and ONLY while Info mode
+## is on — the same rule `Main` follows, including its ownership: the card frees `entry.visual`, so
+## an entry dropped here must free its own or it is orphaned for the session.
+func _on_screen_info(entry: InfoEntry) -> void:
+	if not preview_info_mode or not is_instance_valid(_info_card):
+		_free_entry(entry)
+		return
+	_info_entry_owner = preview_focus_id   # this card belongs to the picture being read
+	_info_card.show_entry(entry)
+	_pose_camera()   # a taller entry needs more room — see `_apply_info_mode()`
 
 ## The authored entry for `id`, or null -- what the music crossfade reads `.music` off.
 func _entry_for(id: StringName) -> PictureEntry:
@@ -504,20 +548,28 @@ func _build_entry(entry: PictureEntry) -> PictureEntry:
 ## rest, or that picture's info pose. The ONE place the camera is written, so the three cannot
 ## disagree; the same reason `Main` funnels everything through `_settle_camera()`, and this mirrors
 ## it branch for branch.
+## The camera tween a pose change is currently animating, or null. Kept so the next pose can KILL
+## it — a stale tween keeps writing toward the target it captured, so a snap made while one is
+## running is silently overwritten a few frames later.
+var _pose_tween : Tween = null
+
 func _pose_camera() -> void:
 	if not _camera: return
+	_kill_pose_tween()
 	var rect := _rect_for(preview_focus_id)
 	if rect == null:
 		_frame_camera(_last_rects)
 		return
 	if preview_info_mode:
-		var state := WallPicture.info_zoom_state(rect, _viewport_size(), preview_settings)
+		var state := WallPicture.info_zoom_state(rect, _viewport_size(), preview_settings,
+				_info_card_height())
 		_camera.position = state["position"] as Vector2
 		_camera.zoom = Vector2.ONE * (state["zoom"] as float)
 		return
-	_camera.position = rect.centre
-	_camera.zoom = Vector2.ONE * WallPicture.focused_scale(rect.size, _viewport_size(),
-			preview_settings.wall_overfill_margin)
+	var rest := WallPicture.resting_state(rect, _viewport_size(), preview_settings,
+			_info_card_height())
+	_camera.position = rest["position"] as Vector2
+	_camera.zoom = Vector2.ONE * (rest["zoom"] as float)
 
 ## Focuses `preview_focus_id` and unfocuses everything else, through the REAL
 ## `WallPicture.focus()`/`unfocus()`. That is what puts each picture's SubViewport at the resolution
@@ -570,6 +622,12 @@ func _apply_selection() -> void:
 ## ⚠ Snapping here is what made info mode read as instant in the tool while the game animated it.
 ## A tool whose timing differs from the product cannot be used to judge timing, which is most of
 ## what this panel is for.
+## Kills any in-flight pose animation. Every path that writes the camera calls this first, so the
+## last thing asked for is the thing that happens.
+func _kill_pose_tween() -> void:
+	if _pose_tween and _pose_tween.is_valid(): _pose_tween.kill()
+	_pose_tween = null
+
 func _animate_camera_to_pose() -> void:
 	var before_pos := _camera.position
 	var before_zoom := _camera.zoom
@@ -581,6 +639,7 @@ func _animate_camera_to_pose() -> void:
 	var duration := WallTransition.total_duration(preview_settings) \
 			* preview_settings.wall_info_zoom_scale
 	var tween := _camera.create_tween()
+	_pose_tween = tween
 	tween.set_parallel(true)
 	tween.tween_property(_camera, "position", target_pos, duration) \
 			.set_trans(preview_settings.wall_travel_trans) \
@@ -617,18 +676,43 @@ func _rect_for(id: StringName) -> PictureRect:
 ## ⚠ The card is RUNNING ONLY (F6), like the live screens: it measures itself from theme fonts and
 ## anchors to the real window, neither of which the Inspector preview has. The camera's info POSE is
 ## pure arithmetic and works in both.
+## The info card's height on screen right now, or -1 when there is no card for `info_zoom_state()`
+## to reserve — in which case it falls back to the authored cap.
+func _info_card_height() -> float:
+	if not is_instance_valid(_info_card) or not _info_card.visible: return -1.0
+	return _info_card.size.y
+
 func _apply_info_mode(animate: bool = false) -> void:
+	# ⚠ THE CARD FIRST, THEN THE CAMERA. The pose reserves the card's LIVE height, so posing before
+	# the card is shown reserves the previous entry's height — or the authored cap on the first
+	# toggle, which is the worst case and the one that reads as being thrown out to the wall.
+	if is_instance_valid(_info_card):
+		# Stash the outgoing screen's card before loading this one's, exactly as `Main` does.
+		if _info_entry_owner != preview_focus_id:
+			var outgoing := _info_card.detach_entry()
+			if outgoing:
+				if _info_entry_owner == &"":
+					_free_entry(outgoing)
+				else:
+					var previous : InfoEntry = _info_entry_by_picture.get(_info_entry_owner)
+					if previous != outgoing: _free_entry(previous)
+					_info_entry_by_picture[_info_entry_owner] = outgoing
+			_info_entry_owner = preview_focus_id
+		if not preview_info_mode:
+			_info_card.reset()
+		else:
+			var remembered : InfoEntry = _info_entry_by_picture.get(preview_focus_id)
+			if remembered:
+				_info_entry_by_picture.erase(preview_focus_id)
+				_info_card.show_entry(remembered)
+			else:
+				var wp : WallPicture = _preview_pictures.get(preview_focus_id)
+				if wp: _info_card.show_entry(wp.get_info())
+				else: _info_card.reset()
 	if animate and not Engine.is_editor_hint() and _camera and _rect_for(preview_focus_id) != null:
 		_animate_camera_to_pose()
 	else:
 		_pose_camera()
-	if not is_instance_valid(_info_card): return
-	if not preview_info_mode:
-		_info_card.reset()
-		return
-	var wp : WallPicture = _preview_pictures.get(preview_focus_id)
-	if wp: _info_card.show_entry(wp.get_info())
-	else: _info_card.reset()
 
 ## The wall-view zoom, computed exactly as `Wall.wall_view_zoom()` does.
 ##
@@ -713,6 +797,7 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 	var dest_rect := _rect_for(dest_id)
 	if dest_id != &"" and dest_rect == null: return
 	_move_active = true
+	_kill_pose_tween()   # a move owns the camera; a pose animation must not fight it
 	if is_instance_valid(_wall):
 		_wall.begin_music_crossfade(_entry_for(dest_id))
 	if source_rect != null and dest_rect != null:
@@ -723,7 +808,7 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 		var landed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
 		transition.landed.connect(func(_id: StringName) -> void: landed[0] = true)
 		transition.request(_camera, source_wp, source_rect, dest_wp, dest_rect, _viewport_size(),
-				preview_settings)
+				preview_settings, _info_card_height())
 		while not landed[0]:
 			if is_instance_valid(_wall):
 				_wall.update_travel_music(source_rect.centre, dest_rect.centre, _camera.position)
@@ -731,11 +816,15 @@ func _move_to(dest_id: StringName, record: bool = true, duration_scale: float = 
 	else:
 		# Wall view is one end of this move, which `WallTransition` cannot express -- it only ever
 		# runs picture to picture. A plain tween on the authored travel curve, same clock.
-		var target_pos := dest_rect.centre if dest_rect else _wall_extent().get_center()
+		var target_pos := _wall_extent().get_center()
 		var target_zoom := _wall_view_zoom()
 		if dest_rect:
-			target_zoom = WallPicture.focused_scale(dest_rect.size, _viewport_size(),
-					preview_settings.wall_overfill_margin)
+			# The RESTING pose, so a move made with Info mode on lands where Info mode wants the
+			# camera rather than being cut there afterwards.
+			var rest := WallPicture.resting_state(dest_rect, _viewport_size(), preview_settings,
+					_info_card_height())
+			target_pos = rest["position"] as Vector2
+			target_zoom = rest["zoom"] as float
 		var tween := _camera.create_tween()
 		tween.set_parallel(true)
 		var duration := WallTransition.total_duration(preview_settings) * duration_scale

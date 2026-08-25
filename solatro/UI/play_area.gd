@@ -2,6 +2,9 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
+## A card was CLICKED while Info mode is on. Carries the card's own `InfoEntry` for the wall's one
+## info card; `data_selected` is deliberately NOT emitted for the same press.
+signal info_requested(entry: InfoEntry)
 ## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
 ## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
 ## a deferred emit queued after those adds (FIFO) fires only once they've entered the tree.
@@ -24,26 +27,26 @@ var separation : int = 4:
 ## is the eased 0..1 this row is through its opening. A row at 0 is absent from the map entirely, so
 ## an un-revealed board carries no state and `slot_center_global` costs what it always did.
 ##
-## ⚠ **A COLUMN OPENS EVERY ROW IT PASSES THROUGH**, not none — chart D4 defines the reveal set as
-## *"which board rows must expand to make every member of the spotlight set fully visible"*, and `Q52`
-## states the consequence outright: *"Column scoring on the longest column expands nearly every row at
+## ⚠ **A COLUMN OPENS EVERY ROW IT PASSES THROUGH**, not none — the reveal set is every board row
+## that must expand to make each member of the spotlight set fully visible, and the consequence is
+## stated outright: *"Column scoring on the longest column expands nearly every row at
 ## once"*. This is keyed by ROW for exactly that reason.
 var _row_open : Dictionary[Vector2i, float] = {}
 ## The rows that WANT to be open. Separate from `_row_open` because a row that has just left the set
 ## still has to ease back down, and a map that only held the current set would snap it.
 var _row_open_wanted : Dictionary[Vector2i, bool] = {}
 
-## How tall a revealed row's strip becomes, in screen pixels — **GAP-009's knob, and the only place
-## either formula is written**.
+## How tall a revealed row's strip becomes, in screen pixels — the only place either formula is
+## written.
 ##
-## ⚠ **THE DERIVED OPENING IS RETIRED (GAP-009).** It used to be sized so there was *"no visible gap"*,
-## measured from the lowest card that had to be seen — but on a FLUSH every card in the row is lit and
-## jumps, so that card is the lowest on the board and the opening lifted rows *"that arent part of
-## actual scored set"*. Neither formula below looks at any card's position.
+## ⚠ **NEITHER FORMULA MAY LOOK AT ANY CARD'S POSITION.** Sizing the opening from the lowest card
+## that had to be seen breaks on a FLUSH, where every card in the row is lit and jumps — that card
+## is then the lowest on the board, and the opening lifts rows *"that arent part of actual scored
+## set"*.
 func _row_open_height() -> float:
 	return row_open_height(SettingsManager.settings, float(separation))
 
-## GAP-009's two modes, STATIC so the tuning tool reads the same formula instead of a hand copy
+## The two modes, STATIC so the tuning tool reads the same formula instead of a hand copy
 ## (its copy ignored the mode and kept the overshoot bug fixed below — the exact drift the tool
 ## exists to rule out). `separation_px` is the SCALED inter-row gap (`PlayArea.separation`'s
 ## getter applies `card_scale`; a caller without the node applies it itself).
@@ -75,10 +78,9 @@ func row_open_extra(zone_x: int, row_z: int) -> float:
 	# ⚠ **A ROW THAT COVERS NOTHING DOES NOT OPEN, AND LEAVING THIS OUT WAS A REAL BUG.** The opening
 	# exists to lift a covering card off a buried one. On a board one card deep there is nothing
 	# underneath, so growing the strip adds PURE EMPTY SPACE and the only visible result is the whole
-	# zone below being shoved down — which is exactly the *"shifting in cards that arent part of actual
-	# scored set"* the owner rejected when they retired the derived opening (GAP-009). Reported from a
-	# playtest of `reveal_shot.tscn`: *"lower zone input zone cards wiggle down and up twice ... seems
-	# impossible since zone cards shouldnt move like that"*. They were right — nothing was revealed.
+	# zone below being shoved down — exactly the *"shifting in cards that arent part of actual scored
+	# set"* the derived opening was retired for. It reads as *"lower zone input zone cards wiggle down
+	# and up twice"* while nothing has actually been revealed.
 	# ⚠ Decided per ROW, never per column: every column's VBox must give row `row_z` the same height or
 	# the rows stop lining up across the board.
 	if not _row_covers_anything(zone_x, row_z): return 0.0
@@ -172,7 +174,10 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
-				data_selected.emit(ui_data[focused_control])
+				if _info_mode():
+					info_requested.emit(card_info(ui_data[focused_control]))
+				else:
+					data_selected.emit(ui_data[focused_control])
 
 ## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
 ## card control consumes nothing), then fall through the focus-navigation pass to unhandled
@@ -187,7 +192,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if (is_instance_valid(focused_control)
 				and focused_control in ui_data
 				and get_viewport().gui_get_focus_owner() == focused_control):
-			data_selected.emit(ui_data[focused_control])
+			if _info_mode():
+				info_requested.emit(card_info(ui_data[focused_control]))
+			else:
+				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		if selected_cards:
@@ -602,7 +610,11 @@ func on_control_focus_entered(control:Control) -> void:
 	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
 	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
 	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
-	if ui_data.has(control):
+	# ⚠ Two gates, and they are different questions. In Info mode this panel ALWAYS yields: the
+	# wall's card is the one description system, and two panels describing the same card is what
+	# having a single info card replaced. Outside Info mode `wall_screen_popups` decides whether a
+	# description is available at all.
+	if ui_data.has(control) and _popups_allowed():
 		_show_focus_info(control, ui_data[control])
 	else:
 		hide_focus_info()
@@ -662,6 +674,35 @@ func _ensure_focus_info() -> void:
 ## Show `data`'s description beside the focused control (right of it; flips left at the
 ## edge). Placement is re-pinned every frame while visible (_process) so focus-driven
 ## container relayouts — which move the anchor a frame later — never strand the panel.
+## Whether the wall's Info mode is on. Read through `WallPicture.settings()` — the one accessor
+## that answers "which PlayerSettings" — so a tool previewing the board sees its own knobs.
+func _info_mode() -> bool:
+	return WallPicture.settings().wall_info_mode
+
+## Whether this screen's OWN description popup may show right now — never in Info mode, and outside
+## it only when `wall_screen_popups` is on.
+func _popups_allowed() -> bool:
+	var settings := WallPicture.settings()
+	return not settings.wall_info_mode and settings.wall_screen_popups
+
+## A card's `InfoEntry` for the wall's info card. The TEXT is `ControlCard.describe_card()`, the
+## same string the in-screen inspector shows, so the two can never drift; its first line is the
+## card's name and the rest is the description. The VISUAL is a real preview card built through
+## `CardsViewer`, the same listing `MapHoverPanel` uses for booster previews.
+##
+## ⚠ The caller takes ownership of `entry.visual` — `InfoCard.show_entry()` frees it on the next
+## entry — so a fresh one is built per call rather than cached.
+static func card_info(data: CardData) -> InfoEntry:
+	var entry := InfoEntry.new()
+	var text := ControlCard.describe_card(data)
+	var split := text.split("\n", false, 1)
+	entry.title = split[0] if split.size() > 0 else ""
+	entry.body = split[1] if split.size() > 1 else ""
+	var flow := FlowContainer.new()
+	entry.visual = flow
+	CardsViewer.new(flow).populate([data] as Array[CardData])
+	return entry
+
 func _show_focus_info(control: Control, data: CardData) -> void:
 	_ensure_focus_info()
 	_focus_info_anchor = control
@@ -745,7 +786,7 @@ func _apply_row_openings() -> void:
 
 ## One frame of the reveal. Returns whether anything is still open or moving.
 ##
-## ⚠ **A FRACTION OF `Game.get_delay()` (`Q167`=a), never wall clock** — the expansion compresses with
+## ⚠ **A FRACTION OF `Game.get_delay()`, never wall clock** — the expansion compresses with
 ## the act speed-up exactly like the dim, the travel and the hold, so a long cascade cannot leave a
 ## row still opening while the next section has already started.
 func _ease_row_openings(delta: float) -> bool:

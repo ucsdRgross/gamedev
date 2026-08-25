@@ -395,22 +395,52 @@ static func focused_scale(native_size: Vector2, window_size: Vector2,
 		return fill
 	return fill * overfill_margin
 
-## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`:
-## just enough reveal to show the BOTTOM frame, with top, left and right still covered.
+## Where the camera RESTS on `rect` — the info pose while Info mode is on, the ordinary focused
+## pose otherwise. Same `{"position", "zoom"}` shape as `info_zoom_state()`.
 ##
-## Zoom is UNCHANGED from `focused_scale()`'s at-rest value — only POSITION shifts downward. That
-## is correct for every `frame_px`, symmetric or not: at rest the whole frame sits outside the
-## visible rect, so `frame.top < visible_top`; shifting down by `delta > 0` only increases
-## `visible_top`, which can never cross back below the fixed `frame.top`. `delta` is the SMALLEST
-## shift bringing the bottom frame edge into view plus `wall_frame_reveal_margin`'s clearance,
-## reused rather than duplicated as a second near-identical knob.
+## ⚠ **EVERY MOVE MUST AIM HERE, not at the focused pose.** A move computed against
+## `focused_scale()` while Info mode is on lands at the ordinary pose and is then CUT to the info
+## pose by the settle — the camera zooms into the screen and snaps back out, as if Info mode were
+## not on until the instant it arrived. The destination of a move IS its resting pose.
+static func resting_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
+		card_height_px: float = -1.0) -> Dictionary:
+	if settings.wall_info_mode:
+		return info_zoom_state(rect, window_size, settings, card_height_px)
+	return {"position": rect.centre,
+			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
+
+## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`.
+##
+## ⚠ **THE POINT IS THAT NOTHING IS COVERED.** Info mode exists to read a screen while a card
+## describes it, so neither the window edge nor the card may hide any of it. Two things follow:
+##  * **Zoom out, never pan.** Panning down to reveal the bottom frame drags the top of the visible
+##    rect with it and crops the top of the screen — content lost behind the window edge.
+##  * **Zoom out far enough to clear the CARD too**, not just the window. The card is reserved out
+##    of the window before the picture is fitted, so the whole screen lands ABOVE it.
+##
+## `wall_info_card_overlap` is the one part the card may cover — it keeps the card reading as
+## something in FRONT of the picture rather than a band beside it.
+##
+## ⚠ **`card_height_px` IS THE CARD'S LIVE HEIGHT, and passing it matters.** Reserving
+## `wall_info_card_max_height` instead reserves the WORST case on every entry — a two-line caption
+## then pulls the camera back as far as the longest description would, which reads as being thrown
+## out to the wall. Callers that have a card on screen pass its real height; the cap is only the
+## fallback for callers that have no card, such as the transition's own info branch.
 static func info_zoom_state(rect: PictureRect, window_size: Vector2,
-		settings: PlayerSettings) -> Dictionary:
-	var zoom := focused_scale(rect.size, window_size, settings.wall_overfill_margin)
-	var frame_rect := WallPacker.frame_outer_rect(rect)
-	var visible_bottom_rest := rect.centre.y + window_size.y / (2.0 * zoom)
-	var target_bottom := frame_rect.end.y + settings.wall_frame_reveal_margin * rect.size.y
-	var delta := maxf(target_bottom - visible_bottom_rest, 0.0)
+		settings: PlayerSettings, card_height_px: float = -1.0) -> Dictionary:
+	# Reserve the card out of the window first: its real height, less the overlap it is allowed.
+	# The picture is then fitted into what is LEFT.
+	var card_height := card_height_px if card_height_px >= 0.0 \
+			else settings.wall_info_card_max_height
+	var reserve := maxf(card_height - settings.wall_info_card_overlap, 0.0)
+	var free_height := maxf(window_size.y - reserve, 1.0)
+	# "Fit", the MIN of the two axis ratios — against `focused_scale()`'s "fill" MAX, which is what
+	# crops. Nothing is cropped at or below this.
+	var zoom := minf(window_size.x / rect.size.x, free_height / rect.size.y)
+	# The picture now sits in the TOP `free_height` of the window, so its centre must appear above
+	# the window's centre by half the reserve. The camera therefore sits BELOW the picture's centre
+	# by that same distance in wall units.
+	var delta := reserve / (2.0 * maxf(zoom, 0.0001))
 	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
 
 ## This picture's info-mode entry. Strings are resolved HERE, not stored on the entry —

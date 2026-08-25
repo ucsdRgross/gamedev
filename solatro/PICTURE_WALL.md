@@ -129,7 +129,7 @@ Inspector already gives arrays, undo and nested resources.
 | Transition preview | `preview_source_id`/`preview_dest_id` are seeded with the longest move on the wall; `play_transition` runs the real `WallTransition`. |
 | Focus | `preview_focus_id` focuses that picture through the real `WallPicture.focus()` and poses the camera at its resting pose — the state a player is in most of the time, and the only place a too-small `wall_overfill_margin` shows as a sliver of frame at a window edge. `&""` is wall view. `preview_selected_id` drives the real `set_selected()`, so `wall_selected_lift` is visible. `preview_wall_view_resolution` renders unfocused pictures at their wall-view footprint, as the game does. |
 | Gestures | `preview_pinch` routes real touch through the real `WallInput.PinchTracker`, so `wall_pinch_threshold_px` is tunable against actual fingers. Needs a touch device or `emulate_mouse_from_touch` off; `gesture_log` shows what the tracker saw. |
-| Info mode | `preview_info_mode` ANIMATES the camera to `preview_info_id`'s info pose (bottom frame revealed, the other three edges covered) and shows the real `InfoCard`. The ONLY way to reach `wall_info_mode` from an Inspector — it is not `@export`ed on `PlayerSettings`, being session state that must never persist. With it on, `play_transition` previews the INFO transition: a pure travel at constant zoom. |
+| Info mode | PER PICTURE — each screen remembers whether it is on, and the card it was showing. `preview_info_mode` ANIMATES the camera to `preview_info_id`'s info pose (bottom frame revealed, the other three edges covered) and shows the real `InfoCard`. The ONLY way to reach `wall_info_mode` from an Inspector — it is not `@export`ed on `PlayerSettings`, being session state that must never persist. With it on, `play_transition` previews the INFO transition: a pure travel at constant zoom. |
 | Overlay | The REAL overlay from the hosted `wall.tscn`, with its info card. Back / Forward / Wall / Info are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knobs are live. |
 | Save | `save_now` writes `Assets/Wall/layout_default.tres` — the resource the game boots from. `revert_now` reloads it. `preview_settings` is NOT saved. |
 
@@ -175,6 +175,18 @@ whenever anything is focused — silently, with no other symptom.
 scenes that assert on pixels (`test_pixels`, `test_outline`); everything else under `Tests/Visual`
 is a hand-run diagnostic that renders, screenshots and prints. That is why the wall-editor runs look
 different from a suite run — they are a different kind of instrument.
+
+⚠ **Info mode covers NOTHING.** The camera zooms out — it never pans, which would crop the top of
+the screen — far enough that the whole screen clears the info card, bar `wall_info_card_overlap`.
+The reserve is the card's LIVE height, not `wall_info_card_max_height`; that cap is only the
+fallback for callers with no card on screen. Every mover aims at `WallPicture.resting_state()`,
+which is info-aware, so a move made in Info mode LANDS in the info pose instead of being cut there.
+
+⚠ **A visual inside the info card is a real game node made inert.** `InfoCard._make_inert()` strips
+`focus_mode` and `mouse_filter` recursively as the card takes ownership, so a preview cannot take
+focus or swallow a click. It cannot mutate what it shows either: `CardVisual` never writes to its
+`CardData`. Keep that guarantee at the ONE site — a per-builder rule would have to be remembered
+every time a new `get_info()` is written.
 
 ⚠ **Wall view is framed with `layout.view_margin`, exactly as `Wall.wall_view_zoom()` frames it —
 NOT with `wall_overfill_margin`, which is a picture's own overfill when focused.** Using the picture

@@ -33,6 +33,20 @@ var _focus_stack : FocusStack = null
 ## here (not read back off `wall`) because `Main` is the one that knows what "focused" means for
 ## each id (a live GameView vs. a persistent menu/map screen).
 var _current_focus : StringName = &""
+## Info mode PER PICTURE. `wall_info_mode` on the settings is only ever the focused picture's
+## entry, written on every focus change — so a screen left in info mode is still in it when the
+## player comes back, and turning it on for one screen does not turn it on everywhere.
+var _info_by_picture : Dictionary[StringName, bool] = {}
+## The last info card each picture was showing, so returning to a screen returns to what you were
+## reading rather than a blank card. Entries here are DETACHED from the card and owned by `Main`.
+var _info_entry_by_picture : Dictionary[StringName, InfoEntry] = {}
+## Which picture the card is currently showing an entry FOR, so the outgoing one can be stashed
+## before the incoming one is loaded.
+var _info_entry_owner : StringName = &""
+## The picture a move is heading for, while one is in flight. Info mode toggled MID-MOVE is a
+## choice about where you are going, not where you are leaving — without this the arrival would
+## restore the destination's old state and silently drop what the player just chose.
+var _moving_to : StringName = &""
 var _window_size : Vector2
 
 func _ready() -> void:
@@ -226,16 +240,18 @@ func _settle_camera() -> void:
 		camera.zoom = Vector2.ONE * wall.wall_view_zoom(_window_size)
 		return
 	var focused_rect : PictureRect = _rects[_current_focus]
-	if settings.wall_info_mode:
-		var state := WallPicture.info_zoom_state(focused_rect, _window_size, settings)
-		var info_pos : Vector2 = state["position"]
-		var info_zoom : float = state["zoom"]
-		camera.position = info_pos
-		camera.zoom = Vector2.ONE * info_zoom
-	else:
-		camera.position = focused_rect.centre
-		camera.zoom = Vector2.ONE * WallPicture.focused_scale(focused_rect.size, _window_size,
-				settings.wall_overfill_margin)
+	var state := WallPicture.resting_state(focused_rect, _window_size, settings,
+			_info_card_height())
+	camera.position = state["position"] as Vector2
+	camera.zoom = Vector2.ONE * (state["zoom"] as float)
+
+## The info card's height on screen right now, or -1 when nothing is showing — `info_zoom_state()`
+## then falls back to the authored cap. Reserving the CAP on every entry pulls the camera back as
+## far as the longest description would, whatever is actually being read.
+func _info_card_height() -> float:
+	var card : InfoCard = wall.get_node_or_null(^"%Overlay/InfoCard")
+	if card == null or not card.visible: return -1.0
+	return card.size.y
 
 ## Set by `_on_window_resized()` when a move was already in flight with no retargetable transition;
 ## cleared by whichever move was in flight, which settles the camera itself once it lands.
@@ -330,6 +346,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	if _move_in_flight: return
 	if id == _current_focus: return   # requesting the current picture does nothing
 	_move_in_flight = true
+	_moving_to = id
 	# Input goes inert for the length of the move. The transition's `input_unlocked` lifts it
 	# EARLY below; this is the only thing that ever sets it.
 	wall.lock_input()
@@ -347,7 +364,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		var landed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
 		transition.landed.connect(func(_lid: StringName) -> void: landed[0] = true)
 		transition.request(camera, source_wp, source_rect, dest_wp, dest_rect, _window_size,
-				settings)
+				settings, _info_card_height())
 		_active_transition = transition
 		_transition_dest_id = id
 		# The wall answers input again the instant the destination and its frame are fully in
@@ -369,11 +386,16 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		source_wp.unfocus(_footprint(source_rect))
 		wall.transition_landed.emit(id)
 	else:
-		await _animate_camera(dest_rect.centre, WallPicture.focused_scale(dest_rect.size,
-				_window_size, settings.wall_overfill_margin),
+		# The move's target is the picture's RESTING pose, which honours Info mode — aiming at the
+		# focused pose would land there and be cut to the info pose by the settle below.
+		var rest := WallPicture.resting_state(dest_rect, _window_size, settings,
+				_info_card_height())
+		await _animate_camera(rest["position"] as Vector2, rest["zoom"] as float,
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
+	_moving_to = &""
+	_restore_info_mode_for(id)
 	# Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
 	wall.focus_changed.emit(id)
 	if record_visit:
@@ -391,6 +413,52 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 	wall.unlock_input()   # backstop: the early unlock above may never have had a frame to fire in
 	_settle_after_deferred_resize()
 
+## Points `wall_info_mode` and the overlay's toggle at `id`'s own remembered state.
+##
+## ⚠ The BUTTON is moved, not just the flag — `WallOverlay`'s toggle is the source of truth for what
+## the player sees, and a flag changed behind it leaves info mode on with the control reading
+## un-pressed. Setting an unchanged `button_pressed` emits nothing, so this cannot loop.
+func _restore_info_mode_for(id: StringName) -> void:
+	var wanted : bool = _info_by_picture.get(id, false)
+	SettingsManager.settings.wall_info_mode = wanted
+	var overlay : WallOverlay = wall.get_node(^"%Overlay")
+	var button : Button = overlay.get_node_or_null(^"InfoButton") as Button
+	if button and button.button_pressed != wanted: button.button_pressed = wanted
+	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
+	# Put the outgoing screen's card away before loading this one's, so each picture keeps what it
+	# was showing instead of inheriting the last screen's card or a blank one.
+	if _info_entry_owner != id:
+		_stash_info_entry(_info_entry_owner, info_card.detach_entry())
+		_info_entry_owner = id
+	if not wanted:
+		info_card.reset()
+		return
+	var remembered : InfoEntry = _info_entry_by_picture.get(id)
+	if remembered:
+		_info_entry_by_picture.erase(id)   # the card owns it again once shown
+		info_card.show_entry(remembered)
+
+## Remembers `entry` as `id`'s card, freeing whatever it replaces.
+func _stash_info_entry(id: StringName, entry: InfoEntry) -> void:
+	if entry == null: return
+	if id == &"":
+		_free_entry(entry)   # wall view has no card of its own to remember
+		return
+	var previous : InfoEntry = _info_entry_by_picture.get(id)
+	if previous and previous != entry: _free_entry(previous)
+	_info_entry_by_picture[id] = entry
+
+## Frees a detached entry's visual. `InfoEntry` is `RefCounted`, but its visual is a NODE outside
+## the tree that nothing else will collect.
+func _free_entry(entry: InfoEntry) -> void:
+	if entry and entry.visual and is_instance_valid(entry.visual):
+		entry.visual.queue_free()
+
+func _exit_tree() -> void:
+	for stashed_id : StringName in _info_entry_by_picture:
+		_free_entry(_info_entry_by_picture[stashed_id])
+	_info_entry_by_picture.clear()
+
 ## Unfocuses whatever is focused — FREEZING it in place, never freeing it — and animates the
 ## camera out to wall view. A no-op if already in wall view. `duration_scale` defaults to an
 ## ordinary move; only the opening reveal passes anything else.
@@ -399,6 +467,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 	# Camera2D, so a Wall press racing an in-flight enter would fight it for position and zoom.
 	if _move_in_flight: return
 	_move_in_flight = true
+	_moving_to = &""   # wall view is not a picture and has no info mode of its own
 	# Just as much a transition to the player. No `WallTransition`, so no early unlock -- input
 	# clears on landing.
 	wall.lock_input()
@@ -414,6 +483,9 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		source_wp.unfocus(_footprint(_rects[_current_focus]))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
+	# Wall view is not a picture, so it has no info mode of its own — the flag goes off, and each
+	# picture's own state is restored when it is entered again.
+	_restore_info_mode_for(&"")
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_move_in_flight = false
@@ -439,6 +511,10 @@ func _on_info_toggle_requested() -> void:
 ## a picture is focused. A no-op in wall view, where no single frame exists to reveal.
 func _on_info_toggled(active: bool) -> void:
 	SettingsManager.settings.wall_info_mode = active
+	# Recorded against the DESTINATION while a move is running: the toggle applies to the picture
+	# being entered, which is also the one whose state is restored on arrival.
+	var owner_id := _moving_to if _move_in_flight else _current_focus
+	if owner_id != &"": _info_by_picture[owner_id] = active
 	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
 	if not active:
 		info_card.reset()
@@ -455,7 +531,8 @@ func _on_info_toggled(active: bool) -> void:
 	var dest_rect : PictureRect = _rects[_current_focus]
 	var settings := SettingsManager.settings
 	if active:
-		var state := WallPicture.info_zoom_state(dest_rect, _window_size, settings)
+		var state := WallPicture.info_zoom_state(dest_rect, _window_size, settings,
+				_info_card_height())
 		var info_pos : Vector2 = state["position"]
 		var info_zoom : float = state["zoom"]
 		await _animate_camera(info_pos, info_zoom, dest_rect.centre, dest_rect.centre,
@@ -489,7 +566,14 @@ func _on_screen_info_hovered(entry: InfoEntry) -> void:
 			entry.visual.queue_free()
 		return
 	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
+	var before := info_card.size.y if info_card.visible else -1.0
+	_info_entry_owner = _current_focus   # this card belongs to the picture being read
 	info_card.show_entry(entry)
+	# ⚠ A TALLER ENTRY NEEDS MORE ROOM. The camera reserved the previous card's height, so a longer
+	# description would sit over the screen the mode exists to keep clear. Re-settle only when the
+	# height actually moved, so an equal-height entry does not nudge the camera on every hover.
+	if not is_equal_approx(before, info_card.size.y) and not _move_in_flight:
+		_settle_camera()
 
 ## A different picture is under the pointer in wall view. `get_info()` is called HERE rather than
 ## in `Wall` so it runs only when Info mode will show the result: it builds a live preview node per
@@ -570,6 +654,7 @@ func enter_game() -> void:
 		var new_view : GameView = GAME_VIEW.instantiate()
 		new_view.game_ended.connect(game_ended)
 		new_view.run_lost.connect(_on_run_lost)
+		new_view.info_requested.connect(_on_screen_info_hovered)
 		game_wp.attach_screen(new_view)
 	await _focus_picture(&"game")
 

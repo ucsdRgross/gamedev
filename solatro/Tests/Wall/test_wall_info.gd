@@ -154,8 +154,8 @@ func _test_transition_in_info_mode_has_constant_zoom() -> void:
 	settings.wall_info_mode = true
 	settings.base_delay = 1.0
 	settings.wall_transition_delay = 1.0
-	# Deliberately DIFFERENT sizes -- if zoom were wrongly re-derived per-picture instead of held
-	# constant from the source, a symmetric fixture would hide that bug entirely.
+	# Deliberately DIFFERENT sizes: at equal sizes the two info zooms coincide, and every reading of
+	# what the zoom does between them looks identical.
 	var source := PictureRect.new(&"a", Vector2(-500, 0), Vector2(400, 300), Vector4(20, 20, 20, 20))
 	var dest := PictureRect.new(&"b", Vector2(500, 0), Vector2(700, 500), Vector4(30, 30, 30, 30))
 	var window := Vector2(1280, 720)
@@ -169,13 +169,31 @@ func _test_transition_in_info_mode_has_constant_zoom() -> void:
 	check(zooms.size() == SCAN_STEPS + 1,
 			"the scan actually sampled every step before asserting anything about the samples",
 			"sampled=%d" % zooms.size())
-	var first : float = zooms[0]
-	var all_constant := true
+	# ⚠ ZOOM MOVES, AND THAT IS THE FIX, NOT A REGRESSION. Holding the SOURCE's zoom for the whole
+	# move means a differently-sized destination is reached at the wrong zoom and the settle after
+	# landing CUTS to the right one -- the snap this test used to require. "The camera never leaves
+	# the info zoom" is honoured by staying BETWEEN the two info poses the whole way, which is what
+	# is asserted here.
+	var source_zoom : float = WallPicture.info_zoom_state(source, window, settings)["zoom"]
+	var dest_zoom : float = WallPicture.info_zoom_state(dest, window, settings)["zoom"]
+	check(is_equal_approx(zooms[0], source_zoom),
+			"the info move STARTS at the source's own info zoom -- nothing to snap from",
+			"%.5f vs %.5f" % [zooms[0], source_zoom])
+	check(is_equal_approx(zooms[zooms.size() - 1], dest_zoom),
+			"...and ENDS at the destination's, so the settle after landing has nothing to cut",
+			"%.5f vs %.5f" % [zooms[zooms.size() - 1], dest_zoom])
+	var lo := minf(source_zoom, dest_zoom)
+	var hi := maxf(source_zoom, dest_zoom)
+	var stays_within := true
 	for z : float in zooms:
-		if not is_equal_approx(z, first): all_constant = false
-	check(all_constant,
-			"camera zoom is CONSTANT across the whole transition in info mode (J10: pure travel)",
-			"zooms=%s" % [zooms])
+		if z < lo - 0.0001 or z > hi + 0.0001: stays_within = false
+	check(stays_within,
+			"...and never leaves info framing in between -- every sample is between the two poses",
+			"zooms=%s bounds=[%.5f, %.5f]" % [zooms, lo, hi])
+	check(not is_equal_approx(source_zoom, dest_zoom),
+			"sanity: the fixture's two info zooms really do differ, or the three checks above "
+			+ "cannot tell a constant zoom from an interpolated one",
+			"%.5f vs %.5f" % [source_zoom, dest_zoom])
 	# Position, meanwhile, DOES move -- otherwise this would be a picture that never travels,
 	# not a "pure travel" transition (J10's other half).
 	var start_pos := WallTransition.sample_at(0.0, total, source, dest, window, settings) \
@@ -183,7 +201,7 @@ func _test_transition_in_info_mode_has_constant_zoom() -> void:
 	var end_pos := WallTransition.sample_at(total, total, source, dest, window, settings) \
 			.camera_position
 	check(not start_pos.is_equal_approx(end_pos),
-			"camera POSITION still travels even though zoom does not",
+			"camera POSITION travels too -- an info move is still a move",
 			"start=%s end=%s" % [start_pos, end_pos])
 
 # ------------------------------------------------------------------ design J9 (S28, Q136=b)

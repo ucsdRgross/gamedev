@@ -39,6 +39,10 @@ func _ready() -> void:
 	await _case_the_real_wall_is_what_is_hosted()
 	await _case_wall_view_render_resolution()
 	await _case_authoring_extremes()
+	await _case_info_mode_reaches_a_hosted_screen()
+	await _case_info_transition_does_not_snap()
+	await _case_the_card_visual_is_inert()
+	await _case_info_mode_is_per_picture()
 
 	print("\n======== WALL EDITOR SOAK: %d checks, %d problem(s) ========" % [_checks, _problems.size()])
 	for line : String in _problems:
@@ -118,26 +122,56 @@ func _case_overlay_buttons() -> void:
 	# `wall_transition_delay * wall_info_zoom_scale`; a tool that jumps there instead cannot be used
 	# to judge how the reveal feels, which is most of what the panel is for. Sampled two frames
 	# apart and again later: it must be MOVING at first and STILL by the end.
-	var pose_before := _editor._camera.position
+	# ⚠ INFO MODE ZOOMS OUT; IT DOES NOT PAN. The camera stays CENTRED on the picture, so `zoom` is
+	# the observable, not `position` -- panning down would crop the top of the screen, which is the
+	# whole thing info mode must not do.
+	var rest_zoom := _editor._camera.zoom.x
+	var rest_pos := _editor._camera.position
 	info_button.button_pressed = true
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var pose_mid := _editor._camera.position
-	_check(not pose_mid.is_equal_approx(pose_before),
-			"toggling info mode starts the camera moving")
-	_check(not pose_mid.is_equal_approx(_expected_info_position(first)),
-			"...and it is ANIMATING, not already at the info pose two frames in",
-			"mid %s vs target %s" % [pose_mid, _expected_info_position(first)])
+	var mid_zoom := _editor._camera.zoom.x
+	_check(not is_equal_approx(mid_zoom, rest_zoom),
+			"toggling info mode starts the camera zooming")
+	_check(not is_equal_approx(mid_zoom, _expected_info_zoom(first)),
+			"...and it is ANIMATING, not already at the info zoom two frames in",
+			"mid %.5f vs target %.5f" % [mid_zoom, _expected_info_zoom(first)])
 	await _wait_for_camera()
-	_check(_editor._camera.position.is_equal_approx(_expected_info_position(first)),
-			"...and it arrives at the info pose",
-			"%s vs %s" % [_editor._camera.position, _expected_info_position(first)])
+	_check(is_equal_approx(_editor._camera.zoom.x, _expected_info_zoom(first)),
+			"...and it arrives at the info zoom",
+			"%.5f vs %.5f" % [_editor._camera.zoom.x, _expected_info_zoom(first)])
+	_check(_editor._camera.position.y > rest_pos.y,
+			"...shifting DOWN only as far as the reserved card band, never cropping the top",
+			"%s vs rest %s" % [_editor._camera.position, rest_pos])
+	_check(_editor._camera.zoom.x < rest_zoom,
+			"...and it zooms OUT, never in", "%.5f vs rest %.5f" % [_editor._camera.zoom.x, rest_zoom])
+	# Nothing may be cropped while info mode is on: the visible rect must contain the whole picture.
+	var info_rect := _editor._rect_for(first)
+	var picture := Rect2(info_rect.centre - info_rect.size * 0.5, info_rect.size)
+	_check(_camera_visible_rect().encloses(picture),
+			"the WHOLE screen is visible in info mode -- nothing cropped by the window",
+			"visible %s vs picture %s" % [_camera_visible_rect(), picture])
+	# ⚠ AND NOTHING COVERED BY THE CARD EITHER. That is the point of moving the camera at all: the
+	# picture's on-screen bottom edge must clear the card, bar the authored overlap.
+	var card := _info_card()
+	var vis := _camera_visible_rect()
+	var zoom_now : float = _editor._camera.zoom.x
+	var picture_bottom_px : float = (picture.end.y - vis.position.y) * zoom_now
+	var card_top_px : float = float(get_viewport().get_visible_rect().size.y) - card.size.y
+	var overlap : float = _editor.preview_settings.wall_info_card_overlap
+	_check(card.size.y < _editor.preview_settings.wall_info_card_max_height - 1.0,
+			"sanity: this entry is SHORTER than the cap, so reserving the cap would over-zoom",
+			"card %.0f vs cap %.0f" % [card.size.y,
+			_editor.preview_settings.wall_info_card_max_height])
+	_check(picture_bottom_px <= card_top_px + overlap + 1.0,
+			"...and the card covers no more of the screen than wall_info_card_overlap allows",
+			"picture bottom %.0f px vs card top %.0f + overlap %.0f"
+			% [picture_bottom_px, card_top_px, overlap])
 	_check(_editor.preview_info_mode, "the Info BUTTON turns info mode on")
 	_check(_info_card().visible, "...and the info card is actually showing")
 	# The card carries a preview image BESIDE its text. It must be at least as tall as that image,
 	# or it scrolls content it had room to show -- and `wall_info_card_max_height` is then tuning
 	# against a height the card never reaches.
-	var card := _info_card()
 	var slot := card.get_node(^"%VisualSlot") as Control
 	var visual_h : float = slot.get_combined_minimum_size().y if slot else 0.0
 	_check(visual_h > 0.0, "the info entry really did carry a visual", "%.0f px" % visual_h)
@@ -486,6 +520,176 @@ func _case_authoring_extremes() -> void:
 	_editor._repack()
 	await _settle()
 
+## Does Info mode actually reach a SCREEN hosted inside a picture? The whole of GAP-023 depends on
+## `PlayArea._info_mode()` seeing the tool's own knob, and nothing else proves that seam: the
+## board's popup and the click gate both read it, and both fail silently if it is false.
+func _case_info_mode_reaches_a_hosted_screen() -> void:
+	var game_wp : WallPicture = _editor._preview_pictures.get(&"game")
+	_check(game_wp != null, "the game picture is packed")
+	if game_wp == null: return
+	_check(game_wp.screen_root != null, "...and hosts a real screen", str(game_wp.screen_root))
+	if game_wp.screen_root == null: return
+	var pa := _find_play_area(game_wp.screen_root)
+	_check(pa != null, "...whose board is a real PlayArea")
+	if pa == null: return
+
+	_editor.preview_info_mode = false
+	await _settle()
+	_check(not pa._info_mode(), "with info mode OFF the board sees it off")
+	_editor.preview_info_mode = true
+	await _settle()
+	_check(pa._info_mode(),
+			"⚠ THE SEAM: with the tool's info mode ON the hosted board sees it ON",
+			"settings instance match=%s" % str(WallPicture.settings() == _editor.preview_settings))
+	_check(pa._focus_info == null or not pa._focus_info.visible,
+			"...and the board's own popup is not showing")
+
+	# ⚠ END TO END: a card clicked inside a hosted screen must reach the tool's OWN info card.
+	# `_info_mode()` being true proves the board is willing; nothing proved anyone was LISTENING,
+	# and nobody was -- the tool never connected `info_requested`, so every entry went nowhere.
+	var control := _any_card_control(pa)
+	_check(control != null, "the hosted board has a card control to click")
+	if control != null:
+		_info_card().reset()
+		pa.on_control_focus_entered(control)
+		pa.info_requested.emit(PlayArea.card_info(pa.ui_data[control]))
+		await _settle()
+		_check(_info_card().visible,
+				"clicking a card in a hosted screen SHOWS it on the wall's info card")
+		_check(_info_card().current_entry != null
+				and not _info_card().current_entry.title.is_empty(),
+				"...carrying that card's own name, not an empty entry",
+				_info_card().current_entry.title if _info_card().current_entry else "<null>")
+	_editor.preview_info_mode = false
+	await _settle()
+
+## ⚠ THE VISUAL IN THE CARD IS A REAL GAME NODE, AND MUST NOT BE ABLE TO ACT LIKE ONE.
+## `ControlCard._ready()` makes itself `FOCUS_ALL`, and any `Control` defaults to
+## `MOUSE_FILTER_STOP` — so an un-neutered preview would be a focus stop controller navigation can
+## land on, and would swallow clicks aimed behind the card. `InfoCard._make_inert()` strips both
+## recursively; this proves it on the real entry, every run.
+func _case_the_card_visual_is_inert() -> void:
+	await _editor._move_to(_editor.layout.home_id)
+	_editor.preview_info_mode = true
+	await _wait_for_camera()
+	var card := _info_card()
+	_check(card.current_entry != null and card.current_entry.visual != null,
+			"the entry really carries a visual, or the checks below are vacuous")
+	if card.current_entry != null and card.current_entry.visual != null:
+		var offenders : Array[String] = []
+		_collect_interactive(card.current_entry.visual, offenders)
+		_check(offenders.is_empty(),
+				"every node of the card's visual is non-focusable and mouse-transparent",
+				", ".join(offenders))
+	_editor.preview_info_mode = false
+	await _wait_for_camera()
+	await _editor._move_to(&"")
+
+func _collect_interactive(node: Node, out: Array[String]) -> void:
+	var control := node as Control
+	if control:
+		if control.focus_mode != Control.FOCUS_NONE:
+			out.append("%s focus_mode=%d" % [control.name, control.focus_mode])
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			out.append("%s mouse_filter=%d" % [control.name, control.mouse_filter])
+	for child : Node in node.get_children():
+		_collect_interactive(child, out)
+
+## Info mode is PER PICTURE: turning it on for one screen must not turn it on for another, and a
+## screen left in it must still be in it when the player comes back.
+func _case_info_mode_is_per_picture() -> void:
+	var a := _editor.layout.home_id
+	var b := _other_id(a)
+	await _editor._move_to(a)
+	_editor.preview_info_mode = true
+	await _wait_for_camera()
+	_check(_editor.preview_info_mode, "info mode is on for the first picture")
+
+	await _editor._move_to(b)
+	_check(not _editor.preview_info_mode,
+			"...and OFF for a different picture -- the toggle is per screen, not global")
+
+	await _editor._move_to(a)
+	_check(_editor.preview_info_mode,
+			"...and still ON when the first picture is entered again -- each screen remembers")
+	_editor.preview_info_mode = false
+	await _wait_for_camera()
+	await _editor._move_to(&"")
+
+## Any focusable card control on a hosted board, or null when the board has no cards dealt.
+## A transition WITH Info mode on must begin and end exactly where the camera already rests, or it
+## visibly jumps at each end.
+##
+## ⚠ Two separate snaps lived here. The move used to hold the SOURCE's zoom throughout, so a
+## differently-sized destination was reached at the wrong zoom and the settle cut to the right one;
+## and `sample_at()` computed its pose without the card height, reserving the authored CAP while the
+## resting pose reserved the card's LIVE height -- so it jumped the instant the move began.
+func _case_info_transition_does_not_snap() -> void:
+	var a := _editor.layout.home_id
+	var b := _other_id(a)
+	# ⚠ THE TWO PICTURES MUST BE DIFFERENT SIZES. At equal sizes their info zooms coincide, so
+	# holding the source's zoom and interpolating produce the same numbers and the test cannot tell
+	# the readings apart — it passed with the fix removed until this fixture changed.
+	var entry_b := _entry_for(b)
+	var kept_multiplier : float = entry_b.size_multiplier if entry_b else 1.0
+	if entry_b: entry_b.size_multiplier = kept_multiplier * 2.5
+	_editor._repack()
+	await _settle()
+	_check(not is_equal_approx(_editor._rect_for(a).size.y, _editor._rect_for(b).size.y),
+			"sanity: the two pictures really are different sizes, or this proves nothing",
+			"%s vs %s" % [_editor._rect_for(a).size, _editor._rect_for(b).size])
+	await _editor._move_to(a)
+	_editor.preview_info_mode = true
+	await _wait_for_camera()
+
+	var rest_pos := _editor._camera.position
+	var rest_zoom := _editor._camera.zoom.x
+	var settings := _editor.preview_settings
+	var total := WallTransition.total_duration(settings)
+	var card_h := _editor._info_card_height()
+	var first := WallTransition.sample_at(0.0, total, _editor._rect_for(a), _editor._rect_for(b),
+			Vector2(get_viewport().get_visible_rect().size), settings, card_h)
+	_check(first.camera_position.is_equal_approx(rest_pos)
+			and is_equal_approx(first.camera_zoom, rest_zoom),
+			"an info-mode move STARTS exactly at the resting pose -- no jump on the first frame",
+			"start %s/%.5f vs rest %s/%.5f"
+			% [first.camera_position, first.camera_zoom, rest_pos, rest_zoom])
+
+	var last := WallTransition.sample_at(total, total, _editor._rect_for(a), _editor._rect_for(b),
+			Vector2(get_viewport().get_visible_rect().size), settings, card_h)
+	var dest_state := WallPicture.info_zoom_state(_editor._rect_for(b),
+			Vector2(get_viewport().get_visible_rect().size), settings, card_h)
+	_check(last.camera_position.is_equal_approx(dest_state["position"] as Vector2)
+			and is_equal_approx(last.camera_zoom, dest_state["zoom"] as float),
+			"...and ENDS exactly on the destination's info pose -- nothing left for a cut",
+			"end %s/%.5f vs dest %s/%.5f" % [last.camera_position, last.camera_zoom,
+			dest_state["position"], dest_state["zoom"]])
+	_editor.preview_info_mode = false
+	await _wait_for_camera()
+	if entry_b: entry_b.size_multiplier = kept_multiplier
+	_editor._repack()
+	await _editor._move_to(&"")
+
+## The authored entry for `id`, or null.
+func _entry_for(id: StringName) -> PictureEntry:
+	for e : PictureEntry in _editor.layout.pictures:
+		if e.id == id: return e
+	return null
+
+## Any focusable card control on a hosted board, or null when the board has no cards dealt.
+func _any_card_control(pa: PlayArea) -> Control:
+	for control : Control in pa.ui_data:
+		if is_instance_valid(control): return control
+	return null
+
+func _find_play_area(node: Node) -> PlayArea:
+	var pa := node as PlayArea
+	if pa: return pa
+	for child : Node in node.get_children():
+		var found := _find_play_area(child)
+		if found: return found
+	return null
+
 func _window_aspect() -> float:
 	var w := Vector2(get_viewport().get_visible_rect().size)
 	return w.x / w.y if w.y > 0.0 else 1.0
@@ -525,23 +729,28 @@ func _press(button: Button) -> void:
 		return
 	button.pressed.emit()
 
-## The info pose the tool should end at, computed independently of the tool.
-func _expected_info_position(id: StringName) -> Vector2:
+## The info zoom the tool should end at, computed independently of the tool.
+func _expected_info_zoom(id: StringName) -> float:
 	var rect := _editor._rect_for(id)
-	if rect == null: return Vector2.ZERO
+	if rect == null: return 0.0
+	var card := _info_card()
+	var card_h : float = card.size.y if card and card.visible else -1.0
 	var state := WallPicture.info_zoom_state(rect,
-			Vector2(get_viewport().get_visible_rect().size), _editor.preview_settings)
-	return state["position"] as Vector2
+			Vector2(get_viewport().get_visible_rect().size), _editor.preview_settings, card_h)
+	return state["zoom"] as float
 
 ## Waits for the camera to stop moving, rather than for a fixed number of frames.
 func _wait_for_camera() -> void:
 	var started := Time.get_ticks_msec()
-	var last := _editor._camera.position
+	var last := Vector3(_editor._camera.position.x, _editor._camera.position.y,
+			_editor._camera.zoom.x)
 	var still := 0
 	while still < 4 and Time.get_ticks_msec() - started < 8000:
 		await get_tree().process_frame
-		still = still + 1 if _editor._camera.position.is_equal_approx(last) else 0
-		last = _editor._camera.position
+		var now := Vector3(_editor._camera.position.x, _editor._camera.position.y,
+				_editor._camera.zoom.x)
+		still = still + 1 if now.is_equal_approx(last) else 0
+		last = now
 	await _settle()
 
 func _wait_for_move() -> void:

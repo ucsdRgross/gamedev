@@ -128,6 +128,9 @@ func _show_lap_summary() -> void:
 ## is no placement to compute here, and the map has no business deciding whether Info mode wants
 ## it shown.
 func _on_node_hovered(node: WorldGraphNode) -> void:
+	# Published regardless: `Main` decides whether Info mode wants it, and the map has no business
+	# knowing. `wall_screen_popups` governs the map's own panel, which no longer exists as a live
+	# scene — so there is nothing to suppress here today. See `PlayArea._popups_allowed()`.
 	info_hovered.emit(MapHoverPanel.get_info(node, run, controller.lap_target()))
 
 func _update_hud() -> void:

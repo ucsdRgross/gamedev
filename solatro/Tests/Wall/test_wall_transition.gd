@@ -31,8 +31,8 @@ func _ready() -> void:
 	test_travel_duration_is_distance_independent()
 	behavior_section("PHASES AND FRAMING (T3, T4)")
 	test_phases_overlap()
-	test_zoom_out_shows_both_frames_plus_margin()
-	test_zoom_out_shows_both_frames_plus_margin_asymmetric()
+	test_zoom_out_shows_the_source_frame_plus_margin()
+	test_zoom_out_ignores_the_destination_entirely()
 	behavior_section("PAUSE / UNPAUSE / INPUT-UNLOCK BOUNDARIES (T6, T7, T8)")
 	test_source_pauses_when_frame_edge_enters_view()
 	test_dest_unpauses_on_first_visibility()
@@ -188,10 +188,14 @@ func test_phases_overlap() -> void:
 			"position starts changing (travel begins) BEFORE zoom finishes zooming out",
 			"%.4f vs %.4f" % [position_start_elapsed, zoom_flat_elapsed])
 
-## T4 (C8, Q48=b): the zoom-out target shows BOTH frames plus the reveal margin. Symmetric "opposite
-## rings" fixture (ASSUMPTIONS.md) so the union bounding box's own centre coincides with the
-## midpoint of the two picture centres -- exactly where the camera sits at the wide-zoom plateau.
-func test_zoom_out_shows_both_frames_plus_margin() -> void:
+## T4: the zoom-out plateau shows the SOURCE picture's whole frame plus the reveal margin — and
+## deliberately NOT the destination. Leaving a picture zooms out far enough to see the frame you
+## are leaving, not far enough to see where you are going; the travel is what covers the distance.
+##
+## ⚠ This test asserted the OPPOSITE until the owner ruled on it in playtest: fitting both frames
+## means a far jump zooms out to most of the wall. The old fixture is kept exactly — two pictures
+## 1200 apart — because it is the case where the two readings differ most.
+func test_zoom_out_shows_the_source_frame_plus_margin() -> void:
 	var settings := _settings()
 	var total := WallTransition.total_duration(settings)
 	var source := _rect(&"a", Vector2(-600, 0), Vector2(400, 400), Vector4(20, 20, 20, 20))
@@ -201,51 +205,53 @@ func test_zoom_out_shows_both_frames_plus_margin() -> void:
 	var sample := WallTransition.sample_at(plateau_elapsed, total, source, dest, WINDOW, settings)
 
 	var visible_size := WINDOW / sample.camera_zoom
-	var visible := Rect2(sample.camera_position - visible_size * 0.5, visible_size)
+	# At this instant the camera is mid-travel, so measure containment against a window of the same
+	# SIZE parked on the source — the zoom is what this test is about, not where the travel has got
+	# to. `_zoom_out_window_over()` does that for both tests.
+	var over_source := _zoom_out_window_over(source.centre, visible_size)
 	var source_frame := WallPacker.frame_outer_rect(source)
 	var dest_frame := WallPacker.frame_outer_rect(dest)
-	check(visible.encloses(source_frame), "the peak-zoom visible rect contains the SOURCE frame",
-			"visible=%s source_frame=%s" % [visible, source_frame])
-	check(visible.encloses(dest_frame), "the peak-zoom visible rect contains the DEST frame",
-			"visible=%s dest_frame=%s" % [visible, dest_frame])
-	var union := source_frame.merge(dest_frame)
-	check(visible.size.x > union.size.x and visible.size.y > union.size.y,
-			"the visible rect is strictly larger than the union of both frames on BOTH axes -- "
-			+ "there IS a reveal margin, not just exact containment",
-			"visible=%s union=%s" % [visible.size, union.size])
+	check(over_source.encloses(source_frame),
+			"the zoom-out plateau shows the SOURCE's whole frame",
+			"visible=%s source_frame=%s" % [over_source, source_frame])
+	check(over_source.size.x > source_frame.size.x and over_source.size.y > source_frame.size.y,
+			"...plus a strict reveal margin on BOTH axes, not exact containment",
+			"visible=%s source_frame=%s" % [over_source.size, source_frame.size])
+	# The point of the change: it must NOT widen to swallow the far picture too.
+	check(not over_source.encloses(dest_frame),
+			"...and does NOT widen to contain the DESTINATION 1200 units away -- travel covers "
+			+ "the distance, not zoom", "visible=%s dest_frame=%s" % [over_source, dest_frame])
 
-## T4 variant (C8, Q48=b) -- a genuinely ASYMMETRIC pair: different `size` AND different `frame_px`
-## on the two pictures, so the union bounding box's true centre does NOT coincide with the
-## straight-line midpoint of the two centres (the camera's own fixed position at this plateau
-## instant, per Q51=a). Same property as the symmetric test above -- containment plus a strict
-## margin on both axes -- proving `_wide_zoom()` accounts for the one-sided offset rather than
-## assuming the union is centred where the camera sits (ASSUMPTIONS.md, the flagged limitation this
-## variant closes).
-func test_zoom_out_shows_both_frames_plus_margin_asymmetric() -> void:
+## T4 variant: the plateau zoom depends on the SOURCE alone, so swapping the destination for a much
+## larger, thicker-framed picture must not change it. That is the sharpest statement of the new
+## contract — under the old both-frames rule this pair produced a visibly different zoom.
+func test_zoom_out_ignores_the_destination_entirely() -> void:
 	var settings := _settings()
 	var total := WallTransition.total_duration(settings)
 	var source := _rect(&"a", Vector2(-600, 0), Vector2(200, 200), Vector4(10, 10, 10, 10))
-	var dest := _rect(&"b", Vector2(600, 0), Vector2(800, 400), Vector4(60, 60, 60, 60))
+	var small_dest := _rect(&"b", Vector2(600, 0), Vector2(200, 200), Vector4(10, 10, 10, 10))
+	var huge_dest := _rect(&"b", Vector2(600, 0), Vector2(800, 400), Vector4(60, 60, 60, 60))
 	var bounds := WallTransition.phase_bounds(settings)
 	var plateau_elapsed : float = (bounds["zoom_out_end"] + bounds["zoom_in_start"]) * 0.5 * total
-	var sample := WallTransition.sample_at(plateau_elapsed, total, source, dest, WINDOW, settings)
 
-	var visible_size := WINDOW / sample.camera_zoom
-	var visible := Rect2(sample.camera_position - visible_size * 0.5, visible_size)
+	var small_zoom := WallTransition.sample_at(plateau_elapsed, total, source, small_dest,
+			WINDOW, settings).camera_zoom
+	var huge_zoom := WallTransition.sample_at(plateau_elapsed, total, source, huge_dest,
+			WINDOW, settings).camera_zoom
+	check(is_equal_approx(small_zoom, huge_zoom),
+			"the zoom-out plateau is the SAME whatever the destination is",
+			"small=%.5f huge=%.5f" % [small_zoom, huge_zoom])
+
+	var over_source := _zoom_out_window_over(source.centre, WINDOW / small_zoom)
 	var source_frame := WallPacker.frame_outer_rect(source)
-	var dest_frame := WallPacker.frame_outer_rect(dest)
-	check(visible.encloses(source_frame),
-			"the peak-zoom visible rect contains the SOURCE frame, the smaller/thinner-framed one",
-			"visible=%s source_frame=%s" % [visible, source_frame])
-	check(visible.encloses(dest_frame),
-			"the peak-zoom visible rect contains the DEST frame, the larger/thicker-framed one -- "
-			+ "the one whose far edge a midpoint-symmetric window would clip",
-			"visible=%s dest_frame=%s" % [visible, dest_frame])
-	var union := source_frame.merge(dest_frame)
-	check(visible.size.x > union.size.x and visible.size.y > union.size.y,
-			"the visible rect is strictly larger than the union of both frames on BOTH axes even "
-			+ "though the union is off-centre from the camera",
-			"visible=%s union=%s" % [visible.size, union.size])
+	check(over_source.encloses(source_frame),
+			"...and it still shows the source's own whole frame",
+			"visible=%s source_frame=%s" % [over_source, source_frame])
+
+## A window of `size` centred on `centre` — the visible rect the plateau zoom would give while
+## parked over one picture, isolating ZOOM from where the travel has reached.
+func _zoom_out_window_over(centre: Vector2, size: Vector2) -> Rect2:
+	return Rect2(centre - size * 0.5, size)
 
 # ------------------------------------------------------------------ T6, T7 (S15 pause boundaries)
 

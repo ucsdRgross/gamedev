@@ -55,6 +55,8 @@ func _ready() -> void:
 	behavior_section("CARD SELECTION, EVERY INPUT MODE")
 	await test_mouse_click_selects_card()
 	await test_mouse_right_click_ungrabs()
+	await test_info_mode_inspects_instead_of_grabbing()
+	await test_wall_screen_popups_gates_the_in_screen_description()
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
@@ -224,6 +226,76 @@ func test_mouse_click_selects_card() -> void:
 	await mouse_click(center_of(control))
 	check(selections.size() >= 1 and selections[0] == pa.ui_data[control],
 			"a mouse click over a card emits its selection", str(selections.size()))
+	pa.ungrab_cards()
+
+## Info mode is for READING the board, so a click describes a card instead of picking it up.
+##
+## ⚠ Three separate things have to hold, and the first two are the ones a green suite would miss:
+## the grab must NOT happen, the info entry MUST be published, and the board's own in-screen
+## inspector must stay hidden — otherwise two panels describe the same card, which is exactly what
+## having one info card replaced.
+func test_info_mode_inspects_instead_of_grabbing() -> void:
+	var control := a_card_control()
+	check(control != null, "a dealt board offers a focusable card control")
+	if not control: return
+	var entries : Array[InfoEntry] = []
+	pa.info_requested.connect(func(e: InfoEntry) -> void: entries.append(e))
+	var was_info : bool = SettingsManager.settings.wall_info_mode
+	SettingsManager.settings.wall_info_mode = true
+	selections.clear()
+	pa.ungrab_cards()
+
+	await mouse_click(center_of(control))
+
+	check(entries.size() == 1, "a click in Info mode publishes exactly one info entry",
+			str(entries.size()))
+	check(selections.is_empty(),
+			"...and does NOT select the card -- no game action while Info mode is on",
+			str(selections.size()))
+	check(pa.selected_cards.is_empty(), "...so nothing is left held", str(pa.selected_cards.size()))
+	if entries.size() == 1:
+		check(not entries[0].title.is_empty(), "the entry carries the card's name", entries[0].title)
+		check(entries[0].visual != null, "...and a preview visual of the card itself")
+		if entries[0].visual: entries[0].visual.free()
+	check(pa._focus_info == null or not pa._focus_info.visible,
+			"the board's own in-screen inspector stays hidden -- the info card is the one system")
+
+	SettingsManager.settings.wall_info_mode = was_info
+	pa.ungrab_cards()
+
+## `wall_screen_popups` decides whether a screen's OWN description panel exists outside Info mode.
+## Info mode is a SEPARATE gate and always wins — this asserts both, because a single flag doing
+## both jobs is the shape that would silently make one of them unreachable.
+func test_wall_screen_popups_gates_the_in_screen_description() -> void:
+	var control := a_card_control()
+	check(control != null, "a dealt board offers a focusable card control")
+	if not control: return
+	var was_info : bool = SettingsManager.settings.wall_info_mode
+	var was_popups : bool = SettingsManager.settings.wall_screen_popups
+	SettingsManager.settings.wall_info_mode = false
+
+	SettingsManager.settings.wall_screen_popups = true
+	pa.on_control_focus_entered(control)
+	await get_tree().process_frame
+	check(pa._focus_info != null and pa._focus_info.visible,
+			"popups ON, Info mode off: the board's own description shows")
+
+	SettingsManager.settings.wall_screen_popups = false
+	pa.on_control_focus_entered(control)
+	await get_tree().process_frame
+	check(pa._focus_info == null or not pa._focus_info.visible,
+			"popups OFF: no description anywhere outside Info mode")
+
+	# Info mode wins over the popup flag in BOTH directions.
+	SettingsManager.settings.wall_screen_popups = true
+	SettingsManager.settings.wall_info_mode = true
+	pa.on_control_focus_entered(control)
+	await get_tree().process_frame
+	check(pa._focus_info == null or not pa._focus_info.visible,
+			"...and Info mode suppresses the popup even with popups ON -- one card, one system")
+
+	SettingsManager.settings.wall_info_mode = was_info
+	SettingsManager.settings.wall_screen_popups = was_popups
 	pa.ungrab_cards()
 
 func test_mouse_right_click_ungrabs() -> void:

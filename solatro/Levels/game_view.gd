@@ -15,6 +15,9 @@ class_name GameView
 ## Game-as-scene-root wiring). The view frees with its Game child, so Main frees just the view.
 signal game_ended
 signal run_lost
+## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card. The board has
+## no business knowing whether Info mode wants it shown — see `Main._on_screen_info_hovered()`.
+signal info_requested(entry: InfoEntry)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
 const CONTINUE_FONT_SIZE := 40
@@ -84,6 +87,7 @@ func _ready() -> void:
 	next_button.pressed.connect(func() -> void: await game.next())
 	undo_button.pressed.connect(_on_undo_pressed)
 	play_area.data_selected.connect(_on_data_selected)
+	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
 	(deck_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
 	(discard_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
 	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
@@ -405,13 +409,13 @@ func _on_debug_record() -> void:
 ## **STAMP `SpotlightProbe` ONTO A BOARD CARD AND RE-RUN THE SWEEP, SO S15's CUE ACTUALLY FIRES.**
 ##
 ## ⚠ **THE CUE IS OTHERWISE UNREACHABLE IN THE RUNNING GAME AND THAT IS A CONTENT FACT, NOT A BUG.**
-## `spotlight_cued` is `Q246`-filtered to skills implementing `on_spotlight`; before `SpotlightProbe`
+## `spotlight_cued` is filtered to skills implementing `on_spotlight`; before `SpotlightProbe`
 ## the only one was a RULES card with no `CardVisual`, so the light set was always empty. See
 ## `SpotlightProbe`'s header.
 ##
 ## ⚠ **IT PICKS A CARD THAT IS NOT ALREADY SPOTLIT, WHICH IS THE WHOLE TRICK.** The cue fires on the
-## EDGE — `skill_spotlight_check` only announces a card that TRANSITIONED into spotlit (`Q13`/`Q15`:
-## one already spotlit is not re-cued). A card that is uncovered when the probe lands is spotlit the
+## EDGE — `skill_spotlight_check` only announces a card that TRANSITIONED into spotlit; one already
+## spotlit is not re-cued. A card that is uncovered when the probe lands is spotlit the
 ## instant the sweep runs, so the transition happens on this click; press again and it lands on the
 ## next card, so the button keeps producing cues instead of going quiet after the first.
 func _on_debug_cue() -> void:

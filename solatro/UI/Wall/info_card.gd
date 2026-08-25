@@ -9,6 +9,9 @@ extends Control
 
 signal info_shown(entry: InfoEntry)
 
+## The most of the card's width a visual may take, leaving the rest for the text beside it.
+const _VISUAL_MAX_WIDTH_SHARE := 0.5
+
 @onready var _title_label : Label = %Title
 @onready var _body_label : Label = %Body
 @onready var _visual_slot : Control = %VisualSlot
@@ -38,9 +41,51 @@ func show_entry(entry: InfoEntry) -> void:
 		child.queue_free()
 	if entry.visual:
 		_visual_slot.add_child(entry.visual)
+		_make_inert(entry.visual)
 	_resize_to_content()
 	visible = true
 	info_shown.emit(entry)
+
+## ⚠ **THE VISUAL IS A READ-ONLY PICTURE OF THE THING, AND THIS IS WHAT GUARANTEES IT.**
+##
+## An entry's visual is a REAL game node — a preview `ControlCard` with a live `CardVisual`, or a
+## `TextureRect` mirroring a picture's own `SubViewport`. Real, because a stand-in would show
+## something the game does not. But real also means it arrives interactive: `ControlCard._ready()`
+## sets `focus_mode = FOCUS_ALL`, so it becomes a focus stop that controller navigation can land on
+## and steal focus from the board; and any `Control` defaults to `MOUSE_FILTER_STOP`, so it would
+## swallow clicks aimed at whatever is behind the card.
+##
+## Every visual is therefore stripped of both, recursively, the moment this card takes it. What
+## survives is drawing and idle animation, which is why the card still floats.
+##
+## ⚠ This is the ONE place it can be done safely — every entry passes through here, so a new
+## `get_info()` somewhere else cannot forget. Doing it in each builder instead would be a rule that
+## has to be remembered N times.
+##
+## Note the visual only ever DRAWS: `CardVisual` never writes to its `CardData` (it reads
+## `CardEnvironment` for timing and nothing else), so a preview cannot mutate the card it shows.
+func _make_inert(node: Node) -> void:
+	var control := node as Control
+	if control:
+		control.focus_mode = Control.FOCUS_NONE
+		control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child : Node in node.get_children():
+		_make_inert(child)
+
+## Hands the current entry back and stops owning it: the visual is DETACHED, not freed, so the
+## entry can be shown again later.
+##
+## ⚠ The caller then owns `entry.visual` — a Node outside the tree that nothing else will free. It
+## must either `show_entry()` it again or free it. This exists so a screen can be left and returned
+## to with the card it had, which `reset()` cannot do because it frees.
+func detach_entry() -> InfoEntry:
+	var entry := current_entry
+	if entry and entry.visual and is_instance_valid(entry.visual):
+		if entry.visual.get_parent() == _visual_slot:
+			_visual_slot.remove_child(entry.visual)
+	current_entry = null
+	visible = false
+	return entry
 
 ## Resets the card to nothing: hides it AND drops the remembered entry, so a later
 ## `current_entry` read cannot look like something is still shown.
@@ -68,7 +113,7 @@ func _resize_to_content() -> void:
 	#    UNDER-estimates how many lines the body wraps to;
 	#  * the card is as tall as the TALLER column, so a short caption beside a preview image is
 	#    still as tall as the image.
-	var visual_size := _visual_slot.get_combined_minimum_size()
+	var visual_size := _visual_size(width)
 	var text_width := maxf(width - visual_size.x, 1.0)
 	var title_h := title_font.get_multiline_string_size(_title_label.text,
 			HORIZONTAL_ALIGNMENT_LEFT, text_width, title_font_size).y
@@ -89,6 +134,33 @@ func _resize_to_content() -> void:
 	_body_label.custom_minimum_size.x = text_width
 	# Re-anchor: a different entry is a different height, so this runs on every `show_entry()`.
 	_reposition_to_window()
+
+## How much room the visual beside the text needs.
+##
+## ⚠ **MEASURED FROM THE SLOT'S CHILDREN, NOT FROM THE SLOT.** A container's own
+## `get_combined_minimum_size()` is recomputed on a DEFERRED pass, so immediately after
+## `add_child()` it still reports the previous entry's size — zero for the first entry of a
+## session. The text was then measured at the FULL card width while actually laid out in the
+## narrower column beside the visual: too few lines predicted, so the card came out too short and
+## scrolled, and the text read as compressed. It corrected itself on the next entry, which is the
+## signature of a deferred value being read too early.
+func _visual_size(card_width: float) -> Vector2:
+	var out := Vector2.ZERO
+	for child : Node in _visual_slot.get_children():
+		var control := child as Control
+		if control == null: continue
+		# ⚠ MINIMUM SIZE ONLY, never `size`. A Control's `size` before its first layout pass is
+		# whatever it happens to hold — for a freshly added `ControlCard`, wider than this whole
+		# card. Taking the max of the two made `text_width` collapse to its 1px floor, so the body
+		# wrapped to ONE LETTER PER ROW, which then made the card max-height tall and the info pose
+		# zoom right out to make room for it.
+		var needed := control.get_combined_minimum_size()
+		out = Vector2(out.x + needed.x, maxf(out.y, needed.y))
+	# ⚠ AND A HARD CEILING. Whatever a visual asks for, the text keeps at least half the card —
+	# no visual is worth leaving no room to read beside it, and this makes the one-letter-per-row
+	# failure unreachable rather than merely fixed at its one known cause.
+	out.x = minf(out.x, card_width * _VISUAL_MAX_WIDTH_SHARE)
+	return out
 
 ## Bottom-centred against the CURRENT window, growing UPWARD as content gets taller: the bottom
 ## edge stays on `window.y` and only the top edge moves. Separate from `_resize_to_content()` so a

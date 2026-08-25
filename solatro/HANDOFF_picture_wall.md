@@ -20,6 +20,55 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
 
 ## Tasks
 ```yaml
+- id: S54
+  description: >
+    Owner playtest round 1 through the wall editor. Three rulings, recorded as GAP-021/022/023:
+    the transition zooms out to the SOURCE frame only (Q48 b->a, a gate flip); Info mode ZOOMS OUT
+    until the whole screen clears the info card rather than panning down and cropping the top; and
+    a click describes a card while Info mode suppresses every game action.
+  files_touched: [solatro/Scripts/Wall/wall_transition.gd, solatro/UI/Wall/wall_picture.gd,
+    solatro/Scripts/player_settings.gd, solatro/UI/play_area.gd, solatro/Levels/game_view.gd,
+    solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_transition.gd,
+    solatro/Tests/Interaction/test_interaction.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
+  verification_kind: suite
+  status: done
+  evidence: >
+    Suite ALL 39 SUITES: 3104 CHECKS PASSED; soak 87 checks / 0 problems. Info-mode gate proven
+    red-then-green (2 FAILED when _info_mode() forced false). Q48's six old T4 assertions pinned the
+    superseded answer and were rewritten to the new contract, including that the plateau zoom is
+    IDENTICAL whatever the destination is.
+  notes: >
+    This also lands the half of Q134=c/J8 that S29 skipped: the board's in-screen inspector now
+    yields to the wall's one info card. S29's done-when named the map and never the board.
+    Round 2 of the same playtest corrected the info zoom (the reserve is the card's LIVE height,
+    not the cap -- reserving the cap read as being thrown out to the wall) and added
+    wall_screen_popups, which decides whether a screen's own description exists outside Info mode.
+
+- id: S55
+  description: >
+    Owner playtest rounds 2-5 through the wall editor. Landed: the transition zooms out to the
+    SOURCE frame only; Info mode zooms out (never pans) far enough to clear the card; a click
+    describes a card and Info mode suppresses game actions; wall_screen_popups; Info mode is per
+    picture; the card's visual is made inert; and the crop/aspect/stale-tween defects found on the
+    way. Recorded as GAP-021, GAP-022 and GAP-023.
+  files_touched: [solatro/Scripts/Wall/wall_transition.gd, solatro/UI/Wall/wall_picture.gd,
+    solatro/UI/Wall/info_card.gd, solatro/Scripts/player_settings.gd, solatro/UI/play_area.gd,
+    solatro/Levels/game_view.gd, solatro/Levels/main.gd, solatro/Tools/wall_editor.gd,
+    solatro/Tests/Wall/test_wall_transition.gd, solatro/Tests/Wall/test_wall_info.gd,
+    solatro/Tests/Interaction/test_interaction.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
+  verification_kind: suite
+  status: done
+  evidence: 'ALL 39 SUITES: 3141 CHECKS PASSED; wall_editor_soak 105 checks / 0 problems; LEAK
+    CANARY 17/17. Every behaviour change proven red-then-green.'
+  notes: >
+    Three defects remain OPEN and are the first thing to pick up -- see todo.md "Picture wall", the
+    three red entries: the card lays out before the zoom finishes, the deck/discard/rules viewers
+    still cannot show a description, and the per-screen card does not actually persist. Each has a
+    diagnosis and a fix path written down. The third one has a mechanism that landed and a
+    behaviour that did not, so write the soak case before touching the code.
+
 - id: S40
   description: Owner playtest of the wall shell — navigate, resize, alt-tab, controller, Info.
   files_touched: []
@@ -254,6 +303,11 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
   the real `Game` node fires.
 - Routing lands on the aimed viewport pixel at three zooms and at a non-16:9 aspect, for mouse and
   for raw touch.
+
+⚠ **The three red `todo.md` entries were found by PLAYING it, after every one of the above was
+green.** The suite and the soak are necessary and they are not sufficient — none of the three
+shows up as a failing check, because each is about ordering, reachability or a journey nothing
+drives. Write the missing journey first; do not trust a green banner to have covered it.
 
 **Assumed, not checked:** anything about how the wall FEELS — transition timing, the reveal's
 "longer, slower", whether GAP-019=(c)'s cut reads as abrupt, whether the 14px selection lift is
