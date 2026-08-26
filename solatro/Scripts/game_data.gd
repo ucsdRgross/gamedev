@@ -281,6 +281,26 @@ func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
 					out[cell.datas[h]] = BoardCoord.new(gi, col, row, h)
 	return out
 
+## The board walk for `CardDataIterator` (run_all_mods, spotlight sweep, etc.): `draw_deck`
+## first, then every board collection, cell zone cards near the end. Each grid's cells wrap
+## in `GridCellWalk` so the grid is walked row-major with a full bottom-to-top stack per
+## cell and no early stop -- a grid is sparse by nature.
+func get_card_collections() -> Array:
+	var out : Array = [
+		draw_deck,
+		upper_zone,
+		lower_zone,
+	]
+	for grid : GridData in grids:
+		if grid: out.append(GridCellWalk.new(grid.cells))
+	out.append(discard_deck)
+	out.append(upper_zone_type)
+	out.append(lower_zone_type)
+	for grid : GridData in grids:
+		if grid: out.append(grid.cell_types)
+	out.append(rules_deck)
+	return out
+
 func all_card_datas() -> Array[CardData]:
 	var all : Array[CardData] = []
 	all.append_array(draw_deck)

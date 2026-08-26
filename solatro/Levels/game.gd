@@ -226,15 +226,7 @@ func _revision_key() -> Array:
 	return [state.get_instance_id(), state.revision]
 
 func get_card_collections() -> Array:
-	return [
-		state.draw_deck,
-		state.upper_zone,
-		state.lower_zone,
-		state.discard_deck,
-		state.upper_zone_type,
-		state.lower_zone_type,
-		state.rules_deck
-	]
+	return state.get_card_collections()
 
 func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck

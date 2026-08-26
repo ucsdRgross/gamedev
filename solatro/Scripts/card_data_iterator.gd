@@ -39,6 +39,25 @@ func should_continue() -> bool:
 			collection_index += 1
 			continue
 
+		# Handle a grid's cell array: cell by cell (already row-major), each cell's
+		# stack bottom to top, no early stop -- termination is bounded by the array
+		# sizes themselves, unlike the legacy 2D walk below (§1.10).
+		if current_coll is GridCellWalk:
+			var walk : GridCellWalk = current_coll
+			while current_col < walk.cells.size():
+				var stack : Array[CardData] = walk.cells[current_col].datas
+				if current_row < stack.size():
+					next_card_data = stack[current_row]
+					current_row += 1
+					return true
+				else:
+					current_col += 1
+					current_row = 0
+			collection_index += 1
+			current_col = 0
+			current_row = 0
+			continue
+
 		# Handle 2D Arrays (Array[ArrayCardData])
 		if current_coll is Array[ArrayCardData] and (current_coll as Array).size() > 0:
 			while true:
