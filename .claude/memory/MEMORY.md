@@ -34,3 +34,4 @@
 
 **Design workflow** (everything else lives in the `/flowchart-design` skill)
 - [Design answers need a claimant](design-answers-need-a-claimant.md) — check nodes→steps, not just steps→nodes
+- [Charts from resolved answers](charts-from-resolved-answers.md) — render the chosen option's words; memory defaults to your own recommendation

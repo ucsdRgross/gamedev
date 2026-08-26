@@ -1,0 +1,9 @@
+{
+  "slug": "poker-patience",
+  "title": "Poker Patience — the 5x5 grid core-gameplay overhaul",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "created": "2026-08-24T00:00:00Z",
+  "rounds": 1,
+  "confirmed_version": null
+}

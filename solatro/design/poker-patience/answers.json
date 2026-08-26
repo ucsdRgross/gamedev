@@ -1,0 +1,2878 @@
+{
+  "slug": "solatro/poker-patience",
+  "doc_hash": "sha256:5ced0915c46bdf687599378c62704c474bd3adf003620d250787942d9c626e02",
+  "updated": "2026-08-26T11:35:30Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "a",
+      "note": "note that height is already built into current architecture via card stacking. we are adding more zones. Current system is x,y where y is stacks, and new system is x,y,z but new z and current y is the same axis, so technically the new rows are the new dimension.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:15:14Z"
+    },
+    "Q69": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:15:34Z"
+    },
+    "Q70": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:15:55Z"
+    },
+    "Q71": {
+      "state": "chosen",
+      "option": null,
+      "note": "today's default stacking system. lower heights get covered, showing only the rank/stamp/suit, and talent/skill becomes inactive",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:18:30Z"
+    },
+    "Q72": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:18:36Z"
+    },
+    "Q73": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:27:27Z"
+    },
+    "Q74": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:27:41Z"
+    },
+    "Q75": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:27:49Z"
+    },
+    "Q76": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:36:09Z"
+    },
+    "Q77": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:39:33Z"
+    },
+    "Q78": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:40:15Z"
+    },
+    "Q79": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:41:51Z"
+    },
+    "Q80": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:42:16Z"
+    },
+    "Q81": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:42:49Z"
+    },
+    "Q82": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:43:16Z"
+    },
+    "Q83": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:43:54Z"
+    },
+    "Q84": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:44:00Z"
+    },
+    "Q85": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:45:52Z"
+    },
+    "Q88": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:46:27Z"
+    },
+    "Q89": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:46:36Z"
+    },
+    "Q90": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:46:53Z"
+    },
+    "Q91": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T06:47:05Z"
+    },
+    "Q92": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T08:37:17Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T08:51:11Z"
+    },
+    "Q94": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T08:53:14Z"
+    },
+    "Q95": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:32:54Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:33:04Z"
+    },
+    "Q245": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:34:26Z"
+    },
+    "Q246": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:34:56Z"
+    },
+    "Q247": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:36:22Z"
+    },
+    "Q248": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:37:00Z"
+    },
+    "Q249": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:37:55Z"
+    },
+    "Q250": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:38:03Z"
+    },
+    "Q251": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:38:39Z"
+    },
+    "Q252": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:38:59Z"
+    },
+    "Q253": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:40:16Z"
+    },
+    "Q254": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T09:40:37Z"
+    },
+    "Q255": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:07:31Z"
+    },
+    "Q256": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:07:38Z"
+    },
+    "Q145": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Owner addition (chat): the show OPENS zoomed out. \"game starts zoomed out, then you choose a grid which zooms in, then you can go left and right.\" That opening state was not previously recorded anywhere.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:30Z"
+    },
+    "Q146": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:08:27Z"
+    },
+    "Q147": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:09:37Z"
+    },
+    "Q148": {
+      "state": "chosen",
+      "option": null,
+      "note": "clicking on a grid zooms in, back button same with picture wall zooms outs, forward button returns to same view as before. reusing buttons so basically intercepting.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:11:59Z"
+    },
+    "Q149": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:12:28Z"
+    },
+    "Q150": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:15:13Z"
+    },
+    "Q151": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:15:47Z"
+    },
+    "Q152": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:16:19Z"
+    },
+    "Q153": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:16:36Z"
+    },
+    "Q154": {
+      "state": "chosen",
+      "option": "b",
+      "note": "Owner resolution (chat) of the conflict I raised with Q14=(b) no panels: no dedicated position indicator is needed because the NAVIGATION carries the information — you start zoomed out, choose a grid, and pan from there. Verbatim: \"I will probably make it more obvious down the line by having background art be unique by location.\" Unique per-grid background art is a later content pass, not part of this design.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:30Z"
+    },
+    "Q155": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:17:10Z"
+    },
+    "Q156": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:17:34Z"
+    },
+    "Q157": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:17:45Z"
+    },
+    "Q158": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:18:17Z"
+    },
+    "Q159": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:18:37Z"
+    },
+    "Q160": {
+      "state": "chosen",
+      "option": null,
+      "note": "Owner specification (chat), superseding the earlier prose: \"one scroll container inside the picture to deal with tall stacks and potentially infinite grids or very large grids. Camera will pan over 3 possible grid positions since that is size of picture frame, and user can then choose to further scroll to reveal more of a single grid. choosing to pan left and right will shift current view of 3 grids left or right if there are more than 3 grids off edge of picture frame.\" So the two mechanisms divide cleanly: the WALL CAMERA steps between the 3 grid positions the picture frame holds, and ONE scroll container inside the picture handles tall stacks and any reveal beyond those three.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:30Z"
+    },
+    "Q161": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:22:27Z"
+    },
+    "Q162": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:22:48Z"
+    },
+    "Q163": {
+      "state": "chosen",
+      "option": null,
+      "note": "no, because those grids are still technically interactable if there are cards within that can be interacted with separately from how input cards work.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:23:56Z"
+    },
+    "Q164": {
+      "state": "chosen",
+      "option": null,
+      "note": "existing texture rect, repeated, not stretched. Will eventually replace with non placeholder art.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:24:54Z"
+    },
+    "Q165": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:27:34Z"
+    },
+    "Q186": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:27:43Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:28:07Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:29:34Z"
+    },
+    "Q166": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:36:19Z"
+    },
+    "Q167": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:54:33Z"
+    },
+    "Q168": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:55:02Z"
+    },
+    "Q169": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:56:08Z"
+    },
+    "Q170": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:56:16Z"
+    },
+    "Q171": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:56:31Z"
+    },
+    "Q172": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:57:05Z"
+    },
+    "Q173": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:59:04Z"
+    },
+    "Q174": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T10:59:12Z"
+    },
+    "Q175": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:01:34Z"
+    },
+    "Q176": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:02:14Z"
+    },
+    "Q177": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:02:26Z"
+    },
+    "Q178": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:02:55Z"
+    },
+    "Q179": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:03:42Z"
+    },
+    "Q180": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:10:38Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T11:14:14Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "d",
+      "note": "each grid gets its own row x col x diag = grid score\nhud shows total grid score from each grid added together as left number, multiplied by the combo number on the right. Since gameplay has changed, lets have each unique effect add  +1 the first time, and repeat non-unique effects worth 0.5, all tunables. \nhud always shows most updated scores.",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:25:34Z"
+    },
+    "QR6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:09:54Z"
+    },
+    "QR7": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:10:21Z"
+    },
+    "Q86": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:11:09Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:11:16Z"
+    },
+    "Q97": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:11:24Z"
+    },
+    "Q98": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:11:29Z"
+    },
+    "Q99": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:11:45Z"
+    },
+    "Q100": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:12:48Z"
+    },
+    "Q103": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:13:01Z"
+    },
+    "Q104": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:13:57Z"
+    },
+    "Q105": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:15:37Z"
+    },
+    "Q106": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:15:44Z"
+    },
+    "QR8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:16:21Z"
+    },
+    "Q279": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:16:29Z"
+    },
+    "Q280": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:16:48Z"
+    },
+    "Q281": {
+      "state": "chosen",
+      "option": null,
+      "note": "alternate versions, lets archive the older versions for now",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:17:24Z"
+    },
+    "Q282": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:17:55Z"
+    },
+    "Q283": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:18:07Z"
+    },
+    "Q284": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:18:34Z"
+    },
+    "Q285": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:18:46Z"
+    },
+    "Q286": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:18:57Z"
+    },
+    "Q287": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:19:25Z"
+    },
+    "Q288": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:19:34Z"
+    },
+    "Q289": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:19:51Z"
+    },
+    "Q290": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:20:05Z"
+    },
+    "Q291": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:20:24Z"
+    },
+    "Q292": {
+      "state": "chosen",
+      "option": null,
+      "note": "ideally docs are updated during code changes, but mostly after. The planning we are doing now is already the before.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:21:43Z"
+    },
+    "Q1": {
+      "state": "chosen",
+      "option": null,
+      "note": "4 component coordinate, with special case for entrance since it is technically row -1 since it is stacked above/below the grid.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:23:53Z"
+    },
+    "Q2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:24:26Z"
+    },
+    "Q3": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, continuous, with entrance being part of y lattice, dynamically changing depending on which grid it is currently attached to.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:26:05Z"
+    },
+    "Q4": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:40:15Z"
+    },
+    "Q5": {
+      "state": "chosen",
+      "option": null,
+      "note": "52",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:27:18Z"
+    },
+    "Q6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:27:56Z"
+    },
+    "Q7": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, tunable cap, have cap be 3 for now",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:28:30Z"
+    },
+    "Q8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:30:52Z"
+    },
+    "Q10": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:31:06Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:31:16Z"
+    },
+    "Q12": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:31:41Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:40:28Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:32:54Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:35:22Z"
+    },
+    "Q16": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:35:44Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:36:36Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:36:59Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:37:16Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:37:44Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:38:02Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:38:11Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:39:43Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:40:47Z"
+    },
+    "Q26": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:41:26Z"
+    },
+    "Q27": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:41:59Z"
+    },
+    "Q28": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:43:15Z"
+    },
+    "Q29": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:44:20Z"
+    },
+    "Q30": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:44:38Z"
+    },
+    "Q31": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, the entrance hand/row visibly detaches from the grid. choosing a grid causes it to move closer to committed grid",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:46:14Z"
+    },
+    "Q32": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:46:48Z"
+    },
+    "Q33": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, refill happens when no more legal moves or empty entrance, with unused cards staying",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:48:05Z"
+    },
+    "Q34": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Owner reversal (chat): randomised refill ABANDONED. Verbatim: \"lets just abandon the randomized refill for now then since I realize it doesnt make sense with current way effect processing works from left to right. Use current system where leftmost draws first, then next on right since it is next card triggering draw effect.\" So the refill is strictly left-to-right, driven by each entrance header card in board order, exactly as TypeInput.draw_card does today. This resolves the Q34/Q207 conflict I raised: no coordinator is needed because there is nothing to coordinate.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q35": {
+      "state": "chosen",
+      "option": null,
+      "note": "Moot: Q34 abandoned randomised slot assignment, so there are no random slots to spread.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q36": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:52:19Z"
+    },
+    "Q37": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:52:26Z"
+    },
+    "Q38": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:52:46Z"
+    },
+    "Q39": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, follows the camera, think of it like a player hand",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:53:53Z"
+    },
+    "Q40": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:54:12Z"
+    },
+    "Q41": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:54:23Z"
+    },
+    "Q42": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:54:43Z"
+    },
+    "Q43": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:54:51Z"
+    },
+    "Q44": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:55:19Z"
+    },
+    "Q45": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:55:32Z"
+    },
+    "Q46": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:56:36Z"
+    },
+    "Q47": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:57:28Z"
+    },
+    "Q48": {
+      "state": "chosen",
+      "option": null,
+      "note": "depends on the scoring system. For an effect checking for lines of 5, it requires that line have 5. for an effect that scores on specific patterns of 2x2 card layout, it would obviously check every completed 2x2 card shape.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:59:05Z"
+    },
+    "Q49": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:59:19Z"
+    },
+    "Q50": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T12:59:51Z"
+    },
+    "Q51": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:00:06Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": null,
+      "note": "if card has its ranks or suits changed or other internal values changed, nothing happens. If it gets removed, then another card takes its place, that counts as new scoring event since line went from 4 to 5 again.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:02:44Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:03:02Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:03:51Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:05:19Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:07:06Z"
+    },
+    "Q57": {
+      "state": "chosen",
+      "option": null,
+      "note": "run_all_mods specifically expects to run over mutating live collections so i see no issue and question is a misunderstanding. Since scorer will default live in rules deck, it is last thing it checks regardless and all other effects will fire first anyways.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:10:45Z"
+    },
+    "Q58": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:11:13Z"
+    },
+    "Q59": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:11:51Z"
+    },
+    "Q60": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:12:23Z"
+    },
+    "Q61": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:12:56Z"
+    },
+    "Q62": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:13:43Z"
+    },
+    "Q63": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:14:16Z"
+    },
+    "Q64": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:14:37Z"
+    },
+    "Q65": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:15:24Z"
+    },
+    "Q66": {
+      "state": "chosen",
+      "option": null,
+      "note": "have all cards dance briefly using the placeholder animation",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:17:07Z"
+    },
+    "Q67": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:17:16Z"
+    },
+    "Q68": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes unchanged, its just that they reset their use trackers now when processing is done as part of cleanup hook which used to trigger at end of acts, unless i am misremembering",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:19:32Z"
+    },
+    "Q107": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:20:01Z"
+    },
+    "Q108": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:22:00Z"
+    },
+    "Q109": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:22:11Z"
+    },
+    "Q110": {
+      "state": "chosen",
+      "option": null,
+      "note": "I changed my mind. All diagonal type scores go to a single label to the right of the grid aligned with center of the grid, opposite side of row labels. This is the special meld score bucket.\nfuture special meld scores will also go to this bucket, regardless of if its diagonal or not, simply because having a unique label for every special meld would be impossible to place on screen and make sense.\nin data it is also one bucket",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:27:25Z"
+    },
+    "Q111": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:27:35Z"
+    },
+    "Q112": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:27:50Z"
+    },
+    "Q113": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:29:16Z"
+    },
+    "Q114": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:30:18Z"
+    },
+    "Q115": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, but no context provided on what delta means in this context",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:31:48Z"
+    },
+    "Q117": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:33:46Z"
+    },
+    "Q120": {
+      "state": "chosen",
+      "option": null,
+      "note": "retired entirely. only grid_total and combo",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:35:03Z"
+    },
+    "Q121": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:35:33Z"
+    },
+    "Q122": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:37:35Z"
+    },
+    "Q123": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T13:38:23Z"
+    },
+    "Q124": {
+      "state": "chosen",
+      "option": null,
+      "note": "flat row and col scores, 2d arrays for row height and col height scores, and single variable for special meld scores. Doesn't seem like we need dictionary yet unless 2d array doesnt work",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:07:29Z"
+    },
+    "Q125": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:07:58Z"
+    },
+    "Q126": {
+      "state": "chosen",
+      "option": null,
+      "note": "If a grid gets removed, then the score labels within the grid are removed as well. However, accumulated score is not lost.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:08:59Z"
+    },
+    "Q127": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:09:09Z"
+    },
+    "Q128": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, end show and highlights when goal is met",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:30:36Z"
+    },
+    "Q129": {
+      "state": "chosen",
+      "option": null,
+      "note": "no. total always shows current combined grid score times current combo",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:32:57Z"
+    },
+    "Q130": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:34:54Z"
+    },
+    "Q132": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:35:21Z"
+    },
+    "Q133": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Owner refinement (chat): \"the goal curve refit can be its own phase if you think its too big to be 1 step.\" It is. The refit becomes its own numbered phase in PLAN.md with its own acceptance gate, not a step inside another phase.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q135": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:37:12Z"
+    },
+    "Q136": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:37:46Z"
+    },
+    "Q137": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, but only if an effect is tracking it. Otherwise settings wont be able to change one type to be worth more than another.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:39:08Z"
+    },
+    "Q138": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, but new interval i want to try is 52 per grid, so player starts with 1 grid at starting hand of 52 cards, 2 grids at 53, 3 grids at 105.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:41:50Z"
+    },
+    "Q139": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:42:16Z"
+    },
+    "Q140": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:42:28Z"
+    },
+    "Q141": {
+      "state": "chosen",
+      "option": null,
+      "note": "no, play until player pressed end button.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:43:19Z"
+    },
+    "Q142": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:43:40Z"
+    },
+    "Q143": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:43:48Z"
+    },
+    "Q144": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:44:01Z"
+    },
+    "Q187": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:45:36Z"
+    },
+    "Q188": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:45:54Z"
+    },
+    "Q189": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:46:15Z"
+    },
+    "Q190": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:46:23Z"
+    },
+    "Q191": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:46:29Z"
+    },
+    "Q192": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T14:46:58Z"
+    },
+    "Q193": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:30:30Z"
+    },
+    "Q194": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:30:59Z"
+    },
+    "Q195": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:31:19Z"
+    },
+    "Q196": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:31:32Z"
+    },
+    "Q197": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:31:57Z"
+    },
+    "Q198": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:32:13Z"
+    },
+    "Q199": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:32:26Z"
+    },
+    "Q200": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:32:36Z"
+    },
+    "Q201": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, that is how current setup exists as well with meta cards in rule deck building pre grid board as well.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:35:48Z"
+    },
+    "Q202": {
+      "state": "chosen",
+      "option": null,
+      "note": "Sure lets have it persist. On game start, the meta card checking deck size will add or subtract existing persistent grid creation cards based on current deck size. Removing that card would mean grid count is no longer linked to deck size between games, which makes sense to me.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:39:14Z"
+    },
+    "Q203": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:45:59Z"
+    },
+    "Q204": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:46:09Z"
+    },
+    "Q205": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Owner refinement (chat): \"sure measure it as we implement and note how much it hurts performance wise during tests.\" So the measurement is not deferred to when it hurts — it is taken during implementation and the numbers are recorded in the test output, against the existing scoring_cost harness.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q206": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:47:09Z"
+    },
+    "Q207": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:47:27Z"
+    },
+    "Q208": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:48:10Z"
+    },
+    "Q209": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:48:28Z"
+    },
+    "Q210": {
+      "state": "chosen",
+      "option": null,
+      "note": "moved, should no longer run as part of tests",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:48:59Z"
+    },
+    "Q213": {
+      "state": "chosen",
+      "option": null,
+      "note": "just delete it manually or something.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:56:24Z"
+    },
+    "Q214": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:57:41Z"
+    },
+    "Q215": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:58:27Z"
+    },
+    "Q216": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:58:41Z"
+    },
+    "Q217": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:59:03Z"
+    },
+    "Q218": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:59:09Z"
+    },
+    "Q219": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:59:18Z"
+    },
+    "Q220": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T15:59:26Z"
+    },
+    "Q221": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:00:26Z"
+    },
+    "Q222": {
+      "state": "chosen",
+      "option": null,
+      "note": "no, i will personally handle the frame art myself",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:00:54Z"
+    },
+    "Q223": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:04:33Z"
+    },
+    "Q224": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:04:50Z"
+    },
+    "Q225": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:06:17Z"
+    },
+    "Q226": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:06:44Z"
+    },
+    "Q227": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:07:08Z"
+    },
+    "Q228": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:07:42Z"
+    },
+    "Q229": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:08:46Z"
+    },
+    "Q230": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:09:03Z"
+    },
+    "Q231": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:09:16Z"
+    },
+    "Q232": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:12:48Z"
+    },
+    "Q233": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Scope narrowed by the Q34 reversal: the refill no longer uses RNG at all, so the determinism ruling is satisfied by construction rather than by seeding. The deck SHUFFLE at game start keeps its existing RNG, unchanged. The in-depth generator remains a todo.md item, no longer coupled to the Entrance.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q235": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:18:03Z"
+    },
+    "Q236": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:33:25Z"
+    },
+    "Q237": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:33:44Z"
+    },
+    "Q238": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:34:13Z"
+    },
+    "Q239": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:35:12Z"
+    },
+    "Q240": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:35:23Z"
+    },
+    "Q241": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:35:34Z"
+    },
+    "Q242": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:35:46Z"
+    },
+    "Q243": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:35:55Z"
+    },
+    "Q244": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:37:34Z"
+    },
+    "Q257": {
+      "state": "chosen",
+      "option": "b",
+      "note": "no, currently no card that implements the hook.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:39:08Z"
+    },
+    "Q258": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes, asks for confirm if goal not reached yet",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:42:22Z"
+    },
+    "Q259": {
+      "state": "chosen",
+      "option": null,
+      "note": "no, but end becomes highlighted",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:43:12Z"
+    },
+    "Q260": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:43:25Z"
+    },
+    "Q261": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:43:47Z"
+    },
+    "Q262": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:45:14Z"
+    },
+    "Q263": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:46:03Z"
+    },
+    "Q264": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:46:16Z"
+    },
+    "Q265": {
+      "state": "chosen",
+      "option": "b",
+      "note": "before",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:46:34Z"
+    },
+    "Q266": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:46:57Z"
+    },
+    "Q267": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:47:13Z"
+    },
+    "Q268": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:47:30Z"
+    },
+    "Q269": {
+      "state": "chosen",
+      "option": null,
+      "note": "for testing purposes, i expect final board score to be same score no matter the order as long as cards cannot be removed from their spot or changed once placed.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:50:30Z"
+    },
+    "Q270": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:50:44Z"
+    },
+    "Q271": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:50:51Z"
+    },
+    "Q272": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:51:04Z"
+    },
+    "Q273": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:51:13Z"
+    },
+    "Q274": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:51:21Z"
+    },
+    "Q275": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:51:41Z"
+    },
+    "Q276": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:03Z"
+    },
+    "Q277": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:16Z"
+    },
+    "Q278": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:26Z"
+    },
+    "Q293": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:31Z"
+    },
+    "Q294": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:37Z"
+    },
+    "Q295": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:39Z"
+    },
+    "Q296": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:46Z"
+    },
+    "Q297": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:55Z"
+    },
+    "Q298": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:52:57Z"
+    },
+    "Q299": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:00Z"
+    },
+    "Q300": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:03Z"
+    },
+    "Q301": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:10Z"
+    },
+    "Q303": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:12Z"
+    },
+    "Q304": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:15Z"
+    },
+    "Q305": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-08-25T16:53:24Z"
+    },
+    "Q118": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:26:08Z"
+    },
+    "Q119": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:26:25Z"
+    },
+    "Q134": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:29:04Z"
+    },
+    "Q322": {
+      "state": "chosen",
+      "option": "c",
+      "note": "Owner confirmation (chat) of the edge I assumed: \"assumption is correct. if score is 0 do not multiply regardless of if 0 is somehow a returned actual score from something.\" So the test is the VALUE, never touched-ness: a bucket worth 0 is excluded from the product even when a line genuinely completed and scored 0.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-08-26T11:35:18Z"
+    },
+    "Q323": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:30:29Z"
+    },
+    "Q324": {
+      "state": "chosen",
+      "option": null,
+      "note": "retriggers by design track effects they have already triggered, with runaway guard for safety if there is a bug",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:31:49Z"
+    },
+    "Q325": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:32:14Z"
+    },
+    "Q326": {
+      "state": "chosen",
+      "option": null,
+      "note": "Owner correction (chat), superseding the round-2 answer (b): \"do not display subtotals such as grid score.\" No per-grid score, no per-grid bucket breakdown. The HUD shows the board total and the combo, and nothing else. This also settles the Q123/Q326 conflict in favour of Q123, which said no per-grid subtotal all along.",
+      "override": true,
+      "active": true,
+      "round": 3,
+      "at": "2026-08-25T19:05:58Z"
+    },
+    "Q306": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:32:51Z"
+    },
+    "Q307": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:33:20Z"
+    },
+    "Q308": {
+      "state": "chosen",
+      "option": null,
+      "note": "draw order shouldnt change, so newest at top is still in front.",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:34:16Z"
+    },
+    "Q309": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:34:35Z"
+    },
+    "Q314": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:34:50Z"
+    },
+    "Q310": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:35:10Z"
+    },
+    "Q311": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:35:41Z"
+    },
+    "Q312": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:36:06Z"
+    },
+    "Q313": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:36:53Z"
+    },
+    "Q315": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:37:16Z"
+    },
+    "Q316": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:37:25Z"
+    },
+    "Q317": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:38:25Z"
+    },
+    "Q319": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:38:45Z"
+    },
+    "Q320": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:39:00Z"
+    },
+    "Q318": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:39:33Z"
+    },
+    "Q321": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-08-25T18:39:55Z"
+    }
+  }
+}

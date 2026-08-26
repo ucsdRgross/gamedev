@@ -1,0 +1,364 @@
+{"seq":1,"at":"2026-08-25T06:13:01Z","event":"answer","id":"QR1","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":2,"at":"2026-08-25T06:13:03Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":3,"at":"2026-08-25T06:15:11Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"note that height is already built into current architecture via card stacking. we are adding more zones. Current system is x,y where y is stacks, and new system is x,y,z but new z and current y is the same axis, so technically the new rows are the new dimension.","override":false,"round":1}
+{"seq":4,"at":"2026-08-25T06:15:14Z","event":"answer","id":"QR1","state":"chosen","option":"a","note":"note that height is already built into current architecture via card stacking. we are adding more zones. Current system is x,y where y is stacks, and new system is x,y,z but new z and current y is the same axis, so technically the new rows are the new dimension.","override":false,"round":1}
+{"seq":5,"at":"2026-08-25T06:15:34Z","event":"answer","id":"Q69","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":6,"at":"2026-08-25T06:15:55Z","event":"answer","id":"Q70","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":7,"at":"2026-08-25T06:18:30Z","event":"answer","id":"Q71","state":"chosen","option":null,"note":"today's default stacking system. lower heights get covered, showing only the rank/stamp/suit, and talent/skill becomes inactive","override":true,"round":1}
+{"seq":8,"at":"2026-08-25T06:18:36Z","event":"answer","id":"Q72","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":9,"at":"2026-08-25T06:27:27Z","event":"answer","id":"Q73","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":10,"at":"2026-08-25T06:27:41Z","event":"answer","id":"Q74","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":11,"at":"2026-08-25T06:27:49Z","event":"answer","id":"Q75","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":12,"at":"2026-08-25T06:36:09Z","event":"answer","id":"Q76","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":13,"at":"2026-08-25T06:39:33Z","event":"answer","id":"Q77","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":14,"at":"2026-08-25T06:40:15Z","event":"answer","id":"Q78","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":15,"at":"2026-08-25T06:41:51Z","event":"answer","id":"Q79","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":16,"at":"2026-08-25T06:42:16Z","event":"answer","id":"Q80","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":17,"at":"2026-08-25T06:42:38Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":18,"at":"2026-08-25T06:42:49Z","event":"answer","id":"Q81","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":19,"at":"2026-08-25T06:43:16Z","event":"answer","id":"Q82","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":20,"at":"2026-08-25T06:43:54Z","event":"answer","id":"Q83","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":21,"at":"2026-08-25T06:44:00Z","event":"answer","id":"Q84","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":22,"at":"2026-08-25T06:45:52Z","event":"answer","id":"Q85","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":23,"at":"2026-08-25T06:46:27Z","event":"answer","id":"Q88","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":24,"at":"2026-08-25T06:46:36Z","event":"answer","id":"Q89","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":25,"at":"2026-08-25T06:46:53Z","event":"answer","id":"Q90","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":26,"at":"2026-08-25T06:47:05Z","event":"answer","id":"Q91","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":27,"at":"2026-08-25T08:37:17Z","event":"answer","id":"Q92","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":28,"at":"2026-08-25T08:51:11Z","event":"answer","id":"Q93","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":29,"at":"2026-08-25T08:53:14Z","event":"answer","id":"Q94","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":30,"at":"2026-08-25T09:32:54Z","event":"answer","id":"Q95","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":31,"at":"2026-08-25T09:33:04Z","event":"answer","id":"QR2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":32,"at":"2026-08-25T09:34:26Z","event":"answer","id":"Q245","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":33,"at":"2026-08-25T09:34:56Z","event":"answer","id":"Q246","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":34,"at":"2026-08-25T09:36:22Z","event":"answer","id":"Q247","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":35,"at":"2026-08-25T09:37:00Z","event":"answer","id":"Q248","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":36,"at":"2026-08-25T09:37:55Z","event":"answer","id":"Q249","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":37,"at":"2026-08-25T09:38:03Z","event":"answer","id":"Q250","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":38,"at":"2026-08-25T09:38:39Z","event":"answer","id":"Q251","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":39,"at":"2026-08-25T09:38:59Z","event":"answer","id":"Q252","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":40,"at":"2026-08-25T09:40:16Z","event":"answer","id":"Q253","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":41,"at":"2026-08-25T09:40:37Z","event":"answer","id":"Q254","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":42,"at":"2026-08-25T10:07:12Z","event":"answer","id":"Q255","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":43,"at":"2026-08-25T10:07:31Z","event":"answer","id":"Q255","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":44,"at":"2026-08-25T10:07:38Z","event":"answer","id":"Q256","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":45,"at":"2026-08-25T10:08:12Z","event":"answer","id":"Q145","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":46,"at":"2026-08-25T10:08:22Z","event":"answer","id":"Q146","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":47,"at":"2026-08-25T10:08:27Z","event":"answer","id":"Q146","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":48,"at":"2026-08-25T10:09:37Z","event":"answer","id":"Q147","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":49,"at":"2026-08-25T10:11:59Z","event":"answer","id":"Q148","state":"chosen","option":null,"note":"clicking on a grid zooms in, back button same with picture wall zooms outs, forward button returns to same view as before. reusing buttons so basically intercepting.","override":true,"round":1}
+{"seq":50,"at":"2026-08-25T10:12:28Z","event":"answer","id":"Q149","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":51,"at":"2026-08-25T10:15:13Z","event":"answer","id":"Q150","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":52,"at":"2026-08-25T10:15:47Z","event":"answer","id":"Q151","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":53,"at":"2026-08-25T10:16:19Z","event":"answer","id":"Q152","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":54,"at":"2026-08-25T10:16:36Z","event":"answer","id":"Q153","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":55,"at":"2026-08-25T10:16:57Z","event":"answer","id":"Q154","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":56,"at":"2026-08-25T10:17:10Z","event":"answer","id":"Q155","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":57,"at":"2026-08-25T10:17:34Z","event":"answer","id":"Q156","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":58,"at":"2026-08-25T10:17:45Z","event":"answer","id":"Q157","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":59,"at":"2026-08-25T10:18:17Z","event":"answer","id":"Q158","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":60,"at":"2026-08-25T10:18:37Z","event":"answer","id":"Q159","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":61,"at":"2026-08-25T10:21:53Z","event":"answer","id":"Q160","state":"chosen","option":null,"note":"yes, entire screen may need to be inside a smooth scroll container since frame size should not change.","override":true,"round":1}
+{"seq":62,"at":"2026-08-25T10:22:27Z","event":"answer","id":"Q161","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":63,"at":"2026-08-25T10:22:48Z","event":"answer","id":"Q162","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":64,"at":"2026-08-25T10:23:56Z","event":"answer","id":"Q163","state":"chosen","option":null,"note":"no, because those grids are still technically interactable if there are cards within that can be interacted with separately from how input cards work.","override":true,"round":1}
+{"seq":65,"at":"2026-08-25T10:24:54Z","event":"answer","id":"Q164","state":"chosen","option":null,"note":"existing texture rect, repeated, not stretched. Will eventually replace with non placeholder art.","override":true,"round":1}
+{"seq":66,"at":"2026-08-25T10:27:34Z","event":"answer","id":"Q165","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":67,"at":"2026-08-25T10:27:43Z","event":"answer","id":"Q186","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":68,"at":"2026-08-25T10:28:07Z","event":"answer","id":"Q87","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":69,"at":"2026-08-25T10:29:34Z","event":"answer","id":"QR3","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":70,"at":"2026-08-25T10:36:19Z","event":"answer","id":"Q166","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":71,"at":"2026-08-25T10:54:33Z","event":"answer","id":"Q167","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":72,"at":"2026-08-25T10:55:02Z","event":"answer","id":"Q168","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":73,"at":"2026-08-25T10:56:08Z","event":"answer","id":"Q169","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":74,"at":"2026-08-25T10:56:16Z","event":"answer","id":"Q170","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":75,"at":"2026-08-25T10:56:31Z","event":"answer","id":"Q171","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":76,"at":"2026-08-25T10:57:05Z","event":"answer","id":"Q172","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":77,"at":"2026-08-25T10:59:04Z","event":"answer","id":"Q173","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":78,"at":"2026-08-25T10:59:12Z","event":"answer","id":"Q174","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":79,"at":"2026-08-25T11:01:34Z","event":"answer","id":"Q175","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":80,"at":"2026-08-25T11:02:14Z","event":"answer","id":"Q176","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":81,"at":"2026-08-25T11:02:26Z","event":"answer","id":"Q177","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":82,"at":"2026-08-25T11:02:55Z","event":"answer","id":"Q178","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":83,"at":"2026-08-25T11:03:42Z","event":"answer","id":"Q179","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":84,"at":"2026-08-25T11:10:38Z","event":"answer","id":"Q180","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":85,"at":"2026-08-25T11:14:14Z","event":"answer","id":"QR4","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":86,"at":"2026-08-25T12:09:11Z","event":"answer","id":"QR5","state":"chosen","option":null,"note":"each grid gets its own row x col = grid score\nhud shows total grid score from each grid added together as left number, multiplied by the combo number on the right. Since gameplay has changed, lets have each unique effect add  +1 the first time, and repeat non-unique effects worth 0.5, all tunables. \nhud always shows most updated scores.","override":true,"round":1}
+{"seq":87,"at":"2026-08-25T12:09:23Z","event":"answer","id":"QR5","state":"chosen","option":null,"note":"each grid gets its own row x col = grid score\nhud shows total grid score from each grid added together as left number, multiplied by the combo number on the right. Since gameplay has changed, lets have each unique effect add  +1 the first time, and repeat non-unique effects worth 0.5, all tunables. \nhud always shows most updated scores.","override":true,"round":1}
+{"seq":88,"at":"2026-08-25T12:09:54Z","event":"answer","id":"QR6","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":89,"at":"2026-08-25T12:10:21Z","event":"answer","id":"QR7","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":90,"at":"2026-08-25T12:11:09Z","event":"answer","id":"Q86","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":91,"at":"2026-08-25T12:11:16Z","event":"answer","id":"Q96","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":92,"at":"2026-08-25T12:11:24Z","event":"answer","id":"Q97","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":93,"at":"2026-08-25T12:11:29Z","event":"answer","id":"Q98","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":94,"at":"2026-08-25T12:11:45Z","event":"answer","id":"Q99","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":95,"at":"2026-08-25T12:12:39Z","event":"answer","id":"QR5","state":"chosen","option":null,"note":"each grid gets its own row x col x diag = grid score\nhud shows total grid score from each grid added together as left number, multiplied by the combo number on the right. Since gameplay has changed, lets have each unique effect add  +1 the first time, and repeat non-unique effects worth 0.5, all tunables. \nhud always shows most updated scores.","override":true,"round":1}
+{"seq":96,"at":"2026-08-25T12:12:48Z","event":"answer","id":"Q100","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":97,"at":"2026-08-25T12:13:01Z","event":"answer","id":"Q103","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":98,"at":"2026-08-25T12:13:57Z","event":"answer","id":"Q104","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":99,"at":"2026-08-25T12:15:37Z","event":"answer","id":"Q105","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":100,"at":"2026-08-25T12:15:44Z","event":"answer","id":"Q106","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":101,"at":"2026-08-25T12:16:21Z","event":"answer","id":"QR8","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":102,"at":"2026-08-25T12:16:29Z","event":"answer","id":"Q279","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":103,"at":"2026-08-25T12:16:48Z","event":"answer","id":"Q280","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":104,"at":"2026-08-25T12:16:55Z","event":"answer","id":"Q281","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":105,"at":"2026-08-25T12:17:24Z","event":"answer","id":"Q281","state":"chosen","option":null,"note":"alternate versions, lets archive the older versions for now","override":true,"round":1}
+{"seq":106,"at":"2026-08-25T12:17:55Z","event":"answer","id":"Q282","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":107,"at":"2026-08-25T12:18:07Z","event":"answer","id":"Q283","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":108,"at":"2026-08-25T12:18:28Z","event":"answer","id":"Q284","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":109,"at":"2026-08-25T12:18:34Z","event":"answer","id":"Q284","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":110,"at":"2026-08-25T12:18:46Z","event":"answer","id":"Q285","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":111,"at":"2026-08-25T12:18:57Z","event":"answer","id":"Q286","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":112,"at":"2026-08-25T12:19:25Z","event":"answer","id":"Q287","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":113,"at":"2026-08-25T12:19:34Z","event":"answer","id":"Q288","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":114,"at":"2026-08-25T12:19:51Z","event":"answer","id":"Q289","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":115,"at":"2026-08-25T12:20:05Z","event":"answer","id":"Q290","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":116,"at":"2026-08-25T12:20:24Z","event":"answer","id":"Q291","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":117,"at":"2026-08-25T12:20:51Z","event":"answer","id":"Q292","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":118,"at":"2026-08-25T12:21:43Z","event":"answer","id":"Q292","state":"chosen","option":null,"note":"ideally docs are updated during code changes, but mostly after. The planning we are doing now is already the before.","override":true,"round":1}
+{"seq":119,"at":"2026-08-25T12:23:53Z","event":"answer","id":"Q1","state":"chosen","option":null,"note":"4 component coordinate, with special case for entrance since it is technically row -1 since it is stacked above/below the grid.","override":true,"round":1}
+{"seq":120,"at":"2026-08-25T12:24:26Z","event":"answer","id":"Q2","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":121,"at":"2026-08-25T12:26:05Z","event":"answer","id":"Q3","state":"chosen","option":null,"note":"yes, continuous, with entrance being part of y lattice, dynamically changing depending on which grid it is currently attached to.","override":true,"round":1}
+{"seq":122,"at":"2026-08-25T12:26:58Z","event":"answer","id":"Q4","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":123,"at":"2026-08-25T12:27:18Z","event":"answer","id":"Q5","state":"chosen","option":null,"note":"52","override":true,"round":1}
+{"seq":124,"at":"2026-08-25T12:27:56Z","event":"answer","id":"Q6","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":125,"at":"2026-08-25T12:28:09Z","event":"answer","id":"Q7","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":126,"at":"2026-08-25T12:28:30Z","event":"answer","id":"Q7","state":"chosen","option":null,"note":"yes, tunable cap, have cap be 3 for now","override":true,"round":1}
+{"seq":127,"at":"2026-08-25T12:30:52Z","event":"answer","id":"Q8","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":128,"at":"2026-08-25T12:31:06Z","event":"answer","id":"Q10","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":129,"at":"2026-08-25T12:31:16Z","event":"answer","id":"Q11","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":130,"at":"2026-08-25T12:31:41Z","event":"answer","id":"Q12","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":131,"at":"2026-08-25T12:32:23Z","event":"answer","id":"Q13","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":132,"at":"2026-08-25T12:32:54Z","event":"answer","id":"Q14","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":133,"at":"2026-08-25T12:35:22Z","event":"answer","id":"Q15","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":134,"at":"2026-08-25T12:35:44Z","event":"answer","id":"Q16","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":135,"at":"2026-08-25T12:36:36Z","event":"answer","id":"Q17","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":136,"at":"2026-08-25T12:36:59Z","event":"answer","id":"Q19","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":137,"at":"2026-08-25T12:37:16Z","event":"answer","id":"Q20","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":138,"at":"2026-08-25T12:37:44Z","event":"answer","id":"Q21","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":139,"at":"2026-08-25T12:38:02Z","event":"answer","id":"Q22","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":140,"at":"2026-08-25T12:38:11Z","event":"answer","id":"Q23","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":141,"at":"2026-08-25T12:39:43Z","event":"answer","id":"Q24","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":142,"at":"2026-08-25T12:40:47Z","event":"answer","id":"Q25","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":143,"at":"2026-08-25T12:41:26Z","event":"answer","id":"Q26","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":144,"at":"2026-08-25T12:41:59Z","event":"answer","id":"Q27","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":145,"at":"2026-08-25T12:43:11Z","event":"answer","id":"Q28","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":146,"at":"2026-08-25T12:43:15Z","event":"answer","id":"Q28","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":147,"at":"2026-08-25T12:44:20Z","event":"answer","id":"Q29","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":148,"at":"2026-08-25T12:44:38Z","event":"answer","id":"Q30","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":149,"at":"2026-08-25T12:46:14Z","event":"answer","id":"Q31","state":"chosen","option":null,"note":"yes, the entrance hand/row visibly detaches from the grid. choosing a grid causes it to move closer to committed grid","override":true,"round":1}
+{"seq":150,"at":"2026-08-25T12:46:48Z","event":"answer","id":"Q32","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":151,"at":"2026-08-25T12:48:05Z","event":"answer","id":"Q33","state":"chosen","option":null,"note":"yes, refill happens when no more legal moves or empty entrance, with unused cards staying","override":true,"round":1}
+{"seq":152,"at":"2026-08-25T12:51:32Z","event":"answer","id":"Q34","state":"chosen","option":null,"note":"every refill is randomized. Should be deterministic though, so that a future seeing card effect can reveal what an entrance slot is going to have in the future.","override":true,"round":1}
+{"seq":153,"at":"2026-08-25T12:51:48Z","event":"answer","id":"Q35","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":154,"at":"2026-08-25T12:52:19Z","event":"answer","id":"Q36","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":155,"at":"2026-08-25T12:52:26Z","event":"answer","id":"Q37","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":156,"at":"2026-08-25T12:52:46Z","event":"answer","id":"Q38","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":157,"at":"2026-08-25T12:53:53Z","event":"answer","id":"Q39","state":"chosen","option":null,"note":"yes, follows the camera, think of it like a player hand","override":true,"round":1}
+{"seq":158,"at":"2026-08-25T12:54:12Z","event":"answer","id":"Q40","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":159,"at":"2026-08-25T12:54:23Z","event":"answer","id":"Q41","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":160,"at":"2026-08-25T12:54:43Z","event":"answer","id":"Q42","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":161,"at":"2026-08-25T12:54:51Z","event":"answer","id":"Q43","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":162,"at":"2026-08-25T12:55:10Z","event":"answer","id":"Q44","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":163,"at":"2026-08-25T12:55:19Z","event":"answer","id":"Q44","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":164,"at":"2026-08-25T12:55:32Z","event":"answer","id":"Q45","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":165,"at":"2026-08-25T12:56:36Z","event":"answer","id":"Q46","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":166,"at":"2026-08-25T12:57:28Z","event":"answer","id":"Q47","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":167,"at":"2026-08-25T12:59:05Z","event":"answer","id":"Q48","state":"chosen","option":null,"note":"depends on the scoring system. For an effect checking for lines of 5, it requires that line have 5. for an effect that scores on specific patterns of 2x2 card layout, it would obviously check every completed 2x2 card shape.","override":true,"round":1}
+{"seq":168,"at":"2026-08-25T12:59:19Z","event":"answer","id":"Q49","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":169,"at":"2026-08-25T12:59:51Z","event":"answer","id":"Q50","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":170,"at":"2026-08-25T13:00:06Z","event":"answer","id":"Q51","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":171,"at":"2026-08-25T13:02:44Z","event":"answer","id":"Q52","state":"chosen","option":null,"note":"if card has its ranks or suits changed or other internal values changed, nothing happens. If it gets removed, then another card takes its place, that counts as new scoring event since line went from 4 to 5 again.","override":true,"round":1}
+{"seq":172,"at":"2026-08-25T13:03:02Z","event":"answer","id":"Q53","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":173,"at":"2026-08-25T13:03:51Z","event":"answer","id":"Q54","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":174,"at":"2026-08-25T13:05:11Z","event":"answer","id":"Q55","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":175,"at":"2026-08-25T13:05:19Z","event":"answer","id":"Q55","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":176,"at":"2026-08-25T13:07:06Z","event":"answer","id":"Q56","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":177,"at":"2026-08-25T13:10:45Z","event":"answer","id":"Q57","state":"chosen","option":null,"note":"run_all_mods specifically expects to run over mutating live collections so i see no issue and question is a misunderstanding. Since scorer will default live in rules deck, it is last thing it checks regardless and all other effects will fire first anyways.","override":true,"round":1}
+{"seq":178,"at":"2026-08-25T13:11:13Z","event":"answer","id":"Q58","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":179,"at":"2026-08-25T13:11:51Z","event":"answer","id":"Q59","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":180,"at":"2026-08-25T13:12:23Z","event":"answer","id":"Q60","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":181,"at":"2026-08-25T13:12:56Z","event":"answer","id":"Q61","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":182,"at":"2026-08-25T13:13:43Z","event":"answer","id":"Q62","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":183,"at":"2026-08-25T13:14:16Z","event":"answer","id":"Q63","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":184,"at":"2026-08-25T13:14:37Z","event":"answer","id":"Q64","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":185,"at":"2026-08-25T13:15:24Z","event":"answer","id":"Q65","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":186,"at":"2026-08-25T13:17:07Z","event":"answer","id":"Q66","state":"chosen","option":null,"note":"have all cards dance briefly using the placeholder animation","override":true,"round":1}
+{"seq":187,"at":"2026-08-25T13:17:16Z","event":"answer","id":"Q67","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":188,"at":"2026-08-25T13:18:23Z","event":"answer","id":"Q68","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":189,"at":"2026-08-25T13:19:32Z","event":"answer","id":"Q68","state":"chosen","option":null,"note":"yes unchanged, its just that they reset their use trackers now when processing is done as part of cleanup hook which used to trigger at end of acts, unless i am misremembering","override":true,"round":1}
+{"seq":190,"at":"2026-08-25T13:20:01Z","event":"answer","id":"Q107","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":191,"at":"2026-08-25T13:22:00Z","event":"answer","id":"Q108","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":192,"at":"2026-08-25T13:22:11Z","event":"answer","id":"Q109","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":193,"at":"2026-08-25T13:27:25Z","event":"answer","id":"Q110","state":"chosen","option":null,"note":"I changed my mind. All diagonal type scores go to a single label to the right of the grid aligned with center of the grid, opposite side of row labels. This is the special meld score bucket.\nfuture special meld scores will also go to this bucket, regardless of if its diagonal or not, simply because having a unique label for every special meld would be impossible to place on screen and make sense.\nin data it is also one bucket","override":true,"round":1}
+{"seq":194,"at":"2026-08-25T13:27:35Z","event":"answer","id":"Q111","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":195,"at":"2026-08-25T13:27:50Z","event":"answer","id":"Q112","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":196,"at":"2026-08-25T13:29:16Z","event":"answer","id":"Q113","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":197,"at":"2026-08-25T13:30:18Z","event":"answer","id":"Q114","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":198,"at":"2026-08-25T13:31:15Z","event":"answer","id":"Q115","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":199,"at":"2026-08-25T13:31:39Z","event":"answer","id":"Q115","state":"chosen","option":"a","note":"no context provided on what delta means in this context","override":false,"round":1}
+{"seq":200,"at":"2026-08-25T13:31:48Z","event":"answer","id":"Q115","state":"chosen","option":null,"note":"yes, but no context provided on what delta means in this context","override":true,"round":1}
+{"seq":201,"at":"2026-08-25T13:33:46Z","event":"answer","id":"Q117","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":202,"at":"2026-08-25T13:35:03Z","event":"answer","id":"Q120","state":"chosen","option":null,"note":"retired entirely. only grid_total and combo","override":true,"round":1}
+{"seq":203,"at":"2026-08-25T13:35:24Z","event":"answer","id":"Q121","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":204,"at":"2026-08-25T13:35:33Z","event":"answer","id":"Q121","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":205,"at":"2026-08-25T13:37:35Z","event":"answer","id":"Q122","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":206,"at":"2026-08-25T13:38:23Z","event":"answer","id":"Q123","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":207,"at":"2026-08-25T14:07:29Z","event":"answer","id":"Q124","state":"chosen","option":null,"note":"flat row and col scores, 2d arrays for row height and col height scores, and single variable for special meld scores. Doesn't seem like we need dictionary yet unless 2d array doesnt work","override":true,"round":1}
+{"seq":208,"at":"2026-08-25T14:07:53Z","event":"answer","id":"Q125","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":209,"at":"2026-08-25T14:07:58Z","event":"answer","id":"Q125","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":210,"at":"2026-08-25T14:08:59Z","event":"answer","id":"Q126","state":"chosen","option":null,"note":"If a grid gets removed, then the score labels within the grid are removed as well. However, accumulated score is not lost.","override":true,"round":1}
+{"seq":211,"at":"2026-08-25T14:09:09Z","event":"answer","id":"Q127","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":212,"at":"2026-08-25T14:30:36Z","event":"answer","id":"Q128","state":"chosen","option":null,"note":"yes, end show and highlights when goal is met","override":true,"round":1}
+{"seq":213,"at":"2026-08-25T14:32:57Z","event":"answer","id":"Q129","state":"chosen","option":null,"note":"no. total always shows current combined grid score times current combo","override":true,"round":1}
+{"seq":214,"at":"2026-08-25T14:34:54Z","event":"answer","id":"Q130","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":215,"at":"2026-08-25T14:35:21Z","event":"answer","id":"Q132","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":216,"at":"2026-08-25T14:35:41Z","event":"answer","id":"Q133","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":217,"at":"2026-08-25T14:37:12Z","event":"answer","id":"Q135","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":218,"at":"2026-08-25T14:37:46Z","event":"answer","id":"Q136","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":219,"at":"2026-08-25T14:39:08Z","event":"answer","id":"Q137","state":"chosen","option":null,"note":"yes, but only if an effect is tracking it. Otherwise settings wont be able to change one type to be worth more than another.","override":true,"round":1}
+{"seq":220,"at":"2026-08-25T14:41:50Z","event":"answer","id":"Q138","state":"chosen","option":null,"note":"yes, but new interval i want to try is 52 per grid, so player starts with 1 grid at starting hand of 52 cards, 2 grids at 53, 3 grids at 105.","override":true,"round":1}
+{"seq":221,"at":"2026-08-25T14:42:16Z","event":"answer","id":"Q139","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":222,"at":"2026-08-25T14:42:28Z","event":"answer","id":"Q140","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":223,"at":"2026-08-25T14:43:19Z","event":"answer","id":"Q141","state":"chosen","option":null,"note":"no, play until player pressed end button.","override":true,"round":1}
+{"seq":224,"at":"2026-08-25T14:43:40Z","event":"answer","id":"Q142","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":225,"at":"2026-08-25T14:43:48Z","event":"answer","id":"Q143","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":226,"at":"2026-08-25T14:44:01Z","event":"answer","id":"Q144","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":227,"at":"2026-08-25T14:45:36Z","event":"answer","id":"Q187","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":228,"at":"2026-08-25T14:45:54Z","event":"answer","id":"Q188","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":229,"at":"2026-08-25T14:46:15Z","event":"answer","id":"Q189","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":230,"at":"2026-08-25T14:46:23Z","event":"answer","id":"Q190","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":231,"at":"2026-08-25T14:46:29Z","event":"answer","id":"Q191","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":232,"at":"2026-08-25T14:46:58Z","event":"answer","id":"Q192","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":233,"at":"2026-08-25T15:30:30Z","event":"answer","id":"Q193","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":234,"at":"2026-08-25T15:30:59Z","event":"answer","id":"Q194","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":235,"at":"2026-08-25T15:31:19Z","event":"answer","id":"Q195","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":236,"at":"2026-08-25T15:31:32Z","event":"answer","id":"Q196","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":237,"at":"2026-08-25T15:31:57Z","event":"answer","id":"Q197","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":238,"at":"2026-08-25T15:32:13Z","event":"answer","id":"Q198","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":239,"at":"2026-08-25T15:32:26Z","event":"answer","id":"Q199","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":240,"at":"2026-08-25T15:32:36Z","event":"answer","id":"Q200","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":241,"at":"2026-08-25T15:34:32Z","event":"answer","id":"Q201","state":"chosen","option":null,"note":"yes, that is how current setup exists as well with meta cards in rule deck building pre grid board as well.","override":true,"round":1}
+{"seq":242,"at":"2026-08-25T15:35:48Z","event":"answer","id":"Q201","state":"chosen","option":null,"note":"yes, that is how current setup exists as well with meta cards in rule deck building pre grid board as well.","override":true,"round":1}
+{"seq":243,"at":"2026-08-25T15:39:14Z","event":"answer","id":"Q202","state":"chosen","option":null,"note":"Sure lets have it persist. On game start, the meta card checking deck size will add or subtract existing persistent grid creation cards based on current deck size. Removing that card would mean grid count is no longer linked to deck size between games, which makes sense to me.","override":true,"round":1}
+{"seq":244,"at":"2026-08-25T15:45:59Z","event":"answer","id":"Q203","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":245,"at":"2026-08-25T15:46:09Z","event":"answer","id":"Q204","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":246,"at":"2026-08-25T15:46:36Z","event":"answer","id":"Q205","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":247,"at":"2026-08-25T15:47:09Z","event":"answer","id":"Q206","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":248,"at":"2026-08-25T15:47:27Z","event":"answer","id":"Q207","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":249,"at":"2026-08-25T15:48:10Z","event":"answer","id":"Q208","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":250,"at":"2026-08-25T15:48:28Z","event":"answer","id":"Q209","state":"chosen","option":"c","note":"","override":false,"round":1}
+{"seq":251,"at":"2026-08-25T15:48:41Z","event":"answer","id":"Q210","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":252,"at":"2026-08-25T15:48:59Z","event":"answer","id":"Q210","state":"chosen","option":null,"note":"moved, should no longer run as part of tests","override":true,"round":1}
+{"seq":253,"at":"2026-08-25T15:56:24Z","event":"answer","id":"Q213","state":"chosen","option":null,"note":"just delete it manually or something.","override":true,"round":1}
+{"seq":254,"at":"2026-08-25T15:57:41Z","event":"answer","id":"Q214","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":255,"at":"2026-08-25T15:58:27Z","event":"answer","id":"Q215","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":256,"at":"2026-08-25T15:58:41Z","event":"answer","id":"Q216","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":257,"at":"2026-08-25T15:59:03Z","event":"answer","id":"Q217","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":258,"at":"2026-08-25T15:59:09Z","event":"answer","id":"Q218","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":259,"at":"2026-08-25T15:59:18Z","event":"answer","id":"Q219","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":260,"at":"2026-08-25T15:59:26Z","event":"answer","id":"Q220","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":261,"at":"2026-08-25T16:00:26Z","event":"answer","id":"Q221","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":262,"at":"2026-08-25T16:00:54Z","event":"answer","id":"Q222","state":"chosen","option":null,"note":"no, i will personally handle the frame art myself","override":true,"round":1}
+{"seq":263,"at":"2026-08-25T16:04:33Z","event":"answer","id":"Q223","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":264,"at":"2026-08-25T16:04:50Z","event":"answer","id":"Q224","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":265,"at":"2026-08-25T16:06:17Z","event":"answer","id":"Q225","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":266,"at":"2026-08-25T16:06:44Z","event":"answer","id":"Q226","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":267,"at":"2026-08-25T16:07:08Z","event":"answer","id":"Q227","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":268,"at":"2026-08-25T16:07:42Z","event":"answer","id":"Q228","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":269,"at":"2026-08-25T16:08:46Z","event":"answer","id":"Q229","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":270,"at":"2026-08-25T16:09:03Z","event":"answer","id":"Q230","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":271,"at":"2026-08-25T16:09:16Z","event":"answer","id":"Q231","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":272,"at":"2026-08-25T16:10:18Z","event":"answer","id":"Q232","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":273,"at":"2026-08-25T16:12:48Z","event":"answer","id":"Q232","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":274,"at":"2026-08-25T16:17:00Z","event":"answer","id":"Q233","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":275,"at":"2026-08-25T16:18:03Z","event":"answer","id":"Q235","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":276,"at":"2026-08-25T16:33:25Z","event":"answer","id":"Q236","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":277,"at":"2026-08-25T16:33:44Z","event":"answer","id":"Q237","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":278,"at":"2026-08-25T16:34:13Z","event":"answer","id":"Q238","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":279,"at":"2026-08-25T16:35:12Z","event":"answer","id":"Q239","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":280,"at":"2026-08-25T16:35:23Z","event":"answer","id":"Q240","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":281,"at":"2026-08-25T16:35:34Z","event":"answer","id":"Q241","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":282,"at":"2026-08-25T16:35:46Z","event":"answer","id":"Q242","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":283,"at":"2026-08-25T16:35:55Z","event":"answer","id":"Q243","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":284,"at":"2026-08-25T16:37:34Z","event":"answer","id":"Q244","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":285,"at":"2026-08-25T16:39:08Z","event":"answer","id":"Q257","state":"chosen","option":"b","note":"no, currently no card that implements the hook.","override":false,"round":1}
+{"seq":286,"at":"2026-08-25T16:42:22Z","event":"answer","id":"Q258","state":"chosen","option":null,"note":"yes, asks for confirm if goal not reached yet","override":true,"round":1}
+{"seq":287,"at":"2026-08-25T16:43:12Z","event":"answer","id":"Q259","state":"chosen","option":null,"note":"no, but end becomes highlighted","override":true,"round":1}
+{"seq":288,"at":"2026-08-25T16:43:25Z","event":"answer","id":"Q260","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":289,"at":"2026-08-25T16:43:47Z","event":"answer","id":"Q261","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":290,"at":"2026-08-25T16:44:28Z","event":"answer","id":"Q262","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":291,"at":"2026-08-25T16:44:33Z","event":"answer","id":"Q262","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":292,"at":"2026-08-25T16:45:14Z","event":"answer","id":"Q262","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":293,"at":"2026-08-25T16:46:03Z","event":"answer","id":"Q263","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":294,"at":"2026-08-25T16:46:16Z","event":"answer","id":"Q264","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":295,"at":"2026-08-25T16:46:34Z","event":"answer","id":"Q265","state":"chosen","option":"b","note":"before","override":false,"round":1}
+{"seq":296,"at":"2026-08-25T16:46:57Z","event":"answer","id":"Q266","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":297,"at":"2026-08-25T16:47:13Z","event":"answer","id":"Q267","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":298,"at":"2026-08-25T16:47:30Z","event":"answer","id":"Q268","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":299,"at":"2026-08-25T16:50:30Z","event":"answer","id":"Q269","state":"chosen","option":null,"note":"for testing purposes, i expect final board score to be same score no matter the order as long as cards cannot be removed from their spot or changed once placed.","override":true,"round":1}
+{"seq":300,"at":"2026-08-25T16:50:44Z","event":"answer","id":"Q270","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":301,"at":"2026-08-25T16:50:51Z","event":"answer","id":"Q271","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":302,"at":"2026-08-25T16:51:04Z","event":"answer","id":"Q272","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":303,"at":"2026-08-25T16:51:13Z","event":"answer","id":"Q273","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":304,"at":"2026-08-25T16:51:21Z","event":"answer","id":"Q274","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":305,"at":"2026-08-25T16:51:41Z","event":"answer","id":"Q275","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":306,"at":"2026-08-25T16:52:03Z","event":"answer","id":"Q276","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":307,"at":"2026-08-25T16:52:16Z","event":"answer","id":"Q277","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":308,"at":"2026-08-25T16:52:26Z","event":"answer","id":"Q278","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":309,"at":"2026-08-25T16:52:31Z","event":"answer","id":"Q293","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":310,"at":"2026-08-25T16:52:37Z","event":"answer","id":"Q294","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":311,"at":"2026-08-25T16:52:39Z","event":"answer","id":"Q295","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":312,"at":"2026-08-25T16:52:46Z","event":"answer","id":"Q296","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":313,"at":"2026-08-25T16:52:55Z","event":"answer","id":"Q297","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":314,"at":"2026-08-25T16:52:57Z","event":"answer","id":"Q298","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":315,"at":"2026-08-25T16:53:00Z","event":"answer","id":"Q299","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":316,"at":"2026-08-25T16:53:03Z","event":"answer","id":"Q300","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":317,"at":"2026-08-25T16:53:10Z","event":"answer","id":"Q301","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":318,"at":"2026-08-25T16:53:12Z","event":"answer","id":"Q303","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":319,"at":"2026-08-25T16:53:15Z","event":"answer","id":"Q304","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":320,"at":"2026-08-25T16:53:24Z","event":"answer","id":"Q305","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":321,"at":"2026-08-25T18:25:34Z","event":"answer","id":"QR5","state":"chosen","option":"d","note":"each grid gets its own row x col x diag = grid score\nhud shows total grid score from each grid added together as left number, multiplied by the combo number on the right. Since gameplay has changed, lets have each unique effect add  +1 the first time, and repeat non-unique effects worth 0.5, all tunables. \nhud always shows most updated scores.","override":false,"round":2}
+{"seq":322,"at":"2026-08-25T18:26:08Z","event":"answer","id":"Q118","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":323,"at":"2026-08-25T18:26:25Z","event":"answer","id":"Q119","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":324,"at":"2026-08-25T18:29:04Z","event":"answer","id":"Q134","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":325,"at":"2026-08-25T18:30:02Z","event":"answer","id":"Q322","state":"chosen","option":"c","note":"","override":false,"round":2}
+{"seq":326,"at":"2026-08-25T18:30:29Z","event":"answer","id":"Q323","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":327,"at":"2026-08-25T18:31:49Z","event":"answer","id":"Q324","state":"chosen","option":null,"note":"retriggers by design track effects they have already triggered, with runaway guard for safety if there is a bug","override":true,"round":2}
+{"seq":328,"at":"2026-08-25T18:32:03Z","event":"answer","id":"Q325","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":329,"at":"2026-08-25T18:32:08Z","event":"answer","id":"Q325","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":330,"at":"2026-08-25T18:32:14Z","event":"answer","id":"Q325","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":331,"at":"2026-08-25T18:32:27Z","event":"answer","id":"Q326","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":332,"at":"2026-08-25T18:32:43Z","event":"answer","id":"Q306","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":333,"at":"2026-08-25T18:32:47Z","event":"answer","id":"Q306","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":334,"at":"2026-08-25T18:32:51Z","event":"answer","id":"Q306","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":335,"at":"2026-08-25T18:33:20Z","event":"answer","id":"Q307","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":336,"at":"2026-08-25T18:33:40Z","event":"answer","id":"Q308","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":337,"at":"2026-08-25T18:34:16Z","event":"answer","id":"Q308","state":"chosen","option":null,"note":"draw order shouldnt change, so newest at top is still in front.","override":true,"round":2}
+{"seq":338,"at":"2026-08-25T18:34:35Z","event":"answer","id":"Q309","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":339,"at":"2026-08-25T18:34:50Z","event":"answer","id":"Q314","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":340,"at":"2026-08-25T18:35:10Z","event":"answer","id":"Q310","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":341,"at":"2026-08-25T18:35:41Z","event":"answer","id":"Q311","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":342,"at":"2026-08-25T18:36:06Z","event":"answer","id":"Q312","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":343,"at":"2026-08-25T18:36:53Z","event":"answer","id":"Q313","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":344,"at":"2026-08-25T18:37:16Z","event":"answer","id":"Q315","state":"chosen","option":"c","note":"","override":false,"round":2}
+{"seq":345,"at":"2026-08-25T18:37:25Z","event":"answer","id":"Q316","state":"chosen","option":"b","note":"","override":false,"round":2}
+{"seq":346,"at":"2026-08-25T18:38:25Z","event":"answer","id":"Q317","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":347,"at":"2026-08-25T18:38:45Z","event":"answer","id":"Q319","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":348,"at":"2026-08-25T18:39:00Z","event":"answer","id":"Q320","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":349,"at":"2026-08-25T18:39:33Z","event":"answer","id":"Q318","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":350,"at":"2026-08-25T18:39:55Z","event":"answer","id":"Q321","state":"chosen","option":"a","note":"","override":false,"round":2}
+{"seq":351,"at":"2026-08-25T18:40:15Z","event":"answer","id":"Q4","state":"chosen","option":"d","note":"","override":false,"round":2}
+{"seq":352,"at":"2026-08-25T18:40:28Z","event":"answer","id":"Q13","state":"chosen","option":"d","note":"","override":false,"round":2}
+{"seq":353,"at":"2026-08-25T19:05:58Z","event":"answer","id":"Q322","state":"chosen","option":"c","note":"Owner correction (chat): an untouched bucket ADDS 0, it does not multiply by 0. Worked example, verbatim: \"row + col + diag = 0 + 0 + 0. Row gets 10 score. it is now 10 + 0 + 0 = 10. Col gets 5 score. It is now 10 * 5 + 0 = 50. Diag gets 2 score. It is now 10 * 5 * 2 = 100.\" So grid score = the PRODUCT of every bucket that has scored, and 0 when none has. This is arithmetically what (c) already said, restated in the owner's own terms, which are clearer.","override":true,"round":3}
+{"seq":354,"at":"2026-08-25T19:05:58Z","event":"answer","id":"Q326","state":"chosen","option":null,"note":"Owner correction (chat), superseding the round-2 answer (b): \"do not display subtotals such as grid score.\" No per-grid score, no per-grid bucket breakdown. The HUD shows the board total and the combo, and nothing else. This also settles the Q123/Q326 conflict in favour of Q123, which said no per-grid subtotal all along.","override":true,"round":3}
+{"seq":355,"at":"2026-08-25T19:05:58Z","event":"answer","id":"Q233","state":"chosen","option":"a","note":"Owner refinement (chat): \"rng is going to need its own in depth generator, so seed generation is its own todo for later, we just have placeholder seed generation for now.\" The seeded-from-state contract stands; the SEED DERIVATION ships as an explicit placeholder with a todo.md item, and no shipped card may depend on foreseeing a future slot until the real generator lands.","override":true,"round":3}
+{"seq":356,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q34","state":"chosen","option":"a","note":"Owner reversal (chat): randomised refill ABANDONED. Verbatim: \"lets just abandon the randomized refill for now then since I realize it doesnt make sense with current way effect processing works from left to right. Use current system where leftmost draws first, then next on right since it is next card triggering draw effect.\" So the refill is strictly left-to-right, driven by each entrance header card in board order, exactly as TypeInput.draw_card does today. This resolves the Q34/Q207 conflict I raised: no coordinator is needed because there is nothing to coordinate.","override":true,"round":4}
+{"seq":357,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q35","state":"chosen","option":null,"note":"Moot: Q34 abandoned randomised slot assignment, so there are no random slots to spread.","override":true,"round":4}
+{"seq":358,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q233","state":"chosen","option":"a","note":"Scope narrowed by the Q34 reversal: the refill no longer uses RNG at all, so the determinism ruling is satisfied by construction rather than by seeding. The deck SHUFFLE at game start keeps its existing RNG, unchanged. The in-depth generator remains a todo.md item, no longer coupled to the Entrance.","override":true,"round":4}
+{"seq":359,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q205","state":"chosen","option":"a","note":"Owner refinement (chat): \"sure measure it as we implement and note how much it hurts performance wise during tests.\" So the measurement is not deferred to when it hurts — it is taken during implementation and the numbers are recorded in the test output, against the existing scoring_cost harness.","override":true,"round":4}
+{"seq":360,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q133","state":"chosen","option":"a","note":"Owner refinement (chat): \"the goal curve refit can be its own phase if you think its too big to be 1 step.\" It is. The refit becomes its own numbered phase in PLAN.md with its own acceptance gate, not a step inside another phase.","override":true,"round":4}
+{"seq":361,"at":"2026-08-26T11:35:18Z","event":"answer","id":"Q322","state":"chosen","option":"c","note":"Owner confirmation (chat) of the edge I assumed: \"assumption is correct. if score is 0 do not multiply regardless of if 0 is somehow a returned actual score from something.\" So the test is the VALUE, never touched-ness: a bucket worth 0 is excluded from the product even when a line genuinely completed and scored 0.","override":true,"round":4}
+{"seq":362,"at":"2026-08-26T11:35:30Z","event":"answer","id":"Q160","state":"chosen","option":null,"note":"Owner specification (chat), superseding the earlier prose: \"one scroll container inside the picture to deal with tall stacks and potentially infinite grids or very large grids. Camera will pan over 3 possible grid positions since that is size of picture frame, and user can then choose to further scroll to reveal more of a single grid. choosing to pan left and right will shift current view of 3 grids left or right if there are more than 3 grids off edge of picture frame.\" So the two mechanisms divide cleanly: the WALL CAMERA steps between the 3 grid positions the picture frame holds, and ONE scroll container inside the picture handles tall stacks and any reveal beyond those three.","override":true,"round":4}
+{"seq":363,"at":"2026-08-26T11:35:30Z","event":"answer","id":"Q145","state":"chosen","option":"a","note":"Owner addition (chat): the show OPENS zoomed out. \"game starts zoomed out, then you choose a grid which zooms in, then you can go left and right.\" That opening state was not previously recorded anywhere.","override":true,"round":4}
+{"seq":364,"at":"2026-08-26T11:35:30Z","event":"answer","id":"Q154","state":"chosen","option":"b","note":"Owner resolution (chat) of the conflict I raised with Q14=(b) no panels: no dedicated position indicator is needed because the NAVIGATION carries the information — you start zoomed out, choose a grid, and pan from there. Verbatim: \"I will probably make it more obvious down the line by having background art be unique by location.\" Unique per-grid background art is a later content pass, not part of this design.","override":true,"round":4}

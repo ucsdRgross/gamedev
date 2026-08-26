@@ -36,6 +36,7 @@ A card that says on game start, check cards in deck, and add a 5x5 grid creation
 when 5x5 grid creation Card becomes active, it creates 5x5 zone cards it owns, when inactive, grid of zone cards should be removed and cards it contains should be discarded. Basically follow same logic as zone creation cards.
 5 different input/entrance zone cards, same as today. When refreshing after all zone cards empty or current grid is full, should draw from deck in random order so input cards are not always filled in left to right. 1st input card is same column and 1st col in 5x5 grid.
 a card that detects new 5 line cards to score when line of 5 cards is created anywhere across the grids.
+Use unused frames from art assets for new cards for now for new cards. Move cards that wont be usable anymore to an archive in case we want to reuse for future side game mode.
 
 CardDataIterator needs to be updated to track all grids. Order is still input cards, left to right, leftmost first grid, left slot in first row, going down rows, then repeat with 2nd grid, then when grids are down discard and rules.
 

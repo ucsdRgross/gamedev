@@ -355,6 +355,34 @@ accumulated the 20 stale nodes: each round I fixed the nodes I remembered and le
 answers are the source; the charts are output. `run check`'s `stale` line is the check, and it only
 turns red once answers exist — **so re-run it after every round, not only after authoring.**
 
+⚠⚠ **AND THE VARIANT `stale` CANNOT SEE: A NODE THAT CONFIDENTLY STATES THE WRONG ANSWER.** `stale`
+flags a node posing an ANSWERED question as an open fork. A node that asserts the option the AUTHOR
+recommended instead of the option the OWNER picked is, to a parser, ordinary prose — it is
+self-consistent, it reads well, and nothing reports it.
+
+**Measured on `solatro/poker-patience`: nine such nodes across four charts. Every one was a question
+where the owner's answer differed from my `*default*`; not one node was wrong where they agreed.**
+That correlation is perfect, and it names the mechanism: **`answers.json` stores an opaque LETTER,
+the letter's meaning lives back in the document, and reconstructing it from memory silently defaults
+to whatever you argued for.** The owner found the first one by eye (*"Pretty sure I answered a
+question saying this is not the case"*) and the audit it prompted found eight more.
+
+**So: never write a chart node from the question line or from memory. Render the answers first:**
+
+```bash
+node .claude/tools/answer_sheet.mjs <project>/<slug> --diverged   # start here — these go wrong
+node .claude/tools/answer_sheet.mjs <project>/<slug>              # then the rest
+```
+
+It prints each answer as the CHOSEN OPTION'S OWN WORDS, resolved from the document, and flags every
+one that overrode the recommendation. Write the diverged nodes first, from that output. On
+poker-patience the flag fired on 57 of 314 answers — that is the set worth being slow and careful
+about, and it is 18 % of the document, not all of it.
+
+⚠ **Treat a high divergence count as a signal about the QUESTIONNAIRE, not just about the charts.**
+57 overrides means the recommended defaults were wrong more than one time in six, so "the owner
+accepted the defaults" is never a safe assumption when summarising what was decided.
+
 ### 4. Enumerate every usage
 
 One row per situation the feature can be in — including the boring ones (headless, empty case,

@@ -1,11 +1,11 @@
 {
-  "doc_hash": "sha256:e3761b25989596793e075e739c2a7902450027875506be0f54a6945d7a4bcea2",
+  "doc_hash": "sha256:4f615c70e472acfb104d6c7809587a7f6a96e99700155e4796f800523616e9a0",
   "charts": [
     {
       "id": "A",
       "name": "A",
       "title": "where the mechanical spotlight comes from",
-      "line": 927,
+      "line": 930,
       "nodes": [
         "A1",
         "A2",
@@ -23,7 +23,7 @@
       "id": "B",
       "name": "B",
       "title": "activation edges (who gets told, and when)",
-      "line": 974,
+      "line": 977,
       "nodes": [
         "B1",
         "B2",
@@ -45,7 +45,7 @@
       "id": "C",
       "name": "C",
       "title": "Submit, top level, with the new phases spliced in",
-      "line": 1011,
+      "line": 1014,
       "nodes": [
         "C1",
         "C2",
@@ -74,7 +74,7 @@
       "id": "S",
       "name": "S",
       "title": "the TRANSIENT dim `[QR2=c]` — ⚠ NOT THE ANSWER, KEPT AS THE RECORD",
-      "line": 1078,
+      "line": 1081,
       "nodes": [
         "S1",
         "S2",
@@ -100,7 +100,7 @@
       "id": "D",
       "name": "D",
       "title": "ONE LINE'S SPOTLIGHT PHASE (the core of the feature)",
-      "line": 1131,
+      "line": 1134,
       "nodes": [
         "D1",
         "D2",
@@ -137,7 +137,7 @@
       "id": "E",
       "name": "E",
       "title": "the spotlight transition between lines",
-      "line": 1244,
+      "line": 1247,
       "nodes": [
         "E1",
         "E2",
@@ -156,7 +156,7 @@
       "id": "F",
       "name": null,
       "title": "the spotlight transition between lines",
-      "line": 1265,
+      "line": 1268,
       "nodes": [
         "F1",
         "F2",
@@ -169,7 +169,7 @@
       "id": "G",
       "name": "F",
       "title": "what a card looks like, moment by moment",
-      "line": 1296,
+      "line": 1299,
       "nodes": [
         "G1",
         "G2",
@@ -191,7 +191,7 @@
       "id": "H",
       "name": "G",
       "title": "the light layer's render model",
-      "line": 1341,
+      "line": 1344,
       "nodes": [
         "H1",
         "H2",
@@ -208,7 +208,7 @@
       "id": "I",
       "name": "H",
       "title": "beam origins, the allocator, and scrolling",
-      "line": 1395,
+      "line": 1398,
       "nodes": [
         "I1",
         "I2",
@@ -228,7 +228,7 @@
       "id": "J",
       "name": null,
       "title": "beam origins, the allocator, and scrolling",
-      "line": 1437,
+      "line": 1440,
       "nodes": [
         "J1",
         "J2",
@@ -240,7 +240,7 @@
       "id": "K",
       "name": "I",
       "title": "the reveal (per-row expansion)",
-      "line": 1470,
+      "line": 1473,
       "nodes": [
         "K1",
         "K2",
@@ -265,7 +265,7 @@
       "id": "L",
       "name": "J",
       "title": "interruptions and edge cases",
-      "line": 1529,
+      "line": 1532,
       "nodes": [
         "L1",
         "L2",
@@ -287,7 +287,7 @@
       "id": "R",
       "name": "R",
       "title": "a spotlit card is DISCARDED mid-line: compact and follow `[Q24=c]`",
-      "line": 1591,
+      "line": 1594,
       "nodes": [
         "R1",
         "R2",
@@ -311,7 +311,7 @@
       "id": "M",
       "name": "K",
       "title": "the non-scoring spotlight (normal play)",
-      "line": 1664,
+      "line": 1667,
       "nodes": [
         "M1",
         "M2",
@@ -336,7 +336,7 @@
       "id": "T",
       "name": "T",
       "title": "the MOMENTARY spotlight, outside scoring `[Q149=b]`",
-      "line": 1708,
+      "line": 1711,
       "nodes": [
         "T1",
         "T2",
@@ -361,7 +361,7 @@
       "id": "N",
       "name": "L",
       "title": "the tuning tool",
-      "line": 1791,
+      "line": 1794,
       "nodes": [
         "N1",
         "N2",
@@ -376,7 +376,7 @@
       "id": "O",
       "name": null,
       "title": "14b.2 The model",
-      "line": 1871,
+      "line": 1874,
       "nodes": [
         "O1",
         "O2",
@@ -406,7 +406,7 @@
       "id": "P",
       "name": "P",
       "title": "the film-light pipeline `[QR10≠c]`",
-      "line": 1971,
+      "line": 1974,
       "nodes": [
         "P1",
         "P2",
@@ -437,7 +437,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 929
+      "line": 932
     },
     "A2": {
       "chart": "A",
@@ -445,7 +445,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 929
+      "line": 932
     },
     "A99": {
       "chart": "A",
@@ -453,7 +453,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 930
+      "line": 933
     },
     "A3": {
       "chart": "A",
@@ -461,7 +461,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 931
+      "line": 934
     },
     "A4": {
       "chart": "A",
@@ -469,7 +469,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 933
+      "line": 936
     },
     "A98": {
       "chart": "A",
@@ -477,7 +477,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 934
+      "line": 937
     },
     "A5": {
       "chart": "A",
@@ -485,7 +485,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 935
+      "line": 938
     },
     "A6": {
       "chart": "A",
@@ -495,7 +495,7 @@
       "decidedBy": [
         "Q6"
       ],
-      "line": 937
+      "line": 940
     },
     "A7": {
       "chart": "A",
@@ -503,7 +503,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 939
+      "line": 942
     },
     "A8": {
       "chart": "A",
@@ -514,7 +514,7 @@
         "Q9",
         "Q6"
       ],
-      "line": 941
+      "line": 944
     },
     "B1": {
       "chart": "B",
@@ -522,7 +522,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 976
+      "line": 979
     },
     "B2": {
       "chart": "B",
@@ -530,7 +530,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 976
+      "line": 979
     },
     "B3": {
       "chart": "B",
@@ -538,7 +538,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 978
+      "line": 981
     },
     "B4": {
       "chart": "B",
@@ -546,7 +546,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 979
+      "line": 982
     },
     "B5": {
       "chart": "B",
@@ -554,7 +554,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 981
+      "line": 984
     },
     "B6": {
       "chart": "B",
@@ -562,7 +562,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 982
+      "line": 985
     },
     "B7": {
       "chart": "B",
@@ -570,7 +570,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 983
+      "line": 986
     },
     "B8": {
       "chart": "B",
@@ -578,7 +578,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 984
+      "line": 987
     },
     "B9": {
       "chart": "B",
@@ -586,7 +586,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 985
+      "line": 988
     },
     "B10": {
       "chart": "B",
@@ -594,7 +594,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 987
+      "line": 990
     },
     "B11": {
       "chart": "B",
@@ -602,7 +602,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 988
+      "line": 991
     },
     "B12": {
       "chart": "B",
@@ -612,7 +612,7 @@
       "decidedBy": [
         "Q264"
       ],
-      "line": 989
+      "line": 992
     },
     "B13": {
       "chart": "B",
@@ -622,7 +622,7 @@
       "decidedBy": [
         "Q264"
       ],
-      "line": 992
+      "line": 995
     },
     "B14": {
       "chart": "B",
@@ -632,7 +632,7 @@
       "decidedBy": [
         "Q10"
       ],
-      "line": 994
+      "line": 997
     },
     "C1": {
       "chart": "C",
@@ -640,7 +640,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1013
+      "line": 1016
     },
     "C2": {
       "chart": "C",
@@ -648,7 +648,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1013
+      "line": 1016
     },
     "C3": {
       "chart": "C",
@@ -656,7 +656,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1014
+      "line": 1017
     },
     "C4": {
       "chart": "C",
@@ -664,7 +664,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1015
+      "line": 1018
     },
     "C5": {
       "chart": "C",
@@ -674,7 +674,7 @@
       "decidedBy": [
         "QR2"
       ],
-      "line": 1016
+      "line": 1019
     },
     "C6": {
       "chart": "C",
@@ -682,7 +682,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1019
+      "line": 1022
     },
     "C7": {
       "chart": "C",
@@ -690,7 +690,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1020
+      "line": 1023
     },
     "C8": {
       "chart": "C",
@@ -700,7 +700,7 @@
       "decidedBy": [
         "Q33"
       ],
-      "line": 1021
+      "line": 1024
     },
     "C11": {
       "chart": "C",
@@ -708,7 +708,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1022
+      "line": 1025
     },
     "C9": {
       "chart": "C",
@@ -718,7 +718,7 @@
       "decidedBy": [
         "Q34"
       ],
-      "line": 1023
+      "line": 1026
     },
     "C10": {
       "chart": "C",
@@ -726,7 +726,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1026
+      "line": 1029
     },
     "C12": {
       "chart": "C",
@@ -734,7 +734,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1028
+      "line": 1031
     },
     "C13": {
       "chart": "C",
@@ -742,7 +742,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1029
+      "line": 1032
     },
     "C14": {
       "chart": "C",
@@ -750,7 +750,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1032
+      "line": 1035
     },
     "C15": {
       "chart": "C",
@@ -762,7 +762,7 @@
         "Q78",
         "Q151"
       ],
-      "line": 1034
+      "line": 1037
     },
     "C16": {
       "chart": "C",
@@ -773,7 +773,7 @@
         "Q78",
         "Q151"
       ],
-      "line": 1036
+      "line": 1039
     },
     "C17": {
       "chart": "C",
@@ -781,7 +781,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1038
+      "line": 1041
     },
     "C18": {
       "chart": "C",
@@ -789,7 +789,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1039
+      "line": 1042
     },
     "C19": {
       "chart": "C",
@@ -797,7 +797,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1040
+      "line": 1043
     },
     "C20": {
       "chart": "C",
@@ -805,7 +805,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1041
+      "line": 1044
     },
     "C21": {
       "chart": "C",
@@ -813,7 +813,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1042
+      "line": 1045
     },
     "S1": {
       "chart": "S",
@@ -821,7 +821,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1080
+      "line": 1083
     },
     "S2": {
       "chart": "S",
@@ -829,7 +829,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1080
+      "line": 1083
     },
     "S3": {
       "chart": "S",
@@ -837,7 +837,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1082
+      "line": 1085
     },
     "S4": {
       "chart": "S",
@@ -845,7 +845,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1083
+      "line": 1086
     },
     "S5": {
       "chart": "S",
@@ -853,7 +853,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1084
+      "line": 1087
     },
     "S6": {
       "chart": "S",
@@ -861,7 +861,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1085
+      "line": 1088
     },
     "S7": {
       "chart": "S",
@@ -871,7 +871,7 @@
       "decidedBy": [
         "Q189"
       ],
-      "line": 1086
+      "line": 1089
     },
     "S8": {
       "chart": "S",
@@ -879,7 +879,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1087
+      "line": 1090
     },
     "S9": {
       "chart": "S",
@@ -887,7 +887,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1088
+      "line": 1091
     },
     "S10": {
       "chart": "S",
@@ -895,7 +895,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1089
+      "line": 1092
     },
     "S11": {
       "chart": "S",
@@ -903,7 +903,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1090
+      "line": 1093
     },
     "S12": {
       "chart": "S",
@@ -913,7 +913,7 @@
       "decidedBy": [
         "Q190"
       ],
-      "line": 1093
+      "line": 1096
     },
     "S13": {
       "chart": "S",
@@ -921,7 +921,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1094
+      "line": 1097
     },
     "S14": {
       "chart": "S",
@@ -929,7 +929,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1096
+      "line": 1099
     },
     "S15": {
       "chart": "S",
@@ -937,7 +937,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1099
+      "line": 1102
     },
     "S16": {
       "chart": "S",
@@ -947,7 +947,7 @@
       "decidedBy": [
         "Q192"
       ],
-      "line": 1102
+      "line": 1105
     },
     "S17": {
       "chart": "S",
@@ -955,7 +955,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1103
+      "line": 1106
     },
     "S18": {
       "chart": "S",
@@ -963,7 +963,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1104
+      "line": 1107
     },
     "D1": {
       "chart": "D",
@@ -971,7 +971,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1133
+      "line": 1136
     },
     "D2": {
       "chart": "D",
@@ -979,7 +979,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1133
+      "line": 1136
     },
     "D99": {
       "chart": "D",
@@ -987,7 +987,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1134
+      "line": 1137
     },
     "D3": {
       "chart": "D",
@@ -1000,7 +1000,7 @@
         "Q35",
         "Q42"
       ],
-      "line": 1135
+      "line": 1138
     },
     "D4": {
       "chart": "D",
@@ -1008,7 +1008,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1136
+      "line": 1139
     },
     "D5": {
       "chart": "D",
@@ -1019,7 +1019,7 @@
         "Q46",
         "Q47"
       ],
-      "line": 1138
+      "line": 1141
     },
     "D8": {
       "chart": "D",
@@ -1027,7 +1027,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1147
+      "line": 1150
     },
     "D6": {
       "chart": "D",
@@ -1035,7 +1035,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1142
+      "line": 1145
     },
     "D7": {
       "chart": "D",
@@ -1045,7 +1045,7 @@
       "decidedBy": [
         "Q44"
       ],
-      "line": 1144
+      "line": 1147
     },
     "D9": {
       "chart": "D",
@@ -1053,7 +1053,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1149
+      "line": 1152
     },
     "D10": {
       "chart": "D",
@@ -1065,7 +1065,7 @@
         "QR2",
         "Q37"
       ],
-      "line": 1150
+      "line": 1153
     },
     "D11": {
       "chart": "D",
@@ -1073,7 +1073,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1154
+      "line": 1157
     },
     "D12": {
       "chart": "D",
@@ -1085,7 +1085,7 @@
         "Q22",
         "Q26"
       ],
-      "line": 1155
+      "line": 1158
     },
     "D12b": {
       "chart": "D",
@@ -1097,7 +1097,7 @@
         "Q252",
         "Q201"
       ],
-      "line": 1157
+      "line": 1160
     },
     "D13": {
       "chart": "D",
@@ -1108,7 +1108,7 @@
         "Q68",
         "Q19"
       ],
-      "line": 1161
+      "line": 1164
     },
     "D13a": {
       "chart": "D",
@@ -1116,7 +1116,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1165
+      "line": 1168
     },
     "D13b": {
       "chart": "D",
@@ -1129,7 +1129,7 @@
         "Q244",
         "Q243"
       ],
-      "line": 1169
+      "line": 1172
     },
     "D14": {
       "chart": "D",
@@ -1139,7 +1139,7 @@
       "decidedBy": [
         "Q265"
       ],
-      "line": 1173
+      "line": 1176
     },
     "D15": {
       "chart": "D",
@@ -1147,7 +1147,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1176
+      "line": 1179
     },
     "D16": {
       "chart": "D",
@@ -1155,7 +1155,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1177
+      "line": 1180
     },
     "D17": {
       "chart": "D",
@@ -1163,7 +1163,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1178
+      "line": 1181
     },
     "D18": {
       "chart": "D",
@@ -1171,7 +1171,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1181
+      "line": 1184
     },
     "D19": {
       "chart": "D",
@@ -1182,7 +1182,7 @@
         "Q49",
         "Q50"
       ],
-      "line": 1182
+      "line": 1185
     },
     "D20": {
       "chart": "D",
@@ -1194,7 +1194,7 @@
         "Q49",
         "Q50"
       ],
-      "line": 1183
+      "line": 1186
     },
     "D21": {
       "chart": "D",
@@ -1202,7 +1202,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1194
+      "line": 1197
     },
     "D22": {
       "chart": "D",
@@ -1210,7 +1210,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1196
+      "line": 1199
     },
     "D23": {
       "chart": "D",
@@ -1218,7 +1218,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1197
+      "line": 1200
     },
     "D24": {
       "chart": "D",
@@ -1226,7 +1226,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1198
+      "line": 1201
     },
     "D25": {
       "chart": "D",
@@ -1236,7 +1236,7 @@
       "decidedBy": [
         "QR2"
       ],
-      "line": 1199
+      "line": 1202
     },
     "E1": {
       "chart": "E",
@@ -1244,7 +1244,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1246
+      "line": 1249
     },
     "E2": {
       "chart": "E",
@@ -1252,7 +1252,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1246
+      "line": 1249
     },
     "E3": {
       "chart": "E",
@@ -1260,7 +1260,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1247
+      "line": 1250
     },
     "E4": {
       "chart": "E",
@@ -1268,7 +1268,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1248
+      "line": 1251
     },
     "E5": {
       "chart": "E",
@@ -1276,7 +1276,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1249
+      "line": 1252
     },
     "E6": {
       "chart": "E",
@@ -1284,7 +1284,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1250
+      "line": 1253
     },
     "E7": {
       "chart": "E",
@@ -1292,7 +1292,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1251
+      "line": 1254
     },
     "E8": {
       "chart": "E",
@@ -1300,7 +1300,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1253
+      "line": 1256
     },
     "E9": {
       "chart": "E",
@@ -1308,7 +1308,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1255
+      "line": 1258
     },
     "E10": {
       "chart": "E",
@@ -1316,7 +1316,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1259
+      "line": 1262
     },
     "E11": {
       "chart": "E",
@@ -1324,7 +1324,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1260
+      "line": 1263
     },
     "F1": {
       "chart": "F",
@@ -1332,7 +1332,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1267
+      "line": 1270
     },
     "F2": {
       "chart": "F",
@@ -1340,7 +1340,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1267
+      "line": 1270
     },
     "F3": {
       "chart": "F",
@@ -1348,7 +1348,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1268
+      "line": 1271
     },
     "F4": {
       "chart": "F",
@@ -1356,7 +1356,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1270
+      "line": 1273
     },
     "F5": {
       "chart": "F",
@@ -1364,7 +1364,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1271
+      "line": 1274
     },
     "G1": {
       "chart": "G",
@@ -1372,7 +1372,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1298
+      "line": 1301
     },
     "G2": {
       "chart": "G",
@@ -1380,7 +1380,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1298
+      "line": 1301
     },
     "G3": {
       "chart": "G",
@@ -1388,7 +1388,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1299
+      "line": 1302
     },
     "G4": {
       "chart": "G",
@@ -1396,7 +1396,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1300
+      "line": 1303
     },
     "G5": {
       "chart": "G",
@@ -1404,7 +1404,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1301
+      "line": 1304
     },
     "G6": {
       "chart": "G",
@@ -1412,7 +1412,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1302
+      "line": 1305
     },
     "G7": {
       "chart": "G",
@@ -1420,7 +1420,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1304
+      "line": 1307
     },
     "G8": {
       "chart": "G",
@@ -1431,7 +1431,7 @@
         "Q121",
         "Q124"
       ],
-      "line": 1305
+      "line": 1308
     },
     "G9": {
       "chart": "G",
@@ -1439,7 +1439,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1307
+      "line": 1310
     },
     "G10": {
       "chart": "G",
@@ -1447,7 +1447,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1308
+      "line": 1311
     },
     "G11": {
       "chart": "G",
@@ -1455,7 +1455,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1311
+      "line": 1314
     },
     "G12": {
       "chart": "G",
@@ -1463,7 +1463,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1312
+      "line": 1315
     },
     "G13": {
       "chart": "G",
@@ -1471,7 +1471,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1314
+      "line": 1317
     },
     "G14": {
       "chart": "G",
@@ -1481,7 +1481,7 @@
       "decidedBy": [
         "Q127"
       ],
-      "line": 1316
+      "line": 1319
     },
     "H1": {
       "chart": "H",
@@ -1489,7 +1489,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1343
+      "line": 1346
     },
     "H2": {
       "chart": "H",
@@ -1497,7 +1497,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1343
+      "line": 1346
     },
     "H3": {
       "chart": "H",
@@ -1505,7 +1505,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1346
+      "line": 1349
     },
     "H4": {
       "chart": "H",
@@ -1513,7 +1513,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1347
+      "line": 1350
     },
     "H5": {
       "chart": "H",
@@ -1521,7 +1521,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1349
+      "line": 1352
     },
     "H6": {
       "chart": "H",
@@ -1529,7 +1529,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1351
+      "line": 1354
     },
     "H7": {
       "chart": "H",
@@ -1537,7 +1537,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1353
+      "line": 1356
     },
     "H8": {
       "chart": "H",
@@ -1545,7 +1545,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1354
+      "line": 1357
     },
     "H9": {
       "chart": "H",
@@ -1553,7 +1553,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1355
+      "line": 1358
     },
     "I1": {
       "chart": "I",
@@ -1563,7 +1563,7 @@
       "decidedBy": [
         "QR2"
       ],
-      "line": 1397
+      "line": 1400
     },
     "I2": {
       "chart": "I",
@@ -1573,7 +1573,7 @@
       "decidedBy": [
         "Q109"
       ],
-      "line": 1397
+      "line": 1400
     },
     "I3": {
       "chart": "I",
@@ -1584,7 +1584,7 @@
         "Q113",
         "Q250"
       ],
-      "line": 1399
+      "line": 1402
     },
     "I4": {
       "chart": "I",
@@ -1592,7 +1592,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1402
+      "line": 1405
     },
     "I5": {
       "chart": "I",
@@ -1600,7 +1600,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1403
+      "line": 1406
     },
     "I6": {
       "chart": "I",
@@ -1608,7 +1608,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1404
+      "line": 1407
     },
     "I7": {
       "chart": "I",
@@ -1618,7 +1618,7 @@
       "decidedBy": [
         "Q111"
       ],
-      "line": 1405
+      "line": 1408
     },
     "I8": {
       "chart": "I",
@@ -1626,7 +1626,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1407
+      "line": 1410
     },
     "I9": {
       "chart": "I",
@@ -1634,7 +1634,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1409
+      "line": 1412
     },
     "I10": {
       "chart": "I",
@@ -1642,7 +1642,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1412
+      "line": 1415
     },
     "I11": {
       "chart": "I",
@@ -1652,7 +1652,7 @@
       "decidedBy": [
         "Q164"
       ],
-      "line": 1413
+      "line": 1416
     },
     "I12": {
       "chart": "I",
@@ -1663,7 +1663,7 @@
         "Q251",
         "Q262"
       ],
-      "line": 1414
+      "line": 1417
     },
     "J1": {
       "chart": "J",
@@ -1671,7 +1671,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1439
+      "line": 1442
     },
     "J2": {
       "chart": "J",
@@ -1679,7 +1679,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1439
+      "line": 1442
     },
     "J3": {
       "chart": "J",
@@ -1687,7 +1687,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1444
+      "line": 1447
     },
     "J4": {
       "chart": "J",
@@ -1695,7 +1695,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1451
+      "line": 1454
     },
     "K1": {
       "chart": "K",
@@ -1703,7 +1703,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1472
+      "line": 1475
     },
     "K2": {
       "chart": "K",
@@ -1711,7 +1711,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1472
+      "line": 1475
     },
     "K3": {
       "chart": "K",
@@ -1719,7 +1719,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1475
+      "line": 1478
     },
     "K4": {
       "chart": "K",
@@ -1727,7 +1727,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1477
+      "line": 1480
     },
     "K5": {
       "chart": "K",
@@ -1735,7 +1735,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1478
+      "line": 1481
     },
     "K6": {
       "chart": "K",
@@ -1743,7 +1743,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1479
+      "line": 1482
     },
     "K7": {
       "chart": "K",
@@ -1753,7 +1753,7 @@
       "decidedBy": [
         "Q51"
       ],
-      "line": 1480
+      "line": 1483
     },
     "K8": {
       "chart": "K",
@@ -1761,7 +1761,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1482
+      "line": 1485
     },
     "K9": {
       "chart": "K",
@@ -1769,7 +1769,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1484
+      "line": 1487
     },
     "K10": {
       "chart": "K",
@@ -1779,7 +1779,7 @@
       "decidedBy": [
         "Q52"
       ],
-      "line": 1486
+      "line": 1489
     },
     "K10b": {
       "chart": "K",
@@ -1789,7 +1789,7 @@
       "decidedBy": [
         "Q43"
       ],
-      "line": 1488
+      "line": 1491
     },
     "K10c": {
       "chart": "K",
@@ -1797,7 +1797,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1495
+      "line": 1498
     },
     "K10d": {
       "chart": "K",
@@ -1805,7 +1805,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1498
+      "line": 1501
     },
     "K11": {
       "chart": "K",
@@ -1813,7 +1813,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1505
+      "line": 1508
     },
     "K12": {
       "chart": "K",
@@ -1824,7 +1824,7 @@
         "Q57",
         "Q59"
       ],
-      "line": 1507
+      "line": 1510
     },
     "K13": {
       "chart": "K",
@@ -1835,7 +1835,7 @@
         "Q57",
         "Q59"
       ],
-      "line": 1509
+      "line": 1512
     },
     "K14": {
       "chart": "K",
@@ -1843,7 +1843,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1511
+      "line": 1514
     },
     "L1": {
       "chart": "L",
@@ -1851,7 +1851,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1531
+      "line": 1534
     },
     "L2": {
       "chart": "L",
@@ -1859,7 +1859,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1531
+      "line": 1534
     },
     "L3": {
       "chart": "L",
@@ -1867,7 +1867,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1532
+      "line": 1535
     },
     "L4": {
       "chart": "L",
@@ -1875,7 +1875,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1535
+      "line": 1538
     },
     "L5": {
       "chart": "L",
@@ -1883,7 +1883,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1536
+      "line": 1539
     },
     "L6": {
       "chart": "L",
@@ -1891,7 +1891,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1537
+      "line": 1540
     },
     "L7": {
       "chart": "L",
@@ -1899,7 +1899,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1539
+      "line": 1542
     },
     "L8": {
       "chart": "L",
@@ -1907,7 +1907,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1542
+      "line": 1545
     },
     "L9": {
       "chart": "L",
@@ -1915,7 +1915,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1544
+      "line": 1547
     },
     "L10": {
       "chart": "L",
@@ -1923,7 +1923,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1546
+      "line": 1549
     },
     "L11": {
       "chart": "L",
@@ -1931,7 +1931,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1548
+      "line": 1551
     },
     "L12": {
       "chart": "L",
@@ -1939,7 +1939,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1549
+      "line": 1552
     },
     "L13": {
       "chart": "L",
@@ -1947,7 +1947,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1552
+      "line": 1555
     },
     "L14": {
       "chart": "L",
@@ -1955,7 +1955,7 @@
       "shape": "box",
       "new": true,
       "decidedBy": [],
-      "line": 1554
+      "line": 1557
     },
     "R1": {
       "chart": "R",
@@ -1963,7 +1963,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1593
+      "line": 1596
     },
     "R2": {
       "chart": "R",
@@ -1971,7 +1971,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1593
+      "line": 1596
     },
     "R3": {
       "chart": "R",
@@ -1981,7 +1981,7 @@
       "decidedBy": [
         "Q160"
       ],
-      "line": 1596
+      "line": 1599
     },
     "R4": {
       "chart": "R",
@@ -1992,7 +1992,7 @@
         "Q199",
         "Q160"
       ],
-      "line": 1597
+      "line": 1600
     },
     "R5": {
       "chart": "R",
@@ -2000,7 +2000,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1601
+      "line": 1604
     },
     "R6": {
       "chart": "R",
@@ -2013,7 +2013,7 @@
         "Q243",
         "Q244"
       ],
-      "line": 1603
+      "line": 1606
     },
     "R7": {
       "chart": "R",
@@ -2021,7 +2021,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1606
+      "line": 1609
     },
     "R8": {
       "chart": "R",
@@ -2032,7 +2032,7 @@
         "Q200",
         "Q160"
       ],
-      "line": 1607
+      "line": 1610
     },
     "R9": {
       "chart": "R",
@@ -2040,7 +2040,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1611
+      "line": 1614
     },
     "R10": {
       "chart": "R",
@@ -2048,7 +2048,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1612
+      "line": 1615
     },
     "R11": {
       "chart": "R",
@@ -2058,7 +2058,7 @@
       "decidedBy": [
         "Q201"
       ],
-      "line": 1614
+      "line": 1617
     },
     "R12": {
       "chart": "R",
@@ -2068,7 +2068,7 @@
       "decidedBy": [
         "Q201"
       ],
-      "line": 1615
+      "line": 1618
     },
     "R13": {
       "chart": "R",
@@ -2076,7 +2076,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1618
+      "line": 1621
     },
     "R14": {
       "chart": "R",
@@ -2086,7 +2086,7 @@
       "decidedBy": [
         "Q202"
       ],
-      "line": 1620
+      "line": 1623
     },
     "R15": {
       "chart": "R",
@@ -2096,7 +2096,7 @@
       "decidedBy": [
         "Q203"
       ],
-      "line": 1626
+      "line": 1629
     },
     "R16": {
       "chart": "R",
@@ -2104,7 +2104,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1629
+      "line": 1632
     },
     "M1": {
       "chart": "M",
@@ -2112,7 +2112,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1666
+      "line": 1669
     },
     "M2": {
       "chart": "M",
@@ -2120,7 +2120,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1666
+      "line": 1669
     },
     "M3": {
       "chart": "M",
@@ -2128,7 +2128,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1667
+      "line": 1670
     },
     "M4": {
       "chart": "M",
@@ -2136,7 +2136,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1668
+      "line": 1671
     },
     "M5": {
       "chart": "M",
@@ -2144,7 +2144,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1669
+      "line": 1672
     },
     "M6": {
       "chart": "M",
@@ -2152,7 +2152,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1670
+      "line": 1673
     },
     "M7": {
       "chart": "M",
@@ -2160,7 +2160,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1671
+      "line": 1674
     },
     "M8": {
       "chart": "M",
@@ -2171,7 +2171,7 @@
         "Q145",
         "Q263"
       ],
-      "line": 1672
+      "line": 1675
     },
     "M9": {
       "chart": "M",
@@ -2179,7 +2179,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1676
+      "line": 1679
     },
     "M10": {
       "chart": "M",
@@ -2187,7 +2187,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1678
+      "line": 1681
     },
     "M11": {
       "chart": "M",
@@ -2197,7 +2197,7 @@
       "decidedBy": [
         "Q142"
       ],
-      "line": 1679
+      "line": 1682
     },
     "M12": {
       "chart": "M",
@@ -2205,7 +2205,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1682
+      "line": 1685
     },
     "M13": {
       "chart": "M",
@@ -2215,7 +2215,7 @@
       "decidedBy": [
         "Q143"
       ],
-      "line": 1683
+      "line": 1686
     },
     "M14": {
       "chart": "M",
@@ -2223,7 +2223,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1684
+      "line": 1687
     },
     "M15": {
       "chart": "M",
@@ -2233,7 +2233,7 @@
       "decidedBy": [
         "Q141"
       ],
-      "line": 1685
+      "line": 1688
     },
     "M16": {
       "chart": "M",
@@ -2241,7 +2241,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1687
+      "line": 1690
     },
     "M17": {
       "chart": "M",
@@ -2251,7 +2251,7 @@
       "decidedBy": [
         "Q144"
       ],
-      "line": 1688
+      "line": 1691
     },
     "T1": {
       "chart": "T",
@@ -2259,7 +2259,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1710
+      "line": 1713
     },
     "T2": {
       "chart": "T",
@@ -2267,7 +2267,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1710
+      "line": 1713
     },
     "T3": {
       "chart": "T",
@@ -2275,7 +2275,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1713
+      "line": 1716
     },
     "T4": {
       "chart": "T",
@@ -2286,7 +2286,7 @@
         "Q13",
         "Q15"
       ],
-      "line": 1714
+      "line": 1717
     },
     "T5": {
       "chart": "T",
@@ -2297,7 +2297,7 @@
         "Q246",
         "Q10"
       ],
-      "line": 1715
+      "line": 1718
     },
     "T6": {
       "chart": "T",
@@ -2305,7 +2305,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1719
+      "line": 1722
     },
     "T7": {
       "chart": "T",
@@ -2313,7 +2313,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1721
+      "line": 1724
     },
     "T8": {
       "chart": "T",
@@ -2321,7 +2321,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1722
+      "line": 1725
     },
     "T9": {
       "chart": "T",
@@ -2331,7 +2331,7 @@
       "decidedBy": [
         "QR2"
       ],
-      "line": 1725
+      "line": 1728
     },
     "T10": {
       "chart": "T",
@@ -2341,7 +2341,7 @@
       "decidedBy": [
         "Q245"
       ],
-      "line": 1726
+      "line": 1729
     },
     "T11": {
       "chart": "T",
@@ -2351,7 +2351,7 @@
       "decidedBy": [
         "Q247"
       ],
-      "line": 1729
+      "line": 1732
     },
     "T12": {
       "chart": "T",
@@ -2359,7 +2359,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1731
+      "line": 1734
     },
     "T13": {
       "chart": "T",
@@ -2367,7 +2367,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1732
+      "line": 1735
     },
     "T14": {
       "chart": "T",
@@ -2378,7 +2378,7 @@
         "Q248",
         "Q149"
       ],
-      "line": 1734
+      "line": 1737
     },
     "T15": {
       "chart": "T",
@@ -2388,7 +2388,7 @@
       "decidedBy": [
         "Q249"
       ],
-      "line": 1740
+      "line": 1743
     },
     "T16": {
       "chart": "T",
@@ -2396,7 +2396,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1744
+      "line": 1747
     },
     "T17": {
       "chart": "T",
@@ -2404,7 +2404,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1746
+      "line": 1749
     },
     "N1": {
       "chart": "N",
@@ -2412,7 +2412,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1793
+      "line": 1796
     },
     "N2": {
       "chart": "N",
@@ -2420,7 +2420,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1793
+      "line": 1796
     },
     "N3": {
       "chart": "N",
@@ -2428,7 +2428,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1795
+      "line": 1798
     },
     "N4": {
       "chart": "N",
@@ -2436,7 +2436,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1796
+      "line": 1799
     },
     "N5": {
       "chart": "N",
@@ -2444,7 +2444,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1798
+      "line": 1801
     },
     "N6": {
       "chart": "N",
@@ -2452,7 +2452,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1800
+      "line": 1803
     },
     "N7": {
       "chart": "N",
@@ -2460,7 +2460,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1803
+      "line": 1806
     },
     "O1": {
       "chart": "O",
@@ -2468,7 +2468,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1873
+      "line": 1876
     },
     "O2": {
       "chart": "O",
@@ -2476,7 +2476,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1873
+      "line": 1876
     },
     "O3": {
       "chart": "O",
@@ -2484,7 +2484,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1876
+      "line": 1879
     },
     "O4": {
       "chart": "O",
@@ -2492,7 +2492,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1877
+      "line": 1880
     },
     "O5": {
       "chart": "O",
@@ -2502,7 +2502,7 @@
       "decidedBy": [
         "Q124"
       ],
-      "line": 1878
+      "line": 1881
     },
     "O6": {
       "chart": "O",
@@ -2510,7 +2510,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1881
+      "line": 1884
     },
     "O7": {
       "chart": "O",
@@ -2518,7 +2518,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1883
+      "line": 1886
     },
     "O8": {
       "chart": "O",
@@ -2528,7 +2528,7 @@
       "decidedBy": [
         "Q207"
       ],
-      "line": 1886
+      "line": 1889
     },
     "O9": {
       "chart": "O",
@@ -2536,7 +2536,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1888
+      "line": 1891
     },
     "O10": {
       "chart": "O",
@@ -2544,7 +2544,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1889
+      "line": 1892
     },
     "O11": {
       "chart": "O",
@@ -2556,7 +2556,7 @@
         "Q135",
         "Q214"
       ],
-      "line": 1891
+      "line": 1894
     },
     "O12": {
       "chart": "O",
@@ -2564,7 +2564,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1898
+      "line": 1901
     },
     "O13": {
       "chart": "O",
@@ -2572,7 +2572,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1899
+      "line": 1902
     },
     "O14": {
       "chart": "O",
@@ -2582,7 +2582,7 @@
       "decidedBy": [
         "Q216"
       ],
-      "line": 1901
+      "line": 1904
     },
     "O15": {
       "chart": "O",
@@ -2590,7 +2590,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1904
+      "line": 1907
     },
     "O16": {
       "chart": "O",
@@ -2598,7 +2598,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1907
+      "line": 1910
     },
     "O17": {
       "chart": "O",
@@ -2606,7 +2606,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1909
+      "line": 1912
     },
     "O18": {
       "chart": "O",
@@ -2616,7 +2616,7 @@
       "decidedBy": [
         "Q121"
       ],
-      "line": 1910
+      "line": 1913
     },
     "O18b": {
       "chart": "O",
@@ -2626,7 +2626,7 @@
       "decidedBy": [
         "Q121"
       ],
-      "line": 1912
+      "line": 1915
     },
     "O19": {
       "chart": "O",
@@ -2636,7 +2636,7 @@
       "decidedBy": [
         "Q218"
       ],
-      "line": 1914
+      "line": 1917
     },
     "O20": {
       "chart": "O",
@@ -2644,7 +2644,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1917
+      "line": 1920
     },
     "O21": {
       "chart": "O",
@@ -2652,7 +2652,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1919
+      "line": 1922
     },
     "P1": {
       "chart": "P",
@@ -2660,7 +2660,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1973
+      "line": 1976
     },
     "P2": {
       "chart": "P",
@@ -2668,7 +2668,7 @@
       "shape": "decision",
       "new": false,
       "decidedBy": [],
-      "line": 1973
+      "line": 1976
     },
     "P3": {
       "chart": "P",
@@ -2676,7 +2676,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1974
+      "line": 1977
     },
     "P4": {
       "chart": "P",
@@ -2684,7 +2684,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1976
+      "line": 1979
     },
     "P5": {
       "chart": "P",
@@ -2692,7 +2692,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1978
+      "line": 1981
     },
     "P6": {
       "chart": "P",
@@ -2700,7 +2700,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1981
+      "line": 1984
     },
     "P7": {
       "chart": "P",
@@ -2708,7 +2708,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1983
+      "line": 1986
     },
     "P8": {
       "chart": "P",
@@ -2716,7 +2716,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1984
+      "line": 1987
     },
     "P9": {
       "chart": "P",
@@ -2724,7 +2724,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1985
+      "line": 1988
     },
     "P10": {
       "chart": "P",
@@ -2732,7 +2732,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1986
+      "line": 1989
     },
     "P11": {
       "chart": "P",
@@ -2740,7 +2740,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1987
+      "line": 1990
     },
     "P12": {
       "chart": "P",
@@ -2748,7 +2748,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1988
+      "line": 1991
     },
     "P13": {
       "chart": "P",
@@ -2756,7 +2756,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1989
+      "line": 1992
     },
     "P14": {
       "chart": "P",
@@ -2764,7 +2764,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1990
+      "line": 1993
     },
     "P15": {
       "chart": "P",
@@ -2772,7 +2772,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 1997
+      "line": 2000
     },
     "P16": {
       "chart": "P",
@@ -2782,7 +2782,7 @@
       "decidedBy": [
         "QR10"
       ],
-      "line": 1998
+      "line": 2001
     },
     "P17": {
       "chart": "P",
@@ -2798,7 +2798,7 @@
         "Q234",
         "Q235"
       ],
-      "line": 1999
+      "line": 2002
     },
     "P18": {
       "chart": "P",
@@ -2806,7 +2806,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 2005
+      "line": 2008
     },
     "P19": {
       "chart": "P",
@@ -2814,7 +2814,7 @@
       "shape": "box",
       "new": false,
       "decidedBy": [],
-      "line": 2007
+      "line": 2010
     }
   },
   "edges": [
@@ -2824,7 +2824,7 @@
       "to": "A2",
       "label": "",
       "chart": "A",
-      "line": 929
+      "line": 932
     },
     {
       "key": "A2->A99",
@@ -2832,7 +2832,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 930
+      "line": 933
     },
     {
       "key": "A2->A3",
@@ -2840,7 +2840,7 @@
       "to": "A3",
       "label": "no",
       "chart": "A",
-      "line": 931
+      "line": 934
     },
     {
       "key": "A3->A99",
@@ -2848,7 +2848,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 932
+      "line": 935
     },
     {
       "key": "A3->A4",
@@ -2856,7 +2856,7 @@
       "to": "A4",
       "label": "no",
       "chart": "A",
-      "line": 933
+      "line": 936
     },
     {
       "key": "A4->A98",
@@ -2864,7 +2864,7 @@
       "to": "A98",
       "label": "no",
       "chart": "A",
-      "line": 934
+      "line": 937
     },
     {
       "key": "A4->A5",
@@ -2872,7 +2872,7 @@
       "to": "A5",
       "label": "yes",
       "chart": "A",
-      "line": 935
+      "line": 938
     },
     {
       "key": "A5->A98",
@@ -2880,7 +2880,7 @@
       "to": "A98",
       "label": "no",
       "chart": "A",
-      "line": 936
+      "line": 939
     },
     {
       "key": "A5->A6",
@@ -2888,7 +2888,7 @@
       "to": "A6",
       "label": "yes",
       "chart": "A",
-      "line": 937
+      "line": 940
     },
     {
       "key": "A6->A99",
@@ -2896,7 +2896,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 938
+      "line": 941
     },
     {
       "key": "A6->A7",
@@ -2904,7 +2904,7 @@
       "to": "A7",
       "label": "no",
       "chart": "A",
-      "line": 939
+      "line": 942
     },
     {
       "key": "A7->A99",
@@ -2912,7 +2912,7 @@
       "to": "A99",
       "label": "yes",
       "chart": "A",
-      "line": 940
+      "line": 943
     },
     {
       "key": "A7->A8",
@@ -2920,7 +2920,7 @@
       "to": "A8",
       "label": "no",
       "chart": "A",
-      "line": 941
+      "line": 944
     },
     {
       "key": "A8->A99#1",
@@ -2928,7 +2928,7 @@
       "to": "A99",
       "label": "no cards above",
       "chart": "A",
-      "line": 944
+      "line": 947
     },
     {
       "key": "A8->A99#2",
@@ -2936,7 +2936,7 @@
       "to": "A99",
       "label": "all above are non-blocking (a Kuroko is up there)",
       "chart": "A",
-      "line": 945
+      "line": 948
     },
     {
       "key": "A8->A98",
@@ -2944,7 +2944,7 @@
       "to": "A98",
       "label": "a blocker is above",
       "chart": "A",
-      "line": 946
+      "line": 949
     },
     {
       "key": "B1->B2",
@@ -2952,7 +2952,7 @@
       "to": "B2",
       "label": "",
       "chart": "B",
-      "line": 976
+      "line": 979
     },
     {
       "key": "B2->B3",
@@ -2960,7 +2960,7 @@
       "to": "B3",
       "label": "",
       "chart": "B",
-      "line": 978
+      "line": 981
     },
     {
       "key": "B3->B4",
@@ -2968,7 +2968,7 @@
       "to": "B4",
       "label": "",
       "chart": "B",
-      "line": 979
+      "line": 982
     },
     {
       "key": "B4->B3",
@@ -2976,7 +2976,7 @@
       "to": "B3",
       "label": "no",
       "chart": "B",
-      "line": 980
+      "line": 983
     },
     {
       "key": "B4->B5",
@@ -2984,7 +2984,7 @@
       "to": "B5",
       "label": "yes",
       "chart": "B",
-      "line": 981
+      "line": 984
     },
     {
       "key": "B5->B6",
@@ -2992,7 +2992,7 @@
       "to": "B6",
       "label": "false to true",
       "chart": "B",
-      "line": 982
+      "line": 985
     },
     {
       "key": "B6->B7",
@@ -3000,7 +3000,7 @@
       "to": "B7",
       "label": "",
       "chart": "B",
-      "line": 983
+      "line": 986
     },
     {
       "key": "B5->B8",
@@ -3008,7 +3008,7 @@
       "to": "B8",
       "label": "true to false",
       "chart": "B",
-      "line": 984
+      "line": 987
     },
     {
       "key": "B8->B9",
@@ -3016,7 +3016,7 @@
       "to": "B9",
       "label": "",
       "chart": "B",
-      "line": 985
+      "line": 988
     },
     {
       "key": "B5->B3",
@@ -3024,7 +3024,7 @@
       "to": "B3",
       "label": "unchanged",
       "chart": "B",
-      "line": 986
+      "line": 989
     },
     {
       "key": "B7->B10",
@@ -3032,7 +3032,7 @@
       "to": "B10",
       "label": "",
       "chart": "B",
-      "line": 987
+      "line": 990
     },
     {
       "key": "B9->B11",
@@ -3040,7 +3040,7 @@
       "to": "B11",
       "label": "",
       "chart": "B",
-      "line": 988
+      "line": 991
     },
     {
       "key": "B10->B12",
@@ -3048,7 +3048,7 @@
       "to": "B12",
       "label": "",
       "chart": "B",
-      "line": 989
+      "line": 992
     },
     {
       "key": "B11->B13",
@@ -3056,7 +3056,7 @@
       "to": "B13",
       "label": "",
       "chart": "B",
-      "line": 992
+      "line": 995
     },
     {
       "key": "B3->B14",
@@ -3064,7 +3064,7 @@
       "to": "B14",
       "label": "",
       "chart": "B",
-      "line": 994
+      "line": 997
     },
     {
       "key": "C1->C2",
@@ -3072,7 +3072,7 @@
       "to": "C2",
       "label": "",
       "chart": "C",
-      "line": 1013
+      "line": 1016
     },
     {
       "key": "C2->C3",
@@ -3080,7 +3080,7 @@
       "to": "C3",
       "label": "",
       "chart": "C",
-      "line": 1014
+      "line": 1017
     },
     {
       "key": "C3->C4",
@@ -3088,7 +3088,7 @@
       "to": "C4",
       "label": "",
       "chart": "C",
-      "line": 1015
+      "line": 1018
     },
     {
       "key": "C4->C5",
@@ -3096,7 +3096,7 @@
       "to": "C5",
       "label": "",
       "chart": "C",
-      "line": 1016
+      "line": 1019
     },
     {
       "key": "C5->C6",
@@ -3104,7 +3104,7 @@
       "to": "C6",
       "label": "",
       "chart": "C",
-      "line": 1019
+      "line": 1022
     },
     {
       "key": "C6->C7",
@@ -3112,7 +3112,7 @@
       "to": "C7",
       "label": "",
       "chart": "C",
-      "line": 1020
+      "line": 1023
     },
     {
       "key": "C7->C8",
@@ -3120,7 +3120,7 @@
       "to": "C8",
       "label": "",
       "chart": "C",
-      "line": 1021
+      "line": 1024
     },
     {
       "key": "C8->C11",
@@ -3128,7 +3128,7 @@
       "to": "C11",
       "label": "no",
       "chart": "C",
-      "line": 1022
+      "line": 1025
     },
     {
       "key": "C8->C9",
@@ -3136,7 +3136,7 @@
       "to": "C9",
       "label": "yes",
       "chart": "C",
-      "line": 1023
+      "line": 1026
     },
     {
       "key": "C9->C10",
@@ -3144,7 +3144,7 @@
       "to": "C10",
       "label": "",
       "chart": "C",
-      "line": 1026
+      "line": 1029
     },
     {
       "key": "C10->C8",
@@ -3152,7 +3152,7 @@
       "to": "C8",
       "label": "",
       "chart": "C",
-      "line": 1027
+      "line": 1030
     },
     {
       "key": "C11->C12",
@@ -3160,7 +3160,7 @@
       "to": "C12",
       "label": "",
       "chart": "C",
-      "line": 1028
+      "line": 1031
     },
     {
       "key": "C12->C13",
@@ -3168,7 +3168,7 @@
       "to": "C13",
       "label": "yes",
       "chart": "C",
-      "line": 1029
+      "line": 1032
     },
     {
       "key": "C13->C14",
@@ -3176,7 +3176,7 @@
       "to": "C14",
       "label": "",
       "chart": "C",
-      "line": 1032
+      "line": 1035
     },
     {
       "key": "C14->C12",
@@ -3184,7 +3184,7 @@
       "to": "C12",
       "label": "",
       "chart": "C",
-      "line": 1033
+      "line": 1036
     },
     {
       "key": "C12->C15",
@@ -3192,7 +3192,7 @@
       "to": "C15",
       "label": "no",
       "chart": "C",
-      "line": 1034
+      "line": 1037
     },
     {
       "key": "C15->C16",
@@ -3200,7 +3200,7 @@
       "to": "C16",
       "label": "",
       "chart": "C",
-      "line": 1036
+      "line": 1039
     },
     {
       "key": "C16->C17",
@@ -3208,7 +3208,7 @@
       "to": "C17",
       "label": "",
       "chart": "C",
-      "line": 1038
+      "line": 1041
     },
     {
       "key": "C17->C18",
@@ -3216,7 +3216,7 @@
       "to": "C18",
       "label": "",
       "chart": "C",
-      "line": 1039
+      "line": 1042
     },
     {
       "key": "C18->C19",
@@ -3224,7 +3224,7 @@
       "to": "C19",
       "label": "",
       "chart": "C",
-      "line": 1040
+      "line": 1043
     },
     {
       "key": "C19->C20",
@@ -3232,7 +3232,7 @@
       "to": "C20",
       "label": "yes",
       "chart": "C",
-      "line": 1041
+      "line": 1044
     },
     {
       "key": "C19->C21",
@@ -3240,7 +3240,7 @@
       "to": "C21",
       "label": "no",
       "chart": "C",
-      "line": 1042
+      "line": 1045
     },
     {
       "key": "S1->S2",
@@ -3248,7 +3248,7 @@
       "to": "S2",
       "label": "",
       "chart": "S",
-      "line": 1080
+      "line": 1083
     },
     {
       "key": "S2->S3",
@@ -3256,7 +3256,7 @@
       "to": "S3",
       "label": "",
       "chart": "S",
-      "line": 1082
+      "line": 1085
     },
     {
       "key": "S3->S4",
@@ -3264,7 +3264,7 @@
       "to": "S4",
       "label": "",
       "chart": "S",
-      "line": 1083
+      "line": 1086
     },
     {
       "key": "S4->S5",
@@ -3272,7 +3272,7 @@
       "to": "S5",
       "label": "",
       "chart": "S",
-      "line": 1084
+      "line": 1087
     },
     {
       "key": "S5->S6",
@@ -3280,7 +3280,7 @@
       "to": "S6",
       "label": "",
       "chart": "S",
-      "line": 1085
+      "line": 1088
     },
     {
       "key": "S6->S7",
@@ -3288,7 +3288,7 @@
       "to": "S7",
       "label": "",
       "chart": "S",
-      "line": 1086
+      "line": 1089
     },
     {
       "key": "S7->S8",
@@ -3296,7 +3296,7 @@
       "to": "S8",
       "label": "the jump lands",
       "chart": "S",
-      "line": 1087
+      "line": 1090
     },
     {
       "key": "S7->S9",
@@ -3304,7 +3304,7 @@
       "to": "S9",
       "label": "the score popup shows",
       "chart": "S",
-      "line": 1088
+      "line": 1091
     },
     {
       "key": "S7->S10",
@@ -3312,7 +3312,7 @@
       "to": "S10",
       "label": "the line's props finish",
       "chart": "S",
-      "line": 1089
+      "line": 1092
     },
     {
       "key": "S8->S11",
@@ -3320,7 +3320,7 @@
       "to": "S11",
       "label": "",
       "chart": "S",
-      "line": 1090
+      "line": 1093
     },
     {
       "key": "S9->S11",
@@ -3328,7 +3328,7 @@
       "to": "S11",
       "label": "",
       "chart": "S",
-      "line": 1091
+      "line": 1094
     },
     {
       "key": "S10->S11",
@@ -3336,7 +3336,7 @@
       "to": "S11",
       "label": "",
       "chart": "S",
-      "line": 1092
+      "line": 1095
     },
     {
       "key": "S11->S12",
@@ -3344,7 +3344,7 @@
       "to": "S12",
       "label": "",
       "chart": "S",
-      "line": 1093
+      "line": 1096
     },
     {
       "key": "S12->S13",
@@ -3352,7 +3352,7 @@
       "to": "S13",
       "label": "lights too",
       "chart": "S",
-      "line": 1094
+      "line": 1097
     },
     {
       "key": "S12->S14",
@@ -3360,7 +3360,7 @@
       "to": "S14",
       "label": "lights stay",
       "chart": "S",
-      "line": 1096
+      "line": 1099
     },
     {
       "key": "S13->S15",
@@ -3368,7 +3368,7 @@
       "to": "S15",
       "label": "",
       "chart": "S",
-      "line": 1099
+      "line": 1102
     },
     {
       "key": "S14->S15",
@@ -3376,7 +3376,7 @@
       "to": "S15",
       "label": "",
       "chart": "S",
-      "line": 1101
+      "line": 1104
     },
     {
       "key": "S15->S16",
@@ -3384,7 +3384,7 @@
       "to": "S16",
       "label": "",
       "chart": "S",
-      "line": 1102
+      "line": 1105
     },
     {
       "key": "S16->S17",
@@ -3392,7 +3392,7 @@
       "to": "S17",
       "label": "no",
       "chart": "S",
-      "line": 1103
+      "line": 1106
     },
     {
       "key": "S16->S18",
@@ -3400,7 +3400,7 @@
       "to": "S18",
       "label": "yes",
       "chart": "S",
-      "line": 1104
+      "line": 1107
     },
     {
       "key": "D1->D2",
@@ -3408,7 +3408,7 @@
       "to": "D2",
       "label": "",
       "chart": "D",
-      "line": 1133
+      "line": 1136
     },
     {
       "key": "D2->D99",
@@ -3416,7 +3416,7 @@
       "to": "D99",
       "label": "yes",
       "chart": "D",
-      "line": 1134
+      "line": 1137
     },
     {
       "key": "D2->D3",
@@ -3424,7 +3424,7 @@
       "to": "D3",
       "label": "no",
       "chart": "D",
-      "line": 1135
+      "line": 1138
     },
     {
       "key": "D3->D4",
@@ -3432,7 +3432,7 @@
       "to": "D4",
       "label": "",
       "chart": "D",
-      "line": 1136
+      "line": 1139
     },
     {
       "key": "D4->D5",
@@ -3440,7 +3440,7 @@
       "to": "D5",
       "label": "",
       "chart": "D",
-      "line": 1138
+      "line": 1141
     },
     {
       "key": "D5->D8",
@@ -3448,7 +3448,7 @@
       "to": "D8",
       "label": "skip",
       "chart": "D",
-      "line": 1141
+      "line": 1144
     },
     {
       "key": "D5->D6",
@@ -3456,7 +3456,7 @@
       "to": "D6",
       "label": "expand",
       "chart": "D",
-      "line": 1142
+      "line": 1145
     },
     {
       "key": "D6->D7",
@@ -3464,7 +3464,7 @@
       "to": "D7",
       "label": "",
       "chart": "D",
-      "line": 1144
+      "line": 1147
     },
     {
       "key": "D7->D8",
@@ -3472,7 +3472,7 @@
       "to": "D8",
       "label": "",
       "chart": "D",
-      "line": 1147
+      "line": 1150
     },
     {
       "key": "D8->D9",
@@ -3480,7 +3480,7 @@
       "to": "D9",
       "label": "",
       "chart": "D",
-      "line": 1149
+      "line": 1152
     },
     {
       "key": "D9->D10",
@@ -3488,7 +3488,7 @@
       "to": "D10",
       "label": "",
       "chart": "D",
-      "line": 1150
+      "line": 1153
     },
     {
       "key": "D10->D11",
@@ -3496,7 +3496,7 @@
       "to": "D11",
       "label": "",
       "chart": "D",
-      "line": 1154
+      "line": 1157
     },
     {
       "key": "D11->D12",
@@ -3504,7 +3504,7 @@
       "to": "D12",
       "label": "",
       "chart": "D",
-      "line": 1155
+      "line": 1158
     },
     {
       "key": "D12->D12b",
@@ -3512,7 +3512,7 @@
       "to": "D12b",
       "label": "",
       "chart": "D",
-      "line": 1157
+      "line": 1160
     },
     {
       "key": "D12b->D13",
@@ -3520,7 +3520,7 @@
       "to": "D13",
       "label": "",
       "chart": "D",
-      "line": 1161
+      "line": 1164
     },
     {
       "key": "D13->D13a",
@@ -3528,7 +3528,7 @@
       "to": "D13a",
       "label": "",
       "chart": "D",
-      "line": 1165
+      "line": 1168
     },
     {
       "key": "D13a->D13b",
@@ -3536,7 +3536,7 @@
       "to": "D13b",
       "label": "",
       "chart": "D",
-      "line": 1169
+      "line": 1172
     },
     {
       "key": "D13b->D14",
@@ -3544,7 +3544,7 @@
       "to": "D14",
       "label": "",
       "chart": "D",
-      "line": 1173
+      "line": 1176
     },
     {
       "key": "D14->D15",
@@ -3552,7 +3552,7 @@
       "to": "D15",
       "label": "",
       "chart": "D",
-      "line": 1176
+      "line": 1179
     },
     {
       "key": "D15->D16",
@@ -3560,7 +3560,7 @@
       "to": "D16",
       "label": "",
       "chart": "D",
-      "line": 1177
+      "line": 1180
     },
     {
       "key": "D16->D17",
@@ -3568,7 +3568,7 @@
       "to": "D17",
       "label": "",
       "chart": "D",
-      "line": 1178
+      "line": 1181
     },
     {
       "key": "D17->D18",
@@ -3576,7 +3576,7 @@
       "to": "D18",
       "label": "",
       "chart": "D",
-      "line": 1181
+      "line": 1184
     },
     {
       "key": "D18->D19",
@@ -3584,7 +3584,7 @@
       "to": "D19",
       "label": "",
       "chart": "D",
-      "line": 1182
+      "line": 1185
     },
     {
       "key": "D19->D20",
@@ -3592,7 +3592,7 @@
       "to": "D20",
       "label": "yes",
       "chart": "D",
-      "line": 1183
+      "line": 1186
     },
     {
       "key": "D20->D21",
@@ -3600,7 +3600,7 @@
       "to": "D21",
       "label": "",
       "chart": "D",
-      "line": 1194
+      "line": 1197
     },
     {
       "key": "D19->D22",
@@ -3608,7 +3608,7 @@
       "to": "D22",
       "label": "no",
       "chart": "D",
-      "line": 1196
+      "line": 1199
     },
     {
       "key": "D22->D23",
@@ -3616,7 +3616,7 @@
       "to": "D23",
       "label": "",
       "chart": "D",
-      "line": 1197
+      "line": 1200
     },
     {
       "key": "D23->D24",
@@ -3624,7 +3624,7 @@
       "to": "D24",
       "label": "",
       "chart": "D",
-      "line": 1198
+      "line": 1201
     },
     {
       "key": "D24->D25",
@@ -3632,7 +3632,7 @@
       "to": "D25",
       "label": "",
       "chart": "D",
-      "line": 1202
+      "line": 1205
     },
     {
       "key": "E1->E2",
@@ -3640,7 +3640,7 @@
       "to": "E2",
       "label": "",
       "chart": "E",
-      "line": 1246
+      "line": 1249
     },
     {
       "key": "E2->E3",
@@ -3648,7 +3648,7 @@
       "to": "E3",
       "label": "",
       "chart": "E",
-      "line": 1247
+      "line": 1250
     },
     {
       "key": "E3->E4",
@@ -3656,7 +3656,7 @@
       "to": "E4",
       "label": "",
       "chart": "E",
-      "line": 1248
+      "line": 1251
     },
     {
       "key": "E4->E5",
@@ -3664,7 +3664,7 @@
       "to": "E5",
       "label": "",
       "chart": "E",
-      "line": 1249
+      "line": 1252
     },
     {
       "key": "E5->E6",
@@ -3672,7 +3672,7 @@
       "to": "E6",
       "label": "equal",
       "chart": "E",
-      "line": 1250
+      "line": 1253
     },
     {
       "key": "E5->E7",
@@ -3680,7 +3680,7 @@
       "to": "E7",
       "label": "more lights than targets",
       "chart": "E",
-      "line": 1251
+      "line": 1254
     },
     {
       "key": "E5->E8",
@@ -3688,7 +3688,7 @@
       "to": "E8",
       "label": "more targets than lights",
       "chart": "E",
-      "line": 1253
+      "line": 1256
     },
     {
       "key": "E6->E9",
@@ -3696,7 +3696,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 1255
+      "line": 1258
     },
     {
       "key": "E7->E9",
@@ -3704,7 +3704,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 1257
+      "line": 1260
     },
     {
       "key": "E8->E9",
@@ -3712,7 +3712,7 @@
       "to": "E9",
       "label": "",
       "chart": "E",
-      "line": 1258
+      "line": 1261
     },
     {
       "key": "E9->E10",
@@ -3720,7 +3720,7 @@
       "to": "E10",
       "label": "",
       "chart": "E",
-      "line": 1259
+      "line": 1262
     },
     {
       "key": "E10->E11",
@@ -3728,7 +3728,7 @@
       "to": "E11",
       "label": "",
       "chart": "E",
-      "line": 1260
+      "line": 1263
     },
     {
       "key": "F1->F2",
@@ -3736,7 +3736,7 @@
       "to": "F2",
       "label": "",
       "chart": "F",
-      "line": 1267
+      "line": 1270
     },
     {
       "key": "F2->F3",
@@ -3744,7 +3744,7 @@
       "to": "F3",
       "label": "option A (RECOMMENDED)",
       "chart": "F",
-      "line": 1268
+      "line": 1271
     },
     {
       "key": "F2->F4",
@@ -3752,7 +3752,7 @@
       "to": "F4",
       "label": "option B",
       "chart": "F",
-      "line": 1270
+      "line": 1273
     },
     {
       "key": "F2->F5",
@@ -3760,7 +3760,7 @@
       "to": "F5",
       "label": "option C",
       "chart": "F",
-      "line": 1271
+      "line": 1274
     },
     {
       "key": "G1->G2",
@@ -3768,7 +3768,7 @@
       "to": "G2",
       "label": "",
       "chart": "G",
-      "line": 1298
+      "line": 1301
     },
     {
       "key": "G2->G3",
@@ -3776,7 +3776,7 @@
       "to": "G3",
       "label": "no",
       "chart": "G",
-      "line": 1299
+      "line": 1302
     },
     {
       "key": "G2->G4",
@@ -3784,7 +3784,7 @@
       "to": "G4",
       "label": "yes",
       "chart": "G",
-      "line": 1300
+      "line": 1303
     },
     {
       "key": "G4->G5",
@@ -3792,7 +3792,7 @@
       "to": "G5",
       "label": "no",
       "chart": "G",
-      "line": 1301
+      "line": 1304
     },
     {
       "key": "G4->G6",
@@ -3800,7 +3800,7 @@
       "to": "G6",
       "label": "yes",
       "chart": "G",
-      "line": 1302
+      "line": 1305
     },
     {
       "key": "G6->G7",
@@ -3808,7 +3808,7 @@
       "to": "G7",
       "label": "",
       "chart": "G",
-      "line": 1304
+      "line": 1307
     },
     {
       "key": "G7->G8",
@@ -3816,7 +3816,7 @@
       "to": "G8",
       "label": "yes",
       "chart": "G",
-      "line": 1305
+      "line": 1308
     },
     {
       "key": "G7->G9",
@@ -3824,7 +3824,7 @@
       "to": "G9",
       "label": "no",
       "chart": "G",
-      "line": 1307
+      "line": 1310
     },
     {
       "key": "G8->G10",
@@ -3832,7 +3832,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 1308
+      "line": 1311
     },
     {
       "key": "G9->G10",
@@ -3840,7 +3840,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 1309
+      "line": 1312
     },
     {
       "key": "G5->G10",
@@ -3848,7 +3848,7 @@
       "to": "G10",
       "label": "",
       "chart": "G",
-      "line": 1310
+      "line": 1313
     },
     {
       "key": "G10->G11",
@@ -3856,7 +3856,7 @@
       "to": "G11",
       "label": "no",
       "chart": "G",
-      "line": 1311
+      "line": 1314
     },
     {
       "key": "G10->G12",
@@ -3864,7 +3864,7 @@
       "to": "G12",
       "label": "yes",
       "chart": "G",
-      "line": 1312
+      "line": 1315
     },
     {
       "key": "G12->G13",
@@ -3872,7 +3872,7 @@
       "to": "G13",
       "label": "",
       "chart": "G",
-      "line": 1314
+      "line": 1317
     },
     {
       "key": "G12->G14",
@@ -3880,7 +3880,7 @@
       "to": "G14",
       "label": "",
       "chart": "G",
-      "line": 1316
+      "line": 1319
     },
     {
       "key": "H1->H2",
@@ -3888,7 +3888,7 @@
       "to": "H2",
       "label": "",
       "chart": "H",
-      "line": 1343
+      "line": 1346
     },
     {
       "key": "H2->H3",
@@ -3896,7 +3896,7 @@
       "to": "H3",
       "label": "",
       "chart": "H",
-      "line": 1346
+      "line": 1349
     },
     {
       "key": "H3->H4",
@@ -3904,7 +3904,7 @@
       "to": "H4",
       "label": "",
       "chart": "H",
-      "line": 1347
+      "line": 1350
     },
     {
       "key": "H4->H5",
@@ -3912,7 +3912,7 @@
       "to": "H5",
       "label": "",
       "chart": "H",
-      "line": 1349
+      "line": 1352
     },
     {
       "key": "H5->H6",
@@ -3920,7 +3920,7 @@
       "to": "H6",
       "label": "",
       "chart": "H",
-      "line": 1351
+      "line": 1354
     },
     {
       "key": "H6->H7",
@@ -3928,7 +3928,7 @@
       "to": "H7",
       "label": "",
       "chart": "H",
-      "line": 1353
+      "line": 1356
     },
     {
       "key": "H7->H8",
@@ -3936,7 +3936,7 @@
       "to": "H8",
       "label": "",
       "chart": "H",
-      "line": 1354
+      "line": 1357
     },
     {
       "key": "H8->H9",
@@ -3944,7 +3944,7 @@
       "to": "H9",
       "label": "",
       "chart": "H",
-      "line": 1355
+      "line": 1358
     },
     {
       "key": "I1->I2",
@@ -3952,7 +3952,7 @@
       "to": "I2",
       "label": "",
       "chart": "I",
-      "line": 1397
+      "line": 1400
     },
     {
       "key": "I2->I3",
@@ -3960,7 +3960,7 @@
       "to": "I3",
       "label": "",
       "chart": "I",
-      "line": 1399
+      "line": 1402
     },
     {
       "key": "I3->I4",
@@ -3968,7 +3968,7 @@
       "to": "I4",
       "label": "",
       "chart": "I",
-      "line": 1402
+      "line": 1405
     },
     {
       "key": "I4->I5",
@@ -3976,7 +3976,7 @@
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 1403
+      "line": 1406
     },
     {
       "key": "I5->I6",
@@ -3984,7 +3984,7 @@
       "to": "I6",
       "label": "",
       "chart": "I",
-      "line": 1404
+      "line": 1407
     },
     {
       "key": "I6->I7",
@@ -3992,7 +3992,7 @@
       "to": "I7",
       "label": "no",
       "chart": "I",
-      "line": 1405
+      "line": 1408
     },
     {
       "key": "I6->I8",
@@ -4000,7 +4000,7 @@
       "to": "I8",
       "label": "yes",
       "chart": "I",
-      "line": 1407
+      "line": 1410
     },
     {
       "key": "I8->I9",
@@ -4008,7 +4008,7 @@
       "to": "I9",
       "label": "",
       "chart": "I",
-      "line": 1409
+      "line": 1412
     },
     {
       "key": "I9->I7",
@@ -4016,7 +4016,7 @@
       "to": "I7",
       "label": "",
       "chart": "I",
-      "line": 1411
+      "line": 1414
     },
     {
       "key": "I7->I10",
@@ -4024,7 +4024,7 @@
       "to": "I10",
       "label": "",
       "chart": "I",
-      "line": 1412
+      "line": 1415
     },
     {
       "key": "I10->I11",
@@ -4032,7 +4032,7 @@
       "to": "I11",
       "label": "no",
       "chart": "I",
-      "line": 1413
+      "line": 1416
     },
     {
       "key": "I10->I12",
@@ -4040,7 +4040,7 @@
       "to": "I12",
       "label": "yes",
       "chart": "I",
-      "line": 1414
+      "line": 1417
     },
     {
       "key": "I11->I5",
@@ -4048,7 +4048,7 @@
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 1417
+      "line": 1420
     },
     {
       "key": "I12->I5",
@@ -4056,7 +4056,7 @@
       "to": "I5",
       "label": "",
       "chart": "I",
-      "line": 1418
+      "line": 1421
     },
     {
       "key": "J1->J2",
@@ -4064,7 +4064,7 @@
       "to": "J2",
       "label": "",
       "chart": "J",
-      "line": 1439
+      "line": 1442
     },
     {
       "key": "J1->J3",
@@ -4072,7 +4072,7 @@
       "to": "J3",
       "label": "",
       "chart": "J",
-      "line": 1444
+      "line": 1447
     },
     {
       "key": "J1->J4",
@@ -4080,7 +4080,7 @@
       "to": "J4",
       "label": "",
       "chart": "J",
-      "line": 1451
+      "line": 1454
     },
     {
       "key": "K1->K2",
@@ -4088,7 +4088,7 @@
       "to": "K2",
       "label": "",
       "chart": "K",
-      "line": 1472
+      "line": 1475
     },
     {
       "key": "K2->K3",
@@ -4096,7 +4096,7 @@
       "to": "K3",
       "label": "",
       "chart": "K",
-      "line": 1475
+      "line": 1478
     },
     {
       "key": "K3->K4",
@@ -4104,7 +4104,7 @@
       "to": "K4",
       "label": "",
       "chart": "K",
-      "line": 1477
+      "line": 1480
     },
     {
       "key": "K4->K5",
@@ -4112,7 +4112,7 @@
       "to": "K5",
       "label": "yes",
       "chart": "K",
-      "line": 1478
+      "line": 1481
     },
     {
       "key": "K4->K6",
@@ -4120,7 +4120,7 @@
       "to": "K6",
       "label": "no",
       "chart": "K",
-      "line": 1479
+      "line": 1482
     },
     {
       "key": "K6->K7",
@@ -4128,7 +4128,7 @@
       "to": "K7",
       "label": "",
       "chart": "K",
-      "line": 1480
+      "line": 1483
     },
     {
       "key": "K7->K8",
@@ -4136,7 +4136,7 @@
       "to": "K8",
       "label": "every column (RECOMMENDED)",
       "chart": "K",
-      "line": 1482
+      "line": 1485
     },
     {
       "key": "K7->K9",
@@ -4144,7 +4144,7 @@
       "to": "K9",
       "label": "only occupied columns",
       "chart": "K",
-      "line": 1484
+      "line": 1487
     },
     {
       "key": "K8->K10",
@@ -4152,7 +4152,7 @@
       "to": "K10",
       "label": "",
       "chart": "K",
-      "line": 1486
+      "line": 1489
     },
     {
       "key": "K10->K10b",
@@ -4160,7 +4160,7 @@
       "to": "K10b",
       "label": "",
       "chart": "K",
-      "line": 1488
+      "line": 1491
     },
     {
       "key": "K10b->K10c",
@@ -4168,7 +4168,7 @@
       "to": "K10c",
       "label": "",
       "chart": "K",
-      "line": 1495
+      "line": 1498
     },
     {
       "key": "K10c->K10d",
@@ -4176,7 +4176,7 @@
       "to": "K10d",
       "label": "",
       "chart": "K",
-      "line": 1502
+      "line": 1505
     },
     {
       "key": "K10d->K11",
@@ -4184,7 +4184,7 @@
       "to": "K11",
       "label": "",
       "chart": "K",
-      "line": 1503
+      "line": 1506
     },
     {
       "key": "K9->K10",
@@ -4192,7 +4192,7 @@
       "to": "K10",
       "label": "",
       "chart": "K",
-      "line": 1504
+      "line": 1507
     },
     {
       "key": "K10->K11",
@@ -4200,7 +4200,7 @@
       "to": "K11",
       "label": "",
       "chart": "K",
-      "line": 1505
+      "line": 1508
     },
     {
       "key": "K11->K12",
@@ -4208,7 +4208,7 @@
       "to": "K12",
       "label": "",
       "chart": "K",
-      "line": 1507
+      "line": 1510
     },
     {
       "key": "K12->K13",
@@ -4216,7 +4216,7 @@
       "to": "K13",
       "label": "",
       "chart": "K",
-      "line": 1509
+      "line": 1512
     },
     {
       "key": "K13->K14",
@@ -4224,7 +4224,7 @@
       "to": "K14",
       "label": "",
       "chart": "K",
-      "line": 1511
+      "line": 1514
     },
     {
       "key": "L1->L2",
@@ -4232,7 +4232,7 @@
       "to": "L2",
       "label": "",
       "chart": "L",
-      "line": 1531
+      "line": 1534
     },
     {
       "key": "L2->L3",
@@ -4240,7 +4240,7 @@
       "to": "L3",
       "label": "Undo pressed mid-act",
       "chart": "L",
-      "line": 1532
+      "line": 1535
     },
     {
       "key": "L3->L4",
@@ -4248,7 +4248,7 @@
       "to": "L4",
       "label": "",
       "chart": "L",
-      "line": 1535
+      "line": 1538
     },
     {
       "key": "L4->L5",
@@ -4256,7 +4256,7 @@
       "to": "L5",
       "label": "",
       "chart": "L",
-      "line": 1536
+      "line": 1539
     },
     {
       "key": "L5->L6",
@@ -4264,7 +4264,7 @@
       "to": "L6",
       "label": "",
       "chart": "L",
-      "line": 1537
+      "line": 1540
     },
     {
       "key": "L2->L7",
@@ -4272,7 +4272,7 @@
       "to": "L7",
       "label": "app quit mid-act, then resume",
       "chart": "L",
-      "line": 1539
+      "line": 1542
     },
     {
       "key": "L7->L8",
@@ -4280,7 +4280,7 @@
       "to": "L8",
       "label": "",
       "chart": "L",
-      "line": 1542
+      "line": 1545
     },
     {
       "key": "L2->L9",
@@ -4288,7 +4288,7 @@
       "to": "L9",
       "label": "board mutated mid-line by an on_active effect",
       "chart": "L",
-      "line": 1544
+      "line": 1547
     },
     {
       "key": "L9->L10",
@@ -4296,7 +4296,7 @@
       "to": "L10",
       "label": "",
       "chart": "L",
-      "line": 1546
+      "line": 1549
     },
     {
       "key": "L10->L11",
@@ -4304,7 +4304,7 @@
       "to": "L11",
       "label": "",
       "chart": "L",
-      "line": 1548
+      "line": 1551
     },
     {
       "key": "L2->L12",
@@ -4312,7 +4312,7 @@
       "to": "L12",
       "label": "settings changed mid-act",
       "chart": "L",
-      "line": 1549
+      "line": 1552
     },
     {
       "key": "L2->L13",
@@ -4320,7 +4320,7 @@
       "to": "L13",
       "label": "the show ends (3rd submit)",
       "chart": "L",
-      "line": 1552
+      "line": 1555
     },
     {
       "key": "L13->L14",
@@ -4328,7 +4328,7 @@
       "to": "L14",
       "label": "",
       "chart": "L",
-      "line": 1554
+      "line": 1557
     },
     {
       "key": "R1->R2",
@@ -4336,7 +4336,7 @@
       "to": "R2",
       "label": "",
       "chart": "R",
-      "line": 1593
+      "line": 1596
     },
     {
       "key": "R2->R3",
@@ -4344,7 +4344,7 @@
       "to": "R3",
       "label": "",
       "chart": "R",
-      "line": 1596
+      "line": 1599
     },
     {
       "key": "R3->R4",
@@ -4352,7 +4352,7 @@
       "to": "R4",
       "label": "yes",
       "chart": "R",
-      "line": 1597
+      "line": 1600
     },
     {
       "key": "R3->R5",
@@ -4360,7 +4360,7 @@
       "to": "R5",
       "label": "no",
       "chart": "R",
-      "line": 1601
+      "line": 1604
     },
     {
       "key": "R5->R6",
@@ -4368,7 +4368,7 @@
       "to": "R6",
       "label": "",
       "chart": "R",
-      "line": 1603
+      "line": 1606
     },
     {
       "key": "R6->R7",
@@ -4376,7 +4376,7 @@
       "to": "R7",
       "label": "",
       "chart": "R",
-      "line": 1606
+      "line": 1609
     },
     {
       "key": "R7->R8",
@@ -4384,7 +4384,7 @@
       "to": "R8",
       "label": "",
       "chart": "R",
-      "line": 1610
+      "line": 1613
     },
     {
       "key": "R8->R9",
@@ -4392,7 +4392,7 @@
       "to": "R9",
       "label": "",
       "chart": "R",
-      "line": 1611
+      "line": 1614
     },
     {
       "key": "R9->R10",
@@ -4400,7 +4400,7 @@
       "to": "R10",
       "label": "",
       "chart": "R",
-      "line": 1612
+      "line": 1615
     },
     {
       "key": "R10->R11",
@@ -4408,7 +4408,7 @@
       "to": "R11",
       "label": "",
       "chart": "R",
-      "line": 1614
+      "line": 1617
     },
     {
       "key": "R11->R12",
@@ -4416,7 +4416,7 @@
       "to": "R12",
       "label": "yes",
       "chart": "R",
-      "line": 1615
+      "line": 1618
     },
     {
       "key": "R11->R13",
@@ -4424,7 +4424,7 @@
       "to": "R13",
       "label": "no",
       "chart": "R",
-      "line": 1618
+      "line": 1621
     },
     {
       "key": "R4->R14",
@@ -4432,7 +4432,7 @@
       "to": "R14",
       "label": "",
       "chart": "R",
-      "line": 1620
+      "line": 1623
     },
     {
       "key": "R13->R14",
@@ -4440,7 +4440,7 @@
       "to": "R14",
       "label": "",
       "chart": "R",
-      "line": 1625
+      "line": 1628
     },
     {
       "key": "R14->R15",
@@ -4448,7 +4448,7 @@
       "to": "R15",
       "label": "",
       "chart": "R",
-      "line": 1626
+      "line": 1629
     },
     {
       "key": "R15->R16",
@@ -4456,7 +4456,7 @@
       "to": "R16",
       "label": "",
       "chart": "R",
-      "line": 1629
+      "line": 1632
     },
     {
       "key": "M1->M2",
@@ -4464,7 +4464,7 @@
       "to": "M2",
       "label": "",
       "chart": "M",
-      "line": 1666
+      "line": 1669
     },
     {
       "key": "M2->M3",
@@ -4472,7 +4472,7 @@
       "to": "M3",
       "label": "",
       "chart": "M",
-      "line": 1667
+      "line": 1670
     },
     {
       "key": "M3->M4",
@@ -4480,7 +4480,7 @@
       "to": "M4",
       "label": "",
       "chart": "M",
-      "line": 1668
+      "line": 1671
     },
     {
       "key": "M4->M5",
@@ -4488,7 +4488,7 @@
       "to": "M5",
       "label": "",
       "chart": "M",
-      "line": 1669
+      "line": 1672
     },
     {
       "key": "M4->M6",
@@ -4496,7 +4496,7 @@
       "to": "M6",
       "label": "",
       "chart": "M",
-      "line": 1670
+      "line": 1673
     },
     {
       "key": "M1->M7",
@@ -4504,7 +4504,7 @@
       "to": "M7",
       "label": "",
       "chart": "M",
-      "line": 1671
+      "line": 1674
     },
     {
       "key": "M7->M8",
@@ -4512,7 +4512,7 @@
       "to": "M8",
       "label": "",
       "chart": "M",
-      "line": 1675
+      "line": 1678
     },
     {
       "key": "M1->M9",
@@ -4520,7 +4520,7 @@
       "to": "M9",
       "label": "",
       "chart": "M",
-      "line": 1676
+      "line": 1679
     },
     {
       "key": "M9->M4",
@@ -4528,7 +4528,7 @@
       "to": "M4",
       "label": "",
       "chart": "M",
-      "line": 1677
+      "line": 1680
     },
     {
       "key": "M1->M10",
@@ -4536,7 +4536,7 @@
       "to": "M10",
       "label": "",
       "chart": "M",
-      "line": 1678
+      "line": 1681
     },
     {
       "key": "M10->M11",
@@ -4544,7 +4544,7 @@
       "to": "M11",
       "label": "",
       "chart": "M",
-      "line": 1681
+      "line": 1684
     },
     {
       "key": "M1->M12",
@@ -4552,7 +4552,7 @@
       "to": "M12",
       "label": "",
       "chart": "M",
-      "line": 1682
+      "line": 1685
     },
     {
       "key": "M12->M13",
@@ -4560,7 +4560,7 @@
       "to": "M13",
       "label": "",
       "chart": "M",
-      "line": 1683
+      "line": 1686
     },
     {
       "key": "M1->M14",
@@ -4568,7 +4568,7 @@
       "to": "M14",
       "label": "",
       "chart": "M",
-      "line": 1684
+      "line": 1687
     },
     {
       "key": "M14->M15",
@@ -4576,7 +4576,7 @@
       "to": "M15",
       "label": "",
       "chart": "M",
-      "line": 1685
+      "line": 1688
     },
     {
       "key": "M1->M16",
@@ -4584,7 +4584,7 @@
       "to": "M16",
       "label": "",
       "chart": "M",
-      "line": 1687
+      "line": 1690
     },
     {
       "key": "M16->M17",
@@ -4592,7 +4592,7 @@
       "to": "M17",
       "label": "",
       "chart": "M",
-      "line": 1688
+      "line": 1691
     },
     {
       "key": "T1->T2",
@@ -4600,7 +4600,7 @@
       "to": "T2",
       "label": "",
       "chart": "T",
-      "line": 1710
+      "line": 1713
     },
     {
       "key": "T2->T3",
@@ -4608,7 +4608,7 @@
       "to": "T3",
       "label": "",
       "chart": "T",
-      "line": 1713
+      "line": 1716
     },
     {
       "key": "T3->T4",
@@ -4616,7 +4616,7 @@
       "to": "T4",
       "label": "no",
       "chart": "T",
-      "line": 1714
+      "line": 1717
     },
     {
       "key": "T3->T5",
@@ -4624,7 +4624,7 @@
       "to": "T5",
       "label": "yes",
       "chart": "T",
-      "line": 1715
+      "line": 1718
     },
     {
       "key": "T5->T6",
@@ -4632,7 +4632,7 @@
       "to": "T6",
       "label": "it has an on_active hook",
       "chart": "T",
-      "line": 1719
+      "line": 1722
     },
     {
       "key": "T5->T7",
@@ -4640,7 +4640,7 @@
       "to": "T7",
       "label": "no hook at all",
       "chart": "T",
-      "line": 1721
+      "line": 1724
     },
     {
       "key": "T6->T8",
@@ -4648,7 +4648,7 @@
       "to": "T8",
       "label": "",
       "chart": "T",
-      "line": 1722
+      "line": 1725
     },
     {
       "key": "T7->T8",
@@ -4656,7 +4656,7 @@
       "to": "T8",
       "label": "",
       "chart": "T",
-      "line": 1724
+      "line": 1727
     },
     {
       "key": "T6->T9",
@@ -4664,7 +4664,7 @@
       "to": "T9",
       "label": "",
       "chart": "T",
-      "line": 1725
+      "line": 1728
     },
     {
       "key": "T9->T10",
@@ -4672,7 +4672,7 @@
       "to": "T10",
       "label": "",
       "chart": "T",
-      "line": 1726
+      "line": 1729
     },
     {
       "key": "T10->T11",
@@ -4680,7 +4680,7 @@
       "to": "T11",
       "label": "",
       "chart": "T",
-      "line": 1729
+      "line": 1732
     },
     {
       "key": "T11->T12",
@@ -4688,7 +4688,7 @@
       "to": "T12",
       "label": "one",
       "chart": "T",
-      "line": 1731
+      "line": 1734
     },
     {
       "key": "T11->T13",
@@ -4696,7 +4696,7 @@
       "to": "T13",
       "label": "many (a Next drops several stacks)",
       "chart": "T",
-      "line": 1732
+      "line": 1735
     },
     {
       "key": "T11->T14",
@@ -4704,7 +4704,7 @@
       "to": "T14",
       "label": "the whole board (first build, resume)",
       "chart": "T",
-      "line": 1734
+      "line": 1737
     },
     {
       "key": "T12->T15",
@@ -4712,7 +4712,7 @@
       "to": "T15",
       "label": "",
       "chart": "T",
-      "line": 1740
+      "line": 1743
     },
     {
       "key": "T13->T15",
@@ -4720,7 +4720,7 @@
       "to": "T15",
       "label": "",
       "chart": "T",
-      "line": 1742
+      "line": 1745
     },
     {
       "key": "T14->T15",
@@ -4728,7 +4728,7 @@
       "to": "T15",
       "label": "",
       "chart": "T",
-      "line": 1743
+      "line": 1746
     },
     {
       "key": "T15->T16",
@@ -4736,7 +4736,7 @@
       "to": "T16",
       "label": "no",
       "chart": "T",
-      "line": 1744
+      "line": 1747
     },
     {
       "key": "T15->T17",
@@ -4744,7 +4744,7 @@
       "to": "T17",
       "label": "yes",
       "chart": "T",
-      "line": 1746
+      "line": 1749
     },
     {
       "key": "N1->N2",
@@ -4752,7 +4752,7 @@
       "to": "N2",
       "label": "",
       "chart": "N",
-      "line": 1793
+      "line": 1796
     },
     {
       "key": "N2->N3",
@@ -4760,7 +4760,7 @@
       "to": "N3",
       "label": "",
       "chart": "N",
-      "line": 1795
+      "line": 1798
     },
     {
       "key": "N3->N4",
@@ -4768,7 +4768,7 @@
       "to": "N4",
       "label": "",
       "chart": "N",
-      "line": 1796
+      "line": 1799
     },
     {
       "key": "N4->N5",
@@ -4776,7 +4776,7 @@
       "to": "N5",
       "label": "",
       "chart": "N",
-      "line": 1798
+      "line": 1801
     },
     {
       "key": "N5->N6",
@@ -4784,7 +4784,7 @@
       "to": "N6",
       "label": "",
       "chart": "N",
-      "line": 1800
+      "line": 1803
     },
     {
       "key": "N6->N7",
@@ -4792,7 +4792,7 @@
       "to": "N7",
       "label": "",
       "chart": "N",
-      "line": 1803
+      "line": 1806
     },
     {
       "key": "O1->O2",
@@ -4800,7 +4800,7 @@
       "to": "O2",
       "label": "",
       "chart": "O",
-      "line": 1873
+      "line": 1876
     },
     {
       "key": "O2->O3",
@@ -4808,7 +4808,7 @@
       "to": "O3",
       "label": "",
       "chart": "O",
-      "line": 1876
+      "line": 1879
     },
     {
       "key": "O3->O4",
@@ -4816,7 +4816,7 @@
       "to": "O4",
       "label": "",
       "chart": "O",
-      "line": 1877
+      "line": 1880
     },
     {
       "key": "O4->O5",
@@ -4824,7 +4824,7 @@
       "to": "O5",
       "label": "host silhouette",
       "chart": "O",
-      "line": 1878
+      "line": 1881
     },
     {
       "key": "O4->O6",
@@ -4832,7 +4832,7 @@
       "to": "O6",
       "label": "disc (the circle)",
       "chart": "O",
-      "line": 1881
+      "line": 1884
     },
     {
       "key": "O5->O7",
@@ -4840,7 +4840,7 @@
       "to": "O7",
       "label": "",
       "chart": "O",
-      "line": 1883
+      "line": 1886
     },
     {
       "key": "O6->O7",
@@ -4848,7 +4848,7 @@
       "to": "O7",
       "label": "",
       "chart": "O",
-      "line": 1885
+      "line": 1888
     },
     {
       "key": "O7->O8",
@@ -4856,7 +4856,7 @@
       "to": "O8",
       "label": "",
       "chart": "O",
-      "line": 1886
+      "line": 1889
     },
     {
       "key": "O8->O9",
@@ -4864,7 +4864,7 @@
       "to": "O9",
       "label": "one",
       "chart": "O",
-      "line": 1888
+      "line": 1891
     },
     {
       "key": "O8->O10",
@@ -4872,7 +4872,7 @@
       "to": "O10",
       "label": "L layers",
       "chart": "O",
-      "line": 1889
+      "line": 1892
     },
     {
       "key": "O9->O11",
@@ -4880,7 +4880,7 @@
       "to": "O11",
       "label": "",
       "chart": "O",
-      "line": 1891
+      "line": 1894
     },
     {
       "key": "O10->O11",
@@ -4888,7 +4888,7 @@
       "to": "O11",
       "label": "",
       "chart": "O",
-      "line": 1897
+      "line": 1900
     },
     {
       "key": "O11->O12",
@@ -4896,7 +4896,7 @@
       "to": "O12",
       "label": "",
       "chart": "O",
-      "line": 1898
+      "line": 1901
     },
     {
       "key": "O12->O13",
@@ -4904,7 +4904,7 @@
       "to": "O13",
       "label": "no",
       "chart": "O",
-      "line": 1899
+      "line": 1902
     },
     {
       "key": "O12->O14",
@@ -4912,7 +4912,7 @@
       "to": "O14",
       "label": "yes",
       "chart": "O",
-      "line": 1901
+      "line": 1904
     },
     {
       "key": "O14->O15",
@@ -4920,7 +4920,7 @@
       "to": "O15",
       "label": "",
       "chart": "O",
-      "line": 1904
+      "line": 1907
     },
     {
       "key": "O13->O16",
@@ -4928,7 +4928,7 @@
       "to": "O16",
       "label": "",
       "chart": "O",
-      "line": 1907
+      "line": 1910
     },
     {
       "key": "O15->O16",
@@ -4936,7 +4936,7 @@
       "to": "O16",
       "label": "",
       "chart": "O",
-      "line": 1908
+      "line": 1911
     },
     {
       "key": "O16->O17",
@@ -4944,7 +4944,7 @@
       "to": "O17",
       "label": "",
       "chart": "O",
-      "line": 1909
+      "line": 1912
     },
     {
       "key": "O17->O18",
@@ -4952,7 +4952,7 @@
       "to": "O18",
       "label": "",
       "chart": "O",
-      "line": 1910
+      "line": 1913
     },
     {
       "key": "O18->O18b",
@@ -4960,7 +4960,7 @@
       "to": "O18b",
       "label": "",
       "chart": "O",
-      "line": 1912
+      "line": 1915
     },
     {
       "key": "O18b->O19",
@@ -4968,7 +4968,7 @@
       "to": "O19",
       "label": "",
       "chart": "O",
-      "line": 1914
+      "line": 1917
     },
     {
       "key": "O19->O20",
@@ -4976,7 +4976,7 @@
       "to": "O20",
       "label": "additive, outside the silhouette",
       "chart": "O",
-      "line": 1917
+      "line": 1920
     },
     {
       "key": "O19->O21",
@@ -4984,7 +4984,7 @@
       "to": "O21",
       "label": "tinted, over the art",
       "chart": "O",
-      "line": 1919
+      "line": 1922
     },
     {
       "key": "P1->P2",
@@ -4992,7 +4992,7 @@
       "to": "P2",
       "label": "",
       "chart": "P",
-      "line": 1973
+      "line": 1976
     },
     {
       "key": "P2->P3",
@@ -5000,7 +5000,7 @@
       "to": "P3",
       "label": "no",
       "chart": "P",
-      "line": 1974
+      "line": 1977
     },
     {
       "key": "P2->P4",
@@ -5008,7 +5008,7 @@
       "to": "P4",
       "label": "no",
       "chart": "P",
-      "line": 1976
+      "line": 1979
     },
     {
       "key": "P2->P5",
@@ -5016,7 +5016,7 @@
       "to": "P5",
       "label": "no",
       "chart": "P",
-      "line": 1978
+      "line": 1981
     },
     {
       "key": "P2->P6",
@@ -5024,7 +5024,7 @@
       "to": "P6",
       "label": "no",
       "chart": "P",
-      "line": 1981
+      "line": 1984
     },
     {
       "key": "P2->P7",
@@ -5032,7 +5032,7 @@
       "to": "P7",
       "label": "yes",
       "chart": "P",
-      "line": 1983
+      "line": 1986
     },
     {
       "key": "P2->P8",
@@ -5040,7 +5040,7 @@
       "to": "P8",
       "label": "yes",
       "chart": "P",
-      "line": 1984
+      "line": 1987
     },
     {
       "key": "P2->P9",
@@ -5048,7 +5048,7 @@
       "to": "P9",
       "label": "yes",
       "chart": "P",
-      "line": 1985
+      "line": 1988
     },
     {
       "key": "P2->P10",
@@ -5056,7 +5056,7 @@
       "to": "P10",
       "label": "yes",
       "chart": "P",
-      "line": 1986
+      "line": 1989
     },
     {
       "key": "P2->P11",
@@ -5064,7 +5064,7 @@
       "to": "P11",
       "label": "yes",
       "chart": "P",
-      "line": 1987
+      "line": 1990
     },
     {
       "key": "P2->P12",
@@ -5072,7 +5072,7 @@
       "to": "P12",
       "label": "yes",
       "chart": "P",
-      "line": 1988
+      "line": 1991
     },
     {
       "key": "P2->P13",
@@ -5080,7 +5080,7 @@
       "to": "P13",
       "label": "yes",
       "chart": "P",
-      "line": 1989
+      "line": 1992
     },
     {
       "key": "P7->P14",
@@ -5088,7 +5088,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1990
+      "line": 1993
     },
     {
       "key": "P8->P14",
@@ -5096,7 +5096,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1991
+      "line": 1994
     },
     {
       "key": "P9->P14",
@@ -5104,7 +5104,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1992
+      "line": 1995
     },
     {
       "key": "P10->P14",
@@ -5112,7 +5112,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1993
+      "line": 1996
     },
     {
       "key": "P11->P14",
@@ -5120,7 +5120,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1994
+      "line": 1997
     },
     {
       "key": "P12->P14",
@@ -5128,7 +5128,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1995
+      "line": 1998
     },
     {
       "key": "P13->P14",
@@ -5136,7 +5136,7 @@
       "to": "P14",
       "label": "",
       "chart": "P",
-      "line": 1996
+      "line": 1999
     },
     {
       "key": "P14->P15",
@@ -5144,7 +5144,7 @@
       "to": "P15",
       "label": "",
       "chart": "P",
-      "line": 1997
+      "line": 2000
     },
     {
       "key": "P15->P16",
@@ -5152,7 +5152,7 @@
       "to": "P16",
       "label": "",
       "chart": "P",
-      "line": 1998
+      "line": 2001
     },
     {
       "key": "P16->P17",
@@ -5160,7 +5160,7 @@
       "to": "P17",
       "label": "✅ in scope (QR10=a)",
       "chart": "P",
-      "line": 1999
+      "line": 2002
     },
     {
       "key": "P16->P18",
@@ -5168,7 +5168,7 @@
       "to": "P18",
       "label": "deferred",
       "chart": "P",
-      "line": 2005
+      "line": 2008
     },
     {
       "key": "P16->P19",
@@ -5176,7 +5176,7 @@
       "to": "P19",
       "label": "never",
       "chart": "P",
-      "line": 2007
+      "line": 2010
     }
   ],
   "links": [
@@ -5186,7 +5186,7 @@
       "fromChart": "C",
       "toChart": "D",
       "ref": "D",
-      "line": 1016
+      "line": 1019
     },
     {
       "key": "S1~>C",
@@ -5194,7 +5194,7 @@
       "fromChart": "S",
       "toChart": "C",
       "ref": "C",
-      "line": 1080
+      "line": 1083
     },
     {
       "key": "S3~>D",
@@ -5202,7 +5202,7 @@
       "fromChart": "S",
       "toChart": "D",
       "ref": "D",
-      "line": 1082
+      "line": 1085
     },
     {
       "key": "S14~>E",
@@ -5210,7 +5210,7 @@
       "fromChart": "S",
       "toChart": "E",
       "ref": "E",
-      "line": 1096
+      "line": 1099
     },
     {
       "key": "S15~>C",
@@ -5218,7 +5218,7 @@
       "fromChart": "S",
       "toChart": "C",
       "ref": "C",
-      "line": 1099
+      "line": 1102
     },
     {
       "key": "D8~>E",
@@ -5226,7 +5226,7 @@
       "fromChart": "D",
       "toChart": "E",
       "ref": "E",
-      "line": 1147
+      "line": 1150
     },
     {
       "key": "D10~>T",
@@ -5234,7 +5234,7 @@
       "fromChart": "D",
       "toChart": "T",
       "ref": "T",
-      "line": 1150
+      "line": 1153
     },
     {
       "key": "D12b~>R",
@@ -5242,7 +5242,7 @@
       "fromChart": "D",
       "toChart": "R",
       "ref": "R",
-      "line": 1157
+      "line": 1160
     },
     {
       "key": "D13a~>E",
@@ -5250,7 +5250,7 @@
       "fromChart": "D",
       "toChart": "E",
       "ref": "E",
-      "line": 1165
+      "line": 1168
     },
     {
       "key": "D21~>E",
@@ -5258,7 +5258,7 @@
       "fromChart": "D",
       "toChart": "E",
       "ref": "E",
-      "line": 1194
+      "line": 1197
     },
     {
       "key": "D25~>C",
@@ -5266,7 +5266,7 @@
       "fromChart": "D",
       "toChart": "C",
       "ref": "C",
-      "line": 1199
+      "line": 1202
     },
     {
       "key": "K14~>I",
@@ -5274,7 +5274,7 @@
       "fromChart": "K",
       "toChart": "I",
       "ref": "H",
-      "line": 1511
+      "line": 1514
     },
     {
       "key": "L11~>E",
@@ -5282,7 +5282,7 @@
       "fromChart": "L",
       "toChart": "E",
       "ref": "E3",
-      "line": 1548
+      "line": 1551
     },
     {
       "key": "R16~>K",
@@ -5290,7 +5290,7 @@
       "fromChart": "R",
       "toChart": "K",
       "ref": "I",
-      "line": 1629
+      "line": 1632
     },
     {
       "key": "T8~>G",
@@ -5298,7 +5298,7 @@
       "fromChart": "T",
       "toChart": "G",
       "ref": "F",
-      "line": 1722
+      "line": 1725
     },
     {
       "key": "P3~>O",
@@ -5306,7 +5306,7 @@
       "fromChart": "P",
       "toChart": "O",
       "ref": "O",
-      "line": 1974
+      "line": 1977
     },
     {
       "key": "P4~>O",
@@ -5314,7 +5314,7 @@
       "fromChart": "P",
       "toChart": "O",
       "ref": "O",
-      "line": 1976
+      "line": 1979
     },
     {
       "key": "P5~>O",
@@ -5322,7 +5322,7 @@
       "fromChart": "P",
       "toChart": "O",
       "ref": "O",
-      "line": 1978
+      "line": 1981
     }
   ]
 }
