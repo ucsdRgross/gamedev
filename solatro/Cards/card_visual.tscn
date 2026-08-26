@@ -685,7 +685,8 @@ _data = {
 &"new_animation_2": SubResource("Animation_cksyn")
 }
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_v4ikb"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cksyn"]
+resource_local_to_scene = true
 shader = ExtResource("8_v4ikb")
 shader_parameter/u_palette = ExtResource("9_dmau8")
 shader_parameter/u_num_colors = 32
@@ -702,7 +703,8 @@ shader_parameter/u_alert_color = 31
 shader_parameter/u_alert_thickness = 8.0
 shader_parameter/u_alert_buffer = 0.0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_dmau8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_018h0"]
+resource_local_to_scene = true
 shader = ExtResource("8_v4ikb")
 shader_parameter/u_palette = ExtResource("9_dmau8")
 shader_parameter/u_num_colors = 32
@@ -711,7 +713,7 @@ shader_parameter/u_outline_width = 1
 shader_parameter/u_outline_index = 28
 shader_parameter/u_fill_mode = 0
 shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(-12, -18)
+shader_parameter/u_card_offset = Vector2(-12, 18)
 shader_parameter/u_card_extent = Vector2(40, 54)
 shader_parameter/u_alert_kind = 0
 shader_parameter/u_alert_clock = 0.0
@@ -719,7 +721,8 @@ shader_parameter/u_alert_color = 31
 shader_parameter/u_alert_thickness = 8.0
 shader_parameter/u_alert_buffer = 0.0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cksyn"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wmxs8"]
+resource_local_to_scene = true
 shader = ExtResource("8_v4ikb")
 shader_parameter/u_palette = ExtResource("9_dmau8")
 shader_parameter/u_num_colors = 32
@@ -736,7 +739,8 @@ shader_parameter/u_alert_color = 31
 shader_parameter/u_alert_thickness = 8.0
 shader_parameter/u_alert_buffer = 0.0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_018h0"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_e768u"]
+resource_local_to_scene = true
 shader = ExtResource("8_v4ikb")
 shader_parameter/u_palette = ExtResource("9_dmau8")
 shader_parameter/u_num_colors = 32
@@ -745,7 +749,7 @@ shader_parameter/u_outline_width = 1
 shader_parameter/u_outline_index = 28
 shader_parameter/u_fill_mode = 0
 shader_parameter/u_fill_index = 0
-shader_parameter/u_card_offset = Vector2(0, -18)
+shader_parameter/u_card_offset = Vector2(0, 18)
 shader_parameter/u_card_extent = Vector2(40, 54)
 shader_parameter/u_alert_kind = 0
 shader_parameter/u_alert_clock = 0.0
@@ -753,7 +757,8 @@ shader_parameter/u_alert_color = 31
 shader_parameter/u_alert_thickness = 8.0
 shader_parameter/u_alert_buffer = 0.0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_wmxs8"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_af85l"]
+resource_local_to_scene = true
 shader = ExtResource("8_v4ikb")
 shader_parameter/u_palette = ExtResource("9_dmau8")
 shader_parameter/u_num_colors = 32
@@ -771,6 +776,7 @@ shader_parameter/u_alert_thickness = 8.0
 shader_parameter/u_alert_buffer = 0.0
 
 [node name="CardVisual" type="Node2D" unique_id=758458623 node_paths=PackedStringArray("target_polygon_node") groups=["CardVisual"]]
+scale = Vector2(2.5, 2.5)
 script = ExtResource("1_s3n6f")
 data = SubResource("Resource_wmxs8")
 target_polygon_node = NodePath("Offset/Visual/Type")
@@ -787,7 +793,7 @@ libraries/ = SubResource("AnimationLibrary_018h0")
 [node name="Visual" type="Node2D" parent="Offset" unique_id=1508650724]
 
 [node name="Type" type="Polygon2D" parent="Offset/Visual" unique_id=167754990]
-material = SubResource("ShaderMaterial_v4ikb")
+material = SubResource("ShaderMaterial_cksyn")
 texture = ExtResource("2_y74k2")
 skeleton = NodePath("../Skeleton2D")
 polygon = PackedVector2Array(-20, -27, 20, -27, 20, 27, -20, 27, -10, -27, 0, -27, 10, -27, -20, -13.5, -10, -13.5, 0, -13.5, 10, -13.5, 20, -13.5, -20, 0, -10, 0, 0, 0, 10, 0, 20, 0, -20, 13.5, -10, 13.5, 0, 13.5, 10, 13.5, 20, 13.5, -10, 27, 0, 27, 10, 27, -15, -20.25, -5, -20.25, 5, -20.25, 15, -20.25, -15, -6.75, -5, -6.75, 5, -6.75, 15, -6.75, -15, 6.75, -5, 6.75, 5, 6.75, 15, 6.75, -15, 20.25, -5, 20.25, 5, 20.25, 15, 20.25)
@@ -797,7 +803,7 @@ bones = ["Bone_Center", PackedFloat32Array(8.855152e-06, 8.855152e-06, 8.855152e
 internal_vertex_count = 37
 
 [node name="Rank" type="Polygon2D" parent="Offset/Visual" unique_id=1514090271]
-material = SubResource("ShaderMaterial_dmau8")
+material = SubResource("ShaderMaterial_018h0")
 position = Vector2(-12, 18)
 texture = ExtResource("8_rbggy")
 skeleton = NodePath("../Skeleton2D")
@@ -808,7 +814,8 @@ bones = ["Bone_Center", PackedFloat32Array(0.01624028, 0.12965469, 0.022343632, 
 internal_vertex_count = 1
 
 [node name="Suit" type="Polygon2D" parent="Offset/Visual" unique_id=655054366]
-material = SubResource("ShaderMaterial_cksyn")
+visible = false
+material = SubResource("ShaderMaterial_wmxs8")
 position = Vector2(12, 18)
 texture = ExtResource("10_2gib3")
 skeleton = NodePath("../Skeleton2D")
@@ -819,7 +826,7 @@ bones = ["Bone_Center", PackedFloat32Array(0.12965469, 0.01624028, 0.015687095, 
 internal_vertex_count = 1
 
 [node name="Stamp" type="Polygon2D" parent="Offset/Visual" unique_id=1921553756]
-material = SubResource("ShaderMaterial_018h0")
+material = SubResource("ShaderMaterial_e768u")
 position = Vector2(0, 18)
 texture = ExtResource("11_0xvu6")
 skeleton = NodePath("../Skeleton2D")
@@ -830,7 +837,8 @@ bones = ["Bone_Center", PackedFloat32Array(0.14890306, 0.14890306, 0.025710652, 
 internal_vertex_count = 1
 
 [node name="Art" type="Polygon2D" parent="Offset/Visual" unique_id=738299753]
-material = SubResource("ShaderMaterial_wmxs8")
+visible = false
+material = SubResource("ShaderMaterial_af85l")
 position = Vector2(0, -6)
 texture = ExtResource("12_v4ikb")
 skeleton = NodePath("../Skeleton2D")
@@ -849,63 +857,111 @@ rest = Transform2D(1, 0, 0, 1, 0, 0)
 [node name="Arm_TopLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1807068411]
 position = Vector2(-20, -27)
 rest = Transform2D(1, 0, 0, 1, -20, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1491696459]
 position = Vector2(-10, -27)
 rest = Transform2D(1, 0, 0, 1, -10, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=636771794]
 position = Vector2(0, -27)
 rest = Transform2D(1, 0, 0, 1, 0, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Top_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1608045547]
 position = Vector2(10, -27)
 rest = Transform2D(1, 0, 0, 1, 10, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_TopRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1210543316]
 position = Vector2(20, -27)
 rest = Transform2D(1, 0, 0, 1, 20, -27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1165253936]
 position = Vector2(20, -13.5)
 rest = Transform2D(1, 0, 0, 1, 20, -13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=708136759]
 position = Vector2(20, 0)
 rest = Transform2D(1, 0, 0, 1, 20, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Right_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1154999691]
 position = Vector2(20, 13.5)
 rest = Transform2D(1, 0, 0, 1, 20, 13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_BottomRight" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1883602634]
 position = Vector2(20, 27)
 rest = Transform2D(1, 0, 0, 1, 20, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1022965053]
 position = Vector2(10, 27)
 rest = Transform2D(1, 0, 0, 1, 10, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=404956107]
 position = Vector2(0, 27)
 rest = Transform2D(1, 0, 0, 1, 0, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Bottom_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=887202590]
 position = Vector2(-10, 27)
 rest = Transform2D(1, 0, 0, 1, -10, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_BottomLeft" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=639251822]
 position = Vector2(-20, 27)
 rest = Transform2D(1, 0, 0, 1, -20, 27)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_1" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1832143824]
 position = Vector2(-20, 13.5)
 rest = Transform2D(1, 0, 0, 1, -20, 13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_2" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=25281498]
 position = Vector2(-20, 0)
 rest = Transform2D(1, 0, 0, 1, -20, 0)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0
 
 [node name="Arm_Left_3" type="Bone2D" parent="Offset/Visual/Skeleton2D/Bone_Center" unique_id=1486646180]
 position = Vector2(-20, -13.5)
 rest = Transform2D(1, 0, 0, 1, -20, -13.5)
+auto_calculate_length_and_angle = false
+length = 16.0
+bone_angle = 0.0

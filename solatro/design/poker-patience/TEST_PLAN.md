@@ -298,6 +298,27 @@ Asserting the total unconditionally would fail for a correct reason.
 | TP-135 | `skill_spotlight_check()` cost at 1 grid vs 3 grids (75 extra cell cards), recorded in the test output | Q205 | G |
 | TP-136 | `duplicate_state()` snapshot size and time at `FIX-FULL-15`, recorded | Q232 | G |
 
+---
+
+## 9a. Landed during Phase 0 — already written and green
+
+| id | Test | Proves | Kind |
+|---|---|---|---|
+| TP-137 | `card_visual.tscn` ships **no** saved `ShaderMaterial` — neither an assignment nor a sub-resource | E5, S0 | G |
+
+⚠ **TP-137 asserts the SCENE, not the symptom.** `CardOutline.material_of()` assigns `poly.material`,
+which is a scene mutation under `@tool`, so any editor edit to the card scene bakes materials in —
+capturing the suitless preview card's uniforms, including `u_frame_uv = (0,0,1,1)`, which is no frame
+clamp at all. Asserting that no saved material exists catches every future re-bake rather than the one
+uniform that happened to be wrong. It reads the `.tscn` as TEXT rather than loading it, because
+loading would run the very `@tool` script that writes the material.
+
+Red-then-green was run: with the baked scene restored both checks fail, for the expected reason, with
+the suite's other 31 checks still passing. It lives in `Tests/Visual/test_outline.gd`.
+
+⚠ **Not prevention — detection.** The editor can still re-bake. After any edit to the card scene,
+`grep -c ShaderMaterial Cards/card_visual.tscn` must read 0.
+
 ⚠ **These RECORD numbers rather than asserting a threshold.** Owner (`Q205`): *"sure measure it as we
 implement and note how much it hurts performance wise during tests."* Extend
 `Tests/Engine/scoring_cost.gd` rather than writing a new harness.

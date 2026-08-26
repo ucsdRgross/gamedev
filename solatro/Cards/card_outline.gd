@@ -64,17 +64,25 @@ enum Alert {NONE = 0, GLARE = 1, THROB = 2}
 ## are frequent. Retuning uniforms on the live material is what keeps that off the frame budget.
 static func material_of(poly : Polygon2D) -> ShaderMaterial:
 	var mat := poly.material as ShaderMaterial
-	if mat and mat.shader == SHADER:
-		return mat
-	mat = ShaderMaterial.new()
-	mat.shader = SHADER
+	if not (mat and mat.shader == SHADER):
+		mat = ShaderMaterial.new()
+		mat.shader = SHADER
+		# ⚠ SCENE-LOCAL, so a material that ends up SAVED into a scene is still copied per instance.
+		# Without it every card sharing that scene shares one material, and each card's own
+		# `u_frame_uv` / `u_fill_mode` write lands on all of them — last writer wins, board-wide.
+		mat.resource_local_to_scene = true
+		poly.material = mat
+	# ⚠ **SEEDED ON EVERY CALL, NOT ONLY ON CREATION.** These three used to be set once, inside the
+	# construction branch, with an existing outline material returned untouched. That is exactly what
+	# an editor-saved material defeats: `poly.material = mat` above is a scene mutation, so a `@tool`
+	# host persists it, and every later call then short-circuited and left whatever uniform state the
+	# editor happened to capture. Re-seeding is idempotent and cheap next to a rebind.
 	# The palette IMAGE and its width both come from PaletteDB, never from a shader default: the
 	# VisualShader this pattern replaced had the palette baked into itself, so swapping palettes
 	# recoloured nothing (ARCHITECTURE_REVIEW §4h, proved by the 16_palette_swap snapshot).
 	mat.set_shader_parameter(&"u_palette", PaletteDB.PALETTE.texture)
 	mat.set_shader_parameter(&"u_num_colors", PaletteDB.width())
 	mat.set_shader_parameter(&"u_outline_width", int(WIDTH))
-	poly.material = mat
 	return mat
 
 ## UV this polygon so its frame lands on the polygon's inner rect, leaving `WIDTH` units of margin for

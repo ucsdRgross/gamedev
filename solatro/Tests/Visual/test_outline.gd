@@ -31,6 +31,10 @@ extends TestSuite
 
 const VP_SIZE := 64
 
+## Read as TEXT, not loaded as a scene: the claim is about what is SAVED on disk, and loading it
+## would run the `@tool` script that writes the material in the first place.
+const CARD_SCENE_PATH := "res://Cards/card_visual.tscn"
+
 var _vp : SubViewport
 var _stage : Node2D
 
@@ -54,6 +58,7 @@ func _ready() -> void:
 	test_alert_is_off_until_a_status_declares_it()
 	implementation_section("THE RULES THAT KEEP THE RIM ON THE ART")
 	test_shader_taps_in_texture_space()
+	test_the_card_scene_ships_no_baked_material()
 	finish()
 
 ## The guard, copied in shape from `test_pixels`: a dummy renderer compiles no shader and rasterizes
@@ -450,3 +455,23 @@ func test_shader_taps_in_texture_space() -> void:
 			+ "runtime and fails in the EDITOR, so the whole suite can go green on a broken shader",
 			"%d sampler2D mentions, %d of them uniforms"
 			% [text.count("sampler2D"), text.count("uniform sampler2D")])
+
+## ⚠ **THE CARD SCENE MUST SHIP NO SAVED MATERIAL, AND THAT IS NOT A STYLE RULE.**
+## `CardOutline.material_of()` assigns `poly.material`, which is a SCENE MUTATION — and `CardVisual`
+## is `@tool`, so it happens in the editor too. Any edit that dirties the scene therefore persists
+## whatever uniform state the scene's PREVIEW card happened to produce, and that card has no suit:
+## `card_visual.gd`'s art branch never runs for it, so `frame_polygon()` never fires on Suit or Art
+## and their `u_frame_uv` stays at the shader default `(0,0,1,1)` — the whole sheet, i.e. NO CLAMP.
+## The sheets are packed edge to edge with no gutter, so an unclamped padded window samples the four
+## neighbouring frames and the art visibly bleeds.
+##
+## This asserts the scene, not the symptom, so it catches ANY future editor re-bake rather than the
+## one uniform that happened to be wrong.
+func test_the_card_scene_ships_no_baked_material() -> void:
+	var text := FileAccess.get_file_as_string(CARD_SCENE_PATH)
+	check(not text.is_empty(), "the card scene is readable at %s" % CARD_SCENE_PATH)
+	check(not text.contains("SubResource(\"ShaderMaterial"),
+			"card_visual.tscn assigns no saved ShaderMaterial (an editor re-bake freezes the "
+			+ "suitless preview's uniforms, including an unclamped u_frame_uv)")
+	check(not text.contains("[sub_resource type=\"ShaderMaterial\""),
+			"card_visual.tscn defines no ShaderMaterial sub-resource")

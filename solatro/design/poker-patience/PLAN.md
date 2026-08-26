@@ -293,9 +293,21 @@ same manual copy `duplicate_state()` already does for the existing three (`Q240`
 ### 1.8 Card geometry after the flip (`Q306`, `Q307`, `Q309`)
 
 **`CardVisual.CARD_SEPARATION`** is re-derived **from the bottom edge, with the same arithmetic
-mirrored** (`Q306`=a). If the new pip row carries the same margins, the value stays **16** and only
-the constant's comment changes. **The derivation is the contract; the literal follows from Phase 0's
-measured art.**
+mirrored** (`Q306`=a).
+
+✅ **MEASURED — Phase 0 has landed and the value is CONFIRMED at 16. Do not re-derive it.**
+
+From the shipped `card_visual.tscn`: the card face spans y ∈ [−27, +27]; the pip row sits at
+`position.y = 18` with a ±5 polygon, so it spans y ∈ [13, 23]. Card bottom edge is 27, so the margin
+below the pips is **27 − 23 = 4** art units — identical to the 4-unit top margin the old layout had.
+
+```
+4 (margin to the bottom edge) + 10 (outlined pip) = 14
+14 + 2 (idle-rig clearance)                       = 16   # CARD_SEPARATION, unchanged
+```
+
+**The board's row pitch does not move**: strip 40 px + separation 10 px = 50 px at `card_scale` 2.5,
+exactly as §1i measured. Step S20 is therefore a comment re-derivation, not a value change.
 
 **Row band anchor** (`Q307`=b): a row is measured from its **bottom edge**, the band grows **upward**,
 and growth **pushes every row above it up** — the whole board grows upward from the Entrance.
@@ -417,6 +429,27 @@ and animations recreated.
 **Done-when** (`Q315`=c): the new `card_visual.tscn` is committed; `test_outline` is green; the
 pip-row offset from the **bottom** edge is measured and handed over as the input to §1.8; and
 `test_pixels`' deformed-pose signature is **re-derived** and recorded.
+
+### ✅ S0 IS COMPLETE. Do not redo it. Evidence:
+
+- Pips at `position.y = +18` (was −18), art at `−6` (was `+6`). The flip is in.
+- `CARD_SEPARATION` measured and **confirmed at 16** — §1.8.
+- Full suite green: **39 suites, 3120 checks, 0 failures**, `test_outline` and `test_pixels`
+  included.
+- **`test_pixels`' pose signature did NOT need re-deriving** — the existing pinned values still
+  pass, so the re-baked rig deforms within the same envelope. `Q315`=(c) asked for a re-derivation;
+  the honest outcome is that none was required, and the pinned numbers stand.
+
+⚠ **One regression landed and was fixed during S0, and the trap is still live.**
+`CardOutline.material_of()` assigns `poly.material`, which is a scene mutation — and `CardVisual` is
+`@tool`, so **any editor edit to the card scene bakes ShaderMaterials into `card_visual.tscn`**. The
+bake captures the uniform state of the scene's SUITLESS preview card, which leaves `Suit` and `Art`
+with `u_frame_uv = (0,0,1,1)` — no frame clamp — and the art then samples its neighbouring sheet
+frames.
+
+Mitigated, not prevented: `material_of()` now re-seeds its uniforms on every call and marks new
+materials `resource_local_to_scene`, and `test_outline` asserts the scene ships no saved material.
+**If you touch `card_visual.tscn`, check `grep -c ShaderMaterial Cards/card_visual.tscn` is 0.**
 
 ⚠ No code phase may begin against the old art.
 
