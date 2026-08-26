@@ -2,8 +2,9 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** Baseline repaired and green. Worktree `gamedev-poker-patience` on branch
-`poker-patience`. No plan step landed yet.
+**State:** **Phase 1 complete** — S1–S5 landed and committed, suite green at 40 suites.
+Next is S6, the first step of Phase 2 (line detection). Worktree `gamedev-poker-patience`
+on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
 `START_HERE.md`, `HEADLESS_TESTING.md`.
@@ -26,6 +27,13 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
   Runs WINDOWED, ~90 s, self-quits with the failure count.
 - A fresh worktree needs `--headless --path . --import` run TWICE before the suite will
   pass (the first pass reports parse errors against autoloads not yet registered).
+- ⚠ **A new `class_name` referenced from an existing script hangs the suite until you
+  reimport.** This cost a long bisection during S5. The symptom is NOT a parse error: the
+  run reaches `test_interaction`, `game.state` is Nil, and
+  `test_game_over_interactivity`'s `while game.submits_used < Game.MAX_SUBMITS` loop
+  spins forever spraying *"Invalid access to property 'submits_used' on a base object of
+  type 'Nil'"* until the wrapper's timeout kills it. `--timeout 240` makes that fail fast.
+  Repo rule 11 already says to reimport; this records what ignoring it looks like.
 
 ## Baseline
 
@@ -116,33 +124,53 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S3
   description: 'Position index and _scan_positions() extended to grids, plus the reverse index.'
-  files_touched: []
+  files_touched: [solatro/Scripts/game_data.gd, solatro/Tests/Engine/test_grid_board.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3159 CHECKS PASSED ========
+    TP-08 and TP-09 green; TP-09 exercises place, move and removal.
+    Red: keying the reverse index one height too high fails 7 checks including
+    validate()'s I4 seam check, which names both sides per card. Committed 6eb9722.
   notes: >
     Done-when: TP-08, TP-09 green. The reverse index is a second representation of one fact -
     it needs a stated invariant tying it to the forward index, and validate() must check it.
 
 - id: S4
   description: 'Board mutation API for grid cells: place, move, remove-with-compaction.'
-  files_touched: []
+  files_touched: [solatro/Scripts/board.gd, solatro/Tests/Support/test_grid_fixtures.gd,
+     solatro/Tests/Engine/test_grid_board.gd, solatro/design/poker-patience/ASSUMPTIONS.md]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3210 CHECKS PASSED ========
+    TP-10..TP-14 green. Exactly one `state.revision += 1` per mutation function.
+    Red, expected checks only:
+      bump per compacted card -> [FAIL] one revision bump covers the whole compaction
+      drop the caller's flag  -> [FAIL] a caller-declared compaction move carries
+                                        is_compaction == true
+    Committed 7684258.
   notes: >
     Done-when: TP-10..TP-14 green. is_compaction is set BY THE MOVER, never inferred from
     before/after heights. A compaction bumps revision ONCE for the whole compaction.
 
 - id: S5
   description: 'CardDataIterator and get_card_collections() for grids; the early stop REMOVED.'
-  files_touched: []
+  files_touched: [solatro/Scripts/card_data_iterator.gd, solatro/Scripts/grid_cell_walk.gd,
+     solatro/Scripts/game_data.gd, solatro/Levels/game.gd,
+     solatro/Tests/Engine/test_iterator.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3231 CHECKS PASSED ========
+    TP-15..TP-17 green in the ITERATOR suite; TP-17 asserts the exact expected
+    sequence on a sparse grid with cards only in row 3.
+    Red (THE PHASE-1 GATE): giving the grid walk an early stop at the first empty
+    cell fails TP-17 (25 cards, all zone cards) and TP-15 (77 of 112).
+    Committed 3b98a54.
   notes: >
     Done-when: TP-15..TP-17 green. TP-17 is the gate - a SPARSE grid, cards only in row 3,
     must be walked completely. Neutralise by restoring the early stop and watch it fail.
@@ -381,9 +409,11 @@ solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
 
 ## Next up
 
-1. S1 — `BoardCoord` and its arithmetic (TP-01..TP-04).
-2. S2 — `GridData` and `GameData.grids` (TP-05..TP-07).
-3. S3 — the position index over grids, forward and reverse (TP-08, TP-09).
+1. S6 — line enumeration: ROW, COL, DIAG, HEIGHT_V through a cell, within one grid
+   (TP-18..TP-24). Opens Phase 2.
+2. S7 — `ScoringSection.kind` / `line_key`; `score_line` loses `is_row`/`zone`/`index`
+   (TP-25..TP-27, plus a grep gate that no caller passes the old signature).
+3. S8 — the mutation broadcast, the compaction flag and the board lock (TP-28..TP-31).
 
 Opening prompt for the next agent:
 
