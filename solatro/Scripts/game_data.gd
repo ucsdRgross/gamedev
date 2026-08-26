@@ -175,6 +175,8 @@ func duplicate_state() -> GameData:
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
 	copy._pos_index_revision = -1
+	copy._grid_pos_index = {}
+	copy._card_at_index = {}
 	#the forced spotlight is per-ACT and never travels with a copy: a snapshot restored by undo,
 	#act-cancel or resume must come back with no beam on it (Q18=a). duplicate_deep already
 	#skips a non-exported var; stated here for the same reason the index above is.
@@ -197,18 +199,49 @@ func duplicate_state() -> GameData:
 var _pos_index : Dictionary[CardData, Vector3i] = {}
 var _pos_index_revision : int = -1   # -1 = invalid (revision is never negative)
 
+# The legacy zone board and the grid board coexist for now, and there is no fixed mapping from
+# a legacy (zone, col, row) position onto BoardCoord. So the grid-side index is a SEPARATE
+# forward index, keyed the same way (rebuild-on-revision-change) as the legacy one above, plus
+# its own reverse lookup.
+var _grid_pos_index : Dictionary[CardData, BoardCoord] = {}
+# card_at()'s reverse index. Keyed on a value-type Vector4i(grid,x,y,h) rather than a
+# BoardCoord instance, since BoardCoord is RefCounted and hashes by identity, not value.
+var _card_at_index : Dictionary[Vector4i, CardData] = {}
+
 ## O(1) board position of a card; Vector3i.MIN when not on the board.
 func position_of(card: CardData) -> Vector3i:
-	if _pos_index_revision != revision:
-		_pos_index = _scan_positions()
-		_pos_index_revision = revision
+	_ensure_pos_index()
 	return _pos_index.get(card, Vector3i.MIN)
 
-## Force the next position_of to rebuild (for lookups mid-mutation, before the bump).
+## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
+## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a
+## grid position P (i.e. `_grid_pos_index[C] == P`), `card_at(P) == C`; and for every non-null
+## `card_at(P)`, that card's grid position is exactly P. Neither dictionary is a copy of the
+## other — they are built together and diverge only if some path bumps `revision` without
+## finishing the mutation that keeps them in step. `validate()`'s I4 check compares both against
+## an independent rescan to catch that.
+func card_at(coord: BoardCoord) -> CardData:
+	_ensure_pos_index()
+	return _card_at_index.get(Vector4i(coord.grid, coord.x, coord.y, coord.h), null)
+
+## Rebuilds every position index (legacy Vector3i, grid-side BoardCoord, and its reverse) once
+## per revision change, mirroring the bump-after-consistency rule the legacy index already rode.
+func _ensure_pos_index() -> void:
+	if _pos_index_revision == revision:
+		return
+	_pos_index = _scan_positions()
+	_grid_pos_index = _scan_grid_positions()
+	_card_at_index = {}
+	for card : CardData in _grid_pos_index:
+		var coord : BoardCoord = _grid_pos_index[card]
+		_card_at_index[Vector4i(coord.grid, coord.x, coord.y, coord.h)] = card
+	_pos_index_revision = revision
+
+## Force the next position_of/card_at to rebuild (for lookups mid-mutation, before the bump).
 func invalidate_pos_index() -> void:
 	_pos_index_revision = -1
 
-## Full rescan of every board position. Write order is REVERSE lookup precedence
+## Full rescan of every legacy zone board position. Write order is REVERSE lookup precedence
 ## (upper types > lower types > upper cards > lower cards — later writes win), so a
 ## duplicate-card state (I1 violation) resolves like the old linear locate did.
 func _scan_positions() -> Dictionary[CardData, Vector3i]:
@@ -225,6 +258,27 @@ func _scan_positions() -> Dictionary[CardData, Vector3i]:
 		if lower_zone_type[c]: out[lower_zone_type[c]] = Vector3i(1, c, -1)
 	for c in upper_zone_type.size():
 		if upper_zone_type[c]: out[upper_zone_type[c]] = Vector3i(0, c, -1)
+	return out
+
+## Full rescan of every grid cell. The grid-side result stays out of the legacy Vector3i index
+## (no fixed legacy-to-grid coordinate mapping exists yet), so this is a sibling scan, not a
+## shared return type. Cell zone cards are not positioned by this index -- only cards in play, at a
+## height. Write order: grid 0 before grid 1 before grid 2, row-major within a grid, bottom of
+## stack first -- a card duplicated across two grid cells resolves to the later one, the same
+## later-write-wins precedence the legacy scan uses.
+func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
+	var out : Dictionary[CardData, BoardCoord] = {}
+	for gi in grids.size():
+		var grid : GridData = grids[gi]
+		if not grid: continue
+		for ci in grid.cells.size():
+			var cell : ArrayCardData = grid.cells[ci]
+			if not cell: continue
+			var col := ci % grid.grid_width
+			var row := ci / grid.grid_width
+			for h in cell.datas.size():
+				if cell.datas[h]:
+					out[cell.datas[h]] = BoardCoord.new(gi, col, row, h)
 	return out
 
 func all_card_datas() -> Array[CardData]:
@@ -383,6 +437,27 @@ func validate() -> Array[String]:
 			if not rescan.has(card):
 				violations.append("I4: stale index entry %s for off-board %s" \
 						% [_pos_index[card], card])
+		#I4, grid side: the grid forward index agrees with an independent rescan, and the
+		#reverse index (card_at) names exactly the same card at exactly the same coordinate
+		#the forward index has for it -- the invariant stated at card_at()'s definition.
+		var grid_rescan := _scan_grid_positions()
+		for card in grid_rescan:
+			var expected : BoardCoord = grid_rescan[card]
+			var got : BoardCoord = _grid_pos_index.get(card, null)
+			if not got or got.grid != expected.grid or got.x != expected.x \
+					or got.y != expected.y or got.h != expected.h:
+				violations.append("I4: grid index says %s for %s, rescan says (%d,%d,%d,%d)" \
+						% [got, card, expected.grid, expected.x, expected.y, expected.h])
+		for card in _grid_pos_index:
+			if not grid_rescan.has(card):
+				violations.append("I4: stale grid index entry for off-board %s" % card)
+		for card in _grid_pos_index:
+			var coord : BoardCoord = _grid_pos_index[card]
+			var key := Vector4i(coord.grid, coord.x, coord.y, coord.h)
+			if _card_at_index.get(key, null) != card:
+				violations.append(
+						"I4: card_at reverse index disagrees with forward index for %s at %s" \
+						% [card, key])
 	#score arrays sized to the board
 	if scores_col and upper_zone and scores_col.size() < min(upper_zone.size(), lower_zone.size()):
 		violations.append("scores_col %d entries < %d paired columns" \

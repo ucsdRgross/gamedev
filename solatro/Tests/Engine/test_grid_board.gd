@@ -16,6 +16,8 @@ func _ready() -> void:
 	run_grid_storage_test()
 	run_grid_duplicate_test()
 	run_grid_zone_cards_test()
+	run_position_index_test()
+	run_reverse_index_test()
 	finish()
 
 # ==============================================================================
@@ -195,3 +197,82 @@ func run_grid_zone_cards_test() -> void:
 	check(violations.is_empty(),
 			"validate() returns empty on FIX-GRID-3",
 			"got %s" % [violations])
+
+# ==============================================================================
+# TP-08 -- position_of()/card_at() are O(1) and rebuild only when revision moved.
+# FIX-MIXED-H. Legacy position_of() has no legacy-zone cards to read on this fixture (only
+# grids are stocked), so the caching contract is exercised through card_at() -- the S3
+# grid-side index shares the SAME revision-gated rebuild as the legacy one.
+# ==============================================================================
+func run_position_index_test() -> void:
+	behavior_section("POSITION INDEX")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	var g1 : GridData = state.grids[1]
+	var known_card : CardData = g1.cells[g1.cell_index(0, 1)].datas[0]
+	var coord := BoardCoord.new(1, 0, 1, 0)
+	check(state.card_at(coord) == known_card,
+			"card_at() finds the known card at grid 1 row 1 height 0",
+			"got %s" % state.card_at(coord))
+
+	# mutate a cell directly WITHOUT bumping revision -- the index must NOT reflect this
+	# until revision moves, proving the rebuild is gated on revision, not on every call.
+	var intruder := TestFactories.m_card(1, TestFactories.uc())
+	intruder.stage = CardData.Stage.PLAY
+	var g2 : GridData = state.grids[2]
+	g2.cells[g2.cell_index(0, 1)].datas.append(intruder)
+	var g2_coord := BoardCoord.new(2, 0, 1, 0)
+	check(state.card_at(g2_coord) == null,
+			"card_at() still reads the pre-mutation index before revision moves",
+			"got %s" % state.card_at(g2_coord))
+
+	state.revision += 1
+	check(state.card_at(g2_coord) == intruder,
+			"card_at() rebuilds once revision moves and finds the new card",
+			"got %s" % state.card_at(g2_coord))
+
+# ==============================================================================
+# TP-09 -- the reverse index (card_at) agrees with the grid-side forward index after every
+# mutation kind: a place, a move and a removal. FIX-MIXED-H. S4's mutation API does not
+# exist yet, so the fixture is driven directly, bumping revision after each mutation the
+# same way Board.* does today.
+# ==============================================================================
+func run_reverse_index_test() -> void:
+	behavior_section("REVERSE INDEX")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	var g0 : GridData = state.grids[0]
+
+	# PLACE: a new card into an empty cell.
+	var placed := TestFactories.m_card(1, TestFactories.uc())
+	placed.stage = CardData.Stage.PLAY
+	g0.cells[g0.cell_index(2, 3)].datas.append(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 2, 3, 0)) == placed,
+			"after a place, card_at() finds the new card at its cell",
+			"got %s" % state.card_at(BoardCoord.new(0, 2, 3, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a place",
+			"got %s" % [state.validate()])
+
+	# MOVE: relocate the same card to a different cell.
+	g0.cells[g0.cell_index(2, 3)].datas.erase(placed)
+	g0.cells[g0.cell_index(4, 4)].datas.append(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 2, 3, 0)) == null,
+			"after a move, the old cell reads empty",
+			"got %s" % state.card_at(BoardCoord.new(0, 2, 3, 0)))
+	check(state.card_at(BoardCoord.new(0, 4, 4, 0)) == placed,
+			"after a move, the new cell reads the moved card",
+			"got %s" % state.card_at(BoardCoord.new(0, 4, 4, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a move",
+			"got %s" % [state.validate()])
+
+	# REMOVE: take the card off the board entirely.
+	g0.cells[g0.cell_index(4, 4)].datas.erase(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 4, 4, 0)) == null,
+			"after a removal, the cell reads empty",
+			"got %s" % state.card_at(BoardCoord.new(0, 4, 4, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a removal",
+			"got %s" % [state.validate()])
