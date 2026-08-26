@@ -88,12 +88,31 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
   description: >
     GameData grid storage: GridData, the grid list, per-grid cell arrays, 25 cell zone
     cards per grid.
-  files_touched: []
+  files_touched:
+    [solatro/Scripts/grid_data.gd, solatro/Scripts/game_data.gd,
+     solatro/Cards/Types/type_grid_cell.gd, solatro/Tests/Support/test_grid_fixtures.gd,
+     solatro/Tests/Engine/test_grid_board.gd, solatro/Locale/localization.csv]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-05..TP-07 green; validate() empty on a 3-grid fixture at mixed heights.'
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3149 CHECKS PASSED ========
+    ============ GRID BOARD: ALL 31 CHECKS PASSED ============
+    Hard gate: "validate() returns empty on FIX-MIXED-H" passes (3 grids, row 1 at
+    heights 6 / 1 / empty).
+    Red-then-green run by the overseer, expected checks and ONLY those:
+      drop `all.append_array(grid.cell_types)` from all_card_datas()
+        -> [FAIL] grid 0's cell zone card appears in all_card_datas()
+        -> [FAIL] grid 2's last cell zone card appears in all_card_datas()
+      drop the cell duplicate report from validate()
+        -> [FAIL] validate() reports the duplicate card -- got []
+        -> [FAIL] the report names BOTH cell locations
+    Committed 6e4c6e3.
+  notes: >
+    validate() and all_card_datas() extended IN PLACE, not shadowed. TypeGridCell uses
+    the registry-claimed frame 13; both strings go through TRANSLATION.find. The suite's
+    75 duplicated per-cell checks were collapsed to one aggregate check per grid that
+    names the offending cell indices.
 
 - id: S3
   description: 'Position index and _scan_positions() extended to grids, plus the reverse index.'
@@ -319,6 +338,28 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 - **GAP-002** — nothing defines what `step_x` does off the board. Provisionally clamps.
 
 ## Open bugs
+
+- ⚠ **`VISUAL LAYERS` has an intermittent failure that the S0-repair EXPOSED.** The check
+  *"a light stays on its card's art square every frame while that card moves"*
+  (`Tests/UI/test_visual_layers.gd`) asserts `worst < 1.0` px and intermittently measures
+  **2.87–2.96 px** — the light is drawn from the card's previous position for at least one
+  frame. Measured, 3 runs each:
+
+  | tree | result |
+  |---|---|
+  | card scene with materials baked (main, 69eee09) | 3/3 clean |
+  | card scene with the bake stripped (this branch) | fails ~1 in 3 |
+
+  The bake is still a real regression and stripping it is still right — but with materials
+  no longer loaded from disk, `material_of()` constructs five per card visual at runtime,
+  which shifts frame timing enough to expose a latent ordering bug between a card's move and
+  the light layer's update. **The tolerance was calibrated with the baked scene in place.**
+
+  **Not fixed here, deliberately:** it is a VFX-layer defect and the run's anti-scope says
+  do not touch the VFX layer. **It was NOT hidden by widening the tolerance** — that would
+  be calibrating a test to a bug. Every suite verdict in this run is therefore judged by
+  failure SET, with this one known intermittent excluded and confirmed to be the only
+  failure present. **Owner call: fix the ordering, or re-derive the tolerance honestly.**
 
 - **`PLAN.md` §1.1 and `TEST_PLAN.md` TP-02 state an arithmetically wrong example.** Both say
   *"5 columns left of (grid 1, x 0) is (grid 0, x 4)"*. At the default width 5 it is **one**
