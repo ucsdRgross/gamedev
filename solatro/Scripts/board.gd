@@ -252,15 +252,15 @@ static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone
 
 
 # ==============================================================================
-# Grid-board mutations (poker-patience PLAN.md §1: place, move, remove-with-
-# compaction). Same MUTATION GUIDELINES as above -- consistent state first, ONE
-# revision bump after, no scene tree, no signals.
+# Grid-board mutations: place, move, remove-with-compaction. Same MUTATION
+# GUIDELINES as above -- consistent state first, ONE revision bump after, no
+# scene tree, no signals.
 # ==============================================================================
 
 ## Result of a grid mutation: whether it happened, and whether the MOVER declared it a
 ## compaction. `is_compaction` is never computed from before/after heights -- it is
-## whatever the caller passed to move_to_cell, echoed back so a later pass (S8's
-## broadcast) can read it without re-deriving it.
+## whatever the caller passed to move_to_cell, echoed back so the board-mutation
+## broadcast can read it without re-deriving it.
 class GridMoveResult:
 	extends RefCounted
 	var ok : bool = false
