@@ -135,6 +135,9 @@ func discard_lower_board() -> void:
 func has_met_goal() -> bool:
 	return total_score >= goal
 
+## The grid list, left to right. Each grid carries its own size and cells (§1.3 of the
+## poker-patience plan: nothing hard-codes 5x5).
+@export_storage var grids : Array[GridData] = []
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
@@ -233,6 +236,12 @@ func all_card_datas() -> Array[CardData]:
 	all.append_array(lower_zone_type)
 	for col in upper_zone: all.append_array(col.datas)
 	for col in lower_zone: all.append_array(col.datas)
+	for grid : GridData in grids:
+		if not grid: continue
+		all.append_array(grid.cell_types)
+		for cell : ArrayCardData in grid.cells:
+			if not cell: continue
+			all.append_array(cell.datas)
 	return all
 
 ## Invariant checker (ARCHITECTURE_REVIEW.md §5, I1-I5). Returns a list of
@@ -247,6 +256,22 @@ func validate() -> Array[String]:
 	if lower_zone.size() != lower_zone_type.size():
 		violations.append("I2: lower_zone %d cols vs lower_zone_type %d" \
 				% [lower_zone.size(), lower_zone_type.size()])
+	#I2: every grid's cells and cell_types stay in lockstep with its OWN width * height
+	#(G7: 25 cell zone cards per grid, at the default 5x5 -- nothing hard-codes 5)
+	for gi in grids.size():
+		var grid_check : GridData = grids[gi]
+		if not grid_check:
+			violations.append("I3: grids index %d is null" % gi)
+			continue
+		var expected_cells := grid_check.grid_width * grid_check.grid_height
+		if grid_check.cells.size() != expected_cells:
+			violations.append("I2: grid %d cells %d entries vs %d expected (%dx%d)" \
+					% [gi, grid_check.cells.size(), expected_cells,
+					grid_check.grid_width, grid_check.grid_height])
+		if grid_check.cell_types.size() != expected_cells:
+			violations.append("I2: grid %d cell_types %d entries vs %d expected (%dx%d)" \
+					% [gi, grid_check.cell_types.size(), expected_cells,
+					grid_check.grid_width, grid_check.grid_height])
 	#I3: no null columns or null cards anywhere
 	for zone_name : String in ["upper_zone", "lower_zone"]:
 		var zone : Array[ArrayCardData] = get(zone_name)
@@ -263,6 +288,20 @@ func validate() -> Array[String]:
 		for i in deck.size():
 			if not deck[i]:
 				violations.append("I3: %s index %d is null" % [deck_name, i])
+	#I3: no null grid cells / cell zone cards
+	for gi in grids.size():
+		var grid_null_check : GridData = grids[gi]
+		if not grid_null_check: continue
+		for ci in grid_null_check.cells.size():
+			if not grid_null_check.cells[ci]:
+				violations.append("I3: grid %d cell %d is null" % [gi, ci])
+				continue
+			for r in grid_null_check.cells[ci].datas.size():
+				if not grid_null_check.cells[ci].datas[r]:
+					violations.append("I3: grid %d cell %d row %d is null" % [gi, ci, r])
+		for ci in grid_null_check.cell_types.size():
+			if not grid_null_check.cell_types[ci]:
+				violations.append("I3: grid %d cell_types %d is null" % [gi, ci])
 	#I1: every card lives in exactly one collection (no duplicates by identity).
 	#Walks the named containers (not all_card_datas) so the message can say WHERE the
 	#card also lives instead of a bare true.
@@ -286,6 +325,29 @@ func validate() -> Array[String]:
 					violations.append("I1: card in two places: %s (%s, also %s)" \
 							% [card, here, seen[card]])
 				seen[card] = here
+	for gi in grids.size():
+		var grid_dup_check : GridData = grids[gi]
+		if not grid_dup_check: continue
+		for ci in grid_dup_check.cell_types.size():
+			var type_card := grid_dup_check.cell_types[ci]
+			if not type_card: continue
+			var type_here := "grid %d cell_types (%d,%d)" \
+					% [gi, ci % grid_dup_check.grid_width, ci / grid_dup_check.grid_width]
+			if seen.has(type_card):
+				violations.append("I1: card in two places: %s (%s, also %s)" \
+						% [type_card, type_here, seen[type_card]])
+			seen[type_card] = type_here
+		for ci in grid_dup_check.cells.size():
+			var cell_col : ArrayCardData = grid_dup_check.cells[ci]
+			if not cell_col: continue
+			var cell_here := "grid %d cell (%d,%d)" \
+					% [gi, ci % grid_dup_check.grid_width, ci / grid_dup_check.grid_width]
+			for card : CardData in cell_col.datas:
+				if not card: continue
+				if seen.has(card):
+					violations.append("I1: card in two places: %s (%s, also %s)" \
+							% [card, cell_here, seen[card]])
+				seen[card] = cell_here
 	#I5: stage matches location
 	var expected_stage : Dictionary[CardData, CardData.Stage] = {}
 	for card in draw_deck: expected_stage[card] = CardData.Stage.DRAW
@@ -297,6 +359,12 @@ func validate() -> Array[String]:
 		for c in zone:
 			if not c: continue
 			for card in c.datas: expected_stage[card] = CardData.Stage.PLAY
+	for grid_stage_check : GridData in grids:
+		if not grid_stage_check: continue
+		for card in grid_stage_check.cell_types: expected_stage[card] = CardData.Stage.ZONE
+		for cell : ArrayCardData in grid_stage_check.cells:
+			if not cell: continue
+			for card in cell.datas: expected_stage[card] = CardData.Stage.PLAY
 	for card : CardData in expected_stage:
 		if not card: continue
 		if card.stage != expected_stage[card]:

@@ -13,6 +13,9 @@ func _ready() -> void:
 	run_continuous_x_test()
 	run_entrance_test()
 	run_off_board_test()
+	run_grid_storage_test()
+	run_grid_duplicate_test()
+	run_grid_zone_cards_test()
 	finish()
 
 # ==============================================================================
@@ -115,3 +118,80 @@ func run_off_board_test() -> void:
 	check(off_right.grid == 2 and off_right.x == 4,
 			"stepping past the right edge of the last grid clamps to its last column",
 			"got grid=%d x=%d" % [off_right.grid, off_right.x])
+
+# ==============================================================================
+# TP-05 -- a 3-grid board's validate() returns empty at mixed heights. FIX-MIXED-H.
+# ==============================================================================
+func run_grid_storage_test() -> void:
+	behavior_section("GRID STORAGE")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	check(state.grids.size() == 3, "FIX-MIXED-H carries 3 grids",
+			"got %d" % state.grids.size())
+	var g0 : GridData = state.grids[0]
+	check(g0.cells[g0.cell_index(0, 1)].datas.size() == 6,
+			"grid 0 row 1 is at height 6",
+			"got %d" % g0.cells[g0.cell_index(0, 1)].datas.size())
+	var g1 : GridData = state.grids[1]
+	check(g1.cells[g1.cell_index(0, 1)].datas.size() == 1,
+			"grid 1 row 1 is at height 1",
+			"got %d" % g1.cells[g1.cell_index(0, 1)].datas.size())
+	var g2 : GridData = state.grids[2]
+	check(g2.cells[g2.cell_index(0, 1)].datas.size() == 0,
+			"grid 2 row 1 is empty",
+			"got %d" % g2.cells[g2.cell_index(0, 1)].datas.size())
+	var violations := state.validate()
+	check(violations.is_empty(),
+			"validate() returns empty on FIX-MIXED-H",
+			"got %s" % [violations])
+
+# ==============================================================================
+# TP-06 -- a card in two cells is reported by validate() with BOTH locations. FIX-GRID-1.
+# ==============================================================================
+func run_grid_duplicate_test() -> void:
+	behavior_section("GRID DUPLICATE")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var g0 : GridData = state.grids[0]
+	var dupe := TestFactories.m_card(1, TestFactories.uc())
+	dupe.stage = CardData.Stage.PLAY
+	g0.cells[g0.cell_index(0, 0)].datas.append(dupe)
+	g0.cells[g0.cell_index(1, 2)].datas.append(dupe)
+	var violations := state.validate()
+	var hit := ""
+	for v : String in violations:
+		if v.begins_with("I1:") and v.contains(str(dupe)):
+			hit = v
+			break
+	check(not hit.is_empty(), "validate() reports the duplicate card", "got %s" % [violations])
+	check(hit.contains("(0,0)") and hit.contains("(1,2)"),
+			"the report names BOTH cell locations",
+			"got: %s" % hit)
+
+# ==============================================================================
+# TP-07 -- 25 cell zone cards exist per grid and appear in all_card_datas(). FIX-GRID-3.
+# ==============================================================================
+func run_grid_zone_cards_test() -> void:
+	behavior_section("GRID ZONE CARDS")
+	var state := TestGridFixtures.build_fix_grid_3()
+	for gi in state.grids.size():
+		var grid : GridData = state.grids[gi]
+		check(grid.cell_types.size() == 25,
+				"grid %d carries 25 cell zone cards" % gi,
+				"got %d" % grid.cell_types.size())
+		var bad_cells : Array[int] = []
+		for ci in grid.cell_types.size():
+			if not (grid.cell_types[ci].type is TypeGridCell):
+				bad_cells.append(ci)
+		check(bad_cells.is_empty(),
+				"grid %d cell zone cards are all TypeGridCell" % gi,
+				"got non-TypeGridCell at cells %s" % [bad_cells])
+	var all := state.all_card_datas()
+	var g0 : GridData = state.grids[0]
+	check(all.has(g0.cell_types[0]),
+			"grid 0's cell zone card appears in all_card_datas()")
+	var g2 : GridData = state.grids[2]
+	check(all.has(g2.cell_types[24]),
+			"grid 2's last cell zone card appears in all_card_datas()")
+	var violations := state.validate()
+	check(violations.is_empty(),
+			"validate() returns empty on FIX-GRID-3",
+			"got %s" % [violations])

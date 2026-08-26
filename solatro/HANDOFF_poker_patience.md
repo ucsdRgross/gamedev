@@ -64,12 +64,25 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
   description: >
     BoardCoord: the four-component coordinate (grid, x, y, h), NOWHERE sentinel,
     ENTRANCE_ROW = -1, step_x(n) crossing grid boundaries, is_entrance().
-  files_touched: []
+  files_touched:
+    [solatro/Scripts/board_coord.gd, solatro/Tests/Engine/test_grid_board.gd,
+     solatro/Tests/Engine/test_grid_board.tscn, solatro/Tests/all_tests.tscn]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-01..TP-04 green.'
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3166 CHECKS PASSED ========
+    ============ GRID BOARD: ALL 17 CHECKS PASSED ============
+    All four planned rows covered, plus TP-02's literal -5 fixture and both
+    off-board clamp cases. Red-then-green proven three ways, expected checks only:
+      continuity  -> "one column left of (grid 1, x 0) is (grid 0, x 4)"
+      is_entrance -> the three ENTRANCE checks
+      NOWHERE     -> both OFF BOARD sentinel checks
+    Committed bf61cd9.
+  notes: >
+    Dead code removed: step_x's negative-normalising loop was guarded `g > 0` with g
+    initialised to 0, so it could never run and a step off the left edge returned
+    grid 0 at a negative column. Off-board now clamps, PROVISIONALLY - see GAP-002.
 
 - id: S2
   description: >
@@ -299,8 +312,22 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 - **Assumed, not checked** — that `CARD_SEPARATION = 16` is correct. Taken from `PLAN.md`
   §1.8 as instructed; not re-derived.
 
+## Open gaps
+
+- **GAP-001** — `NAMES.md` fixes `step_x(n)`, but the contract needs each grid's own width
+  and `BoardCoord` is a bare value type. Shipped as `step_x(n, grid_widths)`. Owner call.
+- **GAP-002** — nothing defines what `step_x` does off the board. Provisionally clamps.
+
 ## Open bugs
 
+- **`PLAN.md` §1.1 and `TEST_PLAN.md` TP-02 state an arithmetically wrong example.** Both say
+  *"5 columns left of (grid 1, x 0) is (grid 0, x 4)"*. At the default width 5 it is **one**
+  column left that lands on (grid 0, x 4); five columns left lands on (grid 0, x 0). The
+  owner's source answer (`Q3`) contains no such example — it says only "yes, continuous, with
+  entrance being part of y lattice". So this is a documentation slip in the derived docs, not
+  a gap: the rule (continuity, `grid` derived from the global ordinate) is unambiguous, and
+  only one reading is defensible. Both cases are now asserted in `test_grid_board.gd`. The
+  design docs are the owner's and were left unedited — worth correcting at the next revision.
 - `.claude/memory/machine-profiles.md` records Godot 4.7.1 for Box A; the box has 4.7.2 and
   no 4.7.1. Anything reading that path fails with `FileNotFoundError`. Not fixed here — it
   is a memory file, outside this run's scope.
