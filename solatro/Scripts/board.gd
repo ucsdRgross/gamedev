@@ -249,3 +249,117 @@ static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone
 	var orphans : Array[CardData] = zone_cols.pop_at(index).datas
 	state.revision += 1
 	return orphans
+
+
+# ==============================================================================
+# Grid-board mutations (poker-patience PLAN.md §1: place, move, remove-with-
+# compaction). Same MUTATION GUIDELINES as above -- consistent state first, ONE
+# revision bump after, no scene tree, no signals.
+# ==============================================================================
+
+## Result of a grid mutation: whether it happened, and whether the MOVER declared it a
+## compaction. `is_compaction` is never computed from before/after heights -- it is
+## whatever the caller passed to move_to_cell, echoed back so a later pass (S8's
+## broadcast) can read it without re-deriving it.
+class GridMoveResult:
+	extends RefCounted
+	var ok : bool = false
+	var is_compaction : bool = false
+
+## Cell (x, y) of grid `grid_index` in `state`, or null when out of range.
+static func _grid_at(state: GameData, grid_index: int) -> GridData:
+	if grid_index < 0 or grid_index >= state.grids.size():
+		return null
+	return state.grids[grid_index]
+
+## [grid_index, cell_index, height] of `card` in the grid board, or [] when the card is
+## not in any grid cell.
+static func _locate_in_grid(state: GameData, card: CardData) -> Array[int]:
+	for gi in state.grids.size():
+		var grid : GridData = state.grids[gi]
+		if not grid: continue
+		for ci in grid.cells.size():
+			var cell : ArrayCardData = grid.cells[ci]
+			if not cell: continue
+			var h := cell.datas.find(card)
+			if h != -1:
+				var found : Array[int] = [gi, ci, h]
+				return found
+	return []
+
+## Places a card NOT already on the grid board into a cell, at the TOP of its stack --
+## reuses the Anchor.ON_TOP rule (insert above whatever is already there) rather than
+## trusting `coord.h`, so a caller can never hand in a height that disagrees with the
+## stack it is landing on. Bumps revision exactly once.
+static func place_in_cell(state: GameData, card: CardData, coord: BoardCoord) -> bool:
+	if not card: return false
+	var grid := _grid_at(state, coord.grid)
+	if not grid: return false
+	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
+		return false
+	if not _locate_in_grid(state, card).is_empty():
+		return false #already on the grid board
+	var idx := grid.cell_index(coord.x, coord.y)
+	grid.cells[idx].datas.append(card)
+	#don't re-set an already-PLAY stage: previous_stage drives the visual's spawn origin
+	if card.stage != CardData.Stage.PLAY:
+		card.stage = CardData.Stage.PLAY
+	state.revision += 1
+	return true
+
+## Moves a card already on the grid board to another cell, landing at that cell's top
+## (Anchor.ON_TOP again). `is_compaction` is set BY THE CALLER -- never inferred from the
+## source/destination heights -- and is carried on the returned result. Bumps revision
+## exactly once.
+static func move_to_cell(state: GameData, card: CardData, coord: BoardCoord, is_compaction: bool) -> GridMoveResult:
+	var res := GridMoveResult.new()
+	res.is_compaction = is_compaction
+	if not card: return res
+	var loc := _locate_in_grid(state, card)
+	if loc.is_empty(): return res #not on the grid board -- place_in_cell's job
+	var dest_grid := _grid_at(state, coord.grid)
+	if not dest_grid: return res
+	if coord.x < 0 or coord.x >= dest_grid.grid_width \
+			or coord.y < 0 or coord.y >= dest_grid.grid_height:
+		return res
+	var src_grid : GridData = state.grids[loc[0]]
+	src_grid.cells[loc[1]].datas.remove_at(loc[2])
+	var dest_idx := dest_grid.cell_index(coord.x, coord.y)
+	dest_grid.cells[dest_idx].datas.append(card)
+	state.revision += 1
+	res.ok = true
+	return res
+
+## Removes `card` from its cell. The array holding the stack IS the height axis, so
+## popping the card out already drops every card above it down by one -- no separate
+## per-card move is needed to compact. ONE revision bump for the whole compaction.
+static func remove_from_cell(state: GameData, card: CardData) -> bool:
+	var loc := _locate_in_grid(state, card)
+	if loc.is_empty(): return false
+	var grid : GridData = state.grids[loc[0]]
+	grid.cells[loc[1]].datas.remove_at(loc[2])
+	state.revision += 1
+	return true
+
+## Appends one grid to the board. Ensures its cells/cell_types are built to its own size
+## BEFORE the append, mirroring add_column's header-and-column lockstep. One bump.
+static func add_grid(state: GameData, grid: GridData) -> void:
+	if not grid: return
+	var expected := grid.grid_width * grid.grid_height
+	if grid.cells.size() != expected or grid.cell_types.size() != expected:
+		grid.build_cells()
+	state.grids.append(grid)
+	state.revision += 1
+
+## Removes grid `index` and returns the orphaned in-play cards (not the cell zone type
+## cards) for the caller to discard, mirroring remove_column's orphan contract. One bump.
+static func remove_grid(state: GameData, index: int) -> Array[CardData]:
+	if index < 0 or index >= state.grids.size():
+		return []
+	var grid : GridData = state.grids.pop_at(index)
+	state.revision += 1
+	var orphans : Array[CardData] = []
+	if grid:
+		for cell : ArrayCardData in grid.cells:
+			if cell: orphans.append_array(cell.datas)
+	return orphans

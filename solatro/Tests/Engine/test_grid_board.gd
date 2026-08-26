@@ -18,6 +18,11 @@ func _ready() -> void:
 	run_grid_zone_cards_test()
 	run_position_index_test()
 	run_reverse_index_test()
+	run_place_in_cell_test()
+	run_stack_anchor_test()
+	run_remove_compaction_test()
+	run_compaction_single_bump_test()
+	run_compaction_flag_test()
 	finish()
 
 # ==============================================================================
@@ -275,4 +280,112 @@ func run_reverse_index_test() -> void:
 			"got %s" % state.card_at(BoardCoord.new(0, 4, 4, 0)))
 	check(state.validate().is_empty(),
 			"validate() reports no I4 violation after a removal",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-10 -- place_in_cell into an empty cell bumps revision exactly once. FIX-GRID-1.
+# ==============================================================================
+func run_place_in_cell_test() -> void:
+	behavior_section("PLACE IN CELL")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var before := state.revision
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var ok := Board.place_in_cell(state, card, BoardCoord.new(0, 0, 0, 0))
+	check(ok, "place_in_cell into an empty cell succeeds")
+	check(state.revision == before + 1,
+			"place_in_cell bumps revision exactly once",
+			"got %d, expected %d" % [state.revision, before + 1])
+	check(state.card_at(BoardCoord.new(0, 0, 0, 0)) == card,
+			"the placed card is found at (0,0,0)")
+	check(state.validate().is_empty(),
+			"validate() returns empty after the placement",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-11 -- stacking uses Anchor.ON_TOP and lands at h+1. FIX-STACK-5 (cell (0,0) already
+# holds 4 cards).
+# ==============================================================================
+func run_stack_anchor_test() -> void:
+	behavior_section("STACK ANCHOR")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var ok := Board.place_in_cell(state, card, BoardCoord.new(0, 0, 0, 0))
+	check(ok, "the 5th card stacks onto cell (0,0)")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 4)) == card,
+			"it lands at h=4 -- ON_TOP of the existing 4 cards (h+1)",
+			"got %s" % state.card_at(BoardCoord.new(0, 0, 0, 4)))
+	check(state.validate().is_empty(),
+			"validate() returns empty after stacking",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-12 -- removing from mid-stack compacts the cards above down. FIX-STACK-5.
+# ==============================================================================
+func run_remove_compaction_test() -> void:
+	behavior_section("REMOVE COMPACTION")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var mid_card : CardData = cell.datas[1]     #h=1 of 4 (h=0..3)
+	var top_card : CardData = cell.datas[3]     #was h=3, must land at h=2
+	var ok := Board.remove_from_cell(state, mid_card)
+	check(ok, "remove_from_cell removes the mid-stack card")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 1)) != mid_card,
+			"the removed card no longer occupies its old height")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 2)) == top_card,
+			"the card above it compacts down by one height",
+			"got %s" % state.card_at(BoardCoord.new(0, 0, 0, 2)))
+	check(cell.datas.size() == 3, "the stack is now 3 tall", "got %d" % cell.datas.size())
+	check(state.validate().is_empty(),
+			"validate() returns empty after the compaction",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-13 -- a compaction bumps revision ONCE for the whole compaction. FIX-STACK-10 (9
+# cards; removing the bottom one compacts 8 cards down in one mutation).
+# ==============================================================================
+func run_compaction_single_bump_test() -> void:
+	behavior_section("COMPACTION SINGLE BUMP")
+	var state := TestGridFixtures.build_fix_stack_10()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var bottom_card : CardData = cell.datas[0]
+	var before := state.revision
+	var ok := Board.remove_from_cell(state, bottom_card)
+	check(ok, "remove_from_cell removes the bottom card of a 9-tall stack")
+	check(state.revision == before + 1,
+			"one revision bump covers the whole 8-card compaction, not one per card",
+			"got %d, expected %d" % [state.revision, before + 1])
+	check(cell.datas.size() == 8, "the stack is now 8 tall", "got %d" % cell.datas.size())
+	check(state.validate().is_empty(),
+			"validate() returns empty after the compaction",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-14 -- a compaction move carries the compaction flag; a placement does not.
+# is_compaction is set BY THE CALLER, never inferred from before/after heights.
+# FIX-STACK-5.
+# ==============================================================================
+func run_compaction_flag_test() -> void:
+	behavior_section("COMPACTION FLAG")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var card : CardData = cell.datas[0]
+
+	var compaction_res := Board.move_to_cell(state, card, BoardCoord.new(0, 1, 0, 0), true)
+	check(compaction_res.ok, "move_to_cell moves a card already on the grid board")
+	check(compaction_res.is_compaction,
+			"a caller-declared compaction move carries is_compaction == true")
+
+	var plain_res := Board.move_to_cell(state, card, BoardCoord.new(0, 2, 0, 0), false)
+	check(plain_res.ok, "a second move_to_cell call also succeeds")
+	check(not plain_res.is_compaction,
+			"a caller-declared non-compaction move carries is_compaction == false")
+
+	var new_card := TestFactories.m_card(1, TestFactories.uc())
+	var place_ok := Board.place_in_cell(state, new_card, BoardCoord.new(0, 3, 0, 0))
+	check(place_ok, "place_in_cell succeeds for a fresh card")
+	check(state.validate().is_empty(),
+			"validate() returns empty after the moves and the placement",
 			"got %s" % [state.validate()])

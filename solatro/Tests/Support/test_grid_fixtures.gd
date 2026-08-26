@@ -27,6 +27,22 @@ static func build_fix_mixed_h() -> GameData:
 	state.grids = [g0, g1, g2]
 	return state
 
+## FIX-STACK-5: grid 0 cell (0,0) holding 4 cards; the 5th completes a vertical line.
+static func build_fix_stack_5() -> GameData:
+	var state := GameData.new()
+	var grid := _new_grid(5, 5)
+	_fill_cell(grid, 0, 0, 4)
+	state.grids = [grid]
+	return state
+
+## FIX-STACK-10: grid 0 cell (0,0) holding 9 cards; the 10th completes at height 10.
+static func build_fix_stack_10() -> GameData:
+	var state := GameData.new()
+	var grid := _new_grid(5, 5)
+	_fill_cell(grid, 0, 0, 9)
+	state.grids = [grid]
+	return state
+
 static func _new_grid(width: int, height: int) -> GridData:
 	var grid := GridData.new()
 	grid.grid_width = width
@@ -42,3 +58,11 @@ static func _fill_row(grid: GridData, row: int, height: int) -> void:
 			var card := TestFactories.m_card(1, TestFactories.uc())
 			card.stage = CardData.Stage.PLAY
 			grid.cells[idx].datas.append(card)
+
+## Fills grid cell (x, y) with `height` distinct, real cards (bottom to top).
+static func _fill_cell(grid: GridData, x: int, y: int, height: int) -> void:
+	var idx := grid.cell_index(x, y)
+	for h in height:
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		grid.cells[idx].datas.append(card)
