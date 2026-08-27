@@ -107,7 +107,6 @@ func run_win_and_resume_scenario() -> void:
 
 	# --- act 1: Submit scores the performed board and pays row x col ---
 	await g.submit()
-	check(g.submits_used == 1, "Submit consumes one act")
 	check(g.state.total_score > 0, "a performed board pays a positive act score",
 			str(g.state.total_score))
 	var lower_empty := g.state.lower_zone.all(
@@ -127,7 +126,7 @@ func run_win_and_resume_scenario() -> void:
 	g.free()
 	var loaded := RunManager.load_run()
 	Main.save_info = loaded
-	check(loaded.pending_node_id == 2 and loaded.game_submits == 1,
+	check(loaded.pending_node_id == 2,
 			"the save remembers which node and act the quit interrupted")
 
 	# --- resume: a new Game rebuilds the exact interrupted show ---
@@ -135,7 +134,6 @@ func run_win_and_resume_scenario() -> void:
 	add_child(g2)
 	await get_tree().process_frame
 	await get_tree().process_frame  # _resume_after_visuals is deferred
-	check(g2.submits_used == 1, "resume restores the act count")
 	check(g2.state.total_score == exp_total, "resume restores the banked score",
 			"%d vs %d" % [g2.state.total_score, exp_total])
 	check(g2.state.goal == 1, "resume restores the show's goal")
@@ -148,10 +146,10 @@ func run_win_and_resume_scenario() -> void:
 	g2.show_resolved.connect(func(won: bool, score: int, goal: int) -> void:
 			resolved.append([won, score, goal]))
 	await g2.submit()
-	check(resolved.is_empty(), "the show does not resolve before the final act")
-	await g2.submit()
+	check(resolved.is_empty(), "the show does not resolve on its own")
+	g2.end_show()
 	check((resolved.size() == 1 and resolved[0][0] == true) as bool,
-			"after the final act the show resolves as a win (goal met)", str(resolved))
+			"ending the show resolves it as a win (goal met)", str(resolved))
 	check(loaded.fame == 0,
 			"the win is NOT banked at the outcome screen (it stays undoable until Continue)",
 			"fame %d" % loaded.fame)
@@ -197,12 +195,11 @@ func run_loss_scenario() -> void:
 	var resolved: Array = []
 	g.show_resolved.connect(func(won: bool, score: int, goal: int) -> void:
 			resolved.append([won, score, goal]))
-	# Submit all three acts without performing anything: score stays under the goal.
+	# Submit without performing anything, then End: score stays under the goal.
 	await g.submit()
-	await g.submit()
-	await g.submit()
+	g.end_show()
 	check((resolved.size() == 1 and resolved[0][0] == false) as bool,
-			"failing the goal after the final act resolves the show as a loss", str(resolved))
+			"ending below the goal resolves the show as a loss", str(resolved))
 	check(run.fame == 0, "a lost show banks no fame")
 
 	var lost: Array = []

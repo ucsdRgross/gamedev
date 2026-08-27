@@ -69,7 +69,6 @@ func _rand_run_state(rng: RandomNumberGenerator) -> RunState:
 	rs.fame = rng.randi_range(0, 1_000_000_000)
 	rs.pending_goal = rng.randi_range(0, 1_000_000)
 	rs.pending_node_id = rng.randi_range(-1, 200)
-	rs.game_submits = rng.randi_range(0, 3)
 	rs.pending_action = [&"", &"on_run_scorer", &"on_next"][rng.randi_range(0, 2)]
 	rs.card_datas = _rand_card_array(rng, rng.randi_range(0, 12), CardData.Stage.DRAW)
 	rs.rule_datas = _rand_card_array(rng, rng.randi_range(0, 5), CardData.Stage.RULES)
@@ -156,7 +155,6 @@ func _diff_run(a: RunState, b: RunState) -> Array[String]:
 	if a.fame != b.fame: e.append("fame %d != %d" % [a.fame, b.fame])
 	if a.pending_goal != b.pending_goal: e.append("pending_goal")
 	if a.pending_node_id != b.pending_node_id: e.append("pending_node_id")
-	if a.game_submits != b.game_submits: e.append("game_submits")
 	if a.pending_action != b.pending_action: e.append("pending_action '%s' != '%s'" % [a.pending_action, b.pending_action])
 	if a.traveled != b.traveled: e.append("traveled %s != %s" % [a.traveled, b.traveled])
 	_diff_cards(e, "card_datas", a.card_datas, b.card_datas)

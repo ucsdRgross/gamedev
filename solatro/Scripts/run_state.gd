@@ -35,8 +35,6 @@ extends Resource
 ## game_history_trimmed + game_history.size() = total actions committed — Game hashes that
 ## sum for replay-stable prop sides (entity_side_for_row).
 @export var game_history_trimmed : int = 0
-## Acts (submits) used in the in-progress show.
-@export var game_submits : int = 0
 ## A board-mutating button (Submit/Next) was pressed but its async resolution (scoring /
 ## draw animations) had not committed when the run was last saved. Persisted so a quit
 ## mid-resolution REPLAYS the action from the committed pre-action board on resume — the

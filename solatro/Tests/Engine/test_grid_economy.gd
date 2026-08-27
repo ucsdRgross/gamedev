@@ -27,6 +27,8 @@ func _ready() -> void:
 	run_zero_valued_bucket_excluded_test()
 	run_board_total_is_the_sum_test()
 	run_terms_aggregate_their_levels_test()
+	run_retired_identifiers_grep_gate()
+	run_no_resurrected_act_count_test()
 	finish()
 # ==============================================================================
 # Helpers: the real detector in the rules deck, and a Game that records what banked.
@@ -447,3 +449,104 @@ func run_terms_aggregate_their_levels_test() -> void:
 	check(state.grid_score(0) == 400.0,
 			"another grid's cell bucket does not reach this grid's special term",
 			"got %f" % state.grid_score(0))
+
+# ==============================================================================
+# TP-60 -- GREP GATE: every retired identifier has ZERO readers in code.
+#
+# Reads the source tree as TEXT, the way the score_line signature gate does, because a
+# retired identifier leaves no compile error behind once its last reader is gone -- the
+# only way to know it is really gone is to look.
+#
+# ⚠ CARD_CATALOG.csv is deliberately NOT scanned. It is a catalogue of design IDEAS, many
+# of which describe cards that were never built, and the plan's own documentation phase
+# handles it separately with the rule "mark impossible rows superseded, never delete".
+# ==============================================================================
+const RETIRED_IDENTIFIERS : Array[String] = [
+	"MAX_SUBMITS", "submits_used", "game_submits",
+	"score_additive", "duplicate_class_scale",
+	"patience", "patience_max", "patience_track_uniques", "patience_reset_uniques_on_act",
+]
+
+func run_retired_identifiers_grep_gate() -> void:
+	implementation_section("RETIRED IDENTIFIERS GREP GATE")
+	var offenders : Array[String] = []
+	var scanned := 0
+	for path : String in _all_source_files("res://"):
+		if path == SELF_PATH: continue
+		var f := FileAccess.open(path, FileAccess.READ)
+		if not f: continue
+		scanned += 1
+		var n := 0
+		for raw : String in f.get_as_text().split("\n"):
+			n += 1
+			# The PROJECT is called poker-patience, so its own name is not a reader of the
+			# retired patience feature. Remove it before looking for the identifiers.
+			var line := raw.replace("poker-patience", "")
+			for id : String in RETIRED_IDENTIFIERS:
+				if line.contains(id):
+					offenders.append("%s:%d: %s" % [path, n, raw.strip_edges()])
+					break
+	check(scanned > 50, "the gate actually scanned the source tree",
+			"only %d files scanned" % scanned)
+	check(offenders.is_empty(),
+			"every retired identifier has zero readers left in code",
+			"\n".join(offenders))
+
+## Every .gd and .tscn under `root`, recursively. Test-only helper.
+func _all_source_files(root: String) -> Array[String]:
+	var out : Array[String] = []
+	var dirs : Array[String] = [root]
+	while not dirs.is_empty():
+		var d : String = dirs.pop_back()
+		var dir := DirAccess.open(d)
+		if not dir: continue
+		dir.list_dir_begin()
+		var name := dir.get_next()
+		while name != "":
+			if name.begins_with("."):
+				name = dir.get_next()
+				continue
+			var full : String = d.path_join(name)
+			if dir.current_is_dir(): dirs.append(full)
+			elif name.ends_with(".gd") or name.ends_with(".tscn"): out.append(full)
+			name = dir.get_next()
+		dir.list_dir_end()
+	return out
+
+# ==============================================================================
+# TP-61 -- undo across a Submit-era save does not resurrect the act count.
+#
+# There is NO save migration, by owner ruling. An old save simply carries a property
+# nothing reads. What must hold is that the property is genuinely GONE from the type -- a
+# leftover declaration would let an old snapshot quietly repopulate it -- and that undo
+# still rewinds the per-show state that REPLACED it.
+# ==============================================================================
+func run_no_resurrected_act_count_test() -> void:
+	behavior_section("NO RESURRECTED ACT COUNT")
+	var fresh := GameData.new()
+	var names : Array[String] = []
+	for prop : Dictionary in fresh.get_property_list():
+		var pname : String = prop["name"]
+		names.append(pname)
+	check(not names.has("submits_used"),
+			"GameData declares no submits_used for an old snapshot to repopulate")
+	check(not names.has("patience"),
+			"nor patience")
+	check(names.has("show_ended"),
+			"the per-show flag that replaced it IS declared, so undo has something to rewind")
+
+	# And the replacement genuinely rewinds with the board, which is the property the act
+	# count was kept on GameData for in the first place.
+	var g := Game.new()
+	CardEnvironment.CURRENT = g
+	g.state = GameData.new()
+	g.save_state()
+	g.state.revision += 1
+	g.save_state()
+	g.end_show()
+	check(g.state.show_ended, "precondition: the show is ended")
+	g.undo()
+	check(not g.state.show_ended,
+			"undo rewinds the show back to live -- the flag travels with the snapshot")
+	CardEnvironment.CURRENT = null
+	g.free()

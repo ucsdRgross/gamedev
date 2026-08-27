@@ -519,8 +519,8 @@ func _session_cycle() -> void:
 
 	var won : Array[bool] = []
 	g2.show_resolved.connect(func(w: bool, _score: int, _goal: int) -> void: won.append(w))
-	while g2.submits_used < Game.MAX_SUBMITS:
-		await g2.submit()
+	await g2.submit()
+	g2.end_show()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
 	g2.exit_show()   # win path: return_to_map banks the deck into the run doc
 	await _settle()

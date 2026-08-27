@@ -40,14 +40,14 @@ var revision : int = 0:
 		if row_total == value: return
 		row_total = value
 		state_changed.emit()
-## Acts used this show. Lives ON the board state so every undo/history snapshot carries it:
-## undoing across a Submit rewinds the act count together with the board (it used to be a
-## Game-level counter that undo never touched — owner bug report).
-@export_storage var submits_used : int = 0
+## The player has ended this show and the outcome is up. Lives ON the board state so undo
+## rewinds it with the board and a resume comes back into the outcome rather than a live board
+## — the same reason the act count used to live here.
+@export_storage var show_ended : bool = false
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
-## submits_used lives here.
+## show_ended lives here.
 @export_storage var combo_classes : Array[String] = []
 ## How many registrations landed on a class ALREADY seen. Kept alongside the distinct set
 ## because the two are weighted differently: a first-of-its-class and a repeat each add their

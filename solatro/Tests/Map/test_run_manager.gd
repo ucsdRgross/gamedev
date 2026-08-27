@@ -184,7 +184,6 @@ func test_game_state_round_trip() -> void:
 	var run := RunManager.new_run([] as Array[CardData], [] as Array[CardData])
 	# Build two runtime states (an undo stack of depth 2) and store them saveable.
 	run.game_history = [_show_state(100), _show_state(123)] as Array[GameData]
-	run.game_submits = 2
 	# A Submit was mid-scoring when saved — the marker must survive so resume replays it.
 	run.pending_action = &"on_run_scorer"
 	RunManager.save_run()
@@ -194,7 +193,7 @@ func test_game_state_round_trip() -> void:
 			"save_run actually writes run.tres to disk (temp file keeps a .tres extension)")
 
 	var loaded := RunManager.load_run()
-	check(loaded.game_history.size() == 2 and loaded.game_submits == 2,
+	check(loaded.game_history.size() == 2,
 			"full undo history + act count persist")
 	check(loaded.pending_action == &"on_run_scorer",
 			"pending-action marker persists (quit mid-scoring replays the Submit on resume)")

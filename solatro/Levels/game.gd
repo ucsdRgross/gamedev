@@ -77,12 +77,8 @@ var processing : bool = false:
 
 ## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
 ## after the last one.
-const MAX_SUBMITS := 3
-## Acts used this show — FORWARDS to state.submits_used (GameData) so undo/save snapshots
-## rewind it with the board. Callers keep the old Game-level API.
-var submits_used : int:
-	get: return state.submits_used
-	set(value): state.submits_used = value
+# A show is one continuous performance: it runs until the player ends it, so there is no act
+# count and no ceiling on acts. `end_show()` is the only thing that resolves one.
 var _won : bool = false
 ## The show finished and the win/lose screen is up. Undo in this state dismisses the outcome
 ## and rewinds the final Submit (show_unresolved). Reset by that undo; a fresh _resolve_game
@@ -188,7 +184,6 @@ func _ready() -> void:
 func _start_fresh_show() -> void:
 	# The map node being played sets the fame requirement (RunManager.goal_for).
 	state.goal = maxi(Main.save_info.pending_goal, 1)
-	submits_used = 0
 	_update_submit_label()
 	add_deck()
 	await run_all_mods(&"on_game_start")
@@ -217,10 +212,9 @@ func _resume_show() -> void:
 		_debug_history = save_history.duplicate()
 		_debug_redo.clear()
 	state = _runtime_state(save_history[-1])
-	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
+	# AFTER the state swap (the resolved flag lives on GameData — assigning before would write
 	# into the state being replaced). The run save stays authoritative: snapshots from before
 	# the field existed default to 0 and this rescues them.
-	submits_used = Main.save_info.game_submits
 	_update_submit_label()
 	state.revision += 1  # force the play area to rebuild from the restored board
 	# ...and baseline AFTER that bump: the restored board is committed, and the cosmetic bump
@@ -242,9 +236,9 @@ func _resume_after_visuals() -> void:
 	# headless: no view means no visuals to sync — the state is already restored, so skip
 	# straight to the outcome/replay/handoff decision below.
 	if view: await view.load_board_visuals()
-	print("[resume] board fully loaded: goal=%d total_score=%d submits_used=%d pending_action=%s"
-			% [state.goal, state.total_score, submits_used, Main.save_info.pending_action])
-	if submits_used >= MAX_SUBMITS:
+	print("[resume] board fully loaded: goal=%d total_score=%d resolved=%s pending_action=%s"
+			% [state.goal, state.total_score, state.show_ended, Main.save_info.pending_action])
+	if state.show_ended:
 		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
 	elif Main.save_info.pending_action != &"":
 		await _replay_pending_action(Main.save_info.pending_action)
@@ -378,7 +372,6 @@ func save_state() -> void:
 	if RunManager.run != null:
 		RunManager.run.game_history = save_history
 		RunManager.run.game_history_trimmed = history_trimmed
-		RunManager.run.game_submits = submits_used
 		# An action fully committed: nothing is mid-resolution anymore, so drop any replay
 		# marker (see _begin_action). Card moves land here too, harmlessly clearing it.
 		RunManager.run.pending_action = &""
@@ -395,7 +388,6 @@ func _begin_action(action: StringName) -> void:
 	if RunManager.run != null:
 		RunManager.run.pending_action = action
 		RunManager.run.game_history = save_history
-		RunManager.run.game_submits = submits_used
 		RunManager.request_save()
 
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
@@ -424,14 +416,12 @@ func undo() -> void:
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = _runtime_state(prev_game_data)
 		_last_saved_revision = state.revision  # the restored board IS history's top: committed
-		# The restored snapshot carries its own submits_used — refresh the Submit button label
 		# so an undo across a Submit shows the act back (state swap bypasses the setter).
 		_update_submit_label()
 		# History shrank — persist so the reverted state (not the mistake) is what a quit
 		# resumes to. Undo is the sanctioned rewind; closing the game is not.
 		if RunManager.run != null:
 			RunManager.run.game_history = save_history
-			RunManager.run.game_submits = submits_used
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
@@ -505,7 +495,6 @@ func _restore_pre_act_board(context: String) -> void:
 	if RunManager.run != null:
 		RunManager.run.pending_action = &""   # nothing is mid-resolution anymore
 		RunManager.run.game_history = save_history
-		RunManager.run.game_submits = submits_used
 		RunManager.request_save()
 	if view:
 		view.abort_props()   # the simulation stopped mid-run; free its stranded visuals
@@ -679,17 +668,27 @@ func _perform_submit() -> void:
 	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
 	if view: view.sync_scores()
 	state.discard_lower_board()
-	submits_used += 1  # bump BEFORE save_state so the persisted act count matches the board
 	_update_submit_label()
 	save_state()
-	if submits_used >= MAX_SUBMITS:
-		_resolve_game()
-		return  # processing stays true: the show is over, no more input
 	processing = false
 
 func _update_submit_label() -> void:
-	submit_label_changed.emit("Submit (%d act%s left)" \
-			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"])
+	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))
+
+## The player ends the performance. A show runs until this is called; there is no act count
+## and nothing resolves one on its own. Marks the state resolved BEFORE saving, so a quit at
+## the outcome screen resumes into the outcome rather than back into a live board.
+func end_show() -> void:
+	if state.show_ended: return
+	state.show_ended = true
+	# Ending is an undoable action but NOT a board mutation, and save_state() only commits
+	# when `revision` moved -- without a bump the End would leave no snapshot and undo would
+	# have nothing to rewind to. The state is fully consistent here, so the bump is safe.
+	state.revision += 1
+	save_state()
+	# The show is over: input stays locked until Continue or an undo dismisses the outcome.
+	processing = true
+	_resolve_game()
 
 ## All acts performed: win if the fame requirement was reached. The view shows the win/lose
 ## screen + Continue button and calls exit_show(). Fame is NOT banked here — the outcome
@@ -736,7 +735,6 @@ func return_to_map() -> void:
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
-	Main.save_info.game_submits = 0
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
@@ -1018,7 +1016,7 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 ## (direction affects hook order, so it is data, not RNG).
 func entity_side_for_row(v: Vector3i) -> bool:
 	# history_trimmed + size = total actions ever committed — invariant under the undo cap
-	return hash([submits_used, history_trimmed + save_history.size(), v.x, v.z]) & 1 == 0
+	return hash([history_trimmed + save_history.size(), v.x, v.z]) & 1 == 0
 
 ## Every slot in v's row (fixed zone x + row z, across columns y), left-to-right or reversed.
 func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:

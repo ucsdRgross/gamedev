@@ -431,7 +431,6 @@ func _submit_in_background() -> void:
 func test_undo_button_cancels_live_submit() -> void:
 	pa.ungrab_cards()   # held cards would make _on_undo_pressed swallow the click
 	SettingsManager.settings.base_delay = SLOW_DELAY
-	var submits_before : int = game.submits_used
 	var history_before : int = game.save_history.size()
 	var score_before : int = game.state.total_score
 	_submit_finished[0] = false
@@ -443,7 +442,6 @@ func test_undo_button_cancels_live_submit() -> void:
 	var done := await wait_until(func() -> bool:
 			return _submit_finished[0] and not game.processing)
 	check(done, "the cancelled submit hands input back (never hangs)")
-	check(game.submits_used == submits_before, "no act was consumed", str(game.submits_used))
 	check(game.save_history.size() == history_before,
 			"nothing was committed by the cancelled submit")
 	check(game.state.total_score == score_before, "no act score was applied")
@@ -460,9 +458,9 @@ func test_game_over_interactivity() -> void:
 	pa.ungrab_cards()   # held cards would make _on_undo_pressed swallow the outcome undo
 	var resolved : Array[bool] = [false]
 	game.show_resolved.connect(func(_w: bool, _s: int, _g: int) -> void: resolved[0] = true)
-	while game.submits_used < Game.MAX_SUBMITS:
-		await game.submit()
-	check(resolved[0], "the final act resolves the show")
+	await game.submit()
+	game.end_show()
+	check(resolved[0], "ending the show resolves it")
 	await frames(2)
 	var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
 	check(screen.visible, "an outcome screen is showing")
@@ -486,12 +484,11 @@ func test_game_over_interactivity() -> void:
 	await mouse_click(pa_rect.get_center())
 	check(selections.is_empty(), "a click on the covered board selects nothing")
 	# Undo at the outcome screen: overlay drops, the final Submit rewinds, play resumes.
-	var submits_at_over : int = game.submits_used
 	await mouse_click(center_of(view.undo_button))
 	await frames(2)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"Undo dismisses the outcome overlay")
-	check(game.submits_used == submits_at_over - 1, "Undo rewinds the final Submit's act")
+	check(not game.state.show_ended, "Undo rewinds the show back to live")
 	check(not game.processing, "play resumes after the outcome undo")
 	check(not view.submit_button.disabled and not view.next_button.disabled,
 			"Submit and Next come back with play")
