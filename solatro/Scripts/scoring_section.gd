@@ -4,6 +4,10 @@
 class_name ScoringSection
 extends RefCounted
 
+## Every shape a scoring line can take: a row, a column, either diagonal family (flat or
+## climbing through height), or a vertical run within one cell.
+enum LineKind { ROW, COL, DIAG, HEIGHT_V }
+
 ## Every card participating in the hand. THIS IS THE SPOTLIGHT SET (design Q31=d) — it is not
 ## derived from geometry and it is not `result.meld`.
 var cards : Array[CardData] = []
