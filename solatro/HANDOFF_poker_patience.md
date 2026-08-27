@@ -761,11 +761,16 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 **The assigned range is finished and the player loop closes.** A show now deals, refills,
 commits to a grid, places, scores, banks, undoes, replays a quit, shows a live score and ends.
 
-1. **Phase 5 (S20-S25)** — the flipped board: upward stacks, the shared bottom edge, the
-   Entrance at `y == -1`, score labels, `slot_center_global`. ⚠ **This is the owner-visible
-   one**: cards still stack DOWNWARD on screen. The design settled UP (`Q72`, `Q74`, `Q307`,
-   `Q308`); Phase 5 is where it happens.
-2. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. Three smaller things belong here
+1. ⚠ **GAP-009 BLOCKS EVERYTHING VISUAL AND NEEDS AN OWNER ANSWER.** **No step builds the
+   grid'"'"'s VIEW.** `PlayArea` renders only the two legacy zones -- `grids` appears nowhere in
+   `UI/play_area.gd` -- so a card placed on a grid has no control, no visual and no position.
+   `NAMES.md` §10 names `%GridContainer` / `%GridPanel`, but no PLAN step claims them, and
+   Phases 5, 6 and 7 are all written as rules over a view that does not exist.
+2. **Phase 5 (S20-S25)** — the flipped board. **S20 is DONE** (a comment re-derivation plus a
+   gate; it needed no view). **S21 onward is blocked on GAP-009.** ⚠ This is the owner-visible
+   one: cards still stack DOWNWARD on screen. The design settled UP (`Q72`, `Q74`, `Q307`,
+   `Q308`), and the flip lands here -- but the thing to flip has to exist first.
+3. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. Three smaller things belong here
    and are written down so they are not lost:
    - **chart A5, "legal cells highlighted while a card is held", is not built.** The rule
      behind it is (a cell always accepts); nothing draws it.
@@ -773,12 +778,12 @@ commits to a grid, places, scores, banks, undoes, replays a quit, shows a live s
      to highlight once the goal is met.
    - the HUD still shows the retired row/col/mult subtotals as zeros; the design says NO
      subtotals are displayed at all.
-3. **Phase 7 (S31-S34)** — the wall.
-4. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5**, reasoning in
+4. **Phase 7 (S31-S34)** — the wall.
+5. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5**, reasoning in
    its task entry: it cannot be split from the prop system, and PLAN.md §4 reserves that to
    whatever `slot_center_global` forces, which is Phase 5's. **Its cost is live and known: a
    scored grid line pays its points and fires no props.**
-5. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
+6. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
 
 ⚠ **Not owned by any step, worth an owner decision:** `Game.submit()` and the Next button are
 both vestigial. Chart D retires the act outright ("no act, no banking moment"; "End fires its

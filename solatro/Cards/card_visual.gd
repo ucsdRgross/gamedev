@@ -29,11 +29,20 @@ const ART_OUTLINE := CardOutline.WIDTH
 const CARD_SIZE := CARD_ART_SIZE + Vector2.ONE * ART_OUTLINE * 2.0
 ## The strip of a covered card that stays visible in a stack, in art units.
 ##
-## ⚠ **14 -> 16 came with the outline, and it is a BOARD-LAYOUT change, not just a card change** (owner:
-## *"pip added 2 pixels, need 2 unit clearance to account for animations"*). The arithmetic lands
-## exactly: the outlined pip row now ends 14 units below the card's top edge (4 of margin + a 10-unit
-## outlined pip), and 14 + 2 of clearance for the idle rig = 16. Every stacked card therefore sits 2
-## units further down and a tall column grows ~14 %.
+## Stacks grow UPWARD, so the strip that stays visible is the card's BOTTOM band, and what has to
+## fit inside it is that card's pip row. Derived from where the pips actually sit in
+## `card_visual.tscn` -- the Rank/Suit polygons are centred at y = 18 with a +/-5 extent, so the
+## pips span [13, 23] and the card's bottom edge is at 27:
+##
+##     4 (margin below the pips) + 10 (the outlined pip) = 14
+##     14 + 2 (clearance for the idle rig)               = 16
+##
+## ⚠ **IT IS A BOARD-LAYOUT NUMBER, NOT JUST A CARD ONE** -- it is the board's row pitch, so
+## moving it moves every stacked card and every prop anchored to a slot. The 2 is the only part
+## that is a choice rather than a measurement (owner: *"pip added 2 pixels, need 2 unit clearance
+## to account for animations"*); everything else follows from the art, and
+## `test_outline.test_card_separation_derives_from_the_pip_row` re-derives it from the scene so
+## an art pass that moves the pips cannot silently leave the pitch behind.
 const CARD_SEPARATION : int = 16
 ## How far anim_jump lifts a card, in UNSCALED units. Shared, not a literal inside the animation:
 ## props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide —
