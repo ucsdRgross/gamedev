@@ -2,7 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete** — S1–S11 landed and committed, suite green at 41 suites. Next is S12, which opens Phase 3 (the economy). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1–S12 landed and committed,
+suite green at 42 suites. Next is S13 (grid_score as the product of positive buckets). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -304,11 +305,22 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S12
   description: 'The three buckets per grid and their storage, pack/unpack, duplicate_state() copy.'
-  files_touched: []
+  files_touched: [solatro/Scripts/game_data.gd, solatro/Scripts/scoring_section.gd,
+     solatro/Levels/game.gd, solatro/Levels/game_view.gd, solatro/UI/play_area.gd,
+     solatro/Tests/Engine/test_grid_economy.gd, solatro/Tests/all_tests.tscn]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES ======== (only the known intermittent failing)
+    TP-47..TP-50 green in the new Phase 3 suite, which carries its own registration gate.
+    Red: sharing the raised 2-D containers instead of hand-copying them fails TP-50 at
+    1040 / 1050 -- the copy followed the original.
+    Two defects found: buckets seeded at ONE (BigNumber.new() is 1, not 0) which would
+    have made every unscored bucket read as scored to S13's product rule; and the legacy
+    scores_col collided with the registry name, so it is renamed scores_col_legacy until
+    S19b removes it.
+    Committed 3a384d2.
   notes: 'Done-when: TP-47..TP-50 green.'
 
 - id: S13
@@ -454,6 +466,12 @@ and `NAMES.md`, because they are newer.**
   `GameData.has_cell(coord)` is the landing question, and a landing on nothing discards.
   ⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`,
   chosen by the overseer because the owner's answer required a name no document fixes.
+- **GAP-005 — OPEN, needs the owner.** Nothing says which bucket a `HEIGHT_V` line (a
+  vertical stack in one cell) banks into. Row, col and special are all specified; the
+  vertical run is not. Its score is deliberately NOT banked rather than guessed. Everything
+  else in Phase 3 is unaffected.
+- **GAP-004** — answered: a diagonal is a same-rate run, corners irrelevant; the owner
+  confirmed this governs the flat case only and the eight climbing families stand.
 - **GAP-003** — the legacy 3-component coordinate is retired: the lower zone becomes an
   ordinary grid, the upper zone becomes the Entrance. **Scheduled as `S19b`**, not yet
   implemented — see that ledger entry and GAP-003's sequencing note for why it sits there
@@ -503,11 +521,7 @@ solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
 
 ## Next up
 
-1. S12 — the three buckets per grid and their storage, pack/unpack and the
-   `duplicate_state()` manual copy (TP-47..TP-50). Opens Phase 3.
-   ⚠ A grid line currently banks NOTHING: `add_line_score` has no bucket to write to, which
-   is why `state.total_score` stays 0. S12 is what closes that.
-2. S13 — `grid_score` as the product of positive buckets (TP-51..TP-56). ⚠ TP-51 is the
+1. S13 — `grid_score` as the product of positive buckets (TP-51..TP-56). ⚠ TP-51 is the
    owner's worked example verbatim; TP-54 tests the VALUE, never touched-ness.
 3. S14 — the combo model and the retirement of `MAX_SUBMITS`, `submits_used`,
    `score_additive`, `duplicate_class_scale` and the patience family (TP-57..TP-61).
