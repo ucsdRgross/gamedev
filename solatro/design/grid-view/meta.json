@@ -1,0 +1,8 @@
+{
+  "slug": "grid-view",
+  "title": "The grid view replaces the play area",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "rounds": 0,
+  "confirmed_version": null
+}
