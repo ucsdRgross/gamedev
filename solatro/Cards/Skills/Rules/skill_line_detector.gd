@@ -42,6 +42,10 @@ func on_board_mutated(coord: BoardCoord, is_compaction: bool) -> void:
 			if line.kind != kind: continue
 			if not _is_complete(game.state, coord.grid, line): continue
 			var section := ScoringSection.of_geometric_line(game.state, coord.grid, line)
+			# No result is computed here ON PURPOSE. score_line re-evaluates the hand
+			# itself, over whatever is in the section after every spotlight effect has
+			# fired, and THAT is what banks -- so a result computed now would only be
+			# thrown away, and computing one would imply it survived the cascade.
 			await game.score_line(null, section)
 			if game.act_overrun or game.act_cancelled: return
 

@@ -32,6 +32,9 @@ func _ready() -> void:
 	await run_detector_triple_and_order_test()
 	await run_detector_rescan_test()
 	await run_detector_runaway_guard_test()
+	await run_hand_through_pokerhands_test()
+	await run_multi_line_spotlight_unabbreviated_test()
+	await run_hand_reevaluated_after_spotlight_test()
 	finish()
 
 # ==============================================================================
@@ -520,9 +523,17 @@ func run_pass_runs_after_commit_test() -> void:
 ## Game with a tap on score_line. Records the section, then behaves exactly as Game does.
 class RecordingGame extends Game:
 	var scored : Array[ScoringSection] = []
+	## Every amount `score_line` actually banked, in call order -- this IS `result.score` from
+	## the re-evaluated `Scoring.PokerHands.score()` call, since `add_line_score` is the single
+	## write path score_line hands its computed amount to (S10: which bucket a section banks
+	## into is a later step, but the amount reaching this call is already the final one).
+	var banked_amounts : Array[int] = []
 	func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 		scored.append(section)
 		await super(result, section)
+	func add_line_score(section : ScoringSection, amount : int) -> void:
+		banked_amounts.append(amount)
+		super(section, amount)
 
 ## The real detector card, spotlit in the rules deck so run_all_mods dispatches to it.
 func detector_game(state: GameData, extra: CardModifierSkill = null) -> RecordingGame:
@@ -759,3 +770,134 @@ func run_nonsquare_diag_test() -> void:
 	check(flat_square == 2,
 			"a square grid still reports exactly two flat diagonals through its centre",
 			"got %d" % flat_square)
+
+# ==============================================================================
+# S10 -- the detected line actually evaluates a poker hand (TP-37..TP-39).
+# ==============================================================================
+
+# ==============================================================================
+# TP-37 -- the hand goes through PokerHands.score() unchanged: a straight and a flush of
+# the same shape are told apart by the SAME evaluator every other caller uses, and the
+# banked amount is exactly what that evaluator returned. FIX-ROW-STRAIGHT.
+# ==============================================================================
+func run_hand_through_pokerhands_test() -> void:
+	behavior_section("HAND THROUGH POKERHANDS")
+	var state := TestGridFixtures.build_fix_row_straight()
+	var grid : GridData = state.grids[0]
+	var idx := grid.cell_index(4, 0)
+	var last_card : CardData = grid.cells[idx].datas[0]
+	grid.cells[idx].datas.clear()
+	var g := detector_game(state)
+	await g.place_card_in_grid(last_card, BoardCoord.new(0, 4, 0, 0))
+	check(g.scored.size() == 1, "exactly one line scored", "got %d" % g.scored.size())
+	if g.scored.is_empty():
+		free_grid_game(g)
+		return
+	var section : ScoringSection = g.scored[0]
+	var expected : Array[Scoring.Result] = await Scoring.PokerHands.score(section.cards)
+	check(not expected.is_empty(), "PokerHands.score() returns a result for the completed row")
+	if expected.is_empty():
+		free_grid_game(g)
+		return
+	var best : Scoring.Result = expected[0]
+	check(best.types.has(Scoring.MELD_TYPE.STRAIGHT),
+			"FIX-ROW-STRAIGHT's mixed-suit run scores as a STRAIGHT", "types %s" % [best.types])
+	check(not best.types.has(Scoring.MELD_TYPE.FLUSH),
+			"FIX-ROW-STRAIGHT is not also read as a FLUSH", "types %s" % [best.types])
+	check(g.banked_amounts.size() == 1 and g.banked_amounts[0] == best.score,
+			"the banked amount is exactly PokerHands.score()'s own result, unforked",
+			"banked %s, PokerHands.score() said %d" % [g.banked_amounts, best.score])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-38 -- the spotlight cascade runs unabbreviated even for a multi-line placement: one
+# placement completing a row, a column and BOTH main diagonals banks every one of them, not
+# an abbreviated subset. FIX-TRIPLE.
+# ==============================================================================
+func run_multi_line_spotlight_unabbreviated_test() -> void:
+	behavior_section("MULTI-LINE SPOTLIGHT UNABBREVIATED")
+	var state := TestGridFixtures.build_fix_triple()
+	var g := detector_game(state)
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	# ROW + COL + both main DIAGs through the shared centre cell (TP-20/TP-33/TP-34).
+	check(g.scored.size() == 4,
+			"the placement completes a row, a column and both main diagonals -- all four score",
+			"got %d" % g.scored.size())
+	check(g.banked_amounts.size() == g.scored.size(),
+			"every scored section actually banked an amount -- none was skipped",
+			"%d banked amounts for %d scored sections" % [g.banked_amounts.size(), g.scored.size()])
+	var expected_total := 0
+	for section : ScoringSection in g.scored:
+		var results : Array[Scoring.Result] = await Scoring.PokerHands.score(section.cards)
+		if results: expected_total += results[0].score
+	var banked_total := 0
+	for amount : int in g.banked_amounts: banked_total += amount
+	check(banked_total == expected_total,
+			"the sum banked across the cascade equals the sum PokerHands.score() gives each line",
+			"banked total %d, sum of PokerHands.score() results %d" % [banked_total, expected_total])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-39 -- the hand is re-evaluated after every spotlight effect: a hook that swaps a card
+# out of the section mid-cascade changes what banks, because the banked result is derived
+# from the section as it stands AFTER the effects, not the one computed at completion.
+# FIX-ROW-FLUSH.
+# ==============================================================================
+
+## Fires on its own card's spotlight and swaps a different card into the same cell, breaking
+## the flush the section originally completed with.
+class EffectSwapDuringSpotlight extends CardModifierSkill:
+	var game_ref : Game
+	var coord : BoardCoord
+	var replacement : CardData
+	var swapped := false
+	func get_str() -> String: return "EffectSwapDuringSpotlight"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_spotlight() -> void:
+		if swapped or not game_ref: return
+		swapped = true
+		var victim : CardData = game_ref.state.card_at(coord)
+		if victim: Board.remove_from_cell(game_ref.state, victim)
+		Board.place_in_cell(game_ref.state, replacement, coord)
+
+func run_hand_reevaluated_after_spotlight_test() -> void:
+	behavior_section("HAND REEVALUATED AFTER SPOTLIGHT")
+	var state := TestGridFixtures.build_fix_row_flush()
+	var grid : GridData = state.grids[0]
+	var idx := grid.cell_index(0, 0)
+	var swap_target : CardData = grid.cells[idx].datas[0]
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	var effect := EffectSwapDuringSpotlight.new()
+	effect.coord = coord
+	effect.replacement = TestFactories.m_card(3, TestFactories.uc())
+	swap_target.with_skill(effect)
+	var g := detector_game(state)
+	effect.game_ref = g
+	# Complete the row by placing the last card through the detector so the pass fires.
+	var last_idx := grid.cell_index(4, 0)
+	var last_card : CardData = grid.cells[last_idx].datas[0]
+	grid.cells[last_idx].datas.clear()
+	await g.place_card_in_grid(last_card, BoardCoord.new(0, 4, 0, 0))
+	check(effect.swapped, "the spotlight hook really fired and swapped a card (else this test is vacuous)")
+	var pre_swap_cards : Array[CardData] = []
+	pre_swap_cards.append(swap_target)
+	for xi : int in [1, 2, 3]:
+		pre_swap_cards.append_array(grid.cells[grid.cell_index(xi, 0)].datas)
+	pre_swap_cards.append(last_card)
+	var pre_swap_results : Array[Scoring.Result] = await Scoring.PokerHands.score(pre_swap_cards)
+	var pre_swap_score : int = pre_swap_results[0].score if pre_swap_results else 0
+	# ⚠ Read the BANKED amount, not state.total_score: a grid line's bucket does not exist
+	# yet, so total_score is always 0 here and comparing against it passes vacuously.
+	check(g.banked_amounts.size() == 1,
+			"exactly one line banked, so the amount below is unambiguous",
+			"banked %s" % [g.banked_amounts])
+	var banked : int = g.banked_amounts[0] if g.banked_amounts.size() == 1 else -1
+	check(pre_swap_score > 0,
+			"the ORIGINAL five cards really did score (else the comparison is vacuous)",
+			"pre-swap scored %d" % pre_swap_score)
+	check(banked != pre_swap_score,
+			"the banked hand is the RE-EVALUATED one, not the pre-swap five cards",
+			"banked %d, the pre-swap cards would have scored %d" % [banked, pre_swap_score])
+	free_grid_game(g)

@@ -76,6 +76,21 @@ static func build_fix_row_flush() -> GameData:
 	state.grids = [grid]
 	return state
 
+## FIX-ROW-STRAIGHT: grid 0 row 0 filled with five cards ranks 3,4,5,6,7 across mixed suits --
+## a straight, not a flush. Pairs with FIX-ROW-FLUSH so the evaluator is shown telling the two
+## apart, not merely returning something non-null.
+static func build_fix_row_straight() -> GameData:
+	var state := GameData.new()
+	var grid := _new_grid(5, 5)
+	var ranks : Array[int] = [3, 4, 5, 6, 7]
+	for x in grid.grid_width:
+		var idx := grid.cell_index(x, 0)
+		var card := TestFactories.m_card(ranks[x], TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		grid.cells[idx].datas.append(card)
+	state.grids = [grid]
+	return state
+
 ## FIX-TRIPLE: grid 0 arranged so cell (2,2) completes row 2, column 2 and a diagonal at
 ## once -- both main diagonals, row 2 and column 2 fully filled.
 static func build_fix_triple() -> GameData:
