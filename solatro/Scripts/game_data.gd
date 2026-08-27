@@ -421,6 +421,30 @@ func validate() -> Array[String]:
 		for i in deck.size():
 			if not deck[i]:
 				violations.append("I3: %s index %d is null" % [deck_name, i])
+	#I3: ALIASING -- the same GridData under two indexes, or the same cell array reachable from
+	#two cells. Neither shows up as a size or null violation: an aliased board looks entirely
+	#consistent until a placement into one grid appears in the other. Checked BEFORE the
+	#duplicate-card scan, which would otherwise report every card the shared object holds as
+	#"in two places" and bury the single fact that explains all of them.
+	var seen_grid_objects : Dictionary = {}
+	var seen_cell_objects : Dictionary = {}
+	for gi in grids.size():
+		var grid_alias_check : GridData = grids[gi]
+		if not grid_alias_check: continue
+		if seen_grid_objects.has(grid_alias_check):
+			violations.append("I3: grid %d is the same GridData as grid %d" \
+					% [gi, seen_grid_objects[grid_alias_check]])
+			continue #its cells are the same objects too; one report, not width*height of them
+		seen_grid_objects[grid_alias_check] = gi
+		for ci in grid_alias_check.cells.size():
+			var cell_alias_check : ArrayCardData = grid_alias_check.cells[ci]
+			if not cell_alias_check: continue
+			if seen_cell_objects.has(cell_alias_check):
+				var first : Array = seen_cell_objects[cell_alias_check]
+				violations.append("I3: grid %d cell %d is the same ArrayCardData as grid %d cell %d" \
+						% [gi, ci, first[0], first[1]])
+			else:
+				seen_cell_objects[cell_alias_check] = [gi, ci]
 	#I3: no null grid cells / cell zone cards
 	for gi in grids.size():
 		var grid_null_check : GridData = grids[gi]

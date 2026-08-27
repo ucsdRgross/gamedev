@@ -9,6 +9,7 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ GRID BOARD TEST PASS ============")
+	check_all_tests_registered()
 	run_round_trip_test()
 	run_continuous_x_test()
 	run_entrance_test()
@@ -24,6 +25,7 @@ func _ready() -> void:
 	run_compaction_single_bump_test()
 	run_compaction_flag_test()
 	run_has_cell_test()
+	run_validate_catches_grid_aliasing_test()
 	finish()
 
 # ==============================================================================
@@ -439,3 +441,57 @@ func run_has_cell_test() -> void:
 			"the hole sits at the truncated tail of the row-major cell array")
 	check(not state.has_cell(BoardCoord.new(0, 4, 4, 0)),
 			"has_cell is false for a coordinate inside a real grid's block with no cell there")
+
+# ==============================================================================
+# TP-127 -- validate() catches a grid invariant violation. The SIZE and NULL and duplicate
+# invariants are already covered above; what is not is ALIASING -- the same object reachable
+# from two places at once.
+#
+# WARNING: THIS IS THE FAILURE MODE THE GRID MODEL ACTUALLY HAS. Every grid is built and
+# owned by a SkillGridCreator card that holds a reference to it, and every snapshot is a deep
+# copy; an aliased GridData or an aliased cell array therefore reads as perfectly consistent
+# on inspection -- the sizes match, nothing is null, no card is listed twice -- right up until
+# a placement into one grid silently appears in the other. Sizes and nulls cannot see it.
+# ==============================================================================
+
+## True when some violation mentions every one of `needles`.
+func _reports(violations: Array[String], needles: Array[String]) -> bool:
+	for v : String in violations:
+		var all_present := true
+		for needle : String in needles:
+			if not v.contains(needle):
+				all_present = false
+				break
+		if all_present: return true
+	return false
+
+func run_validate_catches_grid_aliasing_test() -> void:
+	behavior_section("VALIDATE CATCHES GRID ALIASING")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	check(state.validate().is_empty(), "precondition: the fixture starts clean",
+			"; ".join(state.validate().slice(0, 2)))
+
+	# One GridData listed twice: two grids that are the same grid.
+	state.grids[2] = state.grids[0]
+	var aliased_grid := state.validate()
+	check(_reports(aliased_grid, ["grid 2", "same GridData"]),
+			"the same GridData listed under two indexes is reported, naming the later index",
+			"; ".join(aliased_grid.slice(0, 3)))
+
+	# One cell array shared by two cells: a card placed in either lands in both.
+	state = TestGridFixtures.build_fix_mixed_h()
+	state.grids[0].cells[7] = state.grids[0].cells[3]
+	var aliased_cell := state.validate()
+	check(_reports(aliased_cell, ["same ArrayCardData"]),
+			"a cell array reachable from two cells is reported",
+			"; ".join(aliased_cell.slice(0, 3)))
+	check(_reports(aliased_cell, ["cell 3", "cell 7"]),
+			"...and the report names BOTH cells, not just the one it noticed second",
+			"; ".join(aliased_cell.slice(0, 3)))
+
+	# A clean board stays clean: a check that fires on the fixture it walks 75 cells of would
+	# make every real board report a violation forever.
+	state = TestGridFixtures.build_fix_mixed_h()
+	check(state.validate().is_empty(),
+			"a legitimate multi-grid board reports nothing",
+			"; ".join(state.validate().slice(0, 3)))

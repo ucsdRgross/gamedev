@@ -27,6 +27,7 @@ func _ready() -> void:
 	run_zero_valued_bucket_excluded_test()
 	run_board_total_is_the_sum_test()
 	run_terms_aggregate_their_levels_test()
+	await run_played_scores_survive_the_save_path_test()
 	run_retired_identifiers_grep_gate()
 	run_no_resurrected_act_count_test()
 	finish()
@@ -550,3 +551,41 @@ func run_no_resurrected_act_count_test() -> void:
 			"undo rewinds the show back to live -- the flag travels with the snapshot")
 	CardEnvironment.CURRENT = null
 	g.free()
+
+# ==============================================================================
+# TP-129 -- scores made by REAL PLAY survive a save and reload with their values.
+#
+# WARNING: THE ROUND-TRIP TESTS ABOVE DO NOT COVER THIS, and the difference is where the bugs
+# live. They call pack_scores()/unpack_scores() directly on values written by hand. The actual
+# save path is to_saveable(), which packs and then CLEARS every runtime bucket -- so a bucket
+# that packs correctly but is not on to_saveable's clear-and-restore list round-trips
+# perfectly here and comes back empty in a real reload. This drives the buckets through
+# scoring, then through the real path, and compares the SCORE, which is what the player sees.
+# FIX-TRIPLE: cell (2,2) completes a row, a column and a diagonal at once, so all three
+# per-grid buckets are non-empty and grid_score is a genuine three-term product.
+# ==============================================================================
+func run_played_scores_survive_the_save_path_test() -> void:
+	behavior_section("PLAYED SCORES SURVIVE THE SAVE PATH")
+	var g := detector_game(TestGridFixtures.build_fix_triple())
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+
+	var played := g.state.live_total()
+	check(played > 0, "precondition: the placement scored", str(played))
+	var digest := TestGridFixtures.board_digest(g.state)
+
+	# The real path a quit takes: to_saveable() for the disk form, then duplicate_state() +
+	# restore_runtime() to build the live state back out of it.
+	var saved := g.state.to_saveable()
+	var reloaded : GameData = saved.duplicate_state()
+	reloaded.restore_runtime()
+
+	check(reloaded.live_total() == played,
+			"the reloaded board scores exactly what the played one did",
+			"%d, wanted %d" % [reloaded.live_total(), played])
+	check(TestGridFixtures.board_digest(reloaded) == digest,
+			"...and every individual bucket came back, not just a total that happens to match",
+			"reloaded:\n%s\n---- wanted:\n%s" % [
+			TestGridFixtures.board_digest(reloaded), digest])
+	free_game(g)
+

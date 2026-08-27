@@ -24,6 +24,8 @@ extends TestSuite
 # restored after, so it always runs full and never touches the player's save.
 # ==============================================================================
 
+const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
+
 func suite_name() -> String:
 	return "E2E RUN"
 
@@ -40,6 +42,7 @@ func _ready() -> void:
 	var real_save_info: RunState = Main.save_info
 	await run_win_and_resume_scenario()
 	await run_loss_scenario()
+	await run_headless_and_viewed_parity_scenario()
 	# Join any in-flight background save FIRST — otherwise a write queued by the last
 	# save_state can land after clear_save and resurrect run.tres.
 	RunManager._shutdown_saver()
@@ -228,3 +231,98 @@ func run_loss_scenario() -> void:
 	check(lost.size() == 1, "leaving a lost show ends the whole run")
 	remove_child(g)
 	g.free()
+
+# ==============================================================================
+# SCENARIO 3: A WHOLE SHOW, HEADLESS AND VIEWED (TP-128, TP-130).
+#
+# TP-130 is the plain claim: a full show -- deal, place every card the Entrance ever offers,
+# End -- runs start to finish without stalling or throwing.
+#
+# TP-128 is the PHASE GATE, and it is the reason every `if view:` in the scoring path is
+# written the way it is. The view is supposed to be a presentation layer over a model that
+# does not know it exists; the moment a `view` branch decides anything -- rounds a number,
+# skips a step, reorders a cascade -- headless play and real play diverge, and every headless
+# test in this suite stops being evidence about the game the player actually plays. The two
+# runs below start from the same seed and the same frozen deck, make the same placements in
+# the same order, and must end on the same board, cell for cell and bucket for bucket.
+# ==============================================================================
+func run_headless_and_viewed_parity_scenario() -> void:
+	var headless := await play_whole_show(false)
+	var viewed := await play_whole_show(true)
+	var headless_placements : int = headless["placements"]
+	var viewed_placements : int = viewed["placements"]
+	var headless_digest : String = headless["digest"]
+	var viewed_digest : String = viewed["digest"]
+	var headless_resolved : bool = headless["resolved"]
+	check(headless_placements == 52,
+			"the headless show placed every card in the frozen 52-card deck",
+			"%d placements" % headless_placements)
+	check(headless_resolved, "the headless show ran to End and resolved")
+	check(viewed_placements == headless_placements,
+			"the viewed show made the same number of placements",
+			"%d vs %d" % [viewed_placements, headless_placements])
+	check(viewed_digest == headless_digest,
+			"a headless show and a viewed show end on the IDENTICAL board",
+			"viewed:\n%s\n---- headless:\n%s" % [viewed_digest, headless_digest])
+
+## Plays one whole show and returns {digest, placements, resolved}. `with_view` decides
+## whether a real GameView is attached; everything else is identical, deliberately.
+func play_whole_show(with_view: bool) -> Dictionary:
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	# The SAME seed for both runs: add_deck shuffles, so an unseeded second run would deal a
+	# different order and the comparison would be meaningless rather than false.
+	seed(20260827)
+	var view : GameView = null
+	var g : Game = null
+	if with_view:
+		view = GAME_VIEW_SCENE.instantiate()
+		add_child(view)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		g = view.game
+	else:
+		g = Game.new()
+		add_child(g)
+		await get_tree().process_frame
+
+	var resolved : Array[bool] = [false]
+	g.show_resolved.connect(func(_w: bool, _s: int, _go: int) -> void: resolved[0] = true)
+
+	# Place every card the Entrance offers, cell by cell in row-major order and then stacking
+	# once the grid is full. A FIXED walk, not a search: the two runs have to make the same
+	# choices for their boards to be comparable at all.
+	var placements := 0
+	while placements < 200:
+		var slot := first_occupied_slot(g)
+		if slot == -1: break
+		var held : CardData = g.state.upper_zone[slot].datas.back()
+		var n := placements % 25
+		await g.place_card_in_grid(held, BoardCoord.new(0, n % 5, n / 5, 0))
+		placements += 1
+	g.end_show()
+	var out := {
+		"digest": TestGridFixtures.board_digest(g.state),
+		"placements": placements,
+		"resolved": resolved[0],
+	}
+
+	if with_view:
+		view.queue_free()
+		await get_tree().process_frame
+	else:
+		remove_child(g)
+		g.free()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	return out
+
+## The leftmost Entrance slot holding a card, or -1 when the Entrance is empty.
+func first_occupied_slot(g: Game) -> int:
+	for col : int in g.state.upper_zone.size():
+		if not g.state.upper_zone[col].datas.is_empty(): return col
+	return -1
+
