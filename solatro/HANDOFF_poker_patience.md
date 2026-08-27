@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1–S12 landed and committed,
-suite green at 42 suites. Next is S13 (grid_score as the product of positive buckets). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1–S13 landed and committed,
+suite green at 42 suites. Next is S14 (the combo model and the retirements). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -325,11 +325,20 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S13
   description: 'grid_score as the product of positive buckets; board_total as their sum.'
-  files_touched: []
+  files_touched: [solatro/Scripts/game_data.gd, solatro/Tests/Engine/test_grid_economy.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3392 CHECKS PASSED ========
+    TP-51..TP-56 green. TP-51 walks the worked example STEP BY STEP (0, 10, 50, 100),
+    which matters: under multiply-by-everything the final 100 still passes because by
+    then all three terms are non-zero - only the intermediate steps catch it.
+    Red, both readings the owner ruled against:
+      multiply by every term including zero -> 9 checks fail
+      include a term by TOUCHED-NESS not value -> 7 fail, incl. "a bucket worth 0 is
+        excluded from the product even though its line scored -- got 0, wanted 10 * 5"
+    Committed 54cab17.
   notes: >
     Done-when: TP-51..TP-56 green. TP-51 reproduces the owner's worked example exactly:
     0+0+0 then 10 then 50 then 100. TP-54: a bucket whose VALUE is 0 is excluded from the
@@ -414,6 +423,25 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
     props and pips. Sequenced here (not before Phase 2) because Phases 2-3 read only grids,
     and S19 first archives the tableau cards that operate the lower zone. See GAP-003.
     ⚠ Until this lands, grid work reads card_at / the grid index, never position_of.
+
+- id: S37b
+  description: >
+    THE CLOSING PASS - not a PLAN.md step. Added because nothing between S1 and S37 audits
+    what this run wrote: PLAN.md's own documentation phase is S40-S44, outside this run's
+    range, and /plan-run's "Closing the run" is skill guidance rather than a tracked step.
+  files_touched: []
+  verification_command: 'py .claude/tools/doc_check.py && py solatro/Tools/run_tests.py'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: >
+    Scope: read the whole run's diff; adversarial review against DESIGN/PLAN/TEST_PLAN/NAMES
+    tracing what a player actually does; run /simplify over the changed files for reuse,
+    duplication and dead code; /docs pass over the new files and comments; fold ASSUMPTIONS.md
+    and the resolved gaps into the living docs; confirm doc_check reports no NEW findings
+    against the pre-existing backlog (measured at run start: 0 errors, 8 warnings - 343 design
+    ids, 137 dated, 128 long blocks, all pre-existing). ⚠ Do NOT delete the gap files: a gap is
+    closed by a new design version, not by deletion.
 
 - id: S35
   description: 'Every placement an undo step; scores rewind with the board.'
