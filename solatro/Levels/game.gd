@@ -277,6 +277,21 @@ func _replay_pending_action(action: StringName) -> void:
 	match action:
 		&"on_run_scorer": await _perform_submit()
 		&"on_next": await _perform_next()
+		&"on_placement": await _replay_pending_placement()
+
+## Re-run the placement a quit interrupted. The restored board is the pre-placement one, so
+## the card named by the saved slot is back in the Entrance and the deck is back in its
+## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
+## board, scoring and refill included. A slot that no longer holds anything means the marker
+## outlived the board it described; the board is already correct, so there is nothing to do.
+func _replay_pending_placement() -> void:
+	var slot : int = RunManager.run.pending_placement_slot
+	if slot < 0 or slot >= state.upper_zone.size(): return
+	var held : Array[CardData] = state.upper_zone[slot].datas
+	if held.is_empty(): return
+	var c : Vector4i = RunManager.run.pending_placement_coord
+	var card : CardData = held.back()
+	await place_card_in_grid(card, BoardCoord.new(c.x, c.y, c.z, c.w))
 
 # Rebuild a live runtime GameData from a saveable history snapshot (independent copy with
 # modifier backrefs relinked and BigNumber scores rebuilt).
@@ -398,6 +413,7 @@ func save_state() -> void:
 		# An action fully committed: nothing is mid-resolution anymore, so drop any replay
 		# marker (see _begin_action). Card moves land here too, harmlessly clearing it.
 		RunManager.run.pending_action = &""
+		RunManager.run.pending_placement_slot = -1
 		RunManager.request_save()
 	_last_saved_revision = state.revision
 
@@ -412,6 +428,25 @@ func _begin_action(action: StringName) -> void:
 		RunManager.run.pending_action = action
 		RunManager.run.game_history = save_history
 		RunManager.request_save()
+
+## The same marker for a placement, which needs two more things than a button press does:
+## which Entrance slot the card came from and where it was aimed.
+## The card is named by its SLOT, never by the object -- the pre-placement board a replay
+## starts from is a restored snapshot carrying its OWN copies of every card, so no reference
+## to the original survives. A placement whose card is not in the Entrance (an effect placing
+## one, a test driving the engine directly) is not a player action and records nothing: there
+## is no slot to replay it from, and a replay is exactly what the marker is for.
+func _begin_placement(slot: int, coord: BoardCoord) -> void:
+	if slot < 0 or RunManager.run == null: return
+	RunManager.run.pending_placement_slot = slot
+	RunManager.run.pending_placement_coord = Vector4i(coord.grid, coord.x, coord.y, coord.h)
+	_begin_action(&"on_placement")
+
+## Which Entrance slot holds `card`, or -1 if it is not held in one.
+func entrance_slot_of(card: CardData) -> int:
+	for col : int in state.upper_zone.size():
+		if state.upper_zone[col].datas.has(card): return col
+	return -1
 
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
 ## (selection state lives there); Game owns the history rewind. Three states:
@@ -618,6 +653,11 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	# the SAME budget as the act that caused them.
 	if not processing:
 		_begin_act()
+		# Persist WHAT is about to happen before it happens, so a quit mid-cascade resumes by
+		# replaying it from the committed pre-placement board rather than letting the player
+		# keep the score and dodge the placement. Only a card held in the Entrance can be
+		# replayed: the slot is the identity that survives the save (see _begin_placement).
+		_begin_placement(entrance_slot_of(card), coord)
 	if not Board.place_in_cell(state, card, coord):
 		return
 	if state.committed_grid == -1:

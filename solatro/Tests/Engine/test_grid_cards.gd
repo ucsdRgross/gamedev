@@ -30,6 +30,9 @@ func _ready() -> void:
 	await run_every_placement_is_one_undo_step_test()
 	await run_undo_rewinds_every_score_a_placement_made_test()
 	await run_a_placement_that_changes_nothing_commits_nothing_test()
+	await run_pending_marker_names_the_placement_test()
+	await run_replay_reproduces_the_interrupted_placement_test()
+	await run_replayed_refill_is_identical_test()
 	finish()
 
 # ==============================================================================
@@ -432,15 +435,20 @@ func run_refill_keeps_unused_cards_in_their_slots_test() -> void:
 
 ## Accepts a stack onto any still-empty cell (a `cell_types` card) of exactly one grid;
 ## refuses a cell already holding a card (no stacking) and refuses every other grid.
+## The grid is held by INDEX, not by object. A restored snapshot carries its own GridData
+## copies, so a cached reference silently stops matching anything the moment a test undoes or
+## replays -- the card then accepts nothing and every commitment lifts. An index survives.
 class AcceptEmptyCellsOfOneGrid extends CardModifierSkill:
-	var grid : GridData
+	var grid_index : int = 0
 	func get_str() -> String: return "AcceptEmptyCellsOfOneGrid"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
 	func combo_key(_hook: StringName = &"") -> String: return ""
 	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
-		if not (stack and target) or not grid: return []
-		if target in grid.cell_types: return stack
+		if not (stack and target) or not api or not api.is_live(): return []
+		var grids : Array[GridData] = api.grids()
+		if grid_index < 0 or grid_index >= grids.size(): return []
+		if target in grids[grid_index].cell_types: return stack
 		return []
 
 ## FIX-GRID-3 wired with a dealt Entrance and one grid whose cells the test double accepts.
@@ -453,7 +461,7 @@ func _committable_entrance_game() -> Dictionary:
 	var fixture := TestGridFixtures.build_fix_grid_3()
 	g.state.grids = fixture.grids
 	var acceptor := AcceptEmptyCellsOfOneGrid.new()
-	acceptor.grid = g.state.grids[0]
+	acceptor.grid_index = 0
 	g.state.rules_deck.append(_rules_card(acceptor))
 	await _deal(g)
 	return {"game": g, "headers": headers}
@@ -742,3 +750,153 @@ func run_a_placement_that_changes_nothing_commits_nothing_test() -> void:
 			"...and the card is still held, exactly where it was")
 	_free_game(g)
 
+# ==============================================================================
+# S36 -- the interrupted-placement replay (TP-124..TP-126).
+#
+# WARNING: THE MARKER IS ONLY OBSERVABLE FROM INSIDE THE PLACEMENT. It is written before the
+# mutation and cleared the instant the placement commits, so a test that looks at it before
+# or after sees nothing either way. This probe reads it from an `on_card_placed` handler,
+# which runs mid-placement -- the same technique the mutation-broadcast tests use.
+# ==============================================================================
+class PlacementMarkerProbe extends CardModifierSkill:
+	var seen_action : StringName = &""
+	var seen_slot : int = -99
+	var seen_coord : Vector4i = Vector4i.ZERO
+	func get_str() -> String: return "PlacementMarkerProbe"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_card_placed(_coord: BoardCoord) -> void:
+		if RunManager.run == null: return
+		seen_action = RunManager.run.pending_action
+		seen_slot = RunManager.run.pending_placement_slot
+		seen_coord = RunManager.run.pending_placement_coord
+
+## A run document the marker can be written into, with the player's real save parked.
+func _with_run(tag: String) -> RunState:
+	backup_real_save(tag)
+	var run := RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	Main.save_info = run
+	return run
+
+func _without_run(tag: String, prev_run: RunState, prev_info: RunState) -> void:
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(tag)
+	RunManager.run = prev_run
+	Main.save_info = prev_info
+
+# ==============================================================================
+# TP-124 -- pending_action carries the placement: which slot the card came from and where
+# it was aimed, written BEFORE the board moves and cleared once it commits.
+# ==============================================================================
+func run_pending_marker_names_the_placement_test() -> void:
+	behavior_section("THE PENDING MARKER NAMES THE PLACEMENT")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	_with_run(suite_tag())
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	var probe := PlacementMarkerProbe.new()
+	g.state.rules_deck.append(_rules_card(probe))
+	g.save_state()
+
+	await g.place_card_in_grid(_held(g, 2), BoardCoord.new(0, 3, 1, 0))
+	check(probe.seen_action == &"on_placement",
+			"the marker persisted mid-placement says a PLACEMENT is resolving",
+			str(probe.seen_action))
+	check(probe.seen_slot == 2,
+			"...and names the Entrance slot the card came from", "got %d" % probe.seen_slot)
+	check(probe.seen_coord == Vector4i(0, 3, 1, 0),
+			"...and the coordinate it was aimed at", str(probe.seen_coord))
+	check(RunManager.run.pending_action == &"" and RunManager.run.pending_placement_slot == -1,
+			"a committed placement clears the marker -- nothing is mid-resolution any more",
+			"%s / %d" % [RunManager.run.pending_action, RunManager.run.pending_placement_slot])
+	_free_game(g)
+	_without_run(suite_tag(), prev_run, prev_info)
+
+# ==============================================================================
+# TP-125 -- replaying the marker from the PRE-placement board reproduces the placement in
+# full, scoring included. FIX-CROSS: the target cell completes a row and a column at once,
+# so a replay that restored the board without re-running the cascade would show it.
+# ==============================================================================
+func run_replay_reproduces_the_interrupted_placement_test() -> void:
+	behavior_section("A REPLAY REPRODUCES THE WHOLE INTERRUPTED PLACEMENT")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	_with_run(suite_tag())
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	g.state.rules_deck.append(_rules_card(SkillLineDetector.new()))
+	var fixture := TestGridFixtures.build_fix_cross()
+	g.state.grids = fixture.grids
+	g.save_state()
+	# The exact board a quit would have left on disk: the last COMMITTED one.
+	var pre_placement : GameData = g.save_history[-1]
+
+	var coord := BoardCoord.new(0, 2, 2, 0)
+	await g.place_card_in_grid(_held(g, 0), coord)
+	var expected := TestGridFixtures.board_digest(g.state)
+	check(g.state.live_total() > 0,
+			"precondition: the placement completed a line and scored", str(g.state.live_total()))
+
+	# Rewind to the pre-placement board and replay the marker, exactly as a resume does.
+	g.state = g._runtime_state(pre_placement)
+	g.save_history = [pre_placement]
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = Vector4i(coord.grid, coord.x, coord.y, coord.h)
+	await g._replay_pending_action(&"on_placement")
+
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"the replayed placement reproduces the board it interrupted, scores and all",
+			"replayed:\n%s\n---- wanted:\n%s" % [
+			TestGridFixtures.board_digest(g.state), expected])
+	_free_game(g)
+	_without_run(suite_tag(), prev_run, prev_info)
+
+# ==============================================================================
+# TP-126 -- the refill a replayed placement triggers deals the SAME cards. The draw is a pop
+# off an already-ordered deck that the snapshot carries, so there is no RNG in the path; this
+# is the check that says so rather than assuming it.
+# ==============================================================================
+func run_replayed_refill_is_identical_test() -> void:
+	behavior_section("A REPLAYED REFILL DEALS THE IDENTICAL BOARD")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	_with_run(suite_tag())
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	# Drain slots 1-4 first. A refill is due only when the Entrance is EMPTY (or nothing held
+	# can go anywhere), so a single placement never triggers one -- the four other slots still
+	# hold cards this grid would accept. It is the LAST card leaving that deals a fresh hand,
+	# and that is the placement whose replay has a refill in it to reproduce.
+	for slot : int in [1, 2, 3, 4]:
+		await g.place_card_in_grid(_held(g, slot), BoardCoord.new(0, slot, 4, 0))
+	check(g.state.upper_zone[1].datas.is_empty(),
+			"precondition: draining a slot does not refill it while the Entrance still holds cards",
+			"%d cards" % g.state.upper_zone[1].datas.size())
+	g.save_state()
+	var pre_placement : GameData = g.save_history[-1]
+	var deck_before : int = g.state.draw_deck.size()
+
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	await g.place_card_in_grid(_held(g, 0), coord)
+	var expected := TestGridFixtures.board_digest(g.state)
+	check(g.state.draw_deck.size() < deck_before,
+			"precondition: emptying the Entrance dealt a fresh hand from the deck",
+			"%d -> %d" % [deck_before, g.state.draw_deck.size()])
+
+	g.state = g._runtime_state(pre_placement)
+	g.save_history = [pre_placement]
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = Vector4i(coord.grid, coord.x, coord.y, coord.h)
+	await g._replay_pending_action(&"on_placement")
+
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"the replay refills with the identical cards -- no RNG anywhere in the path",
+			"replayed:\n%s\n---- wanted:\n%s" % [
+			TestGridFixtures.board_digest(g.state), expected])
+	_free_game(g)
+	_without_run(suite_tag(), prev_run, prev_info)

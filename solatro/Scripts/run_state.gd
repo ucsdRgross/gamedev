@@ -43,6 +43,14 @@ extends Resource
 ## (Next). Cleared the instant an action fully commits (see Game.save_state).
 @export var pending_action : StringName = &""
 
+## Which Entrance slot the pending placement took its card from, and where it was aimed
+## (grid, x, y, h). Only meaningful while `pending_action` is the placement marker: a
+## placement is identified by its SLOT rather than by the card, because the pre-placement
+## board a replay starts from carries its own copies of every card and no reference to the
+## original survives the save. `-1` = no placement pending.
+@export var pending_placement_slot : int = -1
+@export var pending_placement_coord : Vector4i = Vector4i.ZERO
+
 ## Odd laps traverse the graph backwards (end -> start).
 func is_reversed() -> bool:
 	return lap % 2 == 1

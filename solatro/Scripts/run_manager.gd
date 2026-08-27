@@ -122,6 +122,8 @@ func _build_payload() -> RunState:
 	p.pending_goal = run.pending_goal
 	p.pending_node_id = run.pending_node_id
 	p.pending_action = run.pending_action
+	p.pending_placement_slot = run.pending_placement_slot
+	p.pending_placement_coord = run.pending_placement_coord
 	if _deck_dirty:
 		_saveable_deck = _to_saveable_cards(run.card_datas)
 		_saveable_rules = _to_saveable_cards(run.rule_datas)

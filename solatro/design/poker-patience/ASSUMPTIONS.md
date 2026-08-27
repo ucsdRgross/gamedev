@@ -50,3 +50,14 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
 - **S19** — `return_to_map()`'s end-of-show sweep now also empties the grid cells back into the
   draw deck. Cell ZONE cards stay, matching how a column header stays with its column. Without it
   a show returns fewer cards than it took.
+
+- **S36** — the pending placement is identified by its **Entrance slot**, not by the card.
+  `Q236` says *the card and the target coordinate*, but names no way to write a card on disk:
+  the pre-placement board a replay starts from is a restored snapshot carrying its own copies
+  of every card, so no reference to the original survives. The slot is the only stable handle,
+  and chart A has the player picking from the Entrance and nowhere else. Carried in two new
+  `RunState` fields beside the existing `pending_action` (`pending_placement_slot`,
+  `pending_placement_coord`). A placement whose card is NOT in the Entrance — an effect
+  placing one, a test driving the engine — records no marker: it is not a player action, and
+  there is no slot to replay it from. Reversible: the marker is write-only state cleared on
+  every commit.

@@ -204,3 +204,48 @@ static func stack_cell_from_deck(game: Game, grid: int, x: int, y: int, height: 
 		placed.append(card)
 	return placed
 
+
+## A stable text digest of everything a show's outcome is made of: every grid cell bottom to
+## top, the Entrance, the deck and discard IN ORDER, and every score bucket. Cards are named
+## by VALUE (rank/suit), never by instance -- a restored snapshot carries its own copies, so
+## two states that are "the same board" never share a single card object.
+## Shared because more than one claim reduces to it: that a replayed action reproduces the
+## board it interrupted, and that a headless show and a viewed one end up in the same place.
+static func board_digest(state: GameData) -> String:
+	var parts : Array[String] = []
+	for gi : int in state.grids.size():
+		var grid : GridData = state.grids[gi]
+		for ci : int in grid.cells.size():
+			var names : Array[String] = []
+			for card : CardData in grid.cells[ci].datas:
+				names.append(card.log_str())
+			parts.append("g%d.c%d=[%s]" % [gi, ci, ",".join(names)])
+	for col : int in state.upper_zone.size():
+		var names : Array[String] = []
+		for card : CardData in state.upper_zone[col].datas:
+			names.append(card.log_str())
+		parts.append("e%d=[%s]" % [col, ",".join(names)])
+	for deck_name : String in ["draw", "discard"]:
+		var deck : Array[CardData] = state.draw_deck if deck_name == "draw" else state.discard_deck
+		var names : Array[String] = []
+		for card : CardData in deck:
+			names.append(card.log_str())
+		parts.append("%s=[%s]" % [deck_name, ",".join(names)])
+	parts.append("row=%s" % _bucket_digest(state.scores_row))
+	parts.append("col=%s" % _bucket_digest(state.scores_col))
+	parts.append("special=%s" % _bucket_digest(state.score_special))
+	var cell_keys : Array = state.scores_cell.keys()
+	cell_keys.sort()
+	for key : Vector3i in cell_keys:
+		parts.append("cell%s=%f" % [key, state.scores_cell[key].to_float()])
+	parts.append("committed=%d" % state.committed_grid)
+	parts.append("total=%d" % state.live_total())
+	return "
+".join(parts)
+
+static func _bucket_digest(bucket: Array[BigNumber]) -> String:
+	var out : Array[String] = []
+	for n : BigNumber in bucket:
+		out.append("%f" % n.to_float())
+	return "[%s]" % ",".join(out)
+
