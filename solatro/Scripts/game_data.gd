@@ -111,9 +111,16 @@ func discard_lower_board() -> void:
 		col.datas.clear()
 	revision += 1
 
+## The show's score right now: the whole board's total times the combo multiplier. There is no
+## banking moment and no act payout -- a scored line lands in its bucket the instant it
+## completes, so this is derived on demand and is always current. It is what the goal is
+## measured against and what fame banks.
+func live_total() -> int:
+	return int(board_total() * combo_mult())
+
 ## The fame requirement for this show has been reached.
 func has_met_goal() -> bool:
-	return total_score >= goal
+	return live_total() >= goal
 
 ## The grid list, left to right. Each grid carries its own size and cells (§1.3 of the
 ## poker-patience plan: nothing hard-codes 5x5).

@@ -1377,7 +1377,8 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 			"it shifted only %.1f px over the cycle" % moved)
 	check(worst < 1.0,
 			"a light stays on its card's art square every frame while that card moves",
-			"the nearest light was %.2f px off the moving card's centre at worst" % worst)
+			"the nearest light was %.2f px off the moving card's centre at worst (%d lights, %d lit, moved %.1f)"
+			% [worst, layer._lights.size(), lit.size(), moved])
 	await _teardown_view(view)
 
 ## **THE OTHER HALF OF "cards moving while lit; board SCROLL".**
@@ -1452,14 +1453,37 @@ func test_lights_track_a_scrolled_board() -> void:
 ## does nothing and every assertion about it passes for the wrong reason. That is exactly how S16 came
 ## to be reported as verified while its whole purpose — lifting a covering card off a buried one — had
 ## never run: the fixture could not express the case. Each `Next` drops another card onto the columns.
+## A board with a COVERED row 0 -- a column at least two cards deep, so row 0 has something
+## under it to uncover, which is the only shape the reveal and the light-follow tests are about.
+## ⚠ IT BUILDS ITS OWN LOWER COLUMN AND STACKS THAT, for two reasons. The deal fills each
+## Entrance slot to exactly one card and stops, so no number of refills ever covers a row; and
+## stacking the ENTRANCE instead measures geometry the play area has not been rebuilt for yet
+## (the Entrance moves to y == -1 and pushes the board up as part of the flipped-board work),
+## which reads as a ~50 px light offset that is about the unbuilt layout, not about the light.
+## What these tests guard is the play area's row-reveal geometry, so the fixture is the shape
+## that geometry is written against. Nothing here depends on WHICH cards are used.
 func _deal_until_stacked(view: GameView) -> void:
-	for _n : int in 4:
-		await view.game.next()
-		view.play_area.flush_rebuild()
-		await get_tree().process_frame
-		for zx : int in 2:
-			for rz : int in 4:
-				if view.play_area._row_covers_anything(zx, rz): return
+	var g := view.game
+	# Pair the lower zone to the Entrance column for column, the shape the play area's
+	# geometry is written against -- a lone column of a different width is not that shape.
+	while g.state.lower_zone.size() < g.state.upper_zone.size():
+		var header := TestFactories.m_card(1, TestFactories.uc())
+		Board.add_column(g.state, g.state.lower_zone, g.state.lower_zone_type, header)
+	# EVERY column gets the same depth. A board with one deep column and four empty ones is
+	# mostly empty space, so opening a row changes the whole board's height and the play area
+	# re-centres -- the lit card then travels ~180 px, twice a full row opening, which is not
+	# the motion this test is calibrated against. A uniformly stocked board keeps the opening
+	# local, which is what a played board looks like anyway.
+	# ⚠ CARDS ARE BUILT, NOT DRAWN. The draw deck is shuffled, so drawing made the board's depth
+	# and therefore the reveal's travel distance vary run to run (measured: the lit card moved
+	# anywhere from 340 to 550 px across runs). Nothing here depends on rank or suit, only on
+	# every column being the same known depth, so fixed cards are strictly better.
+	for _depth : int in 2:
+		for col : int in g.state.lower_zone.size():
+			var card := TestFactories.m_card(col + 2, TestFactories.uc())
+			Board.place_card(g.state, card, 1, col)
+	view.play_area.flush_rebuild()
+	await get_tree().process_frame
 
 ## A card's art-square centre, for comparing against what the layer was handed.
 func _centre_for(view: GameView, data: CardData) -> Vector2:

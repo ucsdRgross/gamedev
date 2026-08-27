@@ -195,9 +195,21 @@ func _start_fresh_show() -> void:
 	state.goal = maxi(Main.save_info.pending_goal, 1)
 	_update_submit_label()
 	add_deck()
-	await run_all_mods(&"on_game_start")
-	await refill_entrance_if_due()
+	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
+	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
+	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
+	#    card at all. This sweep is also what has the zone adders build the Entrance.
 	skill_spotlight_check()
+	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
+	#    dealt and adds that many creator cards.
+	await run_all_mods(&"on_game_start")
+	# 3. Sweep again for the cards step 2 added: a creator builds its grid in on_spotlight, and
+	#    it did not exist when the first sweep walked the rules deck. Idempotent -- a sweep only
+	#    fires on a transition, so nothing already spotlit fires twice.
+	skill_spotlight_check()
+	# 4. Only now do the Entrance slots and the grids both exist, which is what a refill needs:
+	#    somewhere to put a card, and a board to judge a legal placement against.
+	await refill_entrance_if_due()
 	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
 	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
 	# setup_gui found no game and skipped the score gutters — including the row buffer control
@@ -595,6 +607,17 @@ func _no_held_card_has_a_legal_placement() -> bool:
 func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if state.committed_grid != -1 and coord.grid != state.committed_grid:
 		return
+	# A PLAYER's placement is the grid game's board action -- the thing a Submit used to be --
+	# and it opens a fresh activation budget. Without that reset `act_calls` climbs across the
+	# whole show: get_delay() collapses to 0 so every animation snaps, and act_overrun trips
+	# the runaway guard, which then suppresses the very scoring the placement just caused.
+	# ⚠ GUARDED ON `processing`, AND THE GUARD IS LOAD-BEARING. An effect that places a card
+	# mid-cascade reaches here too, and resetting the counter there would hand the cascade an
+	# unlimited budget every time it placed something -- which is precisely the unbounded
+	# re-scan the act-level runaway guard is the only bound on. Nested placements must spend
+	# the SAME budget as the act that caused them.
+	if not processing:
+		_begin_act()
 	if not Board.place_in_cell(state, card, coord):
 		return
 	if state.committed_grid == -1:
@@ -763,13 +786,13 @@ func end_show() -> void:
 func _resolve_game() -> void:
 	_won = state.has_met_goal()
 	_resolved = true
-	show_resolved.emit(_won, state.total_score, state.goal)
+	show_resolved.emit(_won, state.live_total(), state.goal)
 
 # Leave the show (view-called from Continue): won games bank the FULL score as fame and
 # hand back to the map, lost games end the run.
 func exit_show() -> void:
 	if _won:
-		RunManager.record_win(state.total_score, state.goal)
+		RunManager.record_win(state.live_total(), state.goal)
 		return_to_map()
 	else:
 		run_lost.emit()
@@ -791,6 +814,13 @@ func return_to_map() -> void:
 		for col in zone:
 			state.draw_deck.append_array(col.datas)
 			col.datas.clear()
+	# The grids hold the played cards, so the sweep has to reach them too or a show returns
+	# fewer cards to the run deck than it took -- the cell ZONE cards stay, they belong to the
+	# grid's own lifetime the way a column header belongs to its column.
+	for grid : GridData in state.grids:
+		for cell : ArrayCardData in grid.cells:
+			state.draw_deck.append_array(cell.datas)
+			cell.datas.clear()
 	state.draw_deck.append_array(state.discard_deck)
 	state.discard_deck.clear()
 	for data in state.draw_deck:

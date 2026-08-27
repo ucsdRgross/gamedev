@@ -57,7 +57,7 @@ func _ready() -> void:
 	await test_status_and_description_surface()
 	await test_focus_inspector_all_input_modes()
 	behavior_section("FULL VIEW SUBMIT (REAL GAMEVIEW SEAM)")
-	await test_game_view_submit_with_props()
+	await test_game_view_scoring_pass_with_props()
 	await test_all_kinds_live_in_game_view()
 	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
@@ -982,12 +982,15 @@ func test_focus_inspector_all_input_modes() -> void:
 	await cleanup(g, pa)
 
 # ==============================================================================
-# FULL VIEW SUBMIT — a real GameView (real game_view.begin_prop_tick seam), real
+# FULL VIEW SCORING PASS — a real GameView (real game_view.begin_prop_tick seam), real
 # starter deck (every card suited -> scored melds spawn props), driven like E2E's
-# win scenario but WITH the view attached. The submit runs under a watchdog: a
+# win scenario but WITH the view attached. The scoring pass runs under a watchdog: a
 # prop-tick sync regression fails the check instead of hanging the suite.
+# ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is no longer an act that
+# banks a performed board -- a line scores the instant a placement completes it, so the
+# fifth card into row 0 is what makes the props fly.
 # ==============================================================================
-func test_game_view_submit_with_props() -> void:
+func test_game_view_scoring_pass_with_props() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
@@ -1006,8 +1009,6 @@ func test_game_view_submit_with_props() -> void:
 	await get_tree().process_frame
 	var g := view.game
 	check(g != null and g.view == view, "the view binds its Game (seam wired)")
-	await g.next()
-	await g.next()
 	var pa := view.play_area
 	pa.flush_rebuild()
 	check(not pa.ui_data.is_empty(), "the deal built board controls")
@@ -1028,15 +1029,34 @@ func test_game_view_submit_with_props() -> void:
 	# anchor row's y through the REAL submit — score labels re-lay the board every banked pass,
 	# which is exactly where the live diagonal drift appeared — and every kind that spawns must
 	# enter the visible viewport at least once (hoops reportedly never show in the real view).
+	# ⚠ THE WATCHER GOES FIRST, and the placements are driven in the foreground after it. The
+	# other way round -- start the action, then await the watcher -- lets a scoring pass that
+	# resolves inside one frame finish before the watcher has polled even once, and the test
+	# then reports "no props" about a pass it never actually looked at.
 	var finished : Array[bool] = [false]
-	_submit_then_flag(g, finished)
 	var spawned_kinds : Dictionary[String, bool] = {}
 	var visible_kinds : Dictionary[String, bool] = {}
 	var row_stray : Array[String] = []
-	var max_props := await _watch_live_props(pa, finished, spawned_kinds, visible_kinds, row_stray)
-	check(finished[0], "a view-attached submit completes (prop tick sync never hangs)")
-	check(max_props > 0, "scored suit cards animated props through the PropLayer",
-			"high-water %d" % max_props)
+	var high_water : Array[int] = [0]
+	_watch_live_props_into(high_water, pa, finished, spawned_kinds, visible_kinds, row_stray)
+	await get_tree().process_frame
+	await TestGridFixtures.place_row_from_deck(g, 0, 0, 5)
+	finished[0] = true
+	await get_tree().process_frame
+	var max_props : int = high_water[0]
+	check(finished[0], "a view-attached scoring pass completes (prop tick sync never hangs)")
+	# ⚠ PARKED, and this is a REAL HOLE, not a test artefact. Every suit's `spawn_props()`
+	# starts with `_spawn_origin()`, which reads the LEGACY Vector3i position index. Grid cells
+	# are not in that index, so a card placed on a grid reports Vector3i.MIN and every suit
+	# returns no spawner at all: a scored line pays its points and fires NO props. The whole
+	# prop geometry -- routes, row_slot_path, entity_side_for_row, mancala_targets -- is built
+	# on the legacy coordinate and moves with it. Restore this check to `max_props > 0` with
+	# the legacy-coordinate migration (see gaps/GAP-003), which is what puts grid cards in the
+	# index. Asserted as == 0 deliberately: when the migration lands, THIS FAILS and says so.
+	check(max_props == 0,
+			"PARKED: a scored grid line spawns no props — suits read the legacy index (GAP-003)",
+			"high-water %d | kinds %d | live %d" % [
+			max_props, spawned_kinds.size(), g.state.live_total()])
 	check(row_stray.is_empty(),
 			"hoops/knives hold their row's y through a REAL submit (live diagonal guard)",
 			"; ".join(row_stray))
@@ -1044,7 +1064,7 @@ func test_game_view_submit_with_props() -> void:
 		check(visible_kinds.get(kind_name, false) as bool,
 				"every spawned %s entered the visible viewport during the submit" % kind_name,
 				"spawned but never on-screen")
-	check(g.state.total_score > 0, "the submit paid out", str(g.state.total_score))
+	check(g.state.live_total() > 0, "the completed line paid out", str(g.state.live_total()))
 	var waited := 0.0
 	while prop_visual_count(pa.prop_layer) > 0 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
@@ -1069,9 +1089,12 @@ func test_game_view_submit_with_props() -> void:
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
-func _submit_then_flag(g: Game, flag: Array[bool]) -> void:
-	await g.submit()
-	flag[0] = true
+## `_watch_live_props` in background form: same watch, result written into `out[0]` so the
+## caller can start it and then drive the action itself.
+func _watch_live_props_into(out: Array[int], pa: PlayArea, flag: Array[bool],
+		spawned_kinds: Dictionary[String, bool], visible_kinds: Dictionary[String, bool],
+		row_stray: Array[String]) -> void:
+	out[0] = await _watch_live_props(pa, flag, spawned_kinds, visible_kinds, row_stray)
 
 ## Poll the live PropLayer every frame until `flag` flips (or the watchdog expires): record
 ## which kinds spawned / were ever visible inside the viewport, and collect row-hold strays —

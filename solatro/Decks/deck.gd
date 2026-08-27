@@ -37,9 +37,10 @@ func _card(suit: GDScript, rank: int) -> CardData:
 			.with_suit(suit.new() as PipSuit) \
 			.with_rank(PipRankNumeral.new().with_value(rank))
 
-## RULES 1 — the standard rules row: 5 upper adders, 6 lower adders, one each of
-## grabber/placer/cascade-scorer, and the poker-hand evaluator. Random suits/ranks: rules
-## cards never score as melds, so their pips are cosmetic.
+## RULES 1 — the standard rules row: 5 upper adders (five of them are what make the Entrance
+## five wide), the allotment card (which sizes the grid count to the deck and adds the creator
+## cards that build the grids), and the line detector (which scores every line a placement
+## completes). Random suits/ranks: rules cards never score as melds, so their pips are cosmetic.
 ## N6: every deck/rules member below is LAZY (built on first access, cached in the backing
 ## var — reading the var inside its own getter bypasses the getter, no recursion). Deck.new()
 ## therefore allocates nothing; a Game builds only the one deck it plays, and the picker
@@ -57,13 +58,7 @@ func _build_rules1() -> Array[CardData]:
 				.with_skill(SkillAdderInputUpper.new()) \
 				.with_suit(PipSuit.random_standard()) \
 				.with_rank(PipRankNumeral.new().with_random()))
-	for _i : int in 6:
-		out.append(CardData.new().with_type(TypePaper.new()) \
-				.with_skill(SkillAdderInputLower.new()) \
-				.with_suit(PipSuit.random_standard()) \
-				.with_rank(PipRankNumeral.new().with_random()))
-	var singles : Array[CardModifier] = [SkillGrabberOgLower.new(), SkillPlacerOgLower.new(),
-			SkillScorerCascadeLower.new(), SkillEvalPokerBest.new()]
+	var singles : Array[CardModifier] = [SkillGridAllotment.new(), SkillLineDetector.new()]
 	for skill : CardModifier in singles:
 		out.append(CardData.new().with_type(TypePaper.new()) \
 				.with_skill(skill) \

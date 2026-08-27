@@ -480,21 +480,16 @@ func _session_cycle() -> void:
 	await _settle()
 	var g := view.game
 	await g.next()
-	await g.next()
-	# grab/place through the real command seam (mirrors GameView._on_data_selected)
-	var src := _topmost_lower(g, 0)
-	var dst := _topmost_lower(g, 1)
-	if src and dst and src != dst:
-		var stack : Array[CardData] = await g.try_grab(src)
-		if stack:
-			view.play_area.grab_cards(stack)
-			await g.try_place(stack, dst)
-			view.play_area.ungrab_cards()
-	# draw happened inside the Nexts; discard one board card through the real path
-	var to_discard := _topmost_lower(g, 0)
-	if to_discard:
-		await g.discard_data(to_discard)
-	await g.submit()
+	# Fill row 0 through the real placement path: the fifth card completes the row, the
+	# detector scores it, and the scoring cascade allocates the prop visuals and beams that
+	# are the whole point of a leak canary. This is also what makes the show winnable below.
+	var placed : Array[CardData] = await TestGridFixtures.place_row_from_deck(g, 0, 0, 5)
+	# Discard one of the placed cards through the real path.
+	if placed:
+		await g.discard_data(placed[0])
+	# A placement is not yet an undo step of its own, so commit explicitly before undoing --
+	# otherwise there is no snapshot to rewind to and the undo exercises nothing.
+	g.save_state()
 	g.undo()
 	await _settle()
 	await g.submit()
@@ -519,7 +514,9 @@ func _session_cycle() -> void:
 
 	var won : Array[bool] = []
 	g2.show_resolved.connect(func(w: bool, _score: int, _goal: int) -> void: won.append(w))
-	await g2.submit()
+	# The resumed board is whatever the quit committed; score a line on it so the goal of 1 is
+	# met through the real path rather than by assuming the pre-quit score survived.
+	await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
 	g2.end_show()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
 	g2.exit_show()   # win path: return_to_map banks the deck into the run doc

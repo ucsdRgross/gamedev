@@ -168,3 +168,39 @@ static func build_fix_full_15() -> GameData:
 				grid.cells[idx].datas.append(card)
 	state.grids = [grid] as Array[GridData]
 	return state
+
+
+# ==============================================================================
+# DRIVING A LIVE GAME ONTO A GRID BOARD
+# These take a real `Game` (view or headless) that has already bootstrapped, and put cards on
+# its grids through `place_card_in_grid` -- the same path the engine uses, so the mutation
+# broadcast fires, the detector scores, and the Entrance refills. Shared so the suites that
+# need "a board with something on it" do not each grow their own.
+#
+# Cards come from the game's OWN draw deck via `draw_card()`, never from the Entrance: lifting
+# a card out of an Entrance slot has no mutation path yet (see gaps/GAP-008), and placing one
+# that is still in `upper_zone` would leave it in two collections at once.
+# ==============================================================================
+
+## Draws `count` cards and places them into consecutive cells of row `y`, left to right.
+## Returns the cards actually placed -- fewer than `count` if the deck ran out.
+static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Array[CardData]:
+	var placed : Array[CardData] = []
+	for x : int in count:
+		var card := game.draw_card()
+		if not card: break
+		await game.place_card_in_grid(card, BoardCoord.new(grid, x, y, 0))
+		placed.append(card)
+	return placed
+
+## Draws `height` cards and stacks them all into the single cell (x, y), bottom to top --
+## the covered-card case: every card but the top one has another card on it.
+static func stack_cell_from_deck(game: Game, grid: int, x: int, y: int, height: int) -> Array[CardData]:
+	var placed : Array[CardData] = []
+	for _h : int in height:
+		var card := game.draw_card()
+		if not card: break
+		await game.place_card_in_grid(card, BoardCoord.new(grid, x, y, 0))
+		placed.append(card)
+	return placed
+

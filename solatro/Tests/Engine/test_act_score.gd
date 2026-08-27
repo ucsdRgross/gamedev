@@ -104,12 +104,21 @@ func test_discard_lower_board() -> void:
 	check(state.upper_zone[0].datas == ([upper] as Array[CardData]),
 			"the upper Entrance zone is NOT wiped")
 
+## The goal is measured against the LIVE board score, not against a banked act payout: there
+## is no banking moment any more. One grid with a single positive bucket makes the arithmetic
+## exact -- grid_score is the product of the buckets that are positive, so one bucket IS the
+## board total, and with no combo class registered the combo multiplier is exactly 1.
 func test_has_met_goal() -> void:
-	var state := GameData.new()
+	var state := TestGridFixtures.build_fix_grid_1()
+	state.resize_grid_bucket(state.scores_row, 1)
 	state.goal = 100
-	state.total_score = 99
-	check(not state.has_met_goal(), "below goal -> not met (loss)")
-	state.total_score = 100
-	check(state.has_met_goal(), "exactly at goal -> met (win)")
-	state.total_score = 250
-	check(state.has_met_goal(), "overscore -> met")
+	state.scores_row[0].plus_equals(99)
+	check(not state.has_met_goal(), "below goal -> not met (loss)",
+			"live %d" % state.live_total())
+	state.scores_row[0].plus_equals(1)
+	check(state.has_met_goal(), "exactly at goal -> met (win)",
+			"live %d" % state.live_total())
+	state.scores_row[0].plus_equals(150)
+	check(state.has_met_goal(), "overscore -> met", "live %d" % state.live_total())
+	check(state.total_score == 0,
+			"the goal never reads the retired act-payout total", str(state.total_score))

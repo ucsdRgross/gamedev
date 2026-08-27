@@ -30,20 +30,32 @@ static func seeded_deck() -> Array[CardData]:
 		out.append(_card(PipSuitFire, 1))
 	return out
 
-## The standard rules row, frozen from Decks/deck.gd rules1: 5 upper adders, 6 lower
-## adders, grabber/placer/cascade-scorer/poker evaluator. Pips are FIXED (not random like
-## the shipped rules1): rules cards never score as melds, so their pips are cosmetic, and
-## fixed pips keep the deal fully deterministic under a test seed.
+## The standard rules row, frozen from Decks/deck.gd rules1: 5 upper adders (the Entrance),
+## the grid allotment card and the line detector. Pips are FIXED (not random like the shipped
+## rules1): rules cards never score as melds, so their pips are cosmetic, and fixed pips keep
+## the deal fully deterministic under a test seed.
+## ⚠ MIRROR, NOT A COPY OF THE OBJECT: it has to track `_build_rules1`'s COMPOSITION by hand. A
+## suite that runs the shipped bootstrap against a stale mirror is testing a rules set the game
+## no longer ships, and nothing else would say so -- which is what `rules_skill_names` is for.
 static func standard_rules() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 5:
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillAdderInputUpper.new()))
-	for _i : int in 6:
-		out.append(_card(PipSuitKnife, 1).with_skill(SkillAdderInputLower.new()))
-	var singles : Array[CardModifier] = [SkillGrabberOgLower.new(), SkillPlacerOgLower.new(),
-			SkillScorerCascadeLower.new(), SkillEvalPokerBest.new()]
+	var singles : Array[CardModifier] = [SkillGridAllotment.new(), SkillLineDetector.new()]
 	for skill : CardModifier in singles:
 		out.append(_card(PipSuitBall, 1).with_skill(skill))
+	return out
+
+## The sorted multiset of skill class names in a rules row. Lets a suite compare the frozen
+## mirror above against the shipped `Deck.rules1` without depending on pip values, card order,
+## or the random suits the shipped builder draws.
+static func rules_skill_names(rules: Array[CardData]) -> Array[String]:
+	var out : Array[String] = []
+	for card : CardData in rules:
+		var skill : CardModifier = card.skill
+		var script : Script = skill.get_script() if skill else null
+		out.append(script.get_global_name() if script else "<none>")
+	out.sort()
 	return out
 
 ## The smallest valid save-bootstrap deck for tests that CRAFT their board afterwards
