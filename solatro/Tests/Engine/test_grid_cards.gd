@@ -18,6 +18,11 @@ func _ready() -> void:
 	await run_unspotlight_discards_grid_cards_test()
 	await run_removed_grid_labels_go_score_stays_test()
 	await run_meta_card_adds_and_subtracts_creators_test()
+	await run_refill_fills_left_to_right_test()
+	await run_short_refill_leaves_right_slots_empty_test()
+	await run_refill_fires_on_empty_entrance_test()
+	await run_refill_fires_on_no_legal_move_test()
+	await run_refill_keeps_unused_cards_in_their_slots_test()
 	finish()
 
 # ==============================================================================
@@ -241,6 +246,165 @@ func _creator_count(g: Game) -> int:
 	for card : CardData in g.state.rules_deck:
 		if card.skill is SkillGridCreator: n += 1
 	return n
+
+# ==============================================================================
+# TP-70..TP-74 -- S17: TypeInput's on_next is gone; the Entrance refills itself left to
+# right, on the same two triggers (empty Entrance / no legal move), through on_game_start
+# (the initial deal) and on_card_placed (every later placement).
+# ==============================================================================
+
+## A bare Game with 5 spotlit SkillAdderInputUpper cards (the Entrance's 5 columns) and no
+## grid. Returns the game and the 5 TypeInput header instances, left to right.
+func _entrance_game(deck: Array[CardData]) -> Dictionary:
+	var g := Game.new()
+	var state := GameData.new()
+	state.draw_deck = deck
+	var adders : Array[SkillAdderInputUpper] = []
+	for _i : int in 5:
+		adders.append(SkillAdderInputUpper.new())
+	var rules : Array[CardData] = []
+	for adder : SkillAdderInputUpper in adders:
+		rules.append(_rules_card(adder))
+	state.rules_deck = rules
+	g.state = state
+	CardEnvironment.CURRENT = g
+	var headers : Array[TypeInput] = []
+	for adder : SkillAdderInputUpper in adders:
+		await adder.on_spotlight()
+		headers.append(adder.card_data.type as TypeInput)
+	return {"game": g, "headers": headers}
+
+## Deals the initial hand by calling each header's on_game_start left to right, mirroring
+## the order the Entrance columns were built in.
+func _deal(headers: Array[TypeInput]) -> void:
+	for header : TypeInput in headers:
+		await header.on_game_start()
+
+# ==============================================================================
+# TP-70 -- FIX-DECK-52: a full refill fills slots 0-4 in draw order, leftmost first.
+# ==============================================================================
+func run_refill_fills_left_to_right_test() -> void:
+	behavior_section("A FULL REFILL FILLS LEFT TO RIGHT")
+	var deck := TestDecks.deck_standard_52()
+	# ⚠ Capture the expectation BEFORE handing the deck over: _entrance_game moves the cards
+	# into the draw deck and leaves this array empty, so reading it afterwards is out of bounds.
+	# draw_card() pops from the BACK, so the leftmost slot gets the LAST card.
+	var expected : Array[CardData] = []
+	for i : int in 5:
+		expected.append(deck[deck.size() - 1 - i])
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	await _deal(headers)
+	var ok := true
+	for i : int in 5:
+		if g.state.upper_zone[i].datas.size() != 1 or g.state.upper_zone[i].datas[0] != expected[i]:
+			ok = false
+	check(ok, "the deck's last 5 cards land in slots 0-4 in that exact order",
+			"upper_zone: %s" % [g.state.upper_zone.map(func(c: ArrayCardData) -> String: return str(c.datas))])
+	_free_game(g)
+
+# ==============================================================================
+# TP-71 -- FIX-DECK-20: a short refill fills leftmost first, leaving the right slots empty.
+# ==============================================================================
+func run_short_refill_leaves_right_slots_empty_test() -> void:
+	behavior_section("A SHORT REFILL FILLS LEFTMOST FIRST")
+	var deck := TestDecks.deck_20().slice(0, 3)  # only 3 cards left to deal
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	await _deal(headers)
+	check(g.state.draw_deck.is_empty(), "the short deck was drained entirely",
+			"got %d cards left" % g.state.draw_deck.size())
+	for i : int in 3:
+		check(g.state.upper_zone[i].datas.size() == 1,
+				"slot %d got one of the 3 available cards" % i,
+				"got %d cards" % g.state.upper_zone[i].datas.size())
+	for i : int in [3, 4]:
+		check(g.state.upper_zone[i].datas.is_empty(),
+				"slot %d stayed empty -- the deck ran out before reaching it" % i,
+				"got %d cards" % g.state.upper_zone[i].datas.size())
+	_free_game(g)
+
+# ==============================================================================
+# TP-72 -- FIX-DECK-52: refill fires when the Entrance is empty.
+# ==============================================================================
+func run_refill_fires_on_empty_entrance_test() -> void:
+	behavior_section("REFILL FIRES ON AN EMPTY ENTRANCE")
+	var deck := TestDecks.deck_standard_52()
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	check(g.state.upper_zone.is_empty() or g.state.upper_zone[0].datas.is_empty(),
+			"the Entrance starts empty, before any deal", "setup invariant broke")
+	await _deal(headers)
+	var filled := 0
+	for column : ArrayCardData in g.state.upper_zone:
+		if column.datas.size() == 1: filled += 1
+	check(filled == 5, "an empty Entrance triggers a full refill of all 5 slots",
+			"got %d filled slots" % filled)
+	_free_game(g)
+
+# ==============================================================================
+# TP-73 -- FIX-GRID-1: refill also fires when no legal move remains, with cards still held.
+#
+# "No legal move" is made true by construction: the grid's cells are TypeGridCell zone cards,
+# which implement no on_can_place_stack at all (that acceptance rule ships in a later step),
+# so any grid built by SkillGridCreator has zero legal placements for anything held in the
+# Entrance -- the same on_can_place_stack dispatch try_place uses (via CardEffectApi.
+# can_place_stack) simply never finds a claimant.
+# ==============================================================================
+func run_refill_fires_on_no_legal_move_test() -> void:
+	behavior_section("REFILL FIRES ON NO LEGAL MOVE, WITH CARDS STILL HELD")
+	var deck := TestDecks.deck_standard_52()
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	var creator := SkillGridCreator.new()
+	g.state.rules_deck.append(_rules_card(creator))
+	await creator.on_spotlight()
+	await _deal(headers)  # slots 0-4 filled
+
+	# Simulate slot 2's card having been placed on the grid: drop it from the Entrance and
+	# run it through the real placement path, which broadcasts on_card_placed to every mod.
+	var placed_card : CardData = g.state.upper_zone[2].datas[0]
+	g.state.upper_zone[2].datas.clear()
+	await g.place_card_in_grid(placed_card, BoardCoord.new(0, 0, 0, 0))
+
+	check(g.state.upper_zone[2].datas.size() == 1,
+			"slot 2 refilled even though slots 0,1,3,4 still hold cards (no legal move anywhere)",
+			"got %d cards in slot 2" % g.state.upper_zone[2].datas.size())
+	_free_game(g)
+
+# ==============================================================================
+# TP-74 -- FIX-DECK-52: unused cards keep their slots across a refill.
+# ==============================================================================
+func run_refill_keeps_unused_cards_in_their_slots_test() -> void:
+	behavior_section("UNUSED CARDS KEEP THEIR SLOTS ACROSS A REFILL")
+	var deck := TestDecks.deck_standard_52()
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	var creator := SkillGridCreator.new()
+	g.state.rules_deck.append(_rules_card(creator))
+	await creator.on_spotlight()
+	await _deal(headers)
+
+	var untouched : Array[CardData] = [
+		g.state.upper_zone[0].datas[0], g.state.upper_zone[1].datas[0],
+		g.state.upper_zone[3].datas[0], g.state.upper_zone[4].datas[0],
+	]
+	var placed_card : CardData = g.state.upper_zone[2].datas[0]
+	g.state.upper_zone[2].datas.clear()
+	await g.place_card_in_grid(placed_card, BoardCoord.new(0, 0, 0, 0))
+
+	check(g.state.upper_zone[0].datas[0] == untouched[0]
+			and g.state.upper_zone[1].datas[0] == untouched[1]
+			and g.state.upper_zone[3].datas[0] == untouched[2]
+			and g.state.upper_zone[4].datas[0] == untouched[3],
+			"the 4 untouched slots kept the exact same cards across the refill",
+			"one of slots 0,1,3,4 changed identity")
+	_free_game(g)
 
 # ==============================================================================
 # THE CARD EFFECT API BOUNDARY GATE.

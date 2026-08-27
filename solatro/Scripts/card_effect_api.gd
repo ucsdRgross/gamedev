@@ -101,6 +101,13 @@ func get_zone_from_vec3(vec3: Vector3i) -> Array[ArrayCardData]:
 func is_data_topmost(data: CardData) -> bool:
 	return _game.is_data_topmost(data) if is_live() else false
 
+## The legality query behind every placement: does any modifier accept `stack` landing on
+## `target`? Same dispatch `try_place` uses, so a legality SCAN reuses it instead of a second
+## "is this legal" walk.
+func can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+	if not is_live(): return ([] as Array[CardData])
+	return await _game.return_first_data_array_result(&"on_can_place_stack", stack, target)
+
 ## Every slot in a row, in the given direction.
 func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:
 	return _game.row_slot_path(v, left_to_right) if is_live() else ([] as Array[Vector3i])
