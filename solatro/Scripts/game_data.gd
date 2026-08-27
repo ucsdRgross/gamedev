@@ -49,6 +49,10 @@ var revision : int = 0:
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
 ## submits_used lives here.
 @export_storage var combo_classes : Array[String] = []
+## How many registrations landed on a class ALREADY seen. Kept alongside the distinct set
+## because the two are weighted differently: a first-of-its-class and a repeat each add their
+## own step. Stored here, not on Game, so undo rewinds it with the board.
+@export_storage var combo_repeats : int = 0
 ## PATIENCE — "the audience won't watch you shuffle the board forever": idle card
 ## moves tick this down; a move that triggers a qualifying card modifier holds it. At 0 the game
 ## auto-presses Next, which resets it to settings.patience_max. Lives ON the board state (like
@@ -95,18 +99,23 @@ func clear_seen() -> void:
 #const COMBO_STEP := 0.1 # moved to PlayerSettings.combo_step (all knobs in one place)
 
 ## Current act multiplier: 1.0 + combo_step per distinct class scored this act (§15a).
+## The live combo multiplier: every first-of-its-class adds one step, every repeat adds a
+## smaller one. Melds and effects contribute on exactly the same terms -- only whether the
+## class has been seen before decides which step applies.
 func combo_mult() -> float:
-	return 1.0 + SettingsManager.settings.combo_step * combo_classes.size()
+	var s := SettingsManager.settings
+	var mult := 1.0 + s.combo_unique_step * combo_classes.size() 			+ s.combo_repeat_step * combo_repeats
+	# A cap of 0 means no cap at all, which is how it ships.
+	if s.combo_cap > 0.0: mult = minf(mult, s.combo_cap)
+	return mult
 
 ## One act's payout (DESIGN_DOC §2 + SCORING_MATH_PLAN §15a): the act's accumulated row and
-## column totals combine (R×C shipped; R+C when settings.score_additive — TEST variant,
-## goals must be re-fit) and multiply with the combo multiplier into mult_score, which is
-## added to total_score; the totals and combo set reset for the next act.
+## column totals combine (R x C) and multiply with the combo multiplier into mult_score,
+## which is added to total_score; the totals and combo set reset for the next act.
 ## Note: under R×C an act with no scored columns (or rows) pays 0 — both sides must score.
 func apply_act_score() -> void:
 	# §15a: round ONCE per act payout — combo applies to the combined R/C total, not per line.
-	var base : int = (row_total + col_total) if SettingsManager.settings.score_additive \
-			else (row_total * col_total)
+	var base : int = row_total * col_total
 	mult_score = int(base * combo_mult())
 	total_score += mult_score
 	row_total = 0

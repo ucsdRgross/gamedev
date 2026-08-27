@@ -143,7 +143,11 @@ func get_delay() -> float:
 ## Add a combo class key to this act's U set (SCORING_MATH_PLAN §15a). Returns true when
 ## it was new. Empty keys never register (opt-out hook for engine mods).
 func register_combo(key: String) -> bool:
-	if key.is_empty() or state.combo_classes.has(key):
+	if key.is_empty(): return false
+	if state.combo_classes.has(key):
+		# A repeat still counts toward the combo, at its own smaller step.
+		state.combo_repeats += 1
+		combo_changed.emit(state.combo_classes.size())
 		return false
 	state.combo_classes.append(key)
 	combo_changed.emit(state.combo_classes.size())
@@ -880,11 +884,6 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	var key := Scoring.class_key(result)
 	var counts_for_combo := not result.types.has(Scoring.MELD_TYPE.HIGH_CARD)  # beats a lone high card
 	var amount := result.score
-	# δ fallback (§15a, ships 1.0 = off): duplicate-CLASS melds score ×δ at accumulation.
-	# Decided BEFORE the class registers, so the FIRST meld of a class always pays full.
-	var delta : float = SettingsManager.settings.duplicate_class_scale
-	if counts_for_combo and delta < 1.0 and state.combo_classes.has(key):
-		amount = int(amount * delta)
 	if view: await view.animate_meld(result)
 	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
 	# animates the label. Must run headless too (feeds the packed save).

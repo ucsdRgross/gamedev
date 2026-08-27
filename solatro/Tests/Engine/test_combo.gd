@@ -82,7 +82,7 @@ func test_apply_act_score_combo() -> void:
 	state.col_total = 5
 	state.combo_classes = ["a", "b", "c"] as Array[String]
 	state.apply_act_score()
-	check(state.mult_score == 65, "act pays int(R x C x (1 + 0.1U)): 50 x 1.3 = 65",
+	check(state.mult_score == 200, "act pays int(R x C x (1 + 1.0U)): 50 x 4 = 200",
 			"mult=%d" % state.mult_score)
 	check(state.combo_classes.is_empty(), "combo set resets with the act payout")
 	check(state.row_total == 0 and state.col_total == 0, "totals reset after the act")
@@ -91,7 +91,7 @@ func test_apply_act_score_combo() -> void:
 	state.col_total = 3
 	state.combo_classes = ["a"] as Array[String]
 	state.apply_act_score()
-	check(state.mult_score == 23, "rounds once per act: int(21 x 1.1) = int(23.1) = 23",
+	check(state.mult_score == 42, "rounds once per act: int(21 x 2.0) = 42",
 			"mult=%d" % state.mult_score)
 	# Empty set: exact legacy payout.
 	state.row_total = 10
@@ -99,29 +99,15 @@ func test_apply_act_score_combo() -> void:
 	state.apply_act_score()
 	check(state.mult_score == 50, "empty combo set pays exactly row x col")
 	# combo_step is a live settings knob (shared resource — restore after).
-	var saved_step : float = SettingsManager.settings.combo_step
-	SettingsManager.settings.combo_step = 0.2
+	var saved_step : float = SettingsManager.settings.combo_unique_step
+	SettingsManager.settings.combo_unique_step = 0.2
 	state.row_total = 10
 	state.col_total = 5
 	state.combo_classes = ["a", "b"] as Array[String]
 	state.apply_act_score()
-	check(state.mult_score == 70, "combo_step knob is live: 50 x (1 + 0.2x2) = 70",
+	check(state.mult_score == 70, "combo_unique_step knob is live: 50 x (1 + 0.2x2) = 70",
 			"mult=%d" % state.mult_score)
-	SettingsManager.settings.combo_step = saved_step
-	# score_additive TEST variant: payout = (R + C) x combo (ships off; restore after).
-	var saved_additive : bool = SettingsManager.settings.score_additive
-	SettingsManager.settings.score_additive = true
-	state.row_total = 10
-	state.col_total = 5
-	state.combo_classes = ["a", "b"] as Array[String]
-	state.apply_act_score()
-	check(state.mult_score == 18, "additive variant pays int((R+C) x combo): 15 x 1.2 = 18",
-			"mult=%d" % state.mult_score)
-	state.row_total = 40
-	state.col_total = 0
-	state.apply_act_score()
-	check(state.mult_score == 40, "additive variant: a one-sided act still pays (no x0 rule)")
-	SettingsManager.settings.score_additive = saved_additive
+	SettingsManager.settings.combo_unique_step = saved_step
 
 func test_snapshot_carries_combo() -> void:
 	var state := GameData.new()
@@ -139,29 +125,15 @@ func test_register_combo() -> void:
 	var emissions : Array[int] = []
 	g.combo_changed.connect(func(count: int) -> void: emissions.append(count))
 	check(g.register_combo("a"), "a new key registers (returns true)")
-	check(not g.register_combo("a"), "a duplicate key is rejected (returns false)")
+	check(not g.register_combo("a"), "a repeat is not a NEW class (returns false)")
 	check(not g.register_combo(""), "an empty key never registers (engine mod opt-out)")
-	check(g.state.combo_classes == (["a"] as Array[String]) and emissions == ([1] as Array[int]),
-			"U holds one class and combo_changed fired once", "emissions=%s" % str(emissions))
-	# δ lever: with duplicate_class_scale < 1, a SECOND meld of an already-seen class banks
-	# a scaled score; the first always pays full. Shared settings resource — restore after.
-	var saved_delta : float = SettingsManager.settings.duplicate_class_scale
-	SettingsManager.settings.duplicate_class_scale = 0.5
-	var pair := _result([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], 2, 1, 10)
-	await g.score_line(pair, ScoringSection.of_line(g.state.upper_zone, true, 0))
-	check(g.state.row_total == 10, "first meld of a class banks its full score",
-			"row_total=%d" % g.state.row_total)
-	await g.score_line(pair, ScoringSection.of_line(g.state.upper_zone, true, 1))
-	check(g.state.row_total == 15, "duplicate-class meld banks int(score x 0.5)",
-			"row_total=%d" % g.state.row_total)
-	check(g.state.combo_classes.size() == 2, "the pair class joined U exactly once")
-	# High cards never enter U (and never δ-scale).
-	var high := _result([Scoring.MELD_TYPE.HIGH_CARD] as Array[Scoring.MELD_TYPE], 1, 1, 1)
-	await g.score_line(high, ScoringSection.of_line(g.state.upper_zone, true, 2))
-	await g.score_line(high, ScoringSection.of_line(g.state.upper_zone, true, 3))
-	check(g.state.combo_classes.size() == 2, "lone high cards never enter U")
-	check(g.state.row_total == 17, "high cards bank full score (no δ)",
-			"row_total=%d" % g.state.row_total)
-	SettingsManager.settings.duplicate_class_scale = saved_delta
-	CardEnvironment.CURRENT = null
-	g.free()
+	check(g.state.combo_classes == (["a"] as Array[String]),
+			"the distinct set still holds exactly one class")
+	check(g.state.combo_repeats == 1,
+			"but the repeat was COUNTED -- it adds its own smaller step to the multiplier",
+			"repeats=%d" % g.state.combo_repeats)
+	# The repeat moves the multiplier, so the HUD has to hear about it: the consumer ignores
+	# the payload and re-reads the state, so what matters is that it fired at all.
+	check(emissions.size() == 2,
+			"combo_changed fired for the new class AND for the repeat",
+			"emissions=%s" % str(emissions))

@@ -285,20 +285,26 @@ enum SeparationMode {
 		combo_step = value
 		settings_changed.emit()
 
-## δ fallback lever (§15a): duplicate-CLASS melds score ×δ. 1.0 = off (ship default);
-## only lower during playtest if dump crushes everything.
-@export var duplicate_class_scale : float = 1.0:
+## What a FIRST-of-its-class meld or effect adds to the combo multiplier.
+@export var combo_unique_step : float = 1.0:
 	set(value):
-		duplicate_class_scale = value
+		combo_unique_step = value
 		settings_changed.emit()
 
-## TEST variant (2026-07-17, unpriced): act payout = (R + C) × combo instead of
-## (R × C) × combo. Linearizes payout growth — re-fit goal_g0/goal_alpha (sim
-## `--final --additive`) before judging difficulty with this on. Ships OFF.
-@export var score_additive : bool = false:
+## What a REPEAT of a class already seen adds. Melds and effects contribute on the same
+## terms; only whether the class is new decides which step applies.
+@export var combo_repeat_step : float = 0.5:
 	set(value):
-		score_additive = value
+		combo_repeat_step = value
 		settings_changed.emit()
+
+## Ceiling on the combo multiplier. 0 = OFF, no ceiling.
+@export var combo_cap : float = 0.0:
+	set(value):
+		combo_cap = value
+		settings_changed.emit()
+
+
 
 @export_group("Balance — goal curve (SCORING_MATH_PLAN §15b)")
 ## Global goal multiplier (§15b "difficulty"): ±15% ≈ one persona band. THE dial for
