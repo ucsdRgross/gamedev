@@ -19,6 +19,7 @@ func _ready() -> void:
 	run_height_taller_stack_test()
 	run_diag_no_grid_crossing_test()
 	run_3d_diag_family_test()
+	run_nonsquare_diag_test()
 	run_height_v_line_test()
 	run_section_key_test()
 	run_old_signature_grep_gate()
@@ -690,3 +691,71 @@ func run_detector_runaway_guard_test() -> void:
 			"act_calls=%d cap=%d" % [g.act_calls, SettingsManager.settings.act_event_cap])
 	free_grid_game(g)
 	restore_settings_snapshot(snap)
+
+# ==============================================================================
+# A diagonal is a run whose x and y change at the SAME RATE; corners are not part of
+# the definition. That is what makes a NON-SQUARE grid answerable: the corner
+# requirement was the only thing undefined there. Full length is bounded by whichever
+# dimension runs out first, and only a full-length run is a line.
+# ==============================================================================
+func run_nonsquare_diag_test() -> void:
+	behavior_section("NON-SQUARE DIAGONALS")
+	var grid := GridData.new()
+	grid.grid_width = 5
+	grid.grid_height = 7
+	grid.build_cells()
+
+	# Through (0,0) going down-right: (0,0)..(4,4), five cells -- x runs out first.
+	var at_origin := _lines_of_kind(LineGeometry.lines_through(grid, 0, 0, 0),
+			ScoringSection.LineKind.DIAG)
+	var flat_origin : Array[LineGeometry.Line] = []
+	for line : LineGeometry.Line in at_origin:
+		if line.cells[1].z == line.cells[0].z: flat_origin.append(line)
+	check(not flat_origin.is_empty(),
+			"a non-square grid reports flat diagonals at all -- the corner rule blocked these")
+	for line : LineGeometry.Line in flat_origin:
+		check(line.cells.size() == mini(grid.grid_width, grid.grid_height),
+				"a non-square diagonal is as long as the SHORTER dimension allows",
+				"got %d cells: %s" % [line.cells.size(), line.cells])
+
+	# A run that does NOT reach full length is still not a line: from (0,3) going
+	# down-right the grid's right edge stops it at (4,7), which is off the bottom.
+	var short_run := _lines_of_kind(LineGeometry.lines_through(grid, 0, 3, 0),
+			ScoringSection.LineKind.DIAG)
+	var found_short := false
+	for line : LineGeometry.Line in short_run:
+		if line.cells.size() < mini(grid.grid_width, grid.grid_height): found_short = true
+	check(not found_short, "no under-length diagonal is ever reported",
+			"one of %s is short" % [short_run.size()])
+
+	# Corners genuinely do not matter: a full-length diagonal that touches NO corner of
+	# this 5x7 grid exists and is reported.
+	var offset := _lines_of_kind(LineGeometry.lines_through(grid, 2, 3, 0),
+			ScoringSection.LineKind.DIAG)
+	var non_corner := false
+	for line : LineGeometry.Line in offset:
+		if line.cells[1].z != line.cells[0].z: continue
+		if line.cells.size() != mini(grid.grid_width, grid.grid_height): continue
+		var first : Vector3i = line.cells[0]
+		var last : Vector3i = line.cells[line.cells.size() - 1]
+		var touches_corner := (first.x == 0 or first.x == grid.grid_width - 1) \
+				and (first.y == 0 or first.y == grid.grid_height - 1)
+		var last_corner := (last.x == 0 or last.x == grid.grid_width - 1) \
+				and (last.y == 0 or last.y == grid.grid_height - 1)
+		if not touches_corner and not last_corner: non_corner = true
+	check(non_corner,
+			"a full-length diagonal touching no corner is still a diagonal",
+			"none found among %d" % offset.size())
+
+	# A SQUARE grid still yields exactly the two long diagonals through its centre --
+	# the two readings agree wherever the corner rule was defined.
+	var square := GridData.new()
+	square.build_cells()
+	var centre := _lines_of_kind(LineGeometry.lines_through(square, 2, 2, 0),
+			ScoringSection.LineKind.DIAG)
+	var flat_square := 0
+	for line : LineGeometry.Line in centre:
+		if line.cells[1].z == line.cells[0].z: flat_square += 1
+	check(flat_square == 2,
+			"a square grid still reports exactly two flat diagonals through its centre",
+			"got %d" % flat_square)

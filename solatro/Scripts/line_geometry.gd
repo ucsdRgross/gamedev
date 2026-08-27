@@ -61,40 +61,42 @@ static func _height_v(x: int, y: int, h: int) -> Line:
 
 ## Every DIAG line (flat or climbing) that passes through (x, y, h), full length along
 ## whichever spatial axis moves, no wrapping, never crossing this grid's boundary.
+static func _in_grid(grid: GridData, x: int, y: int) -> bool:
+	return x >= 0 and x < grid.grid_width and y >= 0 and y < grid.grid_height
+
+## Every DIAG line (flat or climbing) that passes through (x, y, h), full length along
+## whichever spatial axis moves, no wrapping, never crossing this grid's boundary.
 static func _diagonals(grid: GridData, x: int, y: int, h: int) -> Array[Line]:
 	var out : Array[Line] = []
 	for dir : Vector3i in _DIAG_DIRECTIONS:
 		var dx := dir.x
 		var dy := dir.y
 		var dz := dir.z
+		# A diagonal is a run whose x and y change at the SAME RATE; where it starts and
+		# ends is not part of the definition. Its full length is bounded by whichever grid
+		# dimension runs out first, and only a full-length run is a line.
 		var length : int
 		if dx != 0 and dy != 0:
-			# Corner-to-corner: the run must take the same number of steps along x as
-			# along y, which only has one unambiguous answer on a SQUARE grid. On a
-			# non-square grid the length is undecided, so no corner-to-corner line is
-			# reported there rather than one being guessed.
-			if grid.grid_width != grid.grid_height:
-				continue
-			length = grid.grid_width
+			length = mini(grid.grid_width, grid.grid_height)
 		elif dx != 0:
 			length = grid.grid_width
 		else:
 			length = grid.grid_height
 
-		var x0 : int = 0 if dx == 1 else (grid.grid_width - 1 if dx == -1 else x)
-		var y0 : int = 0 if dy == 1 else (grid.grid_height - 1 if dy == -1 else y)
-
-		var k : int
-		if dx != 0:
-			k = (x - x0) / dx
-		else:
-			k = (y - y0) / dy
-		if k < 0 or k >= length:
+		# Walk back from the queried cell to the first in-bounds cell of this run, then
+		# check the run reaches `length` cells without leaving the grid.
+		var back := 0
+		while _in_grid(grid, x - (back + 1) * dx, y - (back + 1) * dy):
+			back += 1
+		var x0 := x - back * dx
+		var y0 := y - back * dy
+		var run := 0
+		while _in_grid(grid, x0 + run * dx, y0 + run * dy):
+			run += 1
+		if run < length:
 			continue
-		if dx != 0 and dy != 0 and y0 + k * dy != y:
-			continue
-
-		var h0 := h - k * dz
+		# The climb must not start below the board.
+		var h0 := h - back * dz
 		if dz == 1 and h0 < 0:
 			continue
 
