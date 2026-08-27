@@ -498,20 +498,35 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S19b
   description: >
-    THE LEGACY ZONE MIGRATION - not a PLAN.md step. Added because the owner's GAP-003 answer
-    retires the legacy 3-component coordinate: the lower zone becomes an ordinary grid, the
-    upper zone becomes the Entrance at y == -1, and position_of returns BoardCoord.
+    THE LEGACY ZONE MIGRATION (GAP-003) - not a PLAN.md step. The lower zone becomes an
+    ordinary grid, the upper zone becomes the Entrance at y == -1, and position_of returns
+    BoardCoord.
   files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py'
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
+  status: deferred
   evidence: ''
   notes: >
-    Blast radius measured: 296 references to upper_zone/lower_zone across 29 files, plus
-    Board.locate, position_of and the board-position Vector3i.MIN checks; it reaches the UI,
-    props and pips. Sequenced here (not before Phase 2) because Phases 2-3 read only grids,
-    and S19 first archives the tableau cards that operate the lower zone. See GAP-003.
-    ⚠ Until this lands, grid work reads card_at / the grid index, never position_of.
+    ⚠ RESEQUENCED TO AFTER PHASE 5 by the overseer. GAP-003 says outright that the owner
+    answered WHAT, not WHEN, and that the sequencing is the overseer's call; it originally
+    scheduled this "immediately after S19", before anyone had measured what it actually
+    touches. What it actually touches is the suit-prop system, and PLAN.md §4 anti-scope says
+    "Do NOT touch the suit-prop system, statuses, or the VFX/shader layer BEYOND WHAT
+    `slot_center_global` FORCES (Q294)". Q294's own note names the same single seam: "the one
+    real interaction is slot_center_global, which props anchor through and which §19 changes".
+    §19 is the geometry rework, i.e. PHASE 5 (S20-S25) -- out of this run's range.
+    The entanglement is not avoidable by doing "just the coordinate half": every suit's
+    `spawn_props()` opens with `_spawn_origin()`, which IS `position_of`. Change its return
+    type and every prop route (`row_slot_path`, `entity_side_for_row`, `mancala_targets`,
+    `column_rise_path`) has to move with it -- and a prop route on a grid is presentation
+    geometry that only exists once Phase 5 has built it. Doing it now means either violating
+    the anti-scope or doing Phase 5's work unplanned and unmeasured.
+    Nor can the lower zone simply be deleted first: it is still the legacy play area the UI
+    renders, `Tests/UI/test_visual_layers.gd` builds one for its row-reveal fixture, and
+    GAP-007 declined to delete the tableau cards ("without throwing errors").
+    ⚠ THE COST OF DEFERRING IS KNOWN AND IS RECORDED IN OPEN BUGS: a scored grid line pays its
+    points and fires NO props. Two parked checks assert that zero, so they FAIL the day this
+    lands rather than rotting.
 
 - id: S37b
   description: >
