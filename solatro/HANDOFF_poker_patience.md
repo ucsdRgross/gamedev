@@ -495,6 +495,18 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 - **Assumed, not checked** — that `CARD_SEPARATION = 16` is correct. Taken from `PLAN.md`
   §1.8 as instructed; not re-derived.
 
+## Out-of-scope request parked: the card effect API
+
+The owner has asked for **an abstraction layer between card modifiers and the game scene** —
+all effects go through it, no modifier touches `Game` directly, and every existing card
+migrates to it. Captured at `design/card-effect-api/BRIEF.md` with the request verbatim, a
+measurement of today's seam (26 card files reach `game.` across ~7 concerns), and the seven
+structural forks a questionnaire has to settle.
+
+**NOT scheduled in this run and NOT started.** It is cross-cutting and larger than any
+remaining step here. New cards in S16–S18 keep their `Game` contact narrow and funnelled so
+migration is a rename rather than a redesign.
+
 ## Gaps — all three ANSWERED
 
 The owner's answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md`
