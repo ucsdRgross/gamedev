@@ -336,11 +336,18 @@ func test_determinism() -> void:
 func test_add_line_score_seam() -> void:
 	var g := make_grid(1)
 	check(g.state.row_total == 0, "precondition: row_total 0")
-	g.add_line_score(true, g.state.scores_row_upper, 0, 5)
+	var row_section := ScoringSection.new()
+	row_section.kind = ScoringSection.LineKind.ROW
+	row_section.index = 0
+	row_section.zone = g.state.upper_zone
+	g.add_line_score(row_section, 5)
 	check(g.state.row_total == 5, "add_line_score banks into row_total headless")
 	check(g.state.scores_row_upper.size() >= 1 and g.state.scores_row_upper[0] != null,
 			"add_line_score accumulates the gutter BigNumber headless")
-	g.add_line_score(false, g.state.scores_col, 0, 3)
+	var col_section := ScoringSection.new()
+	col_section.kind = ScoringSection.LineKind.COL
+	col_section.index = 0
+	g.add_line_score(col_section, 3)
 	check(g.state.col_total == 3, "add_line_score banks into col_total for columns")
 	check(g.row_gutter(Vector3i(0, 0, 0)) == g.state.scores_row_upper
 			and g.row_gutter(Vector3i(1, 0, 0)) == g.state.scores_row_lower,

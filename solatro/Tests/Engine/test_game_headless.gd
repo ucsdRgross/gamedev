@@ -378,14 +378,14 @@ func test_score_line_headless_mutates_data() -> void:
 	# discarded — the expected number comes from the board, not from `r`.
 	var row_cards := ScoringSection.collect(g.state.lower_zone, true, 0)
 	var expected : int = (await Scoring.PokerHands.score(row_cards))[0].score
-	await g.score_line(r, true, g.state.lower_zone, 0)  # row, lower gutter, index 0
+	await g.score_line(r, ScoringSection.of_line(g.state.lower_zone, true, 0))  # row, lower gutter, index 0
 	check(g.state.row_total == expected,
 			"score_line banks the re-evaluated row hand headless", str(g.state.row_total))
 	check_impl(g.state.scores_row_lower.size() >= 1 and g.state.scores_row_lower[0] != null,
 			"score_line accumulates a gutter BigNumber headless (view skipped, no crash)")
 	# An EMPTY zone builds an empty section: there is nothing to light and nothing to
 	# re-evaluate, so the Result handed in is banked unchanged.
-	await g.score_line(r, false, [] as Array, 0)  # col path
+	await g.score_line(r, ScoringSection.of_line([] as Array, false, 0))  # col path
 	check(g.state.col_total == 7, "score_line adds to col_total headless (no section)")
 	CardEnvironment.CURRENT = null
 	free_game(g)

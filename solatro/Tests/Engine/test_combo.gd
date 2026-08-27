@@ -148,17 +148,17 @@ func test_register_combo() -> void:
 	var saved_delta : float = SettingsManager.settings.duplicate_class_scale
 	SettingsManager.settings.duplicate_class_scale = 0.5
 	var pair := _result([Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE], 2, 1, 10)
-	await g.score_line(pair, true, g.state.upper_zone, 0)
+	await g.score_line(pair, ScoringSection.of_line(g.state.upper_zone, true, 0))
 	check(g.state.row_total == 10, "first meld of a class banks its full score",
 			"row_total=%d" % g.state.row_total)
-	await g.score_line(pair, true, g.state.upper_zone, 1)
+	await g.score_line(pair, ScoringSection.of_line(g.state.upper_zone, true, 1))
 	check(g.state.row_total == 15, "duplicate-class meld banks int(score x 0.5)",
 			"row_total=%d" % g.state.row_total)
 	check(g.state.combo_classes.size() == 2, "the pair class joined U exactly once")
 	# High cards never enter U (and never δ-scale).
 	var high := _result([Scoring.MELD_TYPE.HIGH_CARD] as Array[Scoring.MELD_TYPE], 1, 1, 1)
-	await g.score_line(high, true, g.state.upper_zone, 2)
-	await g.score_line(high, true, g.state.upper_zone, 3)
+	await g.score_line(high, ScoringSection.of_line(g.state.upper_zone, true, 2))
+	await g.score_line(high, ScoringSection.of_line(g.state.upper_zone, true, 3))
 	check(g.state.combo_classes.size() == 2, "lone high cards never enter U")
 	check(g.state.row_total == 17, "high cards bank full score (no δ)",
 			"row_total=%d" % g.state.row_total)

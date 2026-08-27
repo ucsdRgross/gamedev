@@ -13,7 +13,11 @@ func on_pass_card(_prop: PropData, g: Game, card: CardData) -> void:
 		var v := g.find_data_vec3(card)
 		if v == Vector3i.MIN: return
 		g.register_combo(combo_key())   # §15a: prop score effects self-register at their seam
-		g.add_line_score(true, g.row_gutter(v), v.z, points)
+		var section := ScoringSection.new()
+		section.kind = ScoringSection.LineKind.ROW
+		section.index = v.z
+		section.zone = g.state.upper_zone if v.x == 0 else g.state.lower_zone
+		g.add_line_score(section, points)
 
 func reaction_for(_prop: PropData, card: CardData) -> int:
 	return PropData.Reaction.SPIN if card.skill else PropData.Reaction.NONE

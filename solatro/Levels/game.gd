@@ -806,23 +806,19 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 			score_zone[i] = BigNumber.new()
 			score_zone[i].mantissa = 0
 
-## Score one row or column (E7: unifies the old score_row/score_col). Data mutation (row/col
-## total, BigNumber gutter accumulation) always runs; the visuals are paced through the view and
-## simply skipped when headless. `zone` is only read for rows (upper vs lower gutter) — pass the
-## upper/lower zone array; it is ignored for columns.
-func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : int) -> void:
+## Score one line, built by the caller into a `ScoringSection` (E7: unifies the old
+## score_row/score_col). Data mutation (row/col total, BigNumber gutter accumulation) always
+## runs; the visuals are paced through the view and simply skipped when headless. `score_line`
+## NEVER branches on `section.kind` or `line_key` — which bucket a section banks into comes
+## from the section, read only by `add_line_score`.
+func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	# a cancelled act discards its whole state — skip the remaining lines outright
 	if act_cancelled: return
-	# D3 (spotlight S5): building the SECTION is this call's first act. Everything
-	# spotlight-related consumes the section; nothing below reads is_row/index except
-	# add_line_score, which always did. ⚠ Rows and columns are the only shapes today and
-	# NOTHING here may assume that stays true (Q260=a, Q266=a).
-	var section := ScoringSection.of_line(zone, is_row, index)
 	# The act's own spine in the visual log — every light, dim and popup below is read AGAINST this
 	# line, and without it a log of the presentation layer has no idea which line it is presenting.
 	if EventLog.is_on(EventLog.CH_ACT):
 		EventLog.event(EventLog.CH_ACT, "score_line",
-				"%s index=%d cards=%d" % ["row" if is_row else "col", index, section.cards.size()])
+				"%s cards=%d" % [section.origin, section.cards.size()])
 	# An EMPTY section means the caller is not scoring a board line at all (a synthetic
 	# Result handed straight to score_line — the unit fixtures do exactly this). There is no
 	# section to light and nothing to re-evaluate, so the old path runs unchanged. A section
@@ -838,11 +834,6 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 		var rescored : Array[Scoring.Result] = await Scoring.PokerHands.score(section.cards)
 		result = rescored[0] if rescored else null
 		if result == null: return
-	var score_zone : Array[BigNumber]
-	if is_row:
-		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
-	else:
-		score_zone = state.scores_col
 	var key := Scoring.class_key(result)
 	var counts_for_combo := not result.types.has(Scoring.MELD_TYPE.HIGH_CARD)  # beats a lone high card
 	var amount := result.score
@@ -854,7 +845,7 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 	if view: await view.animate_meld(result)
 	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
 	# animates the label. Must run headless too (feeds the packed save).
-	add_line_score(is_row, score_zone, index, amount)
+	add_line_score(section, amount)
 	if counts_for_combo:
 		register_combo(key)
 	if view: await view.show_meld_score(result)
@@ -935,8 +926,17 @@ func _release_spotlight() -> void:
 	await skill_spotlight_check()
 
 ## Bank `amount` into a row/col gutter + the matching act total; animate the label when a view
-## exists. THE single write path for line scores — melds and prop effects both call it.
-func add_line_score(is_row: bool, score_zone: Array[BigNumber], index: int, amount: int) -> void:
+## exists. THE single write path for line scores — melds and prop effects both call it. The
+## legacy row-upper-vs-lower gutter split is read from `section.zone`; which bucket a section
+## banks into beyond that is a later step's job (§1.6), not this one's.
+func add_line_score(section: ScoringSection, amount: int) -> void:
+	var is_row := section.kind == ScoringSection.LineKind.ROW
+	var score_zone : Array[BigNumber]
+	if is_row:
+		score_zone = state.scores_row_upper if section.zone == state.upper_zone else state.scores_row_lower
+	else:
+		score_zone = state.scores_col
+	var index := section.index
 	resize_score_zone(score_zone, index + 1)
 	if is_row:
 		state.row_total += amount   # feeds this act's row x col payout (apply_act_score)

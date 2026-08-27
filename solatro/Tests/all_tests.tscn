@@ -41,6 +41,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_input.tscn" id="38_winput"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_info.tscn" id="39_winfo"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_board.tscn" id="40_gboard"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_line_detect.tscn" id="41_ldetc"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -123,5 +124,7 @@ speed_base_delay = 0.1
 [node name="TestWallInfo" parent="." instance=ExtResource("39_winfo")]
 
 [node name="TestGridBoard" parent="." instance=ExtResource("40_gboard")]
+
+[node name="TestLineDetect" parent="." instance=ExtResource("41_ldetc")]
 
 [node name="TestWallPause" parent="." instance=ExtResource("36_wpause")]
