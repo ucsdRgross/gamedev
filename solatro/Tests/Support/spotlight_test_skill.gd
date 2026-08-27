@@ -25,7 +25,7 @@ func get_str() -> String: return "SpotlightSpy:" + tag
 func get_description() -> String: return ""
 func get_frame() -> int: return 0
 
-## Engine test machinery: never a combo class, and therefore never a patience trigger either —
+## Engine test machinery: never a combo class —
 ## both would make the suite's assertions depend on unrelated act bookkeeping.
 func combo_key(_hook: StringName = &"") -> String: return ""
 

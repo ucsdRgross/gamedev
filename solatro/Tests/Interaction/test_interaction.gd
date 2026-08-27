@@ -60,7 +60,7 @@ func _ready() -> void:
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
-	await test_auto_next_leaves_no_dead_controls()
+	await test_rebuild_leaves_no_dead_controls()
 	behavior_section("TOUCHSCREEN (touch -> emulated mouse)")
 	await test_touch_taps_next_button()
 	behavior_section("UNDO DURING A RESOLVING SUBMIT (the real button)")
@@ -310,16 +310,13 @@ func test_mouse_right_click_ungrabs() -> void:
 
 ## Owner bug report 2026-07-20: after every auto-Next one board card became completely
 ## uninteractable (no hover, no highlight, no focus, no grab), and undo did not heal it —
-## only reloading the game did. Cause: the grab is still LIVE while patience-0 folds a Next
-## into `try_place`, so the board rebuilds underneath it; board controls are POOLED per slot,
+## only reloading the game did. Cause: the grab is still LIVE when a Next rebuilds the board
+## underneath it; board controls are POOLED per slot,
 ## so the `MOUSE_FILTER_IGNORE` that `grab_cards` put on the held card's control got rebound
 ## to whatever card landed in that slot, and only `ungrab_cards` (which looks the control up
 ## by the HELD card's new position) could ever undo it.
 ## Contract asserted here: with nothing held, NO board control is left non-interactive.
-func test_auto_next_leaves_no_dead_controls() -> void:
-	var prev_max : int = SettingsManager.settings.patience_max
-	SettingsManager.settings.patience_max = 1
-	game.state.reset_patience(1)
+func test_rebuild_leaves_no_dead_controls() -> void:
 	# Craft one guaranteed-legal placement: the classic placer wants a topmost target one rank
 	# away with a different suit. Take lower col 0's top card, give col 1 a matching target.
 	pa.flush_rebuild()
@@ -338,15 +335,20 @@ func test_auto_next_leaves_no_dead_controls() -> void:
 	await frames(2)
 	pa.flush_rebuild()
 	check(game.save_history.size() == history_before + 1,
-			"precondition: the move + its auto-Next committed one step")
-	check(game.state.patience == SettingsManager.settings.patience_max,
-			"precondition: the auto-Next refilled patience", str(game.state.patience))
-	check(pa.selected_cards.is_empty(), "the grab is released across the auto-Next")
+			"precondition: the move committed one step")
+	check(pa.selected_cards.is_empty(), "the grab is released across the move")
+	# The regression needs a board REBUILD while a grab is live, so drive a Next directly.
+	# What is being defended is the rebuild's effect on pooled controls, never whatever
+	# happened to trigger it.
+	await game.next()
+	await frames(2)
+	pa.flush_rebuild()
+	check(pa.selected_cards.is_empty(), "and stays released across the Next that rebuilds")
 	var dead : Array[String] = []
 	for control : Control in pa.ui_data:
 		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
 			dead.append(str(pa.ui_data[control]))
-	check(dead.is_empty(), "no board card is left uninteractable after an auto-Next",
+	check(dead.is_empty(), "no board card is left uninteractable after a rebuild",
 			"dead controls: %s" % [dead])
 	# ...and it stays healed through an undo (the pooled controls survive the rebuild)
 	game.undo()
@@ -358,7 +360,6 @@ func test_auto_next_leaves_no_dead_controls() -> void:
 			dead_after_undo.append(str(pa.ui_data[control]))
 	check(dead_after_undo.is_empty(), "undo does not resurrect a dead control",
 			"dead controls: %s" % [dead_after_undo])
-	SettingsManager.settings.patience_max = prev_max
 	pa.ungrab_cards()   # hermetic
 
 func test_keyboard_select_and_cancel() -> void:

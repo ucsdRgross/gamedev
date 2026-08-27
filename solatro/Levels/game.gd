@@ -24,8 +24,6 @@ signal show_resolved(won: bool, score: int, goal: int)
 signal show_unresolved
 ## A NEW combo class registered this act (§15a U grew — view pop + label refresh).
 signal combo_changed(count: int)
-## Patience moved (spent, refilled, or restored by a state swap) — the view refreshes its counter.
-signal patience_changed(current: int, max_value: int)
 
 #placeholder
 @export var deck : Deck = Deck.new()
@@ -46,7 +44,6 @@ var state : GameData = GameData.new():
 		#UI/HUD no longer lives here (S1 gone): just announce the swap so the view rebinds
 		#the new state's signals and drops the old one's (N9 handled in GameView._bind_state).
 		state_bound.emit(value)
-		_emit_patience()
 
 ## THE change detector: the `state.revision` the last committed snapshot carried.
 ## `state.revision != _last_saved_revision` ⇔ the board actually changed since that commit, which
@@ -156,9 +153,7 @@ func register_combo(key: String) -> bool:
 ## Hook override (CardEnvironment): a mod handler actually ran — feed the act combo with
 ## the mod's identity key (§15a mod-activation U). Only while an act is resolving
 ## (_act_cancellable brackets exactly the on_run_scorer/on_next resolution window);
-## engine mods return "" from combo_key and never register. ALSO the patience feed: every
-## dispatch path notifies (feeds_combo=false outside run_all_mods), which is how a placement's
-## legality query can hold the counter.
+## engine mods return "" from combo_key and never register.
 func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
 	# ⚠ EVERY dispatch path funnels through here (run_all_mods, return_first_*, run_card_mods — see
 	# the doc comment on CardEnvironment._note_mod_fired), which makes this the ONE place that sees
@@ -171,59 +166,6 @@ func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := tru
 				% [function, owner_card.log_str() if owner_card else "<no card>"])
 	if feeds_combo and _act_cancellable:
 		register_combo(mod.combo_key(function))
-	_note_patience_trigger(mod, function)
-
-# ==============================================================================
-# PATIENCE — idle-move pressure. The counter lives on GameData (undo rewinds it);
-# Game owns the accounting scope, the spend point, and the auto-Next trip.
-# ==============================================================================
-## True only across ONE try_place resolution: patience only ever reacts to card moves (owner
-## ruling: "patience doesn't matter during a submit"), so Submit/Next dispatch is invisible here.
-var _patience_active : bool = false
-## A qualifying (approved stage, not-yet-seen) modifier fired during this move — it was
-## interesting, so the move costs no patience.
-var _patience_fired_hold : bool = false
-## combo_keys to commit to the seen-set if this move actually lands.
-var _patience_pending_seen : Array[String] = []
-
-## Feed the patience accounting from a mod invocation (every dispatch path calls this via
-## _note_mod_fired). Only counts inside a move, from an approved stage, for a hook that isn't
-## opted out, and — with uniques tracked — only the FIRST time that modifier triggers this round.
-func _note_patience_trigger(mod: CardModifier, function: StringName) -> void:
-	if not _patience_active: return
-	var s := SettingsManager.settings
-	if function in s.patience_disabled_hooks: return
-	var card : CardData = mod.data
-	if card == null or not _stage_influences_patience(card.stage): return
-	var key := mod.combo_key(function)
-	if key.is_empty(): return   # engine mods opt out of combo AND patience the same way
-	if s.patience_track_uniques:
-		if state.patience_seen_mods.has(key) or _patience_pending_seen.has(key):
-			return              # the audience has seen this one — it no longer holds patience
-		_patience_pending_seen.append(key)
-	_patience_fired_hold = true
-
-## Does a trigger on a card at this stage hold the countdown? (per-stage settings toggles)
-func _stage_influences_patience(stage: CardData.Stage) -> bool:
-	var s := SettingsManager.settings
-	match stage:
-		CardData.Stage.PLAY: return s.patience_influence_play
-		CardData.Stage.ZONE: return s.patience_influence_zone
-		CardData.Stage.DRAW: return s.patience_influence_draw
-		CardData.Stage.DISCARD: return s.patience_influence_discard
-		CardData.Stage.RULES: return s.patience_influence_rules
-	return false
-
-## Announce the current counter to the view (HUD label + pulse).
-func _emit_patience() -> void:
-	patience_changed.emit(state.patience if state else 0,
-			maxi(SettingsManager.settings.patience_max, 1))
-
-## Owner ruling A1: raising patience_max mid-round also grants the live counter that much
-## (lowering it never takes any away).
-func _on_patience_max_increased(delta: int) -> void:
-	state.patience += delta
-	_emit_patience()
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
@@ -236,7 +178,6 @@ func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck
 
 func _ready() -> void:
-	SettingsManager.settings.patience_max_increased.connect(_on_patience_max_increased)
 	if not Main.save_info.game_history.is_empty():
 		_resume_show()
 	else:
@@ -257,8 +198,6 @@ func _start_fresh_show() -> void:
 	# setup_gui found no game and skipped the score gutters — including the row buffer control
 	# that keeps the play area from shifting when scores first appear. Headless: no-op.
 	if view: view.rebuild()
-	state.reset_patience(SettingsManager.settings.patience_max)
-	_emit_patience()
 	save_state()          # seed the history with the opening board
 	RunManager.save_run() # write it once synchronously so a save exists immediately
 
@@ -339,8 +278,6 @@ func try_grab(data: CardData) -> Array[CardData]:
 
 ## Command (view-called): try to place `stack` onto `target`. Performs the moves + save_state()
 ## on success and returns whether anything was placed. Guarded so a locked board rejects.
-## Also THE patience spend point: a move that changed the board either holds the counter (a
-## qualifying modifier triggered) or costs one, and hitting 0 auto-presses Next.
 func try_place(stack: Array[CardData], target: CardData) -> bool:
 	# ⚠ THE `input` CHANNEL IS WHAT MAKES A PLAYTEST LOG REPRODUCIBLE. Everything else in the log is
 	# consequence; these five lines are CAUSE. Without them a recording says what the game did but
@@ -348,46 +285,17 @@ func try_place(stack: Array[CardData], target: CardData) -> bool:
 	EventLog.event(EventLog.CH_INPUT, "try_place",
 			"stack=%d onto=%s" % [stack.size(), target.log_str() if target else "<null>"])
 	if processing: return false
-	_patience_active = true
-	_patience_fired_hold = false
-	_patience_pending_seen.clear()
 	var stacked := await return_first_data_array_result(&"on_can_place_stack", stack, target)
 	if stacked:
 		var onto_data := target
 		for moving_data in stacked:
 			move_data_ontop_data(moving_data, onto_data, 1, false)
 			onto_data = moving_data
-		_patience_active = false
 		# A legal-but-OK_NOOP placement (dropped back where it started) moved no card, so the
-		# revision never budged: it costs no patience and commits no snapshot (Task 1).
+		# revision never budged: nothing to commit (Task 1).
 		if state.revision != _last_saved_revision:
-			await _spend_patience_for_move()
-	else:
-		_patience_active = false   # illegal placement: discard the accounting, spend nothing
+			save_state()
 	return not stacked.is_empty()
-
-## Commit one board move's patience accounting, then commit the board. A move that ran out of
-## patience folds into an immediate Next and commits ONCE, as a single undo step: undoing lands
-## on the board BEFORE the move, with patience intact (owner ruling A5 — patience 0 is never a
-## playable board, so undo can't buy an extra action).
-func _spend_patience_for_move() -> void:
-	# A committed board always carries at least 1 patience (0 auto-Nexts immediately), so <= 0
-	# here means a state that never seeded it — a bare fixture, or a save from before patience
-	# existed. Seed it from settings and let this move spend against a full round.
-	if state.patience <= 0:
-		state.reset_patience(SettingsManager.settings.patience_max)
-	if _patience_fired_hold:
-		for key : String in _patience_pending_seen:
-			state.mark_seen(key)
-	else:
-		state.spend_patience()
-	_emit_patience()
-	if state.patience <= 0:
-		# the round is ending under the player's hand — let the view drop the grab first
-		if view: view.release_grab()
-		await next()   # resets patience and commits the whole move+Next in one snapshot
-	else:
-		save_state()
 
 func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
@@ -445,23 +353,6 @@ func _perform_next() -> void:
 	if act_cancelled:
 		_restore_pre_act_board("cancelled next")
 		return
-	# A new round = a fresh audience: refill patience (and forget the seen mods unless the
-	# tunable defers that to the next Submit).
-	var patience_before := state.patience
-	var seen_before := state.patience_seen_mods.size()
-	state.reset_patience(SettingsManager.settings.patience_max)
-	if not SettingsManager.settings.patience_reset_uniques_on_act:
-		state.clear_seen()
-	# The mutators deliberately don't bump revision (owner ruling A2): patience always rides a
-	# real board change. A Next on a board where NOTHING moved is the one exception — bump here
-	# so the refill still commits instead of being skipped by save_state's change detector.
-	# BOTH halves count: a round where every move was interesting leaves patience already full,
-	# so the seen-set clear would be the only change — without it that clear was dropped and a
-	# resume brought the stale "already seen" mods back (fix 2026-07-20).
-	if (patience_before != state.patience or seen_before != state.patience_seen_mods.size()) \
-			and state.revision == _last_saved_revision:
-		state.revision += 1
-	_emit_patience()
 	save_state()
 	processing = false
 	
@@ -785,8 +676,6 @@ func _perform_submit() -> void:
 		_restore_pre_act_board("cancelled submit")
 		return
 	state.apply_act_score()
-	if SettingsManager.settings.patience_reset_uniques_on_act:
-		state.clear_seen()
 	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
 	if view: view.sync_scores()
 	state.discard_lower_board()

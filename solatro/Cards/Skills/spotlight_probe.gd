@@ -16,7 +16,7 @@ extends CardModifierSkill
 ## actually seeing on screen. `on_unspotlight` is here for the same reason — without it the card would
 ## announce on the way in and stay silent on the way out, which is not the shape the chart describes.
 ##
-## ⚠ **NOT A GAMEPLAY CARD.** It scores nothing, is never a combo class (so it cannot move patience or
+## ⚠ **NOT A GAMEPLAY CARD.** It scores nothing, is never a combo class (so it cannot move
 ## an act's bookkeeping), and exists to be looked at. Reach it from the DEBUG BAR's *Cue* button
 ## (`GameView._on_debug_cue`), which stamps it onto an uncovered board card and re-runs the sweep.
 

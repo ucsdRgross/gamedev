@@ -53,17 +53,6 @@ var revision : int = 0:
 ## because the two are weighted differently: a first-of-its-class and a repeat each add their
 ## own step. Stored here, not on Game, so undo rewinds it with the board.
 @export_storage var combo_repeats : int = 0
-## PATIENCE — "the audience won't watch you shuffle the board forever": idle card
-## moves tick this down; a move that triggers a qualifying card modifier holds it. At 0 the game
-## auto-presses Next, which resets it to settings.patience_max. Lives ON the board state (like
-## submits_used) so undo/history snapshots rewind it with the board.
-## NOTE (owner ruling A2): the patience mutators deliberately do NOT bump `revision`.
-## Patience only ever moves together with a real board change, so the change-detector that keys
-## Game.save_state() stays the single signal; a snapshot where ONLY patience differs cannot exist.
-## 0 = never seeded (a bare fixture, or a save written before patience existed): the first move
-## seeds it from settings. Every committed board otherwise carries at least 1 — see the auto-Next
-## rule in Game._spend_patience_for_move.
-@export_storage var patience : int = 0
 ## SPOTLIGHT — the cards the scoring beam is on RIGHT NOW. Effective spotlight is
 ## `is_spotlit()` OR a key in here (design §2), and that one line is the whole mechanical change.
 ## ⚠ Deliberately NOT `@export_storage`: it is per-act state, so undo rewinds it by simply not
@@ -73,28 +62,6 @@ var revision : int = 0:
 ## Written only by `Game._spotlight_section()` / `Game._release_spotlight()`; read only by
 ## `CardModifier.is_spotlit()`. A Dictionary, not an Array, because the read is per-card and hot.
 var forced_spotlight : Dictionary[CardData, bool] = {}
-
-## combo_key set of modifiers the audience has already seen this round: a re-trigger of one of
-## these no longer holds patience (settings.patience_track_uniques). Cleared on Next, or after a
-## Submit when settings.patience_reset_uniques_on_act.
-@export_storage var patience_seen_mods : Array[String] = []
-
-## Spend one patience (a move the audience found boring). Floors at 0 — 0 is the auto-Next trip.
-func spend_patience() -> void:
-	patience = maxi(patience - 1, 0)
-
-## Refill patience for a new round. `max_val` is settings.patience_max (floored at 1 there).
-func reset_patience(max_val: int) -> void:
-	patience = maxi(max_val, 1)
-
-## Record a modifier's combo_key as "seen" this round (it stops holding patience from now on).
-func mark_seen(key: String) -> void:
-	if key.is_empty() or patience_seen_mods.has(key): return
-	patience_seen_mods.append(key)
-
-## Forget every seen modifier — a fresh audience (Next, or Submit per the tunable).
-func clear_seen() -> void:
-	patience_seen_mods.clear()
 
 #const COMBO_STEP := 0.1 # moved to PlayerSettings.combo_step (all knobs in one place)
 

@@ -10,7 +10,6 @@
 [ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_combo.tscn" id="24_combo"]
-[ext_resource type="PackedScene" path="res://Tests/Engine/test_patience.tscn" id="25_patnc"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
@@ -66,7 +65,6 @@ speed_base_delay = 0.1
 
 [node name="TestCombo" parent="." instance=ExtResource("24_combo")]
 
-[node name="TestPatience" parent="." instance=ExtResource("25_patnc")]
 
 [node name="TestPalette" parent="." instance=ExtResource("28_palet")]
 

@@ -69,12 +69,12 @@ func note_processing(_weight := 1) -> void:
 	pass
 
 ## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
-## combo (SCORING_MATH_PLAN §15a mod-activation U) and the patience counter. No-op in base
-## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods)
-## since 2026-07-20 — patience needs the placement legality query (on_can_place_stack) to count.
-## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class
-## (§15a), so the newly-notifying paths (comparators, legality queries, the prop tick's per-card
-## hooks) inform patience ONLY.
+## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base
+## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods),
+## which is what makes it the one place that sees the whole mod firing order for the event log.
+## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class,
+## so the other paths (comparators, legality queries, the prop tick's per-card hooks) are
+## LOGGED but never scored.
 func _note_mod_fired(_mod: CardModifier, _function: StringName,
 		_feeds_combo := true) -> void:
 	pass
@@ -229,7 +229,7 @@ func has_card_data(data: CardData) -> bool:
 	return false
 
 ## ONE pass of the two-pass sameness question (PLAN §1.2): the FIRST true answers and STOPS the
-## pass (Q84=a), so later rules are never asked and do not feed the patience counter.
+## pass, so later rules are never asked.
 ## ⚠ Raw dispatch — callers go through `PipComparator.ask_pass`, which memoises for the hand.
 func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> bool:
 	for mod : CardModifier in active_implementers(hook):
