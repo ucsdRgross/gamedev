@@ -128,11 +128,6 @@ func run_win_and_resume_scenario() -> void:
 	validate_ok(g, "placements")
 
 	# --- quit mid-show: everything needed to resume must already be on disk ---
-	# ⚠ The commit is EXPLICIT here because a placement is not yet an undo step of its own --
-	# `place_card_in_grid` mutates and broadcasts but never calls save_state, so without this the
-	# quit would save the opening board and the resume below would restore a score of zero.
-	# Drop this line when placements commit themselves; the check is unchanged either way.
-	g.save_state()
 	var exp_total := g.state.live_total()
 	var exp_history := g.save_history.size()
 	# A real quit flushes + joins the background saver (RunManager._exit_tree). Do the

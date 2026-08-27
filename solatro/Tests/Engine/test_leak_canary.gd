@@ -487,9 +487,6 @@ func _session_cycle() -> void:
 	# Discard one of the placed cards through the real path.
 	if placed:
 		await g.discard_data(placed[0])
-	# A placement is not yet an undo step of its own, so commit explicitly before undoing --
-	# otherwise there is no snapshot to rewind to and the undo exercises nothing.
-	g.save_state()
 	g.undo()
 	await _settle()
 	await g.submit()

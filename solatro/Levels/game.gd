@@ -630,6 +630,15 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	await refill_entrance_if_due()
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
 		state.committed_grid = -1
+	# THE PLACEMENT IS THE UNDO STEP -- one snapshot each, never a batch of five, exactly as
+	# try_place commits a player's drop. Taken LAST on purpose: the scores a placement caused
+	# live on `state`, so a snapshot taken any earlier would rewind the board without rewinding
+	# what it scored. A placement that moved nothing never got here (the guards above return),
+	# and save_state() skips an unmoved `revision` anyway, so putting a held card back still
+	# costs nothing. ⚠ Same `processing` guard as the act reset above: a placement made by an
+	# effect mid-cascade is part of the act that caused it, not an undo step of its own.
+	if not processing:
+		save_state()
 
 ## Same legality question TypeInput._no_legal_move_remains asks (every held Entrance card
 ## against every grid, via the same on_can_place_stack dispatch try_place uses), narrowed to

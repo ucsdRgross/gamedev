@@ -27,6 +27,9 @@ func _ready() -> void:
 	await run_placement_into_other_grid_while_committed_refused_test()
 	await run_commitment_lifts_when_no_legal_placement_remains_test()
 	await run_undo_lifts_commitment_nothing_else_does_test()
+	await run_every_placement_is_one_undo_step_test()
+	await run_undo_rewinds_every_score_a_placement_made_test()
+	await run_a_placement_that_changes_nothing_commits_nothing_test()
 	finish()
 
 # ==============================================================================
@@ -44,11 +47,7 @@ func _rules_card(skill: CardModifierSkill) -> CardData:
 func _allotment_game(deck: Array[CardData]) -> Game:
 	var g := Game.new()
 	var state := GameData.new()
-	# Assigning the deck directly skips add_deck, which is what normally stamps the stage.
-	# validate() checks stage against location, so set it here or every undo warns I5.
-	for card : CardData in deck:
-		card.stage = CardData.Stage.DRAW
-	state.draw_deck = deck
+	state.draw_deck = _as_draw_deck(deck)
 	state.rules_deck = [_rules_card(SkillGridAllotment.new())] as Array[CardData]
 	g.state = state
 	CardEnvironment.CURRENT = g
@@ -263,10 +262,19 @@ func _creator_count(g: Game) -> int:
 
 ## A bare Game with 5 spotlit SkillAdderInputUpper cards (the Entrance's 5 columns) and no
 ## grid. Returns the game and the 5 TypeInput header instances, left to right.
+## Stamps a hand-assigned deck DRAW and returns it. Assigning `state.draw_deck` directly
+## skips `Game.add_deck`, which is what normally stamps the stage, and `validate()` checks a
+## card's stage against where it actually sits -- so without this every undo in the suite
+## reports the whole deck as I5 violations (stage PLAY, expected DRAW).
+func _as_draw_deck(deck: Array[CardData]) -> Array[CardData]:
+	for card : CardData in deck:
+		card.stage = CardData.Stage.DRAW
+	return deck
+
 func _entrance_game(deck: Array[CardData]) -> Dictionary:
 	var g := Game.new()
 	var state := GameData.new()
-	state.draw_deck = deck
+	state.draw_deck = _as_draw_deck(deck)
 	var adders : Array[SkillAdderInputUpper] = []
 	for _i : int in 5:
 		adders.append(SkillAdderInputUpper.new())
@@ -642,3 +650,92 @@ func _all_card_scripts(root: String) -> Array[String]:
 			name = dir.get_next()
 		dir.list_dir_end()
 	return out
+
+
+# ==============================================================================
+# TP-121 -- every placement is ONE undo step. Not a batch of five, not zero.
+# ==============================================================================
+func run_every_placement_is_one_undo_step_test() -> void:
+	behavior_section("EVERY PLACEMENT IS ONE UNDO STEP")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	g.save_state()   # seed a committed board, the way _start_fresh_show does
+	var before := g.save_history.size()
+
+	await g.place_card_in_grid(_take_held(g, 0), BoardCoord.new(0, 0, 0, 0))
+	check(g.save_history.size() == before + 1,
+			"one placement commits exactly one snapshot",
+			"%d -> %d" % [before, g.save_history.size()])
+	# The SECOND one matters as much as the first: a per-batch commit would pass the check
+	# above and then add nothing here.
+	await g.place_card_in_grid(_take_held(g, 1), BoardCoord.new(0, 1, 0, 0))
+	check(g.save_history.size() == before + 2,
+			"a second placement commits its own snapshot, not a shared batch one",
+			"%d -> %d" % [before, g.save_history.size()])
+	_free_game(g)
+
+# ==============================================================================
+# TP-122 -- undoing a placement that scored rewinds the SCORES with the board. The scores
+# live on GameData, which is what a snapshot captures, so this is the assertion that the
+# placement's snapshot was taken AFTER its scoring pass rather than before it.
+# ==============================================================================
+func run_undo_rewinds_every_score_a_placement_made_test() -> void:
+	behavior_section("UNDO REWINDS EVERY SCORE A PLACEMENT MADE")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	g.state.rules_deck.append(_rules_card(SkillLineDetector.new()))
+	# FIX-TRIPLE: cell (2,2) completes row 2, column 2 and a diagonal at once.
+	var fixture := TestGridFixtures.build_fix_triple()
+	g.state.grids = fixture.grids
+	g.save_state()
+	var before_total := g.state.live_total()
+	var before_history := g.save_history.size()
+
+	var card := _take_held(g, 0)
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	var scored := g.state.live_total()
+	check(scored > before_total,
+			"precondition: the placement into the shared cell scored",
+			"%d -> %d" % [before_total, scored])
+	check(g.save_history.size() == before_history + 1,
+			"precondition: the placement committed", "%d snapshots" % g.save_history.size())
+
+	g.undo()
+	check(g.state.live_total() == before_total,
+			"undo rewinds the scores the placement made, not just the board",
+			"%d, wanted %d" % [g.state.live_total(), before_total])
+	check(g.state.card_at(BoardCoord.new(0, 2, 2, 0)) == null,
+			"...and the placed card is off the board again",
+			str(g.state.card_at(BoardCoord.new(0, 2, 2, 0))))
+	# ⚠ The rewound board must be a LEGAL board, not merely one with the right numbers on it.
+	# Every placement is now a snapshot, so an undo restores one of these on every step of
+	# every show -- an invariant that only breaks on the way back is still broken.
+	var violations := g.state.validate()
+	check(violations.is_empty(), "the rewound board still satisfies every invariant",
+			"; ".join(violations.slice(0, 3)))
+	_free_game(g)
+
+# ==============================================================================
+# TP-123 -- a placement that moves nothing commits nothing: no snapshot, so no undo step
+# that visibly does nothing. Putting a held card back costs the player nothing.
+# ==============================================================================
+func run_a_placement_that_changes_nothing_commits_nothing_test() -> void:
+	behavior_section("A PLACEMENT THAT CHANGES NOTHING COMMITS NOTHING")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	g.save_state()
+	# Commit the batch to grid 0 first, so the refused placement below is refused for the
+	# reason under test rather than for want of a grid.
+	await g.place_card_in_grid(_take_held(g, 0), BoardCoord.new(0, 0, 0, 0))
+	var before := g.save_history.size()
+
+	# Aimed at a grid the batch is not committed to: refused outright, nothing moves.
+	var held : CardData = g.state.upper_zone[1].datas[0]
+	await g.place_card_in_grid(held, BoardCoord.new(1, 0, 0, 0))
+	check(g.save_history.size() == before,
+			"a refused placement commits no snapshot",
+			"%d -> %d" % [before, g.save_history.size()])
+	check(g.state.upper_zone[1].datas.has(held),
+			"...and the card is still held, exactly where it was")
+	_free_game(g)
+
