@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1–S13 landed and committed,
-suite green at 42 suites. Next is S14 (the combo model and the retirements). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete; Phase 3 in progress** — **Phase 3 complete** - S1-S14 landed and committed,
+suite green at 41 suites. Next is S15, which opens Phase 4 (rules cards). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -348,11 +348,24 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
   description: >
     The combo model, and the retirement of MAX_SUBMITS, submits_used, score_additive,
     duplicate_class_scale and the patience family.
-  files_touched: []
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/game_data.gd, solatro/Scripts/run_state.gd,
+     solatro/Scripts/run_manager.gd, solatro/Scripts/player_settings.gd,
+     solatro/UI/control_card.gd, solatro/Scripts/card_environment.gd,
+     solatro/Locale/localization.csv, and seven test suites]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 41 SUITES: 3332 CHECKS PASSED ======== (patience suite deleted: 42 -> 41)
+    Landed in three commits, suite green between each:
+      c72b7f4 S14a  combo model; score_additive and duplicate_class_scale retired
+      49b3eb9 S14b  the patience family retired, including the (seen)/(new) marker
+      ea03db7 S14c  MAX_SUBMITS/submits_used retired; end_show() replaces the act count
+    TP-57..TP-61 green. TP-60 walks every .gd/.tscn for all nine retired identifiers.
+    Red: re-declaring submits_used fails the gate (naming game_data.gd:47) AND TP-61.
+    ⚠ end_show() bumps revision on purpose - ending is undoable but not a board mutation,
+    and save_state() only commits when revision moved, so without it undo had nothing to
+    rewind to. Found by TP-61, not by inspection.
   notes: >
     Done-when: TP-57..TP-61 green; grep proves each retired identifier has zero readers.
     submits_used lives on GameData specifically so undo rewinds it - removing it touches
