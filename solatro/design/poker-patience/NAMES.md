@@ -41,7 +41,7 @@ plan carries the citation.
 | `BoardCoord.h` | `int` | Height in the stack, **0-based**. |
 | `BoardCoord.NOWHERE` | `const` | The off-board sentinel. **Never `(0,0,0,0)`.** |
 | `BoardCoord.ENTRANCE_ROW` | `const int = -1` | Named, never typed as a literal `-1`. |
-| `BoardCoord.step_x(n)` | method | Column arithmetic that crosses grid boundaries. |
+| `BoardCoord.step(dx, dy, grid_widths)` | method | Two-axis movement over an unbounded lattice of per-grid blocks. Never clamps, never returns `NOWHERE`; whether a cell EXISTS at the result is `GameData.has_cell`, asked at landing. |
 | `BoardCoord.is_entrance()` | method | `y == ENTRANCE_ROW`. |
 
 ## 2. GameData
@@ -63,8 +63,11 @@ plan carries the citation.
 | `GameData.packed_*` | packed arrays | One pair per container above, mirroring the existing `pack_scores`/`unpack_scores` contract. |
 | `GameData.grid_score(grid)` | method | Product of the buckets whose value is `> 0`; `0` when none is. |
 | `GameData.board_total()` | method | Sum of `grid_score` over grids. |
+| `GameData.live_total()` | method | `board_total() * combo_mult()`, as an int. **The show's score**: what the goal is measured against and what fame banks. Derived on demand -- there is no banking moment and no stored total. |
 | `GameData.position_of(card)` | method | Existing name, now returning `BoardCoord`. |
 | `GameData.card_at(coord)` | method | The reverse index. |
+| `RunState.pending_placement_slot` | `int`, default `-1` | Which Entrance SLOT the pending placement took its card from. A placement is identified by slot, never by card: the pre-placement board a replay starts from is a restored snapshot carrying its own copies. |
+| `RunState.pending_placement_coord` | `Vector4i` | Where that placement was aimed, as `(grid, x, y, h)`. |
 
 ## 3. Board
 
@@ -101,12 +104,14 @@ plan carries the citation.
 | `SkillAdderInputUpper` | existing | 3 | **Unchanged.** Five of them make the Entrance five wide. |
 | `TypeInput` | existing | 2 | **Unchanged except `on_next` is removed.** |
 
-**Archived** (moved to `Cards/Skills/Rules/Archive/`, kept constructible): `SkillGrabberOgLower`,
-`SkillPlacerOgLower`, `SkillScorerCascadeLower`, `SkillAdderInputLower`, `SkillEvalPokerBest`.
+⚠ **There is no archive.** `SkillGrabberOgLower`, `SkillPlacerOgLower`,
+`SkillScorerCascadeLower`, `SkillAdderInputLower` and `SkillEvalPokerBest` are simply **absent
+from `rules1`**. Their scripts stay where they are and stay constructible; there is no
+`Cards/Skills/Rules/Archive/` directory and no `Deck.archive_rules1`.
 
-| Name | Kind | Notes |
-|---|---|---|
-| `Deck.archive_rules1` | method | Builds the archived tableau rules set for a future side mode. |
+`rules1` is now: 5 x `SkillAdderInputUpper`, 1 x `SkillGridAllotment`, 1 x `SkillLineDetector`.
+`TestDecks.standard_rules` is a frozen mirror of that composition and
+`TestDecks.rules_skill_names` is what compares the two.
 
 ⚠ **Frames 9–13 are claimed here.** `Assets/skill_art.png` is 16×16 = 256 frames; 0–8 were in use.
 Do not pick a frame that is not in this table.
@@ -180,6 +185,7 @@ wall. Do **not** rebind them.
 | `Tests/UI/test_grid_view.gd` / `.tscn` | Phase 6 |
 | `Tests/Wall/test_wall_saved_pan.gd` / `.tscn` | Phase 7 |
 | `Tests/Engine/test_grid_fuzz.gd` / `.tscn` | Fuzz |
+| `TestGridFixtures.board_digest(state)` | The board as comparable text: every cell, the Entrance, deck and discard in order, every bucket. Backs the headless/viewed parity gate and the save round-trip. |
 | `TestDecks.deck_standard_52` | `FIX-DECK-52`. **Frozen.** Never `Deck.deck4`. |
 | `TestDecks.deck_20` | `FIX-DECK-20` |
 | `TestDecks.deck_53` | `FIX-DECK-53` |

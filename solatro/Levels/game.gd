@@ -75,10 +75,10 @@ var processing : bool = false:
 		processing = value
 		processing_changed.emit(value)
 
-## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
-## after the last one.
 # A show is one continuous performance: it runs until the player ends it, so there is no act
 # count and no ceiling on acts. `end_show()` is the only thing that resolves one.
+## The show resolved as a win. Set by `_resolve_game`, read by `exit_show` to decide between
+## banking fame and ending the run.
 var _won : bool = false
 ## The show finished and the win/lose screen is up. Undo in this state dismisses the outcome
 ## and rewinds the final Submit (show_unresolved). Reset by that undo; a fresh _resolve_game
@@ -373,9 +373,11 @@ func next() -> void:
 		return
 	await _perform_next()
 
-## Resolve a Next action: input-zone stacks drop + decks refill (on_next mods), then commit.
-## The board is locked (processing) across the async span and the action is persisted as
-## pending first, so a quit mid-resolution replays it verbatim on resume.
+## Resolve a Next action: run the on_next mods, then refill the Entrance if it is due one,
+## then commit. ⚠ Nothing in the shipped rules deck implements on_next any more -- the
+## Entrance refills from board state, and a placement asks for that itself -- so what is left
+## here is the refill and the commit. The board is locked (processing) across the async span
+## and the action is persisted as pending first, so a quit mid-resolution replays it on resume.
 func _perform_next() -> void:
 	processing = true
 	_begin_act()
@@ -788,10 +790,14 @@ func submit() -> void:
 		return
 	await _perform_submit()
 
-## Resolve a Submit act: run the scorer, bank the row×col payout, clear the lower board, then
-## continue or resolve the show. Locked (processing) across the async scoring and persisted as
-## pending first, so a quit mid-scoring replays from the pre-submit board on resume (the player
-## can't rewind a Submit by killing the app).
+## Resolve a Submit act. ⚠ THE ACT IS RETIRED AND THIS IS VESTIGIAL: a show has no acts, no
+## banking moment and no scoring round -- a line scores the instant a placement completes it,
+## and `end_show()` is what finishes a show. No button reaches this any more (the one that
+## used to is the End button), and the row/col payout and lower-board clear below both operate
+## on a board the grid game does not use. Kept because the pending-action replay and the
+## save format still name `on_run_scorer`; retiring it outright is not a step anything owns.
+## Locked (processing) across the async span and persisted as pending first, so a quit
+## mid-resolution replays from the pre-submit board on resume.
 func _perform_submit() -> void:
 	processing = true
 	_begin_act()
