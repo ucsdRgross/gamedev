@@ -2,8 +2,7 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** Phase 1 complete; **Phase 2 in progress** — **Phase 2 complete** - S1-S11 landed and committed,
-suite green at 41 suites. Next is S12, which opens Phase 3 (the economy). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete** — S1–S11 landed and committed, suite green at 41 suites. Next is S12, which opens Phase 3 (the economy). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
