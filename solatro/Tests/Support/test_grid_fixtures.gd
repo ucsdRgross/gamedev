@@ -193,17 +193,6 @@ static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Ar
 		placed.append(card)
 	return placed
 
-## Draws `height` cards and stacks them all into the single cell (x, y), bottom to top --
-## the covered-card case: every card but the top one has another card on it.
-static func stack_cell_from_deck(game: Game, grid: int, x: int, y: int, height: int) -> Array[CardData]:
-	var placed : Array[CardData] = []
-	for _h : int in height:
-		var card := game.draw_card()
-		if not card: break
-		await game.place_card_in_grid(card, BoardCoord.new(grid, x, y, 0))
-		placed.append(card)
-	return placed
-
 
 ## A stable text digest of everything a show's outcome is made of: every grid cell bottom to
 ## top, the Entrance, the deck and discard IN ORDER, and every score bucket. Cards are named

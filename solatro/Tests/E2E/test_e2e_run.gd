@@ -87,6 +87,16 @@ func run_win_and_resume_scenario() -> void:
 	var cards := TestDecks.seeded_deck()
 	var deck_size := cards.size()
 	var rules := TestDecks.standard_rules()
+	# ⚠ THE MIRROR HAS TO TRACK THE SHIPPED RULES SET, and nothing else says so. Every scenario
+	# below runs the REAL bootstrap against this frozen copy of `Deck.rules1` -- so the day
+	# rules1 gains or loses a card and the mirror does not, this whole suite quietly starts
+	# testing a game that is not the one being shipped, and every check in it still passes.
+	# Compared by skill class name: the shipped builder draws random suits and ranks, and the
+	# mirror fixes them on purpose, so only the COMPOSITION is comparable.
+	check(TestDecks.rules_skill_names(rules) == TestDecks.rules_skill_names(Deck.new().rules1),
+			"the frozen rules mirror still matches the shipped rules1",
+			"mirror %s vs shipped %s" % [TestDecks.rules_skill_names(rules),
+			TestDecks.rules_skill_names(Deck.new().rules1)])
 	var run := RunManager.new_run(cards, rules)
 	Main.save_info = run
 	check(RunManager.has_save(), "starting a run immediately writes a resumable save")
