@@ -296,10 +296,15 @@ static func locate_in_cell(state: GameData, card: CardData) -> BoardCoord:
 	var cell_idx : int = loc[1]
 	return BoardCoord.new(loc[0], cell_idx % grid.grid_width, cell_idx / grid.grid_width, loc[2])
 
-## Places a card NOT already on the grid board into a cell, at the TOP of its stack --
-## reuses the Anchor.ON_TOP rule (insert above whatever is already there) rather than
-## trusting `coord.h`, so a caller can never hand in a height that disagrees with the
-## stack it is landing on. Bumps revision exactly once.
+## Places a card into a cell, at the TOP of its stack -- reuses the Anchor.ON_TOP rule
+## (insert above whatever is already there) rather than trusting `coord.h`, so a caller can
+## never hand in a height that disagrees with the stack it is landing on.
+## ⚠ IT LIFTS THE CARD OUT OF THE ZONE COLUMN IT CAME FROM, as one mutation with the append.
+## A card placed from the Entrance is in `upper_zone` until something takes it out, and there
+## is no other path that does: appending without the lift leaves it in TWO collections, which
+## validate() reports as a duplicate and which every position index then disagrees about.
+## Zone HEADERS (row -1) are never lifted -- they belong to their column.
+## Bumps revision exactly once, after the state is consistent again.
 static func place_in_cell(state: GameData, card: CardData, coord: BoardCoord) -> bool:
 	if not card: return false
 	var grid := _grid_at(state, coord.grid)
@@ -308,6 +313,9 @@ static func place_in_cell(state: GameData, card: CardData, coord: BoardCoord) ->
 		return false
 	if not _locate_in_grid(state, card).is_empty():
 		return false #already on the grid board
+	var held := locate(state, card)
+	if held != Vector3i.MIN and held.z > -1:
+		zone(state, held.x)[held.y].datas.erase(card)
 	var idx := grid.cell_index(coord.x, coord.y)
 	grid.cells[idx].datas.append(card)
 	#don't re-set an already-PLAY stage: previous_stage drives the visual's spawn origin

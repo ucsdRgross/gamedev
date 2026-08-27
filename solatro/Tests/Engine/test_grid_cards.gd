@@ -458,11 +458,11 @@ func _committable_entrance_game() -> Dictionary:
 	await _deal(g)
 	return {"game": g, "headers": headers}
 
-## Takes the held card out of Entrance slot `col` (as a real placement would) and returns it.
-func _take_held(g: Game, col: int) -> CardData:
-	var card : CardData = g.state.upper_zone[col].datas[0]
-	g.state.upper_zone[col].datas.clear()
-	return card
+## The card held in Entrance slot `col`. It is left IN its slot: taking it out is the
+## placement's own job (Board.place_in_cell lifts it), and lifting it here instead used to
+## leave it in no collection at all while still stamped PLAY.
+func _held(g: Game, col: int) -> CardData:
+	return g.state.upper_zone[col].datas[0]
 
 # ==============================================================================
 # TP-75 -- the first placement commits the batch to that grid.
@@ -472,11 +472,14 @@ func run_first_placement_commits_the_batch_test() -> void:
 	var parts := await _committable_entrance_game()
 	var g : Game = parts["game"]
 	check(g.state.committed_grid == -1, "precondition: uncommitted", "setup invariant broke")
-	var card := _take_held(g, 0)
+	var card := _held(g, 0)
 	await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, 0))
 	check(g.state.committed_grid == 0,
 			"the first placement into grid 0 committed the batch to grid 0",
 			"got %d" % g.state.committed_grid)
+	check(not g.state.upper_zone[0].datas.has(card),
+			"...and the placement LIFTED the card out of its Entrance slot, leaving it in "
+			+ "exactly one collection")
 	_free_game(g)
 
 # ==============================================================================
@@ -487,7 +490,7 @@ func run_placement_into_other_grid_while_committed_refused_test() -> void:
 	behavior_section("A PLACEMENT INTO ANOTHER GRID WHILE COMMITTED IS REFUSED")
 	var parts := await _committable_entrance_game()
 	var g : Game = parts["game"]
-	var first := _take_held(g, 0)
+	var first := _held(g, 0)
 	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	check(g.state.committed_grid == 0, "precondition: committed to grid 0", "setup invariant broke")
 
@@ -523,13 +526,13 @@ func run_commitment_lifts_when_no_legal_placement_remains_test() -> void:
 		filler.stage = CardData.Stage.PLAY
 		grid.cells[i].datas.append(filler)
 
-	var first := _take_held(g, 0)
+	var first := _held(g, 0)
 	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	check(g.state.committed_grid == 0,
 			"committed after the first placement -- cell (1,0) is still a legal spot",
 			"got %d" % g.state.committed_grid)
 
-	var second := _take_held(g, 1)
+	var second := _held(g, 1)
 	await g.place_card_in_grid(second, BoardCoord.new(0, 1, 0, 0))
 	check(g.state.committed_grid == -1,
 			"the last empty cell just filled -- no legal placement remains, so it lifted",
@@ -547,7 +550,7 @@ func run_undo_lifts_commitment_nothing_else_does_test() -> void:
 	var g : Game = parts["game"]
 	g.save_state()  # baseline: uncommitted
 
-	var first := _take_held(g, 0)
+	var first := _held(g, 0)
 	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	check(g.state.committed_grid == 0, "precondition: committed to grid 0", "setup invariant broke")
 	g.save_state()
@@ -555,7 +558,7 @@ func run_undo_lifts_commitment_nothing_else_does_test() -> void:
 	# An ordinary further action -- another legal placement into the SAME committed grid,
 	# which also re-runs on_card_placed's refill trigger -- must NOT lift the commitment by
 	# itself; grid 0 is still mostly empty, so legal cells remain.
-	var second := _take_held(g, 1)
+	var second := _held(g, 1)
 	await g.place_card_in_grid(second, BoardCoord.new(0, 1, 0, 0))
 	check(g.state.committed_grid == 0,
 			"a further placement (and its refill check) left the commitment alone",
@@ -662,13 +665,13 @@ func run_every_placement_is_one_undo_step_test() -> void:
 	g.save_state()   # seed a committed board, the way _start_fresh_show does
 	var before := g.save_history.size()
 
-	await g.place_card_in_grid(_take_held(g, 0), BoardCoord.new(0, 0, 0, 0))
+	await g.place_card_in_grid(_held(g, 0), BoardCoord.new(0, 0, 0, 0))
 	check(g.save_history.size() == before + 1,
 			"one placement commits exactly one snapshot",
 			"%d -> %d" % [before, g.save_history.size()])
 	# The SECOND one matters as much as the first: a per-batch commit would pass the check
 	# above and then add nothing here.
-	await g.place_card_in_grid(_take_held(g, 1), BoardCoord.new(0, 1, 0, 0))
+	await g.place_card_in_grid(_held(g, 1), BoardCoord.new(0, 1, 0, 0))
 	check(g.save_history.size() == before + 2,
 			"a second placement commits its own snapshot, not a shared batch one",
 			"%d -> %d" % [before, g.save_history.size()])
@@ -691,7 +694,7 @@ func run_undo_rewinds_every_score_a_placement_made_test() -> void:
 	var before_total := g.state.live_total()
 	var before_history := g.save_history.size()
 
-	var card := _take_held(g, 0)
+	var card := _held(g, 0)
 	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
 	var scored := g.state.live_total()
 	check(scored > before_total,
@@ -726,7 +729,7 @@ func run_a_placement_that_changes_nothing_commits_nothing_test() -> void:
 	g.save_state()
 	# Commit the batch to grid 0 first, so the refused placement below is refused for the
 	# reason under test rather than for want of a grid.
-	await g.place_card_in_grid(_take_held(g, 0), BoardCoord.new(0, 0, 0, 0))
+	await g.place_card_in_grid(_held(g, 0), BoardCoord.new(0, 0, 0, 0))
 	var before := g.save_history.size()
 
 	# Aimed at a grid the batch is not committed to: refused outright, nothing moves.
