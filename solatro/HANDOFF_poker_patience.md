@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** Phase 1 complete; **Phase 2 in progress** — S1–S7 landed and committed, suite
-green at 41 suites. Next is S8 (the mutation broadcast). Worktree `gamedev-poker-patience`
+**State:** Phase 1 complete; **Phase 2 in progress** — S1–S9 landed and committed, suite
+green at 41 suites. Next is S10 (wire the section into PokerHands.score()). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -223,20 +223,41 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S8
   description: 'The mutation broadcast, the compaction flag, and the board lock.'
-  files_touched: []
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/board.gd,
+     solatro/Tests/Engine/test_line_detect.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    41 suites, only the known VISUAL LAYERS intermittent failing.
+    TP-28..TP-31 green. TP-30 and TP-31 assert from INSIDE the handler (processing
+    read true there; the placed card readable off the board there).
+    Red, expected checks only:
+      fire the pass before the placement commits -> [FAIL] the handler read the
+        placed card off the board WHILE handling on_board_mutated
+      drop the mover's flag in the broadcast -> [FAIL] the broadcast carries
+        is_compaction == true, exactly what the mover passed
+    Committed 93c3687.
   notes: 'Done-when: TP-28..TP-31 green.'
 
 - id: S9
   description: 'The detector card: enumerate, score, re-scan until nothing new completes.'
-  files_touched: []
+  files_touched: [solatro/Cards/Skills/Rules/skill_line_detector.gd, solatro/Levels/game.gd,
+     solatro/Scripts/scoring_section.gd, solatro/Locale/localization.csv,
+     solatro/Tests/Engine/test_line_detect.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 41 SUITES: 3278 CHECKS PASSED ========
+    TP-32..TP-36 green. TP-34 asserts the SEQUENCE (every ROW before every COL,
+    every COL before every DIAG), not just membership.
+    Red, expected checks only:
+      reverse the scored-kind order -> both ordering checks fail
+      add a line-scored memory (the FORBIDDEN thing)
+        -> [FAIL] a completed line scored again on every cycle - there is no line
+                  memory -- 1 scorings over 29 cycles
+    Committed 0dc6dbd.
   notes: >
     Done-when: TP-32..TP-36 green. The runaway guard (act_event_cap, MAX_TICKS) is
     CORRECTNESS-critical - there is no line-scored memory and no within-pass guard, so a
@@ -465,11 +486,13 @@ solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
 
 ## Next up
 
-1. S8 — the mutation broadcast, the compaction flag and the board lock (TP-28..TP-31).
-2. S9 — the detector card: enumerate, score, re-scan until nothing new completes
-   (TP-32..TP-36). ⚠ The runaway guard is CORRECTNESS-critical here.
-3. S10 — wire the section into `PokerHands.score()` and the spotlight cascade, unchanged
-   (TP-37..TP-39).
+1. S10 — wire the section into `PokerHands.score()` and the spotlight cascade, unchanged
+   (TP-37..TP-39). ⚠ The detector currently passes a NULL result to `score_line`; S10 is
+   what makes a scored line evaluate a hand.
+2. S11 — height scoring: multiples of 5, whole stack, drops never score (TP-40..TP-46).
+   ⚠ TP-46 is the Phase 2 gate and needs an INDEPENDENT enumerator written in the test.
+   ⚠ Closing S11 must remove the HEIGHT_V deferral comment in `skill_line_detector.gd`.
+3. S12 — the three buckets per grid and their storage (TP-47..TP-50). Opens Phase 3.
 
 Opening prompt for the next agent:
 
