@@ -732,6 +732,9 @@ func run_undo_rewinds_every_score_a_placement_made_test() -> void:
 # ==============================================================================
 func run_a_placement_that_changes_nothing_commits_nothing_test() -> void:
 	behavior_section("A PLACEMENT THAT CHANGES NOTHING COMMITS NOTHING")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	_with_run(suite_tag())
 	var parts := await _committable_entrance_game()
 	var g : Game = parts["game"]
 	g.save_state()
@@ -748,7 +751,29 @@ func run_a_placement_that_changes_nothing_commits_nothing_test() -> void:
 			"%d -> %d" % [before, g.save_history.size()])
 	check(g.state.upper_zone[1].datas.has(held),
 			"...and the card is still held, exactly where it was")
+	# ⚠ AND NO REPLAY MARKER SURVIVES A PLACEMENT THAT DID NOT HAPPEN. The marker is cleared by
+	# save_state, which a rejected placement never reaches -- so one written before the
+	# placement was known to have SUCCEEDED would still be sitting there, and the next resume
+	# would replay a placement the player never made.
+	# Two rejections, and they leave by DIFFERENT doors: the wrong-grid one is refused by the
+	# commitment before anything else happens, while an off-board coordinate gets all the way
+	# to Board.place_in_cell and is refused there. Only the second can strand a marker, so
+	# testing the first alone proves nothing about this.
+	check(RunManager.run.pending_action == &"",
+			"the commitment-refused placement leaves no pending action behind",
+			str(RunManager.run.pending_action))
+
+	var off_board : CardData = g.state.upper_zone[1].datas[0]
+	await g.place_card_in_grid(off_board, BoardCoord.new(0, 99, 0, 0))
+	check(g.state.upper_zone[1].datas.has(off_board),
+			"precondition: an off-board coordinate is rejected and the card stays held")
+	check(RunManager.run.pending_action == &"",
+			"a placement rejected by the board leaves no pending action behind",
+			str(RunManager.run.pending_action))
+	check(RunManager.run.pending_placement_slot == -1,
+			"...and no pending slot", "got %d" % RunManager.run.pending_placement_slot)
 	_free_game(g)
+	_without_run(suite_tag(), prev_run, prev_info)
 
 # ==============================================================================
 # S36 -- the interrupted-placement replay (TP-124..TP-126).

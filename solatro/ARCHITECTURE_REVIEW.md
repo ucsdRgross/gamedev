@@ -184,17 +184,15 @@ history stored in forward orientation).
   `restore_runtime()`/`_relink_cards` relink after load (shared helpers
   `GameData.unlink_card_backrefs`/`relink_card_backrefs` are THE slot list — extend both
   when adding a modifier slot).
-- **Pending-action replay:** Submit/Next persist a `RunState.pending_action` marker with
-  the pre-action board before awaiting; killed mid-resolution → `_resume_show` replays
-  the action with input locked. Requires those actions stay deterministic (no RNG in
-  scoring; draws come from the ordered deck). `save_state` clears the marker on commit.
-  ⚠️ **The patience auto-Next is the one case where the marker's board is NOT the Next's
-  real pre-action board** (§4e): the emptying move and its auto-Next commit as ONE snapshot,
-  so `_begin_action(&"on_next")` persists a history whose top is the board from before the
-  MOVE. A kill inside that span therefore resumes by replaying Next on the pre-move board —
-  the uncommitted move is lost (consistent with any other in-flight action) but the round
-  still advances. Narrow, accepted; do not "fix" it by committing the move separately
-  without re-deciding owner ruling A5 (that reintroduces the patience-0 undo state).
+- **Pending-action replay:** Submit, Next and a grid PLACEMENT each persist a
+  `RunState.pending_action` marker with the pre-action board before awaiting; killed
+  mid-resolution → `_resume_show` replays the action with input locked. Requires those
+  actions stay deterministic (no RNG in scoring; draws come from the ordered deck).
+  `save_state` clears the marker on commit. A placement carries two extra fields,
+  `pending_placement_slot` and `pending_placement_coord`: it is identified by the ENTRANCE
+  SLOT its card came from, never by the card, because the pre-action board a replay starts
+  from is a restored snapshot carrying its own copies and no card reference survives it. A
+  placement whose card is not in the Entrance is not a player action and records no marker.
 - Per-act score gutters reset in `apply_act_score`; their labels only resync via
   `PlayArea.update_score_controls()` (the revision-bump rebuild does NOT touch them).
 - Loading `.tres` from `user://` can execute embedded script paths — standard Godot caveat.
@@ -216,10 +214,12 @@ history stored in forward orientation).
   slot). Therefore **any per-card control property must be re-derived in `_bind_slot`, never
   just set-and-later-unset.** `mouse_filter` broke this rule: `grab_cards` set
   `MOUSE_FILTER_IGNORE` and only `ungrab_cards` cleared it — by the card's NEW position — so a
-  rebuild while a grab was live (auto-Next, §4e) stranded the filter on a control that then
-  belonged to a different card: one permanently uninteractable card per auto-Next, surviving
-  undo, healed only by a restart (owner bug). Pinned by INTERACTION's
-  `test_auto_next_leaves_no_dead_controls`. Game also tells the view to `release_grab()`
+  rebuild while a grab was live stranded the filter on a control that then belonged to a
+  different card: one permanently uninteractable card, surviving undo, healed only by a
+  restart (owner bug). Pinned by INTERACTION's `test_rebuild_leaves_no_dead_controls` —
+  ⚠️ which is currently PARKED and asserts nothing, because the grid board has no legal
+  UI placement to rebuild across (`design/poker-patience/gaps/GAP-008.md`). The rule above
+  stands regardless; it is the guard that is missing, not the reason for it. Game also tells the view to `release_grab()`
   before an auto-Next, so the board never mutates under a live grab in the first place.
 
 ---
@@ -516,46 +516,6 @@ are PlayerSettings fractions of `get_delay()` — never wall-clock literals.
 
 ---
 
-## 4e. PATIENCE (idle-move pressure)
-
-"The audience won't watch you shuffle the board forever." Per-round counter on **GameData**
-(`patience`, `patience_seen_mods`) so undo/history/saves rewind it with the board.
-
-- **Spend point is `Game.try_place` ONLY** — never Submit/Next (owner ruling). A placement
-  that actually changed the board either HOLDS the counter (a qualifying modifier triggered)
-  or spends one; an `OK_NOOP` placement costs nothing (nothing changed → §2 detector).
-- **What "triggered" means:** `try_place` moves with `trigger_mods = false`, so the only
-  dispatch a placement performs is the legality query `on_can_place_stack`. That is why
-  `_note_mod_fired` fires from EVERY dispatch path (`return_first_*`, `run_card_mods`), not
-  just `run_all_mods` — ⚠️ landmine: those paths pass `feeds_combo = false`, so they inform
-  patience but must never register a §3a combo class. Keep that flag when adding a path.
-- Gating: the triggering card's stage must be enabled (`patience_influence_*`, default PLAY
-  only), the hook must not be in `patience_disabled_hooks`, and its `combo_key` must be
-  non-empty (engine mods opt out of combo AND patience together). With
-  `patience_track_uniques`, only the FIRST trigger of a key each round holds — repeats are
-  boring. Seen keys clear on Next, or after a Submit with `patience_reset_uniques_on_act`.
-- **0 auto-presses Next**, which refills to `patience_max`. The emptying move and its
-  auto-Next commit ONE snapshot together (owner ruling A5): patience 0 is never a playable
-  board, so undo lands before the move with patience intact and can't buy an extra action.
-- Raising `patience_max` mid-round also grants the LIVE counter (`patience_max_increased` →
-  `Game._on_patience_max_increased`); lowering it never takes any away (owner ruling A1).
-- Patience mutators deliberately do NOT bump `revision` (owner ruling A2 — patience only ever
-  moves alongside a real board change). The one exception is a Next on a board where nothing
-  moved: `_perform_next` bumps there so the refill still commits.
-- The auto-Next fires INSIDE `try_place`, i.e. while the player's grab is still live — Game
-  calls `view.release_grab()` first, and see the pooled-control landmine in §1.6.
-- View: `%Patience` label in `game_view.tscn` (owner tunes placement in the editor — never
-  create HUD elements in code), fed by `Game.patience_changed`. Card descriptions mark each
-  modifier `(seen)`/`(new)` inside a show while uniques are tracked (`ControlCard.describe_card`).
-- ⚠️ **Known commit gap:** `_perform_next`'s "nothing moved" revision bump is gated on the
-  PATIENCE COUNTER changing (`patience_before != state.patience`), not on the seen-set. So a
-  Next that only clears a non-empty seen-set — patience already full because every move that
-  round was interesting — on a board where `on_next` moved nothing commits nothing, and a
-  resume brings the stale seen-set back. Narrow (needs an inert `on_next`); widen the guard to
-  the seen-set size if it ever bites.
-- Suite: `Tests/Engine/test_patience.gd`.
-
----
 
 ## 4f. BOOSTER REROLLS
 

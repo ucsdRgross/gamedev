@@ -284,6 +284,8 @@ func _replay_pending_action(action: StringName) -> void:
 ## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
 ## board, scoring and refill included. A slot that no longer holds anything means the marker
 ## outlived the board it described; the board is already correct, so there is nothing to do.
+## Takes the slot's TOPMOST card, which is the one a player can pick up (`is_data_topmost`);
+## it matters only once the Entrance holds stacks rather than one card per slot.
 func _replay_pending_placement() -> void:
 	var slot : int = RunManager.run.pending_placement_slot
 	if slot < 0 or slot >= state.upper_zone.size(): return
@@ -651,15 +653,23 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	# unlimited budget every time it placed something -- which is precisely the unbounded
 	# re-scan the act-level runaway guard is the only bound on. Nested placements must spend
 	# the SAME budget as the act that caused them.
+	# Read the slot BEFORE the placement: place_in_cell LIFTS the card out of the Entrance, so
+	# afterwards there is no slot left to record.
+	var from_slot := entrance_slot_of(card) if not processing else -1
 	if not processing:
 		_begin_act()
+	if not Board.place_in_cell(state, card, coord):
+		return
+	if not processing:
 		# Persist WHAT is about to happen before it happens, so a quit mid-cascade resumes by
 		# replaying it from the committed pre-placement board rather than letting the player
 		# keep the score and dodge the placement. Only a card held in the Entrance can be
 		# replayed: the slot is the identity that survives the save (see _begin_placement).
-		_begin_placement(entrance_slot_of(card), coord)
-	if not Board.place_in_cell(state, card, coord):
-		return
+		# ⚠ AFTER the placement is known to have SUCCEEDED, and still before every await below.
+		# Written any earlier, a REFUSED placement would leave a marker nothing ever clears --
+		# save_state is never reached on that path -- and the next resume would replay a
+		# placement the player never made.
+		_begin_placement(from_slot, coord)
 	if state.committed_grid == -1:
 		state.committed_grid = coord.grid
 	# Broadcast where the card LANDED, not where it was asked to go: a placement stacks on
