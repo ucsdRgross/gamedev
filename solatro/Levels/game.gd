@@ -669,8 +669,11 @@ func _broadcast_board_mutation(coord: BoardCoord, is_compaction: bool) -> void:
 func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if not Board.place_in_cell(state, card, coord):
 		return
-	await _broadcast_board_mutation(coord, false)
-	await run_all_mods(&"on_card_placed", coord)
+	# Broadcast where the card LANDED, not where it was asked to go: a placement stacks on
+	# top of whatever is already in the cell, so the requested height is not the real one.
+	var landed := state.grid_position_of(card)
+	await _broadcast_board_mutation(landed, false)
+	await run_all_mods(&"on_card_placed", landed)
 
 ## Moves a card already on the grid board to `coord`, then runs the mutation pass.
 ## `is_compaction` travels straight from the caller through GridMoveResult to the
@@ -679,7 +682,9 @@ func move_card_in_grid(card: CardData, coord: BoardCoord, is_compaction: bool) -
 	var result := Board.move_to_cell(state, card, coord, is_compaction)
 	if not result.ok:
 		return
-	await _broadcast_board_mutation(coord, result.is_compaction)
+	# The landed coordinate, for the same reason a placement broadcasts one: a move stacks
+	# on top of the destination cell, so the requested height is not the real one.
+	await _broadcast_board_mutation(state.grid_position_of(card), result.is_compaction)
 
 ## Removes a card from the grid board (compacting the cards above it) then runs the
 ## mutation pass. A removal is not itself a compaction move, so is_compaction is false --

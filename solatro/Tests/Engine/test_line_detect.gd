@@ -23,6 +23,7 @@ func _ready() -> void:
 	run_height_v_line_test()
 	run_section_key_test()
 	run_old_signature_grep_gate()
+	run_registration_gate()
 	run_section_refresh_test()
 	await run_mutation_pass_arrivals_and_removals_test()
 	await run_compaction_scores_nothing_test()
@@ -35,6 +36,12 @@ func _ready() -> void:
 	await run_hand_through_pokerhands_test()
 	await run_multi_line_spotlight_unabbreviated_test()
 	await run_hand_reevaluated_after_spotlight_test()
+	await run_stack_of_5_scores_test()
+	await run_heights_6_to_9_score_nothing_test()
+	await run_stack_of_10_scores_all_ten_test()
+	await run_height_10_pays_bottom_five_again_test()
+	await run_remove_readd_retriggers_scoring_test()
+	await run_compaction_landing_on_multiple_of_5_scores_nothing_test()
 	finish()
 
 # ==============================================================================
@@ -110,8 +117,17 @@ func run_diag_line_test() -> void:
 	for diag : LineGeometry.Line in flat_diags:
 		check(diag.cells.size() == grid.grid_width,
 				"a flat diagonal is full grid width", "got %d" % diag.cells.size())
+	# Detection is not completeness. FIX-TRIPLE leaves the shared cell (2,2) EMPTY on
+	# purpose, so both diagonals are DETECTED here and neither is complete yet -- filling
+	# that one cell is what completes them, which is the fixture's whole point.
+	for diag : LineGeometry.Line in flat_diags:
+		check(not _cells_occupied(0, state, diag.cells),
+				"a diagonal through the empty shared cell is detected but NOT complete")
+	var filler := TestFactories.m_card(1, TestFactories.uc())
+	Board.place_in_cell(state, filler, BoardCoord.new(0, 2, 2, 0))
+	for diag : LineGeometry.Line in flat_diags:
 		check(_cells_occupied(0, state, diag.cells),
-				"FIX-TRIPLE's filled diagonal is fully occupied -- it completes")
+				"filling the shared cell completes both diagonals")
 
 	# No broken diagonal: a cell off both main diagonals of a 5x5 grid finds none.
 	var off_lines := LineGeometry.lines_through(grid, 0, 1, 0)
@@ -901,3 +917,192 @@ func run_hand_reevaluated_after_spotlight_test() -> void:
 			"the banked hand is the RE-EVALUATED one, not the pre-swap five cards",
 			"banked %d, the pre-swap cards would have scored %d" % [banked, pre_swap_score])
 	free_grid_game(g)
+
+# ==============================================================================
+# S11 -- height scoring (TP-40..TP-45): a vertical stack scores at every multiple of 5,
+# the WHOLE stack each time, and heights 6-9 (and any drop-only move) score nothing.
+# ==============================================================================
+
+# ==============================================================================
+# TP-40 -- a stack of 5 scores as a 5-card hand. FIX-STACK-5.
+# ==============================================================================
+func run_stack_of_5_scores_test() -> void:
+	behavior_section("HEIGHT: STACK OF 5 SCORES")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var g := detector_game(state)
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, 0))
+	var kinds := kinds_of(g.scored)
+	check(kinds.has(ScoringSection.LineKind.HEIGHT_V),
+			"completing the 5th card in the stack scored a HEIGHT_V line", "got %s" % [kinds])
+	var height_section : ScoringSection = null
+	for s : ScoringSection in g.scored:
+		if s.kind == ScoringSection.LineKind.HEIGHT_V: height_section = s
+	check(height_section != null and height_section.cards.size() == 5,
+			"the scored section is a 5-card hand",
+			"got %s" % [height_section.cards.size() if height_section else -1])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-41 -- heights 6-9 score nothing: walked individually, not just spot-checked once.
+# FIX-STACK-10.
+# ==============================================================================
+func run_heights_6_to_9_score_nothing_test() -> void:
+	behavior_section("HEIGHT: 6-9 SCORE NOTHING")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	# Pre-fill 5 cards directly (bypassing the game) so the stack starts already at the
+	# height-5 payout, with the detector's log clean for the walk that follows.
+	for i in 5:
+		Board.place_in_cell(state, TestFactories.m_card(1, TestFactories.uc()), coord)
+	var g := detector_game(state)
+	for card_count : int in [6, 7, 8, 9]:
+		var before := g.scored.size()
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		await g.place_card_in_grid(card, coord)
+		var newly_scored : Array[ScoringSection] = g.scored.slice(before)
+		var newly_kinds := kinds_of(newly_scored)
+		check(not newly_kinds.has(ScoringSection.LineKind.HEIGHT_V),
+				"a stack reaching %d cards scores nothing" % card_count,
+				"got %s" % [newly_kinds])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-42 -- a stack of 10 scores ALL TEN cards, not two fives. FIX-STACK-10.
+# ==============================================================================
+func run_stack_of_10_scores_all_ten_test() -> void:
+	behavior_section("HEIGHT: STACK OF 10 SCORES ALL TEN")
+	var state := TestGridFixtures.build_fix_stack_10()
+	var g := detector_game(state)
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, 0))
+	var height_section : ScoringSection = null
+	for s : ScoringSection in g.scored:
+		if s.kind == ScoringSection.LineKind.HEIGHT_V: height_section = s
+	check(height_section != null,
+			"completing the 10th card scored a HEIGHT_V line (else this test is vacuous)")
+	check(height_section != null and height_section.cards.size() == 10,
+			"the scored section holds the WHOLE ten-card stack, not two fives",
+			"got %s" % [height_section.cards.size() if height_section else -1])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-43 -- height 10 pays the bottom five again: NOT netted off. Grown card by card
+# through the real detector so both the height-5 and height-10 completions are observed
+# banking, matching FIX-STACK-10's shape by the end.
+# ==============================================================================
+func run_height_10_pays_bottom_five_again_test() -> void:
+	behavior_section("HEIGHT: 10 PAYS THE BOTTOM FIVE AGAIN")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var g := detector_game(state)
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	for i in 10:
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		await g.place_card_in_grid(card, coord)
+	check(g.banked_amounts.size() == 2,
+			"exactly two completions banked -- the height-5 payout and the height-10 payout",
+			"banked %s" % [g.banked_amounts])
+	var bottom_five_payout : int = g.banked_amounts[0] if g.banked_amounts.size() >= 1 else -1
+	var whole_stack_payout : int = g.banked_amounts[1] if g.banked_amounts.size() >= 2 else -1
+	check(bottom_five_payout > 0,
+			"the height-5 completion really banked something (else this test is vacuous)",
+			"got %d" % bottom_five_payout)
+	check(whole_stack_payout > 0,
+			"the height-10 completion ALSO banked something -- the bottom five paid again, not netted off",
+			"got %d" % whole_stack_payout)
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-44 -- removing then re-adding to a complete line re-triggers scoring. FIX-ROW-FLUSH.
+# ==============================================================================
+func run_remove_readd_retriggers_scoring_test() -> void:
+	behavior_section("HEIGHT/LINE: REMOVE-READD RE-TRIGGERS SCORING")
+	var state := TestGridFixtures.build_fix_row_flush()
+	var grid : GridData = state.grids[0]
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	var card : CardData = grid.cells[grid.cell_index(0, 0)].datas[0]
+	var g := detector_game(state)
+	check(g.banked_amounts.is_empty(),
+			"the row starts complete but UNSCORED -- built raw by the fixture, never through a pass",
+			"got %s" % [g.banked_amounts])
+	await g.remove_card_from_grid(card)
+	await g.place_card_in_grid(card, coord)
+	check(g.banked_amounts.size() == 1,
+			"removing then re-adding the card re-completed the row and scored it once",
+			"got %s" % [g.banked_amounts])
+	await g.remove_card_from_grid(card)
+	await g.place_card_in_grid(card, coord)
+	check(g.banked_amounts.size() == 2,
+			"doing it again re-triggers scoring again -- no line-scored memory",
+			"got %s" % [g.banked_amounts])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-45 -- cards dropping down to a multiple of 5 score nothing: a compaction move that
+# lands a stack at height 10 must not score, because on_board_mutated bails on
+# is_compaction before geometry ever runs. FIX-STACK-10.
+# ==============================================================================
+func run_compaction_landing_on_multiple_of_5_scores_nothing_test() -> void:
+	behavior_section("HEIGHT: COMPACTION LANDING ON A MULTIPLE OF 5 SCORES NOTHING")
+	var state := TestGridFixtures.build_fix_stack_10()
+	var g := detector_game(state)
+	var mover := TestFactories.m_card(1, TestFactories.uc())
+	# A genuine arrival elsewhere first (never a compaction), then move it INTO the
+	# nine-card stack as an explicit compaction -- landing it at height 10.
+	await g.place_card_in_grid(mover, BoardCoord.new(0, 1, 0, 0))
+	var before := g.scored.size()
+	await g.move_card_in_grid(mover, BoardCoord.new(0, 0, 0, 0), true)
+	var grid2 : GridData = state.grids[0]
+	check(grid2.cells[grid2.cell_index(0, 0)].datas.size() == 10,
+			"the moved card really did land the stack at height 10 (else this test is vacuous)")
+	check(g.scored.size() == before,
+			"the compaction move that landed on a multiple of 5 scored nothing",
+			"scored grew by %d" % (g.scored.size() - before))
+	free_grid_game(g)
+
+# ==============================================================================
+# REGISTRATION GATE: every `func run_*_test()` this file defines must actually be CALLED
+# from _ready.
+#
+# ⚠ This exists because six planned tests were once written, reviewed and reported as
+# added, while none of them ran: they were defined and never invoked, and the suite
+# printed ALL CHECKS PASSED the whole time. An unregistered test is indistinguishable
+# from a passing one in a log, which is the same failure shape the grep gate above
+# guards against. Reads this file as TEXT, since a function's existence says nothing
+# about whether anything calls it.
+# ==============================================================================
+func run_registration_gate() -> void:
+	implementation_section("REGISTRATION GATE")
+	var f := FileAccess.open(SELF_PATH, FileAccess.READ)
+	check(f != null, "the gate can read its own source", SELF_PATH)
+	if not f: return
+	var text := f.get_as_text()
+	var lines := text.split("\n")
+
+	# The body of _ready, which is where a test has to be called from to run at all.
+	var ready_body := ""
+	var in_ready := false
+	for raw : String in lines:
+		if raw.begins_with("func _ready("):
+			in_ready = true
+			continue
+		if in_ready:
+			if raw.begins_with("func "): break
+			ready_body += raw + "\n"
+
+	var defined : Array[String] = []
+	for raw : String in lines:
+		if not raw.begins_with("func run_"): continue
+		var name := raw.substr(5, raw.find("(") - 5)
+		defined.append(name)
+
+	var unregistered : Array[String] = []
+	for name : String in defined:
+		if name == "run_registration_gate": continue
+		if not ready_body.contains(name + "()"): unregistered.append(name)
+
+	check(defined.size() > 10, "the gate actually found this suite's tests",
+			"only found %d" % defined.size())
+	check(unregistered.is_empty(),
+			"every run_*_test defined in this file is called from _ready",
+			"never called: %s" % ", ".join(unregistered))

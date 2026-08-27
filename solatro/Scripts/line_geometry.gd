@@ -50,14 +50,24 @@ static func _col(grid: GridData, x: int, h: int) -> Line:
 		cells.append(Vector3i(x, yi, h))
 	return Line.new(ScoringSection.LineKind.COL, cells)
 
-## The vertical run of cell (x, y) from height 0 up to and including h. The 5/10/15
-## multiple-of-5 windowing that decides which of these runs actually SCORES is a later
-## step's rule, not geometry's.
+## The vertical run of cell (x, y) from height 0 up to and including h. Always the WHOLE stack
+## from the floor, never a five-card slice -- `height_line_scores` decides which of these runs
+## actually pays out.
 static func _height_v(x: int, y: int, h: int) -> Line:
 	var cells : Array[Vector3i] = []
 	for hi in (h + 1):
 		cells.append(Vector3i(x, y, hi))
 	return Line.new(ScoringSection.LineKind.HEIGHT_V, cells)
+
+## RULE: a vertical stack scores only when its height is a multiple of this many cards, and
+## scoring always pays the WHOLE stack -- 5 pays the five, 10 pays all ten (the bottom five
+## again, not netted off), 15 pays all fifteen. Heights 6-9 pay nothing. `h` is 0-based, so a
+## stack of N cards has topmost height `N - 1`.
+const HEIGHT_SCORE_INTERVAL := 5
+
+## Whether the vertical run ending at 0-based height `h` is one of the heights that scores.
+static func height_line_scores(h: int) -> bool:
+	return (h + 1) % HEIGHT_SCORE_INTERVAL == 0
 
 ## Every DIAG line (flat or climbing) that passes through (x, y, h), full length along
 ## whichever spatial axis moves, no wrapping, never crossing this grid's boundary.

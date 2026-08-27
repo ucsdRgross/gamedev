@@ -240,6 +240,15 @@ func card_at(coord: BoardCoord) -> CardData:
 	_ensure_pos_index()
 	return _card_at_index.get(Vector4i(coord.grid, coord.x, coord.y, coord.h), null)
 
+## Where a card ACTUALLY sits on the grid board, or NOWHERE when it is not on one. The forward
+## half of the pair `card_at` reads backwards. Callers that need the coordinate a mutation
+## LANDED on must ask this rather than reusing the coordinate they requested: a placement lands
+## on top of whatever is already in the cell, so a requested height and the real one differ as
+## soon as a stack is more than one card deep.
+func grid_position_of(card: CardData) -> BoardCoord:
+	_ensure_pos_index()
+	return _grid_pos_index.get(card, BoardCoord.NOWHERE)
+
 ## Rebuilds every position index (legacy Vector3i, grid-side BoardCoord, and its reverse) once
 ## per revision change, mirroring the bump-after-consistency rule the legacy index already rode.
 func _ensure_pos_index() -> void:

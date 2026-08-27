@@ -14,11 +14,6 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
   storage that write is meant to feed is S12's contract (§1.7); until it lands, a detector-scored
   grid line registers its combo class and runs its score effects but banks nothing. Reversible:
   nothing yet reads a grid line's banked amount.
-- **S9** — the detector scores ROW, COL and DIAG only; HEIGHT_V lines are enumerated by
-  `LineGeometry` but never reach the scoring loop here, since a HEIGHT_V line's own completeness
-  rule (the multiple-of-5 windowing) is S11's contract (§1.4), not geometry's. PLAN.md §2's S11
-  entry: "Height scoring: multiples of 5, whole stack, drops never score."
-
 - **S4** — `Board.place_in_cell` / `move_to_cell` always land at the TOP of the destination
   cell (current stack size, i.e. `h+1` of whatever card is already there) and ignore
   `coord.h` on the way in, mirroring `Anchor.ON_TOP`'s "insert above whatever is there"

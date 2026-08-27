@@ -104,7 +104,12 @@ static func build_fix_triple() -> GameData:
 	for i in grid.grid_width:
 		coords.append(Vector2i(i, i))
 		coords.append(Vector2i(i, grid.grid_width - 1 - i))
+	# (2,2) is the cell all three lines share and is left EMPTY on purpose: the fixture's
+	# whole point is that ONE placement there completes row 2, column 2 and both diagonals.
+	# Filling it would make that placement land at height 1, where none of them is complete.
+	var shared := Vector2i(2, 2)
 	for coord : Vector2i in coords:
+		if coord == shared: continue
 		var idx := grid.cell_index(coord.x, coord.y)
 		if grid.cells[idx].datas.is_empty():
 			var card := TestFactories.m_card(1, TestFactories.uc())

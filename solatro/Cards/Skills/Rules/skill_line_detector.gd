@@ -2,11 +2,10 @@ class_name SkillLineDetector
 extends CardModifierSkill
 
 ## Every kind this pass scores, in the deterministic order a mutation completing several
-## lines at once must score them: rows, then columns, then diagonals. HEIGHT_V is enumerated
-## by `LineGeometry` but its own completeness rule (multiple-of-5 windowing) lands separately,
-## so it never reaches this loop yet.
+## lines at once must score them: rows, then columns, then diagonals, then the vertical stack.
 const _SCORED_KINDS : Array[ScoringSection.LineKind] = [
 	ScoringSection.LineKind.ROW, ScoringSection.LineKind.COL, ScoringSection.LineKind.DIAG,
+	ScoringSection.LineKind.HEIGHT_V,
 ]
 
 func get_str() -> String: return TRANSLATION.find('LINE_DETECTOR_CARD')
@@ -51,8 +50,13 @@ func on_board_mutated(coord: BoardCoord, is_compaction: bool) -> void:
 
 ## A line is complete when every cell it runs through holds a card -- a taller stack still has
 ## a card at the queried height, so `LineGeometry` already accounts for that; this only checks
-## occupancy.
+## occupancy. A HEIGHT_V run additionally only scores at a multiple-of-5 height -- see
+## `LineGeometry.height_line_scores`.
 func _is_complete(state: GameData, grid: int, line: LineGeometry.Line) -> bool:
+	if line.kind == ScoringSection.LineKind.HEIGHT_V:
+		var top : Vector3i = line.cells[line.cells.size() - 1]
+		if not LineGeometry.height_line_scores(top.z):
+			return false
 	for c : Vector3i in line.cells:
 		if state.card_at(BoardCoord.new(grid, c.x, c.y, c.z)) == null:
 			return false
