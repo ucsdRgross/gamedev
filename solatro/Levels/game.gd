@@ -196,6 +196,7 @@ func _start_fresh_show() -> void:
 	_update_submit_label()
 	add_deck()
 	await run_all_mods(&"on_game_start")
+	await refill_entrance_if_due()
 	skill_spotlight_check()
 	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
 	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
@@ -352,6 +353,7 @@ func _perform_next() -> void:
 	_begin_action(&"on_next")
 	_act_cancellable = true
 	await run_all_mods(&"on_next")
+	await refill_entrance_if_due()
 	_act_cancellable = false
 	if act_cancelled:
 		_restore_pre_act_board("cancelled next")
@@ -559,14 +561,69 @@ func _broadcast_board_mutation(coord: BoardCoord, is_compaction: bool) -> void:
 ## Places a card not yet on the grid board into `coord`, then runs the mutation pass.
 ## An arrival is never a compaction (`is_compaction` is always false here) and additionally
 ## fires on_card_placed, after on_board_mutated, since the placement has already committed.
+## Refills the Entrance if it is due one. ⚠ THE TRIGGER IS EVALUATED ONCE, HERE, for the whole
+## row -- not per header. A header that asked the question itself would find the Entrance no
+## longer empty the moment the leftmost one drew, and every slot after the first would stay
+## empty. The headers still do the drawing, one each, so leftmost-first falls out of dispatch
+## order exactly as before.
+func refill_entrance_if_due() -> void:
+	if _entrance_is_empty() or await _no_held_card_has_a_legal_placement():
+		await run_all_mods(&"on_refill")
+
+## No slot holds a card.
+func _entrance_is_empty() -> bool:
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.size() > 0: return false
+	return true
+
+## Every held Entrance card has been asked, through the same legality dispatch a real
+## placement uses, and none of them can go anywhere on any grid.
+func _no_held_card_has_a_legal_placement() -> bool:
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.is_empty(): continue
+		var held : Array[CardData] = [column.datas.back()]
+		for grid : GridData in state.grids:
+			for i : int in grid.cells.size():
+				var target : CardData = grid.cells[i].datas.back() 						if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+				if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
+					return false
+	return true
+
+## The Entrance's commit: the first placement locks `state.committed_grid` to that grid, and
+## a placement aimed at any other grid while committed is refused outright (no state change).
+## The commitment lifts again once no legal placement remains anywhere in the committed grid.
 func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
+	if state.committed_grid != -1 and coord.grid != state.committed_grid:
+		return
 	if not Board.place_in_cell(state, card, coord):
 		return
+	if state.committed_grid == -1:
+		state.committed_grid = coord.grid
 	# Broadcast where the card LANDED, not where it was asked to go: a placement stacks on
 	# top of whatever is already in the cell, so the requested height is not the real one.
 	var landed := state.grid_position_of(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
+	await refill_entrance_if_due()
+	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
+		state.committed_grid = -1
+
+## Same legality question TypeInput._no_legal_move_remains asks (every held Entrance card
+## against every grid, via the same on_can_place_stack dispatch try_place uses), narrowed to
+## the cells of ONE grid -- whether the committed grid still has anywhere for a held card to go.
+func _no_legal_placement_remains_in_grid(grid_index: int) -> bool:
+	if grid_index < 0 or grid_index >= state.grids.size(): return true
+	var grid : GridData = state.grids[grid_index]
+	if not grid: return true
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.is_empty(): continue
+		var held : Array[CardData] = [column.datas.back()]
+		for i : int in grid.cells.size():
+			var target : CardData = grid.cells[i].datas.back() \
+					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+			if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
+				return false
+	return true
 
 ## Moves a card already on the grid board to `coord`, then runs the mutation pass.
 ## `is_compaction` travels straight from the caller through GridMoveResult to the

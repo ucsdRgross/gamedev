@@ -23,7 +23,6 @@ func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardD
 ## It is a no-op once there is no paired lower column, which is what the archive produces.
 func on_next() -> void:
 	await _legacy_drop_to_lower()
-	await _maybe_refill()
 
 ## The legacy tableau drop. Goes with the tableau.
 func _legacy_drop_to_lower() -> void:
@@ -34,50 +33,14 @@ func _legacy_drop_to_lower() -> void:
 	if col > -1 and col < upper.size() and col < lower.size() 			and upper[col].datas.size() > 0:
 		await api.move_data_to_coord(upper[col].datas[0], Vector3i(1, col, -1), -1)
 
-## Deals the initial hand: the Entrance starts empty, which is exactly the "empty" refill
-## trigger, so game start reuses the same refill path as every later placement.
-func on_game_start() -> void:
-	await _maybe_refill()
-
-## A card landed anywhere on the grid board -- possibly this header's own slot emptying out.
-## Re-checks the refill trigger every time so the leftmost header (dispatched first, per the
-## Entrance columns' left-to-right order) always draws before the next one.
-func on_card_placed(_landed: BoardCoord) -> void:
-	await _maybe_refill()
-
-## Fills this header's OWN slot, left to right, when it is empty AND the refill trigger is
-## met -- the Entrance is completely empty, or no held card has anywhere legal to go.
-func _maybe_refill() -> void:
+## Answers a refill event by filling this header's own slot, if it is empty. The DECISION to
+## refill is not made here -- it is a property of the whole Entrance and is taken once, before
+## this broadcast. Left to right falls out of the order these headers are dispatched in.
+func on_refill() -> void:
 	if not api or not api.is_live(): return
 	var col : int = api.upper_zone_type().find(data)
 	if col == -1 or col >= api.upper_zone().size(): return
 	if api.upper_zone()[col].datas.size() > 0: return
-	if not await _refill_triggered(): return
 	var drawn_card := api.draw_card()
 	if drawn_card:
 		api.place_card(drawn_card, 0, col)
-
-## The Entrance is fully empty, or every held card has no legal placement anywhere on a grid.
-func _refill_triggered() -> bool:
-	if _entrance_is_empty(): return true
-	return await _no_legal_move_remains()
-
-func _entrance_is_empty() -> bool:
-	for column : ArrayCardData in api.upper_zone():
-		if column.datas.size() > 0: return false
-	return true
-
-## Walks every held card against every grid cell's current top card (or its empty-cell zone
-## card) through the existing on_can_place_stack dispatch -- the same legality query
-## try_place uses, never a second "is this legal" implementation.
-func _no_legal_move_remains() -> bool:
-	for column : ArrayCardData in api.upper_zone():
-		if column.datas.is_empty(): continue
-		var held : Array[CardData] = [column.datas.back()]
-		for grid : GridData in api.grids():
-			for i : int in grid.cells.size():
-				var target : CardData = grid.cells[i].datas.back() \
-						if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-				if not (await api.can_place_stack(held, target)).is_empty():
-					return false
-	return true

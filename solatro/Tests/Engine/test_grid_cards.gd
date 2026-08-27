@@ -23,6 +23,10 @@ func _ready() -> void:
 	await run_refill_fires_on_empty_entrance_test()
 	await run_refill_fires_on_no_legal_move_test()
 	await run_refill_keeps_unused_cards_in_their_slots_test()
+	await run_first_placement_commits_the_batch_test()
+	await run_placement_into_other_grid_while_committed_refused_test()
+	await run_commitment_lifts_when_no_legal_placement_remains_test()
+	await run_undo_lifts_commitment_nothing_else_does_test()
 	finish()
 
 # ==============================================================================
@@ -40,6 +44,10 @@ func _rules_card(skill: CardModifierSkill) -> CardData:
 func _allotment_game(deck: Array[CardData]) -> Game:
 	var g := Game.new()
 	var state := GameData.new()
+	# Assigning the deck directly skips add_deck, which is what normally stamps the stage.
+	# validate() checks stage against location, so set it here or every undo warns I5.
+	for card : CardData in deck:
+		card.stage = CardData.Stage.DRAW
 	state.draw_deck = deck
 	state.rules_deck = [_rules_card(SkillGridAllotment.new())] as Array[CardData]
 	g.state = state
@@ -274,11 +282,11 @@ func _entrance_game(deck: Array[CardData]) -> Dictionary:
 		headers.append(adder.card_data.type as TypeInput)
 	return {"game": g, "headers": headers}
 
-## Deals the initial hand by calling each header's on_game_start left to right, mirroring
-## the order the Entrance columns were built in.
-func _deal(headers: Array[TypeInput]) -> void:
-	for header : TypeInput in headers:
-		await header.on_game_start()
+## Deals the initial hand the way the game does: ask for a refill. The DECISION is the
+## game's (the Entrance is empty, so it is due one); the headers each fill their own slot,
+## left to right, in dispatch order.
+func _deal(g: Game) -> void:
+	await g.refill_entrance_if_due()
 
 # ==============================================================================
 # TP-70 -- FIX-DECK-52: a full refill fills slots 0-4 in draw order, leftmost first.
@@ -294,8 +302,7 @@ func run_refill_fills_left_to_right_test() -> void:
 		expected.append(deck[deck.size() - 1 - i])
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
-	var headers : Array[TypeInput] = parts["headers"]
-	await _deal(headers)
+	await _deal(g)
 	var ok := true
 	for i : int in 5:
 		if g.state.upper_zone[i].datas.size() != 1 or g.state.upper_zone[i].datas[0] != expected[i]:
@@ -312,8 +319,7 @@ func run_short_refill_leaves_right_slots_empty_test() -> void:
 	var deck := TestDecks.deck_20().slice(0, 3)  # only 3 cards left to deal
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
-	var headers : Array[TypeInput] = parts["headers"]
-	await _deal(headers)
+	await _deal(g)
 	check(g.state.draw_deck.is_empty(), "the short deck was drained entirely",
 			"got %d cards left" % g.state.draw_deck.size())
 	for i : int in 3:
@@ -334,10 +340,9 @@ func run_refill_fires_on_empty_entrance_test() -> void:
 	var deck := TestDecks.deck_standard_52()
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
-	var headers : Array[TypeInput] = parts["headers"]
 	check(g.state.upper_zone.is_empty() or g.state.upper_zone[0].datas.is_empty(),
 			"the Entrance starts empty, before any deal", "setup invariant broke")
-	await _deal(headers)
+	await _deal(g)
 	var filled := 0
 	for column : ArrayCardData in g.state.upper_zone:
 		if column.datas.size() == 1: filled += 1
@@ -359,11 +364,10 @@ func run_refill_fires_on_no_legal_move_test() -> void:
 	var deck := TestDecks.deck_standard_52()
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
-	var headers : Array[TypeInput] = parts["headers"]
 	var creator := SkillGridCreator.new()
 	g.state.rules_deck.append(_rules_card(creator))
 	await creator.on_spotlight()
-	await _deal(headers)  # slots 0-4 filled
+	await _deal(g)  # slots 0-4 filled
 
 	# Simulate slot 2's card having been placed on the grid: drop it from the Entrance and
 	# run it through the real placement path, which broadcasts on_card_placed to every mod.
@@ -384,11 +388,10 @@ func run_refill_keeps_unused_cards_in_their_slots_test() -> void:
 	var deck := TestDecks.deck_standard_52()
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
-	var headers : Array[TypeInput] = parts["headers"]
 	var creator := SkillGridCreator.new()
 	g.state.rules_deck.append(_rules_card(creator))
 	await creator.on_spotlight()
-	await _deal(headers)
+	await _deal(g)
 
 	var untouched : Array[CardData] = [
 		g.state.upper_zone[0].datas[0], g.state.upper_zone[1].datas[0],
@@ -404,6 +407,162 @@ func run_refill_keeps_unused_cards_in_their_slots_test() -> void:
 			and g.state.upper_zone[4].datas[0] == untouched[3],
 			"the 4 untouched slots kept the exact same cards across the refill",
 			"one of slots 0,1,3,4 changed identity")
+	_free_game(g)
+
+# ==============================================================================
+# TP-75..TP-78 -- S18: commit, silent commitment, and the lift when no legal placement
+# remains. `FIX-GRID-3`.
+#
+# The real grid-cell acceptance rule ships in a later step (TP-73's note above), so these
+# tests use a small test-double rules card that accepts a stack onto any of ONE grid's still-
+# EMPTY cells (a cell_types card) and refuses a cell already holding a card -- no stacking.
+# That is enough to drive commit / refuse / lift through the exact same
+# on_can_place_stack / can_place_stack dispatch try_place and place_card_in_grid use, and it
+# makes "every cell occupied" and "no legal placement remains" coincide (PLAN.md's Q32 note),
+# so filling the grid's last empty cell is exactly the trigger TP-77 needs.
+# ==============================================================================
+
+## Accepts a stack onto any still-empty cell (a `cell_types` card) of exactly one grid;
+## refuses a cell already holding a card (no stacking) and refuses every other grid.
+class AcceptEmptyCellsOfOneGrid extends CardModifierSkill:
+	var grid : GridData
+	func get_str() -> String: return "AcceptEmptyCellsOfOneGrid"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func combo_key(_hook: StringName = &"") -> String: return ""
+	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+		if not (stack and target) or not grid: return []
+		if target in grid.cell_types: return stack
+		return []
+
+## FIX-GRID-3 wired with a dealt Entrance and one grid whose cells the test double accepts.
+## Returns the game, the Entrance headers, and the accepting grid (grid 0).
+func _committable_entrance_game() -> Dictionary:
+	var deck := TestDecks.deck_standard_52()
+	var parts := await _entrance_game(deck)
+	var g : Game = parts["game"]
+	var headers : Array[TypeInput] = parts["headers"]
+	var fixture := TestGridFixtures.build_fix_grid_3()
+	g.state.grids = fixture.grids
+	var acceptor := AcceptEmptyCellsOfOneGrid.new()
+	acceptor.grid = g.state.grids[0]
+	g.state.rules_deck.append(_rules_card(acceptor))
+	await _deal(g)
+	return {"game": g, "headers": headers}
+
+## Takes the held card out of Entrance slot `col` (as a real placement would) and returns it.
+func _take_held(g: Game, col: int) -> CardData:
+	var card : CardData = g.state.upper_zone[col].datas[0]
+	g.state.upper_zone[col].datas.clear()
+	return card
+
+# ==============================================================================
+# TP-75 -- the first placement commits the batch to that grid.
+# ==============================================================================
+func run_first_placement_commits_the_batch_test() -> void:
+	behavior_section("THE FIRST PLACEMENT COMMITS THE BATCH TO THAT GRID")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	check(g.state.committed_grid == -1, "precondition: uncommitted", "setup invariant broke")
+	var card := _take_held(g, 0)
+	await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, 0))
+	check(g.state.committed_grid == 0,
+			"the first placement into grid 0 committed the batch to grid 0",
+			"got %d" % g.state.committed_grid)
+	_free_game(g)
+
+# ==============================================================================
+# TP-76 -- a placement into another grid while committed is refused: the board did not
+# change and the card is still held, not merely a false return value.
+# ==============================================================================
+func run_placement_into_other_grid_while_committed_refused_test() -> void:
+	behavior_section("A PLACEMENT INTO ANOTHER GRID WHILE COMMITTED IS REFUSED")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	var first := _take_held(g, 0)
+	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
+	check(g.state.committed_grid == 0, "precondition: committed to grid 0", "setup invariant broke")
+
+	var other := g.state.upper_zone[1].datas[0]  # left IN the Entrance, not cleared
+	await g.place_card_in_grid(other, BoardCoord.new(1, 0, 0, 0))
+
+	check(g.state.committed_grid == 0, "the commitment did not move off grid 0",
+			"got %d" % g.state.committed_grid)
+	check(g.state.grids[1].cells[0].datas.is_empty(),
+			"grid 1's target cell is untouched -- the board did not change",
+			"got %s" % [g.state.grids[1].cells[0].datas])
+	check(g.state.upper_zone[1].datas.size() == 1 and g.state.upper_zone[1].datas[0] == other,
+			"the card is still held in its Entrance slot, not merely a false return value",
+			"upper_zone[1]: %s" % [g.state.upper_zone[1].datas])
+	_free_game(g)
+
+# ==============================================================================
+# TP-77 -- the commitment lifts when no legal placement remains in that grid. Grid 0 starts
+# with every cell but two filled (no stacking, so a filled cell is never legal again); the
+# first of the two remaining placements commits and the commitment holds (one legal cell
+# still open), the second placement fills the last cell and the commitment lifts.
+# ==============================================================================
+func run_commitment_lifts_when_no_legal_placement_remains_test() -> void:
+	behavior_section("THE COMMITMENT LIFTS WHEN NO LEGAL PLACEMENT REMAINS IN THAT GRID")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	var grid : GridData = g.state.grids[0]
+	# Fill every cell except (0,0) and (1,0) with a real card, so those two are the grid's
+	# only remaining legal placements under the test double's no-stacking acceptance rule.
+	for i : int in grid.cells.size():
+		if i == grid.cell_index(0, 0) or i == grid.cell_index(1, 0): continue
+		var filler := TestFactories.m_card(1, TestFactories.uc())
+		filler.stage = CardData.Stage.PLAY
+		grid.cells[i].datas.append(filler)
+
+	var first := _take_held(g, 0)
+	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
+	check(g.state.committed_grid == 0,
+			"committed after the first placement -- cell (1,0) is still a legal spot",
+			"got %d" % g.state.committed_grid)
+
+	var second := _take_held(g, 1)
+	await g.place_card_in_grid(second, BoardCoord.new(0, 1, 0, 0))
+	check(g.state.committed_grid == -1,
+			"the last empty cell just filled -- no legal placement remains, so it lifted",
+			"got %d" % g.state.committed_grid)
+	_free_game(g)
+
+# ==============================================================================
+# TP-78 -- undo lifts a commitment; nothing else does. Grid 0 is left mostly empty (many
+# legal cells remain), so a further legal placement and a refill must NOT lift the
+# commitment by themselves -- only undo does.
+# ==============================================================================
+func run_undo_lifts_commitment_nothing_else_does_test() -> void:
+	behavior_section("UNDO LIFTS A COMMITMENT; NOTHING ELSE DOES")
+	var parts := await _committable_entrance_game()
+	var g : Game = parts["game"]
+	g.save_state()  # baseline: uncommitted
+
+	var first := _take_held(g, 0)
+	await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
+	check(g.state.committed_grid == 0, "precondition: committed to grid 0", "setup invariant broke")
+	g.save_state()
+
+	# An ordinary further action -- another legal placement into the SAME committed grid,
+	# which also re-runs on_card_placed's refill trigger -- must NOT lift the commitment by
+	# itself; grid 0 is still mostly empty, so legal cells remain.
+	var second := _take_held(g, 1)
+	await g.place_card_in_grid(second, BoardCoord.new(0, 1, 0, 0))
+	check(g.state.committed_grid == 0,
+			"a further placement (and its refill check) left the commitment alone",
+			"got %d" % g.state.committed_grid)
+	g.save_state()
+
+	g.undo()
+	check(g.state.committed_grid == 0,
+			"undo rewound past the second placement; still committed to grid 0",
+			"got %d" % g.state.committed_grid)
+
+	g.undo()
+	check(g.state.committed_grid == -1,
+			"undo rewound past the first placement -- the commitment itself is undone",
+			"got %d" % g.state.committed_grid)
 	_free_game(g)
 
 # ==============================================================================

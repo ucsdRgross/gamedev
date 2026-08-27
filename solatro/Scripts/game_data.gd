@@ -44,6 +44,10 @@ var revision : int = 0:
 ## rewinds it with the board and a resume comes back into the outcome rather than a live board
 ## — the same reason the act count used to live here.
 @export_storage var show_ended : bool = false
+## Which grid the Entrance is committed to; -1 = uncommitted. Once set, an Entrance placement
+## into any other grid is refused. `@export_storage` so undo rewinds the commitment with the
+## board -- the only way it lifts besides no legal placement remaining in the committed grid.
+@export_storage var committed_grid : int = -1
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
