@@ -19,6 +19,20 @@ Keep lines of code low by REMOVING old unused code outright (no dormant paths), 
   reader cannot see. State the rule the answer produced. Full rule, and why the traceability
   instinct produces this: [[design-ids-stay-out-of-code]].
 
+⚠ **REUSE BEFORE YOU WRITE. Owner, verbatim:** *"reducing duplicate code as much as possible
+and no reinventing existing setups, or using existing engine methods when available."*
+
+Search for an existing helper before adding one, and prefer an engine method over a hand-rolled
+one. Measured cost of not doing it: a bucket-growing helper was added to `GameData` that
+duplicated `Game.resize_score_zone`, and `mantissa = 0` ended up stated in two files — the
+existing one was also stricter, so collapsing them fixed a latent weakness as well.
+
+⚠ **This rule was reaching nobody.** It lives here and in `/simplify`, but the `/plan-run` brief
+template carries lines about tunable literals, design ids and registry names and NOT this one —
+so implementer briefs never said it. **Put it in the brief.** The same shape of failure produced
+26 card files reaching past a documented-but-unenforced boundary; where a rule matters, enforce
+it with a gate rather than restating it.
+
 **Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
 
 **How to apply:** When editing gamedev code, prune dead code in the same pass; give every new/rewritten method a `##` purpose comment; end plans with a references section. **Before deleting any doc, run `git ls-files <path>` first** — the doc-hygiene policy (fold residue into the living doc, then delete the plan) assumes the file is tracked, and an untracked file deleted that way is gone for good. Use the `/handoff` skill for handoff docs. Commented-out code rule (owner ruling, `solatro/START_HERE.md`): replace with a TODO comment if it describes unimplemented logic, delete outright if the implementation exists elsewhere.

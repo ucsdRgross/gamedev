@@ -567,6 +567,20 @@ Answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md` 
 
 ⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`.
 
+## Owner instructions this run that are NOT gap answers
+
+Both are durable working agreements, recorded here so they survive the handover.
+
+- **Reuse, do not reinvent.** Owner verbatim: *"reducing duplicate code as much as possible and
+  no reinventing existing setups, or using existing engine methods when available."* Now also in
+  `.claude/memory/code-style-lean-documented.md`. ⚠ It was reaching nobody: the rule lived in
+  memory and in `/simplify`, but `/plan-run`'s brief template never carried it, so implementer
+  briefs never said it. **Put it in every step brief.** One duplicated helper had to be
+  collapsed after the fact this run because of that.
+- **The light layer is out of scope.** Owner verbatim: *"light is out of scope as you assumed,
+  and what you describe does not even seem like a bug but a possible test measuring too early."*
+  See Open bugs — the tolerance was NOT widened.
+
 ## Open bugs
 
 - ⚠ **94 `I5` validate WARNINGS during undo in `test_grid_cards.gd`** — cards sitting in
