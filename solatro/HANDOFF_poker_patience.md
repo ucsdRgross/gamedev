@@ -2,10 +2,10 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **THE PLANNED RANGE IS COMPLETE — S1-S19 (Phases 1-4) and S35-S37 (Phase 8) all
-landed and committed**, suite green at 42 suites, `ALL 42 SUITES: 3417 CHECKS PASSED`.
-Remaining, both ADDED by this run rather than planned steps: **S19b** (the legacy coordinate
-migration, GAP-003 — its scope grew, see below) and **S37b** (the closing pass).
+**State:** **THE WHOLE ASSIGNED RANGE IS COMPLETE, INCLUDING THE CLOSING PASS — S1-S19 (Phases 1-4) and S35-S37 (Phase 8) all
+— S1-S19 (Phases 1-4), S35-S37 (Phase 8) and S37b all landed and committed**, suite green
+at 42 suites over three consecutive runs. **S19b is deliberately resequenced to after Phase 5**
+(see its entry). ⚠ **GAP-008 is open and is what stands between this and a playable game.**
 
 
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
@@ -530,22 +530,47 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S37b
   description: >
-    THE CLOSING PASS - not a PLAN.md step. Added because nothing between S1 and S37 audits
-    what this run wrote: PLAN.md's own documentation phase is S40-S44, outside this run's
-    range, and /plan-run's "Closing the run" is skill guidance rather than a tracked step.
-  files_touched: []
-  verification_command: 'py .claude/tools/doc_check.py && py solatro/Tools/run_tests.py'
+    THE CLOSING PASS - not a PLAN.md step. Read the run's whole diff, review it adversarially
+    against the design by tracing what a PLAYER does, /simplify, /docs, fold the residue in.
+  files_touched:
+    [solatro/Levels/game.gd, solatro/Levels/game_view.gd, solatro/ARCHITECTURE_REVIEW.md,
+     solatro/design/poker-patience/NAMES.md, solatro/Tests/E2E/test_e2e_run.gd,
+     solatro/Tests/Support/test_grid_fixtures.gd, solatro/Tests/Support/test_decks.gd,
+     solatro/Tests/Engine/test_grid_cards.gd, solatro/Tests/Interaction/test_interaction.gd,
+     solatro/Tests/UI/test_ui_props.gd]
+  verification_command: 'py .claude/tools/doc_check.py && py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3442 / 3438 / 3437 CHECKS PASSED ======== three consecutive runs,
+    failure set EMPTY. doc_check: 0 errors, 8 warnings -- back to the run's baseline.
+    Landed in five commits: 9ba1fef, 0d6e898, b420360, 5a99447, a277ea1.
   notes: >
-    Scope: read the whole run's diff; adversarial review against DESIGN/PLAN/TEST_PLAN/NAMES
-    tracing what a player actually does; run /simplify over the changed files for reuse,
-    duplication and dead code; /docs pass over the new files and comments; fold ASSUMPTIONS.md
-    and the resolved gaps into the living docs; confirm doc_check reports no NEW findings
-    against the pre-existing backlog (measured at run start: 0 errors, 8 warnings - 343 design
-    ids, 137 dated, 128 long blocks, all pre-existing). ⚠ Do NOT delete the gap files: a gap is
-    closed by a new design version, not by deletion.
+    ⚠ THREE PLAYER-FACING DEFECTS, none of which any test or diff-read found -- all three came
+    from tracing what a player actually DOES, end to end:
+    (1) THE SHOW COULD NOT BE ENDED. S14c renamed the button to End and added `end_show()`,
+    but left the button bound to `game.submit()`. Every existing test reached the outcome
+    screen by calling `end_show()` directly, which passes just as happily with the button
+    wired to anything at all. The test presses the button now, and asserts the label first.
+    (2) THE HUD SHOWED A PERMANENT ZERO. `total_label` read `total_score`, which this run
+    retired and nothing writes. Fixing the label alone was not enough: the per-grid buckets
+    are BigNumbers written in place, so `add_line_score`'s grid branch now emits
+    `state_changed` -- an emit, NOT a `revision` bump, which would rebuild the play area
+    mid-cascade. The check asserts the LABEL TEXT so a rewire to a dead field cannot pass.
+    (3) A REJECTED PLACEMENT STRANDED A REPLAY MARKER. S36 wrote the marker before the
+    placement was known to have succeeded; a rejection by `Board.place_in_cell` never reaches
+    `save_state`, which is the only thing that clears it, so the next resume would replay a
+    placement the player never made. ⚠ The first test written for this passed immediately and
+    proved nothing -- it used the wrong-GRID rejection, which leaves through the commitment
+    guard before any marker is written. Only a rejection reaching place_in_cell can strand one.
+    ALSO: `stack_cell_from_deck` was dead and is gone; `rules_skill_names` was written as a
+    mirror-drift guard and never wired up (worse than nothing -- a comment claimed something
+    was checking and nothing was), and is now a real gate in E2E, red-proved by adding a card
+    to `rules1`. `ARCHITECTURE_REVIEW.md` §4e PATIENCE deleted with its two inbound refs (S14c
+    retired the system; the dead `test_patience.gd` reference was the one doc_check ERROR this
+    run had introduced). Four stale comments in `game.gd`, one of which CONTRADICTED the line
+    directly below it. `NAMES.md` corrected where the owner's own answers had superseded it:
+    `step_x` -> `step`, the Archive block -> there is no archive, plus the names this run added.
 
 - id: S35
   description: 'Every placement an undo step; scores rewind with the board.'
@@ -696,7 +721,7 @@ Both are durable working agreements, recorded here so they survive the handover.
 - ⚠ **GAP-008 is OPEN**: no card answers `on_can_grab_stack` / `on_can_place_stack` for a
   grid cell, and `try_place` commits only through the legacy move path -- so the player cannot
   put a card on a grid at all. Tests reach the board through `Game.place_card_in_grid`.
-- ⚠ **`VISUAL LAYERS` light intermittent -- LIKELY FIXED AT S19, but watch it.** Its
+- ⚠ **`VISUAL LAYERS` light intermittent -- APPEARS FIXED. Nine consecutive clean runs.** Its
   fixture drew from the SHUFFLED deck, so the lit card's travel varied 340-550 px run to run;
   it now builds fixed cards at a uniform depth and has passed three consecutive runs. The
   tolerance was NOT widened. If it returns, the standing reading below still applies.
@@ -727,18 +752,34 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-1. **S19b** — the legacy coordinate migration (GAP-003). ⚠ ITS SCOPE GREW: it is not only a
-   rename. The whole PROP system is built on the legacy `Vector3i` — `spawn_props`,
-   `_spawn_origin`, `row_slot_path`, `entity_side_for_row`, `mancala_targets`, `column_rise_path`
-   — so until it lands, **a scored grid line pays its points and fires no props at all.** Two
-   parked checks flip to failing when it does, which is how you will know.
-2. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
+**The assigned range is finished.** What follows is the plan's own remaining phases, plus the
+two things this run deliberately did not do.
 
-⚠ **GAP-008 IS OPEN AND BLOCKS THE GAME BEING PLAYABLE** — nothing answers
-`on_can_grab_stack` / `on_can_place_stack` for a grid cell, and `try_place` commits only
-through the legacy move path, so `place_card_in_grid` is reachable from tests alone. S19 and
-S35 both work around it by placing from the DRAW DECK through the engine path. Needs an owner
-answer before the player loop exists.
+1. **GAP-008 needs an owner answer before the game is playable at all.** Nothing answers
+   `on_can_grab_stack` / `on_can_place_stack` for a grid cell, and `try_place` commits only
+   through the legacy move path -- so a player cannot put a card on a grid. Everything else
+   works: the deal, the refill, the commitment, scoring, undo, replay, End, the HUD. Tests
+   reach the board through `Game.place_card_in_grid`, which no player input can reach.
+2. **Phase 5 (S20-S25)** — the flipped board: upward stacks, the shared bottom edge, the
+   Entrance at `y == -1`, score labels, `slot_center_global`. ⚠ **This is the owner-visible
+   one**: cards still stack DOWNWARD on screen. The design settled UP (`Q72`, `Q74`, `Q307`,
+   `Q308`), and Phase 5 is where it happens.
+3. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. The End button's confirm dialog
+   (`END_SHOW_CONFIRM` is in the locale file and used nowhere) and its goal-met highlight
+   belong here, as does removing the retired row/col/mult subtotals from the HUD -- the design
+   says NO subtotals are displayed.
+4. **Phase 7 (S31-S34)** — the wall.
+5. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5** and the
+   reasoning is in its task entry: it cannot be split from the prop system, and PLAN.md §4
+   reserves the prop system to whatever `slot_center_global` forces, which is Phase 5's.
+6. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
+
+⚠ **Not owned by any step, found during this run, worth an owner decision:** `Game.submit()`
+and the Next button are both vestigial. Chart D retires the act outright ("no act, no banking
+moment"; "End fires its hooks, then resolves") and chart A retires Next ("no Next, no
+auto-advance"), but no step removes either. `submit()` is now reachable only from tests and
+the pending-action replay; the Next button still triggers a refill that placements ask for
+themselves.
 
 ## References
 
