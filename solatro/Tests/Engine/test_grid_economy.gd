@@ -18,6 +18,9 @@ func _ready() -> void:
 	await run_diagonals_share_one_special_bucket_test()
 	run_pack_unpack_round_trip_test()
 	run_duplicate_state_copies_by_hand_test()
+	run_cell_buckets_test()
+	await run_cell_bucket_from_a_real_stack_test()
+	run_cell_bucket_persistence_test()
 	finish()
 
 # ==============================================================================
@@ -248,3 +251,84 @@ func run_duplicate_state_copies_by_hand_test() -> void:
 	check((copy.scores_col_h[0][1] as BigNumber).to_float() == 50.0,
 			"nor the raised col bucket",
 			"copy now %f" % (copy.scores_col_h[0][1] as BigNumber).to_float())
+
+# ==============================================================================
+# The per-CELL bucket: a vertical stack banks into its own cell's bucket -- the number
+# behind the height score label that sits above that stack. Keyed by coordinate rather
+# than shaped as a 2-D array, because a grid's shape can change under an effect.
+# ==============================================================================
+func run_cell_buckets_test() -> void:
+	behavior_section("PER-CELL BUCKETS")
+	var state := TestGridFixtures.build_fix_grid_3()
+	check(state.cell_score(0, Vector2i(1, 1)) == 0.0,
+			"a cell that has never scored reads 0, not an error")
+
+	state.bank_cell_score(0, Vector2i(1, 1), 10)
+	check(state.cell_score(0, Vector2i(1, 1)) == 10.0,
+			"a cell's bucket takes the score banked into it",
+			"got %f" % state.cell_score(0, Vector2i(1, 1)))
+	check(state.cell_score(0, Vector2i(1, 2)) == 0.0
+			and state.cell_score(0, Vector2i(2, 1)) == 0.0,
+			"the NEIGHBOURING cells' buckets are untouched -- one bucket per cell")
+	check(state.cell_score(1, Vector2i(1, 1)) == 0.0,
+			"and the SAME cell of another grid is a different bucket entirely")
+
+	# Every payout of one stack accumulates into that stack's single bucket: a stack of 10
+	# pays at height 5 and again at height 10, and both land in the same place.
+	state.bank_cell_score(0, Vector2i(1, 1), 25)
+	check(state.cell_score(0, Vector2i(1, 1)) == 35.0,
+			"a second payout of the same stack accumulates into the same cell bucket",
+			"got %f" % state.cell_score(0, Vector2i(1, 1)))
+
+	# A coordinate key, not a fixed 2-D shape: a cell outside the grid's CURRENT bounds
+	# still banks and reads back, which is what survives a grid changing shape.
+	state.bank_cell_score(0, Vector2i(9, 9), 7)
+	check(state.cell_score(0, Vector2i(9, 9)) == 7.0,
+			"a cell beyond the grid's current bounds still keys its own bucket",
+			"got %f" % state.cell_score(0, Vector2i(9, 9)))
+
+## A real vertical stack, built through the real detector, banks into its own cell.
+func run_cell_bucket_from_a_real_stack_test() -> void:
+	behavior_section("CELL BUCKET FROM A REAL STACK")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var g := detector_game(state)
+	# Five cards into one cell: the fifth completes the vertical line and pays.
+	for i in 5:
+		g._begin_act()
+		var card := TestFactories.m_card(i + 2, TestFactories.uc())
+		await g.place_card_in_grid(card, BoardCoord.new(0, 3, 2, 0))
+	var here := state.cell_score(0, Vector2i(3, 2))
+	check(here > 0.0,
+			"the completed stack banked into ITS OWN cell's bucket", "got %f" % here)
+	check(state.cell_score(0, Vector2i(0, 0)) == 0.0,
+			"no other cell's bucket moved")
+	# It is NOT the special bucket, and not a row or column bucket.
+	check(bucket_value(state.score_special, 0) == 0.0,
+			"a vertical stack does NOT bank into the special bucket",
+			"special %f" % bucket_value(state.score_special, 0))
+	check(bucket_value(state.scores_row, 0) == 0.0
+			and bucket_value(state.scores_col, 0) == 0.0,
+			"nor into the row or column buckets",
+			"row %f col %f" % [bucket_value(state.scores_row, 0), bucket_value(state.scores_col, 0)])
+	free_game(g)
+
+## The cell buckets survive a pack/unpack round trip and are hand-copied by duplicate_state.
+func run_cell_bucket_persistence_test() -> void:
+	behavior_section("CELL BUCKET PERSISTENCE")
+	var state := TestGridFixtures.build_fix_grid_3()
+	state.bank_cell_score(0, Vector2i(1, 1), 11)
+	state.bank_cell_score(2, Vector2i(4, 0), 22)
+
+	state.pack_scores()
+	state.scores_cell = {}
+	state.unpack_scores()
+	check(state.cell_score(0, Vector2i(1, 1)) == 11.0
+			and state.cell_score(2, Vector2i(4, 0)) == 22.0,
+			"cell buckets come back from the packed form at the same coordinates",
+			"got %f and %f" % [state.cell_score(0, Vector2i(1, 1)), state.cell_score(2, Vector2i(4, 0))])
+
+	var copy := state.duplicate_state()
+	state.bank_cell_score(0, Vector2i(1, 1), 1000)
+	check(copy.cell_score(0, Vector2i(1, 1)) == 11.0,
+			"a duplicated state's cell buckets do NOT follow the original",
+			"copy now %f" % copy.cell_score(0, Vector2i(1, 1)))

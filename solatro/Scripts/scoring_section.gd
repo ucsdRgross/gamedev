@@ -28,6 +28,9 @@ var grid : int = -1
 ## The height a ROW or COL line sits at. A grid's height-0 buckets are flat; raised levels are
 ## indexed by this.
 var height : int = 0
+## The cell a HEIGHT_V line stands in, within its grid. (-1, -1) for every other kind, which
+## is not tied to a single cell.
+var cell : Vector2i = Vector2i(-1, -1)
 ## How `refresh()` re-collects — captured at construction so `origin` stays pure provenance and a
 ## future non-line shape supplies its own re-derivation instead of being misread as a column.
 var _recollect : Callable = Callable()
@@ -100,6 +103,7 @@ static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Lin
 	section.height = first.z
 	if line.kind == LineKind.ROW: section.index = first.y
 	elif line.kind == LineKind.COL: section.index = first.x
+	elif line.kind == LineKind.HEIGHT_V: section.cell = Vector2i(first.x, first.y)
 	section.line_key = _key_for_geometric_line(grid, line)
 	section._recollect = _collect_geometric_line.bind(state, grid, line.cells)
 	section.cards = section._recollect.call()

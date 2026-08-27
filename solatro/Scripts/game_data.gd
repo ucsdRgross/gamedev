@@ -174,6 +174,13 @@ var scores_col : Array[BigNumber] = []
 var scores_row_h : Array[Array] = []
 var scores_col_h : Array[Array] = []
 var score_special : Array[BigNumber] = []
+## One bucket PER CELL, for the vertical stack scored in it -- the number behind the height
+## score label that sits above each stack. Keyed by cell coordinate rather than shaped as a
+## 2-D array because a grid's shape can change under effects: a dictionary survives a grid
+## that grows, shrinks or turns ragged, where a width-by-height array would not.
+## Key is Vector3i(grid, x, y); the stack's own height is not part of the key, because every
+## payout of one stack accumulates into that stack's single bucket.
+var scores_cell : Dictionary[Vector3i, BigNumber] = {}
 # Serializable form of the grid economy buckets. The flat ones mirror packed_col_mant/exp
 # above. The raised (2-D) ones flatten grid-major, height-minor into one parallel mant/exp
 # pair plus a per-grid length so unpack_scores() can rebuild each grid's inner array exactly.
@@ -183,6 +190,12 @@ var score_special : Array[BigNumber] = []
 @export_storage var packed_grid_col_exp : PackedInt64Array
 @export_storage var packed_grid_special_mant : PackedFloat64Array
 @export_storage var packed_grid_special_exp : PackedInt64Array
+# The per-cell buckets flatten into three PARALLEL arrays: the cell coordinates and the
+# mantissa/exponent of each. A dictionary has no inherent order, so the key array is what
+# carries the association across a save -- position i in all three is one cell's bucket.
+@export_storage var packed_cell_keys : PackedVector3Array
+@export_storage var packed_cell_mant : PackedFloat64Array
+@export_storage var packed_cell_exp : PackedInt64Array
 @export_storage var packed_grid_row_h_mant : PackedFloat64Array
 @export_storage var packed_grid_row_h_exp : PackedInt64Array
 @export_storage var packed_grid_row_h_lens : PackedInt32Array
@@ -204,6 +217,7 @@ func duplicate_state() -> GameData:
 	copy.score_special = duplicate_big_number_array(score_special)
 	copy.scores_row_h = duplicate_big_number_2d_array(scores_row_h)
 	copy.scores_col_h = duplicate_big_number_2d_array(scores_col_h)
+	copy.scores_cell = duplicate_big_number_dict(scores_cell)
 	#the position index must never travel with a copy (its keys are THIS state's card
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
@@ -563,6 +577,16 @@ func pack_scores() -> void:
 	packed_grid_col_exp = _exponents(scores_col)
 	packed_grid_special_mant = _mantissas(score_special)
 	packed_grid_special_exp = _exponents(score_special)
+	var cell_keys := PackedVector3Array()
+	var cell_mant := PackedFloat64Array()
+	var cell_exp := PackedInt64Array()
+	for key : Vector3i in scores_cell:
+		cell_keys.append(Vector3(key))
+		cell_mant.append(scores_cell[key].mantissa)
+		cell_exp.append(scores_cell[key].exponent)
+	packed_cell_keys = cell_keys
+	packed_cell_mant = cell_mant
+	packed_cell_exp = cell_exp
 	var row_h_packed := _pack_2d(scores_row_h)
 	packed_grid_row_h_mant = row_h_packed[0]
 	packed_grid_row_h_exp = row_h_packed[1]
@@ -582,6 +606,13 @@ func unpack_scores() -> void:
 	score_special = _unpack(packed_grid_special_mant, packed_grid_special_exp)
 	scores_row_h = _unpack_2d(packed_grid_row_h_mant, packed_grid_row_h_exp, packed_grid_row_h_lens)
 	scores_col_h = _unpack_2d(packed_grid_col_h_mant, packed_grid_col_h_exp, packed_grid_col_h_lens)
+	var cells : Dictionary[Vector3i, BigNumber] = {}
+	for i in packed_cell_keys.size():
+		var bn := BigNumber.new()
+		bn.mantissa = packed_cell_mant[i]
+		bn.exponent = packed_cell_exp[i]
+		cells[Vector3i(packed_cell_keys[i])] = bn
+	scores_cell = cells
 
 # CardModifier.data backrefs are WeakRefs (no RefCounted cycle — dropped card graphs
 # just die; the old per-drop-site unlink discipline is gone). These helpers remain for
@@ -626,6 +657,7 @@ func to_saveable() -> GameData:
 	copy.score_special.clear()
 	copy.scores_row_h.clear()
 	copy.scores_col_h.clear()
+	copy.scores_cell.clear()
 	copy.unlink_modifier_backrefs()
 	return copy
 
@@ -672,6 +704,20 @@ func _zero_big_number() -> BigNumber:
 	bn.mantissa = 0
 	return bn
 
+## Adds to one CELL's bucket, creating it at zero on first use. Buckets are created lazily
+## because a cell only gets one once it has scored, and a grid can change shape under an
+## effect -- a missing bucket reads as "has not scored", never as an error.
+func bank_cell_score(grid: int, cell: Vector2i, amount: int) -> void:
+	var key := Vector3i(grid, cell.x, cell.y)
+	if not scores_cell.has(key):
+		scores_cell[key] = _zero_big_number()
+	scores_cell[key].plus_equals(amount)
+
+## One cell's banked vertical score, 0 when that cell has never scored.
+func cell_score(grid: int, cell: Vector2i) -> float:
+	var key := Vector3i(grid, cell.x, cell.y)
+	return scores_cell[key].to_float() if scores_cell.has(key) else 0.0
+
 ## Grows a per-grid bucket array to `n` entries, seeding new ones at zero. Buckets are created
 ## lazily because a grid can be added mid-show, and a missing bucket must read as "has not
 ## scored" rather than as an error.
@@ -688,6 +734,17 @@ func resize_grid_levels(levels: Array[Array], grids_n: int, heights_n: int) -> v
 		while level.size() < heights_n:
 			level.append(_zero_big_number())
 		levels[i] = level
+
+## Deep copy of a coordinate-keyed BigNumber dictionary -- the same RefCounted trap as the
+## arrays: duplicate_deep cannot see a BigNumber, so every value is rebuilt by hand.
+func duplicate_big_number_dict(d:Dictionary[Vector3i, BigNumber]) -> Dictionary[Vector3i, BigNumber]:
+	var out : Dictionary[Vector3i, BigNumber] = {}
+	for key : Vector3i in d:
+		var bn := BigNumber.new()
+		bn.mantissa = d[key].mantissa
+		bn.exponent = d[key].exponent
+		out[key] = bn
+	return out
 
 func duplicate_big_number_2d_array(a:Array[Array]) -> Array[Array]:
 	var out : Array[Array] = []

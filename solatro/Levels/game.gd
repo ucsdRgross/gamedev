@@ -1020,6 +1020,11 @@ func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
 			else:
 				state.resize_grid_levels(raised, g + 1, section.height + 1)
 				(raised[g][section.height] as BigNumber).plus_equals(amount)
+		ScoringSection.LineKind.HEIGHT_V:
+			# A vertical stack banks into its OWN CELL's bucket -- the number behind the
+			# height score label above that stack. One bucket per cell, keyed by coordinate
+			# so a grid that changes shape under an effect keeps its scores.
+			state.bank_cell_score(g, section.cell, amount)
 		_:
 			pass
 
