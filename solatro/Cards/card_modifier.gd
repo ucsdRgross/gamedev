@@ -30,6 +30,12 @@ var env : CardEnvironment:
 	get: return CardEnvironment.CURRENT
 var game : Game:
 	get: return CardEnvironment.get_current_game()
+## THE seam every effect runs through. Null outside a game (deck viewers, boosters), so
+## always null-check — or call `api.is_live()`, which every accessor already guards on.
+var api : CardEffectApi:
+	get:
+		var g := CardEnvironment.get_current_game()
+		return g.effect_api if g else null
 
 @abstract func get_str() -> String
 @abstract func get_description() -> String

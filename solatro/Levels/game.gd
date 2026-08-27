@@ -101,6 +101,15 @@ var _act_cancellable : bool = false
 # (get_delay only compresses while `processing`); animations enforce the pacing by always
 # deriving their durations from get_delay (never a fixed wall-clock length). All knobs live in
 # PlayerSettings (compress_* / act_event_cap) — no ms values anywhere.
+## THE seam card effects run through. Every modifier reaches this rather than the game
+## itself, so a change to Game's own shape is absorbed here instead of breaking every card.
+## One per game, lazily built because a bare Game.new() in a test is still a valid host.
+var effect_api : CardEffectApi:
+	get:
+		if _effect_api == null: _effect_api = CardEffectApi.new(self)
+		return _effect_api
+var _effect_api : CardEffectApi = null
+
 var act_calls : int = 0
 var act_overrun : bool = false
 
