@@ -566,3 +566,16 @@ var wall_info_mode : bool = false
 	set(value):
 		wall_selected_lift = value
 		settings_changed.emit()
+
+@export_group("Balance — grid board")
+## Deck size per unlocked grid: the grid count target is
+## ceil(deck_size_at_game_start / grid_cards_per_unlock), clamped to [1, grid_max_count].
+@export var grid_cards_per_unlock : int = 52:
+	set(value):
+		grid_cards_per_unlock = maxi(value, 1)
+		settings_changed.emit()
+## Hard cap on the number of grids the deck-size allotment will ever create.
+@export var grid_max_count : int = 3:
+	set(value):
+		grid_max_count = maxi(value, 1)
+		settings_changed.emit()

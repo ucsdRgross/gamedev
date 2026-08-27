@@ -54,3 +54,37 @@ static func minimal_deck() -> Array[CardData]:
 	for suit : GDScript in suits:
 		out.append(_card(suit, 1))
 	return out
+
+## `FIX-DECK-52`: standard 52, every suit at ranks 1-13, all plain. FROZEN — the grid-allotment
+## boundary tests (52 -> 1 grid, 53 -> 2) replay against this exact composition; never
+## `Deck.deck4` (see the file header).
+static func deck_standard_52() -> Array[CardData]:
+	var out : Array[CardData] = []
+	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
+	for suit : GDScript in suits:
+		for rank : int in range(1, 14):
+			out.append(_card(suit, rank))
+	return out
+
+## `FIX-DECK-20`: 20 cards, ranks 1-5 x 4 suits, plain — the shape `deck14` has.
+static func deck_20() -> Array[CardData]:
+	var out : Array[CardData] = []
+	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
+	for suit : GDScript in suits:
+		for rank : int in range(1, 6):
+			out.append(_card(suit, rank))
+	return out
+
+## `FIX-DECK-53`: `deck_standard_52` plus one plain card — built FROM the 52 fixture so the
+## boundary case cannot drift apart from it.
+static func deck_53() -> Array[CardData]:
+	var out := deck_standard_52()
+	out.append(_card(PipSuitHoop, 1))
+	return out
+
+## `FIX-DECK-105`: `deck_standard_52` x 2 plus one plain card — built FROM the 52 fixture.
+static func deck_105() -> Array[CardData]:
+	var out := deck_standard_52()
+	out.append_array(deck_standard_52())
+	out.append(_card(PipSuitHoop, 1))
+	return out
