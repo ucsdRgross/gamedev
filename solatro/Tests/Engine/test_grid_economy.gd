@@ -21,6 +21,12 @@ func _ready() -> void:
 	run_cell_buckets_test()
 	await run_cell_bucket_from_a_real_stack_test()
 	run_cell_bucket_persistence_test()
+	run_worked_example_test()
+	run_rows_without_diagonal_test()
+	run_empty_grid_scores_zero_test()
+	run_zero_valued_bucket_excluded_test()
+	run_board_total_is_the_sum_test()
+	run_terms_aggregate_their_levels_test()
 	finish()
 # ==============================================================================
 # Helpers: the real detector in the rules deck, and a Game that records what banked.
@@ -297,3 +303,147 @@ func run_cell_bucket_persistence_test() -> void:
 	check(copy.cell_score(0, Vector2i(1, 1)) == 11.0,
 			"a duplicated state's cell buckets do NOT follow the original",
 			"copy now %f" % copy.cell_score(0, Vector2i(1, 1)))
+
+# ==============================================================================
+# TP-51 -- THE OWNER'S WORKED EXAMPLE, VERBATIM.
+#
+#   "row + col + diag = 0 + 0 + 0. Row gets 10 score. it is now 10 + 0 + 0 = 10. Col gets 5
+#    score. It is now 10 * 5 + 0 = 50. Diag gets 2 score. It is now 10 * 5 * 2 = 100."
+#
+# The point of the example is that a term which has NOT scored ADDS 0 -- it never multiplies
+# by 0. So the sequence 0, 10, 50, 100 is asserted step by step, not just the final 100: an
+# implementation that multiplied by zero would give 0, 0, 0, 100 and still land on 100.
+# ==============================================================================
+func run_worked_example_test() -> void:
+	behavior_section("THE WORKED EXAMPLE")
+	var state := TestGridFixtures.build_fix_grid_1()
+	state.resize_grid_bucket(state.scores_row, 1)
+	state.resize_grid_bucket(state.scores_col, 1)
+	state.resize_grid_bucket(state.score_special, 1)
+
+	check(state.grid_score(0) == 0.0,
+			"row + col + special = 0 + 0 + 0", "got %f" % state.grid_score(0))
+	state.scores_row[0].plus_equals(10)
+	check(state.grid_score(0) == 10.0,
+			"Row gets 10 score. it is now 10 + 0 + 0 = 10", "got %f" % state.grid_score(0))
+	state.scores_col[0].plus_equals(5)
+	check(state.grid_score(0) == 50.0,
+			"Col gets 5 score. It is now 10 * 5 + 0 = 50", "got %f" % state.grid_score(0))
+	state.score_special[0].plus_equals(2)
+	check(state.grid_score(0) == 100.0,
+			"Diag gets 2 score. It is now 10 * 5 * 2 = 100", "got %f" % state.grid_score(0))
+
+# ==============================================================================
+# TP-52 -- a grid with rows scored and no diagonal pays its rows, NOT zero. The whole
+# reason an unscored bucket adds rather than multiplies.
+# ==============================================================================
+func run_rows_without_diagonal_test() -> void:
+	behavior_section("ROWS WITHOUT A DIAGONAL")
+	var state := TestGridFixtures.build_fix_grid_1()
+	state.resize_grid_bucket(state.scores_row, 1)
+	state.scores_row[0].plus_equals(40)
+	check(state.grid_score(0) == 40.0,
+			"a grid that scored only rows pays its rows, not zero",
+			"got %f" % state.grid_score(0))
+	state.resize_grid_bucket(state.scores_col, 1)
+	state.resize_grid_bucket(state.score_special, 1)
+	check(state.grid_score(0) == 40.0,
+			"and the untouched col and special buckets existing changes nothing",
+			"got %f" % state.grid_score(0))
+
+# ==============================================================================
+# TP-53 -- a grid with NO bucket scored contributes 0, not 1. An empty product must not
+# fall out as the multiplicative identity.
+# ==============================================================================
+func run_empty_grid_scores_zero_test() -> void:
+	behavior_section("EMPTY GRID SCORES ZERO")
+	var state := TestGridFixtures.build_fix_grid_1()
+	check(state.grid_score(0) == 0.0,
+			"a grid with no buckets at all contributes 0, not 1",
+			"got %f" % state.grid_score(0))
+	state.resize_grid_bucket(state.scores_row, 1)
+	state.resize_grid_bucket(state.scores_col, 1)
+	state.resize_grid_bucket(state.score_special, 1)
+	check(state.grid_score(0) == 0.0,
+			"and a grid whose buckets all exist but read 0 still contributes 0",
+			"got %f" % state.grid_score(0))
+
+# ==============================================================================
+# TP-54 -- A BUCKET WHOSE VALUE IS 0 IS EXCLUDED FROM THE PRODUCT, even when its line
+# genuinely completed and scored 0. Owner: "if score is 0 do not multiply regardless of if
+# 0 is somehow a returned actual score from something."
+#
+# ⚠ THE TEST IS THE VALUE, NEVER TOUCHED-NESS. This forces a line to complete and bank
+# exactly 0, then asserts the grid still pays its other buckets. An implementation that
+# tracked "has this bucket been written to" would multiply by that 0 and pay 0.
+# ==============================================================================
+func run_zero_valued_bucket_excluded_test() -> void:
+	behavior_section("A ZERO-VALUED BUCKET IS EXCLUDED")
+	var state := TestGridFixtures.build_fix_grid_1()
+	state.resize_grid_bucket(state.scores_row, 1)
+	state.resize_grid_bucket(state.scores_col, 1)
+	state.resize_grid_bucket(state.score_special, 1)
+	state.scores_row[0].plus_equals(10)
+	state.scores_col[0].plus_equals(5)
+	# The special bucket is WRITTEN TO, with a real banked score that happens to be 0.
+	state.score_special[0].plus_equals(0)
+	check(state.score_special[0].to_float() == 0.0,
+			"the special bucket was genuinely banked into and its VALUE is 0",
+			"got %f" % state.score_special[0].to_float())
+	check(state.grid_score(0) == 50.0,
+			"a bucket worth 0 is excluded from the product even though its line scored",
+			"got %f, wanted 10 * 5" % state.grid_score(0))
+
+# ==============================================================================
+# TP-55 -- board_total is the sum of the grid scores. FIX-GRID-3.
+# ==============================================================================
+func run_board_total_is_the_sum_test() -> void:
+	behavior_section("BOARD TOTAL IS THE SUM")
+	var state := TestGridFixtures.build_fix_grid_3()
+	state.resize_grid_bucket(state.scores_row, 3)
+	state.resize_grid_bucket(state.scores_col, 3)
+	state.scores_row[0].plus_equals(10)
+	state.scores_col[0].plus_equals(2)      # grid 0 -> 20
+	state.scores_row[2].plus_equals(7)      # grid 2 -> 7 (col unscored, so it adds nothing)
+	check(state.grid_score(0) == 20.0, "grid 0 scores 10 * 2", "got %f" % state.grid_score(0))
+	check(state.grid_score(1) == 0.0, "grid 1 scored nothing", "got %f" % state.grid_score(1))
+	check(state.grid_score(2) == 7.0, "grid 2 scores its row alone", "got %f" % state.grid_score(2))
+	check(state.board_total() == 27.0,
+			"board_total is the SUM of the grid scores, not their product",
+			"got %f, wanted 20 + 0 + 7" % state.board_total())
+
+# ==============================================================================
+# The height scores fold into the SPECIAL term, and raised row/col scores fold into their
+# own row/col terms -- storage stays granular for the labels, scoring aggregates.
+# ==============================================================================
+func run_terms_aggregate_their_levels_test() -> void:
+	behavior_section("TERMS AGGREGATE THEIR LEVELS")
+	var state := TestGridFixtures.build_fix_grid_1()
+	state.resize_grid_bucket(state.scores_row, 1)
+	state.resize_grid_bucket(state.scores_col, 1)
+	state.resize_grid_bucket(state.score_special, 1)
+	state.resize_grid_levels(state.scores_row_h, 1, 3)
+	state.scores_row[0].plus_equals(4)
+	(state.scores_row_h[0][2] as BigNumber).plus_equals(6)
+	state.scores_col[0].plus_equals(2)
+	check(state.grid_score(0) == 20.0,
+			"a raised row score adds into the ROW term, not a term of its own",
+			"got %f, wanted (4 + 6) * 2" % state.grid_score(0))
+
+	# A vertical stack folds into the SPECIAL term, alongside the diagonals.
+	state.score_special[0].plus_equals(3)
+	state.bank_cell_score(0, Vector2i(1, 1), 7)
+	check(state.grid_score(0) == 200.0,
+			"a cell's height score adds into the SPECIAL term, alongside the diagonal",
+			"got %f, wanted (4 + 6) * 2 * (3 + 7)" % state.grid_score(0))
+	# Still THREE factors, however many buckets fed them.
+	state.bank_cell_score(0, Vector2i(2, 2), 10)
+	check(state.grid_score(0) == 400.0,
+			"a second stack adds to the same special term rather than multiplying again",
+			"got %f, wanted (4 + 6) * 2 * (3 + 7 + 10)" % state.grid_score(0))
+
+	# And a cell bucket in ANOTHER grid never leaks into this grid's special term.
+	state.bank_cell_score(1, Vector2i(0, 0), 1000)
+	check(state.grid_score(0) == 400.0,
+			"another grid's cell bucket does not reach this grid's special term",
+			"got %f" % state.grid_score(0))

@@ -704,6 +704,59 @@ func _zero_big_number() -> BigNumber:
 	bn.mantissa = 0
 	return bn
 
+## One grid's score: its row, column and special TERMS multiplied together, counting only the
+## terms that actually scored.
+##
+## ⚠ A term that has not scored ADDS 0 — it never multiplies by 0. Owner's worked example:
+## row + col + special = 0 + 0 + 0; row banks 10 and it is 10; col banks 5 and it is 10 * 5;
+## special banks 2 and it is 10 * 5 * 2 = 100.
+##
+## ⚠ THE TEST IS THE VALUE, NEVER TOUCHED-NESS. A term worth 0 is excluded from the product
+## even when a line genuinely completed and scored 0.
+##
+## Storage is granular so every label has its own number; scoring aggregates:
+##   row     = the height-0 row bucket    + every raised row bucket
+##   col     = the height-0 column bucket + every raised column bucket
+##   special = the diagonal bucket        + every CELL bucket in this grid
+func grid_score(grid: int) -> float:
+	var terms : Array[float] = [_row_term(grid), _col_term(grid), _special_term(grid)]
+	var product := 0.0
+	for term : float in terms:
+		if term <= 0.0: continue
+		product = term if product == 0.0 else product * term
+	return product
+
+## The whole board's score: the sum of every grid's own score.
+func board_total() -> float:
+	var total := 0.0
+	for i in grids.size():
+		total += grid_score(i)
+	return total
+
+## Height-0 row bucket plus every raised row bucket for this grid.
+func _row_term(grid: int) -> float:
+	return _flat_and_raised(scores_row, scores_row_h, grid)
+
+## Height-0 column bucket plus every raised column bucket for this grid.
+func _col_term(grid: int) -> float:
+	return _flat_and_raised(scores_col, scores_col_h, grid)
+
+## The diagonal bucket plus every cell bucket in this grid — the vertical stacks fold in here
+## rather than forming a factor of their own.
+func _special_term(grid: int) -> float:
+	var total : float = score_special[grid].to_float() if grid < score_special.size() else 0.0
+	for key : Vector3i in scores_cell:
+		if key.x == grid: total += scores_cell[key].to_float()
+	return total
+
+## A flat per-grid bucket plus every level of its raised companion.
+func _flat_and_raised(flat: Array[BigNumber], raised: Array[Array], grid: int) -> float:
+	var total : float = flat[grid].to_float() if grid < flat.size() else 0.0
+	if grid < raised.size():
+		for bn : BigNumber in raised[grid]:
+			total += bn.to_float()
+	return total
+
 ## Adds to one CELL's bucket, creating it at zero on first use. Buckets are created lazily
 ## because a cell only gets one once it has scored, and a grid can change shape under an
 ## effect -- a missing bucket reads as "has not scored", never as an error.
