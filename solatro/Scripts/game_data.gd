@@ -213,6 +213,22 @@ func position_of(card: CardData) -> Vector3i:
 	_ensure_pos_index()
 	return _pos_index.get(card, Vector3i.MIN)
 
+## Does this coordinate name a REAL cell of a real grid? The landing question: movement runs
+## over an unbounded lattice that pretends a grid exists wherever a card is heading, so a step
+## can arrive anywhere. This is what a placement asks on arrival -- false means there is nothing
+## to land on, and the card is discarded. False for a virtual grid index, for an x or y outside
+## the grid's own bounds, and for a hole in a ragged grid.
+func has_cell(coord: BoardCoord) -> bool:
+	if coord.grid < 0 or coord.grid >= grids.size():
+		return false
+	var grid : GridData = grids[coord.grid]
+	if not grid:
+		return false
+	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
+		return false
+	var index := grid.cell_index(coord.x, coord.y)
+	return index < grid.cells.size() and grid.cells[index] != null
+
 ## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
 ## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a
 ## grid position P (i.e. `_grid_pos_index[C] == P`), `card_at(P) == C`; and for every non-null

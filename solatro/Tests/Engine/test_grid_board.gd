@@ -23,6 +23,7 @@ func _ready() -> void:
 	run_remove_compaction_test()
 	run_compaction_single_bump_test()
 	run_compaction_flag_test()
+	run_has_cell_test()
 	finish()
 
 # ==============================================================================
@@ -45,37 +46,54 @@ func run_continuous_x_test() -> void:
 	var c := BoardCoord.new(1, 0, 2, 0)
 	# one column left of (grid 1, x 0) crosses the boundary into (grid 0, x 4) -- the
 	# worked example the source note gives verbatim.
-	var stepped := c.step_x(-1, widths)
+	var stepped := c.step(-1, 0, widths)
 	check(stepped.grid == 0 and stepped.x == 4,
 			"one column left of (grid 1, x 0) is (grid 0, x 4)",
 			"got grid=%d x=%d" % [stepped.grid, stepped.x])
 	check(stepped.y == c.y and stepped.h == c.h,
-			"step_x leaves y and h unchanged",
+			"step leaves y and h unchanged when dy is 0",
 			"got y=%d h=%d" % [stepped.y, stepped.h])
 
 	# lower-level: crossing the OTHER way, and by more than one grid's width
-	var forward := BoardCoord.new(0, 3, 0, 0).step_x(4, widths)
+	var forward := BoardCoord.new(0, 3, 0, 0).step(4, 0, widths)
 	check(forward.grid == 1 and forward.x == 2,
 			"4 columns right of (grid 0, x 3) is (grid 1, x 2)",
 			"got grid=%d x=%d" % [forward.grid, forward.x])
 
-	var far := BoardCoord.new(0, 0, 0, 0).step_x(12, widths)
+	var far := BoardCoord.new(0, 0, 0, 0).step(12, 0, widths)
 	check(far.grid == 2 and far.x == 2,
-			"step_x crosses more than one grid boundary in one call",
+			"step crosses more than one grid boundary in one call",
 			"got grid=%d x=%d" % [far.grid, far.x])
 
 	# a full grid-width step (5, matching FIX-GRID-3's width) lands on the SAME local x
 	# one grid over -- the general shape of the source note's example.
-	var full_width := BoardCoord.new(1, 0, 2, 0).step_x(-5, widths)
+	var full_width := BoardCoord.new(1, 0, 2, 0).step(-5, 0, widths)
 	check(full_width.grid == 0 and full_width.x == 0,
 			"a full grid-width step left keeps the same local x, one grid over",
 			"got grid=%d x=%d" % [full_width.grid, full_width.x])
 
 	# TP-02's literal fixture: 5 columns left of (grid 1, x 0)
-	var tp02 := BoardCoord.new(1, 0, 2, 0).step_x(-5, widths)
+	var tp02 := BoardCoord.new(1, 0, 2, 0).step(-5, 0, widths)
 	check(tp02.grid == 0 and tp02.x == 0,
 			"TP-02's fixture: 5 columns left of (grid 1, x 0) is (grid 0, x 0)",
 			"got grid=%d x=%d" % [tp02.grid, tp02.x])
+
+	# two-axis step: dx and dy together
+	var diag := BoardCoord.new(0, 3, 2, 0).step(3, 4, widths)
+	check(diag.grid == 1 and diag.x == 1 and diag.y == 6,
+			"a two-axis step moves x across a grid boundary and y at the same time",
+			"got grid=%d x=%d y=%d" % [diag.grid, diag.x, diag.y])
+
+	# a step across grids of DIFFERENT widths proves nothing hard-codes 5
+	var uneven : Array[int] = [5, 6, 5]
+	var uneven_step := BoardCoord.new(0, 4, 0, 0).step(2, 0, uneven)
+	check(uneven_step.grid == 1 and uneven_step.x == 1,
+			"a step across grids of different widths lands using each grid's own width",
+			"got grid=%d x=%d" % [uneven_step.grid, uneven_step.x])
+	var uneven_step2 := BoardCoord.new(1, 5, 0, 0).step(1, 0, uneven)
+	check(uneven_step2.grid == 2 and uneven_step2.x == 0,
+			"stepping off the end of the wider middle grid lands at the start of the next",
+			"got grid=%d x=%d" % [uneven_step2.grid, uneven_step2.x])
 
 # ==============================================================================
 # TP-03 -- the Entrance is y == -1 of its attached grid, and the attachment moves on
@@ -113,18 +131,24 @@ func run_off_board_test() -> void:
 			"NOWHERE is the four-component MIN analogue",
 			"got grid=%d x=%d y=%d h=%d" % [nowhere.grid, nowhere.x, nowhere.y, nowhere.h])
 
-	# step_x walking off either edge of the board: provisional reading is CLAMP to the
-	# nearest legal column (never a negative x or an out-of-range grid).
+	# step walking off either edge of the board NEVER clamps and NEVER returns NOWHERE: it
+	# lands on the virtual continuation, stepping at the width of the nearest real edge grid.
 	var widths : Array[int] = [5, 5, 5]
-	var off_left := BoardCoord.new(0, 0, 0, 0).step_x(-11, widths)
-	check(off_left.grid == 0 and off_left.x == 0,
-			"stepping past the left edge of grid 0 clamps to (grid 0, x 0)",
+	var off_left := BoardCoord.new(0, 0, 0, 0).step(-11, 0, widths)
+	check(off_left.grid == -3 and off_left.x == 4,
+			"stepping 11 past the left edge of grid 0 lands on virtual grid -3, x 4",
 			"got grid=%d x=%d" % [off_left.grid, off_left.x])
 
-	var off_right := BoardCoord.new(2, 4, 0, 0).step_x(11, widths)
-	check(off_right.grid == 2 and off_right.x == 4,
-			"stepping past the right edge of the last grid clamps to its last column",
+	var off_right := BoardCoord.new(2, 4, 0, 0).step(11, 0, widths)
+	check(off_right.grid == 5 and off_right.x == 0,
+			"stepping 11 past the right edge of the last grid lands on virtual grid 5, x 0",
 			"got grid=%d x=%d" % [off_right.grid, off_right.x])
+
+	# a y step past the bottom of a grid lands virtually too (no y clamp)
+	var off_bottom := BoardCoord.new(0, 0, 0, 0).step(0, -3, widths)
+	check(off_bottom.grid == 0 and off_bottom.x == 0 and off_bottom.y == -3,
+			"a y step below row 0 is not clamped either",
+			"got grid=%d x=%d y=%d" % [off_bottom.grid, off_bottom.x, off_bottom.y])
 
 # ==============================================================================
 # TP-05 -- a 3-grid board's validate() returns empty at mixed heights. FIX-MIXED-H.
@@ -389,3 +413,29 @@ func run_compaction_flag_test() -> void:
 	check(state.validate().is_empty(),
 			"validate() returns empty after the moves and the placement",
 			"got %s" % [state.validate()])
+
+# ==============================================================================
+# has_cell -- the landing question a step's result asks separately from moving.
+# ==============================================================================
+func run_has_cell_test() -> void:
+	behavior_section("HAS CELL")
+	var state := TestGridFixtures.build_fix_grid_1()
+	check(state.has_cell(BoardCoord.new(0, 2, 2, 0)),
+			"has_cell is true for a real cell of a real grid")
+
+	check(not state.has_cell(BoardCoord.new(-1, 4, 0, 0)),
+			"has_cell is false for a virtual off-edge grid index")
+	check(not state.has_cell(BoardCoord.new(0, 5, 0, 0)),
+			"has_cell is false for an x outside the grid's own bounds")
+	check(not state.has_cell(BoardCoord.new(0, 0, -1, 0)),
+			"has_cell is false for a y outside the grid's own bounds")
+
+	# a ragged/hole grid: cells is shorter than grid_width * grid_height, representing
+	# missing cells at the tail of the row-major array.
+	var ragged : GridData = state.grids[0]
+	ragged.cells.resize(ragged.cells.size() - 1)
+	var hole_index := ragged.cell_index(4, 4)
+	check(hole_index >= ragged.cells.size(),
+			"the hole sits at the truncated tail of the row-major cell array")
+	check(not state.has_cell(BoardCoord.new(0, 4, 4, 0)),
+			"has_cell is false for a coordinate inside a real grid's block with no cell there")

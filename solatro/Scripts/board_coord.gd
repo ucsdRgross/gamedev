@@ -38,23 +38,36 @@ static func global_x(p_grid: int, p_x: int, grid_widths: Array[int]) -> int:
 		total += grid_widths[i]
 	return total + p_x
 
-## Column arithmetic that crosses grid boundaries: `n` columns of the single continuous
-## ordinate, then `grid`/`x` are re-derived from `grid_widths` (each grid's OWN width,
-## left to right). `y` and `h` are unchanged. Walking off either edge of the board CLAMPS
-## to the nearest legal column (provisional pending a design ruling -- see
-## solatro/design/poker-patience/gaps/).
-func step_x(n: int, grid_widths: Array[int]) -> BoardCoord:
-	var target := BoardCoord.global_x(grid, x, grid_widths) + n
+## Two-axis step over the unbounded lattice. `dx` crosses grid boundaries along the single
+## continuous ordinate (re-deriving `grid`/`x` from `grid_widths`, each grid's OWN bounding
+## block width, left to right); `dy` simply offsets `y`, unbounded, grids are laid out
+## horizontally only. NEVER fails, clamps or returns NOWHERE: past either end of the real
+## board it keeps stepping through a virtual continuation at the nearest real edge grid's
+## width, so movement looks identical to a grid being there. Whether a cell exists at the
+## result is a separate question (GameData.has_cell) asked at landing, not here.
+func step(dx: int, dy: int, grid_widths: Array[int]) -> BoardCoord:
+	var target := BoardCoord.global_x(grid, x, grid_widths) + dx
 	var total := 0
 	for w : int in grid_widths:
 		total += w
+	var g : int
+	var local_x : int
 	if target < 0:
-		return BoardCoord.new(0, 0, y, h)
-	if target >= total:
-		return BoardCoord.new(grid_widths.size() - 1, grid_widths[grid_widths.size() - 1] - 1, y, h)
-	var g := 0
-	var remaining := target
-	while remaining >= grid_widths[g]:
-		remaining -= grid_widths[g]
-		g += 1
-	return BoardCoord.new(g, remaining, y, h)
+		var edge_width : int = grid_widths[0]
+		var offset := -target
+		var steps_back := (offset + edge_width - 1) / edge_width
+		g = -steps_back
+		local_x = edge_width * steps_back + target
+	elif target >= total:
+		var edge_width : int = grid_widths[grid_widths.size() - 1]
+		var beyond := target - total
+		g = grid_widths.size() + beyond / edge_width
+		local_x = beyond % edge_width
+	else:
+		g = 0
+		var remaining := target
+		while remaining >= grid_widths[g]:
+			remaining -= grid_widths[g]
+			g += 1
+		local_x = remaining
+	return BoardCoord.new(g, local_x, y + dy, h)
