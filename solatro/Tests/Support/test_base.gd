@@ -259,6 +259,46 @@ func restore_settings_snapshot(snap: Dictionary) -> void:
 	for key : String in snap:
 		s.set(key, snap[key])
 
+## ⚠ EVERY `func run_*` this suite defines must actually be CALLED from `_ready`.
+##
+## A test that is written but never invoked is indistinguishable from a passing one: the
+## banner still reads ALL CHECKS PASSED, and nothing anywhere says the assertions never ran.
+## That has happened — six planned tests shipped defined-but-unregistered and were reported as
+## added. This reads the suite's own source, so a suite gets the guard by calling it rather
+## than by anyone remembering.
+##
+## Name a helper `_something` rather than `run_something` to exempt it: `run_` is the
+## entry-point convention this checks.
+func check_all_tests_registered() -> void:
+	implementation_section("REGISTRATION GATE")
+	var path : String = get_script().resource_path
+	var f := FileAccess.open(path, FileAccess.READ)
+	check(f != null, "the registration gate can read this suite's source", path)
+	if not f: return
+	var lines := f.get_as_text().split("
+")
+	var ready_body := ""
+	var in_ready := false
+	for raw : String in lines:
+		if raw.begins_with("func _ready("):
+			in_ready = true
+			continue
+		if in_ready:
+			if raw.begins_with("func "): break
+			ready_body += raw + "
+"
+	var defined : Array[String] = []
+	for raw : String in lines:
+		if raw.begins_with("func run_"):
+			defined.append(raw.substr(5, raw.find("(") - 5))
+	var unregistered : Array[String] = []
+	for name : String in defined:
+		if not ready_body.contains(name + "("): unregistered.append(name)
+	check(not defined.is_empty(), "the gate found this suite's tests at all", path)
+	check(unregistered.is_empty(),
+			"every run_* test defined in this suite is called from _ready",
+			"never called: %s" % ", ".join(unregistered))
+
 ## Print the suite banner + per-category failure split, then signal the aggregate runner
 ## (all_tests.gd) that this suite is done.
 func finish() -> void:

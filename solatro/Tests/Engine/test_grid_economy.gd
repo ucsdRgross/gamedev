@@ -13,7 +13,7 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ GRID ECONOMY TEST PASS ============")
-	run_registration_gate()
+	check_all_tests_registered()
 	run_buckets_are_independent_test()
 	await run_diagonals_share_one_special_bucket_test()
 	run_pack_unpack_round_trip_test()
@@ -22,41 +22,6 @@ func _ready() -> void:
 	await run_cell_bucket_from_a_real_stack_test()
 	run_cell_bucket_persistence_test()
 	finish()
-
-# ==============================================================================
-# REGISTRATION GATE: every `func run_*` this file defines must actually be CALLED from
-# _ready. Six planned tests once shipped defined-but-never-invoked while the banner read
-# ALL CHECKS PASSED, which is indistinguishable from them passing.
-# ==============================================================================
-func run_registration_gate() -> void:
-	implementation_section("REGISTRATION GATE")
-	var f := FileAccess.open(SELF_PATH, FileAccess.READ)
-	check(f != null, "the gate can read its own source", SELF_PATH)
-	if not f: return
-	var lines := f.get_as_text().split("\n")
-	var ready_body := ""
-	var in_ready := false
-	for raw : String in lines:
-		if raw.begins_with("func _ready("):
-			in_ready = true
-			continue
-		if in_ready:
-			if raw.begins_with("func "): break
-			ready_body += raw + "\n"
-	var defined : Array[String] = []
-	for raw : String in lines:
-		if not raw.begins_with("func run_"): continue
-		defined.append(raw.substr(5, raw.find("(") - 5))
-	var unregistered : Array[String] = []
-	for name : String in defined:
-		if name == "run_registration_gate": continue
-		if not ready_body.contains(name + "()"): unregistered.append(name)
-	check(defined.size() >= 4, "the gate actually found this suite's tests",
-			"only found %d" % defined.size())
-	check(unregistered.is_empty(),
-			"every run_* test defined in this file is called from _ready",
-			"never called: %s" % ", ".join(unregistered))
-
 # ==============================================================================
 # Helpers: the real detector in the rules deck, and a Game that records what banked.
 # ==============================================================================

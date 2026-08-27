@@ -23,7 +23,7 @@ func _ready() -> void:
 	run_height_v_line_test()
 	run_section_key_test()
 	run_old_signature_grep_gate()
-	run_registration_gate()
+	check_all_tests_registered()
 	run_section_refresh_test()
 	await run_mutation_pass_arrivals_and_removals_test()
 	await run_compaction_scores_nothing_test()
@@ -1062,54 +1062,6 @@ func run_compaction_landing_on_multiple_of_5_scores_nothing_test() -> void:
 			"the compaction move that landed on a multiple of 5 scored nothing",
 			"scored grew by %d" % (g.scored.size() - before))
 	free_grid_game(g)
-
-# ==============================================================================
-# REGISTRATION GATE: every `func run_*_test()` this file defines must actually be CALLED
-# from _ready.
-#
-# ⚠ This exists because six planned tests were once written, reviewed and reported as
-# added, while none of them ran: they were defined and never invoked, and the suite
-# printed ALL CHECKS PASSED the whole time. An unregistered test is indistinguishable
-# from a passing one in a log, which is the same failure shape the grep gate above
-# guards against. Reads this file as TEXT, since a function's existence says nothing
-# about whether anything calls it.
-# ==============================================================================
-func run_registration_gate() -> void:
-	implementation_section("REGISTRATION GATE")
-	var f := FileAccess.open(SELF_PATH, FileAccess.READ)
-	check(f != null, "the gate can read its own source", SELF_PATH)
-	if not f: return
-	var text := f.get_as_text()
-	var lines := text.split("\n")
-
-	# The body of _ready, which is where a test has to be called from to run at all.
-	var ready_body := ""
-	var in_ready := false
-	for raw : String in lines:
-		if raw.begins_with("func _ready("):
-			in_ready = true
-			continue
-		if in_ready:
-			if raw.begins_with("func "): break
-			ready_body += raw + "\n"
-
-	var defined : Array[String] = []
-	for raw : String in lines:
-		if not raw.begins_with("func run_"): continue
-		var name := raw.substr(5, raw.find("(") - 5)
-		defined.append(name)
-
-	var unregistered : Array[String] = []
-	for name : String in defined:
-		if name == "run_registration_gate": continue
-		if not ready_body.contains(name + "()"): unregistered.append(name)
-
-	check(defined.size() > 10, "the gate actually found this suite's tests",
-			"only found %d" % defined.size())
-	check(unregistered.is_empty(),
-			"every run_*_test defined in this file is called from _ready",
-			"never called: %s" % ", ".join(unregistered))
-
 # ==============================================================================
 # TP-46 -- THE PHASE 2 GATE. Build a grid card by card to a ceiling and assert the SET of
 # lines the detector scored is exactly the set that should exist.
