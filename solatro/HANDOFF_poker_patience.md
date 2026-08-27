@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phase 1 complete** — S1–S5 landed and committed, suite green at 40 suites.
-Next is S6, the first step of Phase 2 (line detection). Worktree `gamedev-poker-patience`
+**State:** Phase 1 complete; **Phase 2 in progress** — S1–S7 landed and committed, suite
+green at 41 suites. Next is S8 (the mutation broadcast). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -180,20 +180,45 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S6
   description: 'Line enumeration: ROW, COL, DIAG, HEIGHT_V through a given cell, within one grid.'
-  files_touched: []
+  files_touched: [solatro/Scripts/line_geometry.gd, solatro/Scripts/scoring_section.gd,
+     solatro/Tests/Engine/test_line_detect.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 40 SUITES: 3221 CHECKS PASSED ========
+    TP-18..TP-24 green, plus a HEIGHT_V enumeration check beyond the planned rows
+    (the kind shipped otherwise unexercised until S11).
+    DIAG is 10 directions: 2 flat corner-to-corner + 4 axis climbs + 4 corner-to-corner
+    3-D climbs. Reverse duplicates omitted - a line and its reverse are one line.
+    Red, expected checks only:
+      drop the 4 corner-to-corner climbs (the option the owner did NOT take)
+        -> [FAIL] eight climbing 3-D diagonals are found ... got 4
+        -> [FAIL] the found directions are literally the eight from the full family
+      stop rejecting off-main diagonals
+        -> [FAIL] a cell off both main diagonals finds no broken/wrapped diagonal
+    Committed a06a8c3.
   notes: 'Done-when: TP-18..TP-24 green.'
 
 - id: S7
   description: 'ScoringSection gains kind and line_key; score_line loses is_row/zone/index.'
-  files_touched: []
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/scoring_section.gd,
+     solatro/Cards/Skills/Rules/skill_eval_poker_best.gd,
+     solatro/Tests/Engine/test_line_detect.gd, solatro/Tests/all_tests.tscn]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 41 SUITES: 3248 CHECKS PASSED ========
+    TP-25..TP-27 green. TP-26 is a real grep gate: walks every .gd file, counts
+    top-level args per score_line call, names file:line of any four-arg one, and
+    exempts only itself.
+    Red, expected checks only:
+      reintroduce one old-signature call -> gate names skill_eval_poker_best.gd:30,
+        and 74 other checks fail with it (the change is load-bearing, not cosmetic)
+      refresh() stops re-reading into cards -> the 3 TP-27 checks fail, plus 3
+        pre-existing SPOTLIGHT checks that depend on the same re-read
+    Committed 1bffdec.
   notes: 'Done-when: TP-25..TP-27 green; grep proves no caller passes the old signature.'
 
 - id: S8
@@ -440,11 +465,11 @@ solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
 
 ## Next up
 
-1. S6 — line enumeration: ROW, COL, DIAG, HEIGHT_V through a cell, within one grid
-   (TP-18..TP-24). Opens Phase 2.
-2. S7 — `ScoringSection.kind` / `line_key`; `score_line` loses `is_row`/`zone`/`index`
-   (TP-25..TP-27, plus a grep gate that no caller passes the old signature).
-3. S8 — the mutation broadcast, the compaction flag and the board lock (TP-28..TP-31).
+1. S8 — the mutation broadcast, the compaction flag and the board lock (TP-28..TP-31).
+2. S9 — the detector card: enumerate, score, re-scan until nothing new completes
+   (TP-32..TP-36). ⚠ The runaway guard is CORRECTNESS-critical here.
+3. S10 — wire the section into `PokerHands.score()` and the spotlight cascade, unchanged
+   (TP-37..TP-39).
 
 Opening prompt for the next agent:
 
