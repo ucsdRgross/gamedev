@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete; Phase 3 in progress** — **Phase 3 complete** - S1-S14 landed and committed,
-suite green at 41 suites. Next is S15, which opens Phase 4 (rules cards). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1-S16 landed and committed, suite green at 42 suites.
+Next is S17 (TypeInput and the left-to-right refill). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -373,20 +373,36 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S15
   description: 'The meta allotment card (SkillGridAllotment).'
-  files_touched: []
+  files_touched: [solatro/Cards/Skills/Rules/skill_grid_allotment.gd, solatro/Scripts/player_settings.gd,
+     solatro/Tests/Support/test_decks.gd, solatro/Tests/Engine/test_grid_cards.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3368 CHECKS PASSED ========
+    TP-62..TP-65 green. Integer ceiling (n + d - 1) / d; divisor and cap are settings.
+    Red: plain truncating division fails "one card past the boundary (53) rounds up to 2".
+    Committed ead7f66.
   notes: 'Done-when: TP-62..TP-65 green. Frame 11.'
 
 - id: S16
   description: 'The grid creator card (SkillGridCreator).'
-  files_touched: []
+  files_touched: [solatro/Cards/Skills/Rules/skill_grid_creator.gd,
+     solatro/Cards/Skills/Rules/skill_grid_allotment.gd, solatro/Scripts/board.gd,
+     solatro/Scripts/game_data.gd, solatro/Scripts/card_effect_api.gd,
+     solatro/Tests/Engine/test_grid_cards.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES ======== (only the known intermittent failing)
+    TP-66..TP-69 green; TP-69 exercises BOTH directions. S15's placeholder is closed and
+    its deferral comment deleted - the allotment card now adds/removes creator CARDS.
+    Red, both rules:
+      wipe total_score on removal -> [FAIL] the banked total is untouched by removing the grid
+      never subtract creators     -> [FAIL] shrinking the deck subtracts creator cards back
+                                            down to one -- got 3
+    Committed fb76d84.
   notes: 'Done-when: TP-66..TP-69 green. Frame 12.'
 
 - id: S17
@@ -495,17 +511,18 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 - **Assumed, not checked** — that `CARD_SEPARATION = 16` is correct. Taken from `PLAN.md`
   §1.8 as instructed; not re-derived.
 
-## Out-of-scope request parked: the card effect API
+## The card effect API — BUILT, not parked
 
-The owner has asked for **an abstraction layer between card modifiers and the game scene** —
-all effects go through it, no modifier touches `Game` directly, and every existing card
-migrates to it. Captured at `design/card-effect-api/BRIEF.md` with the request verbatim, a
-measurement of today's seam (26 card files reach `game.` across ~7 concerns), and the seven
-structural forks a questionnaire has to settle.
+The owner answered all seven forks in `design/card-effect-api/BRIEF.md`, and the layer is
+implemented across three commits (fb37f9f, 84d4c36): `CardEffectApi`, one instance per `Game`,
+reached as `CardModifier.api`. **`CardModifier.game` is REMOVED**, all 26 card modifiers are
+migrated, and a suite gate fails on any `game.` / `Game.` / `GameData` / `Board.` inside a
+modifier — identified by its `extends` base, not by directory.
 
-**NOT scheduled in this run and NOT started.** It is cross-cutting and larger than any
-remaining step here. New cards in S16–S18 keep their `Game` contact narrow and funnelled so
-migration is a rename rather than a redesign.
+Design and the answers verbatim: `design/card-effect-api/DESIGN.md`.
+
+⚠ Extending the layer is the sanctioned move when a card needs something it does not expose —
+add the method with a `##` comment. S16 added three that way.
 
 ## Gaps — all three ANSWERED
 
