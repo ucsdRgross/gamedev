@@ -441,27 +441,58 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S19
   description: >
-    RESHAPED by the owner's GAP-007 answer. Was "move the tableau cards to an archive
-    directory, add an archive rules builder". Is now: DELETE the tableau from rules1 and
-    REBUILD the six suites that used it onto the grid game. No Archive/ directory, no
-    Deck.archive_rules1.
-  files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py'
+    RESHAPED by the owner's GAP-007 answer: DELETE the tableau from rules1 and REBUILD the six
+    suites that used it onto the grid game. No Archive/ directory, no Deck.archive_rules1.
+  files_touched:
+    [solatro/Decks/deck.gd, solatro/Cards/Types/type_input.gd, solatro/Levels/game.gd,
+     solatro/Scripts/game_data.gd, solatro/Tests/Support/test_decks.gd,
+     solatro/Tests/Support/test_grid_fixtures.gd, solatro/Tests/E2E/test_e2e_run.gd,
+     solatro/Tests/Engine/test_act_score.gd, solatro/Tests/Engine/test_mods.gd,
+     solatro/Tests/Engine/test_leak_canary.gd, solatro/Tests/Interaction/test_interaction.gd,
+     solatro/Tests/UI/test_ui_props.gd, solatro/Tests/UI/test_visual_layers.gd]
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3374 / 3390 / 3365 CHECKS PASSED ======== three consecutive
+    runs, failure set EMPTY -- including the light intermittent, see below.
+    rules1 = 5 SkillAdderInputUpper + SkillGridAllotment + SkillLineDetector.
+    TypeInput.on_next and _legacy_drop_to_lower are gone. TestDecks.standard_rules (the
+    FROZEN MIRROR of rules1 -- E2E/LEAK CANARY/UI PROPS all run through it, not through
+    Deck.rules1) tracks the new composition; TestDecks.rules_skill_names compares them.
+    Committed 74067f0.
   notes: >
-    Owner verbatim: "rebuild, i dont care about archiving anymore, just replace all existing
-    to fit for now without throwing errors". ⚠ TP-79 is VOID as written - it asserts the
-    archived cards are constructible from a builder that will not exist. The gate becomes: a
-    green suite, nothing throwing, every suite exercising the grid game.
-    Leaves rules1: the 5 SkillAdderInputUpper (they make the Entrance), SkillGridAllotment,
-    SkillLineDetector. Goes: the 6 lower adders, grabber, placer, cascade scorer, poker
-    evaluator - and TypeInput.on_next plus _legacy_drop_to_lower, which exist ONLY as
-    scaffolding to keep those six suites alive until this step.
-    The six to rebuild, with their current failure counts when the scaffolding is removed:
-    E2E RUN 5, MODS 4, LEAK CANARY 4, VISUAL LAYERS 3, UI PROPS 2, INTERACTION 2.
-
+    FOUR DEFECTS THE REBUILD UNCOVERED, all fixed here, none cosmetic:
+    (1) The fresh-show bootstrap fired on_game_start on NOTHING. run_all_mods only reaches a
+    skill whose `spotlit` flag is already set and no sweep had run yet, so SkillGridAllotment
+    never ran and a new show had ZERO GRIDS. Order is now sweep -> on_game_start -> sweep
+    again (for the creator cards the hook just added) -> refill. The refill was also asked
+    before the Entrance slots existed, so the opening deal was silently empty. ⚠ Hidden by
+    test_grid_cards' fixture, which force-sets `skill.spotlit = true`.
+    (2) NOTHING CONNECTED THE ECONOMY TO THE GOAL -- has_met_goal read the retired act
+    payout, so the grid game was unwinnable at any score. GameData.live_total()
+    (board_total x combo_mult) now backs has_met_goal / _resolve_game / exit_show. Chart D
+    fixes this (D12, D13, D16) but no step owned it. total_score and apply_act_score are
+    left alone; nothing in the grid game feeds them.
+    (3) return_to_map()'s sweep skipped the grid cells -- a show returned fewer cards than
+    it took.
+    (4) A placement never called _begin_act(), so act_calls climbed all show until
+    get_delay() floored at 0 and act_overrun suppressed real scoring. ⚠ THE `not processing`
+    GUARD IS LOAD-BEARING: without it a mid-cascade placement re-opens the budget every time
+    and the unbounded re-scan recurses until the stack blows (measured: 0xC0000005).
+    THREE PARKED CHECKS, each asserted so it FAILS when its blocker lands:
+      - UI PROPS "a scored grid line spawns no props" -- every suit's spawn_props() starts
+        at _spawn_origin(), which reads the LEGACY Vector3i index; grid cells are not in it,
+        so it returns Vector3i.MIN and no spawner is ever built. Unblocks at S19b.
+      - INTERACTION "no act on a grid board outlives two frames" -- no paced work exists to
+        interrupt, for the same reason. Unblocks at S19b / a cancellable placement.
+      - INTERACTION test_rebuild_leaves_no_dead_controls -- needs a legal UI placement;
+        blocked on GAP-008. ⚠ It had been ABORTING on an empty lower_zone and silently
+        taking five checks with it while the suite still read green.
+    ⚠ The layering fixture now BUILDS its cards at uniform depth instead of drawing from the
+    shuffled deck. The lit card's travel had been varying 340-550 px run to run. This also
+    appears to have fixed the 1-in-3 VISUAL LAYERS light intermittent -- three clean runs.
+    The tableau card SCRIPTS are kept (removed only from rules1); see ASSUMPTIONS.md.
 
 - id: S19b
   description: >
@@ -615,21 +646,26 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-1. **S19 — the rebuild.** The biggest remaining piece. Delete the tableau from `rules1`,
-   remove `TypeInput.on_next` and `_legacy_drop_to_lower`, and rebuild the six suites onto
-   the grid game. No archive directory, no builder. TP-79 is void.
-2. **S35** — every placement an undo step; scores rewind with the board (TP-121..TP-123).
-   ⚠ Also resolves the 94 `I5` warnings above.
-3. **S36** — `pending_action` carries a placement and replays it (TP-124..TP-126).
-4. **S37** — `validate()` grid invariants; **headless parity** (TP-127..TP-130). ⚠ TP-128 is
-   the phase gate: a headless show and a viewed show produce byte-identical final state.
-5. **S19b** — the legacy coordinate migration (GAP-003). 296 references across 29 files.
-6. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
+1. **S35** — every placement an undo step; scores rewind (TP-121..TP-123). ⚠ Also resolves
+   the 94 `I5` warnings. Two places already carry an explicit `save_state()` with a comment
+   saying to drop it when this lands: `Tests/E2E/test_e2e_run.gd` and
+   `Tests/Engine/test_leak_canary.gd`.
+2. **S36** — `pending_action` carries a placement and replays it (TP-124..TP-126).
+3. **S37** — `validate()` grid invariants; **headless parity** (TP-127..TP-130). ⚠ TP-128 is
+   the phase gate. TP-129 (scores survive a save/reload) is ALREADY exercised by E2E's
+   "resume restores the board's score", which round-trips the per-grid buckets.
+4. **S19b** — the legacy coordinate migration (GAP-003). ⚠ ITS SCOPE GREW: it is not only a
+   rename. The whole PROP system is built on the legacy `Vector3i` — `spawn_props`,
+   `_spawn_origin`, `row_slot_path`, `entity_side_for_row`, `mancala_targets`, `column_rise_path`
+   — so until it lands, **a scored grid line pays its points and fires no props at all.** Two
+   parked checks flip to failing when it does, which is how you will know.
+5. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
 
-⚠ **S19 and S19b overlap heavily.** Both remove the legacy two-zone board. Doing S19's rebuild
-first and then S19b means touching the same six suites twice. **Consider merging them**, or
-doing S19b first so the rebuild lands directly on `BoardCoord`. That is a judgement call the
-next overseer should make deliberately, not stumble into.
+⚠ **GAP-008 IS OPEN AND BLOCKS THE GAME BEING PLAYABLE** — nothing answers
+`on_can_grab_stack` / `on_can_place_stack` for a grid cell, and `try_place` commits only
+through the legacy move path, so `place_card_in_grid` is reachable from tests alone. S19 and
+S35 both work around it by placing from the DRAW DECK through the engine path. Needs an owner
+answer before the player loop exists.
 
 ## References
 
