@@ -1017,6 +1017,12 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 	# A grid line banks into its GRID's buckets, not the legacy zone gutters.
 	if section.grid >= 0:
 		_add_grid_line_score(section, amount)
+		# The buckets are BigNumbers written in place, so nothing else announces this. Without
+		# the emit, the score a player is shown only catches up the next time some UNRELATED
+		# scalar happens to move -- and the show's whole score is derived from these buckets.
+		# Not a `revision` bump: banking a score is not a board mutation, and a bump would
+		# rebuild the play area in the middle of the cascade.
+		state.state_changed.emit()
 		return
 	if section.index < 0:
 		return
@@ -1040,8 +1046,8 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 ## non-directional meld shares. A row or column at height 0 banks into the flat per-grid
 ## bucket; a raised one banks into that grid's bucket for its own height.
 ##
-## ⚠ A vertical stack has no bucket here yet -- which one it belongs in is an open question,
-## so its score is deliberately not banked rather than guessed into the wrong one.
+## A vertical stack banks into its own CELL's bucket, keyed by coordinate so a grid that
+## changes shape under an effect keeps its scores.
 func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
 	var g := section.grid
 	match section.kind:

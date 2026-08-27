@@ -153,7 +153,9 @@ func _refresh_hud() -> void:
 	if not is_node_ready() or not game: return
 	var state := game.state
 	goal_label.text = str(state.goal)
-	total_label.text = str(state.total_score)
+	# The show's score is DERIVED (every grid's total, times the combo) and always current --
+	# there is no act payout and no banking moment, so there is no stored total to show.
+	total_label.text = str(state.live_total())
 	mult_label.text = str(state.mult_score)
 	col_label.text = str(state.col_total)
 	row_label.text = str(state.row_total)

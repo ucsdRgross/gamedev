@@ -1065,6 +1065,14 @@ func test_game_view_scoring_pass_with_props() -> void:
 				"every spawned %s entered the visible viewport during the submit" % kind_name,
 				"spawned but never on-screen")
 	check(g.state.live_total() > 0, "the completed line paid out", str(g.state.live_total()))
+	# ⚠ AND THE PLAYER IS SHOWN IT. The score is derived from the per-grid buckets, which are
+	# BigNumbers written in place -- nothing about writing one announces itself, so a HUD that
+	# is merely correct when something else happens to refresh it is not a live HUD. Checked
+	# against the label's TEXT, not against the state, so a label wired to a retired field
+	# (which reads 0 forever) cannot pass.
+	check(view.total_label.text == str(g.state.live_total()),
+			"the HUD shows the show's live score",
+			"label %s vs live %d" % [view.total_label.text, g.state.live_total()])
 	var waited := 0.0
 	while prop_visual_count(pa.prop_layer) > 0 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
