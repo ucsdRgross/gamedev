@@ -287,6 +287,15 @@ static func _locate_in_grid(state: GameData, card: CardData) -> Array[int]:
 				return found
 	return []
 
+## Public grid-board counterpart of `locate`: the card's coordinate, or null when it is not
+## on any grid. Callers outside this file use this instead of `_locate_in_grid`'s raw triple.
+static func locate_in_cell(state: GameData, card: CardData) -> BoardCoord:
+	var loc := _locate_in_grid(state, card)
+	if loc.is_empty(): return null
+	var grid : GridData = state.grids[loc[0]]
+	var cell_idx : int = loc[1]
+	return BoardCoord.new(loc[0], cell_idx % grid.grid_width, cell_idx / grid.grid_width, loc[2])
+
 ## Places a card NOT already on the grid board into a cell, at the TOP of its stack --
 ## reuses the Anchor.ON_TOP rule (insert above whatever is already there) rather than
 ## trusting `coord.h`, so a caller can never hand in a height that disagrees with the

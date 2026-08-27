@@ -23,6 +23,10 @@ func _ready() -> void:
 	run_section_key_test()
 	run_old_signature_grep_gate()
 	run_section_refresh_test()
+	await run_mutation_pass_arrivals_and_removals_test()
+	await run_compaction_scores_nothing_test()
+	await run_board_locked_during_pass_test()
+	await run_pass_runs_after_commit_test()
 	finish()
 
 # ==============================================================================
@@ -362,3 +366,142 @@ func run_section_refresh_test() -> void:
 	# the activation sweep's loop, so a always-true refresh would spin it forever.
 	check(not section.refresh(),
 			"a refresh with nothing changed reports no change")
+
+# ==============================================================================
+# S8 -- the mutation broadcast, the compaction flag, and the board lock (TP-28..TP-31).
+# A bare Game.new() never added to the tree, one rules card carrying a spy skill
+# spotlit in rules_deck so run_all_mods dispatches to it, mirroring test_game_headless's
+# make_game/free_game pattern.
+# ==============================================================================
+
+## Records every on_board_mutated / on_card_placed call, and (from INSIDE the handler,
+## since that is the only place that proves "during") whether the board was locked and
+## whether the mutation had already committed.
+class SpyBoardMutation extends CardModifierSkill:
+	var mutation_log : Array[Dictionary] = []
+	var placed_log : Array[BoardCoord] = []
+	var game_ref : Game
+	var saw_locked_during_mutation := false
+	var saw_committed_during_mutation := false
+	func get_str() -> String: return "SpyBoardMutation"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_board_mutated(coord: BoardCoord, is_compaction: bool) -> void:
+		mutation_log.append({"coord": coord, "is_compaction": is_compaction})
+		if game_ref and game_ref.processing:
+			saw_locked_during_mutation = true
+		if game_ref and game_ref.state.card_at(coord) != null:
+			saw_committed_during_mutation = true
+	func on_card_placed(coord: BoardCoord) -> void:
+		placed_log.append(coord)
+
+func rules_card_grid(skill: CardModifierSkill) -> CardData:
+	var c := CardData.new().with_skill(skill)
+	c.stage = CardData.Stage.RULES
+	skill.spotlit = true
+	return c
+
+func make_grid_game(state: GameData, spy: SpyBoardMutation) -> Game:
+	var g := Game.new()
+	state.rules_deck = [rules_card_grid(spy)] as Array[CardData]
+	g.state = state
+	spy.game_ref = g
+	CardEnvironment.CURRENT = g
+	return g
+
+func free_grid_game(g: Game) -> void:
+	CardEnvironment.CURRENT = null
+	g.free()
+
+# ==============================================================================
+# TP-28 -- every board mutation runs a pass -- arrivals AND removals. FIX-GRID-1.
+# ==============================================================================
+func run_mutation_pass_arrivals_and_removals_test() -> void:
+	behavior_section("MUTATION PASS: ARRIVALS AND REMOVALS")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var spy := SpyBoardMutation.new()
+	var g := make_grid_game(state, spy)
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var coord := BoardCoord.new(0, 0, 0, 0)
+	await g.place_card_in_grid(card, coord)
+	check(spy.mutation_log.size() == 1,
+			"an arrival runs the mutation pass once",
+			"got %d" % spy.mutation_log.size())
+	check(spy.placed_log.size() == 1,
+			"an arrival also fires on_card_placed",
+			"got %d" % spy.placed_log.size())
+	await g.remove_card_from_grid(card)
+	check(spy.mutation_log.size() == 2,
+			"a removal ALSO runs the mutation pass",
+			"got %d" % spy.mutation_log.size())
+	check(spy.placed_log.size() == 1,
+			"a removal does not fire on_card_placed",
+			"got %d" % spy.placed_log.size())
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-29 -- a drop-only (compaction) mutation carries is_compaction == true, and a
+# scorer keyed on that flag is skipped -- the strongest assertion available before S9's
+# detector exists. FIX-STACK-10.
+# ==============================================================================
+func run_compaction_scores_nothing_test() -> void:
+	behavior_section("COMPACTION SCORES NOTHING")
+	var state := TestGridFixtures.build_fix_stack_10()
+	var spy := SpyBoardMutation.new()
+	var g := make_grid_game(state, spy)
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var card : CardData = cell.datas[0]
+	await g.move_card_in_grid(card, BoardCoord.new(0, 1, 0, 0), true)
+	check(spy.mutation_log.size() == 1,
+			"the compaction move runs one mutation pass",
+			"got %d" % spy.mutation_log.size())
+	var entry : Dictionary = spy.mutation_log[0]
+	var flag : bool = entry["is_compaction"]
+	check(flag,
+			"the broadcast carries is_compaction == true, exactly what the mover passed",
+			"got %s" % [entry])
+	# A scorer keyed on is_compaction would skip this pass -- assert that a
+	# would-be scorer sees the flag it needs to make that call, unlike a genuine
+	# arrival, which never carries it.
+	var card2 : CardData = cell.datas[1]
+	await g.move_card_in_grid(card2, BoardCoord.new(0, 2, 0, 0), false)
+	var entry2 : Dictionary = spy.mutation_log[1]
+	var flag2 : bool = entry2["is_compaction"]
+	check(not flag2,
+			"a non-compaction move on the same board carries is_compaction == false",
+			"got %s" % [entry2])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-30 -- the board is locked (processing == true) for the WHOLE pass, read from
+# INSIDE the handler, not merely set and cleared around it. FIX-CROSS.
+# ==============================================================================
+func run_board_locked_during_pass_test() -> void:
+	behavior_section("BOARD LOCKED DURING PASS")
+	var state := TestGridFixtures.build_fix_cross()
+	var spy := SpyBoardMutation.new()
+	var g := make_grid_game(state, spy)
+	check(not g.processing, "the board starts unlocked")
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	check(spy.saw_locked_during_mutation,
+			"processing read true from INSIDE the on_board_mutated handler")
+	check(not g.processing, "the lock lifts once the whole pass has finished")
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-31 -- the pass runs AFTER the placement has committed: a handler responding to
+# on_board_mutated already sees the placed card on the board. FIX-GRID-1.
+# ==============================================================================
+func run_pass_runs_after_commit_test() -> void:
+	behavior_section("PASS RUNS AFTER COMMIT")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var spy := SpyBoardMutation.new()
+	var g := make_grid_game(state, spy)
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var coord := BoardCoord.new(0, 3, 3, 0)
+	await g.place_card_in_grid(card, coord)
+	check(spy.saw_committed_during_mutation,
+			"the handler read the placed card off the board WHILE handling on_board_mutated")
+	free_grid_game(g)

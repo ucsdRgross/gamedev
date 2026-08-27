@@ -650,6 +650,48 @@ func move_stack(moving:CardData, count:int, dest:Board.Anchor, trigger_mods: boo
 		await run_all_mods(&"on_stack_cards", result.stack)
 	debug_validate("move %s -> %s" % [moving, dest])
 
+# ==============================================================================
+# Grid board mutations: Board.* mutates (or rejects), Game fires the mutation
+# broadcast afterwards, board already consistent. Mirrors move_stack's split above.
+# ==============================================================================
+
+## Fires the mutation broadcast for one grid mutation, board LOCKED for the whole pass.
+## `is_compaction` is never re-derived here -- it is exactly what the mover/caller decided.
+func _broadcast_board_mutation(coord: BoardCoord, is_compaction: bool) -> void:
+	var was_processing := processing
+	processing = true
+	await run_all_mods(&"on_board_mutated", coord, is_compaction)
+	processing = was_processing
+
+## Places a card not yet on the grid board into `coord`, then runs the mutation pass.
+## An arrival is never a compaction (`is_compaction` is always false here) and additionally
+## fires on_card_placed, after on_board_mutated, since the placement has already committed.
+func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
+	if not Board.place_in_cell(state, card, coord):
+		return
+	await _broadcast_board_mutation(coord, false)
+	await run_all_mods(&"on_card_placed", coord)
+
+## Moves a card already on the grid board to `coord`, then runs the mutation pass.
+## `is_compaction` travels straight from the caller through GridMoveResult to the
+## broadcast -- never inferred from before/after heights.
+func move_card_in_grid(card: CardData, coord: BoardCoord, is_compaction: bool) -> void:
+	var result := Board.move_to_cell(state, card, coord, is_compaction)
+	if not result.ok:
+		return
+	await _broadcast_board_mutation(coord, result.is_compaction)
+
+## Removes a card from the grid board (compacting the cards above it) then runs the
+## mutation pass. A removal is not itself a compaction move, so is_compaction is false --
+## the cards it compacted moved as a side effect of the array shift, not a mover's own move.
+func remove_card_from_grid(card: CardData) -> void:
+	var coord := Board.locate_in_cell(state, card)
+	if not coord:
+		return
+	if not Board.remove_from_cell(state, card):
+		return
+	await _broadcast_board_mutation(coord, false)
+
 ## Debug-build invariant sweep (ARCHITECTURE_REVIEW.md §5). Report-only.
 func debug_validate(context: String) -> void:
 	if not OS.is_debug_build(): return

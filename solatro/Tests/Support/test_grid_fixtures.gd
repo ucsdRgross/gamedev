@@ -27,6 +27,24 @@ static func build_fix_mixed_h() -> GameData:
 	state.grids = [g0, g1, g2]
 	return state
 
+## FIX-CROSS: grid 0 row 2 and column 2 both one card short, sharing cell (2,2) empty --
+## so one placement into (2,2) completes both.
+static func build_fix_cross() -> GameData:
+	var state := GameData.new()
+	var grid := _new_grid(5, 5)
+	for x in grid.grid_width:
+		if x == 2: continue
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		grid.cells[grid.cell_index(x, 2)].datas.append(card)
+	for y in grid.grid_height:
+		if y == 2: continue
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		grid.cells[grid.cell_index(2, y)].datas.append(card)
+	state.grids = [grid]
+	return state
+
 ## FIX-STACK-5: grid 0 cell (0,0) holding 4 cards; the 5th completes a vertical line.
 static func build_fix_stack_5() -> GameData:
 	var state := GameData.new()
