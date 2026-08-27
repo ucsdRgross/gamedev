@@ -2,8 +2,10 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1-4 complete — S1-S19 landed and committed**, suite green at 42 suites.
-Next is Phase 8: S35, S36, S37, then S19b and the S37b closing pass.
+**State:** **THE PLANNED RANGE IS COMPLETE — S1-S19 (Phases 1-4) and S35-S37 (Phase 8) all
+landed and committed**, suite green at 42 suites, `ALL 42 SUITES: 3417 CHECKS PASSED`.
+Remaining, both ADDED by this run rather than planned steps: **S19b** (the legacy coordinate
+migration, GAP-003 — its scope grew, see below) and **S37b** (the closing pass).
 
 
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
@@ -532,32 +534,84 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S35
   description: 'Every placement an undo step; scores rewind with the board.'
-  files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Levels/game.gd, solatro/Tests/Engine/test_grid_cards.gd]
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-121..TP-123 green.'
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3371 CHECKS PASSED ======== TP-121..TP-123 green.
+    Red first, failing exactly and only the expected checks:
+      one placement commits exactly one snapshot                   -- 1 -> 1
+      a second placement commits its own snapshot, not a batch one -- 1 -> 1
+      undo rewinds the scores the placement made                   -- 12096, wanted 0
+      ...and the placed card is off the board again                -- still there
+    Committed cc39f98.
+  notes: >
+    `place_card_in_grid` calls `save_state()` LAST -- after the broadcast, the refill and the
+    commitment lift -- because the scores a placement caused live on `state`, so any earlier
+    snapshot rewinds the board without rewinding what it scored. Guarded on `not processing`
+    like the act reset beside it: an effect placing a card mid-cascade is part of the act that
+    caused it, not an undo step of its own. Q16 (a put-it-back costs nothing) falls out for
+    free -- a refused placement returns before mutating, and save_state skips an unmoved
+    revision anyway.
+    ⚠ THE 94 I5 WARNINGS ARE CLOSED, and they were never about undo: `_entrance_game` assigned
+    `state.draw_deck` directly, which skips `add_deck` and so skips the stage stamp, while
+    validate() checks a card's stage against where it sits. The sibling fixture had documented
+    and fixed exactly this; they are one helper now. Count 145 -> 0.
 
 - id: S36
   description: 'pending_action carries a placement and replays it.'
-  files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/run_state.gd,
+     solatro/Scripts/run_manager.gd, solatro/Scripts/board.gd,
+     solatro/Tests/Support/test_grid_fixtures.gd, solatro/Tests/Engine/test_grid_cards.gd]
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-124..TP-126 green.'
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3415 CHECKS PASSED ======== TP-124..TP-126 green.
+    Red first: marker never written (action empty, slot -1, coord zero), both replays
+    reproducing nothing. Landed in two commits: 488a4c2 (the Entrance lift), 0b8f969.
+  notes: >
+    The placement is identified by its ENTRANCE SLOT, not by the card -- the pre-placement
+    board a replay starts from is a restored snapshot carrying its own copies, so no card
+    reference survives. Two new RunState fields beside pending_action. A placement whose card
+    is not in the Entrance records nothing: not a player action, no slot to replay from.
+    ⚠ `Board.place_in_cell` NOW LIFTS THE CARD out of the zone column it came from, as one
+    mutation with the append. Nothing did before -- a card placed from the Entrance stayed in
+    `upper_zone` as well as the cell. This is the mechanical half GAP-008 named. It retired the
+    `_take_held` test shortcut that had been standing in for it.
+    ⚠ TWO TEST DEFECTS THIS FOUND, both of the passes-while-proving-nothing kind: TP-126 first
+    asserted a refill after ANY placement (a refill is due only when the Entrance EMPTIES, so
+    it is the last card leaving that deals a fresh hand); and `AcceptEmptyCellsOfOneGrid`
+    cached a GridData OBJECT, so after any undo or replay it matched nothing, accepted nothing,
+    and every commitment silently lifted. It resolves by index now.
 
 - id: S37
   description: 'validate() grid invariants; headless parity assertion. STOP HERE.'
-  files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Scripts/game_data.gd, solatro/Tests/Engine/test_grid_board.gd,
+     solatro/Tests/Engine/test_grid_economy.gd, solatro/Tests/E2E/test_e2e_run.gd]
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3417 CHECKS PASSED ======== TP-127..TP-130 green.
+    TP-129 red-proved by dropping the special bucket from unpack_scores: 504, wanted 12096.
+    TP-128 (THE PHASE GATE) red-proved with a one-line `if view: amount += 1` in the scoring
+    path -- the whole rest of the suite stayed green and this check alone failed.
+    Committed e1d6827.
   notes: >
-    Done-when: TP-127..TP-130 green. TP-128 is the phase gate: a headless show and a viewed
-    show produce byte-identical final state.
+    validate() gains the grid ALIASING invariants: the same GridData under two indexes, the
+    same cell array reachable from two cells. Neither is a size or null violation -- an aliased
+    board reads as consistent until a placement into one grid appears in the other, which is
+    the failure mode this model has (every grid is owned by a creator card holding a reference,
+    every snapshot is a deep copy). Checked BEFORE the duplicate-card scan, which was already
+    catching the aliased-GRID case but as 25 "card in two places" lines that buried the one
+    fact explaining them; the aliased-CELL case was not caught at all.
+    TP-129 goes through the REAL save path (to_saveable -> duplicate_state -> restore_runtime),
+    not pack/unpack directly as the existing round-trip tests do: to_saveable packs and then
+    CLEARS every runtime bucket, so a bucket missing from that list round-trips perfectly in
+    the old tests and comes back empty in a real reload.
+    `TestGridFixtures.board_digest` backs TP-128 and TP-129 both.
 ```
 
 ## Verified vs assumed
@@ -658,20 +712,12 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-1. **S35** — every placement an undo step; scores rewind (TP-121..TP-123). ⚠ Also resolves
-   the 94 `I5` warnings. Two places already carry an explicit `save_state()` with a comment
-   saying to drop it when this lands: `Tests/E2E/test_e2e_run.gd` and
-   `Tests/Engine/test_leak_canary.gd`.
-2. **S36** — `pending_action` carries a placement and replays it (TP-124..TP-126).
-3. **S37** — `validate()` grid invariants; **headless parity** (TP-127..TP-130). ⚠ TP-128 is
-   the phase gate. TP-129 (scores survive a save/reload) is ALREADY exercised by E2E's
-   "resume restores the board's score", which round-trips the per-grid buckets.
-4. **S19b** — the legacy coordinate migration (GAP-003). ⚠ ITS SCOPE GREW: it is not only a
+1. **S19b** — the legacy coordinate migration (GAP-003). ⚠ ITS SCOPE GREW: it is not only a
    rename. The whole PROP system is built on the legacy `Vector3i` — `spawn_props`,
    `_spawn_origin`, `row_slot_path`, `entity_side_for_row`, `mancala_targets`, `column_rise_path`
    — so until it lands, **a scored grid line pays its points and fires no props at all.** Two
    parked checks flip to failing when it does, which is how you will know.
-5. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
+2. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
 
 ⚠ **GAP-008 IS OPEN AND BLOCKS THE GAME BEING PLAYABLE** — nothing answers
 `on_can_grab_stack` / `on_can_place_stack` for a grid cell, and `try_place` commits only
