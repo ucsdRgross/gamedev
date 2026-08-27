@@ -2,8 +2,8 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** Phase 1 complete; **Phase 2 in progress** — S1–S9 landed and committed, suite
-green at 41 suites. Next is S10 (wire the section into PokerHands.score()). Worktree `gamedev-poker-patience`
+**State:** Phase 1 complete; **Phase 2 in progress** — **Phase 2 complete** - S1-S11 landed and committed,
+suite green at 41 suites. Next is S12, which opens Phase 3 (the economy). Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -266,20 +266,38 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S10
   description: 'Wire the section into Scoring.PokerHands.score() and the spotlight cascade, unchanged.'
-  files_touched: []
+  files_touched: [solatro/Cards/Skills/Rules/skill_line_detector.gd,
+     solatro/Tests/Engine/test_line_detect.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 41 SUITES: 3306 CHECKS PASSED ========
+    TP-37..TP-39 green. score_line ALREADY re-evaluates the section through
+    PokerHands.score() after the cascade, so the detector passes no result of its own
+    on purpose; the call site now says why.
+    ⚠ TP-39 was passing VACUOUSLY as first written - it compared state.total_score,
+    which is always 0 until S12, against a non-zero hand. Now reads the banked amount.
+    Red (only meaningful after that fix): evaluate the hand BEFORE the cascade
+      -> [FAIL] the banked hand is the RE-EVALUATED one, not the pre-swap five cards
+    Committed 54a2bb5.
   notes: 'Done-when: TP-37..TP-39 green.'
 
 - id: S11
   description: 'Height scoring: multiples of 5, whole stack, drops never score.'
-  files_touched: []
+  files_touched: [solatro/Scripts/line_geometry.gd, solatro/Cards/Skills/Rules/skill_line_detector.gd,
+     solatro/Levels/game.gd, solatro/Scripts/game_data.gd,
+     solatro/Tests/Engine/test_line_detect.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 41 SUITES: 3373 passed ======== (only the known intermittent failing)
+    TP-40..TP-46 green. TP-46 runs at ceilings 3, 5 and 15 and compares SETS both ways.
+    Red, with counts matching the test's own enumerator independently:
+      stop scoring HEIGHT_V -> 25 missing at ceiling 5, 75 at ceiling 15
+      score EVERY height    -> 75 / 100 / 300 unexpected at ceilings 3 / 5 / 15
+    Committed a146980 (part 1) and 8029ffe (part 2, the gate).
   notes: >
     Done-when: TP-40..TP-46 green. TP-46 is the phase gate: build FIX-FULL-15 card by card,
     compare the completed-line SET against an enumerator written INDEPENDENTLY in the test,
@@ -486,13 +504,14 @@ solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
 
 ## Next up
 
-1. S10 — wire the section into `PokerHands.score()` and the spotlight cascade, unchanged
-   (TP-37..TP-39). ⚠ The detector currently passes a NULL result to `score_line`; S10 is
-   what makes a scored line evaluate a hand.
-2. S11 — height scoring: multiples of 5, whole stack, drops never score (TP-40..TP-46).
-   ⚠ TP-46 is the Phase 2 gate and needs an INDEPENDENT enumerator written in the test.
-   ⚠ Closing S11 must remove the HEIGHT_V deferral comment in `skill_line_detector.gd`.
-3. S12 — the three buckets per grid and their storage (TP-47..TP-50). Opens Phase 3.
+1. S12 — the three buckets per grid and their storage, pack/unpack and the
+   `duplicate_state()` manual copy (TP-47..TP-50). Opens Phase 3.
+   ⚠ A grid line currently banks NOTHING: `add_line_score` has no bucket to write to, which
+   is why `state.total_score` stays 0. S12 is what closes that.
+2. S13 — `grid_score` as the product of positive buckets (TP-51..TP-56). ⚠ TP-51 is the
+   owner's worked example verbatim; TP-54 tests the VALUE, never touched-ness.
+3. S14 — the combo model and the retirement of `MAX_SUBMITS`, `submits_used`,
+   `score_additive`, `duplicate_class_scale` and the patience family (TP-57..TP-61).
 
 Opening prompt for the next agent:
 
