@@ -320,6 +320,15 @@ func try_place(stack: Array[CardData], target: CardData) -> bool:
 	if processing: return false
 	var stacked := await return_first_data_array_result(&"on_can_place_stack", stack, target)
 	if stacked:
+		# A GRID CELL is not a card on a column, so it does not go through the legacy move
+		# engine: `place_card_in_grid` is what lifts the card out of the Entrance, fires the
+		# mutation broadcast the scorer listens to, refills, and commits its own undo step.
+		# The target is the cell's ZONE card, which is what an empty cell presents.
+		var cell := state.cell_type_coord(target)
+		if cell:
+			for moving_data in stacked:
+				await place_card_in_grid(moving_data, cell)
+			return true
 		var onto_data := target
 		for moving_data in stacked:
 			move_data_ontop_data(moving_data, onto_data, 1, false)

@@ -5,7 +5,8 @@
 **State:** **THE WHOLE ASSIGNED RANGE IS COMPLETE, INCLUDING THE CLOSING PASS — S1-S19 (Phases 1-4) and S35-S37 (Phase 8) all
 — S1-S19 (Phases 1-4), S35-S37 (Phase 8) and S37b all landed and committed**, suite green
 at 42 suites over three consecutive runs. **S19b is deliberately resequenced to after Phase 5**
-(see its entry). ⚠ **GAP-008 is open and is what stands between this and a playable game.**
+(see its entry). **GAP-008 is answered and built: the player can grab from the Entrance and
+place onto a grid, so the loop closes.** What is left is Phases 5-7 (visual) and 9-10.
 
 
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
@@ -688,7 +689,8 @@ Answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md` 
 | GAP-004 | A diagonal is a same-rate run; corners are not part of the definition. Owner confirmed this governs the FLAT case only — the eight climbing families stand | implemented `6092a27` |
 | GAP-005 | A vertical stack banks into a PER-CELL bucket, keyed by coordinate so a grid can change shape | implemented `581d02a` |
 | GAP-006 | Height scores fold into the SPECIAL term: `row x col x special(diag + height) x combo`. Raised row/col levels fold into their own terms | implemented `54cab17` |
-| GAP-007 | Rebuild the six suites; **the archive is cancelled entirely** | **drives S19, NOT implemented** |
+| GAP-007 | Rebuild the six suites; **the archive is cancelled entirely** | implemented `74067f0` |
+| GAP-008 | Grab and place are rules on the ZONE TYPE cards (`TypeInput`, `TypeGridCell`), **not** rules-deck cards. The Entrance grabs regardless of stack; a cell always accepts | implemented, see below |
 
 ⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`.
 
@@ -718,9 +720,13 @@ Both are durable working agreements, recorded here so they survive the handover.
   from it, so it returns `Vector3i.MIN` and no spawner is ever built. Points bank correctly;
   nothing flies. Unblocks at **S19b**, and `Tests/UI/test_ui_props.gd` asserts the zero so it
   fails the day that lands.
-- ⚠ **GAP-008 is OPEN**: no card answers `on_can_grab_stack` / `on_can_place_stack` for a
-  grid cell, and `try_place` commits only through the legacy move path -- so the player cannot
-  put a card on a grid at all. Tests reach the board through `Game.place_card_in_grid`.
+- ✅ **GAP-008 is CLOSED.** `TypeInput.on_can_grab_stack` and `TypeGridCell.on_can_place_stack`
+  carry the rules -- on the ZONE CARDS, not on rules-deck cards, which is the owner's explicit
+  ruling and a contract rather than a filing choice: a rules card can be removed from a deck,
+  and a deck without a placer is one the player cannot place from. `try_place` routes a drop
+  aimed at a cell zone card to `place_card_in_grid`. ⚠ Stacking stays effect-only WITHOUT a
+  second rule, because an occupied cell presents the card on top of it as the target rather
+  than its zone card, and nothing answers for a played card.
 - ⚠ **`VISUAL LAYERS` light intermittent -- APPEARS FIXED. Nine consecutive clean runs.** Its
   fixture drew from the SHUFFLED deck, so the lit card's travel varied 340-550 px run to run;
   it now builds fixed cards at a uniform depth and has passed three consecutive runs. The
@@ -752,34 +758,33 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-**The assigned range is finished.** What follows is the plan's own remaining phases, plus the
-two things this run deliberately did not do.
+**The assigned range is finished and the player loop closes.** A show now deals, refills,
+commits to a grid, places, scores, banks, undoes, replays a quit, shows a live score and ends.
 
-1. **GAP-008 needs an owner answer before the game is playable at all.** Nothing answers
-   `on_can_grab_stack` / `on_can_place_stack` for a grid cell, and `try_place` commits only
-   through the legacy move path -- so a player cannot put a card on a grid. Everything else
-   works: the deal, the refill, the commitment, scoring, undo, replay, End, the HUD. Tests
-   reach the board through `Game.place_card_in_grid`, which no player input can reach.
-2. **Phase 5 (S20-S25)** — the flipped board: upward stacks, the shared bottom edge, the
+1. **Phase 5 (S20-S25)** — the flipped board: upward stacks, the shared bottom edge, the
    Entrance at `y == -1`, score labels, `slot_center_global`. ⚠ **This is the owner-visible
    one**: cards still stack DOWNWARD on screen. The design settled UP (`Q72`, `Q74`, `Q307`,
-   `Q308`), and Phase 5 is where it happens.
-3. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. The End button's confirm dialog
-   (`END_SHOW_CONFIRM` is in the locale file and used nowhere) and its goal-met highlight
-   belong here, as does removing the retired row/col/mult subtotals from the HUD -- the design
-   says NO subtotals are displayed.
-4. **Phase 7 (S31-S34)** — the wall.
-5. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5** and the
-   reasoning is in its task entry: it cannot be split from the prop system, and PLAN.md §4
-   reserves the prop system to whatever `slot_center_global` forces, which is Phase 5's.
-6. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
+   `Q308`); Phase 5 is where it happens.
+2. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. Three smaller things belong here
+   and are written down so they are not lost:
+   - **chart A5, "legal cells highlighted while a card is held", is not built.** The rule
+     behind it is (a cell always accepts); nothing draws it.
+   - `END_SHOW_CONFIRM` is in the locale file and used nowhere, and the End label is supposed
+     to highlight once the goal is met.
+   - the HUD still shows the retired row/col/mult subtotals as zeros; the design says NO
+     subtotals are displayed at all.
+3. **Phase 7 (S31-S34)** — the wall.
+4. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5**, reasoning in
+   its task entry: it cannot be split from the prop system, and PLAN.md §4 reserves that to
+   whatever `slot_center_global` forces, which is Phase 5's. **Its cost is live and known: a
+   scored grid line pays its points and fires no props.**
+5. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
 
-⚠ **Not owned by any step, found during this run, worth an owner decision:** `Game.submit()`
-and the Next button are both vestigial. Chart D retires the act outright ("no act, no banking
-moment"; "End fires its hooks, then resolves") and chart A retires Next ("no Next, no
-auto-advance"), but no step removes either. `submit()` is now reachable only from tests and
-the pending-action replay; the Next button still triggers a refill that placements ask for
-themselves.
+⚠ **Not owned by any step, worth an owner decision:** `Game.submit()` and the Next button are
+both vestigial. Chart D retires the act outright ("no act, no banking moment"; "End fires its
+hooks, then resolves") and chart A retires Next ("no Next, no auto-advance"), but no step
+removes either. `submit()` is now reachable only from tests and the pending-action replay; the
+Next button still triggers a refill that placements ask for themselves.
 
 ## References
 

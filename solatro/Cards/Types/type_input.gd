@@ -10,6 +10,18 @@ func get_frame() -> int: return 2
 ## the same opt-out reasoning as the rules cards that are.
 func combo_key(_hook: StringName = &"") -> String: return ""
 
+## Any card held in this header's Entrance slot can be picked up, REGARDLESS OF WHAT IS ON
+## TOP OF IT -- the Entrance holds a stack, and a buried card there is still the player's to
+## take. Deliberately not symmetric with the place rule below, which does require the target
+## to be topmost: dropping ONTO the Entrance is stacking, and picking up out of it is not.
+## Grabs that one card and nothing above it.
+func on_can_grab_stack(target: CardData) -> Array[CardData]:
+	if not target or not api or not api.is_live(): return []
+	var col : int = api.upper_zone_type().find(data)
+	if col == -1 or col >= api.upper_zone().size(): return []
+	if not api.upper_zone()[col].datas.has(target): return []
+	return [target] as Array[CardData]
+
 func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if target != data: return []
 	if not api or not api.is_live(): return []

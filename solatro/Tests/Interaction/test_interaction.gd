@@ -316,23 +316,16 @@ func test_mouse_right_click_ungrabs() -> void:
 ## to whatever card landed in that slot, and only `ungrab_cards` (which looks the control up
 ## by the HELD card's new position) could ever undo it.
 ## Contract asserted here: with nothing held, NO board control is left non-interactive.
-## ⚠ PARKED, NOT DELETED -- gaps/GAP-008. The regression needs a LEGAL grab-and-place through
-## `try_grab`/`try_place`, and no card answers `on_can_place_stack` for a grid cell yet, so
-## there is no legal placement to craft. Until one exists this cannot be exercised at all.
-## It used to craft one out of the tableau's lower zone, which is gone; leaving that in place
-## made the function abort on an empty array, and FIVE checks below it silently stopped
-## running while the suite still reported every check it did run as passing.
+## UNPARKED: the grid game has a legal UI placement again -- an Entrance card onto an empty
+## cell -- so the regression is reachable through the same two selects a player makes. It used
+## to craft one out of the tableau's lower zone; when that went, the function aborted on an
+## empty array and FIVE checks below silently stopped running while the suite still reported
+## every check it did run as passing.
 func test_rebuild_leaves_no_dead_controls() -> void:
 	pa.flush_rebuild()
-	if game.state.lower_zone.is_empty():
-		check(true, "PARKED: no legal UI placement exists to rebuild across (see GAP-008)")
-		return
-	var moving : CardData = game.state.lower_zone[0].datas[-1]
-	var target := TestFactories.m_card(moving.rank.value + 1, TestFactories.uc())
-	target.stage = CardData.Stage.PLAY
-	game.state.lower_zone[1].datas.append(target)
-	game.state.revision += 1
-	pa.flush_rebuild()
+	var moving : CardData = game.state.upper_zone[0].datas[0]
+	var grid : GridData = game.state.grids[0]
+	var target : CardData = grid.cell_types[grid.cell_index(1, 1)]
 	await frames(1)
 	var history_before : int = game.save_history.size()
 	# the real player path: select the card (grab), then select the target (place)
@@ -344,13 +337,12 @@ func test_rebuild_leaves_no_dead_controls() -> void:
 	check(game.save_history.size() == history_before + 1,
 			"precondition: the move committed one step")
 	check(pa.selected_cards.is_empty(), "the grab is released across the move")
-	# The regression needs a board REBUILD while a grab is live, so drive a Next directly.
-	# What is being defended is the rebuild's effect on pooled controls, never whatever
-	# happened to trigger it.
+	# The regression needs a board REBUILD, so drive one. What is being defended is the
+	# rebuild's effect on pooled controls, never whatever happened to trigger it.
 	await game.next()
 	await frames(2)
 	pa.flush_rebuild()
-	check(pa.selected_cards.is_empty(), "and stays released across the Next that rebuilds")
+	check(pa.selected_cards.is_empty(), "and stays released across the rebuild")
 	var dead : Array[String] = []
 	for control : Control in pa.ui_data:
 		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
@@ -416,10 +408,12 @@ func test_controller_focus_navigation() -> void:
 			"the dpad moves focus off the first control (controller navigation lives)")
 
 func test_touch_taps_next_button() -> void:
-	# Empty a slot first: the refill only draws for slots that are EMPTY, and the opening deal
-	# leaves the Entrance full -- so a tap on a full Entrance correctly draws nothing, and the
-	# check below would be asserting against a no-op rather than against the button working.
-	game.state.upper_zone[0].datas.clear()
+	# Empty the WHOLE Entrance first. A refill is due when the Entrance is empty or nothing
+	# held can go anywhere -- and every grid cell accepts a card, so while any slot still holds
+	# one there is somewhere to put it and no refill is owed. A tap on a board that owes no
+	# refill correctly draws nothing, and the check below would be asserting against a no-op.
+	for col : ArrayCardData in game.state.upper_zone:
+		col.datas.clear()
 	game.state.revision += 1
 	var deck_before : int = game.state.draw_deck.size()
 	await touch_tap(center_of(view.next_button))

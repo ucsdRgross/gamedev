@@ -61,3 +61,15 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
   placing one, a test driving the engine — records no marker: it is not a player action, and
   there is no slot to replay it from. Reversible: the marker is write-only state cleared on
   every commit.
+
+- **GAP-008** — `TypeGridCell.on_can_place_stack` accepts whenever the target is its OWN zone
+  card, with no emptiness test of its own. The owner said a cell *"can always place ... by
+  default"*, and chart A6/A7 says occupied cells refuse; both hold at once because an occupied
+  cell presents the card on top of it as the drop target rather than its zone card, which is
+  the convention `_no_held_card_has_a_legal_placement` already used. Reversible: adding an
+  emptiness test here would change nothing today.
+
+- **GAP-008** — `GameData.cell_type_coord(card)` is a linear scan of `cell_types`, not a
+  fourth position index. It is asked once per player drop; the three indexes that do exist are
+  there for hot per-card lookups and each one is a second representation that `validate()` then
+  has to police. Reversible: the signature is what callers see.

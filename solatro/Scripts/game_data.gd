@@ -263,6 +263,20 @@ func has_cell(coord: BoardCoord) -> bool:
 	var index := grid.cell_index(coord.x, coord.y)
 	return index < grid.cells.size() and grid.cells[index] != null
 
+## Where a cell's ZONE card sits, or null when the card is not one. The cell zone cards are
+## what an EMPTY cell presents as a drop target, so this is how a placement aimed at one is
+## turned back into the coordinate it means. `h` is always 0: a zone card names the cell, not
+## a height in its stack.
+func cell_type_coord(card: CardData) -> BoardCoord:
+	if not card: return null
+	for gi : int in grids.size():
+		var grid : GridData = grids[gi]
+		if not grid: continue
+		var index := grid.cell_types.find(card)
+		if index == -1: continue
+		return BoardCoord.new(gi, index % grid.grid_width, index / grid.grid_width, 0)
+	return null
+
 ## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
 ## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a
 ## grid position P (i.e. `_grid_pos_index[C] == P`), `card_at(P) == C`; and for every non-null

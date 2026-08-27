@@ -66,6 +66,7 @@ plan carries the citation.
 | `GameData.live_total()` | method | `board_total() * combo_mult()`, as an int. **The show's score**: what the goal is measured against and what fame banks. Derived on demand -- there is no banking moment and no stored total. |
 | `GameData.position_of(card)` | method | Existing name, now returning `BoardCoord`. |
 | `GameData.card_at(coord)` | method | The reverse index. |
+| `GameData.cell_type_coord(card)` | method | Where a cell's ZONE card sits, or `null`. Turns a drop aimed at an empty cell back into its coordinate. |
 | `RunState.pending_placement_slot` | `int`, default `-1` | Which Entrance SLOT the pending placement took its card from. A placement is identified by slot, never by card: the pre-placement board a replay starts from is a restored snapshot carrying its own copies. |
 | `RunState.pending_placement_coord` | `Vector4i` | Where that placement was aimed, as `(grid, x, y, h)`. |
 
@@ -100,9 +101,9 @@ plan carries the citation.
 |---|---|---|---|
 | `SkillGridAllotment` | `class_name` | 11 | The meta card: counts the deck, adds/subtracts creator cards. |
 | `SkillGridCreator` | `class_name` | 12 | `ZoneAdder`-shaped; builds and removes one 5×5 grid. |
-| `TypeGridCell` | `class_name` | 13 | The per-cell zone card. |
+| `TypeGridCell` | `class_name` | 13 | The per-cell zone card. Carries `on_can_place_stack`: a cell ALWAYS accepts. |
 | `SkillAdderInputUpper` | existing | 3 | **Unchanged.** Five of them make the Entrance five wide. |
-| `TypeInput` | existing | 2 | **Unchanged except `on_next` is removed.** |
+| `TypeInput` | existing | 2 | `on_next` removed; **gains `on_can_grab_stack`** — any card in its slot, regardless of what is stacked on it. |
 
 ⚠ **There is no archive.** `SkillGrabberOgLower`, `SkillPlacerOgLower`,
 `SkillScorerCascadeLower`, `SkillAdderInputLower` and `SkillEvalPokerBest` are simply **absent

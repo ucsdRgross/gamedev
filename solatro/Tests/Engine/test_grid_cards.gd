@@ -30,6 +30,9 @@ func _ready() -> void:
 	await run_every_placement_is_one_undo_step_test()
 	await run_undo_rewinds_every_score_a_placement_made_test()
 	await run_a_placement_that_changes_nothing_commits_nothing_test()
+	await run_entrance_grabs_regardless_of_stack_test()
+	await run_empty_cell_always_accepts_test()
+	await run_occupied_cell_refuses_test()
 	await run_pending_marker_names_the_placement_test()
 	await run_replay_reproduces_the_interrupted_placement_test()
 	await run_replayed_refill_is_identical_test()
@@ -378,13 +381,21 @@ func run_refill_fires_on_no_legal_move_test() -> void:
 	var creator := SkillGridCreator.new()
 	g.state.rules_deck.append(_rules_card(creator))
 	await creator.on_spotlight()
+	# ⚠ THE BOARD HAS TO BE GENUINELY FULL. A cell always accepts a card, so "no legal move
+	# anywhere" is only true when there is no EMPTY cell left: an occupied one presents the
+	# card on top of it as the target, and nothing answers for a played card. Fill 24 of the 25
+	# directly (no broadcast, no scoring -- these are scenery), leaving (4,4) for the placement
+	# below to close. Before the rule shipped this was vacuously true and the test passed
+	# without ever making it so.
+	var grid : GridData = g.state.grids[0]
+	for i : int in grid.cells.size() - 1:
+		var filler := TestFactories.m_card(i % 13 + 1, TestFactories.uc())
+		Board.place_in_cell(g.state, filler, BoardCoord.new(0, i % 5, i / 5, 0))
 	await _deal(g)  # slots 0-4 filled
 
-	# Simulate slot 2's card having been placed on the grid: drop it from the Entrance and
-	# run it through the real placement path, which broadcasts on_card_placed to every mod.
-	var placed_card : CardData = g.state.upper_zone[2].datas[0]
-	g.state.upper_zone[2].datas.clear()
-	await g.place_card_in_grid(placed_card, BoardCoord.new(0, 0, 0, 0))
+	# Slot 2's card goes into the last empty cell, through the real placement path, which
+	# broadcasts on_card_placed to every mod and then asks whether a refill is due.
+	await g.place_card_in_grid(_held(g, 2), BoardCoord.new(0, 4, 4, 0))
 
 	check(g.state.upper_zone[2].datas.size() == 1,
 			"slot 2 refilled even though slots 0,1,3,4 still hold cards (no legal move anywhere)",
@@ -433,24 +444,6 @@ func run_refill_keeps_unused_cards_in_their_slots_test() -> void:
 # so filling the grid's last empty cell is exactly the trigger TP-77 needs.
 # ==============================================================================
 
-## Accepts a stack onto any still-empty cell (a `cell_types` card) of exactly one grid;
-## refuses a cell already holding a card (no stacking) and refuses every other grid.
-## The grid is held by INDEX, not by object. A restored snapshot carries its own GridData
-## copies, so a cached reference silently stops matching anything the moment a test undoes or
-## replays -- the card then accepts nothing and every commitment lifts. An index survives.
-class AcceptEmptyCellsOfOneGrid extends CardModifierSkill:
-	var grid_index : int = 0
-	func get_str() -> String: return "AcceptEmptyCellsOfOneGrid"
-	func get_description() -> String: return ""
-	func get_frame() -> int: return 0
-	func combo_key(_hook: StringName = &"") -> String: return ""
-	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
-		if not (stack and target) or not api or not api.is_live(): return []
-		var grids : Array[GridData] = api.grids()
-		if grid_index < 0 or grid_index >= grids.size(): return []
-		if target in grids[grid_index].cell_types: return stack
-		return []
-
 ## FIX-GRID-3 wired with a dealt Entrance and one grid whose cells the test double accepts.
 ## Returns the game, the Entrance headers, and the accepting grid (grid 0).
 func _committable_entrance_game() -> Dictionary:
@@ -460,9 +453,6 @@ func _committable_entrance_game() -> Dictionary:
 	var headers : Array[TypeInput] = parts["headers"]
 	var fixture := TestGridFixtures.build_fix_grid_3()
 	g.state.grids = fixture.grids
-	var acceptor := AcceptEmptyCellsOfOneGrid.new()
-	acceptor.grid_index = 0
-	g.state.rules_deck.append(_rules_card(acceptor))
 	await _deal(g)
 	return {"game": g, "headers": headers}
 
@@ -925,3 +915,99 @@ func run_replayed_refill_is_identical_test() -> void:
 			TestGridFixtures.board_digest(g.state), expected])
 	_free_game(g)
 	_without_run(suite_tag(), prev_run, prev_info)
+
+# ==============================================================================
+# THE PLAYER'S PLACEMENT PATH (design chart A: A2-A9). Owner's GAP-008 answer, verbatim:
+#   "input zone allows grabbing cards from it regardless of stack.
+#    can always place on a grid zone cell by default
+#    these are both rules to adjust for old input zone cards, not effects that come from the
+#    rules deck. I think this would have been the upper and lower input zone classes"
+#
+# So both rules live on the ZONE TYPE cards -- TypeInput for the Entrance, TypeGridCell for a
+# cell -- and NOT on rules-deck cards the way the retired grabber and placer did. That matters
+# beyond tidiness: a rules-deck card can be removed, and a deck that had lost it would be a
+# deck the player cannot place from at all.
+#
+# These use NO test double: the real TypeInput and TypeGridCell answer, through the real
+# try_grab / try_place the view calls.
+# ==============================================================================
+
+## An Entrance and one empty 5x5 grid, with nothing but the real zone cards answering.
+func _placement_game() -> Game:
+	var parts := await _entrance_game(TestDecks.deck_standard_52())
+	var g : Game = parts["game"]
+	g.state.grids = TestGridFixtures.build_fix_grid_1().grids
+	await _deal(g)
+	return g
+
+## The cell zone card of grid 0 at (x, y) -- what an EMPTY cell presents as a drop target.
+func _cell_card(g: Game, x: int, y: int) -> CardData:
+	var grid : GridData = g.state.grids[0]
+	return grid.cell_types[grid.cell_index(x, y)]
+
+func run_entrance_grabs_regardless_of_stack_test() -> void:
+	behavior_section("THE ENTRANCE GRABS REGARDLESS OF STACK")
+	var g := await _placement_game()
+	var bottom : CardData = g.state.upper_zone[0].datas[0]
+	check(not (await g.try_grab(bottom)).is_empty(),
+			"a card held in the Entrance can be grabbed")
+
+	# Bury it. "Regardless of stack" is the whole point of the answer: the Entrance holds a
+	# stack, and a covered card there is still the player's to pick up -- unlike the Entrance's
+	# own PLACE rule, which does require the target to be topmost.
+	var on_top := TestFactories.m_card(9, TestFactories.uc())
+	Board.place_card(g.state, on_top, 0, 0)
+	check(g.state.upper_zone[0].datas.size() == 2 and not g.state.upper_zone[0].datas.has(null),
+			"precondition: the slot is two deep", "%d" % g.state.upper_zone[0].datas.size())
+	var grabbed : Array[CardData] = await g.try_grab(bottom)
+	check(grabbed == ([bottom] as Array[CardData]),
+			"a COVERED Entrance card is still grabbable, and grabs only itself", str(grabbed))
+
+	# A card that is not in the Entrance at all is not grabbable: the rule is the zone's, not
+	# a blanket yes.
+	var stranger := TestFactories.m_card(4, TestFactories.uc())
+	check((await g.try_grab(stranger)).is_empty(),
+			"a card that is not in the Entrance is not grabbable")
+	_free_game(g)
+
+func run_empty_cell_always_accepts_test() -> void:
+	behavior_section("AN EMPTY GRID CELL ALWAYS ACCEPTS")
+	var g := await _placement_game()
+	g.save_state()
+	var history_before := g.save_history.size()
+	var held : CardData = g.state.upper_zone[0].datas[0]
+
+	var placed := await g.try_place([held] as Array[CardData], _cell_card(g, 2, 3))
+	check(placed, "try_place onto an empty cell's zone card is accepted")
+	check(g.state.card_at(BoardCoord.new(0, 2, 3, 0)) == held,
+			"...and the card actually LANDS in that cell -- not merely a true return value",
+			str(g.state.card_at(BoardCoord.new(0, 2, 3, 0))))
+	check(not g.state.upper_zone[0].datas.has(held),
+			"...and it left the Entrance slot it came from")
+	check(g.save_history.size() == history_before + 1,
+			"...and the placement committed exactly one undo step",
+			"%d -> %d" % [history_before, g.save_history.size()])
+	check(g.state.validate().is_empty(), "the board validates after a UI placement",
+			"; ".join(g.state.validate().slice(0, 3)))
+	_free_game(g)
+
+func run_occupied_cell_refuses_test() -> void:
+	behavior_section("AN OCCUPIED CELL REFUSES")
+	var g := await _placement_game()
+	var first : CardData = g.state.upper_zone[0].datas[0]
+	await g.try_place([first] as Array[CardData], _cell_card(g, 0, 0))
+	check(g.state.card_at(BoardCoord.new(0, 0, 0, 0)) == first, "precondition: the cell is full")
+
+	# An occupied cell presents the card ON TOP as the drop target, not its zone card -- the
+	# same rule the refill's legality sweep uses. Nothing answers for a played card, so the
+	# drop is refused: stacking is effect-only, never something the player does by hand.
+	var second : CardData = g.state.upper_zone[1].datas[0]
+	var placed := await g.try_place([second] as Array[CardData], first)
+	check(not placed, "dropping onto the card already in a cell is refused")
+	check(g.state.upper_zone[1].datas.has(second),
+			"...and the refused card is still held, exactly where it was")
+	check(g.state.card_at(BoardCoord.new(0, 0, 0, 1)) == null,
+			"...and nothing stacked on top of the cell's card",
+			str(g.state.card_at(BoardCoord.new(0, 0, 0, 1))))
+	_free_game(g)
+
