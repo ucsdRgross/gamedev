@@ -977,9 +977,10 @@ func _release_spotlight() -> void:
 ## legacy row-upper-vs-lower gutter split is read from `section.zone`; which bucket a section
 ## banks into beyond that is a later step's job (§1.6), not this one's.
 func add_line_score(section: ScoringSection, amount: int) -> void:
-	# A grid-model section (built by the detector, never `of_line`/`of_line_at`'s legacy
-	# `zone`/`index` pair) has no zone-indexed gutter to write into -- that bucket storage is a
-	# later step's contract. Bail before the legacy indexing below, which assumes index >= 0.
+	# A grid line banks into its GRID's buckets, not the legacy zone gutters.
+	if section.grid >= 0:
+		_add_grid_line_score(section, amount)
+		return
 	if section.index < 0:
 		return
 	var is_row := section.kind == ScoringSection.LineKind.ROW
@@ -987,7 +988,7 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 	if is_row:
 		score_zone = state.scores_row_upper if section.zone == state.upper_zone else state.scores_row_lower
 	else:
-		score_zone = state.scores_col
+		score_zone = state.scores_col_legacy
 	var index := section.index
 	resize_score_zone(score_zone, index + 1)
 	if is_row:
@@ -996,6 +997,31 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 		state.col_total += amount
 	var new_score := score_zone[index].plus_equals(amount)
 	if view: view.update_line_score(score_zone, index, new_score)
+
+## Banks one grid line into its grid's bucket. Each grid keeps three buckets that combine
+## into its own score: row, col, and ONE special bucket that every diagonal and every future
+## non-directional meld shares. A row or column at height 0 banks into the flat per-grid
+## bucket; a raised one banks into that grid's bucket for its own height.
+##
+## ⚠ A vertical stack has no bucket here yet -- which one it belongs in is an open question,
+## so its score is deliberately not banked rather than guessed into the wrong one.
+func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
+	var g := section.grid
+	match section.kind:
+		ScoringSection.LineKind.DIAG:
+			state.resize_grid_bucket(state.score_special, g + 1)
+			state.score_special[g].plus_equals(amount)
+		ScoringSection.LineKind.ROW, ScoringSection.LineKind.COL:
+			var flat : Array[BigNumber] = state.scores_row if section.kind == ScoringSection.LineKind.ROW 					else state.scores_col
+			var raised : Array[Array] = state.scores_row_h if section.kind == ScoringSection.LineKind.ROW 					else state.scores_col_h
+			if section.height == 0:
+				state.resize_grid_bucket(flat, g + 1)
+				flat[g].plus_equals(amount)
+			else:
+				state.resize_grid_levels(raised, g + 1, section.height + 1)
+				(raised[g][section.height] as BigNumber).plus_equals(amount)
+		_:
+			pass
 
 ## The row gutter (upper vs lower) a slot coord banks into — prop effects that know only a
 ## Vector3i use this instead of the zone-array identity check score_line does.

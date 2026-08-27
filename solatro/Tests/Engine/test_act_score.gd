@@ -65,16 +65,16 @@ func test_scores_cleared_between_acts() -> void:
 	# The per-row/col BigNumber gutters must reset each act, or the next act's plus_equals
 	# stacks onto the previous act's values (the "old scores on top of new" double-count).
 	var state := GameData.new()
-	state.scores_col = _bn_array([12.0, 3.4])
+	state.scores_col_legacy = _bn_array([12.0, 3.4])
 	state.scores_row_lower = _bn_array([7.0])
 	state.scores_row_upper = _bn_array([1.0, 2.0, 3.0])
 	state.row_total = 5
 	state.col_total = 5
 	state.apply_act_score()
-	check(state.scores_col.is_empty() and state.scores_row_lower.is_empty()
+	check(state.scores_col_legacy.is_empty() and state.scores_row_lower.is_empty()
 			and state.scores_row_upper.is_empty(),
 			"apply_act_score clears the row/col score gutters",
-			"col=%d rl=%d ru=%d" % [state.scores_col.size(),
+			"col=%d rl=%d ru=%d" % [state.scores_col_legacy.size(),
 					state.scores_row_lower.size(), state.scores_row_upper.size()])
 	check(state.total_score == 25, "act still pays row x col before clearing", "total=%d" % state.total_score)
 

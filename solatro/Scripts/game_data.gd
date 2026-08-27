@@ -113,12 +113,12 @@ func apply_act_score() -> void:
 	col_total = 0
 	combo_classes.clear()   # U resets every act, alongside the gutters below
 	# Clear the per-row/col score gutters too, so the NEXT act starts from zero. Without this
-	# the BigNumber accumulators (scores_row_*/scores_col) keep growing and the next act's
-	# plus_equals stacks onto the previous act's values. The UI gutters resync from these
-	# empty arrays via PlayArea.update_score_controls (see Game._perform_submit).
+	# the BigNumber accumulators (scores_row_*/scores_col_legacy) keep growing and the next
+	# act's plus_equals stacks onto the previous act's values. The UI gutters resync from
+	# these empty arrays via PlayArea.update_score_controls (see Game._perform_submit).
 	scores_row_upper.clear()
 	scores_row_lower.clear()
-	scores_col.clear()
+	scores_col_legacy.clear()
 
 ## Move every lower-zone card to the discard pile — the performed cards of an act. The
 ## upper (Entrance) zone is intentionally left intact (DESIGN_DOC §2). Bumps revision so
@@ -150,7 +150,7 @@ func has_met_goal() -> bool:
 # pack_scores()/unpack_scores(). BigNumber only exists at runtime.
 var scores_row_upper : Array[BigNumber]
 var scores_row_lower : Array[BigNumber]
-var scores_col : Array[BigNumber]
+var scores_col_legacy : Array[BigNumber]
 # Serializable score form: each BigNumber array is flattened into two PARALLEL typed arrays
 # (mantissa float + exponent int) instead of an Array[Array] of [m,e] pairs. Typed packed
 # arrays are contiguous and avoid per-pair Variant/Array allocation, so they serialize and
@@ -163,6 +163,33 @@ var scores_col : Array[BigNumber]
 @export_storage var packed_col_mant : PackedFloat64Array
 @export_storage var packed_col_exp : PackedInt64Array
 
+## Per-grid economy buckets (§1.6/§1.7 of the poker-patience plan): each grid gets exactly
+## three buckets that multiply into its grid_score -- row, col and special (every diagonal and
+## every future non-directional meld shares the one special bucket). `scores_row`/
+## `scores_col` hold the height-0 (flat) bucket per grid; `scores_row_h`/`scores_col_h` hold the
+## raised-level buckets, indexed [grid][height]. Runtime-only, same reason as the legacy score
+## arrays above: BigNumber is RefCounted and invisible to ResourceSaver.
+var scores_row : Array[BigNumber] = []
+var scores_col : Array[BigNumber] = []
+var scores_row_h : Array[Array] = []
+var scores_col_h : Array[Array] = []
+var score_special : Array[BigNumber] = []
+# Serializable form of the grid economy buckets. The flat ones mirror packed_col_mant/exp
+# above. The raised (2-D) ones flatten grid-major, height-minor into one parallel mant/exp
+# pair plus a per-grid length so unpack_scores() can rebuild each grid's inner array exactly.
+@export_storage var packed_grid_row_mant : PackedFloat64Array
+@export_storage var packed_grid_row_exp : PackedInt64Array
+@export_storage var packed_grid_col_mant : PackedFloat64Array
+@export_storage var packed_grid_col_exp : PackedInt64Array
+@export_storage var packed_grid_special_mant : PackedFloat64Array
+@export_storage var packed_grid_special_exp : PackedInt64Array
+@export_storage var packed_grid_row_h_mant : PackedFloat64Array
+@export_storage var packed_grid_row_h_exp : PackedInt64Array
+@export_storage var packed_grid_row_h_lens : PackedInt32Array
+@export_storage var packed_grid_col_h_mant : PackedFloat64Array
+@export_storage var packed_grid_col_h_exp : PackedInt64Array
+@export_storage var packed_grid_col_h_lens : PackedInt32Array
+
 func duplicate_state() -> GameData:
 	#duplicate_deep remaps cross-references (modifier .data backrefs, ZoneAdder.card_data,
 	#etc.) so each historical state is completely separate from the others
@@ -170,7 +197,13 @@ func duplicate_state() -> GameData:
 	#BigNumber is RefCounted, invisible to duplicate_deep -> manual copy required
 	copy.scores_row_upper = duplicate_big_number_array(scores_row_upper)
 	copy.scores_row_lower = duplicate_big_number_array(scores_row_lower)
+	copy.scores_col_legacy = duplicate_big_number_array(scores_col_legacy)
+	#the grid economy buckets are the same RefCounted trap -- manual copy too
+	copy.scores_row = duplicate_big_number_array(scores_row)
 	copy.scores_col = duplicate_big_number_array(scores_col)
+	copy.score_special = duplicate_big_number_array(score_special)
+	copy.scores_row_h = duplicate_big_number_2d_array(scores_row_h)
+	copy.scores_col_h = duplicate_big_number_2d_array(scores_col_h)
 	#the position index must never travel with a copy (its keys are THIS state's card
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
@@ -504,9 +537,9 @@ func validate() -> Array[String]:
 						"I4: card_at reverse index disagrees with forward index for %s at %s" \
 						% [card, key])
 	#score arrays sized to the board
-	if scores_col and upper_zone and scores_col.size() < min(upper_zone.size(), lower_zone.size()):
-		violations.append("scores_col %d entries < %d paired columns" \
-				% [scores_col.size(), min(upper_zone.size(), lower_zone.size())])
+	if scores_col_legacy and upper_zone and scores_col_legacy.size() < min(upper_zone.size(), lower_zone.size()):
+		violations.append("scores_col_legacy %d entries < %d paired columns" \
+				% [scores_col_legacy.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
 
 ## Capture the runtime BigNumber scores into the serializable packed_* arrays (BigNumber is
@@ -519,14 +552,36 @@ func pack_scores() -> void:
 	packed_row_upper_exp = _exponents(scores_row_upper)
 	packed_row_lower_mant = _mantissas(scores_row_lower)
 	packed_row_lower_exp = _exponents(scores_row_lower)
-	packed_col_mant = _mantissas(scores_col)
-	packed_col_exp = _exponents(scores_col)
+	packed_col_mant = _mantissas(scores_col_legacy)
+	packed_col_exp = _exponents(scores_col_legacy)
+	# The grid economy buckets (§1.7): flat buckets pack exactly like the legacy ones above;
+	# the raised 2-D buckets flatten grid-major/height-minor with a per-grid length column so
+	# unpack_scores() can rebuild each grid's inner array at its own size.
+	packed_grid_row_mant = _mantissas(scores_row)
+	packed_grid_row_exp = _exponents(scores_row)
+	packed_grid_col_mant = _mantissas(scores_col)
+	packed_grid_col_exp = _exponents(scores_col)
+	packed_grid_special_mant = _mantissas(score_special)
+	packed_grid_special_exp = _exponents(score_special)
+	var row_h_packed := _pack_2d(scores_row_h)
+	packed_grid_row_h_mant = row_h_packed[0]
+	packed_grid_row_h_exp = row_h_packed[1]
+	packed_grid_row_h_lens = row_h_packed[2]
+	var col_h_packed := _pack_2d(scores_col_h)
+	packed_grid_col_h_mant = col_h_packed[0]
+	packed_grid_col_h_exp = col_h_packed[1]
+	packed_grid_col_h_lens = col_h_packed[2]
 
 ## Rebuild the runtime BigNumber scores from the packed_* arrays (after a load).
 func unpack_scores() -> void:
 	scores_row_upper = _unpack(packed_row_upper_mant, packed_row_upper_exp)
 	scores_row_lower = _unpack(packed_row_lower_mant, packed_row_lower_exp)
-	scores_col = _unpack(packed_col_mant, packed_col_exp)
+	scores_col_legacy = _unpack(packed_col_mant, packed_col_exp)
+	scores_row = _unpack(packed_grid_row_mant, packed_grid_row_exp)
+	scores_col = _unpack(packed_grid_col_mant, packed_grid_col_exp)
+	score_special = _unpack(packed_grid_special_mant, packed_grid_special_exp)
+	scores_row_h = _unpack_2d(packed_grid_row_h_mant, packed_grid_row_h_exp, packed_grid_row_h_lens)
+	scores_col_h = _unpack_2d(packed_grid_col_h_mant, packed_grid_col_h_exp, packed_grid_col_h_lens)
 
 # CardModifier.data backrefs are WeakRefs (no RefCounted cycle — dropped card graphs
 # just die; the old per-drop-site unlink discipline is gone). These helpers remain for
@@ -565,7 +620,12 @@ func to_saveable() -> GameData:
 	copy.pack_scores()
 	copy.scores_row_upper.clear()
 	copy.scores_row_lower.clear()
+	copy.scores_col_legacy.clear()
+	copy.scores_row.clear()
 	copy.scores_col.clear()
+	copy.score_special.clear()
+	copy.scores_row_h.clear()
+	copy.scores_col_h.clear()
 	copy.unlink_modifier_backrefs()
 	return copy
 
@@ -600,6 +660,70 @@ func _unpack(mant:PackedFloat64Array, exp:PackedInt64Array) -> Array[BigNumber]:
 		bn.mantissa = mant[i]
 		bn.exponent = exp[i]
 		out[i] = bn
+	return out
+
+## Deep copy of a 2-D BigNumber array, per grid. BigNumber is RefCounted and invisible to
+## duplicate_deep, so every level has to be rebuilt by hand or the copy shares its scores with
+## the state it came from -- and undo would then rewind the board but not the score.
+## A BigNumber at ZERO. `BigNumber.new()` alone is ONE, so a bucket seeded with it would
+## start every grid a point ahead and, worse, read as "has scored" to the product rule.
+func _zero_big_number() -> BigNumber:
+	var bn := BigNumber.new()
+	bn.mantissa = 0
+	return bn
+
+## Grows a per-grid bucket array to `n` entries, seeding new ones at zero. Buckets are created
+## lazily because a grid can be added mid-show, and a missing bucket must read as "has not
+## scored" rather than as an error.
+func resize_grid_bucket(bucket: Array[BigNumber], n: int) -> void:
+	while bucket.size() < n:
+		bucket.append(_zero_big_number())
+
+## The same, one level deeper: `levels[grid][height]`, both dimensions grown as needed.
+func resize_grid_levels(levels: Array[Array], grids_n: int, heights_n: int) -> void:
+	while levels.size() < grids_n:
+		levels.append([] as Array[BigNumber])
+	for i in grids_n:
+		var level : Array[BigNumber] = levels[i]
+		while level.size() < heights_n:
+			level.append(_zero_big_number())
+		levels[i] = level
+
+func duplicate_big_number_2d_array(a:Array[Array]) -> Array[Array]:
+	var out : Array[Array] = []
+	out.resize(a.size())
+	for i in a.size():
+		out[i] = duplicate_big_number_array(a[i])
+	return out
+
+## Flattens a 2-D BigNumber array grid-major into one mantissa/exponent pair plus a per-grid
+## LENGTH, which is what lets unpack rebuild each grid's inner array at exactly its own size --
+## the lengths differ per grid and cannot be recovered from the flat arrays alone.
+func _pack_2d(src:Array[Array]) -> Array:
+	var mant := PackedFloat64Array()
+	var exp := PackedInt64Array()
+	var lens := PackedInt32Array()
+	for level : Array[BigNumber] in src:
+		lens.append(level.size())
+		for bn : BigNumber in level:
+			mant.append(bn.mantissa)
+			exp.append(bn.exponent)
+	return [mant, exp, lens]
+
+## Rebuilds a 2-D BigNumber array from the flat pair plus the per-grid lengths.
+func _unpack_2d(mant:PackedFloat64Array, exp:PackedInt64Array, lens:PackedInt32Array) -> Array[Array]:
+	var out : Array[Array] = []
+	var at := 0
+	for n : int in lens:
+		var level : Array[BigNumber] = []
+		level.resize(n)
+		for i in n:
+			var bn := BigNumber.new()
+			bn.mantissa = mant[at + i]
+			bn.exponent = exp[at + i]
+			level[i] = bn
+		at += n
+		out.append(level)
 	return out
 
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:

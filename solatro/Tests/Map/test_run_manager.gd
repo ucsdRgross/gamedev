@@ -102,7 +102,7 @@ func test_record_win() -> void:
 # copy-on-write assign-back (packing must actually populate the fields).
 func test_scores_packing() -> void:
 	var gs := GameData.new()
-	gs.scores_col = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
+	gs.scores_col_legacy = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
 	gs.scores_row_upper = _big_numbers([[2.5, 1]])
 	gs.scores_row_lower = []
 	gs.pack_scores()
@@ -115,11 +115,11 @@ func test_scores_packing() -> void:
 	check(gs.packed_row_upper_mant.size() == 1 and gs.packed_row_lower_mant.is_empty(),
 			"each score array packs independently (incl. empty ones)")
 	# Round-trip back to runtime BigNumbers.
-	gs.scores_col = []
+	gs.scores_col_legacy = []
 	gs.scores_row_upper = []
 	gs.unpack_scores()
-	check(gs.scores_col.size() == 3 \
-			and is_equal_approx(gs.scores_col[2].mantissa, 7.0) and gs.scores_col[2].exponent == 0,
+	check(gs.scores_col_legacy.size() == 3 \
+			and is_equal_approx(gs.scores_col_legacy[2].mantissa, 7.0) and gs.scores_col_legacy[2].exponent == 0,
 			"unpack rebuilds the BigNumber arrays exactly")
 	check(gs.scores_row_upper.size() == 1 and gs.scores_row_lower.is_empty(),
 			"unpack restores each array independently")
@@ -206,9 +206,9 @@ func test_game_state_round_trip() -> void:
 	var lp: CardData = top.lower_zone[0].datas[0]
 	check(lp.skill is SkillExtraPoint and lp.skill.data == lp,
 			"board cards + relinked modifier backrefs survive")
-	check(top.scores_col.size() == 1 \
-			and is_equal_approx(top.scores_col[0].mantissa, 4.2) \
-			and top.scores_col[0].exponent == 3,
+	check(top.scores_col_legacy.size() == 1 \
+			and is_equal_approx(top.scores_col_legacy[0].mantissa, 4.2) \
+			and top.scores_col_legacy[0].exponent == 3,
 			"BigNumber scores round-trip via the flattened snapshot")
 	RunManager.clear_save()
 
@@ -227,6 +227,6 @@ func _show_state(total: int) -> GameData:
 	var bn := BigNumber.new()
 	bn.mantissa = 4.2
 	bn.exponent = 3
-	gs.scores_col = [bn] as Array[BigNumber]
+	gs.scores_col_legacy = [bn] as Array[BigNumber]
 	var saveable := gs.to_saveable()
 	return saveable

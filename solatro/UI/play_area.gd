@@ -835,7 +835,7 @@ func update_score_controls() -> void:
 	var game_state := game.state
 	set_score_zone(true, upper_zone_left, game_state.scores_row_upper)
 	set_score_zone(true, lower_zone_left, game_state.scores_row_lower)
-	set_score_zone(false, middle_zone_right, game_state.scores_col)
+	set_score_zone(false, middle_zone_right, game_state.scores_col_legacy)
 	# K12: set_score_zone just reset every gutter to its base height, and banking a line score
 	# reaches here while the scored row is still OPEN (rows close on the act's release). Without
 	# this the open row's gutter collapsed and the score numbers desynced from their rows —
@@ -872,7 +872,7 @@ func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
 	var label : BigNumberLabel
 	if zone == game.state.scores_row_lower:
 		label = lower_zone_left.get_child(index)
-	elif zone == game.state.scores_col:
+	elif zone == game.state.scores_col_legacy:
 		label = middle_zone_right.get_child(index)
 	elif zone == game.state.scores_row_upper:
 		label = upper_zone_left.get_child(index)

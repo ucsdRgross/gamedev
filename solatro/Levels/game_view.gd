@@ -283,7 +283,7 @@ func load_board_visuals() -> void:
 	play_area.update_score_controls()
 	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
 			% [game.state.scores_row_upper.size(), game.state.scores_row_lower.size(),
-					game.state.scores_col.size()])
+					game.state.scores_col_legacy.size()])
 
 ## Jump the scored cards; returns after the animation settles.
 func animate_meld(result: Scoring.Result) -> void:

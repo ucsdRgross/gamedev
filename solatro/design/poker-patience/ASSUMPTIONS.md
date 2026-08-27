@@ -19,3 +19,10 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
   `coord.h` on the way in, mirroring `Anchor.ON_TOP`'s "insert above whatever is there"
   rule from the legacy engine rather than trusting a caller-supplied height that could
   disagree with the stack's actual size. PLAN.md §1: "Reuses `Anchor.ON_TOP` for stacking."
+
+- **S12** — Renamed the pre-existing legacy `GameData.scores_col` (the old zone-board flat
+  column bucket) to `scores_col_legacy` so the new NAMES.md `GameData.scores_col` (the per-grid
+  height-0 column bucket) can use its fixed name without a duplicate-declaration collision.
+  Behaviour of the legacy field is unchanged, only the identifier. Reversible: a pure rename,
+  every call site updated together (`Levels/game.gd`, `Levels/game_view.gd`, `UI/play_area.gd`,
+  and the persistence/board/act-score/game-data test suites).

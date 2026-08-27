@@ -402,7 +402,7 @@ func test_submit_headless_full_act() -> void:
 			"first act's total_score equals this act's payout")
 	check(g.state.total_score > 0,
 			"a scored act pays out row_total x col_total > 0", str(g.state.total_score))
-	check(g.state.scores_col.is_empty() and g.state.scores_row_lower.is_empty(),
+	check(g.state.scores_col_legacy.is_empty() and g.state.scores_row_lower.is_empty(),
 			"gutters cleared after the act")
 	check(g.state.validate().is_empty(), "board validates after submit")
 	CardEnvironment.CURRENT = null

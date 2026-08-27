@@ -21,6 +21,13 @@ var kind : LineKind = LineKind.ROW
 ## Opaque key identifying this line for whatever bucket it banks into. `score_line` NEVER
 ## inspects its structure — the bucket derives from it downstream, not here.
 var line_key : StringName = &""
+## Which grid this line belongs to, and where in it. -1 means "not a grid line" -- a legacy
+## zone section, which banks through the old zone-indexed path instead. These exist so the
+## bucket a section banks into can be derived WITHOUT parsing `line_key`, which is opaque.
+var grid : int = -1
+## The height a ROW or COL line sits at. A grid's height-0 buckets are flat; raised levels are
+## indexed by this.
+var height : int = 0
 ## How `refresh()` re-collects — captured at construction so `origin` stays pure provenance and a
 ## future non-line shape supplies its own re-derivation instead of being misread as a column.
 var _recollect : Callable = Callable()
@@ -86,6 +93,13 @@ static func _collect_grid_line(state: GameData, grid: int, kind: LineKind, index
 static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Line) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.kind = line.kind
+	section.grid = grid
+	# A ROW is one row at one height, a COL one column at one height: both are fixed by any
+	# cell on the line, so the first one names them.
+	var first : Vector3i = line.cells[0]
+	section.height = first.z
+	if line.kind == LineKind.ROW: section.index = first.y
+	elif line.kind == LineKind.COL: section.index = first.x
 	section.line_key = _key_for_geometric_line(grid, line)
 	section._recollect = _collect_geometric_line.bind(state, grid, line.cells)
 	section.cards = section._recollect.call()

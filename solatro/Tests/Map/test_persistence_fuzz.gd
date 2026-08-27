@@ -124,7 +124,7 @@ func _rand_game_data(rng: RandomNumberGenerator) -> GameData:
 	gs.lower_zone = _rand_zone(rng, cols)
 	gs.scores_row_upper = _rand_bn_array(rng, rng.randi_range(0, 5))
 	gs.scores_row_lower = _rand_bn_array(rng, rng.randi_range(0, 5))
-	gs.scores_col = _rand_bn_array(rng, rng.randi_range(0, 5))
+	gs.scores_col_legacy = _rand_bn_array(rng, rng.randi_range(0, 5))
 	return gs
 
 func _rand_zone(rng: RandomNumberGenerator, cols: int) -> Array[ArrayCardData]:

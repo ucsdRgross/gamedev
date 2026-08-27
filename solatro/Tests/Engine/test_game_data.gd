@@ -50,7 +50,7 @@ func make_state() -> GameData:
 	s.lower_zone = [TestFactories.col([modded] as Array[CardData])]
 	s.scores_row_upper = [_bn(4.2, 3)] as Array[BigNumber]
 	s.scores_row_lower = [_bn(1.0, 0), _bn(9.99, 7)] as Array[BigNumber]
-	s.scores_col = [_bn(2.5, 12)] as Array[BigNumber]
+	s.scores_col_legacy = [_bn(2.5, 12)] as Array[BigNumber]
 	s.goal = 314
 	s.total_score = 271
 	return s
@@ -59,7 +59,7 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 	var s := make_state()
 	var saveable := s.to_saveable()
 	# saveable form drops the RefCounted BigNumber arrays and keeps only packed primitives
-	check(saveable.scores_col.is_empty() and saveable.scores_row_lower.is_empty(),
+	check(saveable.scores_col_legacy.is_empty() and saveable.scores_row_lower.is_empty(),
 			"to_saveable() clears the runtime BigNumber arrays")
 	check(saveable.packed_col_mant.size() == 1 and saveable.packed_col_exp[0] == 12,
 			"to_saveable() packs the col gutter (mantissa+exponent)",
@@ -67,11 +67,11 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 	# rebuild a live runtime state the way Game._runtime_state does
 	var restored := saveable.duplicate_state()
 	restored.restore_runtime()
-	check(restored.scores_col.size() == 1
-			and is_equal_approx(restored.scores_col[0].mantissa, 2.5)
-			and restored.scores_col[0].exponent == 12,
+	check(restored.scores_col_legacy.size() == 1
+			and is_equal_approx(restored.scores_col_legacy[0].mantissa, 2.5)
+			and restored.scores_col_legacy[0].exponent == 12,
 			"restore_runtime() rebuilds the col gutter exactly",
-			"m=%f e=%d" % [restored.scores_col[0].mantissa, restored.scores_col[0].exponent])
+			"m=%f e=%d" % [restored.scores_col_legacy[0].mantissa, restored.scores_col_legacy[0].exponent])
 	check(restored.scores_row_lower.size() == 2
 			and restored.scores_row_lower[1].exponent == 7,
 			"restore_runtime() rebuilds a multi-entry row gutter")
@@ -105,12 +105,12 @@ func test_duplicate_state_aliasing() -> void:
 		if orig.has(c): shared = true
 	check(not shared, "duplicate_state() shares no CardData instances")
 	# BigNumbers copied by value, distinct instances (RefCounted -> manual copy)
-	check(copy.scores_col[0] != s.scores_col[0]
-			and copy.scores_col[0].exponent == 12,
+	check(copy.scores_col_legacy[0] != s.scores_col_legacy[0]
+			and copy.scores_col_legacy[0].exponent == 12,
 			"duplicate_state() copies BigNumber gutters by value, distinct instances")
 	# mutating the copy's gutter does not touch the original
-	copy.scores_col[0].exponent = 99
-	check(s.scores_col[0].exponent == 12, "copy and original gutters are independent")
+	copy.scores_col_legacy[0].exponent = 99
+	check(s.scores_col_legacy[0].exponent == 12, "copy and original gutters are independent")
 
 func test_validate_clean_board() -> void:
 	var s := make_state()
@@ -135,15 +135,15 @@ func test_pack_unpack_edge_values() -> void:
 	# BigNumber's OWN stored mantissa/exponent (it may normalize on assignment) and require the
 	# packed round-trip to reproduce exactly those stored values.
 	var s := GameData.new()
-	s.scores_col = [] as Array[BigNumber]
+	s.scores_col_legacy = [] as Array[BigNumber]
 	s.scores_row_upper = [_bn(3.14, 300)] as Array[BigNumber]
 	var want_mant := s.scores_row_upper[0].mantissa
 	var want_exp := s.scores_row_upper[0].exponent
 	s.pack_scores()
-	s.scores_col = [_bn(0, 0)] as Array[BigNumber]  # clobber to prove unpack overwrites
+	s.scores_col_legacy = [_bn(0, 0)] as Array[BigNumber]  # clobber to prove unpack overwrites
 	s.scores_row_upper = [] as Array[BigNumber]
 	s.unpack_scores()
-	check(s.scores_col.is_empty(), "unpack of an empty gutter yields an empty array")
+	check(s.scores_col_legacy.is_empty(), "unpack of an empty gutter yields an empty array")
 	check(s.scores_row_upper.size() == 1
 			and s.scores_row_upper[0].exponent == want_exp
 			and is_equal_approx(s.scores_row_upper[0].mantissa, want_mant),

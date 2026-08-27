@@ -402,9 +402,9 @@ func run_undo_duplicate_tests() -> void:
 	#give some cards mods so back-references exist to check
 	var modded := col_datas(g, 0, 2)[0].with_type(SpyEvents.new())
 	col_datas(g, 1, 2)[2].with_type(SpyEvents.new())
-	g.state.scores_col = [BigNumber.new(), BigNumber.new(), BigNumber.new()] as Array[BigNumber]
-	g.state.scores_col[0].mantissa = 4.2
-	g.state.scores_col[0].exponent = 3
+	g.state.scores_col_legacy = [BigNumber.new(), BigNumber.new(), BigNumber.new()] as Array[BigNumber]
+	g.state.scores_col_legacy[0].mantissa = 4.2
+	g.state.scores_col_legacy[0].exponent = 3
 
 	var copy := g.state.duplicate_state()
 	validate_ok(g, "original after duplicate")
@@ -426,9 +426,9 @@ func run_undo_duplicate_tests() -> void:
 	check(backrefs_ok, "B11: every mod.data points at the COPY's card")
 
 	#BigNumbers: values equal, instances distinct
-	check(copy.scores_col.size() == 3 \
-			and copy.scores_col[0].mantissa == 4.2 and copy.scores_col[0].exponent == 3 \
-			and copy.scores_col[0] != g.state.scores_col[0],
+	check(copy.scores_col_legacy.size() == 3 \
+			and copy.scores_col_legacy[0].mantissa == 4.2 and copy.scores_col_legacy[0].exponent == 3 \
+			and copy.scores_col_legacy[0] != g.state.scores_col_legacy[0],
 			"BigNumber scores copied by value, distinct instances")
 
 	#history separation: mutate the current board, the snapshot must not change
