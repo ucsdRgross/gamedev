@@ -42,6 +42,9 @@ func _ready() -> void:
 	await run_height_10_pays_bottom_five_again_test()
 	await run_remove_readd_retriggers_scoring_test()
 	await run_compaction_landing_on_multiple_of_5_scores_nothing_test()
+	await run_full_stack_gate_3()
+	await run_full_stack_gate_5()
+	await run_full_stack_gate_15_test()
 	finish()
 
 # ==============================================================================
@@ -1106,3 +1109,136 @@ func run_registration_gate() -> void:
 	check(unregistered.is_empty(),
 			"every run_*_test defined in this file is called from _ready",
 			"never called: %s" % ", ".join(unregistered))
+
+# ==============================================================================
+# TP-46 -- THE PHASE 2 GATE. Build a grid card by card to a ceiling and assert the SET of
+# lines the detector scored is exactly the set that should exist.
+#
+# ⚠ The expected set is built by the enumerator below, which is written from the RULES --
+# full-length rows and columns at every height, the two flat diagonals, the eight climbing
+# families, and a vertical run at every multiple of 5 -- and NEVER by asking LineGeometry.
+# If it called the code under test it would only assert that the code agrees with itself.
+#
+# Compared as a SET, not a count: a count matches for the wrong reasons.
+#
+# Run at ceilings 3 and 5 before 15, because a failure at 15 is very hard to localise: at 3
+# no climbing line and no vertical line can exist yet, at 5 exactly one of each family can,
+# and at 15 the climbing families have eleven height offsets each.
+# ==============================================================================
+
+## One line's identity, in the same string form the section carries: kind plus endpoints.
+## A straight run is fixed by its two endpoints, so this is unique per line.
+func line_key_for(kind: ScoringSection.LineKind, first: Vector3i, last: Vector3i) -> String:
+	return "grid0:%s:%s:%s" % [ScoringSection.LineKind.keys()[kind], first, last]
+
+## THE INDEPENDENT ENUMERATOR. Every line that should be complete in a fully packed w x h
+## grid whose every cell holds `ceiling` cards. Derived from the rules, not from LineGeometry.
+func expected_line_keys(w: int, h: int, ceiling: int) -> Dictionary:
+	var out : Dictionary = {}
+	var add := func(kind: ScoringSection.LineKind, first: Vector3i, last: Vector3i) -> void:
+		out[line_key_for(kind, first, last)] = true
+
+	# Rows and columns: one per row/column per height, full width / full height.
+	for z in ceiling:
+		for y in h:
+			add.call(ScoringSection.LineKind.ROW, Vector3i(0, y, z), Vector3i(w - 1, y, z))
+		for x in w:
+			add.call(ScoringSection.LineKind.COL, Vector3i(x, 0, z), Vector3i(x, h - 1, z))
+
+	# Flat diagonals: x and y change at the same rate, so on a square grid exactly two.
+	if w == h:
+		for z in ceiling:
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(0, 0, z), Vector3i(w - 1, h - 1, z))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(0, h - 1, z), Vector3i(w - 1, 0, z))
+
+	# Climbing families: height always rises by one per step, so a run of length L needs L
+	# heights and can start at any h0 that leaves room for it.
+	# Along x (length w), for every row, in both horizontal directions.
+	for z0 in range(0, ceiling - w + 1):
+		for y in h:
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(0, y, z0), Vector3i(w - 1, y, z0 + w - 1))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(w - 1, y, z0), Vector3i(0, y, z0 + w - 1))
+	# Along y (length h), for every column, in both directions.
+	for z0 in range(0, ceiling - h + 1):
+		for x in w:
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(x, 0, z0), Vector3i(x, h - 1, z0 + h - 1))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(x, h - 1, z0), Vector3i(x, 0, z0 + h - 1))
+	# Corner-to-corner climbs (length min(w,h)); four of them, one per horizontal direction.
+	var diag_len : int = mini(w, h)
+	if w == h:
+		for z0 in range(0, ceiling - diag_len + 1):
+			var top := z0 + diag_len - 1
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(0, 0, z0), Vector3i(w - 1, h - 1, top))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(0, h - 1, z0), Vector3i(w - 1, 0, top))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(w - 1, 0, z0), Vector3i(0, h - 1, top))
+			add.call(ScoringSection.LineKind.DIAG, Vector3i(w - 1, h - 1, z0), Vector3i(0, 0, top))
+
+	# Vertical runs: a stack scores at every multiple of 5, paying the whole stack.
+	for x in w:
+		for y in h:
+			for z in ceiling:
+				if (z + 1) % LineGeometry.HEIGHT_SCORE_INTERVAL == 0:
+					add.call(ScoringSection.LineKind.HEIGHT_V, Vector3i(x, y, 0), Vector3i(x, y, z))
+	return out
+
+## Builds a w x h grid to `ceiling` cards per cell, ONE CARD AT A TIME through the real
+## placement path, so every line is completed by a real mutation and scored by the real
+## detector. Layer by layer, so a line's topmost cell is always the last one placed.
+func build_packed_grid(g: RecordingGame, w: int, h: int, ceiling: int) -> void:
+	for z in ceiling:
+		for y in h:
+			for x in w:
+				# Each placement is its own act, so the runaway counter never accumulates
+				# across the whole build and stop the detector part way.
+				g._begin_act()
+				var card := TestFactories.m_card((x + y + z) % 13 + 1, TestFactories.uc())
+				await g.place_card_in_grid(card, BoardCoord.new(0, x, y, 0))
+
+## Parameterised helper, not an entry point -- the three wrappers below are.
+func _full_stack_gate_at(ceiling: int) -> void:
+	behavior_section("FULL STACK GATE: CEILING %d" % ceiling)
+	var state := GameData.new()
+	var grid := GridData.new()
+	grid.build_cells()
+	state.grids = [grid] as Array[GridData]
+	var g := detector_game(state)
+	await build_packed_grid(g, grid.grid_width, grid.grid_height, ceiling)
+
+	var found : Dictionary = {}
+	for s : ScoringSection in g.scored:
+		found[String(s.line_key)] = true
+	var expected := expected_line_keys(grid.grid_width, grid.grid_height, ceiling)
+
+	# Sanity: the board really is packed, so a mismatch below is about lines, not cards.
+	var cards := 0
+	for cell : ArrayCardData in grid.cells: cards += cell.datas.size()
+	check(cards == grid.grid_width * grid.grid_height * ceiling,
+			"the board really is packed to the ceiling",
+			"%d cards, wanted %d" % [cards, grid.grid_width * grid.grid_height * ceiling])
+	check(not expected.is_empty(), "the enumerator produced an expectation at all")
+
+	var missing : Array[String] = []
+	for key : String in expected:
+		if not found.has(key): missing.append(key)
+	var unexpected : Array[String] = []
+	for key : String in found:
+		if not expected.has(key): unexpected.append(key)
+	missing.sort()
+	unexpected.sort()
+
+	check(missing.is_empty(),
+			"every line the rules say should complete was scored (ceiling %d)" % ceiling,
+			"%d missing, first few: %s" % [missing.size(), missing.slice(0, 6)])
+	check(unexpected.is_empty(),
+			"no line was scored that the rules do not call for (ceiling %d)" % ceiling,
+			"%d unexpected, first few: %s" % [unexpected.size(), unexpected.slice(0, 6)])
+	free_grid_game(g)
+
+func run_full_stack_gate_3() -> void:
+	await _full_stack_gate_at(3)
+
+func run_full_stack_gate_5() -> void:
+	await _full_stack_gate_at(5)
+
+func run_full_stack_gate_15_test() -> void:
+	await _full_stack_gate_at(15)

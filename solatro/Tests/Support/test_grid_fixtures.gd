@@ -150,3 +150,21 @@ static func _fill_cell(grid: GridData, x: int, y: int, height: int) -> void:
 		var card := TestFactories.m_card(1, TestFactories.uc())
 		card.stage = CardData.Stage.PLAY
 		grid.cells[idx].datas.append(card)
+
+## FIX-FULL-15: grid 0 with all 25 cells at height 15 -- 375 cards.
+## ⚠ This returns the FINISHED board. The phase gate does NOT use it: that test builds the
+## same shape one card at a time through the real placement path, because a board conjured
+## into existence completes no lines and so scores nothing. Use this only where the packed
+## board itself is the subject (a snapshot size, a walk, a render).
+static func build_fix_full_15() -> GameData:
+	var state := GameData.new()
+	var grid := _new_grid(5, 5)
+	for y in grid.grid_height:
+		for x in grid.grid_width:
+			var idx := grid.cell_index(x, y)
+			for z in 15:
+				var card := TestFactories.m_card((x + y + z) % 13 + 1, TestFactories.uc())
+				card.stage = CardData.Stage.PLAY
+				grid.cells[idx].datas.append(card)
+	state.grids = [grid] as Array[GridData]
+	return state
