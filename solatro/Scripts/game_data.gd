@@ -775,8 +775,11 @@ func cell_score(grid: int, cell: Vector2i) -> float:
 ## lazily because a grid can be added mid-show, and a missing bucket must read as "has not
 ## scored" rather than as an error.
 func resize_grid_bucket(bucket: Array[BigNumber], n: int) -> void:
-	while bucket.size() < n:
-		bucket.append(_zero_big_number())
+	if bucket.size() < n: bucket.resize(n)
+	for i in bucket.size():
+		# A resize leaves NULL holes, and a caller may have grown the array itself, so fill
+		# every empty slot rather than only the ones this call appended.
+		if not bucket[i]: bucket[i] = _zero_big_number()
 
 ## The same, one level deeper: `levels[grid][height]`, both dimensions grown as needed.
 func resize_grid_levels(levels: Array[Array], grids_n: int, heights_n: int) -> void:

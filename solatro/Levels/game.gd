@@ -847,11 +847,7 @@ func return_to_map() -> void:
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
-	if score_zone.size() < size: score_zone.resize(size)
-	for i in score_zone.size():
-		if not score_zone[i]: 
-			score_zone[i] = BigNumber.new()
-			score_zone[i].mantissa = 0
+	state.resize_grid_bucket(score_zone, size)
 
 ## Score one line, built by the caller into a `ScoringSection` (E7: unifies the old
 ## score_row/score_col). Data mutation (row/col total, BigNumber gutter accumulation) always
