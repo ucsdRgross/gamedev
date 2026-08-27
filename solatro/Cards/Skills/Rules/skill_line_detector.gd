@@ -29,9 +29,9 @@ func combo_key(_hook: StringName = &"") -> String: return ""
 ## overrun act stops scoring instead of recursing further.
 func on_board_mutated(coord: BoardCoord, is_compaction: bool) -> void:
 	if is_compaction: return
-	if not game: return
-	if game.act_overrun or game.act_cancelled: return
-	var grids : Array[GridData] = game.state.grids
+	if not api or not api.is_live(): return
+	if api.act_overrun() or api.act_cancelled(): return
+	var grids : Array[GridData] = api.grids()
 	if coord.grid < 0 or coord.grid >= grids.size(): return
 	var grid : GridData = grids[coord.grid]
 	if not grid: return
@@ -39,25 +39,25 @@ func on_board_mutated(coord: BoardCoord, is_compaction: bool) -> void:
 	for kind : ScoringSection.LineKind in _SCORED_KINDS:
 		for line : LineGeometry.Line in lines:
 			if line.kind != kind: continue
-			if not _is_complete(game.state, coord.grid, line): continue
-			var section := ScoringSection.of_geometric_line(game.state, coord.grid, line)
+			if not _is_complete(coord.grid, line): continue
+			var section := api.section_of_line(coord.grid, line)
 			# No result is computed here ON PURPOSE. score_line re-evaluates the hand
 			# itself, over whatever is in the section after every spotlight effect has
 			# fired, and THAT is what banks -- so a result computed now would only be
 			# thrown away, and computing one would imply it survived the cascade.
-			await game.score_line(null, section)
-			if game.act_overrun or game.act_cancelled: return
+			await api.score_line(null, section)
+			if api.act_overrun() or api.act_cancelled(): return
 
 ## A line is complete when every cell it runs through holds a card -- a taller stack still has
 ## a card at the queried height, so `LineGeometry` already accounts for that; this only checks
 ## occupancy. A HEIGHT_V run additionally only scores at a multiple-of-5 height -- see
 ## `LineGeometry.height_line_scores`.
-func _is_complete(state: GameData, grid: int, line: LineGeometry.Line) -> bool:
+func _is_complete(grid: int, line: LineGeometry.Line) -> bool:
 	if line.kind == ScoringSection.LineKind.HEIGHT_V:
 		var top : Vector3i = line.cells[line.cells.size() - 1]
 		if not LineGeometry.height_line_scores(top.z):
 			return false
 	for c : Vector3i in line.cells:
-		if state.card_at(BoardCoord.new(grid, c.x, c.y, c.z)) == null:
+		if api.card_at(BoardCoord.new(grid, c.x, c.y, c.z)) == null:
 			return false
 	return true

@@ -80,8 +80,12 @@ than migrated a second time. Staged, suite green between each:
 2. All 26 card files migrated to `api`.
 3. `CardModifier.game` removed, and the enforcement gate added.
 
-## Open, deliberately
+## Resolved during implementation
 
-- **`game.view`.** Wrapping it keeps the rule absolute; not wrapping it forces the few cards
-  that animate to say so out loud. Decided during step 1 against what the call sites actually
-  do, and recorded here.
+- **`game.view` is NOT wrapped, and needs no wrapper.** The measurement settled it: the only
+  code reaching `game.view` is `card_visual.gd`, a `Node2D`. That is the card's visual node,
+  not a modifier, and it does not use this layer. No card EFFECT touches the view at all, so
+  the layering rule holds with no accessor for it.
+- **The gate scans by `extends`**, not by directory: a file is a modifier when its base is one
+  of the CardModifier types. That is what keeps the visual node and the prop classes out of
+  scope without an allowlist that would rot.

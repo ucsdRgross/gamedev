@@ -23,16 +23,13 @@ func eat_card(ate_data:CardData) -> void:
 	# Take the eaten card OFF the board state entirely (same erase path as discard_data),
 	# otherwise it would live both on the board and in consumed_cards (I1 violation) and
 	# get double-added back at game end. Stage.DATA = held as data only, in no collection.
-	if game:
-		var vec3 : Vector3i = game.find_data_vec3(ate_data)
-		if vec3 != Vector3i.MIN and vec3.z > -1:
-			game.get_zone_from_vec3(vec3)[vec3.y].datas.erase(ate_data)
+	if api: api.remove_from_play(ate_data)
 	consumed_cards.append(ate_data)
 	ate_data.stage = CardData.Stage.DATA
 	self.data.rank.value += ate_data.rank.value
-	if not game: return
-	game.state.total_score += ate_data.rank.value
-	game.state.revision += 1  # AFTER the state is consistent (MUTATION GUIDELINES)
+	if not api: return
+	api.add_total_score(ate_data.rank.value)
+	api.bump_revision()  # AFTER the state is consistent (MUTATION GUIDELINES)
 
 # Oh boy this needs to handle all PipRank Types
 func on_game_end() -> void:
@@ -40,6 +37,6 @@ func on_game_end() -> void:
 	for card in consumed_cards:
 		self.data.rank.value -= card.rank.value
 		card.stage = CardData.Stage.DRAW
-		if game: game.state.draw_deck.append(card)
+		if api: api.return_to_draw_deck(card)
 	consumed_cards.clear()
-	if game: game.state.revision += 1  # AFTER the state is consistent
+	if api: api.bump_revision()  # AFTER the state is consistent

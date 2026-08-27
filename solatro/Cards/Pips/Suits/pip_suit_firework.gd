@@ -17,7 +17,7 @@ func spawn_props() -> Array[PropSpawner]:
 	var v := _spawn_origin()
 	if v == Vector3i.MIN: return []
 	var count := _spawn_count()
-	var route := game.column_rise_path(v)
+	var route := api.column_rise_path(v)
 	var col := v.y
 	var origin_card : CardData = data
 	var sp := PropSpawner.new()

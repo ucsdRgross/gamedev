@@ -11,20 +11,20 @@ func get_frame() -> int: return 8
 func combo_key(_hook: StringName = &"") -> String: return ""
 
 func on_score_row(zone : Array[ArrayCardData], row : int) -> void:
-	if not game: return
+	if not api or not api.is_live(): return
 	var row_cards : Array[CardData] = []
 	for a : ArrayCardData in zone:
 		if row < a.size(): row_cards.append(a.datas[row])
 	var results : Array[Scoring.Result] = await Scoring.PokerHands.score(row_cards)
 	var best_hand : Scoring.Result = results[0] if results else null
 	if best_hand:
-		await game.score_line(best_hand, ScoringSection.of_line(zone, true, row))
+		await api.score_line(best_hand, ScoringSection.of_line(zone, true, row))
 
 func on_score_col(zone : Array[ArrayCardData], col : int) -> void:
-	if not game: return
+	if not api or not api.is_live(): return
 	if col >= zone.size(): return
 	var col_cards : Array[CardData] = zone[col].datas
 	var results : Array[Scoring.Result] = await Scoring.PokerHands.score(col_cards)
 	var best_hand : Scoring.Result = results[0] if results else null
 	if best_hand:
-		await game.score_line(best_hand, ScoringSection.of_line(zone, false, col))
+		await api.score_line(best_hand, ScoringSection.of_line(zone, false, col))

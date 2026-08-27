@@ -19,18 +19,18 @@ static func target_grid_count(deck_size: int, cards_per_unlock: int, max_count: 
 	return clampi(maxi(raw, 1), 1, max_count)
 
 ## On game start, matches the actual grid count to the target computed from the deck just dealt
-## (`Levels/game.gd.add_deck` runs before this hook). ⚠ Placeholder for the grid-creator card:
+## (the deal runs before this hook). ⚠ Placeholder for the grid-creator card:
 ## no SkillGridCreator exists yet, so this syncs `state.grids` directly via Board.add_grid /
 ## Board.remove_grid rather than adding/removing a persistent creator card in the rules deck —
 ## a later step folds the actual building into that card's own on_spotlight/on_unspotlight and
 ## reduces this method to adding/removing the right number of them.
 func on_game_start() -> void:
-	if not game: return
+	if not api or not api.is_live(): return
 	var settings := SettingsManager.settings
-	var target := target_grid_count(game.state.draw_deck.size(), settings.grid_cards_per_unlock,
+	var target := target_grid_count(api.draw_deck().size(), settings.grid_cards_per_unlock,
 			settings.grid_max_count)
-	while game.state.grids.size() < target:
-		Board.add_grid(game.state, GridData.new())
-	while game.state.grids.size() > target:
-		for orphan : CardData in Board.remove_grid(game.state, game.state.grids.size() - 1):
-			await game.discard_data(orphan)
+	while api.grids().size() < target:
+		api.add_grid(GridData.new())
+	while api.grids().size() > target:
+		for orphan : CardData in api.remove_grid(api.grids().size() - 1):
+			await api.discard_data(orphan)

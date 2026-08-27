@@ -86,8 +86,8 @@ func fire_mult() -> int:
 ## card (its skill suppresses its own suit effect — locked) or an off-board card.
 func _spawn_origin() -> Vector3i:
 	if data.skill: return Vector3i.MIN
-	if not game: return Vector3i.MIN
-	return game.find_data_vec3(data)
+	if not api or not api.is_live(): return Vector3i.MIN
+	return api.find_data_vec3(data)
 
 ## Prop count = rank × fire_mult (fire buffs count only). Non-numeral ranks count as 1.
 func _spawn_count() -> int:

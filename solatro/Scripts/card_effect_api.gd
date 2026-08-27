@@ -141,6 +141,60 @@ func discard_data(data: CardData) -> void:
 func draw_card() -> CardData:
 	return _game.draw_card() if is_live() else null
 
+## Add to the show's running total.
+func add_total_score(amount: int) -> void:
+	if not is_live(): return
+	_game.state.total_score += amount
+
+## Bump the board revision. ⚠ Only after the state is fully consistent again — the mutation
+## guidelines are not suspended by going through this layer.
+func bump_revision() -> void:
+	if not is_live(): return
+	_game.state.revision += 1
+
+## Take a card off the board entirely, without discarding it. Bumps revision once, after.
+func remove_from_play(card: CardData) -> void:
+	if not is_live(): return
+	var vec3 := _game.find_data_vec3(card)
+	if vec3 == Vector3i.MIN: return
+	_game.get_zone_from_vec3(vec3)[vec3.y].datas.erase(card)
+	_game.state.revision += 1
+
+## Put a card back on top of the draw deck. Caller bumps when its whole batch is consistent.
+func return_to_draw_deck(card: CardData) -> void:
+	if not is_live(): return
+	_game.state.draw_deck.append(card)
+
+## Place a card that is not on the board into a zone column end.
+func place_card(card: CardData, zone_x: int, col: int) -> bool:
+	return Board.place_card(_game.state, card, zone_x, col) if is_live() else false
+
+## Append a zone column and its header in lockstep.
+func add_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
+		header: CardData) -> void:
+	if not is_live(): return
+	Board.add_column(_game.state, zone_cols, zone_types, header)
+
+## Remove a zone column and its header; returns the orphaned cards for the caller to discard.
+func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
+		index: int) -> Array[CardData]:
+	if not is_live(): return ([] as Array[CardData])
+	return Board.remove_column(_game.state, zone_cols, zone_types, index)
+
+## Append one grid to the board.
+func add_grid(grid: GridData) -> void:
+	if not is_live(): return
+	Board.add_grid(_game.state, grid)
+
+## Remove a grid; returns its orphaned cards for the caller to discard.
+func remove_grid(index: int) -> Array[CardData]:
+	if not is_live(): return ([] as Array[CardData])
+	return Board.remove_grid(_game.state, index)
+
+## The scoring section for one enumerated geometric line of a grid.
+func section_of_line(grid: int, line: LineGeometry.Line) -> ScoringSection:
+	return ScoringSection.of_geometric_line(_game.state, grid, line) if is_live() else null
+
 # ==============================================================================
 # SCORING
 # ==============================================================================

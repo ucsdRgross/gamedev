@@ -12,10 +12,10 @@ func combo_key(_hook: StringName = &"") -> String: return ""
 
 func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if not (stack and target): return []
-	if not game: return []
-	var vec3 := game.find_data_vec3(target)
+	if not api or not api.is_live(): return []
+	var vec3 := api.find_data_vec3(target)
 	if vec3 == Vector3i.MIN or vec3.x == 0: return []
-	if not game.is_data_topmost(target): return []
+	if not api.is_data_topmost(target): return []
 	#S21: the STACK sameness hooks, not the ordering ones. A meld rule must not reach this
 	#question and a stacking rule must (QR3=c, Q62=a, Q83=a, Q97).
 	var same_suit := await PipComparator.stack_suits_same(stack[0].suit,target.suit)

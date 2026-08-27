@@ -15,7 +15,7 @@ func spawn_props() -> Array[PropSpawner]:
 	if v == Vector3i.MIN: return []
 	var count := _spawn_count()
 	var eligible := func(c: CardData) -> bool: return c.skill == null and not (c.suit is PipSuitFire)
-	var targets := game.mancala_targets(v, count, eligible)
+	var targets := api.mancala_targets(v, count, eligible)
 	if targets.is_empty(): return []
 	var burning := _burning_mods()
 	var origin_card : CardData = data

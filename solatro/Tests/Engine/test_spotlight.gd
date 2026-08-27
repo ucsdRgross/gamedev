@@ -434,8 +434,8 @@ func test_hook_added_card_activates_in_the_same_phase() -> void:
 	var opener := SpotlightTestSkill.make("opener", func(s: SpotlightTestSkill) -> void:
 		var extra := play_card(9, TestFactories.uc())
 		extra.with_skill(arrival)
-		s.game.state.lower_zone[0].datas.append(extra)
-		s.game.state.revision += 1)
+		s.api.lower_zone()[0].datas.append(extra)
+		s.api.bump_revision())
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(3, TestFactories.uc())
 		bottom.with_skill(opener)
@@ -461,7 +461,7 @@ func test_discard_compacts_and_the_replacement_activates() -> void:
 	var trigger := SpotlightTestSkill.make("trigger", func(s: SpotlightTestSkill) -> void:
 		if doomed_ref.is_empty(): return
 		var doomed : CardData = doomed_ref.pop_back()
-		await s.game.discard_data(doomed))
+		await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(3, TestFactories.uc())
 		bottom.with_skill(trigger)
@@ -493,8 +493,8 @@ func test_self_feeding_chain_ends_at_act_cap() -> void:
 		if generations[0] >= WATCHDOG: return      # the brake: never spin past the watchdog
 		var heir := play_card(6, TestFactories.uc())
 		heir.with_skill(SpotlightTestSkill.make("gen%d" % generations[0], s.behaviour))
-		s.game.state.lower_zone[0].datas.append(heir)
-		await s.game.discard_data(s.data)
+		s.api.lower_zone()[0].datas.append(heir)
+		await s.api.discard_data(s.data)
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var seed_card := play_card(5, TestFactories.uc())
 		seed_card.with_skill(SpotlightTestSkill.make("gen0", respawn))
@@ -524,7 +524,7 @@ func test_broken_meld_rescores() -> void:
 	var breaker := SpotlightTestSkill.make("breaker", func(s: SpotlightTestSkill) -> void:
 		if doomed_ref.is_empty(): return
 		var doomed : CardData = doomed_ref.pop_back()
-		await s.game.discard_data(doomed))
+		await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(2, TestFactories.uc())
 		bottom.with_skill(breaker)
@@ -544,7 +544,7 @@ func test_emptied_section_scores_nothing() -> void:
 	var eraser := SpotlightTestSkill.make("eraser", func(s: SpotlightTestSkill) -> void:
 		while not doomed_ref.is_empty():
 			var doomed : CardData = doomed_ref.pop_back()
-			await s.game.discard_data(doomed))
+			await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(2, TestFactories.uc())
 		bottom.with_skill(eraser)

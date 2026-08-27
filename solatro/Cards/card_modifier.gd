@@ -23,13 +23,11 @@ var data : CardData:
 	get:
 		return _data_ref.get_ref() as CardData if _data_ref else null
 
-## Current environment / game shortcuts so every modifier doesn't have to re-derive them.
-## Read-only convenience: null when no environment / not in a game — always null-check.
-## State MUTATION should still go through Game's API (move_data_*, discard_data, ...).
+## The environment a modifier dispatches through. `api` below is how it reads and changes the
+## game; there is deliberately NO `game` property, because a modifier that can reach the game
+## directly will, and then a change to Game's shape breaks every card at once.
 var env : CardEnvironment:
 	get: return CardEnvironment.CURRENT
-var game : Game:
-	get: return CardEnvironment.get_current_game()
 ## THE seam every effect runs through. Null outside a game (deck viewers, boosters), so
 ## always null-check — or call `api.is_live()`, which every accessor already guards on.
 var api : CardEffectApi:
@@ -122,13 +120,13 @@ func is_spotlit() -> bool:
 	if data.stamp is StampGlobal:
 		return true
 	#everything else must be on the board
-	if not game: return false
+	if not api or not api.is_live(): return false
 	if data.stage != CardData.Stage.PLAY and data.stage != CardData.Stage.ZONE:
 		return false
 	#A6 (design chart A): the scoring beam is literally on this card. Placed AFTER the stage
 	#check so a stale entry for a card that left the board cannot force it, and BEFORE the
 	#coverage rules so a forced spotlight bypasses both Revealing and blocks_spotlight (Q6=a).
-	if game.state.forced_spotlight.has(data):
+	if api and api.forced_spotlight().has(data):
 		return true
 	#Revealing is a property of THIS card: spotlit anywhere on the board, even covered.
 	if data.stamp is StampRevealing:
@@ -159,9 +157,9 @@ func _blocked_from_above() -> bool:
 	# ⚠ **DEGENERATE LOOKUPS FAIL CLOSED (blocked → dark), exactly as `is_data_topmost` did.**
 	# `position_of` is a revision-cached index, so a card read mid-mutation (before the bump) can
 	# miss — and failing OPEN would spotlight a card the board cannot even locate.
-	var coord := game.state.position_of(data)
+	var coord := api.position_of(data) if api else Vector3i.MIN
 	if coord == Vector3i.MIN: return true
-	var zone := game.get_zone_from_vec3(coord)
+	var zone := api.get_zone_from_vec3(coord) if api else ([] as Array[ArrayCardData])
 	if coord.y < 0 or coord.y >= zone.size(): return true
 	var col : ArrayCardData = zone[coord.y]
 	if not col: return true

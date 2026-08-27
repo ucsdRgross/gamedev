@@ -11,8 +11,8 @@ func combo_key(_hook: StringName = &"") -> String: return ""
 
 func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if target != data: return []
-	if not game: return []
-	if game.is_data_topmost(target): return stack
+	if not api or not api.is_live(): return []
+	if api.is_data_topmost(target): return stack
 	return []
 
 func on_next() -> void:
@@ -20,20 +20,19 @@ func on_next() -> void:
 	await draw_card()
 
 func drop_card() -> void:
-	if not game: return
-	var game_state := game.state
-	var col : int = game_state.upper_zone_type.find(data)
+	if not api or not api.is_live(): return
+	var upper := api.upper_zone()
+	var lower := api.lower_zone()
+	var col : int = api.upper_zone_type().find(data)
 	#no-op unless a matching lower column exists (upper col i is assumed paired with lower col i)
-	if col > -1 and col < game_state.upper_zone.size() and col < game_state.lower_zone.size() \
-			and game_state.upper_zone[col].datas.size() > 0:
-		var upper_cards := game_state.upper_zone[col].datas
-		await game.move_data_to_coord(upper_cards[0], Vector3i(1,col,-1), -1)
+	if col > -1 and col < upper.size() and col < lower.size() \
+			and upper[col].datas.size() > 0:
+		await api.move_data_to_coord(upper[col].datas[0], Vector3i(1, col, -1), -1)
 
 func draw_card() -> void:
-	if not game: return
-	var game_state := game.state
-	var col : int = game_state.upper_zone_type.find(data)
-	if col > -1 and col < game_state.upper_zone.size():
-		var drawn_card := game.draw_card()
+	if not api or not api.is_live(): return
+	var col : int = api.upper_zone_type().find(data)
+	if col > -1 and col < api.upper_zone().size():
+		var drawn_card := api.draw_card()
 		if drawn_card:
-			Board.place_card(game_state, drawn_card, 0, col)
+			api.place_card(drawn_card, 0, col)
