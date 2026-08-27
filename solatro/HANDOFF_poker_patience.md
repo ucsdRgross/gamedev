@@ -2,8 +2,9 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete; Phase 3 in progress** — S1-S16 landed and committed, suite green at 42 suites.
-Next is S17 (TypeInput and the left-to-right refill). Worktree `gamedev-poker-patience`
+**State:** **Phases 1 and 2 complete; Phase 3 in progress** — **S1-S18 landed and committed**, suite green at 42 suites.
+Next is S19, the biggest remaining piece: the owner's GAP-007 answer turned it from an
+archive move into a REBUILD of six suites onto the grid game. Worktree `gamedev-poker-patience`
 on branch `poker-patience`; one commit per verified step.
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
@@ -407,34 +408,60 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S17
   description: 'TypeInput with on_next removed, and the left-to-right refill.'
-  files_touched: []
+  files_touched: [solatro/Cards/Types/type_input.gd, solatro/Levels/game.gd,
+     solatro/Scripts/card_effect_api.gd, solatro/Tests/Engine/test_grid_cards.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3366 CHECKS PASSED ======== (at commit 8626cae)
+    TP-70..TP-74 green. TP-70 asserts the exact card per slot, not that slots are full.
+    ⚠ REVISED in S18: the trigger was evaluated PER HEADER, so the initial deal dealt ONE
+    card - the Entrance stopped being empty after the leftmost drew. S17's own fixtures had
+    no grids, which made the other branch trivially true, so they passed for the wrong
+    reason. Game now takes the decision once; see S18.
+    Committed 8626cae.
   notes: 'Done-when: TP-70..TP-74 green. Do NOT add an Entrance width property.'
 
 - id: S18
   description: 'Commit, silent commitment, and the lift when no legal placement remains.'
-  files_touched: []
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/game_data.gd,
+     solatro/Cards/Types/type_input.gd, solatro/Tests/Engine/test_grid_cards.gd]
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: |
+    ======== ALL 42 SUITES: 3393 CHECKS PASSED ========
+    TP-75..TP-78 green. TP-76 asserts the board is untouched AND the card is still held.
+    TP-78 asserts a further placement and a refill do NOT lift the commitment.
+    Game.refill_entrance_if_due() now decides once and broadcasts &"on_refill"; headers each
+    fill their own slot, so leftmost-first still falls out of dispatch order.
+    Committed 28610a3.
   notes: 'Done-when: TP-75..TP-78 green.'
 
 - id: S19
   description: >
-    Move the tableau cards to the archive directory, add the archive rules builder, remove
-    them from rules1, move their tests out of the suite.
+    RESHAPED by the owner's GAP-007 answer. Was "move the tableau cards to an archive
+    directory, add an archive rules builder". Is now: DELETE the tableau from rules1 and
+    REBUILD the six suites that used it onto the grid game. No Archive/ directory, no
+    Deck.archive_rules1.
   files_touched: []
   verification_command: 'py solatro/Tools/run_tests.py'
   verification_kind: suite
   status: pending
   evidence: ''
   notes: >
-    Done-when: TP-79 green; suite count drops by exactly the moved suites and NO other
-    suite changes.
+    Owner verbatim: "rebuild, i dont care about archiving anymore, just replace all existing
+    to fit for now without throwing errors". ⚠ TP-79 is VOID as written - it asserts the
+    archived cards are constructible from a builder that will not exist. The gate becomes: a
+    green suite, nothing throwing, every suite exercising the grid game.
+    Leaves rules1: the 5 SkillAdderInputUpper (they make the Entrance), SkillGridAllotment,
+    SkillLineDetector. Goes: the 6 lower adders, grabber, placer, cascade scorer, poker
+    evaluator - and TypeInput.on_next plus _legacy_drop_to_lower, which exist ONLY as
+    scaffolding to keep those six suites alive until this step.
+    The six to rebuild, with their current failure counts when the scaffolding is removed:
+    E2E RUN 5, MODS 4, LEAK CANARY 4, VISUAL LAYERS 3, UI PROPS 2, INTERACTION 2.
+
 
 - id: S19b
   description: >
@@ -524,85 +551,71 @@ Design and the answers verbatim: `design/card-effect-api/DESIGN.md`.
 ⚠ Extending the layer is the sanctioned move when a card needs something it does not expose —
 add the method with a `##` comment. S16 added three that way.
 
-## Gaps — all three ANSWERED
+## Gaps — all SEVEN filed, all SEVEN answered by the owner
 
-The owner's answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md`
-and `NAMES.md`, because they are newer.**
+Answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md` and
+`NAMES.md`, because they are newer.**
 
-- **GAP-001 / GAP-002** — implemented in `fea5768`. Movement is **two-axis** over an
-  **unbounded** lattice of per-grid bounding blocks laid end to end (nothing is 5x5; a ragged
-  grid's holes still exist for movement). A step never clamps and never returns `NOWHERE`;
-  past the last grid it continues as if another grid were there, in `y` as well as `x`.
-  `GameData.has_cell(coord)` is the landing question, and a landing on nothing discards.
-  ⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`,
-  chosen by the overseer because the owner's answer required a name no document fixes.
-- **GAP-005 — OPEN, needs the owner.** Nothing says which bucket a `HEIGHT_V` line (a
-  vertical stack in one cell) banks into. Row, col and special are all specified; the
-  vertical run is not. Its score is deliberately NOT banked rather than guessed. Everything
-  else in Phase 3 is unaffected.
-- **GAP-004** — answered: a diagonal is a same-rate run, corners irrelevant; the owner
-  confirmed this governs the flat case only and the eight climbing families stand.
-- **GAP-003** — the legacy 3-component coordinate is retired: the lower zone becomes an
-  ordinary grid, the upper zone becomes the Entrance. **Scheduled as `S19b`**, not yet
-  implemented — see that ledger entry and GAP-003's sequencing note for why it sits there
-  rather than before Phase 2.
+| gap | answer | state |
+|---|---|---|
+| GAP-001 / GAP-002 | Movement is two-axis over an UNBOUNDED lattice; `has_cell()` is the landing question; a landing on nothing discards | implemented `fea5768` |
+| GAP-003 | The legacy 3-component coordinate is retired; lower zone becomes a grid, upper becomes the Entrance | **scheduled as S19b, NOT implemented** |
+| GAP-004 | A diagonal is a same-rate run; corners are not part of the definition. Owner confirmed this governs the FLAT case only — the eight climbing families stand | implemented `6092a27` |
+| GAP-005 | A vertical stack banks into a PER-CELL bucket, keyed by coordinate so a grid can change shape | implemented `581d02a` |
+| GAP-006 | Height scores fold into the SPECIAL term: `row x col x special(diag + height) x combo`. Raised row/col levels fold into their own terms | implemented `54cab17` |
+| GAP-007 | Rebuild the six suites; **the archive is cancelled entirely** | **drives S19, NOT implemented** |
+
+⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`.
 
 ## Open bugs
 
-- ⚠ **`VISUAL LAYERS` has an intermittent failure that the S0-repair EXPOSED.** The check
-  *"a light stays on its card's art square every frame while that card moves"*
-  (`Tests/UI/test_visual_layers.gd`) asserts `worst < 1.0` px and intermittently measures
-  **2.87–2.96 px** — the light is drawn from the card's previous position for at least one
-  frame. Measured, 3 runs each:
-
-  | tree | result |
-  |---|---|
-  | card scene with materials baked (main, 69eee09) | 3/3 clean |
-  | card scene with the bake stripped (this branch) | fails ~1 in 3 |
-
-  The bake is still a real regression and stripping it is still right — but with materials
-  no longer loaded from disk, `material_of()` constructs five per card visual at runtime,
-  which shifts frame timing enough to expose a latent ordering bug between a card's move and
-  the light layer's update. **The tolerance was calibrated with the baked scene in place.**
-
-  **Not fixed here, deliberately:** it is a VFX-layer defect and the run's anti-scope says
-  do not touch the VFX layer. **It was NOT hidden by widening the tolerance** — that would
-  be calibrating a test to a bug. Every suite verdict in this run is therefore judged by
-  failure SET, with this one known intermittent excluded and confirmed to be the only
-  failure present. **Owner call: fix the ordering, or re-derive the tolerance honestly.**
-
-- **`PLAN.md` §1.1 and `TEST_PLAN.md` TP-02 state an arithmetically wrong example.** Both say
-  *"5 columns left of (grid 1, x 0) is (grid 0, x 4)"*. At the default width 5 it is **one**
-  column left that lands on (grid 0, x 4); five columns left lands on (grid 0, x 0). The
-  owner's source answer (`Q3`) contains no such example — it says only "yes, continuous, with
-  entrance being part of y lattice". So this is a documentation slip in the derived docs, not
-  a gap: the rule (continuity, `grid` derived from the global ordinate) is unambiguous, and
-  only one reading is defensible. Both cases are now asserted in `test_grid_board.gd`. The
-  design docs are the owner's and were left unedited — worth correcting at the next revision.
-- `.claude/memory/machine-profiles.md` records Godot 4.7.1 for Box A; the box has 4.7.2 and
-  no 4.7.1. Anything reading that path fails with `FileNotFoundError`. Not fixed here — it
-  is a memory file, outside this run's scope.
+- ⚠ **94 `I5` validate WARNINGS during undo in `test_grid_cards.gd`** — cards sitting in
+  `draw_deck` still stamped `PLAY`. No check fails; confined to that one suite. Best read: the
+  fixture's `_take_held` lifts a card out of the Entrance without a mutation path, leaving it
+  in no collection while still stamped `PLAY`. **Resolve at S35**, which owns making a
+  placement a real undo step and will replace that shortcut. Not hidden by widening anything.
+- ⚠ **`VISUAL LAYERS`: "a light stays on its card's art square every frame while that card
+  moves"** fails roughly 1 run in 3, measuring 2.5–3.0 px against a `worst < 1.0` tolerance.
+  **Pre-existing and out of scope** (owner: the light is out of scope, and it may be the test
+  measuring too early). Exposed — not caused — by stripping the card scene's baked materials:
+  3/3 clean with the bake, ~1-in-3 without. **The tolerance was calibrated with the bug
+  present, so it was NOT widened.** Judge every suite run by failure SET with this one
+  excluded, and confirm it is the only failure.
+- `.claude/memory/machine-profiles.md` records Godot **4.7.1** for Box A; the box has **4.7.2**
+  and no 4.7.1. Anything reading that path dies with `FileNotFoundError`. Memory file, outside
+  this run's scope.
+- **`PLAN.md` §1.1 and `TEST_PLAN.md` TP-02 state an arithmetically wrong example** —
+  *"5 columns left of (grid 1, x 0) is (grid 0, x 4)"*. At width 5 it is ONE column left. The
+  owner's source answer `Q3` contains no such example. Both cases are asserted in the tests;
+  the design docs were left unedited.
 
 ## Files touched
 
-```
-solatro/Cards/card_visual.tscn   (S0-repair, committed b416d37)
-```
+`git diff --stat 69eee09..HEAD` from the worktree root. New product files:
+`Scripts/board_coord.gd`, `grid_data.gd`, `grid_cell_walk.gd`, `line_geometry.gd`,
+`card_effect_api.gd`; `Cards/Types/type_grid_cell.gd`;
+`Cards/Skills/Rules/skill_line_detector.gd`, `skill_grid_allotment.gd`,
+`skill_grid_creator.gd`. New suites: `Tests/Engine/test_grid_board.gd`,
+`test_line_detect.gd`, `test_grid_economy.gd`, `test_grid_cards.gd`;
+fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-1. S13 — `grid_score` as the product of positive buckets (TP-51..TP-56). ⚠ TP-51 is the
-   owner's worked example verbatim; TP-54 tests the VALUE, never touched-ness.
-3. S14 — the combo model and the retirement of `MAX_SUBMITS`, `submits_used`,
-   `score_additive`, `duplicate_class_scale` and the patience family (TP-57..TP-61).
+1. **S19 — the rebuild.** The biggest remaining piece. Delete the tableau from `rules1`,
+   remove `TypeInput.on_next` and `_legacy_drop_to_lower`, and rebuild the six suites onto
+   the grid game. No archive directory, no builder. TP-79 is void.
+2. **S35** — every placement an undo step; scores rewind with the board (TP-121..TP-123).
+   ⚠ Also resolves the 94 `I5` warnings above.
+3. **S36** — `pending_action` carries a placement and replays it (TP-124..TP-126).
+4. **S37** — `validate()` grid invariants; **headless parity** (TP-127..TP-130). ⚠ TP-128 is
+   the phase gate: a headless show and a viewed show produce byte-identical final state.
+5. **S19b** — the legacy coordinate migration (GAP-003). 296 references across 29 files.
+6. **S37b** — the closing pass: full diff review, adversarial review, `/simplify`, `/docs`.
 
-Opening prompt for the next agent:
-
-> Resume `solatro/HANDOFF_poker_patience.md` in the `gamedev-poker-patience` worktree on
-> branch `poker-patience`. Read that file, then `design/poker-patience/PLAN.md` §1
-> (normative), `TEST_PLAN.md` and `NAMES.md`. Run the suite to confirm the tree is green
-> before trusting any `done`. Continue from the first `pending` task. Commit one step per
-> verified done-when — the repo's no-commit rule is REVERSED on this branch.
+⚠ **S19 and S19b overlap heavily.** Both remove the legacy two-zone board. Doing S19's rebuild
+first and then S19b means touching the same six suites twice. **Consider merging them**, or
+doing S19b first so the rebuild lands directly on `BoardCoord`. That is a judgement call the
+next overseer should make deliberately, not stumble into.
 
 ## References
 
