@@ -88,9 +88,12 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
       NOWHERE     -> both OFF BOARD sentinel checks
     Committed bf61cd9.
   notes: >
-    Dead code removed: step_x's negative-normalising loop was guarded `g > 0` with g
-    initialised to 0, so it could never run and a step off the left edge returned
-    grid 0 at a negative column. Off-board now clamps, PROVISIONALLY - see GAP-002.
+    REVISED after the owner answered GAP-001 and GAP-002 (commit fea5768). step_x(n) is
+    replaced by step(dx, dy, grid_widths): movement is two-axis over an UNBOUNDED lattice
+    of per-grid bounding blocks laid end to end, never clamping and never returning
+    NOWHERE. Past the last grid it continues as if another grid were there, in y as well
+    as x. Landing is a separate question - GameData.has_cell(coord) - and a landing on
+    nothing discards. The provisional clamp and its two checks are gone.
 
 - id: S2
   description: >
@@ -320,6 +323,23 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
     Done-when: TP-79 green; suite count drops by exactly the moved suites and NO other
     suite changes.
 
+- id: S19b
+  description: >
+    THE LEGACY ZONE MIGRATION - not a PLAN.md step. Added because the owner's GAP-003 answer
+    retires the legacy 3-component coordinate: the lower zone becomes an ordinary grid, the
+    upper zone becomes the Entrance at y == -1, and position_of returns BoardCoord.
+  files_touched: []
+  verification_command: 'py solatro/Tools/run_tests.py'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: >
+    Blast radius measured: 296 references to upper_zone/lower_zone across 29 files, plus
+    Board.locate, position_of and the board-position Vector3i.MIN checks; it reaches the UI,
+    props and pips. Sequenced here (not before Phase 2) because Phases 2-3 read only grids,
+    and S19 first archives the tableau cards that operate the lower zone. See GAP-003.
+    ⚠ Until this lands, grid work reads card_at / the grid index, never position_of.
+
 - id: S35
   description: 'Every placement an undo step; scores rewind with the board.'
   files_touched: []
@@ -359,11 +379,22 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 - **Assumed, not checked** — that `CARD_SEPARATION = 16` is correct. Taken from `PLAN.md`
   §1.8 as instructed; not re-derived.
 
-## Open gaps
+## Gaps — all three ANSWERED
 
-- **GAP-001** — `NAMES.md` fixes `step_x(n)`, but the contract needs each grid's own width
-  and `BoardCoord` is a bare value type. Shipped as `step_x(n, grid_widths)`. Owner call.
-- **GAP-002** — nothing defines what `step_x` does off the board. Provisionally clamps.
+The owner's answers are quoted verbatim at the top of each gap file and **outrank `PLAN.md`
+and `NAMES.md`, because they are newer.**
+
+- **GAP-001 / GAP-002** — implemented in `fea5768`. Movement is **two-axis** over an
+  **unbounded** lattice of per-grid bounding blocks laid end to end (nothing is 5x5; a ragged
+  grid's holes still exist for movement). A step never clamps and never returns `NOWHERE`;
+  past the last grid it continues as if another grid were there, in `y` as well as `x`.
+  `GameData.has_cell(coord)` is the landing question, and a landing on nothing discards.
+  ⚠ `NAMES.md`'s `step_x(n)` is superseded — the shipped name is `step(dx, dy, grid_widths)`,
+  chosen by the overseer because the owner's answer required a name no document fixes.
+- **GAP-003** — the legacy 3-component coordinate is retired: the lower zone becomes an
+  ordinary grid, the upper zone becomes the Entrance. **Scheduled as `S19b`**, not yet
+  implemented — see that ledger entry and GAP-003's sequencing note for why it sits there
+  rather than before Phase 2.
 
 ## Open bugs
 
