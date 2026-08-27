@@ -2,10 +2,10 @@
 
 **Goal:** Implement `design/poker-patience/PLAN.md` steps S1–S19 (Phases 1–4) and S35–S37
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
-**State:** **Phases 1 and 2 complete; Phase 3 in progress** — **S1-S18 landed and committed**, suite green at 42 suites.
-Next is S19, the biggest remaining piece: the owner's GAP-007 answer turned it from an
-archive move into a REBUILD of six suites onto the grid game. Worktree `gamedev-poker-patience`
-on branch `poker-patience`; one commit per verified step.
+**State:** **Phases 1-4 complete — S1-S19 landed and committed**, suite green at 42 suites.
+Next is Phase 8: S35, S36, S37, then S19b and the S37b closing pass.
+
+
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
 behaviour), `TEST_PLAN.md` (every test that must exist), `NAMES.md` (every identifier),
 `START_HERE.md`, `HEADLESS_TESTING.md`.
@@ -619,6 +619,18 @@ Both are durable working agreements, recorded here so they survive the handover.
   fixture's `_take_held` lifts a card out of the Entrance without a mutation path, leaving it
   in no collection while still stamped `PLAY`. **Resolve at S35**, which owns making a
   placement a real undo step and will replace that shortcut. Not hidden by widening anything.
+- ⚠ **A SCORED GRID LINE FIRES NO PROPS.** Every suit's `spawn_props()` opens with
+  `_spawn_origin()`, which reads the legacy `Vector3i` position index; grid cells are absent
+  from it, so it returns `Vector3i.MIN` and no spawner is ever built. Points bank correctly;
+  nothing flies. Unblocks at **S19b**, and `Tests/UI/test_ui_props.gd` asserts the zero so it
+  fails the day that lands.
+- ⚠ **GAP-008 is OPEN**: no card answers `on_can_grab_stack` / `on_can_place_stack` for a
+  grid cell, and `try_place` commits only through the legacy move path -- so the player cannot
+  put a card on a grid at all. Tests reach the board through `Game.place_card_in_grid`.
+- ⚠ **`VISUAL LAYERS` light intermittent -- LIKELY FIXED AT S19, but watch it.** Its
+  fixture drew from the SHUFFLED deck, so the lit card's travel varied 340-550 px run to run;
+  it now builds fixed cards at a uniform depth and has passed three consecutive runs. The
+  tolerance was NOT widened. If it returns, the standing reading below still applies.
 - ⚠ **`VISUAL LAYERS`: "a light stays on its card's art square every frame while that card
   moves"** fails roughly 1 run in 3, measuring 2.5–3.0 px against a `worst < 1.0` tolerance.
   **Pre-existing and out of scope** (owner: the light is out of scope, and it may be the test
