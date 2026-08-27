@@ -487,9 +487,14 @@ func test_game_over_interactivity() -> void:
 	pa.ungrab_cards()   # held cards would make _on_undo_pressed swallow the outcome undo
 	var resolved : Array[bool] = [false]
 	game.show_resolved.connect(func(_w: bool, _s: int, _g: int) -> void: resolved[0] = true)
-	await game.submit()
-	game.end_show()
-	check(resolved[0], "ending the show resolves it")
+	# ⚠ THROUGH THE BUTTON, not through game.end_show(). The button carries the End label, and
+	# a label is not a wire: calling end_show() directly here would pass just as happily with
+	# the button still bound to the retired Submit act, which is a show the player cannot end.
+	check(view.submit_button.text == TRANSLATION.find('END_SHOW_BUTTON'),
+			"precondition: the button reads End", view.submit_button.text)
+	await mouse_click(center_of(view.submit_button))
+	await frames(2)
+	check(resolved[0], "pressing End resolves the show")
 	await frames(2)
 	var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
 	check(screen.visible, "an outcome screen is showing")

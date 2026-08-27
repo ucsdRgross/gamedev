@@ -81,7 +81,11 @@ func _ready() -> void:
 	_bind_state(null, game.state)  # the initial default state bypasses the setter -> bind by hand
 
 	# Input wiring (all lives in the view now).
-	submit_button.pressed.connect(func() -> void: await game.submit())
+	# ⚠ THIS BUTTON ENDS THE SHOW; it carries the End label. A show is one continuous
+	# performance now -- there is no act to submit and nothing resolves one on its own, so
+	# end_show() is the only thing that can finish it. Bound to the retired submit act, the
+	# button reads End and does nothing a player can see, and the show cannot be ended at all.
+	submit_button.pressed.connect(func() -> void: game.end_show())
 	next_button.pressed.connect(func() -> void: await game.next())
 	undo_button.pressed.connect(_on_undo_pressed)
 	play_area.data_selected.connect(_on_data_selected)
