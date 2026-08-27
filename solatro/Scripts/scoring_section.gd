@@ -80,6 +80,33 @@ static func _collect_grid_line(state: GameData, grid: int, kind: LineKind, index
 			if c: out.append(c)
 	return out
 
+## The detector-card constructor: any `LineGeometry.Line` (ROW, COL, DIAG or HEIGHT_V) becomes
+## a section keyed by its grid, kind and endpoints -- the one shape general enough for a line
+## that does not reduce to `of_line_at`'s index+height pair. Re-derives from the LIVE board.
+static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Line) -> ScoringSection:
+	var section := ScoringSection.new()
+	section.kind = line.kind
+	section.line_key = _key_for_geometric_line(grid, line)
+	section._recollect = _collect_geometric_line.bind(state, grid, line.cells)
+	section.cards = section._recollect.call()
+	return section
+
+## Opaque and unique per line: grid, kind and the line's own first/last cell -- two lines of the
+## same kind through different cells never collide, and the same line asked for twice keys the
+## same because `Line.cells` is rebuilt identically from the same geometry.
+static func _key_for_geometric_line(grid: int, line: LineGeometry.Line) -> StringName:
+	var first : Vector3i = line.cells[0]
+	var last : Vector3i = line.cells[line.cells.size() - 1]
+	return StringName("grid%d:%s:%s:%s" % [grid, LineKind.keys()[line.kind], first, last])
+
+## THE card list for an arbitrary geometric line: every cell that holds a card, read live.
+static func _collect_geometric_line(state: GameData, grid: int, cells: Array[Vector3i]) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for c : Vector3i in cells:
+		var card := state.card_at(BoardCoord.new(grid, c.x, c.y, c.z))
+		if card: out.append(card)
+	return out
+
 ## THE card list for a row or a column of `zone`. Static and pure so a re-derive is one call.
 static func collect(zone: Array, is_row: bool, index: int) -> Array[CardData]:
 	var out : Array[CardData] = []

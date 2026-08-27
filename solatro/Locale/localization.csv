@@ -62,6 +62,8 @@ Next: If in Upper Zone, drop card to open space in Lower Zone. Then Draw a Card.
 Removed: Stacked cards are Discarded",revealed
 GRID_CELL_CARD,Grid Cell,
 GRID_CELL_CARD_DESCRIPTION,"One cell of a Grid. Cards may be stacked here.",
+LINE_DETECTOR_CARD,Line Detector,
+LINE_DETECTOR_CARD_DESCRIPTION,"Whenever the board changes, scores every completed row, column and diagonal.",
 ,,
 ,,
 ,,

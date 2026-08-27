@@ -27,6 +27,10 @@ func _ready() -> void:
 	await run_compaction_scores_nothing_test()
 	await run_board_locked_during_pass_test()
 	await run_pass_runs_after_commit_test()
+	await run_detector_row_and_col_test()
+	await run_detector_triple_and_order_test()
+	await run_detector_rescan_test()
+	await run_detector_runaway_guard_test()
 	finish()
 
 # ==============================================================================
@@ -505,3 +509,184 @@ func run_pass_runs_after_commit_test() -> void:
 	check(spy.saw_committed_during_mutation,
 			"the handler read the placed card off the board WHILE handling on_board_mutated")
 	free_grid_game(g)
+
+# ==============================================================================
+# S9 -- the detector card (TP-32..TP-36). The REAL SkillLineDetector runs; only the
+# Game it reports to is instrumented, by a subclass that records each score_line call
+# and then calls super. Nothing about the detector or the geometry is stood in for.
+# ==============================================================================
+
+## Game with a tap on score_line. Records the section, then behaves exactly as Game does.
+class RecordingGame extends Game:
+	var scored : Array[ScoringSection] = []
+	func score_line(result : Scoring.Result, section : ScoringSection) -> void:
+		scored.append(section)
+		await super(result, section)
+
+## The real detector card, spotlit in the rules deck so run_all_mods dispatches to it.
+func detector_game(state: GameData, extra: CardModifierSkill = null) -> RecordingGame:
+	var g := RecordingGame.new()
+	var deck : Array[CardData] = [rules_card_grid(SkillLineDetector.new())]
+	if extra: deck.append(rules_card_grid(extra))
+	state.rules_deck = deck
+	g.state = state
+	CardEnvironment.CURRENT = g
+	return g
+
+## The kinds recorded, in the order they were scored.
+func kinds_of(sections: Array[ScoringSection]) -> Array[int]:
+	var out : Array[int] = []
+	for s : ScoringSection in sections: out.append(s.kind)
+	return out
+
+## Every recorded section's line key, for a failure message that names what actually scored.
+func keys_of(sections: Array[ScoringSection]) -> Array[String]:
+	var out : Array[String] = []
+	for s : ScoringSection in sections: out.append(String(s.line_key))
+	return out
+
+# ==============================================================================
+# TP-32 -- one placement completing a row AND a column scores both. FIX-CROSS.
+# ==============================================================================
+func run_detector_row_and_col_test() -> void:
+	behavior_section("DETECTOR: ROW AND COL")
+	var state := TestGridFixtures.build_fix_cross()
+	var g := detector_game(state)
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	var kinds := kinds_of(g.scored)
+	check(kinds.has(ScoringSection.LineKind.ROW),
+			"the placement that completed row 2 scored a ROW line", "got %s" % [kinds])
+	check(kinds.has(ScoringSection.LineKind.COL),
+			"the same placement also scored a COL line", "got %s" % [kinds])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-33 / TP-34 -- one placement completing row, column AND diagonal scores all three,
+# in the deterministic order rows -> columns -> diagonals. FIX-TRIPLE.
+# ==============================================================================
+func run_detector_triple_and_order_test() -> void:
+	behavior_section("DETECTOR: TRIPLE AND ORDER")
+	var state := TestGridFixtures.build_fix_triple()
+	var g := detector_game(state)
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	var kinds := kinds_of(g.scored)
+	check(kinds.has(ScoringSection.LineKind.ROW), "a ROW scored", "got %s" % [kinds])
+	check(kinds.has(ScoringSection.LineKind.COL), "a COL scored", "got %s" % [kinds])
+	check(kinds.has(ScoringSection.LineKind.DIAG), "a DIAG scored", "got %s" % [kinds])
+	# The order is a replay contract, so assert the SEQUENCE, not just membership: every
+	# ROW precedes every COL, and every COL precedes every DIAG.
+	var last_row := -1
+	var first_col := kinds.size()
+	var last_col := -1
+	var first_diag := kinds.size()
+	for i in kinds.size():
+		match kinds[i]:
+			ScoringSection.LineKind.ROW: last_row = i
+			ScoringSection.LineKind.COL:
+				first_col = mini(first_col, i)
+				last_col = i
+			ScoringSection.LineKind.DIAG: first_diag = mini(first_diag, i)
+	check(last_row < first_col,
+			"every ROW is scored before every COL", "kinds %s" % [kinds])
+	check(last_col < first_diag,
+			"every COL is scored before every DIAG", "kinds %s" % [kinds])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-35 -- an effect that completes ANOTHER line during the pass gets that line scored
+# too. The re-scan is not a loop inside the detector: the effect's own board mutation
+# broadcasts again, and the detector answers again. FIX-CROSS.
+# ==============================================================================
+
+## Fills the last hole of column 4 the first time it sees a mutation, completing a line
+## the original placement never touched.
+class EffectCompletesAnotherLine extends CardModifierSkill:
+	var fired := false
+	var game_ref : Game
+	func get_str() -> String: return "EffectCompletesAnotherLine"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_board_mutated(_coord: BoardCoord, _is_compaction: bool) -> void:
+		if fired or not game_ref: return
+		fired = true
+		var card := TestFactories.m_card(9, TestFactories.uc())
+		await game_ref.place_card_in_grid(card, BoardCoord.new(0, 4, 4, 0))
+
+func run_detector_rescan_test() -> void:
+	behavior_section("DETECTOR: RESCAN")
+	var state := TestGridFixtures.build_fix_cross()
+	# Leave column 4 one cell short so the effect below can be the thing that completes it.
+	for y in 4:
+		var filler := TestFactories.m_card(3, TestFactories.uc())
+		Board.place_in_cell(state, filler, BoardCoord.new(0, 4, y, 0))
+	var effect := EffectCompletesAnotherLine.new()
+	var g := detector_game(state, effect)
+	effect.game_ref = g
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 2, 2, 0))
+	check(effect.fired, "the effect really ran (else this test is vacuous)")
+	var col4_scored := false
+	for s : ScoringSection in g.scored:
+		if s.kind != ScoringSection.LineKind.COL: continue
+		for c : Vector3i in [Vector3i(4, 0, 0), Vector3i(4, 4, 0)]:
+			if String(s.line_key).contains("4"): col4_scored = true
+	check(col4_scored,
+			"the line the EFFECT completed was scored too, not only the placement's own",
+			"scored keys: %s" % [keys_of(g.scored)])
+	free_grid_game(g)
+
+# ==============================================================================
+# TP-36 -- a remove-and-replace loop RE-SCORES every cycle and is bounded ONLY by the
+# runaway guard. FIX-ROW-FLUSH.
+#
+# This is deliberately NOT written as "it terminates". There is no line-scored memory and
+# no within-pass guard by design, so a complete line re-scores on every cycle. The
+# assertions are that it re-scored many times over, and that act_overrun -- the guard --
+# is what stopped it. A future change that makes the loop stop for some OTHER reason fails
+# the guard check below loudly instead of quietly still passing.
+# ==============================================================================
+
+## Removes and immediately replaces a card in the completed row on every mutation it sees.
+## Each replacement re-completes the line, which broadcasts again.
+class EffectRemoveAndReplace extends CardModifierSkill:
+	var game_ref : Game
+	var cycles := 0
+	func get_str() -> String: return "EffectRemoveAndReplace"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_board_mutated(_coord: BoardCoord, is_compaction: bool) -> void:
+		if is_compaction or not game_ref: return
+		if game_ref.act_overrun or game_ref.act_cancelled: return
+		var here := BoardCoord.new(0, 0, 0, 0)
+		var victim : CardData = game_ref.state.card_at(here)
+		if not victim: return
+		cycles += 1
+		Board.remove_from_cell(game_ref.state, victim)
+		await game_ref.place_card_in_grid(victim, here)
+
+func run_detector_runaway_guard_test() -> void:
+	behavior_section("DETECTOR: RUNAWAY GUARD")
+	var snap := snapshot_settings("runaway")
+	# A small cap keeps the test quick. The POINT is which mechanism stops the loop, not
+	# the particular number it stops at.
+	SettingsManager.settings.act_event_cap = 60
+	var state := TestGridFixtures.build_fix_row_flush()
+	var effect := EffectRemoveAndReplace.new()
+	var g := detector_game(state, effect)
+	effect.game_ref = g
+	g._begin_act()
+	var card := TestFactories.m_card(7, TestFactories.uc())
+	await g.place_card_in_grid(card, BoardCoord.new(0, 0, 1, 0))
+	check(effect.cycles > 1,
+			"the remove-and-replace ran many cycles, re-scoring each time",
+			"only %d cycles" % effect.cycles)
+	check(g.scored.size() >= effect.cycles,
+			"a completed line scored again on every cycle -- there is no line memory",
+			"%d scorings over %d cycles" % [g.scored.size(), effect.cycles])
+	check(g.act_overrun,
+			"THE RUNAWAY GUARD is what stopped the loop -- act_overrun tripped",
+			"act_calls=%d cap=%d" % [g.act_calls, SettingsManager.settings.act_event_cap])
+	free_grid_game(g)
+	restore_settings_snapshot(snap)

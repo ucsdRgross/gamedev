@@ -972,6 +972,11 @@ func _release_spotlight() -> void:
 ## legacy row-upper-vs-lower gutter split is read from `section.zone`; which bucket a section
 ## banks into beyond that is a later step's job (§1.6), not this one's.
 func add_line_score(section: ScoringSection, amount: int) -> void:
+	# A grid-model section (built by the detector, never `of_line`/`of_line_at`'s legacy
+	# `zone`/`index` pair) has no zone-indexed gutter to write into -- that bucket storage is a
+	# later step's contract. Bail before the legacy indexing below, which assumes index >= 0.
+	if section.index < 0:
+		return
 	var is_row := section.kind == ScoringSection.LineKind.ROW
 	var score_zone : Array[BigNumber]
 	if is_row:
