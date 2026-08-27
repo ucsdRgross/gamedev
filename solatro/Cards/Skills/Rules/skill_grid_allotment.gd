@@ -18,19 +18,32 @@ static func target_grid_count(deck_size: int, cards_per_unlock: int, max_count: 
 	var raw := (maxi(deck_size, 0) + d - 1) / d
 	return clampi(maxi(raw, 1), 1, max_count)
 
-## On game start, matches the actual grid count to the target computed from the deck just dealt
-## (the deal runs before this hook). ⚠ Placeholder for the grid-creator card:
-## no SkillGridCreator exists yet, so this syncs `state.grids` directly via Board.add_grid /
-## Board.remove_grid rather than adding/removing a persistent creator card in the rules deck —
-## a later step folds the actual building into that card's own on_spotlight/on_unspotlight and
-## reduces this method to adding/removing the right number of them.
+## Every persistent `SkillGridCreator` currently in the rules deck, in order.
+func _creator_cards() -> Array[CardData]:
+	var out : Array[CardData] = []
+	for card : CardData in api.rules_deck():
+		if card.skill is SkillGridCreator: out.append(card)
+	return out
+
+## On game start, matches the persistent grid-creator card count to the target computed from
+## the deck just dealt (the deal runs before this hook), adding or removing `SkillGridCreator`
+## cards so their count tracks the deck. This card no longer builds or removes grids
+## itself -- each creator card's own `on_spotlight`/`on_unspotlight` does that.
 func on_game_start() -> void:
 	if not api or not api.is_live(): return
 	var settings := SettingsManager.settings
 	var target := target_grid_count(api.draw_deck().size(), settings.grid_cards_per_unlock,
 			settings.grid_max_count)
-	while api.grids().size() < target:
-		api.add_grid(GridData.new())
-	while api.grids().size() > target:
-		for orphan : CardData in api.remove_grid(api.grids().size() - 1):
-			await api.discard_data(orphan)
+	var creators := _creator_cards()
+	while creators.size() < target:
+		var card := CardData.new().with_skill(SkillGridCreator.new())
+		api.add_rules_card(card)
+		creators.append(card)
+	while creators.size() > target:
+		var card : CardData = creators.pop_back()
+		var creator := card.skill as SkillGridCreator
+		# Removing a rules-deck card takes it out of the walk the spotlight sweep would use to
+		# catch the edge, so the removal fires on_unspotlight itself before the card is gone.
+		if creator and creator.has_method(&"on_unspotlight"):
+			await creator.on_unspotlight()
+		api.remove_rules_card(card)

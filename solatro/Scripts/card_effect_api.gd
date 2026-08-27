@@ -191,6 +191,28 @@ func remove_grid(index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_grid(_game.state, index)
 
+## The rules deck, left to right -- every persistent meta/creator card.
+func rules_deck() -> Array[CardData]:
+	return _game.state.rules_deck if is_live() else ([] as Array[CardData])
+
+## Appends a persistent rules-deck card (a meta card creating another rules card). Rules cards
+## are always spotlit (`CardModifier.is_spotlit`), so the next spotlight sweep fires its
+## `on_spotlight` -- the caller does not call it directly.
+func add_rules_card(card: CardData) -> void:
+	if not is_live(): return
+	card.stage = CardData.Stage.RULES
+	_game.state.rules_deck.append(card)
+	_game.state.revision += 1
+
+## Removes a persistent rules-deck card. ⚠ The card leaves the rules deck immediately, so the
+## normal spotlight sweep can no longer see the edge to fire its `on_unspotlight` -- the caller
+## must run that itself (via `on_mod_triggered` or a direct call) BEFORE removing, while the
+## card is still spotlit.
+func remove_rules_card(card: CardData) -> void:
+	if not is_live(): return
+	_game.state.rules_deck.erase(card)
+	_game.state.revision += 1
+
 ## The scoring section for one enumerated geometric line of a grid.
 func section_of_line(grid: int, line: LineGeometry.Line) -> ScoringSection:
 	return ScoringSection.of_geometric_line(_game.state, grid, line) if is_live() else null

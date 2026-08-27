@@ -767,6 +767,23 @@ func resize_grid_levels(levels: Array[Array], grids_n: int, heights_n: int) -> v
 			level.append(_zero_big_number())
 		levels[i] = level
 
+## Drops grid `index`'s score buckets and re-indexes every later grid down by one, keeping every
+## bucket aligned with `grids` after a grid is removed. `total_score` is untouched -- a removed
+## grid's LABELS go, its already-banked contribution does not.
+func remove_grid_score_data(index: int) -> void:
+	if index >= 0 and index < scores_row.size(): scores_row.remove_at(index)
+	if index >= 0 and index < scores_col.size(): scores_col.remove_at(index)
+	if index >= 0 and index < score_special.size(): score_special.remove_at(index)
+	if index >= 0 and index < scores_row_h.size(): scores_row_h.remove_at(index)
+	if index >= 0 and index < scores_col_h.size(): scores_col_h.remove_at(index)
+	var kept : Dictionary[Vector3i, BigNumber] = {}
+	for key : Vector3i in scores_cell:
+		if key.x == index: continue
+		var out_key := key
+		if key.x > index: out_key = Vector3i(key.x - 1, key.y, key.z)
+		kept[out_key] = scores_cell[key]
+	scores_cell = kept
+
 ## Deep copy of a coordinate-keyed BigNumber dictionary -- the same RefCounted trap as the
 ## arrays: duplicate_deep cannot see a BigNumber, so every value is rebuilt by hand.
 func duplicate_big_number_dict(d:Dictionary[Vector3i, BigNumber]) -> Dictionary[Vector3i, BigNumber]:

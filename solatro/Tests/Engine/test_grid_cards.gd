@@ -14,6 +14,10 @@ func _ready() -> void:
 	await run_the_52_53_boundary_test()
 	await run_105_yields_three_grids_test()
 	await run_the_cap_holds_test()
+	await run_grid_creator_builds_5x5_test()
+	await run_unspotlight_discards_grid_cards_test()
+	await run_removed_grid_labels_go_score_stays_test()
+	await run_meta_card_adds_and_subtracts_creators_test()
 	finish()
 
 # ==============================================================================
@@ -98,6 +102,145 @@ func run_the_cap_holds_test() -> void:
 			"a deck far past 3 grids' worth is still capped at grid_max_count (3)",
 			"got %d" % g.state.grids.size())
 	_free_game(g)
+
+# ==============================================================================
+# Helper: a bare Game with one spotlit SkillGridCreator card in the rules deck, and the card
+# itself for the test to call its hooks on directly.
+# ==============================================================================
+func _creator_game() -> Array:
+	var creator := SkillGridCreator.new()
+	var g := Game.new()
+	var state := GameData.new()
+	state.rules_deck = [_rules_card(creator)] as Array[CardData]
+	g.state = state
+	CardEnvironment.CURRENT = g
+	return [g, creator]
+
+# ==============================================================================
+# TP-66 -- FIX-GRID-1: the grid creator builds a 5x5 grid on on_spotlight.
+# ==============================================================================
+func run_grid_creator_builds_5x5_test() -> void:
+	behavior_section("THE GRID CREATOR BUILDS 5X5")
+	var parts := _creator_game()
+	var g : Game = parts[0]
+	var creator : SkillGridCreator = parts[1]
+	await creator.on_spotlight()
+	check(g.state.grids.size() == 1,
+			"on_spotlight adds exactly one grid",
+			"got %d" % g.state.grids.size())
+	var grid : GridData = g.state.grids[0]
+	check(grid.grid_width == 5 and grid.grid_height == 5,
+			"the grid is 5 wide and 5 tall",
+			"got %d x %d" % [grid.grid_width, grid.grid_height])
+	check(grid.cells.size() == 25 and grid.cell_types.size() == 25,
+			"25 cell zone cards were built, one real card per cell",
+			"got %d cells, %d types" % [grid.cells.size(), grid.cell_types.size()])
+	_free_game(g)
+
+# ==============================================================================
+# TP-67 -- FIX-ROW-FLUSH: on_unspotlight removes the grid and discards its cards.
+# ==============================================================================
+func run_unspotlight_discards_grid_cards_test() -> void:
+	behavior_section("ON_UNSPOTLIGHT REMOVES THE GRID AND DISCARDS ITS CARDS")
+	var parts := _creator_game()
+	var g : Game = parts[0]
+	var creator : SkillGridCreator = parts[1]
+	await creator.on_spotlight()
+	var occupant := CardData.new()
+	g.state.grids[0].cells[0].datas.append(occupant)
+	await creator.on_unspotlight()
+	check(g.state.grids.is_empty(),
+			"the grid is gone from the board",
+			"still %d grids" % g.state.grids.size())
+	check(occupant in g.state.discard_deck,
+			"the card that was sitting in a cell was discarded",
+			"discard_deck: %s" % [g.state.discard_deck])
+	_free_game(g)
+
+# ==============================================================================
+# TP-68 -- FIX-ROW-FLUSH, Q126: a removed grid's labels go; accumulated score does not.
+# ==============================================================================
+func run_removed_grid_labels_go_score_stays_test() -> void:
+	behavior_section("A REMOVED GRID'S LABELS GO -- ACCUMULATED SCORE DOES NOT")
+	var parts := _creator_game()
+	var g : Game = parts[0]
+	var creator : SkillGridCreator = parts[1]
+	await creator.on_spotlight()
+	# A second grid, untouched, to prove the removal shifts indices rather than wiping siblings.
+	var other := GridData.new()
+	Board.add_grid(g.state, other)
+	g.state.total_score = 500
+	g.state.resize_grid_bucket(g.state.scores_row, 2)
+	g.state.resize_grid_bucket(g.state.scores_col, 2)
+	g.state.resize_grid_bucket(g.state.score_special, 2)
+	g.state.scores_row[0].plus_equals(10)
+	g.state.scores_col[0].plus_equals(20)
+	g.state.score_special[0].plus_equals(30)
+	g.state.scores_row[1].plus_equals(40)
+	g.state.bank_cell_score(0, Vector2i(1, 1), 5)
+	g.state.bank_cell_score(1, Vector2i(2, 2), 7)
+
+	await creator.on_unspotlight()
+
+	check(g.state.total_score == 500,
+			"the banked total is untouched by removing the grid",
+			"got %d" % g.state.total_score)
+	check(g.state.scores_row.size() == 1 and g.state.scores_row[0].to_float() == 40.0,
+			"the removed grid's row label is gone and the surviving grid shifted down to index 0",
+			"got size %d, value %f" % [g.state.scores_row.size(), g.state.scores_row[0].to_float()])
+	check(g.state.cell_score(0, Vector2i(2, 2)) == 7.0,
+			"the surviving grid's cell label shifted down with it",
+			"got %f" % g.state.cell_score(0, Vector2i(2, 2)))
+	check(g.state.cell_score(0, Vector2i(1, 1)) == 0.0,
+			"the removed grid's cell label is gone",
+			"got %f" % g.state.cell_score(0, Vector2i(1, 1)))
+	_free_game(g)
+
+# ==============================================================================
+# TP-69 -- FIX-DECK-53, Q202: the meta card adds AND subtracts persistent creator cards on
+# deck change -- both directions in one test.
+# ==============================================================================
+func run_meta_card_adds_and_subtracts_creators_test() -> void:
+	behavior_section("THE META CARD ADDS AND SUBTRACTS PERSISTENT CREATORS")
+	var g := _allotment_game(TestDecks.deck_20())
+	await g.run_all_mods(&"on_game_start")
+	check(_creator_count(g) == 1,
+			"a small deck leaves exactly one persistent creator card",
+			"got %d" % _creator_count(g))
+	check(g.state.grids.size() == 1,
+			"and that creator built its grid",
+			"got %d grids" % g.state.grids.size())
+
+	# GROWS past a boundary: swap in a big deck and re-run the same game-start hook.
+	var big : Array[CardData] = []
+	for _i : int in 6:
+		big.append_array(TestDecks.deck_standard_52())
+	g.state.draw_deck = big
+	await g.run_all_mods(&"on_game_start")
+	check(_creator_count(g) == 3,
+			"a deck far past the cap grows the creator count to the cap (3)",
+			"got %d" % _creator_count(g))
+	check(g.state.grids.size() == 3,
+			"and grid count follows",
+			"got %d grids" % g.state.grids.size())
+
+	# SHRINKS back: swap in a small deck and re-run again.
+	g.state.draw_deck = TestDecks.deck_20()
+	await g.run_all_mods(&"on_game_start")
+	check(_creator_count(g) == 1,
+			"shrinking the deck subtracts creator cards back down to one",
+			"got %d" % _creator_count(g))
+	check(g.state.grids.size() == 1,
+			"and grid count follows back down",
+			"got %d grids" % g.state.grids.size())
+	_free_game(g)
+
+## How many persistent SkillGridCreator cards are in the rules deck right now.
+func _creator_count(g: Game) -> int:
+	var n := 0
+	for card : CardData in g.state.rules_deck:
+		if card.skill is SkillGridCreator: n += 1
+	return n
 
 # ==============================================================================
 # THE CARD EFFECT API BOUNDARY GATE.

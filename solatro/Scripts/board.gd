@@ -366,6 +366,7 @@ static func remove_grid(state: GameData, index: int) -> Array[CardData]:
 	if index < 0 or index >= state.grids.size():
 		return []
 	var grid : GridData = state.grids.pop_at(index)
+	state.remove_grid_score_data(index)
 	state.revision += 1
 	var orphans : Array[CardData] = []
 	if grid:
