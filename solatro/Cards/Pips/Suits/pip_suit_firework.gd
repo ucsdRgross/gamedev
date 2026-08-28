@@ -15,10 +15,10 @@ func get_description() -> String: return TRANSLATION.find('SUIT_FIREWORK_DESCRIP
 ## the edge. The rise route may be empty (card at the top) — then it banks immediately.
 func spawn_props() -> Array[PropSpawner]:
 	var v := _spawn_origin()
-	if v == Vector3i.MIN: return []
+	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var route := api.column_rise_path(v)
-	var col := v.y
+	var col := v.x
 	var origin_card : CardData = data
 	var sp := PropSpawner.new()
 	sp.origin = v

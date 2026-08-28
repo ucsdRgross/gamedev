@@ -82,12 +82,14 @@ func fire_mult() -> int:
 
 # --- Shared spawn preamble (Phase 3) --------------------------------------------------------
 
-## The board slot this suit launches from, or Vector3i.MIN when it spawns nothing: a talented
-## card (its skill suppresses its own suit effect — locked) or an off-board card.
-func _spawn_origin() -> Vector3i:
-	if data.skill: return Vector3i.MIN
-	if not api or not api.is_live(): return Vector3i.MIN
-	return api.find_data_vec3(data)
+## The board slot this suit launches from, or NOWHERE when it spawns nothing: a talented
+## card (its skill suppresses its own suit effect — locked) or an off-board card. Reads the
+## GRID index (Entrance included), not the legacy zone one -- that is the one `_pos_index`
+## never sees a grid or Entrance card through.
+func _spawn_origin() -> BoardCoord:
+	if data.skill: return BoardCoord.NOWHERE
+	if not api or not api.is_live(): return BoardCoord.NOWHERE
+	return api.grid_position_of(data)
 
 ## Prop count = rank × fire_mult (fire buffs count only). Non-numeral ranks count as 1.
 func _spawn_count() -> int:

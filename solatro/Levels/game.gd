@@ -1042,11 +1042,6 @@ func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
 		_:
 			pass
 
-## The row gutter (upper vs lower) a slot coord banks into — prop effects that know only a
-## Vector3i use this instead of the zone-array identity check score_line does.
-func row_gutter(v: Vector3i) -> Array[BigNumber]:
-	return state.scores_row_upper if v.x == 0 else state.scores_row_lower
-
 ## Suit-effect phase for one scored meld (SUIT_PROPS_PLAN §1.5). Gather every meld card's suit
 ## spawners, run the ONE shared prop simulation, then fire the on_score / on_after_score
 ## broadcast (activates SkillExtraPoint / StampDoubleTrigger / SkillEchoingTrigger — previously
@@ -1117,7 +1112,7 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 		# EVENTS — new-slot props ONLY, in emission order; hooks stay await-light
 		for p in movers:
 			note_processing()               # per SLOT ENTRY: feeds the runaway cap
-			var card := find_vec3_data(p.at)
+			var card := state.card_at(p.at)
 			if card:                        # slot may have emptied mid-flight
 				p.pass_negated = false
 				await run_card_mods(card, &"on_prop_passing", p)   # 1: intercept/dodge
@@ -1145,56 +1140,89 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 # ==============================================================================
 
 ## Replay-stable 50/50 pick for a hoop/knife row side. Hashes only resume-persisted inputs
-## (direction affects hook order, so it is data, not RNG).
-func entity_side_for_row(v: Vector3i) -> bool:
+## (direction affects hook order, so it is data, not RNG). Excludes the column (coord.x) so a
+## whole row agrees on one side; a real grid row is identified by (grid, y, h) -- the same
+## triple LineGeometry rows are keyed on -- so the Entrance (y == ENTRANCE_ROW, fixed per
+## column) and a genuine grid row both hash to one value per row.
+func entity_side_for_row(coord: BoardCoord) -> bool:
 	# history_trimmed + size = total actions ever committed — invariant under the undo cap
-	return hash([history_trimmed + save_history.size(), v.x, v.z]) & 1 == 0
+	return hash([history_trimmed + save_history.size(), coord.grid, coord.y, coord.h]) & 1 == 0
 
-## Every slot in v's row (fixed zone x + row z, across columns y), left-to-right or reversed.
-func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:
-	var zone := get_zone_from_vec3(v)
-	var out : Array[Vector3i] = []
-	for col in zone.size():
-		out.append(Vector3i(v.x, col, v.z))
+## Every slot in coord's row, left-to-right or reversed, NEVER crossing a grid boundary: a prop
+## travels one grid and stops at its edge. The Entrance's row is every `upper_zone` column at
+## coord's height; a real grid's row reuses `LineGeometry.row_cells`, which is already
+## within-one-grid and already left-to-right.
+func row_slot_path(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	if coord.is_entrance():
+		for col in state.upper_zone.size():
+			out.append(BoardCoord.new(coord.grid, col, BoardCoord.ENTRANCE_ROW, coord.h))
+	else:
+		if coord.grid < 0 or coord.grid >= state.grids.size(): return out
+		var grid : GridData = state.grids[coord.grid]
+		if not grid: return out
+		var line := LineGeometry.row_cells(grid, coord.y, coord.h)
+		for c : Vector3i in line.cells:
+			out.append(BoardCoord.new(coord.grid, c.x, c.y, c.z))
 	if not left_to_right:
 		out.reverse()
 	return out
 
 ## The remaining slots of coord's row PAST coord in the given direction (exclusive of coord) —
-## for mid-flight re-routes (Strongman pushes a prop along a parallel row).
-func row_slot_path_from(coord: Vector3i, left_to_right: bool) -> Array[Vector3i]:
+## for mid-flight re-routes (Strongman pushes a prop along a parallel row). `find` on a
+## RefCounted is identity, never equality — key the search on `pack()`.
+func row_slot_path_from(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
 	var full := row_slot_path(coord, left_to_right)
-	var idx := full.find(coord)
+	var idx := -1
+	for i in full.size():
+		if full[i].pack() == coord.pack():
+			idx = i
+			break
 	if idx == -1:
 		return full
 	return full.slice(idx + 1)
 
-## The slots above v in its column (rows past v toward the far edge). May be EMPTY (v is the
-## topmost card) — a firework then banks its column score immediately.
-func column_rise_path(v: Vector3i) -> Array[Vector3i]:
-	var out : Array[Vector3i] = []
-	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
-	for z in range(v.z + 1, col.datas.size()):
-		out.append(Vector3i(v.x, v.y, z))
+## The ArrayCardData a coordinate's card stack lives in: the Entrance's own `upper_zone`
+## column, or a real grid cell -- the one place a route builder needs to know which.
+func _stack_at_coord(coord: BoardCoord) -> ArrayCardData:
+	if coord.is_entrance():
+		if coord.x < 0 or coord.x >= state.upper_zone.size(): return null
+		return state.upper_zone[coord.x]
+	if coord.grid < 0 or coord.grid >= state.grids.size(): return null
+	var grid : GridData = state.grids[coord.grid]
+	if not grid: return null
+	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
+		return null
+	return grid.cells[grid.cell_index(coord.x, coord.y)]
+
+## The slots above coord in its own cell's stack (rows past coord toward the far edge). May be
+## EMPTY (coord is the topmost card) — a firework then banks its column score immediately.
+func column_rise_path(coord: BoardCoord) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	var stack := _stack_at_coord(coord)
+	if not stack: return out
+	for h in range(coord.h + 1, stack.datas.size()):
+		out.append(BoardCoord.new(coord.grid, coord.x, coord.y, h))
 	return out
 
-## Mancala TARGETS for ballistic Ball/Fire: walk below v.z wrapping to the column top,
+## Mancala TARGETS for ballistic Ball/Fire: walk below coord.h wrapping to the stack top,
 ## collecting `count` eligible cards' coords (each may repeat). Bounded at (count+1) laps so a
-## no-eligible-target column terminates. PURE — computed once at spawn.
-func mancala_targets(v: Vector3i, count: int, eligible: Callable) -> Array[Vector3i]:
-	var out : Array[Vector3i] = []
-	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
-	var n := col.datas.size()
+## no-eligible-target stack terminates. PURE — computed once at spawn.
+func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	var stack := _stack_at_coord(coord)
+	if not stack: return out
+	var n := stack.datas.size()
 	if n == 0 or count <= 0:
 		return out
-	var pos := v.z
+	var pos := coord.h
 	var steps := 0
 	var max_steps := (count + 1) * n
 	while out.size() < count and steps < max_steps:
 		pos = (pos + 1) % n
 		steps += 1
-		var coord := Vector3i(v.x, v.y, pos)
-		var card := find_vec3_data(coord)
+		var c := BoardCoord.new(coord.grid, coord.x, coord.y, pos)
+		var card := state.card_at(c)
 		if card and eligible.call(card):
-			out.append(coord)
+			out.append(c)
 	return out

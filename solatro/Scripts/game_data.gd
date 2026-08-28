@@ -333,12 +333,13 @@ func _scan_positions() -> Dictionary[CardData, Vector3i]:
 		if upper_zone_type[c]: out[upper_zone_type[c]] = Vector3i(0, c, -1)
 	return out
 
-## Full rescan of every grid cell. The grid-side result stays out of the legacy Vector3i index
-## (no fixed legacy-to-grid coordinate mapping exists yet), so this is a sibling scan, not a
-## shared return type. Cell zone cards are not positioned by this index -- only cards in play, at a
-## height. Write order: grid 0 before grid 1 before grid 2, row-major within a grid, bottom of
-## stack first -- a card duplicated across two grid cells resolves to the later one, the same
-## later-write-wins precedence the legacy scan uses.
+## Full rescan of every grid cell PLUS the Entrance (still backed by `upper_zone`). The
+## grid-side result stays out of the legacy Vector3i index -- the LOWER zone genuinely has no
+## grid coordinate yet -- so this is a sibling scan, not a shared return type. Cell zone cards
+## are not positioned by this index -- only cards in play, at a height. Write order: grid 0
+## before grid 1 before grid 2, row-major within a grid, bottom of stack first, THEN the
+## Entrance columns left to right, bottom of stack first -- a card duplicated across two spots
+## resolves to the later one, the same later-write-wins precedence the legacy scan uses.
 func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
 	var out : Dictionary[CardData, BoardCoord] = {}
 	for gi in grids.size():
@@ -352,6 +353,13 @@ func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
 			for h in cell.datas.size():
 				if cell.datas[h]:
 					out[cell.datas[h]] = BoardCoord.new(gi, col, row, h)
+	# The Entrance "belongs to the board, not to any one grid" -- every call site addresses it
+	# as grid 0's row -1 (PropLayer, the UI tests), so that is its attachment here too.
+	for c in upper_zone.size():
+		if not upper_zone[c]: continue
+		for h in upper_zone[c].datas.size():
+			if upper_zone[c].datas[h]:
+				out[upper_zone[c].datas[h]] = BoardCoord.new(0, c, BoardCoord.ENTRANCE_ROW, h)
 	return out
 
 ## The board walk for `CardDataIterator` (run_all_mods, spotlight sweep, etc.): `draw_deck`

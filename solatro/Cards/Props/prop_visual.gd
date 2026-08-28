@@ -66,8 +66,8 @@ var exits_into_void : bool = false
 ## while staged, or the last slot during a void exit. PropLayer re-pins from/target/position
 ## to this slot's LIVE point every frame (_repin): container relayouts (score labels growing,
 ## focus resizing rows, rebuilds) move slot centers mid-flight, and geometry locked to stale
-## pixels walks a diagonal off its row. MIN = nothing to follow (hold raw pixels).
-var anchor_coord : Vector3i = Vector3i.MIN
+## pixels walks a diagonal off its row. NOWHERE = nothing to follow (hold raw pixels).
+var anchor_coord : BoardCoord = BoardCoord.NOWHERE
 ## The anchor slot's last-known content-local point; _repin shifts the leg by the delta to
 ## the live point and refreshes this cache.
 var anchor_point : Vector2

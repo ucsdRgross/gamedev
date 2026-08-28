@@ -73,12 +73,10 @@ func get_frame() -> int: return 0
 func on_score(target: CardData) -> void:
 	if target != data: return
 	if not api or not api.is_live(): return
-	var v := api.find_data_vec3(data)
-	if v == Vector3i.MIN: return
+	var v := api.grid_position_of(data)
+	if v.is_nowhere(): return
 	# §15a: self-register at the score seam (also reaches the dispatch hook via run_all_mods;
 	# register_combo is idempotent, so the double registration is harmless).
 	api.register_combo(combo_key())
-	var section := ScoringSection.new()
-	section.kind = ScoringSection.LineKind.COL
-	section.index = v.y
+	var section := api.line_section_at(v, ScoringSection.LineKind.COL)
 	api.add_line_score(section, stacks)

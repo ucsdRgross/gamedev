@@ -6,7 +6,7 @@ extends RefCounted
 ##   million-prop edge case: max_live caps concurrency — first props move (and despawn)
 ##   while the spawner is still emitting; emission resumes as slots free up.
 
-var origin : Vector3i = Vector3i.MIN   ## captured at spawn: survives source card removal
+var origin : BoardCoord = BoardCoord.NOWHERE   ## captured at spawn: survives source card removal
 var remaining : int = 0                ## props still to emit
 var batch_size : int = 1               ## emitted per due tick
 var interval : int = 1                 ## ticks between emissions

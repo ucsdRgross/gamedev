@@ -108,25 +108,37 @@ func can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData
 	if not is_live(): return ([] as Array[CardData])
 	return await _game.return_first_data_array_result(&"on_can_place_stack", stack, target)
 
-## Every slot in a row, in the given direction.
-func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:
-	return _game.row_slot_path(v, left_to_right) if is_live() else ([] as Array[Vector3i])
+## Every slot in a row, in the given direction. Never crosses a grid boundary.
+func row_slot_path(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
+	return _game.row_slot_path(coord, left_to_right) if is_live() else ([] as Array[BoardCoord])
 
 ## Every slot in a row starting from a coordinate, in the given direction.
-func row_slot_path_from(coord: Vector3i, left_to_right: bool) -> Array[Vector3i]:
-	return _game.row_slot_path_from(coord, left_to_right) if is_live() else ([] as Array[Vector3i])
+func row_slot_path_from(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
+	return _game.row_slot_path_from(coord, left_to_right) if is_live() else ([] as Array[BoardCoord])
 
-## Every slot rising up a column from this one.
-func column_rise_path(v: Vector3i) -> Array[Vector3i]:
-	return _game.column_rise_path(v) if is_live() else ([] as Array[Vector3i])
+## Every slot rising up a cell's stack from this one.
+func column_rise_path(coord: BoardCoord) -> Array[BoardCoord]:
+	return _game.column_rise_path(coord) if is_live() else ([] as Array[BoardCoord])
 
 ## The slots a mancala-style sow would drop into.
-func mancala_targets(v: Vector3i, count: int, eligible: Callable) -> Array[Vector3i]:
-	return _game.mancala_targets(v, count, eligible) if is_live() else ([] as Array[Vector3i])
+func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array[BoardCoord]:
+	return _game.mancala_targets(coord, count, eligible) if is_live() else ([] as Array[BoardCoord])
 
 ## Replay-stable 50/50 pick for a row's entity side.
-func entity_side_for_row(v: Vector3i) -> bool:
-	return _game.entity_side_for_row(v) if is_live() else false
+func entity_side_for_row(coord: BoardCoord) -> bool:
+	return _game.entity_side_for_row(coord) if is_live() else false
+
+## The scoring section a ROW/COL prop write-back banks into at `coord` -- the Entrance reads
+## through the legacy `upper_zone` bridge, a real grid cell through the grid-model constructor;
+## both build the SAME ScoringSection shape `add_line_score` consumes.
+func line_section_at(coord: BoardCoord, kind: ScoringSection.LineKind) -> ScoringSection:
+	if not is_live(): return ScoringSection.new()
+	if coord.is_entrance():
+		var is_row := kind == ScoringSection.LineKind.ROW
+		var index := coord.h if is_row else coord.x
+		return ScoringSection.of_line(_game.state.upper_zone, is_row, index)
+	var index := coord.y if kind == ScoringSection.LineKind.ROW else coord.x
+	return ScoringSection.of_line_at(_game.state, coord.grid, kind, index, coord.h)
 
 # ==============================================================================
 # MUTATION — the write paths. Every one of these goes through Game/Board so the

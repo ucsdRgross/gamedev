@@ -60,14 +60,14 @@ func make_grid(cols: int) -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
-func slot(col: int) -> Vector3i:
-	return Vector3i(0, col, 0)
+func slot(col: int) -> BoardCoord:
+	return BoardCoord.new(0, col, BoardCoord.ENTRANCE_ROW, 0)
 
 func card_at(g: Game, col: int) -> CardData:
 	return g.state.upper_zone[col].datas[0]
 
 ## A prop travelling the given route with the given mods (default speed 1).
-func make_prop(route: Array[Vector3i], mods: Array[PropModifier], tps := 1) -> PropData:
+func make_prop(route: Array[BoardCoord], mods: Array[PropModifier], tps := 1) -> PropData:
 	var p := PropData.new()
 	p.route = route
 	p.mods = mods
@@ -75,7 +75,7 @@ func make_prop(route: Array[Vector3i], mods: Array[PropModifier], tps := 1) -> P
 	return p
 
 ## One spawner emitting `count` props via `factory` (a func(emit_index) -> PropData).
-func spawner(origin: Vector3i, factory: Callable, count := 1, batch := 1, interval := 1,
+func spawner(origin: BoardCoord, factory: Callable, count := 1, batch := 1, interval := 1,
 		max_live := 32) -> Array[PropSpawner]:
 	var sp := PropSpawner.new()
 	sp.origin = origin
@@ -87,7 +87,7 @@ func spawner(origin: Vector3i, factory: Callable, count := 1, batch := 1, interv
 	return [sp] as Array[PropSpawner]
 
 ## A spawner that emits one pre-built prop (source-removal / runaway helpers).
-func spawner_of(origin: Vector3i, p: PropData) -> Array[PropSpawner]:
+func spawner_of(origin: BoardCoord, p: PropData) -> Array[PropSpawner]:
 	var sp := PropSpawner.new()
 	sp.origin = origin
 	sp.remaining = 1
@@ -145,7 +145,7 @@ class DodgeStamp extends CardModifierStamp:
 
 ## Card-side probe that redirects the prop onto a fixed new route in phase 1 (once).
 class RedirectStamp extends CardModifierStamp:
-	var new_route : Array[Vector3i] = []
+	var new_route : Array[BoardCoord] = []
 	var fired := false
 	func get_str() -> String: return "RedirectStamp"
 	func get_description() -> String: return ""
@@ -163,7 +163,7 @@ class RunawayMod extends PropModifier:
 ## Prop-side mod that teleports to (0,3,0) with an empty tail on spawn.
 class TeleportOnSpawn extends PropModifier:
 	func on_spawned(prop: PropData, _g: Game) -> void:
-		prop.teleport(Vector3i(0, 3, 0), [] as Array[Vector3i])
+		prop.teleport(BoardCoord.new(0, 3, BoardCoord.ENTRANCE_ROW, 0), [] as Array[BoardCoord])
 
 # ==============================================================================
 # TESTS
@@ -187,7 +187,7 @@ func test_ballistic_single_slot() -> void:
 	var log := Log.new()
 	var pm := ProbeMod.new(); pm.log = log
 	var factory := func(_i: int) -> PropData:
-		return make_prop([slot(2)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(2)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(2), factory))
 	check(log.passed_cols == [2], "a ballistic prop passes exactly its one target", str(log.passed_cols))
 	check(log.finishes == 1, "and finishes once")
@@ -202,7 +202,7 @@ func test_three_phase_targeted() -> void:
 	var log := Log.new()
 	var pm := ProbeMod.new(); pm.log = log
 	var factory := func(_i: int) -> PropData:
-		return make_prop([slot(0)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(0)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory))
 	check(ps0.log == ["passing", "passed"],
 			"the passed card hears on_prop_passing then on_prop_passed, once each", str(ps0.log))
@@ -217,7 +217,7 @@ func test_dodge() -> void:
 	var log := Log.new()
 	var pm := ProbeMod.new(); pm.log = log
 	var factory := func(_i: int) -> PropData:
-		return make_prop([slot(0), slot(1)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(0), slot(1)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory))
 	check(log.passed_cols == [1],
 			"a dodged pass skips the prop's effect (phase 2); the next pass runs normally",
@@ -228,12 +228,12 @@ func test_dodge() -> void:
 func test_redirect() -> void:
 	var g := make_grid(4)
 	var rs := RedirectStamp.new()
-	rs.new_route = [slot(2), slot(3)] as Array[Vector3i]   # slot0 reroutes onto 2 then 3
+	rs.new_route = [slot(2), slot(3)] as Array[BoardCoord]   # slot0 reroutes onto 2 then 3
 	card_at(g, 0).with_stamp(rs)
 	var log := Log.new()
 	var pm := ProbeMod.new(); pm.log = log
 	var factory := func(_i: int) -> PropData:
-		return make_prop([slot(0), slot(1)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(0), slot(1)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory))
 	check(log.passed_cols == [0, 2, 3],
 			"a phase-1 set_route sends the prop down the new tail (1 skipped, 2 & 3 hit)",
@@ -246,7 +246,7 @@ func test_teleport() -> void:
 	var pm := ProbeMod.new(); pm.log = log
 	var tp := TeleportOnSpawn.new()
 	var factory := func(_i: int) -> PropData:
-		return make_prop([slot(0)] as Array[Vector3i], [tp, pm] as Array[PropModifier])
+		return make_prop([slot(0)] as Array[BoardCoord], [tp, pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory))
 	check(log.passed_cols.is_empty(),
 			"after teleport to an empty-tail slot the prop finishes without a normal pass",
@@ -260,13 +260,13 @@ func test_batch_vs_sequential() -> void:
 	var log := Log.new()
 	var factory := func(_i: int) -> PropData:
 		var pm := ProbeMod.new(); pm.log = log
-		return make_prop([slot(0)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(0)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory, 5, 5, 1))
 	check(log.spawns == 5 and log.finishes == 5, "batch spawner delivers all 5", str(log.spawns))
 	var log2 := Log.new()
 	var factory2 := func(_i: int) -> PropData:
 		var pm := ProbeMod.new(); pm.log = log2
-		return make_prop([slot(0)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(0)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(0), factory2, 5, 1, 1))
 	check(log2.spawns == 5 and log2.finishes == 5, "sequential spawner delivers all 5", str(log2.spawns))
 	done(g)
@@ -277,7 +277,7 @@ func test_max_live_cap_delivers_all() -> void:
 	# 6 props, cap 2 live, speed 2 so they linger and the cap actually bites.
 	var factory := func(_i: int) -> PropData:
 		var pm := ProbeMod.new(); pm.log = log
-		return make_prop([slot(0)] as Array[Vector3i], [pm] as Array[PropModifier], 2)
+		return make_prop([slot(0)] as Array[BoardCoord], [pm] as Array[PropModifier], 2)
 	await g.run_props(spawner(slot(0), factory, 6, 6, 1, 2))
 	check(log.spawns == 6 and log.finishes == 6, "all 6 props delivered under a live cap", str(log.spawns))
 	check(log.max_live <= 2, "never more than max_live=2 props alive at once", str(log.max_live))
@@ -306,7 +306,7 @@ func test_concurrent_props() -> void:
 	var log := Log.new()
 	var factory := func(_i: int) -> PropData:
 		var pm := ProbeMod.new(); pm.log = log
-		return make_prop([slot(1)] as Array[Vector3i], [pm] as Array[PropModifier])
+		return make_prop([slot(1)] as Array[BoardCoord], [pm] as Array[PropModifier])
 	await g.run_props(spawner(slot(1), factory, 2, 2, 1))
 	check(log.passed_cols == [1, 1], "both concurrent props over one card fire", str(log.passed_cols))
 	done(g)
@@ -314,7 +314,7 @@ func test_concurrent_props() -> void:
 func test_empty_route_runaway_terminates() -> void:
 	var g := make_grid(1)
 	var rm := RunawayMod.new()
-	var p := make_prop([slot(0)] as Array[Vector3i], [rm] as Array[PropModifier])
+	var p := make_prop([slot(0)] as Array[BoardCoord], [rm] as Array[PropModifier])
 	await g.run_props(spawner_of(slot(0), p))
 	check(true, "run_props returns on a self-perpetuating route (did not hang)")
 	done(g)
@@ -349,7 +349,4 @@ func test_add_line_score_seam() -> void:
 	col_section.index = 0
 	g.add_line_score(col_section, 3)
 	check(g.state.col_total == 3, "add_line_score banks into col_total for columns")
-	check(g.row_gutter(Vector3i(0, 0, 0)) == g.state.scores_row_upper
-			and g.row_gutter(Vector3i(1, 0, 0)) == g.state.scores_row_lower,
-			"row_gutter maps x=0 -> upper, x=1 -> lower")
 	done(g)

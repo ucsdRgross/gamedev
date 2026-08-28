@@ -10,13 +10,14 @@ func _init(p := 1) -> void:
 
 func on_pass_card(_prop: PropData, g: Game, card: CardData) -> void:
 	if not card.skill:
-		var v := g.find_data_vec3(card)
-		if v == Vector3i.MIN: return
+		var v := g.state.grid_position_of(card)
+		if v.is_nowhere(): return
 		g.register_combo(combo_key())   # §15a: prop score effects self-register at their seam
-		var section := ScoringSection.new()
-		section.kind = ScoringSection.LineKind.ROW
-		section.index = v.z
-		section.zone = g.state.upper_zone if v.x == 0 else g.state.lower_zone
+		var section : ScoringSection
+		if v.is_entrance():
+			section = ScoringSection.of_line(g.state.upper_zone, true, v.h)
+		else:
+			section = ScoringSection.of_line_at(g.state, v.grid, ScoringSection.LineKind.ROW, v.y, v.h)
 		g.add_line_score(section, points)
 
 func reaction_for(_prop: PropData, card: CardData) -> int:

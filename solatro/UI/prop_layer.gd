@@ -207,7 +207,10 @@ func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 ## own removal shifting indexes and converge in ≤2 frames.
 func _apply_split(vis: PropVisual) -> void:
 	var bounds : Array[int] = []
-	if vis.anchor_coord != Vector3i.MIN and _body_over_any_card(vis):
+	# Bracket-split geometry only knows how to bound the Entrance's own row
+	# (row_card_visuals is still zone-indexed); a genuine grid anchor stays unsplit.
+	var anchor_is_entrance := not vis.anchor_coord.is_nowhere() and vis.anchor_coord.is_entrance()
+	if anchor_is_entrance and _body_over_any_card(vis):
 		bounds = _row_bounds(vis.anchor_coord)
 	var active := not bounds.is_empty()
 	vis.set_split_active(active)
@@ -239,11 +242,11 @@ func _apply_split(vis: PropVisual) -> void:
 ## board's edges. Empty when the row has no in-layer visuals (nothing to bracket → unsplit).
 ## Held cards are skipped (they ride lifted at the layer's end and would stretch the row bracket
 ## over the whole board).
-func _row_bounds(v: Vector3i) -> Array[int]:
+func _row_bounds(v: BoardCoord) -> Array[int]:
 	var lo := 2147483647
 	var hi := -1
 	var in_row : Dictionary[Node, bool] = {}
-	for rv : CardVisual in play_area.row_card_visuals(v):
+	for rv : CardVisual in play_area.row_card_visuals(Vector3i(0, 0, v.h)):
 		if rv.get_parent() != play_area.card_layer or rv.held: continue
 		in_row[rv] = true
 		lo = mini(lo, rv.get_index())
@@ -276,11 +279,8 @@ func _free_visual(vis: PropVisual) -> void:
 ## geometry locked to stale pixels walks a diagonal off its row (owner reports 2026-07-12,
 ## worst visibly OFF-BOARD where staged/void points had no live slot to follow).
 func _repin(vis: PropVisual) -> void:
-	if vis.anchor_coord == Vector3i.MIN or not play_area: return
-	## `anchor_coord` stays the legacy Vector3i until the props migrate; narrow local conversion
-	## to the Entrance's BoardCoord form at this one boundary. Run B removes it.
-	var anchor_coord := BoardCoord.new(0, vis.anchor_coord.y, BoardCoord.ENTRANCE_ROW, vis.anchor_coord.z)
-	var live_global := play_area.slot_center_global(anchor_coord)
+	if vis.anchor_coord.is_nowhere() or not play_area: return
+	var live_global := play_area.slot_center_global(vis.anchor_coord)
 	if live_global == Vector2.ZERO: return   # defensive only: slot math never returns ZERO now
 	var live := to_local(live_global)
 	if live.is_equal_approx(vis.anchor_point): return
@@ -368,7 +368,7 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 		vis.t_goal = minf(vis.t_goal + 1.0 / vis.span_ticks, 1.0)
 	var batch_points := _assign_formation_points(spawned)
 	for prop : PropData in spawned:
-		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
+		var origin : BoardCoord = prop.at if not prop.at.is_nowhere() else _spawn_origin_of(prop)
 		var vis := _make_visual(prop, Vector2.ZERO)
 		# Personal formation point (PropFormationSet, per kind+origin batch), applied to every
 		# slot point this prop travels through — a batch reads as a condensed formation, not a
@@ -390,8 +390,8 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 		vis.retarget(staged)
 		# Staged pixels hang off the route entry (or the origin card) so _repin keeps the
 		# whole off-board train riding the board through relayouts.
-		var anchor : Vector3i = prop.route[0] if prop.route.size() >= 2 else origin
-		if anchor != Vector3i.MIN:
+		var anchor : BoardCoord = prop.route[0] if prop.route.size() >= 2 else origin
+		if not anchor.is_nowhere():
 			vis.anchor_coord = anchor
 			vis.anchor_point = _slot_point(anchor)
 		if vis.face_travel and prop.route.size() >= 2:
@@ -478,8 +478,8 @@ func _assign_formation_points(spawned: Array) -> Dictionary[PropData, Array]:
 	var out : Dictionary[PropData, Array] = {}
 	var batches : Dictionary[String, Array] = {}
 	for prop : PropData in spawned:
-		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
-		var key := "%d|%s" % [prop.kind, origin]
+		var origin : BoardCoord = prop.at if not prop.at.is_nowhere() else _spawn_origin_of(prop)
+		var key := "%d|%s" % [prop.kind, origin.pack()]
 		if key not in batches: batches[key] = []
 		(batches[key] as Array).append(prop)
 	for key : String in batches:
@@ -537,12 +537,9 @@ func _prune_done(live: Array) -> void:
 # --- coordinate mapping (content-local, scroll-invariant) ---------------------
 
 ## Content-local point of any board slot (either zone; direction-agnostic).
-func _slot_point(coord: Vector3i) -> Vector2:
-	if not play_area or coord == Vector3i.MIN: return Vector2.ZERO
-	## Props are still routed in the legacy Vector3i form until they migrate; narrow local
-	## conversion to the Entrance's BoardCoord form at this one boundary. Run B removes it.
-	var board_coord := BoardCoord.new(0, coord.y, BoardCoord.ENTRANCE_ROW, coord.z)
-	return to_local(play_area.slot_center_global(board_coord))
+func _slot_point(coord: BoardCoord) -> Vector2:
+	if not play_area or coord.is_nowhere(): return Vector2.ZERO
+	return to_local(play_area.slot_center_global(coord))
 
 ## Where a freshly spawned prop's visual appears. Travelers with a real path (route >= 2
 ## slots) stage OFF-BOARD behind their entry slot ALONG the travel axis — countdown/
@@ -550,7 +547,7 @@ func _slot_point(coord: Vector3i) -> Vector2:
 ## row/column line and marches in from the edge in ONE direction. Ballistic props (single
 ## target) appear at their source card, lifted a little per countdown so a volley isn't one
 ## stacked blob.
-func _staged_point(prop: PropData, origin: Vector3i) -> Vector2:
+func _staged_point(prop: PropData, origin: BoardCoord) -> Vector2:
 	if prop.route.size() >= 2:
 		var entry := _slot_point(prop.route[0])
 		var dir := _slot_point(prop.route[1]) - entry
@@ -576,17 +573,17 @@ func _void_point_of(vis: PropVisual) -> Vector2:
 	var pitch := maxf(dir.length(), CardVisual.card_size_play.x)
 	return vis.position + dir.normalized() * pitch
 
-func _spawn_origin_of(prop: PropData) -> Vector3i:
+func _spawn_origin_of(prop: PropData) -> BoardCoord:
 	# Props carry `at` once entered; a same-tick spawn hasn't moved, so pop out of the SOURCE
 	# CARD (plan §4.2 — the scored suit card bursts its props). The route head is only a
 	# fallback: for row props it is the far board edge, and spawning there made every knife
 	# of a meld materialize at one edge point instead of at its own card.
 	var game := _game()
 	if game and prop.source:
-		var v : Vector3i = game.find_data_vec3(prop.source)
-		if v != Vector3i.MIN: return v
+		var v : BoardCoord = game.state.grid_position_of(prop.source)
+		if not v.is_nowhere(): return v
 	if not prop.route.is_empty(): return prop.route[0]
-	return Vector3i.MIN
+	return BoardCoord.NOWHERE
 
 # --- card reactions -----------------------------------------------------------
 
@@ -603,8 +600,8 @@ func _update_reactions(live: Array, movers: Array) -> void:
 	if not game or not play_area: return
 	# 1. JUMP arrivals re-pulse per prop (anim_jump restarts cleanly; spin is hold-driven).
 	for prop: PropData in movers:
-		if prop.done or prop.at == Vector3i.MIN: continue
-		var card := game.find_vec3_data(prop.at)
+		if prop.done or prop.at.is_nowhere(): continue
+		var card := game.state.card_at(prop.at)
 		if not card: continue
 		var vis : CardVisual = play_area.data_card.get(card)
 		if not vis: continue
@@ -616,16 +613,16 @@ func _update_reactions(live: Array, movers: Array) -> void:
 	var holding : Dictionary[CardData, int] = {}
 	for prop: PropData in live:
 		if prop.done: continue
-		if prop.at != Vector3i.MIN:
-			var card := game.find_vec3_data(prop.at)
+		if not prop.at.is_nowhere():
+			var card := game.state.card_at(prop.at)
 			if card:
 				var reactions := prop.reactions_for(card)
 				if PropData.Reaction.JUMP in reactions:
 					holding[card] = holding.get(card, 0) | HOLD_JUMP
 				if PropData.Reaction.SPIN in reactions:
 					holding[card] = holding.get(card, 0) | HOLD_SPIN
-		for coord : Vector3i in prop.route:
-			var card := game.find_vec3_data(coord)
+		for coord : BoardCoord in prop.route:
+			var card := game.state.card_at(coord)
 			if card and (_reacting.get(card, 0) & HOLD_SPIN) \
 					and PropData.Reaction.SPIN in prop.reactions_for(card):
 				holding[card] = holding.get(card, 0) | HOLD_SPIN

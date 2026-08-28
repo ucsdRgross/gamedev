@@ -14,7 +14,7 @@ func get_description() -> String: return TRANSLATION.find('SUIT_HOOP_DESCRIPTION
 ## every talent they pass.
 func spawn_props() -> Array[PropSpawner]:
 	var v := _spawn_origin()
-	if v == Vector3i.MIN: return []
+	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var route := api.row_slot_path(v, api.entity_side_for_row(v))
 	var burning := _burning_mods()

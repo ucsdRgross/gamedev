@@ -8,8 +8,8 @@ extends RefCounted
 enum Reaction {NONE, JUMP, SPIN, JUGGLE, BURN}
 
 # --- movement state: per-prop and ASYNC-MUTABLE (any hook may rewrite it mid-flight) ---
-var at : Vector3i = Vector3i.MIN   ## slot currently over (MIN until first entry / after teleport)
-var route : Array[Vector3i] = []   ## slots still ahead, [0] = next to enter; MUTABLE — this is
+var at : BoardCoord = BoardCoord.NOWHERE   ## slot currently over (NOWHERE until first entry / after teleport)
+var route : Array[BoardCoord] = []   ## slots still ahead, [0] = next to enter; MUTABLE — this is
                                    ## what makes Strongman/Teleporter-style effects data writes
 var countdown : int = 1            ## TICKS until the prop pops route[0]; staging/train stagger
                                    ## lives HERE, never in the route. Integer => replay-exact.
@@ -35,7 +35,7 @@ func negate_pass() -> void:
 
 ## Instant relocation: continue traversal from `coord` along `new_route`. Recorded in the
 ## tick report so the view blinks/flashes instead of tweening across the board.
-func teleport(coord: Vector3i, new_route: Array[Vector3i]) -> void:
+func teleport(coord: BoardCoord, new_route: Array[BoardCoord]) -> void:
 	var from := at
 	at = coord
 	route = new_route
@@ -43,7 +43,7 @@ func teleport(coord: Vector3i, new_route: Array[Vector3i]) -> void:
 
 ## Rewrite only the slots ahead (e.g. Strongman pushes the prop one row up: same direction,
 ## parallel row — build the new tail with game.row_slot_path_from(...)).
-func set_route(new_route: Array[Vector3i]) -> void:
+func set_route(new_route: Array[BoardCoord]) -> void:
 	route = new_route
 
 ## Duck-typed prop-mod dispatch, mirroring run_all_mods' idiom (not its class).

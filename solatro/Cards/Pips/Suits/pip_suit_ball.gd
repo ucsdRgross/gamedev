@@ -11,7 +11,7 @@ func get_description() -> String: return TRANSLATION.find('SUIT_BALL_DESCRIPTION
 ## (pure data), and one ball per tick flies straight to each, dropping Juggling on arrival.
 func spawn_props() -> Array[PropSpawner]:
 	var v := _spawn_origin()
-	if v == Vector3i.MIN: return []
+	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var targets := api.mancala_targets(v, count, func(c: CardData) -> bool: return c.skill != null)
 	if targets.is_empty(): return []
@@ -25,7 +25,7 @@ func spawn_props() -> Array[PropSpawner]:
 	sp.factory = func(i: int) -> PropData:
 		var p := PropData.new()
 		p.kind = 2
-		p.route = [targets[i]] as Array[Vector3i]
+		p.route = [targets[i]] as Array[BoardCoord]
 		p.source = origin_card
 		p.mods = [PropDropStatus.new(StatusJuggling, PropData.Reaction.JUGGLE)] as Array[PropModifier]
 		p.mods.append_array(burning)

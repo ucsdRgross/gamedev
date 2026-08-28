@@ -131,17 +131,11 @@ func settle(pa: PlayArea) -> void:
 func slot(col: int) -> Vector3i:
 	return Vector3i(0, col, 0)
 
-## The Entrance's BoardCoord form of `slot(col)`, for `slot_center_global` call sites — `slot()`
-## itself stays Vector3i because PropData.route/at (Array[Vector3i]/Vector3i) are unmigrated until
-## Run B and most of this file's `slot()` calls feed those, not `slot_center_global`.
+## The Entrance's BoardCoord form of `slot(col)` -- `slot()` itself stays Vector3i because
+## `play_area.control_for_coord` is still zone-indexed; every prop-facing call site
+## (p.at/p.route, row_slot_path) uses this one instead.
 func slot_coord(col: int) -> BoardCoord:
 	return BoardCoord.new(0, col, BoardCoord.ENTRANCE_ROW, 0)
-
-## Narrow local conversion of a legacy Entrance Vector3i (`p.at`, `vis.anchor_coord`) to its
-## BoardCoord form, for `slot_center_global` call sites only. PropData/PropVisual stay Vector3i
-## until Run B migrates the props themselves; this helper goes with them.
-func slot_coord_v3(v: Vector3i) -> BoardCoord:
-	return BoardCoord.new(0, v.y, BoardCoord.ENTRANCE_ROW, v.z)
 
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
@@ -402,7 +396,7 @@ func test_prop_visual_lifecycle() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 0
-	p.route = [slot(0), slot(1), slot(2)] as Array[Vector3i]
+	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
 	# tick 0: spawn — the visual pops at the route head
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "the spawn tick's animation completes and tick_done fires")
@@ -427,14 +421,12 @@ func test_prop_visual_lifecycle() -> void:
 		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
 		# Slot centre PLUS this kind's lane offset — for the hoop that is the card-jump rise it now
  # rides at (owner), so the bare slot centre is no longer where it parks.
-		# `p.at` stays the legacy Vector3i until props migrate; narrow local conversion to the
-		# Entrance's BoardCoord form here. Run B removes it.
-		var want := pl.to_local(pa.slot_center_global(slot_coord_v3(p.at))) + vis.lane_offset
+		var want := pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		var w := 0.0
 		while (vis.position - want).length() >= 1.0 and w < 1.0:
 			await get_tree().process_frame
 			w += get_process_delta_time()
-			want = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at))) + vis.lane_offset
+			want = pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		check((vis.position - want).length() < 1.0,
 				"the visual lands on its slot's center (plus its own lane offset)",
 				"pos %s vs want %s | anchor %s from %s target %s t %.2f/%.2f" %
@@ -483,7 +475,7 @@ func test_slow_props_move_continuously() -> void:
 	var p := PropData.new()
 	p.kind = 1
 	p.ticks_per_slot = 2
-	p.route = [slot(0), slot(1), slot(2)] as Array[Vector3i]
+	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick completes")
 	p.at = p.route.pop_front()   # enter slot 0
@@ -495,9 +487,7 @@ func test_slow_props_move_continuously() -> void:
 	ok = await run_tick(pl, [p], [], [p], [])
 	check(ok, "a 2-ticks-per-slot mover's entry tick completes at its half-way share")
 	var vis : PropVisual = pl._visuals.get(p)
-	# `p.at` stays the legacy Vector3i until props migrate; narrow local conversion to the
-	# Entrance's BoardCoord form here. Run B removes it.
-	var target := pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
+	var target := pl.to_local(pa.slot_center_global(p.at))
 	check(vis != null and (vis.position - target).length() > 1.0,
 			"the slow prop is still mid-flight after its entry tick (no one-tick sprint)")
 	# the in-between tick (no new slot) carries it the rest of the way — never frozen
@@ -506,15 +496,15 @@ func test_slow_props_move_continuously() -> void:
 	# Settle a few frames (see the timing NOTE in test_prop_visual_lifecycle); re-derive `target`
 	# live each frame since _repin chases the settling board. Dump the leg state on failure.
 	var w := 0.0
-	target = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
+	target = pl.to_local(pa.slot_center_global(p.at))
 	while vis != null and (vis.position - target).length() >= 1.0 and w < 1.0:
 		await get_tree().process_frame
 		w += get_process_delta_time()
-		target = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
+		target = pl.to_local(pa.slot_center_global(p.at))
 	check(vis != null and (vis.position - target).length() < 1.0,
 			"the prop arrives exactly as its slot residency ends (smooth, no pause)",
 			"pos %s vs target %s | anchor %s from %s target %s t %.2f/%.2f" %
-			[vis.position if vis else Vector2.INF, target, vis.anchor_coord if vis else Vector3i.MIN,
+			[vis.position if vis else Vector2.INF, target, vis.anchor_coord if vis else BoardCoord.NOWHERE,
 			vis.from if vis else Vector2.ZERO, vis.target if vis else Vector2.ZERO,
 			vis.t if vis else -1.0, vis.t_goal if vis else -1.0])
 	SettingsManager.settings.base_delay = fast
@@ -527,13 +517,13 @@ func test_teleport_blinks() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 2
-	p.route = [slot(0)] as Array[Vector3i]
+	p.route = [slot_coord(0)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick before the teleport completes")
 	# a hook teleported the prop: the view must BLINK it to the destination, never lerp
-	p.at = slot(2)
-	p.route = [] as Array[Vector3i]
-	pl.begin_prop_tick([p], [], [], [[p, slot(0), slot(2)] as Array])
+	p.at = slot_coord(2)
+	p.route = [] as Array[BoardCoord]
+	pl.begin_prop_tick([p], [], [], [[p, slot_coord(0), slot_coord(2)] as Array])
 	var vis : PropVisual = pl._visuals.get(p)
 	var want := pl.to_local(pa.slot_center_global(slot_coord(2)))
 	check(vis != null and (vis.position - want).length() < 1.0,
@@ -568,8 +558,8 @@ func test_reactions_drive_card_pose() -> void:
 	var p := PropData.new()
 	p.kind = 0
 	p.mods = [JumpHintMod.new()] as Array[PropModifier]
-	p.at = slot(0)
-	p.route = [slot(1)] as Array[Vector3i]
+	p.at = slot_coord(0)
+	p.route = [slot_coord(1)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [], [p], [])
 	check(ok, "the reaction tick completes")
 	# anim_jump tweens the card's offset up; poll for the raised pose
@@ -595,8 +585,8 @@ func test_reactions_drive_card_pose() -> void:
 	var p2 := PropData.new()
 	p2.kind = 0
 	p2.mods = [JumpHintMod.new()] as Array[PropModifier]
-	p2.at = slot(0)
-	p2.route = [slot(1)] as Array[Vector3i]
+	p2.at = slot_coord(0)
+	p2.route = [slot_coord(1)] as Array[BoardCoord]
 	ok = await run_tick(pl, [p, p2], [], [p2], [])
 	check(ok, "the second-arrival tick completes")
 	var pulsed := false
@@ -607,8 +597,8 @@ func test_reactions_drive_card_pose() -> void:
 		waited += get_process_delta_time()
 	check(pulsed, "a second prop arriving on a held card re-triggers its reaction (per-prop pulse)")
 	# both props move on -> the card returns to rest
-	p.at = slot(1)
-	p2.at = slot(1)
+	p.at = slot_coord(1)
+	p2.at = slot_coord(1)
 	ok = await run_tick(pl, [p, p2], [], [p, p2], [])
 	check(ok, "the follow-up tick completes")
 	var rested := false
@@ -640,7 +630,7 @@ func test_row_prop_never_leaves_its_row() -> void:
 	var p := PropData.new()
 	p.kind = 1
 	p.ticks_per_slot = 2
-	p.route = g.row_slot_path(slot(0), true)
+	p.route = g.row_slot_path(slot_coord(0), true)
 	p.countdown = p.ticks_per_slot   # what run_props' spawn stage sets for a batch's first prop
 	var x_min := pa.slot_center_global(slot_coord(0)).x
 	var x_max := pa.slot_center_global(BoardCoord.new(0, 3, BoardCoord.ENTRANCE_ROW, 0)).x
@@ -706,7 +696,7 @@ func test_each_kind_moves_as_expected() -> void:
 		p.ticks_per_slot = 2
 		# Hoop sweeps RIGHT-TO-LEFT (entity_side_for_row sends real hoops and knives in from
 		# opposite edges), knife left-to-right — both directions of the shared sweep covered.
-		p.route = g.row_slot_path(slot(0), kind == 1)
+		p.route = g.row_slot_path(slot_coord(0), kind == 1)
 		p.countdown = p.ticks_per_slot
 		var band := CardVisual.card_size_play.y * 0.5
 		var samples : Array[Vector2] = []
@@ -734,7 +724,7 @@ func test_each_kind_moves_as_expected() -> void:
 		var p := PropData.new()
 		p.kind = kind
 		p.source = g.state.upper_zone[0].datas[0]   # spawns at its card, arcs to the target
-		p.route = [slot(2)] as Array[Vector3i]
+		p.route = [slot_coord(2)] as Array[BoardCoord]
 		p.countdown = p.ticks_per_slot
 		var samples : Array[Vector2] = []
 		var flight_ok : Array[bool] = [false]
@@ -767,7 +757,7 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 	var p := PropData.new()
 	p.kind = 2
 	p.source = g.state.upper_zone[0].datas[0]   # spawns at its card, arcs to the target
-	p.route = [slot(2)] as Array[Vector3i]
+	p.route = [slot_coord(2)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "ballistic spawn tick completes")
 	p.at = p.route.pop_front()
@@ -809,7 +799,7 @@ func test_batch_props_stagger() -> void:
 	fset.formations = [fdata] as Array[PropFormationData]
 	pl._formation_sets[1] = fset
 	pl._formation_checked[1] = true
-	var route := g.row_slot_path(slot(0), true)
+	var route := g.row_slot_path(slot_coord(0), true)
 	var a := PropData.new()
 	a.kind = 1
 	a.ticks_per_slot = 2
@@ -905,7 +895,7 @@ func test_formation_live_rescale() -> void:
 	pl._formation_checked[1] = true
 	var p := PropData.new()
 	p.kind = 1
-	p.route = g.row_slot_path(slot(0), true)
+	p.route = g.row_slot_path(slot_coord(0), true)
 	p.countdown = p.ticks_per_slot
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "the spread-formation spawn tick completes")
@@ -1072,16 +1062,8 @@ func test_game_view_scoring_pass_with_props() -> void:
 	await get_tree().process_frame
 	var max_props : int = high_water[0]
 	check(finished[0], "a view-attached scoring pass completes (prop tick sync never hangs)")
-	# ⚠ PARKED, and this is a REAL HOLE, not a test artefact. Every suit's `spawn_props()`
-	# starts with `_spawn_origin()`, which reads the LEGACY Vector3i position index. Grid cells
-	# are not in that index, so a card placed on a grid reports Vector3i.MIN and every suit
-	# returns no spawner at all: a scored line pays its points and fires NO props. The whole
-	# prop geometry -- routes, row_slot_path, entity_side_for_row, mancala_targets -- is built
-	# on the legacy coordinate and moves with it. Restore this check to `max_props > 0` with
-	# the legacy-coordinate migration (see gaps/GAP-003), which is what puts grid cards in the
-	# index. Asserted as == 0 deliberately: when the migration lands, THIS FAILS and says so.
-	check(max_props == 0,
-			"PARKED: a scored grid line spawns no props — suits read the legacy index (GAP-003)",
+	check(max_props > 0,
+			"a scored grid line spawns props",
 			"high-water %d | kinds %d | live %d" % [
 			max_props, spawned_kinds.size(), g.state.live_total()])
 	check(row_stray.is_empty(),
@@ -1152,10 +1134,8 @@ func _watch_live_props(pa: PlayArea, flag: Array[bool],
 				visible_kinds[kind_name] = true
 			# Row-hold guard: hoops/knives only (ballistic kinds arc off their row by design).
 			if not (vis is HoopVisual or vis is KnifeVisual): continue
-			if vis.anchor_coord == Vector3i.MIN: continue
-			# `anchor_coord` stays the legacy Vector3i until props migrate; narrow local conversion
-			# to the Entrance's BoardCoord form here. Run B removes it.
-			var anchor := pa.slot_center_global(slot_coord_v3(vis.anchor_coord))
+			if vis.anchor_coord.is_nowhere(): continue
+			var anchor := pa.slot_center_global(vis.anchor_coord)
 			if anchor == Vector2.ZERO: continue   # slot vanished mid-run; nothing to hold to
 			if absf(vis.global_position.y - anchor.y) > CardVisual.card_size_play.y * 0.75 \
 					and row_stray.size() < 5:

@@ -30,14 +30,16 @@ static func lines_through(grid: GridData, x: int, y: int, h: int) -> Array:
 	var out : Array[Line] = []
 	if x < 0 or x >= grid.grid_width or y < 0 or y >= grid.grid_height or h < 0:
 		return out
-	out.append(_row(grid, y, h))
+	out.append(row_cells(grid, y, h))
 	out.append(_col(grid, x, h))
 	out.append(_height_v(x, y, h))
 	out.append_array(_diagonals(grid, x, y, h))
 	return out
 
-## Every cell of row `y` at height `h`, full grid width.
-static func _row(grid: GridData, y: int, h: int) -> Line:
+## Every cell of row `y` at height `h`, full grid width, left to right (ascending x). Public so
+## route builders (prop rows) reuse this exact within-one-grid, never-crosses-a-boundary walk
+## instead of writing new row geometry.
+static func row_cells(grid: GridData, y: int, h: int) -> Line:
 	var cells : Array[Vector3i] = []
 	for xi in grid.grid_width:
 		cells.append(Vector3i(xi, y, h))

@@ -14,7 +14,7 @@ func get_description() -> String: return TRANSLATION.find('SUIT_KNIFE_DESCRIPTIO
 ## (props) instead of talents. The route includes the knife's own card (self-scored by design).
 func spawn_props() -> Array[PropSpawner]:
 	var v := _spawn_origin()
-	if v == Vector3i.MIN: return []
+	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var route := api.row_slot_path(v, not api.entity_side_for_row(v))
 	var burning := _burning_mods()
