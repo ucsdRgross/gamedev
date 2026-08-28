@@ -513,6 +513,8 @@ func _order_board_cards(game_state: GameData) -> void:
 	var pending : Array[bool] = [false]
 	_append_zone_row_major(ordered, seen, pending, game_state.upper_zone_type, game_state.upper_zone)
 	_append_zone_row_major(ordered, seen, pending, game_state.lower_zone_type, game_state.lower_zone)
+	# Grids last: they are the board, and they draw over what is left of the legacy zones.
+	_append_grids_row_major(ordered, seen, pending, game_state.grids)
 	for i : int in ordered.size():
 		var vis := ordered[i]
 		if vis.get_index() != i:
@@ -536,6 +538,26 @@ func _deferred_reorder() -> void:
 ## Append one zone's CardVisuals in row-major order: headers (row -1), then each row across all
 ## columns (ragged columns simply skip the rows they don't have). `pending[0]` flips true when a
 ## visual exists but is not yet in CardLayer (deferred add) — the caller re-orders once it lands.
+## The grid half of the board's draw order, mirroring `_append_zone_row_major`: a cell's zone card
+## first, then the stacks height-major, so a card always draws OVER the cell it sits on and a
+## whole height layer stays contiguous for PropLayer's brackets.
+##
+## ⚠ Without this, grid cards were never assigned an index at all -- they kept creation order, and
+## a cell frame rebuilt after its card drew on top of it.
+func _append_grids_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
+		pending: Array[bool], grids: Array[GridData]) -> void:
+	for grid : GridData in grids:
+		if not grid: continue
+		for data : CardData in grid.cell_types:
+			_append_ordered_visual(out, seen, pending, data)
+		var max_h := 0
+		for cell : ArrayCardData in grid.cells:
+			max_h = maxi(max_h, cell.datas.size())
+		for h : int in max_h:
+			for ci : int in grid.cells.size():
+				if h < grid.cells[ci].datas.size():
+					_append_ordered_visual(out, seen, pending, grid.cells[ci].datas[h])
+
 func _append_zone_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
 		pending: Array[bool], type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	var max_rows := 0

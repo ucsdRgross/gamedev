@@ -141,7 +141,9 @@ must sit in the SAME folder as the main exe, which it launches by name.
   The raw form is `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
   (the PIXELS suite asserts on rendered pixels; headless it fails loudly instead of skipping —
   HEADLESS_TESTING.md §0). Logs:
-  `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`. Run it yourself whenever the owner's
+  `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` — ⚠ **CHECK ITS MTIME, and
+  note the `logs\test\` segment**: a file of that name also sits directly under `Solatro\`, is months
+  stale, and greps clean while the banner reports failures. Run it yourself whenever the owner's
   editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (43) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.

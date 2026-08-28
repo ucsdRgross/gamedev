@@ -4,13 +4,16 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** **The engine is complete and the loop closes.** `S1`–`S19` (Phases 1–4) and `S35`–`S37`
-(Phase 8) landed, plus `S37b`'s closing pass. A show deals, refills, commits to a grid, grabs,
-places, scores, banks, undoes, replays a quit mid-cascade, shows a live score, and Ends.
-**What is left is the VIEW.** `S20` and `S20b.1`/`.2`/`.2b` landed — the grid draws, on top, in the
-old zone frame, with the Entrance aligned beneath it and `card_scale` at 1 so the whole board fits
-the window. Next is `S20b.2b`, the coordinate migration, which unblocks everything after it.
-Suite green at **43 suites**. Worktree `gamedev-poker-patience`, branch `poker-patience`.
+**State:** **The engine is complete and the loop closes.** `S1`-`S19`, `S35`-`S37`, `S37b` and now
+`S20c` have landed. A show deals, refills, commits to a grid, grabs, places, scores, banks, undoes,
+replays a quit mid-cascade, shows a live score, and Ends -- and **End is now the ONLY thing that
+finishes a show**; the act, the Next button and `Game.submit` are gone.
+**What is left is the VIEW.** `S20`, `S20b.1`, `.2` landed -- the grid draws, on top, in the old
+zone frame, Entrance beneath it, `card_scale` 1 so the board fits the window.
+⚠ **`S20b.2b` was audited against the live code and could NOT be executed as written**: it needs
+`GAP-011` and `GAP-012` first, both now ANSWERED. It gains a new sub-step `S20b.2b-0` that did not
+exist in the plan. Suite green at **43 suites**. Worktree `gamedev-poker-patience`, branch
+`poker-patience`.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -44,6 +47,12 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
 - ⚠ **Judge by the failure SET, never the check total** — the total varies run to run. And read the
   log for `SCRIPT ERROR` and check the SUITE COUNT even when the banner says all passed: a suite
   that fails to compile silently drops out (measured: 43 → 41, twice).
+- ⚠ **THE TEST LOG IS `...\Solatro\logs	est	est_output_all.log`.** A file of the SAME NAME sits
+  directly under `Solatro\` and is months stale -- it greps clean while the banner reports failures.
+  Check the mtime. `START_HERE.md` named the stale path and has been corrected.
+- ⚠ **`doc_check.py --changed` is STRICTER than the full run on design-id citations.** Touch an old
+  file and it reports the standing backlog as errors in that file. The full run is the gate: it
+  reads 0 errors, 7 warnings. Judge a regression by the full run plus a diff check for ADDED ids.
 - By-eye rendering: `<godot> --path solatro res://Tests/Visual/reveal_shot.tscn`, writes
   `user://reveal_shots/*.png`. It stands up a REAL `GameView`; it is the only thing that shows the
   board.
@@ -156,21 +165,46 @@ lettered steps by hand when closing a gap.
   notes: 'card_scale 2.5 -> 1 landed with it, so the whole board fits the window.'
 
 # ─── PENDING ───
-- id: S20b2b
+- id: S20b2b0
   description: >
-    THE COORDINATE MIGRATION. slot_center_global takes a BoardCoord and nothing else; the legacy
-    Vector3i board position retires; the prop routes follow it (one grid, left to right, never
-    across the gap between grids).
+    VALUE SEMANTICS FIRST (GAP-011=a). BoardCoord gains equals(), pack() -> Vector4i and
+    is_nowhere(); cell_type_coord and Board.locate_in_cell stop returning null and return NOWHERE.
+    Purely additive -- no Vector3i is swapped in this step.
   files_touched: []
   verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
   status: pending
   evidence: ''
   notes: >
-    ⚠ DO THIS ONE NEXT — b.3, b.4 and the test-fixture rebuild all turned out to depend on it.
-    Surface is SMALL in product code: 8 call sites (play_area 4, prop_layer 2, spotlight_tool 2);
-    the other 58 references are tests and move mechanically. This is what makes a scored grid line
-    fire props again (see Open bugs) and what lets test fixtures live on a grid.
+    ⚠ THIS DID NOT EXIST IN THE PLAN. It is required because BoardCoord extends RefCounted and
+    defines no equality: `==` is IDENTITY, and GDScript has no operator overloading, so a mechanical
+    swap breaks ~30 `== Vector3i.MIN` guards silently and makes game.gd's `full.find(coord)` return
+    the whole row. game_data.gd:241-243 already documents the problem and keys on Vector4i.
+    ⚠ It also OWES a source-scanning gate failing on ==/!= against a BoardCoord -- without it,
+    (a) is strictly worse than the rejected (b). Additive now = provable; after the swap = not.
+- id: S20b2b
+  description: >
+    THE COORDINATE MIGRATION. slot_center_global takes a BoardCoord; the legacy Vector3i board
+    position retires; prop routes follow it (one grid, left to right, never across the gap).
+  files_touched: []
+  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: >
+    ⚠ THE "EIGHT PRODUCT CALL SITES" NUMBER WAS WRONG and the low number is the dangerous half.
+    slot_center_global has TWO real product calls (prop_layer.gd:280, :539); the rest are comments.
+    The thing actually migrating is the legacy Vector3i board position: 148 refs across 29 product
+    files -- the five route builders in game.gd AND their CardEffectApi mirrors, PropData.at,
+    PropVisual.anchor_coord, pip_suit.gd::_spawn_origin and its five suit subclasses, the prop-effect
+    write-backs. DESIGN.md 1e is corrected.
+    ⚠ The 58 test refs are NOT a mechanical swap: all 58 are in test_ui_props.gd (33) and
+    test_visual_layers.gd (25), whose fixtures have NO GridData, so no BoardCoord names their slots.
+    They move with S20b.4.
+    ⚠ GAP-012=(c): panels PUBLISH their origin on `resized` and slot_center_global reads the cache,
+    so the every-frame anchor path does no tree reads. Owes a resized-followed test AND a by-eye
+    check -- a stale cache is silent. REUSE LineGeometry._row for the route (it is already
+    within-one-grid and left-to-right); do not write new geometry.
 - id: S20b3
   description: >
     The Entrance moves to a pinned %EntranceStrip outside the board's scroll, x slaved to it, with
@@ -201,13 +235,23 @@ lettered steps by hand when closing a gap.
     ⚠ Moving a fixture is only half: a prop's own `p.at` names a zone too, and redirecting one
     without the other converges on nothing.
 - id: S20c
-  description: 'Retire the act: Game.submit, _perform_submit and the Next button.'
-  files_touched: []
+  description: 'Retire the act: Game.submit, _perform_submit, the on_run_scorer branch, the Next button.'
+  files_touched: [Levels/game.gd, Levels/game_view.gd, Levels/game_view.tscn, Scripts/run_state.gd,
+    Tools/spotlight_tool.gd, Tests/Engine/test_game_headless.gd, Tests/Interaction/test_interaction.gd,
+    Tests/E2E/test_e2e_run.gd, Tests/Engine/test_leak_canary.gd]
   verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: "Owner's Q31=(b). end_show() becomes the only path that resolves a show."
+  status: done
+  evidence: 'ALL 43 SUITES: 3440 CHECKS PASSED, zero failures. grep: zero readers of
+    submit/_perform_submit/next_button in product code. doc_check 0 errors.'
+  notes: >
+    Q31=(b); chart P3/P4. ⚠ Game.next()/_perform_next() STAY -- the plan retires the BUTTON, and
+    _perform_next still serves the &"on_next" replay. TP-80j and TP-80i are new, both red-then-green
+    verified by the overseer (RED hit "a refill does not resolve the show -- show_ended=true" and
+    the gate naming play_area.gd:353 respectively). Touchscreen coverage was RESTORED, not accepted
+    as lost: removing the Next button orphaned test_interaction's touch_tap() and left a section
+    headed "EVERY INPUT MODE" with no touch. ⚠ The new touch test must run AFTER the mouse tests --
+    a touch leaves no HOVER and the mouse selection path needs one.
 ```
 
 After `S20c`, `PLAN.md` §3 governs: `S21`–`S25` (the flipped board — **this is where cards start

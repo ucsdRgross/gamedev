@@ -30,6 +30,7 @@ func _ready() -> void:
 	check_all_tests_registered()
 	await run_a_panel_per_grid_and_a_slot_per_cell_test()
 	await run_a_placed_card_has_a_control_a_visual_and_a_position_test()
+	await run_a_placed_card_draws_over_its_cell_test()
 	await run_every_grid_sits_on_the_same_floor_test()
 	finish()
 
@@ -146,6 +147,47 @@ func run_a_placed_card_has_a_control_a_visual_and_a_position_test() -> void:
 		check(visual.global_position != Vector2.ZERO,
 				"...and the visual has a real position on screen, not the origin",
 				str(visual.global_position))
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-80m -- A CARD ON A CELL DRAWS ON TOP OF THE CELL IT SITS ON.
+#
+# Owner report, by eye: "some cards appear behind the grid zone cells they are supposed to be
+# on top of". Draw order in a CanvasItem layer is CHILD INDEX -- lower draws first, so the
+# card's visual must sit at a HIGHER index than the zone card of its own cell.
+#
+# ⚠ Nothing assigned grid cards an index at all: _order_board_cards walked the two legacy zones
+# and stopped, so a grid card kept whatever index creation happened to give it, and a cell
+# frame rebuilt after its card drew over the card. No test looked, because no visual harness
+# ever put a card ON a cell.
+# ==============================================================================
+func run_a_placed_card_draws_over_its_cell_test() -> void:
+	behavior_section("A PLACED CARD DRAWS OVER ITS CELL")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var coord := BoardCoord.new(0, 2, 3, 0)
+	var placed : CardData = g.state.upper_zone[0].datas[0]
+	await g.place_card_in_grid(placed, coord)
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var cell_type : CardData = g.state.grids[0].cell_types[3 * g.state.grids[0].grid_width + 2]
+	var card_vis : CardVisual = pa.data_card.get(placed)
+	var cell_vis : CardVisual = pa.data_card.get(cell_type)
+	check(card_vis != null and is_instance_valid(card_vis)
+			and cell_vis != null and is_instance_valid(cell_vis),
+			"precondition: both the placed card and its cell have visuals")
+	if not (card_vis and is_instance_valid(card_vis) and cell_vis and is_instance_valid(cell_vis)):
+		await _tear_down(view)
+		return
+	check(card_vis.get_parent() == cell_vis.get_parent(),
+			"precondition: both draw in the SAME layer -- an index only orders within one layer",
+			"%s vs %s" % [str(card_vis.get_parent()), str(cell_vis.get_parent())])
+	check(card_vis.get_index() > cell_vis.get_index(),
+			"the placed card draws OVER the cell it sits on",
+			"card idx %d vs cell idx %d" % [card_vis.get_index(), cell_vis.get_index()])
 	await _tear_down(view)
 
 # ==============================================================================
