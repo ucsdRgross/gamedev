@@ -36,6 +36,7 @@ func _ready() -> void:
 	await test_authored_card_doubles()
 	implementation_section("THE RETIRED ACT")
 	test_retired_act_has_no_readers()
+	test_zone_only_tests_do_not_multiply()
 	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
@@ -868,6 +869,78 @@ func test_retired_act_has_no_readers() -> void:
 			"
 ".join(offenders))
 
+
+
+# ==============================================================================
+# THE ZONE-ONLY RATCHET.
+#
+# A test that asserts against the legacy zone renderer and never touches a grid is testing a
+# renderer the game no longer uses. Eleven such files existed when this gate was written, and one
+# of them was the LAYERING suite -- which is why a card drawing behind its own grid cell reached
+# the owner by eye instead of failing a check.
+#
+# This does not fix them. It RATCHETS: the set may shrink, never grow. A new zone-only test fails
+# here, and porting one fails here too until it is struck off the list below, so the list cannot
+# rot into a lie.
+#
+# The set empties when the legacy zone rendering is deleted and these files have nowhere left to
+# point -- until then, every name below is a known hole, not an oversight.
+
+## Files that assert against the legacy renderer and reference no grid. STRIKE A NAME OFF when it
+## is ported; do not add one.
+const ZONE_ONLY_TESTS : Array[String] = [
+	"res://Tests/Engine/test_board.gd",
+	"res://Tests/Engine/test_fuzz.gd",
+	"res://Tests/Engine/test_game_data.gd",
+	"res://Tests/Engine/test_prop_engine.gd",
+	"res://Tests/Engine/test_spotlight.gd",
+	"res://Tests/Engine/test_statuses.gd",
+	"res://Tests/Engine/test_suit_props.gd",
+	"res://Tests/Map/test_persistence_fuzz.gd",
+	"res://Tests/Map/test_run_manager.gd",
+	"res://Tests/UI/test_visual_layers.gd",
+	"res://Tests/Visual/pause_time_spike.gd",
+]
+
+const ZONE_MARKERS : Array[String] = ["upper_zone", "lower_zone"]
+const GRID_MARKERS : Array[String] = [
+	"grids", "BoardCoord", "place_card_in_grid", "TestGridFixtures", "cell_types",
+]
+
+func test_zone_only_tests_do_not_multiply() -> void:
+	var scanned := 0
+	var zone_only : Array[String] = []
+	for path : String in _gd_scripts_under("res://Tests"):
+		var f := FileAccess.open(path, FileAccess.READ)
+		if not f: continue
+		var text := f.get_as_text()
+		scanned += 1
+		var names_zone := false
+		for m : String in ZONE_MARKERS:
+			if text.contains(m): names_zone = true
+		if not names_zone: continue
+		var names_grid := false
+		for m : String in GRID_MARKERS:
+			if text.contains(m): names_grid = true
+		if not names_grid: zone_only.append(path)
+	# A gate that scans nothing passes while proving nothing.
+	check(scanned >= 30, "the ratchet actually found the test scripts to scan",
+			"only %d scripts scanned" % scanned)
+	var added : Array[String] = []
+	for path : String in zone_only:
+		if not ZONE_ONLY_TESTS.has(path): added.append(path)
+	var ported : Array[String] = []
+	for path : String in ZONE_ONLY_TESTS:
+		if not zone_only.has(path): ported.append(path)
+	check(added.is_empty(),
+			"no NEW test asserts against the legacy renderer without also covering a grid",
+			"
+".join(added))
+	check(ported.is_empty(),
+			"the zone-only list is honest -- a ported file has been struck off it",
+			"now covers a grid, strike it from ZONE_ONLY_TESTS:
+" + "
+".join(ported))
 
 ## Every .gd under `dir`, recursively. Skips addons/, which is vendored and not ours.
 func _gd_scripts_under(dir: String) -> Array[String]:
