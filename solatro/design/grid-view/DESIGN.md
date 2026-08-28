@@ -71,8 +71,15 @@ PlayArea (Control)                                    :15
         └── OverlayLayer  (Node2D)                    :120
 ```
 
-⚠ **`grids` appears nowhere in `UI/play_area.gd`.** A card on a grid has no control, no visual and
-no on-screen position. That is `GAP-009`, and it is what this design fills.
+⚠ This section describes the play area **as it was when this design was written** — the state
+`GAP-009` named, where `grids` appeared nowhere in `UI/play_area.gd` and a card on a grid had no
+control, no visual and no on-screen position.
+
+**`S20b.1` and `S20b.2` have since landed**, so the first two thirds of that is fixed: the grid
+board builds (`%GridContainer` at `play_area.gd:141`, `set_grid_zones`, `_create_grid_panel`,
+`_bind_grid_panel`, `update_grid_zone_visuals`) and a grid card has a `CellSlot` control and a
+visual. **What is still missing is only the GEOMETRY function** — `slot_center_global` still takes
+a legacy `Vector3i`, which is `S20b.2b` and what chart `M` covers.
 
 ### 1b. THE DUAL MODEL — controls lay out, Node2D draws, and math bridges them
 
@@ -124,13 +131,26 @@ Two rules inside it that a height-driven version has to decide about explicitly:
 
 | Symbol | Total refs | In product code | In tests |
 |---|---|---|---|
-| `slot_center_global` | 66 | **8** (`play_area.gd` 4, `prop_layer.gd` 2, `spotlight_tool.gd` 2) | 58 |
-| `Vector3i.MIN` | 56 | — | — |
-| `find_data_vec3` / `Board.locate(` | 37 | — | — |
+| `slot_center_global` | 67 | **2 CALLS** (`prop_layer.gd:280`, `:539`); 5 further refs are comments and the definition | 58 (2 files) |
+| `Vector3i` as a board position | 148 | across **29 files** | — |
+| `upper_zone` / `lower_zone` | — | across **13 files** | — |
 
-⚠ **The product-side seam is far smaller than it looks** — eight call sites, not fifty. The bulk is
-test code, which moves mechanically once the signature is fixed. An earlier estimate in the handoff
-said ~50 product callers; that was wrong and this table replaces it.
+⚠ **Counting `slot_center_global` UNDERSTATES the migration by an order of magnitude.** The symbol
+has two real product call sites, but the thing being migrated is the legacy `Vector3i` board
+position, which reaches 29 product files — the five route builders in `game.gd` and their
+`CardEffectApi` mirrors, `PropData.at`, `PropVisual.anchor_coord`, `pip_suit.gd::_spawn_origin` and
+its five suit subclasses, and the prop-effect write-backs. `gaps/GAP-003.md` measured the same
+radius independently. **An implementer told "eight call sites" will change two lines, see the tree
+compile, and believe the step is done.**
+
+⚠ **The 58 test refs are NOT a mechanical swap.** All 58 live in two files
+(`Tests/UI/test_ui_props.gd` 33, `Tests/UI/test_visual_layers.gd` 25) whose fixtures build boards
+entirely in the legacy zones and contain **no `GridData` at all** — so no `BoardCoord` names any
+slot they assert on. They move with the fixture rebuild (`S20b.4`), not with the signature.
+
+⚠ Two decisions this section's premise depends on are OPEN: `gaps/GAP-011.md` (`BoardCoord` is
+`RefCounted`, so a mechanical swap breaks every equality guard silently) and `gaps/GAP-012.md`
+(`M2`'s "pure arithmetic" cannot describe a grid cell whose panel origin is a layout result).
 
 ### 1f. What the grid model already provides, headless
 
