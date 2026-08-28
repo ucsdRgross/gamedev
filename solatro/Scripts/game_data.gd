@@ -268,14 +268,14 @@ func has_cell(coord: BoardCoord) -> bool:
 ## turned back into the coordinate it means. `h` is always 0: a zone card names the cell, not
 ## a height in its stack.
 func cell_type_coord(card: CardData) -> BoardCoord:
-	if not card: return null
+	if not card: return BoardCoord.NOWHERE
 	for gi : int in grids.size():
 		var grid : GridData = grids[gi]
 		if not grid: continue
 		var index := grid.cell_types.find(card)
 		if index == -1: continue
 		return BoardCoord.new(gi, index % grid.grid_width, index / grid.grid_width, 0)
-	return null
+	return BoardCoord.NOWHERE
 
 ## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
 ## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a

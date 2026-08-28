@@ -37,6 +37,7 @@ func _ready() -> void:
 	implementation_section("THE RETIRED ACT")
 	test_retired_act_has_no_readers()
 	test_zone_only_tests_do_not_multiply()
+	test_nowhere_is_never_compared_by_identity()
 	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
@@ -870,6 +871,51 @@ func test_retired_act_has_no_readers() -> void:
 ".join(offenders))
 
 
+
+
+# ==============================================================================
+# THE SENTINEL GATE. `BoardCoord.NOWHERE` is a shared instance and `==` on a RefCounted is
+# identity, so `coord == BoardCoord.NOWHERE` is TRUE for anything that returns that instance and
+# FALSE for a coordinate rebuilt with the same components. It reads correctly and it is wrong
+# half the time. `is_nowhere()` is always right.
+#
+# ⚠ This gate is the whole reason the value-semantics work is verifiable. Without it, `equals`
+# can be forgotten at a call site where `==` could not be -- which is the one respect in which
+# keeping BoardCoord a reference type is worse than making the coordinate a value.
+
+## Comparing against the shared sentinel by identity. `is_nowhere()` replaces both.
+## ⚠ Built by concatenation on purpose: spelled out, the gate's own constant is an offender and
+## the gate fails on itself.
+const SENTINEL_NAME := "BoardCoord.NOWH" + "ERE"
+static func _forbidden_sentinel_compares() -> Array[String]:
+	return ["== " + SENTINEL_NAME, "!= " + SENTINEL_NAME]
+
+func test_nowhere_is_never_compared_by_identity() -> void:
+	var scanned := 0
+	var offenders : Array[String] = []
+	for dir : String in PRODUCT_DIRS + ["res://Tests"]:
+		for path : String in _gd_scripts_under(dir):
+			# The type itself defines the sentinel and compares its components.
+			if path.ends_with("board_coord.gd"): continue
+			var f := FileAccess.open(path, FileAccess.READ)
+			if not f: continue
+			scanned += 1
+			var n := 0
+			for raw : String in f.get_as_text().split("
+"):
+				n += 1
+				var line := raw.strip_edges()
+				if line.begins_with("#"): continue
+				for bad : String in _forbidden_sentinel_compares():
+					if line.contains(bad):
+						offenders.append("%s:%d: %s" % [path, n, line])
+						break
+	check(scanned >= 60, "the sentinel gate actually found the scripts to scan",
+			"only %d scripts scanned" % scanned)
+	check(offenders.is_empty(),
+			"nothing compares against BoardCoord.NOWHERE by identity -- is_nowhere() is the test",
+			"
+".join(offenders))
 
 # ==============================================================================
 # THE ZONE-ONLY RATCHET.

@@ -14,6 +14,7 @@ func _ready() -> void:
 	run_continuous_x_test()
 	run_entrance_test()
 	run_off_board_test()
+	run_value_semantics_test()
 	run_grid_storage_test()
 	run_grid_duplicate_test()
 	run_grid_zone_cards_test()
@@ -122,6 +123,56 @@ func run_entrance_test() -> void:
 # ==============================================================================
 # TP-04 -- off-board reads as the four-component MIN analogue, never (0,0,0,0)
 # ==============================================================================
+# ==============================================================================
+# VALUE SEMANTICS. `BoardCoord` is a RefCounted and GDScript has no operator overloading, so `==`
+# compares OBJECTS. Every one of these checks is a way that fact silently breaks code which looks
+# obviously correct, and each pins the affordance that replaces it.
+# ==============================================================================
+func run_value_semantics_test() -> void:
+	behavior_section("BOARDCOORD VALUE SEMANTICS")
+	var a := BoardCoord.new(1, 2, 3, 4)
+	var b := BoardCoord.new(1, 2, 3, 4)
+	var c := BoardCoord.new(1, 2, 3, 5)
+
+	# The trap itself, asserted so nobody "fixes" equals() by reaching for ==.
+	check(not (a == b), "two coordinates naming the same cell are NOT ==, because == is identity")
+	check(a.equals(b), "...and equals() says they are the same cell")
+	check(not a.equals(c), "...while a different height is a different cell")
+	check(not a.equals(null), "equals(null) is false, not a crash")
+
+	check(a.pack() == b.pack(), "pack() is a VALUE, so two equal coords give equal keys")
+	check(a.pack() != c.pack(), "...and unequal coords do not collide")
+	var d : Dictionary[Vector4i, int] = {}
+	d[a.pack()] = 7
+	var found : int = d.get(b.pack(), -1)
+	check(found == 7,
+			"a dictionary keyed on pack() finds the entry through a DIFFERENT instance",
+			str(found))
+	var round_trip := BoardCoord.unpack(a.pack())
+	check(round_trip.equals(a), "unpack(pack()) round-trips")
+
+	# ⚠ The sentinel is the sharpest edge: NOWHERE is a shared instance, so identity works for
+	# anything returning that instance and fails for a coordinate REBUILT with the same values.
+	var rebuilt := BoardCoord.new(BoardCoord.NOWHERE.grid, BoardCoord.NOWHERE.x,
+			BoardCoord.NOWHERE.y, BoardCoord.NOWHERE.h)
+	# Through a variable on purpose: written out, this line is exactly what the sentinel gate
+	# forbids, and a gate with an opt-out marker is a gate with a bypass.
+	var shared := BoardCoord.NOWHERE
+	check(not (rebuilt == shared),
+			"a REBUILT sentinel is not == NOWHERE -- the exact bug the sentinel gate forbids")
+	check(rebuilt.is_nowhere(), "...but is_nowhere() recognises it")
+	check(BoardCoord.NOWHERE.is_nowhere(), "...and recognises the shared instance too")
+	check(not a.is_nowhere(), "a real coordinate is not nowhere")
+
+	# The two functions that used to answer `null` now answer NOWHERE, so callers have one
+	# convention instead of two.
+	var state := TestGridFixtures.build_fix_grid_1()
+	var stray := TestFactories.m_card(3, TestFactories.uc())
+	check(state.cell_type_coord(stray).is_nowhere(),
+			"cell_type_coord answers NOWHERE for a card that is not a cell type")
+	check(Board.locate_in_cell(state, stray).is_nowhere(),
+			"locate_in_cell answers NOWHERE for a card that is on no grid")
+
 func run_off_board_test() -> void:
 	behavior_section("OFF BOARD")
 	var nowhere := BoardCoord.NOWHERE

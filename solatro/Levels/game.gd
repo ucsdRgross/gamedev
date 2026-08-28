@@ -324,7 +324,7 @@ func try_place(stack: Array[CardData], target: CardData) -> bool:
 		# mutation broadcast the scorer listens to, refills, and commits its own undo step.
 		# The target is the cell's ZONE card, which is what an empty cell presents.
 		var cell := state.cell_type_coord(target)
-		if cell:
+		if not cell.is_nowhere():
 			for moving_data in stacked:
 				await place_card_in_grid(moving_data, cell)
 			return true
@@ -733,7 +733,7 @@ func move_card_in_grid(card: CardData, coord: BoardCoord, is_compaction: bool) -
 ## the cards it compacted moved as a side effect of the array shift, not a mover's own move.
 func remove_card_from_grid(card: CardData) -> void:
 	var coord := Board.locate_in_cell(state, card)
-	if not coord:
+	if coord.is_nowhere():
 		return
 	if not Board.remove_from_cell(state, card):
 		return

@@ -26,6 +26,33 @@ func _init(p_grid: int = 0, p_x: int = 0, p_y: int = 0, p_h: int = 0) -> void:
 	y = p_y
 	h = p_h
 
+## ⚠ VALUE EQUALITY, BECAUSE `==` ON THIS TYPE IS IDENTITY.
+##
+## This is a RefCounted and GDScript has no operator overloading, so `a == b` compares OBJECTS:
+## two coordinates naming the same cell are not equal, and a rebuilt sentinel is not `NOWHERE`.
+## Compare with this, key dictionaries on `pack()`, and test the sentinel with `is_nowhere()`.
+## A suite gate fails any `== BoardCoord.NOWHERE`, which is the shape that reads correctly and
+## is wrong.
+func equals(other: BoardCoord) -> bool:
+	return other != null and grid == other.grid and x == other.x and y == other.y and h == other.h
+
+
+## The value form, for dictionary keys and `Array.find` -- both of which hash and compare by
+## identity on a RefCounted. `GameData._card_at_index` is already keyed this way.
+func pack() -> Vector4i:
+	return Vector4i(grid, x, y, h)
+
+
+## Rebuilds a coordinate from its value form.
+static func unpack(v: Vector4i) -> BoardCoord:
+	return BoardCoord.new(v.x, v.y, v.z, v.w)
+
+
+## True for the off-board sentinel, whether or not it is the shared `NOWHERE` instance.
+func is_nowhere() -> bool:
+	return grid == NOWHERE.grid and x == NOWHERE.x and y == NOWHERE.y and h == NOWHERE.h
+
+
 ## True when this coordinate is the Entrance (row -1 of its attached grid).
 func is_entrance() -> bool:
 	return y == ENTRANCE_ROW
