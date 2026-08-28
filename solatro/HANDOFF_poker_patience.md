@@ -9,13 +9,13 @@ Entrance is PINNED.** A scored grid line fires props; the Entrance stays welded 
 window with its slots under their columns while the board scrolls.
 
 Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, `.2b-0`, `.2b` (Runs A+B), the
-layering port, `S20c`, `S20b.4a`, **`S20b.3`**. Tree CLEAN, suite green at **43 suites /
-3462 CHECKS PASSED**, HEAD `a641f4e`.
+layering port, `S20c`, `S20b.4a`, `S20b.3`, **all of `S20b.4b`**. Suite green at **43 suites /
+3538 CHECKS PASSED**; `S20b.4b` is UNCOMMITTED in the working tree.
 
-**What is left in this phase is `S20b.4b`** — grid equivalents for the reveal machinery and the
-hoop front/back split (unfinished GAP-012 scope, which unblocks the 6 layering tests still on the
-Entrance), then the 5 PORTABLE fixtures. After that Phase 5 begins: `S21`-`S25`, the flipped board,
-**where cards start stacking UPWARD**.
+**`S20b.4b` IS COMPLETE, and with it the whole of `S20b`.** Nothing in the reveal or the split is
+zone-indexed, and the zone-only ratchet is down to the six files that CANNOT port. **Phase 5 is
+next**: `S21`-`S25`, the flipped board, **where cards start stacking UPWARD** — and `S22` is what
+finally gives a grid row band the arithmetic the reveal's geometry guard is waiting on.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -37,10 +37,19 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
 
 ## Environment — traps that have each cost real time
 
-- Godot here is **4.7.2**. `.claude/memory/machine-profiles.md` records 4.7.1 and is STALE; anything
-  reading that path dies with `FileNotFoundError`.
+- Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` now records it per box. ⚠ **A cache
+  built by a different Godot build CRASHES the suite** with `0xC0000005` and no banner. Fix:
+  `<godot> --headless --path solatro --import`, then re-run. Do that once on a machine you have not
+  run the suite on before.
 - Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400` from the repo
   root. Runs WINDOWED, ~90 s, self-quits. **Close the owner's editor first.**
+- ⚠ **PARSE-CHECK A TEST FILE BEFORE SPENDING 90 s ON IT**:
+  `<godot> --headless --path . --check-only --script <file> 2>&1 | grep <file>`. Real `Parse Error`
+  lines name their line number; the trailing `Compilation failed` at the first autoload reference is
+  noise this mode always produces. ⚠ **GDScript treats "Variant provided where a subtype is
+  required" as a PARSE ERROR** -- `dict.get(...)` and `Array.min()` both return Variant, so assign
+  them to a typed local first. Measured: a suite that fails to parse HANGS every suite waiting on
+  it, and the run dies on the 400 s timeout with no banner.
 - ⚠ **A new `class_name` referenced from an existing script HANGS the suite** rather than failing to
   parse. Symptom: `test_interaction` spinning on `submits_used` against a Nil. Fix: run
   `--headless --path . --import`. Always pass `--timeout` so a hang fails fast.
@@ -167,104 +176,148 @@ lettered steps by hand when closing a gap.
 - id: S20c
   description: 'Retire the act: Game.submit, _perform_submit, the on_run_scorer branch, the Next button.'
   status: done
-  evidence: 'ALL 43 SUITES green; grep: zero readers of submit/_perform_submit/next_button in product code.'
   notes: >
-    Q31=(b); chart P3/P4. Game.next()/_perform_next() STAY -- the plan retires the BUTTON, and
-    _perform_next still serves the &"on_next" replay. TP-80i (gate) and TP-80j (behavioural) are
-    new and red-then-green verified. Touchscreen coverage was RESTORED, not accepted as lost.
-    The new touch test must run AFTER the mouse tests: a touch leaves no HOVER and the mouse
-    selection path needs one.
+    Game.next()/_perform_next() STAY -- only the BUTTON retired, and _perform_next still serves the
+    &"on_next" replay. ⚠ A touch test must run AFTER the mouse tests: a touch leaves no HOVER and
+    the mouse selection path needs one.
 - id: S20bDraw
   description: 'Fix: _order_board_cards never ordered grid cards, so a card drew BEHIND its own cell.'
   status: done
-  evidence: 'RED card idx 9 vs cell idx 27; GREEN margin +25 and by-eye sign-off on grid_occupied.png.'
-  notes: 'Owner found this by eye. _append_grids_row_major mirrors the zone helper. TP-80m pins it.'
+  notes: 'Found BY EYE, through 43 green suites. _append_grids_row_major mirrors the zone helper.'
 - id: S20bRatchet
-  description: 'GAP-013=(a): the zone-only test ratchet, and the sentinel gate for BoardCoord.NOWHERE.'
+  description: 'The zone-only test ratchet, and the sentinel gate for BoardCoord.NOWHERE.'
   status: done
-  notes: 'Eleven zone-only test files enumerated; the set may shrink, never grow.'
-
-# --- PENDING ---
 - id: S20b2b0
   description: 'BoardCoord gains equals(), pack() -> Vector4i, unpack(), is_nowhere(); null retires.'
   status: done
-  evidence: 'ALL 43 SUITES green. RED: equals->identity and is_nowhere->identity each failed their
-    own checks; == NOWHERE in game.gd failed the sentinel gate.'
   notes: >
-    GAP-011=(a). Had to land BEFORE any Vector3i swap -- additive means provable alone. The SENTINEL
-    GATE (test_game_headless.gd) is what makes (a) verifiable: nothing may write == / !=
-    BoardCoord.NOWHERE, because NOWHERE is a shared instance and a rebuilt sentinel is not identical
-    to it. Its needles are built by concatenation or the gate flags its own constant.
+    The SENTINEL GATE (test_game_headless.gd) is what makes this verifiable: nothing may write
+    == / != BoardCoord.NOWHERE, because NOWHERE is a shared instance and a rebuilt sentinel is not
+    identical to it. Its needles are built by concatenation or the gate flags its own constant.
 - id: S20b2b
   description: >
     THE COORDINATE MIGRATION. slot_center_global takes a BoardCoord; the prop chain rides it; routes
     stay inside one grid.
   status: done
-  evidence: '[PASS] a scored grid line spawns props. ALL 43 SUITES green. By eye (grid_props.png):
-    16 props draw ON the scored row, score 38 / COMBO x19.'
   notes: >
-    Run A = geometry (GAP-012=c: panels publish their origin on `resized`, the function reads the
-    cache, so the every-frame anchor path does no tree reads). Run B = the prop chain and routes.
-    ⚠ THE RULING THAT UNBLOCKED IT: both prop suites build in upper_zone, which is the ENTRANCE, and
-    BoardCoord always named that as ENTRANCE_ROW -- so _scan_grid_positions now indexes Entrance
-    cards and card_at/grid_position_of answer for the whole board. PROOF IT WAS RIGHT:
-    test_suit_props.gd is UNCHANGED and green.
+    ⚠ THE RULING THAT UNBLOCKED IT: upper_zone IS the Entrance, and BoardCoord always named that as
+    ENTRANCE_ROW -- so _scan_grid_positions indexes Entrance cards and card_at/grid_position_of
+    answer for the WHOLE board.
     ⚠ The LOWER zone stays deliberately unmapped. A path that needs it is a real gap.
     Routes REUSE LineGeometry.row_cells, which structurally cannot leave its grid.
-    row_slot_path_from locates via pack(): find() on a RefCounted is identity-based.
 - id: S20bPort
   description: 'Tests/UI/test_visual_layers.gd gets real grid coverage; struck off ZONE_ONLY_TESTS.'
   status: done
-  evidence: 'VISUAL LAYERS: ALL 195 CHECKS PASSED (was 192 -- the count went UP, so nothing was
-    traded away). Ratchet list down to 11.'
-  notes: >
-    GAP-013=(c). 12 of 18 tests build real GridData boards; 6 are BLOCKED and left on the Entrance
-    with a comment naming the code they wait on. This is the suite whose absence let a card draw
-    behind its own cell through 43 green suites.
-
-# --- PENDING ---
+  notes: 'The suite whose absence let a card draw behind its own cell through 43 green suites.'
 - id: S20b4a
   description: 'Delete the LowerZone and MiddleZone rendering; Entrance deliberately untouched.'
   status: done
-  evidence: 'ALL 43 SUITES green, console and log agreeing. BY EYE: the dead band between grid and
-    Entrance is GONE -- the Entrance strip now sits directly under the grid.'
   notes: >
-    Landed alone so the Entrance can move later against ONE renderer. GameData.lower_zone storage
+    Landed alone so the Entrance could move later against ONE renderer. GameData.lower_zone storage
     remains, populated and serialized; nothing renders it. Same for scores_row_lower.
-    ⚠ VISUAL LAYERS dropped 195 -> 188 checks. Verified NOT a loss: one line changed, zero check()
-    lines removed -- it is loop iterations that used to cover the deleted zone.
 - id: S20b3
   description: >
     The Entrance is a pinned %EntranceStrip outside the board's scroll, x slaved to it, with its
     own vertical scroll and its own card layer.
   status: done
-  evidence: 'ALL 43 SUITES: 3462 CHECKS PASSED, console and log agreeing. BY EYE
-    (grid_occupied.png): the strip is welded to the BOTTOM OF THE WINDOW, not to the grid, with its
-    five slots exactly under the five grid columns.'
   notes: >
     ⚠ THIRD ATTEMPT, after two backouts. It worked because it ran against a SINGLE renderer -- the
-    coordinate migrated at S20b.2b and the zones stopped rendering at S20b.4a -- and produced six
-    comprehensible failures where attempt two produced 1041 engine errors. That sequencing was the
-    whole bet. If anything in this area is ever reworked, keep it: one renderer at a time.
+    coordinate migrated at S20b.2b and the zones stopped rendering at S20b.4a. ⚠ **KEEP THAT RULE
+    IF THIS AREA IS EVER REWORKED: one renderer at a time.**
     Scene: EntranceStrip (child of PlayArea, OUTSIDE SmoothScrollContainer) > EntranceHTrack >
     EntranceVScroll > EntranceContent > { UpperZone, EntranceCardLayer }.
-    GAP-010's four traps are closed: own card layer; TWO INDEPENDENT draw orderings (one shared
-    index space across two layers re-queues every frame until the stack overflows); _bind_slot
-    reparents a visual between layers; and the ALIGNMENT_CENTER origin disagreement, which was a
-    LAYOUT problem -- test_grid_layout.gd:106-112 compares control rects, never slot_center_global.
-    Renaming upper_zone -> entrance stays deferred; cosmetic.
+    ⚠ TWO INDEPENDENT DRAW ORDERINGS: one shared index space across two layers re-queues every
+    frame until the stack overflows. Renaming upper_zone -> entrance stays deferred; cosmetic.
 - id: S20b4b
-  description: 'Grid equivalents for the reveal and the hoop split; port the 5 PORTABLE fixtures.'
-  files_touched: []
-  verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
-  status: pending
-  evidence: ''
+  description: >
+    Grid equivalents for the reveal and the hoop split; port the 5 PORTABLE fixtures. Split into
+    three sub-steps below -- it is too big to verify as one.
+  status: in_progress
   notes: >
     Unfinished GAP-012 scope: _row_open_offset -> _row_covers_anything (the reveal) and
     _row_bounds -> PlayArea.row_card_visuals (the hoop front/back split) are still zone-indexed and
     have no grid form. They are why 6 layering tests still sit on the Entrance.
+    ⚠ **THE UNIT OF A GRID "ROW" IS THE HEIGHT LAYER `h`, NOT THE CELL ROW `y`.** Two readings
+    existed; `_append_grids_row_major` decides between them. It orders grid cards
+    `for h: for every cell`, so a HEIGHT LAYER is contiguous in `card_layer` and a row `y` is NOT.
+    `_row_bounds` brackets `[first..last]` of the set it is given, so only the contiguous unit is
+    bracketable -- and `_row_bounds` already passes `v.h` as the row. The Entrance agrees: its
+    `row_z` is a DEPTH within a fanned column, not a screen row.
     ⚠ Only FIVE fixtures are portable -- see the ratchet's own categories.
+- id: S20b4b1
+  description: >
+    The hoop split's grid form: row_card_visuals takes a BoardCoord and answers for a grid height
+    layer; _apply_split drops its Entrance-only guard. Unblocks the 3 hoop layering tests.
+  files_touched: [solatro/UI/play_area.gd, solatro/UI/prop_layer.gd, solatro/Tests/UI/test_visual_layers.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    RED (old product code, new test): ALL 43 SUITES, 3490 passed, 3 FAILED -- exactly the expected
+    set: `_split_active false`, and both halves stranded past every card (back 25 / front 27 vs
+    cards [21,22] and [23,24]). GREEN: ALL 43 SUITES: 3528 CHECKS PASSED, console and log agreeing,
+    VISUAL LAYERS 201 -> 204 (the count went UP).
+  notes: >
+    `row_card_visuals` now takes a `BoardCoord`; the grid branch reads STATE
+    (`grids[g].cells[*].datas[h]`) while the Entrance keeps its control walk, because the Entrance's
+    fanned columns ARE its structure. `_apply_split`'s Entrance-only guard is gone; the only guard
+    left is `is_nowhere()` plus the geometric body-overlap test.
+    The three Entrance hoop tests are NOT ported and that is deliberate -- the Entrance is a live,
+    differently-shaped half of the board with its own CardLayer, so porting them would delete
+    coverage rather than add it. Their stale "BLOCKED ON A GRID PORT" comments are rewritten.
+- id: S20b4b2
+  description: >
+    The reveal's grid form: the open-row key becomes (grid, h) with the Entrance a RESERVED grid
+    index (Q6=a); _row_covers_anything / row_open_extra / _row_open_offset take a BoardCoord;
+    coord_of_data answers for grid cards. Unblocks the 3 reveal layering tests.
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_visual_layers.gd,
+    solatro/Tests/Visual/reveal_shot.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    ALL 43 SUITES: 3489 CHECKS PASSED, console and log agreeing, VISUAL LAYERS 204 -> 209.
+    ⚠ The board-wide claims are asserted, not assumed: a grid coord keys `(grid, h)`, the Entrance
+    keys the reserved index, a 3-deep grid layer reads as COVERING SOMETHING (it read false for
+    every grid before), the deepest layer covers nothing, and a coord naming no grid answers
+    instead of erroring. All three reveal fixtures still FIND their targets, so nothing went
+    vacuous when their selection loops moved onto the engine index.
+  notes: >
+    `PlayArea.coord_of_data` is DELETED. `GameData.grid_position_of` already answered for the whole
+    board off a revision-keyed index; the control walk it replaced could only ever find an Entrance
+    card and was a second, staler answer. Its three test call sites moved with it.
+    ⚠ SCOPE LINE. Chart K's row-band GROWTH (a grid cell control actually getting taller, and
+    _grid_slot_center_global carrying the offset) is S22's work -- PLAN.md gives S22 "_row_open
+    inverted, Entrance at y == -1 pushing the board up". This sub-step ports the KEY and the
+    QUERIES so nothing is zone-indexed; it does not ship the un-designed grid band growth.
+- id: S20b4b3
+  description: 'Port the 5 PORTABLE fixtures off ZONE_ONLY_TESTS.'
+  files_touched: [solatro/Tests/Engine/test_fuzz.gd, solatro/Tests/Engine/test_game_data.gd,
+    solatro/Tests/Map/test_persistence_fuzz.gd, solatro/Tests/Map/test_run_manager.gd,
+    solatro/Tests/Visual/pause_time_spike.gd, solatro/Tests/Engine/test_game_headless.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    ALL 43 SUITES: 3538 CHECKS PASSED, console and log agreeing; the ratchet's own honesty check
+    passes with all five struck off. BOARD FUZZ green at 500 iterations with the grid actions in
+    the walk.
+    ⚠ THE RATCHET EARNED ITS KEEP: the first run FAILED on test_persistence_fuzz.gd, which had real
+    grid coverage but no GRID_MARKER substring. Fixed by indexing `a.grids[g]` in `_diff_grids`
+    (natural code), NOT by widening the marker list.
+  notes: >
+    Each port ADDS grid coverage rather than moving an assertion sideways. test_fuzz: the random
+    walk now runs on a board that HAS grids (two, of DIFFERENT shapes -- a square one hides
+    width/height confusion) with place/move/remove-cell actions, so validate(), the card census,
+    the position index and duplicate_state's remap finally see a grid; board_hash covers grids too,
+    or "a rejected move left the board bit-identical" is a claim about half the board.
+    test_persistence_fuzz: grids are FUZZED, dimensions included -- a round-trip that dropped
+    grid_width would look clean against a hard-coded 5x5. test_game_data / test_run_manager: the
+    modifier-carrying card moved from the dead lower zone onto a grid cell, so the backref,
+    aliasing and save claims are about a board the player can see. pause_time_spike: burning card
+    on a grid cell.
+    ⚠ `place_in_cell` lifts a card out of a ZONE COLUMN but NOT out of a deck -- the fuzz has to
+    erase it from draw_deck itself or validate() reports the I1 duplicate.
 ```
 
 After `S20c`, `PLAN.md` §3 governs: `S21`–`S25` (the flipped board — **this is where cards start
@@ -273,28 +326,25 @@ owner's call), Phase 10 (documentation).
 
 ## Verified vs assumed
 
-- **Verified** - `ALL 43 SUITES: 3462 CHECKS PASSED`, tree clean, zero failures, console banner and
-  log banner AGREEING (see the two-process trap in Environment).
-- **Verified** - `[PASS] a scored grid line spawns props`. The check that asserted `== 0` for this
-  whole stream now asserts `> 0` and passes.
-- **Verified by eye** - `grid_occupied.png`: cards cover their cells, empty cells still frame, a
-  stacked cell shows the strip beneath. `grid_props.png`: 16 props draw ON the scored row, score
-  38 / COMBO x19. Both from `Tests/Visual/grid_layer_shot.tscn`.
-- **Verified by eye, the pinned Entrance** - the strip is welded to the BOTTOM OF THE WINDOW, not
-  to the grid, and its five slots sit exactly under the five grid columns while the grid fills the
-  top. The large gap between them is the POINT: the strip stays put while the board scrolls.
-- **Verified by eye, after the demolition** - the dead band between the grid and the Entrance is
-  GONE. The Entrance strip now sits directly beneath the grid's last row; that band was where the
-  deleted MiddleZone/LowerZone drew, and it is what the owner objected to (*"cards in random
-  locations not on top of any zones, such as in area between grid and entrance"*).
-- **Verified** - `py .claude/tools/doc_check.py`: 0 errors, 7 warnings (standing style backlog).
-  Zero design ids in product code.
-- ⚠ **Measured, and NOT a defect**: sampling showed 0 of 16 props moving over 90 frames. That is a
-  HARNESS artefact - `run_props` is awaited inside `place_card_in_grid`, so the flight is over
-  before any polling loop starts. The score changing is what proves the cascade ran. To watch
-  motion you must sample DURING the placement await.
+- **Verified** - `ALL 43 SUITES: 3538 CHECKS PASSED`, zero failures, console banner and log banner
+  AGREEING (see the two-process trap in Environment). `py .claude/tools/doc_check.py`: 0 errors,
+  7 warnings (the standing style backlog). Zero design ids in product code.
+- **Verified by eye** - `grid_occupied.png` from `Tests/Visual/grid_layer_shot.tscn`: cards cover
+  their cells, empty cells still frame, the Entrance strip is welded to the BOTTOM OF THE WINDOW
+  with its five slots exactly under the five grid columns, and the scored line fired (38 /
+  COMBO x19.0). At 4x on the top row, each hoop ring passes BEHIND the card faces on its upper arc
+  and IN FRONT across the lower - a GRID-anchored prop bracketing, which did not happen before.
+- ⚠ **Seen in that same shot, NOT from this stream's changes** (grid geometry is untouched; a
+  grid's `_row_open_offset` is always 0 while the reveal guard holds): **the occupied top row is
+  CLIPPED by the window's top edge.** The grid grows upward and the shot's viewport does not scroll
+  to fit. Worth an owner look before Phase 6 does the zoom/pan work.
+- ⚠ **Measured, and NOT a defect**: sampling showed 0 of 16 props moving over 90 frames. A HARNESS
+  artefact - `run_props` is awaited inside `place_card_in_grid`, so the flight is over before any
+  polling loop starts. The score changing is what proves the cascade ran; to watch motion you must
+  sample DURING the placement await.
 - **Assumed, not checked** - that `card_scale` 1.0 suits every OTHER screen (deck viewer, map, info
   card). Only the play area was looked at.
+
 
 ## The card effect API - a suite gate enforces it
 
@@ -312,7 +362,7 @@ trip it. The five `PipSuit` subclasses are gated; `PropModifier` is not.
    shared instance and `==` on a RefCounted is IDENTITY, so a rebuilt sentinel is not equal to it.
    Use `is_nowhere()`; compare coords with `equals()`; key dictionaries and `Array.find` on
    `pack()`. Comment lines are exempt, which is how the rule can be written down.
-3. **The zone-only ratchet** - `test_game_headless.gd::ZONE_ONLY_TESTS` lists the 11 test files that
+3. **The zone-only ratchet** - `test_game_headless.gd::ZONE_ONLY_TESTS` lists the 6 test files that
    assert against the legacy renderer and never touch a grid. The set may SHRINK, never grow, and
    porting a file fails the gate until its name is struck off, so the list cannot rot.
 
@@ -323,10 +373,9 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 - **GAP-010** the Entrance is pinned, x slaved, independently scrollable - ⚠ **read before S20b.3**.
 - **GAP-011**=(a) `BoardCoord` keeps one type, gained value affordances - landed.
-- **GAP-012**=(c) panels publish their origin on `resized`; `slot_center_global` reads the cache -
-  landed for the geometry. ⚠ **NOT finished**: it also names `_row_open_offset` ->
-  `_row_covers_anything` and `_row_bounds` -> `row_card_visuals` as needing grid equivalents.
-  Neither exists. That is what S20b.4 owes.
+- **GAP-012**=(c) panels publish their origin on `resized`; `slot_center_global` reads the cache.
+  Fully landed: `_row_covers_anything` and `row_card_visuals` both take a `BoardCoord` and answer
+  for grids, and neither added a tree read to the anchor path.
 - **GAP-013**=(a)+(c) the ratchet and the layering port - both landed.
 - **GAP-014** NOT A GAP, resolved as a defect: a fourth option existed (name the zone the test
   measures, and stock it). Kept because it was filed correctly and the reasoning matters.
@@ -345,21 +394,18 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Open bugs
 
-- ⚠ **The reveal machinery is zone-only.** `_row_open_offset` -> `_row_covers_anything`
-  (`play_area.gd`) reads the zone arrays directly, so row-opening has no grid model. **3 layering
-  tests sit on the Entrance because of it.** Unfinished GAP-012 scope; S20b.4 owns it.
-- ⚠ **The hoop front/back split is zone-only.** `PropLayer._apply_split` brackets only an
-  Entrance-anchored prop, because `_row_bounds` -> `PlayArea.row_card_visuals` is zone-indexed, so a
-  grid-anchored hoop stays UNSPLIT. **3 more layering tests sit on the Entrance.** Same GAP-012
-  scope. ⚠ Not a regression - before the migration a grid fired no props at all.
-- ⚠ **11 test files still assert only against the legacy renderer, but only FIVE are portable.**
-  The ratchet list (`test_game_headless.gd::ZONE_ONLY_TESTS`) now marks three categories, because
-  "11 files to port" is wrong and misleading: **PORTABLE** (5) are fixtures that happen to sit in a
-  zone; **MACHINERY** (3 - `test_board`, `test_mods`, `test_spotlight`) test the legacy machinery
-  ITSELF, which is still LIVE (find_data_vec3 has 9 product callers, get_zone_from_vec3 7,
-  is_data_topmost 7, add_column/remove_column 9) - they cannot port and must not be deleted;
-  **ENTRANCE-ONLY** (3) name `upper_zone`, which IS the Entrance. Three of these leaving the list
-  would be a BUG, not progress.
+- ⚠ **A GRID ROW BAND HAS NO ARITHMETIC.** `_grid_slot_center_global`'s row pitch is UNIFORM, so a
+  row that grows because one of its cells holds a deep stack moves its controls and leaves every
+  card and prop behind. `PlayArea._reveal_geometry_exists` is the single named guard holding the
+  reveal off grids because of it; **`S22` builds the band and deletes that guard.** Everything
+  behind the guard — the `(grid, h)` key, `_row_covers_anything`, `row_open_extra`,
+  `_row_open_offset` — is already board-wide.
+- ⚠ **SIX test files still assert only against the legacy renderer, and NONE of them can port.**
+  `test_game_headless.gd::ZONE_ONLY_TESTS` is now entirely **MACHINERY** (3 - `test_board`,
+  `test_mods`, `test_spotlight`) testing legacy code that is still LIVE (find_data_vec3 has 9
+  product callers, get_zone_from_vec3 7, is_data_topmost 7, add_column/remove_column 9), plus
+  **ENTRANCE-ONLY** (3) naming `upper_zone`, which IS the Entrance. Any of these leaving the list
+  would be a BUG, not progress. A name APPEARING there means a new zone-only test was written.
 - ⚠ **`Tools/spotlight_tool.gd` traces no cascade.** PRE-EXISTING: `git log -S place_card_in_grid`
   on it is empty - it has only ever used `move_data_to_coord` into the legacy lower zone.
 - ⚠ **`Tests/Interaction/test_interaction.gd:459` is `check(true, ...)`** - a parked check that can
@@ -373,60 +419,47 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S20b.3`** - pin the Entrance. The demolition (`S20b.4a`) is already done, so this is the first
-   attempt against a SINGLE renderer. Read GAP-010 first.
-2. **`S20b.4b`** - grid equivalents for the reveal and the hoop split (unfinished GAP-012 scope,
-   which unblocks 6 layering tests), then port the 5 PORTABLE fixtures.
-3. Then `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
+1. **`S21`** - upward stacks, shared bottom edge, rows pushed up.
+2. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
+   grid row band gets its arithmetic and `PlayArea._reveal_geometry_exists` is DELETED.
+3. Then the rest of `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
    Phase 6 (zoom/pan/focus), Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is last.
 
 ### Opening prompt for the next session
 
 ```
-Continue the poker-patience GRID VIEW as OVERSEER, using /plan-run.
-
-WORKTREE: the gamedev-poker-patience worktree, branch `poker-patience`.
-The repo's no-commit rule is REVERSED for you there: one commit per step whose done-when
-YOU verified. Implementer subagents never commit, stage or stash.
+Continue the poker-patience grid work on branch `poker-patience`.
 
 READ IN THIS ORDER:
-  1. solatro/HANDOFF_poker_patience.md - this file: state, traps, ledger, gates, open bugs.
-  2. solatro/design/poker-patience/PLAN.md section 3 (steps), section 1 (contracts).
+  1. solatro/HANDOFF_poker_patience.md - THIS FILE. Its Environment, "three gates" and Open
+     bugs sections are the traps; do not rediscover them.
+  2. solatro/design/poker-patience/PLAN.md section 3 (S21-S25), section 1 (contracts).
   3. solatro/design/grid-view/DESIGN.md - charts J, K, L, M, N, P.
   4. The gap files: FOURTEEN filed, all resolved. Answers are quoted verbatim at the top of
-     each and OUTRANK PLAN.md and NAMES.md. ⚠ GAP-010 before touching the Entrance;
-     GAP-012 for what is still UNBUILT; GAP-013 before writing any test.
+     each and OUTRANK PLAN.md and NAMES.md.
   5. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
      CardModifier.api, and a suite gate enforces it.
 
-GROUND TRUTH BEFORE TRUSTING ANY `done`:
+GROUND TRUTH BEFORE TRUSTING ANY `done` (see Environment for the import trap on a new box):
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
-  Expect ALL 43 SUITES, zero failures. Last verified 3462 CHECKS PASSED, tree clean.
+  Expect ALL 43 SUITES, zero failures. Last verified 3538 CHECKS PASSED.
 
-THE WORK: S20b.3 + S20b.4 TOGETHER (never separately - GAP-010), then PLAN.md section 3
-(S21-S25 the flipped board, Phase 6, Phase 7).
+THE WORK: S21, then S22 (which deletes PlayArea._reveal_geometry_exists), then S23-S25,
+Phase 6, Phase 7.
 
 NON-NEGOTIABLES, each of which caught a real defect on this stream:
   - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.
     Do the red runs YOURSELF; never accept a self-reported green.
   - VERIFY VISUALS BY EYE. Tests/Visual/grid_layer_shot.tscn shows a POPULATED grid and
-    prints card-vs-cell draw indices; reveal_shot.tscn shows an empty one. A green suite is
-    not evidence about pixels - the owner found a card drawing behind its own cell that 43
-    green suites did not.
-  - NEVER run two suites at once and never background one: two processes write one log and
-    the banners disagree. Check no Godot process is alive first.
-  - CHECK THE SUITE COUNT (43), not just the failure set. A parse error drops a whole suite
-    silently while the banner still reads plausibly.
-  - CHECK THE LOG'S MTIME, and read logs/test/test_output_all.log - a stale file of the same
-    name sits one directory up and greps clean.
+    prints card-vs-cell draw indices. A green suite is not evidence about pixels - the owner
+    found a card drawing behind its own cell that 43 green suites did not.
+  - CHECK THE SUITE COUNT (43) and the failure SET, never the check total, which swings by
+    tens between runs.
   - AT EVERY PHASE BOUNDARY: read the diff, run an adversarial pass tracing what a PLAYER
-    does, and run `py .claude/tools/doc_check.py`.
+    does, and run `py .claude/tools/doc_check.py` (baseline: 0 errors, 7 warnings).
   - Every step brief names THE CALL SITE. Never accept `done` on a component whose consumer
     does not exist.
   - REUSE, don't reinvent. Declining reuse is fine ON RECORD with the reason in the file.
-  - Subagents exhaust their turns on a whole step, and thrash if asked to decide while
-    editing. Make them DECIDE THE SPLIT FIRST, then convert once. The agent does production
-    code plus mechanical tests; YOU write the gate and intricate tests and run every red-green.
 
 If you hit a decision no document fixes: file a gap at solatro/design/<slug>/gaps/GAP-NNN.md
 following GAP-001's shape, park that thread, keep the unaffected ones moving, and QUOTE the
@@ -434,6 +467,7 @@ gap's own option text to the owner. A bug is not a gap: if exactly one choice is
 it is a defect - fix it and record it. And check for a FOURTH option before filing: GAP-014
 was filed correctly and still turned out to be a defect.
 ```
+
 
 ## References
 

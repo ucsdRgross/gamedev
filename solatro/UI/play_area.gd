@@ -23,7 +23,7 @@ var separation : int = 4:
 	get():
 		return separation * SettingsManager.settings.card_scale
 
-## **S16 — THE REVEAL. Which board rows are held open, and how far.** Key is `(zone_x, row_z)`; value
+## **S16 — THE REVEAL. Which board rows are held open, and how far.** Value
 ## is the eased 0..1 this row is through its opening. A row at 0 is absent from the map entirely, so
 ## an un-revealed board carries no state and `slot_center_global` costs what it always did.
 ##
@@ -31,10 +31,23 @@ var separation : int = 4:
 ## that must expand to make each member of the spotlight set fully visible, and the consequence is
 ## stated outright: *"Column scoring on the longest column expands nearly every row at
 ## once"*. This is keyed by ROW for exactly that reason.
+## ⚠ **THE KEY IS `(grid, h)`, WITH THE ENTRANCE ON A RESERVED GRID INDEX** (`REVEAL_ENTRANCE_GRID`)
+## — one key shape for the whole board, the Entrance just another row. `h` is a DEPTH within a
+## stack, not a screen row: on the Entrance a level of a fanned column, on a grid a height layer
+## across every cell. Build every key with `_reveal_key`, never by hand.
 var _row_open : Dictionary[Vector2i, float] = {}
 ## The rows that WANT to be open. Separate from `_row_open` because a row that has just left the set
 ## still has to ease back down, and a map that only held the current set would snap it.
 var _row_open_wanted : Dictionary[Vector2i, bool] = {}
+
+## The Entrance's reserved slot in the reveal key's grid axis. Real grids index from 0, so -1 is
+## free, and it can never collide with `coord.grid` — the Entrance carries the index of whichever
+## grid it is attached to, which is a REAL grid.
+const REVEAL_ENTRANCE_GRID := -1
+
+## The `_row_open` key for a board coordinate.
+func _reveal_key(coord: BoardCoord) -> Vector2i:
+	return Vector2i(REVEAL_ENTRANCE_GRID if coord.is_entrance() else coord.grid, coord.h)
 
 ## Each grid panel's resolved global origin, keyed by its index among `GameData.grids`. A panel's
 ## own rect is a LAYOUT RESULT (bottom/center-shrink flags inside an HBoxContainer of siblings), so
@@ -83,8 +96,8 @@ static func row_open_span(settings_res: PlayerSettings, separation_px: float) ->
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
 ## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
-func row_open_extra(zone_x: int, row_z: int) -> float:
-	var t : float = _row_open.get(Vector2i(zone_x, row_z), 0.0)
+func row_open_extra(coord: BoardCoord) -> float:
+	var t : float = _row_open.get(_reveal_key(coord), 0.0)
 	if t <= 0.0: return 0.0
 	# ⚠ **A ROW THAT COVERS NOTHING DOES NOT OPEN, AND LEAVING THIS OUT WAS A REAL BUG.** The opening
 	# exists to lift a covering card off a buried one. On a board one card deep there is nothing
@@ -92,9 +105,9 @@ func row_open_extra(zone_x: int, row_z: int) -> float:
 	# zone below being shoved down — exactly the *"shifting in cards that arent part of actual scored
 	# set"* the derived opening was retired for. It reads as *"lower zone input zone cards wiggle down
 	# and up twice"* while nothing has actually been revealed.
-	# ⚠ Decided per ROW, never per column: every column's VBox must give row `row_z` the same height or
-	# the rows stop lining up across the board.
-	if not _row_covers_anything(zone_x, row_z): return 0.0
+	# ⚠ Decided per DEPTH LAYER, never per column or cell: every column's VBox (and every CellSlot)
+	# must give that layer the same height or the rows stop lining up across the board.
+	if not _row_covers_anything(coord): return 0.0
 	# ⚠ **THE VBOX ALREADY PUTS `separation` BETWEEN ROWS — SUBTRACT IT OR THE OPENING OVERSHOOTS.**
 	# `row_open_height` is the TOTAL distance the mode asks for (a full card, or a card minus the
 	# jump), but the row-to-row pitch is `strip + separation`: the containers get
@@ -104,25 +117,39 @@ func row_open_extra(zone_x: int, row_z: int) -> float:
 	# rows, looks like an extra few pixels of separation"*. `row_open_span` supplies the remainder.
 	return row_open_span(SettingsManager.settings, float(separation)) * t
 
-## Does any column in this zone hold a card BELOW `row_z` — i.e. is there anything for this row to
-## uncover? The bottom row of the deepest column covers nothing and must stay put.
+## Does any stack in `coord`'s half of the board hold a card BELOW depth `coord.h` — i.e. is there
+## anything for this layer to uncover? The deepest layer covers nothing and must stay put. The
+## Entrance asks it of its fanned columns, a grid of its cells; the question is the same one.
 ## ⚠ Read from STATE, not the control tree: rebuilds are DEFERRED, so mid-mutation the child counts
 ## describe the previous board — and `slot_center_global` (pure math, prop-anchored every frame)
 ## routes through here, so a tree read made its geometry depend on rebuild timing after all.
-func _row_covers_anything(zone_x: int, row_z: int) -> bool:
+func _row_covers_anything(coord: BoardCoord) -> bool:
 	var game := CardEnvironment.get_current_game()
 	if not game: return false
-	var zone : Array[ArrayCardData] = game.state.upper_zone if zone_x == 0 else game.state.lower_zone
-	for col : ArrayCardData in zone:
-		if col.datas.size() > row_z + 1: return true
+	for stack : ArrayCardData in _reveal_stacks(coord):
+		if stack.datas.size() > coord.h + 1: return true
 	return false
 
-## Everything the rows ABOVE `row_z` in this zone have pushed down. ⚠ Rows above only: a row's own
-## opening grows the gap BELOW it, so it does not move its own card.
-func _row_open_offset(zone_x: int, row_z: int) -> float:
+## The stacks a reveal layer spans: the Entrance's columns, or one grid's cells. Empty for a grid
+## index no grid answers to.
+func _reveal_stacks(coord: BoardCoord) -> Array[ArrayCardData]:
+	var empty : Array[ArrayCardData] = []
+	var game := CardEnvironment.get_current_game()
+	if not game: return empty
+	if coord.is_entrance(): return game.state.upper_zone
+	var grids := game.state.grids
+	if coord.grid < 0 or coord.grid >= grids.size(): return empty
+	var grid : GridData = grids[coord.grid]
+	return grid.cells if grid else empty
+
+## Everything the layers ABOVE `coord.h` in the same half of the board have pushed down. ⚠ Above
+## only: a layer's own opening grows the gap BELOW it, so it does not move its own card.
+func _row_open_offset(coord: BoardCoord) -> float:
 	var sum := 0.0
+	var axis := _reveal_key(coord).x
 	for key : Vector2i in _row_open:
-		if key.x == zone_x and key.y < row_z: sum += row_open_extra(zone_x, key.y)
+		if key.x == axis and key.y < coord.h:
+			sum += row_open_extra(BoardCoord.new(coord.grid, coord.x, coord.y, key.y))
 	return sum
 
 var ui_data : Dictionary[Control, CardData]
@@ -466,7 +493,7 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	# maths says it should be and visibly detaches from its slot.
 	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
 	# the controls, so geometry stays independent of container relayout timing (owner spec).
-	y += _row_open_offset(0, coord.h)
+	y += _row_open_offset(coord)
 	return Vector2(x, y)
 
 ## A grid cell: column and row come from the DATA (`coord.x`, `coord.y`), height from the cell's
@@ -487,23 +514,46 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 			+ depth_pitch * float(coord.h) + full * 0.5
 	return Vector2(x, y)
 
-## Every CardVisual on slot `v`'s ROW — same zone, row v.z across every column (z == -1 = the
-## zone/type header row); ragged/short columns simply have no control at that row and are
-## skipped, so an empty slot never pulls another row's card into the set. Row-major CardLayer
-## order (_order_board_cards) keeps a row contiguous, so PropLayer brackets [first..last] of
-## this set to render a split prop behind / in front of the WHOLE row.
-func row_card_visuals(v: Vector3i) -> Array[CardVisual]:
+## Every CardVisual in `coord`'s BRACKET ROW — the set `PropLayer` brackets a split prop around.
+##
+## ⚠ **THE BRACKET ROW IS THE HEIGHT LAYER `h`, IN BOTH HALVES OF THE BOARD — NEVER THE CELL ROW
+## `y`.** `_order_board_cards` is what decides this: `_append_grids_row_major` emits grid cards
+## `for h: for every cell`, so ONE HEIGHT LAYER is contiguous in `card_layer` and a row `y` is
+## scattered through it. `PropLayer._row_bounds` brackets `[first..last]` of whatever set it gets,
+## so a non-contiguous set would swallow every card between its ends. The Entrance agrees by
+## construction: its depth `h` is a level within a fanned column, not a screen row.
+##
+## Short columns and shallow cells simply have no card at that depth and are skipped, so an empty
+## slot never pulls another layer's card into the set.
+func row_card_visuals(coord: BoardCoord) -> Array[CardVisual]:
 	var out : Array[CardVisual] = []
-	var hbox : HBoxContainer = upper_zone_right
-	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
-	if idx < 0: return out
-	for col : Node in hbox.get_children():
-		if idx >= col.get_child_count(): continue
-		var d : CardData = ui_data.get(col.get_child(idx))
-		var vis : CardVisual = data_card.get(d) if d else null
-		if vis and is_instance_valid(vis):
-			out.append(vis)
+	if coord.h < 0: return out
+	if coord.is_entrance():
+		var hbox : HBoxContainer = upper_zone_right
+		var idx := coord.h + 1   # child 0 = the zone/type header
+		for col : Node in hbox.get_children():
+			if idx >= col.get_child_count(): continue
+			var d : CardData = ui_data.get(col.get_child(idx))
+			_append_row_visual(out, d)
+		return out
+	# ⚠ Read the GRID from STATE, not from the cell controls: rebuilds are DEFERRED, so mid-mutation
+	# the controls still describe the previous board — the same reason `_row_covers_anything` reads
+	# state. The Entrance keeps its control walk because its fanned columns ARE the structure.
+	var game := CardEnvironment.get_current_game()
+	if not game: return out
+	var grids := game.state.grids
+	if coord.grid < 0 or coord.grid >= grids.size(): return out
+	var grid : GridData = grids[coord.grid]
+	if not grid: return out
+	for cell : ArrayCardData in grid.cells:
+		if coord.h >= cell.datas.size(): continue
+		_append_row_visual(out, cell.datas[coord.h])
 	return out
+
+func _append_row_visual(out: Array[CardVisual], d: CardData) -> void:
+	var vis : CardVisual = data_card.get(d) if d else null
+	if vis and is_instance_valid(vis):
+		out.append(vis)
 
 func set_separation() -> void:
 	for container : Control in containers:
@@ -1055,27 +1105,33 @@ func _position_focus_info() -> void:
 ## everything again. The set REPLACES: a row that has left the set eases shut rather than being
 ## dropped, which is why `_row_open` outlives `_row_open_wanted`.
 func set_reveal_cards(cards: Array[CardData]) -> void:
-	flush_rebuild()  # reads ui_data (via coord_of_data) — a hook may have just compacted the board
+	flush_rebuild()  # a hook may have just compacted the board
+	var game := CardEnvironment.get_current_game()
 	var wanted : Dictionary[Vector2i, bool] = {}
-	for data : CardData in cards:
-		var v := coord_of_data(data)
-		if v.z >= 0: wanted[Vector2i(v.x, v.z)] = true
+	if game:
+		for data : CardData in cards:
+			# ⚠ **ASK THE ENGINE WHERE THE CARD IS, don't walk the controls.** `grid_position_of`
+			# already answers for the WHOLE board (grids and Entrance alike) off a revision-keyed
+			# index; the control walk this replaced could only ever find an Entrance card, and was
+			# a second, staler answer to a question the state already answers.
+			var coord : BoardCoord = game.state.grid_position_of(data)
+			if coord.is_nowhere(): continue
+			if not _reveal_geometry_exists(coord): continue
+			wanted[_reveal_key(coord)] = true
 	_row_open_wanted = wanted
 	for key : Vector2i in wanted:
 		if not _row_open.has(key): _row_open[key] = 0.0
 	set_process(true)
 
-## Which slot a card occupies, or `(-1,-1,-1)` if it is not on the board. Derived from the containers
-## rather than cached: a rebuild re-parents controls, and a stale coord map would open the wrong row.
-func coord_of_data(data: CardData) -> Vector3i:
-	var zone_x := 0   # only the Entrance renders now; LowerZone was deleted
-	var hbox : HBoxContainer = upper_zone_right
-	for y : int in hbox.get_child_count():
-		var vbox := hbox.get_child(y)
-		for j : int in range(1, vbox.get_child_count()):
-			if ui_data.get(vbox.get_child(j)) == data:
-				return Vector3i(zone_x, y, j - 1)
-	return Vector3i(-1, -1, -1)
+## ⚠ **THE ONE THING STILL HOLDING THE REVEAL TO THE ENTRANCE, AND IT IS DELIBERATE.** Everything
+## behind it — the key, `_row_covers_anything`, `row_open_extra`, `_row_open_offset` — is
+## board-wide now. What a GRID still lacks is the arithmetic for a row band that grows: a taller
+## cell grows its whole `GridContainer` row and shifts every row after it, and
+## `_grid_slot_center_global`'s pitch is still uniform (see its own note). Opening a grid layer
+## before that exists would move the controls and leave every card and prop behind. This guard goes
+## when a grid row's height becomes derivable from its tallest cell.
+func _reveal_geometry_exists(coord: BoardCoord) -> bool:
+	return coord.is_entrance()
 
 ## Push the current openings onto the row strips AND the row score gutters.
 ##
@@ -1083,7 +1139,7 @@ func coord_of_data(data: CardData) -> Vector3i:
 ## labels are a parallel column with no knowledge of the cards, so nothing else would keep them level;
 ## the design calls this out by name because it fails silently and looks like a labelling bug.
 func _apply_row_openings() -> void:
-	var zone_x := 0   # only the Entrance renders now; LowerZone was deleted
+	# Entrance-only while `_reveal_geometry_exists` is.
 	var hbox : HBoxContainer = upper_zone_right
 	if hbox:
 		for col : Node in hbox.get_children():
@@ -1094,14 +1150,15 @@ func _apply_row_openings() -> void:
 				var base : float = CardVisual.card_size_play.y if j == last \
 						else float(CardVisual.card_separation_play_custom)
 				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
-						base + row_open_extra(zone_x, j - 1))
+						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, j - 1)))
 	var gutter : VBoxContainer = upper_zone_left
 	if not gutter: return
 	for i : int in gutter.get_child_count():
 		var label := gutter.get_child(i) as Control
 		if not label: continue
 		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
-				float(CardVisual.card_separation_play_custom) + row_open_extra(zone_x, i))
+				float(CardVisual.card_separation_play_custom)
+				+ row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, i)))
 
 ## One frame of the reveal. Returns whether anything is still open or moving.
 ##

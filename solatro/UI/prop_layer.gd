@@ -231,10 +231,7 @@ func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 ## own removal shifting indexes and converge in ≤2 frames.
 func _apply_split(vis: PropVisual) -> void:
 	var bounds : Array[int] = []
-	# Bracket-split geometry only knows how to bound the Entrance's own row
-	# (row_card_visuals is still zone-indexed); a genuine grid anchor stays unsplit.
-	var anchor_is_entrance := not vis.anchor_coord.is_nowhere() and vis.anchor_coord.is_entrance()
-	if anchor_is_entrance and _body_over_any_card(vis):
+	if not vis.anchor_coord.is_nowhere() and _body_over_any_card(vis):
 		bounds = _row_bounds(vis.anchor_coord)
 	var active := not bounds.is_empty()
 	vis.set_split_active(active)
@@ -263,7 +260,9 @@ func _apply_split(vis: PropVisual) -> void:
 	if fi <= hi or fi >= bounds[3]:
 		layer.move_child(front, (hi + 1) if fi > hi else hi)
 
-## The bracket geometry of slot `v`'s row in ITS OWN layer (`card_layer_for`):
+## The bracket geometry of slot `v`'s BRACKET ROW — its HEIGHT LAYER, the unit `row_card_visuals`
+## returns and the only one `_order_board_cards` keeps contiguous — in ITS OWN layer
+## (`card_layer_for`):
 ## [row's first card index, row's last card index, last card index BEFORE the row, first card
 ## index AFTER the row] — i.e. the two inter-row gaps _apply_split may place halves in. prev/next
 ## default to -1 / child count at the board's edges. Empty when the row has no in-layer visuals
@@ -274,7 +273,7 @@ func _row_bounds(v: BoardCoord) -> Array[int]:
 	var lo := 2147483647
 	var hi := -1
 	var in_row : Dictionary[Node, bool] = {}
-	for rv : CardVisual in play_area.row_card_visuals(Vector3i(0, 0, v.h)):
+	for rv : CardVisual in play_area.row_card_visuals(v):
 		if rv.get_parent() != layer or rv.held: continue
 		in_row[rv] = true
 		lo = mini(lo, rv.get_index())

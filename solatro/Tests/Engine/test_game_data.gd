@@ -43,17 +43,29 @@ func make_state() -> GameData:
 	var plain := TestFactories.m_card(5, TestFactories.uc())
 	plain.stage = CardData.Stage.PLAY
 	var up_h := TestFactories.m_card(1, TestFactories.uc()); up_h.stage = CardData.Stage.ZONE
-	var lo_h := TestFactories.m_card(2, TestFactories.uc()); lo_h.stage = CardData.Stage.ZONE
 	s.upper_zone_type = [up_h] as Array[CardData]
 	s.upper_zone = [TestFactories.col([plain] as Array[CardData])]
-	s.lower_zone_type = [lo_h] as Array[CardData]
-	s.lower_zone = [TestFactories.col([modded] as Array[CardData])]
+	# ⚠ THE MODIFIER-CARRYING CARD SITS ON A GRID CELL, not the legacy lower zone. Every claim in
+	# this file about backrefs, aliasing and validation is a claim about a card ON THE BOARD, and
+	# the board is the grid now; the Entrance above keeps its own coverage because it is still live.
+	var grid := GridData.new()
+	grid.grid_width = 1
+	grid.grid_height = 1
+	grid.build_cells()
+	grid.cells[grid.cell_index(0, 0)].datas = [modded] as Array[CardData]
+	s.grids = [grid] as Array[GridData]
 	s.scores_row_upper = [_bn(4.2, 3)] as Array[BigNumber]
 	s.scores_row_lower = [_bn(1.0, 0), _bn(9.99, 7)] as Array[BigNumber]
 	s.scores_col_legacy = [_bn(2.5, 12)] as Array[BigNumber]
 	s.goal = 314
 	s.total_score = 271
 	return s
+
+## The modifier-carrying card `make_state` plants, read back out of `st`'s grid cell — the lookup
+## every backref and aliasing claim below needs.
+func board_card(st: GameData) -> CardData:
+	var grid : GridData = st.grids[0]
+	return grid.cells[grid.cell_index(0, 0)].datas[0]
 
 func test_saveable_roundtrip_preserves_gutters() -> void:
 	var s := make_state()
@@ -80,17 +92,17 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 
 func test_saveable_unlinks_backrefs_restore_relinks() -> void:
 	var s := make_state()
-	var modded := s.lower_zone[0].datas[0]
+	var modded := board_card(s)
 	check(modded.skill.data == modded, "precondition: modifier backref points at its card")
 	var saveable := s.to_saveable()
 	# the saveable copy is a SEPARATE resource; its cards' backrefs are unlinked for ResourceSaver
-	var saved_card := saveable.lower_zone[0].datas[0]
+	var saved_card := board_card(saveable)
 	check(saved_card.skill.data == null,
 			"to_saveable() unlinks modifier .data backrefs (saves carry no backref)")
 	check(modded.skill.data == modded, "the ORIGINAL state's backref is left intact")
 	var restored := saveable.duplicate_state()
 	restored.restore_runtime()
-	var r_card := restored.lower_zone[0].datas[0]
+	var r_card := board_card(restored)
 	check(r_card.skill and r_card.skill.data == r_card,
 			"restore_runtime() relinks each backref to the restored card")
 
@@ -125,7 +137,7 @@ func test_validate_reports_injected_violations() -> void:
 			"validate() reports an I2 zone/type size mismatch")
 	# I1: the same card instance living in two collections
 	var s2 := make_state()
-	var dupe := s2.lower_zone[0].datas[0]
+	var dupe := board_card(s2)
 	s2.draw_deck.append(dupe)
 	check(s2.validate().any(func(x: String) -> bool: return x.begins_with("I1")),
 			"validate() reports an I1 duplicate-card violation")

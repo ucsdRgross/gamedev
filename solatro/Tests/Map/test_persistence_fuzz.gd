@@ -121,10 +121,26 @@ func _rand_game_data(rng: RandomNumberGenerator) -> GameData:
 	gs.lower_zone_type = _rand_card_array(rng, cols, CardData.Stage.ZONE)
 	gs.upper_zone = _rand_zone(rng, cols)
 	gs.lower_zone = _rand_zone(rng, cols)
+	gs.grids = _rand_grids(rng)
 	gs.scores_row_upper = _rand_bn_array(rng, rng.randi_range(0, 5))
 	gs.scores_row_lower = _rand_bn_array(rng, rng.randi_range(0, 5))
 	gs.scores_col_legacy = _rand_bn_array(rng, rng.randi_range(0, 5))
 	return gs
+
+## Random grids: a board of 0..3 grids of RANDOM dimensions, each cell holding a random stack.
+## ⚠ Dimensions are fuzzed, not fixed at 5x5 — a round-trip that dropped `grid_width` would still
+## look clean against a hard-coded default, which is the bug this exists to catch.
+func _rand_grids(rng: RandomNumberGenerator) -> Array[GridData]:
+	var out : Array[GridData] = []
+	for _g in rng.randi_range(0, 3):
+		var grid := GridData.new()
+		grid.grid_width = rng.randi_range(1, 5)
+		grid.grid_height = rng.randi_range(1, 5)
+		grid.build_cells()
+		for ci in grid.cells.size():
+			grid.cells[ci].datas = _rand_card_array(rng, rng.randi_range(0, 3), CardData.Stage.PLAY)
+		out.append(grid)
+	return out
 
 func _rand_zone(rng: RandomNumberGenerator, cols: int) -> Array[ArrayCardData]:
 	var zone: Array[ArrayCardData] = []
@@ -184,10 +200,31 @@ func _diff_game(e: Array[String], path: String, a: GameData, b: GameData) -> voi
 	_diff_cards(e, "%s.lower_zone_type" % path, a.lower_zone_type, b.lower_zone_type)
 	_diff_zone(e, "%s.upper_zone" % path, a.upper_zone, b.upper_zone)
 	_diff_zone(e, "%s.lower_zone" % path, a.lower_zone, b.lower_zone)
+	_diff_grids(e, "%s.grids" % path, a, b)
 	# Scores persist as parallel packed arrays; compare those directly (saveable form).
 	_diff_packed(e, "%s.col" % path, a.packed_col_mant, a.packed_col_exp, b.packed_col_mant, b.packed_col_exp)
 	_diff_packed(e, "%s.row_upper" % path, a.packed_row_upper_mant, a.packed_row_upper_exp, b.packed_row_upper_mant, b.packed_row_upper_exp)
 	_diff_packed(e, "%s.row_lower" % path, a.packed_row_lower_mant, a.packed_row_lower_exp, b.packed_row_lower_mant, b.packed_row_lower_exp)
+
+## Grids compare on their DIMENSIONS as well as their contents — a grid whose cells all round-trip
+## into the wrong shape is a different board.
+func _diff_grids(e: Array[String], path: String, a: GameData, b: GameData) -> void:
+	if a.grids.size() != b.grids.size():
+		e.append("%s count %d != %d" % [path, a.grids.size(), b.grids.size()])
+		return
+	for g in a.grids.size():
+		var ag : GridData = a.grids[g]
+		var bg : GridData = b.grids[g]
+		if (ag == null) != (bg == null):
+			e.append("%s[%d] null mismatch" % [path, g])
+			continue
+		if ag == null: continue
+		if ag.grid_width != bg.grid_width or ag.grid_height != bg.grid_height:
+			e.append("%s[%d] size %dx%d != %dx%d" % [path, g, ag.grid_width, ag.grid_height,
+					bg.grid_width, bg.grid_height])
+			continue
+		_diff_zone(e, "%s[%d].cells" % [path, g], ag.cells, bg.cells)
+		_diff_cards(e, "%s[%d].cell_types" % [path, g], ag.cell_types, bg.cell_types)
 
 func _diff_zone(e: Array[String], path: String, a: Array[ArrayCardData], b: Array[ArrayCardData]) -> void:
 	if a.size() != b.size():

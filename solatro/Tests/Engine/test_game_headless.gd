@@ -923,7 +923,7 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 # A test that asserts against the legacy zone renderer and never touches a grid is testing a
 # renderer the game no longer uses. Eleven such files existed when this gate was written, and one
 # of them was the LAYERING suite -- which is why a card drawing behind its own grid cell reached
-# the owner by eye instead of failing a check.
+# the owner by eye instead of failing a check. Six remain, and none of them CAN port.
 #
 # This does not fix them. It RATCHETS: the set may shrink, never grow. A new zone-only test fails
 # here, and porting one fails here too until it is struck off the list below, so the list cannot
@@ -937,7 +937,8 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 ## ⚠ THIS LIST HOLDS TWO DIFFERENT KINDS OF ENTRY, and confusing them wastes a session.
 ##
 ## PORTABLE -- a fixture that merely happens to sit in a zone. It can and should move onto a grid,
-## and its name is struck off when it does.
+## and its name is struck off when it does. ⚠ **THERE ARE NONE LEFT**; every remaining entry is one
+## of the two kinds below, so a name appearing here again means a NEW zone-only test was written.
 ##
 ## MACHINERY -- a test OF the legacy zone machinery itself: the Vector3i position index, dynamic
 ## column add/remove, zone-array scoring sections. That machinery is still LIVE (measured:
@@ -949,12 +950,6 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 ##
 ## Marked below. Strike a PORTABLE name off when it moves; do not add one.
 const ZONE_ONLY_TESTS : Array[String] = [
-	# PORTABLE
-	"res://Tests/Engine/test_fuzz.gd",
-	"res://Tests/Engine/test_game_data.gd",
-	"res://Tests/Map/test_persistence_fuzz.gd",
-	"res://Tests/Map/test_run_manager.gd",
-	"res://Tests/Visual/pause_time_spike.gd",
 	# MACHINERY -- these test live legacy code and leave only when it does
 	"res://Tests/Engine/test_board.gd",
 	"res://Tests/Engine/test_mods.gd",

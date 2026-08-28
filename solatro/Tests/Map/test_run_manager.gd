@@ -202,7 +202,8 @@ func test_game_state_round_trip() -> void:
 	top = top.duplicate_state()
 	top.restore_runtime()
 	check(top.goal == 500 and top.total_score == 123, "game state scalars round-trip")
-	var lp: CardData = top.lower_zone[0].datas[0]
+	var grid : GridData = top.grids[0]
+	var lp: CardData = grid.cells[grid.cell_index(0, 0)].datas[0]
 	check(lp.skill is SkillExtraPoint and lp.skill.data == lp,
 			"board cards + relinked modifier backrefs survive")
 	check(top.scores_col_legacy.size() == 1 \
@@ -220,9 +221,15 @@ func _show_state(total: int) -> GameData:
 	var played := CardData.new().with_rank(PipRankNumeral.new().with_value(7)) \
 			.with_suit(PipSuitBall.new()).with_skill(SkillExtraPoint.new())
 	played.stage = CardData.Stage.PLAY
-	var col := ArrayCardData.new()
-	col.datas = [played] as Array[CardData]
-	gs.lower_zone = [col] as Array[ArrayCardData]
+	# ⚠ ON A GRID CELL, not the legacy lower zone. The claim is that a BOARD card and its relinked
+	# modifier backref survive the save round-trip; asserting it against storage nothing renders
+	# proved it for a board the player never sees.
+	var grid := GridData.new()
+	grid.grid_width = 1
+	grid.grid_height = 1
+	grid.build_cells()
+	grid.cells[grid.cell_index(0, 0)].datas = [played] as Array[CardData]
+	gs.grids = [grid] as Array[GridData]
 	var bn := BigNumber.new()
 	bn.mantissa = 4.2
 	bn.exponent = 3
