@@ -10,9 +10,10 @@
   a path you abandon are marked inactive, never deleted, and come back if you return.
 - ⚠ **The most valuable feedback is "you did not ask about X".** A missing question is a decision
   that would otherwise get made during implementation, by whoever hits it first.
-- Nothing is implemented until the questions are answered AND the flowcharts derived from them are
-  confirmed. **There are no flowcharts in this document yet, deliberately** — a chart drawn before
-  the answers is a guess with an ID on it. They are written after this round and reviewed then.
+- **Version 2 — round 1 is answered and the flowcharts (§7-§12) are derived from those answers.**
+  They are what you review now: the questionnaire settled the decisions, the charts settle sequence
+  and completeness. "Between `K7` and `K8` there must be..." is exactly the feedback this stage is
+  for, and it is the last gate before an implementation plan is written.
 
 ### What this round is NOT re-asking
 
@@ -319,6 +320,179 @@ of them live.
 - **No pan, zoom, or wall work.** Phases 6 and 7.
 
 ---
+
+---
+
+## 7. Flowchart J — building the board, and keeping it in step
+
+Derived from the answers, not from the questions. Every node states a decision.
+
+```mermaid
+flowchart TD
+  J1["PlayArea hosts %GridContainer; the three legacy HSplitContainers are gone"]
+  J2["NEW one %GridPanel per entry in GameData.grids, left to right"]
+  J3["%GridPanel draws nothing — it positions only"]
+  J4["a panel carries its OWN row, column and special labels, so adding or removing a grid takes them with it"]
+  J5["grids are spaced by their CELL blocks; the labels sit in the buffer between them"]
+  J6["every grid sits on the same floor — bottom edges aligned — and grows upward independently"]
+  J7["a panel builds grid_width x grid_height cells FROM THE DATA; 5x5 is only the default"]
+  J8["each cell is one control per card plus the cell's zone card — chart K"]
+  J9["CardVisuals stay in %CardLayer, positioned by arithmetic — chart M"]
+  J10["controls carry layout, focus and hit-testing; the arithmetic MIRRORS them, and the controls are authoritative"]
+  J11["a grid added mid-show slides in and the others ease over to make room"]
+  J12["a grid removed: the survivors ease back together and re-centre"]
+  J13["a resumed board appears already built — no deal-in animation"]
+  J14["card_scale or a window resize re-derives the geometry immediately, without easing"]
+  J15["headless: the view is pure presentation and every geometry helper returns a default"]
+  J1 --> J2
+  J2 --> J3
+  J2 --> J4
+  J4 --> J5
+  J2 --> J6
+  J2 --> J7
+  J7 --> J8
+  J8 --> J9
+  J9 --> J10
+  J2 --> J11
+  J2 --> J12
+  J1 --> J13
+  J1 --> J14
+  J1 --> J15
+```
+
+## 8. Flowchart K — a cell, its stack, and the row band
+
+```mermaid
+flowchart TD
+  K1["an EMPTY cell shows its zone card at a FULL card's size"]
+  K2["so the grid is a full block of card-sized slots from the start and never changes shape as it fills"]
+  K3["a covered card shows exactly CARD_SEPARATION of itself — its pip row"]
+  K4["the top card of a stack shows whole"]
+  K5["a stack is drawn however tall it gets, including past the soft cap of 20"]
+  K6["one cell growing grows its WHOLE row band"]
+  K7["the band grows upward and pushes every row above it up"]
+  K8["the growth is EASED, reusing the reveal's own easing rather than a second one"]
+  K9["the open-row state is re-keyed (grid, y), with the Entrance at a reserved grid index"]
+  K10["a height label is drawn only for a stack that has ACTUALLY SCORED"]
+  K11["a row's label tracks its band as the band grows"]
+  K12["a springing card moves its CardVisual only — its control stays put, so the click target never moves mid-animation"]
+  K1 --> K2
+  K2 --> K3
+  K3 --> K4
+  K4 --> K5
+  K5 --> K6
+  K6 --> K7
+  K7 --> K8
+  K8 --> K9
+  K6 --> K11
+  K5 --> K10
+  K5 --> K12
+```
+
+## 9. Flowchart L — the Entrance
+
+```mermaid
+flowchart TD
+  L1["ONE strip across the bottom of the whole picture"]
+  L2["it belongs to the board, not to any one grid, so it stays on screen wherever the player has panned"]
+  L3["its five slots line up EXACTLY with a grid's five columns, so it reads as row -1 of the grid above it"]
+  L4["a stacked Entrance slot draws with the same strips as a grid cell"]
+  L5["the Entrance's own height pushes the board up, the same way a row band does"]
+  L6["a card in the Entrance can be grabbed regardless of what is stacked on it"]
+  L7["upper_zone stays the Entrance's STORAGE; only its rendering moves"]
+  L1 --> L2
+  L2 --> L3
+  L3 --> L4
+  L4 --> L5
+  L1 --> L6
+  L1 --> L7
+```
+
+## 10. Flowchart M — the coordinate seam, and the props that ride it
+
+```mermaid
+flowchart TD
+  M1["slot_center_global takes a BoardCoord and nothing else — one coordinate type everywhere"]
+  M2["it stays PURE ARITHMETIC: no control-rect reads, so geometry never depends on relayout timing"]
+  M3["a card on no board reports BoardCoord.NOWHERE"]
+  M4["the legacy Vector3i board position retires with the zones it described"]
+  M5["a prop's route along a row is that row's cells IN ONE GRID, left to right"]
+  M6["a prop never crosses the gap between two grids"]
+  M7["props anchor through that one function, so a scored grid line fires props again"]
+  M8["the 8 product call sites and all 58 test call sites move; no shim is left behind"]
+  M1 --> M2
+  M1 --> M3
+  M1 --> M4
+  M1 --> M5
+  M5 --> M6
+  M5 --> M7
+  M1 --> M8
+```
+
+## 11. Flowchart N — focus, input, and what a held card shows
+
+```mermaid
+flowchart TD
+  N1["every card in a stack is focusable, hoverable and clickable in its own right"]
+  N2["up and down step THROUGH a cell's stack, so a buried card is reachable without a mouse"]
+  N3["left and right STOP at the grid's edge"]
+  N4["a grid is a self-contained surface; moving between grids is a separate action, not a focus move"]
+  N5["while a card is held, only the COMMITTED grid's empty cells light"]
+  N6["the other grids stay dark, so the highlight teaches the commitment rule"]
+  N7["a lit cell brightens its zone card, reusing the highlight the zone headers already use"]
+  N8["the board is locked during the scoring cascade exactly as it is today"]
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
+  N1 --> N5
+  N5 --> N6
+  N5 --> N7
+  N1 --> N8
+```
+
+## 12. Flowchart P — what this work RETIRES
+
+```mermaid
+flowchart TD
+  P1["UpperZone, MiddleZone and LowerZone leave, with their per-column VBoxes"]
+  P2["the legacy two-zone RENDERING goes; upper_zone survives as the Entrance's storage only"]
+  P3["Game.submit and the Next button are REMOVED as part of this work"]
+  P4["End becomes the only thing that finishes a show"]
+  P5["the deck viewer, the map and the info card are untouched — they render single cards"]
+  P6["pan, zoom and the wall are NOT in this work"]
+  P7["the card art flip is done and is not revisited"]
+  P1 --> P2
+  P2 --> P3
+  P3 --> P4
+  P1 --> P5
+  P1 --> P6
+  P1 --> P7
+```
+
+---
+
+## 13. Changelog — version 2
+
+**Round 1 answered: 38 of 41 questions; 3 correctly pruned** (`Q33` by `QR2`=a, `Q34` by `QR3`=a,
+`Q36` by `QR4`=a). No free-text answers, no stranded answers, no overrides reverted in the log.
+
+**Two answers overrode the recommendation, and both change the shape of the work:**
+
+- **`Q18`=(b)** — keyboard focus **stops at a grid's edge**. Grids are separate surfaces and
+  changing grid is its own action, not a focus move. The recommendation was that the board read as
+  one continuous surface; it does not. Chart `N3`, `N4`.
+- **`Q31`=(b)** — **`Game.submit()` and the Next button are removed as part of this work**, rather
+  than left for a change of their own. This is a real scope addition and it is now chart `P3`.
+
+Everything else took the recommendation. The dual model survives (`QR1`=c), per-card controls
+survive (`QR2`=a), the Entrance becomes one strip across the whole picture rather than a per-grid
+row (`QR3`=a), and each grid carries its own labels (`QR4`=a).
+
+⚠ **One consequence no question covered, and it needs a ruling before the plan is written.**
+`GameData.lower_zone` / `lower_zone_type` have no renderer after `P1`, no cards, and no card that
+operates them. The answers imply they are dead, but nothing was asked about *deleting the fields*,
+which changes the saved state's shape. Flagged here rather than decided in a chart — see the
+review note.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 

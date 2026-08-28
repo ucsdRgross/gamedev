@@ -1,6 +1,6 @@
 {
   "state": "ready",
-  "mode": "questions",
+  "mode": "review",
   "round": 1,
-  "summary": "Round 1: the grid view replaces the play area. 41 questions, 4 root forks, longest path 38. It does NOT re-ask the geometry you already settled (chart E, §19, the label rulings, pure-math slot_center_global) — those are inherited by name at the top. QR1 is the big one: whether a grid's layout comes from a Godot container, from arithmetic, or from both as the board does today. Research changed two questions before you see them: a container CANNOT hold the cards or let them overlap, so the spring is forced into the Node2D layer either way; and the product-side coordinate seam is 8 call sites, not the ~50 the handoff estimated."
+  "summary": "Round 1 answered (38 of 41; 3 pruned by your gates). Six flowcharts J/K/L/M/N/P are derived from your answers and are what to review now. TWO of your answers overrode the recommendation and both change the work: Q18 - focus STOPS at a grid edge, so grids are separate surfaces (charts N3, N4); and Q31 - Game.submit and the Next button are REMOVED as part of this, which is a scope addition (chart P3). One consequence nothing asked about: GameData.lower_zone has no renderer, no cards and no operator after this, but deleting the FIELDS changes the saved shape - needs a ruling before the plan is written."
 }
