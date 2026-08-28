@@ -214,17 +214,24 @@ func make_play_area() -> PlayArea:
 		pa.prop_layer._formation_checked[kind] = true
 	return pa
 
+## Narrow local conversion of a legacy Entrance Vector3i (zone, col, row) to its BoardCoord form,
+## for `slot_center_global` call sites only — every coordinate this file names is zone 0, the
+## Entrance. `coord_of_data`/`p.at`/`vis.anchor_coord` stay Vector3i until Run B migrates the
+## board fixtures and the props themselves; this helper goes with them.
+func slot_coord_v3(v: Vector3i) -> BoardCoord:
+	return BoardCoord.new(0, v.y, BoardCoord.ENTRANCE_ROW, v.z)
+
 func settle(pa: PlayArea) -> void:
 	var waited := 0.0
 	while not pa.visuals_ready() and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	var last := pa.slot_center_global(Vector3i(0, 0, 0))
+	var last := pa.slot_center_global(slot_coord_v3(Vector3i(0, 0, 0)))
 	var stable := 0
 	while stable < 3 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		var now := pa.slot_center_global(Vector3i(0, 0, 0))
+		var now := pa.slot_center_global(slot_coord_v3(Vector3i(0, 0, 0)))
 		stable = stable + 1 if now.is_equal_approx(last) else 0
 		last = now
 
@@ -424,7 +431,7 @@ func test_hoop_back_half_interleaves() -> void:
 	check(vis != null and vis.has_back_half(), "the hoop opts into the front/back split")
 	# Park the hoop directly over the occupied (row-1) card and let the per-frame interleave run.
 	if vis:
-		vis.global_position = pa.slot_center_global(Vector3i(0, 0, 1))
+		vis.global_position = pa.slot_center_global(slot_coord_v3(Vector3i(0, 0, 1)))
 	for _i in 6:
 		await get_tree().process_frame
 	var back : Node2D = vis.back_node if vis else null
@@ -465,7 +472,7 @@ func test_hoop_back_half_interleaves() -> void:
 	# purely GEOMETRIC now (data occupancy bracketed cards the ring visibly wasn't over), so
 	# drive the visual itself: no card under the ring → halves hide and the PropVisual draws the
 	# whole ring — otherwise stale half ordering left the ring floating on top of the board.
-	vis.global_position = pa.slot_center_global(Vector3i(0, 0, 9))   # far past the built rows
+	vis.global_position = pa.slot_center_global(slot_coord_v3(Vector3i(0, 0, 9)))   # far past the built rows
 	for _j in 4:
 		await get_tree().process_frame
 	check(not vis._split_active, "off a card, the hoop is NOT split (whole ring drawn by PropVisual)")
@@ -473,7 +480,7 @@ func test_hoop_back_half_interleaves() -> void:
 			"off a card, both half nodes are hidden (no stale ring floating over the board)",
 			"back.visible %s front.visible %s" % [back.visible, front.visible])
 	# Back over the occupied card → splits again (state is reversible per frame).
-	vis.global_position = pa.slot_center_global(Vector3i(0, 0, 1))
+	vis.global_position = pa.slot_center_global(slot_coord_v3(Vector3i(0, 0, 1)))
 	for _j in 4:
 		await get_tree().process_frame
 	check(vis._split_active and back.visible and front.visible,
@@ -604,8 +611,8 @@ func test_hoop_split_multi_column() -> void:
 		# columns' cards — the column gap is narrower than the ring, so it touches BOTH. The back
 		# half must render behind EVERY card the ring touches; whatever the data slot says, the
 		# bracket follows the ring's geometry.
-		vis.global_position = (pa.slot_center_global(Vector3i(0, 1, 1))
-				+ pa.slot_center_global(Vector3i(0, 2, 1))) * 0.5
+		vis.global_position = (pa.slot_center_global(slot_coord_v3(Vector3i(0, 1, 1)))
+				+ pa.slot_center_global(slot_coord_v3(Vector3i(0, 2, 1)))) * 0.5
 		for _j in 6:
 			await get_tree().process_frame
 		check(vis._split_active,
@@ -1081,9 +1088,13 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	# covered row is the only one the feature is for.
 	var target : CardData = null
 	var below := Vector3i(-1, -1, -1)
+	# ⚠ PICK THE ENTRANCE'S ROW SPECIFICALLY, not whichever zone the dictionary happens to yield
+	# first. The fixture stocks BOTH zones to the same depth on purpose, so either would satisfy
+	# the loop -- but only the Entrance has a coordinate, and a test that measures a different
+	# zone run to run is measuring whichever one it landed on, not the claim.
 	for data : CardData in pa.data_card.keys():
 		var v := pa.coord_of_data(data)
-		if v.z != 0 or not pa._row_covers_anything(v.x, 0): continue
+		if v.x != 0 or v.z != 0 or not pa._row_covers_anything(v.x, 0): continue
 		target = data
 		below = Vector3i(v.x, v.y, 1)
 		break
@@ -1096,7 +1107,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(is_equal_approx(pa.row_open_extra(below.x, 0), 0.0),
 			"nothing is open before the reveal, so the board is at its stacked layout",
 			str(pa.row_open_extra(below.x, 0)))
-	var closed_y := pa.slot_center_global(below).y
+	var closed_y := pa.slot_center_global(slot_coord_v3(below)).y
 
 	# ⚠ **A FRESHLY DEALT BOARD IS ONE CARD DEEP, SO THIS ROW COVERS NOTHING AND MUST NOT OPEN.**
 	# That is the corrected rule, not a limitation of the fixture: the opening exists to lift a
@@ -1113,7 +1124,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 		check(is_equal_approx(pa.row_open_extra(below.x, 0), 0.0),
 				"S16: a row that COVERS NOTHING does not open — no card is shoved for no reason",
 				"opened %.1f px on a board one card deep" % pa.row_open_extra(below.x, 0))
-		check(is_equal_approx(pa.slot_center_global(below).y, closed_y),
+		check(is_equal_approx(pa.slot_center_global(slot_coord_v3(below)).y, closed_y),
 				"...and nothing below it moves either")
 		# ⚠ **THE COVERED-CARD CASE — THE ONE THE FEATURE EXISTS FOR — IS NOT EXERCISED HERE.** It
 		# needs a board with a real stack (a `Next` that drops one). Until a fixture builds that, S16's
@@ -1133,7 +1144,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	var settled := 0.0
 	while settled < 3.0 and pa._row_open.get(Vector2i(below.x, 0), 0.0) < 1.0:
 		settled += await _tick_seconds()
-	var open_y := pa.slot_center_global(below).y
+	var open_y := pa.slot_center_global(slot_coord_v3(below)).y
 	check(open_y > closed_y,
 			"S17/K13: the slot BELOW it moved down by the opening — props anchored there follow",
 			"y %.1f -> %.1f (no movement means slot_center_global ignored the expansion)"
@@ -1145,8 +1156,8 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	# produced a row pitch of card + separation, and the owner saw *"an odd gap between the rows, looks
 	# like an extra few pixels of separation"*. The mode promises a TOTAL distance, so the total is what
 	# has to be measured.
-	var closed_pitch := closed_y - pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
-	var open_pitch := open_y - pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
+	var closed_pitch := closed_y - pa.slot_center_global(slot_coord_v3(Vector3i(below.x, below.y, 0))).y
+	var open_pitch := open_y - pa.slot_center_global(slot_coord_v3(Vector3i(below.x, below.y, 0))).y
 	check(absf(open_pitch - pa._row_open_height()) < 1.0,
 			"...leaving a row pitch of EXACTLY the mode's opening (GAP-009) — no stray separation",
 			"pitch %.1f -> %.1f, mode asks for %.1f" % [closed_pitch, open_pitch, pa._row_open_height()])
@@ -1160,8 +1171,8 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	SettingsManager.settings.card_scale = prev_scale * 1.5
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var top_y := pa.slot_center_global(Vector3i(below.x, below.y, 0)).y
-	var scaled_pitch := pa.slot_center_global(below).y - top_y
+	var top_y := pa.slot_center_global(slot_coord_v3(Vector3i(below.x, below.y, 0))).y
+	var scaled_pitch := pa.slot_center_global(slot_coord_v3(below)).y - top_y
 	check(scaled_pitch > open_pitch + 1.0,
 			"a card_scale change mid-reveal actually MOVES the pitch, so the next check can fail",
 			"pitch %.1f -> %.1f" % [open_pitch, scaled_pitch])
@@ -1171,11 +1182,11 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	SettingsManager.settings.card_scale = prev_scale
 	await get_tree().process_frame
 	await get_tree().process_frame
-	check(absf((pa.slot_center_global(below).y
-			- pa.slot_center_global(Vector3i(below.x, below.y, 0)).y) - open_pitch) < 1.5,
+	check(absf((pa.slot_center_global(slot_coord_v3(below)).y
+			- pa.slot_center_global(slot_coord_v3(Vector3i(below.x, below.y, 0))).y) - open_pitch) < 1.5,
 			"...and restoring the scale restores the pitch exactly",
-			"back to %.1f, was %.1f" % [pa.slot_center_global(below).y
-				- pa.slot_center_global(Vector3i(below.x, below.y, 0)).y, open_pitch])
+			"back to %.1f, was %.1f" % [pa.slot_center_global(slot_coord_v3(below)).y
+				- pa.slot_center_global(slot_coord_v3(Vector3i(below.x, below.y, 0))).y, open_pitch])
 
 	# The row ABOVE the opening must not move — an opening pushes down, it does not recentre the board.
 	check(is_equal_approx(pa._row_open_offset(below.x, 0), 0.0),
@@ -1206,9 +1217,9 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	check(pa._row_open.is_empty(),
 			"the reveal CLOSES on release, and an idle board holds no reveal state at all",
 			"still open after %.2fs" % closed)
-	check(absf(pa.slot_center_global(below).y - closed_y) < 1.0,
+	check(absf(pa.slot_center_global(slot_coord_v3(below)).y - closed_y) < 1.0,
 			"...and the slot below returns to exactly where it started",
-			"%.1f vs %.1f" % [pa.slot_center_global(below).y, closed_y])
+			"%.1f vs %.1f" % [pa.slot_center_global(slot_coord_v3(below)).y, closed_y])
 	await _teardown_view(view)
 
 ## **GATE G3.1 + G3.2 — a prop anchored BELOW an expansion stays glued to its slot, and the row score
@@ -1227,9 +1238,11 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 
 	var target : CardData = null
 	var below := Vector3i(-1, -1, -1)
+	# Entrance only -- see the note on the other selection loop: the fixture stocks both zones,
+	# and only the Entrance has a coordinate.
 	for data : CardData in pa.data_card.keys():
 		var v := pa.coord_of_data(data)
-		if v.z != 0: continue
+		if v.x != 0 or v.z != 0: continue
 		target = data
 		below = Vector3i(v.x, v.y, 1)
 		break
@@ -1486,10 +1499,17 @@ func _deal_until_stacked(view: GameView) -> void:
 	# and therefore the reveal's travel distance vary run to run (measured: the lit card moved
 	# anywhere from 340 to 550 px across runs). Nothing here depends on rank or suit, only on
 	# every column being the same known depth, so fixed cards are strictly better.
+	# BOTH ZONES, not just the lower one. The reveal is measured through slot_center_global,
+	# which has a coordinate for the Entrance and none for the legacy lower zone -- so a board
+	# that stacks only the lower zone gives the test nothing it can name. Stocking both keeps
+	# the every-column-same-known-depth property this fixture exists for.
 	for _depth : int in 2:
-		for col : int in g.state.lower_zone.size():
-			var card := TestFactories.m_card(col + 2, TestFactories.uc())
-			Board.place_card(g.state, card, 1, col)
+		for zone_x : int in 2:
+			var zone : Array[ArrayCardData] = g.state.upper_zone if zone_x == 0 \
+					else g.state.lower_zone
+			for col : int in zone.size():
+				var card := TestFactories.m_card(col + 2, TestFactories.uc())
+				Board.place_card(g.state, card, zone_x, col)
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
 

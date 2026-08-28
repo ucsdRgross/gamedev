@@ -938,19 +938,24 @@ const ZONE_ONLY_TESTS : Array[String] = [
 	"res://Tests/Engine/test_board.gd",
 	"res://Tests/Engine/test_fuzz.gd",
 	"res://Tests/Engine/test_game_data.gd",
+	"res://Tests/Engine/test_mods.gd",
 	"res://Tests/Engine/test_prop_engine.gd",
 	"res://Tests/Engine/test_spotlight.gd",
 	"res://Tests/Engine/test_statuses.gd",
 	"res://Tests/Engine/test_suit_props.gd",
+	"res://Tests/UI/test_visual_layers.gd",
 	"res://Tests/Map/test_persistence_fuzz.gd",
 	"res://Tests/Map/test_run_manager.gd",
-	"res://Tests/UI/test_visual_layers.gd",
 	"res://Tests/Visual/pause_time_spike.gd",
 ]
 
 const ZONE_MARKERS : Array[String] = ["upper_zone", "lower_zone"]
+## ⚠ NOT `BoardCoord`. It is the coordinate type for the Entrance too, so a file that merely
+## ported its Entrance call sites would satisfy this list while gaining no grid coverage at all --
+## which is exactly the false pass this ratchet exists to prevent. These markers all require a
+## GRID to be present.
 const GRID_MARKERS : Array[String] = [
-	"grids", "BoardCoord", "place_card_in_grid", "TestGridFixtures", "cell_types",
+	"grids[", "state.grids", "place_card_in_grid", "TestGridFixtures",
 ]
 
 func test_zone_only_tests_do_not_multiply() -> void:

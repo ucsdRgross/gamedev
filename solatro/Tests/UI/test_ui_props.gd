@@ -119,17 +119,29 @@ func settle(pa: PlayArea) -> void:
 	while not pa.visuals_ready() and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	var last := pa.slot_center_global(slot(0))
+	var last := pa.slot_center_global(slot_coord(0))
 	var stable := 0
 	while stable < 3 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		var now := pa.slot_center_global(slot(0))
+		var now := pa.slot_center_global(slot_coord(0))
 		stable = stable + 1 if now.is_equal_approx(last) else 0
 		last = now
 
 func slot(col: int) -> Vector3i:
 	return Vector3i(0, col, 0)
+
+## The Entrance's BoardCoord form of `slot(col)`, for `slot_center_global` call sites — `slot()`
+## itself stays Vector3i because PropData.route/at (Array[Vector3i]/Vector3i) are unmigrated until
+## Run B and most of this file's `slot()` calls feed those, not `slot_center_global`.
+func slot_coord(col: int) -> BoardCoord:
+	return BoardCoord.new(0, col, BoardCoord.ENTRANCE_ROW, 0)
+
+## Narrow local conversion of a legacy Entrance Vector3i (`p.at`, `vis.anchor_coord`) to its
+## BoardCoord form, for `slot_center_global` call sites only. PropData/PropVisual stay Vector3i
+## until Run B migrates the props themselves; this helper goes with them.
+func slot_coord_v3(v: Vector3i) -> BoardCoord:
+	return BoardCoord.new(0, v.y, BoardCoord.ENTRANCE_ROW, v.z)
 
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
@@ -281,11 +293,11 @@ func test_slot_geometry() -> void:
 	check_impl(control != null, "an occupied slot coord maps to a board control")
 	if control:
 		var center := control.global_position + control.size * 0.5
-		check_impl(pa.slot_center_global(slot(0)).is_equal_approx(center),
+		check_impl(pa.slot_center_global(slot_coord(0)).is_equal_approx(center),
 				"slot_center_global returns the control's rect center")
 	# Slots past the built rows have no control: the slot MATH extrapolates down the column.
-	var deep_a := pa.slot_center_global(Vector3i(0, 0, 4))
-	var deep_b := pa.slot_center_global(Vector3i(0, 0, 5))
+	var deep_a := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 4))
+	var deep_b := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 5))
 	check_impl(deep_b.y > deep_a.y and is_equal_approx(deep_a.x, deep_b.x),
 			"empty-slot fallback walks straight down the column",
 			"%s -> %s" % [deep_a, deep_b])
@@ -297,8 +309,8 @@ func test_slot_geometry() -> void:
 	g = make_board_game(3, [1] as Array[int])
 	pa = make_play_area()
 	await settle(pa)
-	var occupied_y := pa.slot_center_global(slot(0)).y
-	var empty_y := pa.slot_center_global(slot(1)).y
+	var occupied_y := pa.slot_center_global(slot_coord(0)).y
+	var empty_y := pa.slot_center_global(slot_coord(1)).y
 	check_impl(is_equal_approx(occupied_y, empty_y),
 			"an empty column's row-0 slot sits ON the row line of its occupied neighbors",
 			"occupied y %.1f vs empty-column y %.1f" % [occupied_y, empty_y])
@@ -317,13 +329,14 @@ func test_slot_geometry() -> void:
 		var control_a := pa.control_for_coord(slot(0))
 		var anchor_a : Vector2 = control_a.global_position \
 				+ Vector2(control_a.size.x * 0.5, CardVisual.card_size_play.y * 0.5)
-		check_impl(pa.slot_center_global(slot(0)).is_equal_approx(anchor_a),
+		check_impl(pa.slot_center_global(slot_coord(0)).is_equal_approx(anchor_a),
 				"math slot center matches the built control's card anchor at separation %.1f" % sep_scale,
-				"%s vs %s" % [pa.slot_center_global(slot(0)), anchor_a])
-		check_impl(is_equal_approx(pa.slot_center_global(slot(0)).y,
-				pa.slot_center_global(slot(1)).y),
+				"%s vs %s" % [pa.slot_center_global(slot_coord(0)), anchor_a])
+		check_impl(is_equal_approx(pa.slot_center_global(slot_coord(0)).y,
+				pa.slot_center_global(slot_coord(1)).y),
 				"empty column stays on the row line at separation %.1f" % sep_scale)
-		var pitch := pa.slot_center_global(Vector3i(0, 0, 1)).y - pa.slot_center_global(slot(0)).y
+		var pitch := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)).y \
+				- pa.slot_center_global(slot_coord(0)).y
 		check_impl(is_equal_approx(pitch,
 				float(CardVisual.card_separation_play_custom) + float(pa.separation)),
 				"row pitch = card strip + separation at separation %.1f" % sep_scale, str(pitch))
@@ -358,8 +371,8 @@ func test_a_board_wider_than_the_window_stays_reachable() -> void:
 	await settle(pa)
 
 	var half := CardVisual.card_size_play.x * 0.5
-	var first := pa.slot_center_global(Vector3i(0, 0, 0)).x
-	var last := pa.slot_center_global(Vector3i(0, WIDE - 1, 0)).x
+	var first := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).x
+	var last := pa.slot_center_global(BoardCoord.new(0, WIDE - 1, BoardCoord.ENTRANCE_ROW, 0)).x
 	var view_width := pa.get_viewport_rect().size.x
 	# The premise: this really is wider than the window, or the rest of the test proves nothing.
 	check(last + half > view_width,
@@ -414,12 +427,14 @@ func test_prop_visual_lifecycle() -> void:
 		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
 		# Slot centre PLUS this kind's lane offset — for the hoop that is the card-jump rise it now
  # rides at (owner), so the bare slot centre is no longer where it parks.
-		var want := pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
+		# `p.at` stays the legacy Vector3i until props migrate; narrow local conversion to the
+		# Entrance's BoardCoord form here. Run B removes it.
+		var want := pl.to_local(pa.slot_center_global(slot_coord_v3(p.at))) + vis.lane_offset
 		var w := 0.0
 		while (vis.position - want).length() >= 1.0 and w < 1.0:
 			await get_tree().process_frame
 			w += get_process_delta_time()
-			want = pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
+			want = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at))) + vis.lane_offset
 		check((vis.position - want).length() < 1.0,
 				"the visual lands on its slot's center (plus its own lane offset)",
 				"pos %s vs want %s | anchor %s from %s target %s t %.2f/%.2f" %
@@ -480,7 +495,9 @@ func test_slow_props_move_continuously() -> void:
 	ok = await run_tick(pl, [p], [], [p], [])
 	check(ok, "a 2-ticks-per-slot mover's entry tick completes at its half-way share")
 	var vis : PropVisual = pl._visuals.get(p)
-	var target := pl.to_local(pa.slot_center_global(p.at))
+	# `p.at` stays the legacy Vector3i until props migrate; narrow local conversion to the
+	# Entrance's BoardCoord form here. Run B removes it.
+	var target := pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
 	check(vis != null and (vis.position - target).length() > 1.0,
 			"the slow prop is still mid-flight after its entry tick (no one-tick sprint)")
 	# the in-between tick (no new slot) carries it the rest of the way — never frozen
@@ -489,11 +506,11 @@ func test_slow_props_move_continuously() -> void:
 	# Settle a few frames (see the timing NOTE in test_prop_visual_lifecycle); re-derive `target`
 	# live each frame since _repin chases the settling board. Dump the leg state on failure.
 	var w := 0.0
-	target = pl.to_local(pa.slot_center_global(p.at))
+	target = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
 	while vis != null and (vis.position - target).length() >= 1.0 and w < 1.0:
 		await get_tree().process_frame
 		w += get_process_delta_time()
-		target = pl.to_local(pa.slot_center_global(p.at))
+		target = pl.to_local(pa.slot_center_global(slot_coord_v3(p.at)))
 	check(vis != null and (vis.position - target).length() < 1.0,
 			"the prop arrives exactly as its slot residency ends (smooth, no pause)",
 			"pos %s vs target %s | anchor %s from %s target %s t %.2f/%.2f" %
@@ -518,7 +535,7 @@ func test_teleport_blinks() -> void:
 	p.route = [] as Array[Vector3i]
 	pl.begin_prop_tick([p], [], [], [[p, slot(0), slot(2)] as Array])
 	var vis : PropVisual = pl._visuals.get(p)
-	var want := pl.to_local(pa.slot_center_global(slot(2)))
+	var want := pl.to_local(pa.slot_center_global(slot_coord(2)))
 	check(vis != null and (vis.position - want).length() < 1.0,
 			"a teleported prop's visual snaps to the destination instantly (blink, not lerp)")
 	var waited := 0.0
@@ -625,8 +642,8 @@ func test_row_prop_never_leaves_its_row() -> void:
 	p.ticks_per_slot = 2
 	p.route = g.row_slot_path(slot(0), true)
 	p.countdown = p.ticks_per_slot   # what run_props' spawn stage sets for a batch's first prop
-	var x_min := pa.slot_center_global(slot(0)).x
-	var x_max := pa.slot_center_global(Vector3i(0, 3, 0)).x
+	var x_min := pa.slot_center_global(slot_coord(0)).x
+	var x_max := pa.slot_center_global(BoardCoord.new(0, 3, BoardCoord.ENTRANCE_ROW, 0)).x
 	var pitch := (x_max - x_min) / 3.0
 	var band := CardVisual.card_size_play.y * 0.5
 	var stray : Array[String] = []
@@ -635,7 +652,7 @@ func test_row_prop_never_leaves_its_row() -> void:
 	var label_poked : Array[bool] = [false]
 	var poll := func(vis: PropVisual) -> void:
 		var gp := vis.global_position
-		var row_y := pa.slot_center_global(slot(0)).y   # LIVE: the relayout pokes move the row
+		var row_y := pa.slot_center_global(slot_coord(0)).y   # LIVE: the relayout pokes move the row
 		if absf(gp.y - row_y) > band and stray.is_empty():
 			stray.append("y strayed to %s (live row y %.0f)" % [gp, row_y])
 		elif (gp.x < x_min - 2.0 * pitch or gp.x > x_max + 2.0 * pitch) and stray.is_empty():
@@ -654,7 +671,7 @@ func test_row_prop_never_leaves_its_row() -> void:
 	var flight_ok : Array[bool] = [false]
 	_drive_route_flight(pl, p, flight_ok)   # concurrent: the sampler below owns the frames
 	await _sample_flight(pl, p, samples, poll,
-			func() -> Vector2: return pa.slot_center_global(slot(0)))
+			func() -> Vector2: return pa.slot_center_global(slot_coord(0)))
 	check(flight_ok[0], "every tick of the row flight completes")
 	check(samples.size() > 10, "the sampler captured the flight every frame",
 			str(samples.size()))
@@ -697,7 +714,7 @@ func test_each_kind_moves_as_expected() -> void:
 		_drive_route_flight(pl, p, flight_ok)
 		# samples are relative to the LIVE row anchor, so y deviation is directly |rel.y|
 		await _sample_flight(pl, p, samples, Callable(),
-				func() -> Vector2: return pa.slot_center_global(slot(0)))
+				func() -> Vector2: return pa.slot_center_global(slot_coord(0)))
 		check(flight_ok[0], "%s flight completes" % label)
 		var max_dev := 0.0
 		for gp : Vector2 in samples:
@@ -723,7 +740,7 @@ func test_each_kind_moves_as_expected() -> void:
 		var flight_ok : Array[bool] = [false]
 		_drive_route_flight(pl, p, flight_ok)
 		await _sample_flight(pl, p, samples, Callable(),
-				func() -> Vector2: return pa.slot_center_global(slot(0)))
+				func() -> Vector2: return pa.slot_center_global(slot_coord(0)))
 		check(flight_ok[0], "%s flight completes" % label)
 		check(_direction_changes(samples, 0, label) == 0,
 				"%s flies toward its target without reversing x (raw positions)" % label)
@@ -733,7 +750,7 @@ func test_each_kind_moves_as_expected() -> void:
 					% [label, samples.size(), samples])
 		check(y_flips == 1,
 				"%s arcs: exactly one vertical turn at the peak (raw positions)" % label)
-		var target_rel := pa.slot_center_global(slot(2)) - pa.slot_center_global(slot(0))
+		var target_rel := pa.slot_center_global(slot_coord(2)) - pa.slot_center_global(slot_coord(0))
 		var landing : Vector2 = samples[samples.size() - 1] if not samples.is_empty() else Vector2.INF
 		check((landing - target_rel).length() < CardVisual.card_size_play.x * 0.5,
 				"%s ends its flight AT its target (poof in place)" % label, str(landing))
@@ -759,7 +776,7 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 	p.done = true
 	ok = await run_tick(pl, [p], [], [], [])
 	check(ok, "ballistic despawn tick completes")
-	var target := pa.slot_center_global(slot(2))
+	var target := pa.slot_center_global(slot_coord(2))
 	var strayed := ""
 	var waited := 0.0
 	while waited < WATCHDOG_SECS:
@@ -1136,7 +1153,9 @@ func _watch_live_props(pa: PlayArea, flag: Array[bool],
 			# Row-hold guard: hoops/knives only (ballistic kinds arc off their row by design).
 			if not (vis is HoopVisual or vis is KnifeVisual): continue
 			if vis.anchor_coord == Vector3i.MIN: continue
-			var anchor := pa.slot_center_global(vis.anchor_coord)
+			# `anchor_coord` stays the legacy Vector3i until props migrate; narrow local conversion
+			# to the Entrance's BoardCoord form here. Run B removes it.
+			var anchor := pa.slot_center_global(slot_coord_v3(vis.anchor_coord))
 			if anchor == Vector2.ZERO: continue   # slot vanished mid-run; nothing to hold to
 			if absf(vis.global_position.y - anchor.y) > CardVisual.card_size_play.y * 0.75 \
 					and row_stray.size() < 5:
@@ -1192,8 +1211,9 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 ## column count it is simply what the design does.
 func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void:
 	var half := CardVisual.card_size_play.x * 0.5
-	var left := pa.slot_center_global(Vector3i(0, 0, 0)).x - half
-	var right := pa.slot_center_global(Vector3i(0, columns - 1, 0)).x + half
+	var left := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).x - half
+	var right := pa.slot_center_global(
+			BoardCoord.new(0, columns - 1, BoardCoord.ENTRANCE_ROW, 0)).x + half
 	var view_width := pa.get_viewport_rect().size.x
 	var margin := minf(left, view_width - right)
 

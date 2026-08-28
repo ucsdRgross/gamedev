@@ -277,7 +277,10 @@ func _free_visual(vis: PropVisual) -> void:
 ## worst visibly OFF-BOARD where staged/void points had no live slot to follow).
 func _repin(vis: PropVisual) -> void:
 	if vis.anchor_coord == Vector3i.MIN or not play_area: return
-	var live_global := play_area.slot_center_global(vis.anchor_coord)
+	## `anchor_coord` stays the legacy Vector3i until the props migrate; narrow local conversion
+	## to the Entrance's BoardCoord form at this one boundary. Run B removes it.
+	var anchor_coord := BoardCoord.new(0, vis.anchor_coord.y, BoardCoord.ENTRANCE_ROW, vis.anchor_coord.z)
+	var live_global := play_area.slot_center_global(anchor_coord)
 	if live_global == Vector2.ZERO: return   # defensive only: slot math never returns ZERO now
 	var live := to_local(live_global)
 	if live.is_equal_approx(vis.anchor_point): return
@@ -536,7 +539,10 @@ func _prune_done(live: Array) -> void:
 ## Content-local point of any board slot (either zone; direction-agnostic).
 func _slot_point(coord: Vector3i) -> Vector2:
 	if not play_area or coord == Vector3i.MIN: return Vector2.ZERO
-	return to_local(play_area.slot_center_global(coord))
+	## Props are still routed in the legacy Vector3i form until they migrate; narrow local
+	## conversion to the Entrance's BoardCoord form at this one boundary. Run B removes it.
+	var board_coord := BoardCoord.new(0, coord.y, BoardCoord.ENTRANCE_ROW, coord.z)
+	return to_local(play_area.slot_center_global(board_coord))
 
 ## Where a freshly spawned prop's visual appears. Travelers with a real path (route >= 2
 ## slots) stage OFF-BOARD behind their entry slot ALONG the travel axis — countdown/

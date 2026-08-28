@@ -36,6 +36,17 @@ var _row_open : Dictionary[Vector2i, float] = {}
 ## still has to ease back down, and a map that only held the current set would snap it.
 var _row_open_wanted : Dictionary[Vector2i, bool] = {}
 
+## Each grid panel's resolved global origin, keyed by its index among `GameData.grids`. A panel's
+## own rect is a LAYOUT RESULT (bottom/center-shrink flags inside an HBoxContainer of siblings), so
+## the panel publishes its origin here whenever its rect changes; `slot_center_global` reads only
+## this cache and never the panel's rect, keeping the every-frame prop-anchor path free of
+## control-tree reads. Grids are only appended or truncated from the end (`set_grid_zones`), so a
+## panel's index is stable for its whole lifetime and is a safe cache key.
+## ⚠ Empty for any grid whose panel has not yet reported a `resized` at all (the very first frame
+## before layout has run once) — a lookup then falls back to `Vector2.ZERO`, the same silent-until-
+## seen failure mode the cache accepts by design.
+var _grid_panel_origin : Dictionary[int, Vector2] = {}
+
 ## How tall a revealed row's strip becomes, in screen pixels — the only place either formula is
 ## written.
 ##
@@ -338,33 +349,55 @@ func control_for_coord(v: Vector3i) -> Control:
 	if idx < 0 or idx >= vbox.get_child_count(): return null
 	return vbox.get_child(idx) as Control
 
-## Global-space center of the CARD at any slot coord — PURE MATH from the zone container's
-## origin plus layout constants, NO control_for_coord / control rect reads (owner spec
-## 2026-07-15): geometry is deterministic and independent of container relayout timing, and the
-## one formula covers occupied, empty, and off-board slots alike — so a prop crossing a row keeps
-## ONE y through empty and short columns (the header-fallback bugs of 2026-07-12/13 can't recur:
-## an inflated empty-column header or a focus-resized row no longer moves the slot line).
-## Derivation (mirrors the container build in set_card_zone / update_card_zone_visuals):
-##   column x = zone hbox left + column * (card width + separation) + half card width
-##   slot top = zone hbox top + header height (0) + separation + slot * row pitch
+## Global-space center of the CARD at any board coord — PURE MATH, no control-rect reads on the
+## hot path (owner spec 2026-07-15): geometry is deterministic and independent of container
+## relayout timing, and the one formula covers occupied, empty, and off-board slots alike, for
+## both branches below. Every prop anchors through this every frame.
+func slot_center_global(coord: BoardCoord) -> Vector2:
+	if coord.y == BoardCoord.ENTRANCE_ROW:
+		return _entrance_slot_center_global(coord)
+	return _grid_slot_center_global(coord)
+
+## The Entrance: still backed by `upper_zone`, and still mirrors the container build in
+## `set_card_zone` / `update_card_zone_visuals` — the Entrance hbox is a direct child of one VBox
+## at a known, stable offset, so reading its own global position here (unlike a grid panel's) does
+## not depend on relayout timing in practice.
+##   column x = entrance hbox left + column * (card width + separation) + half card width
+##   slot top = entrance hbox top + header height (0) + separation + slot * row pitch
 ##     with row pitch = card strip height (card_separation_play_custom) + separation
-##   card anchor = slot top + half a card (CardVisual.get_card_control_center) — stacked row
-##     strips are thin while the card art hangs a full card below its control top.
-func slot_center_global(v: Vector3i) -> Vector2:
-	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
-	var origin := hbox.global_position
+##   card anchor = slot top + half a card — stacked row strips are thin while the card art hangs a
+##     full card below its control top.
+func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
+	var origin := upper_zone_right.global_position
 	var width := CardVisual.card_size_play.x
 	var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	var x := origin.x + float(v.y) * (width + float(separation)) + width * 0.5
-	var y := origin.y + float(separation) + pitch * float(v.z) + CardVisual.card_size_play.y * 0.5
-	# ⚠ **K13 — THE UNIFORM PITCH IS NO LONGER THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** S16
-	# lets one row's strip grow, so the rows below it are pushed down by an amount the pitch does not
+	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
+	var y := origin.y + float(separation) + pitch * float(coord.h) + CardVisual.card_size_play.y * 0.5
+	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal lets
+	# one row's strip grow, so the rows below it are pushed down by an amount the pitch does not
 	# describe. Without this term a prop anchored under an expanding row stays where the unexpanded
-	# maths says it should be and visibly detaches from its slot — which is the whole of gate G3.1, and
-	# why the design flagged this function by name rather than letting it be discovered.
+	# maths says it should be and visibly detaches from its slot.
 	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
 	# the controls, so geometry stays independent of container relayout timing (owner spec).
-	y += _row_open_offset(v.x, v.z)
+	y += _row_open_offset(0, coord.h)
+	return Vector2(x, y)
+
+## A grid cell: column and row come from the DATA (`coord.x`, `coord.y`), height from the cell's
+## own stack (`coord.h`). The panel's origin is a cached publish (`_grid_panel_origin`), never a
+## live rect read, because a grid panel's position is a layout result (bottom/center-shrink flags
+## inside an HBoxContainer of siblings).
+## ⚠ The row pitch here is UNIFORM (one card's height, same as an empty cell) — a row that grows
+## taller because one of its cells holds a deep stack (a whole row grows with its tallest cell) has
+## no arithmetic model yet; only the Entrance's eased reveal offset exists today.
+func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
+	var origin : Vector2 = _grid_panel_origin.get(coord.grid, Vector2.ZERO)
+	var width := CardVisual.card_size_play.x
+	var full := CardVisual.card_size_play.y
+	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
+	var row_pitch := full + float(separation)
+	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
+	var y := origin.y + float(coord.y) * row_pitch + float(separation) \
+			+ depth_pitch * float(coord.h) + full * 0.5
 	return Vector2(x, y)
 
 ## Every CardVisual on slot `v`'s ROW — same zone, row v.z across every column (z == -1 = the
@@ -672,7 +705,16 @@ func _create_grid_panel() -> Control:
 	var cells := GridContainer.new()
 	cells.name = "CellGrid"
 	panel.add_child(cells)
+	# `resized` fires whenever a Control's rect changes, position included, not size alone — the
+	# one signal that tracks a shrink-flagged panel being shoved sideways/upward by its siblings.
+	panel.resized.connect(_publish_grid_panel_origin.bind(panel))
 	return panel
+
+## Caches one grid panel's resolved global origin, so `slot_center_global` can read it instead of
+## the panel's rect. Keyed by the panel's CURRENT index (see `_grid_panel_origin`'s own comment for
+## why that index is stable).
+func _publish_grid_panel_origin(panel: Control) -> void:
+	_grid_panel_origin[panel.get_index()] = panel.global_position
 
 ## Fills one panel with `grid_width * grid_height` cell slots and binds every card in them.
 ## The cell count comes from the DATA, never from a hard-coded 5.
