@@ -6,7 +6,11 @@ extends CardModifierType
 
 func get_str() -> String: return TRANSLATION.find('GRID_CELL_CARD')
 func get_description() -> String: return TRANSLATION.find('GRID_CELL_CARD_DESCRIPTION')
-func get_frame() -> int: return 13
+## ⚠ THE OLD ZONE FRAME, not a new one. A cell is a zone slot and reads as one: it uses the
+## same frame the board's zone/type cards have always used (`TypeInput`'s), so an empty cell
+## looks like the empty slot it is. Owner: "use old zone frames. dont change type frames" --
+## which is also why no other type's frame moved to make room for this.
+func get_frame() -> int: return 2
 
 ## Engine zone machinery: never a combo class, like every other zone header.
 func combo_key(_hook: StringName = &"") -> String: return ""

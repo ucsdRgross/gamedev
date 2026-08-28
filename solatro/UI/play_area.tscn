@@ -44,24 +44,11 @@ layout_mode = 2
 theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
-[node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
-unique_name_in_owner = true
-layout_mode = 2
-dragging_enabled = false
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="UpperZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=878004856]
+[node name="GridContainer" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1510098970]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 0
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
+alignment = 1
 
 [node name="MiddleZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=689665879]
 unique_name_in_owner = true
@@ -106,10 +93,24 @@ layout_mode = 2
 theme_override_constants/separation = 4
 metadata/_smooth_scroll_default_mouse_filter_set = true
 
-[node name="GridContainer" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1510098970]
+[node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
+unique_name_in_owner = true
+layout_mode = 2
+dragging_enabled = false
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=878004856]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 4
+metadata/_smooth_scroll_default_mouse_filter_set = true
 
 [node name="CardLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1467391208]
 unique_name_in_owner = true

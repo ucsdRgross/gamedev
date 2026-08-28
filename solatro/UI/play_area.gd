@@ -137,6 +137,7 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## ⚠ Typed `HBoxContainer` and NAMED `GridContainer`: the name is the registry's, the type is
 ## what puts the panels side by side. The 5x5 of cells INSIDE each panel is the real
 ## `GridContainer`, built per panel in `_build_grid_panel`.
+@onready var scroll_container: ScrollContainer = $SmoothScrollContainer
 @onready var grid_container: HBoxContainer = %GridContainer
 @onready var card_layer: Node2D = %CardLayer
 ## Always-on-top surface (last sibling of TopLevelVBox): the focus inspector panel and score
@@ -154,8 +155,20 @@ func _ready() -> void:
 func setup_gui() -> void:
 	set_separation()
 	set_card_zones()
+	# The board grows UPWARD out of the Entrance, so the Entrance is the part the player acts on
+	# and it is the bottom of the picture. Anchor the scroll there ON ENTRY -- deferred, because
+	# the containers have not been sized yet at this point and the maximum is still 0.
+	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
 	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
+
+## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
+## the view out from under a player who had scrolled somewhere else.
+func _anchor_scroll_to_bottom() -> void:
+	if not is_instance_valid(scroll_container): return
+	await get_tree().process_frame
+	var bar := scroll_container.get_v_scroll_bar()
+	if bar: scroll_container.scroll_vertical = int(bar.max_value)
 
 func update_gui() -> void:
 	set_separation()
@@ -622,6 +635,11 @@ func set_grid_zones(game_state: GameData) -> void:
 func _create_grid_panel() -> Control:
 	var panel := VBoxContainer.new()
 	panel.name = "GridPanel"
+	# Grids are aligned by their BOTTOM edges: every grid sits on the same floor and grows
+	# upward independently, which is what the board growing up out of the Entrance means. With
+	# cross-grid row alignment off (the default) the bottom edge is the ONLY thing that lines up.
+	panel.size_flags_vertical = Control.SIZE_SHRINK_END
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var cells := GridContainer.new()
 	cells.name = "CellGrid"
 	panel.add_child(cells)
