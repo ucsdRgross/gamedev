@@ -1321,7 +1321,7 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 		worst_prop = maxf(worst_prop,
 				(vis.position - pinned_offset).distance_to(pl._slot_point(BoardCoord.new(0, below.y, BoardCoord.ENTRANCE_ROW, below.z))))
 		# G3.2: the row gutter label for row 0 must carry the same opening the row card strip does.
-		var gutter : VBoxContainer = pa.upper_zone_left if below.x == 0 else pa.lower_zone_left
+		var gutter : VBoxContainer = pa.upper_zone_left   # Entrance only -- LowerZone was deleted
 		if gutter and gutter.get_child_count() > 0:
 			var label := gutter.get_child(0) as Control
 			if label:

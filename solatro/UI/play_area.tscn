@@ -50,49 +50,6 @@ layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="MiddleZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=689665879]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-split_offsets = PackedInt32Array(38)
-dragging_enabled = false
-split_offset = 38
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="MiddleZoneLeft" type="Control" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=737216612]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(16, 16)
-layout_mode = 2
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="MiddleZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/MiddleZone" unique_id=128433223]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="LowerZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1408330160]
-unique_name_in_owner = true
-layout_mode = 2
-split_offsets = PackedInt32Array(1266)
-dragging_enabled = false
-split_offset = 1266
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="LowerZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=566986388]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 0
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="LowerZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/LowerZone" unique_id=803627596]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
 [node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
 unique_name_in_owner = true
 layout_mode = 2

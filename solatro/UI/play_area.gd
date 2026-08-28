@@ -130,15 +130,10 @@ var data_ui : Dictionary[CardData, Control]
 var data_card : Dictionary[CardData, CardVisual]
 var new_data_card : Dictionary[CardData, CardVisual]
 
-@onready var containers : Array[Control] = [%TopLevelVBox, %UpperZone, %UpperZoneLeft, 
-								%UpperZoneRight, %MiddleZone, %MiddleZoneRight, 
-								%LowerZone, %LowerZoneLeft, %LowerZoneRight]
+@onready var containers : Array[Control] = [%TopLevelVBox, %UpperZone, %UpperZoneLeft,
+								%UpperZoneRight]
 @onready var upper_zone_left: VBoxContainer = %UpperZoneLeft
-@onready var lower_zone_left: VBoxContainer = %LowerZoneLeft
 @onready var upper_zone_right: HBoxContainer = %UpperZoneRight
-@onready var lower_zone_right: HBoxContainer = %LowerZoneRight
-@onready var middle_zone_left: Control = %MiddleZoneLeft
-@onready var middle_zone_right: HBoxContainer = %MiddleZoneRight
 @onready var prop_layer: PropLayer = %PropLayer   ## Phase 4 prop-animation surface
 ## CardVisual host INSIDE the scroll content (a Node2D the containers ignore, like PropLayer):
 ## the scroll transform carries cards, controls, and props together. Parented to the PlayArea
@@ -178,7 +173,6 @@ func setup_gui() -> void:
 	# the containers have not been sized yet at this point and the maximum is still 0.
 	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
-	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -192,7 +186,6 @@ func update_gui() -> void:
 	set_separation()
 	set_card_zones_visuals()
 	update_score_controls()
-	middle_zone_left.custom_minimum_size = Vector2.ONE * CardVisual.card_separation_play
 
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
@@ -342,7 +335,7 @@ func flush_rebuild() -> void:
 ## has no control there (empty slot past the built rows). Focus/input helpers use this;
 ## slot GEOMETRY does not — slot_center_global below is pure math (owner spec).
 func control_for_coord(v: Vector3i) -> Control:
-	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
+	var hbox : HBoxContainer = upper_zone_right
 	if v.y < 0 or v.y >= hbox.get_child_count(): return null
 	var vbox := hbox.get_child(v.y)
 	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
@@ -407,7 +400,7 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 ## this set to render a split prop behind / in front of the WHOLE row.
 func row_card_visuals(v: Vector3i) -> Array[CardVisual]:
 	var out : Array[CardVisual] = []
-	var hbox : HBoxContainer = upper_zone_right if v.x == 0 else lower_zone_right
+	var hbox : HBoxContainer = upper_zone_right
 	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
 	if idx < 0: return out
 	for col : Node in hbox.get_children():
@@ -432,7 +425,6 @@ func set_card_zones() -> void:
 	var game_state := game.state
 	# Handles structural validation, instantiations, and dictionary mapping
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
-	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
 	set_grid_zones(game_state)
 	data_card = new_data_card
 	new_data_card = {}
@@ -462,7 +454,6 @@ func set_card_zones_visuals() -> void:
 	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
 	# lower-zone cards draw over upper.
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
-	update_card_zone_visuals(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
 	update_grid_zone_visuals(game_state)
 	_order_board_cards(game_state)
 
@@ -545,7 +536,6 @@ func _order_board_cards(game_state: GameData) -> void:
 	var seen : Dictionary[CardVisual, bool] = {}
 	var pending : Array[bool] = [false]
 	_append_zone_row_major(ordered, seen, pending, game_state.upper_zone_type, game_state.upper_zone)
-	_append_zone_row_major(ordered, seen, pending, game_state.lower_zone_type, game_state.lower_zone)
 	# Grids last: they are the board, and they draw over what is left of the legacy zones.
 	_append_grids_row_major(ordered, seen, pending, game_state.grids)
 	for i : int in ordered.size():
@@ -942,14 +932,13 @@ func set_reveal_cards(cards: Array[CardData]) -> void:
 ## Which slot a card occupies, or `(-1,-1,-1)` if it is not on the board. Derived from the containers
 ## rather than cached: a rebuild re-parents controls, and a stale coord map would open the wrong row.
 func coord_of_data(data: CardData) -> Vector3i:
-	for zone_x : int in 2:
-		var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
-		if not hbox: continue
-		for y : int in hbox.get_child_count():
-			var vbox := hbox.get_child(y)
-			for j : int in range(1, vbox.get_child_count()):
-				if ui_data.get(vbox.get_child(j)) == data:
-					return Vector3i(zone_x, y, j - 1)
+	var zone_x := 0   # only the Entrance renders now; LowerZone was deleted
+	var hbox : HBoxContainer = upper_zone_right
+	for y : int in hbox.get_child_count():
+		var vbox := hbox.get_child(y)
+		for j : int in range(1, vbox.get_child_count()):
+			if ui_data.get(vbox.get_child(j)) == data:
+				return Vector3i(zone_x, y, j - 1)
 	return Vector3i(-1, -1, -1)
 
 ## Push the current openings onto the row strips AND the row score gutters.
@@ -958,25 +947,25 @@ func coord_of_data(data: CardData) -> Vector3i:
 ## labels are a parallel column with no knowledge of the cards, so nothing else would keep them level;
 ## the design calls this out by name because it fails silently and looks like a labelling bug.
 func _apply_row_openings() -> void:
-	for zone_x : int in 2:
-		var hbox : HBoxContainer = upper_zone_right if zone_x == 0 else lower_zone_right
-		if hbox:
-			for col : Node in hbox.get_children():
-				var last := col.get_child_count() - 1
-				for j : int in range(1, col.get_child_count()):
-					var c := col.get_child(j) as Control
-					if not c: continue
-					var base : float = CardVisual.card_size_play.y if j == last \
-							else float(CardVisual.card_separation_play_custom)
-					c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
-							base + row_open_extra(zone_x, j - 1))
-		var gutter : VBoxContainer = upper_zone_left if zone_x == 0 else lower_zone_left
-		if not gutter: continue
-		for i : int in gutter.get_child_count():
-			var label := gutter.get_child(i) as Control
-			if not label: continue
-			label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
-					float(CardVisual.card_separation_play_custom) + row_open_extra(zone_x, i))
+	var zone_x := 0   # only the Entrance renders now; LowerZone was deleted
+	var hbox : HBoxContainer = upper_zone_right
+	if hbox:
+		for col : Node in hbox.get_children():
+			var last := col.get_child_count() - 1
+			for j : int in range(1, col.get_child_count()):
+				var c := col.get_child(j) as Control
+				if not c: continue
+				var base : float = CardVisual.card_size_play.y if j == last \
+						else float(CardVisual.card_separation_play_custom)
+				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
+						base + row_open_extra(zone_x, j - 1))
+	var gutter : VBoxContainer = upper_zone_left
+	if not gutter: return
+	for i : int in gutter.get_child_count():
+		var label := gutter.get_child(i) as Control
+		if not label: continue
+		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
+				float(CardVisual.card_separation_play_custom) + row_open_extra(zone_x, i))
 
 ## One frame of the reveal. Returns whether anything is still open or moving.
 ##
@@ -1028,8 +1017,7 @@ func update_score_controls() -> void:
 	if not game: return
 	var game_state := game.state
 	set_score_zone(true, upper_zone_left, game_state.scores_row_upper)
-	set_score_zone(true, lower_zone_left, game_state.scores_row_lower)
-	set_score_zone(false, middle_zone_right, game_state.scores_col_legacy)
+	# scores_row_lower / scores_col_legacy: storage only, LowerZone/MiddleZone no longer render.
 	# K12: set_score_zone just reset every gutter to its base height, and banking a line score
 	# reaches here while the scored row is still OPEN (rows close on the act's release). Without
 	# this the open row's gutter collapsed and the score numbers desynced from their rows —
@@ -1064,12 +1052,9 @@ func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
 	# syncs to game data
 	update_score_controls()
 	var label : BigNumberLabel
-	if zone == game.state.scores_row_lower:
-		label = lower_zone_left.get_child(index)
-	elif zone == game.state.scores_col_legacy:
-		label = middle_zone_right.get_child(index)
-	elif zone == game.state.scores_row_upper:
+	if zone == game.state.scores_row_upper:
 		label = upper_zone_left.get_child(index)
+	# scores_row_lower / scores_col_legacy: storage only, no rendering surface anymore.
 	if label: label.update_score_anim(score)
 		
 #func get_control_from_data(data : CardData) -> Control:
