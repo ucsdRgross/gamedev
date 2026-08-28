@@ -755,8 +755,16 @@ its answers.
    - ~~**b.1** build the container, panels and cell slots~~ **DONE.**
    - ~~**b.2** the old zone frame, grid on top, Entrance on the bottom, aligned~~ **DONE.**
    - **b.2b** migrate `slot_center_global` to `BoardCoord`; the prop routes follow it (`M5`, `M6`),
-     which is what makes a scored line fire props again.
-   - **b.3** the Entrance moves to `%EntranceStrip`; `upper_zone` -> `entrance`.
+     which is what makes a scored line fire props again. ⚠ **DO THIS ONE NEXT** -- `S20b.3` and
+     the test-fixture rebuild both turned out to depend on it (GAP-010).
+   - **b.3** the Entrance moves to `%EntranceStrip`, pinned outside the board's scroll, x slaved
+     to it, with its own vertical scroll (GAP-010=a); `upper_zone` -> `entrance`.
+     ⚠ **ATTEMPTED TWICE AND BACKED OUT TWICE; READ GAP-010 BEFORE THE THIRD.** It WORKS by eye
+     and the fixture rebuild WORKS (32 failures -> 1). What defeats it is the product: pinning
+     the Entrance outside the scroll while the legacy zones and the legacy coordinate are still
+     present gives the board THREE renderers and TWO draw layers, and every pooled-control,
+     deferred-add and settings-rebuild path has to be correct for all of them at once -- 1041
+     engine errors, a new seam each time one closed. Land it AFTER b.2b and WITH b.4.
    - **b.4** delete `lower_zone` and the legacy zone rendering; rebuild the tests that used them.
 2. **`S20c` — retire the act.** `Game.submit`, `_perform_submit` and the Next button
    (owner's `Q31`=b). `end_show()` becomes the only path that resolves a show.
