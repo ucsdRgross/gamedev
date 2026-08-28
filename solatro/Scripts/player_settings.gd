@@ -24,7 +24,7 @@ signal settings_changed
 		settings_changed.emit()
 ## Card size multiplier: scales the card footprint, the board layout pitch, formation offsets,
 ## and the prop art (props scale by card_scale / PropVisual.AUTHORED_CARD_SCALE).
-@export var card_scale : float = 2.5:
+@export var card_scale : float = 1.0:
 	set(value):
 		card_scale = value
 		settings_changed.emit()

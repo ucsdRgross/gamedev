@@ -347,6 +347,12 @@ func test_slot_geometry() -> void:
 ## the overflow is not marginal and the check cannot pass by accident.
 func test_a_board_wider_than_the_window_stays_reachable() -> void:
 	const WIDE := 12
+	# ⚠ THE SCALE IS PINNED, for the same reason the column count is: this test is about a board
+	# WIDER THAN THE WINDOW, so the fixture has to make one whatever the shipped card_scale is.
+	# At the shipped 1.0, twelve columns fit comfortably and the test would pass while proving
+	# nothing about overflow at all.
+	var prev_scale : float = SettingsManager.settings.card_scale
+	SettingsManager.settings.card_scale = 2.5
 	var g := make_board_game(WIDE)
 	var pa := make_play_area()
 	await settle(pa)
@@ -370,6 +376,10 @@ func test_a_board_wider_than_the_window_stays_reachable() -> void:
 	# THE INVARIANT: reachable by scrolling. A column outside the scrollable extent is unreachable,
 	# which IS a bug — at 6 columns or 60.
 	_check_board_fits_window(pa, WIDE, "a deliberately over-wide %d-column board" % WIDE)
+	# Put the scale back before the next test in this suite inherits it. The suite's own
+	# backup_real_settings keeps the PLAYER's file safe either way; this is about the tests
+	# after this one, which would otherwise silently run at a scale they did not choose.
+	SettingsManager.settings.card_scale = prev_scale
 	await cleanup(g, pa)
 
 func test_prop_visual_lifecycle() -> void:

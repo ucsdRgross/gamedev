@@ -583,7 +583,11 @@ func test_hoop_split_multi_column() -> void:
 		# Other columns: the ring must geometrically overlap NONE of their cards — bracketing the
 		# ONE occupied card is only sufficient while this holds (the cross-column ambiguity,
 		# hypothesis 1). Ring rect = art_size around the visual's center.
-		var ring_half := vis.art_size * 0.5
+		# ⚠ `art_size` IS IN UNSCALED ART UNITS AND `d` BELOW IS IN SCREEN PIXELS. A prop node is
+		# scaled by `card_scale / AUTHORED_CARD_SCALE`, so the two are only the same number at
+		# card_scale 2.5 -- at 1.0 this read the ring 2.5x too wide and reported it overlapping
+		# both neighbouring columns when on screen it does not. Take the visual's real scale.
+		var ring_half := vis.art_size * 0.5 * vis.global_scale
 		var card_half := CardVisual.card_size_play * 0.5
 		var overlaps : Array[String] = []
 		for col : int in [0, 2] as Array[int]:
@@ -1406,7 +1410,11 @@ func test_lights_track_a_scrolled_board() -> void:
 		return
 
 	var prev_scale : float = SettingsManager.settings.card_scale
-	SettingsManager.settings.card_scale = prev_scale * 2.0
+	# ⚠ AN ABSOLUTE SCALE, NOT A DOUBLING OF WHATEVER IS SET. This test is about what SCROLLING
+	# does, so its fixture has to overflow the container whatever the shipped card_scale is; a
+	# relative bump stops overflowing the moment the default comes down and the test then proves
+	# nothing while still passing its own vacuity guard.
+	SettingsManager.settings.card_scale = 5.0
 	pa.flush_rebuild()
 	for _i : int in 3: await _tick_seconds()
 
