@@ -4,14 +4,17 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** **The engine is complete, the board draws and reacts, and the legacy zones are half gone.**
+**State:** **The engine is complete, the board draws and reacts, the legacy zones are gone, and the
+Entrance pinning is IN FLIGHT AND UNCOMMITTED.**
+
+⚠ **FIRST THING TO DO ON A COLD START: `git status`.** If `UI/play_area.gd`, `UI/play_area.tscn`,
+`UI/prop_layer.gd`, `Scripts/player_settings.gd`, `Tests/UI/test_grid_layout.gd` and
+`Tests/UI/test_visual_layers.gd` are modified, that is **`S20b.3` (the Entrance pinning), partially
+done and NOT committed** — see its ledger entry for exactly what is built and what is left. It is
+the THIRD attempt at a step that was backed out twice; do not discard it without reading that entry.
+
 Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, `.2b-0`, `.2b` (Runs A+B), the
-layering port, `S20c`, and **`S20b.4a`** — the `LowerZone`/`MiddleZone` rendering is DELETED and
-the dead band between grid and Entrance is gone.
-**What is left is the ENTRANCE.** It still renders from `%UpperZoneRight` inside the scroll.
-`S20b.3` pins it — and it can now be attempted against ONE renderer instead of three, which is the
-condition GAP-010 says both previous attempts lacked.
-Suite green at **43 suites**. Worktree `gamedev-poker-patience`, branch `poker-patience`.
+layering port, `S20c`, `S20b.4a`. Suite green at **43 suites** at the last commit (`a2801e5`).
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -232,21 +235,47 @@ lettered steps by hand when closing a gap.
 - id: S20b3
   description: >
     The Entrance moves to a pinned %EntranceStrip outside the board's scroll, x slaved to it, with
-    its own vertical scroll; upper_zone -> entrance.
-  files_touched: []
+    its own vertical scroll.
+  files_touched: [UI/play_area.gd, UI/play_area.tscn, UI/prop_layer.gd, Scripts/player_settings.gd,
+    Tests/UI/test_grid_layout.gd, Tests/UI/test_visual_layers.gd]
   verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: in_progress
+  evidence: 'Was 6 failures, then 1. Last seen: 1 behavior failure (the 4 px below) plus a vacuity
+    guard. NOT the 1041 engine errors of attempt two.'
   notes: >
-    ⚠ ATTEMPTED TWICE, BACKED OUT TWICE. READ design/grid-view/gaps/GAP-010.md FIRST -- it carries
-    the forensics and they are specific: %CardLayer lives INSIDE the scroll, so pinning the row pins
-    nothing and the Entrance needs its OWN card layer; draw ordering is PER LAYER and ordering two
-    layers against one re-queues every frame until the stack overflows; a pooled visual does not
-    follow its card between layers unless _bind_slot reparents it; and slot_center_global stops
-    mirroring the container the moment the row is ALIGNMENT_CENTER (measured: 20 px).
-    ⚠ THE BLOCKERS ARE NOW GONE: the coordinate is migrated and the legacy zones no longer render.
-    This is the first attempt that will happen against a single renderer.
+    ⚠ UNCOMMITTED WORK IS IN THE TREE. Attempts one and two were backed out; this is the third and
+    it is the first to run against a SINGLE renderer, because the coordinate migrated (S20b.2b) and
+    the legacy zones stopped rendering (S20b.4a). That is why it produced six comprehensible
+    failures instead of 1041 engine errors.
+
+    BUILT AND WORKING: the scene structure -- EntranceStrip is a child of PlayArea, OUTSIDE
+    SmoothScrollContainer, holding EntranceHTrack > EntranceVScroll > EntranceContent >
+    { UpperZone, EntranceCardLayer }. Per-layer draw ordering (_apply_layer_order, a separate
+    Entrance list, card_layer_for/_layer_for_coord), _bind_slot reparenting a card between layers,
+    and input reaching the strip again after it moved outside the scroll.
+
+    LEFT TO DO, both in the report above:
+    1. ⚠ THE 4 PX. `test_grid_layout.gd:106-112` compares ACTUAL CONTROL RECTS
+       (`cells.get_child(col).get_global_rect()` vs `entrance_row.get_child(col)`), NOT
+       slot_center_global. So it is a LAYOUT problem and no anchor-formula change can fix it -- the
+       overseer tried exactly that, it did not work, and it was reverted. Likely cause:
+       UpperZoneRight is the right half of an HSplitContainer whose left half holds score labels,
+       so its x depends on the split, while the grid's cells centre via SIZE_SHRINK_CENTER in a
+       different container. Two bases that agree only by coincidence. Give them ONE basis.
+       ⚠ DO NOT widen the test's tolerance: 4 px out means the slots are genuinely not under their
+       columns, which is the entire claim of x-slaving, and it is visible by eye.
+    2. A vacuity guard: `UI PROPS: the 12-column fixture really does overflow the window` --
+       right edge 655 vs viewport 1152. The over-wide fixture stopped overflowing. Fix the cause.
+    3. BY EYE is part of done: render Tests/Visual/grid_layer_shot.tscn and LOOK -- the Entrance
+       welded to the bottom, slots under their columns, grid filling the top.
+
+    ⚠ GAP-010's traps, all still live: %CardLayer is inside the scroll so the Entrance needs its
+    own layer (done); draw ordering is PER LAYER and ordering two layers against one re-queues
+    every frame until the stack overflows (done, keep it that way); a pooled visual does not follow
+    its card between layers without a reparent (done); ALIGNMENT_CENTER makes container origin stop
+    describing where children start (this is item 1).
+    Renaming upper_zone -> entrance is OPTIONAL and was deferred; the pinning is what matters.
 - id: S20b4b
   description: 'Grid equivalents for the reveal and the hoop split; port the 5 PORTABLE fixtures.'
   files_touched: []
