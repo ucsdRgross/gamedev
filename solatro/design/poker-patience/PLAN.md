@@ -529,8 +529,29 @@ green; suite count drops by exactly the moved suites and **no other suite change
 
 ### Phase 5 — geometry and the flipped board (VISUAL)
 
+⚠ **Phase 5 is preceded by `S20b`, which BUILDS the board these steps then shape.** `GAP-009`
+found that no step created the grid's view at all: `PlayArea` rendered only the two legacy zones,
+so `S21`–`S25` were geometry rules with nothing to apply them to. The owner's answer was that the
+grid view **replaces** the play area, which also subsumes the old `S19b` coordinate migration —
+the legacy `Vector3i` position and the legacy zone rendering retire together. Design and answers:
+`design/grid-view/DESIGN.md` version 2, charts `J`, `K`, `L`, `M`, `N`, `P`.
+
 **S20** *(implements E4, §1.8)* — `CARD_SEPARATION` re-derived from Phase 0's measurement.
-**Done-when:** `TP-80` green; by-eye sign-off that a covered card shows its pips.
+**Done-when:** `TP-80` green; by-eye sign-off that a covered card shows its pips. ✅ **LANDED.**
+
+**S20b** *(implements J1–J15, K1–K5, L1–L7, M1–M8, P1–P2)* — **THE GRID VIEW REPLACES THE PLAY
+AREA.** `%GridContainer` hosts one `%GridPanel` per grid; a panel builds
+`grid_width × grid_height` cells from the data and carries its own row/column/special labels;
+each cell is one control per card plus the cell's zone card; `CardVisual`s stay in `%CardLayer`
+positioned by arithmetic that mirrors the controls. `slot_center_global` takes a `BoardCoord` and
+nothing else, and the legacy `Vector3i` board position retires with the zones it described.
+`UpperZone`/`MiddleZone`/`LowerZone` and their per-column `VBox`es are deleted.
+**Done-when:** `TP-80b`–`TP-80h` green; by-eye sign-off that a dealt board draws, that a placement
+lands where the player clicked, and that a scored line fires props again.
+
+**S20c** *(implements P3, P4)* — **Retire the act.** `Game.submit()`, `_perform_submit()` and the
+Next button go; `end_show()` is the only thing that finishes a show. The `&"on_run_scorer"` pending
+action goes with them. **Done-when:** `TP-80i`, `TP-80j` green; grep proves `submit` has no readers.
 
 **S21** *(implements E7–E11, §1.8)* — Upward stacks, shared bottom edge, rows pushed up.
 **Done-when:** `TP-81`–`TP-84` green plus by-eye.
@@ -570,6 +591,10 @@ view.
 **Done-when (phase):** `TP-111`–`TP-120` green; `knobs_this_preview_does_not_drive` still empty.
 
 ### Phase 8 — undo, save, resume
+
+⚠ **The `S19b` of the handoff is RETIRED as a separate step** — `GAP-009`'s answer folds the legacy
+coordinate migration into `S20b`, because the view cannot be replaced while `slot_center_global`
+takes a zone-keyed coordinate and the coordinate cannot migrate while the view still renders zones.
 
 **S35** *(implements §1.7, `Q230`, `Q231`)* — Every placement an undo step; scores rewind with the
 board.
@@ -629,7 +654,10 @@ One per phase, none talk-past-able.
 ## 4. Anti-scope — do NOT do these
 
 - **Do not touch the suit-prop system, statuses, or the VFX/shader layer** beyond what
-  `slot_center_global` forces (`Q294`).
+  `slot_center_global` forces (`Q294`). ⚠ At `S20b` that clause is finally load-bearing: the
+  signature change is exactly what `slot_center_global` forces, so the prop ROUTES move with it —
+  a row's route is that row's cells **in one grid**, left to right (`M5`), and a prop never crosses
+  the gap between grids (`M6`). Nothing else about props changes.
 - **Do not touch the comparator-bucket system** (`Q295`).
 - **Do not redesign the outline shader.** It is direction-agnostic; the flip does not affect it
   (`DESIGN.md` §1m′ row 8).

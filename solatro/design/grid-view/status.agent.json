@@ -2,5 +2,5 @@
   "state": "ready",
   "mode": "review",
   "round": 1,
-  "summary": "Round 1 answered (38 of 41; 3 pruned by your gates). Six flowcharts J/K/L/M/N/P are derived from your answers and are what to review now. TWO of your answers overrode the recommendation and both change the work: Q18 - focus STOPS at a grid edge, so grids are separate surfaces (charts N3, N4); and Q31 - Game.submit and the Next button are REMOVED as part of this, which is a scope addition (chart P3). One consequence nothing asked about: GameData.lower_zone has no renderer, no cards and no operator after this, but deleting the FIELDS changes the saved shape - needs a ruling before the plan is written."
+  "summary": "Charts approved. Steps S20b/S20c and tests TP-80b..TP-80j are folded into the EXISTING poker-patience PLAN.md, TEST_PLAN.md and NAMES.md as instructed - no new plan documents. lower_zone deleted; upper_zone renamed to entrance."
 }

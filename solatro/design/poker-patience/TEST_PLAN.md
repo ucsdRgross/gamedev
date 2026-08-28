@@ -202,6 +202,15 @@ watch it fail.
 | id | Test | Fixture | Proves | Gates | Kind |
 |---|---|---|---|---|---|
 | TP-80 | `CARD_SEPARATION` derives from the measured bottom-edge pip offset | — | E4 | S20 | G |
+| TP-80b | A dealt board builds one `%GridPanel` per grid, each with `grid_width × grid_height` cell controls | `FIX-GRID-3` | J2, J7 | S20b | G |
+| TP-80c | A card placed on a grid has a control, a `CardVisual` and a position | `FIX-GRID-1` | J8, J9 | S20b | G |
+| TP-80d | `slot_center_global(BoardCoord)` is pure math — no control-rect reads, and it answers for an EMPTY cell | `FIX-MIXED-H` | M1, M2 | S20b | G |
+| TP-80e | A card on no board reports `BoardCoord.NOWHERE`, and no `Vector3i` board position survives | `FIX-DECK-52` | M3, M4 | S20b | G |
+| TP-80f | A scored grid line spawns props again, and a prop's route stays inside ONE grid | `FIX-ROW-FLUSH` | M5, M6, M7 | S20b | G |
+| TP-80g | Every grid's bottom edge sits on the same floor | `FIX-GRID-3` | J6 | S20b | G |
+| TP-80h | `upper_zone`/`lower_zone` have no readers: the fields are gone and the Entrance is `entrance` | — | P1, P2 | S20b | G |
+| TP-80i | `Game.submit`, `_perform_submit` and the Next button have no readers | — | P3 | S20c | G |
+| TP-80j | `end_show()` is the only path that resolves a show | `FIX-GRID-1` | P4 | S20c | G |
 | TP-81 | A stack grows upward: card `h+1` has a smaller `y` than card `h` | `FIX-STACK-5` | E7 | S21 | G |
 | TP-82 | Every cell in a row shares a **bottom** edge | `FIX-MIXED-H` | E10 | S21 | G |
 | TP-83 | A tall stack pushes the rows **above** it up | `FIX-MIXED-H` | E11, Q307 | S21 | G |

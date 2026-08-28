@@ -399,7 +399,7 @@ flowchart TD
   L4["a stacked Entrance slot draws with the same strips as a grid cell"]
   L5["the Entrance's own height pushes the board up, the same way a row band does"]
   L6["a card in the Entrance can be grabbed regardless of what is stacked on it"]
-  L7["upper_zone stays the Entrance's STORAGE; only its rendering moves"]
+  L7["the Entrance keeps its own storage under its own name: GameData.entrance, not upper_zone"]
   L1 --> L2
   L2 --> L3
   L3 --> L4
@@ -488,11 +488,22 @@ Everything else took the recommendation. The dual model survives (`QR1`=c), per-
 survive (`QR2`=a), the Entrance becomes one strip across the whole picture rather than a per-grid
 row (`QR3`=a), and each grid carries its own labels (`QR4`=a).
 
-⚠ **One consequence no question covered, and it needs a ruling before the plan is written.**
-`GameData.lower_zone` / `lower_zone_type` have no renderer after `P1`, no cards, and no card that
-operates them. The answers imply they are dead, but nothing was asked about *deleting the fields*,
-which changes the saved state's shape. Flagged here rather than decided in a chart — see the
-review note.
+### The ruling on the deprecated zones, and the charts confirmed
+
+Owner, verbatim: *"you can remove deprecated stuff like the upper lower zones. i approve, but this
+should all go in the existing plans, not create new ones."*
+
+- **`lower_zone` / `lower_zone_type` are DELETED**, fields and all. `Q213` already rules that old
+  saves are not migrated, so the change of saved shape costs nothing.
+- **`upper_zone` / `upper_zone_type` are RENAMED to `entrance` / `entrance_type`.** The owner named
+  both zones, and the Entrance was only ever "zone 0" of a board that no longer exists; keeping the
+  old name would leave the retired two-zone model alive in the vocabulary. Its STORAGE survives —
+  only the name and the rendering change. ⚠ This supersedes `L7` as first drawn, and `L7` now says
+  so. It is a pure rename and cheap to reverse if the Entrance was meant to keep its old name.
+- **The charts are APPROVED.** ⚠ Per the same instruction there is no `design/grid-view/PLAN.md`,
+  `TEST_PLAN.md` or `NAMES.md`: the steps, tests and identifiers are folded into the EXISTING
+  `design/poker-patience/` documents as `S20b` / `S20c` and `TP-80b`–`TP-80j`. This document stays
+  as the design record those steps cite.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 

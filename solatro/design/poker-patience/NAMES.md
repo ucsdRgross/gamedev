@@ -49,6 +49,10 @@ plan carries the citation.
 | Name | Kind | Notes |
 |---|---|---|
 | `GameData.grids` | `Array[GridData]` | The grid list, left to right. `@export_storage`. |
+| `GameData.entrance` | `Array[ArrayCardData]` | The Entrance's slots. **Replaces `upper_zone`**, which was only ever "zone 0" of a two-zone board that no longer exists. `@export_storage`. |
+| `GameData.entrance_type` | `Array[CardData]` | The Entrance's header cards, one per slot. **Replaces `upper_zone_type`.** |
+| ~~`GameData.upper_zone`~~ / ~~`upper_zone_type`~~ | retired | Renamed above. The Entrance is not a zone of anything. |
+| ~~`GameData.lower_zone`~~ / ~~`lower_zone_type`~~ | **deleted** | The tableau's half of the two-zone board. No renderer, no cards, no card that operates it. ⚠ Deleting the FIELDS changes the saved shape; that is fine — `Q213` rules that old saves are not migrated. |
 | `GridData` | `class_name`, Resource | One grid: its size and its cells. |
 | `GridData.grid_width` | `int`, default 5 | Per grid, not global. |
 | `GridData.grid_height` | `int`, default 5 | Per grid, not global. |
@@ -67,6 +71,9 @@ plan carries the citation.
 | `GameData.position_of(card)` | method | Existing name, now returning `BoardCoord`. |
 | `GameData.card_at(coord)` | method | The reverse index. |
 | `GameData.cell_type_coord(card)` | method | Where a cell's ZONE card sits, or `null`. Turns a drop aimed at an empty cell back into its coordinate. |
+| `PlayArea.slot_center_global(coord)` | method | ⚠ **Takes a `BoardCoord` and nothing else.** Stays pure arithmetic — no control-rect reads. The one function every prop, label and light anchors through. |
+| `PlayArea.control_for_coord(coord)` | method | Existing name, now taking a `BoardCoord`. |
+| ~~`Game.submit`~~ / ~~`_perform_submit`~~ / ~~`%Next`~~ | **retired** | A show has no acts. `end_show()` is the only thing that finishes one. |
 | `RunState.pending_placement_slot` | `int`, default `-1` | Which Entrance SLOT the pending placement took its card from. A placement is identified by slot, never by card: the pre-placement board a replay starts from is a restored snapshot carrying its own copies. |
 | `RunState.pending_placement_coord` | `Vector4i` | Where that placement was aimed, as `(grid, x, y, h)`. |
 
@@ -202,4 +209,6 @@ Fixture builder names match the `FIX-*` ids in `TEST_PLAN.md` §1, lowercased wi
 | `%GridContainer` | The board root inside `PlayArea`; hosts one child per grid. |
 | `%GridPanel` | One per grid. ⚠ **Draws nothing** — `Q14`=(b), the gap defines a grid. It is a positioning node only. |
 | `%SpecialScore` | The one special-meld label, right of the grid, aligned with its centre. |
+| `%CellSlot` | One per cell inside a `%GridPanel`; holds the cell's zone-card control and one control per card in its stack. |
+| `%EntranceStrip` | The Entrance's row of slots, one strip across the bottom of the whole picture — NOT a child of any `%GridPanel`. |
 | `%PanLeft` / `%PanRight` | The on-screen pan buttons; hidden at one grid. |
