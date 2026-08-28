@@ -4,15 +4,13 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** **The engine is complete, the loop closes, and the board now draws and reacts.**
-`S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, **`.2b-0`, `.2b` (Runs A and B), the layering
-port, and `S20c`** have landed. `slot_center_global` takes a `BoardCoord`; the legacy `Vector3i`
-board position is retired from the prop path; **a scored grid line fires props again** — the open
-bug that stood through this whole stream.
-**What is left is the ENTRANCE and the DEMOLITION.** `S20b.3` + `S20b.4` land together (GAP-010):
-pin the Entrance outside the board's scroll, then delete the legacy zone rendering and rebuild the
-remaining fixtures onto grids. That one step also closes the reveal and hoop-split holes below,
-because both are zone-indexing that disappears with the zones.
+**State:** **The engine is complete, the board draws and reacts, and the legacy zones are half gone.**
+Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, `.2b-0`, `.2b` (Runs A+B), the
+layering port, `S20c`, and **`S20b.4a`** — the `LowerZone`/`MiddleZone` rendering is DELETED and
+the dead band between grid and Entrance is gone.
+**What is left is the ENTRANCE.** It still renders from `%UpperZoneRight` inside the scroll.
+`S20b.3` pins it — and it can now be attempted against ONE renderer instead of three, which is the
+condition GAP-010 says both previous attempts lacked.
 Suite green at **43 suites**. Worktree `gamedev-poker-patience`, branch `poker-patience`.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
@@ -221,6 +219,16 @@ lettered steps by hand when closing a gap.
     behind its own cell through 43 green suites.
 
 # --- PENDING ---
+- id: S20b4a
+  description: 'Delete the LowerZone and MiddleZone rendering; Entrance deliberately untouched.'
+  status: done
+  evidence: 'ALL 43 SUITES green, console and log agreeing. BY EYE: the dead band between grid and
+    Entrance is GONE -- the Entrance strip now sits directly under the grid.'
+  notes: >
+    Landed alone so the Entrance can move later against ONE renderer. GameData.lower_zone storage
+    remains, populated and serialized; nothing renders it. Same for scores_row_lower.
+    ⚠ VISUAL LAYERS dropped 195 -> 188 checks. Verified NOT a loss: one line changed, zero check()
+    lines removed -- it is loop iterations that used to cover the deleted zone.
 - id: S20b3
   description: >
     The Entrance moves to a pinned %EntranceStrip outside the board's scroll, x slaved to it, with
@@ -231,27 +239,26 @@ lettered steps by hand when closing a gap.
   status: pending
   evidence: ''
   notes: >
-    ⚠ ATTEMPTED TWICE, BACKED OUT TWICE. READ design/grid-view/gaps/GAP-010.md FIRST. It works by
-    eye and the fixture rebuild works (32 failures -> 1). What defeated it was pinning the Entrance
-    while the legacy zones AND the legacy coordinate still existed -- three renderers, two draw
-    layers, 1041 engine errors. THE COORDINATE IS NOW MIGRATED, so only the zones remain: land this
-    WITH S20b4, never alone.
-- id: S20b4
-  description: 'Delete lower_zone and the legacy zone rendering; rebuild the remaining fixtures onto grids.'
+    ⚠ ATTEMPTED TWICE, BACKED OUT TWICE. READ design/grid-view/gaps/GAP-010.md FIRST -- it carries
+    the forensics and they are specific: %CardLayer lives INSIDE the scroll, so pinning the row pins
+    nothing and the Entrance needs its OWN card layer; draw ordering is PER LAYER and ordering two
+    layers against one re-queues every frame until the stack overflows; a pooled visual does not
+    follow its card between layers unless _bind_slot reparents it; and slot_center_global stops
+    mirroring the container the moment the row is ALIGNMENT_CENTER (measured: 20 px).
+    ⚠ THE BLOCKERS ARE NOW GONE: the coordinate is migrated and the legacy zones no longer render.
+    This is the first attempt that will happen against a single renderer.
+- id: S20b4b
+  description: 'Grid equivalents for the reveal and the hoop split; port the 5 PORTABLE fixtures.'
   files_touched: []
   verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
   status: pending
   evidence: ''
   notes: >
-    ⚠ FIXTURES GO ON A GRID, NOT THE LOWER ZONE. An interim redirect put test boards in the legacy
-    lower zone, which draws in the band BETWEEN grid and Entrance -- owner: "cards in random
-    locations not on top of any zones". They are on a zone, but an invisible one.
-    ⚠ Moving a fixture is only half: a prop's own coordinate names a zone too.
-    THIS STEP ALSO CLOSES: the reveal machinery (_row_open_offset -> _row_covers_anything) and the
-    hoop front/back split (_row_bounds -> row_card_visuals), both zone-indexed, both unfinished
-    GAP-012 scope, and both the reason 6 layering tests are still on the Entrance.
-    It empties most of ZONE_ONLY_TESTS.
+    Unfinished GAP-012 scope: _row_open_offset -> _row_covers_anything (the reveal) and
+    _row_bounds -> PlayArea.row_card_visuals (the hoop front/back split) are still zone-indexed and
+    have no grid form. They are why 6 layering tests still sit on the Entrance.
+    ⚠ Only FIVE fixtures are portable -- see the ratchet's own categories.
 ```
 
 After `S20c`, `PLAN.md` §3 governs: `S21`–`S25` (the flipped board — **this is where cards start
@@ -267,6 +274,10 @@ owner's call), Phase 10 (documentation).
 - **Verified by eye** - `grid_occupied.png`: cards cover their cells, empty cells still frame, a
   stacked cell shows the strip beneath. `grid_props.png`: 16 props draw ON the scored row, score
   38 / COMBO x19. Both from `Tests/Visual/grid_layer_shot.tscn`.
+- **Verified by eye, after the demolition** - the dead band between the grid and the Entrance is
+  GONE. The Entrance strip now sits directly beneath the grid's last row; that band was where the
+  deleted MiddleZone/LowerZone drew, and it is what the owner objected to (*"cards in random
+  locations not on top of any zones, such as in area between grid and entrance"*).
 - **Verified** - `py .claude/tools/doc_check.py`: 0 errors, 7 warnings (standing style backlog).
   Zero design ids in product code.
 - ⚠ **Measured, and NOT a defect**: sampling showed 0 of 16 props moving over 90 frames. That is a
@@ -332,8 +343,14 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
   Entrance-anchored prop, because `_row_bounds` -> `PlayArea.row_card_visuals` is zone-indexed, so a
   grid-anchored hoop stays UNSPLIT. **3 more layering tests sit on the Entrance.** Same GAP-012
   scope. ⚠ Not a regression - before the migration a grid fired no props at all.
-- ⚠ **11 test files still assert only against the legacy renderer** - the ratchet holds the list and
-  stops it growing. An ACCEPTED RISK (GAP-013), not a closed hole. S20b.4 empties most of it.
+- ⚠ **11 test files still assert only against the legacy renderer, but only FIVE are portable.**
+  The ratchet list (`test_game_headless.gd::ZONE_ONLY_TESTS`) now marks three categories, because
+  "11 files to port" is wrong and misleading: **PORTABLE** (5) are fixtures that happen to sit in a
+  zone; **MACHINERY** (3 - `test_board`, `test_mods`, `test_spotlight`) test the legacy machinery
+  ITSELF, which is still LIVE (find_data_vec3 has 9 product callers, get_zone_from_vec3 7,
+  is_data_topmost 7, add_column/remove_column 9) - they cannot port and must not be deleted;
+  **ENTRANCE-ONLY** (3) name `upper_zone`, which IS the Entrance. Three of these leaving the list
+  would be a BUG, not progress.
 - ⚠ **`Tools/spotlight_tool.gd` traces no cascade.** PRE-EXISTING: `git log -S place_card_in_grid`
   on it is empty - it has only ever used `move_data_to_coord` into the legacy lower zone.
 - ⚠ **`Tests/Interaction/test_interaction.gd:459` is `check(true, ...)`** - a parked check that can
@@ -347,10 +364,11 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S20b.3` + `S20b.4` TOGETHER, never separately** (GAP-010). Pin the Entrance; delete the legacy
-   zone rendering; rebuild the remaining fixtures onto grids. This also closes both zone-only holes
-   above and empties most of the ratchet.
-2. Then `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
+1. **`S20b.3`** - pin the Entrance. The demolition (`S20b.4a`) is already done, so this is the first
+   attempt against a SINGLE renderer. Read GAP-010 first.
+2. **`S20b.4b`** - grid equivalents for the reveal and the hoop split (unfinished GAP-012 scope,
+   which unblocks 6 layering tests), then port the 5 PORTABLE fixtures.
+3. Then `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
    Phase 6 (zoom/pan/focus), Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is last.
 
 ### Opening prompt for the next session
