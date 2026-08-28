@@ -4,9 +4,9 @@
 (Phase 8), stopping at S37. Phases 5–7 (visual), 9 and 10 are out of scope for this run.
 **State:** **THE WHOLE ASSIGNED RANGE IS COMPLETE, INCLUDING THE CLOSING PASS — S1-S19 (Phases 1-4) and S35-S37 (Phase 8) all
 — S1-S19 (Phases 1-4), S35-S37 (Phase 8) and S37b all landed and committed**, suite green
-at 42 suites over three consecutive runs. **S19b is deliberately resequenced to after Phase 5**
-(see its entry). **GAP-008 is answered and built: the player can grab from the Entrance and
-place onto a grid, so the loop closes.** What is left is Phases 5-7 (visual) and 9-10.
+at 42 suites. **GAP-008 and GAP-009 are both answered and GAP-008 is built**, so the engine loop
+closes: deal, refill, commit, grab, place, score, undo, replay, End. **What is left is the VIEW** --
+a player still cannot see the board. `S20b` is designed, approved and ready to build.
 
 
 **Entry docs:** `design/poker-patience/PLAN.md` (normative §1), `DESIGN.md` (authority on
@@ -499,35 +499,19 @@ a gap — read the answer they are both restating. Do not resolve a gap by picki
 
 - id: S19b
   description: >
-    THE LEGACY ZONE MIGRATION (GAP-003) - not a PLAN.md step. The lower zone becomes an
-    ordinary grid, the upper zone becomes the Entrance at y == -1, and position_of returns
-    BoardCoord.
+    THE LEGACY ZONE MIGRATION (GAP-003) - RETIRED AS A SEPARATE STEP. Folded into S20b by
+    GAP-009's answer.
   files_touched: []
   verification_command: 'py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: deferred
+  status: superseded
   evidence: ''
   notes: >
-    ⚠ RESEQUENCED TO AFTER PHASE 5 by the overseer. GAP-003 says outright that the owner
-    answered WHAT, not WHEN, and that the sequencing is the overseer's call; it originally
-    scheduled this "immediately after S19", before anyone had measured what it actually
-    touches. What it actually touches is the suit-prop system, and PLAN.md §4 anti-scope says
-    "Do NOT touch the suit-prop system, statuses, or the VFX/shader layer BEYOND WHAT
-    `slot_center_global` FORCES (Q294)". Q294's own note names the same single seam: "the one
-    real interaction is slot_center_global, which props anchor through and which §19 changes".
-    §19 is the geometry rework, i.e. PHASE 5 (S20-S25) -- out of this run's range.
-    The entanglement is not avoidable by doing "just the coordinate half": every suit's
-    `spawn_props()` opens with `_spawn_origin()`, which IS `position_of`. Change its return
-    type and every prop route (`row_slot_path`, `entity_side_for_row`, `mancala_targets`,
-    `column_rise_path`) has to move with it -- and a prop route on a grid is presentation
-    geometry that only exists once Phase 5 has built it. Doing it now means either violating
-    the anti-scope or doing Phase 5's work unplanned and unmeasured.
-    Nor can the lower zone simply be deleted first: it is still the legacy play area the UI
-    renders, `Tests/UI/test_visual_layers.gd` builds one for its row-reveal fixture, and
-    GAP-007 declined to delete the tableau cards ("without throwing errors").
-    ⚠ THE COST OF DEFERRING IS KNOWN AND IS RECORDED IN OPEN BUGS: a scored grid line pays its
-    points and fires NO props. Two parked checks assert that zero, so they FAIL the day this
-    lands rather than rotting.
+    The owner answered GAP-009 with (d): the grid view REPLACES the play area. That makes the
+    coordinate migration and the rendering retirement one piece of work seen from two ends --
+    the view cannot be replaced while `slot_center_global` takes a zone-keyed coordinate, and
+    the coordinate cannot migrate while the view still renders zones. Both are now S20b in
+    `design/poker-patience/PLAN.md`. ⚠ Do not re-schedule this; it is not a dropped step.
 
 - id: S37b
   description: >
@@ -758,38 +742,32 @@ fixtures in `Tests/Support/test_grid_fixtures.gd`.
 
 ## Next up
 
-**The assigned range is finished and the player loop closes.** A show now deals, refills,
-commits to a grid, places, scores, banks, undoes, replays a quit, shows a live score and ends.
+**The design for the next phase is written, answered and APPROVED**:
+`design/grid-view/DESIGN.md` version 2 (41 questions, 38 answered, six charts J/K/L/M/N/P).
+Its steps live in `design/poker-patience/PLAN.md` as **`S20b`** and **`S20c`** -- the owner asked
+for no new plan documents, so nothing was created under `design/grid-view/` beyond the design and
+its answers.
 
-1. ⚠ **GAP-009 BLOCKS EVERYTHING VISUAL AND NEEDS AN OWNER ANSWER.** **No step builds the
-   grid'"'"'s VIEW.** `PlayArea` renders only the two legacy zones -- `grids` appears nowhere in
-   `UI/play_area.gd` -- so a card placed on a grid has no control, no visual and no position.
-   `NAMES.md` §10 names `%GridContainer` / `%GridPanel`, but no PLAN step claims them, and
-   Phases 5, 6 and 7 are all written as rules over a view that does not exist.
-2. **Phase 5 (S20-S25)** — the flipped board. **S20 is DONE** (a comment re-derivation plus a
-   gate; it needed no view). **S21 onward is blocked on GAP-009.** ⚠ This is the owner-visible
-   one: cards still stack DOWNWARD on screen. The design settled UP (`Q72`, `Q74`, `Q307`,
-   `Q308`), and the flip lands here -- but the thing to flip has to exist first.
-3. **Phase 6 (S26-S30)** — the view: zoom, pan, grid focus. Three smaller things belong here
-   and are written down so they are not lost:
-   - **chart A5, "legal cells highlighted while a card is held", is not built.** The rule
-     behind it is (a cell always accepts); nothing draws it.
-   - `END_SHOW_CONFIRM` is in the locale file and used nowhere, and the End label is supposed
-     to highlight once the goal is met.
-   - the HUD still shows the retired row/col/mult subtotals as zeros; the design says NO
-     subtotals are displayed at all.
-4. **Phase 7 (S31-S34)** — the wall.
-5. **S19b** — the legacy coordinate migration. ⚠ **RESEQUENCED TO AFTER PHASE 5**, reasoning in
-   its task entry: it cannot be split from the prop system, and PLAN.md §4 reserves that to
-   whatever `slot_center_global` forces, which is Phase 5's. **Its cost is live and known: a
-   scored grid line pays its points and fires no props.**
-6. **Phases 9 and 10** — the goal-curve refit and the documentation rewrite.
+1. **`S20b` — the grid view replaces the play area.** The big one, and the last thing between the
+   engine and a playable game. Suggested order, each landing green:
+   - **b.1** build `%GridContainer` / `%GridPanel` / `%CellSlot` and render grid cards ALONGSIDE
+     the legacy zones. Additive, so the suite stays green.
+   - **b.2** migrate `slot_center_global` to `BoardCoord`; the prop routes follow it (`M5`, `M6`),
+     which is what makes a scored line fire props again.
+   - **b.3** the Entrance moves to `%EntranceStrip`; `upper_zone` -> `entrance`.
+   - **b.4** delete `lower_zone` and the legacy zone rendering; rebuild the tests that used them.
+2. **`S20c` — retire the act.** `Game.submit`, `_perform_submit` and the Next button
+   (owner's `Q31`=b). `end_show()` becomes the only path that resolves a show.
+3. **`S21`–`S25`** — the geometry rules, which now have a board to apply to. ⚠ **This is where the
+   upward flip lands** -- cards still stack DOWNWARD on screen until then.
+4. **Phases 6 and 7** — the view (zoom, pan, focus) and the wall.
+5. **Phases 9 and 10** — the goal-curve refit (owner's call) and the documentation rewrite.
 
-⚠ **Not owned by any step, worth an owner decision:** `Game.submit()` and the Next button are
-both vestigial. Chart D retires the act outright ("no act, no banking moment"; "End fires its
-hooks, then resolves") and chart A retires Next ("no Next, no auto-advance"), but no step
-removes either. `submit()` is now reachable only from tests and the pending-action replay; the
-Next button still triggers a refill that placements ask for themselves.
+⚠ **ONE INTERPRETATION TO CHECK BEFORE b.3.** The owner said *"you can remove deprecated stuff like
+the upper lower zones"*. `lower_zone` is unambiguous and is deleted. `upper_zone` is the ENTRANCE's
+storage and is still live, so it is being RENAMED to `entrance` rather than deleted -- the reading
+is that the two-zone VOCABULARY goes, not the Entrance. That supersedes chart `L7` as first drawn.
+It is a pure rename and cheap to reverse.
 
 ## References
 
