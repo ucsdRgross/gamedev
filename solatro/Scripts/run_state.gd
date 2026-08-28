@@ -35,12 +35,12 @@ extends Resource
 ## game_history_trimmed + game_history.size() = total actions committed — Game hashes that
 ## sum for replay-stable prop sides (entity_side_for_row).
 @export var game_history_trimmed : int = 0
-## A board-mutating button (Submit/Next) was pressed but its async resolution (scoring /
-## draw animations) had not committed when the run was last saved. Persisted so a quit
-## mid-resolution REPLAYS the action from the committed pre-action board on resume — the
-## player can't dodge a Submit by killing the app (anti-cheat). Empty = no action pending.
-## Values are the mod event name the action runs: &"on_run_scorer" (Submit) / &"on_next"
-## (Next). Cleared the instant an action fully commits (see Game.save_state).
+## A board-mutating action (Next, or a card placement) was started but its async resolution
+## (scoring / draw animations) had not committed when the run was last saved. Persisted so a
+## quit mid-resolution REPLAYS the action from the committed pre-action board on resume — the
+## player can't dodge it by killing the app (anti-cheat). Empty = no action pending.
+## Values are the mod event name the action runs: &"on_next" (Next) or &"on_placement" (a
+## grid placement). Cleared the instant an action fully commits (see Game.save_state).
 @export var pending_action : StringName = &""
 
 ## Which Entrance slot the pending placement took its card from, and where it was aimed

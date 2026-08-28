@@ -11,7 +11,7 @@ extends TestSuite
 # ==============================================================================
 
 # CATEGORY MAP: all BEHAVIOR — these drive the player-facing commands (grab, place,
-# undo, submit) through the real Game API and assert the outcomes a player sees.
+# undo, end) through the real Game API and assert the outcomes a player sees.
 # The single representation-level check (gutter BigNumber accumulation) is check_impl.
 
 func suite_name() -> String:
@@ -27,14 +27,15 @@ func _ready() -> void:
 	await test_undo_reverts_state_and_history()
 	test_debug_history_is_uncapped_and_redoable()
 	await test_undo_rewinds_per_show_state()
-	await test_undo_cancels_resolving_submit()
 	await test_undo_at_game_over_rewinds_the_end()
 	test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
-	await test_submit_headless_full_act()
+	await test_end_show_is_the_only_resolver()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
 	await test_comparator_rules_change_a_real_act()
 	await test_authored_card_doubles()
+	implementation_section("THE RETIRED ACT")
+	test_retired_act_has_no_readers()
 	finish()
 
 func rules_card(skill: CardModifierSkill) -> CardData:
@@ -91,10 +92,6 @@ func test_command_guard_blocks_input() -> void:
 	check(grabbed.is_empty(), "try_grab is a no-op while processing (returns [])")
 	var placed := await g.try_place([lower(g, 0)[0]] as Array[CardData], lower(g, 1)[0])
 	check(not placed, "try_place is a no-op while processing (returns false)")
-	var history_before := g.save_history.size()
-	await g.submit()
-	check(g.save_history.size() == history_before,
-			"submit() is a no-op while processing (no history/act change)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
@@ -279,48 +276,8 @@ func test_undo_rewinds_per_show_state() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## "The player pressing Undo" mid-scoring: a rules-card probe that calls game.undo() from
-## inside the scoring cascade (headless resolves in one await chain, so the press can only
-## come from within it — exactly what the live button does mid-animation).
-class UndoDuringScoring extends CardModifierSkill:
-	var pressed := false
-	func get_str() -> String: return "UndoProbe"
-	func get_description() -> String: return ""
-	func get_frame() -> int: return 0
-	func on_score_row(_zone: Array, _row: int) -> void:
-		if pressed: return
-		pressed = true
-		var g := CardEnvironment.get_current_game()
-		if g: g.undo()
-
-## Undo during a resolving Submit cancels the act: the resolution fast-forwards and the
-## board restores to the exact pre-submit snapshot — nothing scored, no act consumed, no
-## new history entry, input handed back.
-func test_undo_cancels_resolving_submit() -> void:
-	var g := make_game()
-	g.state.rules_deck.append(rules_card(UndoDuringScoring.new()))
-	g.save_state()   # the committed pre-submit board the cancel restores
-	var history_before := g.save_history.size()
-	var lower_before : int = 0
-	for col : ArrayCardData in g.state.lower_zone:
-		lower_before += col.datas.size()
-	await g.submit()
-	check(g.save_history.size() == history_before, "the cancelled Submit commits nothing")
-	var lower_after : int = 0
-	for col : ArrayCardData in g.state.lower_zone:
-		lower_after += col.datas.size()
-	check(lower_after == lower_before,
-			"the performed board is restored (not discarded)",
-			"%d vs %d" % [lower_after, lower_before])
-	check(g.state.total_score == 0, "no act score was applied", str(g.state.total_score))
-	check(not g.processing, "input is handed back after the cancel")
-	check(not g.act_cancelled, "the cancel flag is consumed by the restore")
-	check(g.state.validate().is_empty(), "restored board validates")
-	CardEnvironment.CURRENT = null
-	free_game(g)
-
 ## Undo at the win/lose screen dismisses the outcome (show_unresolved) and rewinds the
-## final Submit: the act comes back, input unlocks, and nothing was banked (fame only
+## End: the show comes back live, input unlocks, and nothing was banked (fame only
 ## moves on Continue — exit_show — which never ran).
 func test_undo_at_game_over_rewinds_the_end() -> void:
 	var g := make_game()
@@ -329,8 +286,7 @@ func test_undo_at_game_over_rewinds_the_end() -> void:
 	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
 	var unresolved : Array = []
 	g.show_unresolved.connect(func() -> void: unresolved.append(true))
-	await g.submit()
-	check(resolved.is_empty(), "a Submit alone never resolves the show any more")
+	check(resolved.is_empty(), "the show has not resolved before end_show is called")
 	g.end_show()
 	check(resolved.size() == 1, "ending the show resolves it", str(resolved))
 	check(g.processing, "the resolved show locks input")
@@ -386,24 +342,6 @@ func test_score_line_headless_mutates_data() -> void:
 	check(g.state.col_total == 7, "score_line adds to col_total headless (no section)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
-
-func test_submit_headless_full_act() -> void:
-	var g := make_game()
-	var history_before := g.save_history.size()
-	await g.submit()
-	check(g.save_history.size() == history_before + 1, "submit commits one save")
-	var lower_empty := g.state.lower_zone.all(func(c: ArrayCardData) -> bool: return c.datas.is_empty())
-	check(lower_empty, "submit discards the lower (performed) board")
-	check(g.state.total_score == g.state.mult_score,
-			"first act's total_score equals this act's payout")
-	check(g.state.total_score > 0,
-			"a scored act pays out row_total x col_total > 0", str(g.state.total_score))
-	check(g.state.scores_col_legacy.is_empty() and g.state.scores_row_lower.is_empty(),
-			"gutters cleared after the act")
-	check(g.state.validate().is_empty(), "board validates after submit")
-	CardEnvironment.CURRENT = null
-	free_game(g)
-
 
 # ==============================================================================
 # COMPARATOR RULES CARDS, THROUGH A REAL GAME
@@ -480,10 +418,13 @@ func comparator_game(ranks: Array[int], suits: Array[int], extra: Array[CardData
 	CardEnvironment.CURRENT = g
 	return g
 
-## Score one act and report what the lower row banked. The REAL path: submit -> cascade scorer
-## -> SkillEvalPokerBest -> Scoring.PokerHands.score -> Game.score_line -> gutters.
+## Score one act and report what the lower row banked. The REAL path: on_run_scorer -> cascade
+## scorer -> SkillEvalPokerBest -> Scoring.PokerHands.score -> Game.score_line -> gutters ->
+## GameData.apply_act_score (fires the mod pass and banks it directly; there is no button that
+## does this any more, but the mod event and the bank step are both still real architecture).
 func act_score(g: Game) -> int:
-	await g.submit()
+	await g.run_all_mods(&"on_run_scorer")
+	g.state.apply_act_score()
 	return g.state.total_score
 
 func test_comparator_rules_change_a_real_act() -> void:
@@ -815,3 +756,132 @@ func test_authored_card_doubles() -> void:
 			"%d classes, its own holds %d" % [split.ranks.classes.size(),
 					_class_size_of(split, row[0])])
 	free_game(g)
+
+
+# ==============================================================================
+# TP-80j -- END IS THE ONLY THING THAT RESOLVES A SHOW.
+#
+# The act is retired: there is no Submit, no banking moment and no Next button. That leaves
+# exactly one way for a show to finish, and this pins it from the other side -- every OTHER
+# path the player can drive must leave the show LIVE. A scored line is the interesting one:
+# it pays points, and paying points must not be mistaken for finishing.
+#
+# Driven on a GRID board, because that is the only board the game still has.
+func test_end_show_is_the_only_resolver() -> void:
+	var g := Game.new()
+	CardEnvironment.CURRENT = g
+	g.state = TestGridFixtures.build_fix_grid_1()
+	# The detector is what scores a completed line, and the evaluator is what values it. Without
+	# both, the "a scored line does not resolve the show" leg below would assert over a line that
+	# never scored -- which is why the precondition after the placements is there.
+	g.state.rules_deck = [
+		rules_card(SkillLineDetector.new()),
+		rules_card(SkillEvalPokerBest.new()),
+	] as Array[CardData]
+	g.save_state()
+	var resolved : Array = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+
+	check(not g.state.show_ended and resolved.is_empty(),
+			"precondition: a fresh grid show is live")
+
+	# A placement that COMPLETES AND SCORES A LINE. Points are banked; the show is not over.
+	# The cards are built here rather than drawn: this fixture carries no draw deck, and the
+	# claim under test is about RESOLUTION, not about where a card came from.
+	for x : int in 5:
+		var card := TestFactories.m_card(x + 2, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, 0))
+	check(g.state.live_total() > 0,
+			"precondition: the completed row actually scored -- otherwise this proves nothing",
+			str(g.state.live_total()))
+	check(not g.state.show_ended and resolved.is_empty(),
+			"a scored line does not resolve the show -- banking points is not finishing",
+			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
+
+	# The refill a placement asks for.
+	await g.next()
+	check(not g.state.show_ended and resolved.is_empty(),
+			"a refill does not resolve the show",
+			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
+
+	# An undo.
+	g.undo()
+	check(not g.state.show_ended and resolved.is_empty(),
+			"an undo does not resolve the show",
+			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
+
+	# ...and then the one path that does.
+	g.end_show()
+	check(g.state.show_ended and resolved.size() == 1,
+			"End resolves the show, and nothing before it had",
+			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+
+# ==============================================================================
+# TP-80i -- THE RETIRED ACT HAS NO READERS.
+#
+# Game.submit, _perform_submit and the Next button are gone. This fails if any of them comes
+# back as a READER in product code, which a merge or a copied snippet can do silently -- the
+# game would compile and a second, actless way to finish a show would exist again.
+#
+# Comment lines are skipped: a comment must stay free to explain what it forbids.
+# Tests/ is exempt -- a test may still name a thing to prove it is absent.
+
+## Directories that are product code. Tools/ is included: it ships with the game and a caller
+## there is as real as one in Levels/.
+const PRODUCT_DIRS : Array[String] = [
+	"res://Levels", "res://Scripts", "res://Cards", "res://UI", "res://Tools",
+]
+
+## The retired act's identifiers. `next_button` is here but `next(` is NOT -- Game.next()
+## survives the button that used to call it.
+const RETIRED_ACT_READERS : Array[String] = [
+	".submit(", "func submit", "_perform_submit", "next_button",
+]
+
+func test_retired_act_has_no_readers() -> void:
+	var scanned := 0
+	var offenders : Array[String] = []
+	for dir : String in PRODUCT_DIRS:
+		for path : String in _gd_scripts_under(dir):
+			var f := FileAccess.open(path, FileAccess.READ)
+			if not f: continue
+			scanned += 1
+			var n := 0
+			for raw : String in f.get_as_text().split("
+"):
+				n += 1
+				var line := raw.strip_edges()
+				if line.begins_with("#"): continue
+				for bad : String in RETIRED_ACT_READERS:
+					if line.contains(bad):
+						offenders.append("%s:%d: %s" % [path, n, line])
+						break
+	# Without this the gate passes by scanning nothing, which is the failure it is meant to catch.
+	check(scanned >= 40, "the gate actually found the product scripts to scan",
+			"only %d scripts scanned" % scanned)
+	check(offenders.is_empty(),
+			"no product code reads the retired act -- End is the only way to finish a show",
+			"
+".join(offenders))
+
+
+## Every .gd under `dir`, recursively. Skips addons/, which is vendored and not ours.
+func _gd_scripts_under(dir: String) -> Array[String]:
+	var out : Array[String] = []
+	var d := DirAccess.open(dir)
+	if not d: return out
+	d.list_dir_begin()
+	var name := d.get_next()
+	while name != "":
+		var full := dir.path_join(name)
+		if d.current_is_dir():
+			if name != "addons": out.append_array(_gd_scripts_under(full))
+		elif name.ends_with(".gd"):
+			out.append(full)
+		name = d.get_next()
+	d.list_dir_end()
+	return out

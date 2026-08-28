@@ -228,8 +228,7 @@ func run_loss_scenario() -> void:
 	var resolved: Array = []
 	g.show_resolved.connect(func(won: bool, score: int, goal: int) -> void:
 			resolved.append([won, score, goal]))
-	# Submit without performing anything, then End: score stays under the goal.
-	await g.submit()
+	# End without placing anything: score stays under the goal.
 	g.end_show()
 	check((resolved.size() == 1 and resolved[0][0] == false) as bool,
 			"ending below the goal resolves the show as a loss", str(resolved))

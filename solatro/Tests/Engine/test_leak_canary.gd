@@ -469,9 +469,10 @@ func _session_cycle() -> void:
 	await _settle()
 
 	_mark_phase("3 map + booster")
-	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a Submit with real
-	# scoring (props spawn + finish inside the awaited resolution), UNDO across the Submit
-	# (the quiescent Game.undo() drops the popped snapshot), redo, quit-mid-show -> resume, win.
+	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a real placement pass with
+	# real scoring (props spawn + finish inside the awaited resolution -- see the placement fill
+	# below), UNDO across it (the quiescent Game.undo() drops the popped snapshot), redo,
+	# quit-mid-show -> resume, win.
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	seed(424242)
@@ -489,7 +490,6 @@ func _session_cycle() -> void:
 		await g.discard_data(placed[0])
 	g.undo()
 	await _settle()
-	await g.submit()
 
 	# Quit-mid-show -> resume: the abandoned show's board drops with the view.
 	RunManager._shutdown_saver()
@@ -522,9 +522,10 @@ func _session_cycle() -> void:
 	await _settle()
 	CardEnvironment.CURRENT = null
 
-	_mark_phase("4 show + submit + undo + resume + win")
-	# --- 5. The loss path: an unreachable goal, three empty submits, exit_show ends the
-	# run (the whole doomed board drops with the view).
+	_mark_phase("4 show + placement + undo + resume + win")
+	# --- 5. The loss path: an unreachable goal, three repeated Nexts (the grid game's
+	# repeatable, allocating act -- see place_card_in_grid's "the thing a Submit used to be"),
+	# exit_show ends the run (the whole doomed board drops with the view).
 	loaded.pending_goal = 1000000000
 	loaded.pending_node_id = 1
 	seed(31337)
@@ -532,9 +533,9 @@ func _session_cycle() -> void:
 	add_child(view3)
 	await _settle()
 	var g3 := view3.game
-	await g3.submit()
-	await g3.submit()
-	await g3.submit()
+	await g3.next()
+	await g3.next()
+	await g3.next()
 	g3.exit_show()
 	await _settle()
 	view3.queue_free()

@@ -95,7 +95,7 @@ func apply_act_score() -> void:
 	# Clear the per-row/col score gutters too, so the NEXT act starts from zero. Without this
 	# the BigNumber accumulators (scores_row_*/scores_col_legacy) keep growing and the next
 	# act's plus_equals stacks onto the previous act's values. The UI gutters resync from
-	# these empty arrays via PlayArea.update_score_controls (see Game._perform_submit).
+	# these empty arrays via PlayArea.update_score_controls.
 	scores_row_upper.clear()
 	scores_row_lower.clear()
 	scores_col_legacy.clear()

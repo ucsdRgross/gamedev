@@ -8,7 +8,7 @@ class_name GameView
 ##   Game -> view reactive : game.state.state_changed / board_changed, game.processing_changed /
 ##                           submit_label_changed / show_resolved  (signals, no await)
 ##   Game -> view paced    : game calls `if view: await view.<m>()` for animation/visual sync
-##   View -> Game commands : game.submit() / next() / undo() / try_grab() / try_place()
+##   View -> Game commands : game.end_show() / next() / undo() / try_grab() / try_place()
 ## Remove this view and the Game still runs a full show headless (every paced call is `if view:`).
 
 ## Forwarded from the held Game so Main can bind the view directly (symmetric with the old
@@ -28,7 +28,6 @@ var game : Game = null
 @onready var play_area: PlayArea = %PlayArea
 @onready var submit_button: Button = %Submit
 @onready var undo_button: Button = %Undo
-@onready var next_button: Button = %Next
 @onready var deck_ui: Control = %Deck
 @onready var discard_ui: Control = %Discard
 @onready var rules_ui: Control = %Rules
@@ -86,7 +85,6 @@ func _ready() -> void:
 	# end_show() is the only thing that can finish it. Bound to the retired submit act, the
 	# button reads End and does nothing a player can see, and the show cannot be ended at all.
 	submit_button.pressed.connect(func() -> void: game.end_show())
-	next_button.pressed.connect(func() -> void: await game.next())
 	undo_button.pressed.connect(_on_undo_pressed)
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
@@ -185,7 +183,6 @@ func _on_board_changed() -> void:
 
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
-	next_button.disabled = busy
 	# Undo stays ENABLED while busy: pressing it mid-act cancels the act (Game.undo requests
 	# the cancel; the act restores the pre-act board), and at the win/lose screen it rewinds
 	# the final Submit. Game ignores the press in the states where undo can't act.

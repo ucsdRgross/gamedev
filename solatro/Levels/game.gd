@@ -88,7 +88,7 @@ var _resolved : bool = false
 ## fast-forwards (get_delay -> 0, score_line/run_props short-circuit) and the performing
 ## function restores the pre-act board instead of committing. Reset by _begin_act / restore.
 var act_cancelled : bool = false
-## True only across the cancellable span of _perform_submit/_perform_next — undo() may only
+## True only across the cancellable span of _perform_next — undo() may only
 ## request a cancel while the act can still unwind.
 var _act_cancellable : bool = false
 
@@ -157,7 +157,7 @@ func register_combo(key: String) -> bool:
 
 ## Hook override (CardEnvironment): a mod handler actually ran — feed the act combo with
 ## the mod's identity key (§15a mod-activation U). Only while an act is resolving
-## (_act_cancellable brackets exactly the on_run_scorer/on_next resolution window);
+## (_act_cancellable brackets exactly the on_next resolution window);
 ## engine mods return "" from combo_key and never register.
 func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
 	# ⚠ EVERY dispatch path funnels through here (run_all_mods, return_first_*, run_card_mods — see
@@ -275,7 +275,6 @@ func _resume_after_visuals() -> void:
 func _replay_pending_action(action: StringName) -> void:
 	print("[resume] replaying interrupted action: %s" % action)
 	match action:
-		&"on_run_scorer": await _perform_submit()
 		&"on_next": await _perform_next()
 		&"on_placement": await _replay_pending_placement()
 
@@ -465,7 +464,7 @@ func entrance_slot_of(card: CardData) -> int:
 ## (selection state lives there); Game owns the history rewind. Three states:
 ##   - win/lose screen up (_resolved): dismiss the outcome, then rewind the final Submit.
 ##   - an act is resolving (_act_cancellable): request a cancel — the act fast-forwards and
-##     restores the pre-act board itself (_perform_submit/_perform_next).
+##     restores the pre-act board itself (_perform_next).
 ##   - otherwise locked (resume load / replay tail): ignored.
 func undo() -> void:
 	EventLog.event(EventLog.CH_INPUT, "undo", "resolved=%s" % str(_resolved))
@@ -791,49 +790,6 @@ func draw_card() -> CardData:
 		state.revision += 1
 		return data
 	return null
-
-## Command (view-called): perform a Submit act.
-func submit() -> void:
-	EventLog.event(EventLog.CH_INPUT, "submit", "blocked=%s" % str(processing))
-	if processing:
-		return
-	await _perform_submit()
-
-## Resolve a Submit act. ⚠ THE ACT IS RETIRED AND THIS IS VESTIGIAL: a show has no acts, no
-## banking moment and no scoring round -- a line scores the instant a placement completes it,
-## and `end_show()` is what finishes a show. No button reaches this any more (the one that
-## used to is the End button), and the row/col payout and lower-board clear below both operate
-## on a board the grid game does not use. Kept because the pending-action replay and the
-## save format still name `on_run_scorer`; retiring it outright is not a step anything owns.
-## Locked (processing) across the async span and persisted as pending first, so a quit
-## mid-resolution replays from the pre-submit board on resume.
-func _perform_submit() -> void:
-	processing = true
-	_begin_act()
-	_begin_action(&"on_run_scorer")
-	_act_cancellable = true
-	await run_all_mods(&"on_run_scorer")
-	# D22/D23: the last section has scored, so the beams go out. Inside the cancellable span on
-	# purpose — an on_unspotlight handler is part of the act and registers combos like any other.
-	# Skipped when the act is being unwound: that path throws the whole state away anyway, and
-	# the restored snapshot brings its own (pre-act) spotlight flags with it.
-	if not act_cancelled:
-		await _release_spotlight()
-	_act_cancellable = false
-	if act_cancelled:
-		# The restored snapshot fixes the MODEL, but the view is not derived from state: the
-		# empty section is the only thing that closes revealed rows and retires beams (QR2=d).
-		# No sweep — the doomed state's hooks must not fire.
-		spotlight_section_changed.emit([] as Array[CardData])
-		_restore_pre_act_board("cancelled submit")
-		return
-	state.apply_act_score()
-	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
-	if view: view.sync_scores()
-	state.discard_lower_board()
-	_update_submit_label()
-	save_state()
-	processing = false
 
 func _update_submit_label() -> void:
 	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))

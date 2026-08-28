@@ -2,11 +2,10 @@ extends TestSuite
 # res://Tests/Interaction/test_interaction.gd
 # ==============================================================================
 # INTERACTIVITY, ALL INPUT MODES: drives the REAL GameView with synthesized
-# input events — mouse, touchscreen (touch -> emulated-mouse pipeline),
-# keyboard, and controller — and asserts every UI surface responds: card
-# selection + cancel, the HUD buttons, undo pressed mid-Submit, and the
-# game-over overlay contract (covers ONLY the board; Undo rewinds the outcome;
-# no card input of ANY mode leaks through).
+# input events — mouse, keyboard, and controller — and asserts every UI
+# surface responds: card selection + cancel, the HUD buttons, undo pressed
+# mid-act, and the game-over overlay contract (covers ONLY the board; Undo
+# rewinds the outcome; no card input of ANY mode leaks through).
 #
 # Events go through Input.parse_input_event (the full pipeline: mouse
 # emulation, hover, focus routing) — never direct handler calls — so a broken
@@ -22,7 +21,7 @@ extends TestSuite
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const WATCHDOG_SECS := 10.0
-## Slow enough that a Submit is still mid-animation two frames in (the cancel test
+## Slow enough that an act is still mid-animation two frames in (the cancel test
 ## needs the Undo click to land DURING the resolution).
 const SLOW_DELAY := 0.4
 
@@ -60,9 +59,8 @@ func _ready() -> void:
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
+	await test_touch_taps_select_card()
 	await test_rebuild_leaves_no_dead_controls()
-	behavior_section("TOUCHSCREEN (touch -> emulated mouse)")
-	await test_touch_taps_next_button()
 	behavior_section("UNDO DURING A RESOLVING SUBMIT (the real button)")
 	await test_undo_button_cancels_live_act()
 	behavior_section("GAME OVER OVERLAY CONTRACT")
@@ -298,6 +296,26 @@ func test_wall_screen_popups_gates_the_in_screen_description() -> void:
 	SettingsManager.settings.wall_screen_popups = was_popups
 	pa.ungrab_cards()
 
+## The touchscreen half of "every input mode". The Next button used to be this file's only
+## touch vehicle; it is retired, and a tap on the End button cannot replace it because
+## resolving the show would break every test sharing this session. A tap that SELECTS a card
+## exercises the same pipeline -- InputEventScreenTouch through the window to a board control
+## -- and mutates nothing that outlives the tap.
+func test_touch_taps_select_card() -> void:
+	var control := a_card_control()
+	check(control != null, "a dealt board offers a focusable card control")
+	if not control: return
+	selections.clear()
+	pa.ungrab_cards()
+	await touch_tap(center_of(control))
+	check(selections.size() >= 1 and selections[0] == pa.ui_data[control],
+			"a screen touch over a card emits its selection, same as a mouse click",
+			str(selections.size()))
+	pa.ungrab_cards()
+	# ⚠ A touch leaves no HOVER behind, and the mouse-driven tests that follow need one --
+	# their selection path requires a hovered control. Put the pointer back over the board.
+	await mouse_move_to(center_of(control))
+
 func test_mouse_right_click_ungrabs() -> void:
 	var control := a_card_control()
 	check(control != null, "board control available for the grab")
@@ -407,23 +425,6 @@ func test_controller_focus_navigation() -> void:
 	check(after != null and after != before,
 			"the dpad moves focus off the first control (controller navigation lives)")
 
-func test_touch_taps_next_button() -> void:
-	# Empty the WHOLE Entrance first. A refill is due when the Entrance is empty or nothing
-	# held can go anywhere -- and every grid cell accepts a card, so while any slot still holds
-	# one there is somewhere to put it and no refill is owed. A tap on a board that owes no
-	# refill correctly draws nothing, and the check below would be asserting against a no-op.
-	for col : ArrayCardData in game.state.upper_zone:
-		col.datas.clear()
-	game.state.revision += 1
-	var deck_before : int = game.state.draw_deck.size()
-	await touch_tap(center_of(view.next_button))
-	var acted := await wait_until(func() -> bool:
-			return not game.processing and game.state.draw_deck.size() != deck_before)
-	check(acted, "a touchscreen tap on Next deals cards (touch -> emulated mouse -> button)",
-			"deck %d -> %d" % [deck_before, game.state.draw_deck.size()])
-	pa.flush_rebuild()
-	await frames(1)
-
 # ==============================================================================
 # UNDO DURING A RESOLVING SUBMIT — through the real button, real animations. The
 # exact cancel semantics are pinned headless (test_game_headless); this asserts
@@ -442,7 +443,7 @@ func _act_in_background() -> void:
 func test_undo_button_cancels_live_act() -> void:
 	pa.ungrab_cards()   # held cards would make _on_undo_pressed swallow the click
 	SettingsManager.settings.base_delay = SLOW_DELAY
-	# Same reason as the touch test: an empty slot is what gives the refill work to do.
+	# An empty slot is what gives the refill work to do.
 	game.state.upper_zone[0].datas.clear()
 	game.state.revision += 1
 	var history_before : int = game.save_history.size()
@@ -497,8 +498,8 @@ func test_game_over_interactivity() -> void:
 	check(s_rect.grow(8.0).encloses(pa_rect) and pa_rect.grow(8.0).encloses(s_rect),
 			"the outcome screen covers the play area and nothing else",
 			"screen %s vs board %s" % [s_rect, pa_rect])
-	check(view.submit_button.disabled and view.next_button.disabled,
-			"Submit and Next are disabled at game over")
+	check(view.submit_button.disabled,
+			"End is disabled at game over")
 	check(not view.undo_button.disabled, "Undo stays pressable at game over")
 	var any_focusable := false
 	for control : Control in pa.ui_data:
@@ -511,13 +512,12 @@ func test_game_over_interactivity() -> void:
 	selections.clear()
 	await mouse_click(pa_rect.get_center())
 	check(selections.is_empty(), "a click on the covered board selects nothing")
-	# Undo at the outcome screen: overlay drops, the final Submit rewinds, play resumes.
+	# Undo at the outcome screen: overlay drops, the final End rewinds, play resumes.
 	await mouse_click(center_of(view.undo_button))
 	await frames(2)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"Undo dismisses the outcome overlay")
 	check(not game.state.show_ended, "Undo rewinds the show back to live")
 	check(not game.processing, "play resumes after the outcome undo")
-	check(not view.submit_button.disabled and not view.next_button.disabled,
-			"Submit and Next come back with play")
+	check(not view.submit_button.disabled, "End comes back with play")
 	check(a_card_control() != null, "the rebuilt board is focusable again")
