@@ -133,6 +133,11 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## the scroll transform carries cards, controls, and props together. Parented to the PlayArea
 ## root, cards chased their anchors' scrolled globals through the _process ease and visibly
 ## lagged every scroll (owner report).
+## S20b -- the grid board's root. One child per entry in `GameData.grids`, left to right.
+## ⚠ Typed `HBoxContainer` and NAMED `GridContainer`: the name is the registry's, the type is
+## what puts the panels side by side. The 5x5 of cells INSIDE each panel is the real
+## `GridContainer`, built per panel in `_build_grid_panel`.
+@onready var grid_container: HBoxContainer = %GridContainer
 @onready var card_layer: Node2D = %CardLayer
 ## Always-on-top surface (last sibling of TopLevelVBox): the focus inspector panel and score
 ## popups live here so they render above every card and prop by TREE ORDER — no z_index needed.
@@ -375,6 +380,7 @@ func set_card_zones() -> void:
 	# Handles structural validation, instantiations, and dictionary mapping
 	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	set_card_zone(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
+	set_grid_zones(game_state)
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
@@ -404,6 +410,7 @@ func set_card_zones_visuals() -> void:
 	# lower-zone cards draw over upper.
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_card_zone_visuals(lower_zone_right, game_state.lower_zone_type, game_state.lower_zone)
+	update_grid_zone_visuals(game_state)
 	_order_board_cards(game_state)
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
@@ -581,6 +588,104 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
 			else:
 				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
+
+# ==============================================================================
+# S20b — THE GRID BOARD
+#
+# One `GridPanel` per grid, each holding a Godot `GridContainer` of `CellSlot`s. A cell slot is
+# built exactly like a zone column: child 0 is the cell's own zone card, children 1..n are the
+# cards stacked in it. That is deliberate — it is the same shape `set_card_zone` builds, so the
+# binding, the pooling, the focus wiring and the `CardVisual` creation are all the existing ones.
+#
+# ⚠ THE CELLS ARE CONTROLS; THE CARDS ARE NOT. A Godot container overwrites its children's
+# position and size, so a `CardVisual` can never live in one — it stays in `%CardLayer`,
+# positioned by arithmetic. That is what lets a springing card overlap the row above without the
+# board re-flowing, and it is why this mirrors the container rather than reading it.
+# ==============================================================================
+
+## Builds one panel per grid, in lockstep with the grid list, and one cell slot per cell.
+func set_grid_zones(game_state: GameData) -> void:
+	var wanted := game_state.grids.size()
+	var diff := wanted - grid_container.get_child_count()
+	if diff > 0:
+		for _i : int in diff:
+			grid_container.add_child(_create_grid_panel())
+	elif diff < 0:
+		for _i : int in absi(diff):
+			var doomed : Node = grid_container.get_child(-1)
+			grid_container.remove_child(doomed)
+			doomed.queue_free()
+	for gi : int in wanted:
+		_bind_grid_panel(grid_container.get_child(gi) as Control, game_state.grids[gi])
+
+## A panel: a positioning node that draws nothing, holding the cell grid.
+func _create_grid_panel() -> Control:
+	var panel := VBoxContainer.new()
+	panel.name = "GridPanel"
+	var cells := GridContainer.new()
+	cells.name = "CellGrid"
+	panel.add_child(cells)
+	return panel
+
+## Fills one panel with `grid_width * grid_height` cell slots and binds every card in them.
+## The cell count comes from the DATA, never from a hard-coded 5.
+func _bind_grid_panel(panel: Control, grid: GridData) -> void:
+	if not grid: return
+	var cells : GridContainer = panel.get_child(0)
+	cells.columns = maxi(grid.grid_width, 1)
+	var wanted := grid.cells.size()
+	var diff := wanted - cells.get_child_count()
+	if diff > 0:
+		for _i : int in diff:
+			var slot := VBoxContainer.new()
+			slot.name = "CellSlot"
+			slot.add_theme_constant_override("separation", separation)
+			cells.add_child(slot)
+	elif diff < 0:
+		for _i : int in absi(diff):
+			var doomed : Node = cells.get_child(-1)
+			cells.remove_child(doomed)
+			doomed.queue_free()
+	for ci : int in wanted:
+		var slot : VBoxContainer = cells.get_child(ci)
+		var stack : Array[CardData] = grid.cells[ci].datas
+		var rows := stack.size() + 1   # +1 for the cell's own zone card
+		var row_diff := rows - slot.get_child_count()
+		if row_diff > 0:
+			for _j : int in row_diff:
+				slot.add_child(create_card_control())
+		elif row_diff < 0:
+			for _j : int in absi(row_diff):
+				var doomed : Node = slot.get_child(-1)
+				slot.remove_child(doomed)
+				doomed.queue_free()
+		_bind_slot(slot.get_child(0) as Control, grid.cell_types[ci])
+		for j : int in range(1, slot.get_child_count()):
+			_bind_slot(slot.get_child(j) as Control, stack[j - 1])
+
+## Sizes every cell slot. An EMPTY cell takes a FULL card's worth, so a grid is a complete block
+## of card-sized slots from the moment it is built and never changes shape as it fills; a covered
+## card shows exactly `CARD_SEPARATION` of itself and the top card of a stack shows whole.
+func update_grid_zone_visuals(game_state: GameData) -> void:
+	for gi : int in mini(game_state.grids.size(), grid_container.get_child_count()):
+		var grid : GridData = game_state.grids[gi]
+		if not grid: continue
+		var panel : Control = grid_container.get_child(gi)
+		var cells : GridContainer = panel.get_child(0)
+		cells.add_theme_constant_override("h_separation", separation)
+		cells.add_theme_constant_override("v_separation", separation)
+		for ci : int in mini(grid.cells.size(), cells.get_child_count()):
+			var slot : VBoxContainer = cells.get_child(ci)
+			slot.add_theme_constant_override("separation", separation)
+			# The cell's zone card: a full card while the cell is empty (it IS what an empty
+			# cell shows), collapsed to nothing once a card covers it.
+			var zone_control : Control = slot.get_child(0)
+			zone_control.custom_minimum_size = CardVisual.card_size_play if slot.get_child_count() == 1 \
+					else Vector2(CardVisual.card_size_play.x, 0)
+			for j : int in range(1, slot.get_child_count()):
+				(slot.get_child(j) as Control).custom_minimum_size = Vector2(
+						CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
+			(slot.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
