@@ -134,26 +134,53 @@ func all_zero_z(order: Array[Dictionary]) -> Array[Node]:
 	return offenders
 
 # ==============================================================================
-# FIXTURES (mirrors test_ui_props.make_board_game / make_play_area / settle)
+# FIXTURES — grid-backed (S20bPort). `cols` maps to grid X, the stack DEPTH maps to grid H
+# (`GridData.cells[x].datas`), and every fixture here uses a single grid ROW (y == 0): these
+# tests are about DRAW ORDER within one row's height, not about multiple grid rows.
+# Built directly on `GridData` (via `TestFactories.uc()` cards, mirroring `TestGridFixtures`'
+# own low-level construction) because none of `TestGridFixtures`' fixed 5x5 shapes match the
+# variable column/depth boards these layering claims need.
 # ==============================================================================
+func _new_grid(width: int, height: int) -> GridData:
+	var grid := GridData.new()
+	grid.grid_width = width
+	grid.grid_height = height
+	grid.build_cells()
+	return grid
+
+## The card at grid 0's cell (x, y == 0), height `h` of its stack — the lookup every fixture
+## below needs since `col.datas[row]` (the old Entrance idiom) has no grid equivalent.
+func cell_card(g: Game, x: int, h: int) -> CardData:
+	var grid : GridData = g.state.grids[0]
+	return grid.cells[grid.cell_index(x, 0)].datas[h]
+
+## The zone/type card for grid 0's cell (x, y == 0) — the grid equivalent of an Entrance column
+## header.
+func cell_type(g: Game, x: int) -> CardData:
+	var grid : GridData = g.state.grids[0]
+	return grid.cell_types[grid.cell_index(x, 0)]
+
 func make_board_game(cols: int) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
-	var types : Array[CardData] = []
-	var columns : Array[ArrayCardData] = []
+	var grid := _new_grid(cols, 1)
 	for col in cols:
-		var h := TestFactories.m_card(1, TestFactories.uc()); h.stage = CardData.Stage.ZONE
-		types.append(h)
 		var card := TestFactories.m_card(col + 2, TestFactories.uc())
 		card.stage = CardData.Stage.PLAY
-		columns.append(TestFactories.col([card] as Array[CardData]))
-	s.upper_zone_type = types
-	s.upper_zone = columns
+		grid.cells[grid.cell_index(col, 0)].datas.append(card)
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()
 	CardEnvironment.CURRENT = g
 	return g
 
+## ⚠ **STILL ENTRANCE-BACKED, NOT PORTED TO A GRID — AND THAT IS THE RIGHT ANSWER, NOT A LEFTOVER.**
+## `PropLayer._apply_split` (`prop_layer.gd`) only brackets an Entrance-anchored prop: *"Bracket-split
+## geometry only knows how to bound the Entrance's own row (row_card_visuals is still zone-indexed);
+## a genuine grid anchor stays unsplit."* The hoop front/back split has no grid model yet, so a hoop
+## test built on a grid cannot even reach `_split_active = true` — every hoop-split test therefore
+## stays on the Entrance until that gap is closed, same as the row-reveal tests.
+##
 ## One upper column stacked `rows` deep (row 0 on top of the column visually — later rows draw
 ## over earlier ones), so there is a genuine "card in the row above" for the hoop-split test.
 func make_stack_game(rows: int) -> Game:
@@ -174,7 +201,8 @@ func make_stack_game(rows: int) -> Game:
 
 ## `cols` columns each stacked `rows` deep — the multi-column grid the single-column hoop test was
 ## blind to (TASK 4, owner playtest 2026-07-15): cross-column draw order, ring overlap against
-## EVERY card, and mid-leg split state are checked on this shape.
+## EVERY card, and mid-leg split state are checked on this shape. Entrance-backed — see the note
+## on `make_stack_game` above (`PropLayer._apply_split` has no grid model).
 func make_grid_game(cols: int, rows: int) -> Game:
 	var per_col : Array[int] = []
 	for col : int in cols:
@@ -183,6 +211,7 @@ func make_grid_game(cols: int, rows: int) -> Game:
 
 ## Ragged board: one column per entry, stacked `rows_per_col[i]` deep — SHORT columns are the
 ## shape whose fanned last card pokes down through later rows (the wrong-row bracket bug).
+## Entrance-backed — see the note on `make_stack_game` above.
 func make_ragged_game(rows_per_col: Array[int]) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -220,12 +249,14 @@ func settle(pa: PlayArea) -> void:
 	while not pa.visuals_ready() and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	var last := pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 0)).z))
+	# Grid coord (grid 0, x 0, y 0, h 0): every fixture in this file builds a grid, and the
+	# panel's origin publishes on `resized`, so this is the geometry that actually needs settling.
+	var last := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0))
 	var stable := 0
 	while stable < 3 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		var now := pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 0)).z))
+		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0))
 		stable = stable + 1 if now.is_equal_approx(last) else 0
 		last = now
 
@@ -279,7 +310,7 @@ func test_fresh_deal_structure() -> void:
 	var monotone := true
 	var any_z := false
 	for i in 3:
-		var data := g.state.upper_zone[i].datas[0]
+		var data := cell_card(g, i, 0)
 		var vis : CardVisual = pa.data_card.get(data)
 		if not vis: continue
 		if vis.z_index != 0: any_z = true
@@ -297,8 +328,8 @@ func test_normal_prop_above_cards() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 1   # knife — has_back_half() == false
-	p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 0)
-	p.route = [BoardCoord.new(0, 2, BoardCoord.ENTRANCE_ROW, 0)] as Array[BoardCoord]
+	p.at = BoardCoord.new(0, 1, 0, 0)
+	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [p], [])
 	check(ok, "knife spawn/move tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
@@ -306,7 +337,7 @@ func test_normal_prop_above_cards() -> void:
 	var prop_rank := draw_rank(order, vis)
 	var above_all := prop_rank >= 0
 	for i in 3:
-		var cv : CardVisual = pa.data_card.get(g.state.upper_zone[i].datas[0])
+		var cv : CardVisual = pa.data_card.get(cell_card(g, i, 0))
 		if cv and draw_rank(order, cv) > prop_rank: above_all = false
 	check(above_all, "a back-half-less prop renders above every board card")
 	check(not vis.has_back_half(), "the knife opts out of the back-half split (default)")
@@ -317,7 +348,7 @@ func test_held_card_above_resting() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
 	await settle(pa)
-	var held := g.state.upper_zone[1].datas[0]
+	var held := cell_card(g, 1, 0)
 	pa.grab_cards([held] as Array[CardData])
 	await get_tree().process_frame
 	var order := dump_draw_order("held card lifted", pa)
@@ -326,7 +357,7 @@ func test_held_card_above_resting() -> void:
 	var above := held_rank >= 0
 	for i in 3:
 		if i == 1: continue
-		var cv : CardVisual = pa.data_card.get(g.state.upper_zone[i].datas[0])
+		var cv : CardVisual = pa.data_card.get(cell_card(g, i, 0))
 		if cv and draw_rank(order, cv) > held_rank: above = false
 	check(above, "a held/dragged card renders above all resting cards")
 	check_impl(held_vis.z_index == 0, "the held card carries no z_index (move_child, not z)")
@@ -345,7 +376,7 @@ func test_fx_inside_its_host() -> void:
 	var g := make_board_game(2)
 	var pa := make_play_area()
 	await settle(pa)
-	var card := g.state.upper_zone[0].datas[0]
+	var card := cell_card(g, 0, 0)
 	card.add_status(CardModifierStatus.stacked(StatusBurning, 3))
 	var vis : CardVisual = pa.data_card.get(card)
 	await get_tree().process_frame
@@ -382,10 +413,10 @@ func test_overlay_above_everything() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 1
-	p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 0)
-	p.route = [BoardCoord.new(0, 2, BoardCoord.ENTRANCE_ROW, 0)] as Array[BoardCoord]
+	p.at = BoardCoord.new(0, 1, 0, 0)
+	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
 	await run_tick(pl, [p], [p], [p], [])
-	var control : Control = pa.data_ui.get(g.state.upper_zone[0].datas[0])
+	var control : Control = pa.data_ui.get(cell_card(g, 0, 0))
 	control.grab_focus()
 	await get_tree().process_frame
 	check(pa._focus_info != null and pa._focus_info.visible, "the focus inspector is shown")
@@ -395,7 +426,7 @@ func test_overlay_above_everything() -> void:
 	var prop_vis : PropVisual = pl._visuals.get(p)
 	if prop_vis and draw_rank(order, prop_vis) > panel_rank: ok = false
 	for i in 3:
-		var cv : CardVisual = pa.data_card.get(g.state.upper_zone[i].datas[0])
+		var cv : CardVisual = pa.data_card.get(cell_card(g, i, 0))
 		if cv and draw_rank(order, cv) > panel_rank: ok = false
 	check(ok, "the focus inspector renders above every prop and card (OverlayLayer last sibling)")
 	check_impl(pa._focus_info.get_parent() == pa.overlay_layer,
@@ -403,6 +434,10 @@ func test_overlay_above_everything() -> void:
 	pa.hide_focus_info()
 	await cleanup(g, pa)
 
+## ⚠ **BLOCKED ON A GRID PORT — STAYS ON THE ENTRANCE.** `PropLayer._apply_split` only brackets an
+## Entrance-anchored prop (`row_card_visuals` is still zone-indexed); a grid-anchored hoop never
+## reaches `_split_active`, so this claim has no grid model to assert against yet.
+##
 ## THE CORE FEATURE: a hoop's back half renders BELOW the card it occupies and ABOVE the card in
 ## the row above; its FRONT half renders in front of the occupied card but BELOW the card in the row
 ## BELOW — the ring brackets the occupied card so it passes through. Driven on a 3-deep stacked
@@ -493,9 +528,12 @@ func test_hoop_back_half_interleaves() -> void:
 			"both half nodes are freed with the prop visual (no leak)")
 	await cleanup(g, pa)
 
+## ⚠ **BLOCKED ON A GRID PORT — STAYS ON THE ENTRANCE**, same reason as `test_hoop_back_half_interleaves`
+## above: `PropLayer._apply_split` has no grid model, so a grid-anchored hoop never splits.
+##
 ## TASK 4 (owner playtest 2026-07-15): the single-column hoop test passed while playtest layering
 ## looked wrong — the blind spots were OTHER columns, MID-LEG occupancy, and separation levels.
-## On a 3x3 grid, at several card separations, a parked hoop must: take NO formation offset and
+## On a 3x3 board (Entrance columns x depth), at several card separations, a parked hoop must: take NO formation offset and
 ## sit exactly on the occupied card's visual center (TASK 3a — the ring threads the card center at
 ## every separation); bracket the occupied card, staying above EVERY same-column card above and
 ## below EVERY same-column card below (fanned stacks overlap more than one row at small
@@ -644,6 +682,9 @@ func test_hoop_split_multi_column() -> void:
 		await cleanup(g, pa)
 	SettingsManager.settings.card_separation_scale = prev_sep
 
+## ⚠ **BLOCKED ON A GRID PORT — STAYS ON THE ENTRANCE**, same reason as the other two hoop tests:
+## `PropLayer._apply_split` has no grid model.
+##
 ## Owner report 2026-07-16: a hoop crossing a row over a SHORT COLUMN (no card in its row there)
 ## was bracketed to the wrong row — back arc behind the zone header and rows above — because the
 ## short column's fanned last card is a full card TALL and "contained" the ring's center. The

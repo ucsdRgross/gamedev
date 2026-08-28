@@ -943,7 +943,6 @@ const ZONE_ONLY_TESTS : Array[String] = [
 	"res://Tests/Engine/test_spotlight.gd",
 	"res://Tests/Engine/test_statuses.gd",
 	"res://Tests/Engine/test_suit_props.gd",
-	"res://Tests/UI/test_visual_layers.gd",
 	"res://Tests/Map/test_persistence_fuzz.gd",
 	"res://Tests/Map/test_run_manager.gd",
 	"res://Tests/Visual/pause_time_spike.gd",
