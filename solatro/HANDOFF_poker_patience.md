@@ -12,6 +12,9 @@ Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, `.2b-0`, `.2b` (
 layering port, `S20c`, `S20b.4a`, `S20b.3`, **all of `S20b.4b`**. Suite green at **43 suites /
 3538 CHECKS PASSED**; `S20b.4b` is UNCOMMITTED in the working tree.
 
+⚠ **`S21` IS ATTEMPTED, NOT LANDED** -- backed out to keep the tree green, parked at
+`solatro/S21_WIP.patch`, with what is solved and what is not in its ledger entry.
+
 **`S20b.4b` IS COMPLETE, and with it the whole of `S20b`.** Nothing in the reveal or the split is
 zone-indexed, and the zone-only ratchet is down to the six files that CANNOT port. **Phase 5 is
 next**: `S21`-`S25`, the flipped board, **where cards start stacking UPWARD** — and `S22` is what
@@ -290,6 +293,44 @@ lettered steps by hand when closing a gap.
     _grid_slot_center_global carrying the offset) is S22's work -- PLAN.md gives S22 "_row_open
     inverted, Entrance at y == -1 pushing the board up". This sub-step ports the KEY and the
     QUERIES so nothing is zone-indexed; it does not ship the un-designed grid band growth.
+- id: S21
+  description: >
+    Upward stacks, shared bottom edge, rows pushed up (E7-E11, PLAN.md 1.8). ATTEMPTED AND BACKED
+    OUT -- the diff is parked at `solatro/S21_WIP.patch`, and the tree is green without it.
+  files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd,
+    solatro/Tests/UI/test_grid_layout.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: blocked
+  evidence: >
+    RED: 5 failures, the expected set -- y INCREASED with h (154/174/194) and the row above never
+    moved. With the patch applied: TP-81 and TP-82 GREEN (E7 the stack rises, E8 one depth pitch
+    between cards, E9 draw order unchanged and still newest-in-front). STILL RED: E11 (a tall stack
+    pushes the rows ABOVE it up) and, as a knock-on, the 3 grid hoop-split checks. Backed out
+    rather than left failing.
+  notes: >
+    ⚠ **WHAT IS ALREADY SOLVED, IN THE PATCH.** The cell stack is bound and sized in reverse
+    (topmost card takes the FIRST control), `CardVisual.bottom_anchored` makes a grid card hang
+    from its control's BOTTOM edge while the Entrance still hangs from control tops, and
+    `_grid_slot_center_global` measures UP from the row's bottom with per-row heights from
+    `_grid_row_height` (a row is as tall as its deepest cell). That much is verified.
+    ⚠ **WHAT IS NOT: GIVING THE BOARD A FIXED FLOOR.** Three mechanisms were tried and MEASURED:
+    (1) `size_flags_vertical = SIZE_SHRINK_END` on the grid block does NOTHING -- a `VBoxContainer`
+    allots each child exactly its minimum height, so a vertical size flag aligns it inside a slot
+    that has no slack. `BoxContainer.alignment = ALIGNMENT_END` is the lever that works.
+    (2) With `ALIGNMENT_END` plus a `custom_minimum_size.y` on TopLevelVBox, the floor holds only
+    while the board is SHORTER than the window -- measured, the rows below a deepened stack still
+    slid 36 px while those above rose the remaining 4, which was all the slack left.
+    (3) Sticking the scroll to the bottom on rebuild changed the numbers not at all; that path was
+    not reached or not effective, and was NOT diagnosed.
+    ⚠ **THE NEXT ATTEMPT SHOULD START BY LOOKING, NOT BY INFERRING.** Four layout mechanisms were
+    changed in a row on reasoning alone; the render (`Tests/Visual/grid_layer_shot.tscn`) answered
+    more in one pass than all four. Do that FIRST.
+    ⚠ **A BUG THE OWNER CAUGHT BY EYE MID-RUN, and its fix is IN the patch:** once cards hang from
+    control bottoms, the cell's own frame -- a control that collapses to zero height when a card
+    covers it -- drew a full card ABOVE its cell, landing frames on the row above and reading as a
+    whole extra row of them. The frame has to be the LAST child of the CellSlot, because it marks
+    the CELL, which sits on the row's bottom line and does not rise with the stack.
 - id: S20b4b3
   description: 'Port the 5 PORTABLE fixtures off ZONE_ONLY_TESTS.'
   files_touched: [solatro/Tests/Engine/test_fuzz.gd, solatro/Tests/Engine/test_game_data.gd,
@@ -419,7 +460,10 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S21`** - upward stacks, shared bottom edge, rows pushed up.
+1. **`S21`, from `solatro/S21_WIP.patch`** - most of it is done and verified; what is left is
+   giving the board a FIXED FLOOR so a deepening stack raises the rows above it instead of pushing
+   the ones below it down. Read that step's `notes` first: three mechanisms are already ruled out
+   with measurements, and the instruction is to RENDER AND LOOK before changing a fourth.
 2. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
    grid row band gets its arithmetic and `PlayArea._reveal_geometry_exists` is DELETED.
 3. Then the rest of `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
