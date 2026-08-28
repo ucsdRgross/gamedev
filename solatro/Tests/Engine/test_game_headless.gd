@@ -932,20 +932,37 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 # The set empties when the legacy zone rendering is deleted and these files have nowhere left to
 # point -- until then, every name below is a known hole, not an oversight.
 
-## Files that assert against the legacy renderer and reference no grid. STRIKE A NAME OFF when it
-## is ported; do not add one.
+## Files that assert against the legacy renderer and reference no grid.
+##
+## ⚠ THIS LIST HOLDS TWO DIFFERENT KINDS OF ENTRY, and confusing them wastes a session.
+##
+## PORTABLE -- a fixture that merely happens to sit in a zone. It can and should move onto a grid,
+## and its name is struck off when it does.
+##
+## MACHINERY -- a test OF the legacy zone machinery itself: the Vector3i position index, dynamic
+## column add/remove, zone-array scoring sections. That machinery is still LIVE (measured:
+## find_data_vec3 has 9 product callers, get_zone_from_vec3 7, is_data_topmost 7,
+## add_column/remove_column 9), because the Entrance is still zone-shaped storage. These tests
+## CANNOT port -- a grid has no fixed-width column to add or remove -- and they MUST NOT be
+## deleted, because they cover code that still runs. They leave this list only when the machinery
+## they test does.
+##
+## Marked below. Strike a PORTABLE name off when it moves; do not add one.
 const ZONE_ONLY_TESTS : Array[String] = [
-	"res://Tests/Engine/test_board.gd",
+	# PORTABLE
 	"res://Tests/Engine/test_fuzz.gd",
 	"res://Tests/Engine/test_game_data.gd",
-	"res://Tests/Engine/test_mods.gd",
-	"res://Tests/Engine/test_prop_engine.gd",
-	"res://Tests/Engine/test_spotlight.gd",
-	"res://Tests/Engine/test_statuses.gd",
-	"res://Tests/Engine/test_suit_props.gd",
 	"res://Tests/Map/test_persistence_fuzz.gd",
 	"res://Tests/Map/test_run_manager.gd",
 	"res://Tests/Visual/pause_time_spike.gd",
+	# MACHINERY -- these test live legacy code and leave only when it does
+	"res://Tests/Engine/test_board.gd",
+	"res://Tests/Engine/test_mods.gd",
+	"res://Tests/Engine/test_spotlight.gd",
+	# ENTRANCE-ONLY -- they name upper_zone, which IS the Entrance and is not going away yet
+	"res://Tests/Engine/test_prop_engine.gd",
+	"res://Tests/Engine/test_statuses.gd",
+	"res://Tests/Engine/test_suit_props.gd",
 ]
 
 const ZONE_MARKERS : Array[String] = ["upper_zone", "lower_zone"]
