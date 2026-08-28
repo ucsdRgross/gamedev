@@ -95,6 +95,21 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	check(cells.columns == grid.grid_width,
 			"the cell grid is as wide as the DATA says, not a hard-coded 5",
 			"%d columns vs grid_width %d" % [cells.columns, grid.grid_width])
+	var top : Control = pa.get_node("SmoothScrollContainer/TopLevelVBox")
+	# TP-80k — the Entrance's slots line up with the grid's columns (chart L3). It is what makes
+	# the Entrance read as the row BELOW the board rather than a separate strip near it, and it
+	# is easy to lose: the Entrance carried a row-score gutter left over from the retired upper
+	# zone, and its row was left-aligned while the grid centred itself in the same width. Each
+	# of those put it 25-50 px out, which looks like a rounding artefact and is not one.
+	var entrance_row : Control = top.get_node("UpperZone/UpperZoneRight")
+	var worst_dx := 0.0
+	for col : int in mini(entrance_row.get_child_count(), grid.grid_width):
+		var slot_x : float = (cells.get_child(col) as Control).get_global_rect().position.x
+		var ent_x : float = (entrance_row.get_child(col) as Control).get_global_rect().position.x
+		worst_dx = maxf(worst_dx, absf(slot_x - ent_x))
+	check(worst_dx < 1.0,
+			"every Entrance slot lines up with the grid column above it",
+			"worst %.1f px out" % worst_dx)
 	check(cells.get_child_count() == grid.cells.size(),
 			"there is exactly one cell slot per cell in the data",
 			"%d slots vs %d cells" % [cells.get_child_count(), grid.cells.size()])

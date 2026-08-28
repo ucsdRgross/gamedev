@@ -155,6 +155,13 @@ func _ready() -> void:
 func setup_gui() -> void:
 	set_separation()
 	set_card_zones()
+	# THE ENTRANCE LINES UP WITH THE GRID'S COLUMNS, which is what makes it read as the row below
+	# the board rather than a separate strip that happens to be nearby. Two things were pushing it
+	# out of line: its row-score gutter, which is a leftover of the retired upper zone (row scores
+	# belong to a grid's own panel now, so the Entrance has none), and its row being left-aligned
+	# while the grid centres itself in the same width.
+	upper_zone_left.visible = false
+	upper_zone_right.alignment = BoxContainer.ALIGNMENT_CENTER
 	# The board grows UPWARD out of the Entrance, so the Entrance is the part the player acts on
 	# and it is the bottom of the picture. Anchor the scroll there ON ENTRY -- deferred, because
 	# the containers have not been sized yet at this point and the maximum is still 0.

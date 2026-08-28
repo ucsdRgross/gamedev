@@ -749,10 +749,12 @@ for no new plan documents, so nothing was created under `design/grid-view/` beyo
 its answers.
 
 1. **`S20b` — the grid view replaces the play area.** The big one, and the last thing between the
-   engine and a playable game. Suggested order, each landing green:
-   - **b.1** build `%GridContainer` / `%GridPanel` / `%CellSlot` and render grid cards ALONGSIDE
-     the legacy zones. Additive, so the suite stays green.
-   - **b.2** migrate `slot_center_global` to `BoardCoord`; the prop routes follow it (`M5`, `M6`),
+   engine and a playable game. **b.1 and b.2 are DONE and verified by eye** -- the board draws,
+   the grid is on top in the old zone frame, the Entrance is the bottom row and its slots line up
+   with the columns above them (`TP-80k`). Remaining, each landing green:
+   - ~~**b.1** build the container, panels and cell slots~~ **DONE.**
+   - ~~**b.2** the old zone frame, grid on top, Entrance on the bottom, aligned~~ **DONE.**
+   - **b.2b** migrate `slot_center_global` to `BoardCoord`; the prop routes follow it (`M5`, `M6`),
      which is what makes a scored line fire props again.
    - **b.3** the Entrance moves to `%EntranceStrip`; `upper_zone` -> `entrance`.
    - **b.4** delete `lower_zone` and the legacy zone rendering; rebuild the tests that used them.
