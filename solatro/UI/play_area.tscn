@@ -12,6 +12,12 @@ script = ExtResource("2_34k5y")
 [sub_resource type="Resource" id="Resource_1opyf"]
 script = ExtResource("2_34k5y")
 
+[sub_resource type="Resource" id="Resource_ent_wheel"]
+script = ExtResource("2_34k5y")
+
+[sub_resource type="Resource" id="Resource_ent_drag"]
+script = ExtResource("2_34k5y")
+
 [node name="PlayArea" type="Control" unique_id=1510098967]
 layout_mode = 3
 anchors_preset = 15
@@ -50,25 +56,6 @@ layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 1
 
-[node name="UpperZone" type="HSplitContainer" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1061356067]
-unique_name_in_owner = true
-layout_mode = 2
-dragging_enabled = false
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="UpperZoneLeft" type="VBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=878004856]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
-[node name="UpperZoneRight" type="HBoxContainer" parent="SmoothScrollContainer/TopLevelVBox/UpperZone" unique_id=1820259403]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 0
-theme_override_constants/separation = 4
-metadata/_smooth_scroll_default_mouse_filter_set = true
-
 [node name="CardLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=1467391208]
 unique_name_in_owner = true
 
@@ -81,6 +68,70 @@ unique_name_in_owner = true
 script = ExtResource("4_particles")
 
 [node name="OverlayLayer" type="Node2D" parent="SmoothScrollContainer/TopLevelVBox" unique_id=2038411772]
+unique_name_in_owner = true
+
+[node name="EntranceStrip" type="Control" parent="." unique_id=3021554101]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -160.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 1
+
+[node name="EntranceHTrack" type="Control" parent="EntranceStrip" unique_id=3021554102]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_bottom = 1.0
+offset_right = 400.0
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="EntranceVScroll" type="ScrollContainer" parent="EntranceStrip/EntranceHTrack" unique_id=3021554103]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+script = ExtResource("1_07a3p")
+wheel_scroll_damper = SubResource("Resource_ent_wheel")
+dragging_scroll_damper = SubResource("Resource_ent_drag")
+allow_horizontal_scroll = false
+handle_input = false
+metadata/_custom_type_script = "uid://bgqglerkcylxx"
+
+[node name="EntranceContent" type="VBoxContainer" parent="EntranceStrip/EntranceHTrack/EntranceVScroll" unique_id=3021554104]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="UpperZone" type="HSplitContainer" parent="EntranceStrip/EntranceHTrack/EntranceVScroll/EntranceContent" unique_id=1061356067]
+unique_name_in_owner = true
+layout_mode = 2
+dragging_enabled = false
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneLeft" type="VBoxContainer" parent="EntranceStrip/EntranceHTrack/EntranceVScroll/EntranceContent/UpperZone" unique_id=878004856]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="UpperZoneRight" type="HBoxContainer" parent="EntranceStrip/EntranceHTrack/EntranceVScroll/EntranceContent/UpperZone" unique_id=1820259403]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 4
+metadata/_smooth_scroll_default_mouse_filter_set = true
+
+[node name="EntranceCardLayer" type="Node2D" parent="EntranceStrip/EntranceHTrack/EntranceVScroll/EntranceContent" unique_id=3021554105]
 unique_name_in_owner = true
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]

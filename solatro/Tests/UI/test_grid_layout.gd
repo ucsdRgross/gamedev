@@ -96,13 +96,14 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	check(cells.columns == grid.grid_width,
 			"the cell grid is as wide as the DATA says, not a hard-coded 5",
 			"%d columns vs grid_width %d" % [cells.columns, grid.grid_width])
-	var top : Control = pa.get_node("SmoothScrollContainer/TopLevelVBox")
 	# TP-80k — the Entrance's slots line up with the grid's columns (chart L3). It is what makes
 	# the Entrance read as the row BELOW the board rather than a separate strip near it, and it
 	# is easy to lose: the Entrance carried a row-score gutter left over from the retired upper
 	# zone, and its row was left-aligned while the grid centred itself in the same width. Each
 	# of those put it 25-50 px out, which looks like a rounding artefact and is not one.
-	var entrance_row : Control = top.get_node("UpperZone/UpperZoneRight")
+	# S20b.3: the Entrance moved to its own pinned %EntranceStrip (GAP-010) — read it through the
+	# unique-named accessor, not a path under TopLevelVBox (which no longer holds it).
+	var entrance_row : Control = pa.upper_zone_right
 	var worst_dx := 0.0
 	for col : int in mini(entrance_row.get_child_count(), grid.grid_width):
 		var slot_x : float = (cells.get_child(col) as Control).get_global_rect().position.x

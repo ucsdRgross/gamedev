@@ -579,3 +579,9 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_max_count = maxi(value, 1)
 		settings_changed.emit()
+## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
+## scroll (independent of the board's) covers whatever a deep stack adds past this.
+@export var entrance_visible_rows : float = 1.5:
+	set(value):
+		entrance_visible_rows = maxf(value, 0.5)
+		settings_changed.emit()

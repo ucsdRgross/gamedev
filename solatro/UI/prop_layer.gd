@@ -67,6 +67,22 @@ func _ready() -> void:
 	play_area = owner as PlayArea   # the play_area.tscn root
 	top_level = false               # ride the scroll container's transform
 
+## Split-prop half nodes are NOT this node's children (they live in a CARD layer, back-brackets
+## for the CardVisual's own draw order), so a tree teardown frees THIS node's PropVisual children
+## and their half nodes on two INDEPENDENT branches with no ordering guarantee between them. A
+## PropVisual whose halves are freed first is left holding stale pointers its own PREDELETE
+## notification then reads (`prop_visual.gd`'s `_notification`) -- "previously freed" engine
+## errors. `_free_visual`/`abort_all` already null both refs before freeing; do the same here so
+## ANY teardown path is safe, not just the ones that route through this layer's own free calls.
+func _exit_tree() -> void:
+	for vis : PropVisual in _visuals.values():
+		vis.back_node = null
+		vis.front_node = null
+	for vis : PropVisual in _exiting:
+		if is_instance_valid(vis):
+			vis.back_node = null
+			vis.front_node = null
+
 ## The kind's authored formation set, or null (no formation). Tests may pre-seed
 ## _formation_sets to exercise assignment without touching the shipped .tres files.
 func _formation_set(kind: int) -> PropFormationSet:
@@ -176,7 +192,11 @@ func _update_back_halves() -> void:
 func _body_over_any_card(vis: PropVisual) -> bool:
 	var reach := CardVisual.card_size_play * 0.5 + vis.body_size * 0.5 * vis.scale
 	for cvis : CardVisual in play_area.data_card.values():
-		if not is_instance_valid(cvis) or cvis.get_parent() != play_area.card_layer: continue
+		# A card now draws in EITHER of two layers (the Entrance's own, pinned, or the board's) —
+		# the body-overlap test has to see cards in both.
+		if not is_instance_valid(cvis): continue
+		var parent := cvis.get_parent()
+		if parent != play_area.card_layer and parent != play_area.entrance_card_layer: continue
 		var d := vis.global_position - cvis.global_position
 		if absf(d.x) <= reach.x and absf(d.y) <= reach.y:
 			return true
@@ -184,11 +204,15 @@ func _body_over_any_card(vis: PropVisual) -> bool:
 
 ## Copy the prop's live transform/opacity onto one half node (the single fade/scale source); the
 ## half is visible only while the prop is splitting (else the PropVisual draws the whole body).
+## Parented into whichever layer the prop's anchor SLOT belongs to (`card_layer_for`) — the
+## Entrance and the grids no longer share one `CardLayer`, and a half node ordered
+## against the wrong layer's children is meaningless (trap 2).
 func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 	if not half or not is_instance_valid(half): return
-	if half.get_parent() != play_area.card_layer:
+	var layer := play_area.card_layer_for(vis.anchor_coord)
+	if half.get_parent() != layer:
 		if half.get_parent(): half.get_parent().remove_child(half)
-		play_area.card_layer.add_child(half)
+		layer.add_child(half)
 	half.global_position = vis.global_position
 	half.rotation = vis.rotation
 	half.scale = vis.scale
@@ -217,16 +241,19 @@ func _apply_split(vis: PropVisual) -> void:
 	var back := vis.ensure_back()
 	var front := vis.ensure_front()
 	if not back or not front: return
+	# The anchor's OWN layer: the Entrance and the grids no longer share one CardLayer,
+	# and a half ordered against the wrong layer's children brackets nothing (trap 2).
+	var layer := play_area.card_layer_for(vis.anchor_coord)
 	for half : Node2D in [back, front]:
-		if half.get_parent() != play_area.card_layer:
+		if half.get_parent() != layer:
 			if half.get_parent(): half.get_parent().remove_child(half)
-			play_area.card_layer.add_child(half)
+			layer.add_child(half)
 	if not active: return
 	# BACK in the gap between the previous row's last card and this row's first card.
 	var lo := bounds[0]
 	var bi := back.get_index()
 	if bi <= bounds[2] or bi >= lo:
-		play_area.card_layer.move_child(back, (lo - 1) if bi < lo else lo)
+		layer.move_child(back, (lo - 1) if bi < lo else lo)
 	# FRONT in the gap between this row's last card and the next row's first card (bounds
 	# re-read — the back move above may have shifted the whole row by one).
 	bounds = _row_bounds(vis.anchor_coord)
@@ -234,27 +261,28 @@ func _apply_split(vis: PropVisual) -> void:
 	var hi := bounds[1]
 	var fi := front.get_index()
 	if fi <= hi or fi >= bounds[3]:
-		play_area.card_layer.move_child(front, (hi + 1) if fi > hi else hi)
+		layer.move_child(front, (hi + 1) if fi > hi else hi)
 
-## The bracket geometry of slot `v`'s row in CardLayer: [row's first card index, row's last card
-## index, last card index BEFORE the row, first card index AFTER the row] — i.e. the two
-## inter-row gaps _apply_split may place halves in. prev/next default to -1 / child count at the
-## board's edges. Empty when the row has no in-layer visuals (nothing to bracket → unsplit).
-## Held cards are skipped (they ride lifted at the layer's end and would stretch the row bracket
-## over the whole board).
+## The bracket geometry of slot `v`'s row in ITS OWN layer (`card_layer_for`):
+## [row's first card index, row's last card index, last card index BEFORE the row, first card
+## index AFTER the row] — i.e. the two inter-row gaps _apply_split may place halves in. prev/next
+## default to -1 / child count at the board's edges. Empty when the row has no in-layer visuals
+## (nothing to bracket -> unsplit). Held cards are skipped (they ride lifted at the layer's end
+## and would stretch the row bracket over the whole board).
 func _row_bounds(v: BoardCoord) -> Array[int]:
+	var layer := play_area.card_layer_for(v)
 	var lo := 2147483647
 	var hi := -1
 	var in_row : Dictionary[Node, bool] = {}
 	for rv : CardVisual in play_area.row_card_visuals(Vector3i(0, 0, v.h)):
-		if rv.get_parent() != play_area.card_layer or rv.held: continue
+		if rv.get_parent() != layer or rv.held: continue
 		in_row[rv] = true
 		lo = mini(lo, rv.get_index())
 		hi = maxi(hi, rv.get_index())
 	if hi < 0: return []
 	var prev_hi := -1
-	var next_lo := play_area.card_layer.get_child_count()
-	for child : Node in play_area.card_layer.get_children():
+	var next_lo := layer.get_child_count()
+	for child : Node in layer.get_children():
 		var cv := child as CardVisual
 		if not cv or cv in in_row: continue
 		var i := cv.get_index()

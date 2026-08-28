@@ -467,9 +467,11 @@ func test_hoop_back_half_interleaves() -> void:
 	var front : Node2D = vis.front_node if vis else null
 	check(back != null and is_instance_valid(back) and front != null and is_instance_valid(front),
 			"the hoop built both half nodes")
-	check_impl(back != null and back.get_parent() == pa.card_layer
-			and front != null and front.get_parent() == pa.card_layer,
-			"both halves are parented into the STABLE CardLayer (not the card)")
+	# S20b.3: this fixture is Entrance-backed (make_stack_game), so its halves are parented into
+	# the Entrance's OWN card layer now (GAP-010) — not the card, and not the grids' CardLayer.
+	check_impl(back != null and back.get_parent() == pa.entrance_card_layer
+			and front != null and front.get_parent() == pa.entrance_card_layer,
+			"both halves are parented into the STABLE EntranceCardLayer (not the card)")
 
 	var order := dump_draw_order("hoop occupying the row-1 card", pa)
 	var occ_vis : CardVisual = pa.data_card.get(occupied)

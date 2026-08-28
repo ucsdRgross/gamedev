@@ -130,8 +130,13 @@ var data_ui : Dictionary[CardData, Control]
 var data_card : Dictionary[CardData, CardVisual]
 var new_data_card : Dictionary[CardData, CardVisual]
 
-@onready var containers : Array[Control] = [%TopLevelVBox, %UpperZone, %UpperZoneLeft,
-								%UpperZoneRight]
+## ⚠ **`%UpperZone` (an `HSplitContainer`) IS DELIBERATELY NOT IN THIS LIST.** Its "separation"
+## theme constant is the GUTTER RESERVED BETWEEN ITS TWO PANES, not a card-row spacing — matching
+## it to the shared card `separation` pushed `UpperZoneRight` (and every Entrance column) that
+## many pixels off its own left edge, out from under the grid's columns it must x-slave to
+## (measured: 4 px, TP-80k). `UpperZoneLeft` is hidden (`setup_gui`), so the gutter has nothing to
+## separate from and is zeroed there instead.
+@onready var containers : Array[Control] = [%TopLevelVBox, %UpperZoneLeft, %UpperZoneRight]
 @onready var upper_zone_left: VBoxContainer = %UpperZoneLeft
 @onready var upper_zone_right: HBoxContainer = %UpperZoneRight
 @onready var prop_layer: PropLayer = %PropLayer   ## Phase 4 prop-animation surface
@@ -150,6 +155,17 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## popups live here so they render above every card and prop by TREE ORDER — no z_index needed.
 @onready var overlay_layer: Node2D = %OverlayLayer
 
+## **THE PINNED ENTRANCE.** A sibling of `SmoothScrollContainer`, outside the board's scroll, so
+## it never scrolls away vertically: `EntranceStrip` is the fixed, clipped window; `EntranceHTrack`
+## is the wide (board-content-width) track slid in X to mirror the board's own horizontal scroll
+## (`_sync_entrance_x`); `EntranceVScroll` is the Entrance's OWN vertical scroll for a stack
+## deeper than the strip; `EntranceCardLayer` is its OWN card layer — a card layer INSIDE the
+## board's scroll cannot pin, because its cards would scroll away from their own pinned controls.
+@onready var entrance_strip: Control = %EntranceStrip
+@onready var entrance_h_track: Control = %EntranceHTrack
+@onready var entrance_v_scroll: ScrollContainer = %EntranceVScroll
+@onready var entrance_card_layer: Node2D = %EntranceCardLayer
+
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
 	# Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on
@@ -157,6 +173,13 @@ func _ready() -> void:
 	FxAttachment.warm(overlay_layer)
 	setup_gui()
 	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
+	# X-SLAVING RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off like `_process`
+	# above): a board scroll can happen at any time regardless of whether the focus inspector or
+	# a reveal is live, and a ScrollContainer's `scroll_horizontal` can be written directly
+	# (tests, and any future scroll-to code) without reliably firing its scrollbar's
+	# `value_changed` — the same "recompute live, never trust a signal alone" rule every other
+	# per-frame board anchor in this file already follows (`slot_center_global`'s callers).
+	set_physics_process(true)
 
 func setup_gui() -> void:
 	set_separation()
@@ -168,11 +191,64 @@ func setup_gui() -> void:
 	# while the grid centres itself in the same width.
 	upper_zone_left.visible = false
 	upper_zone_right.alignment = BoxContainer.ALIGNMENT_CENTER
+	# The split gutter has nothing to separate now the left pane is hidden -- zero it so
+	# `UpperZoneRight` starts flush with `UpperZone`'s own left edge (see the `containers` note).
+	(%UpperZone as Control).add_theme_constant_override("separation", 0)
 	# The board grows UPWARD out of the Entrance, so the Entrance is the part the player acts on
 	# and it is the bottom of the picture. Anchor the scroll there ON ENTRY -- deferred, because
 	# the containers have not been sized yet at this point and the maximum is still 0.
 	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
+	_apply_entrance_strip_height()
+	_sync_entrance_x()
+
+func _physics_process(_delta: float) -> void:
+	_sync_entrance_x()
+
+## X SLAVED TO THE BOARD'S HORIZONTAL SCROLL (owner spec): the Entrance never scrolls on its own
+## in X, it mirrors whatever the board's own scroll reads, so its columns stay under the grid's.
+##
+## ⚠ **ONE SHARED WIDTH, NOT TWO INDEPENDENT ONES.** Before the Entrance was pinned, `GridContainer`
+## and `UpperZone` were BOTH direct children of the same `TopLevelVBox`, each filling it (default
+## `SIZE_FILL`) — so `TopLevelVBox`'s own width was the max of BOTH their natural (minimum)
+## widths, and THAT shared width is what `GridContainer`'s panels (SIZE_SHRINK_CENTER) and
+## `upper_zone_right` (ALIGNMENT_CENTER) each centred inside — the same box, so their centres
+## agreed. Splitting them into two separate branches loses that unless this reproduces the
+## SAME shared width on both sides: `GridContainer` is stretched to it too (`custom_minimum_size`),
+## exactly mirroring what the old shared VBox parent gave it for free. Using `grid_container.size.x`
+## alone (a NARROWER, already-settled value) left the two centred in different-width boxes and
+## measurably 4 px apart (TP-80k) on a board narrower than an Entrance with more columns than it.
+func _sync_entrance_x() -> void:
+	if not is_instance_valid(entrance_h_track) or not is_instance_valid(scroll_container): return
+	# ⚠ **ANCHORED TO THE GRID'S OWN RESOLVED POSITION, NOT `-scroll_horizontal` FROM ZERO.**
+	# `grid_container` sits inside `SmoothScrollContainer`'s content, which carries its own
+	# internal layout (a ScrollContainer reserves margin the plain `EntranceStrip` chain never
+	# had) -- mirroring the raw scroll delta reproduced the SCROLL, correctly, but not the
+	# CONSTANT offset baked into where the scrolled content starts, which is exactly the same
+	# "control-rect read, not arithmetic" fix `_grid_slot_center_global`'s own panel-origin cache
+	# already made once (measured: 4 px, TP-80k). Reading `grid_container`'s live global position
+	# folds the scroll delta AND that constant in together, correct by construction either way.
+	entrance_h_track.position.x = grid_container.global_position.x - entrance_strip.global_position.x
+	# ⚠ ZERO `grid_container`'s OWN override BEFORE measuring it: `get_combined_minimum_size()`
+	# folds in `custom_minimum_size`, and this function is the only writer of that override — an
+	# un-reset read would fold in LAST call's answer, so `shared_width` could only ever grow
+	# (never shrink back down once an Entrance was briefly wider), converging on a WRONG, sticky
+	# value instead of the two containers' true natural widths.
+	grid_container.custom_minimum_size.x = 0.0
+	var shared_width := maxf(grid_container.get_combined_minimum_size().x,
+			upper_zone_right.get_combined_minimum_size().x)
+	grid_container.custom_minimum_size.x = shared_width
+	entrance_h_track.size.x = shared_width
+
+## The strip's fixed visible height, and the matching reservation carved out of the board's own
+## scroll so the two never overlap on screen. A multiple of one card's height
+## (`entrance_visible_rows`) — re-applied on every settings change since `card_scale` resizes
+## the card the multiple is measured against.
+func _apply_entrance_strip_height() -> void:
+	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
+	var h := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
+	entrance_strip.offset_top = -h
+	scroll_container.offset_bottom = -h
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -186,6 +262,8 @@ func update_gui() -> void:
 	set_separation()
 	set_card_zones_visuals()
 	update_score_controls()
+	_apply_entrance_strip_height()
+	_sync_entrance_x()
 
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
@@ -253,10 +331,12 @@ func grab_cards(datas:Array[CardData]) -> void:
 			var card_visual := data_card[data]
 			card_visual.held = index + 1
 			# Held cards ride ABOVE all resting cards, still below PropLayer (a later sibling of
-			# CardLayer). move_child to the end of CardLayer — no z_index (structural order,
-			# LAYERING.md). ungrab_cards -> rebuild restores row-major order.
-			if card_visual.get_parent() == card_layer:
-				card_layer.move_child(card_visual, -1)
+			# CardLayer). move_child to the end of the card's OWN layer (Entrance or grid) — no
+			# z_index (structural order, LAYERING.md). ungrab_cards -> rebuild restores row-major
+			# order.
+			var vis_layer := card_visual.get_parent()
+			if vis_layer == card_layer or vis_layer == entrance_card_layer:
+				(vis_layer as Node2D).move_child(card_visual, -1)
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -351,6 +431,12 @@ func slot_center_global(coord: BoardCoord) -> Vector2:
 		return _entrance_slot_center_global(coord)
 	return _grid_slot_center_global(coord)
 
+## Which `CardVisual` layer a BOARD COORD's card draws in — `PropLayer`'s split-prop bracketing
+## (`_apply_split`/`_row_bounds`) needs this to move/query the right layer now the Entrance and
+## the grids no longer share one `CardLayer`.
+func card_layer_for(coord: BoardCoord) -> Node2D:
+	return entrance_card_layer if coord.y == BoardCoord.ENTRANCE_ROW else card_layer
+
 ## The Entrance: still backed by `upper_zone`, and still mirrors the container build in
 ## `set_card_zone` / `update_card_zone_visuals` — the Entrance hbox is a direct child of one VBox
 ## at a known, stable offset, so reading its own global position here (unlike a grid panel's) does
@@ -361,7 +447,15 @@ func slot_center_global(coord: BoardCoord) -> Vector2:
 ##   card anchor = slot top + half a card — stacked row strips are thin while the card art hangs a
 ##     full card below its control top.
 func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
+	# ⚠ **THE CONTAINER'S OWN `global_position` STOPS MIRRORING ITS CHILDREN THE MOMENT IT IS
+	# CENTRED** (`ALIGNMENT_CENTER`, set in `setup_gui` so the Entrance lines up with the grid):
+	# the columns start at an offset INSIDE the hbox, and the two disagree by half the slack
+	# (measured: 20 px). The first column's own `global_position` already carries that
+	# offset, so read it directly instead of teaching this formula the alignment math. Falls back
+	# to the container's own position for an entrance with no columns built yet.
 	var origin := upper_zone_right.global_position
+	if upper_zone_right.get_child_count() > 0:
+		origin = (upper_zone_right.get_child(0) as Control).global_position
 	var width := CardVisual.card_size_play.x
 	var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
 	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
@@ -456,6 +550,10 @@ func set_card_zones_visuals() -> void:
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_grid_zone_visuals(game_state)
 	_order_board_cards(game_state)
+	# Re-sync now too (not just every physics frame): a caller that reads Entrance geometry
+	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
+	# a stale track width from before this rebuild's grid changed size.
+	_sync_entrance_x()
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	var card_columns := type.size()
@@ -495,6 +593,16 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 		for j in range(1, vbox.get_child_count()):
 			_bind_slot(vbox.get_child(j) as Control, datas[i].datas[j-1])
 
+## Which `CardVisual` layer a slot control's card belongs in — the Entrance's own pinned layer
+## if `c` lives under `upper_zone_right`, the board's otherwise. Walking `c`'s own ancestry (not
+## a caller-supplied flag) means every call site stays exactly as it was (REUSE — no new params).
+func _target_card_layer(c: Control) -> Node2D:
+	var n : Node = c
+	while n:
+		if n == upper_zone_right: return entrance_card_layer
+		n = n.get_parent()
+	return card_layer
+
 ## Register one board control <-> CardData mapping and carry over (or create) its CardVisual.
 func _bind_slot(c: Control, connected_data: CardData) -> void:
 	ui_data[c] = connected_data
@@ -507,12 +615,22 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	# uninteractable and survives undo (owner bug report).
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
+	var target_layer := _target_card_layer(c)
 	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
-		new_data_card[connected_data] = data_card[connected_data]
-		new_data_card[connected_data].control_anchor = c
+		var vis := data_card[connected_data]
+		new_data_card[connected_data] = vis
+		vis.control_anchor = c
+		# A CARD MOVED BETWEEN LAYERS (Entrance <-> grid — a placement or an undo of one): a
+		# pooled visual does not follow its card between layers on its own, so reparent
+		# it here. Guarded on a non-null parent: a visual created THIS rebuild is still awaiting
+		# its own deferred add_child into its CREATION layer (CardVisual.add_child_card_visual) —
+		# reparenting something with no parent yet is an ENGINE ERROR, not a no-op, and it will
+		# land correctly in that layer already, so nothing to do until the NEXT rebuild.
+		if vis.get_parent() != target_layer and vis.get_parent() != null:
+			vis.reparent(target_layer)
 	else:
 		new_data_card[connected_data] = CardVisual.add_child_card_visual(
-			card_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
+			target_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
 
 ## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
 ## (owner spec): per zone, the type/zone headers first, then row 0 of every column,
@@ -531,25 +649,41 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 ## via call_deferred, so they aren't in CardLayer yet — skipped; they append in creation order
 ## and the next rebuild slots them. Held/selected cards keep their lifted end-of-layer spot
 ## (grab_cards); prop half nodes drift toward the end and PropLayer re-fixes them next frame.
+## ⚠ **TWO LAYERS, TWO INDEPENDENT ORDERINGS.** A `move_child` index only
+## means anything inside the layer that holds the child. The Entrance now lives in its OWN
+## `EntranceCardLayer`, pinned outside the board's scroll (`_bind_slot`), so its cards can never
+## share one ordered list / `seen` set / `pending` flag with the grids' `CardLayer` — a visual
+## that is (correctly) parented in the OTHER layer would read as a deferred add that never lands,
+## and the reorder would requeue itself every frame until the stack overflowed. Measured, twice.
 func _order_board_cards(game_state: GameData) -> void:
-	var ordered : Array[CardVisual] = []
-	var seen : Dictionary[CardVisual, bool] = {}
-	var pending : Array[bool] = [false]
-	_append_zone_row_major(ordered, seen, pending, game_state.upper_zone_type, game_state.upper_zone)
-	# Grids last: they are the board, and they draw over what is left of the legacy zones.
-	_append_grids_row_major(ordered, seen, pending, game_state.grids)
-	for i : int in ordered.size():
-		var vis := ordered[i]
-		if vis.get_index() != i:
-			card_layer.move_child(vis, i)
+	var entrance_ordered : Array[CardVisual] = []
+	var entrance_seen : Dictionary[CardVisual, bool] = {}
+	var entrance_pending : Array[bool] = [false]
+	_append_zone_row_major(entrance_ordered, entrance_seen, entrance_pending, entrance_card_layer,
+			game_state.upper_zone_type, game_state.upper_zone)
+	_apply_layer_order(entrance_card_layer, entrance_ordered)
+
+	var grid_ordered : Array[CardVisual] = []
+	var grid_seen : Dictionary[CardVisual, bool] = {}
+	var grid_pending : Array[bool] = [false]
+	_append_grids_row_major(grid_ordered, grid_seen, grid_pending, card_layer, game_state.grids)
+	_apply_layer_order(card_layer, grid_ordered)
+
 	# Freshly created CardVisuals enter the tree via call_deferred and were skipped above — but
 	# their creation order is COLUMN-major, so without a follow-up pass a fresh board keeps the
 	# wrong row order until some unrelated rebuild happens (which nothing guarantees: hoop halves
 	# then bracketed scattered indices — back arcs behind the row above, owner report).
 	# Queue exactly ONE re-order behind the pending add_childs (deferred FIFO: adds run first).
-	if pending[0] and not _reorder_queued:
+	if (entrance_pending[0] or grid_pending[0]) and not _reorder_queued:
 		_reorder_queued = true
 		_deferred_reorder.call_deferred()
+
+## Apply one layer's ordering with `move_child` calls confined to THAT layer alone.
+func _apply_layer_order(layer: Node2D, ordered: Array[CardVisual]) -> void:
+	for i : int in ordered.size():
+		var vis := ordered[i]
+		if vis.get_index() != i:
+			layer.move_child(vis, i)
 
 var _reorder_queued := false
 
@@ -558,47 +692,49 @@ func _deferred_reorder() -> void:
 	var game := CardEnvironment.get_current_game()
 	if game: _order_board_cards(game.state)
 
-## Append one zone's CardVisuals in row-major order: headers (row -1), then each row across all
-## columns (ragged columns simply skip the rows they don't have). `pending[0]` flips true when a
-## visual exists but is not yet in CardLayer (deferred add) — the caller re-orders once it lands.
-## The grid half of the board's draw order, mirroring `_append_zone_row_major`: a cell's zone card
-## first, then the stacks height-major, so a card always draws OVER the cell it sits on and a
-## whole height layer stays contiguous for PropLayer's brackets.
+## Append one zone's CardVisuals in row-major order, scoped to `layer`: headers (row -1), then
+## each row across all columns (ragged columns simply skip the rows they don't have). `pending[0]`
+## flips true when a visual belongs in `layer` but is not yet parented there (deferred add still
+## in flight) — the caller re-orders once it lands.
+func _append_zone_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
+		pending: Array[bool], layer: Node2D, type: Array[CardData],
+		datas: Array[ArrayCardData]) -> void:
+	var max_rows := 0
+	for col : ArrayCardData in datas:
+		max_rows = maxi(max_rows, col.datas.size())
+	for data : CardData in type:
+		_append_ordered_visual(out, seen, pending, layer, data)
+	for z : int in max_rows:
+		for i : int in datas.size():
+			if z < datas[i].datas.size():
+				_append_ordered_visual(out, seen, pending, layer, datas[i].datas[z])
+
+## The grid half of the board's draw order, mirroring `_append_zone_row_major`, scoped to `layer`:
+## a cell's zone card first, then the stacks height-major, so a card always draws OVER the cell it
+## sits on and a whole height layer stays contiguous for PropLayer's brackets.
 ##
 ## ⚠ Without this, grid cards were never assigned an index at all -- they kept creation order, and
 ## a cell frame rebuilt after its card drew on top of it.
 func _append_grids_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
-		pending: Array[bool], grids: Array[GridData]) -> void:
+		pending: Array[bool], layer: Node2D, grids: Array[GridData]) -> void:
 	for grid : GridData in grids:
 		if not grid: continue
 		for data : CardData in grid.cell_types:
-			_append_ordered_visual(out, seen, pending, data)
+			_append_ordered_visual(out, seen, pending, layer, data)
 		var max_h := 0
 		for cell : ArrayCardData in grid.cells:
 			max_h = maxi(max_h, cell.datas.size())
 		for h : int in max_h:
 			for ci : int in grid.cells.size():
 				if h < grid.cells[ci].datas.size():
-					_append_ordered_visual(out, seen, pending, grid.cells[ci].datas[h])
-
-func _append_zone_row_major(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
-		pending: Array[bool], type: Array[CardData], datas: Array[ArrayCardData]) -> void:
-	var max_rows := 0
-	for col : ArrayCardData in datas:
-		max_rows = maxi(max_rows, col.datas.size())
-	for data : CardData in type:
-		_append_ordered_visual(out, seen, pending, data)
-	for z : int in max_rows:
-		for i : int in datas.size():
-			if z < datas[i].datas.size():
-				_append_ordered_visual(out, seen, pending, datas[i].datas[z])
+					_append_ordered_visual(out, seen, pending, layer, grid.cells[ci].datas[h])
 
 func _append_ordered_visual(out: Array[CardVisual], seen: Dictionary[CardVisual, bool],
-		pending: Array[bool], data: CardData) -> void:
+		pending: Array[bool], layer: Node2D, data: CardData) -> void:
 	if data in selected_cards: return   # held cards stay lifted at the layer's end
 	var vis : CardVisual = data_card.get(data)
 	if vis == null or not is_instance_valid(vis): return
-	if vis.get_parent() != card_layer:
+	if vis.get_parent() != layer:
 		pending[0] = true   # deferred add still in flight; re-order once it lands
 		return
 	if vis in seen: return
