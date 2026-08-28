@@ -120,10 +120,6 @@ lettered steps by hand when closing a gap.
 - id: S19
   description: 'THE REBUILD: rules1 becomes the grid game; six suites follow it.'
   status: done
-  notes: >
-    Uncovered four defects: on_game_start reached NO rules card (a sweep must run first, so a new
-    show had ZERO grids); nothing connected the economy to the goal (unwinnable at any score); the
-    end-of-show sweep skipped grid cells; a placement never opened a fresh activation budget.
 - id: S35
   description: 'Every placement one undo step; scores rewind with the board.'
   status: done
@@ -140,13 +136,9 @@ lettered steps by hand when closing a gap.
 - id: S37
   description: 'validate() grid aliasing invariants; headless/viewed parity gate.'
   status: done
-  notes: 'TP-128 red-proved with a one-line `if view:` in the scoring path — only that check saw it.'
 - id: S37b
   description: 'The closing pass: adversarial review, /simplify, /docs.'
   status: done
-  notes: >
-    Found three player-facing defects no diff-read would have: the End button never ended the
-    show, the HUD showed a permanent zero, and a rejected placement stranded a replay marker.
 - id: S19b
   description: 'The legacy coordinate migration — SUPERSEDED, folded into S20b by GAP-009.'
   status: superseded
@@ -235,11 +227,10 @@ owner's call), Phase 10 (documentation).
 
 ## The card effect API — a suite gate enforces it
 
-A card modifier may NOT touch `Game`, `GameData` or `Board` directly. Everything goes through
-`CardEffectApi`, reached as `CardModifier.api`; `CardModifier.game` is REMOVED, and a gate fails on
-any `game.` / `Game.` / `GameData` / `Board.` inside a modifier, identified by its `extends` base.
-⚠ **Extending the layer is the sanctioned move** when a card needs something it does not expose —
-add the method with a `##` comment. See `design/card-effect-api/DESIGN.md`.
+A card modifier may NOT touch `Game`, `GameData` or `Board` directly — everything goes through
+`CardEffectApi` as `CardModifier.api`, and a suite gate fails on any direct reference inside a
+modifier. ⚠ **Extending the layer (with a `##` comment) is the sanctioned move** when a card needs
+something it does not expose. See `design/card-effect-api/DESIGN.md`.
 
 ## Gaps — ten filed, ten answered
 
@@ -273,52 +264,98 @@ not on rules-deck cards), **GAP-009** (the grid view REPLACES the play area, and
   left of (grid 1, x 0) is (grid 0, x 4)"*. At width 5 it is ONE column left. Both cases are
   asserted in the tests; the design docs were left unedited.
 
-## Files touched
-
-`git diff --stat 69eee09..HEAD`. New product: `Scripts/{board_coord,grid_data,grid_cell_walk,line_geometry,card_effect_api}.gd`;
-`Cards/Types/type_grid_cell.gd`; `Cards/Skills/Rules/{skill_line_detector,skill_grid_allotment,skill_grid_creator}.gd`.
-New suites: `Tests/Engine/{test_grid_board,test_line_detect,test_grid_economy,test_grid_cards}.gd`,
-`Tests/UI/test_grid_layout.gd`; fixtures in `Tests/Support/test_grid_fixtures.gd`.
-
 ## Next up
 
 1. **`S20b.2b`** — the coordinate migration. Unblocks props, `S20b.3` and the fixture rebuild.
 2. **`S20b.3` + `S20b.4`** — together, never separately (GAP-010).
 3. **`S20c`** — retire the act.
 
-```
-Continue the poker-patience grid view in the worktree
-C:\Users\khanr\Documents\GitHub\gamedev-poker-patience (branch `poker-patience`).
-The repo's no-commit rule is REVERSED here: commit after every step whose done-when you
-verified yourself, one step per commit.
+Below is the opening prompt for the next session. It assumes `/plan-run` — an overseer that holds
+the plan and never reads code, plus implementer subagents that hold the code and never hold the plan.
 
-Read solatro/HANDOFF_poker_patience.md first — it is the live ledger and it is
-self-contained. design/poker-patience/PLAN.md and design/grid-view/DESIGN.md are the
-authority on behaviour; where they and the handoff disagree, the design wins.
+```
+Continue the poker-patience GRID VIEW as OVERSEER, using /plan-run.
+
+WORKTREE: C:\Users\khanr\Documents\GitHub\gamedev-poker-patience  (branch `poker-patience`)
+The repo's no-commit rule is REVERSED for you on this branch: commit after every step whose
+done-when YOU verified, one step per commit. Commits are the only rollback points and a long
+run loses sessions to API limits. Implementer subagents never commit, stage or stash.
+
+START HERE, in this order:
+  1. solatro/HANDOFF_poker_patience.md — the live ledger, self-contained, ~330 lines. It
+     carries the state, the environment traps, the ledger, the open bugs and what is next.
+  2. solatro/design/poker-patience/PLAN.md §3 (the steps) and §1 (normative contracts).
+  3. solatro/design/grid-view/DESIGN.md — the VIEW's own design: 41 answered questions and
+     six confirmed charts (J building, K the cell and row band, L the Entrance, M the
+     coordinate seam, N focus and input, P what is retired). Its steps live in PLAN.md as
+     S20b/S20c; there is deliberately no separate plan under design/grid-view/.
+  4. The gap files. TEN are filed and ALL TEN are answered; the answers are quoted verbatim
+     at the top of each and OUTRANK PLAN.md and NAMES.md because they are newer.
+     ⚠ Read design/grid-view/gaps/GAP-010.md BEFORE touching the Entrance.
+  5. solatro/design/card-effect-api/DESIGN.md — a card modifier may NOT touch Game, GameData
+     or Board directly; everything goes through CardEffectApi as CardModifier.api, and a
+     suite gate ENFORCES it. Extending the layer (with a ## comment) is the sanctioned move.
 
 GROUND TRUTH BEFORE TRUSTING ANY `done`:
     cd C:\Users\khanr\Documents\GitHub\gamedev-poker-patience
     GODOT_BIN="C:/Users/khanr/Desktop/Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 400
-  Expect ALL 43 SUITES, zero failures. Judge by the failure SET, never the check total, and
-  check the SUITE COUNT — a suite that fails to compile silently drops out.
+  Expect ALL 43 SUITES, zero failures. Last verified: 3442 CHECKS PASSED at commit d9ad559,
+  tree clean, 0 script errors, 0 engine errors.
 
-Next task is S20b.2b, the coordinate migration. Then S20b.3 and S20b.4 TOGETHER — read
-design/grid-view/gaps/GAP-010.md first, it records two failed attempts and exactly why.
+THE WORK, in this order:
+  S20b.2b — THE COORDINATE MIGRATION, and do it first: S20b.3, S20b.4 and the test-fixture
+        rebuild all depend on it. slot_center_global takes a BoardCoord and nothing else; the
+        legacy Vector3i board position retires; the prop routes follow it (a row's route is
+        that row's cells IN ONE GRID, left to right — chart M5/M6). Product surface is EIGHT
+        call sites; the other 58 references are tests and move mechanically. This is what
+        makes a scored grid line fire props again.
+  S20b.3 + S20b.4 — TOGETHER, never separately. Pin the Entrance outside the board's scroll
+        with its own layer and its own vertical scroll, x slaved to the board; delete
+        lower_zone and the legacy zone rendering; rebuild the fixtures ONTO GRIDS.
+        ⚠ S20b.3 has been attempted twice and backed out twice. GAP-010 records why.
+  S20c — retire the act: Game.submit, _perform_submit and the Next button.
+  Then PLAN.md §3 governs: S21-S25 (the flipped board — where cards start stacking UPWARD),
+  Phase 6, Phase 7. Phase 9 is the owner's call; Phase 10 is last.
+
+ENVIRONMENT TRAPS — all in the handoff, and each cost real time:
+  - Godot here is 4.7.2; machine-profiles.md says 4.7.1 and is STALE.
+  - A new `class_name` referenced from an existing script HANGS the suite rather than failing
+    to parse. Fix: `--headless --path . --import`. Always pass --timeout so a hang fails fast.
+  - `export PYTHONIOENCODING=utf-8` before any python heredoc, or the console encoding kills
+    the script MID-EDIT and leaves a source file half-written.
+  - ⚠ CHECK THE LOG'S MTIME. godot.log is overwritten by whichever process wrote last,
+    including your own runs.
+  - ⚠ A banner reading "N FAILED (0 behavior, 0 implementation)" is NOT a check failure — it
+    is an unexpected engine error. Read the newest log's backtrace. This run hit 1041 of them.
 
 NON-NEGOTIABLES that caught real defects on this stream:
-- RED-THEN-GREEN for every new test, and check the red run failed the checks you EXPECTED.
-- Verify visuals BY EYE: render res://Tests/Visual/reveal_shot.tscn and look at the PNG.
-  A green test is not evidence about pixels.
-- Call check_all_tests_registered() from a new suite's _ready, and name tests run_*_test —
-  the gate only recognises that form.
-- No design ids (Q123, GAP-004, step ids) in product code. Tests/ is exempt.
-- REUSE, don't reinvent — search for an existing helper first.
+  - RED-THEN-GREEN for every new test, and check the red run failed the checks you EXPECTED.
+    Do the red runs YOURSELF; never accept a self-reported green.
+  - VERIFY VISUALS BY EYE. Render `res://Tests/Visual/reveal_shot.tscn` and LOOK at the PNG.
+    A green test is not evidence about pixels — and looking is what found the End button that
+    never ended the show, the HUD stuck at zero, and a "PATIENCE 3/3" label no grep could see.
+  - AT EVERY PHASE BOUNDARY: read the diff, run an adversarial review tracing what a PLAYER
+    does, and run `py .claude/tools/doc_check.py --changed`. The adversarial pass has the
+    highest yield of anything here.
+  - Every step brief names THE CALL SITE — "what calls this, and what breaks if it is
+    deleted?" Never accept `done` on a component whose consumer does not exist.
+  - Call check_all_tests_registered() from a new suite's _ready, and name tests `run_*_test` —
+    the gate only recognises that form. Check the SUITE COUNT: a suite that fails to compile
+    silently drops out. Judge by the failure SET, never the check total.
+  - NO design ids (Q123, GAP-004, step ids) in product code, including @export_group labels.
+    Tests/ is exempt. This stream added zero; keep it that way.
+  - REUSE, don't reinvent (owner's standing instruction) — search for an existing helper first.
+  - Subagents reliably exhaust their turns on a whole step. Split them: the agent does
+    production code plus the mechanical tests; YOU write the intricate/gate tests and run all
+    red-then-green. Never leave a step half-applied.
 
-If you hit a decision no document fixes: file a gap at design/<slug>/gaps/GAP-NNN.md
-following GAP-001's shape, park that thread, keep working the unaffected ones, tell the
-owner. Do NOT resolve a gap by picking an answer.
+If you hit a decision no document fixes: file a gap at solatro/design/<slug>/gaps/GAP-NNN.md
+following GAP-001's shape, lettered options in questionnaire grammar. Park that thread, keep
+working the unaffected ones, tell the owner — and QUOTE the gap's own option text when you do.
+A bug is not a gap: if exactly one choice is defensible it is a defect, so fix it and record it.
+Do NOT resolve a gap by picking an answer.
 
-Use /handoff to keep this file current — and PRUNE it; it is capped at ~300 lines.
+Use /handoff to keep the ledger current — and PRUNE it; it is capped at ~300 lines.
 ```
 
 ## References
