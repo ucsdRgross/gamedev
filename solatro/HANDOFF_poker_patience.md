@@ -61,6 +61,15 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
 - ⚠ **Judge by the failure SET, never the check total** — the total varies run to run. And read the
   log for `SCRIPT ERROR` and check the SUITE COUNT even when the banner says all passed: a suite
   that fails to compile silently drops out (measured: 43 → 41, twice).
+- ⚠⚠ **A KILLED SUITE POISONS `user://` AND LATER RUNS THEN HANG WITH NO BANNER.** Suites park the
+  real save and the real SETTINGS and restore them at the end; a run killed by `--timeout` never
+  reaches the restore, so TEST values become the live `user://settings.tres`. Measured: after
+  several timed-out runs the live settings held `act_event_cap = 60` (test_line_detect),
+  `booster_reroll_pool = 0` (test_ui_viewers) and `wall_selection_repeat_delay = 0.05`
+  (test_wall_input) — and a tree that had been green all session stopped producing a banner at all,
+  at an UNCHANGED commit. **Before blaming your own diff for a no-banner run, check
+  `user://settings.tres` for test values and `user://run_save/` for a leftover `*.testbak`.**
+  The save backup is self-healing (`backup_real_save` restores first); the SETTINGS are not.
 - ⚠ **NEVER RUN TWO SUITES AT ONCE, and never background one.** Two Godot processes write the same
   log, and the console banner and the log banner then DISAGREE (measured: console "3465 CHECKS
   PASSED" against the log's "3 FAILED"). Check no `Godot_v4.7.2-stable_win64_console` process is
@@ -295,8 +304,8 @@ lettered steps by hand when closing a gap.
     QUERIES so nothing is zone-indexed; it does not ship the un-designed grid band growth.
 - id: S21
   description: >
-    Upward stacks, shared bottom edge, rows pushed up (E7-E11, PLAN.md 1.8). ATTEMPTED AND BACKED
-    OUT -- the diff is parked at `solatro/S21_WIP.patch`, and the tree is green without it.
+    Upward stacks, shared bottom edge, rows pushed up (E7-E11, PLAN.md 1.8). ATTEMPTED TWICE AND
+    PARKED at `solatro/S21_WIP.patch`. Most of it is verified; see notes for exactly what.
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd,
     solatro/Tests/UI/test_grid_layout.gd]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
@@ -309,6 +318,16 @@ lettered steps by hand when closing a gap.
     pushes the rows ABOVE it up) and, as a knock-on, the 3 grid hoop-split checks. Backed out
     rather than left failing.
   notes: >
+    ⚠ **THE OWNER'S STRUCTURAL RULING, AND IT IS IN THE PATCH.** Verbatim: *"it might be useful to
+    have each row be its own container to prevent cards overlapping into new zones ... we want to
+    be as similar to original play area code as possible, just reversed and with more rows that
+    should act independent of other rows while making sure each row's zones are always the same
+    y."* So: the panel is a VBox of one HBox PER ROW (not a `GridContainer`), each cell a VBox that
+    is `SIZE_SHRINK_END` inside its row. A `GridContainer` gives every cell the row's full height,
+    so a cell has nothing to bottom-align against; a row of its own is the original zone's shape
+    turned 90 degrees. VERIFIED by eye (5 grid rows + the Entrance, cards on their own cells) and
+    by two new checks: one row container per grid row, and every cell in a row sharing one bottom
+    line.
     ⚠ **WHAT IS ALREADY SOLVED, IN THE PATCH.** The cell stack is bound and sized in reverse
     (topmost card takes the FIRST control), `CardVisual.bottom_anchored` makes a grid card hang
     from its control's BOTTOM edge while the Entrance still hangs from control tops, and
@@ -323,9 +342,19 @@ lettered steps by hand when closing a gap.
     slid 36 px while those above rose the remaining 4, which was all the slack left.
     (3) Sticking the scroll to the bottom on rebuild changed the numbers not at all; that path was
     not reached or not effective, and was NOT diagnosed.
-    ⚠ **THE NEXT ATTEMPT SHOULD START BY LOOKING, NOT BY INFERRING.** Four layout mechanisms were
-    changed in a row on reasoning alone; the render (`Tests/Visual/grid_layer_shot.tscn`) answered
-    more in one pass than all four. Do that FIRST.
+    ⚠ **THE PANEL BOTTOM MUST BE DERIVED, NOT CACHED FROM A RECT.** The cached ORIGIN is fresh,
+    but the cached SIZE is not -- measured at 330 against a real 310, so the board read as sliding
+    DOWNWARD as it filled. `resized`, `item_rect_changed` and `sort_children` were each tried and
+    each missed it. `origin.y + <height the DATA implies>` has no such gap.
+    ⚠ **AND THAT DERIVATION MUST BE MEMOISED ON `state.revision`.** `slot_center_global` runs for
+    every card and prop EVERY frame; an O(rows x cols) cell scan per call collapsed the frame rate
+    until awaited placement animations stopped finishing -- which presents as a HANG with no error.
+    ⚠ **DO NOT REFRESH A RECT CACHE FROM `_physics_process`.** Reading panel rects every frame feeds
+    the relayout that the floor code writes into, and the board never settles.
+    ⚠ **THE NEXT ATTEMPT SHOULD START BY LOOKING, NOT BY INFERRING.** Several layout mechanisms
+    were changed in a row on reasoning alone; one render (`Tests/Visual/grid_layer_shot.tscn`, with
+    a temporary print of control-vs-arithmetic y per card) answered more than all of them. Do that
+    FIRST. When the cache is fresh the two agree EXACTLY -- every settled card measured d = 0.0.
     ⚠ **A BUG THE OWNER CAUGHT BY EYE MID-RUN, and its fix is IN the patch:** once cards hang from
     control bottoms, the cell's own frame -- a control that collapses to zero height when a card
     covers it -- drew a full card ABOVE its cell, landing frames on the row above and reading as a
