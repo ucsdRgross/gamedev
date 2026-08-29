@@ -314,126 +314,59 @@ lettered steps by hand when closing a gap.
     inverted, Entrance at y == -1 pushing the board up". This sub-step ports the KEY and the
     QUERIES so nothing is zone-indexed; it does not ship the un-designed grid band growth.
 - id: S21
-  description: >
-    Upward stacks, shared bottom edge, one container per row (E7-E10, PLAN.md 1.8). LANDED except
-    E11/Q307, which wait on the floor -- see S21floor.
-  files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd,
-    solatro/Tests/UI/test_grid_layout.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'Upward stacks, shared bottom edge, one container per row, the board floor (E7-E11).'
   status: done
-  evidence: >
-    ALL 44 SUITES: 3586 CHECKS PASSED, console and log agreeing. RED first, and the failure set was
-    exactly the flip: y INCREASED with h (154/174/194), and across the whole settings sweep the
-    gaps were negative and correctly scaled (-10 / -20 / -50 by card scale). BY EYE
-    (grid_occupied.png): five grid rows plus the Entrance -- the six the owner said it should be --
-    cards on their own cells, and the stacked cell visibly rising above its neighbours.
   notes: >
-    ⚠ **OWNER'S STRUCTURAL RULING: ONE CONTAINER PER ROW.** Verbatim: *"it might be useful to have
-    each row be its own container to prevent cards overlapping into new zones ... we want to be as
-    similar to original play area code as possible, just reversed and with more rows that should
-    act independent of other rows while making sure each row's zones are always the same y."* A
-    `GridContainer` gives every cell the row's full height, so a cell has nothing to bottom-align
-    against; a row of its own is the original zone's shape turned 90 degrees, and cells
-    `SIZE_SHRINK_END` inside it are what keep a row's zone cards on ONE y.
+    ⚠ **ONE CONTAINER PER ROW** (owner ruling), not a `GridContainer`: a GridContainer gives every
+    cell the row's full height, so a cell has nothing to bottom-align against. A row of its own is
+    the original zone's shape turned 90 degrees, and cells `SIZE_SHRINK_END` inside it are what keep
+    a row's zone cards on ONE y.
     ⚠ **THE CELL'S OWN FRAME IS THE LAST CHILD OF THE SLOT.** It marks the CELL, which sits on the
-    row's bottom line and does not rise with the stack. Left first, it drew a full card ABOVE an
-    occupied cell (its control collapses to zero height once covered), putting frames on the row
-    above -- which reads as a whole extra row of them. Owner found that by eye, mid-run.
-    ⚠ **THE PANEL BOTTOM IS DERIVED, NEVER CACHED FROM A RECT.** The cached ORIGIN is fresh; the
-    cached SIZE is not (330 against a real 310), and the board then read as sliding downward as it
-    filled. `resized`, `item_rect_changed` and `sort_children` each miss the move.
-    ⚠ **AND THE DERIVATION IS MEMOISED ON `state.revision`.** `slot_center_global` runs for every
-    card and prop EVERY frame; an O(rows x cols) cell scan per call collapsed the frame rate until
-    awaited animations stopped finishing -- which presents as a HANG with no error, not slowness.
-    ⚠ Do NOT refresh a rect cache from `_physics_process`: it feeds the relayout the floor code
-    writes into and the board never settles.
-- id: S21floor
-  description: >
-    E11/Q307: give the board a fixed FLOOR so a deepening stack raises the rows above it instead of
-    pushing the ones below it down, then restore the three assertions to TP-83.
-  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_layout.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: >
-    `_give_the_board_a_floor` pins the bottom ONLY while the board fits the window
-    (`ALIGNMENT_END` on TopLevelVBox -- ⚠ `size_flags_vertical` does nothing here, a VBox allots
-    each child exactly its minimum height so there is no slack to align inside). Past that the
-    content grows and rows below a deepened one slide down: measured +36 px down while the rows
-    above rose the 4 px of slack that was left.
-    ⚠ MEASURED AND STILL UNEXPLAINED: with a card added, the panel's own rect did NOT change
-    (top 244, height 310 before and after) while row bottoms DID move. Start there, and start by
-    RENDERING with a temporary print of panel top/height and row bottoms -- one such print answered
-    more than four rounds of reasoning did.
-    ⚠ TP-83's three assertions were REMOVED rather than left red: a test for a feature nobody is
-    building this session is a test written too early, and `warn()` is explicitly not for
-    "this is broken". The note in `run_a_row_shares_one_bottom_edge_test` says what to put back.
+    row's bottom line and does not rise with the stack. First, it drew a full card ABOVE an occupied
+    cell and put frames on the row above.
+    ⚠ **THE FLOOR COMES FROM `TopLevelVBox`, VIA `ALIGNMENT_END`** — NOT `size_flags_vertical`, which
+    has no slack to align inside. Every panel is bottom-aligned against that one line, and unlike a
+    panel it does not move when a stack deepens, so caching it is safe. A per-PANEL rect cache lagged
+    a whole depth pitch and slid every row on the board.
+    ⚠ **DO NOT REFRESH A RECT CACHE FROM `_physics_process`** if the floor code writes to that rect:
+    the board never settles. `_board_floor_y` reads ONE control the floor code does not write per
+    frame, which is why it is safe there.
+    ⚠ **A TEST MUST WAIT FOR THE GEOMETRY TO STOP MOVING** (`_settle_layout`), not for a frame count:
+    a container sorts its children a frame after the rebuild that changed them.
 - id: S22
-  description: >
-    The reveal inverted and shared: a grid row EASES into its new height on the reveal's own clock,
-    and the Entrance is row -1 whose height raises the board (E12, E13, Q75, Q77, Q313).
-  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_layout.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'A grid row EASES into its height; the Entrance is row -1 and raises the board.'
   status: done
-  evidence: >
-    ALL 44 SUITES: 3575 CHECKS PASSED, console and log agreeing; GRID LAYOUT 43/43, VISUAL LAYERS
-    209/209. RED taken by neutralising `_layer_arrival` to a constant rather than by reverting the
-    file -- the old code has no `_layer_grown` at all, so a plain revert dropped the suite to 43 and
-    proved nothing. Neutralised, the failures were exactly the three expected: no growth
-    registered, nothing caught mid-flight, and the row stuck at 54 where 74 was due.
   notes: >
-    ⚠ **GROWTH IS TRACKED SEPARATELY FROM THE REVEAL, ON THE SAME CLOCK** (`Q75`=a). `_layer_grown`
-    shares `_row_open`'s key shape and easing, but NOT its semantics: a reveal opens and then
-    CLOSES, and `set_reveal_cards` REPLACES its wanted-set every section -- growth living in there
-    would be closed by the next section and the row would shrink under a card still sitting on it.
-    Arrived height is permanent, so an entry is erased at 1 and an absent key reads as arrived.
-    ⚠ **`Q77`=b RECONCILES WITH TP-87 ONCE YOU READ WHAT BOTH RESTATE.** The re-derived guard asks
-    whether the STACK has the height to contribute, not whether anything sits above it. Guarding on
-    "is there a row above" is the misreading, and TP-87 is exactly that case: a row with nothing
-    above it still grows.
-    ⚠ **THE VISIBLE STRIP AND THE ENTRANCE'S OWN HEIGHT ARE TWO DIFFERENT NUMBERS.** Making the
-    strip track the Entrance's depth re-lays out everything anchored INSIDE it -- measured as a
-    prop drifting 4 px off its slot mid-reveal and an Entrance slot moving 17 px between cycles.
-    The strip stays the player's setting; only the FLOOR clears the Entrance's real height.
-    ⚠ **A ROW'S EASED HEIGHT CANNOT USE THE REVISION MEMO** -- while anything is easing the height
-    is a function of time, and the memo froze the animation on its first frame. An idle board still
-    takes the cached path.
-    ⚠ **ONLY AN ENTRANCE KEY NEEDS THE CONTROL PASS.** A grid row's height is resolved by its own
-    containers; running `_apply_row_openings` for a grid key rewrites the Entrance's strips for
-    nothing and drifts what is anchored to them.
+    ⚠ **GROWTH IS TRACKED SEPARATELY FROM THE REVEAL** (`_layer_grown`), sharing its key shape and
+    clock but not its semantics: a reveal opens and then CLOSES, and `set_reveal_cards` REPLACES its
+    wanted-set every section — growth living there would shrink a row under a card still on it.
+    Arrived height is permanent; an entry is erased at 1 and an absent key reads as arrived.
+    ⚠ **`Q77`=b RECONCILES WITH TP-87**: the re-derived guard asks whether the STACK has the height
+    to contribute, not whether anything sits above it. A row with nothing above it still grows.
+    ⚠ **THE VISIBLE STRIP AND THE ENTRANCE'S OWN HEIGHT ARE TWO DIFFERENT NUMBERS.** Making the strip
+    track the Entrance's depth re-lays out everything anchored INSIDE it (a prop drifted 4 px, an
+    Entrance slot moved 17). The strip stays the player's setting; only the FLOOR clears the real
+    height.
+    ⚠ **AN EASED ROW HEIGHT CANNOT USE THE REVISION MEMO** — while easing it is a function of time,
+    and the memo froze the animation on its first frame. An idle board still takes the cached path.
+    ⚠ **ONLY AN ENTRANCE KEY NEEDS THE CONTROL PASS**; a grid row's height is resolved by its own
+    containers.
 - id: S23
-  description: >
-    THE SPRING: a jumping card lifts the whole stack above it rigidly, overlapping the rows above
-    rather than re-flowing them, and a hoop rides the card that jumped (E14-E16, Q310-Q312).
-  files_touched: [solatro/Cards/card_visual.gd, solatro/UI/play_area.gd, solatro/UI/prop_layer.gd,
-    solatro/Tests/UI/test_grid_layout.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'THE SPRING: a jump lifts the stack above it rigidly, overlapping rather than re-flowing.'
   status: done
-  evidence: >
-    ALL 44 SUITES: 3604 CHECKS PASSED, console and log agreeing; GRID LAYOUT 53/53. RED taken by
-    stubbing out only the rider loop: the jumping card lifted -11.9 while the stack above it stayed
-    at 0.0, which is exactly the claim.
   notes: >
-    ⚠ **THE BOARD KNOWLEDGE LIVES IN `PlayArea.jump_card_with_its_stack`, NOT IN `CardVisual`.** A
-    card visual cannot know what is stacked on it. Both callers that used to reach for `anim_jump()`
-    now go through it, so a jump can never again lift only the card it happened to.
-    ⚠ **`Q312`=a COMES FOR FREE, AND IT IS WORTH KNOWING WHY.** The lift rides `offset`, which is
-    INSIDE the card root and invisible to the containers — so a springing stack overlaps the rows
-    above and nothing re-flows. That is the one place the "rows never overlap" rule is deliberately
-    broken; breaking it here is the design's choice, not an accident of the implementation.
-    ⚠ `anim_spring_lift` deliberately omits `anim_jump`'s SCALE PULSE: the pulse belongs to the card
-    the effect is happening to, and pulsing the whole stack reads as five cards being hit.
-    ⚠ `Q311`=a already held — a hoop's rise is folded into its own LANE OFFSET, applied at its
-    anchor coord, which is the jumping card's. TP-90 pins it against the stack top, two depth
-    pitches away, because that is the reading that would send a card through the ring's side.
-    ⚠ A test that waits for a jump to settle must wait for `absf(y)` to fall, not for the sign to
-    flip: the descent is TRANS_BACK and OVERSHOOTS the resting pose.
+    ⚠ **THE BOARD KNOWLEDGE LIVES IN `PlayArea.jump_card_with_its_stack`**, never in `CardVisual` —
+    a card visual cannot know what is stacked on it. Every caller goes through it.
+    ⚠ **`Q312`=a COMES FOR FREE**: the lift rides `offset`, INSIDE the card root and invisible to the
+    containers, so a springing stack overlaps and nothing re-flows. That is the one place the "rows
+    never overlap" rule is deliberately broken.
+    ⚠ `anim_spring_lift` omits `anim_jump`'s SCALE PULSE on purpose: the pulse belongs to the card the
+    effect is happening to.
+    ⚠ A test waiting for a jump to settle must wait for `absf(y)` to fall, not for the sign to flip —
+    the descent is TRANS_BACK and OVERSHOOTS.
     ⚠ **A TEST HELPER MUST NOT BE NAMED `run_*`** — that is the registration gate's entry-point
-    convention, and it will demand the helper be called from `_ready`.
+    convention and it will demand the helper be called from `_ready`.
+
 - id: S24
   description: >
     Score labels: rows left, columns below, one special-meld label right of the grid centre, height
