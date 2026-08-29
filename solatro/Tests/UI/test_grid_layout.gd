@@ -40,6 +40,7 @@ func _ready() -> void:
 	await run_the_entrance_height_pushes_the_board_up_test()
 	await run_a_jump_lifts_the_stack_above_it_test()
 	await run_a_hoop_rides_the_card_that_jumped_test()
+	await run_no_subtotal_is_displayed_anywhere_test()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -749,4 +750,63 @@ func run_a_hoop_rides_the_card_that_jumped_test() -> void:
 			"...and NOT the top of the stack it lifted, which sits two depth pitches away -- a card "
 			+ "would pass through the SIDE of a ring placed there",
 			"ring %.1f vs stack-top-plus-rise %.1f" % [ring.y, top_ring])
+	await _tear_down(view)
+
+
+# ==============================================================================
+# TP-93 -- NO SUBTOTAL IS DISPLAYED ANYWHERE. No per-grid score, no bucket breakdown.
+#
+# Owner correction, recorded on Q326 and superseding its round-2 answer: *"do not display subtotals
+# such as grid score."* D22 states it as a design node: *"NO subtotals are displayed: no grid score,
+# no bucket breakdown."* The HUD shows the board total and the combo, and nothing else.
+#
+# ⚠ **THIS IS A RATCHET, AND IT PASSES TRIVIALLY TODAY -- THAT IS THE POINT.** No grid-score label
+# exists yet, so the claim holds for free; it is written NOW because S24 is about to add score
+# labels around every grid, and "we also added a grid subtotal while we were there" is precisely
+# the drift a negative claim cannot catch after the fact. It fails the day one appears.
+#
+# ⚠ It must not pass by finding nothing at all. The board really does display SOME numbers (the
+# board total, the combo), so the test first proves it can see labels, then proves none of them is
+# a per-grid subtotal.
+# ==============================================================================
+func run_no_subtotal_is_displayed_anywhere_test() -> void:
+	behavior_section("NO SUBTOTAL IS DISPLAYED ANYWHERE")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	# Score something, so every bucket a subtotal could be drawn from is non-zero.
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], BoardCoord.new(0, 0, 2, 0))
+	await _settle_layout(view)
+
+	var grid_score := g.state.grid_score(0)
+	check(grid_score >= 0.0, "precondition: a grid score exists to be (not) displayed",
+			"grid 0 scores %.1f" % grid_score)
+
+	# Every label anywhere under the view, so the search cannot miss a surface.
+	var labels : Array[Label] = []
+	var stack : Array[Node] = [view]
+	while not stack.is_empty():
+		var n : Node = stack.pop_back()
+		var l := n as Label
+		if l: labels.append(l)
+		for c : Node in n.get_children(): stack.append(c)
+	check(labels.size() > 0,
+			"the sweep can SEE labels at all — otherwise this test passes by looking at nothing",
+			"%d labels found" % labels.size())
+
+	# The board total and the combo are allowed; a PER-GRID subtotal is not. Anything parented
+	# under a grid panel that reads as a score is the shape D22 forbids.
+	var offenders : Array[String] = []
+	for panel_i : int in pa.grid_container.get_child_count():
+		var panel : Node = pa.grid_container.get_child(panel_i)
+		var inner : Array[Node] = [panel]
+		while not inner.is_empty():
+			var n : Node = inner.pop_back()
+			var bl := n as BigNumberLabel
+			if bl and not bl.text.is_empty():
+				offenders.append("%s = '%s'" % [bl.name, bl.text])
+			for c : Node in n.get_children(): inner.append(c)
+	check(offenders.is_empty(),
+			"D22/Q326: no grid panel displays a subtotal — no grid score, no bucket breakdown",
+			"found: " + ", ".join(offenders))
 	await _tear_down(view)

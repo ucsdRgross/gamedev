@@ -454,9 +454,14 @@ lettered steps by hand when closing a gap.
     The partial panel restructure this needed was BACKED OUT rather than left half-built; it is a
     small rebuild once the gap is answered (a `Board` HBox of RowLabels | Cells | SpecialLabel over
     a ColLabels HBox, with `_cells_root` as the one accessor everything walks rows through).
-    ⚠ **TP-92 and TP-93 are NOT blocked.** `scores_cell` really is per cell, so a height label above
-    each stack has a number; and TP-93 (*no subtotal displayed anywhere*) is a negative claim that
-    holds today. They can land ahead of the answer.
+    ⚠ **TP-93 HAS LANDED AHEAD OF THE ANSWER** — a negative claim needs no per-row number. It
+    passes trivially today and is written as a RATCHET: it fails the day a grid panel displays a
+    subtotal, which is exactly the drift S24's label work could introduce. It proves it can SEE
+    labels first, so it cannot pass by looking at nothing.
+    ⚠ **TP-92 is deferred WITH the label work, not blocked by the gap.** A height label above a
+    stack either joins the CellSlot — where it adds its own height to `_measure_grid_row_height`
+    and disturbs the row arithmetic S21/S22 pin exactly — or is positioned by arithmetic in an
+    overlay like a CardVisual. That choice belongs with the rest of the labels.
 - id: S21settings
   description: >
     Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
