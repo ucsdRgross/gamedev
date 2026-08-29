@@ -277,6 +277,9 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
+- ⬜ **Focused suite testing** — a suite filter, timing instrumentation and a headless logic tier, so
+  a one-line change stops costing a full windowed run. Plan, task list, and the doc/memory/skill
+  updates it forces: `FOCUSED_TESTING_PLAN.md`. Delete this line and that file when it lands.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
