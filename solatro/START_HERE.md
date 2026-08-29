@@ -20,6 +20,10 @@ changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the tempor
 | [todo.md](todo.md) | Open backlog — the single place open items live. |
 | [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (the owner's ideas). |
 | [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / reference quarry. |
+| `curated effects post grid.csv` | **The design idea index.** One row per idea from `gam draft.txt`, `pokerpatience.txt`, the two design companions and `DESIGN_DOC.md`, restated for the grid. Every row declares `scope` (`grid-local` or `global`), `axis`, `needs_height` and `needs_grids`; `source` cites the line it came from and `status` says whether it is carried, revived, superseded, vetoed or implemented. `curated effects pre grid.csv` is the archived predecessor. |
+| `blinds.csv` | Level modifiers — one row per blind effect, each with a hazard or an objective **and a payoff for playing into it**. A level draws one; a boss level draws two. `weight` 2 means it counts as two. |
+| `accepted-ideas.csv` | What the owner has actually marked, mined from the catalog's `seen?` column and the two idea CSVs, plus unmarked proposals. `evidence` quotes the acceptance signal; most rows are `proposed` because no signal exists in their source. |
+| `CARD_CATALOG.csv` | The card spreadsheet, now carrying the same four axis columns plus `status` (superseded / remapped rows are marked with a reason, never deleted). |
 
 ## Hard project rules (non-negotiable)
 

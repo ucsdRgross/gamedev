@@ -626,6 +626,21 @@ effects CSV alongside the pre-grid one (`Q288`=a).
 **S44** — `START_HERE.md`, `PICTURE_WALL.md`, `LAYERING.md` updated (`Q290`=b); `doc_check.py` clean
 of **new** findings (`Q289`=a).
 
+**S42 and S43 are DONE, taken out of order at the owner's instruction** — the CSV half was run
+before Phase 6 because the play-area rework had settled far enough to restate every idea against
+the four-coordinate board. `S40`, `S41` and `S44` are untouched, and the phase's dependency (it
+runs last) still governs them.
+
+Two things the owner added that this section did not ask for:
+
+- **A `blinds.csv` category** — level modifiers, one row per blind effect. A level draws one and a
+  boss draws two; `weight` 2 marks a heavy negative such as losing a grid, which doubles the
+  remaining grids in exchange. **Every blind must reward playing into it** — owner verbatim:
+  *"each hazard should reward you if you play into it and take a risk, and not just be a different
+  'level' with no downsides."*
+- **`scope` is a two-valued column on every idea row** — owner verbatim: *"effects should be grid
+  local or global."* Nothing else is legal in it.
+
 **Done-when (phase):** `py .claude/tools/doc_check.py` reports no new findings, and an independent
 audit pass reads the **code**, not the rewrite (`Q291`=a).
 

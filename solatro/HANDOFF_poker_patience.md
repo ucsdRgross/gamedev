@@ -454,11 +454,58 @@ lettered steps by hand when closing a gap.
     on a grid cell.
     ⚠ `place_in_cell` lifts a card out of a ZONE COLUMN but NOT out of a deck -- the fuzz has to
     erase it from draw_deck itself or validate() reports the I1 duplicate.
+- id: S42
+  description: 'CARD_CATALOG.csv: the four axis columns, the seen-flag reset, superseded marks.'
+  files_touched: [solatro/CARD_CATALOG.csv, solatro/START_HERE.md]
+  verification_command: 'py .claude/tools/doc_check.py'
+  status: done
+  notes: >
+    `Q286`=a added `scope` / `axis` / `needs_height` / `needs_grids`, plus `status` and `source`.
+    ⚠ **THE AXIS COLUMNS ARE KEYWORD-DERIVED FROM THE EFFECT TEXT, NOT HAND-JUDGED.** They are a
+    filter aid, which is what `Q286` asked for; they are NOT a contract and nothing should branch
+    on them. `scope` is the exception -- only `grid-local` and `global` are legal, per the owner.
+    `Q284`=b said reset the seen flag only where the premise depended on the tableau. Read all 23
+    reviewed rows by hand: exactly ONE qualifies -- **Water**, whose premise is the drop-down
+    ("on Next, flows sideways into a shorter column"). Everything else was rank renames, suit
+    props or stacking, none of which the grid touched. `Q285`=a marks and never deletes: 3
+    superseded (Ring Column, Cascade Scorer, Water), 1 vetoed (The Anarchist, per the
+    recommendations), 41 remapped where only the act/Submit/Next TIMING died.
+    221 new cards appended from the post-grid CSV (`Q221`=b), 378 rows -> 599.
+- id: S43
+  description: 'The draft appended, the post-grid effects CSV, the accepted-ideas CSV, blinds.'
+  files_touched: [solatro/gam draft.txt, the post-grid curated effects CSV,
+    solatro/accepted-ideas.csv, solatro/blinds.csv, solatro/START_HERE.md]
+  verification_command: 'py .claude/tools/doc_check.py'
+  status: done
+  notes: >
+    `Q282`=b: the draft's newest block was appended (1451 -> 1494 lines). The repo copy was STALE
+    -- the owner had edited two of its last lines on another machine, so the tail was resynced
+    rather than duplicated.
+    `Q288`=a: `curated effects post grid.csv`, 1457 rows, pre-grid file untouched as its archive.
+    ⚠ **THE OWNER'S BAR WAS "AT LEAST 1 ENTRY PER LINE", SO COVERAGE IS MECHANICALLY PROVEN, NOT
+    ASSERTED.** Every row's `source` cites the line it came from (`draft:412`, `refs:305-309`), and
+    a checker expands the ranges against each file: 980/980 draft, 36/36 braindump, 305/305
+    recommendations, 688/688 references, 779/779 design doc -- 2788 non-blank lines, none missed.
+    ⚠ A row whose idea already existed gets the second source APPENDED (`draft:67;random:2-17`)
+    rather than a duplicate row, or the file would carry the same card three times.
+    `Q287`=b: `accepted-ideas.csv`, 185 rows. Its own note predicted this -- **the acceptance
+    signal mostly does not exist**, so 157 of 185 are `proposed` and the `evidence` column says so
+    per row. Only the catalog's `seen?` column and the pre-grid file's "already added" marker are
+    real signals; the random-effects sheet and the recommendations carry none.
+    NEW, not in `PLAN.md`: `blinds.csv`, 90 rows, the owner's new category. One row is one blind
+    EFFECT (a level draws one, a boss two); `weight` 2 is a heavy negative such as losing a grid.
+    ⚠ **EVERY BLIND PAYS FOR PLAYING INTO IT** -- the owner's ruling that a hazard must reward the
+    risk, not just be a different level. Asserted: no row has an empty `payoff`.
 ```
 
 After `S20c`, `PLAN.md` §3 governs: `S21`–`S25` (the flipped board — **this is where cards start
 stacking UPWARD**), Phase 6 (zoom, pan, focus), Phase 7 (the wall), Phase 9 (goal-curve refit,
 owner's call), Phase 10 (documentation).
+
+⚠ **Phase 10 WAS TAKEN OUT OF ORDER, at the owner's instruction, and only its CSV half.** `S42`
+and `S43` are done; `S40` (ARCHITECTURE_REVIEW), `S41` (alternate design docs) and `S44` (the
+remaining doc updates) are NOT. The plan's own dependency note — Phase 10 depends on everything
+and runs last — still holds for those three.
 
 ## Verified vs assumed
 
@@ -532,6 +579,18 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Open bugs
 
+- ⚠ **`test_visual_layers.gd` FAILS ITS OWN VACUITY GUARD: the scrolled board barely scrolls.**
+  `scrolling really did move the lit card` wants `moved > 20.0` and measures **11.3 px, then 11.5 px
+  on a re-run** — reproducible, not flaky. The guard is doing exactly its job: `scrollable` passes
+  (the board overflows by *at least* 1 px) while the card it lights travels ~11 px, so the real
+  assertion under it — *a light follows its card across a board SCROLL* — is very nearly vacuous.
+  ⚠ **Read it as a finding about the BOARD, not about the test:** at `card_scale = 5.0` the play
+  area should overflow its container by far more than eleven pixels, and Phase 5 rewrote every
+  width in that path. Fix the width before touching the threshold — lowering 20.0 to 10.0 would
+  silence the one thing telling you the board stopped being wide.
+  Not caused by the Phase 10 CSV work: nothing under `Scripts/`, `UI/`, `Levels/` or `Cards/` reads
+  any of those files, and all six design CSVs are `importer="keep"`, so the engine never imports
+  them. Verified by grep, not by argument.
 - ⚠ **THE SCROLL CONTENT'S OWN ORIGIN CAN SHIFT** as the region around it resizes (measured: its
   top moved −1 → +7 when the Entrance's reservation changed). The board tracks the FLOOR exactly,
   which is correct — but it means "the board moved by exactly X" is an identity the layout does not
@@ -561,8 +620,16 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 2. **`S27`**-**`S30`** - Back/Forward intercepted for zoom, the one scroll container, keyboard and
    controller selection across grids, refocus when a grid is removed.
 3. **Phase 7** - `S31`-`S34`: the wall.
-3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
-   last.
+4. **Phase 9** is the owner's call. **Phase 10's remaining half** is `S40`, `S41` and `S44` — the
+   architecture and design-doc rewrites. Its CSV half (`S42`, `S43`) already landed out of order;
+   the post-grid curated effects CSV is where any new card idea now goes, and every row there must
+   declare `scope` as `grid-local` or `global`.
+   ⚠ **`doc_check.py` CANNOT EXPRESS A FILENAME CONTAINING SPACES.** Its reference regex keeps only
+   the last space-free run, so spelling that file out in a living doc reports a dangling reference
+   to a name that is really just its tail. The name is `Q288`=a verbatim and matches its pre-grid
+   sibling, so it stays: the exact spelling lives in `START_HERE.md`'s read-first table, and every
+   other doc calls it "the post-grid curated effects CSV". Rename it only if you would rather have
+   the references than the recorded name.
 
 ### Opening prompt for the next session
 
