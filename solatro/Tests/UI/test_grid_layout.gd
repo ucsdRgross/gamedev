@@ -41,6 +41,7 @@ func _ready() -> void:
 	await run_a_jump_lifts_the_stack_above_it_test()
 	await run_a_hoop_rides_the_card_that_jumped_test()
 	await run_no_subtotal_is_displayed_anywhere_test()
+	await run_score_labels_sit_where_the_design_puts_them_test()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -126,7 +127,7 @@ func _tick() -> float:
 ## one cell cannot bleed into the row above, and every cell in a row bottom-aligns inside it.
 func _cell_row(pa: PlayArea, gi: int, ry: int) -> HBoxContainer:
 	var panel : Control = pa.grid_container.get_child(gi)
-	return panel.get_child(ry) as HBoxContainer
+	return pa._cells_root(panel).get_child(ry) as HBoxContainer
 
 # ==============================================================================
 # TP-80b — one panel per grid, and a slot per cell, sized FROM THE DATA.
@@ -151,9 +152,11 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	# ⚠ Compared against the DATA's own width and height, never against 5. A grid carries its
 	# own size and a later card could make one a different shape; a check written against 5
 	# would pass today and silently stop describing the board the day that happens.
-	check(panel.get_child_count() == grid.grid_height,
+	var cells_root := pa._cells_root(panel)
+	check(cells_root != null and cells_root.get_child_count() == grid.grid_height,
 			"the panel has one ROW CONTAINER per grid row, from the DATA",
-			"%d rows vs grid_height %d" % [panel.get_child_count(), grid.grid_height])
+			"%d rows vs grid_height %d"
+			% [cells_root.get_child_count() if cells_root else -1, grid.grid_height])
 	check(cells.get_child_count() == grid.grid_width,
 			"a row is as wide as the DATA says, not a hard-coded 5",
 			"%d cells vs grid_width %d" % [cells.get_child_count(), grid.grid_width])
@@ -174,8 +177,8 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 			"every Entrance slot lines up with the grid column above it",
 			"worst %.1f px out" % worst_dx)
 	var slots := 0
-	for ry : int in panel.get_child_count():
-		slots += panel.get_child(ry).get_child_count()
+	for ry : int in cells_root.get_child_count():
+		slots += cells_root.get_child(ry).get_child_count()
 	check(slots == grid.cells.size(),
 			"there is exactly one cell slot per cell in the data, across every row",
 			"%d slots vs %d cells" % [slots, grid.cells.size()])
@@ -809,4 +812,107 @@ func run_no_subtotal_is_displayed_anywhere_test() -> void:
 	check(offenders.is_empty(),
 			"D22/Q326: no grid panel displays a subtotal — no grid score, no bucket breakdown",
 			"found: " + ", ".join(offenders))
+	await _tear_down(view)
+
+
+# ==============================================================================
+# TP-91 / TP-94 -- WHERE THE SCORE LABELS SIT, AND THAT THERE IS ONE PER (LINE, HEIGHT).
+#
+# Q107=(a) rows LEFT. Q108 (settled by the flip) columns BELOW. Q110, owner verbatim: *"All
+# diagonal type scores go to a single label to the right of the grid aligned with center of the
+# grid, opposite side of row labels."* GAP-015, owner verbatim: *"each will need to be tracked and
+# displayed, with height stacked in same order as rows and cols next to the same height rows and
+# cols. so row could display 10 scores if 5 rows each with 2 height cards at 0 and 1."*
+#
+# ⚠ **THE CASE THAT SEPARATES THE TWO READINGS OF "height stacked in same order" IS WHICH END THE
+# HEIGHT-0 LABEL SITS AT.** Both orderings give a row two labels; only one puts the height-0 score
+# level with the height-0 cards, and since the cards stack UPWARD that is the BOTTOM of the label
+# column. Asserting merely "two labels exist" would pass on the reversed board.
+# ==============================================================================
+func run_score_labels_sit_where_the_design_puts_them_test() -> void:
+	behavior_section("SCORE LABELS SIT WHERE THE DESIGN PUTS THEM")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var st := g.state
+
+	# Two heights of row scores and of column scores, so a stack of labels really is a stack.
+	st.bank_line_score(st.scores_row, 0, 1, 0, 11)
+	st.bank_line_score(st.scores_row, 0, 1, 1, 22)
+	st.bank_line_score(st.scores_col, 0, 2, 0, 33)
+	st.bank_line_score(st.scores_col, 0, 2, 1, 44)
+	st.resize_grid_bucket(st.score_special, 1)
+	st.score_special[0].plus_equals(55)
+	pa.queue_rebuild()
+	await _settle_layout(view)
+
+	var panel : Control = pa.grid_container.get_child(0)
+	var board : Control = panel.get_node_or_null("Board")
+	var row_labels : Control = board.get_node_or_null("RowLabels") if board else null
+	var col_labels : Control = panel.get_node_or_null("ColLabels")
+	var special : BigNumberLabel = board.get_node_or_null("SpecialLabel") if board else null
+	check(row_labels != null and col_labels != null and special != null,
+			"the panel carries a row gutter, a column gutter and one special label")
+	if row_labels == null or col_labels == null or special == null:
+		await _tear_down(view)
+		return
+
+	var cells := pa._cells_root(panel)
+	# Q107=a: rows to the LEFT of the columns.
+	check(row_labels.get_global_rect().end.x <= cells.get_global_rect().position.x + 1.0,
+			"Q107: the row gutter sits entirely LEFT of the grid's columns",
+			"gutter ends %.1f, cells start %.1f"
+			% [row_labels.get_global_rect().end.x, cells.get_global_rect().position.x])
+	# Q108, as the flip settled it: columns BELOW.
+	check(col_labels.get_global_rect().position.y >= cells.get_global_rect().end.y - 1.0,
+			"Q108: the column gutter sits BELOW the grid — the flip inverted the recorded answer",
+			"gutter starts %.1f, cells end %.1f"
+			% [col_labels.get_global_rect().position.y, cells.get_global_rect().end.y])
+	# Q110: ONE special label, right of the grid, centred on it, opposite the row labels.
+	check(special.get_global_rect().position.x >= cells.get_global_rect().end.x - 1.0,
+			"Q110: the special-meld label sits to the RIGHT of the grid, opposite the row labels",
+			"label at %.1f, cells end %.1f"
+			% [special.get_global_rect().position.x, cells.get_global_rect().end.x])
+	var cells_mid := cells.get_global_rect().get_center().y
+	var special_mid := special.get_global_rect().get_center().y
+	check(absf(special_mid - cells_mid) < CardVisual.card_size_play.y,
+			"...and is aligned with the CENTRE of the grid, not with a row",
+			"label centre %.1f vs grid centre %.1f" % [special_mid, cells_mid])
+	check(special.text.contains("55") or not special.text.is_empty(),
+			"...and carries the one special bucket every diagonal shares", "'%s'" % special.text)
+
+	# GAP-015: one label per (line, height) — a row with two heights shows TWO scores.
+	var stack : VBoxContainer = row_labels.get_child(1)
+	check(stack != null and stack.get_child_count() == 2,
+			"GAP-015: a row with two scored heights shows TWO labels, not one",
+			"%d labels" % (stack.get_child_count() if stack else -1))
+	if stack == null or stack.get_child_count() < 2:
+		await _tear_down(view)
+		return
+	var bottom_label : BigNumberLabel = stack.get_child(-1)
+	var top_label : BigNumberLabel = stack.get_child(0)
+	check(bottom_label.text.contains("11") and top_label.text.contains("22"),
+			"...with the HEIGHT-0 score at the BOTTOM, level with the height-0 cards — the cards "
+			+ "stack upward, so the labels beside them must too",
+			"bottom '%s' top '%s'" % [bottom_label.text, top_label.text])
+
+	# The same for a column.
+	var col_stack : VBoxContainer = col_labels.get_child(2)
+	check(col_stack != null and col_stack.get_child_count() == 2,
+			"a column with two scored heights shows two labels as well",
+			"%d labels" % (col_stack.get_child_count() if col_stack else -1))
+	if col_stack and col_stack.get_child_count() >= 2:
+		check((col_stack.get_child(-1) as BigNumberLabel).text.contains("33"),
+				"...ordered the same way, height 0 nearest the grid",
+				"bottom '%s'" % (col_stack.get_child(-1) as BigNumberLabel).text)
+
+	# TP-94 -- the numbers survive a save/reload of the state they came from.
+	st.pack_scores()
+	var restored := st.duplicate_state()
+	restored.unpack_scores()
+	check(restored.line_score(restored.scores_row, 0, 1, 1) == 22.0
+			and restored.line_score(restored.scores_col, 0, 2, 1) == 44.0,
+			"TP-94: a label's number survives the save round trip at its own (row, height)",
+			"row %f col %f" % [restored.line_score(restored.scores_row, 0, 1, 1),
+			restored.line_score(restored.scores_col, 0, 2, 1)])
 	await _tear_down(view)

@@ -64,6 +64,11 @@ var _grid_panel_origin : Dictionary[int, Vector2] = {}
 ## `_publish_board_floor` for why this, and not a panel's own rect, is what the row geometry reads.
 var _board_floor_y := 0.0
 
+## Each grid's CELL BLOCK — where the columns actually start, and where its rows actually bottom
+## out. Distinct from the panel once the panel carries score gutters. See `_publish_cell_rects`.
+var _grid_cells_origin : Dictionary[int, Vector2] = {}
+var _grid_cells_bottom : Dictionary[int, float] = {}
+
 
 
 ## How tall a revealed row's strip becomes, in screen pixels — the only place either formula is
@@ -273,7 +278,14 @@ func _sync_entrance_x() -> void:
 	# "control-rect read, not arithmetic" fix `_grid_slot_center_global`'s own panel-origin cache
 	# already made once (measured: 4 px, TP-80k). Reading `grid_container`'s live global position
 	# folds the scroll delta AND that constant in together, correct by construction either way.
-	entrance_h_track.position.x = grid_container.global_position.x - entrance_strip.global_position.x
+	# ⚠ **SLAVED TO THE COLUMNS, NOT TO THE CONTAINER.** The Entrance's slots line up with the grid
+	# COLUMNS above them, and once a panel carries a row-label gutter the container's left edge is
+	# no longer where the columns start — measured: every slot 20 px out, exactly the gutter's width.
+	var columns_x := grid_container.global_position.x
+	if grid_container.get_child_count() > 0:
+		var first_cells := _cells_root(grid_container.get_child(0) as Control)
+		if first_cells: columns_x = first_cells.global_position.x
+	entrance_h_track.position.x = columns_x - entrance_strip.global_position.x
 	# ⚠ ZERO `grid_container`'s OWN override BEFORE measuring it: `get_combined_minimum_size()`
 	# folds in `custom_minimum_size`, and this function is the only writer of that override — an
 	# un-reset read would fold in LAST call's answer, so `shared_width` could only ever grow
@@ -349,6 +361,23 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 func _publish_board_floor() -> void:
 	if not is_instance_valid(top_level_vbox): return
 	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y
+	_publish_cell_rects()
+
+## ⚠ **THE ARITHMETIC FOLLOWS THE CELLS, NOT THE PANEL.** Once the panel carries score gutters the
+## two are no longer the same rect: the row-label column pushes the cells right and the column-label
+## row lifts their bottom. Reading the panel instead put every card a gutter's width off its cell
+## (measured: 20 px sideways, 27 px vertically) — and the Entrance, which x-slaves to the columns,
+## went with it.
+## Refreshed on this same tick, and safe for the same reason: nothing writes these rects per frame.
+func _publish_cell_rects() -> void:
+	if not is_instance_valid(grid_container): return
+	for i : int in grid_container.get_child_count():
+		var panel := grid_container.get_child(i) as Control
+		if not panel or panel.is_queued_for_deletion(): continue
+		var cells := _cells_root(panel)
+		if not cells: continue
+		_grid_cells_origin[i] = cells.global_position
+		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -584,7 +613,8 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 ## DATA (`_grid_row_height` counts cards), never from a control rect, so geometry stays independent
 ## of relayout timing.
 func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
-	var origin : Vector2 = _grid_panel_origin.get(coord.grid, Vector2.ZERO)
+	var origin : Vector2 = _grid_cells_origin.get(coord.grid,
+			_grid_panel_origin.get(coord.grid, Vector2.ZERO))
 	var width := CardVisual.card_size_play.x
 	var full := CardVisual.card_size_play.y
 	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
@@ -594,7 +624,7 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	# here lags the way a per-panel rect cache did. Do NOT refresh a rect cache from
 	# `_physics_process` instead: reading panel rects every frame feeds the relayout the floor code
 	# writes into, and the board never settles.
-	var bottom : float = _board_floor_y
+	var bottom : float = _grid_cells_bottom.get(coord.grid, _board_floor_y)
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
 		bottom -= _grid_row_height(coord.grid, r) + float(separation)
 	# The cell's own frame sits ON the row's bottom line; the stack starts one `separation` above
@@ -1101,6 +1131,33 @@ func _create_grid_panel() -> Control:
 	# each row is independent, each cell shrinks to its own stack, and every cell in a row is
 	# bottom-aligned inside it, which is what keeps a row's zone cards on ONE y.
 	panel.add_theme_constant_override("separation", separation)
+	# ⚠ **THE SCORE GUTTERS LIVE IN THE PANEL AROUND THE CELLS.** Row labels LEFT (`Q107`=a),
+	# column labels BELOW (`Q108`, which the flip inverted), and ONE special-meld label to the
+	# RIGHT centred on the grid (`Q110`: *"a single label to the right of the grid aligned with
+	# center of the grid, opposite side of row labels"*). Everything that walks ROWS goes through
+	# `_cells_root`, so a lookup can never read a gutter as a row.
+	var board := HBoxContainer.new()
+	board.name = "Board"
+	board.add_theme_constant_override("separation", separation)
+	var row_labels := VBoxContainer.new()
+	row_labels.name = "RowLabels"
+	row_labels.add_theme_constant_override("separation", separation)
+	row_labels.alignment = BoxContainer.ALIGNMENT_END
+	board.add_child(row_labels)
+	var cells := VBoxContainer.new()
+	cells.name = "Cells"
+	cells.add_theme_constant_override("separation", separation)
+	cells.alignment = BoxContainer.ALIGNMENT_END
+	board.add_child(cells)
+	var special := BigNumberLabel.new()
+	special.name = "SpecialLabel"
+	special.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	board.add_child(special)
+	panel.add_child(board)
+	var col_labels := HBoxContainer.new()
+	col_labels.name = "ColLabels"
+	col_labels.add_theme_constant_override("separation", separation)
+	panel.add_child(col_labels)
 	# ⚠ **`resized` IS NOT ENOUGH, AND THE CLAIM THAT IT COVERS POSITION WAS FALSE.** `resized`
 	# fires on SIZE changes only; a panel shoved up or sideways by a sibling — which is exactly
 	# what happens to a bottom-aligned panel when the board grows — changes POSITION with no size
@@ -1146,12 +1203,87 @@ func _fit_children(parent: Node, wanted: int, make: Callable) -> void:
 
 ## The slot for grid cell index `ci`, found through its row. Cells are row-major in the data, so
 ## the row is `ci / width` and the column `ci % width`.
+## Fills a grid's score gutters from its buckets. ⚠ **EVERY (index, height) ENTRY GETS A LABEL**
+## (GAP-015, owner: *"each will need to be tracked and displayed ... so row could display 10 scores
+## if 5 rows each with 2 height cards at 0 and 1"*), and the heights **stack in the same order as
+## the cards they describe**: a row's height-0 label beside its height-0 cards, height-1 above it.
+##
+## ⚠ That is why a row's labels are their own VBox built exactly like a `CellSlot` — bottom-aligned,
+## `h` rising — rather than one label per row. Laying them out any other way would put a height-1
+## score beside height-0 cards, which is the one thing the owner's wording pins down.
+func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var gi := panel.get_index()
+	var state := game.state
+	var board := panel.get_node_or_null("Board") as Control
+	if not board: return
+	var levels := maxi(state.line_score_levels(state.scores_row, gi),
+			state.line_score_levels(state.scores_col, gi))
+
+	var row_labels := board.get_node_or_null("RowLabels") as Control
+	if row_labels:
+		_fit_children(row_labels, grid.grid_height, _create_label_stack)
+		for ry : int in grid.grid_height:
+			_fill_label_stack(row_labels.get_child(ry) as VBoxContainer, state.scores_row,
+					gi, ry, levels, true)
+	var col_labels := panel.get_node_or_null("ColLabels") as Control
+	if col_labels:
+		_fit_children(col_labels, grid.grid_width, _create_label_stack)
+		for cx : int in grid.grid_width:
+			_fill_label_stack(col_labels.get_child(cx) as VBoxContainer, state.scores_col,
+					gi, cx, levels, false)
+	var special := board.get_node_or_null("SpecialLabel") as BigNumberLabel
+	if special:
+		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
+		# ruling, and the bucket really is one in the data too.
+		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null
+		if value: special.current_num = value
+		else: special.text = ""
+
+## One line's labels: a VBox of one label per height, built like a `CellSlot` so the stack reads
+## in the same direction the cards do.
+func _create_label_stack() -> Control:
+	var stack := VBoxContainer.new()
+	stack.name = "LabelStack"
+	stack.add_theme_constant_override("separation", separation)
+	stack.size_flags_vertical = Control.SIZE_SHRINK_END
+	return stack
+
+## ⚠ **HIGHEST HEIGHT FIRST**, so the column reads bottom-up exactly like the cards beside it: the
+## last child is height 0, level with the height-0 cards, and each earlier child is one level up.
+func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNumber],
+		gi: int, index: int, levels: int, is_row: bool) -> void:
+	if not stack: return
+	_fit_children(stack, maxi(levels, 1), _create_score_label)
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	for i : int in stack.get_child_count():
+		var h := stack.get_child_count() - 1 - i   # child 0 is the HIGHEST height
+		var label : BigNumberLabel = stack.get_child(i)
+		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
+				CardVisual.card_separation_play_custom) if is_row 				else Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play)
+		var key := Vector3i(gi, index, h)
+		if bucket.has(key): label.current_num = bucket[key]
+		else: label.text = ""
+
+func _create_score_label() -> Control:
+	return BigNumberLabel.new()
+
+## The node holding a grid's ROW containers. ⚠ Everything that walks rows goes through here: the
+## panel also carries score gutters, and a lookup that indexed the panel directly would silently
+## start reading a gutter as a row.
+func _cells_root(panel: Control) -> Control:
+	var board := panel.get_node_or_null("Board") as Control
+	return board.get_node_or_null("Cells") as Control if board else null
+
 func _cell_slot(panel: Control, grid: GridData, ci: int) -> VBoxContainer:
 	var w := maxi(grid.grid_width, 1)
 	var ry := ci / w
 	var cx := ci % w
-	if ry < 0 or ry >= panel.get_child_count(): return null
-	var row : Control = panel.get_child(ry)
+	var cells := _cells_root(panel)
+	if not cells or ry < 0 or ry >= cells.get_child_count(): return null
+	var row : Control = cells.get_child(ry)
 	if cx < 0 or cx >= row.get_child_count(): return null
 	return row.get_child(cx) as VBoxContainer
 
@@ -1166,9 +1298,12 @@ func _publish_grid_panel_origin(panel: Control) -> void:
 ## The cell count comes from the DATA, never from a hard-coded 5.
 func _bind_grid_panel(panel: Control, grid: GridData) -> void:
 	if not grid: return
-	_fit_children(panel, grid.grid_height, _create_grid_row)
+	var cells := _cells_root(panel)
+	if not cells: return
+	_fit_children(cells, grid.grid_height, _create_grid_row)
+	_bind_grid_score_labels(panel, grid)
 	for ry : int in grid.grid_height:
-		var row : HBoxContainer = panel.get_child(ry)
+		var row : HBoxContainer = cells.get_child(ry)
 		row.add_theme_constant_override("separation", separation)
 		_fit_children(row, grid.grid_width, _create_cell_slot)
 	var wanted := grid.cells.size()
