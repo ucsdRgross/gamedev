@@ -8,17 +8,19 @@ they can look at.
 Entrance is PINNED.** A scored grid line fires props; the Entrance stays welded to the bottom of the
 window with its slots under their columns while the board scrolls.
 
-Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`, `.2`, `.2b-0`, `.2b` (Runs A+B), the
-layering port, `S20c`, `S20b.4a`, `S20b.3`, **all of `S20b.4b`**. Suite green at **43 suites /
-3538 CHECKS PASSED**; `S20b.4b` is UNCOMMITTED in the working tree.
+Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`-`.4b` (all of `S20b`), `S20c`, and
+**all of `S21` — the board now stacks UPWARD off a fixed floor**. Suite green at
+**44 suites / 3577 CHECKS PASSED**, console and log agreeing.
 
-⚠ **`S21` IS ATTEMPTED, NOT LANDED** -- backed out to keep the tree green, parked at
-`solatro/S21_WIP.patch`, with what is solved and what is not in its ledger entry.
+**Also landed: tests own the settings they test with** (`S21settings`). `SettingsManager.isolated`
+is set run-wide by `all_tests`, so no suite can write `user://settings.tres` — verified
+byte-identical after a full run AND after one killed by its timeout. The new **SETTINGS RANGE**
+suite sweeps the geometry across each knob's range, so tuning cannot break a test and any value
+stays valid.
 
-**`S20b.4b` IS COMPLETE, and with it the whole of `S20b`.** Nothing in the reveal or the split is
-zone-indexed, and the zone-only ratchet is down to the six files that CANNOT port. **Phase 5 is
-next**: `S21`-`S25`, the flipped board, **where cards start stacking UPWARD** — and `S22` is what
-finally gives a grid row band the arithmetic the reveal's geometry guard is waiting on.
+**Next** is `S22` (`_row_open` inverted, the Entrance at `y == -1`) — which is also what gives a
+grid row band the arithmetic `PlayArea._reveal_geometry_exists` is waiting on — then `S23`-`S25`,
+Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -514,13 +516,11 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S21floor`** - the board's fixed floor, then restore `TP-83`'s three assertions. Read that
-   ledger entry first: the mechanisms already ruled out are listed with their measurements, and
-   one render answered more than four rounds of reasoning did.
-2. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
+1. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
    grid row band gets its arithmetic and `PlayArea._reveal_geometry_exists` is DELETED.
-3. Then the rest of `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),
-   Phase 6 (zoom/pan/focus), Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is last.
+2. **`S23`**-**`S25`** - the spring, the score labels, cross-grid alignment.
+3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
+   last.
 
 ### Opening prompt for the next session
 

@@ -60,6 +60,10 @@ func _reveal_key(coord: BoardCoord) -> Vector2i:
 ## seen failure mode the cache accepts by design.
 var _grid_panel_origin : Dictionary[int, Vector2] = {}
 
+## The board's floor: the screen line every grid panel is bottom-aligned against. See
+## `_publish_board_floor` for why this, and not a panel's own rect, is what the row geometry reads.
+var _board_floor_y := 0.0
+
 
 
 ## How tall a revealed row's strip becomes, in screen pixels — the only place either formula is
@@ -298,6 +302,19 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 	if not is_instance_valid(top_level_vbox) or not is_instance_valid(grid_container): return
 	top_level_vbox.custom_minimum_size.y = maxf(size.y - strip_h, 0.0)
 	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
+	_publish_board_floor()
+	if not top_level_vbox.resized.is_connected(_publish_board_floor):
+		top_level_vbox.resized.connect(_publish_board_floor)
+
+## ⚠ **THE FLOOR COMES FROM THE SCROLL CONTENT, NOT FROM A PANEL'S RECT.** Every grid panel is
+## bottom-aligned against this same line, so it is the one number the row geometry needs — and
+## unlike a panel it does NOT move when a stack deepens, which is exactly why caching it is safe.
+## Caching the PANEL's rect was not: its origin lagged a whole depth pitch behind (measured: 264
+## against a real 244), and a board's rows then appeared to slide by that much whenever a card
+## landed. `resized` is enough here because this control only changes with the WINDOW.
+func _publish_board_floor() -> void:
+	if not is_instance_valid(top_level_vbox): return
+	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y
 
 ## ⚠ **PAST THE WINDOW'S HEIGHT THE SCROLL IS THE ONLY THING THAT CAN HOLD THE FLOOR.** The
 ## bottom-alignment above pins the board only while it FITS: once the content is taller than the
@@ -562,14 +579,12 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	var full := CardVisual.card_size_play.y
 	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
 	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
-	# ⚠ **THE PANEL'S BOTTOM IS DERIVED, NEVER CACHED FROM ITS RECT.** The cached ORIGIN is fresh
-	# (a panel that grows also changes size, so `resized` fires), but the cached SIZE was not —
-	# measured at 330 against a real 310, and the whole board then read as sliding downward as it
-	# filled. Adding the height the DATA implies has no such gap. And do NOT refresh a rect cache
-	# from `_physics_process` instead: reading panel rects every frame feeds the relayout that
-	# `_give_the_board_a_floor` writes into, and the board never settles — it hung the suite before
-	# its banner, three times.
-	var bottom : float = origin.y + _grid_panel_height(coord.grid)
+	# ⚠ **THE ROW BOTTOMS ARE MEASURED FROM THE BOARD'S FLOOR, NOT FROM THIS PANEL.** Every panel is
+	# bottom-aligned against that one line, and it does not move when a stack deepens — so nothing
+	# here lags the way a per-panel rect cache did. Do NOT refresh a rect cache from
+	# `_physics_process` instead: reading panel rects every frame feeds the relayout the floor code
+	# writes into, and the board never settles.
+	var bottom : float = _board_floor_y
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
 		bottom -= _grid_row_height(coord.grid, r) + float(separation)
 	# The cell's own frame sits ON the row's bottom line; the stack starts one `separation` above

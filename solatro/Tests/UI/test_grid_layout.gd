@@ -33,7 +33,7 @@ func _ready() -> void:
 	await run_a_placed_card_draws_over_its_cell_test()
 	await run_every_grid_sits_on_the_same_floor_test()
 	await run_a_stack_grows_upward_test()
-	await run_a_row_shares_one_bottom_edge_test()
+	await run_a_row_shares_one_bottom_edge_and_pushes_the_rows_above_it_test()
 	await run_slot_center_global_reads_no_control_rects_test()
 	finish()
 
@@ -333,16 +333,15 @@ func run_a_stack_grows_upward_test() -> void:
 	await _tear_down(view)
 
 # ==============================================================================
-# TP-82 -- a row's cells share a BOTTOM edge. (TP-83, the rows above being pushed up, waits
-# on the floor: see the note in the body.)
+# TP-82 / TP-83 -- a row's cells share a BOTTOM edge, and a tall stack pushes the rows ABOVE it up.
 #
 # ⚠ TP-83's discriminating case is the row BELOW the tall one, which must NOT move. "Rows are
 # pushed up" and "the board re-centres" both raise the rows above; only the first leaves the rows
 # beneath exactly where they were, and that is what the board growing upward from the Entrance
 # actually means.
 # ==============================================================================
-func run_a_row_shares_one_bottom_edge_test() -> void:
-	behavior_section("A ROW SHARES A BOTTOM EDGE")
+func run_a_row_shares_one_bottom_edge_and_pushes_the_rows_above_it_test() -> void:
+	behavior_section("A ROW SHARES A BOTTOM EDGE AND PUSHES THE ROWS ABOVE IT UP")
 	var view := await _stand_up()
 	var pa := view.play_area
 	var g := view.game
@@ -357,17 +356,35 @@ func run_a_row_shares_one_bottom_edge_test() -> void:
 			"E10: two cells in the same row bottom out on the same line",
 			"%.1f vs %.1f" % [left, right])
 
-	# ⚠ **E11 / Q307 ARE NOT ASSERTED HERE YET, AND THAT IS NOT AN OVERSIGHT.** "A tall stack pushes
-	# the rows ABOVE it up, and the rows below it do not move" needs the board to have a fixed
-	# FLOOR, and it does not have one yet: `_give_the_board_a_floor` pins the bottom only while the
-	# board FITS the window, and past that the content grows and every row below a deepened one
-	# slides down instead. Measured, repeatedly: rows below moved +36 px while the rows above rose
-	# the 4 px of slack that was left.
-	#
-	# Writing the assertions before the floor exists would leave a red suite standing for something
-	# nobody is fixing this session, so they belong with the step that BUILDS the floor. What is
-	# already true — the stack rises, the pitch scales, a row shares one bottom line — is asserted
-	# above and in SETTINGS RANGE across the whole knob range.
+	# ⚠ **TP-83's DISCRIMINATING CASE IS THE ROW BELOW, WHICH MUST NOT MOVE.** "Rows are pushed up"
+	# and "the board re-centres" both raise the rows above a deepened stack; only the first leaves
+	# the rows beneath exactly where they were, and that is what growing upward out of the Entrance
+	# means.
+	var above_before := pa.slot_center_global(BoardCoord.new(0, 0, 1, 0)).y
+	var below_before := pa.slot_center_global(BoardCoord.new(0, 0, 3, 0)).y
+	var row2_before := pa.slot_center_global(BoardCoord.new(0, 0, 2, 0)).y
+
+	for i in 2:
+		await g.place_card_in_grid(g.state.upper_zone[2 + i].datas[0], BoardCoord.new(0, 0, 2, 0))
+	await _settle_layout(pa)
+
+	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	var above_after := pa.slot_center_global(BoardCoord.new(0, 0, 1, 0)).y
+	var below_after := pa.slot_center_global(BoardCoord.new(0, 0, 3, 0)).y
+	var row2_after := pa.slot_center_global(BoardCoord.new(0, 0, 2, 0)).y
+
+	check(absf(row2_after - row2_before) < 0.5,
+			"a row's own bottom edge does not move when its stack deepens — it grows UP off it",
+			"%.1f -> %.1f" % [row2_before, row2_after])
+	check(absf(below_after - below_before) < 0.5,
+			"Q307: the row BELOW does NOT move — the board grows upward, it does not re-centre",
+			"%.1f -> %.1f" % [below_before, below_after])
+	check(above_after < above_before - 0.5,
+			"E11: the row ABOVE is pushed UP by the deeper stack",
+			"%.1f -> %.1f" % [above_before, above_after])
+	check(absf((above_before - above_after) - 2.0 * depth_pitch) < 1.0,
+			"...by exactly the height the stack gained, not an approximation",
+			"moved %.1f, stack gained %.1f" % [above_before - above_after, 2.0 * depth_pitch])
 	await _tear_down(view)
 
 # ==============================================================================
