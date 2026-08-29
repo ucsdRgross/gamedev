@@ -8,9 +8,10 @@ they can look at.
 Entrance is PINNED.** A scored grid line fires props; the Entrance stays welded to the bottom of the
 window with its slots under their columns while the board scrolls.
 
-Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, `S20b.1`-`.4b` (all of `S20b`), `S20c`, and
-**all of `S21` — the board now stacks UPWARD off a fixed floor**. Suite green at
-**44 suites / 3577 CHECKS PASSED**, console and log agreeing.
+Landed: `S1`-`S19`, `S35`-`S37`, `S37b`, `S20`, all of `S20b`, `S20c`, and **`S21`-`S24` — the
+board stacks UPWARD off a fixed floor, rows ease into their height, a jump carries the stack above
+it, and every row, column and stack shows its score**. Suite green at
+**44 suites / 3616 CHECKS PASSED**, console and log agreeing.
 
 **Also landed: tests own the settings they test with** (`S21settings`). `SettingsManager.isolated`
 is set run-wide by `all_tests`, so no suite can write `user://settings.tres` — verified
@@ -25,9 +26,9 @@ nothing about the reveal is Entrance-only any more.
 **`S23` has landed too** — the spring: a jumping card lifts the whole stack above it rigidly, the
 board overlaps rather than re-flowing, and a hoop rides the card that actually jumped.
 
-⚠ **`S24` IS BLOCKED ON `GAP-015`** — `Q107` wants one score label per ROW, but a grid banks every
-row into ONE bucket. **The owner needs to answer it.** `TP-92` (height labels) and `TP-93` (no
-subtotals) are unaffected and can land first.
+**`S24` has landed**, and with it `GAP-015`'s answer: a row/column bucket is keyed
+`(grid, index, height)`, every entry gets a label, and the heights stack in the same order as the
+cards beside them.
 
 **Next** is `S25` (cross-grid alignment), then Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
 
@@ -368,33 +369,23 @@ lettered steps by hand when closing a gap.
     convention and it will demand the helper be called from `_ready`.
 
 - id: S24
-  description: >
-    Score labels: rows left, columns below, one special-meld label right of the grid centre, height
-    labels above their stacks. No subtotals anywhere (D22, E17, §1.7).
-  files_touched: []
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
-  status: blocked
-  evidence: ''
+  description: 'Score labels: rows left, columns below, one special label right, height above stacks.'
+  status: done
   notes: >
-    ⚠ **BLOCKED ON GAP-015 — a CONTRADICTION between the design and the code, not a design gap.**
-    `Q107`/`Q108`/`TP-91` all place ONE LABEL PER ROW and per column, but
-    `Levels/game.gd::_add_grid_line_score` banks every row of a grid into ONE bucket indexed by
-    GRID (`flat[g]`), discarding `section.index`. There is no per-row number to display; five row
-    labels could only show the same figure five times. §1.7's *"flat row and col scores"* reads
-    either way — a flat array INDEXED BY ROW, or the height-0 (flat) bucket PER GRID, which is what
-    S12 built and what `_row_term` multiplies.
-    The partial panel restructure this needed was BACKED OUT rather than left half-built; it is a
-    small rebuild once the gap is answered (a `Board` HBox of RowLabels | Cells | SpecialLabel over
-    a ColLabels HBox, with `_cells_root` as the one accessor everything walks rows through).
-    ⚠ **TP-93 HAS LANDED AHEAD OF THE ANSWER** — a negative claim needs no per-row number. It
-    passes trivially today and is written as a RATCHET: it fails the day a grid panel displays a
-    subtotal, which is exactly the drift S24's label work could introduce. It proves it can SEE
-    labels first, so it cannot pass by looking at nothing.
-    ⚠ **TP-92 is deferred WITH the label work, not blocked by the gap.** A height label above a
-    stack either joins the CellSlot — where it adds its own height to `_measure_grid_row_height`
-    and disturbs the row arithmetic S21/S22 pin exactly — or is positioned by arithmetic in an
-    overlay like a CardVisual. That choice belongs with the rest of the labels.
+    ⚠ **ONE LABEL PER (LINE, HEIGHT)** — GAP-015's answer. A line's labels are their own VBox built
+    exactly like a `CellSlot`, bottom-aligned with `h` rising, so the height-0 score is level with
+    the height-0 cards. That ordering is the discriminating case; reversed, the test reads
+    `bottom '22' top '11'`.
+    ⚠ **THE PANEL AND THE CELL BLOCK ARE NO LONGER THE SAME RECT.** Everything that walks rows goes
+    through `_cells_root`, and `_grid_slot_center_global` measures from the CELL block — reading the
+    panel put every card a gutter's width off its cell (20 px sideways, 27 px vertically). The
+    Entrance x-slaves to the COLUMNS for the same reason.
+    ⚠ **THE HEIGHT LABEL IS POSITIONED BY ARITHMETIC IN `card_layer`, NOT PARENTED INTO THE CELL.**
+    Inside the `CellSlot` it would add its own height to `_measure_grid_row_height` — the
+    arithmetic every card and prop is placed by. Riding `slot_center_global` instead means it
+    follows a growth ease, a spring and a reveal for free.
+    ⚠ TP-93 is a RATCHET against grid subtotals: it passes trivially and fails the day a panel
+    displays one. It proves it can SEE labels before asserting none is a subtotal.
 - id: S21settings
   description: >
     Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
@@ -497,7 +488,7 @@ trip it. The five `PipSuit` subclasses are gated; `PropModifier` is not.
    assert against the legacy renderer and never touch a grid. The set may SHRINK, never grow, and
    porting a file fails the gate until its name is struck off, so the list cannot rot.
 
-## Gaps - fifteen filed, fourteen resolved
+## Gaps - fifteen filed, fifteen resolved
 
 `design/poker-patience/gaps/GAP-001..009`, `design/grid-view/gaps/GAP-010..014`. Answers are quoted
 verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they are newer.**
@@ -508,9 +499,8 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
   Fully landed: `_row_covers_anything` and `row_card_visuals` both take a `BoardCoord` and answer
   for grids, and neither added a tree read to the anchor path.
 - **GAP-013**=(a)+(c) the ratchet and the layering port - both landed.
-- **GAP-015** ⚠ **OPEN, and it blocks `S24`.** `Q107` places one score label per ROW; the code
-  banks every row of a grid into one bucket. Options (a) fix the storage, (b) fix the labels,
-  (c) a display-only per-row accumulator. Recommendation (a), with the save format as its cost.
+- **GAP-015**=(a) a row/column bucket is per row/column AND per height, keyed
+  `Vector3i(grid, index, height)`; every entry is displayed, heights stacked in card order - landed.
 - **GAP-014** NOT A GAP, resolved as a defect: a fourth option existed (name the zone the test
   measures, and stock it). Kept because it was filed correctly and the reasoning matters.
 
@@ -551,10 +541,10 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`GAP-015`** - the owner's answer unblocks `S24`. Quote its options verbatim; do not pick one.
-2. **`S24`'s unblocked half** - `TP-92` (a height label above each stack, from `scores_cell`) and
-   `TP-93` (no subtotal displayed anywhere) need no answer and can land now.
-3. **`S25`** - the cross-grid alignment setting, including its scoring-invariance assertion.
+1. **`S25`** - the cross-grid alignment setting, including its scoring-invariance assertion
+   (`TP-95`, `TP-96`) — the last step of Phase 5.
+2. **Phase 6** - `S26`-`S30`: two view modes, zoom, pan, keyboard/controller selection across grids.
+3. **Phase 7** - `S31`-`S34`: the wall.
 3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
    last.
 

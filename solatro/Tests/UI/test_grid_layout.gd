@@ -42,6 +42,7 @@ func _ready() -> void:
 	await run_a_hoop_rides_the_card_that_jumped_test()
 	await run_no_subtotal_is_displayed_anywhere_test()
 	await run_score_labels_sit_where_the_design_puts_them_test()
+	await run_a_height_label_sits_above_its_stack_test()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -915,4 +916,53 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 			"TP-94: a label's number survives the save round trip at its own (row, height)",
 			"row %f col %f" % [restored.line_score(restored.scores_row, 0, 1, 1),
 			restored.line_score(restored.scores_col, 0, 2, 1)])
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-92 -- a HEIGHT score label sits ABOVE the topmost card of its stack (E17, Q309=a),
+# and rises as the stack grows.
+#
+# ⚠ **THE CASE THAT SEPARATES "above the stack" FROM "above the cell" IS A SECOND CARD.** Both put
+# the label over a one-card cell; only the first moves it when the stack deepens. So the assertion
+# is about the label MOVING UP by a depth pitch, not merely about where it starts.
+# ==============================================================================
+func run_a_height_label_sits_above_its_stack_test() -> void:
+	behavior_section("A HEIGHT LABEL SITS ABOVE ITS STACK")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var coord := BoardCoord.new(0, 3, 2, 0)
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], coord)
+	g.state.bank_cell_score(0, Vector2i(3, 2), 12)
+	await _settle_layout(view)
+	await get_tree().physics_frame
+
+	var key := Vector3i(0, 3, 2)
+	var label : BigNumberLabel = pa._cell_score_labels.get(key)
+	check(label != null and is_instance_valid(label),
+			"a cell that has scored gets a height label at all")
+	if label == null:
+		await _tear_down(view)
+		return
+	check(label.text.contains("12"), "...carrying that cell's own banked score",
+			"'%s'" % label.text)
+
+	var top_card_y := pa.slot_center_global(BoardCoord.new(0, 3, 2, 0)).y
+	check(label.global_position.y + label.size.y <= top_card_y
+			- CardVisual.card_size_play.y * 0.5 + 1.0,
+			"E17: the label sits entirely ABOVE the topmost card, never over it",
+			"label bottom %.1f vs card top %.1f"
+			% [label.global_position.y + label.size.y,
+			top_card_y - CardVisual.card_size_play.y * 0.5])
+	var before := label.global_position.y
+
+	# Deepen the stack: the label must RISE with it, which is what "above its STACK" means.
+	await g.place_card_in_grid(g.state.upper_zone[1].datas[0], coord)
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	check(absf((before - label.global_position.y) - pitch) < 1.5,
+			"Q309: it RISES by one depth pitch as the stack grows — above the STACK, not above the "
+			+ "cell, which is the reading a one-card fixture cannot tell apart",
+			"moved %.1f, pitch %.1f" % [before - label.global_position.y, pitch])
 	await _tear_down(view)

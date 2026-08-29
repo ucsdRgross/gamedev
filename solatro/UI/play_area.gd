@@ -254,6 +254,55 @@ func _physics_process(_delta: float) -> void:
 	# WRITES to, every frame, and the board never settled. `TopLevelVBox` is written only from
 	# `_give_the_board_a_floor`, which runs on a window resize — not on this tick.
 	_publish_board_floor()
+	_sync_cell_score_labels()
+
+## **E17 / `Q309`=a — a stack's height score sits ABOVE its topmost card, and rises as the stack
+## grows.** One label per cell that has ever scored; `scores_cell` is already keyed per cell.
+##
+## ⚠ **POSITIONED BY ARITHMETIC IN ITS OWN LAYER, NOT PARENTED INTO THE CELL.** A label inside the
+## `CellSlot` would add its own height to the cell, and `_measure_grid_row_height` — the arithmetic
+## every card and prop on the board is placed by — would have to know about it. Riding
+## `slot_center_global` instead means the label follows the stack through a growth ease, a spring
+## and a reveal for free, and the row geometry never learns it exists.
+func _sync_cell_score_labels() -> void:
+	if not is_inside_tree() or not is_instance_valid(card_layer): return
+	var game := CardEnvironment.get_current_game()
+	if not game:
+		for key : Vector3i in _cell_score_labels:
+			if is_instance_valid(_cell_score_labels[key]): _cell_score_labels[key].queue_free()
+		_cell_score_labels.clear()
+		return
+	var state := game.state
+	var live : Dictionary[Vector3i, bool] = {}
+	for key : Vector3i in state.scores_cell:
+		if key.x < 0 or key.x >= state.grids.size(): continue
+		var grid : GridData = state.grids[key.x]
+		if not grid: continue
+		var idx := grid.cell_index(key.y, key.z)
+		if idx < 0 or idx >= grid.cells.size(): continue
+		var depth : int = grid.cells[idx].datas.size()
+		if depth <= 0: continue   # nothing to sit above yet
+		live[key] = true
+		var label : BigNumberLabel = _cell_score_labels.get(key)
+		if not label or not is_instance_valid(label):
+			label = BigNumberLabel.new()
+			label.name = "CellScore_%d_%d_%d" % [key.x, key.y, key.z]
+			card_layer.add_child(label)
+			_cell_score_labels[key] = label
+		label.current_num = state.scores_cell[key]
+		# ABOVE the topmost card: its centre, less half a card, less the label's own height.
+		var top := BoardCoord.new(key.x, key.y, key.z, depth - 1)
+		var at := slot_center_global(top)
+		label.global_position = Vector2(at.x - label.size.x * 0.5,
+				at.y - CardVisual.card_size_play.y * 0.5 - label.size.y)
+	for key : Vector3i in _cell_score_labels.keys():
+		if live.has(key): continue
+		var doomed : BigNumberLabel = _cell_score_labels[key]
+		if is_instance_valid(doomed): doomed.queue_free()
+		_cell_score_labels.erase(key)
+
+## One height-score label per cell that has scored, keyed the same way `scores_cell` is.
+var _cell_score_labels : Dictionary[Vector3i, BigNumberLabel] = {}
 
 ## X SLAVED TO THE BOARD'S HORIZONTAL SCROLL (owner spec): the Entrance never scrolls on its own
 ## in X, it mirrors whatever the board's own scroll reads, so its columns stay under the grid's.
