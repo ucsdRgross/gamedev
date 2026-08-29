@@ -35,6 +35,9 @@ func _ready() -> void:
 	await run_a_stack_grows_upward_test()
 	await run_a_row_shares_one_bottom_edge_and_pushes_the_rows_above_it_test()
 	await run_slot_center_global_reads_no_control_rects_test()
+	await run_a_row_grows_into_its_height_test()
+	await run_a_freshly_dealt_board_animates_nothing_test()
+	await run_the_entrance_height_pushes_the_board_up_test()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -44,7 +47,11 @@ func _stand_up() -> GameView:
 	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	run.pending_goal = 1
+	# ⚠ **A GOAL OF 1 ENDS THE SHOW ON THE FIRST SCORING PLACEMENT**, and a layout test that places
+	# a few cards then measures is left reading a board whose Game has already been torn down —
+	# `slot_center_global` answers from a null game, every row collapses onto the floor, and the
+	# numbers look like a geometry bug rather than a dead fixture. Out of reach instead.
+	run.pending_goal = 1_000_000_000
 	run.pending_node_id = 2
 	seed(20260828)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
@@ -74,13 +81,21 @@ func _tear_down(view: GameView) -> void:
 ## arithmetic reads is published by that sort — so a single `process_frame` measures a board that
 ## is one layout pass behind. It read 36 px of movement where 40 was due, and the missing 4 was
 ## simply the part that had not happened yet.
-func _settle_layout(pa: PlayArea) -> void:
+## ⚠ **RE-ASSERTS `CardEnvironment.CURRENT` ON EVERY FRAME IT WAITS.** This suite does not await its
+## siblings, so another suite's teardown can null the shared CURRENT while we are settling — and
+## `slot_center_global` then answers from no game at all, collapsing every row onto the floor. The
+## numbers that produces (every row reporting the same y) look exactly like a geometry bug. Same
+## re-assertion `_stand_up` makes, for the same reason, just repeated while time passes.
+func _settle_layout(view: GameView) -> void:
+	var pa := view.play_area
+	CardEnvironment.CURRENT = view.game
 	pa.flush_rebuild()
 	var last := INF
 	var waited := 0.0
 	while waited < 2.0:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+		CardEnvironment.CURRENT = view.game
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
 		if is_equal_approx(now, last): return
 		last = now
@@ -348,7 +363,7 @@ func run_a_row_shares_one_bottom_edge_and_pushes_the_rows_above_it_test() -> voi
 	# One card each into two cells of row 2, so the row has a shared bottom to measure.
 	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], BoardCoord.new(0, 0, 2, 0))
 	await g.place_card_in_grid(g.state.upper_zone[1].datas[0], BoardCoord.new(0, 3, 2, 0))
-	await _settle_layout(pa)
+	await _settle_layout(view)
 
 	var left := pa.slot_center_global(BoardCoord.new(0, 0, 2, 0)).y
 	var right := pa.slot_center_global(BoardCoord.new(0, 3, 2, 0)).y
@@ -366,9 +381,13 @@ func run_a_row_shares_one_bottom_edge_and_pushes_the_rows_above_it_test() -> voi
 
 	for i in 2:
 		await g.place_card_in_grid(g.state.upper_zone[2 + i].datas[0], BoardCoord.new(0, 0, 2, 0))
-	await _settle_layout(pa)
+	await _settle_layout(view)
 
 	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	# ⚠ Without this the three checks below can only report nonsense: a torn-down show leaves
+	# `slot_center_global` with no grid to measure and every row lands on the floor together.
+	check(CardEnvironment.get_current_game() != null,
+			"precondition: the show is still running, so the rows below are real measurements")
 	var above_after := pa.slot_center_global(BoardCoord.new(0, 0, 1, 0)).y
 	var below_after := pa.slot_center_global(BoardCoord.new(0, 0, 3, 0)).y
 	var row2_after := pa.slot_center_global(BoardCoord.new(0, 0, 2, 0)).y
@@ -429,4 +448,154 @@ func run_slot_center_global_reads_no_control_rects_test() -> void:
 	check(absf(empty_cell.y - occupied.y) < 0.5,
 			"an EMPTY cell in the same row bottoms out on that row's line like every other cell",
 			"%.1f vs %.1f" % [empty_cell.y, occupied.y])
+	await _tear_down(view)
+
+
+# ==============================================================================
+# TP-85 / TP-87 -- a row GROWS into its new height instead of snapping there, and a row with
+# nothing above it grows just the same.
+#
+# ⚠ **THE READING TP-87 SEPARATES.** `Q77`=(b) says the height shift inherits the reveal's guard
+# "re-derived for the new direction", and the guard it inherits is about the STACK -- a layer only
+# contributes height if the stack really reaches it. The misreading is to re-derive it as "does
+# this row have anything ABOVE it to push", which would leave the TOP row of a grid snapping while
+# every other row eased. So the case that matters is the row with nothing above it, which is
+# exactly the one the example never covers.
+#
+# ⚠ Mid-flight is sampled by the growth's OWN progress, not by a frame count, so the assertion is
+# about the same moment of the animation whatever the frame rate.
+# ==============================================================================
+func run_a_row_grows_into_its_height_test() -> void:
+	behavior_section("A ROW GROWS INTO ITS HEIGHT INSTEAD OF SNAPPING")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+
+	# Row 0 is the TOP row of the grid: nothing above it. That is TP-87's case.
+	var coord := BoardCoord.new(0, 1, 0, 0)
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], coord)
+	await _settle_layout(view)
+	var settled_before := pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y
+	var height_before := pa._grid_row_height(0, 0)
+
+	# A SECOND card into the same cell: the row now owes one depth pitch of growth.
+	await g.place_card_in_grid(g.state.upper_zone[1].datas[0], coord)
+	pa.flush_rebuild()
+	await get_tree().process_frame
+
+	check(not pa._layer_grown.is_empty(),
+			"TP-87: a row with NOTHING ABOVE IT still registers growth -- the guard is about the "
+			+ "stack having the height, not about anything being there to push",
+			"layers growing: %d" % pa._layer_grown.size())
+
+	# Mid-flight: the row is taller than it was and NOT yet at its full new height.
+	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	var caught_midway := false
+	var waited := 0.0
+	while waited < 3.0 and not pa._layer_grown.is_empty():
+		var t : float = pa._layer_grown.values()[0] if not pa._layer_grown.is_empty() else 1.0
+		if t > 0.15 and t < 0.85:
+			var mid := pa._grid_row_height(0, 0)
+			caught_midway = mid > height_before + 0.5 and mid < height_before + pitch - 0.5
+			break
+		waited += await _tick()
+	check(caught_midway,
+			"TP-85: caught mid-growth, the row is PART WAY to its new height -- it eases rather "
+			+ "than snapping (a snap would only ever be at the old height or the new one)",
+			"row %.1f, was %.1f, will be %.1f" % [pa._grid_row_height(0, 0), height_before,
+			height_before + pitch])
+
+	# It arrives, exactly one pitch taller, and stops.
+	waited = 0.0
+	while waited < 3.0 and not pa._layer_grown.is_empty():
+		waited += await _tick()
+	await _settle_layout(view)
+	check(absf(pa._grid_row_height(0, 0) - (height_before + pitch)) < 0.5,
+			"...and it arrives at exactly one depth pitch taller",
+			"%.1f vs %.1f" % [pa._grid_row_height(0, 0), height_before + pitch])
+	check(pa._layer_grown.is_empty(),
+			"...and an arrived board carries no growth state at all",
+			"%d left" % pa._layer_grown.size())
+
+	# The bottom line of the row itself never moved: it grew UP off it.
+	check(absf(pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y - settled_before) < 0.5,
+			"the card on the row's bottom line never moved while the row grew above it",
+			"%.1f -> %.1f" % [settled_before,
+			pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y])
+	await _tear_down(view)
+
+# ==============================================================================
+# A dealt board must NOT play a growth it never had -- the seeding's own edge case.
+# ==============================================================================
+func run_a_freshly_dealt_board_animates_nothing_test() -> void:
+	behavior_section("A FRESHLY DEALT BOARD ANIMATES NOTHING")
+	var view := await _stand_up()
+	var pa := view.play_area
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	check(pa._layer_grown.is_empty(),
+			"a board seen for the first time is already the shape it should be, so nothing eases "
+			+ "in -- a restored or dealt board must not play a growth that never happened",
+			"%d layers growing" % pa._layer_grown.size())
+	await _tear_down(view)
+
+
+# ==============================================================================
+# TP-86 -- the Entrance is row -1, and its own height pushes the whole board UP.
+#
+# Owner, quoted in Q313: *"if entrance/input cards are somehow stacked with multiple cards as well
+# increasing in height, then it raises everything above it up as well so as to not cover any card
+# in the grid."* Q313=(a): that is the SAME mechanism a grid row's height uses, not a special case.
+#
+# ⚠ **THE DISCRIMINATING CASE IS A GRID CARD, NOT THE ENTRANCE'S OWN.** "The Entrance got taller"
+# and "the Entrance got taller AND the board moved" both leave the strip looking right; only the
+# second keeps the Entrance from covering the board. So this measures a card sitting on the GRID.
+# ==============================================================================
+func run_the_entrance_height_pushes_the_board_up_test() -> void:
+	behavior_section("THE ENTRANCE'S OWN HEIGHT PUSHES THE BOARD UP")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+
+	# A card on the grid, so there is a board position that must not be covered.
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], BoardCoord.new(0, 2, 4, 0))
+	await _settle_layout(view)
+	var board_before := pa.slot_center_global(BoardCoord.new(0, 2, 4, 0)).y
+	# ⚠ The Entrance's OVERFLOW past its visible strip is what moves the board. The strip itself is
+	# a player setting and deliberately does NOT move when cards land in the Entrance — resizing it
+	# would re-lay out everything anchored inside it.
+	var reservation := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
+	var strip_before := maxf(reservation, pa._entrance_row_height())
+
+	# Stack the Entrance PAST the configured minimum, so the strip genuinely has to grow.
+	var col : ArrayCardData = g.state.upper_zone[1]
+	for _i in 4:
+		var extra := TestFactories.m_card(7, TestFactories.uc())
+		extra.stage = CardData.Stage.PLAY
+		col.datas.append(extra)
+	g.state.revision += 1
+	pa.queue_rebuild()
+	await _settle_layout(view)
+
+	var strip_after := maxf(reservation, pa._entrance_row_height())
+	check(strip_after > strip_before + 0.5,
+			"precondition: the Entrance really did get taller",
+			"%.1f -> %.1f" % [strip_before, strip_after])
+
+	var board_after := pa.slot_center_global(BoardCoord.new(0, 2, 4, 0)).y
+	check(board_after < board_before - 0.5,
+			"Q313: a card on the GRID is pushed UP when the Entrance stacks — the Entrance is row "
+			+ "-1 and its height raises everything above it rather than covering it",
+			"%.1f -> %.1f" % [board_before, board_after])
+	# ⚠ **NOT "by exactly the overflow".** That looks like the mechanism but is an identity the
+	# layout does not owe: the scroll content's own origin can shift as the region around it
+	# resizes (measured: the content top moved -1 -> +7, so the floor rose 49 where the Entrance
+	# overflowed 57, and the board tracked the FLOOR exactly, which is correct). The requirement is
+	# the owner's own words — *"so as to not cover any card in the grid"* — so assert that.
+	var lowest_bottom := board_after + CardVisual.card_size_play.y * 0.5
+	var entrance_top := pa.global_position.y + pa.size.y - pa._entrance_row_height()
+	check(lowest_bottom <= entrance_top + 1.0,
+			"...far enough that the board's LOWEST card clears the Entrance's real height — the "
+			+ "point of raising it at all",
+			"lowest card bottom %.1f vs Entrance top %.1f" % [lowest_bottom, entrance_top])
 	await _tear_down(view)

@@ -242,6 +242,13 @@ func setup_gui() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_sync_entrance_x()
+	# ⚠ ONE control's rect, on the tick `_sync_entrance_x` already reads on. `resized` alone left
+	# this 8 px stale (562 against a real 554) because the content's POSITION can settle without
+	# its size changing, and a stale floor moves every row on the board at once.
+	# ⚠ This is safe where the per-PANEL version was not: that one read the rects the floor code
+	# WRITES to, every frame, and the board never settled. `TopLevelVBox` is written only from
+	# `_give_the_board_a_floor`, which runs on a window resize — not on this tick.
+	_publish_board_floor()
 
 ## X SLAVED TO THE BOARD'S HORIZONTAL SCROLL (owner spec): the Entrance never scrolls on its own
 ## in X, it mirrors whatever the board's own scroll reads, so its columns stay under the grid's.
@@ -284,10 +291,37 @@ func _sync_entrance_x() -> void:
 ## the card the multiple is measured against.
 func _apply_entrance_strip_height() -> void:
 	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
+	# ⚠ **THE VISIBLE STRIP AND THE ENTRANCE'S OWN HEIGHT ARE TWO DIFFERENT NUMBERS.** The strip is
+	# a player setting — how much Entrance is on screen — and it must NOT move when cards land in
+	# the Entrance: resizing it re-lays out everything anchored INSIDE it, which drifted a prop off
+	# its slot mid-reveal (4 px) and moved an Entrance slot 17 px between cycles. What Q313 asks for
+	# is that the BOARD rises, and only the board.
 	var h := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
 	entrance_strip.offset_top = -h
 	scroll_container.offset_bottom = -h
-	_give_the_board_a_floor(h)
+	# ⚠ **THE FLOOR CLEARS THE ENTRANCE'S ACTUAL HEIGHT, NOT ITS RESERVATION** (`Q313`=a, owner:
+	# *"it raises everything above it up as well so as to not cover any card in the grid"*). A
+	# stacked Entrance that outgrows its strip pushes the board up by the overflow; a shallow one
+	# changes nothing.
+	_give_the_board_a_floor(maxf(h, _entrance_row_height()))
+
+## ⚠ **THE ENTRANCE IS ROW −1, AND ITS OWN HEIGHT PUSHES THE BOARD UP** (`Q313`=a, owner: *"if
+## entrance/input cards are somehow stacked with multiple cards as well increasing in height, then
+## it raises everything above it up as well so as to not cover any card in the grid"*). Same
+## arithmetic a grid row uses — a whole card plus a fanned strip for every card under the top one —
+## so the Entrance participates in the board's geometry rather than being a fixed reservation the
+## board happens to sit above. The configured `entrance_visible_rows` stays the FLOOR of that: a
+## shallow Entrance still shows the strip the player expects.
+func _entrance_row_height() -> float:
+	var full := CardVisual.card_size_play.y
+	var game := CardEnvironment.get_current_game()
+	if not game: return full
+	var deepest := 0
+	for col : ArrayCardData in game.state.upper_zone:
+		deepest = maxi(deepest, col.datas.size())
+	if deepest == 0: return full
+	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
+	return float(separation) + full + float(deepest - 1) * depth_pitch
 
 ## ⚠ **THE BOARD NEEDS A FLOOR TO GROW UP OFF, AND A SCROLL CONTAINER DOES NOT GIVE IT ONE.**
 ## `TopLevelVBox` hugs its own content, so without this the grid block starts at the top of the
@@ -315,30 +349,6 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 func _publish_board_floor() -> void:
 	if not is_instance_valid(top_level_vbox): return
 	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y
-
-## ⚠ **PAST THE WINDOW'S HEIGHT THE SCROLL IS THE ONLY THING THAT CAN HOLD THE FLOOR.** The
-## bottom-alignment above pins the board only while it FITS: once the content is taller than the
-## view there is no slack left to shrink into, and a deepening stack pushes every row below it down
-## again (measured: rows below slid 36 px while those above rose the 4 that were left).
-##
-## So absorb the growth into the scroll: when the content gets taller, scroll by exactly that much.
-## The bottom of the board then stays on the same screen line and the rows above rise off it —
-## which is what growing upward out of the Entrance means. ⚠ Scrolling by the DELTA rather than
-## jumping to the maximum is what keeps this honest for a player who has scrolled somewhere else:
-## their view moves with the board instead of being yanked to the bottom.
-var _last_content_height := -1.0
-
-func _hold_the_floor_through_growth() -> void:
-	if not is_instance_valid(scroll_container) or not is_instance_valid(top_level_vbox): return
-	var h := top_level_vbox.size.y
-	var was := _last_content_height
-	_last_content_height = h
-	# The FIRST measurement only establishes the baseline — entry anchoring owns where the view
-	# starts, and treating "grew from nothing" as growth would jump the board on the first frame.
-	if was < 0.0: return
-	var grew := h - was
-	if grew <= 0.0: return
-	scroll_container.scroll_vertical += int(roundf(grew))
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -633,6 +643,11 @@ func _grid_rows(g: int) -> int:
 ## zone-card child adds one `separation` once it has collapsed to nothing.
 ## Reads the DATA, never a rect — `slot_center_global` is on the every-frame prop-anchor path.
 func _grid_row_height(g: int, r: int) -> float:
+	# ⚠ While anything is EASING the height is a function of time, not of the revision, so the memo
+	# would freeze the animation on its first frame. An idle board — which is nearly every frame —
+	# still takes the cached path.
+	if not _row_open.is_empty() or not _layer_grown.is_empty():
+		return _measure_grid_row_height(g, r)
 	_row_heights_for(g)
 	var key := Vector2i(g, r)
 	if _row_height_cache.has(key): return _row_height_cache[key]
@@ -655,7 +670,53 @@ func _measure_grid_row_height(g: int, r: int) -> float:
 			deepest = maxi(deepest, grid.cells[idx].datas.size())
 	if deepest == 0: return full
 	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	return float(separation) + full + float(deepest - 1) * depth_pitch
+	# ⚠ **EACH DEPTH LAYER CONTRIBUTES ITS PITCH THROUGH THE EASE, NOT ALL AT ONCE** — the row
+	# GROWS into its new height instead of snapping there, reusing the very clock the reveal
+	# already runs on. A layer with no entry in `_row_open` has finished arriving and counts whole.
+	var grown := 0.0
+	for h : int in range(1, deepest):
+		grown += depth_pitch * _layer_arrival(g, h)
+	return float(separation) + full + grown
+
+## How far depth layer `h` of grid `g` is through arriving, 0..1. ⚠ **THE GUARD IS ABOUT THE STACK,
+## NOT ABOUT WHAT IS ABOVE IT** (`Q77`=b, re-derived for the flipped direction): the old reveal
+## refused to open a row with nothing beneath it because that added pure empty space, and the
+## re-derivation asks the same question of the stack — a layer only contributes height if the stack
+## really reaches it. Guarding on whether a row has anything ABOVE it is the misreading, and a row
+## with nothing above it still pushes.
+func _layer_arrival(g: int, h: int) -> float:
+	var key := Vector2i(g, h)
+	if not _layer_grown.has(key): return 1.0
+	return clampf(_layer_grown[key], 0.0, 1.0)
+
+## How far each newly-landed depth layer is through arriving. ⚠ **SEPARATE FROM `_row_open`, ON
+## PURPOSE.** They share the key shape and the clock, but not the semantics: a reveal OPENS and
+## then CLOSES again, and `set_reveal_cards` REPLACES its wanted-set every section — a growth entry
+## living in there would be closed by the next section and the row would shrink back under a card
+## that is still sitting on it. Height that has arrived is permanent, so an entry is erased once it
+## reaches 1 and an absent key reads as fully arrived.
+var _layer_grown : Dictionary[Vector2i, float] = {}
+## The deepest stack each grid had at the last rebuild, so a DEEPER one can be told apart from a
+## board that simply already looked like this.
+var _known_depth : Dictionary[int, int] = {}
+
+## Seed the arrival of any depth layer that appeared since the last rebuild, so the row eases into
+## its new height instead of snapping (`Q75`=a).
+## ⚠ A grid seen for the FIRST time animates nothing: a dealt or restored board is already the
+## shape it should be, and easing it in would play a growth that never happened.
+func _seed_new_layers(game_state: GameData) -> void:
+	for gi : int in game_state.grids.size():
+		var grid : GridData = game_state.grids[gi]
+		if not grid: continue
+		var deepest := 0
+		for cell : ArrayCardData in grid.cells:
+			deepest = maxi(deepest, cell.datas.size())
+		var known : int = _known_depth.get(gi, deepest)
+		for h : int in range(maxi(known, 1), deepest):
+			if not _layer_grown.has(Vector2i(gi, h)):
+				_layer_grown[Vector2i(gi, h)] = 0.0
+				set_process(true)
+		_known_depth[gi] = deepest
 
 ## Every CardVisual in `coord`'s BRACKET ROW — the set `PropLayer` brackets a split prop around.
 ##
@@ -742,9 +803,11 @@ func set_card_zones_visuals() -> void:
 	# lower-zone cards draw over upper.
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_grid_zone_visuals(game_state)
+	_seed_new_layers(game_state)
+	# The Entrance is row -1: its depth is part of the board's geometry, so a rebuild that changed
+	# it has to re-measure the floor. This moves the BOARD, never the strip.
+	_apply_entrance_strip_height()
 	_order_board_cards(game_state)
-	# After the layout has actually re-run, so the content height is the new one.
-	_hold_the_floor_through_growth.call_deferred()
 
 	# Re-sync now too (not just every physics frame): a caller that reads Entrance geometry
 	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
@@ -1325,22 +1388,11 @@ func set_reveal_cards(cards: Array[CardData]) -> void:
 			# a second, staler answer to a question the state already answers.
 			var coord : BoardCoord = game.state.grid_position_of(data)
 			if coord.is_nowhere(): continue
-			if not _reveal_geometry_exists(coord): continue
 			wanted[_reveal_key(coord)] = true
 	_row_open_wanted = wanted
 	for key : Vector2i in wanted:
 		if not _row_open.has(key): _row_open[key] = 0.0
 	set_process(true)
-
-## ⚠ **THE ONE THING STILL HOLDING THE REVEAL TO THE ENTRANCE, AND IT IS DELIBERATE.** Everything
-## behind it — the key, `_row_covers_anything`, `row_open_extra`, `_row_open_offset` — is
-## board-wide now. What a GRID still lacks is the arithmetic for a row band that grows: a taller
-## cell grows its whole `GridContainer` row and shifts every row after it, and
-## `_grid_slot_center_global`'s pitch is still uniform (see its own note). Opening a grid layer
-## before that exists would move the controls and leave every card and prop behind. This guard goes
-## when a grid row's height becomes derivable from its tallest cell.
-func _reveal_geometry_exists(coord: BoardCoord) -> bool:
-	return coord.is_entrance()
 
 ## Push the current openings onto the row strips AND the row score gutters.
 ##
@@ -1348,7 +1400,9 @@ func _reveal_geometry_exists(coord: BoardCoord) -> bool:
 ## labels are a parallel column with no knowledge of the cards, so nothing else would keep them level;
 ## the design calls this out by name because it fails silently and looks like a labelling bug.
 func _apply_row_openings() -> void:
-	# Entrance-only while `_reveal_geometry_exists` is.
+	# ⚠ The GRID's opening needs no control pass: a grid row's height is a function of its cells'
+	# depth (`_measure_grid_row_height`), which the containers already resolve on their own. Only
+	# the Entrance's fanned strips and its score gutter have to be pushed by hand.
 	var hbox : HBoxContainer = upper_zone_right
 	if hbox:
 		for col : Node in hbox.get_children():
@@ -1375,7 +1429,8 @@ func _apply_row_openings() -> void:
 ## the act speed-up exactly like the dim, the travel and the hold, so a long cascade cannot leave a
 ## row still opening while the next section has already started.
 func _ease_row_openings(delta: float) -> bool:
-	if _row_open.is_empty(): return false
+	var growing := _ease_layer_arrivals(delta)
+	if _row_open.is_empty(): return growing
 	var game := CardEnvironment.get_current_game()
 	var unit : float = game.get_delay() if game else SettingsManager.settings.base_delay
 	var span := maxf(unit * SettingsManager.settings.spotlight_reveal_fraction, 0.0001)
@@ -1384,16 +1439,42 @@ func _ease_row_openings(delta: float) -> bool:
 	for key : Vector2i in _row_open:
 		var target : float = 1.0 if _row_open_wanted.has(key) else 0.0
 		var now : float = _row_open[key]
+		# ⚠ Only an ENTRANCE key can make the control pass necessary — a grid row's height is a
+		# function of its cells' depth and its containers resolve it themselves. Running the pass
+		# for a grid key rewrites the Entrance's strip sizes for no reason, and the relayout that
+		# provokes drifts anything anchored to an Entrance slot (measured: a prop 4 px off across a
+		# reveal cycle, which is exactly what G31/G32 exist to catch).
+		var is_entrance_key := key.x == REVEAL_ENTRANCE_GRID
 		if is_equal_approx(now, target):
 			# ⚠ A fully CLOSED row leaves the map, so an idle board holds no reveal state at all and
 			# `_row_open_offset` stays free. A fully OPEN one must stay — it is still displacing.
 			if target <= 0.0: shut.append(key)
 			continue
 		_row_open[key] = move_toward(now, target, delta / span)
-		moved = true
+		if is_entrance_key: moved = true
 	for key : Vector2i in shut: _row_open.erase(key)
 	if moved or not shut.is_empty(): _apply_row_openings()
-	return not _row_open.is_empty()
+	return growing or not _row_open.is_empty()
+
+## One frame of every landing depth layer growing into its height. Shares the reveal's clock
+## (`Q75`=a: *"reusing the existing eased `_row_open` machinery"*) so a placement during a cascade
+## compresses with the act speed-up exactly like the reveal does, rather than running on wall time
+## of its own. An entry that reaches 1 is ERASED — arrived height is permanent, and an idle board
+## then carries no growth state at all.
+func _ease_layer_arrivals(delta: float) -> bool:
+	if _layer_grown.is_empty(): return false
+	var game := CardEnvironment.get_current_game()
+	var unit : float = game.get_delay() if game else SettingsManager.settings.base_delay
+	var span := maxf(unit * SettingsManager.settings.spotlight_reveal_fraction, 0.0001)
+	var done : Array[Vector2i] = []
+	for key : Vector2i in _layer_grown:
+		var now : float = _layer_grown[key]
+		if now >= 1.0:
+			done.append(key)
+			continue
+		_layer_grown[key] = move_toward(now, 1.0, delta / span)
+	for key : Vector2i in done: _layer_grown.erase(key)
+	return not _layer_grown.is_empty()
 
 ## The board itself has no per-frame work (rebuilds are signal-driven, see queue_rebuild);
 ## this hook keeps the visible focus inspector pinned to its live anchor, and drives S16's reveal.

@@ -18,9 +18,12 @@ byte-identical after a full run AND after one killed by its timeout. The new **S
 suite sweeps the geometry across each knob's range, so tuning cannot break a test and any value
 stays valid.
 
-**Next** is `S22` (`_row_open` inverted, the Entrance at `y == -1`) — which is also what gives a
-grid row band the arithmetic `PlayArea._reveal_geometry_exists` is waiting on — then `S23`-`S25`,
-Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
+**`S22` has landed too**: a grid row now EASES into its new height on the reveal's own clock, the
+Entrance is row −1 whose own height raises the board, and `_reveal_geometry_exists` is DELETED —
+nothing about the reveal is Entrance-only any more.
+
+**Next** is `S23` (the spring: a jumping card lifts the stack above it rigidly, overlapping rather
+than re-flowing), then `S24`-`S25`, Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -361,6 +364,40 @@ lettered steps by hand when closing a gap.
     ⚠ TP-83's three assertions were REMOVED rather than left red: a test for a feature nobody is
     building this session is a test written too early, and `warn()` is explicitly not for
     "this is broken". The note in `run_a_row_shares_one_bottom_edge_test` says what to put back.
+- id: S22
+  description: >
+    The reveal inverted and shared: a grid row EASES into its new height on the reveal's own clock,
+    and the Entrance is row -1 whose height raises the board (E12, E13, Q75, Q77, Q313).
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_layout.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    ALL 44 SUITES: 3575 CHECKS PASSED, console and log agreeing; GRID LAYOUT 43/43, VISUAL LAYERS
+    209/209. RED taken by neutralising `_layer_arrival` to a constant rather than by reverting the
+    file -- the old code has no `_layer_grown` at all, so a plain revert dropped the suite to 43 and
+    proved nothing. Neutralised, the failures were exactly the three expected: no growth
+    registered, nothing caught mid-flight, and the row stuck at 54 where 74 was due.
+  notes: >
+    ⚠ **GROWTH IS TRACKED SEPARATELY FROM THE REVEAL, ON THE SAME CLOCK** (`Q75`=a). `_layer_grown`
+    shares `_row_open`'s key shape and easing, but NOT its semantics: a reveal opens and then
+    CLOSES, and `set_reveal_cards` REPLACES its wanted-set every section -- growth living in there
+    would be closed by the next section and the row would shrink under a card still sitting on it.
+    Arrived height is permanent, so an entry is erased at 1 and an absent key reads as arrived.
+    ⚠ **`Q77`=b RECONCILES WITH TP-87 ONCE YOU READ WHAT BOTH RESTATE.** The re-derived guard asks
+    whether the STACK has the height to contribute, not whether anything sits above it. Guarding on
+    "is there a row above" is the misreading, and TP-87 is exactly that case: a row with nothing
+    above it still grows.
+    ⚠ **THE VISIBLE STRIP AND THE ENTRANCE'S OWN HEIGHT ARE TWO DIFFERENT NUMBERS.** Making the
+    strip track the Entrance's depth re-lays out everything anchored INSIDE it -- measured as a
+    prop drifting 4 px off its slot mid-reveal and an Entrance slot moving 17 px between cycles.
+    The strip stays the player's setting; only the FLOOR clears the Entrance's real height.
+    ⚠ **A ROW'S EASED HEIGHT CANNOT USE THE REVISION MEMO** -- while anything is easing the height
+    is a function of time, and the memo froze the animation on its first frame. An idle board still
+    takes the cached path.
+    ⚠ **ONLY AN ENTRANCE KEY NEEDS THE CONTROL PASS.** A grid row's height is resolved by its own
+    containers; running `_apply_row_openings` for a grid key rewrites the Entrance's strips for
+    nothing and drifts what is anchored to them.
 - id: S21settings
   description: >
     Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
@@ -491,12 +528,10 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Open bugs
 
-- ⚠ **A GRID ROW BAND HAS NO ARITHMETIC.** `_grid_slot_center_global`'s row pitch is UNIFORM, so a
-  row that grows because one of its cells holds a deep stack moves its controls and leaves every
-  card and prop behind. `PlayArea._reveal_geometry_exists` is the single named guard holding the
-  reveal off grids because of it; **`S22` builds the band and deletes that guard.** Everything
-  behind the guard — the `(grid, h)` key, `_row_covers_anything`, `row_open_extra`,
-  `_row_open_offset` — is already board-wide.
+- ⚠ **THE SCROLL CONTENT'S OWN ORIGIN CAN SHIFT** as the region around it resizes (measured: its
+  top moved −1 → +7 when the Entrance's reservation changed). The board tracks the FLOOR exactly,
+  which is correct — but it means "the board moved by exactly X" is an identity the layout does not
+  owe, and a test asserting one will fail on a board that is behaving.
 - ⚠ **SIX test files still assert only against the legacy renderer, and NONE of them can port.**
   `test_game_headless.gd::ZONE_ONLY_TESTS` is now entirely **MACHINERY** (3 - `test_board`,
   `test_mods`, `test_spotlight`) testing legacy code that is still LIVE (find_data_vec3 has 9
@@ -516,9 +551,10 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
-   grid row band gets its arithmetic and `PlayArea._reveal_geometry_exists` is DELETED.
-2. **`S23`**-**`S25`** - the spring, the score labels, cross-grid alignment.
+1. **`S23`** - the spring: a jumping card lifts the whole stack above it rigidly, by the full
+   rise, OVERLAPPING the rows above rather than re-flowing them, and a hoop rides the card that
+   jumped rather than the stack top (`TP-88`-`TP-90`).
+2. **`S24`**-**`S25`** - the score labels, then cross-grid alignment.
 3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
    last.
 
