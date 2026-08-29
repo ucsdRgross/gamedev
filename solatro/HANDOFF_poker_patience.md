@@ -22,8 +22,11 @@ stays valid.
 Entrance is row −1 whose own height raises the board, and `_reveal_geometry_exists` is DELETED —
 nothing about the reveal is Entrance-only any more.
 
-**Next** is `S23` (the spring: a jumping card lifts the stack above it rigidly, overlapping rather
-than re-flowing), then `S24`-`S25`, Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
+**`S23` has landed too** — the spring: a jumping card lifts the whole stack above it rigidly, the
+board overlaps rather than re-flowing, and a hoop rides the card that actually jumped.
+
+**Next** is `S24` (score labels — **no subtotals anywhere**), then `S25` (cross-grid alignment),
+Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -398,6 +401,36 @@ lettered steps by hand when closing a gap.
     ⚠ **ONLY AN ENTRANCE KEY NEEDS THE CONTROL PASS.** A grid row's height is resolved by its own
     containers; running `_apply_row_openings` for a grid key rewrites the Entrance's strips for
     nothing and drifts what is anchored to them.
+- id: S23
+  description: >
+    THE SPRING: a jumping card lifts the whole stack above it rigidly, overlapping the rows above
+    rather than re-flowing them, and a hoop rides the card that jumped (E14-E16, Q310-Q312).
+  files_touched: [solatro/Cards/card_visual.gd, solatro/UI/play_area.gd, solatro/UI/prop_layer.gd,
+    solatro/Tests/UI/test_grid_layout.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    ALL 44 SUITES: 3604 CHECKS PASSED, console and log agreeing; GRID LAYOUT 53/53. RED taken by
+    stubbing out only the rider loop: the jumping card lifted -11.9 while the stack above it stayed
+    at 0.0, which is exactly the claim.
+  notes: >
+    ⚠ **THE BOARD KNOWLEDGE LIVES IN `PlayArea.jump_card_with_its_stack`, NOT IN `CardVisual`.** A
+    card visual cannot know what is stacked on it. Both callers that used to reach for `anim_jump()`
+    now go through it, so a jump can never again lift only the card it happened to.
+    ⚠ **`Q312`=a COMES FOR FREE, AND IT IS WORTH KNOWING WHY.** The lift rides `offset`, which is
+    INSIDE the card root and invisible to the containers — so a springing stack overlaps the rows
+    above and nothing re-flows. That is the one place the "rows never overlap" rule is deliberately
+    broken; breaking it here is the design's choice, not an accident of the implementation.
+    ⚠ `anim_spring_lift` deliberately omits `anim_jump`'s SCALE PULSE: the pulse belongs to the card
+    the effect is happening to, and pulsing the whole stack reads as five cards being hit.
+    ⚠ `Q311`=a already held — a hoop's rise is folded into its own LANE OFFSET, applied at its
+    anchor coord, which is the jumping card's. TP-90 pins it against the stack top, two depth
+    pitches away, because that is the reading that would send a card through the ring's side.
+    ⚠ A test that waits for a jump to settle must wait for `absf(y)` to fall, not for the sign to
+    flip: the descent is TRANS_BACK and OVERSHOOTS the resting pose.
+    ⚠ **A TEST HELPER MUST NOT BE NAMED `run_*`** — that is the registration gate's entry-point
+    convention, and it will demand the helper be called from `_ready`.
 - id: S21settings
   description: >
     Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
