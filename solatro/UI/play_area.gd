@@ -60,6 +60,8 @@ func _reveal_key(coord: BoardCoord) -> Vector2i:
 ## seen failure mode the cache accepts by design.
 var _grid_panel_origin : Dictionary[int, Vector2] = {}
 
+
+
 ## How tall a revealed row's strip becomes, in screen pixels — the only place either formula is
 ## written.
 ##
@@ -164,6 +166,7 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## (measured: 4 px, TP-80k). `UpperZoneLeft` is hidden (`setup_gui`), so the gutter has nothing to
 ## separate from and is zeroed there instead.
 @onready var containers : Array[Control] = [%TopLevelVBox, %UpperZoneLeft, %UpperZoneRight]
+@onready var top_level_vbox: VBoxContainer = %TopLevelVBox
 @onready var upper_zone_left: VBoxContainer = %UpperZoneLeft
 @onready var upper_zone_right: HBoxContainer = %UpperZoneRight
 @onready var prop_layer: PropLayer = %PropLayer   ## Phase 4 prop-animation surface
@@ -227,6 +230,10 @@ func setup_gui() -> void:
 	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
 	_apply_entrance_strip_height()
+	# The floor is measured against THIS control's height, so re-measure it whenever the window
+	# changes — otherwise the board keeps growing off a stale floor.
+	if not resized.is_connected(_apply_entrance_strip_height):
+		resized.connect(_apply_entrance_strip_height)
 	_sync_entrance_x()
 
 func _physics_process(_delta: float) -> void:
@@ -276,6 +283,45 @@ func _apply_entrance_strip_height() -> void:
 	var h := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
 	entrance_strip.offset_top = -h
 	scroll_container.offset_bottom = -h
+	_give_the_board_a_floor(h)
+
+## ⚠ **THE BOARD NEEDS A FLOOR TO GROW UP OFF, AND A SCROLL CONTAINER DOES NOT GIVE IT ONE.**
+## `TopLevelVBox` hugs its own content, so without this the grid block starts at the top of the
+## scrolled content and every deepened stack pushes the rows BELOW it down — the opposite of the
+## board growing upward out of the Entrance.
+## ⚠ **`alignment`, NOT `size_flags_vertical`.** A vertical size flag aligns a child inside its OWN
+## allotted slot, and a `VBoxContainer` allots each child exactly its minimum height — so
+## `SIZE_SHRINK_END` on the grid block moved it by nothing at all (measured: the rows below a
+## deepened one still slid down the full 40 px it gained). `ALIGNMENT_END` packs the container's
+## children against its end, which is what actually pins the floor.
+func _give_the_board_a_floor(strip_h: float) -> void:
+	if not is_instance_valid(top_level_vbox) or not is_instance_valid(grid_container): return
+	top_level_vbox.custom_minimum_size.y = maxf(size.y - strip_h, 0.0)
+	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
+
+## ⚠ **PAST THE WINDOW'S HEIGHT THE SCROLL IS THE ONLY THING THAT CAN HOLD THE FLOOR.** The
+## bottom-alignment above pins the board only while it FITS: once the content is taller than the
+## view there is no slack left to shrink into, and a deepening stack pushes every row below it down
+## again (measured: rows below slid 36 px while those above rose the 4 that were left).
+##
+## So absorb the growth into the scroll: when the content gets taller, scroll by exactly that much.
+## The bottom of the board then stays on the same screen line and the rows above rise off it —
+## which is what growing upward out of the Entrance means. ⚠ Scrolling by the DELTA rather than
+## jumping to the maximum is what keeps this honest for a player who has scrolled somewhere else:
+## their view moves with the board instead of being yanked to the bottom.
+var _last_content_height := -1.0
+
+func _hold_the_floor_through_growth() -> void:
+	if not is_instance_valid(scroll_container) or not is_instance_valid(top_level_vbox): return
+	var h := top_level_vbox.size.y
+	var was := _last_content_height
+	_last_content_height = h
+	# The FIRST measurement only establishes the baseline — entry anchoring owns where the view
+	# starts, and treating "grew from nothing" as growth would jump the board on the first frame.
+	if was < 0.0: return
+	var grew := h - was
+	if grew <= 0.0: return
+	scroll_container.scroll_vertical += int(roundf(grew))
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -500,19 +546,101 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 ## own stack (`coord.h`). The panel's origin is a cached publish (`_grid_panel_origin`), never a
 ## live rect read, because a grid panel's position is a layout result (bottom/center-shrink flags
 ## inside an HBoxContainer of siblings).
-## ⚠ The row pitch here is UNIFORM (one card's height, same as an empty cell) — a row that grows
-## taller because one of its cells holds a deep stack (a whole row grows with its tallest cell) has
-## no arithmetic model yet; only the Entrance's eased reveal offset exists today.
+##
+## ⚠ **STACKS GROW UPWARD FROM A SHARED BOTTOM EDGE.** Every card in a row bottoms out on that
+## row's bottom line; height `h` lifts a card by one depth pitch, so a covered card shows its
+## bottom strip — which is where the pips are. The centre is measured UP from the row's bottom,
+## never down from the panel's top.
+##
+## ⚠ **ROW HEIGHTS ARE NOT UNIFORM, AND THAT IS THE POINT.** A row is as tall as its deepest cell,
+## and a tall stack pushes every row ABOVE it up. Still pure arithmetic: the heights come from the
+## DATA (`_grid_row_height` counts cards), never from a control rect, so geometry stays independent
+## of relayout timing.
 func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	var origin : Vector2 = _grid_panel_origin.get(coord.grid, Vector2.ZERO)
 	var width := CardVisual.card_size_play.x
 	var full := CardVisual.card_size_play.y
 	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	var row_pitch := full + float(separation)
 	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
-	var y := origin.y + float(coord.y) * row_pitch + float(separation) \
-			+ depth_pitch * float(coord.h) + full * 0.5
+	# ⚠ **THE PANEL'S BOTTOM IS DERIVED, NEVER CACHED FROM ITS RECT.** The cached ORIGIN is fresh
+	# (a panel that grows also changes size, so `resized` fires), but the cached SIZE was not —
+	# measured at 330 against a real 310, and the whole board then read as sliding downward as it
+	# filled. Adding the height the DATA implies has no such gap. And do NOT refresh a rect cache
+	# from `_physics_process` instead: reading panel rects every frame feeds the relayout that
+	# `_give_the_board_a_floor` writes into, and the board never settles — it hung the suite before
+	# its banner, three times.
+	var bottom : float = origin.y + _grid_panel_height(coord.grid)
+	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
+		bottom -= _grid_row_height(coord.grid, r) + float(separation)
+	# The cell's own frame sits ON the row's bottom line; the stack starts one `separation` above
+	# it — the gap the CellSlot puts between the frame and the card covering it.
+	var y := bottom - float(separation) - depth_pitch * float(coord.h) - full * 0.5
 	return Vector2(x, y)
+
+## ⚠ **MEMOISED ON THE STATE'S REVISION, AND IT HAS TO BE.** `slot_center_global` runs for every
+## card and every prop EVERY FRAME, and the row heights it needs are an O(rows x cols) scan of the
+## cells. Computing them per call collapsed the frame rate far enough that awaited placement
+## animations stopped finishing — which presents as a HANG with no error, not as slowness: the
+## suite died before its banner, and the visual harness never reached its own second card.
+## `revision` is the same key `GameData._ensure_pos_index` rebuilds on, and it bumps on every board
+## mutation, so a stale entry cannot outlive a change to the cells it measured.
+var _row_height_cache : Dictionary[Vector2i, float] = {}
+var _row_height_revision := -1
+
+func _row_heights_for(g: int) -> void:
+	var game := CardEnvironment.get_current_game()
+	var rev : int = game.state.revision if game else -1
+	if rev == _row_height_revision: return
+	_row_height_cache.clear()
+	_row_height_revision = rev
+
+## A panel's whole height, from the DATA: every row, plus the gap the panel puts between them.
+func _grid_panel_height(g: int) -> float:
+	var rows := _grid_rows(g)
+	if rows <= 0: return 0.0
+	var total := float(separation) * float(rows - 1)
+	for r : int in rows:
+		total += _grid_row_height(g, r)
+	return total
+
+## How many rows grid `g` has, from the DATA. Zero for a grid index nothing answers to.
+func _grid_rows(g: int) -> int:
+	var game := CardEnvironment.get_current_game()
+	if not game: return 0
+	var grids := game.state.grids
+	if g < 0 or g >= grids.size(): return 0
+	var grid : GridData = grids[g]
+	return grid.grid_height if grid else 0
+
+## How tall row `r` of grid `g` stands: its deepest cell decides, because a `GridContainer` row is
+## as tall as its tallest child. An EMPTY cell is a whole card (that is what an empty cell shows);
+## a stack of `d` is the top card whole plus a strip for every card under it, and the cell's own
+## zone-card child adds one `separation` once it has collapsed to nothing.
+## Reads the DATA, never a rect — `slot_center_global` is on the every-frame prop-anchor path.
+func _grid_row_height(g: int, r: int) -> float:
+	_row_heights_for(g)
+	var key := Vector2i(g, r)
+	if _row_height_cache.has(key): return _row_height_cache[key]
+	var h := _measure_grid_row_height(g, r)
+	_row_height_cache[key] = h
+	return h
+
+func _measure_grid_row_height(g: int, r: int) -> float:
+	var full := CardVisual.card_size_play.y
+	var game := CardEnvironment.get_current_game()
+	if not game: return full
+	var grids := game.state.grids
+	if g < 0 or g >= grids.size(): return full
+	var grid : GridData = grids[g]
+	if not grid or r < 0 or r >= grid.grid_height: return full
+	var deepest := 0
+	for x : int in grid.grid_width:
+		var idx := grid.cell_index(x, r)
+		if idx >= 0 and idx < grid.cells.size():
+			deepest = maxi(deepest, grid.cells[idx].datas.size())
+	if deepest == 0: return full
+	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
+	return float(separation) + full + float(deepest - 1) * depth_pitch
 
 ## Every CardVisual in `coord`'s BRACKET ROW — the set `PropLayer` brackets a split prop around.
 ##
@@ -600,6 +728,9 @@ func set_card_zones_visuals() -> void:
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_grid_zone_visuals(game_state)
 	_order_board_cards(game_state)
+	# After the layout has actually re-run, so the content height is the new one.
+	_hold_the_floor_through_growth.call_deferred()
+
 	# Re-sync now too (not just every physics frame): a caller that reads Entrance geometry
 	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
 	# a stale track width from before this rebuild's grid changed size.
@@ -666,8 +797,13 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
 	var target_layer := _target_card_layer(c)
+	# A GRID card hangs from its control's BOTTOM edge (stacks grow upward, a row shares one bottom
+	# edge); the Entrance still fans downward from its control tops. The layer the control belongs
+	# to is exactly that distinction, so it is the one thing asked.
+	var bottom := target_layer == card_layer
 	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 		var vis := data_card[connected_data]
+		vis.bottom_anchored = bottom
 		new_data_card[connected_data] = vis
 		vis.control_anchor = c
 		# A CARD MOVED BETWEEN LAYERS (Entrance <-> grid — a placement or an undo of one): a
@@ -679,8 +815,10 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 		if vis.get_parent() != target_layer and vis.get_parent() != null:
 			vis.reparent(target_layer)
 	else:
-		new_data_card[connected_data] = CardVisual.add_child_card_visual(
+		var fresh := CardVisual.add_child_card_visual(
 			target_layer, connected_data, CardVisual.DisplayContext.PLAY_AREA, c)
+		fresh.bottom_anchored = bottom
+		new_data_card[connected_data] = fresh
 
 ## Structural draw order (no z_index anywhere, LAYERING.md), ROW-MAJOR across columns
 ## (owner spec): per zone, the type/zone headers first, then row 0 of every column,
@@ -878,13 +1016,66 @@ func _create_grid_panel() -> Control:
 	# cross-grid row alignment off (the default) the bottom edge is the ONLY thing that lines up.
 	panel.size_flags_vertical = Control.SIZE_SHRINK_END
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var cells := GridContainer.new()
-	cells.name = "CellGrid"
-	panel.add_child(cells)
-	# `resized` fires whenever a Control's rect changes, position included, not size alone — the
-	# one signal that tracks a shrink-flagged panel being shoved sideways/upward by its siblings.
-	panel.resized.connect(_publish_grid_panel_origin.bind(panel))
+	# ⚠ **ONE CONTAINER PER ROW, NOT ONE GRID FOR THE WHOLE PANEL** (owner spec). A `GridContainer`
+	# gives every cell in a row the row's full height, so a cell has nothing to bottom-align
+	# against and a deep stack bleeds into the row above. A row of its own is the same shape the
+	# original play area used for a zone — an HBox of columns — just turned through 90 degrees:
+	# each row is independent, each cell shrinks to its own stack, and every cell in a row is
+	# bottom-aligned inside it, which is what keeps a row's zone cards on ONE y.
+	panel.add_theme_constant_override("separation", separation)
+	# ⚠ **`resized` IS NOT ENOUGH, AND THE CLAIM THAT IT COVERS POSITION WAS FALSE.** `resized`
+	# fires on SIZE changes only; a panel shoved up or sideways by a sibling — which is exactly
+	# what happens to a bottom-aligned panel when the board grows — changes POSITION with no size
+	# change at all, and the cache silently kept the old line. Measured: a cached bottom of 574
+	# against a real 554, one whole depth pitch stale, which read as the board growing DOWNWARD.
+	# `item_rect_changed` is the signal that covers both.
+	panel.item_rect_changed.connect(_publish_grid_panel_origin.bind(panel))
+	panel.sort_children.connect(_publish_grid_panel_origin.bind(panel))
 	return panel
+
+## One row of a grid: an HBox of cells, the same shape the original play area gave a zone.
+func _create_grid_row() -> Control:
+	var row := HBoxContainer.new()
+	row.name = "GridRow"
+	row.add_theme_constant_override("separation", separation)
+	# Rows keep their own width centred on the panel, like the panel does on the board.
+	row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return row
+
+## One cell: a VBox holding its stack. ⚠ **BOTTOM-ALIGNED INSIDE ITS ROW** — this is the whole
+## reason a row is its own HBox. The row is as tall as its deepest cell, and every shallower cell
+## shrinks to its own stack and sits on the row's bottom line, so a row's zone cards are ALWAYS on
+## one y no matter how uneven the stacks are.
+func _create_cell_slot() -> Control:
+	var slot := VBoxContainer.new()
+	slot.name = "CellSlot"
+	slot.add_theme_constant_override("separation", separation)
+	slot.size_flags_vertical = Control.SIZE_SHRINK_END
+	return slot
+
+## Grows or truncates `parent`'s children to exactly `wanted`, building new ones with `make`.
+## The same add/remove-from-the-end shape `set_card_zone` uses for a zone's columns.
+func _fit_children(parent: Node, wanted: int, make: Callable) -> void:
+	var diff := wanted - parent.get_child_count()
+	if diff > 0:
+		for _i : int in diff:
+			parent.add_child(make.call() as Node)
+	elif diff < 0:
+		for _i : int in absi(diff):
+			var doomed : Node = parent.get_child(-1)
+			parent.remove_child(doomed)
+			doomed.queue_free()
+
+## The slot for grid cell index `ci`, found through its row. Cells are row-major in the data, so
+## the row is `ci / width` and the column `ci % width`.
+func _cell_slot(panel: Control, grid: GridData, ci: int) -> VBoxContainer:
+	var w := maxi(grid.grid_width, 1)
+	var ry := ci / w
+	var cx := ci % w
+	if ry < 0 or ry >= panel.get_child_count(): return null
+	var row : Control = panel.get_child(ry)
+	if cx < 0 or cx >= row.get_child_count(): return null
+	return row.get_child(cx) as VBoxContainer
 
 ## Caches one grid panel's resolved global origin, so `slot_center_global` can read it instead of
 ## the panel's rect. Keyed by the panel's CURRENT index (see `_grid_panel_origin`'s own comment for
@@ -892,27 +1083,20 @@ func _create_grid_panel() -> Control:
 func _publish_grid_panel_origin(panel: Control) -> void:
 	_grid_panel_origin[panel.get_index()] = panel.global_position
 
+
 ## Fills one panel with `grid_width * grid_height` cell slots and binds every card in them.
 ## The cell count comes from the DATA, never from a hard-coded 5.
 func _bind_grid_panel(panel: Control, grid: GridData) -> void:
 	if not grid: return
-	var cells : GridContainer = panel.get_child(0)
-	cells.columns = maxi(grid.grid_width, 1)
+	_fit_children(panel, grid.grid_height, _create_grid_row)
+	for ry : int in grid.grid_height:
+		var row : HBoxContainer = panel.get_child(ry)
+		row.add_theme_constant_override("separation", separation)
+		_fit_children(row, grid.grid_width, _create_cell_slot)
 	var wanted := grid.cells.size()
-	var diff := wanted - cells.get_child_count()
-	if diff > 0:
-		for _i : int in diff:
-			var slot := VBoxContainer.new()
-			slot.name = "CellSlot"
-			slot.add_theme_constant_override("separation", separation)
-			cells.add_child(slot)
-	elif diff < 0:
-		for _i : int in absi(diff):
-			var doomed : Node = cells.get_child(-1)
-			cells.remove_child(doomed)
-			doomed.queue_free()
 	for ci : int in wanted:
-		var slot : VBoxContainer = cells.get_child(ci)
+		var slot : VBoxContainer = _cell_slot(panel, grid, ci)
+		if not slot: continue
 		var stack : Array[CardData] = grid.cells[ci].datas
 		var rows := stack.size() + 1   # +1 for the cell's own zone card
 		var row_diff := rows - slot.get_child_count()
@@ -924,9 +1108,18 @@ func _bind_grid_panel(panel: Control, grid: GridData) -> void:
 				var doomed : Node = slot.get_child(-1)
 				slot.remove_child(doomed)
 				doomed.queue_free()
-		_bind_slot(slot.get_child(0) as Control, grid.cell_types[ci])
-		for j : int in range(1, slot.get_child_count()):
-			_bind_slot(slot.get_child(j) as Control, stack[j - 1])
+		# ⚠ **REVERSED, AND THE CELL'S OWN FRAME GOES LAST.** A VBox lays its children out top to
+		# bottom and a card now hangs from its control's BOTTOM edge, so: the card at the greatest
+		# height takes the FIRST control, h 0 the last CARD control, and the cell's zone card the very
+		# last one — because the frame marks the CELL, which sits on the row's bottom line and does
+		# not rise with the stack.
+		# ⚠ Leaving the frame FIRST drew it a full card ABOVE an occupied cell: its control collapses
+		# to zero height once a card covers it, so bottom-anchoring put the frame off the top of the
+		# cell and onto the row above — which reads as a whole extra row of frames. Found by eye.
+		var depth := stack.size()
+		for j : int in depth:
+			_bind_slot(slot.get_child(j) as Control, stack[depth - 1 - j])
+		_bind_slot(slot.get_child(depth) as Control, grid.cell_types[ci])
 
 ## Sizes every cell slot. An EMPTY cell takes a FULL card's worth, so a grid is a complete block
 ## of card-sized slots from the moment it is built and never changes shape as it fills; a covered
@@ -936,21 +1129,22 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		var grid : GridData = game_state.grids[gi]
 		if not grid: continue
 		var panel : Control = grid_container.get_child(gi)
-		var cells : GridContainer = panel.get_child(0)
-		cells.add_theme_constant_override("h_separation", separation)
-		cells.add_theme_constant_override("v_separation", separation)
-		for ci : int in mini(grid.cells.size(), cells.get_child_count()):
-			var slot : VBoxContainer = cells.get_child(ci)
+		panel.add_theme_constant_override("separation", separation)
+		for ci : int in grid.cells.size():
+			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
+			if not slot: continue
 			slot.add_theme_constant_override("separation", separation)
-			# The cell's zone card: a full card while the cell is empty (it IS what an empty
-			# cell shows), collapsed to nothing once a card covers it.
-			var zone_control : Control = slot.get_child(0)
-			zone_control.custom_minimum_size = CardVisual.card_size_play if slot.get_child_count() == 1 \
-					else Vector2(CardVisual.card_size_play.x, 0)
-			for j : int in range(1, slot.get_child_count()):
+			# The cell's zone card is the LAST child: a full card while the cell is empty (it IS what
+			# an empty cell shows), collapsed to nothing once a card covers it.
+			var zone_control : Control = slot.get_child(-1)
+			zone_control.custom_minimum_size = CardVisual.card_size_play 					if slot.get_child_count() == 1 else Vector2(CardVisual.card_size_play.x, 0)
+			# The TOPMOST card of the stack (child 0 after the flip) shows whole; every card under it
+			# contributes only its own bottom strip.
+			for j : int in slot.get_child_count() - 1:
 				(slot.get_child(j) as Control).custom_minimum_size = Vector2(
 						CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
-			(slot.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
+			if slot.get_child_count() > 1:
+				(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
 
 func create_card_control() -> Control:
 	var new_control := Control.new()

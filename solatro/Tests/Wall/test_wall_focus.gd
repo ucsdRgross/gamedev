@@ -1174,23 +1174,27 @@ func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
 ## path being broken outright.
 func test_toggling_info_mode_does_not_write_the_settings_file() -> void:
 	backup_real_settings()
-	var path := "user://settings.tres"
-	var real := ProjectSettings.globalize_path(path)
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(real)
-	check(not FileAccess.file_exists(path), "sanity: no settings file to begin with")
+	# ⚠ **COUNT THE SIGNAL, DO NOT WATCH THE FILE.** Suites now run on their own PlayerSettings with
+	# `SettingsManager.isolated` set, so NOTHING writes `user://settings.tres` — a file probe would
+	# report "no write" for every knob alike and this test would pass while proving nothing. The
+	# claim was always about `wall_info_mode` not emitting `settings_changed` in the first place,
+	# and that is what the save hangs off, so the signal is the instrument the claim deserves.
+	var fires : Array[int] = [0]
+	var counter := func() -> void: fires[0] += 1
+	SettingsManager.settings_changed.connect(counter)
 
 	SettingsManager.settings.wall_info_mode = true
-	check(not FileAccess.file_exists(path),
-			"toggling Info mode did NOT write the settings file")
+	check(fires[0] == 0, "toggling Info mode did NOT ask the settings to save", "%d fires" % fires[0])
 	SettingsManager.settings.wall_info_mode = false
-	check(not FileAccess.file_exists(path), "...nor did toggling it back")
+	check(fires[0] == 0, "...nor did toggling it back", "%d fires" % fires[0])
 
 	# A genuinely saved knob, to prove the save path is alive and this test can fail.
 	var prev : int = SettingsManager.settings.wall_view_min_texture_px
 	SettingsManager.settings.wall_view_min_texture_px = prev + 1
-	check(FileAccess.file_exists(path),
-			"sanity: a REAL setting still writes the file, so the check above is not vacuous")
+	check(fires[0] > 0,
+			"sanity: a REAL setting still asks to save, so the checks above are not vacuous",
+			"%d fires" % fires[0])
 	SettingsManager.settings.wall_view_min_texture_px = prev
 
+	SettingsManager.settings_changed.disconnect(counter)
 	restore_real_settings()

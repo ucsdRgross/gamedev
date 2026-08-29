@@ -43,6 +43,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_line_detect.tscn" id="41_ldetc"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_economy.tscn" id="42_gecon"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_grid_layout.tscn" id="44_glayout"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_settings_range.tscn" id="45_setrng"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
@@ -133,5 +134,7 @@ speed_base_delay = 0.1
 [node name="TestGridCards" parent="." instance=ExtResource("43_gcard")]
 
 [node name="TestGridLayout" parent="." instance=ExtResource("44_glayout")]
+
+[node name="TestSettingsRange" parent="." instance=ExtResource("45_setrng")]
 
 [node name="TestWallPause" parent="." instance=ExtResource("36_wpause")]

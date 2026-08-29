@@ -56,8 +56,8 @@ func suite_name() -> String:
 # new suite (VISUAL LAYERS) waited for INTERACTION while INTERACTION still waited for it.
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
-#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →  E2E RUN  →
-#     LEAK CANARY  →  WALL PAUSE
+#     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →
+#     SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
 #
 # WALL PAUSE (S12) is the permanent tail: it constructs a real Wall whose _ready() sets
 # get_tree().paused = true and never clears it (that persistence is what U1 tests), so nothing may
@@ -199,16 +199,37 @@ const REAL_SETTINGS_PATH := "user://settings.tres"
 func _settings_bak_path() -> String:
 	return "user://settings.tres.%s.testbak" % suite_name().to_lower().replace(" ", "_")
 
+## ⚠ **A SUITE GETS ITS OWN `PlayerSettings`, AND THE PLAYER'S FILE IS NEVER WRITTEN.** Owner
+## ruling: *"tests should have its own settings it tests with over range of possible settings
+## values, that way tuning settings wont break tests, and tests that any setting is valid."*
+##
+## `SettingsManager.isolated` stops every disk write for the duration, and the suite scribbles on a
+## FRESH instance rather than the player's. Nothing to restore means nothing a killed run can leave
+## half-undone — which is the failure this replaced: a suite killed by its timeout left TEST values
+## as the player's live settings, and later runs then hung with no banner at an unchanged commit.
+##
+## The old file-parking is kept underneath purely to heal a save left by a run from BEFORE this.
 func backup_real_settings() -> void:
-	# self-healing: a previously ABORTED run may have left the real file parked in this suite's
-	# backup, so put it back before parking again (else that run's throwaway becomes "real")
 	_move_settings_backup_home()
-	if FileAccess.file_exists(REAL_SETTINGS_PATH):
-		DirAccess.rename_absolute(ProjectSettings.globalize_path(REAL_SETTINGS_PATH),
-				ProjectSettings.globalize_path(_settings_bak_path()))
+	SettingsManager.isolated = true
+
+## A suite's OWN `PlayerSettings`, so the values it sweeps owe nothing to how the player has tuned
+## the game. Pair with `backup_real_settings()`.
+## ⚠ **CALL THIS BEFORE THE SUITE BUILDS ANYTHING, AND NEVER MID-SUITE.** Swapping the resource
+## replaces the object, and anything already holding the previous one keeps reading it — a live
+## Wall went on consulting the settings it captured in `_ready` and two of its checks failed while
+## the settings the test was writing said something else. Suites that scribble on live objects want
+## `backup_real_settings()` alone, which stops the disk writes without moving the object.
+func use_own_settings() -> PlayerSettings:
+	SettingsManager.isolated = true
+	SettingsManager.settings = PlayerSettings.new()
+	return SettingsManager.settings
 
 func restore_real_settings() -> void:
 	_move_settings_backup_home()
+	# ⚠ Deliberately does NOT clear `SettingsManager.isolated`: `all_tests` sets it for the whole
+	# run, and a suite finishing must not re-open the player's file to the suites after it.
+	SettingsManager.reload_from_disk()
 
 # Drop whatever the suite wrote and move this suite's parked real file back over it.
 func _move_settings_backup_home() -> void:

@@ -38,7 +38,7 @@ func suite_name() -> String:
 func _ready() -> void:
 	# Runs after UI PROPS (shares CardEnvironment.CURRENT) and before E2E. Excludes only E2E (which
 	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
 	backup_real_settings()
 	var prev_delay := SettingsManager.settings.base_delay

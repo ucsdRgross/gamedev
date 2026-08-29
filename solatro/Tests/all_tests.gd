@@ -29,6 +29,15 @@ func _enter_tree() -> void:
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())
 
 func _ready() -> void:
+	# ⚠ **NO SUITE MAY WRITE THE PLAYER'S SETTINGS, AND THIS IS WHERE THAT IS GUARANTEED.**
+	# Owner ruling: tests own the settings they test with, so tuning a knob cannot break a test and
+	# a test cannot overwrite a knob. Setting it per suite was not enough — only the eleven suites
+	# that call `backup_real_settings()` were covered, and `test_line_detect` (which drops
+	# `act_event_cap` from 6000 to 60) is not one of them, so it went on rewriting
+	# `user://settings.tres` on every run. Setting it HERE covers the whole process, including any
+	# suite added later that never thinks about settings at all.
+	# ⚠ Nothing clears it: the run exits, and a suite's own restore must not re-open the hole.
+	SettingsManager.isolated = true
 	var suites: Array[TestSuite] = []
 	for child in get_children():
 		if child is TestSuite:

@@ -304,62 +304,87 @@ lettered steps by hand when closing a gap.
     QUERIES so nothing is zone-indexed; it does not ship the un-designed grid band growth.
 - id: S21
   description: >
-    Upward stacks, shared bottom edge, rows pushed up (E7-E11, PLAN.md 1.8). ATTEMPTED TWICE AND
-    PARKED at `solatro/S21_WIP.patch`. Most of it is verified; see notes for exactly what.
+    Upward stacks, shared bottom edge, one container per row (E7-E10, PLAN.md 1.8). LANDED except
+    E11/Q307, which wait on the floor -- see S21floor.
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd,
     solatro/Tests/UI/test_grid_layout.gd]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: blocked
+  status: done
   evidence: >
-    RED: 5 failures, the expected set -- y INCREASED with h (154/174/194) and the row above never
-    moved. With the patch applied: TP-81 and TP-82 GREEN (E7 the stack rises, E8 one depth pitch
-    between cards, E9 draw order unchanged and still newest-in-front). STILL RED: E11 (a tall stack
-    pushes the rows ABOVE it up) and, as a knock-on, the 3 grid hoop-split checks. Backed out
-    rather than left failing.
+    ALL 44 SUITES: 3586 CHECKS PASSED, console and log agreeing. RED first, and the failure set was
+    exactly the flip: y INCREASED with h (154/174/194), and across the whole settings sweep the
+    gaps were negative and correctly scaled (-10 / -20 / -50 by card scale). BY EYE
+    (grid_occupied.png): five grid rows plus the Entrance -- the six the owner said it should be --
+    cards on their own cells, and the stacked cell visibly rising above its neighbours.
   notes: >
-    ⚠ **THE OWNER'S STRUCTURAL RULING, AND IT IS IN THE PATCH.** Verbatim: *"it might be useful to
-    have each row be its own container to prevent cards overlapping into new zones ... we want to
-    be as similar to original play area code as possible, just reversed and with more rows that
-    should act independent of other rows while making sure each row's zones are always the same
-    y."* So: the panel is a VBox of one HBox PER ROW (not a `GridContainer`), each cell a VBox that
-    is `SIZE_SHRINK_END` inside its row. A `GridContainer` gives every cell the row's full height,
-    so a cell has nothing to bottom-align against; a row of its own is the original zone's shape
-    turned 90 degrees. VERIFIED by eye (5 grid rows + the Entrance, cards on their own cells) and
-    by two new checks: one row container per grid row, and every cell in a row sharing one bottom
-    line.
-    ⚠ **WHAT IS ALREADY SOLVED, IN THE PATCH.** The cell stack is bound and sized in reverse
-    (topmost card takes the FIRST control), `CardVisual.bottom_anchored` makes a grid card hang
-    from its control's BOTTOM edge while the Entrance still hangs from control tops, and
-    `_grid_slot_center_global` measures UP from the row's bottom with per-row heights from
-    `_grid_row_height` (a row is as tall as its deepest cell). That much is verified.
-    ⚠ **WHAT IS NOT: GIVING THE BOARD A FIXED FLOOR.** Three mechanisms were tried and MEASURED:
-    (1) `size_flags_vertical = SIZE_SHRINK_END` on the grid block does NOTHING -- a `VBoxContainer`
-    allots each child exactly its minimum height, so a vertical size flag aligns it inside a slot
-    that has no slack. `BoxContainer.alignment = ALIGNMENT_END` is the lever that works.
-    (2) With `ALIGNMENT_END` plus a `custom_minimum_size.y` on TopLevelVBox, the floor holds only
-    while the board is SHORTER than the window -- measured, the rows below a deepened stack still
-    slid 36 px while those above rose the remaining 4, which was all the slack left.
-    (3) Sticking the scroll to the bottom on rebuild changed the numbers not at all; that path was
-    not reached or not effective, and was NOT diagnosed.
-    ⚠ **THE PANEL BOTTOM MUST BE DERIVED, NOT CACHED FROM A RECT.** The cached ORIGIN is fresh,
-    but the cached SIZE is not -- measured at 330 against a real 310, so the board read as sliding
-    DOWNWARD as it filled. `resized`, `item_rect_changed` and `sort_children` were each tried and
-    each missed it. `origin.y + <height the DATA implies>` has no such gap.
-    ⚠ **AND THAT DERIVATION MUST BE MEMOISED ON `state.revision`.** `slot_center_global` runs for
-    every card and prop EVERY frame; an O(rows x cols) cell scan per call collapsed the frame rate
-    until awaited placement animations stopped finishing -- which presents as a HANG with no error.
-    ⚠ **DO NOT REFRESH A RECT CACHE FROM `_physics_process`.** Reading panel rects every frame feeds
-    the relayout that the floor code writes into, and the board never settles.
-    ⚠ **THE NEXT ATTEMPT SHOULD START BY LOOKING, NOT BY INFERRING.** Several layout mechanisms
-    were changed in a row on reasoning alone; one render (`Tests/Visual/grid_layer_shot.tscn`, with
-    a temporary print of control-vs-arithmetic y per card) answered more than all of them. Do that
-    FIRST. When the cache is fresh the two agree EXACTLY -- every settled card measured d = 0.0.
-    ⚠ **A BUG THE OWNER CAUGHT BY EYE MID-RUN, and its fix is IN the patch:** once cards hang from
-    control bottoms, the cell's own frame -- a control that collapses to zero height when a card
-    covers it -- drew a full card ABOVE its cell, landing frames on the row above and reading as a
-    whole extra row of them. The frame has to be the LAST child of the CellSlot, because it marks
-    the CELL, which sits on the row's bottom line and does not rise with the stack.
+    ⚠ **OWNER'S STRUCTURAL RULING: ONE CONTAINER PER ROW.** Verbatim: *"it might be useful to have
+    each row be its own container to prevent cards overlapping into new zones ... we want to be as
+    similar to original play area code as possible, just reversed and with more rows that should
+    act independent of other rows while making sure each row's zones are always the same y."* A
+    `GridContainer` gives every cell the row's full height, so a cell has nothing to bottom-align
+    against; a row of its own is the original zone's shape turned 90 degrees, and cells
+    `SIZE_SHRINK_END` inside it are what keep a row's zone cards on ONE y.
+    ⚠ **THE CELL'S OWN FRAME IS THE LAST CHILD OF THE SLOT.** It marks the CELL, which sits on the
+    row's bottom line and does not rise with the stack. Left first, it drew a full card ABOVE an
+    occupied cell (its control collapses to zero height once covered), putting frames on the row
+    above -- which reads as a whole extra row of them. Owner found that by eye, mid-run.
+    ⚠ **THE PANEL BOTTOM IS DERIVED, NEVER CACHED FROM A RECT.** The cached ORIGIN is fresh; the
+    cached SIZE is not (330 against a real 310), and the board then read as sliding downward as it
+    filled. `resized`, `item_rect_changed` and `sort_children` each miss the move.
+    ⚠ **AND THE DERIVATION IS MEMOISED ON `state.revision`.** `slot_center_global` runs for every
+    card and prop EVERY frame; an O(rows x cols) cell scan per call collapsed the frame rate until
+    awaited animations stopped finishing -- which presents as a HANG with no error, not slowness.
+    ⚠ Do NOT refresh a rect cache from `_physics_process`: it feeds the relayout the floor code
+    writes into and the board never settles.
+- id: S21floor
+  description: >
+    E11/Q307: give the board a fixed FLOOR so a deepening stack raises the rows above it instead of
+    pushing the ones below it down, then restore the three assertions to TP-83.
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_layout.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: >
+    `_give_the_board_a_floor` pins the bottom ONLY while the board fits the window
+    (`ALIGNMENT_END` on TopLevelVBox -- ⚠ `size_flags_vertical` does nothing here, a VBox allots
+    each child exactly its minimum height so there is no slack to align inside). Past that the
+    content grows and rows below a deepened one slide down: measured +36 px down while the rows
+    above rose the 4 px of slack that was left.
+    ⚠ MEASURED AND STILL UNEXPLAINED: with a card added, the panel's own rect did NOT change
+    (top 244, height 310 before and after) while row bottoms DID move. Start there, and start by
+    RENDERING with a temporary print of panel top/height and row bottoms -- one such print answered
+    more than four rounds of reasoning did.
+    ⚠ TP-83's three assertions were REMOVED rather than left red: a test for a feature nobody is
+    building this session is a test written too early, and `warn()` is explicitly not for
+    "this is broken". The note in `run_a_row_shares_one_bottom_edge_test` says what to put back.
+- id: S21settings
+  description: >
+    Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
+  files_touched: [solatro/Scripts/settings_manager.gd, solatro/Tests/Support/test_base.gd,
+    solatro/Tests/all_tests.gd, solatro/Tests/UI/test_settings_range.gd,
+    solatro/Tests/Wall/test_wall_focus.gd]
+  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
+  verification_kind: suite
+  status: done
+  evidence: >
+    ALL 44 SUITES: 3586 CHECKS PASSED. `user://settings.tres` is byte-identical after a full run
+    AND after a run killed by its timeout -- the damage this fixes.
+  notes: >
+    Owner ruling: *"tests should have its own settings it tests with over range of possible
+    settings values, that way tuning settings wont break tests, and tests that any setting is
+    valid."*
+    ⚠ **`SettingsManager.isolated` IS SET RUN-WIDE BY `all_tests`, NOT PER SUITE.** Per-suite
+    covered only the eleven that call `backup_real_settings()`; `test_line_detect` is not one and
+    went on writing `act_event_cap = 60` into the player's file every run. `restore_real_settings`
+    deliberately does NOT clear it.
+    ⚠ **`use_own_settings()` (a FRESH PlayerSettings) is opt-in and must be called before a suite
+    builds anything.** Swapping the resource mid-suite orphans every reference already taken -- a
+    live Wall went on reading the settings it captured in `_ready` and two of its checks failed.
+    ⚠ A file-existence probe is the WRONG instrument for "did this knob save" once nothing writes
+    at all; `test_wall_focus` now counts `settings_changed` instead, which is the mechanism the
+    claim was always about.
 - id: S20b4b3
   description: 'Port the 5 PORTABLE fixtures off ZONE_ONLY_TESTS.'
   files_touched: [solatro/Tests/Engine/test_fuzz.gd, solatro/Tests/Engine/test_game_data.gd,
@@ -489,10 +514,9 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S21`, from `solatro/S21_WIP.patch`** - most of it is done and verified; what is left is
-   giving the board a FIXED FLOOR so a deepening stack raises the rows above it instead of pushing
-   the ones below it down. Read that step's `notes` first: three mechanisms are already ruled out
-   with measurements, and the instruction is to RENDER AND LOOK before changing a fourth.
+1. **`S21floor`** - the board's fixed floor, then restore `TP-83`'s three assertions. Read that
+   ledger entry first: the mechanisms already ruled out are listed with their measurements, and
+   one render answered more than four rounds of reasoning did.
 2. **`S22`** - `_row_open` inverted, Entrance at `y == -1` pushing the board up. This is where the
    grid row band gets its arithmetic and `PlayArea._reveal_geometry_exists` is DELETED.
 3. Then the rest of `PLAN.md` section 3: `S21`-`S25` (the flipped board - **cards start stacking UPWARD**),

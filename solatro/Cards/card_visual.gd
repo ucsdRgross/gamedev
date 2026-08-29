@@ -72,6 +72,11 @@ const RIG_ANIM : StringName = &"new_animation_2"
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
 @export var current_context: DisplayContext = DisplayContext.PLAY_AREA
 var control_anchor: Control = null
+## Which EDGE of `control_anchor` the card hangs from. A grid cell's stack grows UPWARD and every
+## card in a row shares a BOTTOM edge, so a covered card shows its bottom strip -- which is where
+## the pips are. The Entrance still fans DOWNWARD from its control tops. PlayArea sets this per
+## card when it binds the slot.
+var bottom_anchored := false
 
 var card_size : Vector2
 var card_separation: int
@@ -651,8 +656,12 @@ func _game_view() -> GameView:
 	var game := CardEnvironment.get_current_game()
 	return game.view if game else null
 
+## Where this card's centre sits on its anchor control. Hanging from the control's BOTTOM edge is
+## the whole of the shared-bottom-edge rule: a thin strip control then shows the card's bottom
+## while the rest of it rises over the card beneath.
 func get_card_control_center(control:Control) -> Vector2:
-	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
+	var y := (control.size.y - card_size.y / 2) if bottom_anchored else (card_size.y / 2)
+	return control.global_position + Vector2(control.size.x / 2, y)
 
 func get_control_center(control:Control) -> Vector2:
 	return control.global_position + control.size/2
