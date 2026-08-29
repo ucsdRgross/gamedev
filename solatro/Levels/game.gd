@@ -1026,14 +1026,10 @@ func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
 			state.resize_grid_bucket(state.score_special, g + 1)
 			state.score_special[g].plus_equals(amount)
 		ScoringSection.LineKind.ROW, ScoringSection.LineKind.COL:
-			var flat : Array[BigNumber] = state.scores_row if section.kind == ScoringSection.LineKind.ROW 					else state.scores_col
-			var raised : Array[Array] = state.scores_row_h if section.kind == ScoringSection.LineKind.ROW 					else state.scores_col_h
-			if section.height == 0:
-				state.resize_grid_bucket(flat, g + 1)
-				flat[g].plus_equals(amount)
-			else:
-				state.resize_grid_levels(raised, g + 1, section.height + 1)
-				(raised[g][section.height] as BigNumber).plus_equals(amount)
+			# ⚠ **WHICH row or column, and at WHAT height** (GAP-015). Banking by grid alone threw
+			# `section.index` away, and a per-row score label then had no number to show.
+			var bucket : Dictionary[Vector3i, BigNumber] = state.scores_row 					if section.kind == ScoringSection.LineKind.ROW else state.scores_col
+			state.bank_line_score(bucket, g, section.index, section.height, amount)
 		ScoringSection.LineKind.HEIGHT_V:
 			# A vertical stack banks into its OWN CELL's bucket -- the number behind the
 			# height score label above that stack. One bucket per cell, keyed by coordinate

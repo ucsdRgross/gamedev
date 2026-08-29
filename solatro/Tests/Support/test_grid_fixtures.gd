@@ -220,8 +220,8 @@ static func board_digest(state: GameData) -> String:
 		for card : CardData in deck:
 			names.append(card.log_str())
 		parts.append("%s=[%s]" % [deck_name, ",".join(names)])
-	parts.append("row=%s" % _bucket_digest(state.scores_row))
-	parts.append("col=%s" % _bucket_digest(state.scores_col))
+	parts.append("row=%s" % _keyed_digest(state.scores_row))
+	parts.append("col=%s" % _keyed_digest(state.scores_col))
 	parts.append("special=%s" % _bucket_digest(state.score_special))
 	var cell_keys : Array = state.scores_cell.keys()
 	cell_keys.sort()
@@ -231,6 +231,16 @@ static func board_digest(state: GameData) -> String:
 	parts.append("total=%d" % state.live_total())
 	return "
 ".join(parts)
+
+## A coordinate-keyed bucket, in KEY ORDER — a dictionary has none of its own, and a digest that
+## varied with insertion order would report a difference where there is none.
+static func _keyed_digest(bucket: Dictionary[Vector3i, BigNumber]) -> String:
+	var keys : Array = bucket.keys()
+	keys.sort()
+	var out : Array[String] = []
+	for key : Vector3i in keys:
+		out.append("%s=%f" % [key, bucket[key].to_float()])
+	return "[%s]" % ",".join(out)
 
 static func _bucket_digest(bucket: Array[BigNumber]) -> String:
 	var out : Array[String] = []

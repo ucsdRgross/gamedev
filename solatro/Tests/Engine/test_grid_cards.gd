@@ -188,13 +188,11 @@ func run_removed_grid_labels_go_score_stays_test() -> void:
 	var other := GridData.new()
 	Board.add_grid(g.state, other)
 	g.state.total_score = 500
-	g.state.resize_grid_bucket(g.state.scores_row, 2)
-	g.state.resize_grid_bucket(g.state.scores_col, 2)
 	g.state.resize_grid_bucket(g.state.score_special, 2)
-	g.state.scores_row[0].plus_equals(10)
-	g.state.scores_col[0].plus_equals(20)
+	g.state.bank_line_score(g.state.scores_row, 0, 0, 0, 10)
+	g.state.bank_line_score(g.state.scores_col, 0, 0, 0, 20)
 	g.state.score_special[0].plus_equals(30)
-	g.state.scores_row[1].plus_equals(40)
+	g.state.bank_line_score(g.state.scores_row, 1, 0, 0, 40)
 	g.state.bank_cell_score(0, Vector2i(1, 1), 5)
 	g.state.bank_cell_score(1, Vector2i(2, 2), 7)
 
@@ -203,9 +201,10 @@ func run_removed_grid_labels_go_score_stays_test() -> void:
 	check(g.state.total_score == 500,
 			"the banked total is untouched by removing the grid",
 			"got %d" % g.state.total_score)
-	check(g.state.scores_row.size() == 1 and g.state.scores_row[0].to_float() == 40.0,
+	check(g.state.scores_row.size() == 1 and g.state.line_score(g.state.scores_row, 0, 0, 0) == 40.0,
 			"the removed grid's row label is gone and the surviving grid shifted down to index 0",
-			"got size %d, value %f" % [g.state.scores_row.size(), g.state.scores_row[0].to_float()])
+			"got %d entries, value %f"
+			% [g.state.scores_row.size(), g.state.line_score(g.state.scores_row, 0, 0, 0)])
 	check(g.state.cell_score(0, Vector2i(2, 2)) == 7.0,
 			"the surviving grid's cell label shifted down with it",
 			"got %f" % g.state.cell_score(0, Vector2i(2, 2)))

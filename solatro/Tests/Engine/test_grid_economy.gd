@@ -58,7 +58,17 @@ func free_game(g: Game) -> void:
 	g.free()
 
 ## Value of a per-grid bucket, 0 when it does not exist yet.
-func bucket_value(bucket: Array[BigNumber], i: int) -> float:
+## A grid's TOTAL for one bucket. ⚠ GAP-015 re-keyed row/col to `(grid, index, height)`, so "grid
+## i's row bucket" is now the SUM of that grid's entries — which is exactly what `_row_term`
+## multiplies, so these checks still describe the economy they always did.
+func bucket_value(bucket: Dictionary[Vector3i, BigNumber], grid: int) -> float:
+	var total := 0.0
+	for key : Vector3i in bucket:
+		if key.x == grid: total += bucket[key].to_float()
+	return total
+
+## The per-grid Array form, still used by `score_special`.
+func special_value(bucket: Array[BigNumber], i: int) -> float:
 	if i >= bucket.size(): return 0.0
 	return bucket[i].to_float()
 
@@ -70,40 +80,42 @@ func bucket_value(bucket: Array[BigNumber], i: int) -> float:
 func run_buckets_are_independent_test() -> void:
 	behavior_section("BUCKETS ARE INDEPENDENT")
 	var state := TestGridFixtures.build_fix_grid_3()
-	state.resize_grid_bucket(state.scores_row, 3)
-	state.resize_grid_bucket(state.scores_col, 3)
 	state.resize_grid_bucket(state.score_special, 3)
 
-	state.scores_row[1].plus_equals(10)
+	state.bank_line_score(state.scores_row, 1, 0, 0, 10)
 	check(bucket_value(state.scores_row, 1) == 10.0,
 			"a grid's row bucket takes the score written to it",
 			"got %f" % bucket_value(state.scores_row, 1))
 	check(bucket_value(state.scores_row, 0) == 0.0 and bucket_value(state.scores_row, 2) == 0.0,
 			"writing grid 1's row bucket leaves the OTHER grids' row buckets alone",
 			"grid0 %f grid2 %f" % [bucket_value(state.scores_row, 0), bucket_value(state.scores_row, 2)])
-	check(bucket_value(state.scores_col, 1) == 0.0 and bucket_value(state.score_special, 1) == 0.0,
+	check(bucket_value(state.scores_col, 1) == 0.0 and special_value(state.score_special, 1) == 0.0,
 			"and leaves the SAME grid's col and special buckets alone",
-			"col %f special %f" % [bucket_value(state.scores_col, 1), bucket_value(state.score_special, 1)])
+			"col %f special %f" % [bucket_value(state.scores_col, 1), special_value(state.score_special, 1)])
 
-	state.scores_col[1].plus_equals(5)
+	state.bank_line_score(state.scores_col, 1, 0, 0, 5)
 	state.score_special[1].plus_equals(2)
 	check(bucket_value(state.scores_row, 1) == 10.0,
 			"writing col and special does not disturb the row bucket already written",
 			"got %f" % bucket_value(state.scores_row, 1))
-	check(bucket_value(state.scores_col, 1) == 5.0 and bucket_value(state.score_special, 1) == 2.0,
+	check(bucket_value(state.scores_col, 1) == 5.0 and special_value(state.score_special, 1) == 2.0,
 			"all three buckets hold their own value at once",
-			"col %f special %f" % [bucket_value(state.scores_col, 1), bucket_value(state.score_special, 1)])
+			"col %f special %f" % [bucket_value(state.scores_col, 1), special_value(state.score_special, 1)])
 
-	# Raised levels are a separate bucket again, per grid and per height.
-	state.resize_grid_levels(state.scores_row_h, 3, 3)
-	(state.scores_row_h[1][2] as BigNumber).plus_equals(7)
-	check((state.scores_row_h[1][2] as BigNumber).to_float() == 7.0,
+	# ⚠ GAP-015: a raised level is not a separate CONTAINER, it is another HEIGHT KEY in the same
+	# bucket. So the claim is that writing height 2 leaves height 0 alone — not that two containers
+	# exist.
+	state.bank_line_score(state.scores_row, 1, 0, 2, 7)
+	check(state.line_score(state.scores_row, 1, 0, 2) == 7.0,
 			"a raised row bucket takes its own score")
-	check(bucket_value(state.scores_row, 1) == 10.0,
-			"a raised row bucket is NOT the height-0 row bucket",
-			"height-0 row now %f" % bucket_value(state.scores_row, 1))
-	check((state.scores_row_h[0][2] as BigNumber).to_float() == 0.0
-			and (state.scores_row_h[1][1] as BigNumber).to_float() == 0.0,
+	check(state.line_score(state.scores_row, 1, 0, 0) == 10.0,
+			"...and the height-0 entry of the same row is untouched — heights are separate keys",
+			"height-0 row now %f" % state.line_score(state.scores_row, 1, 0, 0))
+	check(bucket_value(state.scores_row, 1) == 17.0,
+			"...while the GRID's row term is their sum, which is what `_row_term` multiplies",
+			"grid row term %f" % bucket_value(state.scores_row, 1))
+	check(state.line_score(state.scores_row, 0, 0, 2) == 0.0
+			and state.line_score(state.scores_row, 1, 0, 1) == 0.0,
 			"and is independent across both grid and height")
 
 # ==============================================================================
@@ -121,7 +133,7 @@ func run_diagonals_share_one_special_bucket_test() -> void:
 	check(state.score_special.size() >= 1,
 			"the special bucket exists for grid 0 once a diagonal scored",
 			"size %d" % state.score_special.size())
-	var special := bucket_value(state.score_special, 0)
+	var special := special_value(state.score_special, 0)
 	check(special > 0.0, "both diagonals banked something into the special bucket",
 			"special %f" % special)
 	check(bucket_value(state.scores_row, 0) > 0.0,
@@ -143,40 +155,38 @@ func run_diagonals_share_one_special_bucket_test() -> void:
 func run_pack_unpack_round_trip_test() -> void:
 	behavior_section("PACK UNPACK ROUND TRIP")
 	var state := TestGridFixtures.build_fix_grid_3()
-	state.resize_grid_bucket(state.scores_row, 3)
-	state.resize_grid_bucket(state.scores_col, 3)
 	state.resize_grid_bucket(state.score_special, 3)
-	state.scores_row[0].plus_equals(11)
-	state.scores_row[2].plus_equals(33)
-	state.scores_col[1].plus_equals(22)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 11)
+	state.bank_line_score(state.scores_row, 2, 0, 0, 33)
+	state.bank_line_score(state.scores_col, 1, 0, 0, 22)
 	state.score_special[2].plus_equals(44)
 	# Deliberately RAGGED: grid 0 has three levels, grid 1 has two, grid 2 has none. A
 	# flattening that loses the per-grid lengths cannot rebuild this.
-	state.resize_grid_levels(state.scores_row_h, 3, 3)
-	(state.scores_row_h[0][1] as BigNumber).plus_equals(55)
-	(state.scores_row_h[1][2] as BigNumber).plus_equals(66)
+	state.bank_line_score(state.scores_row, 0, 0, 1, 55)
+	state.bank_line_score(state.scores_row, 1, 0, 2, 66)
 
 	state.pack_scores()
 	# Wipe the runtime side entirely, so unpack has to rebuild from the packed arrays alone.
-	state.scores_row = []
-	state.scores_col = []
+	state.scores_row = {}
+	state.scores_col = {}
 	state.score_special = []
-	state.scores_row_h = []
-	state.scores_col_h = []
 	state.unpack_scores()
 
-	check(bucket_value(state.scores_row, 0) == 11.0 and bucket_value(state.scores_row, 2) == 33.0,
-			"flat row buckets survive the round trip with their values",
-			"got %f and %f" % [bucket_value(state.scores_row, 0), bucket_value(state.scores_row, 2)])
-	check(bucket_value(state.scores_col, 1) == 22.0, "flat col buckets survive",
-			"got %f" % bucket_value(state.scores_col, 1))
-	check(bucket_value(state.score_special, 2) == 44.0, "the special bucket survives",
-			"got %f" % bucket_value(state.score_special, 2))
-	check(state.scores_row_h.size() == 3,
-			"the raised array comes back with one entry per grid",
-			"got %d" % state.scores_row_h.size())
-	check((state.scores_row_h[0][1] as BigNumber).to_float() == 55.0
-			and (state.scores_row_h[1][2] as BigNumber).to_float() == 66.0,
+	check(state.line_score(state.scores_row, 0, 0, 0) == 11.0
+			and state.line_score(state.scores_row, 2, 0, 0) == 33.0,
+			"height-0 row entries survive the round trip with their values",
+			"got %f and %f" % [state.line_score(state.scores_row, 0, 0, 0),
+			state.line_score(state.scores_row, 2, 0, 0)])
+	check(state.line_score(state.scores_col, 1, 0, 0) == 22.0, "height-0 col entries survive",
+			"got %f" % state.line_score(state.scores_col, 1, 0, 0))
+	check(special_value(state.score_special, 2) == 44.0, "the special bucket survives",
+			"got %f" % special_value(state.score_special, 2))
+	check(state.line_score_levels(state.scores_row, 1) == 3,
+			"a grid's raised levels come back — GAP-015 keys height into the bucket itself, so the "
+			+ "deepest key is what says how many label rows the gutter owes",
+			"got %d" % state.line_score_levels(state.scores_row, 1))
+	check(state.line_score(state.scores_row, 0, 0, 1) == 55.0
+			and state.line_score(state.scores_row, 1, 0, 2) == 66.0,
 			"raised buckets come back at the SAME grid and height they went in at")
 
 # ==============================================================================
@@ -189,42 +199,40 @@ func run_pack_unpack_round_trip_test() -> void:
 func run_duplicate_state_copies_by_hand_test() -> void:
 	behavior_section("DUPLICATE STATE COPIES BY HAND")
 	var state := TestGridFixtures.build_fix_grid_3()
-	state.resize_grid_bucket(state.scores_row, 3)
-	state.resize_grid_bucket(state.scores_col, 3)
 	state.resize_grid_bucket(state.score_special, 3)
-	state.resize_grid_levels(state.scores_row_h, 3, 2)
-	state.resize_grid_levels(state.scores_col_h, 3, 2)
-	state.scores_row[0].plus_equals(10)
-	state.scores_col[0].plus_equals(20)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 10)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 20)
 	state.score_special[0].plus_equals(30)
-	(state.scores_row_h[0][1] as BigNumber).plus_equals(40)
-	(state.scores_col_h[0][1] as BigNumber).plus_equals(50)
+	state.bank_line_score(state.scores_row, 0, 0, 1, 40)
+	state.bank_line_score(state.scores_col, 0, 0, 1, 50)
 
 	var copy := state.duplicate_state()
-	check(bucket_value(copy.scores_row, 0) == 10.0,
+	check(copy.line_score(copy.scores_row, 0, 0, 0) == 10.0,
 			"the copy starts with the original's values",
-			"got %f" % bucket_value(copy.scores_row, 0))
+			"got %f" % copy.line_score(copy.scores_row, 0, 0, 0))
 
 	# THE REAL CHECK: move the original and confirm the copy stayed put.
-	state.scores_row[0].plus_equals(1000)
-	state.scores_col[0].plus_equals(1000)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 1000)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 1000)
 	state.score_special[0].plus_equals(1000)
-	(state.scores_row_h[0][1] as BigNumber).plus_equals(1000)
-	(state.scores_col_h[0][1] as BigNumber).plus_equals(1000)
+	state.bank_line_score(state.scores_row, 0, 0, 1, 1000)
+	state.bank_line_score(state.scores_col, 0, 0, 1, 1000)
 
-	check(bucket_value(copy.scores_row, 0) == 10.0,
-			"the copy's row bucket did NOT follow the original -- it is a real copy",
+	# ⚠ The grid's whole row TERM, so this covers every height at once: the copy holds 10 at height
+	# 0 and 40 at height 1, and the original has since grown by 2000 across the two.
+	check(bucket_value(copy.scores_row, 0) == 50.0,
+			"the copy's row bucket did NOT follow the original -- it is a real copy, at every height",
 			"copy now %f" % bucket_value(copy.scores_row, 0))
-	check(bucket_value(copy.scores_col, 0) == 20.0,
-			"nor the col bucket", "copy now %f" % bucket_value(copy.scores_col, 0))
-	check(bucket_value(copy.score_special, 0) == 30.0,
-			"nor the special bucket", "copy now %f" % bucket_value(copy.score_special, 0))
-	check((copy.scores_row_h[0][1] as BigNumber).to_float() == 40.0,
-			"nor the raised row bucket -- the 2-D container is copied level by level",
-			"copy now %f" % (copy.scores_row_h[0][1] as BigNumber).to_float())
-	check((copy.scores_col_h[0][1] as BigNumber).to_float() == 50.0,
+	check(copy.line_score(copy.scores_col, 0, 0, 0) == 20.0,
+			"nor the col bucket", "copy now %f" % copy.line_score(copy.scores_col, 0, 0, 0))
+	check(special_value(copy.score_special, 0) == 30.0,
+			"nor the special bucket", "copy now %f" % special_value(copy.score_special, 0))
+	check(copy.line_score(copy.scores_row, 0, 0, 1) == 40.0,
+			"nor the raised row bucket -- a coordinate-keyed bucket is copied entry by entry",
+			"copy now %f" % copy.line_score(copy.scores_row, 0, 0, 1))
+	check(copy.line_score(copy.scores_col, 0, 0, 1) == 50.0,
 			"nor the raised col bucket",
-			"copy now %f" % (copy.scores_col_h[0][1] as BigNumber).to_float())
+			"copy now %f" % copy.line_score(copy.scores_col, 0, 0, 1))
 
 # ==============================================================================
 # The per-CELL bucket: a vertical stack banks into its own cell's bucket -- the number
@@ -277,9 +285,9 @@ func run_cell_bucket_from_a_real_stack_test() -> void:
 	check(state.cell_score(0, Vector2i(0, 0)) == 0.0,
 			"no other cell's bucket moved")
 	# It is NOT the special bucket, and not a row or column bucket.
-	check(bucket_value(state.score_special, 0) == 0.0,
+	check(special_value(state.score_special, 0) == 0.0,
 			"a vertical stack does NOT bank into the special bucket",
-			"special %f" % bucket_value(state.score_special, 0))
+			"special %f" % special_value(state.score_special, 0))
 	check(bucket_value(state.scores_row, 0) == 0.0
 			and bucket_value(state.scores_col, 0) == 0.0,
 			"nor into the row or column buckets",
@@ -320,16 +328,14 @@ func run_cell_bucket_persistence_test() -> void:
 func run_worked_example_test() -> void:
 	behavior_section("THE WORKED EXAMPLE")
 	var state := TestGridFixtures.build_fix_grid_1()
-	state.resize_grid_bucket(state.scores_row, 1)
-	state.resize_grid_bucket(state.scores_col, 1)
 	state.resize_grid_bucket(state.score_special, 1)
 
 	check(state.grid_score(0) == 0.0,
 			"row + col + special = 0 + 0 + 0", "got %f" % state.grid_score(0))
-	state.scores_row[0].plus_equals(10)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 10)
 	check(state.grid_score(0) == 10.0,
 			"Row gets 10 score. it is now 10 + 0 + 0 = 10", "got %f" % state.grid_score(0))
-	state.scores_col[0].plus_equals(5)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 5)
 	check(state.grid_score(0) == 50.0,
 			"Col gets 5 score. It is now 10 * 5 + 0 = 50", "got %f" % state.grid_score(0))
 	state.score_special[0].plus_equals(2)
@@ -343,12 +349,10 @@ func run_worked_example_test() -> void:
 func run_rows_without_diagonal_test() -> void:
 	behavior_section("ROWS WITHOUT A DIAGONAL")
 	var state := TestGridFixtures.build_fix_grid_1()
-	state.resize_grid_bucket(state.scores_row, 1)
-	state.scores_row[0].plus_equals(40)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 40)
 	check(state.grid_score(0) == 40.0,
 			"a grid that scored only rows pays its rows, not zero",
 			"got %f" % state.grid_score(0))
-	state.resize_grid_bucket(state.scores_col, 1)
 	state.resize_grid_bucket(state.score_special, 1)
 	check(state.grid_score(0) == 40.0,
 			"and the untouched col and special buckets existing changes nothing",
@@ -364,8 +368,6 @@ func run_empty_grid_scores_zero_test() -> void:
 	check(state.grid_score(0) == 0.0,
 			"a grid with no buckets at all contributes 0, not 1",
 			"got %f" % state.grid_score(0))
-	state.resize_grid_bucket(state.scores_row, 1)
-	state.resize_grid_bucket(state.scores_col, 1)
 	state.resize_grid_bucket(state.score_special, 1)
 	check(state.grid_score(0) == 0.0,
 			"and a grid whose buckets all exist but read 0 still contributes 0",
@@ -383,11 +385,9 @@ func run_empty_grid_scores_zero_test() -> void:
 func run_zero_valued_bucket_excluded_test() -> void:
 	behavior_section("A ZERO-VALUED BUCKET IS EXCLUDED")
 	var state := TestGridFixtures.build_fix_grid_1()
-	state.resize_grid_bucket(state.scores_row, 1)
-	state.resize_grid_bucket(state.scores_col, 1)
 	state.resize_grid_bucket(state.score_special, 1)
-	state.scores_row[0].plus_equals(10)
-	state.scores_col[0].plus_equals(5)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 10)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 5)
 	# The special bucket is WRITTEN TO, with a real banked score that happens to be 0.
 	state.score_special[0].plus_equals(0)
 	check(state.score_special[0].to_float() == 0.0,
@@ -403,11 +403,9 @@ func run_zero_valued_bucket_excluded_test() -> void:
 func run_board_total_is_the_sum_test() -> void:
 	behavior_section("BOARD TOTAL IS THE SUM")
 	var state := TestGridFixtures.build_fix_grid_3()
-	state.resize_grid_bucket(state.scores_row, 3)
-	state.resize_grid_bucket(state.scores_col, 3)
-	state.scores_row[0].plus_equals(10)
-	state.scores_col[0].plus_equals(2)      # grid 0 -> 20
-	state.scores_row[2].plus_equals(7)      # grid 2 -> 7 (col unscored, so it adds nothing)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 10)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 2)      # grid 0 -> 20
+	state.bank_line_score(state.scores_row, 2, 0, 0, 7)      # grid 2 -> 7 (col unscored, so it adds nothing)
 	check(state.grid_score(0) == 20.0, "grid 0 scores 10 * 2", "got %f" % state.grid_score(0))
 	check(state.grid_score(1) == 0.0, "grid 1 scored nothing", "got %f" % state.grid_score(1))
 	check(state.grid_score(2) == 7.0, "grid 2 scores its row alone", "got %f" % state.grid_score(2))
@@ -422,13 +420,10 @@ func run_board_total_is_the_sum_test() -> void:
 func run_terms_aggregate_their_levels_test() -> void:
 	behavior_section("TERMS AGGREGATE THEIR LEVELS")
 	var state := TestGridFixtures.build_fix_grid_1()
-	state.resize_grid_bucket(state.scores_row, 1)
-	state.resize_grid_bucket(state.scores_col, 1)
 	state.resize_grid_bucket(state.score_special, 1)
-	state.resize_grid_levels(state.scores_row_h, 1, 3)
-	state.scores_row[0].plus_equals(4)
-	(state.scores_row_h[0][2] as BigNumber).plus_equals(6)
-	state.scores_col[0].plus_equals(2)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 4)
+	state.bank_line_score(state.scores_row, 0, 0, 2, 6)
+	state.bank_line_score(state.scores_col, 0, 0, 0, 2)
 	check(state.grid_score(0) == 20.0,
 			"a raised row score adds into the ROW term, not a term of its own",
 			"got %f, wanted (4 + 6) * 2" % state.grid_score(0))

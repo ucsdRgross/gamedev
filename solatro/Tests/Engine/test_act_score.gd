@@ -110,15 +110,14 @@ func test_discard_lower_board() -> void:
 ## board total, and with no combo class registered the combo multiplier is exactly 1.
 func test_has_met_goal() -> void:
 	var state := TestGridFixtures.build_fix_grid_1()
-	state.resize_grid_bucket(state.scores_row, 1)
 	state.goal = 100
-	state.scores_row[0].plus_equals(99)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 99)
 	check(not state.has_met_goal(), "below goal -> not met (loss)",
 			"live %d" % state.live_total())
-	state.scores_row[0].plus_equals(1)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 1)
 	check(state.has_met_goal(), "exactly at goal -> met (win)",
 			"live %d" % state.live_total())
-	state.scores_row[0].plus_equals(150)
+	state.bank_line_score(state.scores_row, 0, 0, 0, 150)
 	check(state.has_met_goal(), "overscore -> met", "live %d" % state.live_total())
 	check(state.total_score == 0,
 			"the goal never reads the retired act-payout total", str(state.total_score))
