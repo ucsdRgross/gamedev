@@ -45,6 +45,7 @@ func _ready() -> void:
 	await run_a_suite_never_writes_the_players_settings_test()
 	await run_the_board_holds_its_shape_at_any_card_scale_test()
 	await run_the_fan_tracks_its_own_knob_at_any_separation_scale_test()
+	await run_cross_grid_alignment_test()
 	restore_real_settings()
 	finish()
 
@@ -179,3 +180,81 @@ func _tear_down(g: Game, pa: PlayArea) -> void:
 	CardEnvironment.CURRENT = null
 	await get_tree().process_frame
 	g.free()
+
+# ==============================================================================
+# TP-95 / TP-96 -- CROSS-GRID ROW ALIGNMENT (§1.14, Q245=b, Q251=b).
+#
+# OFF by default: each grid sizes its own rows. ON: row r takes a shared maximum across every grid.
+#
+# ⚠ **THE FIXTURE MUST BE UNEVEN, OR BOTH SETTINGS AGREE AND THE TEST PROVES NOTHING.** Two grids
+# whose row 0 is the same depth align trivially. So grid 0's row 0 is stacked and grid 1's is not,
+# and the claim is that the shallow one GROWS to match only when the setting is on.
+#
+# ⚠ **TP-96 IS THE ONE THAT MATTERS.** A visual knob that moved the score would be a silent
+# balance change, so the same board is scored with the setting on and off and the totals compared.
+# ==============================================================================
+func run_cross_grid_alignment_test() -> void:
+	behavior_section("CROSS-GRID ROW ALIGNMENT")
+	var prev : bool = SettingsManager.settings.grid_align_rows_globally
+	check(not prev, "the setting is OFF by default — each grid sizes its own rows (Q245=b)",
+			"default was %s" % prev)
+
+	SettingsManager.settings.grid_align_rows_globally = false
+	var g := _uneven_board()
+	var pa := await _stand_up()
+	var own_deep := pa._own_grid_row_height(0, 0)
+	var own_shallow := pa._own_grid_row_height(1, 0)
+	check(own_deep > own_shallow + 0.5,
+			"fixture: the two grids' row 0 really are different depths, so the two settings can "
+			+ "disagree at all",
+			"deep %.1f vs shallow %.1f" % [own_deep, own_shallow])
+	check(absf(pa._grid_row_height(1, 0) - own_shallow) < 0.5,
+			"OFF: the shallow grid keeps its own, shorter row 0",
+			"%.1f vs its own %.1f" % [pa._grid_row_height(1, 0), own_shallow])
+
+	SettingsManager.settings.grid_align_rows_globally = true
+	check(absf(pa._grid_row_height(1, 0) - own_deep) < 0.5,
+			"TP-95: ON, the shallow grid's row 0 takes the SHARED maximum — the boards read as one "
+			+ "ruled sheet",
+			"%.1f vs the tallest %.1f" % [pa._grid_row_height(1, 0), own_deep])
+	check(absf(pa._grid_row_height(0, 0) - own_deep) < 0.5,
+			"...and the deep grid is unchanged, because it already WAS the maximum",
+			"%.1f vs %.1f" % [pa._grid_row_height(0, 0), own_deep])
+
+	# TP-96 -- the same board scores identically either way.
+	SettingsManager.settings.grid_align_rows_globally = false
+	var score_off := g.state.board_total()
+	var grid0_off := g.state.grid_score(0)
+	SettingsManager.settings.grid_align_rows_globally = true
+	check(is_equal_approx(g.state.board_total(), score_off)
+			and is_equal_approx(g.state.grid_score(0), grid0_off),
+			"TP-96/Q251: the SAME board scores identically with the setting on and off — a visual "
+			+ "knob that moved the score would be a silent balance change",
+			"board %f vs %f, grid0 %f vs %f" % [g.state.board_total(), score_off,
+			g.state.grid_score(0), grid0_off])
+
+	SettingsManager.settings.grid_align_rows_globally = prev
+	await _tear_down(g, pa)
+
+## Two grids whose row 0 differs in depth: grid 0 stacked three deep, grid 1 a single card. Both
+## have scored, so TP-96 has real numbers to compare.
+func _uneven_board() -> Game:
+	var g := Game.new()
+	var s := GameData.new()
+	for gi : int in 2:
+		var grid := GridData.new()
+		grid.grid_width = 2
+		grid.grid_height = 2
+		grid.build_cells()
+		for _i : int in (3 if gi == 0 else 1):
+			var card := TestFactories.m_card(_i + 2, TestFactories.uc())
+			card.stage = CardData.Stage.PLAY
+			grid.cells[grid.cell_index(0, 0)].datas.append(card)
+		s.grids.append(grid)
+	s.bank_line_score(s.scores_row, 0, 0, 0, 40)
+	s.bank_line_score(s.scores_col, 0, 0, 0, 5)
+	s.bank_line_score(s.scores_row, 1, 0, 0, 7)
+	g.state = s
+	g._begin_act()
+	CardEnvironment.CURRENT = g
+	return g

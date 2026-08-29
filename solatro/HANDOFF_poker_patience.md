@@ -28,9 +28,11 @@ board overlaps rather than re-flowing, and a hoop rides the card that actually j
 
 **`S24` has landed**, and with it `GAP-015`'s answer: a row/column bucket is keyed
 `(grid, index, height)`, every entry gets a label, and the heights stack in the same order as the
-cards beside them.
+cards beside them. **`S25` closes PHASE 5** — cross-grid row alignment, off by default, proven not
+to touch scoring.
 
-**Next** is `S25` (cross-grid alignment), then Phase 6 (zoom/pan/focus) and Phase 7 (the wall).
+**Next is PHASE 6** (`S26`-`S30`: two view modes, zoom, pan, keyboard/controller selection across
+grids), then Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is last.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md` (the view's own design, answered and confirmed);
@@ -386,6 +388,18 @@ lettered steps by hand when closing a gap.
     follows a growth ease, a spring and a reveal for free.
     ⚠ TP-93 is a RATCHET against grid subtotals: it passes trivially and fails the day a panel
     displays one. It proves it can SEE labels before asserting none is a subtotal.
+- id: S25
+  description: 'Cross-grid row alignment, and the proof it never touches scoring (§1.14).'
+  status: done
+  notes: >
+    ⚠ **THE ALIGNMENT LIVES IN `_measure_grid_row_height` AND NOWHERE ELSE.** Putting it in the one
+    function every row height comes from is what keeps it PURELY VISUAL — scoring never reads a row
+    height, which is why the same board scores identically either way (`Q251`=b, asserted).
+    ⚠ **A SETTING THAT CHANGES GEOMETRY MUST BE PART OF THE ROW-HEIGHT MEMO'S KEY.** It moves every
+    row on the board without touching `state.revision`, so a memo keyed on revision alone served the
+    pre-toggle answer — measured: a shallow grid stayed at its own 58 where the shared max was 98.
+    ⚠ The fixture is UNEVEN on purpose: two grids whose row 0 is the same depth align trivially and
+    the two settings would agree, proving nothing.
 - id: S21settings
   description: >
     Tests own the settings they test with, and sweep the range (owner ruling). SETTINGS RANGE suite.
@@ -541,9 +555,11 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S25`** - the cross-grid alignment setting, including its scoring-invariance assertion
-   (`TP-95`, `TP-96`) — the last step of Phase 5.
-2. **Phase 6** - `S26`-`S30`: two view modes, zoom, pan, keyboard/controller selection across grids.
+1. **`S26`** - two view modes; the board opens zoomed OUT; clicking a grid zooms in (`H4`, `H6`,
+   `H22`). Read `design/grid-view/DESIGN.md` chart `H` first — Phase 6 is all view, and the
+   geometry it pans over is now stable.
+2. **`S27`**-**`S30`** - Back/Forward intercepted for zoom, the one scroll container, keyboard and
+   controller selection across grids, refocus when a grid is removed.
 3. **Phase 7** - `S31`-`S34`: the wall.
 3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
    last.

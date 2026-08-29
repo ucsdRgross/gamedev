@@ -690,13 +690,19 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 ## mutation, so a stale entry cannot outlive a change to the cells it measured.
 var _row_height_cache : Dictionary[Vector2i, float] = {}
 var _row_height_revision := -1
+var _row_height_aligned := false
 
 func _row_heights_for(g: int) -> void:
 	var game := CardEnvironment.get_current_game()
 	var rev : int = game.state.revision if game else -1
-	if rev == _row_height_revision: return
+	# ⚠ **THE ALIGNMENT SETTING IS PART OF THE KEY.** It changes every row height on the board
+	# without touching the state, so a memo keyed on `revision` alone kept serving the pre-toggle
+	# answer — measured: a shallow grid stayed at its own 58 where the shared maximum was 98.
+	var aligned : bool = SettingsManager.settings.grid_align_rows_globally
+	if rev == _row_height_revision and aligned == _row_height_aligned: return
 	_row_height_cache.clear()
 	_row_height_revision = rev
+	_row_height_aligned = aligned
 
 ## A panel's whole height, from the DATA: every row, plus the gap the panel puts between them.
 func _grid_panel_height(g: int) -> float:
@@ -734,7 +740,23 @@ func _grid_row_height(g: int, r: int) -> float:
 	_row_height_cache[key] = h
 	return h
 
+## ⚠ **CROSS-GRID ALIGNMENT LIVES HERE, AND NOWHERE ELSE** (§1.14, `Q245`=b). With the setting on,
+## row `r` takes a SHARED maximum across every grid, so the boards read as one ruled sheet; with it
+## off, each grid sizes its own rows. Putting it in the one function every row's height comes from
+## is what keeps it PURELY VISUAL — scoring never reads a row height, so the same board scores
+## identically either way (`Q251`=b).
 func _measure_grid_row_height(g: int, r: int) -> float:
+	if not SettingsManager.settings.grid_align_rows_globally:
+		return _own_grid_row_height(g, r)
+	var game := CardEnvironment.get_current_game()
+	if not game: return _own_grid_row_height(g, r)
+	var tallest := 0.0
+	for gi : int in game.state.grids.size():
+		tallest = maxf(tallest, _own_grid_row_height(gi, r))
+	return tallest
+
+## One grid's OWN height for row `r`, before any cross-grid alignment.
+func _own_grid_row_height(g: int, r: int) -> float:
 	var full := CardVisual.card_size_play.y
 	var game := CardEnvironment.get_current_game()
 	if not game: return full
