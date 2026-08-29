@@ -551,10 +551,9 @@ verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 
 ## Next up
 
-1. **`S23`** - the spring: a jumping card lifts the whole stack above it rigidly, by the full
-   rise, OVERLAPPING the rows above rather than re-flowing them, and a hoop rides the card that
-   jumped rather than the stack top (`TP-88`-`TP-90`).
-2. **`S24`**-**`S25`** - the score labels, then cross-grid alignment.
+1. **`S24`** - score labels: rows left, columns below, one special-meld label right of the grid
+   centre, height labels above their stacks. **No subtotals anywhere** (`TP-91`-`TP-94`).
+2. **`S25`** - the cross-grid alignment setting, including its scoring-invariance assertion.
 3. Then Phase 6 (zoom/pan/focus) and Phase 7 (the wall). Phase 9 is the owner's call; Phase 10 is
    last.
 

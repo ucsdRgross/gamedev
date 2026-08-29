@@ -1556,12 +1556,40 @@ func get_data_from_control(control : Control) -> CardData:
 		#return data_card[data]
 	#return null
 	
+## **THE SPRING.** Jump `data`, and lift every card stacked ABOVE it in its own cell by the same
+## rise, rigidly (`Q310`=a). Returns how long the raise takes, like `anim_jump` does.
+##
+## ⚠ **THE BOARD KNOWLEDGE BELONGS HERE, NOT IN `CardVisual`.** A card visual has no idea what is
+## stacked on it; every caller that used to reach for `anim_jump()` directly gets the spring by
+## calling this instead, so a jump can never again lift only the card it happened to.
+## ⚠ Grid cells only. The Entrance still fans DOWNWARD from its control tops, so "above" there is
+## not the same relation and lifting it would move cards toward the board rather than with it.
+func jump_card_with_its_stack(data: CardData) -> float:
+	var vis : CardVisual = data_card.get(data)
+	if not vis or not is_instance_valid(vis): return 0.0
+	var rise := vis.anim_jump()
+	var game := CardEnvironment.get_current_game()
+	if not game: return rise
+	var coord : BoardCoord = game.state.grid_position_of(data)
+	if coord.is_nowhere() or coord.is_entrance(): return rise
+	var grids := game.state.grids
+	if coord.grid < 0 or coord.grid >= grids.size(): return rise
+	var grid : GridData = grids[coord.grid]
+	if not grid: return rise
+	var idx := grid.cell_index(coord.x, coord.y)
+	if idx < 0 or idx >= grid.cells.size(): return rise
+	var stack : Array[CardData] = grid.cells[idx].datas
+	for h : int in range(coord.h + 1, stack.size()):
+		var rider : CardVisual = data_card.get(stack[h])
+		if rider and is_instance_valid(rider): rider.anim_spring_lift()
+	return rise
+
 func popup_meld(result : Scoring.Result) -> void:
 	flush_rebuild() #reads data_card
 	var wait_time : float = 0
 	for data in result.meld:
 		if data in data_card:
-			var anim_time := data_card[data].anim_jump()
+			var anim_time := jump_card_with_its_stack(data)
 			wait_time = anim_time if anim_time > wait_time else wait_time
 	await Pacing.wait(self, wait_time).timeout
 	

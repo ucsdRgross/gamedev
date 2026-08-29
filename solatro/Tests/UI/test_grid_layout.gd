@@ -38,6 +38,8 @@ func _ready() -> void:
 	await run_a_row_grows_into_its_height_test()
 	await run_a_freshly_dealt_board_animates_nothing_test()
 	await run_the_entrance_height_pushes_the_board_up_test()
+	await run_a_jump_lifts_the_stack_above_it_test()
+	await run_a_hoop_rides_the_card_that_jumped_test()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -99,6 +101,19 @@ func _settle_layout(view: GameView) -> void:
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
 		if is_equal_approx(now, last): return
 		last = now
+
+## Drive one prop tick to completion, with a watchdog so a stalled tick fails loudly instead of
+## hanging. Mirrors the same helper in `test_visual_layers`.
+func _prop_tick(pl: PropLayer, live: Array, spawned: Array) -> bool:
+	var sig := pl.begin_prop_tick(live, spawned, [], [])
+	var fired : Array[bool] = [false]
+	var handler := func() -> void: fired[0] = true
+	sig.connect(handler)
+	var waited := 0.0
+	while not fired[0] and waited < 10.0:
+		waited += await _tick()
+	if sig.is_connected(handler): sig.disconnect(handler)
+	return fired[0]
 
 ## One frame, and how long it took — for settling loops that must not spin forever.
 func _tick() -> float:
@@ -598,4 +613,140 @@ func run_the_entrance_height_pushes_the_board_up_test() -> void:
 			"...far enough that the board's LOWEST card clears the Entrance's real height — the "
 			+ "point of raising it at all",
 			"lowest card bottom %.1f vs Entrance top %.1f" % [lowest_bottom, entrance_top])
+	await _tear_down(view)
+
+
+# ==============================================================================
+# TP-88 / TP-89 / TP-90 -- THE SPRING.
+#
+# Owner, quoted in Q310: *"animations such as jumping will cause cards stacked above to jump up as
+# well like a spring as if jumping card has all above cards on its shoulder."*
+#   Q310=(a) the WHOLE stack above lifts, by the FULL rise, as one rigid body.
+#   Q312=(a) it OVERLAPS the rows above; the board does NOT re-flow.
+#   Q311=(a) a hoop rides the card that actually JUMPED, not the stack top.
+#
+# ⚠ **THE CASE THAT SEPARATES "RIGID" FROM "SPRING-LIKE" IS THE TOP CARD.** A decaying lift and a
+# rigid one both move the card just above the jump; only the rigid one moves the TOP of a deep
+# stack by the same amount. So the fixture is three deep and the assertion is about equality
+# between the riders, not merely that they moved.
+# ==============================================================================
+func run_a_jump_lifts_the_stack_above_it_test() -> void:
+	behavior_section("A JUMP LIFTS THE WHOLE STACK ABOVE IT, RIGIDLY")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var coord := BoardCoord.new(0, 1, 1, 0)
+	for i in 3:
+		await g.place_card_in_grid(g.state.upper_zone[i].datas[0], coord)
+	await _settle_layout(view)
+
+	var grid : GridData = g.state.grids[0]
+	var stack : Array[CardData] = grid.cells[grid.cell_index(1, 1)].datas
+	check(stack.size() == 3, "precondition: a three-deep stack to spring",
+			"%d deep" % stack.size())
+	if stack.size() < 3:
+		await _tear_down(view)
+		return
+
+	var rows_before := pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y
+	var visuals : Array[CardVisual] = []
+	for c : CardData in stack:
+		visuals.append(pa.data_card.get(c))
+	if visuals[0] == null or visuals[1] == null or visuals[2] == null:
+		check(false, "precondition: every card in the stack has a visual")
+		await _tear_down(view)
+		return
+
+	# The card at the BOTTOM jumps. Everything above it should ride.
+	pa.jump_card_with_its_stack(stack[0])
+	var lifted : Array[float] = [0.0, 0.0, 0.0]
+	var waited := 0.0
+	while waited < 3.0:
+		waited += await _tick()
+		CardEnvironment.CURRENT = g   # siblings run concurrently; see `_settle_layout`
+		for i in 3:
+			lifted[i] = minf(lifted[i], visuals[i].offset.position.y)
+		if lifted[0] < -1.0 and lifted[2] < -1.0: break
+
+	check(lifted[1] < -1.0 and lifted[2] < -1.0,
+			"E14/Q310: every card ABOVE the jumping one lifts too -- the stack rides on its "
+			+ "shoulder rather than being passed through",
+			"h1 %.1f h2 %.1f" % [lifted[1], lifted[2]])
+	check(absf(lifted[2] - lifted[0]) < 1.0 and absf(lifted[1] - lifted[0]) < 1.0,
+			"...by the SAME rise as the card that jumped -- one rigid body, not a decaying spring. "
+			+ "The TOP of the stack is the case that separates the two",
+			"jumped %.1f, h1 %.1f, h2 %.1f" % [lifted[0], lifted[1], lifted[2]])
+
+	# TP-89 -- the board does not RE-FLOW while the stack is up.
+	check(absf(pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y - rows_before) < 0.5,
+			"E15/Q312: the row ABOVE does not move while the stack is lifted -- a jump OVERLAPS "
+			+ "rather than re-flowing the board, which would shove the screen on every jump",
+			"%.1f -> %.1f" % [rows_before,
+			pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y])
+	check(absf(pa.slot_center_global(BoardCoord.new(0, 1, 1, 0)).y
+			- pa.slot_center_global(BoardCoord.new(0, 1, 1, 0)).y) < 0.5,
+			"...and the slot geometry itself is untouched: the lift rides the card's own offset, "
+			+ "which the containers never see")
+
+	# It comes back down.
+	# ⚠ Wait for it to SETTLE, not merely to cross zero: the descent is TRANS_BACK, so it
+	# overshoots past the resting pose and comes back — sampling on the way through caught it at
+	# 1.1 px and called a working animation a failure.
+	waited = 0.0
+	while waited < 4.0 and absf(visuals[2].offset.position.y) > 0.5:
+		waited += await _tick()
+		CardEnvironment.CURRENT = g
+	check(absf(visuals[2].offset.position.y) < 1.0,
+			"...and the whole stack settles back down again",
+			"top card left at %.1f" % visuals[2].offset.position.y)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-90 -- a hoop rides the card that JUMPED, not the top of the stack it lifted.
+#
+# ⚠ The coupling is exact and documented on `CARD_JUMP_RISE`: the ring's centre and the card's
+# centre must coincide, so riding the wrong card of a lifted stack makes the card pass through the
+# SIDE of the hoop. On a three-deep stack the two candidates are two depth pitches apart, which is
+# why the fixture is deep rather than flat.
+# ==============================================================================
+func run_a_hoop_rides_the_card_that_jumped_test() -> void:
+	behavior_section("A HOOP RIDES THE CARD THAT JUMPED")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var coord := BoardCoord.new(0, 1, 1, 0)
+	for i in 3:
+		await g.place_card_in_grid(g.state.upper_zone[i].datas[0], coord)
+	await _settle_layout(view)
+
+	var pl := pa.prop_layer
+	var jumped := BoardCoord.new(0, 1, 1, 0)     # the card at the BOTTOM, which jumps
+	var stack_top := BoardCoord.new(0, 1, 1, 2)  # the card at the top, which merely rides
+	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+
+	# A hoop's own lane offset carries the rise (`_live_lane_offset`), so the ring it anchors to is
+	# its slot point plus that. Driven through a real PropVisual rather than asserted on constants.
+	var hoop := PropData.new()
+	hoop.kind = 0   # hoop -- rides_card_jump
+	hoop.at = jumped
+	hoop.route = [] as Array[BoardCoord]
+	var ok := await _prop_tick(pl, [hoop], [hoop])
+	check(ok, "hoop spawn tick completes")
+	var hv : PropVisual = pl._visuals.get(hoop)
+	check(hv != null and hv.rides_card_jump,
+			"precondition: the hoop is a kind a card jumps INTO")
+	if hv == null:
+		await _tear_down(view)
+		return
+	var ring := pl._slot_point(jumped) + pl._live_lane_offset(hv)
+	var want := pl._slot_point(jumped).y - CardVisual.card_jump_rise_play
+	check(absf(ring.y - want) < 1.0,
+			"Q311: the hoop's anchor is the JUMPING card's slot lifted by the jump rise, so the "
+			+ "two centres coincide",
+			"ring %.1f vs card-plus-rise %.1f" % [ring.y, want])
+	var top_ring := pl._slot_point(stack_top).y - CardVisual.card_jump_rise_play
+	check(absf(ring.y - top_ring) > pitch - 1.0,
+			"...and NOT the top of the stack it lifted, which sits two depth pitches away -- a card "
+			+ "would pass through the SIDE of a ring placed there",
+			"ring %.1f vs stack-top-plus-rise %.1f" % [ring.y, top_ring])
 	await _tear_down(view)

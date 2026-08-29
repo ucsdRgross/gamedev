@@ -779,6 +779,32 @@ func anim_jump() -> float:
 			delay * s.card_jump_settle_fraction)
 	return delay * s.card_jump_raise_fraction
 
+## The SPRING: a card riding a jump that happened BENEATH it (`Q310`=a — *"jumping will cause cards
+## stacked above to jump up as well like a spring as if jumping card has all above cards on its
+## shoulder"*). Mirrors `anim_jump`'s vertical motion on the same phase fractions, so the stack
+## moves as ONE RIGID BODY with the card that jumped, and deliberately omits the SCALE PULSE: the
+## pulse belongs to the card the effect is happening to, and pulsing the whole stack reads as five
+## cards being hit rather than one card lifting the others.
+##
+## ⚠ It rides `offset`, which lives INSIDE the card root and is invisible to the containers — so a
+## springing stack OVERLAPS the rows above it and the board does not re-flow (`Q312`=a). That is
+## the one place the "rows never overlap" rule is deliberately broken, and it is broken here rather
+## than discovered somewhere else.
+func anim_spring_lift() -> float:
+	if not offset: return 0.0
+	reset_tween(move_tween)
+	var delay := CardEnvironment.CURRENT.get_delay()
+	var s := SettingsManager.settings
+	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	move_tween.tween_callback(func()->void: floating = false)
+	move_tween.tween_property(offset, "position:y", -CARD_JUMP_RISE,
+			delay * s.card_jump_raise_fraction)
+	# Held for exactly as long as the jumping card holds its pose, then down together.
+	move_tween.tween_interval(delay * s.card_jump_pulse_fraction)
+	move_tween.tween_property(offset, "position:y", 0.0,
+			delay * s.card_jump_settle_fraction)
+	return delay * s.card_jump_raise_fraction
+
 func anim_spin() -> float:
 	# Mirrors anim_jump (:342) but drives rotation, so it COMPOSES with a concurrent jump
 	# (offset:y vs offset:rotation are independent properties). Guard the null offset the same.

@@ -633,7 +633,8 @@ func _update_reactions(live: Array, movers: Array) -> void:
 		var vis : CardVisual = play_area.data_card.get(card)
 		if not vis: continue
 		if PropData.Reaction.JUMP in prop.reactions_for(card):
-			vis.anim_jump()
+			# The stack above rides it (Q310=a) -- PlayArea owns that, a visual cannot know it.
+			play_area.jump_card_with_its_stack(card)
 	# 2. Holds. JUMP and SPIN both START on occupancy (prop.at over the card — never before
 	#    the first prop arrives); SPIN is additionally SUSTAINED, once started, while the card
 	#    is still in any spin-hinting prop's remaining route (more are coming: keep turning).
