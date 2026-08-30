@@ -315,13 +315,17 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
   files_touched: []
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
+  status: blocked
   evidence: ''
   notes: >
-    Done-when: TP-104 - TP-106 green. ⚠ The camera and the scroller never contend because they move
-    different things -- that is the whole content of H13/H22/H23. ⚠ H24 is unreachable in the
-    shipped game (Q7 caps grids at 3) but the design carries it, and game_picture_max_render_px is
-    what keeps a wider board from silently exceeding the render target.
+    ⚠ **BLOCKED ON GAP-016.** S27 shipped grid-stepping on the SmoothScrollContainer; QR3=a and
+    H11/H23 put it on the wall's camera, and H23's whole content is that the two never contend
+    because they move different things. S28 is the step where that has to be settled, and TP-105
+    ("the camera steps between the 3 grid positions the frame holds") cannot be satisfied before
+    S31 builds the wide picture in Phase 7. Do NOT start this until the owner answers.
+    ⚠ H24 is unreachable in the shipped game (Q7 caps grids at 3) but the design carries it, and
+    game_picture_max_render_px is what keeps a wider board from silently exceeding the render
+    target.
 - id: S29
   description: >
     Arrow keys move the cell selection across grid boundaries and the camera follows; in the
@@ -387,10 +391,15 @@ and the plan's dependency note — Phase 10 depends on everything and runs last 
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — fifteen filed, fifteen resolved
+## Gaps — sixteen filed, fifteen resolved, ONE OPEN
 
-`design/poker-patience/gaps/GAP-001..009`, `design/grid-view/gaps/GAP-010..015`. Answers are quoted
-verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they are newer.**
+`design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
+Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
+are newer.**
+
+⚠ **`GAP-016` IS OPEN AND BLOCKS `S28`.** Grid-stepping rides the `SmoothScrollContainer` while
+`QR3`=a and `H11`/`H23` put it on the wall's camera. Four options, (d) being the fourth found per
+`GAP-014`'s lesson. **Quote its option text to the owner; do not pick one.**
 `GAP-014` is NOT A GAP — resolved as a defect, because a fourth option existed. It is kept because it
 was filed correctly and the reasoning matters: **check for a fourth option before filing.**
 
@@ -443,11 +452,12 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. **`S26`** — two view modes; the board opens zoomed out; clicking a grid zooms in. Read flowchart
-   H (`DESIGN.md` §36) first. The geometry it pans over is now stable.
-2. **`S27`-`S30`** — Back/Forward intercepted for zoom, the one scroll container, keyboard and
-   controller selection across grids, refocus when a grid is removed.
-3. **Phase 7** — `S31`-`S34`: the wall.
+1. ⚠ **ANSWER `GAP-016` FIRST — it blocks `S28`, and `S29`/`S30` are built on whatever it decides.**
+   Quote its four options to the owner verbatim.
+2. **`S28`** once unblocked, then **`S29`**-**`S30`** — keyboard and controller selection across
+   grids, refocus when a grid is removed.
+3. **Phase 7** — `S31`-`S34`: the wall. ⚠ If `GAP-016` resolves as (a) or (d), `S31` moves ahead of
+   the migration, because the wide picture is what a camera pan needs.
 
 ⚠ **`doc_check.py` CANNOT EXPRESS A FILENAME CONTAINING SPACES.** Its reference regex keeps only the
 last space-free run, so spelling out the post-grid curated effects CSV in a living doc reports a
@@ -467,8 +477,8 @@ READ IN THIS ORDER:
   2. solatro/design/poker-patience/PLAN.md section 3 (Phase 6), section 1 (contracts).
   3. solatro/design/poker-patience/DESIGN.md section 36 - FLOWCHART H, which Phase 6 implements.
   4. solatro/design/grid-view/DESIGN.md - charts J, K, L, M, N, P.
-  5. The gap files: FIFTEEN filed, all resolved. Answers are quoted verbatim at the top of each
-     and OUTRANK PLAN.md and NAMES.md.
+  5. The gap files: SIXTEEN filed, fifteen resolved, GAP-016 OPEN. Answers are quoted
+     verbatim at the top of each and OUTRANK PLAN.md and NAMES.md.
   6. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
      CardModifier.api, and a suite gate enforces it.
 
@@ -476,7 +486,8 @@ GROUND TRUTH BEFORE TRUSTING ANY `done` (see Environment for the import trap on 
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
   Expect ALL 44 SUITES, zero failures. Last verified 3624 CHECKS PASSED.
 
-THE WORK: Phase 6 - S26, then S27-S30. Then Phase 7 (the wall).
+THE WORK: S26 and S27 are LANDED and committed. GAP-016 is OPEN and blocks S28 -
+  answer it before writing any code. Then S28-S30, then Phase 7 (the wall).
 
 NON-NEGOTIABLES, each of which caught a real defect on this stream:
   - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.
