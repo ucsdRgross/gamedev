@@ -73,7 +73,10 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
   errors, 7 warnings. Judge a regression by the full run plus a diff check for ADDED ids.
 - By-eye rendering: `<godot> --path solatro res://Tests/Visual/reveal_shot.tscn` and
   `res://Tests/Visual/grid_layer_shot.tscn`, which write `user://reveal_shots/*.png`. They stand up a
-  REAL `GameView`; they are the only things that show the board.
+  REAL `GameView`; they are the only things that show the board. ⚠ **`grid_layer_shot` now shoots
+  the board at 1, 2 AND 3 grids** (`grid_board_1/2/3.png`) and prints each grid's panel centre, the
+  window centre and per-grid off-screen px — a picture plus the numbers behind it. It is NOT
+  registered in `all_tests.tscn`; the suite stays at 45.
 
 ## Standing rules this stream paid for — do not rediscover them
 
@@ -492,6 +495,19 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
+- ⚠⚠ **AT 3 GRIDS THE RIGHTMOST GRID IS CUT OFF AND THE BOARD IS OFF CENTRE — FOUND BY EYE AT THE
+  PHASE GATE, CONFIRMED BY THE OVERSEER LOOKING AT THE PNG.** `grid_board_3.png`: the third grid's
+  rightmost column is sliced by the window edge (**19 px off-screen**) and a horizontal scrollbar
+  appears along the bottom — **even though the content is 706 px in a 711 px window, i.e. it FITS.**
+  The middle grid sits at 792.5 against a window centre of 778.5, so it is **14 px right of centre**,
+  contradicting `G10` *"3 put the middle where a single grid sits"* and `G9` *"board is always
+  CENTRED"*. Measured at REST, with no panning.
+  ⚠ **Not reproduced at 1 or 2 grids** — `grid_board_1.png` is dead centre and `grid_board_2.png`
+  straddles symmetrically (−123 / +122), so this is specific to the 3-grid case. Suspect the
+  interaction between `S27`'s `size_flags_horizontal = SIZE_EXPAND_FILL` and the content's minimum
+  width, or gutter/label width the centring does not account for.
+  **This is a DEFECT, not a gap — `G9`/`G10` leave exactly one defensible behaviour. Phase 6 is not
+  closed until it is fixed.**
 - ⚠⚠ **FLAKY, NOT FIXED: `test_visual_layers.gd`'s "a light follows its card across a board SCROLL,
   not just a layout move" (`worst < 1.0`).** Measured across four runs of IDENTICAL production code:
   it failed twice and passed twice, and it PASSED in the overseer's own S29 verification. It writes
