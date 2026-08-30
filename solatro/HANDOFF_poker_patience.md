@@ -497,26 +497,18 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
-- ⚠⚠ **AT 3 GRIDS THE RIGHTMOST GRID IS CUT OFF AND THE BOARD RESTS UNPOSITIONED — PHASE 6 IS NOT
-  CLOSED UNTIL `GAP-017` IS ANSWERED.** Found by eye at the phase gate; measured by the overseer's
-  own run of `Tests/Visual/grid_layer_shot.tscn`:
-  `container w 731.0 (min 731.0), scroll 0.0/731.0, bar visible true`; grid 2's cells
-  `[937.0 .. 1153.0]`, **19.0 px off-screen**; the middle grid at 792.5 against a window centre of
-  778.5.
-  ⚠ **The board does NOT fit and cannot**: 731 px minimum against **703 px of usable viewport**
-  (cells alone span 706). An earlier reading of "706 fits in 711" compared against the container's
-  OUTER rect, which includes scroll chrome — there is no scroll position at 3 grids that shows
-  everything.
-  ⚠ **Nothing positions the board horizontally at open.** It rests at `scroll_horizontal = 0`, hard
-  left, while `pan_grid` claims the view is centred on grid 0.
-  ⚠ **ROOT CAUSE IS THE ABSENT `grid_buffer_px`** — `Q35`=(b) puts the labels IN the buffer between
-  cell blocks, but with no buffer each panel's 25 px of gutters is ADDED to the board width. That is
-  the 75 px turning a 706 px cell span into 731.
-  ⚠ **`TP-101` did not catch it because it CALLS `pan_to_grid(0)` before measuring** — the very call
-  the resting board never makes. The test sets up the condition whose absence is the bug.
-  **Not reproduced at 1 or 2 grids** (dead centre; −123/+122 straddle). `G10` and `Q150`(a)/`H9` are
-  not simultaneously satisfiable at current measurements, which is why this is `GAP-017` and not a
-  defect anyone may just fix.
+- ⚠ **THE FOCUSED VIEW DOES NOT YET ZOOM — `GAP-017`'s answer is only TWO-THIRDS IMPLEMENTED.**
+  Owner ruling, verbatim: *"no cutoff grid only holds for focused grid. goal is that focused grid
+  has height matching viewport height. while focused, other grids should be out of view"*.
+  Parts 1 and 2 landed: the board now RESTS positioned on the grid the view is on (`scroll 13.5`,
+  was a raw `0.0`), and the cut-off rule is scoped to that grid. **Part 3 — the focused grid sized
+  to the viewport height, with the other grids out of view — is a SCALE, and Phase 6 ships no
+  zoom by `GAP-016`=(d).** Until it lands, a focused view still shows its neighbours.
+  ⚠ **This is the piece that makes `S26`'s two view modes visually real.** They are currently state
+  plus input consequence only.
+- ⚠ **`pan_to_grid` measures the scroll container's FULL rect**, so it aims ~4 px right of the
+  visible window once the vertical scrollbar shows (measured: the middle grid rests at 775.0 against
+  a window centre of 778.5). Deliberately left alone — fixing it moves every pan on the board.
 - ⚠⚠ **FLAKY, NOT FIXED: `test_visual_layers.gd`'s "a light follows its card across a board SCROLL,
   not just a layout move" (`worst < 1.0`).** Measured across four runs of IDENTICAL production code:
   it failed twice and passed twice, and it PASSED in the overseer's own S29 verification. It writes

@@ -483,6 +483,30 @@ func update_gui() -> void:
 ## Open the all-grids view with nothing focused. The show's opening view.
 func open_zoomed_out() -> void:
 	_set_view(ViewMode.OVERVIEW, NO_GRID)
+	rest_board()
+
+## The grid the board RESTS centred on, per view mode. `NO_GRID` while there is no grid to rest on.
+##
+## ⚠ **A RESTING BOARD IS A POSITIONED BOARD.** Nothing used to place the board horizontally, so it
+## sat at scroll zero — hard left — while the view claimed to be centred on a grid.
+## FOCUSED: the grid being acted on, and it is the ONLY grid the "no cut-off grid" rule speaks about
+## — a neighbour sliced by the window edge is not a defect.
+## OVERVIEW: the MIDDLE grid, which is what puts the whole board in the middle of the window.
+func _resting_grid() -> int:
+	var last := grid_container.get_child_count() - 1
+	if last < 0: return NO_GRID
+	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
+		return clampi(focused_grid, 0, last)
+	return last / 2
+
+## Bring the board to its resting position. Reuses the removal re-centre, so opening the board and
+## losing a grid move it the same way — including its wait for the panels to stop moving, which is
+## what makes this safe to call before the layout has ever run.
+func rest_board() -> void:
+	var gi := _resting_grid()
+	if gi == NO_GRID: return
+	pan_grid = gi
+	_recentre_board()
 
 ## Focus one grid — what a click on a grid in the overview does. Placement happens focused.
 ## Focusing also CENTRES the view on that grid: the grid being acted on is the grid in the middle,
@@ -1520,6 +1544,9 @@ func set_grid_zones(game_state: GameData) -> void:
 		_bind_grid_panel(grid_container.get_child(gi) as Control, game_state.grids[gi])
 	_bound_grids.assign(game_state.grids)
 	if removed != NO_GRID: _on_grid_removed(removed)
+	# ⚠ A GRID ARRIVING MOVES THE RESTING POSITION AS SURELY AS ONE LEAVING: the board is wider and
+	# its middle is somewhere else, so a board left where it was is a board off its rest.
+	elif diff > 0: rest_board()
 
 ## The grid list as it was at the last rebuild. The panels are bound by POSITION, so without this
 ## nothing can tell a grid that was REMOVED from one that merely shifted left into its place.
@@ -1584,6 +1611,13 @@ func _recentre_board() -> void:
 		last = now
 	_recentre_waiting = false
 	pan_to_grid(pan_grid)
+	# ⚠ **AIM TWICE: A BOARD SITTING AT SCROLL ZERO LIES ABOUT WHERE IT IS.** At exactly zero the
+	# scroll container still holds the half-margin it centred the content with while the board fitted
+	# (measured: 4 px), and it drops it the moment the scroll moves — so an aim taken from rest lands
+	# 4 px short and stays there, no matter how long it waited for the layout. One frame in, the board
+	# is on its true line and the second aim corrects the same motion, mid-flight, invisibly.
+	await get_tree().process_frame
+	if is_inside_tree() and is_instance_valid(grid_container): pan_to_grid(pan_grid)
 
 ## What "the board has stopped moving" means to a re-centre: where the centred grid sits INSIDE the
 ## board, how wide the board is, and how far the view can scroll. ⚠ All three are read relative to

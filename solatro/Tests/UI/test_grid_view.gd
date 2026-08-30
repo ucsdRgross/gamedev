@@ -30,6 +30,7 @@ func _ready() -> void:
 	await run_back_zooms_out_and_forward_returns_test()
 	await run_panning_has_its_own_actions_test()
 	await run_every_pan_lands_a_grid_centred_test()
+	await run_the_board_rests_positioned_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
 	await run_one_scroll_container_on_the_board_test()
@@ -224,7 +225,8 @@ func _window_x(pa: PlayArea) -> Vector2:
 	return Vector2(left, left + pa.scroll_container.size.x - taken)
 
 ## How far grid `gi`'s CELL BLOCK hangs outside that window, in pixels; 0 when it is wholly on
-## screen. The instrument for "no cut-off grid at rest".
+## screen. The instrument for "no cut-off grid at rest" — a rule scoped to the grid the view is ON:
+## ⚠ ask it about that grid, never about every grid on the board (owner ruling).
 func _cut_off_px(pa: PlayArea, gi: int) -> float:
 	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
 	var win := _window_x(pa)
@@ -342,40 +344,103 @@ func run_panning_has_its_own_actions_test() -> void:
 	await _tear_down(view)
 
 # ==============================================================================
-# TP-101 - FIX-GRID-3: every pan lands a grid centred; no cut-off grid at rest.
+# TP-101 - FIX-GRID-3: every pan lands the grid the view is on centred, and that grid is never cut
+# off.
+#
+# ⚠ THE CUT-OFF RULE IS ABOUT THE GRID THE VIEW IS ON, NOT ITS NEIGHBOURS (owner ruling): a
+# neighbouring grid sliced by the window edge is not a defect, so nothing here asserts over every
+# grid on the board.
+# ⚠ NOTHING IS PANNED BEFORE THE FIRST MEASUREMENT. This test used to call `pan_to_grid(0)` first —
+# the very call a resting board never makes — and so could not see a board that rests unpositioned.
 # ==============================================================================
 func run_every_pan_lands_a_grid_centred_test() -> void:
 	behavior_section("EVERY PAN LANDS A GRID CENTRED")
 	var view := await _stand_up()
 	var pa := view.play_area
 	await _settle_layout(view)
-	pa.pan_to_grid(0)
 	await _settle_scroll(view)
 	check(_board_overflows(pa),
 			"precondition: three grids are wider than the window, so a pan can move (TP-101)",
 			"content %f window %f" % [pa.grid_container.size.x, pa.scroll_container.size.x])
-	check(_cut_off_px(pa, 0) <= 1.0,
-			"grid 0 rests wholly on screen",
-			"%f px off screen" % _cut_off_px(pa, 0))
+	var rest_grid := pa.pan_grid
+	check(rest_grid == 1,
+			"precondition: the overview rests on the middle of three grids (TP-101)",
+			"pan_grid %d" % rest_grid)
+	check(_cut_off_px(pa, rest_grid) <= 1.0,
+			"the grid the view rests on is wholly on screen, with no pan asked for (TP-101)",
+			"%f px off screen" % _cut_off_px(pa, rest_grid))
 
-	for step : int in [1, 2]:
-		pa._unhandled_input(_action(&"grid_pan_right"))
-		await _settle_scroll(view)
-		check(pa.pan_grid == step,
-				"a pan-right press steps ONE grid, to grid %d (TP-101)" % step,
-				"pan_grid %d" % pa.pan_grid)
-		check(_cut_off_px(pa, step) <= 1.0,
-				"grid %d rests wholly on screen -- no cut-off grid at rest" % step,
-				"%f px off screen" % _cut_off_px(pa, step))
-
-	pa._unhandled_input(_action(&"grid_pan_left"))
+	pa._unhandled_input(_action(&"grid_pan_right"))
 	await _settle_scroll(view)
-	check(pa.pan_grid == 1,
-			"a pan-left press steps back one grid",
+	check(pa.pan_grid == rest_grid + 1,
+			"a pan-right press steps ONE grid, to grid %d (TP-101)" % (rest_grid + 1),
 			"pan_grid %d" % pa.pan_grid)
-	check(_cut_off_px(pa, 1) <= 1.0,
+	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
+			"the grid it stepped onto rests wholly on screen -- no cut-off grid UNDER THE VIEW",
+			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
+
+	for _i : int in [0, 1]:
+		pa._unhandled_input(_action(&"grid_pan_left"))
+		await _settle_scroll(view)
+	check(pa.pan_grid == rest_grid - 1,
+			"two pan-left presses step back two grids, to grid %d" % (rest_grid - 1),
+			"pan_grid %d" % pa.pan_grid)
+	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
 			"and that grid rests wholly on screen too",
-			"%f px off screen" % _cut_off_px(pa, 1))
+			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-113 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
+# explicit pan to the grid the view is on puts it.
+#
+# ⚠ FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own clamp parks the board
+# hard left anyway, so an unpositioned board and a correctly positioned one are the SAME number and
+# the check passes with the wiring cut. The resting grid has to be one the clamp cannot supply.
+#
+# ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE: where a grid comes to rest is the layout's business,
+# so the reference is the player's own pan to that same grid — the same reference TP-112 uses.
+# ==============================================================================
+func run_the_board_rests_positioned_test() -> void:
+	behavior_section("THE BOARD RESTS POSITIONED ON THE GRID THE VIEW IS ON")
+	var view := await _stand_up_grids(5)
+	var pa := view.play_area
+	var smooth := _scroller(pa)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(_board_overflows(pa),
+			"precondition: five grids overflow the window, so resting position is the scroll's job"
+			+ " (TP-113)")
+	check(pa.pan_grid == 2,
+			"the overview rests on the MIDDLE grid, so the whole board is centred (TP-113)",
+			"pan_grid %d" % pa.pan_grid)
+	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
+			"...and the grid it rests on is wholly in frame (TP-113)",
+			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
+	var rest := smooth.pos.x
+	pa.pan_to_grid(pa.pan_grid)
+	await _settle_scroll(view)
+	check(absf(smooth.pos.x - rest) <= 1.0,
+			"the board at rest is already where an explicit pan to that grid puts it -- it was "
+			+ "POSITIONED, not left at scroll zero (TP-113)",
+			"rest %.1f vs explicit pan %.1f" % [rest, smooth.pos.x])
+
+	# FOCUSED: the resting grid is the focused one, and it is the only grid the cut-off rule speaks
+	# about — its neighbours may be sliced by the window edge and that is not a defect.
+	pa.focus_grid(3)
+	await _settle_scroll(view)
+	var focused_rest := smooth.pos.x
+	check(pa.focused_grid == 3 and pa.pan_grid == 3,
+			"focusing a grid puts the view on it (TP-113)",
+			"focused %d pan %d" % [pa.focused_grid, pa.pan_grid])
+	check(_cut_off_px(pa, 3) <= 1.0,
+			"the FOCUSED grid rests wholly in frame (TP-113)",
+			"%f px off screen" % _cut_off_px(pa, 3))
+	pa.pan_to_grid(3)
+	await _settle_scroll(view)
+	check(absf(smooth.pos.x - focused_rest) <= 1.0,
+			"...at exactly the position an explicit pan to it lands (TP-113)",
+			"rest %.1f vs explicit pan %.1f" % [focused_rest, smooth.pos.x])
 	await _tear_down(view)
 
 # ==============================================================================
