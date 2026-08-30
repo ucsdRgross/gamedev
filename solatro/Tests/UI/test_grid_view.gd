@@ -32,6 +32,8 @@ func _ready() -> void:
 	await run_every_pan_lands_a_grid_centred_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
+	await run_one_scroll_container_on_the_board_test()
+	await run_panning_shifts_which_three_are_in_frame_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -448,4 +450,148 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 	check(pa.pan_grid == 0,
 			"and there was never another grid to step onto",
 			"pan_grid %d" % pa.pan_grid)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-104 - FIX-FULL-15: ONE scroll container inside the picture. The board pans between grids and
+# the SAME container reveals more of a tall stack or an oversized grid; a second scroller nested in
+# the board would make two things that scroll the same content.
+#
+# ⚠ THIS IS A RATCHET, and its whole value is failing the day someone nests another scroller in the
+# board. So it PROVES IT CAN SEE scrollers first -- an assertion that counts zero things passes
+# trivially. Same shape as TP-93, which proves it can see labels before asserting none is a
+# subtotal.
+# ==============================================================================
+
+## Every ScrollContainer at or under `root`, in tree order. The instrument TP-104 is built on.
+func _scrollers_under(root: Node) -> Array[ScrollContainer]:
+	var found : Array[ScrollContainer] = []
+	var sc := root as ScrollContainer
+	if sc: found.append(sc)
+	for child : Node in root.get_children():
+		found.append_array(_scrollers_under(child))
+	return found
+
+func run_one_scroll_container_on_the_board_test() -> void:
+	behavior_section("ONE SCROLL CONTAINER ON THE BOARD")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+
+	# THE INSTRUMENT CHECK. The play area as a whole holds more than one scroller (the board's, and
+	# the pinned Entrance's own vertical one, which is NOT on the board), so a finder that returned
+	# nothing would be caught here rather than passing the count below by default.
+	var everywhere := _scrollers_under(pa)
+	check(everywhere.size() >= 2,
+			"instrument check: the finder SEES scrollers -- the play area holds more than one (TP-104)",
+			"%d found" % everywhere.size())
+	check(everywhere.has(pa.scroll_container) and everywhere.has(pa.entrance_v_scroll),
+			"...and it finds both the board's scroller and the Entrance's own")
+
+	var on_board := _scrollers_under(pa.scroll_container)
+	var names := PackedStringArray()
+	for s : ScrollContainer in on_board: names.append(s.name)
+	check(on_board.size() == 1,
+			"the board has exactly ONE scroll container -- nothing scrolls inside it (TP-104)",
+			"%s" % [names])
+	check(on_board.size() == 1 and on_board[0] == pa.scroll_container,
+			"...and it is the board's own container, the one the pan drives",
+			"%s" % [names])
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-106 - with MORE THAN 3 grids, panning shifts WHICH grids are in frame.
+#
+# ⚠ `grid_max_count` caps a real run at 3, so this case cannot arise in a show -- which is exactly
+# why it is the untested region and why the fixture builds past the cap DIRECTLY (the cap governs
+# unlocking, not `Board.add_grid`). At three grids every claim below is vacuous: nothing is ever
+# out of frame to shift into it. So the fixture is five, and the test asserts the framing MOVED --
+# direction and ordering, never an exact delta, because the scroll content's own origin shifts as
+# the region around it resizes.
+#
+# It drives the REAL input path, so deleting the pan wiring out of `_consume_as_view_action` fails
+# it even though every part still exists.
+# ==============================================================================
+
+## The grids wholly on screen right now, by index, ascending. "In frame" is `_cut_off_px` at zero.
+func _grids_in_frame(pa: PlayArea) -> Array[int]:
+	var seen : Array[int] = []
+	for gi : int in range(pa.grid_container.get_child_count()):
+		if _cut_off_px(pa, gi) <= 1.0: seen.append(gi)
+	return seen
+
+## The lowest index in frame, or -1 when nothing is. Written out because `Array.min()` is a Variant.
+func _lowest(seen: Array[int]) -> int:
+	var best := -1
+	for gi : int in seen:
+		if best < 0 or gi < best: best = gi
+	return best
+
+## The highest index in frame, or -1 when nothing is.
+func _highest(seen: Array[int]) -> int:
+	var best := -1
+	for gi : int in seen:
+		if gi > best: best = gi
+	return best
+
+func run_panning_shifts_which_three_are_in_frame_test() -> void:
+	behavior_section("PANNING SHIFTS WHICH GRIDS ARE IN FRAME")
+	var view := await _stand_up_grids(5)
+	var pa := view.play_area
+	await _settle_layout(view)
+	check(pa.grid_container.get_child_count() == 5,
+			"precondition: five grids on the board (TP-106)",
+			"%d panels" % pa.grid_container.get_child_count())
+	check(pa.grid_container.get_child_count() > SettingsManager.settings.grid_max_count,
+			"precondition: that is MORE than the cap, which is the case TP-106 is about",
+			"cap %d" % SettingsManager.settings.grid_max_count)
+
+	pa.pan_to_grid(1)
+	await _settle_scroll(view)
+	var before := _grids_in_frame(pa)
+	check(not before.is_empty(),
+			"instrument check: some grid is in frame at rest, so 'in frame' means something",
+			"%s" % [before])
+	check(before.size() < 5,
+			"precondition: five grids do NOT all fit -- there is something to shift into frame",
+			"%s in frame" % [before])
+	check(before.has(0),
+			"the near edge of the board is in frame before panning",
+			"%s" % [before])
+
+	for _i : int in [0, 1]:
+		pa._unhandled_input(_action(&"grid_pan_right"))
+		await _settle_scroll(view)
+	check(pa.pan_grid == 3,
+			"two pan-right presses step the view onto grid 3 (TP-106)",
+			"pan_grid %d" % pa.pan_grid)
+	var after := _grids_in_frame(pa)
+	check(not after.is_empty(),
+			"grids are still in frame after the pan",
+			"%s" % [after])
+	check(_lowest(after) > _lowest(before),
+			"panning right shifts WHICH grids are in frame -- the near edge moves along (TP-106)",
+			"%s -> %s" % [before, after])
+	check(_highest(after) > _highest(before),
+			"...and a grid that was off the far edge is now in frame",
+			"%s -> %s" % [before, after])
+	check(not after.has(0),
+			"...while the grid it started on has left the frame",
+			"%s" % [after])
+
+	for _i : int in [0, 1]:
+		pa._unhandled_input(_action(&"grid_pan_left"))
+		await _settle_scroll(view)
+	var back := _grids_in_frame(pa)
+	check(pa.pan_grid == 1,
+			"panning back left returns to the grid it started on",
+			"pan_grid %d" % pa.pan_grid)
+	# ⚠ Direction and ordering, never set identity: whether the grid at the far edge counts as
+	# wholly on screen turns on a pixel or two of settle, so the near edge is the honest instrument.
+	check(_lowest(back) == _lowest(before),
+			"...and the frame is back where it started: the window shifted, it did not resize",
+			"%s vs %s" % [back, before])
+	check(_highest(back) < _highest(after),
+			"...having given up the far grid it had panned onto",
+			"%s vs %s" % [back, after])
 	await _tear_down(view)

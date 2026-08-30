@@ -312,16 +312,35 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     ONE scroll container inside the picture, for tall stacks and oversized grids; with more than 3
     grids, panning shifts WHICH 3 are in frame. Implements H13 and H24. (H22/H23's camera stepping
     is S31's, per GAP-016=d.)
-  files_touched: []
+  files_touched: [solatro/Tests/UI/test_grid_view.gd]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: done
+  evidence: >
+    Overseer-run: ALL 45 SUITES: 3692 CHECKS PASSED, zero failures, console and log agreeing, log
+    mtime fresh, errors log 0 bytes. GRID VIEW 13 -> 65 checks. doc_check 0 errors / 7 warnings.
+    ⚠ **NO PRODUCT CODE CHANGED** -- `git diff` over UI/, Scripts/, Levels/, Cards/ is EMPTY, which
+    the overseer confirmed rather than took on trust. S28 is a RATCHET plus coverage: H13's one
+    scroll container is already true, and H24's framing shift is already delivered by S27's pan.
+    RED (pan wiring removed from _consume_as_view_action AND a nested ScrollContainer added under
+    the board): 12 FAILED -- TP-104's two ratchet checks with its instrument check still PASSING,
+    TP-106's five, and TP-101/TP-102 as collateral of the same neutralisation.
   notes: >
     ⚠ **SCOPE CUT BY GAP-016=(d): S28 owes TP-104 and TP-106 ONLY.** TP-105 ("the camera steps
     between the 3 grid positions the frame holds") moved to S31, because it cannot be satisfied
     before the wide picture exists. H22/H23's camera half is Phase 7's; S27's scroller pan is the
     scroller half and stays.
+    ⚠ **TP-104 PROVES ITS INSTRUMENT FIRST** -- it asserts the finder can SEE more than one
+    ScrollContainer in the play area (the board's and EntranceVScroll) before asserting the board
+    subtree holds exactly one. An assertion that counts zero things passes trivially.
+    ⚠ **TP-106 REACHES THE 4+ GRID CASE Q7's CAP HIDES** by standing up a five-grid board directly
+    -- `grid_max_count` governs UNLOCKING, not `Board.add_grid` -- with a precondition asserting
+    5 > grid_max_count and that not all five fit. No setting was raised, so SETTINGS RANGE is
+    untouched.
+    ⚠ A first-cut assertion `back == before` (set identity after panning back) FAILED GREEN at
+    [0,1] vs [0,1,2]: the far grid sits a pixel or two outside after settle. That is the "exact
+    delta is an identity the layout does not owe" trap, and it was replaced with direction and
+    ordering checks -- NOT with a widened tolerance.
     ⚠ H24 is unreachable in the shipped game (Q7 caps grids at 3) but the design carries it, and
     game_picture_max_render_px is what keeps a wider board from silently exceeding the render
     target.
@@ -390,11 +409,17 @@ and the plan's dependency note — Phase 10 depends on everything and runs last 
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — sixteen filed, sixteen resolved
+## Gaps — seventeen filed, sixteen resolved, ONE OPEN
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 are newer.**
+
+⚠ **`GAP-017` IS OPEN — it does NOT block anything.** `grid_buffer_px` and `grid_overview_margin`
+are registered in `NAMES.md` §6 against `S28`, which after `GAP-016`=(d) has no site for either.
+⚠ **The gap as filed claimed `Q35` is unanswered; it is not — `Q35`=(b)** fixes that grids are
+spaced by their CELL blocks with the labels in the buffer, so only the TIMING is open. Corrected in
+the file. `S29`/`S30` are unaffected; the natural home is `S31`.
 
 **`GAP-016` = (d)**, the fourth option found per `GAP-014`'s lesson: Phase 6 finishes on the
 scroller and the camera migration lands in Phase 7 with the picture it needs. `TP-105` moved from
@@ -447,11 +472,9 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. **`S28`** — the one scroll container (`TP-104`) and >3-grid framing (`TP-106`). `TP-105` is now
-   `S31`'s.
-2. **`S29`**-**`S30`** — keyboard and controller selection across grids, refocus when a grid is
+1. **`S29`**-**`S30`** — keyboard and controller selection across grids, refocus when a grid is
    removed.
-3. **Phase 7** — `S31`-`S34`: the wall. ⚠ **`S31` now also owes `TP-105` and the camera migration
+2. **Phase 7** — `S31`-`S34`: the wall. ⚠ **`S31` now also owes `TP-105` and the camera migration
    `GAP-016` deferred to it.**
 
 ⚠ **`doc_check.py` CANNOT EXPRESS A FILENAME CONTAINING SPACES.** Its reference regex keeps only the
@@ -472,7 +495,7 @@ READ IN THIS ORDER:
   2. solatro/design/poker-patience/PLAN.md section 3 (Phase 6), section 1 (contracts).
   3. solatro/design/poker-patience/DESIGN.md section 36 - FLOWCHART H, which Phase 6 implements.
   4. solatro/design/grid-view/DESIGN.md - charts J, K, L, M, N, P.
-  5. The gap files: SIXTEEN filed, all resolved. Answers are quoted verbatim at the top of
+  5. The gap files: SEVENTEEN filed, sixteen resolved, GAP-017 open but blocking nothing. Answers are quoted verbatim at the top of
      each and OUTRANK PLAN.md and NAMES.md.
   6. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
      CardModifier.api, and a suite gate enforces it.
@@ -481,9 +504,9 @@ GROUND TRUTH BEFORE TRUSTING ANY `done` (see Environment for the import trap on 
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
   Expect ALL 44 SUITES, zero failures. Last verified 3624 CHECKS PASSED.
 
-THE WORK: S26 and S27 are LANDED and committed. GAP-016 answered (d): S28 owes TP-104 and
-  TP-106 only, TP-105 moved to S31. Then S29-S30, then Phase 7 - where S31 owes the camera
-  migration GAP-016 deferred.
+THE WORK: S26, S27 and S28 are LANDED and committed. Next is S29, then S30, then Phase 7 -
+  where S31 owes TP-105 and the camera migration GAP-016 deferred to it, plus GAP-017's two
+  knobs if the owner puts them there.
 
 NON-NEGOTIABLES, each of which caught a real defect on this stream:
   - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.
