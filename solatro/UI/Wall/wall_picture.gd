@@ -112,7 +112,7 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_design_size = entry.design_size
 
 	viewport = SubViewport.new()
-	viewport.size = entry.design_size
+	_apply_design_render_size()
 	# ⚠ MUST be set explicitly: a SubViewport defaults to LINEAR and does NOT inherit the
 	# project's texture-filter setting.
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
@@ -225,11 +225,7 @@ func focus() -> void:
 	# edge. A mouse-only player never sees it, because a click never selects.
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.size = _design_size
-	# Focused renders at full design size, so the canvas override has nothing to do — cleared
-	# rather than left at a 1:1 identity, so `WallInput.route()` maps into a plain viewport.
-	viewport.size_2d_override = Vector2i.ZERO
-	viewport.size_2d_override_stretch = false
+	_apply_design_render_size()
 	_rescale_screen()
 	# The live screen's root is flipped to ALWAYS. `screen_root` may be null when this picture has
 	# no scene, in which case there is nothing to flip.
@@ -240,6 +236,30 @@ func focus() -> void:
 	# A focused picture is always fully opaque: a reduced-motion cross-fade may have left this
 	# alpha mid-fade, and no resting state is ever partially faded.
 	set_screen_alpha(1.0)
+
+## The render-target size for a picture laid out at `design`: each axis capped at `max_px`.
+##
+## ⚠ **THE PROPERTY CANNOT BE READ BACK TO CHECK THIS.** Past the GPU's maximum texture size the
+## Compatibility renderer destroys the framebuffer and sets the size to 0 internally, while
+## `SubViewport.size` still reports the oversized value — the failure is invisible from script and
+## the picture is simply black. Older GPUs cap at 4096. The only defence is never writing one.
+static func clamped_render_size(design: Vector2i, max_px: int) -> Vector2i:
+	return Vector2i(mini(design.x, max_px), mini(design.y, max_px))
+
+## Writes `viewport`'s render target for a picture laid out at FULL design size — what `build()`
+## and `focus()` both want. Clamped to `game_picture_max_render_px`, with the canvas override
+## engaged ONLY when the clamp actually bites, so a picture too wide for the render target keeps
+## its layout at design size and pays sharpness instead of a destroyed framebuffer. That is the
+## same mechanism `update_wall_view_size()` uses; the difference is only which size is asked for.
+##
+## ⚠ **AT 1:1 THE OVERRIDE MUST BE CLEARED, NOT LEFT AT AN IDENTITY.** `WallInput.route()` maps
+## into a plain viewport and a stale override displaces every click inside a focused screen.
+func _apply_design_render_size() -> void:
+	var render := clamped_render_size(_design_size, settings().game_picture_max_render_px)
+	viewport.size = render
+	var clamped := render != _design_size
+	viewport.size_2d_override = _design_size if clamped else Vector2i.ZERO
+	viewport.size_2d_override_stretch = clamped
 
 ## Drops this out of focus: UPDATE_DISABLED, so rendering stops but the already-rendered texture
 ## persists on the GPU. Sized down to the wall-view footprint, never left at full `design_size`.

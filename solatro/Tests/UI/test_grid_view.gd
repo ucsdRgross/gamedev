@@ -12,6 +12,9 @@ extends TestSuite
 # ==============================================================================
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
+## The real wall picture, for the render-target checks: the game screen is a picture on the wall,
+## so its render target is only meaningful through the node that owns one.
+const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
 
 var _prev_run : RunState
 var _prev_save_info : RunState
@@ -43,6 +46,8 @@ func _ready() -> void:
 	# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
 	await run_a_swipe_fires_once_test()
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
+	await run_the_game_picture_fits_exactly_three_grids_test()
+	await run_the_render_target_never_exceeds_the_clamp_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -675,9 +680,16 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	check(before.size() < 5,
 			"precondition: five grids do NOT all fit -- there is something to shift into frame",
 			"%s in frame" % [before])
-	check(before.has(0),
-			"the near edge of the board is in frame before panning",
-			"%s" % [before])
+	# ⚠ **THE GRID THE VIEW IS ON, NOT ITS NEIGHBOUR.** This asked for grid 0 while the view sat on
+	# grid 1, which held only while grids were spaced 4 px apart and two of them fitted the window
+	# at once. `grid_buffer_px` puts a real gap between cell blocks, so at this window size the
+	# grid in the middle is the only one WHOLLY in frame -- and a neighbour sliced by the window
+	# edge is explicitly not a defect (the no-cut-off rule is scoped to the focused grid). What the
+	# layout owes, and what the "near edge moves along" check below rests on, is that the grid at
+	# rest is itself uncut.
+	check(before.has(pa.pan_grid),
+			"the grid the view rests on is wholly in frame before panning",
+			"%s in frame, resting on %d" % [before, pa.pan_grid])
 
 	for _i : int in [0, 1]:
 		pa._unhandled_input(_action(&"grid_pan_right"))
@@ -1310,3 +1322,158 @@ func run_the_board_recentres_after_any_removal_test() -> void:
 			"%.2f s to rest, pan clock %.2f s"
 			% [elapsed, SettingsManager.settings.grid_pan_duration])
 	await _tear_down(view)
+
+# ==============================================================================
+# TP-113 - the game picture is sized for exactly `grid_max_count` grids, plus margins, at the
+# height the zoomed-out view needs. The size is read through `Wall.load_layout()` - the one seam
+# every real wall build goes through - so a picture that stopped being sized fails here.
+# ==============================================================================
+func run_the_game_picture_fits_exactly_three_grids_test() -> void:
+	behavior_section("THE GAME PICTURE FITS EXACTLY THREE GRIDS")
+	var st := SettingsManager.settings
+	var entry := _game_entry()
+	check(entry != null, "the layout registers a game picture at all")
+	if not entry: return
+	var design := entry.design_size
+	check(design != PictureEntry.new().design_size,
+			"the game picture is SIZED by the board's rule, not left at the entry default every "
+			+ "other picture inherits (TP-113)",
+			"design %s, entry default %s" % [design, PictureEntry.new().design_size])
+	var block := PlayArea.grid_block_size_px(st, GridData.new())
+	var span_3 := _grid_span(block.x, 3)
+	var span_4 := _grid_span(block.x, 4)
+	check(st.grid_max_count == 3,
+			"precondition: the shipped cap is three grids (TP-113)",
+			"grid_max_count %d" % st.grid_max_count)
+	check(float(design.x) >= span_3,
+			"the game picture is wide enough for three grid blocks and the two buffers between "
+			+ "them (TP-113)",
+			"design %d px, three grids span %.1f px" % [design.x, span_3])
+	check(float(design.x) < span_4,
+			"...and NOT wide enough for a fourth - exactly three, not merely at least three "
+			+ "(TP-113)",
+			"design %d px, four grids span %.1f px" % [design.x, span_4])
+	check(absf(float(design.x) - span_3 - 2.0 * st.grid_overview_margin * span_3) <= 1.0,
+			"...with the leftover width being exactly the overview margin on each side (TP-113)",
+			"leftover %.1f px, margin %.3f of %.1f px" % [float(design.x) - span_3,
+			st.grid_overview_margin, span_3])
+	# The height rule: the natural board height or the aspect minimum, whichever is LARGER.
+	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
+	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
+	var aspect_minimum := float(design.x) * ref_h / ref_w
+	check(float(design.y) >= block.y - 1.0,
+			"the picture is at least the board's own natural height (TP-113)",
+			"design %d px, natural %.1f px" % [design.y, block.y])
+	check(float(design.y) >= aspect_minimum - 1.0,
+			"...and at least the height the window aspect needs, so the zoomed-out view is "
+			+ "entirely picture (TP-113)",
+			"design %d px, aspect minimum %.1f px" % [design.y, aspect_minimum])
+	check(float(design.y) <= maxf(block.y, aspect_minimum) + 1.0,
+			"...and no taller than the LARGER of the two - whichever is larger, not their sum "
+			+ "(TP-113)",
+			"design %d px, larger of %.1f / %.1f" % [design.y, block.y, aspect_minimum])
+
+# ==============================================================================
+# TP-114 - FIX-FULL-15: the focused game picture's render target never exceeds
+# `game_picture_max_render_px`.
+#
+# WARNING: `SubViewport.size` LIES WHEN IT IS OVERSIZED - the framebuffer is destroyed and the
+# size set to 0 internally while the property keeps reporting the number that broke it. So no
+# assertion here treats a read-back as proof the GPU accepted it. What is asserted instead is
+# what the code WROTE and the clamp it passed through: the pure clamp, that the tallest legal
+# board does not grow the picture, and - with an entry deliberately past the cap - that the real
+# `focus()` path writes the clamped size AND engages the canvas override. A regression that
+# deleted the clamp would write the oversized number, and the last group catches that whether or
+# not the property tells the truth afterwards.
+# ==============================================================================
+func run_the_render_target_never_exceeds_the_clamp_test() -> void:
+	behavior_section("THE RENDER TARGET NEVER EXCEEDS THE CLAMP")
+	var st := SettingsManager.settings
+	var cap := st.game_picture_max_render_px
+	var empty_design := _game_entry().design_size
+
+	# FIX-FULL-15 standing in the real view: grid 0, all 25 cells at height 15.
+	var view := await _stand_up_grids(1)
+	var pa := view.play_area
+	view.game.state.grids.assign(TestGridFixtures.build_fix_full_15().grids)
+	# ⚠ Assigning the state directly fires no mutation broadcast, so the rebuild has to be ASKED
+	# for -- `flush_rebuild()` alone only services a rebuild something else queued.
+	pa.queue_rebuild()
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	var board_h := pa.grid_container.size.y
+	check(board_h > float(empty_design.y),
+			"precondition: FIX-FULL-15 makes the board TALLER than the whole picture (TP-114)",
+			"board %.0f px, picture %d px" % [board_h, empty_design.y])
+	check(_game_entry().design_size == empty_design,
+			"the tallest legal board does not grow the picture - the render target is a fixed "
+			+ "authored size and the scroll container carries the height (TP-114)",
+			"%s with the board at %.0f px" % [_game_entry().design_size, board_h])
+	await _tear_down(view)
+
+	# The pure clamp, at and past the cap.
+	check(WallPicture.clamped_render_size(Vector2i(cap, cap), cap) == Vector2i(cap, cap),
+			"the clamp leaves a size exactly at the cap alone (TP-114)")
+	check(WallPicture.clamped_render_size(Vector2i(cap * 3, cap + 1), cap) == Vector2i(cap, cap),
+			"...and caps EVERY axis, not just the wide one (TP-114)")
+
+	# The product path: the real game entry, built and focused the way `Main` does it.
+	var host := Node2D.new()
+	var viewports := Node.new()
+	add_child(host)
+	add_child(viewports)
+	var entry := _game_entry()
+	var rect := PictureRect.new(entry.id, Vector2.ZERO, Vector2(entry.design_size) * 0.5,
+			Vector4(10, 10, 10, 10))
+	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	host.add_child(wp)
+	wp.build(rect, entry, viewports)
+	wp.focus()
+	check(wp.viewport.size.x <= cap and wp.viewport.size.y <= cap,
+			"the FOCUSED game picture asks for a render target inside the cap on both axes "
+			+ "(TP-114)",
+			"size %s, cap %d" % [wp.viewport.size, cap])
+	check(wp.viewport.size_2d_override == Vector2i.ZERO,
+			"...and, since the shipped picture is inside the cap, it renders 1:1 with the "
+			+ "override CLEARED, which input routing depends on (TP-114)",
+			str(wp.viewport.size_2d_override))
+	wp.teardown()
+
+	# The wiring, proved with an entry deliberately past the cap: this fails if the clamp stops
+	# being CALLED, not merely if it stops existing.
+	var huge := PictureEntry.new()
+	huge.id = &"oversized"
+	huge.design_size = Vector2i(cap * 2, cap + 1)
+	var huge_rect := PictureRect.new(huge.id, Vector2.ZERO, Vector2(200.0, 100.0),
+			Vector4(10, 10, 10, 10))
+	var wp2 : WallPicture = WALL_PICTURE_SCENE.instantiate()
+	host.add_child(wp2)
+	wp2.build(huge_rect, huge, viewports)
+	check(wp2.viewport.size == Vector2i(cap, cap),
+			"build() writes the CLAMPED size for an entry past the cap (TP-114)",
+			"size %s, design %s" % [wp2.viewport.size, huge.design_size])
+	wp2.focus()
+	check(wp2.viewport.size == Vector2i(cap, cap),
+			"...and focus() writes the clamped size too - focus is the path that used to ask "
+			+ "for full design size unconditionally (TP-114)",
+			"size %s" % str(wp2.viewport.size))
+	check(wp2.viewport.size_2d_override == huge.design_size,
+			"...with the canvas override holding the LAYOUT at full design size (TP-114)",
+			"override %s" % str(wp2.viewport.size_2d_override))
+	check(wp2.viewport.size_2d_override_stretch,
+			"...and the override actually stretching onto the smaller render target (TP-114)")
+	wp2.teardown()
+	host.queue_free()
+	viewports.queue_free()
+	await get_tree().process_frame
+
+## The `game` entry as the real wall reads it -- through `Wall.load_layout()`, never a fresh
+## `PictureEntry`, so anything that stopped sizing it shows up here.
+func _game_entry() -> PictureEntry:
+	for e : PictureEntry in Wall.load_layout().pictures:
+		if e.id == Wall.GAME_PICTURE_ID: return e
+	return null
+
+## The board width `n` grid blocks of `block_x` px span, spaced by `grid_buffer_px`.
+func _grid_span(block_x: float, n: int) -> float:
+	return float(n) * block_x + float(n - 1) * SettingsManager.settings.grid_buffer_px

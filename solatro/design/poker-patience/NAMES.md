@@ -146,7 +146,7 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `game_picture_max_render_px` | `4096` | The render-target clamp. |
 | `grid_bounce_velocity_px` | `900.0` | The edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
 
-⚠ `grid_pan_duration` was registered here long before it existed in code; `S27` added it, and `S29` added `grid_swipe_threshold_mm`. **`grid_buffer_px` and `grid_overview_margin` are still registered-but-absent.**
+⚠ **`stack_offset_px`, `stack_soft_cap` and `stack_spring_rise` are registered-but-absent** — every other knob in this table exists in `Scripts/player_settings.gd`.
 
 **Removed:** `score_additive`, `duplicate_class_scale`, `patience_max`,
 `patience_track_uniques`, `patience_reset_uniques_on_act`, `multi_line_reveal_scale`

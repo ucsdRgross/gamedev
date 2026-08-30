@@ -84,6 +84,12 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
   the board at 1, 2 AND 3 grids** (`grid_board_1/2/3.png`) and prints each grid's panel centre, the
   window centre and per-grid off-screen px — a picture plus the numbers behind it. It is NOT
   registered in `all_tests.tscn`; the suite stays at 45.
+  ⚠⚠ **SINCE `S31`, `grid_layer_shot` NO LONGER SHOWS THE PRODUCT'S FRAMING FOR MULTI-GRID BOARDS.**
+  It renders the board in a **1152x648** window, but `S31` sized the game picture to fit three grids
+  (far wider). So its n=3 shot reports grids 0 and 2 cut off by ~185/~193 px — **that is HARNESS
+  framing, not the product.** n=1 and n=2 still read true (they fit either way). **Whoever next
+  needs a by-eye pass on a 3-grid board must render inside the real picture**, or the image is
+  answering a question nobody asked.
 
 ## Standing rules this stream paid for — do not rediscover them
 
@@ -274,6 +280,32 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     second step bounces off the board's end and lands on the SAME pan_grid a correct reader
     produces -- the defect hides.
     ⚠⚠ **THE SWIPE SHIPPED DEAD AND ITS TESTS PASSED** -- see Open bugs' entry on proving the ROUTE.
+- id: S31
+  description: 'PHASE 7: the game picture sized for 3 grids, the height rule, the render-target clamp.'
+  status: done
+  evidence: >
+    Overseer-verified: ALL 45 SUITES: 3789 CHECKS PASSED, zero failures, console and log agreeing.
+    doc_check 0 errors / 7 warnings; no design ids, sentinel violations or tunable literals added.
+    RED (the clamp call and the _size_game_picture call removed): 5 FAILED -- TP-113's margin check
+    and all four TP-114 wiring checks. GRID VIEW 159 of 159 in BOTH runs, so nothing aborted.
+    BY EYE at 2 grids: a clean 220 px gap, symmetric at -218.0/+218.0, nothing cut off.
+  notes: >
+    ⚠ **Q166=(a) OVERRODE ITS OWN DEFAULT**: `design_size` stays AUTHORED data sized for exactly 3
+    grids, NOT computed at show start from the actual grid count (the rejected (c)).
+    ⚠ **`SubViewport.size` LIES WHEN OVERSIZED** -- over the GPU cap the framebuffer is destroyed and
+    the size set to 0 internally while the GDScript property still reports the value it was given.
+    So TP-114 asserts the pure `clamped_render_size()` at and past the cap, and that `build()` and
+    `focus()` each WROTE the clamped value and engaged `size_2d_override` -- never a read-back.
+    ⚠ **`grid_buffer_px` LANDED HERE** as the cell-block-to-cell-block gap (`Q35`=b), applied as a
+    dynamically computed HBox separation (buffer less the measured label gutters) because one
+    container separation cannot vary per pair.
+    ⚠ ONE existing check reacted -- TP-106's `before.has(0)`. Investigated, not loosened: at a 220 px
+    buffer only the grid the view RESTS on is wholly in frame, and a sliced neighbour is explicitly
+    not a defect under GAP-017 part 1. Re-pointed at `before.has(pa.pan_grid)`, the identity the
+    layout owes.
+    ⚠ TP-113's 7th check ("sized by the rule, not the entry default") was added AFTER the red run,
+    so it alone is not red-proven -- at test `card_scale` the 1152 px default still passed the
+    three-grid width check, which is why it exists.
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
@@ -373,6 +405,13 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
+- ⚠ **THE BOARD'S SCROLL CONTAINER IS EXPLICITLY UNCLIPPED** (`clip_contents = false`), so a board
+  wider than its window PAINTS OVER the surrounding UI — visible in the `S31` n=3 shot, where sliced
+  cards draw across the score column. Pre-existing; it was hidden while the overflow was only 19 px
+  and `grid_buffer_px` exposed it. Options if it is worth fixing: clip the container (a springing or
+  jumping card is then cut at the edge), leave it (the wide picture makes overflow rare), or clip
+  only the cell controls and leave `%CardLayer` free. **Not filed as a gap — raise it if the wide
+  picture does not make it moot.**
 - ⚠ **THE FOCUSED VIEW DOES NOT YET ZOOM — `GAP-017`'s answer is only TWO-THIRDS IMPLEMENTED.**
   Owner ruling, verbatim: *"no cutoff grid only holds for focused grid. goal is that focused grid
   has height matching viewport height. while focused, other grids should be out of view"*.

@@ -579,6 +579,29 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_max_count = maxi(value, 1)
 		settings_changed.emit()
+## The gap between two grids' CELL BLOCKS, in board pixels. The score gutters (row labels left,
+## the special-meld label right) sit INSIDE this gap rather than adding to it, so widening a
+## label never widens the board. Centring is fixed; only this gap is tunable.
+@export_range(0.0, 1000.0, 1.0, "or_greater") var grid_buffer_px : float = 220.0:
+	set(value):
+		grid_buffer_px = maxf(value, 0.0)
+		settings_changed.emit()
+## Margin around the all-grids overview, as a fraction of the board's own span, applied on EACH
+## side. It is what stops the board touching the picture's edges at the zoomed-out view.
+@export_range(0.0, 0.5, 0.005) var grid_overview_margin : float = 0.06:
+	set(value):
+		grid_overview_margin = clampf(value, 0.0, 1.0)
+		settings_changed.emit()
+## The largest render target the game picture may ask the GPU for, per axis, in pixels.
+## ⚠ **A `SubViewport` over the GPU's maximum texture size fails SILENTLY**: the framebuffer is
+## destroyed and the size is internally set to 0 while the script property still reports the
+## oversized value. Older GPUs cap at 4096 and this project ships the Compatibility renderer, so
+## the clamp is the only thing standing between a wide picture and a black screen. The layout stays
+## at full size — only the resolution is capped.
+@export_range(256, 16384, 1) var game_picture_max_render_px : int = 4096:
+	set(value):
+		game_picture_max_render_px = maxi(value, 256)
+		settings_changed.emit()
 ## How long the view takes to travel from one grid to the next, in seconds. 0 snaps.
 @export_range(0.0, 2.0, 0.01, "or_greater") var grid_pan_duration : float = 0.35:
 	set(value):

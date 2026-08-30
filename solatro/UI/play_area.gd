@@ -35,7 +35,11 @@ var focused_control : Control = null
 var moused_hovered_control : Control = null
 var selected_cards : Array[CardData] = []
 
-var separation : int = 4: 
+## The board's inter-card gap in ART units, before `card_scale`. One number, so the board and the
+## picture that has to hold it cannot disagree about the pitch.
+const BOARD_SEPARATION := 4
+
+var separation : int = BOARD_SEPARATION: 
 	set(value):
 		separation = value
 		set_separation()
@@ -123,6 +127,41 @@ static func row_open_height(settings_res: PlayerSettings, separation_px: float) 
 static func row_open_span(settings_res: PlayerSettings, separation_px: float) -> float:
 	return maxf(row_open_height(settings_res, separation_px) - separation_px \
 			- float(CardVisual.card_separation_play_custom), 0.0)
+
+## The board's inter-card gap in SCREEN pixels. Static so anything that has to size the board
+## WITHOUT one on screen -- the picture that hosts it -- reads the same number the board lays out
+## with, rather than a copy that can drift.
+static func board_separation_px(settings_res: PlayerSettings) -> float:
+	return float(BOARD_SEPARATION) * settings_res.card_scale
+
+## One grid's CELL BLOCK in board pixels: `grid_width` cards across and `grid_height` down with the
+## board separation between them. ⚠ The score gutters are deliberately NOT in it -- they sit
+## inside the buffer between grids, which is what `_apply_grid_buffer()` enforces on screen.
+static func grid_block_size_px(settings_res: PlayerSettings, grid: GridData) -> Vector2:
+	var sep := board_separation_px(settings_res)
+	var card := CardVisual.CARD_SIZE * settings_res.card_scale
+	var w := float(maxi(grid.grid_width, 1))
+	var h := float(maxi(grid.grid_height, 1))
+	return Vector2(w * card.x + (w - 1.0) * sep, h * card.y + (h - 1.0) * sep)
+
+## The size the game picture is laid out at: wide enough for exactly `grid_max_count` grids of the
+## DEFAULT shape, spaced by `grid_buffer_px`, with `grid_overview_margin` of that span as margin on
+## each side. Height is the board's own natural height, or the height the project's window aspect
+## needs for the zoomed-out view to be entirely picture, whichever is LARGER.
+##
+## ⚠ **DERIVED FROM THE CAP AND THE DEFAULT GRID SHAPE, NEVER FROM THE GRIDS A RUN HAS.** The
+## picture is one fixed size for every run: a deck that unlocks a second grid mid-show must not
+## resize a render target, and a 1-grid run sits in a picture built for three.
+static func game_picture_design_size(settings_res: PlayerSettings) -> Vector2i:
+	var block := grid_block_size_px(settings_res, GridData.new())
+	var count := float(maxi(settings_res.grid_max_count, 1))
+	var span := count * block.x + (count - 1.0) * settings_res.grid_buffer_px
+	var width := span * (1.0 + 2.0 * settings_res.grid_overview_margin)
+	# The reference aspect is the project's own window shape, read from it rather than restated.
+	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
+	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
+	var aspect_minimum := width * ref_h / ref_w if ref_w > 0.0 and ref_h > 0.0 else 0.0
+	return Vector2i(roundi(width), roundi(maxf(block.y, aspect_minimum)))
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
 ## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
@@ -276,6 +315,7 @@ func setup_gui() -> void:
 	_sync_entrance_x()
 
 func _physics_process(_delta: float) -> void:
+	_apply_grid_buffer()
 	_sync_entrance_x()
 	# ⚠ ONE control's rect, on the tick `_sync_entrance_x` already reads on. `resized` alone left
 	# this 8 px stale (562 against a real 554) because the content's POSITION can settle without
@@ -1655,6 +1695,34 @@ func _recentre_probe() -> Vector3:
 	var reach : float = bar.max_value if bar else 0.0
 	return Vector3(cells.global_position.x - grid_container.global_position.x,
 			grid_container.size.x, reach)
+
+## **THE GAP BETWEEN TWO GRIDS IS MEASURED BETWEEN THEIR CELL BLOCKS**, and is `grid_buffer_px`.
+## Each panel carries score gutters either side of its cells (row labels left, the special-meld
+## label right); those gutters sit INSIDE the buffer rather than adding to the board's width, so a
+## wider label never widens the board. The container's own separation is therefore the buffer LESS
+## the gutters it has to absorb. Where panels' gutters differ, the WIDEST pair sets it, so no two
+## cell blocks are ever closer than the buffer.
+##
+## ⚠ Measured every frame, not once: a score label appearing changes a gutter's width, and grids
+## laid out against a stale gutter sit at the wrong pitch. The override is written only when the
+## value actually changes, so a settled board stops re-sorting. Safe against the feedback the
+## per-panel floor code hit -- every quantity here is panel-RELATIVE, and the container's own
+## separation does not move a panel's cells inside it.
+func _apply_grid_buffer() -> void:
+	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
+	var left := 0.0
+	var right := 0.0
+	for i : int in grid_container.get_child_count():
+		var panel := grid_container.get_child(i) as Control
+		if not panel: continue
+		var cells := _cells_root(panel)
+		if not cells: continue
+		left = maxf(left, cells.global_position.x - panel.global_position.x)
+		right = maxf(right, panel.global_position.x + panel.size.x
+				- (cells.global_position.x + cells.size.x))
+	var wanted := roundi(maxf(SettingsManager.settings.grid_buffer_px - left - right, 0.0))
+	if grid_container.get_theme_constant(&"separation") == wanted: return
+	grid_container.add_theme_constant_override("separation", wanted)
 
 ## A panel: a positioning node that draws nothing, holding the cell grid.
 func _create_grid_panel() -> Control:

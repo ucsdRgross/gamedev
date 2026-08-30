@@ -19,12 +19,31 @@ const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
 ## Falls back to `initial_layout()` when the file is absent, so a fresh checkout still runs. `path`
 ## is a parameter so a test can point at a temp file and prove the layout really came from disk.
 static func load_layout(path: String = LAYOUT_PATH) -> WallLayout:
+	var layout := initial_layout()
 	if ResourceLoader.exists(path):
 		var loaded : Resource = ResourceLoader.load(path)
-		if loaded is WallLayout: return loaded as WallLayout
-		push_error("Wall.load_layout: %s exists but did not load as a WallLayout -- " % path
-				+ "falling back to the built-in layout")
-	return initial_layout()
+		if loaded is WallLayout:
+			layout = loaded as WallLayout
+		else:
+			push_error("Wall.load_layout: %s exists but did not load as a WallLayout -- " % path
+					+ "falling back to the built-in layout")
+	_size_game_picture(layout)
+	return layout
+
+## The id of the picture the game show runs inside.
+const GAME_PICTURE_ID := &"game"
+
+## **THE GAME PICTURE'S SIZE IS A RULE, NOT AN AUTHORED NUMBER.** It has to hold the board's
+## largest legal spread -- every grid the cap allows, side by side, at the board's own metrics --
+## so it is derived from those metrics on every load. Applied here rather than at show start
+## because it depends on the CAP, never on how many grids a run actually has: the picture is one
+## fixed size for the whole session, and nothing resizes a render target mid-show.
+##
+## Every other entry keeps the size authored in the layout resource.
+static func _size_game_picture(layout: WallLayout) -> void:
+	var wanted := PlayArea.game_picture_design_size(SettingsManager.settings)
+	for e : PictureEntry in layout.pictures:
+		if e.id == GAME_PICTURE_ID: e.design_size = wanted
 
 ## The wall's starting content, used to seed `layout_default.tres` the first time and as the
 ## fallback when it is missing. Six registered ids; `entry.scene` is null on every one:
