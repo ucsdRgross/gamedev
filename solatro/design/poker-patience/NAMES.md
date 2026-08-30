@@ -247,3 +247,17 @@ that shipped.
 | `PlayArea._board_control_has_focus()` | method | Does a board control genuinely hold the focus right now. |
 | `PlayArea._grid_widths()` / `_coord_of_control(c)` / `_cell_focus_control(coord)` | method | The lattice adaptors between controls and `BoardCoord`. |
 | `PlayArea._zoom_out_grid` | `int` | The grid Back left, so Forward can return to it. |
+
+## 12. The wide game picture (`S31`)
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.game_picture_design_size()` | method | The picture's authored size: three grid blocks, two `grid_buffer_px` buffers, `grid_overview_margin` **per side**, height = the board's natural height or the window-aspect minimum, whichever is larger. |
+| `PlayArea.grid_block_size_px()` | method | One grid's block, cell-block measured. |
+| `PlayArea.board_separation_px()` | method | `grid_buffer_px` less the measured label gutters — one `HBox` separation cannot vary per pair, so the widest pair wins. |
+| `PlayArea.BOARD_SEPARATION` | const | |
+| `PlayArea._apply_grid_buffer()` | method | Applies the separation to the live board. |
+| `Wall._size_game_picture()` | method | The single seam where the game picture's `design_size` is set; called from `load_layout()`, so `_build_pictures()`, `_repack_wall()` and `_on_window_resized()` all pass through it. |
+| `Wall.GAME_PICTURE_ID` | const | |
+| `WallPicture.clamped_render_size(size)` | method | Pure: clamps to `game_picture_max_render_px`. ⚠ **Assert against this and against what `build()`/`focus()` WROTE — never a read-back of `SubViewport.size`, which reports the oversized value while the framebuffer is already destroyed.** |
+| `WallPicture._apply_design_render_size()` | method | Called from `build()` and `focus()`; engages `size_2d_override` only when the clamp bites. |
