@@ -10,9 +10,16 @@ board stacks UPWARD off a fixed floor, rows ease into their height, a jump carri
 it, and every row, column and stack shows its own score. Phase 10's CSV half (`S42`, `S43`) landed
 out of order at the owner's instruction.
 
-**Next is PHASE 6 — the view** (`S26`-`S30`: two view modes, zoom, pan, keyboard/controller
-selection across grids), then Phase 7 (the wall). Phase 9 is the owner's call; Phase 10's remaining
-three steps are last.
+**PHASE 6 IS COMPLETE** (`S26`-`S30`, all committed and overseer-verified): two view modes, a
+Back/Forward zoom level stack, discrete centred panning, cross-grid arrow selection, touch swipe, and
+refocus on removal. Its by-eye gate at 1, 2 and 3 grids was rendered and looked at, and an
+adversarial pass at the boundary found four defects that a green suite could not — including a
+**touch swipe that no finger could reach while both its tests passed.**
+
+**Next is PHASE 7 — the wall** (`S31`-`S34`). ⚠ `S31` also owes `TP-105` and the camera migration
+`GAP-016`=(d) deferred to it, and **part 3 of `GAP-017`'s ruling: the focused grid sized to the
+viewport height with the other grids out of view** — a zoom Phase 6 deliberately does not have.
+Phase 9 is the owner's call; Phase 10's remaining three steps are last.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
