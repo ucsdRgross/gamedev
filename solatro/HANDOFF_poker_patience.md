@@ -185,22 +185,17 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
   description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, the zone renderers deleted, the pinned Entrance.'
   status: done
   notes: >
-    Covers the lettered sub-steps S20b1, S20b2, S20b2b0, S20b2b, S20b3, S20b4a, S20bDraw,
-    S20bRatchet, S20bPort and S20c. The coordinate migrated (slot_center_global takes a BoardCoord),
-    the LowerZone and MiddleZone renderers are gone, the Entrance became a pinned strip outside the
-    board's scroll, and the act (Submit / the Next button) retired. Game.next()/_perform_next() STAY
-    -- only the BUTTON retired, and _perform_next still serves the &"on_next" replay.
-    ⚠ S20bDraw was found BY EYE through 43 green suites: _order_board_cards never ordered grid cards,
-    so a card drew BEHIND its own cell.
+    Covers S20b1, S20b2, S20b2b0, S20b2b, S20b3, S20b4a, S20bDraw, S20bRatchet, S20bPort and S20c.
+    Game.next()/_perform_next() STAY -- only the BUTTON retired; _perform_next still serves the
+    &"on_next" replay. ⚠ S20bDraw was found BY EYE through 43 green suites: _order_board_cards never
+    ordered grid cards, so a card drew BEHIND its own cell.
 - id: S20b4b
   description: 'The layering port: the hoop split and the reveal both take a BoardCoord; 5 fixtures ported.'
   status: done
   notes: >
-    All three sub-steps landed (S20b4b1 hoop split, S20b4b2 reveal key, S20b4b3 the fixture ports).
-    PlayArea.coord_of_data is DELETED -- GameData.grid_position_of already answered for the whole
-    board off a revision-keyed index. The three Entrance hoop tests are deliberately NOT ported: the
-    Entrance is a live, differently-shaped half of the board with its own CardLayer, so porting them
-    would delete coverage rather than add it.
+    All three sub-steps landed. PlayArea.coord_of_data is DELETED -- GameData.grid_position_of
+    already answered for the whole board. The three Entrance hoop tests are deliberately NOT ported:
+    porting them would delete coverage rather than add it.
 - id: S21
   description: 'PHASE 5, the flipped board: upward stacks, eased row heights, the spring, score labels.'
   status: done
@@ -230,200 +225,69 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
   description: 'The draft appended, the post-grid curated effects CSV, the accepted-ideas CSV, blinds.'
   status: done
   notes: >
-    ⚠ THE OWNER'S BAR WAS "AT LEAST 1 ENTRY PER LINE", SO COVERAGE IS MECHANICALLY PROVEN. Every row
-    cites the line it came from and a checker expands the ranges: 2788 non-blank lines, none missed.
-    A row whose idea already existed gets the second source APPENDED, not a new row.
-    NEW, not in PLAN.md: blinds.csv, 90 rows. ⚠ EVERY BLIND PAYS FOR PLAYING INTO IT -- the owner's
-    ruling that a hazard must reward the risk. Asserted: no row has an empty `payoff`.
+    ⚠ COVERAGE IS MECHANICALLY PROVEN, not asserted: every row cites its source line and a checker
+    expands the ranges -- 2788 non-blank lines, none missed. NEW, not in PLAN.md: blinds.csv, 90 rows.
+    ⚠ EVERY BLIND PAYS FOR PLAYING INTO IT (owner ruling); asserted: no empty `payoff`.
 
 # --- PHASE 6: the view. PLAN.md section 3; flowchart H is DESIGN.md section 36.
 - id: S26
-  description: >
-    Two view modes. The show OPENS zoomed out on the all-grids view; the picture frame holds 3 grid
-    positions and the camera steps between them; clicking a grid zooms in on it. Implements H4, H6,
-    H22.
-  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd,
-    solatro/Tests/UI/test_grid_view.tscn, solatro/Tests/all_tests.tscn,
-    solatro/Tests/Support/test_base.gd, solatro/Tests/Interaction/test_interaction.gd,
-    solatro/Tests/UI/test_ui_props.gd, solatro/Tests/UI/test_visual_layers.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'Two view modes; opens zoomed out; a click in the overview ORIENTS instead of placing.'
   status: done
-  evidence: >
-    Overseer-run, not self-reported: ALL 45 SUITES: 3646 CHECKS PASSED, zero failures, console and
-    log banners agreeing, log mtime fresh, test_output_errors.log 0 bytes. Suite count 44 -> 45 as
-    the registry predicted; GRID VIEW: 13 CHECKS PASSED. doc_check 0 errors / 7 warnings, and the
-    diff added ZERO design ids and ZERO numeric literals to product code.
-    RED A (open_zoomed_out removed from _ready): 7 FAILED, exactly the expected set -- the
-    opens-zoomed-out and nothing-focused checks plus the four TP-98 checks that depend on starting
-    in the overview. RED B (_consume_as_focus_click forced false): 5 FAILED -- TP-97 green, TP-98's
-    zoom/focus/no-selection checks red. Each red failed the checks EXPECTED, not the test itself.
+  evidence: 'Commit 842e95c5. Overseer-verified green; TP-97, TP-98.'
   notes: >
-    ⚠ **S26 SHIPS THE MODE AND THE INPUT CONSEQUENCE, NOT A CAMERA MOVE.** `PLAN.md` §3 says S26
-    implements H4, H6 AND H22 -- but `TEST_PLAN.md` routes H22's only assertion, TP-105 ("the camera
-    steps between the 3 grid positions the frame holds"), to **S28**. The test plan is the one with
-    an observable behind it, so H22 lands with H23 in S28 and PLAN.md's parenthetical is the error.
-    ⚠ **THE DISCRIMINATING CASE IS Q147=b**: in the overview a click FOCUSES and must NOT place; the
-    same click focused places. That is what TP-98 turns on, and RED B is what proves it.
-    CALL SITES: opening zoomed out runs in `PlayArea._ready()` after `setup_gui()` -- deliberately
-    NOT in `setup_gui()`, which is also the undo-rebuild path and would zoom out on every undo. The
-    focusing click arrives through the scene-connected `_on_gui_input` and `_unhandled_input`'s
-    `ui_accept` branch on the real bound cell control; the test posts an InputEventMouseButton and
-    never calls `focus_grid` itself.
-    The overview intercepts `ui_accept` as well as the mouse, because Q147 puts placement behind
-    focus regardless of device. Grid SELECTION in the overview is S29's.
-    INTERACTION now calls `focus_grid(0)` in its fixture -- placement happens focused, which is the
-    new premise rather than a workaround.
+    ⚠ Q147=b is the discriminating case: in the overview a click FOCUSES and must NOT place. Opening
+    zoomed out runs in `_ready()`, deliberately NOT `setup_gui()`, which is also the undo-rebuild
+    path and would zoom out on every undo. PLAN.md §3 also lists H22 here; TEST_PLAN routes H22's
+    only assertion (TP-105) to S31, and the test plan won.
 - id: S27
-  description: >
-    Back zooms out a level and Forward returns to the previous view; panning gets its OWN bindings
-    while the wall keeps its shoulder buttons; a pan steps one grid and always lands centred; the
-    board edge bounces; Camera2D limit and smoothing clamp, collapsing to centre on any axis that
-    already fits. Implements H7-H12.
-  files_touched: [solatro/UI/play_area.gd, solatro/Scripts/player_settings.gd,
-    solatro/project.godot, solatro/Tests/UI/test_grid_view.gd,
-    solatro/design/poker-patience/ASSUMPTIONS.md]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'Back/Forward zoom as a level stack; discrete centred panning; edge bounce.'
   status: done
-  evidence: >
-    Overseer-run: ALL 45 SUITES: 3677 CHECKS PASSED, zero failures, console and log agreeing, log
-    mtime fresh, errors log 0 bytes. doc_check 0 errors / 7 warnings; ZERO design ids and ZERO
-    numeric literals added to product code.
-    RED (fall-through removed only): 1 FAILED, and it was the RIGHT one -- "Back in the all-grids
-    view is NOT swallowed -- it reaches the wall". RED (zoom-out, pan step, bounce and centring all
-    neutralised): 10 FAILED, all in the expected set (2 TP-99, 1 TP-100, 4 TP-101, 1 TP-102,
-    2 TP-103).
-    BY EYE (grid_layer_shot.tscn, rendered and looked at): the grid is centred at x~785 in a
-    1152-wide window, matching the measured fix (was 555, window centre 782). The clipped top row
-    no longer reproduces.
+  evidence: 'Commit 4cf42f8e. Overseer-verified green; TP-99 - TP-103.'
   notes: >
-    ⚠ **TP-103 CAUGHT A REAL DEFECT, it did not just pass**: a board narrower than the window was
-    parked at the LEFT EDGE instead of collapsing to centre, because a ScrollContainer hands its
-    content exactly the content's own minimum width. Fixed by `TopLevelVBox` taking
-    `size_flags_horizontal = SIZE_EXPAND_FILL`, so centring is the LAYOUT's answer rather than
-    arithmetic in the pan. ⚠ This is HORIZONTAL only -- the floor still comes from `ALIGNMENT_END`
-    and is untouched.
-    ⚠ **THE LEVEL STACK is what reconciles Q148 with Q187**: focused -> overview -> wall. Back zooms
-    out one level and, once in the overview, FALLS THROUGH so `wall_back` still reaches the wall.
-    That fall-through is the case the owner's example does not cover, and it is the single check the
-    first red run reddened.
-    ⚠⚠ **THE PAN RIDES THE `SmoothScrollContainer`, NOT A CAMERA -- AND THE DESIGN SAYS CAMERA.**
-    The implementer justified this with `Q182` ("the existing SmoothScrollContainer, driven
-    programmatically"), but `Q182` is gated `[QR3=b]` and **QR3 = (a)**, so Q182 sits on a pruned
-    branch and is UNANSWERED. Under `QR3`=a the wall's camera pans over a wide picture, and `H11`
-    says "Camera2D limit and smoothing do the clamping". The practical defence stands -- the play
-    area has no `Camera2D` today and the wide picture is `S31`'s -- but the citation does not.
-    **`S28` must settle it**: `H23` divides the two explicitly ("the camera steps between the 3 grid
-    positions; the scroller reveals more of ONE grid"), and today the scroller is doing the
-    camera's job. See Open bugs.
+    ⚠ THE LEVEL STACK reconciles Q148 with Q187: focused -> overview -> wall. Back zooms out one
+    level and, once in the overview, FALLS THROUGH so wall_back still reaches the wall. That
+    fall-through is the case the owner's example does not cover.
+    ⚠ TP-103 CAUGHT A REAL DEFECT: a board narrower than the window parked LEFT, because a
+    ScrollContainer hands its content the content's own minimum width. Fixed by
+    `size_flags_horizontal = SIZE_EXPAND_FILL` on TopLevelVBox -- HORIZONTAL ONLY; the floor is
+    ALIGNMENT_END and is untouched.
 - id: S28
-  description: >
-    ONE scroll container inside the picture, for tall stacks and oversized grids; with more than 3
-    grids, panning shifts WHICH 3 are in frame. Implements H13 and H24. (H22/H23's camera stepping
-    is S31's, per GAP-016=d.)
-  files_touched: [solatro/Tests/UI/test_grid_view.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'The one-scroll-container ratchet; >3 grids shifts which are in frame.'
   status: done
-  evidence: >
-    Overseer-run: ALL 45 SUITES: 3692 CHECKS PASSED, zero failures, console and log agreeing, log
-    mtime fresh, errors log 0 bytes. GRID VIEW 13 -> 65 checks. doc_check 0 errors / 7 warnings.
-    ⚠ **NO PRODUCT CODE CHANGED** -- `git diff` over UI/, Scripts/, Levels/, Cards/ is EMPTY, which
-    the overseer confirmed rather than took on trust. S28 is a RATCHET plus coverage: H13's one
-    scroll container is already true, and H24's framing shift is already delivered by S27's pan.
-    RED (pan wiring removed from _consume_as_view_action AND a nested ScrollContainer added under
-    the board): 12 FAILED -- TP-104's two ratchet checks with its instrument check still PASSING,
-    TP-106's five, and TP-101/TP-102 as collateral of the same neutralisation.
+  evidence: 'Commit 7d114a0a. Overseer-verified green; TP-104, TP-106. NO product code changed.'
   notes: >
-    ⚠ **SCOPE CUT BY GAP-016=(d): S28 owes TP-104 and TP-106 ONLY.** TP-105 ("the camera steps
-    between the 3 grid positions the frame holds") moved to S31, because it cannot be satisfied
-    before the wide picture exists. H22/H23's camera half is Phase 7's; S27's scroller pan is the
-    scroller half and stays.
-    ⚠ **TP-104 PROVES ITS INSTRUMENT FIRST** -- it asserts the finder can SEE more than one
-    ScrollContainer in the play area (the board's and EntranceVScroll) before asserting the board
-    subtree holds exactly one. An assertion that counts zero things passes trivially.
-    ⚠ **TP-106 REACHES THE 4+ GRID CASE Q7's CAP HIDES** by standing up a five-grid board directly
-    -- `grid_max_count` governs UNLOCKING, not `Board.add_grid` -- with a precondition asserting
-    5 > grid_max_count and that not all five fit. No setting was raised, so SETTINGS RANGE is
-    untouched.
-    ⚠ A first-cut assertion `back == before` (set identity after panning back) FAILED GREEN at
-    [0,1] vs [0,1,2]: the far grid sits a pixel or two outside after settle. That is the "exact
-    delta is an identity the layout does not owe" trap, and it was replaced with direction and
-    ordering checks -- NOT with a widened tolerance.
-    ⚠ H24 is unreachable in the shipped game (Q7 caps grids at 3) but the design carries it, and
-    game_picture_max_render_px is what keeps a wider board from silently exceeding the render
-    target.
+    ⚠ TP-104 PROVES ITS INSTRUMENT FIRST -- it asserts the finder can SEE more than one
+    ScrollContainer before asserting the board holds exactly one. An assertion that counts zero
+    things passes trivially.
+    ⚠ TP-106 reaches the 4+ grid case Q7's cap hides by standing up five grids directly:
+    `grid_max_count` governs UNLOCKING, not `Board.add_grid`.
 - id: S29
-  description: >
-    Arrow keys move the cell selection across grid boundaries and the camera follows; in the
-    all-grids view arrows select a GRID and Enter focuses it; one-finger swipe read as ScreenDrag
-    with emulated events filtered by device -1; a drag starting on a card places, on empty board it
-    pans. Implements H14-H17.
-  files_touched: [solatro/UI/play_area.gd, solatro/Scripts/player_settings.gd,
-    solatro/Tests/UI/test_grid_view.gd, solatro/design/poker-patience/NAMES.md,
-    solatro/design/poker-patience/ASSUMPTIONS.md]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'Cross-grid arrow selection, the overview grid cursor, and touch swipe.'
   status: done
-  evidence: >
-    Overseer-run: ALL 45 SUITES: 3739 CHECKS PASSED, zero failures, console and log agreeing, log
-    mtime fresh. GRID VIEW 65 -> 107 checks. doc_check 0 errors / 7 warnings; ZERO design ids and
-    ZERO sentinel-gate violations added to product code.
-    RED (four behaviours neutralised): 16 FAILED, 15 of them in GRID VIEW and exactly the expected
-    set. ⚠ **The red run's check TOTAL was identical to the green run's (107 = 92 + 15), which is
-    the proof NO TEST ABORTED** -- a neutralisation that breaks the test rather than the behaviour
-    would have shown a LOWER total with assertions silently missing.
+  evidence: 'Commit 82670456, plus the swipe route fix in ee9dea68. TP-107 - TP-110.'
   notes: >
-    ⚠ **ARROWS ARE MODE-DEPENDENT** (Q162=b): cells when FOCUSED, whole grids when in the OVERVIEW.
-    Same key, two granularities.
-    ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`, NOT `_unhandled_input`.** The
-    viewport's focus-neighbour search runs in the GUI pass and CONSUMES any arrow that finds a
-    neighbour, so an `_unhandled_input` reader never runs while a cell has focus.
-    ⚠ **TP-109's FIXTURE IS FIVE GRIDS ON PURPOSE, and this is the step's best catch.** From grid 1
-    of THREE, a doubling swipe reader's second step bounces off the board's end and lands on the
-    SAME `pan_grid` a correct reader produces -- the defect hides. Five grids separate them (correct
-    lands on 1, doubling on 4). ⚠ The test pushes BOTH event forms interleaved, the ScreenDrag and
-    the emulated `InputEventMouseMotion` partner; a test sending only ScreenDrag would pass on a
-    doubling implementation because the partner never arrives.
-    "The camera follows" (TP-107) is asserted as OBSERVABLES only -- which grid is in frame after
-    the scroll settles -- because GAP-016=(d) means there is no camera in Phase 6.
-    ⚠ **AN EMPTY CELL'S ZONE CARD COUNTS AS "A CARD"** for H17's drag discrimination, since it is
-    the cell's drop target. That follows Q192 literally; if the owner meant "an empty cell is empty
-    board", it is a one-line change in `_card_control_at`. See Open bugs.
+    ⚠ ARROWS ARE MODE-DEPENDENT (Q162=b): cells when FOCUSED, whole grids in the OVERVIEW.
+    ⚠ THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`. The viewport's focus-neighbour search
+    runs in the GUI pass and CONSUMES any arrow that finds a neighbour, so an `_unhandled_input`
+    reader never runs while a cell has focus.
+    ⚠ TP-109's FIXTURE IS FIVE GRIDS ON PURPOSE: from grid 1 of THREE, a doubling swipe reader's
+    second step bounces off the board's end and lands on the SAME pan_grid a correct reader
+    produces -- the defect hides.
+    ⚠⚠ **THE SWIPE SHIPPED DEAD AND ITS TESTS PASSED** -- see Open bugs' entry on proving the ROUTE.
 - id: S30
-  description: 'Refocus when the focused grid is removed, and re-centring. Implements G16, G17, G18.'
-  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd]
-  verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
-  verification_kind: suite
+  description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
-  evidence: >
-    Overseer-run: ALL 45 SUITES: 3759 CHECKS PASSED, zero failures, console and log agreeing.
-    GRID VIEW 107 -> 122 checks. ZERO design ids, ZERO sentinel violations, ZERO tunable literals
-    added to product code.
-    RED (the one call line neutralised): 5 FAILED, exactly the expected set, with the measured
-    numbers naming the defect -- `245.0 px off centre vs 4.0 px for an explicit pan`.
-    ⚠ Red total 3768 vs green 3756, and the whole 12-check gap is BOARD FUZZ, which is RANDOMISED.
-    Every other suite matched check-for-check (3397 non-fuzz in both) and GRID VIEW was 122 in
-    both -- so nothing aborted.
+  evidence: 'Commit d5d0b172. Overseer-verified green; TP-111, TP-112, TP-138.'
   notes: >
-    ⚠ **THE RE-CENTRE HAPPENS ON EVERY REMOVAL; ONLY THE REFOCUS IS CONDITIONAL.** Chart G's
-    G16-no edge goes STRAIGHT to G18, and G17 also flows into G18. A test that only removes the
-    FOCUSED grid cannot tell a correct implementation from one that re-centres solely on the
-    focused path.
-    ⚠ **TWO WEAKER TP-112 FIXTURES WERE MEASURED AND REJECTED, and one of them PASSED WITH THE
-    WIRING CUT**: at three grids the survivors FIT the window so the layout centres them with no
-    scroll at all, and with the view near an edge the scroll clamp drags the board to the same
-    place a re-centre would. The middle grid of FIVE has slack on both sides. The rejected fixtures
-    are written into the test's own header.
-    ⚠ **THE RESTING CLAIM IS AN IDENTITY THE LAYOUT DOES OWE, NOT AN ABSOLUTE CENTRE** -- the board
-    lands where an explicit `pan_to_grid` to that grid lands (4.0 px vs 245.0 unwired). An absolute
-    centre is the trap S28 hit.
-    ⚠ **THE RE-CENTRE MUST WAIT FOR THE PANELS TO STOP MOVING BEFORE IT AIMS.** A pan aimed at the
-    pre-removal layout lands 118 px short (measured).
-    TP-111's tie is REAL: three grids, focus the MIDDLE, remove it -- both survivors are exactly one
-    grid from the hole, so the LEFT PREFERENCE and not distance decides, and the assertion is on
-    grid IDENTITY because index 1 is where a clamp or a no-op would also leave focused_grid.
+    ⚠ Chart G's G16-no edge goes STRAIGHT to G18 and G17 also flows into it, so the re-centre
+    happens on EVERY removal and only the refocus is conditional. A test that only removes the
+    FOCUSED grid cannot tell a correct implementation from one that re-centres solely on that path.
+    ⚠ TWO WEAKER TP-112 FIXTURES WERE REJECTED AND ONE PASSED WITH THE WIRING CUT: at three grids
+    the survivors FIT so the layout centres them with no scroll, and near an edge the clamp lands
+    the board where a re-centre would. The middle grid of FIVE has slack both sides.
+    ⚠ The resting claim is an identity the layout OWES -- the board lands where an explicit
+    `pan_to_grid` lands -- not an absolute centre.
+    Q318=(a) OVERRODE ITS OWN DEFAULT: nearest survivor PREFERRING THE LEFT, not nearest to centre.
 ```
 
 After Phase 6 comes Phase 7 (`S31`-`S34`, the wall), then Phase 9 (goal-curve refit, the owner's
