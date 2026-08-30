@@ -12,6 +12,25 @@ signal info_requested(entry: InfoEntry)
 ## of poll. Pair with visuals_ready() for the already-ready case (check-then-await).
 signal board_visuals_ready
 
+## The board has exactly TWO view modes and nothing in between: OVERVIEW shows every grid for
+## orientation, FOCUSED shows the one grid the player is acting on. Switching is a transition —
+## there is no intermediate zoom to sit at.
+enum ViewMode { OVERVIEW, FOCUSED }
+
+## No grid is focused. ⚠ Never 0 — grid 0 is a real grid.
+const NO_GRID := -1
+
+## The view mode changed. Carries the mode and the grid it focuses (`NO_GRID` in the overview).
+signal view_mode_changed(mode: ViewMode, grid: int)
+
+## ⚠ **THE OVERVIEW IS ORIENTATION ONLY: A CLICK ON A GRID THERE FOCUSES IT AND PLACES NOTHING.**
+## Placement only ever happens focused. Set through `open_zoomed_out` / `focus_grid`, never by hand.
+## ⚠ **THE RESTING DEFAULT IS THE ACTING MODE.** The overview is a state a show is explicitly
+## OPENED into (`open_zoomed_out`), so a show that never opens it reads as one that opens focused
+## rather than silently matching a default.
+var view_mode : ViewMode = ViewMode.FOCUSED
+var focused_grid : int = 0
+
 var focused_control : Control = null
 var moused_hovered_control : Control = null
 var selected_cards : Array[CardData] = []
@@ -211,6 +230,8 @@ func _ready() -> void:
 	# the first card that catches fire mid-act.
 	FxAttachment.warm(overlay_layer)
 	setup_gui()
+	# THE SHOW OPENS ZOOMED OUT. A show is one PlayArea, so this is the show's opening view.
+	open_zoomed_out()
 	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
 	# X-SLAVING RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off like `_process`
 	# above): a board scroll can happen at any time regardless of whether the focus inspector or
@@ -443,6 +464,49 @@ func update_gui() -> void:
 	_apply_entrance_strip_height()
 	_sync_entrance_x()
 
+# ==============================================================================
+# THE TWO VIEW MODES
+#
+# The show opens on the all-grids view; a click on a grid focuses that grid. The overview is
+# orientation, so a click there costs the player nothing: it moves the view and never the board.
+# ==============================================================================
+
+## Open the all-grids view with nothing focused. The show's opening view.
+func open_zoomed_out() -> void:
+	_set_view(ViewMode.OVERVIEW, NO_GRID)
+
+## Focus one grid — what a click on a grid in the overview does. Placement happens focused.
+func focus_grid(gi: int) -> void:
+	if gi < 0 or gi >= grid_container.get_child_count(): return
+	_set_view(ViewMode.FOCUSED, gi)
+
+## The single write path for the view mode; announces only real changes.
+func _set_view(mode: ViewMode, gi: int) -> void:
+	if view_mode == mode and focused_grid == gi: return
+	view_mode = mode
+	focused_grid = gi
+	view_mode_changed.emit(mode, gi)
+
+## Which grid a board control belongs to, or `NO_GRID` for anything that is not on a grid — the
+## Entrance included, so grabbing a card from the Entrance still works in the overview.
+func _grid_index_of(c: Control) -> int:
+	if not is_instance_valid(c): return NO_GRID
+	var node : Node = c
+	while is_instance_valid(node):
+		var parent := node.get_parent()
+		if parent == grid_container: return node.get_index()
+		node = parent
+	return NO_GRID
+
+## In the overview, a click on a grid focuses that grid INSTEAD of acting on the card. True when
+## it consumed the press. Info mode is not placement, so it is asked first and passes through.
+func _consume_as_focus_click(c: Control) -> bool:
+	if view_mode != ViewMode.OVERVIEW: return false
+	var gi := _grid_index_of(c)
+	if gi == NO_GRID: return false
+	focus_grid(gi)
+	return true
+
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
 	# Mouse ONLY: key/joypad events never reach this root handler — Godot 4 delivers them to
@@ -461,7 +525,7 @@ func _on_gui_input(event: InputEvent) -> void:
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				if _info_mode():
 					info_requested.emit(card_info(ui_data[focused_control]))
-				else:
+				elif not _consume_as_focus_click(focused_control):
 					data_selected.emit(ui_data[focused_control])
 
 ## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
@@ -479,7 +543,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				and get_viewport().gui_get_focus_owner() == focused_control):
 			if _info_mode():
 				info_requested.emit(card_info(ui_data[focused_control]))
-			else:
+			elif not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):

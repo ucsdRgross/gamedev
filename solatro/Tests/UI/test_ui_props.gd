@@ -33,7 +33,7 @@ func suite_name() -> String:
 func _ready() -> void:
 	# Runs before VISUAL LAYERS / E2E (they wait on this — shared CardEnvironment.CURRENT), so
 	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["VISUAL LAYERS", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+	await await_siblings_except(["VISUAL LAYERS", "GRID VIEW", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
 			"WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
 	backup_real_settings()

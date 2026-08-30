@@ -212,3 +212,20 @@ Fixture builder names match the `FIX-*` ids in `TEST_PLAN.md` §1, lowercased wi
 | `%CellSlot` | One per cell inside a `%GridPanel`; holds the cell's zone-card control and one control per card in its stack. |
 | `%EntranceStrip` | The Entrance's row of slots, one strip across the bottom of the whole picture — NOT a child of any `%GridPanel`. |
 | `%PanLeft` / `%PanRight` | The on-screen pan buttons; hidden at one grid. |
+
+## 11. The view modes
+
+On `PlayArea`. The registry carried no name for the view state before Phase 6; these are the ones
+that shipped.
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.ViewMode` | enum | `OVERVIEW`, `FOCUSED`. Exactly two — there is no intermediate zoom. |
+| `PlayArea.NO_GRID` | const | "No grid is focused." Never a bare `-1`. |
+| `PlayArea.view_mode` | `ViewMode` | ⚠ Class default is `FOCUSED`, deliberately, so a show that fails to open zoomed out cannot masquerade as the default. |
+| `PlayArea.focused_grid` | `int` | `NO_GRID` while in the overview. |
+| `PlayArea.view_mode_changed(mode, grid)` | signal | |
+| `PlayArea.open_zoomed_out()` | method | Called from `_ready()`, **not** `setup_gui()` — that is also the undo-rebuild path and would zoom out on every undo. |
+| `PlayArea.focus_grid(gi)` | method | |
+| `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |
+| `"GRID VIEW"` | suite name | `Tests/UI/test_grid_view.gd`, between VISUAL LAYERS and SETTINGS RANGE in the ordering chain. |

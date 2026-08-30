@@ -73,3 +73,12 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
   fourth position index. It is asked once per player drop; the three indexes that do exist are
   there for hot per-card lookups and each one is a second representation that `validate()` then
   has to police. Reversible: the signature is what callers see.
+
+- **H4/H6 (S26)** — the two view modes ship as STATE plus the input wiring only: the overview and
+  the focused view differ in what a click does (orientation vs placement), not yet in what the
+  camera shows. The camera move that makes the difference visible is the `H22`/`H23` stepping work
+  in `S27`/`S28`; building a second zoom mechanism here would be the duplicate the owner ruled
+  against. Reversible: the mode is read from one place.
+- **H6 (S26)** — the overview intercepts the keyboard/controller `ui_accept` press on a grid
+  exactly as it intercepts a mouse click, because `Q147` puts placement behind focus regardless of
+  which device asks. Grid SELECTION in the overview is `S29`'s.

@@ -57,7 +57,7 @@ func suite_name() -> String:
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
 #     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →
-#     SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
+#     GRID VIEW  →  SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
 #
 # WALL PAUSE (S12) is the permanent tail: it constructs a real Wall whose _ready() sets
 # get_tree().paused = true and never clears it (that persistence is what U1 tests), so nothing may
