@@ -578,7 +578,8 @@ window.
 **S29** *(implements H14, H15, H16, H17)* — Keyboard/controller selection across grids; touch swipe.
 **S30** *(implements G16, G17, G18)* — Refocus when the focused grid is removed, and re-centring.
 
-**Done-when (phase):** `TP-97`–`TP-110` green, plus a by-eye pass at 1, 2 and 3 grids.
+**Done-when (phase):** `TP-97`–`TP-104`, `TP-106`–`TP-112` and `TP-138` green, plus a by-eye pass
+at 1, 2 and 3 grids. (`TP-105` moved to `S31` by `GAP-016`=(d).)
 
 ### Phase 7 — the wall (VISUAL)
 
@@ -588,7 +589,8 @@ window.
 view.
 **S34** — `Tools/wall_editor.tscn` drives every new wall knob (`Q186`=a).
 
-**Done-when (phase):** `TP-111`–`TP-120` green; `knobs_this_preview_does_not_drive` still empty.
+**Done-when (phase):** `TP-105` and `TP-113`–`TP-120` green; `knobs_this_preview_does_not_drive`
+still empty. (`TP-111`/`TP-112` belong to `S30`, in Phase 6.)
 
 ### Phase 8 — undo, save, resume
 

@@ -462,13 +462,18 @@ and the plan's dependency note — Phase 10 depends on everything and runs last 
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — seventeen filed, sixteen resolved, ONE OPEN
+## Gaps — eighteen filed, seventeen resolved, ONE OPEN
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 are newer.**
 
-⚠⚠ **`GAP-017` IS OPEN AND NOW BLOCKS THE CLOSE OF PHASE 6** (escalated from a timing question by
+⚠ **`GAP-018` IS OPEN — `grid_swipe_threshold_mm`'s default is dead against its own clamp.** 8 mm at
+96 DPI is 30.2 px, under the `[32, 96]` touch-target floor, so turning the knob down does nothing and
+turning it up does nothing until ~8.47 mm. `Q190`=(a) fixes the CLAMP and the settings table fixes
+the DEFAULT at 8; they disagree, and which gives way is the owner's call. Blocks nothing.
+
+**`GAP-017` = answered** (the escalation below is what it was answering) (escalated from a timing question by
 the by-eye gate — the absent knob is producing wrong geometry now, not later). `grid_buffer_px` and `grid_overview_margin`
 are registered in `NAMES.md` §6 against `S28`, which after `GAP-016`=(d) has no site for either —
 but the missing buffer is what makes the 3-grid board 731 px wide in a 703 px viewport.
@@ -509,14 +514,22 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 - ⚠ **`pan_to_grid` measures the scroll container's FULL rect**, so it aims ~4 px right of the
   visible window once the vertical scrollbar shows (measured: the middle grid rests at 775.0 against
   a window centre of 778.5). Deliberately left alone — fixing it moves every pan on the board.
-- ⚠⚠ **FLAKY, NOT FIXED: `test_visual_layers.gd`'s "a light follows its card across a board SCROLL,
-  not just a layout move" (`worst < 1.0`).** Measured across four runs of IDENTICAL production code:
-  it failed twice and passed twice, and it PASSED in the overseer's own S29 verification. It writes
-  `scroll_horizontal` directly and allows 3 ticks for a SMOOTH scroller to catch up, so it is a
-  frame-timing tolerance racing an eased scroll — not a tolerance calibrated to a bug. ⚠ **Do not
-  "fix" it by widening the tolerance; give it a settle-until-still wait like `_settle_scroll`.**
-  ⚠ This is the OTHER check in that test — the `moved > 20.0` vacuity guard beside it is genuinely
-  green and stable, and Phase 5 fixed the width problem that used to fail it.
+- ⚠⚠ **THE SUITE HAS A FLAKY FAMILY, AND A SINGLE GREEN RUN IS NOT EVIDENCE ON IT.** Three
+  assertions, all the same shape — **a fixed tick allowance racing an EASED layout or scroll** —
+  fail intermittently on IDENTICAL production code:
+  - `test_visual_layers.gd` *"a light follows its card across a board SCROLL"* (measured 2 failures
+    in 4 runs; `373.00 px off` when it fails). It writes `scroll_horizontal` directly and allows 3
+    ticks for a SMOOTH scroller to catch up.
+  - `test_grid_layout.gd` *"a card on the GRID is pushed UP when the Entrance stacks"*
+    (`496.0 -> 504.0`) and *"the board's LOWEST card clears the Entrance's real height"*
+    (`lowest card bottom 531.0 vs Entrance top 501.0`). Measured: **both failed on one overseer run
+    and both passed on the very next run of the same tree**, which then read
+    `ALL 45 SUITES: 3782 CHECKS PASSED`.
+  ⚠ **The fix is a settle-until-still wait (`_settle_layout` / `_settle_scroll` already exist and
+  are the right instrument), NEVER a widened tolerance** — widening would silence the only thing
+  telling you the geometry had not finished moving.
+  ⚠ **Practical consequence for anyone verifying: on a failure in this family, RE-RUN before
+  believing it, and say which run you are quoting.**
 - ⚠ **AN EMPTY CELL'S ZONE CARD COUNTS AS "ON A CARD"** for `H17`'s drag-vs-pan discrimination
   (`S29`), because it is the cell's drop target. `Q192`=(a) says *"a drag that STARTS on a card is a
   placement; a drag that starts on empty board is a pan"* and this follows it literally — but if the

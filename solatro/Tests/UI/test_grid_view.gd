@@ -39,6 +39,7 @@ func _ready() -> void:
 	await run_overview_arrows_select_a_grid_test()
 	await run_removing_the_focused_grid_refocuses_left_test()
 	await run_the_board_recentres_after_any_removal_test()
+	await run_the_overview_view_and_cursor_agree_after_a_removal_test()
 	# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
 	await run_a_swipe_fires_once_test()
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
@@ -268,6 +269,50 @@ func run_back_zooms_out_and_forward_returns_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
+	# A GRID CAN GO WHILE THE VIEW IS ZOOMED OUT, and Forward's memory is an INDEX: every index
+	# right of the hole names a different grid afterwards. Checked on IDENTITY, never on the index.
+	view = await _stand_up_grids(5)
+	pa = view.play_area
+	await _settle_layout(view)
+	var remembered : GridData = view.game.state.grids[3]
+	pa.focus_grid(3)
+	pa._unhandled_input(_action(&"wall_back"))
+	Board.remove_grid(view.game.state, 1)
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	pa._unhandled_input(_action(&"wall_forward"))
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"Forward still returns after a grid elsewhere on the board went (TP-99)",
+			"mode %d" % pa.view_mode)
+	check(view.game.state.grids[pa.focused_grid] == remembered,
+			"...to the SAME GRID Back left, which has shifted one index left (TP-99)",
+			"focused_grid %d" % pa.focused_grid)
+	await _settle_scroll(view)
+	await _tear_down(view)
+
+	# AND WHEN THE REMEMBERED GRID ITSELF GOES there is no view to return to, so Forward has
+	# nothing left to give and FALLS THROUGH to the wall — it must not be swallowed and do nothing,
+	# and it must not land on whichever grid slid into that index.
+	view = await _stand_up_grids(5)
+	pa = view.play_area
+	await _settle_layout(view)
+	pa.focus_grid(3)
+	pa._unhandled_input(_action(&"wall_back"))
+	Board.remove_grid(view.game.state, 3)
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	_reset_input_handled()
+	check(not get_viewport().is_input_handled(),
+			"instrument check: the handled flag starts clear (TP-99)")
+	pa._unhandled_input(_action(&"wall_forward"))
+	check(not get_viewport().is_input_handled(),
+			"Forward with the remembered grid gone is NOT swallowed -- it reaches the wall (TP-99)")
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"...and the board stayed in the overview rather than focusing another grid (TP-99)",
+			"mode %d grid %d" % [pa.view_mode, pa.focused_grid])
+	await _settle_scroll(view)
+	await _tear_down(view)
+
 # ==============================================================================
 # TP-100 - FIX-GRID-3: panning uses the NEW actions, and the wall's shoulder buttons still reach
 # the wall.
@@ -391,7 +436,7 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 	await _tear_down(view)
 
 # ==============================================================================
-# TP-113 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
+# TP-138 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
 # explicit pan to the grid the view is on puts it.
 #
 # ⚠ FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own clamp parks the board
@@ -410,19 +455,19 @@ func run_the_board_rests_positioned_test() -> void:
 	await _settle_scroll(view)
 	check(_board_overflows(pa),
 			"precondition: five grids overflow the window, so resting position is the scroll's job"
-			+ " (TP-113)")
+			+ " (TP-138)")
 	check(pa.pan_grid == 2,
-			"the overview rests on the MIDDLE grid, so the whole board is centred (TP-113)",
+			"the overview rests on the MIDDLE grid, so the whole board is centred (TP-138)",
 			"pan_grid %d" % pa.pan_grid)
 	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
-			"...and the grid it rests on is wholly in frame (TP-113)",
+			"...and the grid it rests on is wholly in frame (TP-138)",
 			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
 	var rest := smooth.pos.x
 	pa.pan_to_grid(pa.pan_grid)
 	await _settle_scroll(view)
 	check(absf(smooth.pos.x - rest) <= 1.0,
 			"the board at rest is already where an explicit pan to that grid puts it -- it was "
-			+ "POSITIONED, not left at scroll zero (TP-113)",
+			+ "POSITIONED, not left at scroll zero (TP-138)",
 			"rest %.1f vs explicit pan %.1f" % [rest, smooth.pos.x])
 
 	# FOCUSED: the resting grid is the focused one, and it is the only grid the cut-off rule speaks
@@ -431,15 +476,15 @@ func run_the_board_rests_positioned_test() -> void:
 	await _settle_scroll(view)
 	var focused_rest := smooth.pos.x
 	check(pa.focused_grid == 3 and pa.pan_grid == 3,
-			"focusing a grid puts the view on it (TP-113)",
+			"focusing a grid puts the view on it (TP-138)",
 			"focused %d pan %d" % [pa.focused_grid, pa.pan_grid])
 	check(_cut_off_px(pa, 3) <= 1.0,
-			"the FOCUSED grid rests wholly in frame (TP-113)",
+			"the FOCUSED grid rests wholly in frame (TP-138)",
 			"%f px off screen" % _cut_off_px(pa, 3))
 	pa.pan_to_grid(3)
 	await _settle_scroll(view)
 	check(absf(smooth.pos.x - focused_rest) <= 1.0,
-			"...at exactly the position an explicit pan to it lands (TP-113)",
+			"...at exactly the position an explicit pan to it lands (TP-138)",
 			"rest %.1f vs explicit pan %.1f" % [focused_rest, smooth.pos.x])
 	await _tear_down(view)
 
@@ -788,7 +833,9 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 # ==============================================================================
 func run_overview_arrows_select_a_grid_test() -> void:
 	behavior_section("IN THE OVERVIEW THE ARROWS SELECT A GRID")
-	var view := await _stand_up()
+	# ⚠ FIVE GRIDS, NOT THREE: three fit the window, so the layout centres them and the centring
+	# claim below is true whatever the arrows do.
+	var view := await _stand_up_grids(5)
 	var pa := view.play_area
 	await _settle_layout(view)
 	pa.open_zoomed_out()
@@ -839,6 +886,36 @@ func run_overview_arrows_select_a_grid_test() -> void:
 			"at the first grid, left selects nothing that is not there",
 			"selected_grid %d" % pa.selected_grid)
 	await _settle_scroll(view)
+
+	# ⚠ IN FRAME IS NOT CENTRED, AND THE ARROW ALSO MOVES THE BOARD FOCUS. The scroll container's
+	# `follow_focus` answers a focus change by KILLING the in-flight pan and parking the control
+	# `follow_focus_margin` inside the window edge — still "in frame", not centred. So the pan has
+	# to be the last writer, and the claim is that the arrow lands the board exactly where an
+	# explicit pan to that grid does.
+	# ⚠ THE STEP MUST LAND ON A CELL THAT IS CURRENTLY OUTSIDE THAT MARGIN BAND, or follow-focus
+	# has nothing to correct and leaves the pan alone whichever order they run in — measured: a
+	# rightward step onto an already-visible column passes with the orders swapped. Stepping LEFT
+	# from the middle grid of five lands on a column off the left edge.
+	# ⚠ MIDDLE GRID, never an outer one: centring an edge grid hits the scroll container's own
+	# clamp, which puts a stolen pan and an honest one in the same place.
+	pa.selected_grid = 3
+	pa.pan_to_grid(3)
+	await _settle_scroll(view)
+	check(_board_overflows(pa),
+			"precondition: the board overflows, so centring is the scroll's job (TP-108)")
+	pa._unhandled_input(_key(KEY_LEFT))
+	await _settle_scroll(view)
+	check(pa._grid_index_of(pa.get_viewport().gui_get_focus_owner() as Control) == 2,
+			"instrument check: the arrow moved the board FOCUS onto the selected grid, so the "
+			+ "scroll container's follow-focus really did run (TP-108)",
+			"focus on grid %d" % pa._grid_index_of(pa.get_viewport().gui_get_focus_owner() as Control))
+	var arrowed := _centre_offset(pa, 2)
+	pa.pan_to_grid(2)
+	await _settle_scroll(view)
+	check(absf(arrowed - _centre_offset(pa, 2)) <= 1.0,
+			"the arrow leaves the grid it selected CENTRED, exactly where an explicit pan lands — "
+			+ "follow-focus did not steal the pan (TP-108)",
+			"arrow %.1f px off centre vs pan %.1f" % [arrowed, _centre_offset(pa, 2)])
 	await _tear_down(view)
 
 # ==============================================================================
@@ -848,6 +925,11 @@ func run_overview_arrows_select_a_grid_test() -> void:
 # `InputEventScreenDrag` and as a synthesised `InputEventMouseMotion`. A test that delivered only
 # the screen drag would pass on a reader that doubles, because the partner never arrives. So this
 # delivers BOTH FORMS, interleaved, the way the engine does.
+#
+# ⚠ AND IT DRIVES THEM THROUGH `Viewport.push_input`, NEVER THE HANDLER DIRECTLY. Calling the
+# reader proves the reader and says nothing about whether a finger can REACH it: measured, it could
+# not — touch goes through the GUI pass and the board's scroll container marked it handled long
+# before unhandled input ran, so the whole swipe was dead in the product while these were green.
 #
 # ⚠ AND IT NEEDS FIVE GRIDS. Starting on grid 1 of three, a doubling reader's second step runs off
 # the end and bounces, leaving `pan_grid` at the same value a correct reader produces — the fixture
@@ -884,14 +966,15 @@ func _bare_point(pa: PlayArea) -> Vector2:
 ## One finger swiping `by` pixels horizontally from `from`, delivered in `steps` moves — each of
 ## them in BOTH the forms the engine produces. What it proves is read off the board afterwards.
 func _swipe(pa: PlayArea, from: Vector2, by: float, steps: int) -> void:
-	pa._unhandled_input(_touch(from, true))
+	var vp := pa.get_viewport()
+	vp.push_input(_touch(from, true))
 	var at := from
 	for i : int in steps:
 		var next := from + Vector2(by * float(i + 1) / float(steps), 0.0)
-		pa._unhandled_input(_drag(next, 0))
-		pa._unhandled_input(_emulated_motion(next, next - at))
+		vp.push_input(_drag(next, 0))
+		vp.push_input(_emulated_motion(next, next - at))
 		at = next
-	pa._unhandled_input(_touch(at, false))
+	vp.push_input(_touch(at, false))
 
 func run_a_swipe_fires_once_test() -> void:
 	behavior_section("A SWIPE FIRES ONCE")
@@ -904,6 +987,15 @@ func run_a_swipe_fires_once_test() -> void:
 	check(threshold > 0.0,
 			"instrument check: the swipe threshold is a real distance in px (TP-109)",
 			"%f px" % threshold)
+	# ⚠ A LIVE KNOB, NOT A CONSTANT: a threshold that ignores the setting entirely would still be
+	# "a real distance in px". Doubled and halved about the default, the px must follow.
+	var knob := SettingsManager.settings.grid_swipe_threshold_mm
+	SettingsManager.settings.grid_swipe_threshold_mm = knob * 2.0
+	var wider := pa._swipe_threshold_px()
+	SettingsManager.settings.grid_swipe_threshold_mm = knob
+	check(wider > threshold,
+			"the millimetre knob really drives the threshold — it is not a hard-coded px (TP-109)",
+			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 2.0, wider])
 	var from := _bare_point(pa)
 	check(pa._card_control_at(from) == null,
 			"instrument check: the swipe starts on BARE BOARD, over no card",
@@ -928,11 +1020,12 @@ func run_a_swipe_fires_once_test() -> void:
 	check(before == 0 and pa.grid_container.get_child_count() > 1,
 			"instrument check: the board is re-anchored with somewhere left to pan (TP-109)",
 			"pan_grid %d of %d" % [before, pa.grid_container.get_child_count()])
-	pa._unhandled_input(_touch(from, true))
+	var vp := pa.get_viewport()
+	vp.push_input(_touch(from, true))
 	for i : int in 6:
-		pa._unhandled_input(_emulated_motion(from + Vector2(-threshold * float(i + 1), 0.0),
+		vp.push_input(_emulated_motion(from + Vector2(-threshold * float(i + 1), 0.0),
 				Vector2(-threshold, 0.0)))
-	pa._unhandled_input(_touch(from, false))
+	vp.push_input(_touch(from, false))
 	await _settle_scroll(view)
 	check(pa.pan_grid == before,
 			"the emulated mouse motion on its own pans NOTHING (TP-109)",
@@ -942,10 +1035,10 @@ func run_a_swipe_fires_once_test() -> void:
 	# mouse drag across the board never pans it.
 	pa.pan_to_grid(0)
 	await _settle_scroll(view)
-	pa._unhandled_input(_touch(from, true))
+	vp.push_input(_touch(from, true))
 	for i : int in 6:
-		pa._unhandled_input(_drag(from + Vector2(-threshold * float(i + 1), 0.0), -1))
-	pa._unhandled_input(_touch(from, false))
+		vp.push_input(_drag(from + Vector2(-threshold * float(i + 1), 0.0), -1))
+	vp.push_input(_touch(from, false))
 	await _settle_scroll(view)
 	check(pa.pan_grid == before,
 			"a drag marked device -1 is the engine's own synthesis and is ignored (TP-109)",
@@ -994,15 +1087,15 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 			"%s" % [on_card])
 
 	# STARTING ON A CARD: never a pan, and the event is left for the placement path.
-	pa._unhandled_input(_touch(on_card, true))
+	var vp := pa.get_viewport()
+	vp.push_input(_touch(on_card, true))
 	check(not pa._swipe_armed,
 			"a finger going down on a card does NOT arm a pan (TP-110)")
-	var consumed := pa._consume_as_view_action(_drag(on_card + Vector2(-threshold * 4.0, 0.0), 0))
-	check(not consumed,
-			"...so dragging from it is not swallowed as a swipe — it stays a placement (TP-110)")
+	vp.push_input(_drag(on_card + Vector2(-threshold * 4.0, 0.0), 0))
 	check(not pa._swipe_fired,
-			"...and no pan fired")
-	pa._unhandled_input(_touch(on_card, false))
+			"...so dragging from it is not swallowed as a swipe — it stays a placement, and no pan "
+			+ "fired (TP-110)")
+	vp.push_input(_touch(on_card, false))
 
 	# ...and the placement itself still works, through the real press path.
 	var selected : Array[CardData] = []
@@ -1017,15 +1110,14 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 	check(pa._card_control_at(bare) == null,
 			"instrument check: the second start point is bare board",
 			"%s" % [bare])
-	pa._unhandled_input(_touch(bare, true))
+	vp.push_input(_touch(bare, true))
 	check(pa._swipe_armed,
 			"a finger going down on empty board ARMS the pan (TP-110)")
-	var panned := pa._consume_as_view_action(_drag(bare + Vector2(-threshold * 4.0, 0.0), 0))
-	check(panned,
-			"...and dragging from it IS consumed as a swipe, not offered to placement (TP-110)")
+	vp.push_input(_drag(bare + Vector2(-threshold * 4.0, 0.0), 0))
 	check(pa._swipe_fired,
-			"...one pan fired")
-	pa._unhandled_input(_touch(bare, false))
+			"...and dragging from it IS read as a swipe by the REAL route, not offered to "
+			+ "placement (TP-110)")
+	vp.push_input(_touch(bare, false))
 	check(not pa._swipe_armed,
 			"lifting the finger disarms, so the next press decides again")
 	await _settle_scroll(view)
@@ -1080,6 +1172,61 @@ func run_removing_the_focused_grid_refocuses_left_test() -> void:
 	check(view.game.state.live_total() == banked,
 			"removing a grid does not lose the accumulated score (TP-111)",
 			"%d vs %d" % [view.game.state.live_total(), banked])
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-111 OVERVIEW CASE — losing the grid the OVERVIEW is on leaves the view and the arrow cursor
+# naming the SAME grid: the nearest survivor, preferring the one to the left (owner ruling).
+#
+# ⚠ THE OVERVIEW IS THE DISCRIMINATING MODE. Focused, the refocus re-drives the pan and hides any
+# disagreement between the two indices; in the overview nothing does, so the board can re-centre on
+# the RIGHT survivor while the cursor sits on the LEFT one — and the next arrow then jumps two.
+# ⚠ CHECKED ON THE SURVIVING GRID'S IDENTITY, never its index: the right neighbour slides into the
+# index the removed grid had, so an index-only claim cannot tell a survivor from a leftover number.
+# ==============================================================================
+func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
+	behavior_section("AFTER A REMOVAL THE OVERVIEW AND ITS CURSOR AGREE")
+	var view := await _stand_up_grids(5)
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.open_zoomed_out()
+	pa.selected_grid = 2
+	pa.pan_to_grid(2)
+	await _settle_scroll(view)
+	var left : GridData = view.game.state.grids[1]
+	var right : GridData = view.game.state.grids[3]
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW and pa.pan_grid == 2
+			and pa.selected_grid == 2,
+			"precondition: the overview is on grid 2 of five, cursor and view together (TP-111)",
+			"mode %d pan %d cursor %d" % [pa.view_mode, pa.pan_grid, pa.selected_grid])
+
+	Board.remove_grid(view.game.state, 2)
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+
+	check(view.game.state.grids[1] == left and view.game.state.grids[2] == right,
+			"instrument check: both neighbours survived, equally near — the tie the left-preference"
+			+ " breaks (TP-111)")
+	check(pa.pan_grid == pa.selected_grid,
+			"the view and the arrow cursor still name the SAME grid (TP-111)",
+			"pan %d cursor %d" % [pa.pan_grid, pa.selected_grid])
+	check(view.game.state.grids[pa.pan_grid] == left,
+			"...the nearest survivor, the LEFT one, not the right one that slid into its index"
+			+ " (TP-111)",
+			"pan_grid %d" % pa.pan_grid)
+	check(_centre_offset(pa, pa.pan_grid) <= _centre_offset(pa, pa.pan_grid + 1),
+			"...and the board re-centred on THAT grid, not on its right-hand neighbour (TP-111)",
+			"%.1f px vs %.1f" % [_centre_offset(pa, pa.pan_grid),
+					_centre_offset(pa, pa.pan_grid + 1)])
+
+	# ONE ARROW, ONE GRID: a cursor and a view that disagree make the next press look like a jump.
+	var before := pa.pan_grid
+	pa._unhandled_input(_key(KEY_RIGHT))
+	await _settle_scroll(view)
+	check(pa.pan_grid == before + 1,
+			"the next arrow moves the view exactly ONE grid, not two (TP-111)",
+			"pan_grid %d -> %d" % [before, pa.pan_grid])
 	await _tear_down(view)
 
 ## How far grid `gi`'s cell block sits from the middle of the board's window, in pixels.

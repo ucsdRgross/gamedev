@@ -148,7 +148,7 @@ must sit in the SAME folder as the main exe, which it launches by name.
   `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` — ⚠ **CHECK ITS MTIME, and
   note the `logs\test\` segment**: a file of that name also sits directly under `Solatro\`, is months
   stale, and greps clean while the banner reports failures. Run it yourself whenever the owner's
-  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (43) and the
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (45) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`

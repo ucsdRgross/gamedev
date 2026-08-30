@@ -242,8 +242,8 @@ watch it fail.
 | TP-109 | **A swipe fires once** — an emulated mouse event does not double it | — | H16, Q189 | S29 | G |
 | TP-110 | A drag starting on a card places; on empty board it pans | `FIX-GRID-1` | H17, Q192 | S29 | G |
 | TP-111 | Removing the focused grid refocuses the nearest survivor, preferring left | `FIX-GRID-3` | G17, Q318 | S30 | G |
-| TP-112 | The remaining grids re-centre, animated | `FIX-GRID-3` | G18, Q321 | S30 | G |
-| TP-113 | The board RESTS positioned on the grid the view is on — not at raw scroll 0 | `FIX-GRID-3` | `GAP-017` | S30 | G |
+| TP-112 | The remaining grids re-centre, animated | 5 grids | G18, Q321 | S30 | G |
+| TP-138 | The board RESTS positioned on the grid the view is on — not at raw scroll 0 | 5 grids | `GAP-017` | S30 | G |
 | TP-113 | `design_size` fits exactly 3 grids | — | H1, Q166 | S31 | G |
 | TP-114 | **`SubViewport.size` never exceeds `game_picture_max_render_px`** | `FIX-FULL-15` | H3, Q169 | S31 | G |
 | TP-115 | `resting_state()` returns the saved-pan pose, not the picture centre | — | H18, Q171 | S32 | G |

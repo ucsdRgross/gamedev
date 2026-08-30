@@ -530,8 +530,6 @@ var _zoom_out_grid : int = NO_GRID
 ## becomes unreachable from inside a show. Panning has its own actions and never touches these.
 ## True when this screen consumed the event.
 func _consume_as_view_action(event: InputEvent) -> bool:
-	if _consume_as_swipe(event):
-		return true
 	# The overview's arrow keys pick a GRID, not a cell. Read here as well as on a focused cell's
 	# own `gui_input` so the arrows still work when nothing on the board holds focus.
 	if _consume_as_grid_select(event):
@@ -702,6 +700,11 @@ func _consume_as_cell_move(event: InputEvent, control: Control) -> bool:
 ## mode's cell movement, matching the wall's own overview. The view follows the selection and the
 ## board focus moves onto the newly selected grid, so Enter and the mouse agree about which grid is
 ## chosen. Up/Down mean nothing here and fall through.
+##
+## ⚠ **THE PAN IS THE LAST WRITER, ALWAYS — GRAB THE FOCUS FIRST.** The scroll container follows
+## focus: a focus change kills the in-flight pan and re-aims to put the control just inside the
+## window edge, which leaves the selected grid on screen but NOT centred (measured: 227 px off).
+## Same order as the focused mode's cell move, for the same reason.
 func _consume_as_grid_select(event: InputEvent) -> bool:
 	if view_mode != ViewMode.OVERVIEW: return false
 	var d := _arrow_delta(event)
@@ -709,9 +712,9 @@ func _consume_as_grid_select(event: InputEvent) -> bool:
 	var last := grid_container.get_child_count() - 1
 	if last < 0: return false
 	selected_grid = clampi(selected_grid + d.x, 0, last)
-	pan_to_grid(selected_grid)
 	var target := _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0))
 	if target: target.grab_focus()
+	pan_to_grid(selected_grid)
 	return true
 
 ## Key input on a FOCUSED board cell.
@@ -767,6 +770,7 @@ func _card_control_at(at: Vector2) -> Control:
 ## ⚠ **`device == -1` MARKS THE ENGINE'S OWN SYNTHESIS** (a mouse emulating touch), so filtering it
 ## keeps a real mouse drag from panning the board.
 ## ⚠ A press only ARMS: it consumes nothing, and moves nothing until the finger does.
+## ⚠ **DRIVEN FROM `_input`, NEVER `_unhandled_input`** — see the routing note there.
 func _consume_as_swipe(event: InputEvent) -> bool:
 	if event.device == -1: return false
 	var touch := event as InputEventScreenTouch
@@ -846,7 +850,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			hide_focus_info() # nothing held: just dismiss the inspector, leave the event be
 
 # since clicks outside of play area can happen
+##
+## ⚠ **THE ONE-FINGER PAN IS READ HERE, AND CANNOT BE READ FROM `_unhandled_input`.** Godot routes
+## `InputEventScreenTouch`/`InputEventScreenDrag` through the same viewport GUI pass as the mouse,
+## and the first `MOUSE_FILTER_STOP` control under the finger — the board's own scroll container —
+## marks them handled, so unhandled input never sees a finger on the board at all. `_input` runs
+## BEFORE that pass, which is the only place the board can hear one. (Measured: the swipe reader was
+## unreachable in the product while its tests, which called the handler directly, were green.)
 func _input(event: InputEvent) -> void:
+	if _consume_as_swipe(event):
+		get_viewport().set_input_as_handled()
+		return
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
@@ -1571,9 +1585,19 @@ func _nearest_surviving_grid(removed: int) -> int:
 ## a view that was ON that grid moves to the nearest survivor, and the board re-centres either way.
 ## ⚠ **THE RE-CENTRE IS NOT CONDITIONAL ON THE REFOCUS** — a grid removed elsewhere on the board
 ## still leaves the remaining grids sitting off centre.
+## ⚠ **EVERY INDEX THIS SCREEN REMEMBERS IS FIXED UP HERE, INCLUDING FORWARD'S.** They are indices,
+## so a survivor slides into the hole and any one left alone silently names a DIFFERENT grid.
+## The view and the arrow cursor both take the NEAREST SURVIVOR, preferring the one to the left, so
+## the board cannot re-centre on one grid while the cursor sits on another (owner ruling).
+## Forward's memory is the exception to that rule: the view it would return to no
+## longer exists, so it is cleared and Forward falls through to the wall rather than returning to a
+## grid the player never left.
 func _on_grid_removed(removed: int) -> void:
 	if grid_container.get_child_count() == 0: return
 	if pan_grid > removed: pan_grid -= 1
+	elif pan_grid == removed: pan_grid = _nearest_surviving_grid(removed)
+	if _zoom_out_grid > removed: _zoom_out_grid -= 1
+	elif _zoom_out_grid == removed: _zoom_out_grid = NO_GRID
 	if selected_grid > removed: selected_grid -= 1
 	elif selected_grid == removed: selected_grid = _nearest_surviving_grid(removed)
 	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
