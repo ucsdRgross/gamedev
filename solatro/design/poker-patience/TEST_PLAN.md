@@ -235,7 +235,7 @@ watch it fail.
 | TP-102 | The board edge bounces | `FIX-GRID-3` | H10, Q151 | S27 | G |
 | TP-103 | The clamp collapses to centre on an axis that already fits | `FIX-GRID-1` | H12, Q159 | S27 | G |
 | TP-104 | **One scroll container only** — no second scroller on the board | `FIX-FULL-15` | H13, Q160 | S28 | G |
-| TP-105 | The camera steps between the 3 grid positions the frame holds | `FIX-GRID-3` | H22 | S28 | G |
+| TP-105 | The camera steps between the 3 grid positions the frame holds | `FIX-GRID-3` | H22 | S31 | G |
 | TP-106 | With more than 3 grids, panning shifts **which 3** are in frame | — | H24 | S28 | G |
 | TP-107 | Arrow keys cross a grid boundary and the camera follows | `FIX-GRID-3` | H14, Q161 | S29 | G |
 | TP-108 | In the overview, arrows select a **grid** and Enter focuses it | `FIX-GRID-3` | H15, Q162 | S29 | G |
