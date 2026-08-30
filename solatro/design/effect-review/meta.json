@@ -1,0 +1,9 @@
+{
+  "slug": "effect-review",
+  "title": "Effect review — every candidate effect, three variants each",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "created": "2026-08-29T00:00:00Z",
+  "rounds": 1,
+  "confirmed_version": null
+}

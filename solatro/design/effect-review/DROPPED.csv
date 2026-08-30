@@ -1,0 +1,1161 @@
+﻿id,name,reason,folded_into,origin,source,original_mechanic
+E0008,Balls,ALREADY_A_RULE,,catalog,CARD_CATALOG,"Ball props arc down the column, picking talent targets at spawn, and apply the Juggling status; a Juggling card pays out its column score when it later scores."
+E0025,Column Poker,ALREADY_A_RULE,,catalog,CARD_CATALOG,"While spotlit, every full 5-card band of this card's column is evaluated as a poker hand at scoring."
+E0053,Flames,ALREADY_A_RULE,,catalog,CARD_CATALOG,"Fire props arc down the column applying Burning; a Burning card's suit effect fires with multiplied prop count, and fire cascades can chain within the same act."
+E0082,Hoops,ALREADY_A_RULE,,catalog,CARD_CATALOG,"When a Hoops card scores, hoop props sweep the scored row and re-score every skill card they pass through; talented spawners suppress their own suit effect."
+E0099,Knives,ALREADY_A_RULE,,catalog,CARD_CATALOG,Knife props launch from the opposite row edge and score plain non-skill prop cards they pass; the spawner also scores itself.
+E0134,Poker Evaluator,ALREADY_A_RULE,,catalog,CARD_CATALOG,Evaluates each scored line for its best poker hand; only the best poker hand per line pays.
+E0162,Symmetrical Show,ALREADY_A_RULE,,catalog,CARD_CATALOG,Poker hands are also evaluated on columns in addition to rows.
+E0380,3 submits per match,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §2 Core Game Loop refinements,A match consists of 3 submits ('acts'); winning/losing is decided after the 3rd.
+E0381,5-column board,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §3 Board & Zones,Board is 5 columns wide so a full row forms a 5-card poker hand.
+E0386,All-revealed-trigger (earliest),ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §7 Spotlight System,Earliest rule: all revealed cards perform their abilities unconditionally.
+E0397,Ball = Juggling status,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),"Ball drops a Juggling status, which pays out column score when that card later scores."
+E0401,Base four suits,ALREADY_A_RULE,,designdocs,DESIGN_RECOMMENDATIONS.md §2.4 Suits: 4 + specials,"Standardize on 4 base suits (Knives, Hoops, Balls, Flames) instead of 6, mapping 1:1 to projectile mechanics."
+E0407,Board/deck contract,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"The game has a board with 2 zones, a draw deck, a discard deck, and a hidden rule-set deck, which is parsed at game creation to decide board layout."
+E0430,Card anatomy contract,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"Every card has a suit, a rank, a stamp slot, a skill slot, and a card type; cards can have 1 parent and 1 child (a stack)."
+E0436,Cards enter only via drop,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §2 Core Game Loop v2 (latest),Cards enter play by dropping automatically from the input row; they cannot be dragged down manually.
+E0459,Column Poker (unnamed),ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Every 5 cards per column are scored as a poker hand.
+E0461,Combo payout formula,ALREADY_A_RULE,,designdocs,"DESIGN_DOC.md §5 Scoring v3 (combo, shipped)","Act payout = row-score x column-score x combo, where combo = 1 + 0.1 x U, and U = number of distinct combo classes (archetype+size+copies) scored this act."
+E0462,Combo per unique effect,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §5 Scoring v3 (combo),"Combo increments by 1 for each unique effect triggered; flat points come from card effects ('cards are ammo'), multiplied by row-combo and col-combo."
+E0463,Combo scoring formula,ALREADY_A_RULE,,designdocs,DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe,"Show score = sum of card effect points, multiplied by (1 + row combo) and by (1 + col combo), where row/col combo = number of unique row/column melds scored this submit."
+E0479,Cue via right-click,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §12 Tapping / Cues & Charges,Cards are tapped ('cued') via right-click; tappable cards get a glowing halo border that is removed once spent.
+E0488,Deck-click drops loop,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §2 Core Game Loop v1,Every click of the deck drops new cards down; a limited number of clicks/rounds are allowed per match.
+E0508,Dual-axis base scoring,ALREADY_A_RULE,,designdocs,"DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)",Base scoring combines vertical runs (with a minimum size) per column with horizontal poker hands per row.
+E0547,Fire = Burning status,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),"Fire drops a Burning status on its target, multiplying that card's own suit-effect prop count."
+E0594,Hidden Rules Deck,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §8 Rule Deck,"A normally-hidden Rules Deck holds cards that define the default ruleset (stacking, scoring, input/zone counts, draw-on-Next); changing the ruleset means changing cards in this deck."
+E0604,Illegal stack submission spot,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,Early rule: an illegal stack could only be placed on the submission spot (removed with the loop v2 rewrite).
+E0622,Knife suit,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),Mirrors Hoop but launches from the opposite row side and scores plain (prop) cards instead of talents.
+E0623,Knives/Hoops horizontal projectiles,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit projectiles v1,Scored knife and hoop cards fly horizontally across their scored row; balls and fire drop down columns.
+E0644,Mancala targeting,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),Ball/Fire projectiles are ballistic: a mancala walk down the column picks a fixed count of talent targets at spawn; Fire's eligibility skips talents and other Fire props.
+E0661,Modifier-driven grab/place legality,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,"Stacking legality is decided by a resolver pass: all cards' allow/deny effects are gathered into a whitelist and blacklist, with the blacklist winning over the whitelist."
+E0695,Per-meld suit firing,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),"A scored card's suit effect fires once per meld membership (once for its row, once for its column); talented (skill-bearing) cards suppress their own suit effect."
+E0702,Pip comparator resolver,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,A pip resolver/comparator class governs all rank/suit comparisons; card mods are asked first (on_compare_ranks/suits) with numeric fallback.
+E0703,Pip-registered scoring methods,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"Each pip class can register its own static scoring methods as defaults for that pip; pip effects are permanently active, unlike skills."
+E0706,Poker Evaluator,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §14.4 Rule cards,Performs best-poker-hand evaluation per line.
+E0713,Projectile hit/miss bonuses,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit projectiles v1,"Gain mult for every hoop passing through an animal or acrobat, every knife missing a stuntsman, every ball hitting a juggler or animal; fire buffs cards it passes through."
+E0714,Prop-vs-feat suit targeting,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit projectiles v2 (latest),"Knives reward hitting non-feat (prop) cards, hoops reward hitting feat cards; balls buff feat cards, fire buffs non-feat cards, with balls/fire spreading buffs evenly across the column."
+E0721,Random standard suit roster,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),"The standard random suit roster is [Hoop, Knife, Ball, Fire]; Firework is excluded from random rolls and instead rises up its column, banking column score at the top."
+E0738,Row-then-column evaluation order,ALREADY_A_RULE,,designdocs,"DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)","Evaluation proceeds top-down: poker hands are scored first, with each column's run calculated simultaneously as that row resolves; refined to score all rows first, then all lanes simultaneously at that row."
+E0739,Row x column aggregation,ALREADY_A_RULE,,designdocs,"DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)",All vertical (column) scores are multiplied together with all horizontal (row) scores at the end of a submit.
+E0741,Rule cards get random pips,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §8 Rule Deck,Rule cards are given a random suit and rank in case a player ever extracts one into normal play.
+E0751,Score slots,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §2 Core Game Loop v1,Score slots on the right score whatever is placed on them and double as free spaces between deck clicks.
+E0778,Spotlight rebrand,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §7 Spotlight System (latest),Active state is rebranded Spotlight/Focus: a card is 'in the spotlight' when unblocked/topmost; card text gets an icon marking which effects need spotlight and which don't.
+E0795,Symmetrical Show (rule),ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,"Poker hands are also evaluated vertically, not just horizontally."
+E1037,Trigger order,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §5 Scoring,"Card effects trigger in order: field effects first, then the deck top-down, then the board left-to-right/top-to-bottom (including the input row), then the discard pile top-down."
+E1041,Two-zone board (Entrance/Ring),ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §3 Board & Zones,"Board has an upper zone (Grand Entrance, where drawn cards wait) and a lower zone (The Ring, where the board is built)."
+E1046,Universal deck resolves last,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §8 Rule Deck,The Universal (rule) deck is probably applied last in all modifier resolution order.
+E1053,Voucher effects in main deck,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §8 Rule Deck,Voucher-type effects (player-side) go in the main deck instead of the rule deck.
+E1062,Whole-board submit,ALREADY_A_RULE,,designdocs,DESIGN_DOC.md §2 Core Game Loop v2 (latest),"Player continuously draws to build the board; pressing Submit evaluates and scores the entire board state, then clears it, with Entrance cards dropping down to seed the next board."
+E1072,"3 grids side by side, commit to one",ALREADY_A_RULE,,braindump,gam draft.txt:1263,Each game fills 3 side-by-side 5x5 grids; card effects can influence other grids; player chooses which grid the next 5 entrance cards go into but must commit to a single grid once chosen.
+E1075,3D stacking as extra rows/cols,ALREADY_A_RULE,,braindump,gam draft.txt:1269,"Allow stacking cards on top of each other on the grid, adding a 3D element that functions as theoretical additional rows/columns."
+E1076,4-coordinate card position,ALREADY_A_RULE,,braindump,pokerpatience.txt:12,"Every card's position is defined by 4 coordinates: which grid, x, y, and height."
+E1078,5-wide board for row hands,ALREADY_A_RULE,,braindump,gam draft.txt:90,A 5-column-wide board allows row-wide poker hands as well as column hands.
+E1082,5x5 grid entrance placement redesign,ALREADY_A_RULE,,braindump,gam draft.txt:1262,"Core redesign: entrance shows top 5 cards as normal, but the player freely chooses where in a 5x5 grid below to place each one."
+E1083,5x5 grid replaces drop zones,ALREADY_A_RULE,,braindump,pokerpatience.txt:5,Replace the 5-6 drop-in zones with a 5x5 grid the player manually places entrance cards into.
+E1096,Any-grid line-completion detector,ALREADY_A_RULE,,braindump,pokerpatience.txt:38,A card that detects a new 5-in-a-line completion anywhere across all grids and triggers its scoring.
+E1103,Balanced prop targeting rules,ALREADY_A_RULE,,braindump,gam draft.txt:485,"Alt balance: knives hit non-skill cards and hoops hit skill cards; balls buff skill cards and fire buffs non-skill cards, spreading buffs as evenly across the column as possible."
+E1105,Balls,ALREADY_A_RULE,,braindump,curated effects pre grid.csv:8,Base suit: ball props (count = rank) arc down the column applying a Juggling status that pays out column score when that card later scores; stacking requires different suit and adjacent rank.
+E1106,Base scoring: vertical runs + horizontal poker,ALREADY_A_RULE,,braindump,gam draft.txt:99,Base scoring is vertical runs (with a minimum size) plus horizontal poker hands.
+E1107,Basic suit props sweep board,ALREADY_A_RULE,,braindump,gam draft.txt:481,Scored basic (non-skill) cards summon rank-scaled prop objects in their row/column that move across the board and interact with other cards.
+E1118,Board has deck/discard/ruleset zones,ALREADY_A_RULE,,braindump,gam draft.txt:316,"The board has a deck zone, a discard deck zone, and a ruleset deck zone."
+E1141,"Cards auto-drop, no manual drag down",ALREADY_A_RULE,,braindump,gam draft.txt:117,Cards come down on their own and cannot be dragged down manually.
+E1143,Cards have 1 parent/1 child stack,ALREADY_A_RULE,,braindump,gam draft.txt:315,"Cards can have exactly 1 parent and 1 child card, forming a stack."
+E1162,Combo increments per unique effect,ALREADY_A_RULE,,braindump,gam draft.txt:389,"Row/column scoring becomes a combo system: score increments by 1 for each unique effect triggered, with heavier emphasis on card effects that do direct damage under specific conditions."
+E1163,Commit-to-grid entrance rule,ALREADY_A_RULE,,braindump,pokerpatience.txt:5,"Once the player places a card in a grid, all current entrance cards must be placed in that same grid before the entrance refreshes with 5 new cards."
+E1183,Deck click drop,ALREADY_A_RULE,,braindump,gam draft.txt:13,"Each click of the deck causes new cards to drop down, rounds remaining decrease, and slots on the right score whatever card is put on them."
+E1197,Draw-through then submit,ALREADY_A_RULE,,braindump,gam draft.txt:87,"Constantly draw through the deck like classic solitaire, then submit to evaluate the entire board state and reset."
+E1198,Dynamic input/board card count from rules,ALREADY_A_RULE,,braindump,gam draft.txt:324,The number of input cards and board cards is decided dynamically at game creation by iterating the rule deck (e.g. a rule dictating 5 input columns and 5 board columns).
+E1202,Effect trigger order,ALREADY_A_RULE,,braindump,gam draft.txt:130,"Card effects trigger in order: field effects, then deck top-down (soon-to-be-drawn first, order hidden), then left-right top-down including entrance, then discard pile top-down (recent discards first)."
+E1203,Effect-trigger point gain,ALREADY_A_RULE,,braindump,random potential effects.csv:7,"Whenever a card triggers its effect, gain a point."
+E1210,End show early with good entrance,ALREADY_A_RULE,,braindump,gam draft.txt:1268d,"Entrance cards are global by default; during the final performance, the player can choose to end early if the current entrance cards are good."
+E1211,Entrance cards act via ability,ALREADY_A_RULE,,braindump,gam draft.txt:321,"Entrance/input cards get their draw-and-pass functionality implemented as an ability: on turn start, pass child cards to the board card in the same column, then draw a random card from the deck."
+E1214,Entrance zone cards seed first column,ALREADY_A_RULE,,braindump,pokerpatience.txt:37,"5 entrance/input zone cards work as today, refreshing in random draw order once empty or the current grid is full; the 1st input card corresponds to the 1st column of the 5x5 grid."
+E1236,Flames,ALREADY_A_RULE,,braindump,curated effects pre grid.csv:11,"Base suit: fire props arc down the column applying Flaming stacks that multiply each burning prop's effect (not applicable to fire-suit or talent cards, but inherited by spawned props); stacking requires different suit and adjacent rank."
+E1237,Flat points multiplied by combo,ALREADY_A_RULE,,braindump,gam draft.txt:390,"Flat points come from scoring, while row combo and column combo values are multiplied into the flat points."
+E1247,Full-stack scoring on tall stacks,ALREADY_A_RULE,,braindump,pokerpatience.txt:11,Scoring a height-10 (or taller) stack scores the entire stack at once.
+E1253,Global vs ring-local card effects,ALREADY_A_RULE,,braindump,gam draft.txt:1270,Grid-based card effects can be scoped as global (all grids) or local to a single ring.
+E1260,Grid-creation card owns its zones,ALREADY_A_RULE,,braindump,pokerpatience.txt:36,"When a 5x5 grid-creation card becomes active it creates the 5x5 zone cards it owns; when inactive, its grid of zone cards is removed and any cards it contains are discarded."
+E1261,Grid-creation rule card,ALREADY_A_RULE,,braindump,pokerpatience.txt:35,"A rule card that, on game start, checks the deck size and adds one 5x5 grid-creation card to the rules deck per 25 cards in the deck."
+E1262,Grid refill on completion,ALREADY_A_RULE,,braindump,pokerpatience.txt:6,"If a grid is completed with entrance cards remaining, it frees up for another grid and its empty slots are refilled with the remaining cards in their current slot."
+E1270,Height as a 4th coordinate,ALREADY_A_RULE,,braindump,pokerpatience.txt:11,"Stacking cards on top of each other adds a 4th coordinate (height); 5 cards aligned in height complete a scorable line at that height, including a same-x,y stack of 5."
+E1272,Height removal drops cards above,ALREADY_A_RULE,,braindump,pokerpatience.txt:14,Removing a card from a height stack causes the cards above it to drop down.
+E1273,Height scoring triggers only building up,ALREADY_A_RULE,,braindump,pokerpatience.txt:11,Height-based scoring only triggers when a stack builds upward through a multiple of 5; dropping back down through those intervals does not retrigger scoring.
+E1277,Hoops,ALREADY_A_RULE,,braindump,curated effects pre grid.csv:2,"Base suit: when a scored Hoops card is untalented, hoop props (count = rank) sweep the scored row and every skill card the hoop passes through scores again; stacking requires different suit and adjacent rank."
+E1281,Immediate vs delayed row/col scoring,ALREADY_A_RULE,,braindump,gam draft.txt:1274,"Choice between scoring a completed row/column immediately on completion versus scoring everything at the end; card effects could trigger specifically on completion, rewarding early vs late finishers."
+E1285,Integer numbers (default rank),ALREADY_A_RULE,,braindump,curated effects pre grid.csv:47,"Default rank A-K (1-13), possibly extended to -99..99; negative ranks apply a negative status/shader inverting effects and reducing score, while still counting uniquely toward combo."
+E1316,Match end condition,ALREADY_A_RULE,,braindump,gam draft.txt:105,Match ends when the deck runs out of cards or the required score is reached.
+E1334,Multiply vertical by horizontal,ALREADY_A_RULE,,braindump,gam draft.txt:124,All vertical scores are multiplied together with all horizontal scores at the end.
+E1339,New grid per 25/50 deck cards,ALREADY_A_RULE,,braindump,pokerpatience.txt:5,A new 5x5 grid is unlocked for every 25/50 cards (tunable) in the starting deck.
+E1342,"No submit slot, whole board scores",ALREADY_A_RULE,,braindump,gam draft.txt:86,"There is no special submit slot; the entire board is considered for submission on final score, using entrance cards similar to jokers."
+E1362,Pickup vs legal placement,ALREADY_A_RULE,,braindump,gam draft.txt:59,"A stack can be picked up from anywhere, but if the resulting stack is illegal it can only be placed back on the submission spot."
+E1364,Pip effects permanently active,ALREADY_A_RULE,,braindump,gam draft.txt:259,"Pip effects (suit/rank abilities) should be permanently active, independent of the resolver class."
+E1365,Placed cards are locked by default,ALREADY_A_RULE,,braindump,pokerpatience.txt:10,"By default, a card placed on an empty grid zone cannot be moved or have cards stacked on it; those actions are reserved for future effects."
+E1368,Poker hand scoring table,ALREADY_A_RULE,,braindump,gam draft.txt:1235,Poker Patience scoring table (UK vs Barry scoring) for pair/two pair/three of a kind/straight/flush/full house/four of a kind/straight or royal flush.
+E1370,Poker Patience base rule,ALREADY_A_RULE,,braindump,gam draft.txt:1229,"Poker Patience: lay out 25 cards into a 5x5 square, forming 10 poker hands from the 5 rows and 5 columns."
+E1371,Poker Patience diagonal scoring variant,ALREADY_A_RULE,,braindump,gam draft.txt:1233,Poker Patience variant: also count the 2 longest diagonals for additional scoring.
+E1384,Prop cards defined as feat-less,ALREADY_A_RULE,,braindump,gam draft.txt:498,Cards without feats (skills) are classified as 'prop' cards.
+E1385,Prop-hits-target mult gain,ALREADY_A_RULE,,braindump,gam draft.txt:483,"Gain mult when a hoop passes through an animal/acrobat card, a knife misses a stuntsman, or a ball hits a juggler/animal; fire buffs cards it passes through."
+E1391,Randomized placement on partial refill,ALREADY_A_RULE,,braindump,pokerpatience.txt:6,"If the deck cannot refill the entire entrance zone, new card placement is randomized instead of the default left-to-right order."
+E1395,Rarity gates non-null rolls,ALREADY_A_RULE,,braindump,todo.md:136,"Rarity tiers currently gate only whether a stamp/skill/type roll is non-null, based on luck."
+E1396,Re-adding retriggers line scoring,ALREADY_A_RULE,,braindump,pokerpatience.txt:15,Removing a card from a completed 5-line and re-adding it retriggers that line's scoring event.
+E1401,Revealed cards act,ALREADY_A_RULE,,braindump,gam draft.txt:56,All revealed cards perform their abilities.
+E1404,Ring unlocks per 25 deck cards,ALREADY_A_RULE,,braindump,gam draft.txt:1268,"Increase the number of grids/rings relative to cards in the deck, e.g. every 25 cards in the deck unlocks a new ring (with a max ring cap to avoid excess)."
+E1412,Row/column scoring happens on placement,ALREADY_A_RULE,,braindump,pokerpatience.txt:9,"Scoring occurs immediately as rows/columns are filled in, rather than on submit; pressing submit/end just fires its own hooks and ends the game without a separate scoring round, and can be pressed at any time."
+E1413,Row-first then simultaneous column scoring,ALREADY_A_RULE,,braindump,gam draft.txt:135,"All row scoring happens first, then all 5 lanes are scored simultaneously with the same per-row scoring repeated for each column, returning scored cards that go through the card-effect loop and get elevated."
+E1414,Row-then-column top-down scoring order,ALREADY_A_RULE,,braindump,gam draft.txt:120,"Submission evaluates top-down, one row at a time and 5 cards at a time, so poker hands score first while runs are calculated per column simultaneously."
+E1417,Rule cards have random suit/rank,ALREADY_A_RULE,,braindump,gam draft.txt:307,Rule-deck cards carry a random suit and rank in case the player is able to extract them onto the playing field.
+E1420,Ruleset deck parsed at game creation,ALREADY_A_RULE,,braindump,gam draft.txt:317,"On game creation, the ruleset deck is parsed to decide the board layout."
+E1431,Score slot as free space,ALREADY_A_RULE,,braindump,gam draft.txt:14,The score slot can be used as a free/empty space between deck clicks.
+E1455,Spotlight/focus rename,ALREADY_A_RULE,,braindump,gam draft.txt:519,'Active' is rebranded as Spotlight/Focus: cards that are unblocked (uncovered) are in the spotlight.
+E1459,Submit clears and cascades board,ALREADY_A_RULE,,braindump,gam draft.txt:108,"Pressing submit scores everything and clears the board, with upper cards coming down to start a new board state without a full wipe."
+E1462,Suit-specific prop movement,ALREADY_A_RULE,,braindump,gam draft.txt:482,Knives and hoops move horizontally across their scored row; balls and fire drop down their column.
+E1469,Tips for overscoring,ALREADY_A_RULE,,braindump,gam draft.txt:428,"Scoring is themed as audience excitement with cheering; player gains 'tips' currency for overscoring, playing as the Ringmaster."
+E1485,Unused entrance cards persist,ALREADY_A_RULE,,braindump,gam draft.txt:1277,Unused entrance cards stay in place for the next round rather than being replaced.
+E1490,Vertical poker hands ability,ALREADY_A_RULE,,braindump,gam draft.txt:114,"Ability that makes poker hands also considered vertically (columns), not just rows."
+E0043,Exchange Voucher,DUPLICATE,E0058,catalog,CARD_CATALOG,Usable from anywhere (including the deck): cue to swap this card's position with any card on screen.
+E0239,The Fire Marshal,DUPLICATE,E0048,catalog,CARD_CATALOG,"Town hazard: Flames-suit cards cannot score, and any Flames card in the deck is treated as Wax type this show."
+E0278,The Living Statue,DUPLICATE,E0052,catalog,CARD_CATALOG,Gains bonus points at show end for every show it was never moved; any grab resets the bonus to zero.
+E0338,The Tailor's Dummy,DUPLICATE,E0259,catalog,CARD_CATALOG,"This prop card can never hold a skill, but can hold two stamps."
+E0351,The Vine,DUPLICATE,E0090,catalog,CARD_CATALOG,"The first time this card would be destroyed or discarded by a fall or hazard each tour, it survives instead."
+E0360,The Wing Walker,DUPLICATE,E0224,catalog,CARD_CATALOG,"During the Next-phase drop, this card may transfer mid-air from its input column to an adjacent one, chosen on cue before Next."
+E0379,1 free undo per turn,DUPLICATE,E0060,designdocs,DESIGN_DOC.md §17 Turn Resources,1 free undo is granted per turn by default and does not carry over.
+E0382,72 Transformations,DUPLICATE,E0001,designdocs,DESIGN_REFERENCES.md §A5 China,A wild card may transform up to 72 tracked times per run; at 72 it ascends into a permanently upgraded form.
+E0383,8-9-3 jackpot,DUPLICATE,E0361,designdocs,DESIGN_REFERENCES.md §A6 Japan,Scoring a meld of exactly 8-9-3 pays out a massive jackpot ('the worthless hand').
+E0384,Acrobat (unnamed charge example),DUPLICATE,E0366,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"Has 1 charge; triggers by cue, or auto-spends on Next if unused."
+E0394,Automaton type (Karakuri),DUPLICATE,E0005,designdocs,DESIGN_REFERENCES.md §A6 Japan,"Acts by itself every Next, performing its cue for free, but can never be manually cued."
+E0395,Avalanche,DUPLICATE,E0006,designdocs,DESIGN_DOC.md §5 Scoring,"After scoring, all cards on the board 'attack the scoreboard,' reducing the goal score by the number of cards on the board."
+E0399,Ban-evasion deck (Hanafuda),DUPLICATE,E0074,designdocs,DESIGN_REFERENCES.md §A6 Japan,"When a town outlaws a suit, cards in this deck reskin themselves to dodge the ban."
+E0402,Bian lian instant pip-swap,DUPLICATE,E0010,designdocs,DESIGN_REFERENCES.md §A5 China,"Instant pip-swap on cue, with the swap method hidden from the player; unlocked via a family-lineage condition."
+E0411,Boss/hazard rule cards,DUPLICATE,E0410,designdocs,DESIGN_DOC.md §14.4 Rule cards,Temporary negative rule cards that self-destruct after the game/show ends.
+E0412,Bottom Deal,DUPLICATE,E0013,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune",Draw from the bottom of the deck this turn.
+E0413,Bound pair (Karagöz),DUPLICATE,E0095,designdocs,"DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia",Each of a pair gets +mult when placed in opposite zones.
+E0414,Brass Check,DUPLICATE,E0014,designdocs,DESIGN_RECOMMENDATIONS.md §5 Stamps,"On trigger, mint a Gold card to the top of the deck."
+E0415,Build-to-burn (Las Fallas),DUPLICATE,E0292,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","Invest in a card all tour, then burn it at the finale for a payout proportional to investment; exactly one card can be 'pardoned' from any mass-destruction effect."
+E0418,Buried alive,DUPLICATE,E0017,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,Bury a card (remove from game) for N shows; it returns transformed (+rarity) or not at all (small chance).
+E0420,Burst acrobatics (Hopak),DUPLICATE,E0084,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe",A Dancer card jumps its whole stack one row in a single cue.
+E0425,Calliope,DUPLICATE,E0188,designdocs,DESIGN_RECOMMENDATIONS.md §6 Special Effects,+combo for every different class that scored this submit.
+E0427,Cannon dynasty inheritance,DUPLICATE,E0398,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,"Cannon acts are inheritable between runs, framed as a family dynasty."
+E0429,Canvas,DUPLICATE,E0018,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),Sturdy default material for circus-born cards; an upgrade tier above Paper.
+E0431,Card pack node offers,DUPLICATE,E0408,designdocs,DESIGN_DOC.md §15 Map content & UX,"Nodes offer card packs, or occasionally rarer single cards; packs show at least 1 guaranteed card in the map preview."
+E0440,Cascade Scorer,DUPLICATE,E0019,designdocs,DESIGN_DOC.md §14.4 Rule cards,Performs the whole-board row/column scoring pass.
+E0441,Censorship-immune puppets,DUPLICATE,E0389,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","In towns that ban speech/satire acts, Puppet-type cards perform unhindered."
+E0446,Charivari opening,DUPLICATE,E0195,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,Turn-1 bonus for flooding the Ring with many low-rank cards at once.
+E0447,Cheat Day,DUPLICATE,E0020,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"Cards remaining in the deck get a rank-up, rewarding winning early with cards to spare."
+E0453,Clever Hans,DUPLICATE,E0022,designdocs,"DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal","Appears to calculate a rank but actually copies its neighbor's value; if the neighbor leaves, it's revealed as rank 1."
+E0455,Clown + companion token,DUPLICATE,E0097,designdocs,DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus,Comes with a free 1-rank dog token.
+E0458,Column count via rule cards,DUPLICATE,E0142,designdocs,DESIGN_DOC.md §3 Board & Zones,"Column count is not hardcoded: rule cards (input/zone adders) each add one column at game creation, so effects can add or remove columns."
+E0465,Common (chain),DUPLICATE,E0026,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Doubles the chance of Rare cards appearing.
+E0486,Dead Man's Hand,DUPLICATE,E0029,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","Scoring two pair, aces over eights, triggers a morbid jackpot plus a ghost event."
+E0491,Deck unlocks as gimmick runs,DUPLICATE,E0433,designdocs,DESIGN_DOC.md §13 Special Decks & Variants,"Deck unlocks double as Balatro-style gimmick runs, unifying two systems into one."
+E0492,Declared jump (Evel Knievel),DUPLICATE,E0183,designdocs,DESIGN_REFERENCES.md §A10 The Americas,"Anchors the Booking system: declare a jump, sell tickets, then attempt to survive it."
+E0493,Dedi's Resurrection,DUPLICATE,E0030,designdocs,DESIGN_REFERENCES.md §A1 The Ancient World,Restore one destroyed card per show.
+E0494,Default stack legality,DUPLICATE,E0122,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,A legal stack is an ascending or descending run; same-suit cards cannot stack.
+E0496,Deus ex machina consumable,DUPLICATE,E0031,designdocs,DESIGN_REFERENCES.md §F1 Theater & Opera,"One automatic show-save per run, deliberately framed as feeling like a cheat."
+E0498,Diabolo juggle,DUPLICATE,E0032,designdocs,DESIGN_REFERENCES.md §A5 China,"A card is juggled between two columns, alternating position every Next and buffing both."
+E0500,Discard-driven board building,DUPLICATE,E0290,designdocs,DESIGN_DOC.md §17 Turn Resources,"Discards are a main method of building the board: repeatedly discard Entrance cards until getting what's wanted, then let them drop; an upgrade chain grants more discards or more cards per discard."
+E0501,Discard Joker (unnamed),DUPLICATE,E0290,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Allows discarding 1 Entrance card per turn; upgradable to more discards or more cards per discard.
+E0504,Double Trigger,DUPLICATE,E0034,designdocs,DESIGN_DOC.md §14.2 Stamps,Card's effects trigger twice.
+E0506,Dragon meld,DUPLICATE,E0220,designdocs,DESIGN_REFERENCES.md §A5 China,"A scored run moves as one body afterward, relocatable as a unit next turn."
+E0507,Drumroll,DUPLICATE,E0035,designdocs,DESIGN_RECOMMENDATIONS.md §6 Special Effects,The last meld scored this submit gets +mult.
+E0509,Duende,DUPLICATE,E0036,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","A rare emergent state under specific combo/tension conditions triples a card's score with unique presentation; never purchasable, only summoned."
+E0512,Earth / Air / Water / Fire materials,DUPLICATE,E0002,designdocs,DESIGN_DOC.md §14.3 Types,"Elemental materials with custom movement, such as always sitting on top or bottom of a stack."
+E0514,Electric suit (proposed),DUPLICATE,E0040,designdocs,DESIGN_DOC.md §10 Suits,Electric suit buffs cards that are connected/chained together in a certain way.
+E0516,Elemental custom movement,DUPLICATE,E0002,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,"Elemental card types with custom movement rules, such as always sitting on top or bottom of a stack."
+E0517,Elevate a prop,DUPLICATE,E0332,designdocs,DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation,Permanently convert one prop card into a feat card.
+E0520,Endless mode unlock,DUPLICATE,E0519,designdocs,"DESIGN_DOC.md §15 Map v4 (FTL, latest)","Finishing the final city wins the run and unlocks endless mode, repeating the final city with guaranteed repeating choices until the player loses."
+E0523,Epic (chain),DUPLICATE,E0026,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Doubles the chance of Legendary cards appearing.
+E0526,Escaramuza formation bonus,DUPLICATE,E0042,designdocs,DESIGN_REFERENCES.md §A10 The Americas,A synchronized-formation bonus for symmetrical board states.
+E0529,Exchange Voucher,DUPLICATE,E0058,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Usable from the deck: swap it with any card currently on screen.
+E0533,Eye of God,DUPLICATE,E0045,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,See all decks (including the rule deck) and their true descriptions.
+E0534,Eye of God true vision,DUPLICATE,E0045,designdocs,DESIGN_DOC.md §8 Rule Deck,A prestige unlock grants 'true vision': seeing all decks (including the rule deck) and true card descriptions.
+E0537,Fairy Floss,DUPLICATE,E0046,designdocs,DESIGN_RECOMMENDATIONS.md §6 Concessions,"When scored, adjacent cards gain +1 rank for this show."
+E0541,Fame improves offer rarity,DUPLICATE,E0540,designdocs,"DESIGN_DOC.md §15 Map v4 (FTL, latest)",Total accumulated fame improves the rarity odds of card offers.
+E0543,Family-tent deck,DUPLICATE,E0398,designdocs,DESIGN_REFERENCES.md §A11 South America,"Starts weak, but gains a permanent heirloom card each finished tour."
+E0545,Final Act,DUPLICATE,E0047,designdocs,DESIGN_DOC.md §11 Act types,"Deck-position type: shows up after all other cards are drawn, possibly carrying an extra multiplier."
+E0546,Fire breather,DUPLICATE,E0237,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,"Projects a Flames buff across an entire row, then Exhausts itself."
+E0548,Fire-knife dual-suit pip,DUPLICATE,E0076,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,A pip counting as both Knives and Flames suits simultaneously.
+E0549,Fireworks suit (proposed),DUPLICATE,E0049,designdocs,DESIGN_DOC.md §10 Suits,Fireworks suit directly adds points to its column based on rank.
+E0550,First Act,DUPLICATE,E0050,designdocs,DESIGN_DOC.md §11 Act types,"Deck-position type: shows up alone, before any other cards are drawn."
+E0551,First of May,DUPLICATE,E0051,designdocs,DESIGN_RECOMMENDATIONS.md §9 Events,A rookie joins: gain a random Common card with a hidden growth condition that upgrades it after scoring 10 times.
+E0552,First / Second / Final Act (type entry),DUPLICATE,E0047,designdocs,DESIGN_DOC.md §14.3 Types,Deck-position control types (see §11 Act types).
+E0553,Flash,DUPLICATE,E0054,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),"Scores triple points, but only the first time it would ever score, once per show."
+E0554,Flea Circus,DUPLICATE,E0056,designdocs,DESIGN_RECOMMENDATIONS.md §6 Animal Trainer,"Scores as if it were 5 cards of rank 1, for combo-counting purposes."
+E0555,Flooded rows,DUPLICATE,E0515,designdocs,DESIGN_REFERENCES.md §A13 Korea & Southeast Asia,Water-covered rows let cards float (move freely sideways) while the cards beneath stay hidden but active.
+E0558,Fog-of-war route arrows,DUPLICATE,E0557,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",Arrow markers stay visible on map edges the player has already scouted.
+E0559,Fool's License,DUPLICATE,E0057,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,Ignore one rule card of the player's choice while this card is spotlit.
+E0560,Foot of God,DUPLICATE,E0058,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Switch locations with any card currently on screen.
+E0562,Force-trigger via stacking,DUPLICATE,E0213,designdocs,DESIGN_DOC.md §8 Rule Deck,A card that force-triggers a linked on-trigger card whenever it is tapped via stacking; judged probably too hard to implement well.
+E0565,Forward somersault (Con Colleano),DUPLICATE,E0024,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,Flip a card over the one directly above it (swap upward).
+E0569,Genie's Wish,DUPLICATE,E0061,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Choose a card to create a copy of in the player's hand.
+E0572,Ghost Card (summary),DUPLICATE,E0062,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,Doesn't block Spotlight for cards beneath it.
+E0573,Glass,DUPLICATE,E0063,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),"Scores double points, but is destroyed (shatters) after being scored 3 times."
+E0575,Gold card,DUPLICATE,E0066,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"Money-token card; heavy, so it always sinks to the bottom of the deck."
+E0576,Gold suit,DUPLICATE,E0065,designdocs,DESIGN_REFERENCES.md §A5 China,"A literal money suit, playable as a normal suit as well as functioning as currency."
+E0577,Gold token cards,DUPLICATE,E0066,designdocs,DESIGN_DOC.md §16 Economy & Shop,Gold cards are heavy token cards minted by Producer-class effects or money-on-trigger stamps.
+E0578,Grand Spec,DUPLICATE,E0068,designdocs,DESIGN_RECOMMENDATIONS.md §6 Special Effects,"If all columns scored this submit, double the show's combo."
+E0580,Half-step rank,DUPLICATE,E0072,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Rank of 5½ (etc.): stacks between 5 and 6 in a run but can never meld into a poker hand.
+E0581,Hall of Mirrors,DUPLICATE,E0073,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",The boss show duplicates the board's reflection with fake copies (Gaffs) of the player's cards to play around.
+E0583,Handicap flourish,DUPLICATE,E0251,designdocs,DESIGN_REFERENCES.md §B1 Aerial & Wire,Voluntarily debuff this card's move for double its score.
+E0584,Harlequin pip,DUPLICATE,E0076,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Dual-suit pip: counts as two suits at once for scoring purposes.
+E0587,Heavy,DUPLICATE,E0077,designdocs,DESIGN_DOC.md §14.3 Types,Sinks to the bottom of the deck after shuffling.
+E0589,Helium Card,DUPLICATE,E0078,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,Named version of the Light material: rises during Next.
+E0590,Hey Rube! (boss),DUPLICATE,E0079,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards","Each submit, the rightmost column is attacked: cards there are debuffed unless guarded by a Stuntsman/Strongman card."
+E0592,Hidden-identity reveal cards,DUPLICATE,E0009,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"Identity/rarity is revealed only after N scores, as a fanfare moment."
+E0597,Hire a claque,DUPLICATE,E0197,designdocs,DESIGN_REFERENCES.md §F1 Theater & Opera,"Guarantees minimum fame this show, but demands payment at every subsequent show."
+E0603,Hype mechanic,DUPLICATE,E0088,designdocs,"DESIGN_DOC.md §15 Map v4 (FTL, latest)",Voluntarily double the fame required for the next show in exchange for better goodies.
+E0605,Immovable (unnamed),DUPLICATE,E0159,designdocs,DESIGN_DOC.md §14.3 Types,Type that resists being moved once placed.
+E0607,Incoming card mulligan,DUPLICATE,E0290,designdocs,DESIGN_DOC.md §2 Core Game Loop v1,Incoming cards can be mulliganed via a click + discard button before dropping.
+E0608,Incoming card rearrange,DUPLICATE,E0102,designdocs,DESIGN_DOC.md §2 Core Game Loop v1,Incoming cards can be rearranged before they drop into play.
+E0609,Input,DUPLICATE,E0089,designdocs,DESIGN_DOC.md §14.3 Types,"Zone-header type: on Next, drops its held stack to the paired lower column, then draws a new card."
+E0610,Input Adder (upper),DUPLICATE,E0142,designdocs,DESIGN_DOC.md §14.4 Rule cards,Adds 1 Entrance input column per copy in the rule deck.
+E0612,Jack-of-all-trades,DUPLICATE,E0265,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,"Counts as every class at once, but at half effect (masters none)."
+E0614,Jaded fear-show town,DUPLICATE,E0613,designdocs,DESIGN_REFERENCES.md §G The Modern Era,Debuff-inflicting cards are the headliners in fear shows.
+E0615,John Robinson (elite),DUPLICATE,E0092,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards",Shortened show: 2 submits instead of 3.
+E0617,Judged festival (City Dionysia),DUPLICATE,E0616,designdocs,DESIGN_REFERENCES.md §F1 Theater & Opera,Scores in separate categories (best formation/suit spread/single meld) instead of one total.
+E0618,Juggler leader (Rastelli),DUPLICATE,E0266,designdocs,DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation,Balls-suit cards can be kept aloft (re-scored) as long as one scores each submit.
+E0621,Kneeling Devil,DUPLICATE,E0271,designdocs,DESIGN_REFERENCES.md §A11 South America,"A negative-effect card that, if kept a full tour, converts into a positive card at the final city."
+E0624,Kuroko,DUPLICATE,E0100,designdocs,DESIGN_REFERENCES.md §A6 Japan,"This card is 'unseen': doesn't block Spotlight, can't be targeted by bosses."
+E0625,Label / Evident,DUPLICATE,E0101,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Announces its rule-deck effect on the board even while the rule deck stays hidden.
+E0626,Label/Evident card,DUPLICATE,E0101,designdocs,DESIGN_DOC.md §8 Rule Deck,A card announces its rule-deck effect on the board while the rule deck itself stays hidden ('Baba Is You' visibility trick).
+E0628,Leader (type entry),DUPLICATE,E0629,designdocs,DESIGN_DOC.md §14.3 Types,Type that starts a card on the board or in the Entrance and boosts its group.
+E0629,Leader chassis,DUPLICATE,E0315,designdocs,"DESIGN_DOC.md §11 Classes, Groups & Leaders",Leader cards start already on the board (or in the Entrance) and do not leave play on submit; different starting decks ship different leaders.
+E0631,Leader group boost,DUPLICATE,E0629,designdocs,"DESIGN_DOC.md §11 Classes, Groups & Leaders","Cards belong to groups/classes, and leader cards boost their group."
+E0632,Leader lineage succession,DUPLICATE,E0398,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Retiring a maxed leader unlocks its heir with a carried-over power.
+E0633,Liberty Horses,DUPLICATE,E0102,designdocs,DESIGN_RECOMMENDATIONS.md §6 Animal Trainer,"On Next, all Animal-tagged cards in the Entrance rearrange themselves into ascending order."
+E0634,Light,DUPLICATE,E0078,designdocs,DESIGN_DOC.md §14.3 Types,"Rises to the top of the deck (counterpart to Heavy, never built)."
+E0636,Lithograph,DUPLICATE,E0103,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),"While in the Entrance (not the Ring), broadcasts its skill globally."
+E0639,Mabel's Tigers,DUPLICATE,E0107,designdocs,DESIGN_RECOMMENDATIONS.md §6 Animal Trainer,Consumes the card it's dropped on (like Gluttony) but only prop cards; +rank per meal.
+E0646,Map click seeds next drop,DUPLICATE,E0050,designdocs,DESIGN_DOC.md §15 Map v1 (Minesweeper),Clicking a map card made it the first card dropped in the next match.
+E0648,Marked stamp,DUPLICATE,E0110,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune",The player always knows where this card currently sits in the deck.
+E0651,Maximum Effort / Exhaust,DUPLICATE,E0112,designdocs,DESIGN_DOC.md §14.2 Stamps,Double (or flat bonus) points from this card on score; only refreshes if the card is NOT played/scored the following show.
+E0654,Milk Can,DUPLICATE,E0115,designdocs,DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman,Cue: place a card inside; it leaves play; retrieve it any later turn.
+E0662,Money on Trigger,DUPLICATE,E0014,designdocs,DESIGN_DOC.md §14.2 Stamps,Gain money whenever the card triggers.
+E0663,Moonstruck (Pierrot),DUPLICATE,E0131,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,"Buffs on alternating ('night') shows, pines (does nothing/less) otherwise."
+E0664,Mountebank tonics,DUPLICATE,E0154,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,Cheap buffs with a chance of doing nothing (being water).
+E0665,Movement-resistant cards,DUPLICATE,E0159,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,Cards that resist being moved once placed.
+E0666,Mud Show,DUPLICATE,E0118,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards",Picking up any stack costs 1 discard.
+E0667,Mystery Box,DUPLICATE,E0119,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"On game start, becomes a random skill."
+E0673,Null cards,DUPLICATE,E0120,designdocs,DESIGN_DOC.md §3 Board & Zones,Null cards take up space on the board and are highlighted when selected so hovering over null space reads clearly.
+E0674,Odd couple buff,DUPLICATE,E0293,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,The thinnest (lowest rank) and heaviest (highest rank) card in a row buff each other.
+E0675,OG Grabber,DUPLICATE,E0121,designdocs,DESIGN_DOC.md §14.4 Rule cards,"Provides the default grab legality: ascending/descending runs, no same-suit stacking."
+E0676,OG Placer,DUPLICATE,E0122,designdocs,DESIGN_DOC.md §14.4 Rule cards,Provides the default placement legality rule.
+E0679,Only legal stacks liftable,DUPLICATE,E0121,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,"Only legal stacks can be picked up at all, making moving stacks harder as the run progresses."
+E0682,Outlawed cards,DUPLICATE,E0123,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,Cards banned in pious towns (cannot score there) but score double in others; persecution can spawn an underground-shows event chain.
+E0685,Paired giants,DUPLICATE,E0297,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,Each of a pair gets +mult while both are on the board.
+E0687,Panorama consumable,DUPLICATE,E0298,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,Reveals the whole map's silhouette.
+E0689,Peanut Pitch,DUPLICATE,E0128,designdocs,DESIGN_RECOMMENDATIONS.md §6 Concessions,"Cue (3 charges): add points to any one card, thrown from anywhere."
+E0691,Pepper's Ghost,DUPLICATE,E0129,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,An intangible duplicate of one card appears in the opposite zone; scores as if real but can't be touched or attacked.
+E0696,Per-scenario rule decks,DUPLICATE,E0489,designdocs,DESIGN_DOC.md §8 Rule Deck,"Game rules determine what Next and Submit do; different scenarios swap in different rule decks, and edits during a run are permanent for that run."
+E0697,Performance Rings (origin),DUPLICATE,E0698,designdocs,DESIGN_DOC.md §5 Scoring,Every 5 rows scored increases points 'by layer' / turns the row red — the seed idea that became Performance Rings.
+E0699,Performance Rings as depth multiplier,DUPLICATE,E0698,designdocs,DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe,"Performance Rings act as multipliers on the column combo specifically, rewarding tall play."
+E0705,Poker Crown (unnamed),DUPLICATE,E0133,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"When scored, this card and the 4 cards above it are scored together as a poker hand."
+E0709,Presentation,DUPLICATE,E0136,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Moving cards into ascending order gives multiplier points.
+E0710,Press Bribery / Memory Wipe,DUPLICATE,E0137,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"Extra life: on failing a city, keep going as if the player had won; possibly a straight win if held to the end."
+E0711,Prestige meta-shop,DUPLICATE,E0438,designdocs,DESIGN_DOC.md §19 Meta Progression,"Wins grant prestige currency spent in the Carnival meta-shop on map odds, starting resources, true vision, guaranteed cards/packs, a full unlock reset, or the custom deck editor; spending raises per-show score requirements."
+E0715,Psycho,DUPLICATE,E0138,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,An Automaton card plays a card from the deck by itself every Next.
+E0719,Quick-change (Hikinuki),DUPLICATE,E0080,designdocs,DESIGN_REFERENCES.md §A6 Japan,"On scoring, swap this card's stamp with any stamp in reserve."
+E0720,Railroad Jump (route hazard),DUPLICATE,E0139,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards",Traveling a long map edge costs a card from the deck (left behind on the platform).
+E0722,Rare (chain),DUPLICATE,E0026,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,Doubles the chance of Epic cards appearing.
+E0726,Reroll Blessing effect archetype,DUPLICATE,E0106,designdocs,DESIGN_DOC.md §12 Tapping / Cues & Charges,+1 reroll per game; repeated actions will not repeat the same results for the rest of the game.
+E0729,Revealing (Eye),DUPLICATE,E0141,designdocs,DESIGN_DOC.md §14.2 Stamps,Card triggers even when hidden/covered.
+E0730,Ringmaster,DUPLICATE,E0315,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,No suit/rank; starts in the Entrance; always grabbable; can be placed anywhere uncovered; survives submission.
+E0731,Ringmaster leader spec,DUPLICATE,E0315,designdocs,"DESIGN_DOC.md §11 Classes, Groups & Leaders",No suit or rank; type starts it in the Entrance; stamp lets it always be picked up and placed anywhere uncovered; skill keeps it on board after submission.
+E0733,Rookie growth cards,DUPLICATE,E0051,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,Rookie commons with growth conditions that upgrade them over time.
+E0734,Rosin,DUPLICATE,E0145,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),"Cards placed on it cannot be picked up again, but score +1 per ring depth when scored."
+E0743,Rules-in-hand deck variant,DUPLICATE,E0742,designdocs,DESIGN_DOC.md §8 Rule Deck,A deck variant where the rule deck is empty and all rules are shuffled into and drawn from the main deck.
+E0745,Séance Night,DUPLICATE,E0480,designdocs,DESIGN_RECOMMENDATIONS.md §9 Events,Pick the Gaff out of 3 face-down cards for a reward.
+E0748,Sawdust,DUPLICATE,E0146,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),"When discarded, leaves a marker on its board slot; the next card placed there gets +points."
+E0752,Scripted clown combos,DUPLICATE,E0627,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,Clown combos are scripted sequences (lazzi) with an end-of-sequence bonus.
+E0753,Searing Knife (adopt),DUPLICATE,E0148,designdocs,DESIGN_RECOMMENDATIONS.md §1 How I read your design,Column hazard card enables town/boss content around knife scoring.
+E0754,Searing Knife (summary),DUPLICATE,E0148,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,"On score, burns its column, locking it for 2 turns."
+E0756,Second Act,DUPLICATE,E0149,designdocs,DESIGN_DOC.md §11 Act types,Deck-position type: shows up alone after half the deck has been drawn.
+E0758,Self-granted title,DUPLICATE,E0150,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,"A card names itself Rare, counting as one rarity higher for effect purposes only (not for drop pools)."
+E0759,Seven Pyramid,DUPLICATE,E0323,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,A 7-card stack formation meld with a huge payout.
+E0761,Shop-as-board-buttons,DUPLICATE,E0421,designdocs,DESIGN_DOC.md §16 Economy & Shop,Shops are built out of the game board itself; every button (e.g. reroll) is a tappable card.
+E0763,Sin of Gluttony,DUPLICATE,E0151,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"Upgraded Hippo: no value cap, can be fed from anywhere including decks, and permanently consumes fed cards."
+E0768,Snake Oil,DUPLICATE,E0154,designdocs,DESIGN_REFERENCES.md §A10 The Americas,A buff that sometimes does nothing (is secretly a Gaff); selling it yourself is an economy event with reputation risk.
+E0769,Spangle,DUPLICATE,E0156,designdocs,DESIGN_RECOMMENDATIONS.md §5 Stamps,+1 combo whenever this card is part of any meld.
+E0774,Spiderweb,DUPLICATE,E0157,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"1 point per card diagonal to this card, in a cross/X shape."
+E0775,Spinning-plate buffs,DUPLICATE,E0701,designdocs,DESIGN_REFERENCES.md §A5 China,Stackable buffs that decay unless re-triggered.
+E0776,Spirit Photo consumable,DUPLICATE,E0158,designdocs,"DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal",Capture a 'ghost copy' of any card for one show.
+E0777,Sponsorship,DUPLICATE,E0330,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"A patron funds the tour (gold every show) but stamps ads on cards, imposing a fame tax."
+E0780,StampGlobal,DUPLICATE,E0064,designdocs,DESIGN_DOC.md §7 Spotlight System (implemented),"Card's modifiers are active from anywhere, including inside decks."
+E0781,StampRevealing,DUPLICATE,E0141,designdocs,DESIGN_DOC.md §7 Spotlight System (implemented),Card's modifiers remain active even while covered (not topmost).
+E0782,Status array,DUPLICATE,E0487,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"CardData carries a status dictionary (effect name -> value) processed by rule cards per effect, as the general mechanism for debuffs."
+E0785,Storyteller cross-game persistence,DUPLICATE,E0784,designdocs,DESIGN_DOC.md §19 Meta Progression,"Scoring done outside the main game carries into the next game, e.g. via the Storyteller card preserving points between games."
+E0789,Suit-punishing hazard towns,DUPLICATE,E0048,designdocs,"DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons","Towns punish specific suit scoring (Knifetown scores knives at 0, similarly Firetown/Juggletown/Hooptown); performing at a volcano adds lava hazards."
+E0790,Sunshine (Popov),DUPLICATE,E0334,designdocs,DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus,"A clown that only buffs, never gags; heals debuffs on the cards below it."
+E0792,Sword Swallower,DUPLICATE,E0161,designdocs,DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries,A column that forms one perfect descending run from deck-to-floor triggers a secret meld.
+E0794,Sword swallowing (Edith Clifford),DUPLICATE,E0039,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,"Permanently swallows a Knife card, adding its rank to this card's forever."
+E0797,Tango pair,DUPLICATE,E0339,designdocs,DESIGN_REFERENCES.md §A11 South America,"Two cards locked in embrace, always adjacent, alternating each turn which one's skill fires."
+E0798,Tappable Clown (summary),DUPLICATE,E0163,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,3 taps: randomizes adjacent cards.
+E0801,The 42-Foot Ring,DUPLICATE,E0241,designdocs,DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries,A secret meld triggers when a row's and column's scores total exactly 42.
+E0803,The Acrobat (adopt),DUPLICATE,E0166,designdocs,DESIGN_RECOMMENDATIONS.md §1 How I read your design,Card can be grabbed even while covered by another card.
+E0804,The Acrobat (summary),DUPLICATE,E0166,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,Grabbable even when covered.
+E0805,The Advance Man,DUPLICATE,E0168,designdocs,DESIGN_RECOMMENDATIONS.md §8 Map-layer systems,Map consumable/skill that reveals fog-of-war nodes ahead of the player.
+E0807,The Ambitious Card,DUPLICATE,E0171,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Always rises to the top of the deck after shuffles; a related secret rewards beating a 'Houdini' boss with it.
+E0808,The Anarchist (reject as player card),DUPLICATE,E0173,designdocs,DESIGN_RECOMMENDATIONS.md §1 How I read your design,Silences/disables the rule deck while in play; recommended as a boss effect rather than a player card.
+E0809,The Anarchist (summary),DUPLICATE,E0173,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,Disables all other Rule cards while in the Ring.
+E0813,The Avatar,DUPLICATE,E0175,designdocs,DESIGN_REFERENCES.md §G The Modern Era,A card wears another card's face/identity; unmasking rules apply.
+E0815,The Backward-Backward,DUPLICATE,E0176,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,Reverses a run's direction mid-meld: a descending run counts as ascending for one column.
+E0816,The Bahurupiya,DUPLICATE,E0007,designdocs,DESIGN_REFERENCES.md §A7 India & South Asia,Arrives each show as a random different class.
+E0817,The Balance boss,DUPLICATE,E0177,designdocs,DESIGN_REFERENCES.md §A13 Korea & Southeast Asia,"Cannot be defeated, only balanced: end the show with row points and column points within X% of each other."
+E0820,The Bauta,DUPLICATE,E0009,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","While worn, the card's rarity and identity are hidden from effects, inspections, and towns."
+E0821,The Belt,DUPLICATE,E0178,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,"Exactly one card in the world holds it, doubling that card; belt-challenge bosses can take it away."
+E0823,The Blank,DUPLICATE,E0181,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,No rank and no suit; stacks legally on anything and anything can stack on it; scores 0 points.
+E0825,The Blockhead,DUPLICATE,E0182,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,Absorbs one Knife projectile per show as points instead of damage.
+E0826,The Board (Ouija),DUPLICATE,E0295,designdocs,"DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal",Ask the deck one yes/no question per show.
+E0827,The Booking,DUPLICATE,E0183,designdocs,DESIGN_RECOMMENDATIONS.md §2.2 Alt win cons: The Booking,"A contract card sits in the rule deck for the show; player declares a booking (e.g. score X with no knife melds, win in 2 submits, trigger 12 unique feats) and the show is won by fulfilling it rather than by max score."
+E0828,The Boot Code,DUPLICATE,E0184,designdocs,DESIGN_REFERENCES.md §A16 Africa & the Arctic,"Adjacent cards pass a buff down a row via untriggered 'rhythm,' untraceable by boss effects that punish triggers."
+E0830,The Brass Ring,DUPLICATE,E0015,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",A bonus token rotates around the board's columns each turn; scoring the column while the ring sits on it grants a grab bonus.
+E0831,The Butoh Walker,DUPLICATE,E0186,designdocs,"DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom","Moves one slot every other turn, permanently transforming (buffing) every slot it passes through."
+E0832,The Butterfly Trick,DUPLICATE,E0187,designdocs,DESIGN_REFERENCES.md §A6 Japan,"Creates fluttering paper-token cards (rank 1, any suit) that drift down one column per turn."
+E0834,The Calm Voice,DUPLICATE,E0189,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,"Negates one disaster event by converting it into a show, gaining fame from the crisis."
+E0835,The Cannon King (Zacchini),DUPLICATE,E0191,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,Fireworks-suit cards may score from the Entrance.
+E0836,The Capoeirista,DUPLICATE,E0192,designdocs,DESIGN_REFERENCES.md §A11 South America,Registered as a Dancer but functions as a fighter; performs even in towns that ban combat acts.
+E0837,The Card Index,DUPLICATE,E0193,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Cue: search the deck for any card and put it in the Entrance.
+E0838,The Castell,DUPLICATE,E0194,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","Build a tower and crown it with the smallest card for a massive bonus, with collapse risk scaling per level; a four-word motto maps to four buff types."
+E0842,The Chorus (Kecak),DUPLICATE,E0267,designdocs,DESIGN_REFERENCES.md §A13 Korea & Southeast Asia,+mult per rank-1 card on the board whenever any meld scores.
+E0843,The Claimed Feat,DUPLICATE,E0016,designdocs,DESIGN_REFERENCES.md §A10 The Americas,"Scores fame for a stunt that never happened; if exposed later, lose double."
+E0844,The clean dodge (Recortadores),DUPLICATE,E0416,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","When a hazard targets this card's column, it vaults the hazard, which passes through and scores points instead."
+E0845,The Cliffhanger,DUPLICATE,E0198,designdocs,DESIGN_REFERENCES.md §A7 India & South Asia,"Ending a show mid-trick plummets the next town's fame requirement, but the trick must be 'resolved' there."
+E0846,The Clock Hang,DUPLICATE,E0199,designdocs,DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports,"Placed half-off the board's last column for double spotlight and double score, but risks a random gust that drops it."
+E0849,The Contortionist,DUPLICATE,E0204,designdocs,"DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia",Folds to share a single board slot with another card.
+E0850,The Cooler,DUPLICATE,E0207,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","Replace the remaining draw deck with a perfectly pre-ordered copy, once per run."
+E0851,The Costumier,DUPLICATE,E0209,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,Cards may hold 2 stamps instead of 1.
+E0852,The Courier,DUPLICATE,E0210,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,"A card straddles two columns at once, scoring in both."
+E0853,The Crowd Surf,DUPLICATE,E0212,designdocs,"DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals","Passes a card across the tops of all columns hand-to-hand, gaining +1 per column crossed, but is discarded if any column is empty."
+E0855,The Cutting Contest,DUPLICATE,E0677,designdocs,"DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom",Alternating melds where each must beat the previous score.
+E0857,The Designated Loser,DUPLICATE,E0215,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,"A boss the player always beats, with a hidden 1-in-1000 chance it wins instead."
+E0858,The Diplomatic Show,DUPLICATE,E0502,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Defuse a hostile town with one perfect performance instead of meeting its score requirement.
+E0861,The Discoverie,DUPLICATE,E0217,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,A book card that reveals every Gaff/fake in play; banned in some towns.
+E0863,The Double,DUPLICATE,E0218,designdocs,DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports,Takes destruction meant for its assigned 'star' card.
+E0864,The Drone Swarm,DUPLICATE,E0222,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"Projects any formation bonus the player has previously scored, without needing the original cards."
+E0865,The Dubplate,DUPLICATE,E0223,designdocs,DESIGN_REFERENCES.md §A14 The Caribbean & Central America,A custom exclusive card forged for the player's save file only; clash events let it be 'played' against rival shows.
+E0866,The Duck,DUPLICATE,E0216,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,"Pretends to consume cards (they secretly go to a hidden store, retrievable later) — a fake Gluttony."
+E0868,The Egg Bag,DUPLICATE,E0225,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,A container card that always appears 'empty' when checked but produces a card when it matters.
+E0871,The Encore Exit,DUPLICATE,E0200,designdocs,DESIGN_REFERENCES.md §F1 Theater & Opera,Voluntarily discard this card mid-show; it is called back next turn at +rank.
+E0872,The Endless Fan,DUPLICATE,E0023,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Draw +1 card every turn while spotlit.
+E0873,The Equestrian (Astley),DUPLICATE,E0698,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,Melds scored in the First Ring (first 5x5) get +mult.
+E0878,The Fanchant,DUPLICATE,E0235,designdocs,DESIGN_REFERENCES.md §G The Modern Era,Melds are 'answered' by the crowd via delayed echo scoring once town loyalty is high enough.
+E0880,The Fifteen,DUPLICATE,E0236,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,"Card also melds with any neighboring cards whose ranks sum to 15 (cribbage rule), as a rare pip ability rather than a default rule."
+E0882,The Fire Marshal,DUPLICATE,E0048,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards",Flames-suit cards cannot score; Flames cards in the deck become Wax.
+E0884,The Flash Mob,DUPLICATE,E0055,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"Deploys the entire Entrance to the board in one action, once per show."
+E0885,The Flyting,DUPLICATE,E0677,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe",An insult-duel against a town champion; the winner takes fame from the loser.
+E0887,The Forged Ace,DUPLICATE,E0240,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","A counterfeit card of enormous value; if a town inspects it, the run's economy takes a penalty."
+E0888,The Free Show,DUPLICATE,E0686,designdocs,"DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street","A no-fee performance: heals the whole deck one debuff, gains no gold."
+E0896,The Golden Buzzer,DUPLICATE,E0067,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"Skips one town's requirement entirely, with confetti."
+E0897,The Grand Vanish,DUPLICATE,E0069,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,"Hides an entire column (can't be seen, targeted, or scored) for a turn, then it returns with interest."
+E0898,The Griot,DUPLICATE,E0247,designdocs,DESIGN_REFERENCES.md §A9 Africa,"Preserves score/combo between shows, and re-triggers one effect from the previous show."
+E0900,The Guardian (Moko jumbie),DUPLICATE,E0450,designdocs,DESIGN_REFERENCES.md §A9 Africa,"From its column, reveals boss intentions one turn early."
+E0901,The Guest Star,DUPLICATE,E0249,designdocs,DESIGN_REFERENCES.md §A10 The Americas,"A legendary card joins for exactly N shows then departs, unless a secret condition keeps it permanently."
+E0902,The Half card,DUPLICATE,E0250,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,"A half-rank card that takes up only half a slot, so two halves fit one board slot."
+E0903,The Hat,DUPLICATE,E0253,designdocs,"DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals","After any show, an optional flourish converts leftover combo into gold instead of fame."
+E0904,The Headliner (Ace),DUPLICATE,E0254,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Face-card rename; counts as high or low rank in runs (real solitaire ace rule).
+E0906,The High Dive,DUPLICATE,E0255,designdocs,DESIGN_REFERENCES.md §A10 The Americas,Drop a card from the top of a column to the bottom for points that scale with fall height.
+E0907,The Holdout,DUPLICATE,E0256,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","Store one card outside the game; insert it into any stack at any moment (once); if a town 'searches' the player, it is lost."
+E0909,The Hometown Hero,DUPLICATE,E0196,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,"Names the current town when scored, granting a small bonus in every town universally."
+E0910,The Hook,DUPLICATE,E0257,designdocs,DESIGN_REFERENCES.md §A10 The Americas,A boss/town removes the player's weakest card mid-show unless it scored last submit.
+E0911,The Hunger Artist,DUPLICATE,E0258,designdocs,DESIGN_REFERENCES.md §B3 Strength & Endurance,"Gains +N for every consecutive show it stays in the deck unplayed; scores a huge burst when finally played, then resets."
+E0912,The Illustrated card,DUPLICATE,E0259,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,Can hold unlimited stamps but no other slot content.
+E0913,The Imitator,DUPLICATE,E0260,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,A Gaff copy of another card in the deck that scores more than the original while the original is absent.
+E0915,The Incubator,DUPLICATE,E0262,designdocs,DESIGN_REFERENCES.md §A10 The Americas,Exhibited (covered) cards recover debuffs/ranks while 'on display.'
+E0917,The interlude (Kyōgen),DUPLICATE,E0652,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,A small comic bonus round between boss shows that heals debuffs.
+E0919,The Invisible Wall,DUPLICATE,E0263,designdocs,"DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street","Blocks one column with nothing: no card is there, but nothing can enter or leave for a turn."
+E0920,The Joey (Jack),DUPLICATE,E0261,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Face-card rename to a troupe role; unlocks 'Joey synergy' clown cards.
+E0921,"The Joey (Grimaldi, leader)",DUPLICATE,E0091,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,"Once per turn, free use of Slapstick (swap adjacent ranks)."
+E0923,The Kayfabe rule card,DUPLICATE,E0096,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,"While in play, all Gaffs/Humbugs count as real and score as what they pretend to be; removing it reverts everything."
+E0924,The Kickline,DUPLICATE,E0268,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",A full-row Dancer formation bonus when all 5 columns' top cards share a suit.
+E0925,The Kite,DUPLICATE,E0270,designdocs,DESIGN_REFERENCES.md §A13 Korea & Southeast Asia,Launches a card above the board (out of play); it returns on a chosen later turn with a wind bonus.
+E0929,The Leotard,DUPLICATE,E0274,designdocs,DESIGN_RECOMMENDATIONS.md §6 Acrobat,"Cue: move this card and everything stacked above it to any column, legal or not."
+E0930,The Lion,DUPLICATE,E0276,designdocs,DESIGN_REFERENCES.md §A5 China,"A card is secretly two cards, splitting when destroyed; placing it harvests a bonus from the card beneath it."
+E0931,The Lion's Bride,DUPLICATE,E0277,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,Scores for occupying the same column as a dangerous Animal card without being eaten.
+E0934,The Machine (fortune-teller),DUPLICATE,E0288,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,Pay a gold card to receive a guaranteed true fact about the next 3 nodes.
+E0935,The Major Arcana,DUPLICATE,E0282,designdocs,DESIGN_RECOMMENDATIONS.md §6 Fortune Teller,"22 unique one-shot consumables, e.g. The Tower destroys a column, The Wheel rerolls a row's ranks, The Hanged Man flips a stack's order."
+E0936,The Manager,DUPLICATE,E0213,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,Cues an adjacent card's ability as its own action.
+E0937,The Marathon,DUPLICATE,E0283,designdocs,DESIGN_REFERENCES.md §B3 Strength & Endurance,A multi-show gauntlet where the board does not fully reset between shows.
+E0938,The Marotte,DUPLICATE,E0111,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,"The card carries a mini-copy of itself; if destroyed, the copy survives at rank 1."
+E0942,The Minimal deck,DUPLICATE,E0717,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,"No stamps, no types; pure pips and stacking only."
+E0943,The Mitt Camp,DUPLICATE,E0288,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","Pay for a reading: a true random fact about the run's future, seeded so it's always honest."
+E0944,The modern Committee,DUPLICATE,E0848,designdocs,DESIGN_REFERENCES.md §G The Modern Era,Stake a Gaff against a huge prize; survive scrutiny for a fortune.
+E0945,The Monkey (Sarumawashi),DUPLICATE,E0289,designdocs,DESIGN_REFERENCES.md §A6 Japan,A token climbs one column per turn and cues whatever card it sits on.
+E0950,The Overrun,DUPLICATE,E0686,designdocs,"DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals","The show goes free (zero gold), but grants enormous permanent fame and permanently changes the town."
+E0951,The Ox,DUPLICATE,E0296,designdocs,DESIGN_REFERENCES.md §A11 South America,"Its destruction IS its act: the town celebrates (fame) when it's destroyed, and it revives next show."
+E0953,The Patch,DUPLICATE,E0299,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",Cancels one town penalty/hazard before it applies.
+E0954,The Pickup (dzhigitovka),DUPLICATE,E0224,designdocs,DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus,"During the Next-phase drop animation, snatch one falling card and redirect its column."
+E0957,The Pole (Mallakhamb),DUPLICATE,E0109,designdocs,DESIGN_REFERENCES.md §A7 India & South Asia,"Buffs everything in its column, more so the taller the column grows."
+E0959,The Pose (Voguing),DUPLICATE,E0788,designdocs,"DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom",Holding a scored formation one extra beat grants bonus tips.
+E0960,The Prepared Town,DUPLICATE,E0301,designdocs,DESIGN_REFERENCES.md §G The Modern Era,Pre-inspects everything: all Gaffs and Humbugs are disabled here.
+E0963,The Puszta Five,DUPLICATE,E0304,designdocs,"DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe","For one turn, one card straddles all columns, scoring in every column's meld."
+E0964,The Pyramid (Moroccan tumblers),DUPLICATE,E0305,designdocs,"DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia",A formation meld: 3 cards atop 2 atop 1 across adjacent columns.
+E0967,The Raree Box,DUPLICATE,E0307,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,Peek at the next N cards of the deck for the cost of a gold card.
+E0968,The Rat Sheet,DUPLICATE,E0308,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business","Raises a Rival Show's difficulty for everyone, but steals part of its fame if both parties pass."
+E0969,The Regurgitator,DUPLICATE,E0310,designdocs,DESIGN_REFERENCES.md §B3 Strength & Endurance,Swallows up to N cards and can produce them later in any chosen order.
+E0971,The Rider,DUPLICATE,E0313,designdocs,"DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals",Long rule text hides one small instruction; obeying it doubles the card.
+E0973,The Ringmistress (Queen),DUPLICATE,E0261,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Face-card rename to a troupe role.
+E0974,The Rival Show (recurring boss),DUPLICATE,E0317,designdocs,"DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards","Goal score is pre-raised, but beating it steals one of the rival's cards."
+E0975,The Rodeo Clown,DUPLICATE,E0318,designdocs,DESIGN_REFERENCES.md §A10 The Americas,"When a boss attacks a card, this card redirects the hit to itself."
+E0978,The Séance Buster,DUPLICATE,E0320,designdocs,DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman,Reveals all Gaff/Humbug/fake cards on the board; +points per fake revealed.
+E0984,The Sharpshooter (Oakley),DUPLICATE,E0324,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,Exact-rank effect: choose a rank each show; that rank scores double.
+E0985,The show must go on (Pagliacci),DUPLICATE,E0124,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,+mult while this card carries a debuff.
+E0986,The Showbag,DUPLICATE,E0325,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,A cheap grab-bag pack of random commons with one guaranteed sweet item.
+E0990,The Sitter,DUPLICATE,E0052,designdocs,DESIGN_REFERENCES.md §B3 Strength & Endurance,Rewards a card for remaining atop the same column across multiple shows.
+E0993,The Soundcheck,DUPLICATE,E0155,designdocs,"DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals","One free non-scoring rehearsal turn at show start: see the board, move once, no submit."
+E0996,The Spirit Cabinet,DUPLICATE,E0329,designdocs,"DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal",Cover this card fully and its column's effects trigger as if spotlit ('by spirits').
+E0997,The Statue,DUPLICATE,E0052,designdocs,"DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street",+points each turn it does not move; any movement resets the bonus.
+E0998,The Steelpan,DUPLICATE,E0332,designdocs,DESIGN_REFERENCES.md §A14 The Caribbean & Central America,Converts a junk/prop card into a scoring instrument card.
+E0999,The stick game (Tahtib),DUPLICATE,E0889,designdocs,DESIGN_REFERENCES.md §A16 Africa & the Arctic,A light sparring duel node.
+E1000,The Stilt-walker,DUPLICATE,E0333,designdocs,DESIGN_REFERENCES.md §A9 Africa,Remains spotlit even when one card covers it.
+E1002,The Streak,DUPLICATE,E0693,designdocs,DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment,"Per-card win streaks are tracked on the card itself; fame scales with streak, and a broken streak fires a mourning event."
+E1004,The Sweet Tooth (Morrison),DUPLICATE,E0336,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,All +rank buffs are permanent instead of lasting only one show.
+E1006,The System,DUPLICATE,E0337,designdocs,DESIGN_REFERENCES.md §G The Modern Era,A card that 'predicted' whatever just happened (retroactive prophecy bonus); inspecting it reveals the trick and halves the bonus.
+E1008,The Tarot Reading,DUPLICATE,E0341,designdocs,DESIGN_RECOMMENDATIONS.md §6 Fortune Teller,Cue: look at the top 5 cards of the deck and reorder them.
+E1010,The Three Rings,DUPLICATE,E0342,designdocs,DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries,Score three separate 5-card rings (rows) in one submit to permanently unlock a third zone rule card.
+E1012,The Tiger Queen (Stark),DUPLICATE,E0343,designdocs,DESIGN_RECOMMENDATIONS.md §7 Leaders,Consumption effects have no cap.
+E1014,The Traceur,DUPLICATE,E0346,designdocs,DESIGN_REFERENCES.md §G The Modern Era,"Moves across the tops of columns, never entering stacks."
+E1016,The Triple,DUPLICATE,E0347,designdocs,DESIGN_RECOMMENDATIONS.md §6 Acrobat,"If this card ends a run of exactly 3 cards assembled this turn, score it 3x."
+E1017,The Turk,DUPLICATE,E0348,designdocs,DESIGN_REFERENCES.md §C3 Automata & Illusion Technology,"An Automaton card secretly powered by the card hidden beneath it; its power equals the hidden card's rank, and removing that card stops it."
+E1019,The Uncredited Artist,DUPLICATE,E0874,designdocs,"DESIGN_REFERENCES.md §D Cards, Gambling & Fortune","A hidden signature on the card art that, once found, adds the artist as a playable card."
+E1020,The Unicorn,DUPLICATE,E0349,designdocs,"DESIGN_REFERENCES.md §E The Fairground, Midway & Business",An Animal Gaff that scores as legendary until any player effect inspects it.
+E1022,The Vine,DUPLICATE,E0090,designdocs,DESIGN_REFERENCES.md §A12 Australia & Oceania,"The first time this card would be destroyed by a fall/discard, it stops short and survives (once per tour)."
+E1023,The Wedding,DUPLICATE,E0357,designdocs,DESIGN_REFERENCES.md §A3 Golden Age Western Circus,Permanently pair two cards so they always draw together.
+E1026,The Wing Walker,DUPLICATE,E0224,designdocs,DESIGN_REFERENCES.md §A10 The Americas,Transfers a card between two moving columns during the Next-phase drop.
+E1029,Ticket Stub,DUPLICATE,E0362,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),Consumed as currency at shops for a discount; worthless if brought into the Ring.
+E1031,Tour pre-planning,DUPLICATE,E0977,designdocs,"DESIGN_DOC.md §15 Map v4 (FTL, latest)","Players open by planning their tour (choosing which cities to visit); beginners plan small tours, veterans plan longer routes."
+E1036,Triangle map holes/packs,DUPLICATE,E1035,designdocs,DESIGN_DOC.md §15 Map v2 (Triangle),The triangle can have holes; nodes should contain card packs rather than just single cards.
+E1040,Two-faction city (Parintins),DUPLICATE,E0596,designdocs,DESIGN_REFERENCES.md §A11 South America,"Picking a faction on arrival changes the goal, the shop, and who heckles the player."
+E1042,TypeInput,DUPLICATE,E0089,designdocs,DESIGN_DOC.md §8 Rule Deck (implemented),"On turn start, passes its held child cards to the paired lower column, then takes a random card from the deck."
+E1044,Undo at outcome screen,DUPLICATE,E0539,designdocs,DESIGN_DOC.md §2 Core Game Loop refinements,Pressing Undo at the win/lose screen dismisses the outcome and rewinds the final Submit.
+E1045,Uniqueness multiplier,DUPLICATE,E0036,designdocs,DESIGN_DOC.md §5 Scoring v3 (combo),A separate early idea: a multiplier that grows with every unique effect triggered during a submit.
+E1047,Universal placement ability,DUPLICATE,E1095,designdocs,DESIGN_DOC.md §4 Stacking & Movement Rules,"A card ability lets any card be placed on top of it, overriding default stacking legality."
+E1048,Unpierceable,DUPLICATE,E0369,designdocs,"DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia",Knife-suit projectiles pass through this card harmlessly (still counts as a 'miss' for stuntman bonuses).
+E1049,Verse duel (repentistas),DUPLICATE,E0677,designdocs,DESIGN_REFERENCES.md §A11 South America,Alternate 'stanzas' (mini-submits) with a town champion; the first to fail a beat loses.
+E1051,Visible-to-trigger + hidden-trigger stamp,DUPLICATE,E0141,designdocs,DESIGN_DOC.md §7 Spotlight System,Abilities must be visible to trigger by default; a stamp lets a card trigger even while hidden/covered; deck triggers surface visually on the deck slot as they fire.
+E1052,Voladores calendar meld,DUPLICATE,E0352,designdocs,DESIGN_REFERENCES.md §A10 The Americas,A hidden ritual meld: 4 cards descending 13 ranks each (4x13=52) grants an end-of-run celestial bonus.
+E1054,Walking Through the Wall,DUPLICATE,E0371,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,Move a card through an occupied slot to the other side.
+E1055,Wall of Death,DUPLICATE,E0354,designdocs,DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman,"Adjacent columns score +mult, but cards there take 1 Exhaust debuff per show."
+E1056,Water Torture Cell escape chain,DUPLICATE,E0356,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,"A card locked under 3 conditions unlocks one per turn, paying out on the full escape."
+E1057,Wax,DUPLICATE,E0373,designdocs,DESIGN_RECOMMENDATIONS.md §4 Types (materials),Rank slowly decreases each show it shares a column with a Flame-suit card.
+E1058,Wax and Gold,DUPLICATE,E0374,designdocs,DESIGN_REFERENCES.md §A16 Africa & the Arctic,A card carries two rule texts: the visible 'wax' effect and a hidden 'gold' effect discovered by fulfilling the wax one.
+E1060,White Elephant,DUPLICATE,E0376,designdocs,DESIGN_RECOMMENDATIONS.md §6 Producer/Manager,"Scores huge points, but each show it remains in the deck it eats 1 Gold card."
+E1061,Whiteface/Auguste pairing,DUPLICATE,E0377,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,"A Whiteface card issues a cue that an adjacent Auguste card executes 'wrongly,' with a better result."
+E1064,Wildcard Pip (summary),DUPLICATE,E0348,designdocs,DESIGN_DOC.md §14.5 Summary-only cards,Adopts the rank/suit of the card below it.
+E1065,Winter Quarters,DUPLICATE,E0438,designdocs,DESIGN_RECOMMENDATIONS.md §8 Map-layer systems,Named meta-hub where prestige currency is spent between runs to prepare the next season.
+E1066,X-Ray Eyes,DUPLICATE,E0378,designdocs,"DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal","While this card is covered (blinded), the player can see all facedown/hidden cards."
+E1069,Zone Adder (lower),DUPLICATE,E0142,designdocs,DESIGN_DOC.md §14.4 Rule cards,Adds 1 Ring column per copy in the rule deck.
+E1070,"+1 reroll, no-repeat rerolls",DUPLICATE,E0106,braindump,gam draft.txt:515,"Add +1 reroll per game; for the rest of the game, repeated reroll actions do not give the same results."
+E1085,Accordion pile-matching rule,DUPLICATE,E1084,braindump,gam draft.txt:1195,"Accordion Solitaire: draw a card, create a new pile if it doesn't match the newest pile's top card by suit or rank; can only stack on the newest pile."
+E1086,Acrobatic tap-or-carryover charge,DUPLICATE,E0366,braindump,gam draft.txt:606,"Acrobatic card has 1 charge triggerable by tap; if unused, the charge carries to the next round."
+E1088,Action-triggered negative events,DUPLICATE,E0598,braindump,gam draft.txt:653,"Events triggered by player actions, e.g. sacrificing too many talent cards causes a union strike, or having too many cards triggers a tax-evasion penalty losing basic cards."
+E1091,Air material (top of deck),DUPLICATE,E0002,braindump,random potential effects.csv:4,Air material type stays on top of the deck.
+E1097,Anything-stacks-here card,DUPLICATE,E1095,braindump,random potential effects.csv:5,Any card can be placed on top of this card.
+E1099,Ascension debuff cards,DUPLICATE,E0393,braindump,gam draft.txt:371,"Ascensions: each ascension level adds a chosen negative-effect card to the deck or rules deck, including permanent versions of boss environmental hazards."
+E1101,Audience patience meter,DUPLICATE,E0004,braindump,gam draft.txt:736,"Audience patience system: moving cards drops patience, triggering unique effects delays the drop, and cards auto-drop when patience hits 0."
+E1104,Balloon type,DUPLICATE,E0002,braindump,curated effects pre grid.csv:98,Opposite of a heavy card: always rises to the top of the stack.
+E1112,Best Bower,DUPLICATE,E0179,braindump,curated effects pre grid.csv:37,"Wild suit that counts as every suit for melds/flushes and can stack anywhere; if untalented, randomly selects a prop from the entire game to trigger."
+E1113,Bid-before-play mechanic proposal,DUPLICATE,E0183,braindump,gam draft.txt:1369,Proposed bid mechanic for this game: bet before play to gain extra points for hitting an exact number of melds.
+E1114,Biome-based world/act map,DUPLICATE,E0405,braindump,gam draft.txt:641,Game runs on a level/act/world system (One Step From Eden style) traveling through biomes that each affect map generation differently.
+E1117,Blank rank,DUPLICATE,E0181,braindump,curated effects pre grid.csv:58,Rank effectively 0; always passes stacking rank comparisons but cannot participate in rank-based melds or effects.
+E1121,Boss debuffs as ruleset cards,DUPLICATE,E0410,braindump,gam draft.txt:301,"Negative boss-battle effects are temporary cards added to the ruleset deck, defined to self-destruct after the game/act."
+E1123,Boss phase every few rows,DUPLICATE,E1034,braindump,gam draft.txt:148,"Every few rows of the triangle map is a boss phase, visually designed to look like terrain."
+E1125,Bribery/memory-wipe extra life,DUPLICATE,E0137,braindump,gam draft.txt:695,"Bribery/Memory Wipe card: grants an extra life if a city/show is failed, letting the player keep going as if they had won."
+E1128,Buttons and shops as cards,DUPLICATE,E0421,braindump,gam draft.txt:276,All buttons should themselves be cards; e.g. a shop reroll is itself a tappable card on the board.
+E1129,Calculation Solitaire base piles,DUPLICATE,E1130,braindump,gam draft.txt:1200,"Calculation Solitaire: suits don't matter; start with ace/2/3/4 foundation piles, one waste pile each."
+E1131,Calculation Solitaire waste-pile rule,DUPLICATE,E1130,braindump,gam draft.txt:1202,"Calculation Solitaire: cards that don't fit go on a waste pile; only the waste pile's top card can move to a foundation, and only if legal."
+E1134,Canfield foundation build rule,DUPLICATE,E1136,braindump,gam draft.txt:1211,"Canfield Solitaire: foundations build with same suit, ascending rank only."
+E1137,Card debuff statuses,DUPLICATE,E0487,braindump,gam draft.txt:563,"Debuff status effects on cards: e.g. Exhausted (loses rank at round end if it was on board), plus proposed Cancer and Parasites statuses."
+E1138,Card groups boosted by leaders,DUPLICATE,E0315,braindump,gam draft.txt:457,"Cards belong to groups, and leader cards can boost the members of their group."
+E1139,Card unlocks: action-based and score-based,DUPLICATE,E0433,braindump,gam draft.txt:368,"Dual unlock system: some cards unlock from specific in-game actions, others from reaching score/win thresholds; common cards from generic progress, rare cards from genre-specific play."
+E1140,Cards as currency,DUPLICATE,E0434,braindump,gam draft.txt:65,"Instead of currency, cards themselves are the currency and are traded."
+E1144,Carnival meta shop,DUPLICATE,E0438,braindump,gam draft.txt:478,The overall meta shop is themed as a carnival.
+E1149,Cheat Day card,DUPLICATE,E0020,braindump,gam draft.txt:565,Cheat Day: cards remaining in the deck get a rank increase.
+E1150,Check scoring in deck/discard,DUPLICATE,E0749,braindump,gam draft.txt:233,"Scoring should also check cards sitting in the deck and discard pile, not just the board."
+E1153,Circular map / return-to-start,DUPLICATE,E0645,braindump,gam draft.txt:660,"Alt map shape ideas: circle the map instead of a final city, or require returning to the start after reaching a big enough city."
+E1159,Column card,DUPLICATE,E0328,braindump,random potential effects.csv:8,Column-type card gives points to its column on score.
+E1164,Common-doubles-rare chain,DUPLICATE,E0026,braindump,gam draft.txt:568,Common card: doubles the chance of rares appearing.
+E1168,"Constellation tour map, no backtrack",DUPLICATE,E0567,braindump,gam draft.txt:645,"FTL-style constellation map: cannot backtrack, touring cities to build fame, with environmental hazards and surprise weather."
+E1172,Cribbage phase-1 scoring events,DUPLICATE,E0475,braindump,gam draft.txt:1394,"Cribbage phase 1 scores for: total of exactly 15, pairing the opponent's last card, first card being a jack, or a sequence of 3+ consecutive cards (order-independent)."
+E1174,Cribbage phase-2 hand scoring,DUPLICATE,E0475,braindump,gam draft.txt:1397,"Cribbage phase 2: score the played hand for 15-combinations, pairs, runs, 4/5-card flushes, and a jack."
+E1176,Cross-game score carryover,DUPLICATE,E0784,braindump,gam draft.txt:583,Scoring done outside the main game (side content) carries over into the next game.
+E1184,Deck unlocks combined with gimmick runs,DUPLICATE,E0433,braindump,gam draft.txt:370,Deck unlocks (Balatro-style) combined with gimmick-run variants instead of a separate tab.
+E1185,Deck variants change rules,DUPLICATE,E0489,braindump,gam draft.txt:22,Different decks influence the starting deck and rules; decks can be combined and picked up during a run.
+E1191,Digital card cannot be discarded,DUPLICATE,E0033,braindump,gam draft.txt:733,Digital card type: cannot be discarded from the board.
+E1192,Disaster card packs,DUPLICATE,E0499,braindump,gam draft.txt:635,Disaster-themed card packs appear as choices on the board.
+E1196,Double trigger seal,DUPLICATE,E0034,braindump,gam draft.txt:72,Seal: this card's effect triggers twice.
+E1199,Earth material (bottom of deck),DUPLICATE,E0037,braindump,random potential effects.csv:3,Earth material type stays on the bottom of the deck.
+E1205,Electricity,DUPLICATE,E0040,braindump,curated effects pre grid.csv:26,"On score (if untalented), scores points based on this card's rank plus the ranks of all orthogonally/diagonally connected electric-suit cards; stacking requires different suit and adjacent rank."
+E1206,Elemental materials,DUPLICATE,E0037,braindump,gam draft.txt:81,"Elemental card materials: Earth, Air, Water, Fire."
+E1207,Elemental movement types,DUPLICATE,E0037,braindump,gam draft.txt:102,"Elemental card types have custom movement, such as always staying on top or bottom of a stack."
+E1209,Encounters as mini solitaire games,DUPLICATE,E0810,braindump,gam draft.txt:620,Map encounters could be mini solitaire games in their own right.
+E1218,Exchange Voucher card,DUPLICATE,E0058,braindump,gam draft.txt:275,Exchange Voucher: a special deck card usable to swap itself with any card currently on screen.
+E1219,Eye of God card,DUPLICATE,E0045,braindump,gam draft.txt:375,Eye of God: allows seeing all decks and true (unobscured) card descriptions.
+E1220,Eye stamp shows mini skill art,DUPLICATE,E0141,braindump,gam draft.txt:342,"Eye stamp allows a card to stay active despite being covered, showing a miniature version of the skill art inside the stamp."
+E1221,Face cards worth 10,DUPLICATE,E0475,braindump,gam draft.txt:25,Face cards all count as 10 when adding to a hand total.
+E1222,Fame gate every 10 levels,DUPLICATE,E0405,braindump,gam draft.txt:642,"Every 10 levels, the player must have a certain fame level to progress to the next stage."
+E1223,Fame improves card rarity odds,DUPLICATE,E0540,braindump,gam draft.txt:658,Odds of better-rarity cards increase with total fame.
+E1226,Fifteen (cribbage) talent,DUPLICATE,E0236,braindump,curated effects pre grid.csv:114,Spotlight ability checks the scoring hand (row or column) for cards summing to 15 for bonus points; alt version melds this card with adjacent neighbors whose ranks sum to 15 with it.
+E1227,Fights only on boss phases,DUPLICATE,E1034,braindump,gam draft.txt:149,Fights may be restricted to only happen on boss phases of the map.
+E1228,Final act score multiplier,DUPLICATE,E0692,braindump,gam draft.txt:560,"The final act gets an extra points multiplier, or each act gets an increasing multiplier."
+E1229,Final-act type,DUPLICATE,E0047,braindump,gam draft.txt:466,Final-act card type shows up alone after all other cards are drawn.
+E1230,Fire material (moves up),DUPLICATE,E0002,braindump,random potential effects.csv:6,Fire material type moves upward one position per turn.
+E1232,Firework suit column score,DUPLICATE,E0049,braindump,gam draft.txt:484,Firework suit directly adds points to its column based on its rank.
+E1233,Fireworks,DUPLICATE,E0049,braindump,curated effects pre grid.csv:14,"On score, the rocket rises its column and banks the column score directly based on rank; alt version has each firework trigger add +1 firework to the next trigger; stacking requires different suit and adjacent rank."
+E1234,First-act type,DUPLICATE,E0050,braindump,gam draft.txt:464,First-act card type shows up alone before any other cards.
+E1238,Fog of war on map,DUPLICATE,E0557,braindump,todo.md:274,Planned but unimplemented: fog of war limiting map visibility.
+E1239,Fog of war on tour map,DUPLICATE,E0557,braindump,gam draft.txt:643,Tour theme with fog of war reducing visibility of further map choices.
+E1240,Foot of God card,DUPLICATE,E0058,braindump,gam draft.txt:377,Foot of God: can switch locations with any card on screen.
+E1241,Forbidden click-to-stack solitaire event,DUPLICATE,E0561,braindump,gam draft.txt:680,"A forbidden solitaire variant where you just click cards to stack them into your hand, possibly used for events."
+E1243,Frankenstein card,DUPLICATE,E0059,braindump,gam draft.txt:67,"On submission, this card combines with the bottom and top cards into a 3-card merged stack that remains in the submission zone after scoring."
+E1246,FTL-style map with special cards,DUPLICATE,E0567,braindump,gam draft.txt:47,"Map is FTL-like; each location is marked by a single special card the player collects, which has special effects."
+E1249,Future Sight card,DUPLICATE,E0108,braindump,random potential effects.csv:5,See the next 5 cards in the deck.
+E1250,Genie wish card,DUPLICATE,E0061,braindump,gam draft.txt:589,Genie: make a wish by choosing a card to create a copy of in hand.
+E1256,Gold as money material,DUPLICATE,E0065,braindump,random potential effects.csv:7,Gold cards act as money/currency.
+E1257,Gold heavy to bottom,DUPLICATE,E0066,braindump,gam draft.txt:66,Gold cards are heavy and always sink to the bottom of the deck.
+E1263,Guarantee early entrance cards,DUPLICATE,E0050,braindump,gam draft.txt:180,"Some way to guarantee that newly chosen cards show up first, or sooner, in the entrance."
+E1264,Guaranteed card in pack preview,DUPLICATE,E0796,braindump,gam draft.txt:717,Card packs show at least 1 guaranteed card from the pack in the map preview.
+E1265,Hand of God card,DUPLICATE,E0075,braindump,gam draft.txt:376,Hand of God: allows moving cards to any location on the board and reordering cards within a deck.
+E1268,Hearts-style negative-suit boss mechanic,DUPLICATE,E0048,braindump,gam draft.txt:1381,Boss mechanic where certain suits cause a meld to score 0 or negative if scored.
+E1269,Heavy material,DUPLICATE,E0077,braindump,gam draft.txt:79,Heavy card type sinks to the bottom of the deck.
+E1274,Hidden trigger stamp,DUPLICATE,E0141,braindump,gam draft.txt:217,"Hidden trigger: ability activates even when the card is hidden (covered), unlike default active abilities that need visibility."
+E1276,Hippo card,DUPLICATE,E0087,braindump,random potential effects.csv:3,"When a single card is placed on top of this card, consume it and gain its rank in value (rank wraps around)."
+E1279,Hype mechanic doubles fame requirement,DUPLICATE,E0088,braindump,gam draft.txt:710,Hype mechanic: choose to double the fame required to defeat the next show in exchange for better goodie odds.
+E1280,Hype-wagering system,DUPLICATE,E0088,braindump,todo.md:274,Planned but unimplemented: a hype/wagering system.
+E1282,In-run temporary prestige events,DUPLICATE,E0527,braindump,gam draft.txt:650,Events can grant temporary prestige points to allocate mid-run instead of only pre-game.
+E1283,Injury clears if unused,DUPLICATE,E1284,braindump,gam draft.txt:1175,An injury stack is lost if the card goes through an act without performing.
+E1286,Iron type,DUPLICATE,E1258,braindump,curated effects pre grid.csv:86,"Sinks to the bottom of any stack, respecting physical weight order."
+E1288,King chess card,DUPLICATE,E0269,braindump,gam draft.txt:727,"King: moves like a chess king, never captures (only swaps with adjacent cards), auto-moves out of check from another chess card on any action, and is worth a ton of points if captured by a chess card."
+E1291,Klondike stacking rule,DUPLICATE,E1136,braindump,gam draft.txt:1216,"Klondike Solitaire: tableau stacks opposite color, one rank lower."
+E1292,Kuroko hat,DUPLICATE,E0100,braindump,curated effects pre grid.csv:108,This card is unseen: does not block Spotlight beneath it and cannot be targeted by effects.
+E1295,La Belle Lucie stacking rule,DUPLICATE,E1136,braindump,gam draft.txt:1223,"La Belle Lucie: only top cards of each pile are playable, moved to foundation or stacked one rank lower, same suit."
+E1296,Label/Evident rule-visibility card,DUPLICATE,E0101,braindump,gam draft.txt:304,A 'Label/Evident' type card announces its ruleset-deck effect as an active effect on the board even when the universal/rules deck itself is not visible.
+E1297,Lane loss on lateral movement,DUPLICATE,E1035,braindump,gam draft.txt:147,Moving to the left lane permanently loses access to both right lanes; moving to the middle lane loses both left and right lanes.
+E1298,Leader/champion cards,DUPLICATE,E0315,braindump,gam draft.txt:440,Leader/champion cards start the game already on the board (or entrance) and do not leave on submit.
+E1299,Leader flavor debuffs,DUPLICATE,E0630,braindump,gam draft.txt:442,"Optional leader debuffs, e.g. fear of fire/knives preventing placement on fire/knife cards."
+E1301,"Legal stack ascending/descending, no same suit",DUPLICATE,E0122,braindump,gam draft.txt:111,Legal stacks are ascending or descending rank order and cannot stack same suit.
+E1302,"Legal stacks only, harder over time",DUPLICATE,E0121,braindump,gam draft.txt:93,"Only legal stacks can be picked up, and moving stacks becomes more difficult with time."
+E1303,Light material,DUPLICATE,E0078,braindump,gam draft.txt:80,Light card type rises to the top of the deck.
+E1310,Mana cards instead of mana bar,DUPLICATE,E0643,braindump,gam draft.txt:552,"Instead of a mana bar, use mana cards similar to MTG; any card can serve as a resource."
+E1311,Map card seeds next entrance,DUPLICATE,E0050,braindump,gam draft.txt:64,Clicking a card on the map makes it the first card to appear in the drop-down/entrance area of the subsequent match.
+E1315,Map special squares,DUPLICATE,E0771,braindump,gam draft.txt:50,Some map squares are special locations like shops; e.g. all 7s could be shops.
+E1318,Maximum Effort/Exhaust stamp,DUPLICATE,E0112,braindump,gam draft.txt:663,"Maximum Effort/Exhaust: doubles points (or gives flat points) from this card on score, but only refreshes if the card is not played/scored again on the next show."
+E1319,Merci: shift an obstructing card,DUPLICATE,E1293,braindump,gam draft.txt:1192,"Merci (solitaire cheat): allowed once, to move an obstructing card out of the way."
+E1321,Metagame editing ruleset deck,DUPLICATE,E0704,braindump,gam draft.txt:300,Metagame where the player tries to modify the default ruleset deck during a run by adding or removing rule cards.
+E1322,Metashop odds vs required score,DUPLICATE,E0438,braindump,gam draft.txt:501,Spending points in the meta-shop to manipulate overall card odds also increases the score required per show.
+E1324,Minesweeper map reveal,DUPLICATE,E0655,braindump,gam draft.txt:49,"Deck starts fully visible but face-down like Minesweeper; can only click a card adjacent to a face-down card, battling for it and revealing adjacent cards; win by uncovering all cards."
+E1325,Mini-game events with puzzle win-con,DUPLICATE,E0656,braindump,gam draft.txt:654,"Some events are mini-games where score is not the goal but an alternate puzzle win condition, e.g. trigger an effect 5 times to win."
+E1330,Move-resistant cards,DUPLICATE,E0159,braindump,gam draft.txt:623,Some cards can resist being moved.
+E1331,Mulligan entrance cards,DUPLICATE,E0290,braindump,gam draft.txt:17,Mulligan incoming cards by clicking them and pressing a discard button.
+E1332,Mulligan entrance via tap,DUPLICATE,E0290,braindump,gam draft.txt:612,Card effect that allows mulliganing entrance cards when tapped.
+E1333,Mulligan-style card packs,DUPLICATE,E0796,braindump,gam draft.txt:609,"Card packs where, instead of choosing cards directly, the player mulligans (rerolls) the pack's results arena-style, with an increasable mulligan count."
+E1335,Mystery Box card,DUPLICATE,E0119,braindump,gam draft.txt:555,"Mystery Box: at game start, this card becomes a random skill."
+E1346,Null cards,DUPLICATE,E0120,braindump,gam draft.txt:186,Null cards take up space on the board and are highlighted on hover to show over the null space.
+E1347,Oh Hell bid-exact-tricks rule,DUPLICATE,E0183,braindump,gam draft.txt:1366,"Oh Hell!: players bid exactly how many tricks they intend to win after seeing their hand, capped at the hand size."
+E1348,Oh Hell scoring rule,DUPLICATE,E0183,braindump,gam draft.txt:1368,"Oh Hell!: 1 point per trick won, plus 10 bonus points for hitting your exact bid."
+E1350,Other chess-piece cards,DUPLICATE,E0272,braindump,gam draft.txt:726,"Other chess-piece cards can stack anywhere permitted by that piece's chess movement, discarding and taking the place of the card they land on."
+E1354,Patience meter mechanic,DUPLICATE,E0004,braindump,todo.md:222,"Patience system: idle/non-scoring moves drain a patience meter (patience_max, ships at 3); reaching 0 auto-drops cards; rule cards can raise patience_max via a grant path."
+E1355,Pawn chess card,DUPLICATE,E0300,braindump,gam draft.txt:725,"Pawn: if stacked on the card above it, swaps places (moves up), or two above if bottommost; if stacked diagonally upward, replaces (captures) that card, discarding it."
+E1356,Per-act injury chance,DUPLICATE,E1284,braindump,gam draft.txt:1174,Each act/trigger has a chance of creating an injury stack; injury stacks increase the chance of permanent retirement/death.
+E1358,Performance ring score multiplier,DUPLICATE,E0698,braindump,gam draft.txt:434,"Each 'ring' of 5 rows increases the score multiplier for cards scored within it (1st ring 1x, 2nd ring 2x, 3rd ring 3x, etc.)."
+E1360,Permanently-active toggle,DUPLICATE,E0700,braindump,gam draft.txt:516,"Once activated, an effect stays active for the rest of the game and can no longer be toggled off."
+E1363,Pinochle meld types,DUPLICATE,E1090,braindump,gam draft.txt:1383,"Pinochle: melds include runs (A-K-Q-J-10), marriages (King-Queen), the pinochle meld (J diamond + Q heart), and sets (4 Qs)."
+E1366,Player plans tour route length,DUPLICATE,E0977,braindump,gam draft.txt:646,"Players plan their tour route ahead of time, starting with small tours and unlocking longer routes through more cities as they finish tours."
+E1367,Points increase by layer,DUPLICATE,E0698,braindump,gam draft.txt:231,Points scored increase based on the layer/height a card is stacked at.
+E1369,Poker Patience adjacency placement,DUPLICATE,E1120,braindump,gam draft.txt:1230,"Poker Patience variant: each new card placed must be adjacent or diagonal to a previously placed card, so the first card can end up anywhere in the final square."
+E1372,Poker Patience PvP mode,DUPLICATE,E1126,braindump,gam draft.txt:1234,Poker Patience PvP: one player calls out the next card and both players build their own square with the same cards in the same order.
+E1382,Prestige system reshapes map odds,DUPLICATE,E0438,braindump,gam draft.txt:369,"Prestige currency from wins can be spent to manipulate the odds of cards/events spawning on the map, or to unlock true-vision (seeing the rule deck and true card descriptions)."
+E1397,Rearrange entrance cards,DUPLICATE,E0102,braindump,gam draft.txt:18,Player can rearrange incoming/entrance cards before placing them.
+E1398,Repeatable entrance discard gambling,DUPLICATE,E0290,braindump,gam draft.txt:672,"Repeatedly discard entrance cards until satisfied, then commit them to drop; starts with 1 discard per turn (possibly a joker effect), allowing gambling for a better entrance hand."
+E1399,Retirement requires ability activation,DUPLICATE,E0435,braindump,gam draft.txt:602,"Cards cannot retire (leave play) until scored or until an ability is activated on them; with no ability, there is no retirement condition."
+E1405,Ringmaster leader card,DUPLICATE,E0315,braindump,gam draft.txt:441,Ringmaster: no suit/rank; type makes it start in the entrance like other leaders; stamp lets it always be picked up and placed anywhere with nothing on top; skill keeps it on the board after submission.
+E1416,Rule cards always globally spotlit,DUPLICATE,E0740,braindump,gam draft.txt:576,"Rule cards are a special card type whose top skill is always globally in the spotlight (active), making them not special from normal deck mechanics otherwise."
+E1418,Rules deck defines next/submit behavior,DUPLICATE,E0421,braindump,gam draft.txt:586,"Game rules (via the rules deck) determine what the Next and Submit buttons do; different rules decks per scenario, permanently changeable during a run."
+E1419,Rules-in-main-deck variant,DUPLICATE,E0742,braindump,gam draft.txt:345,A deck variant where the rule deck is empty and all rules are embedded as cards in the main deck.
+E1425,Score for 15,DUPLICATE,E0475,braindump,gam draft.txt:30,Score 2 points for every combination that sums to 15.
+E1426,Score for pair,DUPLICATE,E0475,braindump,gam draft.txt:32,Score 2 points for a pair.
+E1427,Score for quad,DUPLICATE,E0475,braindump,gam draft.txt:34,Score 12 points for a quad.
+E1428,Score for run,DUPLICATE,E0475,braindump,gam draft.txt:35,Score 3-7 points for a run of 3 to 7 cards.
+E1429,Score for triple,DUPLICATE,E0475,braindump,gam draft.txt:33,Score 6 points for a triple.
+E1432,Second-act type,DUPLICATE,E0149,braindump,gam draft.txt:465,Second-act card type shows up alone after half the deck is drawn.
+E1433,Secret melds via add-to-deck effects,DUPLICATE,E0757,braindump,gam draft.txt:632,"Secret melds to discover, implemented as cards with hidden on-add-to-deck effects that add new scoring rules."
+E1435,Self-upgrading effect,DUPLICATE,E0718,braindump,gam draft.txt:242,An effect that upgrades itself into a better version of itself if the player meets certain conditions.
+E1438,Shared charge system,DUPLICATE,E0760,braindump,gam draft.txt:605,"All charge-based effects share the same charge system, so anything with charges can gain more or less charge from different sources."
+E1439,Shop buy/sell in cards,DUPLICATE,E0432,braindump,gam draft.txt:360,Shop sells cards priced in a stack of cards taken from the player's deck (equivalent value); card packs on the map add cards while the shop removes them; shop can sell packs too; reroll cost increases each use.
+E1441,Show-must-go-on weather hazards,DUPLICATE,E0669,braindump,gam draft.txt:644,Negative weather effects are thematized as 'the show must go on'.
+E1442,Sin of Gluttony card,DUPLICATE,E0151,braindump,gam draft.txt:285,"Sin of Gluttony: a Hippo-type card with no value cap that can be fed from anywhere, including decks, permanently consuming cards without returning them."
+E1444,Sliced Bread card,DUPLICATE,E0153,braindump,gam draft.txt:68,"On submission, if there is a same-suit card later down the stack, gain a point for each card in between."
+E1456,Status effect array on cards,DUPLICATE,E0487,braindump,gam draft.txt:406,Cards carry a status array (dictionary of status-effect name to value) processed by a rule card each turn.
+E1457,Storyteller point carryover,DUPLICATE,E0784,braindump,gam draft.txt:596,Storyteller: preserves some points for the next game.
+E1461,Suit-nerfing towns,DUPLICATE,E0048,braindump,gam draft.txt:511,"Certain towns don't score certain suits at all, e.g. 'knifetown' gives no points for knife scoring, similarly firetown/juggletown/hooptown."
+E1463,Survivor deck,DUPLICATE,E0791,braindump,gam draft.txt:39,"Survivor deck: each suit represents a resource such as food, water, or a weapon."
+E1465,Tap-to-force-trigger card,DUPLICATE,E0213,braindump,gam draft.txt:328,"A card that can force a linked on-trigger card to fire whenever it is tapped, likely via stacking."
+E1471,Tour planning system,DUPLICATE,E0977,braindump,todo.md:274,Planned but unimplemented: a tour-planning system for choosing a route.
+E1472,Town-specific hazards,DUPLICATE,E0669,braindump,gam draft.txt:510,Different towns present different hazards; e.g. performing at a volcano might cause lava hazards.
+E1474,Triangle map holes hold card packs,DUPLICATE,E1035,braindump,gam draft.txt:350,The triangle map can have holes that contain card packs instead of individual cards.
+E1475,Triangle map tier choice,DUPLICATE,E1035,braindump,gam draft.txt:146,"Choose from the next 3 card options, moving the player up a tier of a triangle-shaped map and playing a match, repeating."
+E1477,Trigger in deck seal,DUPLICATE,E0064,braindump,gam draft.txt:74,Seal: this card's effect can trigger while still in the deck.
+E1478,Trigger when hidden seal,DUPLICATE,E0141,braindump,gam draft.txt:73,Seal: this card's effect triggers even when hidden (covered).
+E1479,Trump Fan Tan wild-suit rule,DUPLICATE,E1170,braindump,gam draft.txt:1352,Trump Fan Tan: one suit is wild; a wild-suit card taking another card's place forces that card to be played to the wild foundation.
+E1483,Uniqueness multiplier,DUPLICATE,E0036,braindump,gam draft.txt:288,A multiplier that increases with every unique effect triggered during a run.
+E1487,Utter Chaos card,DUPLICATE,E0370,braindump,gam draft.txt:557,Utter Chaos: becomes a random skill on every 'next' action.
+E1489,Vampire Survivors-style prestige shop,DUPLICATE,E0438,braindump,gam draft.txt:335,Prestige points system: each win grants points spendable in a menu to change the odds of cards appearing or to apply debuffs for more points.
+E1492,Water material (moves down),DUPLICATE,E0372,braindump,random potential effects.csv:5,Water material type moves downward one position per turn.
+E1493,Water type,DUPLICATE,E0372,braindump,curated effects pre grid.csv:100,Always flows sideways into the shortest adjacent column.
+E1496,Wild pip random selection,DUPLICATE,E1063,braindump,gam draft.txt:261,Wild pip randomly chooses itself from among existing pips on the same board/row/column.
+E1497,Wild pip tracks previous pip,DUPLICATE,E1063,braindump,gam draft.txt:260,A Wild pip type tracks and mimics whichever pip it last resolved to.
+E1501,World tour fame ramp,DUPLICATE,E0684,braindump,gam draft.txt:657,World tour: build fame across cities before reaching the final city; exceeding a city's score requirement raises the requirement for the next city.
+E1505,Acrobat,DUPLICATE,E0035,balatro,balatro,X3 Mult on final hand of round.
+E1507,Ancient Joker,DUPLICATE,E1255,balatro,balatro,Each played card of a target suit gives X1.5 Mult when scored; the target suit changes at end of round.
+E1516,Blast Off,DUPLICATE,E1502,balatro,balatro,"2 hands and 2 discards per round, 4 Joker slots; includes Planet-card vouchers; hand/discard-boosting vouchers and the Burglar Joker are banned."
+E1520,Blue Stake,DUPLICATE,E1514,balatro,balatro,-1 Discard per round.
+E1521,Blueprint,DUPLICATE,E0001,balatro,balatro,Copies the ability of the Joker to the right.
+E1526,Bram Poker,DUPLICATE,E1502,balatro,balatro,Jokers no longer appear in the shop; starts with an Eternal Vampire Joker and extra Tarot cards.
+E1527,Buffoon Tag,DUPLICATE,E0408,balatro,balatro,Gives a free Mega Buffoon Pack.
+E1528,Bull,DUPLICATE,E1523,balatro,balatro,+2 Chips for each $1 you have.
+E1533,Canio,DUPLICATE,E0375,balatro,balatro,Gains X1 Mult permanently when a face card is destroyed.
+E1535,Cartomancer,DUPLICATE,E0202,balatro,balatro,Creates a Tarot card when Blind is selected.
+E1536,Castle,DUPLICATE,E1507,balatro,balatro,Gains +3 Chips permanently per discarded card of a target suit; the target suit changes every round.
+E1541,Chaos the Clown,DUPLICATE,E0524,balatro,balatro,1 free reroll per shop.
+E1542,Charm Tag,DUPLICATE,E0408,balatro,balatro,Gives a free Mega Arcana Pack.
+E1543,Chicot,DUPLICATE,E0281,balatro,balatro,Disables the effect of every Boss Blind.
+E1547,Coupon Tag,DUPLICATE,E1509,balatro,balatro,Initial cards and booster packs in the next shop are free.
+E1551,Crimson Heart,DUPLICATE,E0173,balatro,balatro,One random Joker is disabled each hand played.
+E1552,Cruelty,DUPLICATE,E1502,balatro,balatro,Small and Big Blinds give no reward money; 3 Joker slots.
+E1553,D6 Tag,DUPLICATE,E1509,balatro,balatro,Rerolls in the next shop start at $0.
+E1558,Double or Nothing,DUPLICATE,E0859,balatro,balatro,All played cards become debuffed after scoring; uses a standard 52-card deck with every card given a Red Seal.
+E1561,Drunkard,DUPLICATE,E0290,balatro,balatro,+1 discard each round.
+E1562,Dusk,DUPLICATE,E0035,balatro,balatro,Retrigger all played cards in the final hand of the round.
+E1565,Erosion,DUPLICATE,E1518,balatro,balatro,+4 Mult for each card below the deck's starting size in your full deck.
+E1566,Ethereal Tag,DUPLICATE,E0408,balatro,balatro,Gives a free Spectral Pack.
+E1569,Five-Card Draw,DUPLICATE,E1502,balatro,balatro,"6 discards per round, 5 hand size, 7 Joker slots; starts with Card Sharp and a base Joker; hand-size-expanding Jokers are banned."
+E1573,Foil Tag,DUPLICATE,E1509,balatro,balatro,Next base-edition shop Joker is free and becomes Foil.
+E1574,Fortune Teller,DUPLICATE,E1546,balatro,balatro,+1 Mult per Tarot card used this run.
+E1576,Fragile,DUPLICATE,E1502,balatro,balatro,Starts with 2 Eternal Negative Oops! All 6s Jokers; uses a standard 52-card deck with every card given Glass enhancement; all other card-enhancement methods are banned.
+E1577,Garbage Tag,DUPLICATE,E1554,balatro,balatro,Gives $1 per unused discard this run.
+E1579,Glass Card,DUPLICATE,E0063,balatro,balatro,X2 Mult when scored; 1 in 4 chance to be destroyed after scoring is finished.
+E1583,Gold Seal,DUPLICATE,E0014,balatro,balatro,Earn $3 when this card is played and scores.
+E1586,Golden Needle,DUPLICATE,E1502,balatro,balatro,Each discard costs $1; 1 hand and 6 discards per round; starts with $10; hand-boosting vouchers and the Burglar Joker are banned.
+E1593,Handy Tag,DUPLICATE,E1554,balatro,balatro,Gives $1 per hand played this run.
+E1596,Hit the Road,DUPLICATE,E1617,balatro,balatro,Gains X0.5 Mult for the rest of the round for every Jack discarded.
+E1599,Holographic Tag,DUPLICATE,E1509,balatro,balatro,Next base-edition shop Joker is free and becomes Holographic.
+E1606,Jokerless,DUPLICATE,E1502,balatro,balatro,"Jokers no longer appear in the shop and Joker slots are set to 0; all other Joker-acquisition methods (Judgement, Wraith, Soul cards, tags, certain blinds, Antimatter voucher, Buffoon packs) are banned."
+E1608,Juggler,DUPLICATE,E0023,balatro,balatro,+1 hand size.
+E1610,Luchador,DUPLICATE,E0299,balatro,balatro,Sell this card to disable the current Boss Blind's effect for the round.
+E1611,Lucky Card,DUPLICATE,E0154,balatro,balatro,1 in 5 chance to give +20 Mult and 1 in 15 chance to give $20 when scored.
+E1612,Lucky Cat,DUPLICATE,E1580,balatro,balatro,Gains X0.25 Mult permanently every time a Lucky card successfully triggers.
+E1615,Mad World,DUPLICATE,E1502,balatro,balatro,Extra hands earn no money and no interest is earned; deck is restricted to ranks 2-9 (32 cards); The Plant boss blind is banned.
+E1617,Mail-In Rebate,DUPLICATE,E1507,balatro,balatro,Earn $5 for each discarded card of a target rank; the target rank changes every round.
+E1618,Marble Joker,DUPLICATE,E0202,balatro,balatro,Adds one Stone card to the deck when Blind is selected.
+E1620,Medusa,DUPLICATE,E1502,balatro,balatro,Starts with an Eternal Marble Joker; all face cards in the deck are replaced with Stone cards.
+E1621,Merry Andy,DUPLICATE,E1529,balatro,balatro,"+3 discards each round, -1 hand size."
+E1622,Meteor Tag,DUPLICATE,E0408,balatro,balatro,Gives a free Mega Celestial Pack.
+E1626,Monolith,DUPLICATE,E1502,balatro,balatro,Starts with an Eternal Obelisk and an Eternal Negative Marble Joker.
+E1627,Mr. Bones,DUPLICATE,E0031,balatro,balatro,Prevents death if chips scored are at least 25% of required chips; this card is then sold/destroyed.
+E1629,Mystic Summit,DUPLICATE,E1510,balatro,balatro,+15 Mult when 0 discards remaining.
+E1631,Negative Tag,DUPLICATE,E1509,balatro,balatro,Next base-edition shop Joker is free and becomes Negative.
+E1632,Non-Perishable,DUPLICATE,E1502,balatro,balatro,"All Jokers are Eternal; self-destructing Jokers (e.g. Gros Michel, Cavendish, Ice Cream) and the Verdant Leaf blind are banned."
+E1635,On a Knife's Edge,DUPLICATE,E1502,balatro,balatro,Starts with an Eternal Ceremonial Dagger pinned to the leftmost Joker slot.
+E1637,Orange Stake,DUPLICATE,E1584,balatro,balatro,30% chance for Jokers in shops or booster packs to have a Perishable Sticker (destroyed if not scored with within 5 rounds).
+E1638,Orbital Tag,DUPLICATE,E1530,balatro,balatro,Upgrades a random poker hand by 3 levels.
+E1641,Photograph,DUPLICATE,E1594,balatro,balatro,First played face card gives X2 Mult when scored.
+E1643,Polychrome Tag,DUPLICATE,E1509,balatro,balatro,Next base-edition shop Joker is free and becomes Polychrome.
+E1644,Popcorn,DUPLICATE,E1600,balatro,balatro,"+20 Mult, -4 Mult per round played."
+E1645,Purple Seal,DUPLICATE,E0219,balatro,balatro,Creates a Tarot card when this card is discarded.
+E1648,Ramen,DUPLICATE,E1600,balatro,balatro,"X2 Mult, losing X0.01 Mult permanently per card discarded."
+E1649,Rare Tag,DUPLICATE,E1509,balatro,balatro,Shop contains a free Rare Joker.
+E1651,Red Seal,DUPLICATE,E0034,balatro,balatro,Retrigger this card 1 additional time.
+E1652,Red Stake,DUPLICATE,E1514,balatro,balatro,Small Blind gives no reward money.
+E1656,Riff-Raff,DUPLICATE,E0202,balatro,balatro,"When Blind is selected, creates 2 Common Jokers (if there is room)."
+E1660,Satellite,DUPLICATE,E1546,balatro,balatro,Earn $1 at end of round per unique Planet card used this run.
+E1664,Seeing Double,DUPLICATE,E1571,balatro,balatro,X2 Mult if played hand has a scoring Club card and a scoring card of any other suit.
+E1674,Space Joker,DUPLICATE,E1530,balatro,balatro,1 in 4 chance to upgrade the level of the played poker hand.
+E1675,Spare Trousers,DUPLICATE,E1659,balatro,balatro,Gains +2 Mult permanently if played hand contains a Two Pair.
+E1676,Speed Tag,DUPLICATE,E1650,balatro,balatro,Gives $5 per Blind skipped this run.
+E1678,Square Joker,DUPLICATE,E1659,balatro,balatro,Gains +4 Chips permanently if played hand has exactly 4 cards.
+E1679,Standard Tag,DUPLICATE,E0408,balatro,balatro,Gives a free Mega Standard Pack.
+E1681,Steel Joker,DUPLICATE,E1683,balatro,balatro,Gives X0.2 Mult for each Steel Card in your full deck.
+E1682,Stone Card,DUPLICATE,E0181,balatro,balatro,"Has no rank or suit, always scores, and its Chip value is fixed at +50 Chips."
+E1689,The Club,DUPLICATE,E0048,balatro,balatro,All Club cards are debuffed (score no Chips or Mult).
+E1694,The Goad,DUPLICATE,E0048,balatro,balatro,All Spade cards are debuffed.
+E1695,The Head,DUPLICATE,E0048,balatro,balatro,All Heart cards are debuffed.
+E1697,The House,DUPLICATE,E1692,balatro,balatro,First hand of the round is dealt face down.
+E1698,The Idol,DUPLICATE,E1507,balatro,balatro,Each played card matching a target rank and suit gives X2 Mult when scored; the target card changes every round.
+E1699,The Mark,DUPLICATE,E1692,balatro,balatro,All face cards are dealt face down.
+E1702,The Omelette,DUPLICATE,E1502,balatro,balatro,Blinds and extra hands give no reward money and no interest is earned; starts with 5 Egg Jokers; economy-related vouchers/Jokers are banned.
+E1705,The Plant,DUPLICATE,E0048,balatro,balatro,All face cards are debuffed.
+E1709,The Wall,DUPLICATE,E0806,balatro,balatro,Extra large blind requiring 4x base Chips to beat.
+E1710,The Water,DUPLICATE,E1529,balatro,balatro,Start the round with 0 discards.
+E1711,The Wheel,DUPLICATE,E1692,balatro,balatro,1 in 7 cards are dealt face down during the round.
+E1712,The Window,DUPLICATE,E0048,balatro,balatro,All Diamond cards are debuffed.
+E1713,Throwback,DUPLICATE,E1650,balatro,balatro,X0.25 Mult for each Blind skipped this run.
+E1714,To Do List,DUPLICATE,E1507,balatro,balatro,Earn $4 if the played poker hand matches a specific target hand; the target hand changes at the end of round.
+E1715,To the Moon,DUPLICATE,E1803,balatro,balatro,Earn an extra $1 of interest for every $5 you have at end of round.
+E1716,Top-up Tag,DUPLICATE,E0202,balatro,balatro,"Creates up to 2 Common Jokers, if there is room."
+E1717,Trading Card,DUPLICATE,E1557,balatro,balatro,"If first discard of round has only 1 card, destroys it and earns $3."
+E1719,Turtle Bean,DUPLICATE,E1600,balatro,balatro,"+5 hand size, reducing by 1 each round until it reaches 0."
+E1720,Typecast,DUPLICATE,E1502,balatro,balatro,"After the Ante 4 boss is defeated, all Jokers become Eternal and Joker slots are set to 0; Verdant Leaf blind is banned."
+E1721,Uncommon Tag,DUPLICATE,E1509,balatro,balatro,Shop contains a free Uncommon Joker.
+E1725,Violet Vessel,DUPLICATE,E0806,balatro,balatro,Very large blind requiring 6x base Chips to beat.
+E1726,Voucher Tag,DUPLICATE,E1509,balatro,balatro,Adds one Voucher to the next shop.
+E1728,Wee Joker,DUPLICATE,E1659,balatro,balatro,Gains +8 Chips permanently when each played 2 is scored.
+E1730,Wild Card,DUPLICATE,E0179,balatro,balatro,Considered to be every suit simultaneously.
+E1733,X-ray Vision,DUPLICATE,E1692,balatro,balatro,1 in 4 cards are dealt face down.
+E1734,Yorick,DUPLICATE,E1659,balatro,balatro,Gains X1 Mult permanently every 23 cards discarded.
+E1739,Ace Aequilibrium,DUPLICATE,E1502,cryptid,cryptid,Jokers appear from the shop in Collection order; creates 2 Negative Jokers when a hand is played; Exotic-or-better Jokers cannot appear
+E1741,Amber Stake,DUPLICATE,E1746,cryptid,cryptid,-1 Booster Pack slot
+E1743,Antimatter Sleeve,DUPLICATE,E1742,cryptid,cryptid,Applies the effects and special deck-pairing effects of all deck sleeves
+E1747,Astral,DUPLICATE,E1737,cryptid,cryptid,^1.1 Mult
+E1749,Astral Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Astral
+E1751,Azure Stake,DUPLICATE,E1746,cryptid,cryptid,Values on Jokers are reduced by 20%
+E1753,Ballin',DUPLICATE,E1502,cryptid,cryptid,3 Joker slots; starts with 52 Stone Cards and an Eternal Jimball; bans Vampire and several tarots
+E1756,Beige Sleeve,DUPLICATE,E1755,cryptid,cryptid,"Common Jokers have quadrupled values, or Uncommon Jokers if paired with Beige Deck"
+E1757,Better Top-up Tag,DUPLICATE,E0202,cryptid,cryptid,Creates up to 2 Uncommon Jokers (must have room)
+E1763,Blurred Joker,DUPLICATE,E1529,cryptid,cryptid,Gain +1 hand when Blind is selected
+E1764,Blurred Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Blurred
+E1768,Booster Joker,DUPLICATE,E1630,cryptid,cryptid,+1 Booster Pack slot available in shop
+E1770,Boredom,DUPLICATE,E0038,cryptid,cryptid,1 in 2 chance to retrigger each Joker or played card (does not affect other copies of Boredom)
+E1771,Bountiful Deck,DUPLICATE,E1707,cryptid,cryptid,"After Play or Discard, always draw 5 cards"
+E1774,Bronze Stake,DUPLICATE,E1601,cryptid,cryptid,Vouchers are 50% more expensive
+E1778,Bundle Tag,DUPLICATE,E0408,cryptid,cryptid,"Creates a Standard Tag, a Charm Tag, a Buffoon Tag, and a Meteor Tag"
+E1783,Candy Buttons,DUPLICATE,E1509,cryptid,cryptid,The next 15 shop rerolls cost $1 each
+E1785,Candy Dagger,DUPLICATE,E1538,cryptid,cryptid,"When Blind is selected, destroys Joker to the left to create a Candy"
+E1788,Caramel,DUPLICATE,E1665,cryptid,cryptid,"Each played card gives X1.75 Mult when scored, for the next 11 rounds"
+E1789,Carved Pumpkin,DUPLICATE,E0281,cryptid,cryptid,The next 5 Boss Blinds have their abilities disabled (removed)
+E1792,Celestial Globe,DUPLICATE,E1659,cryptid,cryptid,Gains X0.2 Chips if poker hand matches a rotating hand type (changes each time it increases)
+E1793,Chad,DUPLICATE,E1594,cryptid,cryptid,Retriggers leftmost Joker 2 additional times
+E1794,Chili Pepper,DUPLICATE,E1665,cryptid,cryptid,"Gains X0.5 Mult at end of round, self-destructs after 8 rounds"
+E1796,Circulus Pistoris,DUPLICATE,E1737,cryptid,cryptid,^pi Chips and ^pi Mult if exactly 3 hands remaining
+E1797,Circus,DUPLICATE,E1513,cryptid,cryptid,"Rare Jokers give X2 Mult, Epic give X3, Legendary give X4, Exotic give X20, each"
+E1800,Clone Tag,DUPLICATE,E1559,cryptid,cryptid,"Shop items cost 1.5x as much while held; obtain a copy of the next bought card, then is consumed"
+E1802,Code Joker,DUPLICATE,E0202,cryptid,cryptid,Creates a Negative Code Card when Blind is selected
+E1804,Console Tag,DUPLICATE,E0408,cryptid,cryptid,Gives a free Program Pack
+E1807,Copy/Paste,DUPLICATE,E1640,cryptid,cryptid,"1 in 2 chance to duplicate used Code cards, once per round (must have room)"
+E1811,Crustulum,DUPLICATE,E1570,cryptid,cryptid,Gains +4 Chips per shop reroll; all rerolls are free
+E1814,Cursor,DUPLICATE,E1597,cryptid,cryptid,Gains +8 Chips for each card purchased
+E1815,Cut,DUPLICATE,E1580,cryptid,cryptid,Destroys a random Code card and gains X0.5 Mult at the end of the shop
+E1816,Cyan Stake,DUPLICATE,E1746,cryptid,cryptid,Uncommon and Rare Jokers are less likely to appear
+E1817,:D,DUPLICATE,E1556,cryptid,cryptid,Creates a random Joker at end of round; sell this card to create a random Joker (must have room)
+E1818,Dagger War,DUPLICATE,E1502,cryptid,cryptid,"Starts with 2x Negative M Chain, 2x Negative Gift Card, and Eternal Ceremonial Dagger, Unjust Dagger, Monkey Dagger, and Pirate Dagger; Lock is banned"
+E1819,Dawn Stake,DUPLICATE,E1746,cryptid,cryptid,Tarots and Spectrals target 1 fewer card (minimum of 1)
+E1820,Deck of Equilibrium,DUPLICATE,E1752,cryptid,cryptid,All cards have the same chance of appearing in shops; starts run with Overstock Plus
+E1821,Delibird Dilemma,DUPLICATE,E1502,cryptid,pokermon,"All Blinds give no reward money, extra hands earn no money, no Interest at end of round; starts with Eternal Delibird"
+E1831,Dropshot,DUPLICATE,E1507,cryptid,cryptid,Gains X0.2 Mult per played nonscoring card of a suit that changes every round
+E1833,Duplicare,DUPLICATE,E1595,cryptid,cryptid,Gains X1 Mult when a Joker or playing card is scored
+E1837,Ember Stake,DUPLICATE,E1746,cryptid,cryptid,All items give no money when sold
+E1840,Empowered Tag,DUPLICATE,E0408,cryptid,cryptid,Gives a free Spectral Pack containing The Soul and Gateway
+E1841,Encoded Deck,DUPLICATE,E1835,cryptid,cryptid,Starts with a Code Joker and a Copy/Paste; only Code Cards appear in shop
+E1843,Enhancement Deck,DUPLICATE,E1835,cryptid,cryptid,All playing cards are a chosen Enhancement
+E1845,Epic Tag,DUPLICATE,E1509,cryptid,cryptid,Shop has a half-price Epic Joker
+E1847,Eternal Flame,DUPLICATE,E1532,cryptid,cryptid,Gains X0.2 Mult for each card sold
+E1848,Exoplanet,DUPLICATE,E1683,cryptid,cryptid,Other Holographic cards each give +15 Mult
+E1849,Exponentia,DUPLICATE,E1737,cryptid,cryptid,Gains ^0.03 Mult whenever XMult is triggered
+E1852,Fading Joker,DUPLICATE,E1580,cryptid,cryptid,Gains X1 Mult whenever a Perishable card is debuffed
+E1855,Fidget Spinner,DUPLICATE,E1633,cryptid,cryptid,+6 Chips if played hand is not your most-played hand
+E1859,Fractal Fingers,DUPLICATE,E0023,cryptid,cryptid,+2 card selection limit
+E1861,Fragile Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Fragile
+E1870,Glitched Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Glitched
+E1872,Gold Joker,DUPLICATE,E1803,cryptid,cryptid,"Earns 0% of total money at end of round, +2% payout per played Gold card scored"
+E1873,Golden,DUPLICATE,E0014,cryptid,cryptid,Earns $2 when used or triggered
+E1874,Golden Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Golden
+E1875,Good As Gold,DUPLICATE,E1502,cryptid,pokermon,"6 hand size, starts with $6; deck is a standard 52-card deck where all cards are Gold; starts with Eternal Gholdengo"
+E1877,Gourmand Tag,DUPLICATE,E1509,cryptid,cryptid,Shop has a free Food Joker
+E1878,Gray Stake,DUPLICATE,E0524,cryptid,cryptid,Rerolls increase in cost by $2 each
+E1880,Hammertime,DUPLICATE,E1502,cryptid,pokermon,"2 hands and 1 discard per round; deck is only ranks 2,3,4,5,A (20 cards), Ace of Spades is Steel; starts with Eternal Tinkaton"
+E1888,Jade Stake,DUPLICATE,E1692,cryptid,cryptid,1 in 20 cards are drawn face down
+E1889,Jawbreaker,DUPLICATE,E1866,cryptid,cryptid,"When Boss Blind is defeated, doubles the values of adjacent Jokers, then self-destructs"
+E1891,Jimbo-tron 9000,DUPLICATE,E1737,cryptid,cryptid,Gains ^1 Mult for each default Joker owned
+E1892,Joker Poker,DUPLICATE,E1502,cryptid,cryptid,"Skipping, rerolling, booster packs, and consumables are all disabled, 0 discards per round and 0 consumable slots; all Jokers that interact with those systems are banned"
+E1895,Jolly Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Jolly
+E1896,Kaleidoscope,DUPLICATE,E1748,cryptid,cryptid,Adds Polychrome to a random Joker when Boss Blind is defeated
+E1897,Key Change,DUPLICATE,E1633,cryptid,cryptid,"Gains X0.25 Mult if the current poker hand has not been played this round, resetting at end of round"
+E1900,Krusty the Clown,DUPLICATE,E1595,cryptid,cryptid,Gains X0.02 Mult when each played card is scored
+E1906,Lens Tag,DUPLICATE,E1509,cryptid,cryptid,Applies Negative to 2 random consumables
+E1908,Little Cup,DUPLICATE,E1502,cryptid,pokermon,"Small and Big Blinds give no reward money, 3 Joker Slots; starts with Negative Eternal Everstone"
+E1909,Lonesome,DUPLICATE,E1502,cryptid,pokermon,"Jokers no longer appear in shop, 1 Joker Slot, 10 Consumable Slots; starts with Eternal Cubone"
+E1911,Loss,DUPLICATE,E0408,cryptid,cryptid,Gives a free Meme Pack
+E1916,M Chain,DUPLICATE,E1578,cryptid,cryptid,Sell this card to add $1 of sell value to every Joker card
+E1923,Mellowcreme,DUPLICATE,E1578,cryptid,cryptid,Sell this card to multiply the sell value of all consumables by X4
+E1925,Memory Tag,DUPLICATE,E1559,cryptid,cryptid,Creates 2 copies of the last non-copying Tag used this run
+E1927,Misprint Deck,DUPLICATE,E1869,cryptid,cryptid,Values of cards and poker hands are randomized
+E1928,Misprinted Sleeve,DUPLICATE,E1869,cryptid,cryptid,Values in cards are randomized
+E1929,Mondrian,DUPLICATE,E1554,cryptid,cryptid,Gains X0.25 Mult if no discards were used
+E1930,Monkey Dagger,DUPLICATE,E1538,cryptid,cryptid,"When Blind is selected, destroys Joker to the left and permanently adds 10x its sell value as +Chips"
+E1935,Mosaic Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Mosaic
+E1936,Motebook,DUPLICATE,E1767,cryptid,cryptid,"1 in 7 chance per shop reroll to gain +1 Joker slot (always triggers with 4+ Jolly Jokers owned), once per round"
+E1938,Mystery Dungeon,DUPLICATE,E1502,cryptid,pokermon,Starts with an Eternal Joker and applies a random Pokermon Deck effect; resets daily at 04:00 PM PST
+E1941,Negative Joker,DUPLICATE,E1630,cryptid,cryptid,+4 Joker slots
+E1944,Night,DUPLICATE,E1665,cryptid,cryptid,"^3 Mult on the final hand of the round, then self-destructs"
+E1945,Noisy,DUPLICATE,E1869,cryptid,cryptid,+0-30 Mult and +0-150 Chips (random each time)
+E1948,Nostalgic Arm,DUPLICATE,E1706,cryptid,cryptid,Must play 4 or fewer cards
+E1949,Nostalgic Candy,DUPLICATE,E0023,cryptid,cryptid,Sell this card to permanently gain +3 hand size
+E1952,Nostalgic Flint,DUPLICATE,E1690,cryptid,cryptid,No Flushes allowed
+E1953,Nostalgic Googol Play Card,DUPLICATE,E1603,cryptid,cryptid,Sell this card to create 2 copies of the leftmost Joker (excludes copying itself)
+E1954,Nostalgic House,DUPLICATE,E1690,cryptid,cryptid,No Full Houses allowed
+E1955,Nostalgic Invisible Joker,DUPLICATE,E1603,cryptid,cryptid,Duplicates a random Joker every 4 Jokers sold (excluding itself)
+E1956,Nostalgic Manacle,DUPLICATE,E1589,cryptid,cryptid,Divides Mult by number of discards used
+E1957,Nostalgic Mark,DUPLICATE,E1690,cryptid,cryptid,No hands containing a Pair allowed
+E1959,Nostalgic Pillar,DUPLICATE,E1690,cryptid,cryptid,No Straights allowed
+E1960,Nostalgic Serpent,DUPLICATE,E1688,cryptid,cryptid,Divides Mult by the level of the played poker hand
+E1962,Nuzlocke,DUPLICATE,E1502,cryptid,pokermon,"Jokers no longer appear in shop, all Jokers are Eternal, 1 Joker slot (+1 per Boss Blind defeated up to 5), first shop of each Ante has a Buffoon Pack"
+E1964,Oil Lamp,DUPLICATE,E1866,cryptid,cryptid,Increases the values of the Joker to the right by X1.2 at end of round
+E1965,Old Blueprint,DUPLICATE,E0001,cryptid,cryptid,Copies the ability of the Joker to the right; 1 in 4 chance it is destroyed at end of round
+E1967,On the Flip Side,DUPLICATE,E1830,cryptid,cryptid,Double-Sided Jokers use their back side's effect instead of the front; retriggers all Double-Sided Jokers
+E1968,One for All,DUPLICATE,E1630,cryptid,cryptid,"+1 Booster Pack slot, +1 hand size, +1 consumable slot, +1 card in shop, +1 voucher slot"
+E1970,Oversaturated Tag,DUPLICATE,E1509,cryptid,cryptid,Next base-edition shop Joker is free and becomes Oversaturated
+E1972,Panopticon,DUPLICATE,E1901,cryptid,cryptid,All hands are considered the last hand of each round
+E1973,Parenthood,DUPLICATE,E1502,cryptid,pokermon,"Jokers no longer appear in shop, earn no Interest at end of round, 2 Joker Slots; starts with 2x Mystery Egg"
+E1976,Pickle,DUPLICATE,E1650,cryptid,cryptid,"When Blind is skipped, creates 3 Tags, reduced by 1 each time a Blind is selected"
+E1977,Pink Stake,DUPLICATE,E1646,cryptid,cryptid,Required score scales faster for each Ante
+E1978,Pirate Dagger,DUPLICATE,E1538,cryptid,cryptid,"When Blind is selected, destroys Joker to the right and gains one-fourth of its sell value as XChips"
+E1979,Pity Prize,DUPLICATE,E1650,cryptid,cryptid,"On skipping a Booster Pack, gain a random Tag"
+E1983,Poor Joker,DUPLICATE,E1584,cryptid,cryptid,Gains +4 Mult whenever a Rental card takes money from you
+E1985,Primus,DUPLICATE,E1737,cryptid,cryptid,"Gains ^0.17 Mult if all cards in played hand are Aces, 2s, 3s, 5s, or 7s"
+E1986,Pumpkin,DUPLICATE,E0031,cryptid,cryptid,Prevents Death if chips scored are at least 50% of required chips; turns into Carved Pumpkin when destroyed (removed)
+E1987,Python,DUPLICATE,E1546,cryptid,cryptid,Gains X0.15 Mult when a Code card is used
+E1991,Red Bloon,DUPLICATE,E1854,cryptid,cryptid,"Earns $20 after 2 rounds, then self-destructs"
+E1996,RNG,DUPLICATE,E1997,cryptid,cryptid,All Jokers are RNJoker
+E1997,RNJoker,DUPLICATE,E0370,cryptid,cryptid,Randomizes its ability every Ante
+E1999,Ruby Stake,DUPLICATE,E1761,cryptid,cryptid,30% chance for Big Blinds to become a Boss Blind (still skippable)
+E2000,Rush Hour I,DUPLICATE,E1502,cryptid,cryptid,All Boss Blinds are The Clock or Lavender Loop
+E2001,Rush Hour II,DUPLICATE,E1502,cryptid,cryptid,"All Boss Blinds are The Clock or Lavender Loop, all Blinds are Boss Blinds, and skipping is disabled"
+E2002,Rush Hour III,DUPLICATE,E1502,cryptid,cryptid,"All Boss Blinds are The Clock or Lavender Loop scaling twice as fast, all Blinds are Boss Blinds, and skipping is disabled; deck gets +1 Jack of each suit, starts with Negative Eternal Hit the Road"
+E2004,Safety First,DUPLICATE,E1502,cryptid,pokermon,"Jokers and Energy cards no longer appear in shop, 3 Joker Slots; starts with Eternal Mudkip, Roggenrola, and Bronzor"
+E2009,Scalae,DUPLICATE,E1829,cryptid,cryptid,"Scaling Jokers scale as a degree-2 polynomial instead of linearly, raising the degree by 1 at end of round (excludes itself)"
+E2010,Schematic Tag,DUPLICATE,E1509,cryptid,cryptid,Shop has a Brainstorm
+E2011,Scope Tag,DUPLICATE,E1529,cryptid,cryptid,+2 hands and discards next round
+E2013,Seal Deck,DUPLICATE,E1835,cryptid,cryptid,All playing cards have a chosen Seal and cannot change seals
+E2014,Seal The Deal,DUPLICATE,E1772,cryptid,cryptid,Adds a random seal to each card scored on the final hand of the round
+E2018,Solo Card,DUPLICATE,E1502,cryptid,cryptid,"Starts with $10 and a single Blue Seal Ace of Clubs plus a Popcorn Joker; many Jokers, packs, consumables, and tags are banned"
+E2019,Spectrogram,DUPLICATE,E1787,cryptid,cryptid,Retriggers rightmost Joker once for every Echo card played and scored
+E2020,Speculo,DUPLICATE,E1640,cryptid,cryptid,Creates a Negative copy of a random Joker at the end of the shop (does not copy other Speculo)
+E2021,Spooky Deck,DUPLICATE,E1904,cryptid,cryptid,"Starts with an Eternal Chocolate Die; after each Ante, creates a Candy or Cursed Joker"
+E2023,Stardust,DUPLICATE,E1683,cryptid,cryptid,Other Polychrome cards each give X2 Mult
+E2025,Stella Mortis,DUPLICATE,E1580,cryptid,cryptid,Destroys a random Planet card and gains ^0.4 Mult at the end of the shop
+E2026,Sticker Deck,DUPLICATE,E1835,cryptid,cryptid,All cards are a chosen Sticker
+E2027,Sticker Sheet,DUPLICATE,E1775,cryptid,cryptid,"All Jokers are simultaneously Eternal, Perishable, Rental, Pinned, and Banana; many Jokers banned"
+E2028,Sticker Sheet+,DUPLICATE,E1775,cryptid,cryptid,All purchasable items have every sticker applied; many Jokers banned
+E2033,Sync Catalyst,DUPLICATE,E1773,cryptid,cryptid,Balances Chips and Mult (averages them)
+E2035,Tenebris,DUPLICATE,E1630,cryptid,cryptid,+25 Joker slots; earns $25 at end of round
+E2037,The Box,DUPLICATE,E0280,cryptid,cryptid,All Common Jokers are debuffed
+E2039,The Clock,DUPLICATE,E1902,cryptid,cryptid,"+0.1X blind requirement every 12 seconds spent this ante, multiplied by game speed"
+E2040,The Complete and Utter Annihilation of Everything That Makes Balatro Sacred,DUPLICATE,E1919,cryptid,cryptid,^5.2 Mult if played hand contains The Entire Fucking Deck/The Entire Deck
+E2042,The Entire Fucking Deck/The Entire Deck,DUPLICATE,E1919,cryptid,cryptid,5.253e29 Chips x 5.253e28 Mult; requires a hand containing every card of a standard 52-card deck
+E2047,The Landlord,DUPLICATE,E1584,cryptid,cryptid,Applies Rental to a random Joker when a hand is played
+E2048,The Magic,DUPLICATE,E2044,cryptid,cryptid,All cards with even rank are debuffed
+E2049,The Pin,DUPLICATE,E0280,cryptid,cryptid,Jokers with Epic or higher rarity are debuffed
+E2051,The Scorch,DUPLICATE,E1706,cryptid,cryptid,Must play 5 cards; destroys played and discarded cards
+E2052,The Shackle,DUPLICATE,E0280,cryptid,cryptid,All Negative Jokers are debuffed
+E2053,The Striker,DUPLICATE,E0280,cryptid,cryptid,All Rare Jokers are debuffed
+E2057,The Windmill,DUPLICATE,E0280,cryptid,cryptid,All Uncommon Jokers are debuffed
+E2059,Translucent Joker,DUPLICATE,E1603,cryptid,cryptid,Sell this card to create a Banana Perishable copy of a random Joker
+E2064,Triple Tag,DUPLICATE,E1559,cryptid,cryptid,Gives 2 copies of the next selected non-copying Tag
+E2066,Tropical Smoothie,DUPLICATE,E1866,cryptid,cryptid,Sell this card to multiply the values of owned Jokers by 1.5
+E2068,Twilight Stake,DUPLICATE,E1868,cryptid,cryptid,30% chance for cards to have a Banana sticker (1 in 10 chance of being destroyed each round)
+E2071,Universe,DUPLICATE,E1683,cryptid,cryptid,Other Astral cards each give ^1.2 Mult
+E2073,Unjust Dagger,DUPLICATE,E1538,cryptid,cryptid,"When Blind is selected, destroys Joker to the left and gains one-fifth of its sell value as XMult"
+E2074,Unlimited Sleeve,DUPLICATE,E1886,cryptid,cryptid,You can select any number of cards
+E2076,Very Fair Deck,DUPLICATE,E1502,cryptid,cryptid,-2 hands and -2 discards every round; Vouchers no longer appear in the shop
+E2081,Wonka Bar,DUPLICATE,E1886,cryptid,cryptid,Sell this card to permanently gain +1 card selection limit
+E2082,Words Can't Even Begin to Describe This Joker,DUPLICATE,E1919,cryptid,cryptid,"X52,000,000 Mult if played hand contains The Entire Fucking Deck/The Entire Deck"
+E2083,Wormhole Deck,DUPLICATE,E1904,cryptid,cryptid,Starts with an Exotic Joker; Jokers are 20X more likely to be Negative; -2 Joker slots
+E2084,Wrapped Candy,DUPLICATE,E1854,cryptid,cryptid,"Creates a random Food Joker after 2 rounds, then self-destructs"
+E2085,Yellow Stake,DUPLICATE,E1775,cryptid,cryptid,Stickers can appear on all purchasable items
+E0130,Performance Rings,NOT_APPLICABLE,,catalog,CARD_CATALOG,"Rows 1-5 pay 1x, rows 6-10 pay 2x, rows 11-15 pay 3x, and so on by board depth."
+E0229,The Equestrian,NOT_APPLICABLE,,catalog,CARD_CATALOG,Leader: melds scored entirely within rows 1-5 get bonus multiplier.
+E1079,500 Rummy free-meld-adding,NOT_APPLICABLE,,braindump,gam draft.txt:1333,"500 Rummy: any player, regardless of turn order, can add to existing melds and take more than the top discard."
+E1080,500 Rummy turn-stealing,NOT_APPLICABLE,,braindump,gam draft.txt:1334,500 Rummy: a player can steal a turn if an opponent discards a card that could extend another meld.
+E1100,Auction Pinochle bidder-only meld,NOT_APPLICABLE,,braindump,gam draft.txt:1387,Auction Pinochle: only the auction winner picks trump and can score melds; other players act as defenders.
+E1109,Beggar My Neighbor forfeit rule,NOT_APPLICABLE,,braindump,gam draft.txt:1300,"Beggar My Neighbor: playing a face card forces the next player to pay a forfeit (4 cards for ace, 3 for K, 2 for Q, 1 for J)."
+E1110,Beggar My Neighbor number-card play,NOT_APPLICABLE,,braindump,gam draft.txt:1299,Beggar My Neighbor: play continues normally on number cards (2-10).
+E1111,Beggar My Neighbor pile-win rule,NOT_APPLICABLE,,braindump,gam draft.txt:1301,"Beggar My Neighbor: if all forfeit cards are non-face, the face-card player takes the whole middle pile; a face card among the forfeit passes the effect to the new face card."
+E1133,Canfield 3-card stock draw,NOT_APPLICABLE,,braindump,gam draft.txt:1208,"Canfield Solitaire: stock is drawn 3 cards at a time, only the top of the 3 usable (then the next below it once used)."
+E1135,Canfield foundation-rank feed,NOT_APPLICABLE,,braindump,gam draft.txt:1210,"Canfield Solitaire: a card matching the foundation base's rank, wherever found in reserve or stock, goes straight to the foundation."
+E1147,Cheat bluff-discard rule,NOT_APPLICABLE,,braindump,gam draft.txt:1314,"Cheat: discard face-down while announcing (possibly falsely) what rank you're playing; next player can claim one rank higher, lower, or the same."
+E1148,Cheat call-out resolution,NOT_APPLICABLE,,braindump,gam draft.txt:1315,"Cheat: calling 'cheat' makes the accused pick up the whole pile if lying, or the caller picks it up if the accused was truthful."
+E1251,Gin Rummy early-end scoring,NOT_APPLICABLE,,braindump,gam draft.txt:1331,"Gin Rummy: a player can end the round early if mostly done with combinations, and is rewarded for having more complete combinations than opponents."
+E1254,Go Fish ask-and-fish rule,NOT_APPLICABLE,,braindump,gam draft.txt:1311,"Go Fish: ask another player for a rank you hold; if they have it they hand it over, otherwise you draw ('fish') from stock."
+E1267,Hearts avoid-scoring rule,NOT_APPLICABLE,,braindump,gam draft.txt:1379,Hearts: avoid winning tricks containing hearts (1 point each) or the queen of spades (13 points).
+E1294,La Belle Lucie redeal limit,NOT_APPLICABLE,,braindump,gam draft.txt:1225,La Belle Lucie: three tries to win; redeal reshuffles all cards and redistributes in threes.
+E1317,Mau Mau wildcard/win-call rule,NOT_APPLICABLE,,braindump,gam draft.txt:1342,"Mau Mau: jacks are wild, no redeal limit; must call 'Mau' on your last card, 'Mau Mau' if that card is wild."
+E1338,Neuner 9s-wild variant,NOT_APPLICABLE,,braindump,gam draft.txt:1343,"Neuner: like Mau Mau but 9s are wild plus an added Joker, and players may draw at will."
+E1340,Ninety-Nine suit-value bidding,NOT_APPLICABLE,,braindump,gam draft.txt:1373,"Ninety-Nine: discard 3 of 12 cards to set your bid, where club=+3, heart=+2, spade=+1, diamond=+0."
+E1349,Old Maid pair-discard rule,NOT_APPLICABLE,,braindump,gam draft.txt:1318,Old Maid: discard strict pairs from your hand; goal is to not be left holding the queen.
+E1378,President climbing-rank rule,NOT_APPLICABLE,,braindump,gam draft.txt:1399,"President: each turn plays equal-or-higher rank or passes; 2s are highest, suit irrelevant."
+E1379,President matched-count play rule,NOT_APPLICABLE,,braindump,gam draft.txt:1400,"President: subsequent players must match the number of cards the first player placed, at increasing rank."
+E1380,President Palace hidden-hand variant,NOT_APPLICABLE,,braindump,gam draft.txt:1403,"Palace variant of President: play with 3 private cards, 3 face-up cards, and 3 face-down cards, playable only after the previous set is used."
+E1381,President scum tribute rule,NOT_APPLICABLE,,braindump,gam draft.txt:1402,President: the last player to empty their hand ('Scum') must give their two highest cards to the winner.
+E1410,Romanian Whist variable hand size,NOT_APPLICABLE,,braindump,gam draft.txt:1371,Romanian Whist: each round deals a different number of cards; must follow trump suit if unable to follow the leading suit.
+E1421,Rummy early-meld risk,NOT_APPLICABLE,,braindump,gam draft.txt:1328,"Rummy: melds can be placed face-up early to guarantee they count, but this risks other players adding to them for their own points."
+E1423,Rummy win condition,NOT_APPLICABLE,,braindump,gam draft.txt:1326,Rummy: first to arrange the whole hand into melds with exactly 1 card left to discard wins.
+E1436,Setback point-card trick bidding,NOT_APPLICABLE,,braindump,gam draft.txt:1389,"Setback/Pitch: different cards are worth different points, and players bid on how many point-carrying tricks they can win."
+E1443,Slapjack slap-on-jack rule,NOT_APPLICABLE,,braindump,gam draft.txt:1307,"Slapjack: everyone places a card in the middle; if it's a jack, first to slap the pile wins it."
+E1447,Snap matching-pile call,NOT_APPLICABLE,,braindump,gam draft.txt:1305,"Snap: if a newly revealed card matches rank with any other player's pile, first to call 'snap' wins both piles."
+E1451,Spit legal-stack speed rule,NOT_APPLICABLE,,braindump,gam draft.txt:1320,Spit/Speed: no turn order; players race to empty their hand onto shared center stacks under standard legal-stacking rules.
+E1453,Spite and Malice waste-pile rule,NOT_APPLICABLE,,braindump,gam draft.txt:1291,Spite and Malice: personal waste piles accept 1 discard per turn and can only stack same-or-one-lower rank; top waste card can move to a foundation.
+E1464,Switch chaining +2/+4/skip/reverse,NOT_APPLICABLE,,braindump,gam draft.txt:1346,"Switch: ace is wild; 2s are +2 (chainable), 4s are +4 (chainable), 8 skips a turn, jack reverses turn order."
+E1491,War tie-breaking rule,NOT_APPLICABLE,,braindump,gam draft.txt:1308,"War: higher rank wins both cards; on a tie, both players place face-down cards and the next comparison's winner takes everything."
+E1494,Whist trick-taking rule,NOT_APPLICABLE,,braindump,gam draft.txt:1358,"Whist: highest card of the leading suit wins the trick, unless a trump is played, in which case the highest trump wins; trick winner leads next."
+E1495,Whist trump-suit reveal,NOT_APPLICABLE,,braindump,gam draft.txt:1357,Whist: the first card revealed determines the trump suit for the hand.
+E1511,Baron,NOT_APPLICABLE,,balatro,balatro,Each King held in hand gives X1.5 Mult.
+E1515,Blackboard,NOT_APPLICABLE,,balatro,balatro,X3 Mult if all cards held in hand are Spades or Clubs.
+E1519,Blue Seal,NOT_APPLICABLE,,balatro,balatro,"Creates the Planet card for the final played poker hand of the round, if this card is held in hand at end of round."
+E1568,Faceless Joker,NOT_APPLICABLE,,balatro,balatro,Earn $5 if 3 or more face cards are discarded at the same time.
+E1582,Gold Card,NOT_APPLICABLE,,balatro,balatro,Gives $3 if held in hand at end of round.
+E1607,Juggle Tag,NOT_APPLICABLE,,balatro,balatro,+3 hand size for the next round.
+E1624,Mime,NOT_APPLICABLE,,balatro,balatro,Retrigger all card held-in-hand abilities.
+E1647,Raised Fist,NOT_APPLICABLE,,balatro,balatro,Adds double the rank of the lowest ranked card held in hand to Mult.
+E1653,Reserved Parking,NOT_APPLICABLE,,balatro,balatro,Each face card held in hand has a 1 in 2 chance to give $1.
+E1666,Shoot the Moon,NOT_APPLICABLE,,balatro,balatro,Each Queen held in hand gives +13 Mult.
+E1680,Steel Card,NOT_APPLICABLE,,balatro,balatro,X1.5 Mult while held in hand.
+E1696,The Hook,NOT_APPLICABLE,,balatro,balatro,Discards 2 random cards held in hand after every hand played.
+E1924,Membership Card,NOT_APPLICABLE,,cryptid,cryptid,X0.1 Mult per member in the Cryptid Discord server (live count)
+E1961,Number Blocks,NOT_APPLICABLE,,cryptid,cryptid,"Earns $1 at end of round, +$1 more for each card of a rank (which changes every round) held in hand"
+E1966,Old Membership Card,NOT_APPLICABLE,,cryptid,cryptid,+1 Chips per member in the Cryptid Discord server (live count)
+E0081,HONK,NO_MECHANIC,,catalog,CARD_CATALOG,"Cue: makes a honk sound, with unlimited uses and no other effect."
+E0126,Paper,NO_MECHANIC,,catalog,CARD_CATALOG,Default material with no modifier behavior.
+E0144,Roman Numerals,NO_MECHANIC,,catalog,CARD_CATALOG,"This card's rank displays as Roman numerals; melds, stacking and comparisons are unaffected."
+E0385,Acrobat class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: card movement.
+E0387,Amplifying existing points,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that amplify existing point sources.
+E0390,Animal Trainer class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,"Class mechanical focus: stacking — eating cards, cards auto-moving through the field."
+E0396,Axis-distinguishing score display,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)","Score display distinguishes axes: '-2-' denotes row points, '|1|' denotes column points."
+E0403,BigNumber class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §5 Scoring,An infinite/arbitrary-precision number class is used so scores can grow unboundedly large.
+E0409,Booster / Talent pack,NO_MECHANIC,,designdocs,DESIGN_DOC.md §14.3 Types,Card-pack generation type used on the map.
+E0417,Bullet Catch graveyard secret,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §B4 Danger Acts,"A hidden secret tracks repeat users of the Bullet Catch card, referencing its many in-fiction deaths."
+E0428,Cannot-retire veteran card,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §B1 Aerial & Wire,"A veteran card that cannot retire, used as endless-mode flavor."
+E0437,Cards with a price,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that come at a price/cost.
+E0444,Changing game rules,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that change game rules.
+E0445,Changing how other skills work,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that alter how other skills function.
+E0452,Circus suit roster,NO_MECHANIC,,designdocs,DESIGN_DOC.md §10 Suits,"Planned circus suits: clowns, background dancers, flames, juggling balls, hoops, nails/knives, plus special suits fireworks and electric."
+E0454,Clown class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: pip manipulation.
+E0460,Combine and pick up decks,NO_MECHANIC,,designdocs,DESIGN_DOC.md §2 Core Game Loop,Early undeveloped idea to combine and pick up multiple decks.
+E0464,Commedia dell'arte roster,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe,An entire face-card family or leader roster built from stock commedia characters.
+E0466,Compress board toggle,NO_MECHANIC,,designdocs,DESIGN_DOC.md §7 Spotlight System,"A QOL 'compress board' view strips card art to pips plus ability names (dim when inactive), turning a stack into a stiff column when picked up."
+E0467,Concessions / Food class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: positive effects (buffs).
+E0471,Costume Designer class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: equipment/clothing/stamp manipulation.
+E0472,Creating mini-games,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that create mini-games.
+E0473,Creating temporary cards,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that create temporary cards.
+E0477,Cross-game persistence,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: effects persisting into the next game.
+E0481,Custom deck (final unlockable),NO_MECHANIC,,designdocs,DESIGN_DOC.md §13 Special Decks & Variants,A fully custom deck as the final unlockable deck variant.
+E0482,Custom rule deck pack,NO_MECHANIC,,designdocs,DESIGN_DOC.md §8 Rule Deck (vetoed),"Vetoed: an unlock letting players build fully custom rule decks, up to re-implementing default solitaire — rejected as scope creep."
+E0484,Damage/antagonist reframing,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §5 Scoring v3 (combo, unbuilt)","Points are reframed as damage dealt against an antagonist, Slay-the-Spire/TCG style, with row and column scorers becoming a combo system."
+E0485,Dancer / trick artist class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: specific formation bonuses.
+E0490,Deck manipulation,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that manipulate the deck.
+E0495,Deterministic own RNG,NO_MECHANIC,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"The engine implements its own RNG with seed offsets that are themselves randomized per-seed, so everything stays deterministic."
+E0510,Duplicate rule card identifiers,NO_MECHANIC,,designdocs,DESIGN_DOC.md §3 Board & Zones,Duplicate rule cards (e.g. multiple zone adders) use their rank as an identifier.
+E0521,Endurance lineage cards,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §G The Modern Era,Modern endurance cards explicitly cite a lineage chain of ancestor cards (Hunger Artist family).
+E0525,Escape Artist / Stuntsman class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: negative-effects (debuffs).
+E0528,Every deck as its own solitaire board,NO_MECHANIC,,designdocs,DESIGN_DOC.md §8 Rule Deck (vetoed),"Vetoed: making every deck (draw/discard/rule) itself a playable solitaire board with no layout control, leading to unsolvable boards."
+E0530,Exponential price curve,NO_MECHANIC,,designdocs,DESIGN_DOC.md §16 Economy & Shop,"Card power/cost sits on an exponential curve: stronger cards are priced cheaper than linear scaling would suggest, since high cost trades off against flexibility."
+E0535,Eye stamp mini-art,NO_MECHANIC,,designdocs,DESIGN_DOC.md §7 Spotlight System,The hidden-trigger (eye) stamp shows a miniature of the card's skill art inside the stamp icon.
+E0538,Fame as antagonist reframe,NO_MECHANIC,,designdocs,DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe,Rename the goal score to 'Fame needed'; overscore grants tips; no separate enemy HP is added.
+E0542,Fame/tips framing,NO_MECHANIC,,designdocs,DESIGN_DOC.md §5 Scoring (circus framing),Scoring represents exciting the audience; cheering audio scales with score; overscoring pays out tips; the required score is the fame the show must earn.
+E0563,Formation alt win cons (rejected),NO_MECHANIC,,designdocs,"DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons","Rejected: alt win conditions tied to formations, since a crafted deck can guarantee the formation every time."
+E0564,Fortune Teller class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: deck manipulation.
+E0574,Goal curve formula,NO_MECHANIC,,designdocs,DESIGN_DOC.md §15 Map (implemented),"Show goals follow G0 x (N-hat/N0)^ALPHA x difficulty x BOSS x LAP^lap, baked per progress step with a monotone clamp."
+E0582,Halo charge display,NO_MECHANIC,,designdocs,DESIGN_DOC.md §12 Tapping / Cues & Charges,The halo doesn't resize but gains black divider lines to show remaining charge uses.
+E0588,Held-button full description,NO_MECHANIC,,designdocs,DESIGN_DOC.md §12 Tapping / Cues & Charges,Reading a card's full description requires holding a button or an info toggle (also applies in deck/pack viewers).
+E0593,Hidden micro-text art,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,A card's art contains legible hidden micro-text.
+E0595,High-score luck gates,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons","Progress is gated behind occasional extreme high scores that demand luck or complicated decks, pushing toward dynamic, animated builds."
+E0599,HONK,NO_MECHANIC,,designdocs,DESIGN_DOC.md §14.1 Skills/Feats,"On cue (tap), makes a honk noise; unlimited uses."
+E0611,Inverted-blessing naming,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §F1 Theater & Opera,"Debuff-granting cards carry well-wishing names, and vice versa."
+E0619,Jump/duck reactions,NO_MECHANIC,,designdocs,DESIGN_DOC.md §10 Suit projectiles v2,Feat cards dynamically jump up through hoops and duck under knives as projectiles pass.
+E0635,Literal spotlight beam,NO_MECHANIC,,designdocs,DESIGN_DOC.md §7 Spotlight System,Triggering cards get a literal spotlight beam instead of a generic glow; the whole screen may dim during submit.
+E0641,Magician class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: card creation and deletion.
+E0647,MapNodeRoles,NO_MECHANIC,,designdocs,DESIGN_DOC.md §15 Map (implemented),Deterministically assigns show/booster/anchor roles to map nodes from the run seed.
+E0670,New scoring methods,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that create new ways to score.
+E0672,Nominal suit subclasses,NO_MECHANIC,,designdocs,DESIGN_DOC.md §10 Suit-Props (implemented),"Each suit is a nominal PipSuit subclass (Hoop/Knife/Ball/Fire/Firework) with no ordinal value, constructed explicitly rather than compared by index."
+E0680,Out-of-game ARG secret,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §G The Modern Era,A mystery solvable only through outside research.
+E0683,Overscore tax retired,NO_MECHANIC,,designdocs,DESIGN_DOC.md §15 Map (implemented),The overscore tax was retired: wins now bank the full score as fame with no separate penalty.
+E0688,Paper,NO_MECHANIC,,designdocs,DESIGN_DOC.md §14.3 Types,Default/basic material with no special effect.
+E0690,Peek-over presentation,NO_MECHANIC,,designdocs,DESIGN_DOC.md §7 Spotlight System,Cards with skills idly move and peek over the card blocking them; blocked active cards shift the row below to show at least their upper art half.
+E0694,Per-level rule deck,NO_MECHANIC,,designdocs,DESIGN_DOC.md §8 Rule Deck (rejected),"Rejected: replacing the rule deck with a per-level deck, since score goals live outside the rule deck and building UI from it is scope creep."
+E0707,Power-sort rarity,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §18 Rarity, Packs & Collection",Rarity is determined by how far a base effect has been power-climbed into a stronger version of the same idea (e.g. Hippo to Sin of Gluttony).
+E0712,Producer / Manager class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: token cards — gold/money cards and basic cards.
+E0723,Rarity visual tiers,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §18 Rarity, Packs & Collection","Different rarities get different borders, shines, and possibly holographic effects."
+E0724,Removing unwanted cards,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that remove unwanted cards.
+E0725,Repositioning,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Skill taxonomy,Skill taxonomy category: cards that reposition cards on the board.
+E0732,Roman numeral rank,NO_MECHANIC,,designdocs,DESIGN_RECOMMENDATIONS.md §3 Suits & Pips,Cosmetic rank skin; melds identically to a normal rank.
+E0750,Score goal per-layer increment,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons","Score goal increments per match, currently x1.1 per layer."
+E0762,Show-all-active toggle,NO_MECHANIC,,designdocs,DESIGN_DOC.md §7 Spotlight System,A half-open-eye QOL toggle pushes stacks apart so every spotlit card is fully visible; disabled while holding a stack.
+E0764,Sliced Reality (reject),NO_MECHANIC,,designdocs,DESIGN_RECOMMENDATIONS.md §1 How I read your design,Changes column count; redundant with ZoneAdder rule cards.
+E0766,Slot-machine pack opening,NO_MECHANIC,,designdocs,"DESIGN_DOC.md §18 Rarity, Packs & Collection","Pack opening shows all possible contents in the background, slot-machine styled, with results seed-fixed."
+E0770,Special Effects class,NO_MECHANIC,,designdocs,DESIGN_DOC.md §11 Class list,Class mechanical focus: points/combo manipulation.
+E0779,Stamp as diegetic hat/equipment,NO_MECHANIC,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"Stamps could be reflavored as an equippable hat or other equipment (shoes, costume), tying into a Costume Designer class."
+E0783,Stone,NO_MECHANIC,,designdocs,DESIGN_DOC.md §14.3 Types,Stubbed material type with no defined effect yet.
+E0952,The Palace / death trail naming,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §A10 The Americas,"The final city is named The Palace; circuits become route templates, with a 'death trail' as the hardest route."
+E0992,The Snowstorm,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §B5 Clowning Across Cultures,A board-covering particle finale used as an endless-mode milestone.
+E1028,Thrown cards,NO_MECHANIC,,designdocs,DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic,A Knives/card-throwing crossover card.
+E1043,UI-manipulation win con,NO_MECHANIC,,designdocs,DESIGN_DOC.md §6 Card Anatomy & Pips,"Shelved idea: an alt win condition based on manipulating the scoring UI itself (duplicate-or-remove), with no good design found."
+E1050,Viewable game laws,NO_MECHANIC,,designdocs,DESIGN_DOC.md §8 Rule Deck,"Game laws are viewable as plain text via a greyed-out '?' button before the player has unlocked the rule deck itself, needed to explain prop-card abilities."
+E1067,Yu-Gi-Oh number scaling,NO_MECHANIC,,designdocs,DESIGN_DOC.md §5 Scoring,Base scoring values should be rebalanced upward so numbers are never single digits and always feel big.
+E1071,15 as rank via ability only,NO_MECHANIC,,braindump,gam draft.txt:96,"Rank 15 is too hard to visually read and should only exist via an ability, not as a default rank."
+E1073,3 submits as 3 acts,NO_MECHANIC,,braindump,gam draft.txt:437,3 submits per match could reference 3 performance acts.
+E1087,Acrobatics leader archetype,NO_MECHANIC,,braindump,gam draft.txt:445,Acrobatics leader archetype: focuses on card movement.
+E1094,Animal trainer leader archetype,NO_MECHANIC,,braindump,gam draft.txt:446,"Animal trainer leader archetype: focuses on stacking, including eating cards and cards auto-moving through the field."
+E1098,Applause scales with score,NO_MECHANIC,,braindump,gam draft.txt:1029,Applause/cheer feedback gets more impactful the higher an individual score is.
+E1116,Blackjack meld idea,NO_MECHANIC,,braindump,random potential effects.csv:8,Blackjack-referencing scoring idea (unelaborated).
+E1119,Booster reroll pool,NO_MECHANIC,,braindump,todo.md:229,Booster reroll pool ships at 5 with a planned but unwritten reroll-count modifier content hook (a luck()-style effect).
+E1127,Burning cascades as combo source,NO_MECHANIC,,braindump,todo.md:132,Open scoring knob: whether Burning-status cascades should count as a combo source.
+E1154,"Circus suits, rank cap question",NO_MECHANIC,,braindump,gam draft.txt:429,Suits become clowns/dancers/flames/juggling balls/hoops/knives; aces are the actual performers; considering capping rank at 10.
+E1157,Clowns leader archetype,NO_MECHANIC,,braindump,gam draft.txt:447,Clowns leader archetype: focuses on pip manipulation.
+E1165,Compress-board button,NO_MECHANIC,,braindump,gam draft.txt:272,"QOL: a compress-all-cards button converts the board into a flavorless sheet showing only pips and bright ability names (dimmed if inactive), maximizing readability."
+E1166,Concessions leader archetype,NO_MECHANIC,,braindump,gam draft.txt:452,Concessions/food leader archetype: focuses on positive effects.
+E1169,Costume designer leader archetype,NO_MECHANIC,,braindump,gam draft.txt:453,Costume designer leader archetype: focuses on equipment/clothing/stamp slots.
+E1179,Custom deck as final deck,NO_MECHANIC,,braindump,gam draft.txt:543,A player-built custom deck can serve as the final/endgame deck.
+E1180,Dancer leader archetype,NO_MECHANIC,,braindump,gam draft.txt:448,Dancer/skill-tricks leader archetype: focuses on specific formations.
+E1186,Decks as playable solitaire boards (vetoed),NO_MECHANIC,,braindump,gam draft.txt:310,Considered (then vetoed) making every deck its own playable solitaire board so players could reorder or extract cards from it.
+E1188,Deterministic per-subsystem RNG streams,NO_MECHANIC,,braindump,todo.md:274,"Planned but unimplemented: deterministic per-subsystem RNG streams, required before any seed-sharing feature."
+E1201,Effect art pops up on trigger,NO_MECHANIC,,braindump,gam draft.txt:423,"When an effect plays, its art pops up on screen in the background as if it is being performed."
+E1212,Entrance drop-down between acts,NO_MECHANIC,,braindump,todo.md:273,Planned but unimplemented: an entrance drop-down step between acts.
+E1216,Escape artist leader archetype,NO_MECHANIC,,braindump,gam draft.txt:449,Escape artist/stuntsman leader archetype: focuses on negative effects.
+E1217,Every 5th row red,NO_MECHANIC,,braindump,gam draft.txt:230,"Every 5 rows, make that row red (visual scoring marker/threshold)."
+E1242,Fortune teller leader archetype,NO_MECHANIC,,braindump,gam draft.txt:450,Fortune teller leader archetype: focuses on deck manipulation.
+E1259,Grand Entrance / The Ring zones,NO_MECHANIC,,braindump,gam draft.txt:426,Circus rename: upper and lower play zones become 'Grand Entrance' and 'The Ring'.
+E1271,Height diagonal scoring updates nearest corner,NO_MECHANIC,,braindump,pokerpatience.txt:11,"A diagonal line across height updates the corner score label closest to the highest height involved, to avoid overlap."
+E1275,High-score gated progress,NO_MECHANIC,,braindump,gam draft.txt:666,"Progress is gated behind reaching certain high scores that require luck or complex card play; more complex cards award more points, pushing players toward dynamic decks."
+E1300,Leaders/acts system,NO_MECHANIC,,braindump,todo.md:274,Planned but unimplemented: a leaders/acts system.
+E1307,Magician leader archetype,NO_MECHANIC,,braindump,gam draft.txt:444,Magician leader archetype: focuses on card creation and deletion.
+E1309,Mahjong rank/suit,NO_MECHANIC,,braindump,curated effects pre grid.csv:81,Placeholder entry referencing a mahjong-based rank/suit mechanic; no effect detail given in the sheet.
+E1313,Map node preview before travel,NO_MECHANIC,,braindump,gam draft.txt:698,Clicking a map node shows a preview plus a separate button to actually travel to it.
+E1320,Meta progression system,NO_MECHANIC,,braindump,todo.md:274,Planned but unimplemented: a meta-progression system.
+E1352,Paper (default type),NO_MECHANIC,,braindump,curated effects pre grid.csv:83,Default no-effect base material type; exists so every card has a type slot filled.
+E1359,Performers and Feats rename,NO_MECHANIC,,braindump,gam draft.txt:427,Circus rename: cards are 'performers'; skills are 'feats'.
+E1373,Poker Patience win threshold,NO_MECHANIC,,braindump,gam draft.txt:1232,Poker Patience: win if the total added score across rows and columns reaches 200 under Barry Scoring.
+E1376,Power-sorted rarity tiers,NO_MECHANIC,,braindump,gam draft.txt:357,"Create common base effects, then progressively stronger versions of those effects as separate, rarer cards; rarity is determined by how far a card climbs the effect-value ladder."
+E1377,Presentation-stage preview,NO_MECHANIC,,braindump,gam draft.txt:469,Preview area is themed as a presentation stage where text scrolls but the card itself does not.
+E1383,Producer/manager leader archetype,NO_MECHANIC,,braindump,gam draft.txt:454,Producer/manager leader archetype: focuses on token cards like gold-money cards and basic cards.
+E1392,Rank as duplicate rule-card identifier,NO_MECHANIC,,braindump,gam draft.txt:686,"Duplicate rule cards during creation use their rank as an identifier, e.g. zone-adder 1 has rank 1, zone-adder 5 has rank 5."
+E1394,Rarity affects card borders/shine,NO_MECHANIC,,braindump,gam draft.txt:354,Rarer cards could have different borders and shine/holographic effects.
+E1400,Reveal-all active ability button,NO_MECHANIC,,braindump,gam draft.txt:270,"QOL: a half-open-eye button that opens fully, causing all cards with an eye stamp (or always-active cards) to push cards stacked on top downward so the active card is fully visible."
+E1424,Score as damage vs antagonist,NO_MECHANIC,,braindump,gam draft.txt:388,"Recontextualize the points system as damage dealt against an antagonist, similar to Slay the Spire enemy health."
+E1440,Shop & economy system,NO_MECHANIC,,braindump,todo.md:274,Planned but unimplemented: a shop and economy system.
+E1445,Slot-machine pack opening,NO_MECHANIC,,braindump,gam draft.txt:537,"Card pack opening could show all possible cards from the pack cycling in the background slot-machine style, though the result is fixed by seed."
+E1450,Special effects leader archetype,NO_MECHANIC,,braindump,gam draft.txt:451,Special-effects (fireworks) leader archetype: focuses on points/combo manipulation.
+E1454,Split meld undercounts matches,NO_MECHANIC,,braindump,todo.md:85,"A split meld can show three matching cards on the board but only counts two toward the scored meld, with no on-screen cue explaining the discrepancy."
+E1512,Base,NO_MECHANIC,,balatro,balatro,No additional effect.
+E1670,Small Blind,NO_MECHANIC,,balatro,balatro,No special effect; can be skipped to receive a Tag.
+E1729,White Stake,NO_MECHANIC,,balatro,balatro,"Base difficulty, no additional modifiers."
+E1759,Blank Deck,NO_MECHANIC,,cryptid,cryptid,No effect
+E1823,Demicolon,NO_MECHANIC,,cryptid,cryptid,No effect (N/A)
+E1913,Luigi,NO_MECHANIC,,cryptid,cryptid,All Jokers give X3 Chips (removed)
+E1920,Mario,NO_MECHANIC,,cryptid,cryptid,Retriggers all Jokers 2 additional times (removed)
+E1951,Nostalgic Fish,NO_MECHANIC,,cryptid,cryptid,All hands start with 1 Mult
+E1958,Nostalgic Ox,NO_MECHANIC,,cryptid,cryptid,All hands start with 0 Chips
+E0041,Epic,RESKIN,E0026,catalog,CARD_CATALOG,"While in the deck, doubles the chance of Legendary cards appearing in packs/shops."
+E0083,Hooptown's Snub,RESKIN,E0048,catalog,CARD_CATALOG,Town hazard: Hoops-suit effects score nothing here.
+E0093,Juggletown's Snub,RESKIN,E0048,catalog,CARD_CATALOG,"Town hazard: Balls-suit effects score nothing here, though Juggling statuses still apply."
+E0098,Knifetown's Snub,RESKIN,E0048,catalog,CARD_CATALOG,Town hazard: Knives-suit effects score nothing here.
+E0125,Pandora's Box,RESKIN,E0119,catalog,CARD_CATALOG,On game start becomes a random skill; on game end resets back to this skill.
+E0140,Rare,RESKIN,E0026,catalog,CARD_CATALOG,"While in the deck, doubles the chance of Epic cards appearing in packs/shops."
+E0238,The Fire-Knife,RESKIN,E0076,catalog,CARD_CATALOG,This card is fixed dual-suit Knives and Flames: knife props fly the row while Burning status drops down the column.
+E0264,The Joey,RESKIN,E0261,catalog,CARD_CATALOG,Jacks are renamed and count as Clown-class cards for group effects.
+E0316,The Ringmistress,RESKIN,E0261,catalog,CARD_CATALOG,Queens are renamed and count as Producer-class cards for group effects.
+E1411,Row card,RESKIN,E0328,braindump,random potential effects.csv:9,Row-type card gives points to its row on score.
+E1503,8 Ball,RESKIN,,balatro,balatro,1 in 4 chance for each played 8 to create a Tarot card when scored.
+E1504,Abstract Joker,RESKIN,,balatro,balatro,+3 Mult for each Joker card.
+E1508,Arrowhead,RESKIN,,balatro,balatro,Played cards with Spade suit give +50 Chips when scored.
+E1517,Bloodstone,RESKIN,,balatro,balatro,1 in 2 chance for played Heart-suit cards to give X1.5 Mult when scored.
+E1522,Bonus Card,RESKIN,,balatro,balatro,+30 Chips when scored.
+E1525,Brainstorm,RESKIN,,balatro,balatro,Copies the ability of the leftmost Joker.
+E1531,Business Card,RESKIN,,balatro,balatro,Played face cards have a 1 in 2 chance to give $2 when scored.
+E1544,Clever Joker,RESKIN,,balatro,balatro,+80 Chips if played hand contains a Two Pair.
+E1548,Crafty Joker,RESKIN,,balatro,balatro,+80 Chips if played hand contains a Flush.
+E1549,Crazy Joker,RESKIN,,balatro,balatro,+12 Mult if played hand contains a Straight.
+E1555,Devious Joker,RESKIN,,balatro,balatro,+100 Chips if played hand contains a Straight.
+E1567,Even Steven,RESKIN,,balatro,balatro,Played cards with even rank give +4 Mult when scored.
+E1572,Foil,RESKIN,,balatro,balatro,"+50 Chips when scored (on a playing card), or +50 Chips added directly before the Joker is scored (on a Joker)."
+E1581,Gluttonous Joker,RESKIN,,balatro,balatro,Played cards with Club suit give +3 Mult when scored.
+E1585,Golden Joker,RESKIN,,balatro,balatro,Earn $4 at end of round.
+E1587,Golden Ticket,RESKIN,,balatro,balatro,Played Gold cards earn $4 when scored.
+E1588,Greedy Joker,RESKIN,,balatro,balatro,Played cards with Diamond suit give +3 Mult when scored.
+E1590,Hack,RESKIN,,balatro,balatro,"Retrigger each played 2, 3, 4, or 5."
+E1592,Hallucination,RESKIN,,balatro,balatro,1 in 2 chance to create a Tarot card when any Booster Pack is opened.
+E1598,Holographic,RESKIN,,balatro,balatro,"+10 Mult when scored (on a playing card), or +10 Mult added directly before the Joker is scored (on a Joker)."
+E1602,Investment Tag,RESKIN,,balatro,balatro,Gain $25 after defeating the next Boss Blind.
+E1604,Joker,RESKIN,,balatro,balatro,+4 Mult.
+E1614,Mad Joker,RESKIN,,balatro,balatro,+10 Mult if played hand contains a Two Pair.
+E1628,Mult Card,RESKIN,,balatro,balatro,+4 Mult when scored.
+E1634,Odd Todd,RESKIN,,balatro,balatro,Played cards with odd rank give +31 Chips when scored.
+E1642,Polychrome,RESKIN,,balatro,balatro,"X1.5 Mult when scored (on a playing card), or X1.5 Mult applied directly after the Joker is scored (on a Joker)."
+E1658,Rough Gem,RESKIN,,balatro,balatro,Played cards with Diamond suit earn $1 when scored.
+E1661,Scary Face,RESKIN,,balatro,balatro,Played face cards give +30 Chips when scored.
+E1662,Scholar,RESKIN,,balatro,balatro,Played Aces give +20 Chips and +4 Mult when scored.
+E1663,Seance,RESKIN,,balatro,balatro,"If poker hand is a Straight Flush, creates a random Spectral card."
+E1669,Sixth Sense,RESKIN,,balatro,balatro,"If the first hand of the round is a single 6, destroys it and creates a Spectral card."
+E1672,Smiley Face,RESKIN,,balatro,balatro,Played face cards give +5 Mult when scored.
+E1673,Sock and Buskin,RESKIN,,balatro,balatro,Retrigger all played face cards.
+E1686,Superposition,RESKIN,,balatro,balatro,Creates a Tarot card if played poker hand contains an Ace and a Straight.
+E1691,The Family,RESKIN,,balatro,balatro,X4 Mult if played hand contains a Four of a Kind.
+E1718,Triboulet,RESKIN,,balatro,balatro,Played Kings and Queens each give X2 Mult when scored.
+E1722,Vagabond,RESKIN,,balatro,balatro,Creates a Tarot card if hand is played with $4 or less.
+E1727,Walkie Talkie,RESKIN,,balatro,balatro,Each played 10 or 4 gives +10 Chips and +4 Mult when scored.
+E1731,Wily Joker,RESKIN,,balatro,balatro,+100 Chips if played hand contains a Three of a Kind.
+E1732,Wrathful Joker,RESKIN,,balatro,balatro,Played cards with Spade suit give +3 Mult when scored.
+E1735,Zany Joker,RESKIN,,balatro,balatro,+12 Mult if played hand contains a Three of a Kind.
+E1736,2D,RESKIN,,cryptid,cryptid,"Retriggers each played 2, 2 additional times"
+E1738,Absurd Joker,RESKIN,,cryptid,cryptid,+4 Mult if played hand contains a High Card
+E1740,Adroit Joker,RESKIN,,cryptid,cryptid,+170 Chips if played hand contains a Bulwark
+E1750,Azure Seal,RESKIN,,cryptid,cryptid,"Creates 3 Negative Planets for the played poker hand, then destroys this card"
+E1754,Banana Tag,RESKIN,,cryptid,cryptid,"Creates Gros Michel (or Cavendish if extinct this run), must have room"
+E1760,Blender,RESKIN,,cryptid,cryptid,Creates a random consumable when a Code card is used (must have room)
+E1762,Blurred,RESKIN,,cryptid,cryptid,"Retriggers this card 1 time, plus 1 in 2 chance to retrigger 1 additional time"
+E1765,Bonk,RESKIN,,cryptid,cryptid,"Each Joker gives +6 Chips, +1 more if poker hand is a Pair; Jolly Jokers give +18 Chips instead"
+E1766,Bonkers Joker,RESKIN,,cryptid,cryptid,+20 Mult if played hand contains a Bulwark
+E1776,Bubble M,RESKIN,,cryptid,cryptid,"Creates a Foil Jolly Joker if played hand contains a Three of a Kind, then self-destructs"
+E1805,Consume-able,RESKIN,,cryptid,cryptid,Earns $3 when using a consumable
+E1809,Crimson Stake,RESKIN,,cryptid,cryptid,Vouchers restock on even Antes
+E1812,Crypto Coin,RESKIN,,cryptid,cryptid,Earns between $1 and $10 for each Joker sold
+E1822,Delirious Joker,RESKIN,,cryptid,cryptid,+22 Mult if played hand contains a Five of a Kind
+E1825,Digital Hallucinations,RESKIN,,cryptid,cryptid,"When a Booster Pack is opened, 1 in 2 chance to create a random Negative card matching its type"
+E1826,Discreet Joker,RESKIN,,cryptid,cryptid,+240 Chips if played hand contains a Flush Five
+E1827,Doodle M,RESKIN,,cryptid,cryptid,"Creates 2 Negative consumables when Blind is selected, +1 more per Jolly Joker owned"
+E1828,Double M Tag,RESKIN,,cryptid,cryptid,Shop has a Jolly M Joker
+E1832,Dubious Joker,RESKIN,,cryptid,cryptid,+20 Chips if played hand contains a High Card
+E1834,Echo Card,RESKIN,,cryptid,cryptid,1 in 2 chance to retrigger 2 additional times when scored
+E1853,Familiar Currency,RESKIN,,cryptid,cryptid,Creates a Meme Joker at end of round for $19 if possible (must have room)
+E1857,Formidiulosus,RESKIN,,cryptid,cryptid,"Destroys any Cursed Joker obtained, creates 3 Negative Candies at end of shop, and gains ^0.01 Mult per Candy owned"
+E1858,Foxy Joker,RESKIN,,cryptid,cryptid,+130 Chips if played hand contains a Full House
+E1863,Fucked-Up Joker/Tidy Joker,RESKIN,,cryptid,cryptid,+37 Mult if played hand contains a Clusterfuck/Cluster
+E1864,Gambler's Tag,RESKIN,,cryptid,cryptid,1 in 4 chance to create an Empowered Tag
+E1865,Garden of Forking Paths,RESKIN,,cryptid,cryptid,Earns $7 if played hand contains an Ace and a 7
+E1884,Huge,RESKIN,,cryptid,cryptid,X7 Mult until end of round if poker hand is a Pair
+E1887,Iterum,RESKIN,,cryptid,cryptid,Retriggers all played cards 1 time; each played card gives X2 Mult when scored
+E1893,Jolly,RESKIN,,cryptid,cryptid,+8 Mult; changes the Joker's name to start with M
+E1894,Jolly Joker?,RESKIN,,cryptid,cryptid,"Creates a Jolly Joker when a Joker is sold, once per round"
+E1898,Kidnapping,RESKIN,,cryptid,cryptid,"Earns $1 at end of round, +$3 more when a Mult-type or Chips-type Joker is sold"
+E1903,LeBaron James,RESKIN,,cryptid,cryptid,Played and scoring Kings give +1 hand size and trigger held-in-hand effects
+E1910,Loopy,RESKIN,,cryptid,cryptid,Retriggers all Jokers once for each Jolly Joker sold this round
+E1912,Lucky Joker,RESKIN,,cryptid,cryptid,Earns $5 every time a Lucky card successfully triggers
+E1914,m,RESKIN,,cryptid,cryptid,Gains X13 Mult when Jolly Joker is sold (starts at X1)
+E1915,M,RESKIN,,cryptid,cryptid,Creates a Negative Jolly Joker when Blind is selected
+E1917,M Stack,RESKIN,,cryptid,cryptid,Retriggers all played cards once for every 3 Jolly Jokers sold
+E1922,Megg,RESKIN,,cryptid,cryptid,"Sell this card to create 0 Jolly Jokers, +1 more at end of round"
+E1926,Meteor Shower,RESKIN,,cryptid,cryptid,Other Foil cards each give +75 Chips
+E1933,Morse Code,RESKIN,,cryptid,cryptid,"Earns $1 at end of round, +$2 more when a card with an Edition is sold"
+E1934,Mosaic,RESKIN,,cryptid,cryptid,X2.5 Chips
+E1937,Mult Joker,RESKIN,,cryptid,cryptid,1 in 3 chance per played Mult card scored to create a Cryptid card (must have room)
+E1939,Nebulous Joker,RESKIN,,cryptid,cryptid,+30 Chips if played hand is None
+E1942,Neon M,RESKIN,,cryptid,cryptid,"Earns $0 at end of round, +$1 more per Jolly Joker or M Joker owned"
+E1943,Nice,RESKIN,,cryptid,cryptid,+420 Chips if played hand contains a 6 and a 9
+E1969,Oversaturated,RESKIN,,cryptid,cryptid,"All values on this card are doubled, where possible"
+E1975,Penetrating Joker,RESKIN,,cryptid,cryptid,+270 Chips if played hand contains a Clusterfuck/Cluster
+E1995,Rework Tag,RESKIN,,cryptid,cryptid,Shop has a Joker with the edition of whatever Joker ://REWORK destroyed
+E2003,Sacrifice,RESKIN,,cryptid,cryptid,"Creates an Uncommon Joker and 3 Jolly Jokers when a Spectral card is used, once per round"
+E2008,Savvy Joker,RESKIN,,cryptid,cryptid,+170 Chips if played hand contains a Five of a Kind
+E2012,Scrabble Tile,RESKIN,,cryptid,cryptid,1 in 4 chance to create a Jolly Uncommon Joker when a hand is played
+E2015,Shrewd Joker,RESKIN,,cryptid,cryptid,+150 Chips if played hand contains a Four of a Kind
+E2016,Sob,RESKIN,,cryptid,cryptid,"Creates a Negative Absolute Obelisk when acquired, and a regular Obelisk whenever almost anything happens while an open Joker slot exists"
+E2017,Sock and Sock,RESKIN,,cryptid,cryptid,Retriggers all played Abstract cards 1 time
+E2029,Subtle Joker,RESKIN,,cryptid,cryptid,+240 Chips if played hand contains a Flush House
+E2031,Supercell,RESKIN,,cryptid,cryptid,"X2 Chips, X2 Mult, earns $3 at end of round"
+E2034,Tax Fraud,RESKIN,,cryptid,cryptid,Gains $6 per Rental Joker owned at end of round
+E2045,The Home,RESKIN,,cryptid,cryptid,X3.5 Mult if played hand contains a Full House
+E2056,The WHIP,RESKIN,,cryptid,cryptid,Gains X0.5 Mult if played hand contains a 2 and 7 of different suits
+E2058,Tiny,RESKIN,,cryptid,cryptid,Creates a Double M tag if poker hand is a Pair
+E2060,Treacherous Joker,RESKIN,,cryptid,cryptid,+170 Chips if played hand contains an Ultimate Pair
+E2061,Tredecim,RESKIN,,cryptid,cryptid,"Creates an M Joker at end of round; each Jolly/M Joker gives ^1.05 Mult, increasing by ^0.04 each time a Jolly Joker is sold (excludes itself)"
+E2063,Tricksy Joker,RESKIN,,cryptid,cryptid,+170 Chips if played hand contains a Straight Flush
+E2065,Triplet Rhythm,RESKIN,,cryptid,cryptid,X3 Mult if scoring hand contains exactly three 3s
+E2070,Undefined Joker,RESKIN,,cryptid,cryptid,+5 Mult if played hand is None
+E2077,Virgo,RESKIN,,cryptid,cryptid,Gains $4 of sell value if poker hand contains a Pair; sell this card to create a Polychrome Jolly Joker per $4 of sell value (min 1)
+E2078,Waluigi,RESKIN,,cryptid,cryptid,All Jokers give X2.5 Mult
+E2079,Wario,RESKIN,,cryptid,cryptid,All Jokers give $3 when triggered
