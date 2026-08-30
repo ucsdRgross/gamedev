@@ -270,12 +270,43 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     while the wall keeps its shoulder buttons; a pan steps one grid and always lands centred; the
     board edge bounces; Camera2D limit and smoothing clamp, collapsing to centre on any axis that
     already fits. Implements H7-H12.
-  files_touched: []
+  files_touched: [solatro/UI/play_area.gd, solatro/Scripts/player_settings.gd,
+    solatro/project.godot, solatro/Tests/UI/test_grid_view.gd,
+    solatro/design/poker-patience/ASSUMPTIONS.md]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-99 - TP-103 green.'
+  status: done
+  evidence: >
+    Overseer-run: ALL 45 SUITES: 3677 CHECKS PASSED, zero failures, console and log agreeing, log
+    mtime fresh, errors log 0 bytes. doc_check 0 errors / 7 warnings; ZERO design ids and ZERO
+    numeric literals added to product code.
+    RED (fall-through removed only): 1 FAILED, and it was the RIGHT one -- "Back in the all-grids
+    view is NOT swallowed -- it reaches the wall". RED (zoom-out, pan step, bounce and centring all
+    neutralised): 10 FAILED, all in the expected set (2 TP-99, 1 TP-100, 4 TP-101, 1 TP-102,
+    2 TP-103).
+    BY EYE (grid_layer_shot.tscn, rendered and looked at): the grid is centred at x~785 in a
+    1152-wide window, matching the measured fix (was 555, window centre 782). The clipped top row
+    no longer reproduces.
+  notes: >
+    ⚠ **TP-103 CAUGHT A REAL DEFECT, it did not just pass**: a board narrower than the window was
+    parked at the LEFT EDGE instead of collapsing to centre, because a ScrollContainer hands its
+    content exactly the content's own minimum width. Fixed by `TopLevelVBox` taking
+    `size_flags_horizontal = SIZE_EXPAND_FILL`, so centring is the LAYOUT's answer rather than
+    arithmetic in the pan. ⚠ This is HORIZONTAL only -- the floor still comes from `ALIGNMENT_END`
+    and is untouched.
+    ⚠ **THE LEVEL STACK is what reconciles Q148 with Q187**: focused -> overview -> wall. Back zooms
+    out one level and, once in the overview, FALLS THROUGH so `wall_back` still reaches the wall.
+    That fall-through is the case the owner's example does not cover, and it is the single check the
+    first red run reddened.
+    ⚠⚠ **THE PAN RIDES THE `SmoothScrollContainer`, NOT A CAMERA -- AND THE DESIGN SAYS CAMERA.**
+    The implementer justified this with `Q182` ("the existing SmoothScrollContainer, driven
+    programmatically"), but `Q182` is gated `[QR3=b]` and **QR3 = (a)**, so Q182 sits on a pruned
+    branch and is UNANSWERED. Under `QR3`=a the wall's camera pans over a wide picture, and `H11`
+    says "Camera2D limit and smoothing do the clamping". The practical defence stands -- the play
+    area has no `Camera2D` today and the wide picture is `S31`'s -- but the citation does not.
+    **`S28` must settle it**: `H23` divides the two explicitly ("the camera steps between the 3 grid
+    positions; the scroller reveals more of ONE grid"), and today the scroller is doing the
+    camera's job. See Open bugs.
 - id: S28
   description: >
     ONE scroll container inside the picture, for tall stacks and oversized grids; the camera steps
@@ -382,9 +413,15 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
   is correct — but "the board moved by exactly X" is an identity the layout does not owe, and a test
   asserting one will fail on a board that is behaving. ⚠ **Phase 6 rewrites this path; read it
   first.**
-- ⚠ **The occupied top row is CLIPPED by the window's top edge** in `grid_occupied.png`. The grid
-  grows upward and the shot's viewport does not scroll to fit. Phase 6 does the zoom/pan work that
-  should answer this — treat it as an `S26` acceptance case, not a separate fix.
+- ⚠⚠ **THE PAN IS THE SCROLLER DOING THE CAMERA'S JOB, AND `S28` OWNS THE RECKONING.** `QR3` = (a):
+  *"the wall's camera pans over a wide picture"*. `H11` says "Camera2D limit and smoothing do the
+  clamping" and `H23` divides the two mechanisms explicitly — **the camera steps between the 3 grid
+  positions, the scroller reveals more of ONE grid, and they never contend because they move
+  different things.** `S27` shipped the grid-stepping pan on the `SmoothScrollContainer`. The
+  defence is real (there is no `Camera2D` in the play area, and the wide picture is `S31`'s), but
+  the citation offered for it — `Q182` — is gated `[QR3=b]` on a branch `QR3`=a pruned, and is
+  **unanswered**. Either `S28` migrates the grid-stepping to the camera, or the design's division
+  needs an owner ruling. **Do not let `S28` inherit this silently.**
 - ⚠ **SIX test files still assert only against the legacy renderer, and NONE of them can port.**
   `ZONE_ONLY_TESTS` is now entirely MACHINERY (3 — `test_board`, `test_mods`, `test_spotlight`)
   testing legacy code that is still LIVE (`find_data_vec3` has 9 product callers,

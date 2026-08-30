@@ -251,6 +251,15 @@ func setup_gui() -> void:
 	# while the grid centres itself in the same width.
 	upper_zone_left.visible = false
 	upper_zone_right.alignment = BoxContainer.ALIGNMENT_CENTER
+	# ⚠ **A BOARD NARROWER THAN THE WINDOW SITS CENTRED, NOT PARKED AT THE LEFT EDGE.** A
+	# ScrollContainer hands its content exactly the content's own minimum width unless the content
+	# asks to expand — the scroll range then collapses to nothing with the board still hard left
+	# (measured: one grid centred at 555 in a window centred at 782). Asking to expand gives the
+	# spare width to the content, where `GridContainer`'s centre alignment spends it, so the clamp
+	# collapsing to centre on an axis that already fits is the LAYOUT's answer and not arithmetic
+	# written here. Content wider than the window keeps its own minimum, so an overflowing board is
+	# untouched.
+	top_level_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# The split gutter has nothing to separate now the left pane is hidden -- zero it so
 	# `UpperZoneRight` starts flush with `UpperZone`'s own left edge (see the `containers` note).
 	(%UpperZone as Control).add_theme_constant_override("separation", 0)
@@ -476,9 +485,81 @@ func open_zoomed_out() -> void:
 	_set_view(ViewMode.OVERVIEW, NO_GRID)
 
 ## Focus one grid — what a click on a grid in the overview does. Placement happens focused.
+## Focusing also CENTRES the view on that grid: the grid being acted on is the grid in the middle,
+## in both modes, so `pan_grid` can never disagree with `focused_grid` about where the view is.
 func focus_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	_set_view(ViewMode.FOCUSED, gi)
+	pan_to_grid(gi)
+
+## The grid the view is CENTRED on. Distinct from `focused_grid`, which is `NO_GRID` in the
+## overview: the view is centred on some grid in both modes.
+var pan_grid : int = 0
+
+## The grid Back zoomed out of, so Forward can return to the same view. `NO_GRID` until Back has
+## zoomed out of a focused grid — Forward then has nothing to return to.
+var _zoom_out_grid : int = NO_GRID
+
+## ⚠ **THE BOARD IS ONE LEVEL OF A STACK THAT CONTINUES PAST IT** — one grid, then every grid, then
+## the wall. Back steps OUT one level and Forward steps back IN, and both FALL THROUGH once this
+## screen has no level left to give: Back in the all-grids view must reach the wall, or the wall
+## becomes unreachable from inside a show. Panning has its own actions and never touches these.
+## True when this screen consumed the event.
+func _consume_as_view_action(event: InputEvent) -> bool:
+	if event.is_action_pressed(&"grid_pan_left"):
+		pan_by_grids(-1)
+		return true
+	if event.is_action_pressed(&"grid_pan_right"):
+		pan_by_grids(1)
+		return true
+	if event.is_action_pressed(&"wall_back"):
+		if view_mode != ViewMode.FOCUSED: return false
+		_zoom_out_grid = focused_grid
+		open_zoomed_out()
+		return true
+	if event.is_action_pressed(&"wall_forward"):
+		if view_mode != ViewMode.OVERVIEW or _zoom_out_grid == NO_GRID: return false
+		focus_grid(_zoom_out_grid)
+		return true
+	return false
+
+## Pan `step` grids from whichever grid the view is centred on. There is nothing to centre past the
+## outermost grid, so the board bounces there instead of moving.
+func pan_by_grids(step: int) -> void:
+	var last := grid_container.get_child_count() - 1
+	if last < 0: return
+	var target := pan_grid + step
+	if target < 0 or target > last:
+		_bounce_board(step)
+		return
+	pan_to_grid(target)
+
+## Centre the view on grid `gi`.
+##
+## ⚠ **THE CLAMP IS THE SCROLL CONTAINER'S OWN, NOT ARITHMETIC WRITTEN HERE.** `scroll_x_to` clamps
+## the request to the content's real range, and that range collapses to nothing on an axis the
+## content already fits — so an edge grid rests against the edge with no bare background beside it,
+## and a board narrower than the window stays centred by the layout instead of being panned.
+func pan_to_grid(gi: int) -> void:
+	if gi < 0 or gi >= grid_container.get_child_count(): return
+	pan_grid = gi
+	var smooth := scroll_container as SmoothScrollContainer
+	if not smooth: return
+	var cells := _cells_root(grid_container.get_child(gi) as Control)
+	if not cells: return
+	var want_centre := scroll_container.global_position.x + scroll_container.size.x * 0.5
+	var have_centre := cells.global_position.x + cells.size.x * 0.5
+	smooth.scroll_x_to(smooth.pos.x + want_centre - have_centre,
+			SettingsManager.settings.grid_pan_duration)
+
+## The edge push-back: velocity spent into the scroll container's OWN overdrag, which supplies the
+## counterforce and carries the board back to rest. Reused rather than hand-tweened so the board's
+## edge feels like every other overscroll in the game — and so nothing here can park the board off
+## its own edge.
+func _bounce_board(step: int) -> void:
+	var smooth := scroll_container as SmoothScrollContainer
+	if not smooth: return
+	smooth.scroll_horizontally(float(step) * SettingsManager.settings.grid_bounce_velocity_px)
 
 ## The single write path for the view mode; announces only real changes.
 func _set_view(mode: ViewMode, gi: int) -> void:
@@ -533,6 +614,11 @@ func _on_gui_input(event: InputEvent) -> void:
 ## input — this is the first place the board can hear them. Buttons (Submit/Continue/…)
 ## consume their own ui_accept before this runs, so a focused button never double-acts.
 func _unhandled_input(event: InputEvent) -> void:
+	# THE VIEW GETS FIRST REFUSAL, and gives the event straight back when it has no level left to
+	# step out of — see `_consume_as_view_action`.
+	if _consume_as_view_action(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_accept"):
 		flush_rebuild() #reads ui_data
 		# Act only when a BOARD control genuinely holds focus RIGHT NOW (focused_control is

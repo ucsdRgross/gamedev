@@ -579,6 +579,19 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_max_count = maxi(value, 1)
 		settings_changed.emit()
+## How long the view takes to travel from one grid to the next, in seconds. 0 snaps.
+@export_range(0.0, 2.0, 0.01, "or_greater") var grid_pan_duration : float = 0.35:
+	set(value):
+		grid_pan_duration = maxf(value, 0.0)
+		settings_changed.emit()
+## How hard a pan past the outermost grid pushes the board, in pixels per second. Spent as
+## VELOCITY into the scroll container's own overdrag, which supplies the counterforce and carries
+## the board back to rest — so 0 silences the bounce without touching the pan, and no value can
+## leave the board parked off its edge.
+@export_range(0.0, 4000.0, 1.0, "or_greater") var grid_bounce_velocity_px : float = 900.0:
+	set(value):
+		grid_bounce_velocity_px = maxf(value, 0.0)
+		settings_changed.emit()
 ## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
 ## scroll (independent of the board's) covers whatever a deep stack adds past this.
 ## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so

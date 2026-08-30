@@ -82,3 +82,20 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
 - **H6 (S26)** — the overview intercepts the keyboard/controller `ui_accept` press on a grid
   exactly as it intercepts a mouse click, because `Q147` puts placement behind focus regardless of
   which device asks. Grid SELECTION in the overview is `S29`'s.
+
+- **S27** (H7) — Forward with nothing to return to FALLS THROUGH to the wall, exactly as Back does
+  from the all-grids view. `Q148` says Forward *"returns to same view as before"*, and before any
+  Back has been pressed there is no such view; swallowing the press would make Forward dead on the
+  game screen. Reversible: one guard in `PlayArea._consume_as_view_action`.
+
+- **S27** (H9) — `PlayArea.focus_grid` also CENTRES the view on that grid, so `pan_grid` and
+  `focused_grid` cannot disagree about where the view is. The design never states it, but a grid
+  focused for placement that is not the grid in the middle contradicts *"view should always be
+  snapped with a grid in the center"*. Reversible: one call.
+
+- **S27** (H12, `Q159`=b) — `TopLevelVBox` is given `SIZE_EXPAND_FILL` so a board narrower than the
+  window sits CENTRED instead of parked at the left edge. A `ScrollContainer` otherwise hands its
+  content exactly the content's own minimum width, so the pan range collapsed to nothing with the
+  board hard left (measured: one grid centred at 555 in a window centred at 782). This makes the
+  "collapse to centre on an axis that already fits" rule the LAYOUT's answer rather than arithmetic
+  in the pan. Reversible: one size flag.

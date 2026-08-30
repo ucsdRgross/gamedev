@@ -144,6 +144,9 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `combo_repeat_step` | `0.5` | |
 | `combo_cap` | `0.0` (off) | |
 | `game_picture_max_render_px` | `4096` | The render-target clamp. |
+| `grid_bounce_velocity_px` | `900.0` | The edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
+
+⚠ `grid_pan_duration` was registered here long before it existed in code; `S27` added it. **`grid_buffer_px` and `grid_overview_margin` are still registered-but-absent** — they are `S28`'s.
 
 **Removed:** `score_additive`, `duplicate_class_scale`, `patience_max`,
 `patience_track_uniques`, `patience_reset_uniques_on_act`, `multi_line_reveal_scale`
@@ -155,8 +158,8 @@ Each needs **both** a reader and a binding, keyboard **and** joypad.
 
 | Action | Keyboard | Joypad | Means |
 |---|---|---|---|
-| `grid_pan_left` | `,` | L2 | Pan one grid left |
-| `grid_pan_right` | `.` | R2 | Pan one grid right |
+| `grid_pan_left` | `,` **and `Q`** | L2 (axis 4, deadzone 0.5) | Pan one grid left |
+| `grid_pan_right` | `.` **and `E`** | R2 (axis 5, deadzone 0.5) | Pan one grid right |
 | `grid_zoom_out` | — | — | ⚠ **Not a new action.** Intercepts `wall_back`. |
 | `grid_zoom_in` | — | — | ⚠ **Not a new action.** Intercepts `wall_forward` / click. |
 
@@ -229,3 +232,8 @@ that shipped.
 | `PlayArea.focus_grid(gi)` | method | |
 | `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |
 | `"GRID VIEW"` | suite name | `Tests/UI/test_grid_view.gd`, between VISUAL LAYERS and SETTINGS RANGE in the ordering chain. |
+| `PlayArea.pan_grid` | `int` | The grid the view is centred on. `focus_grid` also centres, so it cannot disagree with `focused_grid`. |
+| `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step, always landing centred. |
+| `PlayArea._consume_as_view_action(event)` | method | The Back/Forward interception. Returns false in the overview so the event still reaches the wall. |
+| `PlayArea._bounce_board(step)` | method | The edge bounce. |
+| `PlayArea._zoom_out_grid` | `int` | The grid Back left, so Forward can return to it. |
