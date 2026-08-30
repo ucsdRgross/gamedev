@@ -107,9 +107,20 @@ func _print_centres(pa: PlayArea, n: int) -> void:
 	var right := left + pa.scroll_container.size.x - taken
 	var window_centre := (left + right) * 0.5
 	print("[grid_layer_shot] n=%d window x [%.1f .. %.1f] centre %.1f" % [n, left, right, window_centre])
+	# The CONTENT's own width against the window is what decides whether a scrollbar appears at
+	# all, so print it beside the centres: a board whose cells fit while its container does not
+	# looks centred-but-clipped, and only these two numbers tell the two cases apart.
+	var hbar := pa.scroll_container.get_h_scroll_bar()
+	print("[grid_layer_shot] n=%d container x %.1f w %.1f (min %.1f), scroll %.1f/%.1f, bar visible %s"
+			% [n, pa.grid_container.global_position.x, pa.grid_container.size.x,
+			pa.grid_container.get_combined_minimum_size().x,
+			hbar.value if hbar else 0.0, hbar.max_value if hbar else 0.0,
+			str(hbar.visible if hbar else false)])
 	for gi : int in pa.grid_container.get_child_count():
 		var panel := pa.grid_container.get_child(gi) as Control
 		var cells := pa._cells_root(panel)
+		print("[grid_layer_shot] n=%d grid %d panel x %.1f w %.1f, cells w %.1f"
+				% [n, gi, panel.global_position.x, panel.size.x, cells.size.x])
 		var panel_centre := panel.global_position.x + panel.size.x * 0.5
 		var off := maxf(maxf(left - cells.global_position.x, 0.0),
 				maxf(cells.global_position.x + cells.size.x - right, 0.0))

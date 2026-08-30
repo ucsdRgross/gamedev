@@ -468,8 +468,10 @@ and the plan's dependency note — Phase 10 depends on everything and runs last 
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
 are newer.**
 
-⚠ **`GAP-017` IS OPEN — it does NOT block anything.** `grid_buffer_px` and `grid_overview_margin`
-are registered in `NAMES.md` §6 against `S28`, which after `GAP-016`=(d) has no site for either.
+⚠⚠ **`GAP-017` IS OPEN AND NOW BLOCKS THE CLOSE OF PHASE 6** (escalated from a timing question by
+the by-eye gate — the absent knob is producing wrong geometry now, not later). `grid_buffer_px` and `grid_overview_margin`
+are registered in `NAMES.md` §6 against `S28`, which after `GAP-016`=(d) has no site for either —
+but the missing buffer is what makes the 3-grid board 731 px wide in a 703 px viewport.
 ⚠ **The gap as filed claimed `Q35` is unanswered; it is not — `Q35`=(b)** fixes that grids are
 spaced by their CELL blocks with the labels in the buffer, so only the TIMING is open. Corrected in
 the file. `S29`/`S30` are unaffected; the natural home is `S31`.
@@ -495,19 +497,26 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
-- ⚠⚠ **AT 3 GRIDS THE RIGHTMOST GRID IS CUT OFF AND THE BOARD IS OFF CENTRE — FOUND BY EYE AT THE
-  PHASE GATE, CONFIRMED BY THE OVERSEER LOOKING AT THE PNG.** `grid_board_3.png`: the third grid's
-  rightmost column is sliced by the window edge (**19 px off-screen**) and a horizontal scrollbar
-  appears along the bottom — **even though the content is 706 px in a 711 px window, i.e. it FITS.**
-  The middle grid sits at 792.5 against a window centre of 778.5, so it is **14 px right of centre**,
-  contradicting `G10` *"3 put the middle where a single grid sits"* and `G9` *"board is always
-  CENTRED"*. Measured at REST, with no panning.
-  ⚠ **Not reproduced at 1 or 2 grids** — `grid_board_1.png` is dead centre and `grid_board_2.png`
-  straddles symmetrically (−123 / +122), so this is specific to the 3-grid case. Suspect the
-  interaction between `S27`'s `size_flags_horizontal = SIZE_EXPAND_FILL` and the content's minimum
-  width, or gutter/label width the centring does not account for.
-  **This is a DEFECT, not a gap — `G9`/`G10` leave exactly one defensible behaviour. Phase 6 is not
-  closed until it is fixed.**
+- ⚠⚠ **AT 3 GRIDS THE RIGHTMOST GRID IS CUT OFF AND THE BOARD RESTS UNPOSITIONED — PHASE 6 IS NOT
+  CLOSED UNTIL `GAP-017` IS ANSWERED.** Found by eye at the phase gate; measured by the overseer's
+  own run of `Tests/Visual/grid_layer_shot.tscn`:
+  `container w 731.0 (min 731.0), scroll 0.0/731.0, bar visible true`; grid 2's cells
+  `[937.0 .. 1153.0]`, **19.0 px off-screen**; the middle grid at 792.5 against a window centre of
+  778.5.
+  ⚠ **The board does NOT fit and cannot**: 731 px minimum against **703 px of usable viewport**
+  (cells alone span 706). An earlier reading of "706 fits in 711" compared against the container's
+  OUTER rect, which includes scroll chrome — there is no scroll position at 3 grids that shows
+  everything.
+  ⚠ **Nothing positions the board horizontally at open.** It rests at `scroll_horizontal = 0`, hard
+  left, while `pan_grid` claims the view is centred on grid 0.
+  ⚠ **ROOT CAUSE IS THE ABSENT `grid_buffer_px`** — `Q35`=(b) puts the labels IN the buffer between
+  cell blocks, but with no buffer each panel's 25 px of gutters is ADDED to the board width. That is
+  the 75 px turning a 706 px cell span into 731.
+  ⚠ **`TP-101` did not catch it because it CALLS `pan_to_grid(0)` before measuring** — the very call
+  the resting board never makes. The test sets up the condition whose absence is the bug.
+  **Not reproduced at 1 or 2 grids** (dead centre; −123/+122 straddle). `G10` and `Q150`(a)/`H9` are
+  not simultaneously satisfiable at current measurements, which is why this is `GAP-017` and not a
+  defect anyone may just fix.
 - ⚠⚠ **FLAKY, NOT FIXED: `test_visual_layers.gd`'s "a light follows its card across a board SCROLL,
   not just a layout move" (`worst < 1.0`).** Measured across four runs of IDENTICAL production code:
   it failed twice and passed twice, and it PASSED in the overseer's own S29 verification. It writes
