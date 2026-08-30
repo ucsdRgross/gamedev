@@ -592,6 +592,14 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_bounce_velocity_px = maxf(value, 0.0)
 		settings_changed.emit()
+## How far a finger must travel before a one-finger drag counts as a pan, in MILLIMETRES.
+## ⚠ Millimetres, not pixels: the same physical swipe must mean the same thing on every screen.
+## Converted through `WallInput.mm_to_px` and clamped to the touch-target bounds, because DPI is
+## unreliable on multi-monitor Windows and on Android.
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 8.0:
+	set(value):
+		grid_swipe_threshold_mm = maxf(value, 0.0)
+		settings_changed.emit()
 ## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
 ## scroll (independent of the board's) covers whatever a deep stack adds past this.
 ## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so

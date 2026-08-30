@@ -350,12 +350,37 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     all-grids view arrows select a GRID and Enter focuses it; one-finger swipe read as ScreenDrag
     with emulated events filtered by device -1; a drag starting on a card places, on empty board it
     pans. Implements H14-H17.
-  files_touched: []
+  files_touched: [solatro/UI/play_area.gd, solatro/Scripts/player_settings.gd,
+    solatro/Tests/UI/test_grid_view.gd, solatro/design/poker-patience/NAMES.md,
+    solatro/design/poker-patience/ASSUMPTIONS.md]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Done-when: TP-107 - TP-110 green. A touch test must run AFTER the mouse tests.'
+  status: done
+  evidence: >
+    Overseer-run: ALL 45 SUITES: 3739 CHECKS PASSED, zero failures, console and log agreeing, log
+    mtime fresh. GRID VIEW 65 -> 107 checks. doc_check 0 errors / 7 warnings; ZERO design ids and
+    ZERO sentinel-gate violations added to product code.
+    RED (four behaviours neutralised): 16 FAILED, 15 of them in GRID VIEW and exactly the expected
+    set. ⚠ **The red run's check TOTAL was identical to the green run's (107 = 92 + 15), which is
+    the proof NO TEST ABORTED** -- a neutralisation that breaks the test rather than the behaviour
+    would have shown a LOWER total with assertions silently missing.
+  notes: >
+    ⚠ **ARROWS ARE MODE-DEPENDENT** (Q162=b): cells when FOCUSED, whole grids when in the OVERVIEW.
+    Same key, two granularities.
+    ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`, NOT `_unhandled_input`.** The
+    viewport's focus-neighbour search runs in the GUI pass and CONSUMES any arrow that finds a
+    neighbour, so an `_unhandled_input` reader never runs while a cell has focus.
+    ⚠ **TP-109's FIXTURE IS FIVE GRIDS ON PURPOSE, and this is the step's best catch.** From grid 1
+    of THREE, a doubling swipe reader's second step bounces off the board's end and lands on the
+    SAME `pan_grid` a correct reader produces -- the defect hides. Five grids separate them (correct
+    lands on 1, doubling on 4). ⚠ The test pushes BOTH event forms interleaved, the ScreenDrag and
+    the emulated `InputEventMouseMotion` partner; a test sending only ScreenDrag would pass on a
+    doubling implementation because the partner never arrives.
+    "The camera follows" (TP-107) is asserted as OBSERVABLES only -- which grid is in frame after
+    the scroll settles -- because GAP-016=(d) means there is no camera in Phase 6.
+    ⚠ **AN EMPTY CELL'S ZONE CARD COUNTS AS "A CARD"** for H17's drag discrimination, since it is
+    the cell's drop target. That follows Q192 literally; if the owner meant "an empty cell is empty
+    board", it is a one-line change in `_card_control_at`. See Open bugs.
 - id: S30
   description: 'Refocus when the focused grid is removed, and re-centring. Implements G16, G17, G18.'
   files_touched: []
@@ -442,6 +467,19 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
+- ⚠⚠ **FLAKY, NOT FIXED: `test_visual_layers.gd`'s "a light follows its card across a board SCROLL,
+  not just a layout move" (`worst < 1.0`).** Measured across four runs of IDENTICAL production code:
+  it failed twice and passed twice, and it PASSED in the overseer's own S29 verification. It writes
+  `scroll_horizontal` directly and allows 3 ticks for a SMOOTH scroller to catch up, so it is a
+  frame-timing tolerance racing an eased scroll — not a tolerance calibrated to a bug. ⚠ **Do not
+  "fix" it by widening the tolerance; give it a settle-until-still wait like `_settle_scroll`.**
+  ⚠ This is the OTHER check in that test — the `moved > 20.0` vacuity guard beside it is genuinely
+  green and stable, and Phase 5 fixed the width problem that used to fail it.
+- ⚠ **AN EMPTY CELL'S ZONE CARD COUNTS AS "ON A CARD"** for `H17`'s drag-vs-pan discrimination
+  (`S29`), because it is the cell's drop target. `Q192`=(a) says *"a drag that STARTS on a card is a
+  placement; a drag that starts on empty board is a pan"* and this follows it literally — but if the
+  owner meant an empty cell reads as empty BOARD, it is a one-line change in
+  `PlayArea._card_control_at`. **Worth an owner ruling before Phase 7.**
 - ⚠ **THE SCROLL CONTENT'S OWN ORIGIN CAN SHIFT** as the region around it resizes (measured: its top
   moved -1 -> +7 when the Entrance's reservation changed). The board tracks the FLOOR exactly, which
   is correct — but "the board moved by exactly X" is an identity the layout does not owe, and a test
@@ -472,8 +510,8 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. **`S29`**-**`S30`** — keyboard and controller selection across grids, refocus when a grid is
-   removed.
+1. **`S30`** — refocus when the focused grid is removed, and re-centring (`G16`-`G18`). It is the
+   last step of Phase 6.
 2. **Phase 7** — `S31`-`S34`: the wall. ⚠ **`S31` now also owes `TP-105` and the camera migration
    `GAP-016` deferred to it.**
 
@@ -504,9 +542,9 @@ GROUND TRUTH BEFORE TRUSTING ANY `done` (see Environment for the import trap on 
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
   Expect ALL 44 SUITES, zero failures. Last verified 3624 CHECKS PASSED.
 
-THE WORK: S26, S27 and S28 are LANDED and committed. Next is S29, then S30, then Phase 7 -
-  where S31 owes TP-105 and the camera migration GAP-016 deferred to it, plus GAP-017's two
-  knobs if the owner puts them there.
+THE WORK: S26-S29 are LANDED and committed. Next is S30, the last step of Phase 6, then
+  Phase 7 - where S31 owes TP-105 and the camera migration GAP-016 deferred to it, plus
+  GAP-017's two knobs if the owner puts them there.
 
 NON-NEGOTIABLES, each of which caught a real defect on this stream:
   - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.

@@ -506,6 +506,12 @@ var _zoom_out_grid : int = NO_GRID
 ## becomes unreachable from inside a show. Panning has its own actions and never touches these.
 ## True when this screen consumed the event.
 func _consume_as_view_action(event: InputEvent) -> bool:
+	if _consume_as_swipe(event):
+		return true
+	# The overview's arrow keys pick a GRID, not a cell. Read here as well as on a focused cell's
+	# own `gui_input` so the arrows still work when nothing on the board holds focus.
+	if _consume_as_grid_select(event):
+		return true
 	if event.is_action_pressed(&"grid_pan_left"):
 		pan_by_grids(-1)
 		return true
@@ -588,6 +594,175 @@ func _consume_as_focus_click(c: Control) -> bool:
 	focus_grid(gi)
 	return true
 
+# ==============================================================================
+# MOVING THE SELECTION — ARROWS, AND THE ONE-FINGER SWIPE
+#
+# The arrows mean two different things, and which one depends on the view mode: focused, they move
+# the SELECTED CELL along the board's lattice and cross into the next grid; in the overview they
+# select a whole GRID, which Enter then focuses. Same key, two granularities.
+# ==============================================================================
+
+## The overview's cursor: which grid the arrows have selected, and the one Enter focuses. Kept in
+## step with the board focus (`on_control_focus_entered`), so a grid picked with the mouse and a
+## grid picked with the arrows are the same fact.
+var selected_grid : int = 0
+
+## Which way an arrow (or d-pad) press points, `ZERO` for anything else. ⚠ `y` grows DOWNWARD: row
+## 0 is a grid's TOP row, so Up is -1.
+func _arrow_delta(event: InputEvent) -> Vector2i:
+	if event.is_action_pressed(&"ui_left"): return Vector2i.LEFT
+	if event.is_action_pressed(&"ui_right"): return Vector2i.RIGHT
+	if event.is_action_pressed(&"ui_up"): return Vector2i.UP
+	if event.is_action_pressed(&"ui_down"): return Vector2i.DOWN
+	return Vector2i.ZERO
+
+## Every grid's own bounding width, left to right — the lattice `BoardCoord.step` moves over.
+func _grid_widths() -> Array[int]:
+	var widths : Array[int] = []
+	var game := CardEnvironment.get_current_game()
+	if not game: return widths
+	for grid : GridData in game.state.grids:
+		widths.append(grid.grid_width if grid else 0)
+	return widths
+
+## The board coordinate a bound control names, or `NOWHERE`. An EMPTY cell presents its own zone
+## card, which names the cell rather than a card in it — so both are asked.
+func _coord_of_control(c: Control) -> BoardCoord:
+	if not is_instance_valid(c) or c not in ui_data: return BoardCoord.NOWHERE
+	var game := CardEnvironment.get_current_game()
+	if not game: return BoardCoord.NOWHERE
+	var data : CardData = ui_data[c]
+	var coord : BoardCoord = game.state.grid_position_of(data)
+	if not coord.is_nowhere(): return coord
+	return game.state.cell_type_coord(data)
+
+## The control the selection sits on for a cell: its slot's FIRST child, which is the topmost card
+## of the stack, or the cell's own zone card while it is empty. Null when no cell is built there.
+func _cell_focus_control(coord: BoardCoord) -> Control:
+	var game := CardEnvironment.get_current_game()
+	if not game: return null
+	if coord.grid < 0 or coord.grid >= grid_container.get_child_count(): return null
+	if coord.grid >= game.state.grids.size(): return null
+	var grid : GridData = game.state.grids[coord.grid]
+	if not grid: return null
+	var slot := _cell_slot(grid_container.get_child(coord.grid) as Control, grid,
+			grid.cell_index(coord.x, coord.y))
+	if not slot or slot.get_child_count() == 0: return null
+	return slot.get_child(0) as Control
+
+## Arrow movement of the selected CELL, focused mode only. True when it consumed the press.
+##
+## ⚠ **THE MOVEMENT IS `BoardCoord.step` OVER THE UNBOUNDED LATTICE, NEVER ARITHMETIC WRITTEN
+## HERE.** Stepping off a grid's edge simply lands in the next grid's block; whether a cell EXISTS
+## at the landing is a separate question asked here, at landing. A landing on nothing consumes the
+## press and moves nothing, so the board's outer edge stops the selection instead of wrapping.
+## ⚠ **CROSSING CARRIES THE VIEW WITH IT**, or the selection would walk off screen: the landing
+## grid is focused, which also centres it.
+func _consume_as_cell_move(event: InputEvent, control: Control) -> bool:
+	if view_mode != ViewMode.FOCUSED: return false
+	var d := _arrow_delta(event)
+	if d == Vector2i.ZERO: return false
+	var from := _coord_of_control(control)
+	if from.is_nowhere() or from.is_entrance(): return false
+	var game := CardEnvironment.get_current_game()
+	if not game: return false
+	var to := from.step(d.x, d.y, _grid_widths())
+	if not game.state.has_cell(to): return true
+	var target := _cell_focus_control(to)
+	if not target: return true
+	target.grab_focus()
+	if to.grid != from.grid: focus_grid(to.grid)
+	return true
+
+## Arrow selection of a whole GRID, overview only — a different granularity from the focused
+## mode's cell movement, matching the wall's own overview. The view follows the selection and the
+## board focus moves onto the newly selected grid, so Enter and the mouse agree about which grid is
+## chosen. Up/Down mean nothing here and fall through.
+func _consume_as_grid_select(event: InputEvent) -> bool:
+	if view_mode != ViewMode.OVERVIEW: return false
+	var d := _arrow_delta(event)
+	if d.x == 0: return false
+	var last := grid_container.get_child_count() - 1
+	if last < 0: return false
+	selected_grid = clampi(selected_grid + d.x, 0, last)
+	pan_to_grid(selected_grid)
+	var target := _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0))
+	if target: target.grab_focus()
+	return true
+
+## Key input on a FOCUSED board cell.
+##
+## ⚠ **THIS IS THE ONLY PLACE THE BOARD CAN HEAR AN ARROW KEY.** The viewport's own focus-neighbour
+## search runs in the GUI pass and consumes any arrow that finds a neighbour, so an arrow read from
+## `_unhandled_input` would never arrive while a cell holds focus — the selection would drift by
+## SCREEN GEOMETRY instead of along the board's lattice, and nothing would pan to follow it.
+## `accept_event` is what stops that search from also running.
+func _on_cell_gui_input(event: InputEvent, control: Control) -> void:
+	if _arrow_delta(event) == Vector2i.ZERO: return
+	if _consume_as_cell_move(event, control) or _consume_as_grid_select(event):
+		control.accept_event()
+
+## Does a BOARD control genuinely hold the focus right now? `focused_control` is a last-known
+## value and goes stale as soon as focus moves to other UI, so the viewport is asked too.
+func _board_control_has_focus() -> bool:
+	return (is_instance_valid(focused_control) and focused_control in ui_data
+			and get_viewport().gui_get_focus_owner() == focused_control)
+
+## Where the live one-finger drag began, in screen pixels.
+var _swipe_origin := Vector2.ZERO
+## Armed only by a touch that began on BARE BOARD. A drag that begins on a card is a placement —
+## the same distinction the wall draws between a press on a picture and a press on bare wall.
+var _swipe_armed := false
+## ONE GRID PER SWIPE: latched the moment the threshold is crossed, and not re-armed until the
+## finger lifts.
+var _swipe_fired := false
+
+## How far a finger must travel before the drag is a pan, in px: the millimetre knob converted at
+## the screen's DPI and clamped to the same touch-target bounds, because a DPI reading is
+## unreliable on multi-monitor Windows (which reports the primary screen's for all of them) and on
+## Android, and an unclamped conversion can therefore produce any number at all.
+func _swipe_threshold_px() -> float:
+	var s := SettingsManager.settings
+	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, DisplayServer.screen_get_dpi()),
+			s.wall_touch_target_min_px, s.wall_touch_target_max_px)
+
+## The bound board control under a point, or null for bare board. The zone card an EMPTY cell
+## presents counts as a card: it is the cell's drop target, so a drag begun on it is a placement.
+func _card_control_at(at: Vector2) -> Control:
+	for c : Control in ui_data:
+		if not is_instance_valid(c) or not c.is_visible_in_tree(): continue
+		if c.get_global_rect().has_point(at): return c
+	return null
+
+## The one-finger swipe. True only when a pan actually fired.
+##
+## ⚠ **READ FROM `InputEventScreenDrag` AND NOTHING ELSE.** With `emulate_mouse_from_touch` at its
+## default of true, one finger arrives as BOTH a screen drag and a synthesised
+## `InputEventMouseMotion`; a reader that accepted either form pans TWICE per swipe. The project
+## setting stays on — the wall's own one-finger pan reads the mouse form.
+## ⚠ **`device == -1` MARKS THE ENGINE'S OWN SYNTHESIS** (a mouse emulating touch), so filtering it
+## keeps a real mouse drag from panning the board.
+## ⚠ A press only ARMS: it consumes nothing, and moves nothing until the finger does.
+func _consume_as_swipe(event: InputEvent) -> bool:
+	if event.device == -1: return false
+	var touch := event as InputEventScreenTouch
+	if touch:
+		_swipe_fired = false
+		_swipe_armed = false
+		if touch.pressed:
+			flush_rebuild()   # reads ui_data
+			_swipe_origin = touch.position
+			_swipe_armed = _card_control_at(touch.position) == null
+		return false
+	var drag := event as InputEventScreenDrag
+	if not drag or not _swipe_armed or _swipe_fired: return false
+	var travel := drag.position.x - _swipe_origin.x
+	if absf(travel) < _swipe_threshold_px(): return false
+	_swipe_fired = true
+	# The board follows the finger: dragging RIGHT brings the grid on the left into view.
+	pan_by_grids(-1 if travel > 0.0 else 1)
+	return true
+
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
 	# Mouse ONLY: key/joypad events never reach this root handler — Godot 4 delivers them to
@@ -620,13 +795,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("ui_accept"):
+		# IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds
+		# focus — an arrow selection must be committable on its own. With a board control focused
+		# the pass below already does it through `_consume_as_focus_click`, and the two agree
+		# because the cursor tracks the focus; leaving that case alone is what keeps a focused
+		# ENTRANCE card (which belongs to no grid) selectable in the overview.
+		if view_mode == ViewMode.OVERVIEW and not _board_control_has_focus():
+			focus_grid(selected_grid)
+			get_viewport().set_input_as_handled()
+			return
 		flush_rebuild() #reads ui_data
 		# Act only when a BOARD control genuinely holds focus RIGHT NOW (focused_control is
 		# our last-known card control; it can go stale when focus moves to other UI, and it
 		# must stay inert while the game-over overlay has the board focus-locked).
-		if (is_instance_valid(focused_control)
-				and focused_control in ui_data
-				and get_viewport().gui_get_focus_owner() == focused_control):
+		if _board_control_has_focus():
 			if _info_mode():
 				info_requested.emit(card_info(ui_data[focused_control]))
 			elif not _consume_as_focus_click(focused_control):
@@ -1586,6 +1768,9 @@ func create_card_control() -> Control:
 	new_control.focus_mode = Control.FOCUS_ALL
 	new_control.focus_behavior_recursive = Control.FOCUS_BEHAVIOR_ENABLED
 	new_control.focus_entered.connect(func()->void:on_control_focus_entered(new_control))
+	# ARROW KEYS ARE READ HERE, on the focused cell itself — see `_on_cell_gui_input` for why
+	# `_unhandled_input` is too late.
+	new_control.gui_input.connect(func(e: InputEvent)->void:_on_cell_gui_input(e, new_control))
 	new_control.mouse_entered.connect(func()->void:
 			new_control.grab_focus()
 			moused_hovered_control = new_control)
@@ -1599,6 +1784,10 @@ func create_card_control() -> Control:
 var focused_visual : CardVisual
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild() #reads ui_data / data_card
+	# ONE CURSOR FOR BOTH INPUT MODES: whatever moved the board focus onto a grid — mouse hover,
+	# arrows, a click — is also what the overview's Enter will focus.
+	var focus_grid_index := _grid_index_of(control)
+	if focus_grid_index != NO_GRID: selected_grid = focus_grid_index
 	var row_index := control.get_index()
 	var column_node : Control = control.get_parent()
 	if focused_visual: focused_visual.focused = false

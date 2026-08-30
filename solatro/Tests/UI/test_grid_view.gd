@@ -34,6 +34,11 @@ func _ready() -> void:
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
 	await run_one_scroll_container_on_the_board_test()
 	await run_panning_shifts_which_three_are_in_frame_test()
+	await run_arrows_cross_a_grid_boundary_test()
+	await run_overview_arrows_select_a_grid_test()
+	# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
+	await run_a_swipe_fires_once_test()
+	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -594,4 +599,364 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	check(_highest(back) < _highest(after),
 			"...having given up the far grid it had panned onto",
 			"%s vs %s" % [back, after])
+	await _tear_down(view)
+
+# ==============================================================================
+# S29 — MOVING THE SELECTION. Arrows across grids, the overview's grid cursor, and the one-finger
+# swipe.
+#
+# ⚠ THE TOUCH TESTS RUN LAST, AFTER EVERY MOUSE TEST ABOVE: a touch leaves no HOVER behind, and
+# the mouse selection path those tests drive needs one.
+# ==============================================================================
+
+## A real key press, so these checks assert the `ui_*` BINDINGS as well as the reader.
+func _key(code: Key) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.pressed = true
+	return e
+
+## The board coordinate a control names, printed. Written out because `BoardCoord` has no
+## `_to_string` and a failure message that says "moved to the wrong cell" must say WHICH.
+func _where(pa: PlayArea, c: Control) -> String:
+	if not is_instance_valid(c): return "<none>"
+	var coord := pa._coord_of_control(c)
+	return "grid %d (%d,%d)" % [coord.grid, coord.x, coord.y]
+
+## True when `c` names exactly this cell.
+func _is_cell(pa: PlayArea, c: Control, gi: int, x: int, y: int) -> bool:
+	if not is_instance_valid(c): return false
+	return pa._coord_of_control(c).equals(BoardCoord.new(gi, x, y, 0))
+
+# ==============================================================================
+# TP-107 — FIX-GRID-3: arrow keys cross a grid boundary, and the view follows.
+#
+# ⚠ DRIVEN THROUGH THE CELL CONTROL'S OWN `gui_input`, which is where the board can first hear an
+# arrow — the viewport's focus-neighbour search consumes arrows in the GUI pass, so a reader in
+# `_unhandled_input` would never run. Cutting the connect in `create_card_control` therefore fails
+# this test even though every part still exists.
+#
+# ⚠ "THE CAMERA FOLLOWS" IS NOT A CAMERA: there is none in this phase. What follows is the board's
+# own scroll, so the observable asserted here is which grid the view is centred on and which grids
+# are in frame — never a camera transform.
+# ==============================================================================
+func run_arrows_cross_a_grid_boundary_test() -> void:
+	behavior_section("ARROW KEYS CROSS A GRID BOUNDARY AND THE VIEW FOLLOWS")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.focus_grid(0)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.pan_grid == 0,
+			"precondition: focused on grid 0 (TP-107 fixture FIX-GRID-3)",
+			"mode %d pan %d" % [pa.view_mode, pa.pan_grid])
+
+	# WITHIN a grid first: the same key, one column along, nothing about the view changes.
+	var start := pa._cell_focus_control(BoardCoord.new(0, 0, 2, 0))
+	check(start != null and _is_cell(pa, start, 0, 0, 2),
+			"instrument check: the selection starts on a real cell of grid 0 (TP-107)",
+			_where(pa, start))
+	start.grab_focus()
+	start.gui_input.emit(_key(KEY_RIGHT))
+	check(_is_cell(pa, pa.focused_control, 0, 1, 2),
+			"a right press inside a grid moves ONE column along it",
+			_where(pa, pa.focused_control))
+	check(pa.pan_grid == 0,
+			"...and the view has no reason to move", "pan_grid %d" % pa.pan_grid)
+
+	# THE BOUNDARY. Grid 0's rightmost column: one more press has to land in grid 1.
+	var edge := pa._cell_focus_control(BoardCoord.new(0, 4, 2, 0))
+	check(edge != null and _is_cell(pa, edge, 0, 4, 2),
+			"precondition: the selection is on grid 0's RIGHTMOST column",
+			_where(pa, edge))
+	edge.grab_focus()
+	edge.gui_input.emit(_key(KEY_RIGHT))
+	check(_is_cell(pa, pa.focused_control, 1, 0, 2),
+			"stepping off a grid's edge CROSSES into the next grid's first column (TP-107)",
+			_where(pa, pa.focused_control))
+	check(pa.focused_grid == 1 and pa.pan_grid == 1,
+			"...and the view follows the selection onto that grid",
+			"focused %d pan %d" % [pa.focused_grid, pa.pan_grid])
+	await _settle_scroll(view)
+	check(_grids_in_frame(pa).has(1),
+			"...so the grid the selection crossed into is actually in frame (TP-107)",
+			"%s in frame" % [_grids_in_frame(pa)])
+
+	# Back the other way, to prove the crossing is not a one-directional accident.
+	pa.focused_control.gui_input.emit(_key(KEY_LEFT))
+	check(_is_cell(pa, pa.focused_control, 0, 4, 2),
+			"a left press at grid 1's first column crosses back into grid 0's last",
+			_where(pa, pa.focused_control))
+	check(pa.pan_grid == 0,
+			"...and the view comes back with it", "pan_grid %d" % pa.pan_grid)
+	await _settle_scroll(view)
+
+	# THE OUTER EDGE OF THE BOARD. There is no grid past the last one, so nothing moves.
+	var far := pa._cell_focus_control(BoardCoord.new(2, 4, 2, 0))
+	far.grab_focus()
+	far.gui_input.emit(_key(KEY_RIGHT))
+	check(_is_cell(pa, pa.focused_control, 2, 4, 2),
+			"at the board's outer edge the selection stays put — it does not wrap (TP-107)",
+			_where(pa, pa.focused_control))
+
+	# The vertical axis is the same lattice: row 0 is the TOP row, so Down increases y.
+	var mid := pa._cell_focus_control(BoardCoord.new(1, 2, 2, 0))
+	mid.grab_focus()
+	mid.gui_input.emit(_key(KEY_DOWN))
+	check(_is_cell(pa, pa.focused_control, 1, 2, 3),
+			"a down press moves one row down the same grid",
+			_where(pa, pa.focused_control))
+	await _settle_scroll(view)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-108 — FIX-GRID-3: in the overview the arrows select a GRID, and Enter focuses it.
+#
+# ⚠ THE DISCRIMINATING CASE IS THAT THE SAME KEY DOES TWO DIFFERENT THINGS. A selection model that
+# was simply "the same cells at a smaller scale" would pass a test that only checked the overview,
+# so both modes are driven here with the same press.
+# ==============================================================================
+func run_overview_arrows_select_a_grid_test() -> void:
+	behavior_section("IN THE OVERVIEW THE ARROWS SELECT A GRID")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.open_zoomed_out()
+	pa.selected_grid = 0
+	pa.pan_to_grid(0)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: the board is in the all-grids view (TP-108)", "mode %d" % pa.view_mode)
+
+	pa._unhandled_input(_key(KEY_RIGHT))
+	check(pa.selected_grid == 1,
+			"a right press in the overview selects the NEXT GRID, not the next cell (TP-108)",
+			"selected_grid %d" % pa.selected_grid)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"...selecting is not focusing: the board is still in the overview",
+			"mode %d" % pa.view_mode)
+	check(pa.pan_grid == 1,
+			"...and the view moves onto the selected grid",
+			"pan_grid %d" % pa.pan_grid)
+	await _settle_scroll(view)
+	check(_grids_in_frame(pa).has(1),
+			"...so the selected grid is in frame", "%s" % [_grids_in_frame(pa)])
+
+	pa._unhandled_input(_action(&"ui_accept"))
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"Enter focuses the selected grid (TP-108)", "mode %d" % pa.view_mode)
+	check(pa.focused_grid == 1,
+			"...the grid the arrows selected, not the one it started on",
+			"focused_grid %d" % pa.focused_grid)
+	await _settle_scroll(view)
+
+	# THE OTHER GRANULARITY, from the same key. Now that a grid is focused, right moves a CELL.
+	var cell := pa._cell_focus_control(BoardCoord.new(1, 0, 2, 0))
+	cell.grab_focus()
+	var was_focused_grid := pa.focused_grid
+	cell.gui_input.emit(_key(KEY_RIGHT))
+	check(_is_cell(pa, pa.focused_control, 1, 1, 2),
+			"the SAME press, once focused, moves a CELL instead of a grid (TP-108)",
+			_where(pa, pa.focused_control))
+	check(pa.focused_grid == was_focused_grid,
+			"...and it selects no new grid", "focused_grid %d" % pa.focused_grid)
+
+	# Back in the overview, the leftmost grid has nothing to its left.
+	pa.open_zoomed_out()
+	pa.selected_grid = 0
+	pa._unhandled_input(_key(KEY_LEFT))
+	check(pa.selected_grid == 0,
+			"at the first grid, left selects nothing that is not there",
+			"selected_grid %d" % pa.selected_grid)
+	await _settle_scroll(view)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-109 — A SWIPE FIRES ONCE.
+#
+# ⚠ WITH `emulate_mouse_from_touch` AT ITS DEFAULT, ONE FINGER ARRIVES TWICE: as an
+# `InputEventScreenDrag` and as a synthesised `InputEventMouseMotion`. A test that delivered only
+# the screen drag would pass on a reader that doubles, because the partner never arrives. So this
+# delivers BOTH FORMS, interleaved, the way the engine does.
+#
+# ⚠ AND IT NEEDS FIVE GRIDS. Starting on grid 1 of three, a doubling reader's second step runs off
+# the end and bounces, leaving `pan_grid` at the same value a correct reader produces — the fixture
+# would hide the very defect the test exists for. From grid 0 of five, one step is 1 and two is 2.
+# ==============================================================================
+
+## A finger going down or coming up. `device` 0: a REAL touch, not the engine's own synthesis.
+func _touch(at: Vector2, pressed: bool) -> InputEventScreenTouch:
+	var e := InputEventScreenTouch.new()
+	e.position = at
+	e.pressed = pressed
+	e.device = 0
+	return e
+
+## A finger moving. `device` -1 is the engine's marker for an emulated event.
+func _drag(at: Vector2, device: int) -> InputEventScreenDrag:
+	var e := InputEventScreenDrag.new()
+	e.position = at
+	e.device = device
+	return e
+
+## The mouse motion the engine synthesises alongside every one of those drags.
+func _emulated_motion(at: Vector2, relative: Vector2) -> InputEventMouseMotion:
+	var e := InputEventMouseMotion.new()
+	e.position = at
+	e.relative = relative
+	return e
+
+## A point on BARE BOARD — inside the scrolling window, over no card control. The board is
+## bottom-aligned, so its top strip is empty; the caller checks this is really bare.
+func _bare_point(pa: PlayArea) -> Vector2:
+	return pa.scroll_container.global_position + Vector2(6.0, 6.0)
+
+## One finger swiping `by` pixels horizontally from `from`, delivered in `steps` moves — each of
+## them in BOTH the forms the engine produces. What it proves is read off the board afterwards.
+func _swipe(pa: PlayArea, from: Vector2, by: float, steps: int) -> void:
+	pa._unhandled_input(_touch(from, true))
+	var at := from
+	for i : int in steps:
+		var next := from + Vector2(by * float(i + 1) / float(steps), 0.0)
+		pa._unhandled_input(_drag(next, 0))
+		pa._unhandled_input(_emulated_motion(next, next - at))
+		at = next
+	pa._unhandled_input(_touch(at, false))
+
+func run_a_swipe_fires_once_test() -> void:
+	behavior_section("A SWIPE FIRES ONCE")
+	var view := await _stand_up_grids(5)
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.pan_to_grid(0)
+	await _settle_scroll(view)
+	var threshold := pa._swipe_threshold_px()
+	check(threshold > 0.0,
+			"instrument check: the swipe threshold is a real distance in px (TP-109)",
+			"%f px" % threshold)
+	var from := _bare_point(pa)
+	check(pa._card_control_at(from) == null,
+			"instrument check: the swipe starts on BARE BOARD, over no card",
+			"%s" % [from])
+
+	# A leftward swipe drags the board's content left, which brings the NEXT grid into view.
+	_swipe(pa, from, -threshold * 4.0, 6)
+	await _settle_scroll(view)
+	check(pa.pan_grid == 1,
+			"one swipe pans exactly ONE grid — the emulated mouse partner did not double it (TP-109)",
+			"pan_grid %d" % pa.pan_grid)
+	check(_grids_in_frame(pa).has(1),
+			"...and that grid is in frame", "%s" % [_grids_in_frame(pa)])
+
+	# The mouse form ALONE must move nothing: it is the partner, never the signal.
+	# ⚠ RE-ANCHORED AT GRID 0 FIRST, and before every negative check below. Left where the swipe
+	# above put it, a board that has run out of grids to step onto cannot move whatever the reader
+	# does — so these checks would pass on a reader that reads every form, proving nothing.
+	pa.pan_to_grid(0)
+	await _settle_scroll(view)
+	var before := pa.pan_grid
+	check(before == 0 and pa.grid_container.get_child_count() > 1,
+			"instrument check: the board is re-anchored with somewhere left to pan (TP-109)",
+			"pan_grid %d of %d" % [before, pa.grid_container.get_child_count()])
+	pa._unhandled_input(_touch(from, true))
+	for i : int in 6:
+		pa._unhandled_input(_emulated_motion(from + Vector2(-threshold * float(i + 1), 0.0),
+				Vector2(-threshold, 0.0)))
+	pa._unhandled_input(_touch(from, false))
+	await _settle_scroll(view)
+	check(pa.pan_grid == before,
+			"the emulated mouse motion on its own pans NOTHING (TP-109)",
+			"pan_grid %d -> %d" % [before, pa.pan_grid])
+
+	# An emulated SCREEN DRAG — the form a real mouse produces — is filtered by device -1, so a
+	# mouse drag across the board never pans it.
+	pa.pan_to_grid(0)
+	await _settle_scroll(view)
+	pa._unhandled_input(_touch(from, true))
+	for i : int in 6:
+		pa._unhandled_input(_drag(from + Vector2(-threshold * float(i + 1), 0.0), -1))
+	pa._unhandled_input(_touch(from, false))
+	await _settle_scroll(view)
+	check(pa.pan_grid == before,
+			"a drag marked device -1 is the engine's own synthesis and is ignored (TP-109)",
+			"pan_grid %d" % pa.pan_grid)
+
+	# A finger that never travels far enough is a tap, not a swipe.
+	pa.pan_to_grid(0)
+	await _settle_scroll(view)
+	_swipe(pa, from, -threshold * 0.4, 4)
+	await _settle_scroll(view)
+	check(pa.pan_grid == before,
+			"a drag shorter than the threshold is a tap and pans nothing",
+			"pan_grid %d" % pa.pan_grid)
+
+	# And the other way, one grid back.
+	pa.pan_to_grid(1)
+	await _settle_scroll(view)
+	_swipe(pa, from, threshold * 4.0, 6)
+	await _settle_scroll(view)
+	check(pa.pan_grid == 0,
+			"swiping the other way pans one grid back, once",
+			"pan_grid %d" % pa.pan_grid)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-110 — FIX-GRID-1: a drag that STARTS ON A CARD places; one starting on empty board pans.
+#
+# The two are the same one-finger drag, so the discrimination is the whole behaviour: it is read
+# from where the finger WENT DOWN, exactly as the wall reads a press on a picture as "enter" and a
+# press on bare wall as "arm the pan".
+# ==============================================================================
+func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
+	behavior_section("A DRAG ON A CARD PLACES, ON EMPTY BOARD IT PANS")
+	var view := await _stand_up_grids(1)
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.focus_grid(0)
+	await _settle_scroll(view)
+	var threshold := pa._swipe_threshold_px()
+	var control := _cell_control(pa, 0)
+	check(control in pa.ui_data,
+			"precondition: a bound board control to start the drag on (TP-110 fixture FIX-GRID-1)")
+	var on_card := control.get_global_rect().get_center()
+	check(pa._card_control_at(on_card) == control,
+			"instrument check: that point really is on the card control",
+			"%s" % [on_card])
+
+	# STARTING ON A CARD: never a pan, and the event is left for the placement path.
+	pa._unhandled_input(_touch(on_card, true))
+	check(not pa._swipe_armed,
+			"a finger going down on a card does NOT arm a pan (TP-110)")
+	var consumed := pa._consume_as_view_action(_drag(on_card + Vector2(-threshold * 4.0, 0.0), 0))
+	check(not consumed,
+			"...so dragging from it is not swallowed as a swipe — it stays a placement (TP-110)")
+	check(not pa._swipe_fired,
+			"...and no pan fired")
+	pa._unhandled_input(_touch(on_card, false))
+
+	# ...and the placement itself still works, through the real press path.
+	var selected : Array[CardData] = []
+	pa.data_selected.connect(func(d: CardData) -> void: selected.append(d))
+	_click(pa, control)
+	check(selected.size() == 1,
+			"a press on that same card still reaches the placement path (TP-110)",
+			"%d selections" % selected.size())
+
+	# STARTING ON EMPTY BOARD: armed, and the swipe is the board's.
+	var bare := _bare_point(pa)
+	check(pa._card_control_at(bare) == null,
+			"instrument check: the second start point is bare board",
+			"%s" % [bare])
+	pa._unhandled_input(_touch(bare, true))
+	check(pa._swipe_armed,
+			"a finger going down on empty board ARMS the pan (TP-110)")
+	var panned := pa._consume_as_view_action(_drag(bare + Vector2(-threshold * 4.0, 0.0), 0))
+	check(panned,
+			"...and dragging from it IS consumed as a swipe, not offered to placement (TP-110)")
+	check(pa._swipe_fired,
+			"...one pan fired")
+	pa._unhandled_input(_touch(bare, false))
+	check(not pa._swipe_armed,
+			"lifting the finger disarms, so the next press decides again")
+	await _settle_scroll(view)
 	await _tear_down(view)

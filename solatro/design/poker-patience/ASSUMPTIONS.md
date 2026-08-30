@@ -99,3 +99,4 @@ See the gap protocol in `PLAN.md` §0 — this is for (1), not (2)/(3).
   board hard left (measured: one grid centred at 555 in a window centred at 782). This makes the
   "collapse to centre on an axis that already fits" rule the LAYOUT's answer rather than arithmetic
   in the pan. Reversible: one size flag.
+- **Swipe direction follows the finger** (`H16`, `Q191`): dragging RIGHT brings the grid on the LEFT into view, i.e. the board moves with the finger. The design fixes that one swipe pans one grid but never which way; direct manipulation is the only reading consistent with the scroll container the pan already rides.

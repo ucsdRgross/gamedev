@@ -146,7 +146,7 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `game_picture_max_render_px` | `4096` | The render-target clamp. |
 | `grid_bounce_velocity_px` | `900.0` | The edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
 
-⚠ `grid_pan_duration` was registered here long before it existed in code; `S27` added it. **`grid_buffer_px` and `grid_overview_margin` are still registered-but-absent** — they are `S28`'s.
+⚠ `grid_pan_duration` was registered here long before it existed in code; `S27` added it, and `S29` added `grid_swipe_threshold_mm`. **`grid_buffer_px` and `grid_overview_margin` are still registered-but-absent.**
 
 **Removed:** `score_additive`, `duplicate_class_scale`, `patience_max`,
 `patience_track_uniques`, `patience_reset_uniques_on_act`, `multi_line_reveal_scale`
@@ -236,4 +236,14 @@ that shipped.
 | `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step, always landing centred. |
 | `PlayArea._consume_as_view_action(event)` | method | The Back/Forward interception. Returns false in the overview so the event still reaches the wall. |
 | `PlayArea._bounce_board(step)` | method | The edge bounce. |
+| `PlayArea.selected_grid` | `int` | The OVERVIEW's cursor: which grid the arrows have selected and Enter focuses. Kept in step with the board focus, so the mouse and the arrows cannot disagree. |
+| `PlayArea._arrow_delta(event)` | method | Which way an arrow/d-pad press points. ⚠ `y` grows DOWNWARD — row 0 is a grid's top row. |
+| `PlayArea._consume_as_cell_move(event, control)` | method | Focused mode: the selection moves along the lattice via `BoardCoord.step` and crossing a grid edge focuses (and centres) the next grid. |
+| `PlayArea._consume_as_grid_select(event)` | method | Overview: the arrows pick a whole GRID instead. |
+| `PlayArea._on_cell_gui_input(event, control)` | method | ⚠ **The only place the board can hear an arrow key** — the viewport's focus-neighbour search consumes arrows in the GUI pass, so `_unhandled_input` is too late. Connected per control in `create_card_control`. |
+| `PlayArea._consume_as_swipe(event)` | method | The one-finger swipe. Reads `InputEventScreenDrag` ONLY, ignores `device == -1`. |
+| `PlayArea._swipe_threshold_px()` | method | `grid_swipe_threshold_mm` through `WallInput.mm_to_px`, clamped to the touch-target bounds. |
+| `PlayArea._card_control_at(at)` | method | The bound board control under a point, or null for bare board — the placement/pan discrimination. |
+| `PlayArea._board_control_has_focus()` | method | Does a board control genuinely hold the focus right now. |
+| `PlayArea._grid_widths()` / `_coord_of_control(c)` / `_cell_focus_control(coord)` | method | The lattice adaptors between controls and `BoardCoord`. |
 | `PlayArea._zoom_out_grid` | `int` | The grid Back left, so Forward can return to it. |
