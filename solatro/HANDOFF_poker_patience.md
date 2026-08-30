@@ -383,12 +383,37 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     board", it is a one-line change in `_card_control_at`. See Open bugs.
 - id: S30
   description: 'Refocus when the focused grid is removed, and re-centring. Implements G16, G17, G18.'
-  files_touched: []
+  files_touched: [solatro/UI/play_area.gd, solatro/Tests/UI/test_grid_view.gd]
   verification_command: 'GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Phase done-when: TP-97 - TP-110 green, plus a by-eye pass at 1, 2 and 3 grids.'
+  status: done
+  evidence: >
+    Overseer-run: ALL 45 SUITES: 3759 CHECKS PASSED, zero failures, console and log agreeing.
+    GRID VIEW 107 -> 122 checks. ZERO design ids, ZERO sentinel violations, ZERO tunable literals
+    added to product code.
+    RED (the one call line neutralised): 5 FAILED, exactly the expected set, with the measured
+    numbers naming the defect -- `245.0 px off centre vs 4.0 px for an explicit pan`.
+    ⚠ Red total 3768 vs green 3756, and the whole 12-check gap is BOARD FUZZ, which is RANDOMISED.
+    Every other suite matched check-for-check (3397 non-fuzz in both) and GRID VIEW was 122 in
+    both -- so nothing aborted.
+  notes: >
+    ⚠ **THE RE-CENTRE HAPPENS ON EVERY REMOVAL; ONLY THE REFOCUS IS CONDITIONAL.** Chart G's
+    G16-no edge goes STRAIGHT to G18, and G17 also flows into G18. A test that only removes the
+    FOCUSED grid cannot tell a correct implementation from one that re-centres solely on the
+    focused path.
+    ⚠ **TWO WEAKER TP-112 FIXTURES WERE MEASURED AND REJECTED, and one of them PASSED WITH THE
+    WIRING CUT**: at three grids the survivors FIT the window so the layout centres them with no
+    scroll at all, and with the view near an edge the scroll clamp drags the board to the same
+    place a re-centre would. The middle grid of FIVE has slack on both sides. The rejected fixtures
+    are written into the test's own header.
+    ⚠ **THE RESTING CLAIM IS AN IDENTITY THE LAYOUT DOES OWE, NOT AN ABSOLUTE CENTRE** -- the board
+    lands where an explicit `pan_to_grid` to that grid lands (4.0 px vs 245.0 unwired). An absolute
+    centre is the trap S28 hit.
+    ⚠ **THE RE-CENTRE MUST WAIT FOR THE PANELS TO STOP MOVING BEFORE IT AIMS.** A pan aimed at the
+    pre-removal layout lands 118 px short (measured).
+    TP-111's tie is REAL: three grids, focus the MIDDLE, remove it -- both survivors are exactly one
+    grid from the hole, so the LEFT PREFERENCE and not distance decides, and the assertion is on
+    grid IDENTITY because index 1 is where a clamp or a no-op would also leave focused_grid.
 ```
 
 After Phase 6 comes Phase 7 (`S31`-`S34`, the wall), then Phase 9 (goal-curve refit, the owner's

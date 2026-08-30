@@ -36,6 +36,8 @@ func _ready() -> void:
 	await run_panning_shifts_which_three_are_in_frame_test()
 	await run_arrows_cross_a_grid_boundary_test()
 	await run_overview_arrows_select_a_grid_test()
+	await run_removing_the_focused_grid_refocuses_left_test()
+	await run_the_board_recentres_after_any_removal_test()
 	# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
 	await run_a_swipe_fires_once_test()
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
@@ -196,7 +198,9 @@ func _scroller(pa: PlayArea) -> SmoothScrollContainer:
 
 ## Wait for the BOARD to stop moving horizontally. A pan and a bounce both have a DURATION, so a
 ## still frame taken right after the press is the wrong instrument for either.
-func _settle_scroll(view: GameView) -> void:
+## Returns how long that took, in seconds: a move with a DURATION is the only thing that can take
+## longer than one frame to come to rest.
+func _settle_scroll(view: GameView) -> float:
 	var smooth := _scroller(view.play_area)
 	var last := INF
 	var waited := 0.0
@@ -205,8 +209,9 @@ func _settle_scroll(view: GameView) -> void:
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
 		var now := smooth.pos.x
-		if is_equal_approx(now, last): return
+		if is_equal_approx(now, last): return waited
 		last = now
+	return waited
 
 ## The board's VISIBLE window in global x: the scroll container's own rect less whatever a visible
 ## vertical scrollbar takes off its right edge. ⚠ Not the rect itself — a shown v-scrollbar narrows
@@ -959,4 +964,137 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 	check(not pa._swipe_armed,
 			"lifting the finger disarms, so the next press decides again")
 	await _settle_scroll(view)
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-111 — FIX-GRID-3: removing the grid the view is focused on refocuses the NEAREST survivor,
+# and the LEFT one when two are equally near.
+#
+# The middle grid of three is removed, so both its neighbours survive and both are exactly one
+# grid away: the tie the left-preference exists to break. ⚠ The check is on the surviving grid's
+# IDENTITY, not its index — after the removal the RIGHT neighbour occupies the index a clamp would
+# leave the focus on, so an index-only claim cannot tell the preference from a clamp.
+#
+# It removes the grid through `Board.remove_grid`, the real removal the grid creator's
+# `on_unspotlight` calls, and never touches the refocus itself.
+# ==============================================================================
+func run_removing_the_focused_grid_refocuses_left_test() -> void:
+	behavior_section("REMOVING THE FOCUSED GRID REFOCUSES THE NEAREST SURVIVOR")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+	var left : GridData = view.game.state.grids[0]
+	var right : GridData = view.game.state.grids[2]
+	pa.focus_grid(1)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 1,
+			"precondition: focused on the MIDDLE of three grids (TP-111 fixture FIX-GRID-3)",
+			"mode %d grid %d" % [pa.view_mode, pa.focused_grid])
+	var banked := view.game.state.live_total()
+
+	Board.remove_grid(view.game.state, 1)
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+
+	check(view.game.state.grids.size() == 2,
+			"precondition: the focused grid is gone and both neighbours survive (TP-111)",
+			"%d grids" % view.game.state.grids.size())
+	check(view.game.state.grids[0] == left and view.game.state.grids[1] == right,
+			"instrument check: the two survivors were EQUALLY near the removed grid — one either "
+			+ "side — so this is the tie the left-preference breaks (TP-111)")
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"the view is still focused on a grid, not left on nothing (TP-111)",
+			"mode %d" % pa.view_mode)
+	check(pa.focused_grid >= 0 and pa.focused_grid < view.game.state.grids.size(),
+			"the focused index points at a grid that EXISTS (TP-111)",
+			"focused_grid %d of %d" % [pa.focused_grid, view.game.state.grids.size()])
+	check(view.game.state.grids[pa.focused_grid] == left,
+			"...and it is the LEFT survivor, not the right one that slid into its index (TP-111)",
+			"focused_grid %d" % pa.focused_grid)
+	check(view.game.state.live_total() == banked,
+			"removing a grid does not lose the accumulated score (TP-111)",
+			"%d vs %d" % [view.game.state.live_total(), banked])
+	await _tear_down(view)
+
+## How far grid `gi`'s cell block sits from the middle of the board's window, in pixels.
+func _centre_offset(pa: PlayArea, gi: int) -> float:
+	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
+	var win := _window_x(pa)
+	return absf(cells.global_position.x + cells.size.x * 0.5 - (win.x + win.y) * 0.5)
+
+# ==============================================================================
+# TP-112 — the surviving grids re-centre, ANIMATED, on a removal the view was NOT focused on.
+#
+# ⚠ THAT IS THE DISCRIMINATING CASE: the re-centre is unconditional while the refocus is not, so a
+# test that only ever removes the focused grid cannot tell a correct board from one that re-centres
+# solely on the refocus path.
+#
+# ⚠ FIVE GRIDS, NOT THREE, AND THE VIEW ON THE MIDDLE ONE. Two weaker fixtures were measured and
+# rejected: with three grids a removal leaves a board that FITS its window, so the layout centres
+# it and the scroll never runs; and with the view near an edge the scroll container's own clamp
+# drags the board to the same place a re-centre would, which passes with the wiring cut. The middle
+# grid of five has slack on both sides, so only a re-centre can put it back in the middle.
+#
+# ⚠ A still frame is the wrong instrument for a move with a duration: the offset is sampled while
+# the pan is still running and again at rest, and the settle must take longer than a single frame.
+# ==============================================================================
+func run_the_board_recentres_after_any_removal_test() -> void:
+	behavior_section("THE SURVIVING GRIDS RE-CENTRE AFTER ANY REMOVAL")
+	var view := await _stand_up_grids(5)
+	var pa := view.play_area
+	await _settle_layout(view)
+	var kept : GridData = view.game.state.grids[2]
+	pa.focus_grid(2)
+	await _settle_scroll(view)
+	check(_board_overflows(pa),
+			"precondition: the board overflows its window, so centring is the scroll's job (TP-112)")
+	check(pa.focused_grid == 2,
+			"precondition: focused on a grid that is NOT the one about to be removed (TP-112)",
+			"focused_grid %d" % pa.focused_grid)
+
+	# ⚠ The clock starts at the removal, not at the pan: what is being timed is how long the board
+	# takes to come to rest after losing a grid, and a snap would be done inside a few frames.
+	var started := Time.get_ticks_msec()
+	Board.remove_grid(view.game.state, 0)
+	pa.flush_rebuild()
+	await _settle_layout(view)
+	# Sampled with the layout at rest and the board still travelling: the re-centre waits for the
+	# panels to stop before it aims, so this is the board on its way, not before it started.
+	var moving := _centre_offset(pa, view.game.state.grids.find(kept))
+	await _settle_scroll(view)
+	var elapsed := float(Time.get_ticks_msec() - started) / 1000.0
+	var kept_index := view.game.state.grids.find(kept)
+	var at_rest := _centre_offset(pa, kept_index)
+	var grid_px : float = pa._cells_root(pa.grid_container.get_child(0) as Control).size.x
+	# ⚠ THE REFERENCE IS AN EXPLICIT PAN TO THE SAME GRID, NOT THE WINDOW'S MIDDLE: where a grid
+	# comes to rest is the layout's business — a board whose content is wider than its grid block
+	# rests off the window's own centre — so the claim is that the removal put the board where the
+	# player's own pan key would have put it, and that identity the layout does owe.
+	pa.pan_to_grid(kept_index)
+	await _settle_scroll(view)
+	var reference := _centre_offset(pa, kept_index)
+
+	check(view.game.state.grids.size() == 4 and _board_overflows(pa),
+			"precondition: four grids survive and the board still overflows (TP-112)",
+			"%d grids" % view.game.state.grids.size())
+	check(view.game.state.grids[pa.focused_grid] == kept,
+			"the view still follows the SAME grid after one to its left went (TP-112)",
+			"focused_grid %d" % pa.focused_grid)
+	check(absf(at_rest - reference) < grid_px * 0.05,
+			"the survivors re-centre on a removal the view was not focused on — the board lands "
+			+ "where an explicit pan to that same grid lands (TP-112)",
+			"%.1f px off centre vs %.1f px for an explicit pan, grid %.1f px"
+			% [at_rest, reference, grid_px])
+	check(_grids_in_frame(pa).has(kept_index),
+			"...with that grid wholly in frame (TP-112)",
+			"%s in frame, wanted %d" % [_grids_in_frame(pa), kept_index])
+	check(moving > at_rest + 1.0,
+			"...and it TRAVELLED there — mid-move it is further off centre than at rest (TP-112)",
+			"%.1f px mid-move vs %.1f px at rest" % [moving, at_rest])
+	check(elapsed > SettingsManager.settings.grid_pan_duration * 0.5,
+			"...over the grid pan clock — the board is still moving long after the layout that "
+			+ "lost the grid has come to rest (TP-112)",
+			"%.2f s to rest, pan clock %.2f s"
+			% [elapsed, SettingsManager.settings.grid_pan_duration])
 	await _tear_down(view)

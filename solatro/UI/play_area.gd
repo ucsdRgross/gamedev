@@ -1506,6 +1506,7 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 ## Builds one panel per grid, in lockstep with the grid list, and one cell slot per cell.
 func set_grid_zones(game_state: GameData) -> void:
 	var wanted := game_state.grids.size()
+	var removed := _removed_grid_index(game_state.grids)
 	var diff := wanted - grid_container.get_child_count()
 	if diff > 0:
 		for _i : int in diff:
@@ -1517,6 +1518,85 @@ func set_grid_zones(game_state: GameData) -> void:
 			doomed.queue_free()
 	for gi : int in wanted:
 		_bind_grid_panel(grid_container.get_child(gi) as Control, game_state.grids[gi])
+	_bound_grids.assign(game_state.grids)
+	if removed != NO_GRID: _on_grid_removed(removed)
+
+## The grid list as it was at the last rebuild. The panels are bound by POSITION, so without this
+## nothing can tell a grid that was REMOVED from one that merely shifted left into its place.
+var _bound_grids : Array[GridData] = []
+
+## Which bound grid is no longer on the board, or `NO_GRID`. Grids go one at a time, so the first
+## one missing is the one that went.
+func _removed_grid_index(grids: Array[GridData]) -> int:
+	if grids.size() >= _bound_grids.size(): return NO_GRID
+	for i : int in _bound_grids.size():
+		var grid : GridData = _bound_grids[i]
+		if grid and not grids.has(grid): return i
+	return NO_GRID
+
+## Where the view goes when the grid it was on is removed: the NEAREST survivor, the LEFT one when
+## both neighbours are equally near. They always are — so this is the left neighbour, except when
+## the board's first grid went and there is none.
+func _nearest_surviving_grid(removed: int) -> int:
+	return clampi(removed - 1, 0, grid_container.get_child_count() - 1)
+
+## Keep the view honest on a board that just lost a grid: every index right of the hole shifts left,
+## a view that was ON that grid moves to the nearest survivor, and the board re-centres either way.
+## ⚠ **THE RE-CENTRE IS NOT CONDITIONAL ON THE REFOCUS** — a grid removed elsewhere on the board
+## still leaves the remaining grids sitting off centre.
+func _on_grid_removed(removed: int) -> void:
+	if grid_container.get_child_count() == 0: return
+	if pan_grid > removed: pan_grid -= 1
+	if selected_grid > removed: selected_grid -= 1
+	elif selected_grid == removed: selected_grid = _nearest_surviving_grid(removed)
+	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
+		if focused_grid == removed:
+			focus_grid(_nearest_surviving_grid(removed))
+		elif focused_grid > removed:
+			_set_view(view_mode, focused_grid - 1)
+	_recentre_board()
+
+## True while a re-centre is waiting for the board to stop re-laying out, so a second removal in
+## the same breath does not start a second wait.
+var _recentre_waiting := false
+
+## Re-centre on whichever grid the view is on, animated over the pan clock — the player's own pan,
+## reused, so a removal moves the board exactly the way a pan key does.
+##
+## ⚠ **AIM ONLY ONCE THE PANELS HAVE STOPPED MOVING.** Losing a grid re-lays the board out over
+## several frames — panel positions, the shared width and the scroll range all settle separately —
+## and a pan aimed at where the grids WERE lands short of centre (measured: 118 px, half a grid).
+## The wait is capped at the pan clock so a board that never settles still re-centres.
+func _recentre_board() -> void:
+	pan_grid = clampi(pan_grid, 0, grid_container.get_child_count() - 1)
+	if _recentre_waiting: return
+	_recentre_waiting = true
+	var last := Vector3(INF, INF, INF)
+	var waited := 0.0
+	while waited < SettingsManager.settings.grid_pan_duration:
+		await get_tree().process_frame
+		if not is_inside_tree() or not is_instance_valid(grid_container):
+			_recentre_waiting = false
+			return
+		waited += get_process_delta_time()
+		var now := _recentre_probe()
+		if now.is_equal_approx(last): break
+		last = now
+	_recentre_waiting = false
+	pan_to_grid(pan_grid)
+
+## What "the board has stopped moving" means to a re-centre: where the centred grid sits INSIDE the
+## board, how wide the board is, and how far the view can scroll. ⚠ All three are read relative to
+## the board, never in screen space — the scroll's own easing moves screen space every frame, so a
+## probe that read it could never come to rest.
+func _recentre_probe() -> Vector3:
+	if pan_grid < 0 or pan_grid >= grid_container.get_child_count(): return Vector3.ZERO
+	var cells := _cells_root(grid_container.get_child(pan_grid) as Control)
+	if not cells: return Vector3.ZERO
+	var bar := scroll_container.get_h_scroll_bar()
+	var reach : float = bar.max_value if bar else 0.0
+	return Vector3(cells.global_position.x - grid_container.global_position.x,
+			grid_container.size.x, reach)
 
 ## A panel: a positioning node that draws nothing, holding the cell grid.
 func _create_grid_panel() -> Control:
