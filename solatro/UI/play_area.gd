@@ -429,12 +429,41 @@ func _apply_entrance_strip_height() -> void:
 	# is that the BOARD rises, and only the board.
 	var h := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
 	entrance_strip.offset_top = -h
-	scroll_container.offset_bottom = -h
+	_apply_board_zoom_rect(h)
 	# ⚠ **THE FLOOR CLEARS THE ENTRANCE'S ACTUAL HEIGHT, NOT ITS RESERVATION** (`Q313`=a, owner:
 	# *"it raises everything above it up as well so as to not cover any card in the grid"*). A
 	# stacked Entrance that outgrows its strip pushes the board up by the overflow; a shallow one
 	# changes nothing.
 	_give_the_board_a_floor(maxf(h, _entrance_row_height()))
+
+## Put the board's window back where it was after the zoom made it bigger.
+##
+## ⚠ **THE ZOOM SCALES THE SCROLL CONTAINER, AND ITS RECT IS DIVIDED BY THE ZOOM TO COMPENSATE.**
+## The scale cannot go on the CONTENT: a `Container` rewrites its children's scale on every sort
+## (measured -- the scale was back at 1 the next frame), so the scroller's own child is the one node
+## on the board that cannot carry it. The scroller itself is a child of this plain `Control`, which
+## rewrites nothing. Dividing the rect by the same factor leaves the window exactly the pixels it
+## occupied unzoomed, so the side panels keep their room and only the BOARD grows.
+func _apply_board_zoom_rect(strip_h: float) -> void:
+	if not is_instance_valid(scroll_container): return
+	_board_strip_h = strip_h
+	var local := _board_window_local()
+	scroll_container.scale = Vector2.ONE * board_zoom
+	scroll_container.offset_right = local.x - size.x
+	scroll_container.offset_bottom = local.y - size.y
+
+## The strip the board's window is currently giving up to the Entrance, kept so the window can be
+## recomputed without waiting for a layout pass.
+var _board_strip_h := 0.0
+
+## The board's window in the SCROLLER'S OWN units: what it occupies on screen, divided by the zoom.
+##
+## ⚠ **COMPUTED, NEVER READ BACK OFF `scroll_container.size`.** A container's size only catches up
+## with the offsets on the next sort, so anything that measures it on the tick the zoom changed is
+## reading the PREVIOUS mode's window -- which is a whole grid's worth of aim, and a board floor
+## left where the unzoomed board had it.
+func _board_window_local() -> Vector2:
+	return Vector2(size.x, maxf(size.y - _board_strip_h, 0.0)) / maxf(board_zoom, 0.0001)
 
 ## ⚠ **THE ENTRANCE IS ROW −1, AND ITS OWN HEIGHT PUSHES THE BOARD UP** (`Q313`=a, owner: *"if
 ## entrance/input cards are somehow stacked with multiple cards as well increasing in height, then
@@ -465,7 +494,11 @@ func _entrance_row_height() -> float:
 ## children against its end, which is what actually pins the floor.
 func _give_the_board_a_floor(strip_h: float) -> void:
 	if not is_instance_valid(top_level_vbox) or not is_instance_valid(grid_container): return
-	top_level_vbox.custom_minimum_size.y = maxf(size.y - strip_h, 0.0)
+	# ⚠ Divided by the zoom, and by NOTHING ELSE: `size.y - strip_h` is the floor in SCREEN pixels
+	# while the content is laid out in the scroller's own, smaller ones. ⚠ It must not be taken from
+	# the scroller's window either -- that window is carved out by the Entrance's RESERVATION while
+	# this floor clears its ACTUAL height, and the two differ exactly when the Entrance stacks.
+	top_level_vbox.custom_minimum_size.y = maxf(size.y - strip_h, 0.0) / maxf(board_zoom, 0.0001)
 	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
 	_publish_board_floor()
 	if not top_level_vbox.resized.is_connected(_publish_board_floor):
@@ -479,7 +512,7 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 ## landed. `resized` is enough here because this control only changes with the WINDOW.
 func _publish_board_floor() -> void:
 	if not is_instance_valid(top_level_vbox): return
-	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y
+	_board_floor_y = top_level_vbox.global_position.y + top_level_vbox.size.y * board_zoom
 	_publish_cell_rects()
 
 ## ⚠ **THE ARITHMETIC FOLLOWS THE CELLS, NOT THE PANEL.** Once the panel carries score gutters the
@@ -496,7 +529,9 @@ func _publish_cell_rects() -> void:
 		var cells := _cells_root(panel)
 		if not cells: continue
 		_grid_cells_origin[i] = cells.global_position
-		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y
+		# ⚠ A GLOBAL origin plus a LOCAL size is not a global edge once the board is zoomed --
+		# `global_position` carries the zoom and `size` never does.
+		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y * board_zoom
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -523,6 +558,7 @@ func update_gui() -> void:
 ## Open the all-grids view with nothing focused. The show's opening view.
 func open_zoomed_out() -> void:
 	_set_view(ViewMode.OVERVIEW, NO_GRID)
+	_zoom_board_to(OVERVIEW_BOARD_ZOOM)
 	rest_board()
 
 ## The grid the board RESTS centred on, per view mode. `NO_GRID` while there is no grid to rest on.
@@ -554,7 +590,67 @@ func rest_board() -> void:
 func focus_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	_set_view(ViewMode.FOCUSED, gi)
+	_zoom_board_to(focused_board_zoom(gi))
 	pan_to_grid(gi)
+	# ⚠ **AIM AGAIN ONCE THE ZOOM'S RELAYOUT HAS LANDED.** The aim above is exact horizontally --
+	# the content's own columns do not move when the board zooms -- but the FLOOR does, and a grid's
+	# vertical position is measured from it, so the vertical half of that aim is taken against the
+	# previous mode's floor. This is the same re-aim a removal uses, for the same reason.
+	_recentre_board()
+
+# ------------------------------------------------------------------------------
+# THE ZOOM — what makes the two modes different on screen and not merely in state
+# ------------------------------------------------------------------------------
+
+## The overview's zoom: the board at the scale it is laid out at. The overview shows as many grids
+## as fit at ONE fixed readable zoom and pans to reach the rest, so it never scales.
+const OVERVIEW_BOARD_ZOOM := 1.0
+
+## The scale the board is CURRENTLY being taken to. The live scale lags it through the transition;
+## every aim is computed at this one, so a pan and a zoom started together land together.
+var board_zoom : float = OVERVIEW_BOARD_ZOOM
+
+## The focused view's scale: **grid `gi`'s CELL BLOCK made exactly as tall as the board's window.**
+## Derived from the grid's own shape and the window, never authored -- a taller grid zooms less.
+## ⚠ The block, not the grid's live height: a stack growing upward must not re-scale the board
+## under the player's hand.
+func focused_board_zoom(gi: int) -> float:
+	if not is_instance_valid(scroll_container): return OVERVIEW_BOARD_ZOOM
+	var grid : GridData = _bound_grids[gi] if gi >= 0 and gi < _bound_grids.size() else GridData.new()
+	var block_h := grid_block_size_px(SettingsManager.settings, grid).y
+	# ⚠ **THE WINDOW IN SCREEN PIXELS, NOT THE SCROLLER'S OWN HEIGHT.** The scroller's height is
+	# already divided by the current zoom, so reading it while FOCUSED answers "one" every time and
+	# stepping from one focused grid to the next would quietly drop the board back to overview size.
+	var window_h := maxf(size.y - _board_strip_h, 0.0)
+	if block_h <= 0.0 or window_h <= 0.0: return OVERVIEW_BOARD_ZOOM
+	return window_h / block_h
+
+## Take the board to scale `z` over the pan clock -- the same clock a grid pan and the removal
+## re-centre use, so a mode change is one motion and not two.
+##
+## ⚠ **THE SCALE IS NOT ANIMATED, AND THAT IS THE RULE, NOT A SHORTCUT.** There are exactly two
+## view modes and NO INTERMEDIATE ZOOM EXISTS: the transition the player sees is the board sliding
+## to the grid, over the pan clock, at the mode's own scale. An eased scale would also fight the
+## aim it is issued with -- the scroller clamps every aim against the reach it can see at that
+## instant, so a target set for the zoomed board is destroyed by the next unzoomed frame.
+##
+## The whole board is re-measured here rather than on the next layout pass, because `pan_to_grid`
+## runs immediately after and reads the window and the floor this writes.
+func _zoom_board_to(z: float) -> void:
+	if not is_instance_valid(scroll_container): return
+	if is_equal_approx(board_zoom, maxf(z, 0.0001)): return
+	board_zoom = maxf(z, 0.0001)
+	_apply_entrance_strip_height()
+	_publish_board_floor()
+
+## Where the scroller puts the content at `pos` zero: the margin offset it centres with, measured
+## rather than restated, so an aim is expressed in the same units the scroller stores.
+func _board_content_origin() -> Vector2:
+	var smooth := scroll_container as SmoothScrollContainer
+	if not smooth: return Vector2.ZERO
+	var z := maxf(scroll_container.scale.x, 0.0001)
+	return (top_level_vbox.global_position - scroll_container.global_position) / z - smooth.pos
+
 
 ## The grid the view is CENTRED on. Distinct from `focused_grid`, which is `NO_GRID` in the
 ## overview: the view is centred on some grid in both modes.
@@ -615,10 +711,29 @@ func pan_to_grid(gi: int) -> void:
 	if not smooth: return
 	var cells := _cells_root(grid_container.get_child(gi) as Control)
 	if not cells: return
-	var want_centre := scroll_container.global_position.x + scroll_container.size.x * 0.5
-	var have_centre := cells.global_position.x + cells.size.x * 0.5
-	smooth.scroll_x_to(smooth.pos.x + want_centre - have_centre,
-			SettingsManager.settings.grid_pan_duration)
+	var dur : float = SettingsManager.settings.grid_pan_duration
+	var origin := _board_content_origin()
+	var local := _board_local_rect(cells)
+	# ⚠ **EVERY TERM HERE IS IN THE SCROLLER'S OWN LOCAL SPACE, WHICH THE ZOOM DOES NOT TOUCH.**
+	# The zoom scales the scroller and divides its rect, so inside it the content keeps its authored
+	# size and the WINDOW is what shrinks -- `size` already carries the zoom, and multiplying a
+	# board length by it again aims the board off its own edge (measured: a whole grid out).
+	var window := _board_window_local()
+	smooth.scroll_x_to(window.x * 0.5
+			- (local.position.x + local.size.x * 0.5) - origin.x, dur)
+	# ⚠ **THE VERTICAL AIM IS THE FOCUSED VIEW'S ALONE.** Zoomed in, the grid is taller than the
+	# window unless it is framed, and the edge to frame it by is the FLOOR every grid grows up out
+	# of. In the overview the board is at rest vertically and a pan must not yank a player who has
+	# scrolled up to read a stack.
+	if view_mode == ViewMode.FOCUSED:
+		smooth.scroll_y_to(window.y - (local.position.y + local.size.y) - origin.y, dur)
+
+## A board control's rect in the CONTENT's own unzoomed space. ⚠ `global_position` already carries
+## the zoom while `size` never does, so the two cannot be mixed: everything an aim is built from is
+## divided back out here, and the target zoom is applied once, at the end.
+func _board_local_rect(c: Control) -> Rect2:
+	var z := maxf(scroll_container.scale.x, 0.0001)
+	return Rect2((c.global_position - top_level_vbox.global_position) / z, c.size)
 
 ## The edge push-back: velocity spent into the scroll container's OWN overdrag, which supplies the
 ## counterforce and carries the board back to rest. Reused rather than hand-tweened so the board's
@@ -1074,10 +1189,14 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	var origin : Vector2 = _grid_cells_origin.get(coord.grid,
 			_grid_panel_origin.get(coord.grid, Vector2.ZERO))
-	var width := CardVisual.card_size_play.x
-	var full := CardVisual.card_size_play.y
-	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
+	# ⚠ **EVERY LENGTH HERE IS A BOARD LENGTH AND THE ORIGIN IS A SCREEN POINT.** The board is
+	# drawn at `board_zoom`, so each of them is taken into screen pixels before it is added to a
+	# measured global origin; leaving one unscaled puts the card a growing fraction of a cell off.
+	var width := CardVisual.card_size_play.x * board_zoom
+	var full := CardVisual.card_size_play.y * board_zoom
+	var sep := float(separation) * board_zoom
+	var depth_pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * board_zoom
+	var x := origin.x + float(coord.x) * (width + sep) + width * 0.5
 	# ⚠ **THE ROW BOTTOMS ARE MEASURED FROM THE BOARD'S FLOOR, NOT FROM THIS PANEL.** Every panel is
 	# bottom-aligned against that one line, and it does not move when a stack deepens — so nothing
 	# here lags the way a per-panel rect cache did. Do NOT refresh a rect cache from
@@ -1085,10 +1204,10 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	# writes into, and the board never settles.
 	var bottom : float = _grid_cells_bottom.get(coord.grid, _board_floor_y)
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
-		bottom -= _grid_row_height(coord.grid, r) + float(separation)
+		bottom -= (_grid_row_height(coord.grid, r) + float(separation)) * board_zoom
 	# The cell's own frame sits ON the row's bottom line; the stack starts one `separation` above
 	# it — the gap the CellSlot puts between the frame and the card covering it.
-	var y := bottom - float(separation) - depth_pitch * float(coord.h) - full * 0.5
+	var y := bottom - sep - depth_pitch * float(coord.h) - full * 0.5
 	return Vector2(x, y)
 
 ## ⚠ **MEMOISED ON THE STATE'S REVISION, AND IT HAS TO BE.** `slot_center_global` runs for every
@@ -1717,9 +1836,12 @@ func _apply_grid_buffer() -> void:
 		if not panel: continue
 		var cells := _cells_root(panel)
 		if not cells: continue
-		left = maxf(left, cells.global_position.x - panel.global_position.x)
-		right = maxf(right, panel.global_position.x + panel.size.x
-				- (cells.global_position.x + cells.size.x))
+		# ⚠ Divided by the zoom: these gutters are compared against `grid_buffer_px`, which is a
+		# BOARD length, while the positions they come from are screen ones.
+		var z := maxf(board_zoom, 0.0001)
+		left = maxf(left, (cells.global_position.x - panel.global_position.x) / z)
+		right = maxf(right, panel.global_position.x / z + panel.size.x
+				- (cells.global_position.x / z + cells.size.x))
 	var wanted := roundi(maxf(SettingsManager.settings.grid_buffer_px - left - right, 0.0))
 	if grid_container.get_theme_constant(&"separation") == wanted: return
 	grid_container.add_theme_constant_override("separation", wanted)

@@ -34,6 +34,8 @@ func _ready() -> void:
 	await run_panning_has_its_own_actions_test()
 	await run_every_pan_lands_a_grid_centred_test()
 	await run_the_board_rests_positioned_test()
+	await run_the_focused_grid_is_as_tall_as_its_window_test()
+	await run_focusing_takes_the_other_grids_out_of_view_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
 	await run_one_scroll_container_on_the_board_test()
@@ -227,17 +229,27 @@ func _settle_scroll(view: GameView) -> float:
 func _window_x(pa: PlayArea) -> Vector2:
 	var bar := pa.scroll_container.get_v_scroll_bar()
 	var taken : float = bar.size.x if bar and bar.visible else 0.0
-	var left := pa.scroll_container.global_position.x
-	return Vector2(left, left + pa.scroll_container.size.x - taken)
+	var win := _screen_rect(pa.scroll_container)
+	return Vector2(win.position.x, win.end.x - taken * win.size.x / maxf(pa.scroll_container.size.x, 1.0))
+
+## A control's rect AS DRAWN, in the picture's own pixels.
+##
+## ⚠ **`global_position` CARRIES EVERY SCALE ABOVE IT AND `size` CARRIES NONE**, so the two cannot
+## be added together on a board that zooms. Read through the engine's own transform instead of a
+## named scale: that keeps this instrument true of ANY implementation that makes a grid bigger on
+## screen, rather than only of the one the product happens to use.
+func _screen_rect(c: Control) -> Rect2:
+	var t := c.get_global_transform()
+	return Rect2(t.origin, t.get_scale() * c.size)
 
 ## How far grid `gi`'s CELL BLOCK hangs outside that window, in pixels; 0 when it is wholly on
 ## screen. The instrument for "no cut-off grid at rest" — a rule scoped to the grid the view is ON:
 ## ⚠ ask it about that grid, never about every grid on the board (owner ruling).
 func _cut_off_px(pa: PlayArea, gi: int) -> float:
 	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
+	var r := _screen_rect(cells)
 	var win := _window_x(pa)
-	return maxf(maxf(win.x - cells.global_position.x, 0.0),
-			maxf(cells.global_position.x + cells.size.x - win.y, 0.0))
+	return maxf(maxf(win.x - r.position.x, 0.0), maxf(r.end.x - win.y, 0.0))
 
 ## Does the board actually overflow its window? Every pan claim below is vacuous if it does not.
 func _board_overflows(pa: PlayArea) -> bool:
@@ -492,6 +504,114 @@ func run_the_board_rests_positioned_test() -> void:
 			"...at exactly the position an explicit pan to it lands (TP-138)",
 			"rest %.1f vs explicit pan %.1f" % [focused_rest, smooth.pos.x])
 	await _tear_down(view)
+
+# ==============================================================================
+# TP-139 — THE FOCUSED GRID IS AS TALL AS ITS WINDOW. The two view modes differ ON SCREEN and not
+# only in a bookkeeping int: focusing a grid makes that grid's CELL BLOCK exactly as tall as the
+# board's window, and zooming back out gives it its overview size back.
+#
+# ⚠ THIS IS THE WIRING CHECK. `view_mode` and `focused_grid` are values the code assigns itself and
+# assert nothing about pixels; a click that reached the mode but not the zoom passes every check on
+# them and fails this one. Cut `focus_grid`'s call to the zoom and the block stays at its overview
+# height against a window twice that (measured: 286 against 555).
+#
+# ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE — "as tall as the window" is a number the layout owes
+# exactly, so it is asserted against the window and never against a remembered constant.
+# ==============================================================================
+func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
+	behavior_section("THE FOCUSED GRID IS AS TALL AS ITS WINDOW")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.open_zoomed_out()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var window_h := _screen_rect(pa.scroll_container).size.y
+	var overview_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
+	check(window_h > 1.0 and overview_h > 1.0,
+			"precondition: the board and its window are both on screen (TP-139)",
+			"window %.1f grid %.1f" % [window_h, overview_h])
+	check(overview_h < window_h - 1.0,
+			"precondition: in the OVERVIEW a grid is SHORTER than the window, so the focused view "
+			+ "has somewhere to grow to (TP-139)",
+			"grid %.1f vs window %.1f" % [overview_h, window_h])
+
+	pa.focus_grid(1)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var focused_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
+	check(absf(focused_h - _screen_rect(pa.scroll_container).size.y) <= 1.0,
+			"the FOCUSED grid's cell block is exactly as tall as the board's window (TP-139)",
+			"grid %.1f vs window %.1f" % [focused_h, _screen_rect(pa.scroll_container).size.y])
+	check(focused_h > overview_h + 1.0,
+			"...which is BIGGER than it was in the overview -- the mode change is a visible one "
+			+ "and not a state flag (TP-139)",
+			"focused %.1f vs overview %.1f" % [focused_h, overview_h])
+
+	# ⚠ FOCUS A SECOND GRID WITHOUT ZOOMING OUT FIRST. The zoom is derived from the window, and a
+	# window read while already zoomed answers in the zoomed board's own units -- which reads as
+	# "already the right size" and drops the board back to overview scale on the step.
+	pa.focus_grid(2)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var stepped_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(2) as Control)).size.y
+	check(absf(stepped_h - focused_h) <= 1.0,
+			"stepping from one focused grid to the next KEEPS the focused size (TP-139)",
+			"stepped %.1f vs first focus %.1f" % [stepped_h, focused_h])
+
+	pa.open_zoomed_out()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var back_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
+	check(absf(back_h - overview_h) <= 1.0,
+			"zooming back out gives the grid its overview size back -- the zoom is not one-way "
+			+ "(TP-139)",
+			"back %.1f vs overview %.1f" % [back_h, overview_h])
+	await _tear_down(view)
+
+# ==============================================================================
+# TP-140 — FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW (owner ruling). In the overview a neighbour
+# overlaps the board's window; focused, every grid but the focused one is wholly outside it.
+#
+# ⚠ THE FIXTURE IS WHAT GIVES THIS TEETH: focusing the MIDDLE of three grids asks the pan for
+# nothing -- the board is already centred there -- so an unzoomed board does not move at all and
+# both neighbours stay in frame (measured with the zoom cut: grid 0 at 238.5 against a window
+# starting at 423). Focus an OUTER grid instead and the pan alone carries the neighbours out, and
+# this check passes while the zoom is missing.
+# ==============================================================================
+func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
+	behavior_section("FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW")
+	var view := await _stand_up()
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.open_zoomed_out()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(_overlaps_window(pa, 0) or _overlaps_window(pa, 2),
+			"precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one "
+			+ "(TP-140)",
+			"grid 0 %s grid 2 %s" % [str(_overlaps_window(pa, 0)), str(_overlaps_window(pa, 2))])
+
+	pa.focus_grid(1)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(_cut_off_px(pa, 1) <= 1.0,
+			"the FOCUSED grid is wholly in frame (TP-140)",
+			"%.1f px off screen" % _cut_off_px(pa, 1))
+	for gi : int in [0, 2]:
+		check(not _overlaps_window(pa, gi),
+				"grid %d is OUT OF VIEW while another grid is focused (TP-140)" % gi,
+				"cells %s vs window %s"
+				% [str(_screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))),
+				str(_window_x(pa))])
+	await _tear_down(view)
+
+## Does grid `gi`'s cell block put any pixel inside the board's window? The instrument for "out of
+## view" — an off-screen DISTANCE cannot tell "just outside" from "half in".
+func _overlaps_window(pa: PlayArea, gi: int) -> bool:
+	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
+	var win := _window_x(pa)
+	return r.end.x > win.x and r.position.x < win.y
 
 # ==============================================================================
 # TP-102 - FIX-GRID-3: the board edge bounces.

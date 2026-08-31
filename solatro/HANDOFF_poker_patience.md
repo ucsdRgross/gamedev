@@ -306,6 +306,32 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     ⚠ TP-113's 7th check ("sized by the rule, not the entry default") was added AFTER the red run,
     so it alone is not red-proven -- at test `card_scale` the 1152 px default still passed the
     three-grid width check, which is why it exists.
+- id: S31b
+  description: 'THE FOCUSED ZOOM: the focused grid is as tall as its window (GAP-017 ruling part 3).'
+  status: done
+  evidence: >
+    Overseer-verified: ALL 45 SUITES: 3805 CHECKS PASSED, zero failures. GRID VIEW 160 -> 170.
+    doc_check 0 errors; no design ids or sentinel violations added.
+    RED (the wiring cut -- focus_grid's call to the zoom removed, nothing else): 4 FAILED, and
+    GRID VIEW read 170 of 170 in BOTH runs, GRID LAYOUT 71 in both, VISUAL LAYERS 220 in both, so
+    nothing aborted.
+    BY EYE via the new `grid_zoom_shot`, which renders inside the REAL picture: the focused grid
+    measures y [3.0 .. 558.0] against a board window of y [3.0 .. 558.0] -- **the grid's height IS
+    the viewport's height, exactly.**
+  notes: >
+    ⚠ **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** -- a `Container` rewrites its
+    children's scale on every sort (measured: `TopLevelVBox` was back at 1 the next frame). Its rect
+    is divided by the same factor so the window keeps its pixels.
+    ⚠ **THE SCALE IS NOT ANIMATED** (`Q145`: "no intermediate zoom exists", read literally) and
+    measured: the scroller clamps every aim against the reach it can see at that instant, so an
+    eased scale DESTROYS the aim issued with it. The transition the player sees is the pan.
+    ⚠ **EVERY SITE THAT ADDED A MEASURED GLOBAL POSITION TO A LOCAL SIZE HAD TO BECOME ZOOM-AWARE.**
+    The suite's own `_window_x` / `_cut_off_px` mixed the two -- a latent error the zoom exposed;
+    corrected to read the engine's global transform, not widened.
+    ⚠ **TWO "FLAKY FAMILY" FAILURES HERE WERE A REAL REGRESSION, NOT FLAKE** -- the board's floor was
+    made to read the SCROLLER's window, which the Entrance's RESERVATION carves out, while the floor
+    must clear its ACTUAL height. They differ exactly when the Entrance stacks. **So that family is
+    not pure noise: it caught a real bug. Investigate before dismissing a failure there.**
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
@@ -405,6 +431,17 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
+- ⚠⚠ **THE UNCLIPPED BOARD NOW BREAKS THE OWNER'S OWN RULING, AND IT IS THE LAST THING BETWEEN THE
+  CODE AND `GAP-017` PART 3.** The ruling says *"while focused, other grids should be out of view"*.
+  Measured with the zoom in: the neighbours ARE outside the board window (grid 0 ends at x 146.0
+  against a window starting at 423.0; grid 2 starts at 1419.0 against a window ending at 1142.0) —
+  **but `clip_contents = false` still PAINTS them**, and by eye a whole grid draws across the Deck
+  button, the skill text and up to the Goal/Total column. Out of the window, not out of view.
+  ⚠ **The zoom made this WORSE, not moot** — it was a 19 px sliver before `grid_buffer_px`, then a
+  sliced neighbour, and it is now a full grid. Three mechanisms, and they differ observably:
+  **clip** the scroll container (cheapest, but board cards live inside it, so a card animating
+  between the Entrance and a grid would be clipped at the boundary — needs its own verification),
+  **cull** the non-focused panels, or **move** them. **Owner's call; not picked.**
 - ⚠ **THE BOARD'S SCROLL CONTAINER IS EXPLICITLY UNCLIPPED** (`clip_contents = false`), so a board
   wider than its window PAINTS OVER the surrounding UI — visible in the `S31` n=3 shot, where sliced
   cards draw across the score column. Pre-existing; it was hidden while the overflow was only 19 px
@@ -412,7 +449,14 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
   jumping card is then cut at the edge), leave it (the wide picture makes overflow rare), or clip
   only the cell controls and leave `%CardLayer` free. **Not filed as a gap — raise it if the wide
   picture does not make it moot.**
-- ⚠ **THE FOCUSED VIEW DOES NOT YET ZOOM — `GAP-017`'s answer is only TWO-THIRDS IMPLEMENTED.**
+- ⚠ **`TP-105` IS PARKED A SECOND TIME, AND THE ZOOM DISCONFIRMED THE HYPOTHESIS BEHIND `GAP-019`=(e).**
+  Re-measured with the zoom in place: the picture holds **1.44** grid positions where `H22` wants 3,
+  and the board's own window holds **0.85** — the zoom moved that number AWAY from 3 (it was 2.80
+  and 1.65 unzoomed), because neither the picture nor the board window changed size while the grid
+  pitch doubled to 846 px. **The camera still has no grid step to make**, and `GAP-019`'s options
+  (a)/(c) — resizing the picture — remain prerequisites. ⚠ The buffer question feeds straight into
+  it: `grid_buffer_px` 220 against a 216 px grid block is most of what makes the pitch 846.
+- ⚠ **SUPERSEDED, and kept only as the record of what was true before `S31b`:**
   Owner ruling, verbatim: *"no cutoff grid only holds for focused grid. goal is that focused grid
   has height matching viewport height. while focused, other grids should be out of view"*.
   Parts 1 and 2 landed: the board now RESTS positioned on the grid the view is on (`scroll 13.5`,

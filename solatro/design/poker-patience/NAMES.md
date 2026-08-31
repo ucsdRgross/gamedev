@@ -261,3 +261,20 @@ that shipped.
 | `Wall.GAME_PICTURE_ID` | const | |
 | `WallPicture.clamped_render_size(size)` | method | Pure: clamps to `game_picture_max_render_px`. ⚠ **Assert against this and against what `build()`/`focus()` WROTE — never a read-back of `SubViewport.size`, which reports the oversized value while the framebuffer is already destroyed.** |
 | `WallPicture._apply_design_render_size()` | method | Called from `build()` and `focus()`; engages `size_2d_override` only when the clamp bites. |
+
+## 13. The focused zoom (`S31b`)
+
+⚠ **The scale lives on the SCROLL CONTAINER, not its content** — a `Container` rewrites its
+children's scale on every sort (measured: `TopLevelVBox` was back at 1 the next frame). Its rect is
+divided by the same factor so the window keeps its pixels.
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.board_zoom` | `float` | The live board scale. |
+| `PlayArea.OVERVIEW_BOARD_ZOOM` | const | The overview's scale. |
+| `PlayArea.focused_board_zoom(gi)` | method | Derived, not a knob: the factor that makes a grid as tall as the board window. |
+| `PlayArea._zoom_board_to(z)` | method | |
+| `PlayArea._apply_board_zoom_rect(strip_h)` | method | |
+| `PlayArea._board_window_local()` / `_board_content_origin()` / `_board_local_rect(c)` | method | Zoom-aware geometry. ⚠ Every site that added a measured GLOBAL position to a LOCAL size had to become zoom-aware; the suite's `_window_x` / `_cut_off_px` mixed the two and now read the engine's global transform. |
+| `PlayArea._board_strip_h` | `float` | |
+| `Tests/Visual/grid_zoom_shot.gd` / `.tscn` | instrument | ⚠ **The only shot that renders inside the REAL picture** (`game_picture_design_size`), rather than `grid_layer_shot`'s bare 1152x648 window. Shoots both modes. Not registered in `all_tests.tscn`. |
