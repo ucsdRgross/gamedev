@@ -1,0 +1,149 @@
+kept_name	kept_origin	folded_name	folded_origin	folded_source	folded_mechanic
+Knives	catalog	Knives	braindump	curated effects pre grid.csv:5	Base suit: knife props (count = rank) launch from the opposite row edge and score plain (non-skill) prop cards they pass, with the spawner scoring itself; stacking requires different suit and adjacent rank.
+Tintype	catalog	Tintype	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	On acquisition, permanently copies the pips of the card it was created from.
+Greasepaint	catalog	Greasepaint	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	Card counts as a Clown (class) in addition to its own class.
+Top Billing	catalog	Top Billing	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	Card always scores first within its meld (controls trigger order).
+Ghost Light	catalog	Ghost Card (adopt)	designdocs	DESIGN_RECOMMENDATIONS.md §1 How I read your design	Card does not block Spotlight passthrough for cards beneath it.
+Ghost Light	catalog	Ghost Light	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	Card does not block the Spotlight of cards beneath it.
+Understudy	catalog	Understudy	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	If the card above it in the stack is destroyed or consumed, this card copies that card's skill.
+Iron Body	catalog	Iron Body	designdocs	DESIGN_REFERENCES.md §A5 China	Immune to the first destruction/debuff each show.
+Ascetic	catalog	Ascetic stamp	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	Immune to floor/row hazards.
+Contract Ink	catalog	Contract Ink	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	+X points per show played; the card leaves the deck if benched two shows in a row.
+The Encore	catalog	The Encore	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	If this card's skill triggered this show, 50% chance it triggers once more at show end.
+Lloyd's Policy	catalog	Lloyd's Policy	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	The first time this card would be destroyed or debuffed, prevent it.
+Ringmaster's Grip	catalog	Always-grabbable (unnamed)	designdocs	DESIGN_DOC.md §14.2 Stamps	This card can always be picked up regardless of stack legality.
+The Contrary	catalog	The Contrary	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	Descending runs count as ascending, and the 'worst' hand scores as the best.
+Sawing in Half	catalog	Sawing in Half	designdocs	DESIGN_RECOMMENDATIONS.md §6 Magician	Cue: split a card into two cards of half rank each (rounded up/down), same suit.
+Misdirection	catalog	Misdirection	designdocs	DESIGN_RECOMMENDATIONS.md §6 Magician	While spotlit, the leftmost covered card in each adjacent column also becomes spotlit.
+Pandora's Box	catalog	Pandora('s) Box	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	On game start becomes a random skill; on game end resets back to Pandora Box.
+Pandora's Box	catalog	Pandora Box card	braindump	gam draft.txt:556	Pandora Box: at game start becomes a random skill; at game end resets back to Pandora Box.
+Metamorphosis	catalog	Metamorphosis	designdocs	DESIGN_RECOMMENDATIONS.md §6 Magician	Cue: swap this card with any card in the draw deck (seen or unseen).
+Frankenstein	catalog	Frankenstein	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	On submit, merges with the card above and below into a 3-card merged stack that stays in the zone after scoring.
+Utter Chaos	catalog	Utter Chaos	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Becomes a random skill on every Next.
+The Bullet Catch	catalog	The Bullet Catch	designdocs	DESIGN_RECOMMENDATIONS.md §6 Magician	Scores 10x rank when scored while in the Spotlight; 1-in-13 chance it is destroyed instead.
+Human Cannonball	catalog	Human Cannonball	designdocs	DESIGN_RECOMMENDATIONS.md §6 Acrobat	Cue: fire the bottom card of any column to the top of another column.
+Blondin's Crossing	catalog	Blondin's Crossing	designdocs	DESIGN_RECOMMENDATIONS.md §6 Acrobat	Once per show: move an entire row one column left or right, wrapping around.
+Hungry Hippo	catalog	Hungry Hippo	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Consumes cards dropped on it, adding their rank to its own up to a cap of 13 total; returns them at game end.
+The Learned Pig	catalog	The Sapient Pig	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	Reveals the description of any facedown or unknown card once per turn.
+Jumbo	catalog	Jumbo	designdocs	DESIGN_RECOMMENDATIONS.md §6 Animal Trainer	Heavy: cards cannot be placed on it, but it can be placed on anything; +points per card beneath it when scored.
+Slapstick	catalog	Slapstick	designdocs	DESIGN_RECOMMENDATIONS.md §6 Clown	Cue: swap the ranks of this card and one adjacent card.
+Custard Pie	catalog	Custard Pie	designdocs	DESIGN_RECOMMENDATIONS.md §6 Clown	Throw (cue): target card's suit becomes Balls; if that completes a flush row, gain +mult.
+The One-Man Band	catalog	The one-man band	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	Counts as three classes at one-third effect each.
+The Comedic Drop	catalog	The Comedic Drop	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Deliberately discard this card mid-show for a bonus larger than scoring it would give.
+Weary Willie	catalog	Weary Willie	designdocs	DESIGN_RECOMMENDATIONS.md §6 Clown	Gains +1 rank permanently every time one of the player's cards is destroyed or a show is failed.
+Clown Car	catalog	Clown Car	designdocs	DESIGN_RECOMMENDATIONS.md §6 Clown	On Next: draw an extra card into this card's column, +1 more per Clown card scored last submit.
+Twin Harmony	catalog	Twin harmony	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Doubles any music/combo effect on an adjacent card.
+The Fadista	catalog	The Fadista	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Scores +N per card destroyed or lost this run.
+Straitjacket	catalog	Straitjacket	designdocs	DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman	Starts each show unable to be moved; frees itself and gains +points when its column scores.
+The Target Girl	catalog	The Target Girl	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Placed in a knife-projectile row, converts every 'miss' into points.
+The Escape Map	catalog	The Escape Map	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Discarding (soaking) this card reveals part of the world map's fog of war.
+The Mime	catalog	The Mime	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	Attaches to a stack and absorbs one hostile event targeting it.
+The Second Sight	catalog	Second Sight pair	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	While both cards of the pair are on board, the top card of the deck is always revealed.
+Madame Zora's Eye	catalog	Madame Zora's Eye	designdocs	DESIGN_RECOMMENDATIONS.md §6 Fortune Teller	The next-drawn card is always visible above the deck slot.
+Sliced Bread	catalog	Sliced Bread	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	On submission, if a same-suit card is later down the stack, gain a point per card in between.
+Pink Lemonade	catalog	Pink Lemonade	designdocs	DESIGN_RECOMMENDATIONS.md §6 Producer/Manager	When a Flames card and a Concessions card score in the same row, gain a bonus and draw 1 card.
+The Grease Joint	catalog	The Grease Joint	designdocs	DESIGN_RECOMMENDATIONS.md §6 Concessions	At show start, feed the bottom card of the deck to the discard, then draw 1.
+The Egress	catalog	The Egress	designdocs	DESIGN_RECOMMENDATIONS.md §6 Producer/Manager	Cue: send any card on the board straight to the discard pile, gain 1 Ticket Stub.
+Humbug	catalog	Humbug	designdocs	DESIGN_RECOMMENDATIONS.md §6 Producer/Manager	While covered, counts as a copy of the most valuable card in its row; when spotlit, reveals as junk (rank 2).
+The Advance Campaign	catalog	The Advance Campaign	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Spend big before a show to multiply its fame payout.
+The Red Wagon	catalog	The Red Wagon	designdocs	DESIGN_RECOMMENDATIONS.md §6 Producer/Manager	While spotlit, all Gold cards in the deck count toward every column run as wildcards.
+Hand of God	catalog	Hand of God	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Move cards to any location on the board; reorder cards inside a deck.
+Extra Point	catalog	Extra Point	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Gain extra points per score (currently +10 total on score).
+Echoing Trigger	catalog	Echoing Trigger	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	ALL triggers repeat once (once per card per scoring pass).
+The Showman	catalog	The Showman (Barnum)	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	Shops offer 1 extra card; all Gaff/Humbug cards cost nothing.
+The Escapologist	catalog	The Escapologist (Houdini)	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The free undo becomes 2 per turn; debuffs expire 1 show sooner.
+The Sibyl	catalog	The Sibyl (Zora)	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	Top of deck is always revealed; the first reroll each shop is free.
+The Aerialist	catalog	The Aerialist (Leitzel)	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	Re-scores the topmost meld once per submit; is destroyed if her column ever fails to score.
+The Dalang	catalog	The Dalang	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	While in play, the player chooses trigger order for all effects.
+Chindon'ya	catalog	Hire chindon'ya	designdocs	DESIGN_REFERENCES.md §A6 Japan	The next town's fame requirement drops.
+Paper the House	catalog	Paper the House	designdocs	DESIGN_RECOMMENDATIONS.md §8 Map-layer systems	Auto-passes a town's fame check but grants 0 tips.
+Lot Lice	catalog	Lot Lice	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	The first submit each show scores 0 fame.
+Temperance Town	catalog	Temperance Town	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	Concessions class disabled; shop prices doubled.
+Blowdown	catalog	Blowdown (weather boss)	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	At show start and on each Next, a random Entrance card is discarded.
+The Gong	catalog	The Gong	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Any submit scoring under a floor value ends the show immediately.
+The Loggione	catalog	The loggione	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Common cards earn nothing here; legendary cards earn triple.
+The Falling Wall	catalog	The Falling Wall	designdocs	DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports	Destroys an entire column except one exact slot, telegraphed one turn ahead.
+The Ringmistress (Queen)	designdocs	The Impresario (King)	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	Face-card rename to a troupe role.
+Only first poker hand scores	designdocs	Only first poker hand scores	braindump	gam draft.txt:221	Make it so only the first scored poker hand actually scores, ignoring later poker hands in the same evaluation.
+Avalanche	designdocs	Avalanche (catalog entry)	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	After scoring, all cards on board attack the scoreboard: goal score reduced by the number of cards.
+Avalanche	designdocs	Avalanche card	braindump	gam draft.txt:393	Avalanche: after scoring all cards on the board, attack the scoreboard, reducing the goal score by the number of cards scored.
+StampGlobal	designdocs	Global	designdocs	DESIGN_DOC.md §14.2 Stamps	Card is active from anywhere, including inside decks.
+Hidden Rules Deck	designdocs	Hidden Rules Deck	braindump	gam draft.txt:294	A normally-hidden 'Rules' deck holds the cards that define the default rule set (stacking, scoring, etc.); changing the rules means changing cards in this deck.
+Electric suit (proposed)	designdocs	Electric suit chain buff	braindump	gam draft.txt:490	Electric suit buffs cards that are connected and chained together in a certain way.
+Reroll Blessing effect archetype	designdocs	Reroll Blessing (unnamed)	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	+1 reroll per game; repeated actions will not have the same results for the rest of the game.
+Reroll Blessing effect archetype	designdocs	+1 reroll per game (turn resource)	designdocs	DESIGN_DOC.md §17 Turn Resources	+1 reroll per game; repeated actions will not have the same results.
+Magic deck	designdocs	Magic deck	braindump	gam draft.txt:38	Magic deck: each suit is an element; cast spells by submitting elemental suit combinations.
+Double Everything deck	designdocs	Double-everything deck	braindump	gam draft.txt:534	Double-everything deck variant: ranks are doubled (doubling deck size), initial slots doubled, score requirement doubled, and card packs doubled.
+HONK	designdocs	HONK card	braindump	gam draft.txt:629	HONK: on tap, makes a honk noise; unlimited uses.
+Presentation	designdocs	Presentation card ascending order mult	braindump	gam draft.txt:714	Presentation card: moving cards into ascending order gives multiplier points.
+Common (chain)	designdocs	Rare-doubles-epic chain	braindump	gam draft.txt:569	Rare card: doubles the chance of epics appearing.
+Rare (chain)	designdocs	Epic-doubles-legendary chain	braindump	gam draft.txt:570	Epic card: doubles the chance of legendaries appearing.
+Spiderweb	designdocs	Spiderweb card	braindump	gam draft.txt:160	Spiderweb: scores 1 point per card diagonal to this card, in a cross shape.
+Spiderweb	designdocs	Spiderweb card	braindump	random potential effects.csv:6	Scores 1 point per card diagonal to this card, in a cross shape.
+Poker Crown (unnamed)	designdocs	Poker card (5-card window)	braindump	gam draft.txt:158	When this card is scored, it and the 4 cards above it are scored together as a poker hand.
+Poker Crown (unnamed)	designdocs	Poker card (5-window)	braindump	random potential effects.csv:4	When this card is evaluated, it and the 4 cards above it are scored as a poker hand.
+Column Poker (unnamed)	designdocs	Every 5 cards per column scores	braindump	gam draft.txt:159	Every 5 cards in a column are scored as a poker hand.
+Money on Trigger	designdocs	Money on trigger seal	braindump	gam draft.txt:75	Seal: gain money whenever this card's effect triggers.
+Money on Trigger	designdocs	Money on trigger (seal)	braindump	random potential effects.csv:6	Seal: gain money whenever this card's effect triggers.
+Endless mode unlock	designdocs	Endless mode after final city	braindump	gam draft.txt:659	Finishing the final city unlocks an endless mode that repeats the final city with guaranteed repeating choices until the player loses.
+1 free undo per turn	designdocs	1 free undo per turn	braindump	gam draft.txt:689	1 free undo per turn is baked in by default and does not carry over between turns.
+Score for 15	braindump	Score for 31	braindump	gam draft.txt:31	Score 2 points for every combination that sums to 31.
+Frankenstein card	braindump	Frankenstein card	braindump	random potential effects.csv:3	When submitted, combines with the bottom and top cards into a 3-card merged stack that remains in the submission zone after scoring.
+Sliced Bread card	braindump	Sandwich card	braindump	random potential effects.csv:3	On submission, if there is a same-suit card later down the stack, gain a point for each card in between.
+Double trigger seal	braindump	Double trigger (seal)	braindump	random potential effects.csv:3	Seal: this card's effect triggers twice.
+Trigger when hidden seal	braindump	Trigger even when hidden (seal)	braindump	random potential effects.csv:4	Seal: this card's effect triggers even when hidden (covered).
+Trigger in deck seal	braindump	Trigger when in deck (seal)	braindump	random potential effects.csv:5	Seal: this card's effect can trigger while still in the deck.
+Bloodstone	balatro	Lusty Joker	balatro	balatro	Played cards with Heart suit give +3 Mult when scored.
+Gluttonous Joker	balatro	Onyx Agate	balatro	balatro	Played cards with Club suit give +7 Mult when scored.
+Mad Joker	balatro	Jolly Joker	balatro	balatro	+8 Mult if played hand contains a Pair.
+Mad Joker	balatro	The Duo	balatro	balatro	X2 Mult if played hand contains a Pair.
+Mad Joker	balatro	Foolhardy Joker	cryptid	cryptid	+42 Mult if played hand contains an Ultimate Pair
+Mad Joker	balatro	The Clash	cryptid	cryptid	X12 Mult if played hand contains an Ultimate Pair
+Mad Joker	balatro	The Duos	cryptid	cryptid	X2.5 Mult if played hand contains a Two Pair
+Zany Joker	balatro	The Trio	balatro	balatro	X3 Mult if played hand contains a Three of a Kind.
+Crazy Joker	balatro	The Order	balatro	balatro	X3 Mult if played hand contains a Straight.
+Crazy Joker	balatro	Droll Joker	balatro	balatro	+10 Mult if played hand contains a Flush.
+Crazy Joker	balatro	The Tribe	balatro	balatro	X2 Mult if played hand contains a Flush.
+Crazy Joker	balatro	Manic Joker	cryptid	cryptid	+22 Mult if played hand contains a Straight Flush
+Crazy Joker	balatro	The Nuts	cryptid	cryptid	X5 Mult if played hand contains a Straight Flush
+Crazy Joker	balatro	Wacky Joker	cryptid	cryptid	+30 Mult if played hand contains a Flush House
+Crazy Joker	balatro	Kooky Joker	cryptid	cryptid	+30 Mult if played hand contains a Flush Five
+Crazy Joker	balatro	The Unity	cryptid	cryptid	X9 Mult if played hand contains a Flush House
+Crazy Joker	balatro	The Swarm	cryptid	cryptid	X9 Mult if played hand contains a Flush Five
+Clever Joker	balatro	Sly Joker	balatro	balatro	+50 Chips if played hand contains a Pair.
+Walkie Talkie	balatro	Fibonacci	balatro	balatro	Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored.
+Walkie Talkie	balatro	Weebonacci	cryptid	cryptid	+3 Mult when each played Ace, 2, 3, 5, or 8 is scored
+Walkie Talkie	balatro	Light Up The Night	cryptid	cryptid	Each played 7 or 2 gives X1.5 Mult when scored
+Cavendish	balatro	Gros Michel	balatro	balatro	+15 Mult; 1 in 6 chance this card is destroyed at end of round.
+Cavendish	balatro	Broken House	cryptid	cryptid	X11.4 Mult; 1 in 4 chance it is destroyed at end of round
+Juggler	balatro	The Manacle	balatro	balatro	-1 hand size.
+Merry Andy	balatro	Troubadour	balatro	balatro	+2 hand size, -1 hand each round.
+Wee Joker	balatro	...Like Antennas to Heaven	cryptid	cryptid	Gains X0.1 Chips when each played 7 or 4 is scored
+The Family	balatro	Nutty Joker	cryptid	cryptid	+19 Mult if played hand contains a Four of a Kind
+Purple Stake	balatro	Green Stake	balatro	balatro	Required score to beat Blinds scales faster for each Ante.
+Small Blind	balatro	Big Blind	balatro	balatro	No special effect; can be skipped to receive a Tag.
+Voucher Tag	balatro	Golden Voucher Tag	cryptid	cryptid	Adds one Tier 3 Voucher to the next shop
+Absurd Joker	cryptid	The Filler	cryptid	cryptid	X1 Mult if played hand contains a High Card
+The Home	cryptid	Silly Joker	cryptid	cryptid	+16 Mult if played hand contains a Full House
+Delirious Joker	cryptid	The Quintet	cryptid	cryptid	X5 Mult if played hand contains a Five of a Kind
+2D	cryptid	No Sound, No Memory	cryptid	cryptid	Retriggers each played 7, 3 additional times
+Mosaic	cryptid	Big Cube	cryptid	cryptid	X6 Chips
+Bonkers Joker	cryptid	The Stronghold	cryptid	cryptid	X5 Mult if played hand contains a Bulwark
+Fucked-Up Joker/Tidy Joker	cryptid	The Fuck!?/The Cluster	cryptid	cryptid	X10 Mult if played hand contains a Clusterfuck/Cluster
+Undefined Joker	cryptid	The	cryptid	cryptid	X2 Mult if played hand is None
+Exposed	cryptid	Mask	cryptid	cryptid	Retriggers all scored face cards 3 additional times; all non-face cards are debuffed
+Very Fair Deck	cryptid	Very Fair Sleeve	cryptid	cryptid	-2 hands and -2 discards every round; Vouchers no longer appear in the shop
+CCD Deck	cryptid	CCD Sleeve	cryptid	cryptid	Every card is also a random consumable
+Wormhole Deck	cryptid	Wormhole Sleeve	cryptid	cryptid	Starts with an Exotic Joker; Jokers are 20X more likely to be Negative; -2 Joker slots
+Conveyor Deck	cryptid	Conveyor Sleeve	cryptid	cryptid	Jokers may not be moved; at start of round, duplicates the rightmost Joker and destroys the leftmost Joker
+Redeemed Deck	cryptid	Redeemed Sleeve	cryptid	cryptid	When a Voucher is purchased, also gain its extra tiers
+Glowing Deck	cryptid	Glowing Sleeve	cryptid	cryptid	Multiplies the values of all Jokers by X1.25 when Boss Blind is defeated
+Critical Deck	cryptid	Critical Sleeve	cryptid	cryptid	After each hand played, 1 in 4 chance for ^2 Mult, 1 in 8 chance for ^0.5 Mult
+Encoded Deck	cryptid	Encoded Sleeve	cryptid	cryptid	Starts with a Code Joker and a Copy/Paste; only Code Cards appear in shop
+Nostalgic Deck	cryptid	Nostalgic Sleeve	cryptid	cryptid	Joker and Consumable slots are combined; Nostalgic Blinds replace their updated Blind
+Bountiful Deck	cryptid	Bountiful Sleeve	cryptid	cryptid	After Play or Discard, always draw 5 cards
+Legendary Deck	cryptid	Legendary Sleeve	cryptid	cryptid	Starts with a Legendary Joker; 1 in 5 chance to create another when Boss Blind is defeated (must have room)
+Spooky Deck	cryptid	Spooky Sleeve	cryptid	cryptid	Starts with an Eternal Chocolate Die; after each Ante, creates a Candy or Cursed Joker
+Pink Stake	cryptid	Verdant Stake	cryptid	cryptid	Required score scales faster for each Ante
+Triple Tag	cryptid	Quadruple Tag	cryptid	cryptid	Gives 3 copies of the next selected non-copying Tag
+Triple Tag	cryptid	Quintuple Tag	cryptid	cryptid	Gives 4 copies of the next selected non-copying Tag

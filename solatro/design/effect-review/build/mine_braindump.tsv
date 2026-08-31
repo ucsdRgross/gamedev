@@ -1,0 +1,460 @@
+source	name	slot_guess	mechanic
+gam draft.txt:13	Deck click drop	rule	Each click of the deck causes new cards to drop down, rounds remaining decrease, and slots on the right score whatever card is put on them.
+gam draft.txt:14	Score slot as free space	rule	The score slot can be used as a free/empty space between deck clicks.
+gam draft.txt:17	Mulligan entrance cards	rule	Mulligan incoming cards by clicking them and pressing a discard button.
+gam draft.txt:18	Rearrange entrance cards	rule	Player can rearrange incoming/entrance cards before placing them.
+gam draft.txt:22	Deck variants change rules	map	Different decks influence the starting deck and rules; decks can be combined and picked up during a run.
+gam draft.txt:25	Face cards worth 10	rank	Face cards all count as 10 when adding to a hand total.
+gam draft.txt:30	Score for 15	rule	Score 2 points for every combination that sums to 15.
+gam draft.txt:31	Score for 31	rule	Score 2 points for every combination that sums to 31.
+gam draft.txt:32	Score for pair	rule	Score 2 points for a pair.
+gam draft.txt:33	Score for triple	rule	Score 6 points for a triple.
+gam draft.txt:34	Score for quad	rule	Score 12 points for a quad.
+gam draft.txt:35	Score for run	rule	Score 3-7 points for a run of 3 to 7 cards.
+gam draft.txt:38	Magic deck	map	Magic deck: each suit is an element; cast spells by submitting elemental suit combinations.
+gam draft.txt:39	Survivor deck	map	Survivor deck: each suit represents a resource such as food, water, or a weapon.
+gam draft.txt:46	Collect number cards to progress	boss	Collect all number cards to progress to a stage where remaining boss face cards must be faced (Deadman Wonderland reference).
+gam draft.txt:47	FTL-style map with special cards	map	Map is FTL-like; each location is marked by a single special card the player collects, which has special effects.
+gam draft.txt:48	Location difficulty from card	map	A map location's suit and rank determine its difficulty and type.
+gam draft.txt:49	Minesweeper map reveal	map	Deck starts fully visible but face-down like Minesweeper; can only click a card adjacent to a face-down card, battling for it and revealing adjacent cards; win by uncovering all cards.
+gam draft.txt:50	Map special squares	map	Some map squares are special locations like shops; e.g. all 7s could be shops.
+gam draft.txt:51	Map probability rings	map	Map could be a square with rings of probability where higher-rank cards are more likely toward the middle.
+gam draft.txt:56	Revealed cards act	rule	All revealed cards perform their abilities.
+gam draft.txt:59	Pickup vs legal placement	rule	A stack can be picked up from anywhere, but if the resulting stack is illegal it can only be placed back on the submission spot.
+gam draft.txt:64	Map card seeds next entrance	map	Clicking a card on the map makes it the first card to appear in the drop-down/entrance area of the subsequent match.
+gam draft.txt:65	Cards as currency	meta	Instead of currency, cards themselves are the currency and are traded.
+gam draft.txt:66	Gold heavy to bottom	type	Gold cards are heavy and always sink to the bottom of the deck.
+gam draft.txt:67	Frankenstein card	skill	On submission, this card combines with the bottom and top cards into a 3-card merged stack that remains in the submission zone after scoring.
+gam draft.txt:68	Sliced Bread card	skill	On submission, if there is a same-suit card later down the stack, gain a point for each card in between.
+gam draft.txt:72	Double trigger seal	stamp	Seal: this card's effect triggers twice.
+gam draft.txt:73	Trigger when hidden seal	stamp	Seal: this card's effect triggers even when hidden (covered).
+gam draft.txt:74	Trigger in deck seal	stamp	Seal: this card's effect can trigger while still in the deck.
+gam draft.txt:75	Money on trigger seal	stamp	Seal: gain money whenever this card's effect triggers.
+gam draft.txt:79	Heavy material	type	Heavy card type sinks to the bottom of the deck.
+gam draft.txt:80	Light material	type	Light card type rises to the top of the deck.
+gam draft.txt:81	Elemental materials	type	Elemental card materials: Earth, Air, Water, Fire.
+gam draft.txt:86	No submit slot, whole board scores	rule	There is no special submit slot; the entire board is considered for submission on final score, using entrance cards similar to jokers.
+gam draft.txt:87	Draw-through then submit	rule	Constantly draw through the deck like classic solitaire, then submit to evaluate the entire board state and reset.
+gam draft.txt:90	5-wide board for row hands	rule	A 5-column-wide board allows row-wide poker hands as well as column hands.
+gam draft.txt:93	Legal stacks only, harder over time	rule	Only legal stacks can be picked up, and moving stacks becomes more difficult with time.
+gam draft.txt:96	15 as rank via ability only	rule	Rank 15 is too hard to visually read and should only exist via an ability, not as a default rank.
+gam draft.txt:99	Base scoring: vertical runs + horizontal poker	rule	Base scoring is vertical runs (with a minimum size) plus horizontal poker hands.
+gam draft.txt:102	Elemental movement types	type	Elemental card types have custom movement, such as always staying on top or bottom of a stack.
+gam draft.txt:105	Match end condition	rule	Match ends when the deck runs out of cards or the required score is reached.
+gam draft.txt:108	Submit clears and cascades board	rule	Pressing submit scores everything and clears the board, with upper cards coming down to start a new board state without a full wipe.
+gam draft.txt:111	Legal stack ascending/descending, no same suit	rule	Legal stacks are ascending or descending rank order and cannot stack same suit.
+gam draft.txt:114	Vertical poker hands ability	skill	Ability that makes poker hands also considered vertically (columns), not just rows.
+gam draft.txt:117	Cards auto-drop, no manual drag down	rule	Cards come down on their own and cannot be dragged down manually.
+gam draft.txt:120	Row-then-column top-down scoring order	rule	Submission evaluates top-down, one row at a time and 5 cards at a time, so poker hands score first while runs are calculated per column simultaneously.
+gam draft.txt:124	Multiply vertical by horizontal	rule	All vertical scores are multiplied together with all horizontal scores at the end.
+gam draft.txt:130	Effect trigger order	rule	Card effects trigger in order: field effects, then deck top-down (soon-to-be-drawn first, order hidden), then left-right top-down including entrance, then discard pile top-down (recent discards first).
+gam draft.txt:135	Row-first then simultaneous column scoring	rule	All row scoring happens first, then all 5 lanes are scored simultaneously with the same per-row scoring repeated for each column, returning scored cards that go through the card-effect loop and get elevated.
+gam draft.txt:146	Triangle map tier choice	map	Choose from the next 3 card options, moving the player up a tier of a triangle-shaped map and playing a match, repeating.
+gam draft.txt:147	Lane loss on lateral movement	map	Moving to the left lane permanently loses access to both right lanes; moving to the middle lane loses both left and right lanes.
+gam draft.txt:148	Boss phase every few rows	boss	Every few rows of the triangle map is a boss phase, visually designed to look like terrain.
+gam draft.txt:149	Fights only on boss phases	map	Fights may be restricted to only happen on boss phases of the map.
+gam draft.txt:158	Poker card (5-card window)	skill	When this card is scored, it and the 4 cards above it are scored together as a poker hand.
+gam draft.txt:159	Every 5 cards per column scores	skill	Every 5 cards in a column are scored as a poker hand.
+gam draft.txt:160	Spiderweb card	skill	Spiderweb: scores 1 point per card diagonal to this card, in a cross shape.
+gam draft.txt:180	Guarantee early entrance cards	rule	Some way to guarantee that newly chosen cards show up first, or sooner, in the entrance.
+gam draft.txt:186	Null cards	type	Null cards take up space on the board and are highlighted on hover to show over the null space.
+gam draft.txt:217	Hidden trigger stamp	stamp	Hidden trigger: ability activates even when the card is hidden (covered), unlike default active abilities that need visibility.
+gam draft.txt:221	Only first poker hand scores	rule	Make it so only the first scored poker hand actually scores, ignoring later poker hands in the same evaluation.
+gam draft.txt:223	Any card placeable on this card	skill	Card ability: any card can be placed on top of this card, modifying stacking rules.
+gam draft.txt:230	Every 5th row red	rule	Every 5 rows, make that row red (visual scoring marker/threshold).
+gam draft.txt:231	Points increase by layer	rule	Points scored increase based on the layer/height a card is stacked at.
+gam draft.txt:233	Check scoring in deck/discard	rule	Scoring should also check cards sitting in the deck and discard pile, not just the board.
+gam draft.txt:234	Add all cards to map	map	Add all cards to the map (as collectibles/nodes), not just special ones.
+gam draft.txt:242	Self-upgrading effect	skill	An effect that upgrades itself into a better version of itself if the player meets certain conditions.
+gam draft.txt:259	Pip effects permanently active	rule	Pip effects (suit/rank abilities) should be permanently active, independent of the resolver class.
+gam draft.txt:260	Wild pip tracks previous pip	suit	A Wild pip type tracks and mimics whichever pip it last resolved to.
+gam draft.txt:261	Wild pip random selection	suit	Wild pip randomly chooses itself from among existing pips on the same board/row/column.
+gam draft.txt:270	Reveal-all active ability button	view	QOL: a half-open-eye button that opens fully, causing all cards with an eye stamp (or always-active cards) to push cards stacked on top downward so the active card is fully visible.
+gam draft.txt:272	Compress-board button	view	QOL: a compress-all-cards button converts the board into a flavorless sheet showing only pips and bright ability names (dimmed if inactive), maximizing readability.
+gam draft.txt:275	Exchange Voucher card	consumable	Exchange Voucher: a special deck card usable to swap itself with any card currently on screen.
+gam draft.txt:276	Buttons and shops as cards	meta	All buttons should themselves be cards; e.g. a shop reroll is itself a tappable card on the board.
+gam draft.txt:285	Sin of Gluttony card	skill	Sin of Gluttony: a Hippo-type card with no value cap that can be fed from anywhere, including decks, permanently consuming cards without returning them.
+gam draft.txt:288	Uniqueness multiplier	rule	A multiplier that increases with every unique effect triggered during a run.
+gam draft.txt:294	Hidden Rules Deck	rule	A normally-hidden 'Rules' deck holds the cards that define the default rule set (stacking, scoring, etc.); changing the rules means changing cards in this deck.
+gam draft.txt:300	Metagame editing ruleset deck	meta	Metagame where the player tries to modify the default ruleset deck during a run by adding or removing rule cards.
+gam draft.txt:301	Boss debuffs as ruleset cards	boss	Negative boss-battle effects are temporary cards added to the ruleset deck, defined to self-destruct after the game/act.
+gam draft.txt:304	Label/Evident rule-visibility card	skill	A 'Label/Evident' type card announces its ruleset-deck effect as an active effect on the board even when the universal/rules deck itself is not visible.
+gam draft.txt:307	Rule cards have random suit/rank	rule	Rule-deck cards carry a random suit and rank in case the player is able to extract them onto the playing field.
+gam draft.txt:310	Decks as playable solitaire boards (vetoed)	map	Considered (then vetoed) making every deck its own playable solitaire board so players could reorder or extract cards from it.
+gam draft.txt:315	Cards have 1 parent/1 child stack	rule	Cards can have exactly 1 parent and 1 child card, forming a stack.
+gam draft.txt:316	Board has deck/discard/ruleset zones	rule	The board has a deck zone, a discard deck zone, and a ruleset deck zone.
+gam draft.txt:317	Ruleset deck parsed at game creation	rule	On game creation, the ruleset deck is parsed to decide the board layout.
+gam draft.txt:321	Entrance cards act via ability	rule	Entrance/input cards get their draw-and-pass functionality implemented as an ability: on turn start, pass child cards to the board card in the same column, then draw a random card from the deck.
+gam draft.txt:324	Dynamic input/board card count from rules	rule	The number of input cards and board cards is decided dynamically at game creation by iterating the rule deck (e.g. a rule dictating 5 input columns and 5 board columns).
+gam draft.txt:328	Tap-to-force-trigger card	skill	A card that can force a linked on-trigger card to fire whenever it is tapped, likely via stacking.
+gam draft.txt:331	Unlockable ruleset card packs	meta	A ruleset card pack that can be unlocked, allowing cards that change fundamental rules of the game.
+gam draft.txt:335	Vampire Survivors-style prestige shop	meta	Prestige points system: each win grants points spendable in a menu to change the odds of cards appearing or to apply debuffs for more points.
+gam draft.txt:342	Eye stamp shows mini skill art	stamp	Eye stamp allows a card to stay active despite being covered, showing a miniature version of the skill art inside the stamp.
+gam draft.txt:345	Rules-in-main-deck variant	meta	A deck variant where the rule deck is empty and all rules are embedded as cards in the main deck.
+gam draft.txt:350	Triangle map holes hold card packs	map	The triangle map can have holes that contain card packs instead of individual cards.
+gam draft.txt:354	Rarity affects card borders/shine	view	Rarer cards could have different borders and shine/holographic effects.
+gam draft.txt:357	Power-sorted rarity tiers	meta	Create common base effects, then progressively stronger versions of those effects as separate, rarer cards; rarity is determined by how far a card climbs the effect-value ladder.
+gam draft.txt:360	Shop buy/sell in cards	meta	Shop sells cards priced in a stack of cards taken from the player's deck (equivalent value); card packs on the map add cards while the shop removes them; shop can sell packs too; reroll cost increases each use.
+gam draft.txt:368	Card unlocks: action-based and score-based	meta	Dual unlock system: some cards unlock from specific in-game actions, others from reaching score/win thresholds; common cards from generic progress, rare cards from genre-specific play.
+gam draft.txt:369	Prestige system reshapes map odds	meta	Prestige currency from wins can be spent to manipulate the odds of cards/events spawning on the map, or to unlock true-vision (seeing the rule deck and true card descriptions).
+gam draft.txt:370	Deck unlocks combined with gimmick runs	meta	Deck unlocks (Balatro-style) combined with gimmick-run variants instead of a separate tab.
+gam draft.txt:371	Ascension debuff cards	meta	Ascensions: each ascension level adds a chosen negative-effect card to the deck or rules deck, including permanent versions of boss environmental hazards.
+gam draft.txt:375	Eye of God card	consumable	Eye of God: allows seeing all decks and true (unobscured) card descriptions.
+gam draft.txt:376	Hand of God card	consumable	Hand of God: allows moving cards to any location on the board and reordering cards within a deck.
+gam draft.txt:377	Foot of God card	consumable	Foot of God: can switch locations with any card on screen.
+gam draft.txt:388	Score as damage vs antagonist	boss	Recontextualize the points system as damage dealt against an antagonist, similar to Slay the Spire enemy health.
+gam draft.txt:389	Combo increments per unique effect	rule	Row/column scoring becomes a combo system: score increments by 1 for each unique effect triggered, with heavier emphasis on card effects that do direct damage under specific conditions.
+gam draft.txt:390	Flat points multiplied by combo	rule	Flat points come from scoring, while row combo and column combo values are multiplied into the flat points.
+gam draft.txt:393	Avalanche card	skill	Avalanche: after scoring all cards on the board, attack the scoreboard, reducing the goal score by the number of cards scored.
+gam draft.txt:406	Status effect array on cards	rule	Cards carry a status array (dictionary of status-effect name to value) processed by a rule card each turn.
+gam draft.txt:423	Effect art pops up on trigger	view	When an effect plays, its art pops up on screen in the background as if it is being performed.
+gam draft.txt:426	Grand Entrance / The Ring zones	rule	Circus rename: upper and lower play zones become 'Grand Entrance' and 'The Ring'.
+gam draft.txt:427	Performers and Feats rename	rule	Circus rename: cards are 'performers'; skills are 'feats'.
+gam draft.txt:428	Tips for overscoring	meta	Scoring is themed as audience excitement with cheering; player gains 'tips' currency for overscoring, playing as the Ringmaster.
+gam draft.txt:429	Circus suits, rank cap question	suit	Suits become clowns/dancers/flames/juggling balls/hoops/knives; aces are the actual performers; considering capping rank at 10.
+gam draft.txt:434	Performance ring score multiplier	rule	Each 'ring' of 5 rows increases the score multiplier for cards scored within it (1st ring 1x, 2nd ring 2x, 3rd ring 3x, etc.).
+gam draft.txt:437	3 submits as 3 acts	rule	3 submits per match could reference 3 performance acts.
+gam draft.txt:440	Leader/champion cards	skill	Leader/champion cards start the game already on the board (or entrance) and do not leave on submit.
+gam draft.txt:441	Ringmaster leader card	skill	Ringmaster: no suit/rank; type makes it start in the entrance like other leaders; stamp lets it always be picked up and placed anywhere with nothing on top; skill keeps it on the board after submission.
+gam draft.txt:442	Leader flavor debuffs	skill	Optional leader debuffs, e.g. fear of fire/knives preventing placement on fire/knife cards.
+gam draft.txt:444	Magician leader archetype	skill	Magician leader archetype: focuses on card creation and deletion.
+gam draft.txt:445	Acrobatics leader archetype	skill	Acrobatics leader archetype: focuses on card movement.
+gam draft.txt:446	Animal trainer leader archetype	skill	Animal trainer leader archetype: focuses on stacking, including eating cards and cards auto-moving through the field.
+gam draft.txt:447	Clowns leader archetype	skill	Clowns leader archetype: focuses on pip manipulation.
+gam draft.txt:448	Dancer leader archetype	skill	Dancer/skill-tricks leader archetype: focuses on specific formations.
+gam draft.txt:449	Escape artist leader archetype	skill	Escape artist/stuntsman leader archetype: focuses on negative effects.
+gam draft.txt:450	Fortune teller leader archetype	skill	Fortune teller leader archetype: focuses on deck manipulation.
+gam draft.txt:451	Special effects leader archetype	skill	Special-effects (fireworks) leader archetype: focuses on points/combo manipulation.
+gam draft.txt:452	Concessions leader archetype	skill	Concessions/food leader archetype: focuses on positive effects.
+gam draft.txt:453	Costume designer leader archetype	skill	Costume designer leader archetype: focuses on equipment/clothing/stamp slots.
+gam draft.txt:454	Producer/manager leader archetype	skill	Producer/manager leader archetype: focuses on token cards like gold-money cards and basic cards.
+gam draft.txt:457	Card groups boosted by leaders	skill	Cards belong to groups, and leader cards can boost the members of their group.
+gam draft.txt:464	First-act type	type	First-act card type shows up alone before any other cards.
+gam draft.txt:465	Second-act type	type	Second-act card type shows up alone after half the deck is drawn.
+gam draft.txt:466	Final-act type	type	Final-act card type shows up alone after all other cards are drawn.
+gam draft.txt:469	Presentation-stage preview	view	Preview area is themed as a presentation stage where text scrolls but the card itself does not.
+gam draft.txt:478	Carnival meta shop	map	The overall meta shop is themed as a carnival.
+gam draft.txt:481	Basic suit props sweep board	suit	Scored basic (non-skill) cards summon rank-scaled prop objects in their row/column that move across the board and interact with other cards.
+gam draft.txt:482	Suit-specific prop movement	suit	Knives and hoops move horizontally across their scored row; balls and fire drop down their column.
+gam draft.txt:483	Prop-hits-target mult gain	suit	Gain mult when a hoop passes through an animal/acrobat card, a knife misses a stuntsman, or a ball hits a juggler/animal; fire buffs cards it passes through.
+gam draft.txt:484	Firework suit column score	suit	Firework suit directly adds points to its column based on its rank.
+gam draft.txt:485	Balanced prop targeting rules	suit	Alt balance: knives hit non-skill cards and hoops hit skill cards; balls buff skill cards and fire buffs non-skill cards, spreading buffs as evenly across the column as possible.
+gam draft.txt:490	Electric suit chain buff	suit	Electric suit buffs cards that are connected and chained together in a certain way.
+gam draft.txt:498	Prop cards defined as feat-less	rule	Cards without feats (skills) are classified as 'prop' cards.
+gam draft.txt:501	Metashop odds vs required score	meta	Spending points in the meta-shop to manipulate overall card odds also increases the score required per show.
+gam draft.txt:507	Hard cap on flush win-con plays	rule	Alt win condition idea: win via 1 flush, but a hard cap exists on total flushes ever playable so it cannot be repeated infinitely.
+gam draft.txt:510	Town-specific hazards	boss	Different towns present different hazards; e.g. performing at a volcano might cause lava hazards.
+gam draft.txt:511	Suit-nerfing towns	boss	Certain towns don't score certain suits at all, e.g. 'knifetown' gives no points for knife scoring, similarly firetown/juggletown/hooptown.
+gam draft.txt:515	+1 reroll, no-repeat rerolls	skill	Add +1 reroll per game; for the rest of the game, repeated reroll actions do not give the same results.
+gam draft.txt:516	Permanently-active toggle	stamp	Once activated, an effect stays active for the rest of the game and can no longer be toggled off.
+gam draft.txt:519	Spotlight/focus rename	rule	'Active' is rebranded as Spotlight/Focus: cards that are unblocked (uncovered) are in the spotlight.
+gam draft.txt:534	Double-everything deck	map	Double-everything deck variant: ranks are doubled (doubling deck size), initial slots doubled, score requirement doubled, and card packs doubled.
+gam draft.txt:537	Slot-machine pack opening	view	Card pack opening could show all possible cards from the pack cycling in the background slot-machine style, though the result is fixed by seed.
+gam draft.txt:543	Custom deck as final deck	meta	A player-built custom deck can serve as the final/endgame deck.
+gam draft.txt:552	Mana cards instead of mana bar	rule	Instead of a mana bar, use mana cards similar to MTG; any card can serve as a resource.
+gam draft.txt:555	Mystery Box card	skill	Mystery Box: at game start, this card becomes a random skill.
+gam draft.txt:556	Pandora Box card	skill	Pandora Box: at game start becomes a random skill; at game end resets back to Pandora Box.
+gam draft.txt:557	Utter Chaos card	skill	Utter Chaos: becomes a random skill on every 'next' action.
+gam draft.txt:560	Final act score multiplier	rule	The final act gets an extra points multiplier, or each act gets an increasing multiplier.
+gam draft.txt:563	Card debuff statuses	skill	Debuff status effects on cards: e.g. Exhausted (loses rank at round end if it was on board), plus proposed Cancer and Parasites statuses.
+gam draft.txt:564	Reward fast/lean wins	skill	Reward winning fast or with fewer cards via card effects, e.g. extra gold cards for winning faster, or buffs to cards remaining in the deck.
+gam draft.txt:565	Cheat Day card	skill	Cheat Day: cards remaining in the deck get a rank increase.
+gam draft.txt:568	Common-doubles-rare chain	skill	Common card: doubles the chance of rares appearing.
+gam draft.txt:569	Rare-doubles-epic chain	skill	Rare card: doubles the chance of epics appearing.
+gam draft.txt:570	Epic-doubles-legendary chain	skill	Epic card: doubles the chance of legendaries appearing.
+gam draft.txt:576	Rule cards always globally spotlit	rule	Rule cards are a special card type whose top skill is always globally in the spotlight (active), making them not special from normal deck mechanics otherwise.
+gam draft.txt:583	Cross-game score carryover	meta	Scoring done outside the main game (side content) carries over into the next game.
+gam draft.txt:586	Rules deck defines next/submit behavior	rule	Game rules (via the rules deck) determine what the Next and Submit buttons do; different rules decks per scenario, permanently changeable during a run.
+gam draft.txt:589	Genie wish card	consumable	Genie: make a wish by choosing a card to create a copy of in hand.
+gam draft.txt:596	Storyteller point carryover	skill	Storyteller: preserves some points for the next game.
+gam draft.txt:602	Retirement requires ability activation	rule	Cards cannot retire (leave play) until scored or until an ability is activated on them; with no ability, there is no retirement condition.
+gam draft.txt:605	Shared charge system	rule	All charge-based effects share the same charge system, so anything with charges can gain more or less charge from different sources.
+gam draft.txt:606	Acrobatic tap-or-carryover charge	skill	Acrobatic card has 1 charge triggerable by tap; if unused, the charge carries to the next round.
+gam draft.txt:609	Mulligan-style card packs	consumable	Card packs where, instead of choosing cards directly, the player mulligans (rerolls) the pack's results arena-style, with an increasable mulligan count.
+gam draft.txt:612	Mulligan entrance via tap	skill	Card effect that allows mulliganing entrance cards when tapped.
+gam draft.txt:613	Upgraded pack results with stamps	meta	Pack mulligan results can have a chance to be upgraded, including bonus types and stamps.
+gam draft.txt:617	Map high-rarity loose cards	map	The map can sometimes place single high-rarity cards lying around instead of the usual card pack.
+gam draft.txt:620	Encounters as mini solitaire games	map	Map encounters could be mini solitaire games in their own right.
+gam draft.txt:623	Move-resistant cards	skill	Some cards can resist being moved.
+gam draft.txt:629	HONK card	skill	HONK: on tap, makes a honk noise; unlimited uses.
+gam draft.txt:632	Secret melds via add-to-deck effects	rule	Secret melds to discover, implemented as cards with hidden on-add-to-deck effects that add new scoring rules.
+gam draft.txt:635	Disaster card packs	boss	Disaster-themed card packs appear as choices on the board.
+gam draft.txt:641	Biome-based world/act map	map	Game runs on a level/act/world system (One Step From Eden style) traveling through biomes that each affect map generation differently.
+gam draft.txt:642	Fame gate every 10 levels	meta	Every 10 levels, the player must have a certain fame level to progress to the next stage.
+gam draft.txt:643	Fog of war on tour map	map	Tour theme with fog of war reducing visibility of further map choices.
+gam draft.txt:644	Show-must-go-on weather hazards	boss	Negative weather effects are thematized as 'the show must go on'.
+gam draft.txt:645	Constellation tour map, no backtrack	map	FTL-style constellation map: cannot backtrack, touring cities to build fame, with environmental hazards and surprise weather.
+gam draft.txt:646	Player plans tour route length	map	Players plan their tour route ahead of time, starting with small tours and unlocking longer routes through more cities as they finish tours.
+gam draft.txt:650	In-run temporary prestige events	meta	Events can grant temporary prestige points to allocate mid-run instead of only pre-game.
+gam draft.txt:653	Action-triggered negative events	map	Events triggered by player actions, e.g. sacrificing too many talent cards causes a union strike, or having too many cards triggers a tax-evasion penalty losing basic cards.
+gam draft.txt:654	Mini-game events with puzzle win-con	map	Some events are mini-games where score is not the goal but an alternate puzzle win condition, e.g. trigger an effect 5 times to win.
+gam draft.txt:657	World tour fame ramp	map	World tour: build fame across cities before reaching the final city; exceeding a city's score requirement raises the requirement for the next city.
+gam draft.txt:658	Fame improves card rarity odds	meta	Odds of better-rarity cards increase with total fame.
+gam draft.txt:659	Endless mode after final city	meta	Finishing the final city unlocks an endless mode that repeats the final city with guaranteed repeating choices until the player loses.
+gam draft.txt:660	Circular map / return-to-start	map	Alt map shape ideas: circle the map instead of a final city, or require returning to the start after reaching a big enough city.
+gam draft.txt:663	Maximum Effort/Exhaust stamp	stamp	Maximum Effort/Exhaust: doubles points (or gives flat points) from this card on score, but only refreshes if the card is not played/scored again on the next show.
+gam draft.txt:666	High-score gated progress	meta	Progress is gated behind reaching certain high scores that require luck or complex card play; more complex cards award more points, pushing players toward dynamic decks.
+gam draft.txt:672	Repeatable entrance discard gambling	rule	Repeatedly discard entrance cards until satisfied, then commit them to drop; starts with 1 discard per turn (possibly a joker effect), allowing gambling for a better entrance hand.
+gam draft.txt:680	Forbidden click-to-stack solitaire event	map	A forbidden solitaire variant where you just click cards to stack them into your hand, possibly used for events.
+gam draft.txt:686	Rank as duplicate rule-card identifier	rule	Duplicate rule cards during creation use their rank as an identifier, e.g. zone-adder 1 has rank 1, zone-adder 5 has rank 5.
+gam draft.txt:689	1 free undo per turn	rule	1 free undo per turn is baked in by default and does not carry over between turns.
+gam draft.txt:695	Bribery/memory-wipe extra life	consumable	Bribery/Memory Wipe card: grants an extra life if a city/show is failed, letting the player keep going as if they had won.
+gam draft.txt:698	Map node preview before travel	map	Clicking a map node shows a preview plus a separate button to actually travel to it.
+gam draft.txt:710	Hype mechanic doubles fame requirement	meta	Hype mechanic: choose to double the fame required to defeat the next show in exchange for better goodie odds.
+gam draft.txt:714	Presentation card ascending order mult	skill	Presentation card: moving cards into ascending order gives multiplier points.
+gam draft.txt:717	Guaranteed card in pack preview	map	Card packs show at least 1 guaranteed card from the pack in the map preview.
+gam draft.txt:721	Branching escalating-difficulty paths	map	Branching map paths with escalating difficulty; split roguelike map campaigns from Klondike-like preset puzzle levels; battle levels use a preset board plus the player's own unlocked deck.
+gam draft.txt:725	Pawn chess card	skill	Pawn: if stacked on the card above it, swaps places (moves up), or two above if bottommost; if stacked diagonally upward, replaces (captures) that card, discarding it.
+gam draft.txt:726	Other chess-piece cards	skill	Other chess-piece cards can stack anywhere permitted by that piece's chess movement, discarding and taking the place of the card they land on.
+gam draft.txt:727	King chess card	skill	King: moves like a chess king, never captures (only swaps with adjacent cards), auto-moves out of check from another chess card on any action, and is worth a ton of points if captured by a chess card.
+gam draft.txt:730	Freakshow off-rank cards	rank	Freakshow-class cards do not have normal rank numbers.
+gam draft.txt:733	Digital card cannot be discarded	stamp	Digital card type: cannot be discarded from the board.
+gam draft.txt:736	Audience patience meter	rule	Audience patience system: moving cards drops patience, triggering unique effects delays the drop, and cards auto-drop when patience hits 0.
+gam draft.txt:737	Clown set bonus raises patience	skill	Each unique clown card on board raises patience by 1; collecting all of them gives a set bonus chance to not consume patience.
+gam draft.txt:1020	Pickpocket card	skill	Pickpocket: adds an extra card to the deck if this card is never scored.
+gam draft.txt:1024	Diversity-based scoring instead of combo	rule	Idea of scoring 'diversity' (variety of suits/types on board) as an alternative axis to the combo system.
+gam draft.txt:1028	Injury stacking status	skill	Injury stacking status effect: each injury stack increases the chance a card is permanently removed/retired.
+gam draft.txt:1029	Applause scales with score	rule	Applause/cheer feedback gets more impactful the higher an individual score is.
+gam draft.txt:1049	Quest-chain triggered stage acts	meta	Story/quest acts are performed by triggering specific effects in a specific order, with the next quest section unlocking only after the previous one completes.
+gam draft.txt:1054	Carrier-stacking bonus points	skill	Talents doing tricks on top of other 'carrier' talent cards earn extra points.
+gam draft.txt:1115	Risk/reward doubled-points tricks	skill	Higher-tier tricks give better rewards but higher fail chance; players can manage risk with risk-lowering cards, or opt into doubled points for doubled risk.
+gam draft.txt:1137	Clowns as wildcard/joker stand-ins	skill	Clowns can stand in for other cards, similar to a joker/wildcard, reflecting how circus clowns spoofed other acts.
+gam draft.txt:1168	Fun-house-mirror effect modifiers	skill	Fun-house mirrors: skills that modify nearby effects in some way.
+gam draft.txt:1174	Per-act injury chance	rule	Each act/trigger has a chance of creating an injury stack; injury stacks increase the chance of permanent retirement/death.
+gam draft.txt:1175	Injury clears if unused	rule	An injury stack is lost if the card goes through an act without performing.
+gam draft.txt:1176	Net card lowers retirement, raises injury	skill	Net card: increases chance of injury but lowers chance of retirement.
+gam draft.txt:1177	Crit chance to increase score	rule	A chance to crit, increasing score.
+gam draft.txt:1180	5 starting suits	rule	Starting with 5 suits instead of 4 is more balanced: makes flushes harder and allows an anti-flush hand.
+gam draft.txt:1192	Merci: shift an obstructing card	skill	Merci (solitaire cheat): allowed once, to move an obstructing card out of the way.
+gam draft.txt:1195	Accordion pile-matching rule	rule	Accordion Solitaire: draw a card, create a new pile if it doesn't match the newest pile's top card by suit or rank; can only stack on the newest pile.
+gam draft.txt:1196	Accordion pile-combining rule	rule	Accordion Solitaire: piles whose top cards match and are 3 apart (or adjacent) can be combined, newer cards going on top.
+gam draft.txt:1200	Calculation Solitaire base piles	rule	Calculation Solitaire: suits don't matter; start with ace/2/3/4 foundation piles, one waste pile each.
+gam draft.txt:1201	Calculation Solitaire looping stacks	rule	Calculation Solitaire: foundation piles stack in increments of their base number (1s, 2s, 3s, 4s), looping around past King.
+gam draft.txt:1202	Calculation Solitaire waste-pile rule	rule	Calculation Solitaire: cards that don't fit go on a waste pile; only the waste pile's top card can move to a foundation, and only if legal.
+gam draft.txt:1206	Canfield tableau stacking rule	rule	Canfield Solitaire: tableau stacks 1 rank lower and opposite color; a whole stack can move if it follows this rule.
+gam draft.txt:1208	Canfield 3-card stock draw	rule	Canfield Solitaire: stock is drawn 3 cards at a time, only the top of the 3 usable (then the next below it once used).
+gam draft.txt:1210	Canfield foundation-rank feed	rule	Canfield Solitaire: a card matching the foundation base's rank, wherever found in reserve or stock, goes straight to the foundation.
+gam draft.txt:1211	Canfield foundation build rule	rule	Canfield Solitaire: foundations build with same suit, ascending rank only.
+gam draft.txt:1216	Klondike stacking rule	rule	Klondike Solitaire: tableau stacks opposite color, one rank lower.
+gam draft.txt:1218	Klondike reveal-on-move rule	rule	Klondike Solitaire: moving a face-up card off a pile reveals the card beneath as face up.
+gam draft.txt:1219	Klondike empty-space king rule	rule	Klondike Solitaire: empty tableau spaces can only be filled by a king-headed stack.
+gam draft.txt:1223	La Belle Lucie stacking rule	rule	La Belle Lucie: only top cards of each pile are playable, moved to foundation or stacked one rank lower, same suit.
+gam draft.txt:1225	La Belle Lucie redeal limit	rule	La Belle Lucie: three tries to win; redeal reshuffles all cards and redistributes in threes.
+gam draft.txt:1227	La Belle Lucie merci rule	rule	La Belle Lucie: if no moves or redeals remain, one merci move is allowed, shifting a card position up or down by one.
+gam draft.txt:1229	Poker Patience base rule	rule	Poker Patience: lay out 25 cards into a 5x5 square, forming 10 poker hands from the 5 rows and 5 columns.
+gam draft.txt:1230	Poker Patience adjacency placement	rule	Poker Patience variant: each new card placed must be adjacent or diagonal to a previously placed card, so the first card can end up anywhere in the final square.
+gam draft.txt:1232	Poker Patience win threshold	rule	Poker Patience: win if the total added score across rows and columns reaches 200 under Barry Scoring.
+gam draft.txt:1233	Poker Patience diagonal scoring variant	rule	Poker Patience variant: also count the 2 longest diagonals for additional scoring.
+gam draft.txt:1234	Poker Patience PvP mode	rule	Poker Patience PvP: one player calls out the next card and both players build their own square with the same cards in the same order.
+gam draft.txt:1235	Poker hand scoring table	rule	Poker Patience scoring table (UK vs Barry scoring) for pair/two pair/three of a kind/straight/flush/full house/four of a kind/straight or royal flush.
+gam draft.txt:1262	5x5 grid entrance placement redesign	rule	Core redesign: entrance shows top 5 cards as normal, but the player freely chooses where in a 5x5 grid below to place each one.
+gam draft.txt:1263	3 grids side by side, commit to one	rule	Each game fills 3 side-by-side 5x5 grids; card effects can influence other grids; player chooses which grid the next 5 entrance cards go into but must commit to a single grid once chosen.
+gam draft.txt:1264	Rows spanning multiple grids	rule	Allow super-long rows that span across multiple grids.
+gam draft.txt:1266	Cards bounce/swap between grids	skill	Card effects that can bounce cards to other grids or swap places between grids.
+gam draft.txt:1267	No-adjacency placement with shifting	rule	Alternative: no restriction requiring cards be placed near others, but with a shifting mechanic where a second card placed 5 away determines the first card's final position.
+gam draft.txt:1268	Ring unlocks per 25 deck cards	rule	Increase the number of grids/rings relative to cards in the deck, e.g. every 25 cards in the deck unlocks a new ring (with a max ring cap to avoid excess).
+gam draft.txt:1268b	Column-locked entrance placement	rule	Restrict each column to accept only 1 entrance card, from any of the 5 entrance cards, rather than free column choice.
+gam draft.txt:1268c	Cross-path entrance bonus	skill	Card effect that rewards entrance cards crossing each other's paths on the way to their destination column.
+gam draft.txt:1268d	End show early with good entrance	rule	Entrance cards are global by default; during the final performance, the player can choose to end early if the current entrance cards are good.
+gam draft.txt:1268e	Per-ring independent entrances	rule	Each ring/grid has its own independent 5-card entrance, and the player can play them in any order between rings, triggering effects whenever.
+gam draft.txt:1269	3D stacking as extra rows/cols	rule	Allow stacking cards on top of each other on the grid, adding a 3D element that functions as theoretical additional rows/columns.
+gam draft.txt:1270	Global vs ring-local card effects	skill	Grid-based card effects can be scoped as global (all grids) or local to a single ring.
+gam draft.txt:1271	Trigger cross-ring effects while placing	skill	Allow using trigger effects from other rings while placing a card in the currently chosen ring.
+gam draft.txt:1273	Non-5x5 ring layouts with hazards	map	Allow alternative ring layouts that are not 5x5, including prefilled zones with cards or hazards.
+gam draft.txt:1274	Immediate vs delayed row/col scoring	rule	Choice between scoring a completed row/column immediately on completion versus scoring everything at the end; card effects could trigger specifically on completion, rewarding early vs late finishers.
+gam draft.txt:1276	Built-in symmetric PvP mode	rule	Built-in PvP mode: both players start with the same deck and aim for the highest score.
+gam draft.txt:1277	Unused entrance cards persist	rule	Unused entrance cards stay in place for the next round rather than being replaced.
+gam draft.txt:1279	Mahjong hand check across ring	rule	Check whether a ring satisfies mahjong-style hands, e.g. 4 triplets and a pair across its 5 rows or 5 columns.
+gam draft.txt:1280	Empty-zone rank buff (mancala effect)	skill	Manipulate what an empty zone does to the next card placed on it, e.g. a mancala-style effect where a zone temporarily raises the rank of whatever is placed there (shown as +X).
+gam draft.txt:1284	Poker shuffle: pre-commit reshuffle	skill	Poker Shuffle rule: allows shifting placed cards around before all 25 grid spaces are filled, effectively allowing a perfect hand.
+gam draft.txt:1290	Spite and Malice communal foundations	rule	Spite and Malice: dispose of cards into up to 4 communal foundations built 1 through Queen (suits irrelevant, king wild); completed foundations are set aside.
+gam draft.txt:1291	Spite and Malice waste-pile rule	rule	Spite and Malice: personal waste piles accept 1 discard per turn and can only stack same-or-one-lower rank; top waste card can move to a foundation.
+gam draft.txt:1299	Beggar My Neighbor number-card play	rule	Beggar My Neighbor: play continues normally on number cards (2-10).
+gam draft.txt:1300	Beggar My Neighbor forfeit rule	rule	Beggar My Neighbor: playing a face card forces the next player to pay a forfeit (4 cards for ace, 3 for K, 2 for Q, 1 for J).
+gam draft.txt:1301	Beggar My Neighbor pile-win rule	rule	Beggar My Neighbor: if all forfeit cards are non-face, the face-card player takes the whole middle pile; a face card among the forfeit passes the effect to the new face card.
+gam draft.txt:1305	Snap matching-pile call	rule	Snap: if a newly revealed card matches rank with any other player's pile, first to call 'snap' wins both piles.
+gam draft.txt:1307	Slapjack slap-on-jack rule	rule	Slapjack: everyone places a card in the middle; if it's a jack, first to slap the pile wins it.
+gam draft.txt:1308	War tie-breaking rule	rule	War: higher rank wins both cards; on a tie, both players place face-down cards and the next comparison's winner takes everything.
+gam draft.txt:1311	Go Fish ask-and-fish rule	rule	Go Fish: ask another player for a rank you hold; if they have it they hand it over, otherwise you draw ('fish') from stock.
+gam draft.txt:1314	Cheat bluff-discard rule	rule	Cheat: discard face-down while announcing (possibly falsely) what rank you're playing; next player can claim one rank higher, lower, or the same.
+gam draft.txt:1315	Cheat call-out resolution	rule	Cheat: calling 'cheat' makes the accused pick up the whole pile if lying, or the caller picks it up if the accused was truthful.
+gam draft.txt:1318	Old Maid pair-discard rule	rule	Old Maid: discard strict pairs from your hand; goal is to not be left holding the queen.
+gam draft.txt:1320	Spit legal-stack speed rule	rule	Spit/Speed: no turn order; players race to empty their hand onto shared center stacks under standard legal-stacking rules.
+gam draft.txt:1325	Rummy meld types	rule	Rummy: scoring melds are a 3+ same-suit consecutive run, or a 3-4 same-rank set.
+gam draft.txt:1326	Rummy win condition	rule	Rummy: first to arrange the whole hand into melds with exactly 1 card left to discard wins.
+gam draft.txt:1328	Rummy early-meld risk	rule	Rummy: melds can be placed face-up early to guarantee they count, but this risks other players adding to them for their own points.
+gam draft.txt:1331	Gin Rummy early-end scoring	rule	Gin Rummy: a player can end the round early if mostly done with combinations, and is rewarded for having more complete combinations than opponents.
+gam draft.txt:1333	500 Rummy free-meld-adding	rule	500 Rummy: any player, regardless of turn order, can add to existing melds and take more than the top discard.
+gam draft.txt:1334	500 Rummy turn-stealing	rule	500 Rummy: a player can steal a turn if an opponent discards a card that could extend another meld.
+gam draft.txt:1338	Canasta rank-based wildcards	rule	Canasta: certain ranks (e.g. 2s) act as wildcards.
+gam draft.txt:1340	Crazy Eights wild-suit rule	rule	Crazy Eights: eights are wild and choose the next suit; must stack matching suit or rank; drawing up to 3 cards if unable to play.
+gam draft.txt:1342	Mau Mau wildcard/win-call rule	rule	Mau Mau: jacks are wild, no redeal limit; must call 'Mau' on your last card, 'Mau Mau' if that card is wild.
+gam draft.txt:1343	Neuner 9s-wild variant	rule	Neuner: like Mau Mau but 9s are wild plus an added Joker, and players may draw at will.
+gam draft.txt:1346	Switch chaining +2/+4/skip/reverse	rule	Switch: ace is wild; 2s are +2 (chainable), 4s are +4 (chainable), 8 skips a turn, jack reverses turn order.
+gam draft.txt:1351	Fan Tan foundation-build rule	rule	Fan Tan: 7s are foundation cards; can only extend with a same-suit card one rank higher or lower; unable-to-play forfeits a chip.
+gam draft.txt:1352	Trump Fan Tan wild-suit rule	rule	Trump Fan Tan: one suit is wild; a wild-suit card taking another card's place forces that card to be played to the wild foundation.
+gam draft.txt:1353	Crazy Tan escalating draw penalty	rule	Crazy Tan: unable-to-move players draw and skip, with the required draw increasing by 1 for each consecutive skip until someone moves.
+gam draft.txt:1357	Whist trump-suit reveal	rule	Whist: the first card revealed determines the trump suit for the hand.
+gam draft.txt:1358	Whist trick-taking rule	rule	Whist: highest card of the leading suit wins the trick, unless a trump is played, in which case the highest trump wins; trick winner leads next.
+gam draft.txt:1366	Oh Hell bid-exact-tricks rule	rule	Oh Hell!: players bid exactly how many tricks they intend to win after seeing their hand, capped at the hand size.
+gam draft.txt:1368	Oh Hell scoring rule	rule	Oh Hell!: 1 point per trick won, plus 10 bonus points for hitting your exact bid.
+gam draft.txt:1369	Bid-before-play mechanic proposal	skill	Proposed bid mechanic for this game: bet before play to gain extra points for hitting an exact number of melds.
+gam draft.txt:1371	Romanian Whist variable hand size	rule	Romanian Whist: each round deals a different number of cards; must follow trump suit if unable to follow the leading suit.
+gam draft.txt:1373	Ninety-Nine suit-value bidding	rule	Ninety-Nine: discard 3 of 12 cards to set your bid, where club=+3, heart=+2, spade=+1, diamond=+0.
+gam draft.txt:1379	Hearts avoid-scoring rule	rule	Hearts: avoid winning tricks containing hearts (1 point each) or the queen of spades (13 points).
+gam draft.txt:1381	Hearts-style negative-suit boss mechanic	boss	Boss mechanic where certain suits cause a meld to score 0 or negative if scored.
+gam draft.txt:1383	Pinochle meld types	rule	Pinochle: melds include runs (A-K-Q-J-10), marriages (King-Queen), the pinochle meld (J diamond + Q heart), and sets (4 Qs).
+gam draft.txt:1385	Adjacency-required marriage melds	rule	Add marriage-style melds that require cards to be exactly adjacent rather than merely in the same row/column.
+gam draft.txt:1387	Auction Pinochle bidder-only meld	rule	Auction Pinochle: only the auction winner picks trump and can score melds; other players act as defenders.
+gam draft.txt:1389	Setback point-card trick bidding	rule	Setback/Pitch: different cards are worth different points, and players bid on how many point-carrying tricks they can win.
+gam draft.txt:1393	Cribbage phase-1 stack-to-31	rule	Cribbage phase 1: play cards building a running total up to 31 (ace=1, faces=10).
+gam draft.txt:1394	Cribbage phase-1 scoring events	rule	Cribbage phase 1 scores for: total of exactly 15, pairing the opponent's last card, first card being a jack, or a sequence of 3+ consecutive cards (order-independent).
+gam draft.txt:1397	Cribbage phase-2 hand scoring	rule	Cribbage phase 2: score the played hand for 15-combinations, pairs, runs, 4/5-card flushes, and a jack.
+gam draft.txt:1399	President climbing-rank rule	rule	President: each turn plays equal-or-higher rank or passes; 2s are highest, suit irrelevant.
+gam draft.txt:1400	President matched-count play rule	rule	President: subsequent players must match the number of cards the first player placed, at increasing rank.
+gam draft.txt:1402	President scum tribute rule	rule	President: the last player to empty their hand ('Scum') must give their two highest cards to the winner.
+gam draft.txt:1403	President Palace hidden-hand variant	rule	Palace variant of President: play with 3 private cards, 3 face-up cards, and 3 face-down cards, playable only after the previous set is used.
+gam draft.txt:1406	Blackjack bust rule	rule	Blackjack: score exactly 21 to win; going over 21 loses instantly.
+gam draft.txt:1410	Entrance-set betting proposal	skill	Proposed betting system comparing the value of the current entrance set versus the next entrance set.
+gam draft.txt:1414	Monopoly pay-to-unlock squares	map	Monopoly-inspired: certain map squares require sacrificing/paying a card to unlock before use.
+gam draft.txt:1417	Tetris shape-matching bonus tiles	skill	Tetris-inspired: certain board tiles want a random preset Tetris-piece shape placed on top (rotatable) for a bonus, matched by suit or rank.
+gam draft.txt:1420	Pyramid pair-removal rule	rule	Pyramid/Golf Solitaire: remove pairs of cards from the board if they match or sum to 13.
+gam draft.txt:1421	Pyramid entrance-match removal	rule	Pyramid/Golf Solitaire variant: remove a board card if it matches the current entrance card by a rule such as rank +/-1.
+gam draft.txt:1423	Free Cell reserve slots	skill	Free Cell-style reserve/free slots that can hold cards (possibly via stacking) and be grabbed anytime.
+gam draft.txt:1425	Devil's Grip +3 rank stacking	rule	Devil's Grip Solitaire: stacking requires strictly +3 rank, with the starting row determining the sequence.
+gam draft.txt:1427	Beehive four-of-a-kind removal	rule	Beehive Solitaire: allows removing a four-of-a-kind 'swarm' from the board.
+gam draft.txt:1429	31/99-style fixed point values	rank	31/99-style rank values: ace worth 1 or 11, 10 worth -10, King worth 99, others their rank; goal is reaching a target total.
+gam draft.txt:1431	Loaned temporary cards	skill	Loaned cards: temporary cards that last only a few rounds (Game of Life reference).
+gam draft.txt:1433	Sets-of-3 rank boost (Risk)	skill	Risk-inspired: sets of 3 matching cards trigger effects such as increased ranks.
+gam draft.txt:1435	Sudoku-rule grid bonus	rule	Sudoku-inspired: if the ranks in the grid satisfy Sudoku constraints, grant a bonus.
+gam draft.txt:1437	Minesweeper bomb-prefilled grid	boss	Minesweeper-inspired: rings prefilled with random bombs; number tiles indicate nearby bombs; placing a card on a bomb lowers its value.
+gam draft.txt:1439	Checkers hop-capture card	skill	Checkers-inspired 'frog' card: allowed to hop over existing cards.
+gam draft.txt:1441	Wordle-style hidden target card	skill	Wordle-inspired card: sets a randomized target rank/suit combo and reports whether the last placed card is wrong, close (wrong position), or correct; first correctly-placed row/column wins.
+gam draft.txt:1445	Neighbor-type value bonus (3-Ring Circus)	skill	3-Ring Circus board game reference: cards care about the type of cards to their left/right to increase their own value.
+gam draft.txt:1448	Autochess-style ring type combo	rule	Autochess-inspired: multiple copies of a class/type of card within a single ring create special scaling effects, e.g. tying hoop/ball/fire/knife prop synergies to a same-type count in that ring.
+gam draft.txt:1451	Boss: adjacency-only placement	boss	Boss variant of entrance cards: only allows placing cards adjacent to each other when placing on the grid.
+random potential effects.csv:3	Double trigger (seal)	stamp	Seal: this card's effect triggers twice.
+random potential effects.csv:3	Earth material (bottom of deck)	type	Earth material type stays on the bottom of the deck.
+random potential effects.csv:3	Sandwich card	skill	On submission, if there is a same-suit card later down the stack, gain a point for each card in between.
+random potential effects.csv:3	Selection sort card	skill	Card moves up one position if the card above it has a smaller rank.
+random potential effects.csv:3	More Poker card	skill	Poker hands give double the points.
+random potential effects.csv:3	Spaceship card	skill	This card can be placed in 'the void' (an otherwise-illegal empty/off-board slot).
+random potential effects.csv:3	Deck auto-slotter	skill	While in the deck, if an open card with a legal slot is ever available, this card moves from the deck into that slot.
+random potential effects.csv:3	Discard-to-deck on score	skill	On score, put 2 random cards from the discard pile back into the deck; an Exhaust variant skips the whole discard step.
+random potential effects.csv:3	Egg card	skill	When submitted, this card instead becomes a completely random other card of higher rank.
+random potential effects.csv:3	Champion card	skill	Cards of the same rank directly above or below this card are discarded.
+random potential effects.csv:3	Hippo card	skill	When a single card is placed on top of this card, consume it and gain its rank in value (rank wraps around).
+random potential effects.csv:3	All In card	skill	On the next score, double the total score, then double the score needed for the next round.
+random potential effects.csv:3	Deja Vu card	skill	This card remembers its board placement; the next time an open slot appears there, it moves there from anywhere.
+random potential effects.csv:3	Frankenstein card	skill	When submitted, combines with the bottom and top cards into a 3-card merged stack that remains in the submission zone after scoring.
+random potential effects.csv:3	Rabbit card	skill	If this card is clicked/grabbed, it moves away to the furthest orthogonal location.
+random potential effects.csv:3	Robber card	boss	Between turns, robbers steal high-value cards from the board.
+random potential effects.csv:4	Trigger even when hidden (seal)	stamp	Seal: this card's effect triggers even when hidden (covered).
+random potential effects.csv:4	Air material (top of deck)	type	Air material type stays on top of the deck.
+random potential effects.csv:4	Poker card (5-window)	skill	When this card is evaluated, it and the 4 cards above it are scored as a poker hand.
+random potential effects.csv:4	Trap card	skill	Creates an extra empty space; the next card placed there instead goes below this card, and the empty space is removed.
+random potential effects.csv:4	Goalpost card	skill	Enhances a random viable score type, which changes each game.
+random potential effects.csv:4	Distancing card	skill	Card hovers at the top of the stack without blocking the card below it, and cannot be clicked (counts as an extra row).
+random potential effects.csv:4	Pot of Greed card	skill	When this card sits alone in a slot, discard it and replace with two cards from the deck.
+random potential effects.csv:4	Rewrite card	skill	On entering the board, remembers the cards below it; on submission, replaces the same number of cards below it.
+random potential effects.csv:4	Paintbrush card	skill	Cards placed on top of this card become the same suit as it.
+random potential effects.csv:4	The One Ring card	skill	Player always knows exactly where this card is; if it is permanently destroyed, the match is won.
+random potential effects.csv:4	Lightning card	boss	Lightning strikes the highest-value card on the board, causing a shock effect.
+random potential effects.csv:5	Trigger when in deck (seal)	stamp	Seal: this card's effect can trigger while still in the deck.
+random potential effects.csv:5	Water material (moves down)	type	Water material type moves downward one position per turn.
+random potential effects.csv:5	Non-scoring bonus card	skill	If this card is not part of any scoring hand, it gives 10 points.
+random potential effects.csv:5	Parasite card	skill	Attaches to the next card placed on top of it; on submission, replaces the host card with the parasite card.
+random potential effects.csv:5	Cheering Team card	skill	Each scored card of the same suit as this card gets extra points.
+random potential effects.csv:5	Anything-stacks-here card	skill	Any card can be placed on top of this card.
+random potential effects.csv:5	Future Sight card	skill	See the next 5 cards in the deck.
+random potential effects.csv:5	Snake card	skill	Smaller-rank cards below this card are consumed, leaving behind a temporary body card of the same rank.
+random potential effects.csv:5	Sniper card	skill	On next press, lowers the rank of the last-interacted card by one, discarding it if its rank reaches one.
+random potential effects.csv:5	Jenga card	skill	Clicking a non-top card moves it to the top of the next-smallest stack, leaving an empty space; rows may have at most 4 empty spaces and must stay connected, or this card is discarded; empty spaces collapse once inactive.
+random potential effects.csv:5	Hurricane card	boss	Cards in a donut shape get wet; the hurricane starts at a random category 1-5, moves, and weakens over time.
+random potential effects.csv:6	Money on trigger (seal)	stamp	Seal: gain money whenever this card's effect triggers.
+random potential effects.csv:6	Fire material (moves up)	type	Fire material type moves upward one position per turn.
+random potential effects.csv:6	Spiderweb card	skill	Scores 1 point per card diagonal to this card, in a cross shape.
+random potential effects.csv:6	Stowaway card	skill	This card moves to the free slot if it is open, after being scored.
+random potential effects.csv:6	Combo card	skill	During scoring, cards gain temporary points equal to the hand they were scored in.
+random potential effects.csv:6	Connect 4 mini-mode	map	Mini-game mode idea themed on Connect 4.
+random potential effects.csv:7	Gold as money material	type	Gold cards act as money/currency.
+random potential effects.csv:7	Effect-trigger point gain	skill	Whenever a card triggers its effect, gain a point.
+random potential effects.csv:7	Tunneler card	skill	Single cards placed on this card move to the bottom of the stack.
+random potential effects.csv:7	Noble Family card	skill	Each scored face card increases the points of the next scored face card by 1.
+random potential effects.csv:7	Fishing minigame card	map	Place this card over the deck to trigger a fishing minigame to get a card from the deck.
+random potential effects.csv:7	Tsunami card	boss	Washes from the bottom upward, lowering the max card-stack count, then recedes.
+random potential effects.csv:8	Column card	type	Column-type card gives points to its column on score.
+random potential effects.csv:8	Blackjack meld idea	skill	Blackjack-referencing scoring idea (unelaborated).
+random potential effects.csv:8	Turntable card	skill	Flips the entire board vertically.
+random potential effects.csv:9	Row card	type	Row-type card gives points to its row on score.
+random potential effects.csv:9	Score input cards on submit	rule	On submit, score the entrance/input cards too, not just the board.
+random potential effects.csv:9	FEMA mode	boss	After a number of weather cards, disaster relief becomes available.
+random potential effects.csv:11	Earthquake card	boss	Scrambles the board.
+random potential effects.csv:13	Tornado card	boss	Affects a 1x1 area, or a scaling area based on random tornado scale, wherever it is played.
+random potential effects.csv:15	Eruption card	boss	Cards receive a burned effect that spreads in an expanding snake pattern, with no counter available.
+random potential effects.csv:17	Monopoly card	skill	Playing a flush of five of a card removes that card from future generation.
+random potential effects.csv:18	Fire spreading card	boss	Fire spreads to wood-type cards but is blocked by road-type cards.
+random potential effects.csv:20	Windy Day card	boss	Cards randomly shift over by 1 row/column because it's too windy.
+random potential effects.csv:22	Mini Metro mode	map	Mini-game mode: ends of straights become metro stations connected by the straights as lines, which must serve passengers over N turns.
+random potential effects.csv:25	Boss fire-breathing fight	boss	A boss appears that must be defeated with specific hands or raw point damage while it slowly breathes fire onto the player's actual score.
+random potential effects.csv:27	Vampire Survivors edge-eating	boss	Vampires begin eating cards at the board's edge over N turns; the player must play all of them to remove the threat.
+random potential effects.csv:29	Amogus fake card	boss	A card is secretly fake: when played it loses score and ignores the rules on certain turns; the player must find and remove it.
+random potential effects.csv:31	5D multiverse time-travel card	skill	Sends a card into the past to play out that board state until it clashes with the present, keeping only the differences.
+curated effects pre grid.csv:2	Hoops	suit	Base suit: when a scored Hoops card is untalented, hoop props (count = rank) sweep the scored row and every skill card the hoop passes through scores again; stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:5	Knives	suit	Base suit: knife props (count = rank) launch from the opposite row edge and score plain (non-skill) prop cards they pass, with the spawner scoring itself; stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:8	Balls	suit	Base suit: ball props (count = rank) arc down the column applying a Juggling status that pays out column score when that card later scores; stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:11	Flames	suit	Base suit: fire props arc down the column applying Flaming stacks that multiply each burning prop's effect (not applicable to fire-suit or talent cards, but inherited by spawned props); stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:14	Fireworks	suit	On score, the rocket rises its column and banks the column score directly based on rank; alt version has each firework trigger add +1 firework to the next trigger; stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:26	Electricity	suit	On score (if untalented), scores points based on this card's rank plus the ranks of all orthogonally/diagonally connected electric-suit cards; stacking requires different suit and adjacent rank.
+curated effects pre grid.csv:33	Rock Paper Scissors	suit	At game start randomly becomes rock, paper, or scissors; when stacking on another RPS card it must win RPS to stack (ties resolved by higher rank); stacks normally on non-RPS cards.
+curated effects pre grid.csv:37	Best Bower	suit	Wild suit that counts as every suit for melds/flushes and can stack anywhere; if untalented, randomly selects a prop from the entire game to trigger.
+curated effects pre grid.csv:47	Integer numbers (default rank)	rank	Default rank A-K (1-13), possibly extended to -99..99; negative ranks apply a negative status/shader inverting effects and reducing score, while still counting uniquely toward combo.
+curated effects pre grid.csv:53	Roman Numerals rank	rank	Ranks 1-12 that wrap on increase/decrease; time effect advances the rank by +1 per player action.
+curated effects pre grid.csv:58	Blank rank	rank	Rank effectively 0; always passes stacking rank comparisons but cannot participate in rank-based melds or effects.
+curated effects pre grid.csv:62	Wild rank (copycat/understudy)	rank	Rank effectively 0 that simultaneously mimics any rank already present in the player's deck for rank-based effects like stacking and melds; behaves like Blank if nothing to copy.
+curated effects pre grid.csv:71	Decimal numbers (Half-Step hat)	stamp	Rank evaluates as both itself and +1 simultaneously for all purposes (e.g. a 3 with this hat also counts as 2.5/2), letting one card double-count toward multiple melds like pairs and straights.
+curated effects pre grid.csv:81	Mahjong rank/suit	unknown	Placeholder entry referencing a mahjong-based rank/suit mechanic; no effect detail given in the sheet.
+curated effects pre grid.csv:83	Paper (default type)	type	Default no-effect base material type; exists so every card has a type slot filled.
+curated effects pre grid.csv:86	Iron type	type	Sinks to the bottom of any stack, respecting physical weight order.
+curated effects pre grid.csv:89	Gold type	type	Sinks to the bottom of stack, heavier than Iron (stops at other heavy cards); costs +2 when traded in at shops.
+curated effects pre grid.csv:92	Diamond type	type	Doubles this card's score; costs +3 when traded in at shops.
+curated effects pre grid.csv:95	Glass type	type	Spotlights cards behind it, but breaks if a heavy-type card passes through it.
+curated effects pre grid.csv:98	Balloon type	type	Opposite of a heavy card: always rises to the top of the stack.
+curated effects pre grid.csv:100	Water type	type	Always flows sideways into the shortest adjacent column.
+curated effects pre grid.csv:107	PropArtist hat	stamp	This card's suit prop effects still apply even if the card is talented (has a skill).
+curated effects pre grid.csv:108	Kuroko hat	stamp	This card is unseen: does not block Spotlight beneath it and cannot be targeted by effects.
+curated effects pre grid.csv:114	Fifteen (cribbage) talent	skill	Spotlight ability checks the scoring hand (row or column) for cards summing to 15 for bonus points; alt version melds this card with adjacent neighbors whose ranks sum to 15 with it.
+curated effects pre grid.csv:122	The Half Card talent	skill	On drop, splits into two half-cards along the diagonal (one keeps rank+hat, the other keeps only suit), changing stacking rules; recombines and scores its own meld if the two halves are stacked together on score; alt version splits the rank value in half between the two cards.
+todo.md:136	Rarity gates non-null rolls	rule	Rarity tiers currently gate only whether a stamp/skill/type roll is non-null, based on luck.
+todo.md:132	Burning cascades as combo source	rule	Open scoring knob: whether Burning-status cascades should count as a combo source.
+todo.md:80	Rank-merging meld rule	skill	A comparator-bucket rank-merging meld rule multiplies a scored line's points based on line size (measured x2.0 at 5 cards up to x6.0 at 13, x5.1 at 30).
+todo.md:85	Split meld undercounts matches	rule	A split meld can show three matching cards on the board but only counts two toward the scored meld, with no on-screen cue explaining the discrepancy.
+todo.md:222	Patience meter mechanic	rule	Patience system: idle/non-scoring moves drain a patience meter (patience_max, ships at 3); reaching 0 auto-drops cards; rule cards can raise patience_max via a grant path.
+todo.md:229	Booster reroll pool	rule	Booster reroll pool ships at 5 with a planned but unwritten reroll-count modifier content hook (a luck()-style effect).
+todo.md:273	Entrance drop-down between acts	rule	Planned but unimplemented: an entrance drop-down step between acts.
+todo.md:274	Hype-wagering system	meta	Planned but unimplemented: a hype/wagering system.
+todo.md:274	Fog of war on map	map	Planned but unimplemented: fog of war limiting map visibility.
+todo.md:274	Tour planning system	map	Planned but unimplemented: a tour-planning system for choosing a route.
+todo.md:274	Shop & economy system	meta	Planned but unimplemented: a shop and economy system.
+todo.md:274	Meta progression system	meta	Planned but unimplemented: a meta-progression system.
+todo.md:274	Leaders/acts system	skill	Planned but unimplemented: a leaders/acts system.
+todo.md:274	Deterministic per-subsystem RNG streams	rule	Planned but unimplemented: deterministic per-subsystem RNG streams, required before any seed-sharing feature.
+pokerpatience.txt:5	5x5 grid replaces drop zones	rule	Replace the 5-6 drop-in zones with a 5x5 grid the player manually places entrance cards into.
+pokerpatience.txt:5	New grid per 25/50 deck cards	rule	A new 5x5 grid is unlocked for every 25/50 cards (tunable) in the starting deck.
+pokerpatience.txt:5	Commit-to-grid entrance rule	rule	Once the player places a card in a grid, all current entrance cards must be placed in that same grid before the entrance refreshes with 5 new cards.
+pokerpatience.txt:6	Grid refill on completion	rule	If a grid is completed with entrance cards remaining, it frees up for another grid and its empty slots are refilled with the remaining cards in their current slot.
+pokerpatience.txt:6	Randomized placement on partial refill	rule	If the deck cannot refill the entire entrance zone, new card placement is randomized instead of the default left-to-right order.
+pokerpatience.txt:9	Row/column scoring happens on placement	rule	Scoring occurs immediately as rows/columns are filled in, rather than on submit; pressing submit/end just fires its own hooks and ends the game without a separate scoring round, and can be pressed at any time.
+pokerpatience.txt:10	Placed cards are locked by default	rule	By default, a card placed on an empty grid zone cannot be moved or have cards stacked on it; those actions are reserved for future effects.
+pokerpatience.txt:11	Height as a 4th coordinate	rule	Stacking cards on top of each other adds a 4th coordinate (height); 5 cards aligned in height complete a scorable line at that height, including a same-x,y stack of 5.
+pokerpatience.txt:11	Height scoring triggers only building up	rule	Height-based scoring only triggers when a stack builds upward through a multiple of 5; dropping back down through those intervals does not retrigger scoring.
+pokerpatience.txt:11	Full-stack scoring on tall stacks	rule	Scoring a height-10 (or taller) stack scores the entire stack at once.
+pokerpatience.txt:11	Height diagonal scoring updates nearest corner	rule	A diagonal line across height updates the corner score label closest to the highest height involved, to avoid overlap.
+pokerpatience.txt:12	4-coordinate card position	rule	Every card's position is defined by 4 coordinates: which grid, x, y, and height.
+pokerpatience.txt:14	Height removal drops cards above	rule	Removing a card from a height stack causes the cards above it to drop down.
+pokerpatience.txt:15	Re-adding retriggers line scoring	rule	Removing a card from a completed 5-line and re-adding it retriggers that line's scoring event.
+pokerpatience.txt:18	Cross-grid row expansion setting	rule	A setting to make other grids expand their rows/zones too if one grid's rows expand due to increasing height.
+pokerpatience.txt:35	Grid-creation rule card	skill	A rule card that, on game start, checks the deck size and adds one 5x5 grid-creation card to the rules deck per 25 cards in the deck.
+pokerpatience.txt:36	Grid-creation card owns its zones	skill	When a 5x5 grid-creation card becomes active it creates the 5x5 zone cards it owns; when inactive, its grid of zone cards is removed and any cards it contains are discarded.
+pokerpatience.txt:37	Entrance zone cards seed first column	rule	5 entrance/input zone cards work as today, refreshing in random draw order once empty or the current grid is full; the 1st input card corresponds to the 1st column of the 5x5 grid.
+pokerpatience.txt:38	Any-grid line-completion detector	skill	A card that detects a new 5-in-a-line completion anywhere across all grids and triggers its scoring.

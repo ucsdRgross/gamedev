@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E0001	catalog	CARD_CATALOG	72 Transformations		Epic	skill;Magician;random;collection;meta	Cue: copy any spotlit card's skill; transformations are counted across the run, and at 72 this card permanently upgrades to Legendary stats.	
+E0002	catalog	CARD_CATALOG	Air		Uncommon	type;movement	Whenever its stack settles, this card floats to the top of its stack.	
+E0003	catalog	CARD_CATALOG	Ascetic		Uncommon	stamp;protection;hazard	Immune to row- and floor-targeting hazards.	
+E0004	catalog	CARD_CATALOG	Audience Patience		Uncommon	rule;economy;combo	Each show, patience starts at N; each grab/place spends 1 patience, a unique effect trigger refunds 1; at 0 patience the Entrance drops automatically.	
+E0005	catalog	CARD_CATALOG	Automaton		Rare	type;charges;movement	Every Next this card performs its cue automatically for free, but it can never be cued manually.	
+E0006	catalog	CARD_CATALOG	Avalanche		Rare	skill;Special Effects;economy;combo	After scoring, reduces the show's goal by the number of cards currently on the board.	
+E0007	catalog	CARD_CATALOG	Bahurupiya		Rare	type;random;deck-manip	At the start of each show this card arrives as a random different class, deterministic per seed, counting for that class's group effects.	
+E0008	catalog	CARD_CATALOG	Balls		Common	suit;prop;status;combo	Ball props arc down the column, picking talent targets at spawn, and apply the Juggling status; a Juggling card pays out its column score when it later scores.	Added
+E0009	catalog	CARD_CATALOG	Bauta		Rare	stamp;info;gamble;secret	This card's rarity and identity are hidden from inspections, towns, and effects until it scores.	
+E0010	catalog	CARD_CATALOG	Bian Lian		Rare	skill;Magician;Clown;movement;secret	Cue: instantly swap this card's rank and suit with an adjacent card's.	
+E0011	catalog	CARD_CATALOG	Blondin's Crossing		Rare	skill;Acrobat;movement;formation	Once per show: shift an entire row one column left or right, wrapping around the board edge.	
+E0012	catalog	CARD_CATALOG	Blowdown		Rare	hazard;discard;random	Weather boss: at show start and each Next, a random seeded Grand Entrance card is discarded.	
+E0013	catalog	CARD_CATALOG	Bottom Deal		Common	skill;Fortune Teller;deck-manip	Cue: this turn, draws come from the bottom of the deck instead of the top.	
+E0014	catalog	CARD_CATALOG	Brass Check		Common	stamp;economy;token;Producer	Whenever this card's effects trigger, mint a Gold token card onto the top of the draw deck.	
+E0015	catalog	CARD_CATALOG	Brass Ring		Rare	rule;combo;economy;movement	A token rotates one column per turn; if that column scores while the ring is on it, the meld pays double and a Ticket Stub is banked.	
+E0016	catalog	CARD_CATALOG	Brodie's Leap		Uncommon	skill;Escape Artist;gamble;economy;secret	Banks fame each show for a stunt that never happened; if ever exposed by an inspection effect, loses double everything banked.	
+E0017	catalog	CARD_CATALOG	Buried Alive		Rare	skill;Escape Artist;gamble;growth	Cue: remove a card from the game for 2 shows; it returns upgraded one rarity, with a seeded chance it does not return at all.	
+E0018	catalog	CARD_CATALOG	Canvas		Common	type;protection	The first debuff or status applied to this card each show is discarded.	
+E0019	catalog	CARD_CATALOG	Cascade Scorer		Common	rule;combo	On Submit, scores all rows of the board first, then all columns simultaneously per row band.	
+E0020	catalog	CARD_CATALOG	Cheat Day		Uncommon	skill;Concessions;growth;economy	If the show is won with cards still in the draw deck, every remaining card in the deck gains +1 rank permanently.	
+E0021	catalog	CARD_CATALOG	Chindon'ya		Uncommon	consumable;economy	Consumable: the next town's fame requirement drops 15%.	
+E0022	catalog	CARD_CATALOG	Clever Hans		Uncommon	skill;Animal Trainer;formation;secret	Counts as a copy of its highest adjacent neighbor's rank; if it has no neighbors, its rank is 1.	
+E0023	catalog	CARD_CATALOG	Clown Car		Epic	skill;Clown;deck-manip;combo	On Next, draws one extra card into this card's column, plus one more per Clown-class card scored last submit.	
+E0024	catalog	CARD_CATALOG	Colleano's Somersault		Uncommon	skill;Acrobat;movement;spotlight	Cue: swaps positions with the single card covering it.	
+E0025	catalog	CARD_CATALOG	Column Poker		Uncommon	skill;Special Effects;formation;combo	While spotlit, every full 5-card band of this card's column is evaluated as a poker hand at scoring.	
+E0026	catalog	CARD_CATALOG	Common		Common	skill;Producer;economy;meta	While in the deck, doubles the chance of Rare cards appearing in packs/shops.	
+E0027	catalog	CARD_CATALOG	Contract Ink		Uncommon	stamp;economy;persistence	Scores +X points per show it is played; if benched two shows in a row, it is removed from the deck.	
+E0028	catalog	CARD_CATALOG	Custard Pie		Uncommon	skill;Clown;combo;prop	Cue: target card's suit becomes Balls; if that completes a flush row, gain bonus multiplier immediately.	
+E0029	catalog	CARD_CATALOG	Dead Man's Hand		Legendary	rule;secret;gamble	Hidden rule: scoring two pair, Aces over Eights, in one row pays a jackpot and triggers a map event.	
+E0030	catalog	CARD_CATALOG	Dedi's Mercy		Rare	skill;Magician;protection;destruction	Once per show, when one of your cards is destroyed, restore it to the discard pile instead.	
+E0031	catalog	CARD_CATALOG	Deus ex Machina		Legendary	consumable;protection;meta	Consumable, once per run: when a show is lost, it is instead won at exactly the goal.	
+E0032	catalog	CARD_CATALOG	Diabolo		Uncommon	skill;Acrobat;movement;combo	Every Next, alternates between two adjacent columns, granting bonus points to the top card of the column it leaves.	
+E0033	catalog	CARD_CATALOG	Digital		Uncommon	type;protection	This card cannot be discarded from the board by any effect.	
+E0034	catalog	CARD_CATALOG	Double Trigger		Rare	stamp;combo	All of this card's effects trigger twice, once per scoring pass.	
+E0035	catalog	CARD_CATALOG	Drumroll		Common	skill;Special Effects;combo	The last meld scored each act gets bonus multiplier.	
+E0036	catalog	CARD_CATALOG	Duende		Legendary	skill;Special Effects;combo;secret	When an act scores 5 or more distinct combo classes and every meld that act raised the combo, this card triggers and triples the act's payout.	
+E0037	catalog	CARD_CATALOG	Earth		Uncommon	type;movement	Whenever its stack settles, this card sinks to the bottom of its stack, carrying its stamp with it.	
+E0038	catalog	CARD_CATALOG	Echoing Trigger		Uncommon	skill;meta-effect;combo	All triggers on the board repeat once, per card per scoring pass.	
+E0039	catalog	CARD_CATALOG	Edith's Bayonet		Rare	skill;Escape Artist;destruction;growth	Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever.	
+E0040	catalog	CARD_CATALOG	Electric		Epic	suit;prop;formation;combo	When an Electric card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap.	Added
+E0041	catalog	CARD_CATALOG	Epic		Epic	skill;Producer;economy;meta	While in the deck, doubles the chance of Legendary cards appearing in packs/shops.	
+E0042	catalog	CARD_CATALOG	Escaramuza		Uncommon	skill;Dancer;formation	When the board's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the act.	
+E0043	catalog	CARD_CATALOG	Exchange Voucher		Uncommon	skill;Producer;movement;deck-manip	Usable from anywhere (including the deck): cue to swap this card's position with any card on screen.	
+E0044	catalog	CARD_CATALOG	Extra Point		Common	skill;meta-effect;combo	Gain extra flat points on score (currently +10).	
+E0045	catalog	CARD_CATALOG	Eye of God		Legendary	skill;god-cycle;info;secret	Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including Gaffs, Humbugs, and Riders.	
+E0046	catalog	CARD_CATALOG	Fairy Floss		Common	skill;Concessions;status;formation	When scored, gives +1 rank to all adjacent cards for the rest of the show.	
+E0047	catalog	CARD_CATALOG	Final Act		Rare	type;deck-manip;combo	After every shuffle, this card sinks below all non-Heavy cards and only enters play after the rest of the deck is drawn; it scores a bonus multiplier as the closer.	
+E0048	catalog	CARD_CATALOG	Firetown's Snub		Uncommon	hazard;prop;status	Town hazard: Flames-suit effects score nothing here, and Burning statuses do not multiply.	
+E0049	catalog	CARD_CATALOG	Fireworks		Epic	suit;prop;Special Effects;economy	When a Fireworks card scores, its rocket prop rises up the column and banks the column score directly.	Added
+E0050	catalog	CARD_CATALOG	First Act		Uncommon	type;deck-manip	After every shuffle, this card moves to the top of the deck and enters play alone before any other card that Next.	
+E0051	catalog	CARD_CATALOG	First of May		Uncommon	skill;Producer;growth;event-granted	A random Common card that permanently upgrades to its Rare version after scoring 10 times across the run.	
+E0052	catalog	CARD_CATALOG	Flagpole Sitter		Uncommon	skill;Acrobat;persistence;formation	Gains bonus points for each consecutive show it ends as the top card of the same column; any move resets the streak to zero.	
+E0053	catalog	CARD_CATALOG	Flames		Common	suit;prop;status;combo	Fire props arc down the column applying Burning; a Burning card's suit effect fires with multiplied prop count, and fire cascades can chain within the same act.	Added
+E0054	catalog	CARD_CATALOG	Flash		Uncommon	type;combo;gamble	The first time this card would score each show it scores triple; every later score that show is zero.	
+E0055	catalog	CARD_CATALOG	Flash Mob		Epic	skill;Acrobat;movement;formation	Cue, once per show: deploy the entire Grand Entrance onto the board in one action, columns assigned left-to-right automatically.	
+E0056	catalog	CARD_CATALOG	Flea Circus		Common	skill;Animal Trainer;combo	When scored, counts as five rank-1 cards for combo-counting purposes (not points).	
+E0057	catalog	CARD_CATALOG	Fool's License		Rare	skill;Clown;rule;secret	While spotlit, choose one rule card in the rules deck whose effect is ignored.	
+E0058	catalog	CARD_CATALOG	Foot of God		Legendary	skill;god-cycle;movement	Cue: this card switches locations with any card on screen (board, Entrance, or decks).	
+E0059	catalog	CARD_CATALOG	Frankenstein		Rare	skill;Magician;formation;persistence	On submit, merges with the cards directly above and below it into one 3-card stack of summed rank that stays in the zone after scoring.	
+E0060	catalog	CARD_CATALOG	Free Undo		Common	rule;meta	Grants one free undo per turn that does not carry over.	
+E0061	catalog	CARD_CATALOG	Genie's Wish		Rare	consumable;deck-manip;collection	Consumable: choose any card in your deck and create a full copy of it in the Entrance for this show, which becomes permanent in the deck afterward.	
+E0062	catalog	CARD_CATALOG	Ghost Light		Uncommon	stamp;spotlight	This card does not block the Spotlight of cards beneath it; they stay active as if uncovered.	
+E0063	catalog	CARD_CATALOG	Glass		Uncommon	type;destruction;gamble	Scores double points, and is destroyed permanently after its third score.	
+E0064	catalog	CARD_CATALOG	Global		Rare	stamp;spotlight;deck-manip	This card's modifiers are active from anywhere: board, Entrance, draw deck, or discard.	
+E0065	catalog	CARD_CATALOG	Gold		Rare	suit;economy;token;Producer	Gold-suit cards count as currency at full trade value in shops; when a Gold card scores, it mints a Heavy Gold token card to the deck bottom.	Modified (type instead of suit, effect is that it increases its own cost, is heavy) (gold gen should be its own talent)
+E0066	catalog	CARD_CATALOG	Gold Card		Common	skill;Producer;economy;token	Money token: full trade value at shops, always sinks to the deck bottom (Heavy), and scores 0 in melds.	
+E0067	catalog	CARD_CATALOG	Golden Buzzer		Legendary	consumable;protection;meta	Consumable, once per run: skips one town's requirement entirely for an instant win with full rewards.	
+E0068	catalog	CARD_CATALOG	Grand Spec		Epic	skill;Special Effects;formation;combo	If all columns scored a meld this act, doubles the act's combo multiplier.	
+E0069	catalog	CARD_CATALOG	Grand Vanish		Epic	skill;Magician;protection;formation	Cue, once per show: hide an entire column so it cannot be seen, targeted, scored, or touched for one turn; it then returns with bonus points on every card.	
+E0070	catalog	CARD_CATALOG	Greasepaint		Uncommon	stamp;Clown	This card counts as a Clown-class card in addition to its own class.	
+E0071	catalog	CARD_CATALOG	Grock's Instrument		Rare	skill;Clown;movement;gamble	Each act this card would score, it instead hops one column away and banks the points; when it has no legal hop left, it scores everything banked at once.	
+E0072	catalog	CARD_CATALOG	Half-Step		Uncommon	pip;movement;freakshow	This card has rank N and a half, letting it stack legally between rank N and N+1 in runs, but it never participates in poker melds.	Added (makes more sense as hat)
+E0073	catalog	CARD_CATALOG	Hall of Mirrors		Epic	hazard;secret;formation	Boss: duplicates the board's reflection with fake copies of your cards interleaved into rows; they score 0.	
+E0074	catalog	CARD_CATALOG	Hanafuda Reskin		Rare	skill;Costume Designer;secret;protection	When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show.	
+E0075	catalog	CARD_CATALOG	Hand of God		Legendary	skill;god-cycle;movement;deck-manip	Cue: move any card to any board location ignoring legality, or reorder the cards inside any deck.	
+E0076	catalog	CARD_CATALOG	Harlequin		Rare	pip;prop;combo	This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props.	vetoed (2 suit suit is boring)
+E0077	catalog	CARD_CATALOG	Heavy		Common	type;deck-manip	After any shuffle or return to deck, this card sinks to the deck bottom.	
+E0078	catalog	CARD_CATALOG	Helium		Common	type;deck-manip	After any shuffle or return to deck, this card rises to the top and is always the first card drawn on Next.	
+E0079	catalog	CARD_CATALOG	Hey Rube!		Rare	hazard;status;formation	Boss: each submit, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.	
+E0080	catalog	CARD_CATALOG	Hikinuki		Uncommon	skill;Costume Designer;collection;combo	On scoring, swaps this card's stamp with any stamp held in reserve.	
+E0081	catalog	CARD_CATALOG	HONK		Common	skill;Clown;joke	Cue: makes a honk sound, with unlimited uses and no other effect.	
+E0082	catalog	CARD_CATALOG	Hoops		Common	suit;prop;combo	When a Hoops card scores, hoop props sweep the scored row and re-score every skill card they pass through; talented spawners suppress their own suit effect.	Added
+E0083	catalog	CARD_CATALOG	Hooptown's Snub		Uncommon	hazard;prop	Town hazard: Hoops-suit effects score nothing here.	
+E0084	catalog	CARD_CATALOG	Hopak Burst		Uncommon	skill;Acrobat;Dancer;movement;formation	Cue, 1 charge per show: jumps this card's entire stack one row upward in its column, sliding everything beneath up.	
+E0085	catalog	CARD_CATALOG	Human Cannonball		Rare	skill;Acrobat;movement	Cue: fire the bottom card of any column to the top of any other column.	
+E0086	catalog	CARD_CATALOG	Humbug		Rare	skill;Producer;secret;gamble	While covered, counts as a copy of the most valuable card in its row; when uncovered, is revealed as junk (rank 2, base score only).	
+E0087	catalog	CARD_CATALOG	Hungry Hippo		Uncommon	skill;Animal Trainer;destruction;growth	Consumes cards dropped onto it, adding their rank to its own up to a cap of 13, and returns everything eaten at show end.	
+E0088	catalog	CARD_CATALOG	Hype Poster		Uncommon	consumable;gamble;economy	Consumable: doubles the next show's fame requirement, in exchange for its rewards (pack quality, rarity odds) scaling up two tiers.	
+E0089	catalog	CARD_CATALOG	Input Column		Common	rule;movement	One per column: on Next, drops its upper-zone stack into the paired board column, then draws a card from the deck to refill.	
+E0090	catalog	CARD_CATALOG	Iron Body		Uncommon	stamp;protection	Immune to the first destruction or debuff that targets this card each show.	
+E0091	catalog	CARD_CATALOG	Joey Grimaldi		Epic	leader;Clown;movement;combo	Leader: once per turn, freely swaps the ranks of any two adjacent cards without spending a cue.	
+E0092	catalog	CARD_CATALOG	John Robinson		Uncommon	hazard;economy	Elite hazard: the show is shortened to 2 submits instead of 3, with the goal unchanged.	
+E0093	catalog	CARD_CATALOG	Juggletown's Snub		Uncommon	hazard;prop;status	Town hazard: Balls-suit effects score nothing here, though Juggling statuses still apply.	
+E0094	catalog	CARD_CATALOG	Jumbo		Epic	skill;Animal Trainer;formation;movement	Heavy: no cards may be placed on this card, but it can be placed on anything; scores bonus points per card beneath it when scored.	
+E0095	catalog	CARD_CATALOG	Karagöz & Hacivat		Rare	skill;Dancer;formation;spotlight	Bound pair: each gains bonus multiplier while they are in opposite zones (one in the Entrance, one on the board).	
+E0096	catalog	CARD_CATALOG	Kayfabe		Epic	rule;secret;gamble	While in play, all Gaff/Humbug/fake cards count as real and score as what they pretend to be; removing this card reverts that.	
+E0097	catalog	CARD_CATALOG	Klyaksa		Common	skill;Animal Trainer;Clown;token	Comes with a free rank-1 token card that shuffles into the deck and follows this card's column when drawn.	
+E0098	catalog	CARD_CATALOG	Knifetown's Snub		Uncommon	hazard;prop	Town hazard: Knives-suit effects score nothing here.	
+E0099	catalog	CARD_CATALOG	Knives		Common	suit;prop;economy	Knife props launch from the opposite row edge and score plain non-skill prop cards they pass; the spawner also scores itself.	Added
+E0100	catalog	CARD_CATALOG	Kuroko		Rare	stamp;spotlight;protection	This card does not block Spotlight beneath it and cannot be targeted by boss or town effects.	
+E0101	catalog	CARD_CATALOG	Label		Uncommon	rule;info;secret	While this rule card is in the (normally hidden) rules deck, its effect text is announced on the board.	
+E0102	catalog	CARD_CATALOG	Liberty Horses		Uncommon	skill;Animal Trainer;deck-manip;formation	On Next, all Animal-class cards in the Grand Entrance rearrange into ascending rank order before dropping.	
+E0103	catalog	CARD_CATALOG	Lithograph		Rare	type;spotlight	While this card sits in the Grand Entrance its skill is active globally; on the board it has no effect.	
+E0104	catalog	CARD_CATALOG	Lloyd's Policy		Rare	stamp;protection;economy	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.	
+E0105	catalog	CARD_CATALOG	Lot Lice		Common	hazard;economy	Town hazard: the first submit each show scores 0 fame.	
+E0106	catalog	CARD_CATALOG	Lucky Streak		Uncommon	skill;Fortune Teller;meta;random	Grants +1 reroll per shop visit; after it activates, repeated actions for the rest of the show never repeat identical results.	
+E0107	catalog	CARD_CATALOG	Mabel's Tigers		Rare	skill;Animal Trainer;destruction;growth	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.	
+E0108	catalog	CARD_CATALOG	Madame Zora's Eye		Rare	skill;Fortune Teller;info	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.	
+E0109	catalog	CARD_CATALOG	Mallakhamb Pole		Uncommon	skill;Acrobat;formation;combo	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.	
+E0110	catalog	CARD_CATALOG	Marked		Common	stamp;info;deck-manip	Always shows this card's position in the draw deck.	
+E0111	catalog	CARD_CATALOG	Marotte		Uncommon	stamp;destruction;protection	When this card is destroyed, a rank-1 copy of it (same skill, no stamp) survives in its place.	
+E0112	catalog	CARD_CATALOG	Maximum Effort		Uncommon	stamp;gamble;persistence	Doubles this card's points on score; afterward it is Exhausted (scores nothing) until a show passes in which it was never played.	
+E0113	catalog	CARD_CATALOG	Meal Call		Uncommon	skill;Concessions;status;protection	Cue, once per show: every card on the board removes one debuff or status.	
+E0114	catalog	CARD_CATALOG	Metamorphosis		Rare	skill;Magician;deck-manip;gamble	Cue: swap this card with any card in the draw deck (seen or unseen), taking its board position.	
+E0115	catalog	CARD_CATALOG	Milk Can		Uncommon	skill;Escape Artist;protection;deck-manip	Cue: place one board card inside the can, safe and out of play; cue again on a later turn to retrieve it to the Entrance.	
+E0116	catalog	CARD_CATALOG	Misdirection		Uncommon	skill;Magician;spotlight	While spotlit, the topmost covered card in each adjacent column is also treated as spotlit.	
+E0117	catalog	CARD_CATALOG	Mr. Punch		Uncommon	skill;Clown;destruction;combo	Each act, gains points for every adjacent card debuffed or destroyed.	
+E0118	catalog	CARD_CATALOG	Mud Show		Common	hazard;movement;economy	Town hazard: every stack pickup this show costs 1 discard from the deck top.	
+E0119	catalog	CARD_CATALOG	Mystery Box		Common	skill;Magician;random	On game start, this card becomes a random skill for the rest of the run, deterministic per seed.	
+E0120	catalog	CARD_CATALOG	Null		Uncommon	type;hazard;freakshow	Junk material inserted by hazards: occupies a slot, scores nothing, and melds nothing.	
+E0121	catalog	CARD_CATALOG	OG Grabber		Common	rule;movement	Default grab legality: a stack may be picked up if it is an ascending or descending run with no two same-suit cards adjacent.	
+E0122	catalog	CARD_CATALOG	OG Placer		Common	rule;movement	Default placement legality: a stack may be placed where the join continues a legal run without same-suit contact.	
+E0123	catalog	CARD_CATALOG	Outlawed		Rare	type;gamble;economy	In pious/lawful towns this card cannot score at all; everywhere else it scores double.	
+E0124	catalog	CARD_CATALOG	Pagliacci		Uncommon	skill;Clown;status;gamble	Gains bonus multiplier while this card carries any debuff or negative status.	
+E0125	catalog	CARD_CATALOG	Pandora's Box		Uncommon	skill;Magician;random	On game start becomes a random skill; on game end resets back to this skill.	
+E0126	catalog	CARD_CATALOG	Paper		Common	type	Default material with no modifier behavior.	Added
+E0127	catalog	CARD_CATALOG	Paper the House		Rare	consumable;protection;economy	Consumable: auto-passes one town's fame check, but grants zero fame and zero rewards from it.	
+E0128	catalog	CARD_CATALOG	Peanut Pitch		Common	skill;Concessions;charges	Cue, 3 charges per show: gives bonus points to any one card on the board.	
+E0129	catalog	CARD_CATALOG	Pepper's Ghost		Rare	skill;Magician;formation;combo	While spotlit, an intangible duplicate of this card appears in the opposite zone; it scores in melds but cannot be touched, moved, or targeted.	
+E0130	catalog	CARD_CATALOG	Performance Rings		Rare	rule;formation;combo	Rows 1-5 pay 1x, rows 6-10 pay 2x, rows 11-15 pay 3x, and so on by board depth.	
+E0131	catalog	CARD_CATALOG	Pierrot		Uncommon	skill;Clown;Dancer;gamble	Gains bonus multiplier on odd-numbered shows of the tour; has no effect otherwise.	
+E0132	catalog	CARD_CATALOG	Pink Lemonade		Common	skill;Concessions;combo	When a Flames card and a Concessions card score in the same row, gain bonus points and draw 1 card.	
+E0133	catalog	CARD_CATALOG	Poker Crown		Uncommon	skill;Special Effects;formation;combo	When scored, this card and the 4 cards directly above it in its column are also evaluated as a poker hand, once.	
+E0134	catalog	CARD_CATALOG	Poker Evaluator		Common	rule;combo	Evaluates each scored line for its best poker hand; only the best poker hand per line pays.	
+E0135	catalog	CARD_CATALOG	Popcorn Cascade		Uncommon	skill;Concessions;deck-manip;combo	Whenever a column of 4 or more cards scores, draw 1 card.	
+E0136	catalog	CARD_CATALOG	Presentation		Uncommon	skill;Dancer;combo;movement	While spotlit, each time a placed card's rank is higher than the last card placed, gain +1 combo for the act.	
+E0137	catalog	CARD_CATALOG	Press Bribery		Epic	skill;Producer;protection;gamble;meta	Once: on failing a city, keep touring as if it were won; if still unspent by the final city, converts to an automatic win there.	
+E0138	catalog	CARD_CATALOG	Psycho		Rare	skill;Magician;deck-manip;movement	Every Next, automatically plays the top card of the draw deck into this card's column.	
+E0139	catalog	CARD_CATALOG	Railroad Jump		Rare	hazard;destruction;meta	Map-edge hazard: traveling this route costs one card, permanently removed from the deck.	
+E0140	catalog	CARD_CATALOG	Rare		Rare	skill;Producer;economy;meta	While in the deck, doubles the chance of Epic cards appearing in packs/shops.	
+E0141	catalog	CARD_CATALOG	Revealing		Uncommon	stamp;spotlight	This card's modifiers stay active while covered.	
+E0142	catalog	CARD_CATALOG	Ring Column		Common	rule;formation	One per column: adds one board (lower zone) column at game creation; its rank equals which column it is.	
+E0143	catalog	CARD_CATALOG	Ringmaster's Grip		Rare	stamp;movement	This card and the stack it heads can always be picked up, regardless of stack legality.	
+E0144	catalog	CARD_CATALOG	Roman Numerals		Common	pip;cosmetic	This card's rank displays as Roman numerals; melds, stacking and comparisons are unaffected.	Added
+E0145	catalog	CARD_CATALOG	Rosin		Uncommon	type;movement;formation	Cards placed onto this card cannot be picked up again, but score +1 bonus per ring deeper than they stand.	
+E0146	catalog	CARD_CATALOG	Sawdust		Common	type;discard;Concessions	When this card is discarded from the board, its slot keeps a marker that gives the next card placed there bonus points on its first score.	
+E0147	catalog	CARD_CATALOG	Sawing in Half		Uncommon	skill;Magician;deck-manip;movement	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.	
+E0148	catalog	CARD_CATALOG	Searing Knife		Rare	skill;Escape Artist;gamble;formation;hazard	When scored, its column pays 3x this act but is locked (no placement or grabs) for the next 2 turns.	
+E0149	catalog	CARD_CATALOG	Second Act		Uncommon	type;deck-manip	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.	
+E0150	catalog	CARD_CATALOG	Self-Granted Title		Rare	stamp;economy;info	This card counts as one rarity higher for all effects and bonuses, but not for pack or shop pool rolls.	
+E0151	catalog	CARD_CATALOG	Sin of Gluttony		Epic	skill;Animal Trainer;destruction;growth	Consumes cards from anywhere (board, Entrance, or decks, via cue), with no cap, permanently gaining rank.	
+E0152	catalog	CARD_CATALOG	Slapstick		Common	skill;Clown;movement;combo	Cue: swap the ranks of this card and one adjacent card.	
+E0153	catalog	CARD_CATALOG	Sliced Bread		Uncommon	skill;Special Effects;formation;combo	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.	
+E0154	catalog	CARD_CATALOG	Snake Oil		Common	consumable;gamble;status	Consumable: gives +3 rank to one card this show, with a seeded 1-in-4 chance of doing nothing.	
+E0155	catalog	CARD_CATALOG	Soundcheck		Uncommon	rule;movement;meta	At show start, grants one free move (grab and place one stack) before the first Next, without spending an act.	
+E0156	catalog	CARD_CATALOG	Spangle		Common	stamp;combo	The first time this card is part of any scored meld each act, it adds +1 to the act's combo.	
+E0157	catalog	CARD_CATALOG	Spiderweb		Uncommon	skill;Dancer;formation	When scored, gains +1 point per card diagonally adjacent to it.	
+E0158	catalog	CARD_CATALOG	Spirit Photo		Uncommon	consumable;gamble;token	Consumable: creates an intangible ghost copy of an owned card that plays for one show at half score, then disappears.	
+E0159	catalog	CARD_CATALOG	Stone		Uncommon	type;movement;protection	Once placed on the board this card cannot be grabbed again, and it scores a bonus for remaining unmoved.	
+E0160	catalog	CARD_CATALOG	Straitjacket		Common	skill;Escape Artist;movement;gamble	Starts each show unable to be moved; frees itself and scores bonus points the first time its column scores.	
+E0161	catalog	CARD_CATALOG	Sword Swallower		Epic	rule;secret;formation	Hidden rule: a column that is one perfect descending run from top to floor pays a large bonus and mints a Knife-suit card.	
+E0162	catalog	CARD_CATALOG	Symmetrical Show		Rare	rule;combo;formation	Poker hands are also evaluated on columns in addition to rows.	
+E0163	catalog	CARD_CATALOG	Tappable Clown		Uncommon	skill;Clown;random;charges	3 charges per show: cue to deterministically re-roll the ranks of all adjacent cards.	
+E0164	catalog	CARD_CATALOG	Temperance Town		Uncommon	hazard;economy	Town hazard: Concessions-class cards are disabled and shop prices are doubled.	
+E0165	catalog	CARD_CATALOG	The Accountant		Rare	skill;meta-effect;combo;economy	At payout, before row x column multiplication, shift up to 20% of the larger axis total onto the smaller, costing 2 combo to invoke.	
+E0166	catalog	CARD_CATALOG	The Acrobat		Uncommon	skill;Acrobat;movement	This card can be grabbed even while covered; the cards above cascade down one slot.	
+E0167	catalog	CARD_CATALOG	The Advance Campaign		Rare	skill;Producer;economy;gamble	Cue before a show: spend N Gold tokens to multiply that show's fame payout by 1 + N/10.	
+E0168	catalog	CARD_CATALOG	The Advance Man		Uncommon	consumable;info;meta	Consumable: reveals all fog-of-war nodes within 2 edges of the player's position, including contents.	
+E0169	catalog	CARD_CATALOG	The Aerialist		Legendary	leader;combo;gamble	Leader: re-scores the topmost meld once per submit, but is destroyed permanently if her column ever fails to score.	
+E0170	catalog	CARD_CATALOG	The Alchemist		Uncommon	skill;meta-effect;status	Cue: transmute all statuses of one class on a target card into another class, count preserved.	
+E0171	catalog	CARD_CATALOG	The Ambitious Card		Rare	skill;Magician;deck-manip	This card always rises to the top of the draw deck after any shuffle or discard, and scores bonus points if drawn the same show it was discarded.	
+E0172	catalog	CARD_CATALOG	The Amendment		Rare	skill;meta-effect;rule;collection	Attach any owned stamp to a rule card in the rules deck.	
+E0173	catalog	CARD_CATALOG	The Anarchist		Epic	hazard;rule;secret	Boss: each submit, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.	
+E0174	catalog	CARD_CATALOG	The Apprentice		Rare	skill;meta-effect;growth;collection	Blank skill; each show it permanently learns the first effect it observes firing, up to three learned effects.	
+E0175	catalog	CARD_CATALOG	The Avatar		Rare	stamp;info;secret	This card copies another deck card's name, class, and identity for all checks until it has scored 3 times, at which point it is unmasked.	
+E0176	catalog	CARD_CATALOG	The Backward-Backward		Rare	skill;Acrobat;movement;combo	Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa.	
+E0177	catalog	CARD_CATALOG	The Balance		Legendary	hazard;formation;combo;secret	Final-tier boss: cannot be beaten by score; win by ending the show with row total and column total within 10% of each other.	
+E0178	catalog	CARD_CATALOG	The Belt		Legendary	stamp;economy;persistence;secret	Exactly one card in the save file holds this stamp at a time; it scores double, and a Belt-challenge boss can take it and it must be won back.	
+E0179	catalog	CARD_CATALOG	The Best Bower		Uncommon	pip;combo	This card counts as every suit for flush evaluation, but not for suit-stacking rules.	Added (added effect that it randomly acts as any prop from the game)
+E0180	catalog	CARD_CATALOG	The Bishop		Uncommon	skill;freakshow;movement;destruction	May be placed onto any card along an open diagonal, capturing it; blocked by occupied slots between.	
+E0181	catalog	CARD_CATALOG	The Blank		Common	pip;movement;freakshow	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0.	Added
+E0182	catalog	CARD_CATALOG	The Blockhead		Common	skill;Escape Artist;prop;protection	Absorbs one Knife prop per show, banking it as flat points instead of being hit.	
+E0183	catalog	CARD_CATALOG	The Booking		Uncommon	rule;gamble;economy	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.	
+E0184	catalog	CARD_CATALOG	The Boot Code		Rare	skill;Special Effects;secret;combo	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.	
+E0185	catalog	CARD_CATALOG	The Bullet Catch		Legendary	skill;Magician;gamble;destruction	When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.	
+E0186	catalog	CARD_CATALOG	The Butoh Walker		Rare	skill;Dancer;movement;growth	Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there.	
+E0187	catalog	CARD_CATALOG	The Butterfly Trick		Common	skill;Magician;token;movement	Cue: create two rank-1 paper-token cards of any suit that drift down one chosen column, one row per Next.	
+E0188	catalog	CARD_CATALOG	The Calliope		Uncommon	skill;Special Effects;combo	Gains +1 combo for every different class that scored this act.	
+E0189	catalog	CARD_CATALOG	The Calm Voice		Rare	skill;Magician;protection;economy	Once per run, negate a disaster event or boss effect and gain fame equal to its severity instead.	
+E0190	catalog	CARD_CATALOG	The Candy Butcher		Uncommon	skill;Concessions;economy;token	Whenever a full 5-card row meld scores, mints one Ticket Stub to the deck.	
+E0191	catalog	CARD_CATALOG	The Cannon King		Epic	leader;prop;combo	Leader: Fireworks-suit cards may score directly from the Grand Entrance without entering the board.	
+E0192	catalog	CARD_CATALOG	The Capoeirista		Rare	skill;Escape Artist;Dancer;secret	Registered as a Dancer but functions as an Escape Artist; town bans on Escape Artist-type acts still let it perform.	
+E0193	catalog	CARD_CATALOG	The Card Index		Rare	skill;Magician;deck-manip	Cue, once per show: search the draw deck for any card and put it into the Grand Entrance.	
+E0194	catalog	CARD_CATALOG	The Castell		Epic	skill;Dancer;Acrobat;formation;gamble	Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead.	
+E0195	catalog	CARD_CATALOG	The Charivari		Uncommon	skill;Dancer;Clown;formation;combo	If 4 or more cards are placed into the board on the first turn of a show, gain bonus multiplier on the first act's payout.	
+E0196	catalog	CARD_CATALOG	The Cheap Pop		Common	skill;Producer;economy	When scored, grants a small bonus fame in every town.	
+E0197	catalog	CARD_CATALOG	The Claque		Rare	consumable;economy;gamble	Consumable: raises this show's fame floor to 60% of goal, but costs 1 Gold at every subsequent show forever.	
+E0198	catalog	CARD_CATALOG	The Cliffhanger		Rare	skill;Fortune Teller;gamble;economy	Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame.	
+E0199	catalog	CARD_CATALOG	The Clock Hang		Rare	skill;Acrobat;gamble;spotlight	May be placed half-off the board past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it.	
+E0200	catalog	CARD_CATALOG	The Comedic Drop		Uncommon	skill;Clown;discard;gamble	Cue: discard this card mid-show for a bonus larger than scoring it would have paid.	
+E0201	catalog	CARD_CATALOG	The Conductor		Rare	skill;meta-effect;combo;deck-manip	All on-Next effects are held each turn and fire together at Submit instead, in a chosen order.	
+E0202	catalog	CARD_CATALOG	The Conjuror		Epic	leader;token;deck-manip	Leader: once per turn, produce a rank-1 token card of any suit into the Entrance.	
+E0203	catalog	CARD_CATALOG	The Contagion		Uncommon	skill;meta-effect;status;formation	Each Next, every status on this card's neighbors copies one card further outward, with merge-by-class capping the counts.	
+E0204	catalog	CARD_CATALOG	The Contortionist		Rare	skill;Acrobat;formation;movement	May share one board slot with another card; both cards count in melds.	
+E0205	catalog	CARD_CATALOG	The Contrary		Rare	rule;combo;random	Descending runs count as ascending, and the worst poker hand scores instead of the best, on each row.	
+E0206	catalog	CARD_CATALOG	The Convention		Legendary	skill;meta-effect;rule;meta	Enact one new law chosen from a fixed slate of three (e.g. runs wrap King-to-Ace, 4-card poker hands score, discards feed 10% of rank as points); it becomes a permanent rule card for the rest of the run.	
+E0207	catalog	CARD_CATALOG	The Cooler		Rare	consumable;deck-manip;secret	Consumable, once per run: replaces the remaining draw deck with a copy in a chosen order.	
+E0208	catalog	CARD_CATALOG	The Costume Fitting		Common	skill;Costume Designer;collection	On show start, copies the stamp of one adjacent card for the duration of the show.	
+E0209	catalog	CARD_CATALOG	The Costumier		Epic	leader;collection	Leader: all your cards may hold 2 stamps.	
+E0210	catalog	CARD_CATALOG	The Courier		Epic	skill;Acrobat;formation;combo	While spotlit, this card counts as a member of both its own column's and the adjacent column's melds.	
+E0211	catalog	CARD_CATALOG	The Critic		Rare	skill;meta-effect;combo;gamble	After each act, the effect that triggered most is silenced for the next act; any effect that triggered exactly once scores a bonus.	
+E0212	catalog	CARD_CATALOG	The Crowd Surf		Rare	skill;Acrobat;gamble;movement	Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead.	
+E0213	catalog	CARD_CATALOG	The Cue Card		Common	skill;meta-effect;combo;charges	Cue: manually fire one adjacent card's trigger hook exactly as if the game had triggered it, including combo credit and stamps.	
+E0214	catalog	CARD_CATALOG	The Dalang		Legendary	leader;info;combo	Leader: while in play, the player chooses the trigger order of all card effects each scoring pass.	
+E0215	catalog	CARD_CATALOG	The Designated Loser		Common	hazard;gamble;secret	A boss show with a trivial goal that is normally always won, but has a hidden seeded 1-in-1000 chance the goal silently triples mid-show.	
+E0216	catalog	CARD_CATALOG	The Digesting Duck		Uncommon	skill;Animal Trainer;Magician;deck-manip	Consumes cards dropped on it like Gluttony, but secretly stores them; cue to return any one stored card to the Entrance.	
+E0217	catalog	CARD_CATALOG	The Discoverie		Rare	consumable;info;secret	Consumable, 3 uses: reveals every Gaff/fake in play (yours, the shop's, the town's); banned (a crime event) in pious towns.	
+E0218	catalog	CARD_CATALOG	The Double		Uncommon	skill;Escape Artist;protection	Assign a 'star' card at show start; the first destruction or debuff aimed at the star hits this card instead.	
+E0219	catalog	CARD_CATALOG	The Dragoman		Uncommon	skill;meta-effect;discard;deck-manip	Choose a card: its on-score effects also fire when it is discarded.	
+E0220	catalog	CARD_CATALOG	The Dragon Meld		Rare	skill;Dancer;formation;movement	When a run of 4+ scores while this card is in it, that run can be relocated as a unit anywhere on the board once, next turn.	
+E0221	catalog	CARD_CATALOG	The Dramaturg		Epic	skill;meta-effect;combo;gamble	Rewrites one card's combo identity so each of its triggers registers a fresh combo key every time this act, instead of only on first activation.	
+E0222	catalog	CARD_CATALOG	The Drone Swarm		Epic	skill;Special Effects;formation;combo	Cue, once per show: re-triggers any formation bonus already scored this run, paying it again without needing the cards.	
+E0223	catalog	CARD_CATALOG	The Dubplate		Rare	skill;Producer;collection;event-granted;secret	Event-forged unique card created for this save file, assembled from the two effects scored most this run.	
+E0224	catalog	CARD_CATALOG	The Dzhigit's Pickup		Uncommon	skill;Acrobat;movement;deck-manip	During Next, once armed by cue, intercepts one falling card as it drops and redirects it to any column.	
+E0225	catalog	CARD_CATALOG	The Egg Bag		Uncommon	skill;Magician;deck-manip;discard	Cue while spotlit: stash the top discard inside this card; when this card scores, the stashed card returns to the Grand Entrance.	
+E0226	catalog	CARD_CATALOG	The Egress		Uncommon	skill;Producer;discard;economy	Cue: send any board card to the discard, gaining 1 Ticket Stub.	
+E0227	catalog	CARD_CATALOG	The Encore		Rare	stamp;gamble;combo	If this card's skill triggered this show, there is a seeded 50% chance it triggers once more at show end.	
+E0228	catalog	CARD_CATALOG	The Engineer		Epic	leader;gamble;economy	Leader: gamble-tagged cards cost 1 less to acquire and their destruction odds are halved.	
+E0229	catalog	CARD_CATALOG	The Equestrian		Epic	leader;formation;combo	Leader: melds scored entirely within rows 1-5 get bonus multiplier.	
+E0230	catalog	CARD_CATALOG	The Escape Map		Uncommon	skill;Escape Artist;info;discard;meta	When discarded, reveals part of the world map's fog of war.	
+E0231	catalog	CARD_CATALOG	The Escapologist		Epic	leader;protection;meta	Leader: free undo becomes 2 per turn, and all debuffs on your cards expire one show sooner.	
+E0232	catalog	CARD_CATALOG	The Exchange Rate		Uncommon	skill;meta-effect;combo;economy	At act end, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next act.	
+E0233	catalog	CARD_CATALOG	The Fadista		Rare	skill;Dancer;destruction;persistence	Scores bonus points per card destroyed or lost this run.	
+E0234	catalog	CARD_CATALOG	The Falling Wall		Epic	hazard;destruction;formation	Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot.	
+E0235	catalog	CARD_CATALOG	The Fanchant		Rare	skill;Special Effects;combo	After all scoring resolves, each meld that raised the act's combo pays again at 25%.	
+E0236	catalog	CARD_CATALOG	The Fifteen		Uncommon	pip;combo;Special Effects	This card also melds with any adjacent neighbors whose ranks sum to 15 with it.	Added (made into talent)
+E0237	catalog	CARD_CATALOG	The Fire Breather		Rare	skill;Escape Artist;status;prop	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	
+E0238	catalog	CARD_CATALOG	The Fire-Knife		Rare	pip;prop;status;combo	This card is fixed dual-suit Knives and Flames: knife props fly the row while Burning status drops down the column.	vetoed (already have fire and knives)
+E0239	catalog	CARD_CATALOG	The Fire Marshal		Uncommon	hazard;prop;status	Town hazard: Flames-suit cards cannot score, and any Flames card in the deck is treated as Wax type this show.	
+E0240	catalog	CARD_CATALOG	The Forged Ace		Legendary	pip;gamble;event-granted;secret	This card has an enormous rank that counts as two Aces in melds; if any inspection effect examines it, it is destroyed and the show's fame payout is voided.	Vetoed (??? wtf is this)
+E0241	catalog	CARD_CATALOG	The Forty-Two		Legendary	rule;secret;combo	Hidden rule: when a row's score plus its column's score totals exactly 42, the act's combo gains +3.	
+E0242	catalog	CARD_CATALOG	The Fourth Wall		Epic	skill;meta-effect;movement;gamble	Once per act, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
+E0243	catalog	CARD_CATALOG	The Gentled Beast		Uncommon	skill;Animal Trainer;growth;protection	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.	
+E0244	catalog	CARD_CATALOG	The Ghost Writer		Rare	skill;meta-effect;token;growth	Each show start, writes a temporary skill (a copy of an effect that fired last show) onto one blank/prop card; it fades at show end.	
+E0245	catalog	CARD_CATALOG	The Gong		Rare	hazard;gamble	Town hazard: any submit scoring under 25% of goal ends the show immediately.	
+E0246	catalog	CARD_CATALOG	The Grease Joint		Uncommon	skill;Concessions;deck-manip;discard	At show start, discards the bottom card of the draw deck, then draws 1 card.	
+E0247	catalog	CARD_CATALOG	The Griot		Rare	skill;Fortune Teller;persistence;economy	Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start.	
+E0248	catalog	CARD_CATALOG	The Groundhog		Rare	skill;meta-effect;combo;gamble	Cue, once per show: replay the previous act's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
+E0249	catalog	CARD_CATALOG	The Guest Star		Epic	consumable;collection;gamble;event-granted	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.	
+E0250	catalog	CARD_CATALOG	The Half Card		Rare	pip;movement;freakshow	This card has half rank (rounded down) and half size: two copies occupy one board slot together and meld as one combined card.	Modified (either talent that splits into two halves down middle, or becomes two cards where rank is half. recombines on score as its own meld)
+E0251	catalog	CARD_CATALOG	The Handicap		Uncommon	skill;Acrobat;gamble;protection	Cue at show start: lock this card's movement for the show (cannot be grabbed) in exchange for scoring double all show.	
+E0252	catalog	CARD_CATALOG	The Hanged Man		Epic	consumable;movement;formation	Consumable: flips the order of one entire stack, bottom becomes top.	
+E0253	catalog	CARD_CATALOG	The Hat Line		Uncommon	skill;Producer;economy;combo	At show end, cue to convert the act's unused combo above the payout into Gold tokens instead of losing it.	
+E0254	catalog	CARD_CATALOG	The Headliner		Uncommon	pip;movement;combo	Aces are renamed and count as either rank 1 or rank 14 in runs, whichever is more favorable, decided at evaluation time.	Vetoed (reference can be recycled)
+E0255	catalog	CARD_CATALOG	The High Dive		Rare	skill;Acrobat;movement;gamble	Cue: drop this card from the top of its column to the bottom, scoring bonus points per row fallen.	
+E0256	catalog	CARD_CATALOG	The Holdout		Rare	skill;Escape Artist;secret;gamble;deck-manip	Stores one card outside the game across shows; cue once per run to insert it into any stack at any moment, but a town search loses it.	
+E0257	catalog	CARD_CATALOG	The Hook		Uncommon	hazard;discard	Town hazard: after each submit, the lowest-ranked board card is discarded unless it scored that act.	
+E0258	catalog	CARD_CATALOG	The Hunger Artist		Rare	skill;Escape Artist;persistence;gamble	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.	
+E0259	catalog	CARD_CATALOG	The Illustrated		Rare	stamp;Costume Designer;collection	This card may hold unlimited stamps, but can never hold a skill.	
+E0260	catalog	CARD_CATALOG	The Imitator		Rare	skill;Magician;gamble;secret	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.	
+E0261	catalog	CARD_CATALOG	The Impresario		Common	pip;Producer;economy	Kings are renamed, count as Producer-class cards, and give +1 trade value when spent at shops.	Vetoed (reference can be recycled)

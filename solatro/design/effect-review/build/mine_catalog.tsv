@@ -1,0 +1,379 @@
+source	name	rarity	groups	mechanic	status
+CARD_CATALOG	Hoops	Common	suit;prop;combo	When a Hoops card scores, hoop props sweep the scored row and re-score every skill card they pass through; talented spawners suppress their own suit effect.	Added
+CARD_CATALOG	Knives	Common	suit;prop;economy	Knife props launch from the opposite row edge and score plain non-skill prop cards they pass; the spawner also scores itself.	Added
+CARD_CATALOG	Balls	Common	suit;prop;status;combo	Ball props arc down the column, picking talent targets at spawn, and apply the Juggling status; a Juggling card pays out its column score when it later scores.	Added
+CARD_CATALOG	Flames	Common	suit;prop;status;combo	Fire props arc down the column applying Burning; a Burning card's suit effect fires with multiplied prop count, and fire cascades can chain within the same act.	Added
+CARD_CATALOG	Gold	Rare	suit;economy;token;Producer	Gold-suit cards count as currency at full trade value in shops; when a Gold card scores, it mints a Heavy Gold token card to the deck bottom.	Modified (type instead of suit, effect is that it increases its own cost, is heavy) (gold gen should be its own talent)
+CARD_CATALOG	Electric	Epic	suit;prop;formation;combo	When an Electric card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap.	Added
+CARD_CATALOG	Fireworks	Epic	suit;prop;Special Effects;economy	When a Fireworks card scores, its rocket prop rises up the column and banks the column score directly.	Added
+CARD_CATALOG	Roman Numerals	Common	pip;cosmetic	This card's rank displays as Roman numerals; melds, stacking and comparisons are unaffected.	Added
+CARD_CATALOG	The Blank	Common	pip;movement;freakshow	This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0.	Added
+CARD_CATALOG	The Joey	Common	pip;Clown	Jacks are renamed and count as Clown-class cards for group effects.	Vetoed (rank that is always 11 is boring, joey should be a clown token with actual effect)
+CARD_CATALOG	The Ringmistress	Common	pip;Producer	Queens are renamed and count as Producer-class cards for group effects.	Vetoed (reference can be recycled)
+CARD_CATALOG	The Impresario	Common	pip;Producer;economy	Kings are renamed, count as Producer-class cards, and give +1 trade value when spent at shops.	Vetoed (reference can be recycled)
+CARD_CATALOG	The Headliner	Uncommon	pip;movement;combo	Aces are renamed and count as either rank 1 or rank 14 in runs, whichever is more favorable, decided at evaluation time.	Vetoed (reference can be recycled)
+CARD_CATALOG	Half-Step	Uncommon	pip;movement;freakshow	This card has rank N and a half, letting it stack legally between rank N and N+1 in runs, but it never participates in poker melds.	Added (makes more sense as hat)
+CARD_CATALOG	The Fifteen	Uncommon	pip;combo;Special Effects	This card also melds with any adjacent neighbors whose ranks sum to 15 with it.	Added (made into talent)
+CARD_CATALOG	The Best Bower	Uncommon	pip;combo	This card counts as every suit for flush evaluation, but not for suit-stacking rules.	Added (added effect that it randomly acts as any prop from the game)
+CARD_CATALOG	The Half Card	Rare	pip;movement;freakshow	This card has half rank (rounded down) and half size: two copies occupy one board slot together and meld as one combined card.	Modified (either talent that splits into two halves down middle, or becomes two cards where rank is half. recombines on score as its own meld)
+CARD_CATALOG	Harlequin	Rare	pip;prop;combo	This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props.	vetoed (2 suit suit is boring)
+CARD_CATALOG	The Fire-Knife	Rare	pip;prop;status;combo	This card is fixed dual-suit Knives and Flames: knife props fly the row while Burning status drops down the column.	vetoed (already have fire and knives)
+CARD_CATALOG	The Wildcard	Rare	pip;random;deck-manip	On every board change, this card becomes a copy of a rank/suit currently present in its row, chosen deterministically.	Added (is any rank instead)
+CARD_CATALOG	The Forged Ace	Legendary	pip;gamble;event-granted;secret	This card has an enormous rank that counts as two Aces in melds; if any inspection effect examines it, it is destroyed and the show's fame payout is voided.	Vetoed (??? wtf is this)
+CARD_CATALOG	Paper	Common	type	Default material with no modifier behavior.	Added
+CARD_CATALOG	Canvas	Common	type;protection	The first debuff or status applied to this card each show is discarded.	
+CARD_CATALOG	Ticket Stub	Common	type;economy;token;Producer	Worth double trade value at shops; scores 0 and never melds on the board.	
+CARD_CATALOG	Sawdust	Common	type;discard;Concessions	When this card is discarded from the board, its slot keeps a marker that gives the next card placed there bonus points on its first score.	
+CARD_CATALOG	Heavy	Common	type;deck-manip	After any shuffle or return to deck, this card sinks to the deck bottom.	
+CARD_CATALOG	Helium	Common	type;deck-manip	After any shuffle or return to deck, this card rises to the top and is always the first card drawn on Next.	
+CARD_CATALOG	Air	Uncommon	type;movement	Whenever its stack settles, this card floats to the top of its stack.	
+CARD_CATALOG	Earth	Uncommon	type;movement	Whenever its stack settles, this card sinks to the bottom of its stack, carrying its stamp with it.	
+CARD_CATALOG	Water	Uncommon	type;movement	On Next, if an adjacent column is shorter, this card flows sideways into it, always seeking the lowest level.	Added
+CARD_CATALOG	Tinder	Uncommon	type;status;prop	Whenever this card is covered by another card, the covering card catches Burning.	
+CARD_CATALOG	Stone	Uncommon	type;movement;protection	Once placed on the board this card cannot be grabbed again, and it scores a bonus for remaining unmoved.	
+CARD_CATALOG	Rosin	Uncommon	type;movement;formation	Cards placed onto this card cannot be picked up again, but score +1 bonus per ring deeper than they stand.	
+CARD_CATALOG	Glass	Uncommon	type;destruction;gamble	Scores double points, and is destroyed permanently after its third score.	
+CARD_CATALOG	Wax	Uncommon	type;status	At each show end, loses 1 rank for every Flames-suit card that shared its column that show, and is destroyed at rank 0.	
+CARD_CATALOG	Flash	Uncommon	type;combo;gamble	The first time this card would score each show it scores triple; every later score that show is zero.	
+CARD_CATALOG	Digital	Uncommon	type;protection	This card cannot be discarded from the board by any effect.	
+CARD_CATALOG	Null	Uncommon	type;hazard;freakshow	Junk material inserted by hazards: occupies a slot, scores nothing, and melds nothing.	
+CARD_CATALOG	First Act	Uncommon	type;deck-manip	After every shuffle, this card moves to the top of the deck and enters play alone before any other card that Next.	
+CARD_CATALOG	Second Act	Uncommon	type;deck-manip	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.	
+CARD_CATALOG	Final Act	Rare	type;deck-manip;combo	After every shuffle, this card sinks below all non-Heavy cards and only enters play after the rest of the deck is drawn; it scores a bonus multiplier as the closer.	
+CARD_CATALOG	Lithograph	Rare	type;spotlight	While this card sits in the Grand Entrance its skill is active globally; on the board it has no effect.	
+CARD_CATALOG	Tintype	Rare	type;deck-manip;collection	On acquisition, permanently copies the rank and suit of the card it was created from.	
+CARD_CATALOG	Automaton	Rare	type;charges;movement	Every Next this card performs its cue automatically for free, but it can never be cued manually.	
+CARD_CATALOG	Bahurupiya	Rare	type;random;deck-manip	At the start of each show this card arrives as a random different class, deterministic per seed, counting for that class's group effects.	
+CARD_CATALOG	Outlawed	Rare	type;gamble;economy	In pious/lawful towns this card cannot score at all; everywhere else it scores double.	
+CARD_CATALOG	Spangle	Common	stamp;combo	The first time this card is part of any scored meld each act, it adds +1 to the act's combo.	
+CARD_CATALOG	Marked	Common	stamp;info;deck-manip	Always shows this card's position in the draw deck.	
+CARD_CATALOG	Brass Check	Common	stamp;economy;token;Producer	Whenever this card's effects trigger, mint a Gold token card onto the top of the draw deck.	
+CARD_CATALOG	Greasepaint	Uncommon	stamp;Clown	This card counts as a Clown-class card in addition to its own class.	
+CARD_CATALOG	Top Billing	Uncommon	stamp;combo;info	This card always scores first within its meld, controlling trigger order ahead of board-order dispatch.	
+CARD_CATALOG	Ghost Light	Uncommon	stamp;spotlight	This card does not block the Spotlight of cards beneath it; they stay active as if uncovered.	
+CARD_CATALOG	Revealing	Uncommon	stamp;spotlight	This card's modifiers stay active while covered.	
+CARD_CATALOG	Maximum Effort	Uncommon	stamp;gamble;persistence	Doubles this card's points on score; afterward it is Exhausted (scores nothing) until a show passes in which it was never played.	
+CARD_CATALOG	Understudy	Uncommon	stamp;destruction;deck-manip	If the card directly above this one in a stack is destroyed or consumed, this card permanently copies that card's skill.	
+CARD_CATALOG	Marotte	Uncommon	stamp;destruction;protection	When this card is destroyed, a rank-1 copy of it (same skill, no stamp) survives in its place.	
+CARD_CATALOG	Iron Body	Uncommon	stamp;protection	Immune to the first destruction or debuff that targets this card each show.	
+CARD_CATALOG	Ascetic	Uncommon	stamp;protection;hazard	Immune to row- and floor-targeting hazards.	
+CARD_CATALOG	Unpierceable	Uncommon	stamp;protection;prop	Knife props pass through this card harmlessly, but still count as a miss for miss-triggered bonuses.	
+CARD_CATALOG	The Vine	Uncommon	stamp;protection;gamble	The first time this card would be destroyed or discarded by a fall or hazard each tour, it survives instead.	
+CARD_CATALOG	Contract Ink	Uncommon	stamp;economy;persistence	Scores +X points per show it is played; if benched two shows in a row, it is removed from the deck.	
+CARD_CATALOG	Double Trigger	Rare	stamp;combo	All of this card's effects trigger twice, once per scoring pass.	
+CARD_CATALOG	Global	Rare	stamp;spotlight;deck-manip	This card's modifiers are active from anywhere: board, Entrance, draw deck, or discard.	
+CARD_CATALOG	The Encore	Rare	stamp;gamble;combo	If this card's skill triggered this show, there is a seeded 50% chance it triggers once more at show end.	
+CARD_CATALOG	Lloyd's Policy	Rare	stamp;protection;economy	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.	
+CARD_CATALOG	Kuroko	Rare	stamp;spotlight;protection	This card does not block Spotlight beneath it and cannot be targeted by boss or town effects.	
+CARD_CATALOG	Bauta	Rare	stamp;info;gamble;secret	This card's rarity and identity are hidden from inspections, towns, and effects until it scores.	
+CARD_CATALOG	Self-Granted Title	Rare	stamp;economy;info	This card counts as one rarity higher for all effects and bonuses, but not for pack or shop pool rolls.	
+CARD_CATALOG	The Illustrated	Rare	stamp;Costume Designer;collection	This card may hold unlimited stamps, but can never hold a skill.	
+CARD_CATALOG	The Avatar	Rare	stamp;info;secret	This card copies another deck card's name, class, and identity for all checks until it has scored 3 times, at which point it is unmasked.	
+CARD_CATALOG	Ringmaster's Grip	Rare	stamp;movement	This card and the stack it heads can always be picked up, regardless of stack legality.	
+CARD_CATALOG	The Wedding Band	Rare	stamp;deck-manip;formation	Applied to two cards: the pair always shuffles adjacent to each other and is always drawn together.	
+CARD_CATALOG	The Belt	Legendary	stamp;economy;persistence;secret	Exactly one card in the save file holds this stamp at a time; it scores double, and a Belt-challenge boss can take it and it must be won back.	
+CARD_CATALOG	Input Column	Common	rule;movement	One per column: on Next, drops its upper-zone stack into the paired board column, then draws a card from the deck to refill.	
+CARD_CATALOG	Ring Column	Common	rule;formation	One per column: adds one board (lower zone) column at game creation; its rank equals which column it is.	
+CARD_CATALOG	OG Grabber	Common	rule;movement	Default grab legality: a stack may be picked up if it is an ascending or descending run with no two same-suit cards adjacent.	
+CARD_CATALOG	OG Placer	Common	rule;movement	Default placement legality: a stack may be placed where the join continues a legal run without same-suit contact.	
+CARD_CATALOG	Cascade Scorer	Common	rule;combo	On Submit, scores all rows of the board first, then all columns simultaneously per row band.	
+CARD_CATALOG	Poker Evaluator	Common	rule;combo	Evaluates each scored line for its best poker hand; only the best poker hand per line pays.	
+CARD_CATALOG	Free Undo	Common	rule;meta	Grants one free undo per turn that does not carry over.	
+CARD_CATALOG	Label	Uncommon	rule;info;secret	While this rule card is in the (normally hidden) rules deck, its effect text is announced on the board.	
+CARD_CATALOG	Soundcheck	Uncommon	rule;movement;meta	At show start, grants one free move (grab and place one stack) before the first Next, without spending an act.	
+CARD_CATALOG	Audience Patience	Uncommon	rule;economy;combo	Each show, patience starts at N; each grab/place spends 1 patience, a unique effect trigger refunds 1; at 0 patience the Entrance drops automatically.	
+CARD_CATALOG	The Booking	Uncommon	rule;gamble;economy	Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty.	
+CARD_CATALOG	Brass Ring	Rare	rule;combo;economy;movement	A token rotates one column per turn; if that column scores while the ring is on it, the meld pays double and a Ticket Stub is banked.	
+CARD_CATALOG	Performance Rings	Rare	rule;formation;combo	Rows 1-5 pay 1x, rows 6-10 pay 2x, rows 11-15 pay 3x, and so on by board depth.	
+CARD_CATALOG	Symmetrical Show	Rare	rule;combo;formation	Poker hands are also evaluated on columns in addition to rows.	
+CARD_CATALOG	The Contrary	Rare	rule;combo;random	Descending runs count as ascending, and the worst poker hand scores instead of the best, on each row.	
+CARD_CATALOG	Kayfabe	Epic	rule;secret;gamble	While in play, all Gaff/Humbug/fake cards count as real and score as what they pretend to be; removing this card reverts that.	
+CARD_CATALOG	Sword Swallower	Epic	rule;secret;formation	Hidden rule: a column that is one perfect descending run from top to floor pays a large bonus and mints a Knife-suit card.	
+CARD_CATALOG	Dead Man's Hand	Legendary	rule;secret;gamble	Hidden rule: scoring two pair, Aces over Eights, in one row pays a jackpot and triggers a map event.	
+CARD_CATALOG	The Forty-Two	Legendary	rule;secret;combo	Hidden rule: when a row's score plus its column's score totals exactly 42, the act's combo gains +3.	
+CARD_CATALOG	The Three Rings	Legendary	rule;secret;formation;meta	Hidden rule: scoring three separate full 5-card poker hands (three full rows) in one submit permanently unlocks a third-zone rule card for the profile.	
+CARD_CATALOG	The Voladores	Legendary	rule;secret;formation;meta	Hidden rule: scoring four different columns each containing a 13-rank descent in one show banks 52x base fame.	
+CARD_CATALOG	The Yakuza Hand	Legendary	rule;secret;gamble	Hidden rule: scoring a meld of exactly ranks 8-9-3 pays a large jackpot.	
+CARD_CATALOG	The Butterfly Trick	Common	skill;Magician;token;movement	Cue: create two rank-1 paper-token cards of any suit that drift down one chosen column, one row per Next.	
+CARD_CATALOG	Mystery Box	Common	skill;Magician;random	On game start, this card becomes a random skill for the rest of the run, deterministic per seed.	
+CARD_CATALOG	The Egg Bag	Uncommon	skill;Magician;deck-manip;discard	Cue while spotlit: stash the top discard inside this card; when this card scores, the stashed card returns to the Grand Entrance.	
+CARD_CATALOG	Sawing in Half	Uncommon	skill;Magician;deck-manip;movement	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.	
+CARD_CATALOG	Misdirection	Uncommon	skill;Magician;spotlight	While spotlit, the topmost covered card in each adjacent column is also treated as spotlit.	
+CARD_CATALOG	The Digesting Duck	Uncommon	skill;Animal Trainer;Magician;deck-manip	Consumes cards dropped on it like Gluttony, but secretly stores them; cue to return any one stored card to the Entrance.	
+CARD_CATALOG	Pandora's Box	Uncommon	skill;Magician;random	On game start becomes a random skill; on game end resets back to this skill.	
+CARD_CATALOG	Metamorphosis	Rare	skill;Magician;deck-manip;gamble	Cue: swap this card with any card in the draw deck (seen or unseen), taking its board position.	
+CARD_CATALOG	The Ambitious Card	Rare	skill;Magician;deck-manip	This card always rises to the top of the draw deck after any shuffle or discard, and scores bonus points if drawn the same show it was discarded.	
+CARD_CATALOG	The Card Index	Rare	skill;Magician;deck-manip	Cue, once per show: search the draw deck for any card and put it into the Grand Entrance.	
+CARD_CATALOG	Walking Through the Wall	Rare	skill;Magician;movement	Cue: move this card through an occupied slot to the empty slot beyond it.	
+CARD_CATALOG	Pepper's Ghost	Rare	skill;Magician;formation;combo	While spotlit, an intangible duplicate of this card appears in the opposite zone; it scores in melds but cannot be touched, moved, or targeted.	
+CARD_CATALOG	Psycho	Rare	skill;Magician;deck-manip;movement	Every Next, automatically plays the top card of the draw deck into this card's column.	
+CARD_CATALOG	Dedi's Mercy	Rare	skill;Magician;protection;destruction	Once per show, when one of your cards is destroyed, restore it to the discard pile instead.	
+CARD_CATALOG	The Turk	Rare	skill;Magician;formation;secret	This card's rank counts as the rank of the card directly beneath it in the stack; if that card is removed, its rank is 0.	
+CARD_CATALOG	The Imitator	Rare	skill;Magician;gamble;secret	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.	
+CARD_CATALOG	The Calm Voice	Rare	skill;Magician;protection;economy	Once per run, negate a disaster event or boss effect and gain fame equal to its severity instead.	
+CARD_CATALOG	Bian Lian	Rare	skill;Magician;Clown;movement;secret	Cue: instantly swap this card's rank and suit with an adjacent card's.	
+CARD_CATALOG	Frankenstein	Rare	skill;Magician;formation;persistence	On submit, merges with the cards directly above and below it into one 3-card stack of summed rank that stays in the zone after scoring.	
+CARD_CATALOG	The Light and Heavy Chest	Rare	skill;Magician;movement;protection	The player can always grab this card, but board effects and hazards cannot move or discard it.	
+CARD_CATALOG	Utter Chaos	Rare	skill;Magician;random;combo	Becomes a random skill on every Next, deterministic per history hash.	
+CARD_CATALOG	Grand Vanish	Epic	skill;Magician;protection;formation	Cue, once per show: hide an entire column so it cannot be seen, targeted, scored, or touched for one turn; it then returns with bonus points on every card.	
+CARD_CATALOG	72 Transformations	Epic	skill;Magician;random;collection;meta	Cue: copy any spotlit card's skill; transformations are counted across the run, and at 72 this card permanently upgrades to Legendary stats.	
+CARD_CATALOG	The Bullet Catch	Legendary	skill;Magician;gamble;destruction	When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.	
+CARD_CATALOG	Tumbler's Poise	Common	skill;Acrobat;charges;movement	1 charge per turn: cue to hop this card one column sideways; an unused charge auto-spends on Next.	
+CARD_CATALOG	The Acrobat	Uncommon	skill;Acrobat;movement	This card can be grabbed even while covered; the cards above cascade down one slot.	
+CARD_CATALOG	Diabolo	Uncommon	skill;Acrobat;movement;combo	Every Next, alternates between two adjacent columns, granting bonus points to the top card of the column it leaves.	
+CARD_CATALOG	The Leotard	Uncommon	skill;Acrobat;movement	Cue: move this card and everything above it to the top of any column, ignoring legality.	
+CARD_CATALOG	Colleano's Somersault	Uncommon	skill;Acrobat;movement;spotlight	Cue: swaps positions with the single card covering it.	
+CARD_CATALOG	The Wing Walker	Uncommon	skill;Acrobat;movement;deck-manip	During the Next-phase drop, this card may transfer mid-air from its input column to an adjacent one, chosen on cue before Next.	
+CARD_CATALOG	Hopak Burst	Uncommon	skill;Acrobat;Dancer;movement;formation	Cue, 1 charge per show: jumps this card's entire stack one row upward in its column, sliding everything beneath up.	
+CARD_CATALOG	The Dzhigit's Pickup	Uncommon	skill;Acrobat;movement;deck-manip	During Next, once armed by cue, intercepts one falling card as it drops and redirects it to any column.	
+CARD_CATALOG	Mallakhamb Pole	Uncommon	skill;Acrobat;formation;combo	While spotlit, every card in this card's column gains bonus points per row of column height when the column scores.	
+CARD_CATALOG	The Stilt-Walker	Uncommon	skill;Acrobat;spotlight	This card is spotlit even when covered by one card.	
+CARD_CATALOG	The Handicap	Uncommon	skill;Acrobat;gamble;protection	Cue at show start: lock this card's movement for the show (cannot be grabbed) in exchange for scoring double all show.	
+CARD_CATALOG	Flagpole Sitter	Uncommon	skill;Acrobat;persistence;formation	Gains bonus points for each consecutive show it ends as the top card of the same column; any move resets the streak to zero.	
+CARD_CATALOG	Human Cannonball	Rare	skill;Acrobat;movement	Cue: fire the bottom card of any column to the top of any other column.	
+CARD_CATALOG	Blondin's Crossing	Rare	skill;Acrobat;movement;formation	Once per show: shift an entire row one column left or right, wrapping around the board edge.	
+CARD_CATALOG	The High Dive	Rare	skill;Acrobat;movement;gamble	Cue: drop this card from the top of its column to the bottom, scoring bonus points per row fallen.	
+CARD_CATALOG	The Clock Hang	Rare	skill;Acrobat;gamble;spotlight	May be placed half-off the board past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it.	
+CARD_CATALOG	The Backward-Backward	Rare	skill;Acrobat;movement;combo	Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa.	
+CARD_CATALOG	The Contortionist	Rare	skill;Acrobat;formation;movement	May share one board slot with another card; both cards count in melds.	
+CARD_CATALOG	The Traceur	Rare	skill;Acrobat;movement	This card moves only across the tops of columns, never entering stacks; cue to move any distance sideways along topmost slots.	
+CARD_CATALOG	The Crowd Surf	Rare	skill;Acrobat;gamble;movement	Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead.	
+CARD_CATALOG	The Pyramid	Rare	skill;Acrobat;Dancer;formation	Formation: when three adjacent columns hold stacks of exactly 3, 2, and 1 cards, the formation scores a bonus meld.	
+CARD_CATALOG	The Triple	Epic	skill;Acrobat;combo;formation	If this card completes a run of exactly 3 cards fully assembled that turn, that run scores triple.	
+CARD_CATALOG	The Courier	Epic	skill;Acrobat;formation;combo	While spotlit, this card counts as a member of both its own column's and the adjacent column's melds.	
+CARD_CATALOG	Flash Mob	Epic	skill;Acrobat;movement;formation	Cue, once per show: deploy the entire Grand Entrance onto the board in one action, columns assigned left-to-right automatically.	
+CARD_CATALOG	The Seven Pyramid	Legendary	skill;Acrobat;formation;persistence	Formation: a single stack of exactly 7 legally-run cards scores a large bonus; if the stack is broken by a hazard, rebuilding it once scores double.	
+CARD_CATALOG	The Puszta Five	Legendary	skill;Acrobat;formation;combo	Cue, once per show: for one scoring pass this card counts as a member of every column's meld.	
+CARD_CATALOG	Klyaksa	Common	skill;Animal Trainer;Clown;token	Comes with a free rank-1 token card that shuffles into the deck and follows this card's column when drawn.	
+CARD_CATALOG	Flea Circus	Common	skill;Animal Trainer;combo	When scored, counts as five rank-1 cards for combo-counting purposes (not points).	
+CARD_CATALOG	The Monkey	Uncommon	skill;Animal Trainer;charges;movement	Spawns a token that climbs its column one row per Next, freely cueing whatever card it sits on.	
+CARD_CATALOG	Liberty Horses	Uncommon	skill;Animal Trainer;deck-manip;formation	On Next, all Animal-class cards in the Grand Entrance rearrange into ascending rank order before dropping.	
+CARD_CATALOG	Hungry Hippo	Uncommon	skill;Animal Trainer;destruction;growth	Consumes cards dropped onto it, adding their rank to its own up to a cap of 13, and returns everything eaten at show end.	
+CARD_CATALOG	The Learned Pig	Uncommon	skill;Animal Trainer;info	Once per turn: reveals the description/identity of any facedown, hidden, or unknown card.	
+CARD_CATALOG	Clever Hans	Uncommon	skill;Animal Trainer;formation;secret	Counts as a copy of its highest adjacent neighbor's rank; if it has no neighbors, its rank is 1.	
+CARD_CATALOG	The Gentled Beast	Uncommon	skill;Animal Trainer;growth;protection	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.	
+CARD_CATALOG	The Lion Dance	Rare	skill;Animal Trainer;Dancer;destruction;secret	When destroyed, splits into two rank-half cards instead of dying; when placed onto a card, harvests bonus points from the card beneath it.	
+CARD_CATALOG	Mabel's Tigers	Rare	skill;Animal Trainer;destruction;growth	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.	
+CARD_CATALOG	The Unicorn	Rare	skill;Animal Trainer;gamble;secret	Scores as Legendary (5x base) until any inspection effect examines it, after which it is revealed and scores half forever.	
+CARD_CATALOG	The Lion's Bride	Rare	skill;Animal Trainer;gamble;formation	Scores bonus points each act it shares a column with a consuming Animal card without being eaten.	
+CARD_CATALOG	The Ox	Rare	skill;Animal Trainer;destruction;persistence	When destroyed, grants bonus fame and revives into the deck next show.	
+CARD_CATALOG	Jumbo	Epic	skill;Animal Trainer;formation;movement	Heavy: no cards may be placed on this card, but it can be placed on anything; scores bonus points per card beneath it when scored.	
+CARD_CATALOG	Sin of Gluttony	Epic	skill;Animal Trainer;destruction;growth	Consumes cards from anywhere (board, Entrance, or decks, via cue), with no cap, permanently gaining rank.	
+CARD_CATALOG	HONK	Common	skill;Clown;joke	Cue: makes a honk sound, with unlimited uses and no other effect.	
+CARD_CATALOG	Slapstick	Common	skill;Clown;movement;combo	Cue: swap the ranks of this card and one adjacent card.	
+CARD_CATALOG	The Kecak Chorus	Common	skill;Clown;combo;token	When any meld scores, gains bonus multiplier per rank-1 card currently on the board.	
+CARD_CATALOG	Custard Pie	Uncommon	skill;Clown;combo;prop	Cue: target card's suit becomes Balls; if that completes a flush row, gain bonus multiplier immediately.	
+CARD_CATALOG	Tappable Clown	Uncommon	skill;Clown;random;charges	3 charges per show: cue to deterministically re-roll the ranks of all adjacent cards.	
+CARD_CATALOG	The Sunshine Clown	Uncommon	skill;Clown;status;protection	While spotlit, removes one debuff/status per turn from the cards directly below it; never applies debuffs itself.	
+CARD_CATALOG	Mr. Punch	Uncommon	skill;Clown;destruction;combo	Each act, gains points for every adjacent card debuffed or destroyed.	
+CARD_CATALOG	The Jongleur	Uncommon	skill;Clown;combo	Counts as every class for group effects, but all class bonuses apply at half value.	
+CARD_CATALOG	The One-Man Band	Uncommon	skill;Clown;combo	Counts as three classes chosen at acquisition, each at one-third effect.	
+CARD_CATALOG	The Comedic Drop	Uncommon	skill;Clown;discard;gamble	Cue: discard this card mid-show for a bonus larger than scoring it would have paid.	
+CARD_CATALOG	Pierrot	Uncommon	skill;Clown;Dancer;gamble	Gains bonus multiplier on odd-numbered shows of the tour; has no effect otherwise.	
+CARD_CATALOG	Pagliacci	Uncommon	skill;Clown;status;gamble	Gains bonus multiplier while this card carries any debuff or negative status.	
+CARD_CATALOG	Fool's License	Rare	skill;Clown;rule;secret	While spotlit, choose one rule card in the rules deck whose effect is ignored.	
+CARD_CATALOG	The Vidushaka	Rare	skill;Clown;economy;gamble	Once per tour: reduce the current show's goal (or Booking target) by 20%.	
+CARD_CATALOG	Whiteface & Auguste	Rare	skill;Clown;random;combo	Cue the first card to issue an order (choose an adjacent card's cue); the second card executes it on a different valid target instead, at 150% effect.	
+CARD_CATALOG	The Rodeo Clown	Rare	skill;Clown;protection	Once per turn, when a boss/town effect targets another of your cards, redirects the hit to itself.	
+CARD_CATALOG	Grock's Instrument	Rare	skill;Clown;movement;gamble	Each act this card would score, it instead hops one column away and banks the points; when it has no legal hop left, it scores everything banked at once.	
+CARD_CATALOG	Weary Willie	Rare	skill;Clown;growth;persistence	Gains +1 rank permanently every time one of your cards is destroyed or a show is failed.	
+CARD_CATALOG	Clown Car	Epic	skill;Clown;deck-manip;combo	On Next, draws one extra card into this card's column, plus one more per Clown-class card scored last submit.	
+CARD_CATALOG	The Living Statue	Common	skill;Dancer;persistence;formation	Gains bonus points at show end for every show it was never moved; any grab resets the bonus to zero.	
+CARD_CATALOG	The Charivari	Uncommon	skill;Dancer;Clown;formation;combo	If 4 or more cards are placed into the board on the first turn of a show, gain bonus multiplier on the first act's payout.	
+CARD_CATALOG	Presentation	Uncommon	skill;Dancer;combo;movement	While spotlit, each time a placed card's rank is higher than the last card placed, gain +1 combo for the act.	
+CARD_CATALOG	Spiderweb	Uncommon	skill;Dancer;formation	When scored, gains +1 point per card diagonally adjacent to it.	
+CARD_CATALOG	The Tango Pair	Uncommon	skill;Dancer;formation;movement	Pair: the two cards must always stay adjacent (the free one slides to rejoin on Next); each turn they alternate lead, and only the leader's skill fires, at +50%.	
+CARD_CATALOG	Escaramuza	Uncommon	skill;Dancer;formation	When the board's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the act.	
+CARD_CATALOG	Twin Harmony	Uncommon	skill;Dancer;combo	Doubles any combo or multiplier effect on cards adjacent to it.	
+CARD_CATALOG	The Odd Couple	Uncommon	skill;Dancer;formation;combo	The lowest- and highest-ranked cards in this card's row give each other bonus points when the row scores.	
+CARD_CATALOG	The Paired Giants	Uncommon	skill;Dancer;formation	Pair: each gains bonus multiplier while both are anywhere on the board.	
+CARD_CATALOG	Karagöz & Hacivat	Rare	skill;Dancer;formation;spotlight	Bound pair: each gains bonus multiplier while they are in opposite zones (one in the Entrance, one on the board).	
+CARD_CATALOG	The Kickline	Rare	skill;Dancer;formation;combo	When all five columns' top cards share a suit at scoring, the row above them scores again.	
+CARD_CATALOG	The Butoh Walker	Rare	skill;Dancer;movement;growth	Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there.	
+CARD_CATALOG	The Dragon Meld	Rare	skill;Dancer;formation;movement	When a run of 4+ scores while this card is in it, that run can be relocated as a unit anywhere on the board once, next turn.	
+CARD_CATALOG	The Fadista	Rare	skill;Dancer;destruction;persistence	Scores bonus points per card destroyed or lost this run.	
+CARD_CATALOG	The Castell	Epic	skill;Dancer;Acrobat;formation;gamble	Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead.	
+CARD_CATALOG	Straitjacket	Common	skill;Escape Artist;movement;gamble	Starts each show unable to be moved; frees itself and scores bonus points the first time its column scores.	
+CARD_CATALOG	The Blockhead	Common	skill;Escape Artist;prop;protection	Absorbs one Knife prop per show, banking it as flat points instead of being hit.	
+CARD_CATALOG	The Target Girl	Uncommon	skill;Escape Artist;prop;combo	In a Knife-prop row, converts every knife miss into points.	
+CARD_CATALOG	Milk Can	Uncommon	skill;Escape Artist;protection;deck-manip	Cue: place one board card inside the can, safe and out of play; cue again on a later turn to retrieve it to the Entrance.	
+CARD_CATALOG	The Escape Map	Uncommon	skill;Escape Artist;info;discard;meta	When discarded, reveals part of the world map's fog of war.	
+CARD_CATALOG	The Mime	Uncommon	skill;Escape Artist;protection	Attaches to a stack and absorbs the first hostile event targeting any card in that stack.	
+CARD_CATALOG	The Invisible Wall	Uncommon	skill;Escape Artist;protection;movement	Cue: block one empty column so no card may enter or leave it for one turn, hazards included.	
+CARD_CATALOG	The Double	Uncommon	skill;Escape Artist;protection	Assign a 'star' card at show start; the first destruction or debuff aimed at the star hits this card instead.	
+CARD_CATALOG	Brodie's Leap	Uncommon	skill;Escape Artist;gamble;economy;secret	Banks fame each show for a stunt that never happened; if ever exposed by an inspection effect, loses double everything banked.	
+CARD_CATALOG	Edith's Bayonet	Rare	skill;Escape Artist;destruction;growth	Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever.	
+CARD_CATALOG	The Fire Breather	Rare	skill;Escape Artist;status;prop	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	
+CARD_CATALOG	The Regurgitator	Rare	skill;Escape Artist;deck-manip;movement	Cue: swallow up to 3 board cards, then produce them later to the Entrance in any chosen order.	
+CARD_CATALOG	The Hunger Artist	Rare	skill;Escape Artist;persistence;gamble	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.	
+CARD_CATALOG	The Water Torture Cell	Rare	skill;Escape Artist;gamble;formation	Arrives locked under 3 conditions (covered, column unscored, not moved); one unlocks per turn in order, and a full escape pays a large bonus.	
+CARD_CATALOG	Buried Alive	Rare	skill;Escape Artist;gamble;growth	Cue: remove a card from the game for 2 shows; it returns upgraded one rarity, with a seeded chance it does not return at all.	
+CARD_CATALOG	The Holdout	Rare	skill;Escape Artist;secret;gamble;deck-manip	Stores one card outside the game across shows; cue once per run to insert it into any stack at any moment, but a town search loses it.	
+CARD_CATALOG	The Kneeling Devil	Rare	skill;Escape Artist;status;persistence;gamble	Debuffs its column each show; if kept in the deck for the entire tour, converts at the final city into a Legendary card.	
+CARD_CATALOG	Searing Knife	Rare	skill;Escape Artist;gamble;formation;hazard	When scored, its column pays 3x this act but is locked (no placement or grabs) for the next 2 turns.	
+CARD_CATALOG	The Capoeirista	Rare	skill;Escape Artist;Dancer;secret	Registered as a Dancer but functions as an Escape Artist; town bans on Escape Artist-type acts still let it perform.	
+CARD_CATALOG	The Wall of Death	Rare	skill;Escape Artist;status;formation;gamble	Both adjacent columns score bonus multiplier, but every card in them gains one Exhausted debuff at show end.	
+CARD_CATALOG	The Séance Buster	Rare	skill;Escape Artist;info;combo	Cue: reveal all Gaff/Humbug/fake cards on the board, yours and the town's, scoring bonus points per fake exposed.	
+CARD_CATALOG	Bottom Deal	Common	skill;Fortune Teller;deck-manip	Cue: this turn, draws come from the bottom of the deck instead of the top.	
+CARD_CATALOG	X-Ray Eyes	Uncommon	skill;Fortune Teller;info;spotlight	While this card is covered, reveals all facedown and hidden board cards and the top 3 deck cards.	
+CARD_CATALOG	The Tarot Reading	Uncommon	skill;Fortune Teller;deck-manip;info	Cue, once per show: look at the top 5 cards of the draw deck and reorder them freely.	
+CARD_CATALOG	The Second Sight	Uncommon	skill;Fortune Teller;info	Pair: while both cards are on the board, the top card of the draw deck is always revealed.	
+CARD_CATALOG	Lucky Streak	Uncommon	skill;Fortune Teller;meta;random	Grants +1 reroll per shop visit; after it activates, repeated actions for the rest of the show never repeat identical results.	
+CARD_CATALOG	The Mulligan	Uncommon	skill;Fortune Teller;discard;deck-manip	Allows discarding 1 card from the Grand Entrance per turn before it drops; further copies add +1 discard each.	
+CARD_CATALOG	Madame Zora's Eye	Rare	skill;Fortune Teller;info	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.	
+CARD_CATALOG	The Griot	Rare	skill;Fortune Teller;persistence;economy	Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start.	
+CARD_CATALOG	Wax and Gold	Rare	skill;Fortune Teller;secret;growth	Has a visible effect (+points when scored in a row meld) and a hidden effect unlocked after the visible one triggers 5 times (then +combo on every meld).	
+CARD_CATALOG	The Rider	Rare	skill;Fortune Teller;secret;gamble	Carries one hidden instruction; obeying it all show scores this card double, violating it scores it zero silently.	
+CARD_CATALOG	The System	Rare	skill;Fortune Teller;gamble;combo;secret	After each act scores, gains bonus points scaled to the act's combo; any inspection effect halves this bonus permanently.	
+CARD_CATALOG	The Spirit Cabinet	Rare	skill;Fortune Teller;spotlight;formation	While this card is fully covered, its whole column's card effects trigger as if spotlit.	
+CARD_CATALOG	The Cliffhanger	Rare	skill;Fortune Teller;gamble;economy	Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame.	
+CARD_CATALOG	Drumroll	Common	skill;Special Effects;combo	The last meld scored each act gets bonus multiplier.	
+CARD_CATALOG	The Sparkler	Common	skill;Special Effects;combo	When this card scores, banks +10 flat points to its column score.	
+CARD_CATALOG	Sliced Bread	Uncommon	skill;Special Effects;formation;combo	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.	
+CARD_CATALOG	Poker Crown	Uncommon	skill;Special Effects;formation;combo	When scored, this card and the 4 cards directly above it in its column are also evaluated as a poker hand, once.	
+CARD_CATALOG	Column Poker	Uncommon	skill;Special Effects;formation;combo	While spotlit, every full 5-card band of this card's column is evaluated as a poker hand at scoring.	
+CARD_CATALOG	The Calliope	Uncommon	skill;Special Effects;combo	Gains +1 combo for every different class that scored this act.	
+CARD_CATALOG	The Kite	Uncommon	skill;Special Effects;growth;deck-manip	Cue: remove a card from play temporarily; choose the turn it returns, landing with +rank equal to the turns spent aloft, up to a max of 3.	
+CARD_CATALOG	The Steelpan	Uncommon	skill;Special Effects;growth;token	Cue, once per show: permanently convert one prop (skill-less) card so it gains this skill: bonus points when its row melds.	
+CARD_CATALOG	The Boot Code	Rare	skill;Special Effects;secret;combo	Passes a buff down its row card-to-card without triggering, invisible to effects that count or punish triggers.	
+CARD_CATALOG	The Fanchant	Rare	skill;Special Effects;combo	After all scoring resolves, each meld that raised the act's combo pays again at 25%.	
+CARD_CATALOG	Avalanche	Rare	skill;Special Effects;economy;combo	After scoring, reduces the show's goal by the number of cards currently on the board.	
+CARD_CATALOG	The Ninot	Rare	skill;Special Effects;economy;persistence;event-granted	Cue: bank any amount of the act's score into this card each show; at the final city, burning it pays triple everything invested, or a seeded public vote may pardon it to survive into the next run.	
+CARD_CATALOG	The Drone Swarm	Epic	skill;Special Effects;formation;combo	Cue, once per show: re-triggers any formation bonus already scored this run, paying it again without needing the cards.	
+CARD_CATALOG	Grand Spec	Epic	skill;Special Effects;formation;combo	If all columns scored a meld this act, doubles the act's combo multiplier.	
+CARD_CATALOG	Duende	Legendary	skill;Special Effects;combo;secret	When an act scores 5 or more distinct combo classes and every meld that act raised the combo, this card triggers and triples the act's payout.	
+CARD_CATALOG	Peanut Pitch	Common	skill;Concessions;charges	Cue, 3 charges per show: gives bonus points to any one card on the board.	
+CARD_CATALOG	Fairy Floss	Common	skill;Concessions;status;formation	When scored, gives +1 rank to all adjacent cards for the rest of the show.	
+CARD_CATALOG	Pink Lemonade	Common	skill;Concessions;combo	When a Flames card and a Concessions card score in the same row, gain bonus points and draw 1 card.	
+CARD_CATALOG	Popcorn Cascade	Uncommon	skill;Concessions;deck-manip;combo	Whenever a column of 4 or more cards scores, draw 1 card.	
+CARD_CATALOG	The Grease Joint	Uncommon	skill;Concessions;deck-manip;discard	At show start, discards the bottom card of the draw deck, then draws 1 card.	
+CARD_CATALOG	The Candy Butcher	Uncommon	skill;Concessions;economy;token	Whenever a full 5-card row meld scores, mints one Ticket Stub to the deck.	
+CARD_CATALOG	Cheat Day	Uncommon	skill;Concessions;growth;economy	If the show is won with cards still in the draw deck, every remaining card in the deck gains +1 rank permanently.	
+CARD_CATALOG	Meal Call	Uncommon	skill;Concessions;status;protection	Cue, once per show: every card on the board removes one debuff or status.	
+CARD_CATALOG	The Incubator	Rare	skill;Concessions;status;protection;growth	Each turn a card is covered by this card, it removes one debuff and restores 1 lost rank from that card.	
+CARD_CATALOG	The Tailor's Dummy	Common	skill;Costume Designer;collection	This prop card can never hold a skill, but can hold two stamps.	
+CARD_CATALOG	The Costume Fitting	Common	skill;Costume Designer;collection	On show start, copies the stamp of one adjacent card for the duration of the show.	
+CARD_CATALOG	Hikinuki	Uncommon	skill;Costume Designer;collection;combo	On scoring, swaps this card's stamp with any stamp held in reserve.	
+CARD_CATALOG	The Wardrobe Trunk	Uncommon	skill;Costume Designer;collection;economy	Holds one stamp in reserve; cue to permanently apply the reserved stamp to any spotlit card, then the trunk refills at the next shop.	
+CARD_CATALOG	Hanafuda Reskin	Rare	skill;Costume Designer;secret;protection	When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show.	
+CARD_CATALOG	The Mask Maker	Rare	skill;Costume Designer;secret;protection	Cue, once per show: apply a Masked status to any card, hiding its identity/rarity from inspections and towns until it scores twice.	
+CARD_CATALOG	Gold Card	Common	skill;Producer;economy;token	Money token: full trade value at shops, always sinks to the deck bottom (Heavy), and scores 0 in melds.	
+CARD_CATALOG	The Cheap Pop	Common	skill;Producer;economy	When scored, grants a small bonus fame in every town.	
+CARD_CATALOG	Common	Common	skill;Producer;economy;meta	While in the deck, doubles the chance of Rare cards appearing in packs/shops.	
+CARD_CATALOG	The Hat Line	Uncommon	skill;Producer;economy;combo	At show end, cue to convert the act's unused combo above the payout into Gold tokens instead of losing it.	
+CARD_CATALOG	Exchange Voucher	Uncommon	skill;Producer;movement;deck-manip	Usable from anywhere (including the deck): cue to swap this card's position with any card on screen.	
+CARD_CATALOG	The Egress	Uncommon	skill;Producer;discard;economy	Cue: send any board card to the discard, gaining 1 Ticket Stub.	
+CARD_CATALOG	First of May	Uncommon	skill;Producer;growth;event-granted	A random Common card that permanently upgrades to its Rare version after scoring 10 times across the run.	
+CARD_CATALOG	Humbug	Rare	skill;Producer;secret;gamble	While covered, counts as a copy of the most valuable card in its row; when uncovered, is revealed as junk (rank 2, base score only).	
+CARD_CATALOG	White Elephant	Rare	skill;Producer;economy;gamble;event-granted	Scores huge points, but each show it stays in the deck it consumes 1 Gold token, or 1 rank from the richest card if none are available.	
+CARD_CATALOG	The Advance Campaign	Rare	skill;Producer;economy;gamble	Cue before a show: spend N Gold tokens to multiply that show's fame payout by 1 + N/10.	
+CARD_CATALOG	The Sponsorship	Rare	skill;Producer;economy;persistence	Gain 2 Gold tokens every show start, but occupies a stamp slot on the two highest cards and reduces payouts by 10%.	
+CARD_CATALOG	The Dubplate	Rare	skill;Producer;collection;event-granted;secret	Event-forged unique card created for this save file, assembled from the two effects scored most this run.	
+CARD_CATALOG	Rare	Rare	skill;Producer;economy;meta	While in the deck, doubles the chance of Epic cards appearing in packs/shops.	
+CARD_CATALOG	Press Bribery	Epic	skill;Producer;protection;gamble;meta	Once: on failing a city, keep touring as if it were won; if still unspent by the final city, converts to an automatic win there.	
+CARD_CATALOG	The Red Wagon	Epic	skill;Producer;economy;combo	While spotlit, all Gold token cards in the deck count as wildcards toward every column run.	
+CARD_CATALOG	Epic	Epic	skill;Producer;economy;meta	While in the deck, doubles the chance of Legendary cards appearing in packs/shops.	
+CARD_CATALOG	Eye of God	Legendary	skill;god-cycle;info;secret	Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including Gaffs, Humbugs, and Riders.	
+CARD_CATALOG	Hand of God	Legendary	skill;god-cycle;movement;deck-manip	Cue: move any card to any board location ignoring legality, or reorder the cards inside any deck.	
+CARD_CATALOG	Foot of God	Legendary	skill;god-cycle;movement	Cue: this card switches locations with any card on screen (board, Entrance, or decks).	
+CARD_CATALOG	The Pawn	Common	skill;freakshow;movement;destruction	If stacked under a card, swaps upward with it on Next (2 slots if bottommost); if placed diagonally upward onto a card, captures it (discards it and takes its place).	
+CARD_CATALOG	The Knight	Uncommon	skill;freakshow;movement;destruction	May be placed onto any card 2+1 slots away (an L-shape), discarding and replacing it, ignoring stacking legality.	
+CARD_CATALOG	The Bishop	Uncommon	skill;freakshow;movement;destruction	May be placed onto any card along an open diagonal, capturing it; blocked by occupied slots between.	
+CARD_CATALOG	The Rook	Rare	skill;freakshow;movement;destruction	May be placed onto any card along its open row or column, capturing it.	
+CARD_CATALOG	The Queen	Rare	skill;freakshow;movement;destruction	May be placed onto any card along any open line or diagonal, capturing it.	
+CARD_CATALOG	The King	Epic	skill;freakshow;movement;gamble;secret	Moves like a king but only swaps, never captures; automatically steps out of check whenever the player acts; if a chess card captures it, the captor gains a large bonus and +1 rank.	
+CARD_CATALOG	The Prompter	Common	skill;meta-effect;spotlight	While spotlit, choose one card anywhere in this card's column; that card's modifiers stay active regardless of covering.	
+CARD_CATALOG	The Metronome	Common	skill;meta-effect;charges	All charge-based effects on your cards get +1 maximum charge.	
+CARD_CATALOG	The Cue Card	Common	skill;meta-effect;combo;charges	Cue: manually fire one adjacent card's trigger hook exactly as if the game had triggered it, including combo credit and stamps.	
+CARD_CATALOG	Extra Point	Common	skill;meta-effect;combo	Gain extra flat points on score (currently +10).	
+CARD_CATALOG	Echoing Trigger	Uncommon	skill;meta-effect;combo	All triggers on the board repeat once, per card per scoring pass.	
+CARD_CATALOG	The Dragoman	Uncommon	skill;meta-effect;discard;deck-manip	Choose a card: its on-score effects also fire when it is discarded.	
+CARD_CATALOG	The Contagion	Uncommon	skill;meta-effect;status;formation	Each Next, every status on this card's neighbors copies one card further outward, with merge-by-class capping the counts.	
+CARD_CATALOG	The Alchemist	Uncommon	skill;meta-effect;status	Cue: transmute all statuses of one class on a target card into another class, count preserved.	
+CARD_CATALOG	The Net	Uncommon	skill;meta-effect;prop;movement	Once per act: catch a ballistic prop (Ball/Fire) mid-flight and re-aim it at any card in the same column.	
+CARD_CATALOG	The Prop Master	Uncommon	skill;meta-effect;prop;combo	Every prop-spawning suit effect produces +1 additional prop per volley.	
+CARD_CATALOG	The Exchange Rate	Uncommon	skill;meta-effect;combo;economy	At act end, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next act.	
+CARD_CATALOG	The Stage Manager	Uncommon	skill;meta-effect;rule;info	Cue, once per show: reorder the rules deck, changing which rule answers first for grabs, placement, and scoring disputes.	
+CARD_CATALOG	The Critic	Rare	skill;meta-effect;combo;gamble	After each act, the effect that triggered most is silenced for the next act; any effect that triggered exactly once scores a bonus.	
+CARD_CATALOG	The Conductor	Rare	skill;meta-effect;combo;deck-manip	All on-Next effects are held each turn and fire together at Submit instead, in a chosen order.	
+CARD_CATALOG	The Rigger	Rare	skill;meta-effect;combo;secret	Cue: swap the wiring of two cards so each card's skill now answers the other card's events.	
+CARD_CATALOG	The Lobbyist	Rare	skill;meta-effect;rule;deck-manip;gamble	Extract one rule card from the rules deck into the play deck; its rule stops applying and it gains random pips.	
+CARD_CATALOG	The Amendment	Rare	skill;meta-effect;rule;collection	Attach any owned stamp to a rule card in the rules deck.	
+CARD_CATALOG	The Loophole	Rare	skill;meta-effect;rule;hazard;gamble	Choose one active town/boss hazard: its effect inverts to benefit the player for this show.	
+CARD_CATALOG	The Apprentice	Rare	skill;meta-effect;growth;collection	Blank skill; each show it permanently learns the first effect it observes firing, up to three learned effects.	
+CARD_CATALOG	The Accountant	Rare	skill;meta-effect;combo;economy	At payout, before row x column multiplication, shift up to 20% of the larger axis total onto the smaller, costing 2 combo to invoke.	
+CARD_CATALOG	The Groundhog	Rare	skill;meta-effect;combo;gamble	Cue, once per show: replay the previous act's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
+CARD_CATALOG	The Rewinder	Rare	skill;meta-effect;economy;gamble	Cue: destroy your oldest undo snapshots for bonus points per snapshot destroyed, up to 5 per act.	
+CARD_CATALOG	The Surveyor	Rare	skill;meta-effect;movement;formation	While spotlit, your drops resolve to the bottom of the target column instead of on top.	
+CARD_CATALOG	The Ghost Writer	Rare	skill;meta-effect;token;growth	Each show start, writes a temporary skill (a copy of an effect that fired last show) onto one blank/prop card; it fades at show end.	
+CARD_CATALOG	The Dramaturg	Epic	skill;meta-effect;combo;gamble	Rewrites one card's combo identity so each of its triggers registers a fresh combo key every time this act, instead of only on first activation.	
+CARD_CATALOG	The Time Signature	Epic	skill;meta-effect;combo;formation;gamble	Splits Submit: rows score at submit as normal, columns score at the start of the next turn against the board state then; combo persists across the split.	
+CARD_CATALOG	The Fourth Wall	Epic	skill;meta-effect;movement;gamble	Once per act, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
+CARD_CATALOG	The Marionette	Epic	skill;meta-effect;prop;movement	Take direct control of one prop for the act: it moves one slot per tick in the chosen direction, and inputs are recorded so replay steers identically.	
+CARD_CATALOG	The Convention	Legendary	skill;meta-effect;rule;meta	Enact one new law chosen from a fixed slate of three (e.g. runs wrap King-to-Ace, 4-card poker hands score, discards feed 10% of rank as points); it becomes a permanent rule card for the rest of the run.	
+CARD_CATALOG	The Repertoire	Legendary	skill;meta-effect;collection;combo	Holds three skills in one slot; the active one rotates each act, with a cue to rotate early.	
+CARD_CATALOG	The Ringmaster	Epic	leader;movement	Leader with no suit or rank; starts in the Grand Entrance, is always grabbable, placeable anywhere uncovered, and remains on the board after submission.	
+CARD_CATALOG	The Equestrian	Epic	leader;formation;combo	Leader: melds scored entirely within rows 1-5 get bonus multiplier.	
+CARD_CATALOG	The Showman	Epic	leader;economy;secret	Leader: shops offer +1 extra card, and all Gaff/Humbug/fake cards cost nothing to acquire.	
+CARD_CATALOG	Joey Grimaldi	Epic	leader;Clown;movement;combo	Leader: once per turn, freely swaps the ranks of any two adjacent cards without spending a cue.	
+CARD_CATALOG	The Escapologist	Epic	leader;protection;meta	Leader: free undo becomes 2 per turn, and all debuffs on your cards expire one show sooner.	
+CARD_CATALOG	The Tiger Queen	Epic	leader;destruction;growth	Leader: removes the cap on consumption effects (Hippo's 13 limit removed; Tigers/Gluttony rank gains unbounded).	
+CARD_CATALOG	The Sibyl	Epic	leader;info;economy	Leader: the top of the draw deck is always revealed, and the first reroll at every shop is free.	
+CARD_CATALOG	The Cannon King	Epic	leader;prop;combo	Leader: Fireworks-suit cards may score directly from the Grand Entrance without entering the board.	
+CARD_CATALOG	The Sweet Tooth	Epic	leader;growth;status	Leader: all +rank buffs from your effects become permanent instead of per-show.	
+CARD_CATALOG	The Costumier	Epic	leader;collection	Leader: all your cards may hold 2 stamps.	
+CARD_CATALOG	The Sharpshooter	Epic	leader;combo;gamble	Leader: choose a rank at each show start; cards of that rank score double for the show.	
+CARD_CATALOG	The Satirist	Epic	leader;economy;gamble	Leader: shows earn +25% fame, but each town's snub/hazard is one tier harsher.	
+CARD_CATALOG	The Juggler King	Epic	leader;prop;combo;persistence	Leader: Balls-suit cards can be re-scored each act as long as at least one Balls card scores every submit.	
+CARD_CATALOG	The Conjuror	Epic	leader;token;deck-manip	Leader: once per turn, produce a rank-1 token card of any suit into the Entrance.	
+CARD_CATALOG	The Engineer	Epic	leader;gamble;economy	Leader: gamble-tagged cards cost 1 less to acquire and their destruction odds are halved.	
+CARD_CATALOG	The Aerialist	Legendary	leader;combo;gamble	Leader: re-scores the topmost meld once per submit, but is destroyed permanently if her column ever fails to score.	
+CARD_CATALOG	The Dalang	Legendary	leader;info;combo	Leader: while in play, the player chooses the trigger order of all card effects each scoring pass.	
+CARD_CATALOG	The Panorama	Common	consumable;info;meta	Consumable: reveals the type (show/booster/boss) of every node on the world map, but not its contents.	
+CARD_CATALOG	The Mitt Camp Reading	Common	consumable;info;gamble	Consumable: pay 1 Gold to receive one true fact about the next 3 nodes.	
+CARD_CATALOG	The Raree Box	Common	consumable;info;deck-manip	Consumable: pay 1 Gold to peek at the next 5 cards of the draw deck in order.	
+CARD_CATALOG	Snake Oil	Common	consumable;gamble;status	Consumable: gives +3 rank to one card this show, with a seeded 1-in-4 chance of doing nothing.	
+CARD_CATALOG	The Showbag	Common	consumable;economy	Consumable pack: gives 4 random Common cards, one guaranteed Concessions-class card.	
+CARD_CATALOG	The Ouija Board	Uncommon	consumable;info;secret	Consumable, 3 charges: ask one true/false question about the deck per show, answered truthfully from the seed.	
+CARD_CATALOG	Spirit Photo	Uncommon	consumable;gamble;token	Consumable: creates an intangible ghost copy of an owned card that plays for one show at half score, then disappears.	
+CARD_CATALOG	The Patch	Uncommon	consumable;protection;hazard	Consumable: cancels one town penalty/hazard rule card before the show starts.	
+CARD_CATALOG	Chindon'ya	Uncommon	consumable;economy	Consumable: the next town's fame requirement drops 15%.	
+CARD_CATALOG	Hype Poster	Uncommon	consumable;gamble;economy	Consumable: doubles the next show's fame requirement, in exchange for its rewards (pack quality, rarity odds) scaling up two tiers.	
+CARD_CATALOG	The Advance Man	Uncommon	consumable;info;meta	Consumable: reveals all fog-of-war nodes within 2 edges of the player's position, including contents.	
+CARD_CATALOG	Paper the House	Rare	consumable;protection;economy	Consumable: auto-passes one town's fame check, but grants zero fame and zero rewards from it.	
+CARD_CATALOG	The Rat Sheet	Rare	consumable;gamble;economy	Consumable: raises the next Rival Show's difficulty for both players; if both would pass, steals 25% of its fame payout.	
+CARD_CATALOG	The Cooler	Rare	consumable;deck-manip;secret	Consumable, once per run: replaces the remaining draw deck with a copy in a chosen order.	
+CARD_CATALOG	The Claque	Rare	consumable;economy;gamble	Consumable: raises this show's fame floor to 60% of goal, but costs 1 Gold at every subsequent show forever.	
+CARD_CATALOG	Genie's Wish	Rare	consumable;deck-manip;collection	Consumable: choose any card in your deck and create a full copy of it in the Entrance for this show, which becomes permanent in the deck afterward.	
+CARD_CATALOG	The Discoverie	Rare	consumable;info;secret	Consumable, 3 uses: reveals every Gaff/fake in play (yours, the shop's, the town's); banned (a crime event) in pious towns.	
+CARD_CATALOG	The Tower	Epic	consumable;destruction;gamble	Consumable: destroys an entire column, scoring half the summed base of its cards as flat points.	
+CARD_CATALOG	The Wheel	Epic	consumable;random;gamble	Consumable: re-rolls the ranks of every card in one row, seeded.	
+CARD_CATALOG	The Hanged Man	Epic	consumable;movement;formation	Consumable: flips the order of one entire stack, bottom becomes top.	
+CARD_CATALOG	The Guest Star	Epic	consumable;collection;gamble;event-granted	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.	
+CARD_CATALOG	Golden Buzzer	Legendary	consumable;protection;meta	Consumable, once per run: skips one town's requirement entirely for an instant win with full rewards.	
+CARD_CATALOG	Deus ex Machina	Legendary	consumable;protection;meta	Consumable, once per run: when a show is lost, it is instead won at exactly the goal.	
+CARD_CATALOG	The Major Arcana	Legendary	consumable;collection;secret;meta	Consumable series of 22 unique one-shot consumables; collecting all 22 across runs grants a profile reward.	
+CARD_CATALOG	The Designated Loser	Common	hazard;gamble;secret	A boss show with a trivial goal that is normally always won, but has a hidden seeded 1-in-1000 chance the goal silently triples mid-show.	
+CARD_CATALOG	Lot Lice	Common	hazard;economy	Town hazard: the first submit each show scores 0 fame.	
+CARD_CATALOG	Mud Show	Common	hazard;movement;economy	Town hazard: every stack pickup this show costs 1 discard from the deck top.	
+CARD_CATALOG	Knifetown's Snub	Uncommon	hazard;prop	Town hazard: Knives-suit effects score nothing here.	
+CARD_CATALOG	Hooptown's Snub	Uncommon	hazard;prop	Town hazard: Hoops-suit effects score nothing here.	
+CARD_CATALOG	Juggletown's Snub	Uncommon	hazard;prop;status	Town hazard: Balls-suit effects score nothing here, though Juggling statuses still apply.	
+CARD_CATALOG	Firetown's Snub	Uncommon	hazard;prop;status	Town hazard: Flames-suit effects score nothing here, and Burning statuses do not multiply.	
+CARD_CATALOG	Temperance Town	Uncommon	hazard;economy	Town hazard: Concessions-class cards are disabled and shop prices are doubled.	
+CARD_CATALOG	The Fire Marshal	Uncommon	hazard;prop;status	Town hazard: Flames-suit cards cannot score, and any Flames card in the deck is treated as Wax type this show.	
+CARD_CATALOG	John Robinson	Uncommon	hazard;economy	Elite hazard: the show is shortened to 2 submits instead of 3, with the goal unchanged.	
+CARD_CATALOG	The Hook	Uncommon	hazard;discard	Town hazard: after each submit, the lowest-ranked board card is discarded unless it scored that act.	
+CARD_CATALOG	Blowdown	Rare	hazard;discard;random	Weather boss: at show start and each Next, a random seeded Grand Entrance card is discarded.	
+CARD_CATALOG	Hey Rube!	Rare	hazard;status;formation	Boss: each submit, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.	
+CARD_CATALOG	Railroad Jump	Rare	hazard;destruction;meta	Map-edge hazard: traveling this route costs one card, permanently removed from the deck.	
+CARD_CATALOG	The Volcano	Rare	hazard;status;formation	Terrain boss: the bottom row of the board is lava; any card ending a turn there gains Burning and loses 1 rank per turn.	
+CARD_CATALOG	The Gong	Rare	hazard;gamble	Town hazard: any submit scoring under 25% of goal ends the show immediately.	
+CARD_CATALOG	The Prepared Town	Rare	hazard;info;secret	Boss: pre-inspects everything, revealing and disabling all Gaff/Humbug/fake/Masked cards for the show.	
+CARD_CATALOG	The Loggione	Rare	hazard;economy	Town hazard: Common cards score nothing here; Legendary cards score triple.	
+CARD_CATALOG	Hall of Mirrors	Epic	hazard;secret;formation	Boss: duplicates the board's reflection with fake copies of your cards interleaved into rows; they score 0.	
+CARD_CATALOG	The Falling Wall	Epic	hazard;destruction;formation	Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot.	
+CARD_CATALOG	The Rival Show	Epic	hazard;economy;collection	Recurring boss: a rival plays the town first, raising the goal by 30%; beating it steals one card from the rival's themed deck.	
+CARD_CATALOG	The Anarchist	Epic	hazard;rule;secret	Boss: each submit, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.	
+CARD_CATALOG	The Marathon	Epic	hazard;persistence;formation	Boss gauntlet: a 3-show run where the board does not fully reset between shows (cards, statuses, and lava persist) and goals stack cumulatively.	
+CARD_CATALOG	The Balance	Legendary	hazard;formation;combo;secret	Final-tier boss: cannot be beaten by score; win by ending the show with row total and column total within 10% of each other.	

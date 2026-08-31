@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E1567	balatro	balatro	Even Steven	joker	Common		Played cards with even rank give +4 Mult when scored.	
+E1568	balatro	balatro	Faceless Joker	joker	Common		Earn $5 if 3 or more face cards are discarded at the same time.	
+E1569	balatro	balatro	Five-Card Draw	challenge			6 discards per round, 5 hand size, 7 Joker slots; starts with Card Sharp and a base Joker; hand-size-expanding Jokers are banned.	
+E1570	balatro	balatro	Flash Card	joker	Uncommon		Gains +2 Mult permanently per reroll in the shop.	
+E1571	balatro	balatro	Flower Pot	joker	Uncommon		X3 Mult if played hand contains a Diamond, Club, Heart, and Spade card.	
+E1572	balatro	balatro	Foil	edition			+50 Chips when scored (on a playing card), or +50 Chips added directly before the Joker is scored (on a Joker).	
+E1573	balatro	balatro	Foil Tag	tag			Next base-edition shop Joker is free and becomes Foil.	
+E1574	balatro	balatro	Fortune Teller	joker	Common		+1 Mult per Tarot card used this run.	
+E1575	balatro	balatro	Four Fingers	joker	Uncommon		All Flushes and Straights can be made with 4 cards.	
+E1576	balatro	balatro	Fragile	challenge			Starts with 2 Eternal Negative Oops! All 6s Jokers; uses a standard 52-card deck with every card given Glass enhancement; all other card-enhancement methods are banned.	
+E1577	balatro	balatro	Garbage Tag	tag			Gives $1 per unused discard this run.	
+E1578	balatro	balatro	Gift Card	joker	Uncommon		Adds $1 of sell value to every other Joker and Consumable card at end of round.	
+E1579	balatro	balatro	Glass Card	enhancement			X2 Mult when scored; 1 in 4 chance to be destroyed after scoring is finished.	
+E1580	balatro	balatro	Glass Joker	joker	Uncommon		Gains X0.75 Mult permanently for every Glass Card that is destroyed.	
+E1581	balatro	balatro	Gluttonous Joker	joker	Common		Played cards with Club suit give +3 Mult when scored.	
+E1582	balatro	balatro	Gold Card	enhancement			Gives $3 if held in hand at end of round.	
+E1583	balatro	balatro	Gold Seal	seal			Earn $3 when this card is played and scores.	
+E1584	balatro	balatro	Gold Stake	stake			30% chance for Jokers in shops or booster packs to have a Rental Sticker (costs $3 per round).	
+E1585	balatro	balatro	Golden Joker	joker	Common		Earn $4 at end of round.	
+E1586	balatro	balatro	Golden Needle	challenge			Each discard costs $1; 1 hand and 6 discards per round; starts with $10; hand-boosting vouchers and the Burglar Joker are banned.	
+E1587	balatro	balatro	Golden Ticket	joker	Common		Played Gold cards earn $4 when scored.	
+E1588	balatro	balatro	Greedy Joker	joker	Common		Played cards with Diamond suit give +3 Mult when scored.	
+E1589	balatro	balatro	Green Joker	joker	Common		+1 Mult per hand played, -1 Mult per discard, for the round.	
+E1590	balatro	balatro	Hack	joker	Uncommon		Retrigger each played 2, 3, 4, or 5.	
+E1591	balatro	balatro	Half Joker	joker	Common		+20 Mult if played hand contains 3 or fewer cards.	
+E1592	balatro	balatro	Hallucination	joker	Common		1 in 2 chance to create a Tarot card when any Booster Pack is opened.	
+E1593	balatro	balatro	Handy Tag	tag			Gives $1 per hand played this run.	
+E1594	balatro	balatro	Hanging Chad	joker	Common		Retriggers the first played card used in scoring 2 additional times.	
+E1595	balatro	balatro	Hiker	joker	Uncommon		Every played card permanently gains +5 Chips when scored.	
+E1596	balatro	balatro	Hit the Road	joker	Rare		Gains X0.5 Mult for the rest of the round for every Jack discarded.	
+E1597	balatro	balatro	Hologram	joker	Uncommon		Gains X0.25 Mult permanently every time a playing card is added to your deck.	
+E1598	balatro	balatro	Holographic	edition			+10 Mult when scored (on a playing card), or +10 Mult added directly before the Joker is scored (on a Joker).	
+E1599	balatro	balatro	Holographic Tag	tag			Next base-edition shop Joker is free and becomes Holographic.	
+E1600	balatro	balatro	Ice Cream	joker	Common		+100 Chips, -5 Chips for every hand played.	
+E1601	balatro	balatro	Inflation	challenge			Every shop purchase permanently raises all prices by $1; starts with a Credit Card Joker; discount vouchers are banned.	
+E1602	balatro	balatro	Investment Tag	tag			Gain $25 after defeating the next Boss Blind.	
+E1603	balatro	balatro	Invisible Joker	joker	Rare		After being held through 2 rounds, can be sold to duplicate a random other Joker.	
+E1604	balatro	balatro	Joker	joker	Common		+4 Mult.	
+E1605	balatro	balatro	Joker Stencil	joker	Uncommon		X1 Mult for each empty Joker slot (including this card).	
+E1606	balatro	balatro	Jokerless	challenge			Jokers no longer appear in the shop and Joker slots are set to 0; all other Joker-acquisition methods (Judgement, Wraith, Soul cards, tags, certain blinds, Antimatter voucher, Buffoon packs) are banned.	
+E1607	balatro	balatro	Juggle Tag	tag			+3 hand size for the next round.	
+E1608	balatro	balatro	Juggler	joker	Common		+1 hand size.	
+E1609	balatro	balatro	Loyalty Card	joker	Uncommon		X4 Mult every 6 hands played.	
+E1610	balatro	balatro	Luchador	joker	Uncommon		Sell this card to disable the current Boss Blind's effect for the round.	
+E1611	balatro	balatro	Lucky Card	enhancement			1 in 5 chance to give +20 Mult and 1 in 15 chance to give $20 when scored.	
+E1612	balatro	balatro	Lucky Cat	joker	Uncommon		Gains X0.25 Mult permanently every time a Lucky card successfully triggers.	
+E1613	balatro	balatro	Luxury Tax	challenge			Hand size (base 10) is reduced by 1 for every $5 held.	
+E1614	balatro	balatro	Mad Joker	joker	Common		+10 Mult if played hand contains a Two Pair.	
+E1615	balatro	balatro	Mad World	challenge			Extra hands earn no money and no interest is earned; deck is restricted to ranks 2-9 (32 cards); The Plant boss blind is banned.	
+E1616	balatro	balatro	Madness	joker	Uncommon		When Small Blind or Big Blind is selected, gains X0.5 Mult and destroys a random other Joker.	
+E1617	balatro	balatro	Mail-In Rebate	joker	Common		Earn $5 for each discarded card of a target rank; the target rank changes every round.	
+E1618	balatro	balatro	Marble Joker	joker	Uncommon		Adds one Stone card to the deck when Blind is selected.	
+E1619	balatro	balatro	Matador	joker	Uncommon		Earn $8 if played hand triggers the Boss Blind's ability.	
+E1620	balatro	balatro	Medusa	challenge			Starts with an Eternal Marble Joker; all face cards in the deck are replaced with Stone cards.	
+E1621	balatro	balatro	Merry Andy	joker	Uncommon		+3 discards each round, -1 hand size.	
+E1622	balatro	balatro	Meteor Tag	tag			Gives a free Mega Celestial Pack.	
+E1623	balatro	balatro	Midas Mask	joker	Uncommon		All played face cards become Gold cards when scored.	
+E1624	balatro	balatro	Mime	joker	Uncommon		Retrigger all card held-in-hand abilities.	
+E1625	balatro	balatro	Misprint	joker	Common		+0 to +23 Mult (random) per hand.	
+E1626	balatro	balatro	Monolith	challenge			Starts with an Eternal Obelisk and an Eternal Negative Marble Joker.	
+E1627	balatro	balatro	Mr. Bones	joker	Uncommon		Prevents death if chips scored are at least 25% of required chips; this card is then sold/destroyed.	
+E1628	balatro	balatro	Mult Card	enhancement			+4 Mult when scored.	
+E1629	balatro	balatro	Mystic Summit	joker	Common		+15 Mult when 0 discards remaining.	
+E1630	balatro	balatro	Negative	edition			+1 Joker slot (on a Joker) or +1 Consumable slot (on a Tarot/Planet/Spectral card).	
+E1631	balatro	balatro	Negative Tag	tag			Next base-edition shop Joker is free and becomes Negative.	
+E1632	balatro	balatro	Non-Perishable	challenge			All Jokers are Eternal; self-destructing Jokers (e.g. Gros Michel, Cavendish, Ice Cream) and the Verdant Leaf blind are banned.	
+E1633	balatro	balatro	Obelisk	joker	Rare		Gains X0.2 Mult permanently per consecutive hand played without playing your most-played poker hand; resets when that hand is played.	
+E1634	balatro	balatro	Odd Todd	joker	Common		Played cards with odd rank give +31 Chips when scored.	
+E1635	balatro	balatro	On a Knife's Edge	challenge			Starts with an Eternal Ceremonial Dagger pinned to the leftmost Joker slot.	
+E1636	balatro	balatro	Oops! All 6s	joker	Uncommon		Doubles all listed probabilities (e.g. 1 in X becomes 2 in X).	
+E1637	balatro	balatro	Orange Stake	stake			30% chance for Jokers in shops or booster packs to have a Perishable Sticker (destroyed if not scored with within 5 rounds).	
+E1638	balatro	balatro	Orbital Tag	tag			Upgrades a random poker hand by 3 levels.	
+E1639	balatro	balatro	Pareidolia	joker	Uncommon		All cards are considered face cards.	
+E1640	balatro	balatro	Perkeo	joker	Legendary		Creates a Negative copy of 1 random consumable card at end of shop.	
+E1641	balatro	balatro	Photograph	joker	Common		First played face card gives X2 Mult when scored.	
+E1642	balatro	balatro	Polychrome	edition			X1.5 Mult when scored (on a playing card), or X1.5 Mult applied directly after the Joker is scored (on a Joker).	
+E1643	balatro	balatro	Polychrome Tag	tag			Next base-edition shop Joker is free and becomes Polychrome.	
+E1644	balatro	balatro	Popcorn	joker	Common		+20 Mult, -4 Mult per round played.	
+E1645	balatro	balatro	Purple Seal	seal			Creates a Tarot card when this card is discarded.	
+E1646	balatro	balatro	Purple Stake	stake			Required score to beat Blinds scales even faster for each Ante.	
+E1647	balatro	balatro	Raised Fist	joker	Common		Adds double the rank of the lowest ranked card held in hand to Mult.	
+E1648	balatro	balatro	Ramen	joker	Uncommon		X2 Mult, losing X0.01 Mult permanently per card discarded.	
+E1649	balatro	balatro	Rare Tag	tag			Shop contains a free Rare Joker.	
+E1650	balatro	balatro	Red Card	joker	Common		Gains +3 Mult permanently whenever any Booster Pack is skipped.	
+E1651	balatro	balatro	Red Seal	seal			Retrigger this card 1 additional time.	
+E1652	balatro	balatro	Red Stake	stake			Small Blind gives no reward money.	
+E1653	balatro	balatro	Reserved Parking	joker	Common		Each face card held in hand has a 1 in 2 chance to give $1.	
+E1654	balatro	balatro	Rich get Richer	challenge			Chips scored cannot exceed current money; starts with $100 and the Seed Money and Money Tree vouchers.	
+E1655	balatro	balatro	Ride the Bus	joker	Common		Gains +1 Mult per consecutive hand played without a scoring face card; resets to 0 when a face card scores.	
+E1656	balatro	balatro	Riff-Raff	joker	Common		When Blind is selected, creates 2 Common Jokers (if there is room).	
+E1657	balatro	balatro	Rocket	joker	Uncommon		Earn $1 at end of round; payout increases by $2 permanently when a Boss Blind is defeated.	
+E1658	balatro	balatro	Rough Gem	joker	Uncommon		Played cards with Diamond suit earn $1 when scored.	
+E1659	balatro	balatro	Runner	joker	Common		Gains +15 Chips permanently if played hand contains a Straight.	
+E1660	balatro	balatro	Satellite	joker	Uncommon		Earn $1 at end of round per unique Planet card used this run.	
+E1661	balatro	balatro	Scary Face	joker	Common		Played face cards give +30 Chips when scored.	
+E1662	balatro	balatro	Scholar	joker	Common		Played Aces give +20 Chips and +4 Mult when scored.	
+E1663	balatro	balatro	Seance	joker	Uncommon		If poker hand is a Straight Flush, creates a random Spectral card.	
+E1664	balatro	balatro	Seeing Double	joker	Uncommon		X2 Mult if played hand has a scoring Club card and a scoring card of any other suit.	
+E1665	balatro	balatro	Seltzer	joker	Uncommon		Retrigger all played cards for the next 10 hands, then this card is destroyed.	
+E1666	balatro	balatro	Shoot the Moon	joker	Common		Each Queen held in hand gives +13 Mult.	
+E1667	balatro	balatro	Shortcut	joker	Uncommon		Allows Straights to be made with gaps of 1 rank.	
+E1668	balatro	balatro	Showman	joker	Uncommon		Joker, Tarot, Planet, and Spectral cards may appear multiple times.	
+E1669	balatro	balatro	Sixth Sense	joker	Uncommon		If the first hand of the round is a single 6, destroys it and creates a Spectral card.	
+E1670	balatro	balatro	Small Blind	blind			No special effect; can be skipped to receive a Tag.	
+E1671	balatro	balatro	Smeared Joker	joker	Uncommon		Hearts and Diamonds count as the same suit; Spades and Clubs count as the same suit.	
+E1672	balatro	balatro	Smiley Face	joker	Common		Played face cards give +5 Mult when scored.	
+E1673	balatro	balatro	Sock and Buskin	joker	Uncommon		Retrigger all played face cards.	
+E1674	balatro	balatro	Space Joker	joker	Uncommon		1 in 4 chance to upgrade the level of the played poker hand.	
+E1675	balatro	balatro	Spare Trousers	joker	Uncommon		Gains +2 Mult permanently if played hand contains a Two Pair.	
+E1676	balatro	balatro	Speed Tag	tag			Gives $5 per Blind skipped this run.	
+E1677	balatro	balatro	Splash	joker	Common		Every played card counts in scoring.	
+E1678	balatro	balatro	Square Joker	joker	Common		Gains +4 Chips permanently if played hand has exactly 4 cards.	
+E1679	balatro	balatro	Standard Tag	tag			Gives a free Mega Standard Pack.	
+E1680	balatro	balatro	Steel Card	enhancement			X1.5 Mult while held in hand.	
+E1681	balatro	balatro	Steel Joker	joker	Uncommon		Gives X0.2 Mult for each Steel Card in your full deck.	
+E1682	balatro	balatro	Stone Card	enhancement			Has no rank or suit, always scores, and its Chip value is fixed at +50 Chips.	
+E1683	balatro	balatro	Stone Joker	joker	Uncommon		Gives +25 Chips for each Stone Card in your full deck.	
+E1684	balatro	balatro	Stuntman	joker	Rare		+250 Chips, -2 hand size.	
+E1685	balatro	balatro	Supernova	joker	Common		Adds the number of times the played poker hand has been played this run to Mult.	
+E1686	balatro	balatro	Superposition	joker	Common		Creates a Tarot card if played poker hand contains an Ace and a Straight.	
+E1687	balatro	balatro	Swashbuckler	joker	Common		Adds the sell value of all other owned Jokers to Mult.	
+E1688	balatro	balatro	The Arm	boss_blind			Permanently decreases the level of the poker hand played by 1.	
+E1689	balatro	balatro	The Club	boss_blind			All Club cards are debuffed (score no Chips or Mult).	
+E1690	balatro	balatro	The Eye	boss_blind			No poker hand type can be played more than once this round.	
+E1691	balatro	balatro	The Family	joker	Rare		X4 Mult if played hand contains a Four of a Kind.	
+E1692	balatro	balatro	The Fish	boss_blind			Cards are drawn face down after each hand played.	
+E1693	balatro	balatro	The Flint	boss_blind			Base Chips and Mult for played poker hands are halved.	
+E1694	balatro	balatro	The Goad	boss_blind			All Spade cards are debuffed.	
+E1695	balatro	balatro	The Head	boss_blind			All Heart cards are debuffed.	
+E1696	balatro	balatro	The Hook	boss_blind			Discards 2 random cards held in hand after every hand played.	
+E1697	balatro	balatro	The House	boss_blind			First hand of the round is dealt face down.	
+E1698	balatro	balatro	The Idol	joker	Uncommon		Each played card matching a target rank and suit gives X2 Mult when scored; the target card changes every round.	
+E1699	balatro	balatro	The Mark	boss_blind			All face cards are dealt face down.	
+E1700	balatro	balatro	The Mouth	boss_blind			Only one poker hand type can be played all round.	
+E1701	balatro	balatro	The Needle	boss_blind			Play only 1 hand the entire round, requiring 1x base Chips.	
+E1702	balatro	balatro	The Omelette	challenge			Blinds and extra hands give no reward money and no interest is earned; starts with 5 Egg Jokers; economy-related vouchers/Jokers are banned.	
+E1703	balatro	balatro	The Ox	boss_blind			Playing a hand of the most-played poker hand type this run sets money to $0.	
+E1704	balatro	balatro	The Pillar	boss_blind			Cards played in previous hands this Ante are debuffed.	
+E1705	balatro	balatro	The Plant	boss_blind			All face cards are debuffed.	
+E1706	balatro	balatro	The Psychic	boss_blind			Must play exactly 5 cards each hand (not all need to score).	
+E1707	balatro	balatro	The Serpent	boss_blind			After every play or discard, always draw back up to 3 cards.	
+E1708	balatro	balatro	The Tooth	boss_blind			Lose $1 for each card played.	
+E1709	balatro	balatro	The Wall	boss_blind			Extra large blind requiring 4x base Chips to beat.	
+E1710	balatro	balatro	The Water	boss_blind			Start the round with 0 discards.	
+E1711	balatro	balatro	The Wheel	boss_blind			1 in 7 cards are dealt face down during the round.	
+E1712	balatro	balatro	The Window	boss_blind			All Diamond cards are debuffed.	
+E1713	balatro	balatro	Throwback	joker	Uncommon		X0.25 Mult for each Blind skipped this run.	
+E1714	balatro	balatro	To Do List	joker	Common		Earn $4 if the played poker hand matches a specific target hand; the target hand changes at the end of round.	
+E1715	balatro	balatro	To the Moon	joker	Uncommon		Earn an extra $1 of interest for every $5 you have at end of round.	
+E1716	balatro	balatro	Top-up Tag	tag			Creates up to 2 Common Jokers, if there is room.	
+E1717	balatro	balatro	Trading Card	joker	Uncommon		If first discard of round has only 1 card, destroys it and earns $3.	
+E1718	balatro	balatro	Triboulet	joker	Legendary		Played Kings and Queens each give X2 Mult when scored.	
+E1719	balatro	balatro	Turtle Bean	joker	Uncommon		+5 hand size, reducing by 1 each round until it reaches 0.	
+E1720	balatro	balatro	Typecast	challenge			After the Ante 4 boss is defeated, all Jokers become Eternal and Joker slots are set to 0; Verdant Leaf blind is banned.	
+E1721	balatro	balatro	Uncommon Tag	tag			Shop contains a free Uncommon Joker.	
+E1722	balatro	balatro	Vagabond	joker	Rare		Creates a Tarot card if hand is played with $4 or less.	
+E1723	balatro	balatro	Vampire	joker	Uncommon		Gains X0.1 Mult permanently per scoring Enhanced card played, and removes that card's Enhancement.	
+E1724	balatro	balatro	Verdant Leaf	boss_blind			All cards are debuffed until a Joker is sold.	
+E1725	balatro	balatro	Violet Vessel	boss_blind			Very large blind requiring 6x base Chips to beat.	
+E1726	balatro	balatro	Voucher Tag	tag			Adds one Voucher to the next shop.	
+E1727	balatro	balatro	Walkie Talkie	joker	Common		Each played 10 or 4 gives +10 Chips and +4 Mult when scored.	
+E1728	balatro	balatro	Wee Joker	joker	Rare		Gains +8 Chips permanently when each played 2 is scored.	
+E1729	balatro	balatro	White Stake	stake			Base difficulty, no additional modifiers.	
+E1730	balatro	balatro	Wild Card	enhancement			Considered to be every suit simultaneously.	
+E1731	balatro	balatro	Wily Joker	joker	Common		+100 Chips if played hand contains a Three of a Kind.	
+E1732	balatro	balatro	Wrathful Joker	joker	Common		Played cards with Spade suit give +3 Mult when scored.	
+E1733	balatro	balatro	X-ray Vision	challenge			1 in 4 cards are dealt face down.	
+E1734	balatro	balatro	Yorick	joker	Legendary		Gains X1 Mult permanently every 23 cards discarded.	
+E1735	balatro	balatro	Zany Joker	joker	Common		+12 Mult if played hand contains a Three of a Kind.	
+E1736	cryptid	cryptid	2D	joker	Common		Retriggers each played 2, 2 additional times	
+E1737	cryptid	cryptid	Abstract Card	card_modifier			^1.15 Mult; counts as its own rank and suit; 1 in 4 chance to be destroyed when held at round end or after scoring	
+E1738	cryptid	cryptid	Absurd Joker	joker	Common		+4 Mult if played hand contains a High Card	
+E1739	cryptid	cryptid	Ace Aequilibrium	joker	Exotic		Jokers appear from the shop in Collection order; creates 2 Negative Jokers when a hand is played; Exotic-or-better Jokers cannot appear	
+E1740	cryptid	cryptid	Adroit Joker	joker	Common		+170 Chips if played hand contains a Bulwark	
+E1741	cryptid	cryptid	Amber Stake	stake			-1 Booster Pack slot	
+E1742	cryptid	cryptid	Antimatter Deck	deck			Applies the upsides of every deck won with Gold Stake (Modest/Mainline) or every deck (Madness)	
+E1743	cryptid	cryptid	Antimatter Sleeve	sleeve			Applies the effects and special deck-pairing effects of all deck sleeves	
+E1744	cryptid	cryptid	AP Joker	joker	Uncommon		X4 Mult against Boss Blinds	
+E1745	cryptid	cryptid	Arsonist	joker	Rare		If played hand contains a Full House, destroys all cards after scoring	
+E1746	cryptid	cryptid	Ascendant Stake	stake			-1 Shop Slot	
+E1747	cryptid	cryptid	Astral	card_modifier			^1.1 Mult	
+E1748	cryptid	cryptid	Astral in a Bottle	joker	Uncommon		When sold, applies Astral (and Perishable, gameset-dependent, possibly to two separate Jokers) to a random Joker	
+E1749	cryptid	cryptid	Astral Tag	tag			Next base-edition shop Joker is free and becomes Astral	
+E1750	cryptid	cryptid	Azure Seal	card_modifier			Creates 3 Negative Planets for the played poker hand, then destroys this card	
+E1751	cryptid	cryptid	Azure Stake	stake			Values on Jokers are reduced by 20%	
+E1752	cryptid	cryptid	Balanced Sleeve	sleeve			All cards have the same chance of appearing in shops; starts run with +2 Shop Slots	
+E1753	cryptid	cryptid	Ballin'	challenge			3 Joker slots; starts with 52 Stone Cards and an Eternal Jimball; bans Vampire and several tarots	
+E1754	cryptid	cryptid	Banana Tag	tag			Creates Gros Michel (or Cavendish if extinct this run), must have room	
+E1755	cryptid	cryptid	Beige Deck	deck			Common Jokers have quadrupled values	
+E1756	cryptid	cryptid	Beige Sleeve	sleeve			Common Jokers have quadrupled values, or Uncommon Jokers if paired with Beige Deck	
+E1757	cryptid	cryptid	Better Top-up Tag	tag			Creates up to 2 Uncommon Jokers (must have room)	
+E1758	cryptid	cryptid	Blacklist	joker	Cursed		If a chosen rank is held or played, sets Chips and Mult to 0; self-destructs if no cards of that rank remain in the deck	
+E1759	cryptid	cryptid	Blank Deck	deck			No effect	
+E1760	cryptid	cryptid	Blender	joker	Common		Creates a random consumable when a Code card is used (must have room)	
+E1761	cryptid	cryptid	Blossom Stake	stake			Final Boss Blinds can appear in any Ante	
+E1762	cryptid	cryptid	Blurred	card_modifier			Retriggers this card 1 time, plus 1 in 2 chance to retrigger 1 additional time	
+E1763	cryptid	cryptid	Blurred Joker	joker	Common		Gain +1 hand when Blind is selected	
+E1764	cryptid	cryptid	Blurred Tag	tag			Next base-edition shop Joker is free and becomes Blurred	
+E1765	cryptid	cryptid	Bonk	joker	Uncommon		Each Joker gives +6 Chips, +1 more if poker hand is a Pair; Jolly Jokers give +18 Chips instead	
+E1766	cryptid	cryptid	Bonkers Joker	joker	Common		+20 Mult if played hand contains a Bulwark	
+E1767	cryptid	cryptid	Bonus Joker	joker	Epic		1 in 8 chance per played Bonus card scored to increase Joker or Consumable slots by 1, up to twice per round	
+E1768	cryptid	cryptid	Booster Joker	joker	Uncommon		+1 Booster Pack slot available in shop	
+E1769	cryptid	cryptid	Booster Tag	tag			Next Booster Pack has double cards and double choices; decrements a shared counter on use	
+E1770	cryptid	cryptid	Boredom	joker	Epic		1 in 2 chance to retrigger each Joker or played card (does not affect other copies of Boredom)	
+E1771	cryptid	cryptid	Bountiful Deck	deck			After Play or Discard, always draw 5 cards	
+E1772	cryptid	cryptid	Brittle Candy	joker	Candy		For the next 9 hands, adds Stone, Gold, or Steel to the rightmost scoring card	
+E1773	cryptid	cryptid	Broken Sync Catalyst	joker	Rare		Swaps 10% of Chips with 10% of Mult	
+E1774	cryptid	cryptid	Bronze Stake	stake			Vouchers are 50% more expensive	
+E1775	cryptid	cryptid	Brown Stake	stake			All stickers are compatible with each other (e.g. Perishable and Eternal simultaneously)	
+E1776	cryptid	cryptid	Bubble M	joker	Common		Creates a Foil Jolly Joker if played hand contains a Three of a Kind, then self-destructs	
+E1777	cryptid	cryptid	Bulwark	poker_hand			100 Chips x 10 Mult; requires five rankless, suitless (Stone) cards	
+E1778	cryptid	cryptid	Bundle Tag	tag			Creates a Standard Tag, a Charm Tag, a Buffoon Tag, and a Meteor Tag	
+E1779	cryptid	cryptid	Bus Driver	joker	Uncommon		3 in 4 chance for +50 Mult, 1 in 4 chance for -50 Mult	
+E1780	cryptid	cryptid	Buttercup	joker	Candy		Can store 1 selected shop item; when sold, adds the stored item to the next shop	
+E1781	cryptid	cryptid	Caeruleum	joker	Exotic		Adjacent chips/mult-modifying Jokers use the next-highest operator for scoring (+, then X, then ^), capped at exponentiation	
+E1782	cryptid	cryptid	Candy Basket	joker	Uncommon		Sell this card to create 0 Candies; +1 Candy every 2 Blinds defeated, +2 Candies when a Boss Blind is defeated	
+E1783	cryptid	cryptid	Candy Buttons	joker	Candy		The next 15 shop rerolls cost $1 each	
+E1784	cryptid	cryptid	Candy Cane	joker	Candy		For the next 11 rounds, playing cards give $4 when retriggered	
+E1785	cryptid	cryptid	Candy Dagger	joker	Uncommon		When Blind is selected, destroys Joker to the left to create a Candy	
+E1786	cryptid	cryptid	Candy Sticks	joker	Candy		The next Boss Blind's effect isn't active until you've played 1 hand	
+E1787	cryptid	cryptid	Canvas	joker	Epic		Retriggers all Jokers to the left once for every non-Common Joker to the right of this Joker	
+E1788	cryptid	cryptid	Caramel	joker	Epic		Each played card gives X1.75 Mult when scored, for the next 11 rounds	
+E1789	cryptid	cryptid	Carved Pumpkin	joker	Rare		The next 5 Boss Blinds have their abilities disabled (removed)	
+E1790	cryptid	cryptid	Cat Tag	tag			Grants a leveled Cat Tag; two Cat Tags of the same level merge into one of the next level when clicked	
+E1791	cryptid	cryptid	CCD Deck	deck			Every card is also a random consumable	
+E1792	cryptid	cryptid	Celestial Globe	joker	Rare		Gains X0.2 Chips if poker hand matches a rotating hand type (changes each time it increases)	
+E1793	cryptid	cryptid	Chad	joker	Rare		Retriggers leftmost Joker 2 additional times	
+E1794	cryptid	cryptid	Chili Pepper	joker	Uncommon		Gains X0.5 Mult at end of round, self-destructs after 8 rounds	
+E1795	cryptid	cryptid	Chocolate Die	joker	Rare		Rolls a d10 when Boss Blind is defeated to start a random event	
+E1796	cryptid	cryptid	Circulus Pistoris	joker	Exotic		^pi Chips and ^pi Mult if exactly 3 hands remaining	
+E1797	cryptid	cryptid	Circus	joker	Epic		Rare Jokers give X2 Mult, Epic give X3, Legendary give X4, Exotic give X20, each	
+E1798	cryptid	cryptid	Clicked Cookie	joker	Common		+200 Chips, -1 Chips each time you click it	
+E1799	cryptid	cryptid	Clockwork Joker	joker	Epic		Retriggers held Steel cards every 2(1) hands, gains X0.25(X1) Mult every 3(2) hands, turns the first played card Steel every 5(4) hands, held Steel cards give +X0.1 Mult(X1) every 7(6) hands; triggering all four at once creates a copy of itself	
+E1800	cryptid	cryptid	Clone Tag	tag			Shop items cost 1.5x as much while held; obtain a copy of the next bought card, then is consumed	
+E1801	cryptid	cryptid	Clusterfuck/Cluster	poker_hand			200 Chips x 19 Mult; requires at least eight cards containing no Pair, Flush, or Straight	
+E1802	cryptid	cryptid	Code Joker	joker	Epic		Creates a Negative Code Card when Blind is selected	
+E1803	cryptid	cryptid	Compound Interest	joker	Rare		Earns 12% of total money at end of round, increasing by 3% per consecutive payout	
+E1804	cryptid	cryptid	Console Tag	tag			Gives a free Program Pack	
+E1805	cryptid	cryptid	Consume-able	joker	Uncommon		Earns $3 when using a consumable	
+E1806	cryptid	cryptid	Conveyor Deck	deck			Jokers may not be moved; at start of round, duplicates the rightmost Joker and destroys the leftmost Joker	
+E1807	cryptid	cryptid	Copy/Paste	joker	Epic		1 in 2 chance to duplicate used Code cards, once per round (must have room)	
+E1808	cryptid	cryptid	Cotton Candy	joker	Candy		When sold, adjacent Jokers become Negative	
+E1809	cryptid	cryptid	Crimson Stake	stake			Vouchers restock on even Antes	
+E1810	cryptid	cryptid	Critical Deck	deck			After each hand played, 1 in 4 chance for ^2 Mult, 1 in 8 chance for ^0.5 Mult	
+E1811	cryptid	cryptid	Crustulum	joker	Exotic		Gains +4 Chips per shop reroll; all rerolls are free	
+E1812	cryptid	cryptid	Crypto Coin	joker	Common		Earns between $1 and $10 for each Joker sold	
+E1813	cryptid	cryptid	Cube	joker	Common		+6 Chips (costs -$27)	
+E1814	cryptid	cryptid	Cursor	joker	Common		Gains +8 Chips for each card purchased	
+E1815	cryptid	cryptid	Cut	joker	Uncommon		Destroys a random Code card and gains X0.5 Mult at the end of the shop	
+E1816	cryptid	cryptid	Cyan Stake	stake			Uncommon and Rare Jokers are less likely to appear	
+E1817	cryptid	cryptid	:D	joker	Common		Creates a random Joker at end of round; sell this card to create a random Joker (must have room)	
+E1818	cryptid	cryptid	Dagger War	challenge			Starts with 2x Negative M Chain, 2x Negative Gift Card, and Eternal Ceremonial Dagger, Unjust Dagger, Monkey Dagger, and Pirate Dagger; Lock is banned	
+E1819	cryptid	cryptid	Dawn Stake	stake			Tarots and Spectrals target 1 fewer card (minimum of 1)	
+E1820	cryptid	cryptid	Deck of Equilibrium	deck			All cards have the same chance of appearing in shops; starts run with Overstock Plus	
+E1821	cryptid	pokermon	Delibird Dilemma	challenge			All Blinds give no reward money, extra hands earn no money, no Interest at end of round; starts with Eternal Delibird	
+E1822	cryptid	cryptid	Delirious Joker	joker	Common		+22 Mult if played hand contains a Five of a Kind	
+E1823	cryptid	cryptid	Demicolon	joker	Epic		No effect (N/A)	
+E1824	cryptid	cryptid	Diamond Stake	stake			Must beat Ante 10 to win the run	
+E1825	cryptid	cryptid	Digital Hallucinations	joker	Uncommon		When a Booster Pack is opened, 1 in 2 chance to create a random Negative card matching its type	
+E1826	cryptid	cryptid	Discreet Joker	joker	Common		+240 Chips if played hand contains a Flush Five	
+E1827	cryptid	cryptid	Doodle M	joker	Epic		Creates 2 Negative consumables when Blind is selected, +1 more per Jolly Joker owned	

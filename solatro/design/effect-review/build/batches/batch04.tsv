@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E0784	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Storyteller	skill			Preserves some points into the next game.	
+E0785	designdocs	DESIGN_DOC.md §19 Meta Progression	Storyteller cross-game persistence	skill			Scoring done outside the main game carries into the next game, e.g. via the Storyteller card preserving points between games.	
+E0786	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Storyteller's Dance	skill			Re-triggers the last effect that fired on an adjacent card.	
+E0787	designdocs	DESIGN_RECOMMENDATIONS.md §8 Map-layer systems	Straw House	unknown			When tips exceed X, the next node's offers get +1 rarity.	
+E0788	designdocs	DESIGN_REFERENCES.md §A6 Japan	Style flourish (Mie)	rule			A scored meld holds on screen a beat longer for +tips.	
+E0789	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	Suit-punishing hazard towns	boss			Towns punish specific suit scoring (Knifetown scores knives at 0, similarly Firetown/Juggletown/Hooptown); performing at a volcano adds lava hazards.	
+E0790	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	Sunshine (Popov)	skill			A clown that only buffs, never gags; heals debuffs on the cards below it.	
+E0791	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Survivor deck	unknown			Suits represent survival resources: food, water, sword, etc.	
+E0792	designdocs	DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries	Sword Swallower	unknown			A column that forms one perfect descending run from deck-to-floor triggers a secret meld.	
+E0793	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Sword swallowing (fakir)	skill			Swallow a Knife-suit card into this card; produce it later at increased rank.	
+E0794	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Sword swallowing (Edith Clifford)	skill			Permanently swallows a Knife card, adding its rank to this card's forever.	
+E0795	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Symmetrical Show (rule)	rule			Poker hands are also evaluated vertically, not just horizontally.	
+E0796	designdocs	DESIGN_DOC.md §18 Rarity, Packs & Collection	Talent pack mulligan	rule			Booster packs are opened by mulliganing the results arena-style; contents are previewable, mulligan count is upgradable, and unseen effects show a question mark.	
+E0797	designdocs	DESIGN_REFERENCES.md §A11 South America	Tango pair	skill			Two cards locked in embrace, always adjacent, alternating each turn which one's skill fires.	
+E0798	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Tappable Clown (summary)	skill			3 taps: randomizes adjacent cards.	
+E0799	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Ten-in-One pack	consumable			A pack type containing 10 common cards.	
+E0800	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	Ten-suit challenge deck	unknown			A ten-suit unlockable challenge deck (Ganjifa-inspired).	
+E0801	designdocs	DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries	The 42-Foot Ring	unknown			A secret meld triggers when a row's and column's scores total exactly 42.	
+E0802	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	The Academy	unknown			A meta building trains (permanently upgrades) one common card per season into its rare version.	
+E0803	designdocs	DESIGN_RECOMMENDATIONS.md §1 How I read your design	The Acrobat (adopt)	skill			Card can be grabbed even while covered by another card.	
+E0804	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	The Acrobat (summary)	skill			Grabbable even when covered.	
+E0805	designdocs	DESIGN_RECOMMENDATIONS.md §8 Map-layer systems	The Advance Man	consumable			Map consumable/skill that reveals fog-of-war nodes ahead of the player.	
+E0806	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The All-Nighter	unknown			A triple-length show: 3x submits, 3x goal, 3x reward.	
+E0807	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Ambitious Card	skill			Always rises to the top of the deck after shuffles; a related secret rewards beating a 'Houdini' boss with it.	
+E0808	designdocs	DESIGN_RECOMMENDATIONS.md §1 How I read your design	The Anarchist (reject as player card)	boss			Silences/disables the rule deck while in play; recommended as a boss effect rather than a player card.	
+E0809	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	The Anarchist (summary)	boss			Disables all other Rule cards while in the Ring.	
+E0810	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Arcade	unknown			A minigame node reusing solitaire-variant events for tickets.	
+E0811	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The At Liberty pool	rule			Between towns, hire discounted cards other 'shows' have dropped.	
+E0812	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The audience warns you	rule			The crowd (UI) shouts a warning one step before a hazard hits a card; villains earn boos (heat).	
+E0813	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Avatar	stamp			A card wears another card's face/identity; unmasking rules apply.	
+E0814	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Backlift	skill			Scores +N per card currently stacked on top of this card.	
+E0815	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Backward-Backward	skill			Reverses a run's direction mid-meld: a descending run counts as ascending for one column.	
+E0816	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Bahurupiya	type			Arrives each show as a random different class.	
+E0817	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Balance boss	boss			Cannot be defeated, only balanced: end the show with row points and column points within X% of each other.	
+E0818	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Barrel	unknown			A one-time colossal fame gain with zero gold reward.	
+E0819	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Basket	skill			'Destroys' a card into the basket; it reappears in the Entrance next show, unharmed, granting +fame.	
+E0820	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Bauta	stamp			While worn, the card's rarity and identity are hidden from effects, inspections, and towns.	
+E0821	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Belt	stamp			Exactly one card in the world holds it, doubling that card; belt-challenge bosses can take it away.	
+E0822	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Birdman Race	unknown			A first-to-claim seasonal contest; the winning card holds a tour-long title.	
+E0823	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Blank	rank			No rank and no suit; stacks legally on anything and anything can stack on it; scores 0 points.	
+E0824	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Blind Spot	rule			While the town inspector watches one zone, banned (Outlawed) cards can act in the other zone.	
+E0825	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	The Blockhead	skill			Absorbs one Knife projectile per show as points instead of damage.	
+E0826	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	The Board (Ouija)	consumable			Ask the deck one yes/no question per show.	
+E0827	designdocs	DESIGN_RECOMMENDATIONS.md §2.2 Alt win cons: The Booking	The Booking	consumable			A contract card sits in the rule deck for the show; player declares a booking (e.g. score X with no knife melds, win in 2 submits, trigger 12 unique feats) and the show is won by fulfilling it rather than by max score.	
+E0828	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	The Boot Code	rule			Adjacent cards pass a buff down a row via untriggered 'rhythm,' untraceable by boss effects that punish triggers.	
+E0829	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Box Theater	skill			Cueing it runs a one-card mini-submit inside itself.	
+E0830	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Brass Ring	rule			A bonus token rotates around the board's columns each turn; scoring the column while the ring sits on it grants a grab bonus.	
+E0831	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	The Butoh Walker	skill			Moves one slot every other turn, permanently transforming (buffing) every slot it passes through.	
+E0832	designdocs	DESIGN_REFERENCES.md §A6 Japan	The Butterfly Trick	skill			Creates fluttering paper-token cards (rank 1, any suit) that drift down one column per turn.	
+E0833	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	The Called Shot	skill			Destroys the top card of any stack, leaving the rest of the stack intact.	
+E0834	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Calm Voice	skill			Negates one disaster event by converting it into a show, gaining fame from the crisis.	
+E0835	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Cannon King (Zacchini)	type			Fireworks-suit cards may score from the Entrance.	
+E0836	designdocs	DESIGN_REFERENCES.md §A11 South America	The Capoeirista	skill			Registered as a Dancer but functions as a fighter; performs even in towns that ban combat acts.	
+E0837	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Card Index	skill			Cue: search the deck for any card and put it in the Entrance.	
+E0838	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Castell	skill			Build a tower and crown it with the smallest card for a massive bonus, with collapse risk scaling per level; a four-word motto maps to four buff types.	
+E0839	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	The Chamber (Waxworks)	unknown			A museum node that buys 'likenesses' of the player's destroyed cards for gold.	
+E0840	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Charm	skill			Card text describes one trigger (music) while the real trigger is something else (movement).	
+E0841	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Chest	skill			The card's weight (Heavy/Light) flips depending on whether the player or an effect is moving it.	
+E0842	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Chorus (Kecak)	skill			+mult per rank-1 card on the board whenever any meld scores.	
+E0843	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Claimed Feat	skill			Scores fame for a stunt that never happened; if exposed later, lose double.	
+E0844	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The clean dodge (Recortadores)	skill			When a hazard targets this card's column, it vaults the hazard, which passes through and scores points instead.	
+E0845	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Cliffhanger	unknown			Ending a show mid-trick plummets the next town's fame requirement, but the trick must be 'resolved' there.	
+E0846	designdocs	DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports	The Clock Hang	skill			Placed half-off the board's last column for double spotlight and double score, but risks a random gust that drops it.	
+E0847	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Collective deck	unknown			A leaderless deck where every card shares the ensemble's average power; +mult if the deck contains no rares.	
+E0848	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	The Committee	unknown			Submit a Gaff for 'testing': huge reward if it survives scrutiny, destroyed if not.	
+E0849	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	The Contortionist	skill			Folds to share a single board slot with another card.	
+E0850	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Cooler	consumable			Replace the remaining draw deck with a perfectly pre-ordered copy, once per run.	
+E0851	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Costumier	type			Cards may hold 2 stamps instead of 1.	
+E0852	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	The Courier	skill			A card straddles two columns at once, scoring in both.	
+E0853	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Crowd Surf	skill			Passes a card across the tops of all columns hand-to-hand, gaining +1 per column crossed, but is discarded if any column is empty.	
+E0854	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Crowd Takes Over	unknown			For one turn, a seeded-random 'audience' makes the player's moves.	
+E0855	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	The Cutting Contest	unknown			Alternating melds where each must beat the previous score.	
+E0856	designdocs	DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports	The Demolition Show	unknown			Discarding scores points per card destroyed instead of playing normally.	
+E0857	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Designated Loser	boss			A boss the player always beats, with a hidden 1-in-1000 chance it wins instead.	
+E0858	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Diplomatic Show	unknown			Defuse a hostile town with one perfect performance instead of meeting its score requirement.	
+E0859	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Dirty Opening	unknown			Show starts with all cards debuffed ('muddy'); every card that scores anyway earns double.	
+E0860	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Disaster March	unknown			A hidden audio cue plays one turn before a surprise boss effect, rewarding players who learn the tell.	
+E0861	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	The Discoverie	consumable			A book card that reveals every Gaff/fake in play; banned in some towns.	
+E0862	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The Diva	skill			Strongest card in her class, but her skill is disabled unless placed first each show.	
+E0863	designdocs	DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports	The Double	skill			Takes destruction meant for its assigned 'star' card.	
+E0864	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Drone Swarm	skill			Projects any formation bonus the player has previously scored, without needing the original cards.	
+E0865	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Dubplate	unknown			A custom exclusive card forged for the player's save file only; clash events let it be 'played' against rival shows.	
+E0866	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	The Duck	skill			Pretends to consume cards (they secretly go to a hidden store, retrievable later) — a fake Gluttony.	
+E0867	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Eating Contest	unknown			A sanctioned outing for Hippo/Gluttony/Tigers-family cards to consume the town's offering faster than a rival.	
+E0868	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Egg Bag	skill			A container card that always appears 'empty' when checked but produces a card when it matters.	
+E0869	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	The Egress (event)	unknown			Following a mysterious sign skips the node entirely, with no reward and no risk.	
+E0870	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	The Elimination Save	rule			When two cards would be destroyed/discarded at once, they duel and the winner survives.	
+E0871	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The Encore Exit	skill			Voluntarily discard this card mid-show; it is called back next turn at +rank.	
+E0872	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Endless Fan	skill			Draw +1 card every turn while spotlit.	
+E0873	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Equestrian (Astley)	type			Melds scored in the First Ring (first 5x5) get +mult.	
+E0874	designdocs	DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries	The Erdnase Cipher	unknown			A card-author signature appears on random cards across many runs; collecting/scoring all of them unlocks an unexplained reward.	
+E0875	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Exile (daily challenge)	unknown			An endless-mode vignette used as a hard, fixed daily-challenge layout.	
+E0876	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Exploration Show	unknown			No score goal; only hidden bonuses to find in a pre-built board.	
+E0877	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Faire	unknown			A reverse show where the town's audience are performers and the player's cards judge them, for easy fame.	
+E0878	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Fanchant	rule			Melds are 'answered' by the crowd via delayed echo scoring once town loyalty is high enough.	
+E0879	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Faro Bank	unknown			A gambling node where the house cheats, and the player may cheat back.	
+E0880	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Fifteen	rank			Card also melds with any neighboring cards whose ranks sum to 15 (cribbage rule), as a rare pip ability rather than a default rule.	
+E0881	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Fire (venue loss)	unknown			Lose a venue mid-tour; an insurance/rebuild choice defines the next act.	
+E0882	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	The Fire Marshal	boss			Flames-suit cards cannot score; Flames cards in the deck become Wax.	
+E0883	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	The First Juggler	unknown			An ancient Balls-suit card grants an oldest-trick-in-the-book bonus for scoring the simplest possible meld.	
+E0884	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Flash Mob	skill			Deploys the entire Entrance to the board in one action, once per show.	
+E0885	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Flyting	unknown			An insult-duel against a town champion; the winner takes fame from the loser.	
+E0886	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Foot Juggler	skill			Holds one card suspended in a sub-slot above itself, spinning, as a playable stored card.	
+E0887	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Forged Ace	unknown			A counterfeit card of enormous value; if a town inspects it, the run's economy takes a penalty.	
+E0888	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Free Show	unknown			A no-fee performance: heals the whole deck one debuff, gains no gold.	
+E0889	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The friendly grapple (Glíma)	unknown			A no-stakes duel node to test a card against a boss's stats without risk.	
+E0890	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Gaff	rank			Wild pip that displays a fixed rank/suit until scored, then reveals its true randomly-determined value.	
+E0891	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Gathering	unknown			A festival node where every regional card pool is available at once, one purchase each.	
+E0892	designdocs	DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries	The Ghost Show	unknown			After real-world midnight, one secret card can only be found in the menu.	
+E0893	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Ghost Train	unknown			A blind node whose contents can't be previewed, offering better average rewards.	
+E0894	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Giant	skill			Occupies a 2x2 board footprint, kept active by adjacent 'crew' cards.	
+E0895	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Gift Exchange	unknown			Trade one of the player's cards for one of the town's, both sides choosing blind.	
+E0896	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Golden Buzzer	consumable			Skips one town's requirement entirely, with confetti.	
+E0897	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Grand Vanish	skill			Hides an entire column (can't be seen, targeted, or scored) for a turn, then it returns with interest.	
+E0898	designdocs	DESIGN_REFERENCES.md §A9 Africa	The Griot	skill			Preserves score/combo between shows, and re-triggers one effect from the previous show.	
+E0899	designdocs	DESIGN_REFERENCES.md §B1 Aerial & Wire	The Grip	skill			The bottom card of a stack holds everything above it legal, regardless of normal stacking rules.	
+E0900	designdocs	DESIGN_REFERENCES.md §A9 Africa	The Guardian (Moko jumbie)	skill			From its column, reveals boss intentions one turn early.	
+E0901	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Guest Star	unknown			A legendary card joins for exactly N shows then departs, unless a secret condition keeps it permanently.	
+E0902	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	The Half card	rank			A half-rank card that takes up only half a slot, so two halves fit one board slot.	
+E0903	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Hat	rule			After any show, an optional flourish converts leftover combo into gold instead of fame.	
+E0904	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Headliner (Ace)	rank			Face-card rename; counts as high or low rank in runs (real solitaire ace rule).	
+E0905	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Heel Turn	unknown			Flips the leader to heel mode mid-tour: new powers, every town's reaction changes, no going back this run.	
+E0906	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The High Dive	skill			Drop a card from the top of a column to the bottom for points that scale with fall height.	
+E0907	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Holdout	skill			Store one card outside the game; insert it into any stack at any moment (once); if a town 'searches' the player, it is lost.	
+E0908	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Hologram Tour	skill			Resurrects one destroyed card for one show as an intangible Pepper's Ghost duplicate.	
+E0909	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Hometown Hero	skill			Names the current town when scored, granting a small bonus in every town universally.	
+E0910	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Hook	boss			A boss/town removes the player's weakest card mid-show unless it scored last submit.	
+E0911	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Hunger Artist	skill			Gains +N for every consecutive show it stays in the deck unplayed; scores a huge burst when finally played, then resets.	
+E0912	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	The Illustrated card	stamp			Can hold unlimited stamps but no other slot content.	
+E0913	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Imitator	skill			A Gaff copy of another card in the deck that scores more than the original while the original is absent.	
+E0914	designdocs	DESIGN_REFERENCES.md §A5 China	The Impersonation	skill			Copy the skill of a card that was destroyed this run.	
+E0915	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Incubator	skill			Exhibited (covered) cards recover debuffs/ranks while 'on display.'	
+E0916	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	The Instrument	skill			A prop card keeps 'failing' (moving away) until finally played, then scores everything it dodged.	
+E0917	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	The interlude (Kyōgen)	unknown			A small comic bonus round between boss shows that heals debuffs.	
+E0918	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The International Final	boss			Neighboring map regions 'vote': suits favored by regions the player toured generously score extra.	
+E0919	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Invisible Wall	skill			Blocks one column with nothing: no card is there, but nothing can enter or leave for a turn.	
+E0920	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Joey (Jack)	rank			Face-card rename to a troupe role; unlocks 'Joey synergy' clown cards.	
+E0921	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Joey (Grimaldi, leader)	type			Once per turn, free use of Slapstick (swap adjacent ranks).	
+E0922	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Junk Orchestra	skill			Prop cards score by 'rhythm' (a positional pattern).	
+E0923	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Kayfabe rule card	rule			While in play, all Gaffs/Humbugs count as real and score as what they pretend to be; removing it reverts everything.	
+E0924	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Kickline	skill			A full-row Dancer formation bonus when all 5 columns' top cards share a suit.	
+E0925	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Kite	skill			Launches a card above the board (out of play); it returns on a chosen later turn with a wind bonus.	
+E0926	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Lantern Roast	unknown			The town satirizes the run's failures for laughs; accept for fame or take offense.	
+E0927	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	The Laughing Duel	unknown			A pattern-matching minigame against a town where breaking rhythm (misclicking/failing a meld) loses.	
+E0928	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Lecture	unknown			An 'educational' framing converts any card's flavor text into fame.	
+E0929	designdocs	DESIGN_RECOMMENDATIONS.md §6 Acrobat	The Leotard	skill			Cue: move this card and everything stacked above it to any column, legal or not.	
+E0930	designdocs	DESIGN_REFERENCES.md §A5 China	The Lion	skill			A card is secretly two cards, splitting when destroyed; placing it harvests a bonus from the card beneath it.	
+E0931	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	The Lion's Bride	skill			Scores for occupying the same column as a dangerous Animal card without being eaten.	
+E0932	designdocs	DESIGN_REFERENCES.md §A11 South America	The Little Umbrella	skill			A prop card that lets its holder perform Acrobat moves.	
+E0933	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Locked Room	unknown			A node requiring specific card types as 'keys' to open its reward.	
+E0934	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	The Machine (fortune-teller)	unknown			Pay a gold card to receive a guaranteed true fact about the next 3 nodes.	
+E0935	designdocs	DESIGN_RECOMMENDATIONS.md §6 Fortune Teller	The Major Arcana	consumable			22 unique one-shot consumables, e.g. The Tower destroys a column, The Wheel rerolls a row's ranks, The Hanged Man flips a stack's order.	
+E0936	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Manager	skill			Cues an adjacent card's ability as its own action.	
+E0937	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Marathon	boss			A multi-show gauntlet where the board does not fully reset between shows.	
+E0938	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	The Marotte	stamp			The card carries a mini-copy of itself; if destroyed, the copy survives at rank 1.	
+E0939	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Mask Wager	unknown			Stakes a card's stamp/identity in a duel; unmasking is permanent across the save file.	
+E0940	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Masked Audience / One-on-One	rule			Fame sources are hidden around the board to be found; a One-on-One event performs for a single audience token for outsized intimate fame.	
+E0941	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Mighty Atom	skill			A rank-3 card that can legally hold any size stack above it.	
+E0942	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Minimal deck	unknown			No stamps, no types; pure pips and stacking only.	
+E0943	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Mitt Camp	unknown			Pay for a reading: a true random fact about the run's future, seeded so it's always honest.	
+E0944	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The modern Committee	unknown			Stake a Gaff against a huge prize; survive scrutiny for a fortune.	
+E0945	designdocs	DESIGN_REFERENCES.md §A6 Japan	The Monkey (Sarumawashi)	skill			A token climbs one column per turn and cues whatever card it sits on.	
+E0946	designdocs	DESIGN_REFERENCES.md §A11 South America	The Murga	skill			Scores based on the run's history: +points per boss beaten, per card lost, per event survived.	
+E0947	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	The Museum of Humbugs	unknown			Buy a cheap Gaff card that has a small chance of secretly being a Legendary.	
+E0948	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The New Act	unknown			An unheard-of attraction (a mechanic not yet unlocked) previews for one show.	
+E0949	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Ofrenda Show	unknown			For one night, destroyed and discarded cards return from the discard pile to perform a single show, then rest again.	
+E0950	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Overrun	unknown			The show goes free (zero gold), but grants enormous permanent fame and permanently changes the town.	
+E0951	designdocs	DESIGN_REFERENCES.md §A11 South America	The Ox	skill			Its destruction IS its act: the town celebrates (fame) when it's destroyed, and it revives next show.	
+E0952	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Palace / death trail naming	unknown			The final city is named The Palace; circuits become route templates, with a 'death trail' as the hardest route.	
+E0953	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Patch	consumable			Cancels one town penalty/hazard before it applies.	
+E0954	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	The Pickup (dzhigitovka)	skill			During the Next-phase drop animation, snatch one falling card and redirect its column.	
+E0955	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	The Pie Car	unknown			Rest node: heal one debuff, or gamble at a rigged Three-Card Monte for a tiny chance of a big win.	
+E0956	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Pitch Lottery	unknown			Bid gold cards for first pick of the next three nodes.	
+E0957	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Pole (Mallakhamb)	skill			Buffs everything in its column, more so the taller the column grows.	
+E0958	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Pose (Sandow)	skill			Scores by being displayed (spotlit doing nothing) rather than melded.	
+E0959	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	The Pose (Voguing)	rule			Holding a scored formation one extra beat grants bonus tips.	
+E0960	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Prepared Town	boss			Pre-inspects everything: all Gaffs and Humbugs are disabled here.	
+E0961	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Procession	rule			A moving meld walks one column per turn, collecting +1 from each column it crosses.	
+E0962	designdocs	DESIGN_REFERENCES.md §A6 Japan	The Puppet (Bunraku)	skill			A powerful card that only functions with 2+ adjacent supporting cards.	
+E0963	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	The Puszta Five	skill			For one turn, one card straddles all columns, scoring in every column's meld.	
+E0964	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	The Pyramid (Moroccan tumblers)	skill			A formation meld: 3 cards atop 2 atop 1 across adjacent columns.	
+E0965	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Radio Dummy	skill			A card whose stated gimmick is nullified by its board context, and which scores anyway.	
+E0966	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	The Rappings	unknown			A 'haunted' node where answers come by knocks; debunking it does not un-haunt the town.	
+E0967	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	The Raree Box	consumable			Peek at the next N cards of the deck for the cost of a gold card.	
+E0968	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Rat Sheet	consumable			Raises a Rival Show's difficulty for everyone, but steals part of its fame if both parties pass.	
+E0969	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Regurgitator	skill			Swallows up to N cards and can produce them later in any chosen order.	
+E0970	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	The Renaming	unknown			Sideshow class tags upgrade to a better-received class label after a vote event.	
+E0971	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Rider	skill			Long rule text hides one small instruction; obeying it doubles the card.	
+E0972	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Right to Perform	unknown			A town tries to ban the show: comply for no fame, or resist to fight a hazard show for double fame and permanent town change.	
+E0973	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	The Ringmistress (Queen)	rank			Face-card rename to a troupe role.	
+E0974	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	The Rival Show (recurring boss)	boss			Goal score is pre-raised, but beating it steals one of the rival's cards.	
+E0975	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Rodeo Clown	skill			When a boss attacks a card, this card redirects the hit to itself.	
+E0976	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Rope Trick	unknown			A card exists only in rumor pools and can never drop, until a hidden condition makes it real.	
+E0977	designdocs	DESIGN_RECOMMENDATIONS.md §8 Map-layer systems	The Route Book	rule			Pre-run planning UI where the player traces an intended path; deviating from it costs fame.	
+E0978	designdocs	DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman	The Séance Buster	skill			Reveals all Gaff/Humbug/fake cards on the board; +points per fake revealed.	
+E0979	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Scam Booking	unknown			Arrive to find no venue; improvise a show where only commons score, or eat the failure; mirror version lets the player oversell (declare beyond deck) at risk.	
+E0980	designdocs	DESIGN_REFERENCES.md §A9 Africa	The School (social circus)	unknown			Converts discarded/junk cards into trained commons between runs.	
+E0981	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The Scottish Play curse	unknown			Cueing a cursed card by its true name triggers bad luck; a discoverable ritual sequence cleanses it.	
+E0982	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Screwjob	unknown			Once per profile, a rule card betrays the player at the worst moment, legally by its own text.	
+E0983	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	The Seed	skill			A rank-1 card gains +1 rank every turn it stays covered.	
+E0984	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Sharpshooter (Oakley)	type			Exact-rank effect: choose a rank each show; that rank scores double.	
+E0985	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	The show must go on (Pagliacci)	skill			+mult while this card carries a debuff.	
+E0986	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Showbag	consumable			A cheap grab-bag pack of random commons with one guaranteed sweet item.	
+E0987	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Showdown	unknown			Play the same town 'against' a rival's score; the winner takes both crowds.	
+E0988	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Shredder	skill			Destroys itself when sold and pays double its price.	
+E0989	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Singa Barong	skill			Carries an entire stack's weight; everything above it counts as one card for movement purposes.	
+E0990	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	The Sitter	skill			Rewards a card for remaining atop the same column across multiple shows.	
+E0991	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Skipping Tape	unknown			A Gaff that already scored gets exposed retroactively; the player pays back its fame.	
+E0992	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	The Snowstorm	unknown			A board-covering particle finale used as an endless-mode milestone.	
+E0993	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	The Soundcheck	rule			One free non-scoring rehearsal turn at show start: see the board, move once, no submit.	
+E0994	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Sphere (Final Venue)	boss			The town itself performs: board-wide visual effects modify play every turn.	
+E0995	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	The Spin (whirling)	skill			A rotating card cycles its rank each turn (1 to King, then wraps to 1).	
+E0996	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	The Spirit Cabinet	skill			Cover this card fully and its column's effects trigger as if spotlit ('by spirits').	
+E0997	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Statue	skill			+points each turn it does not move; any movement resets the bonus.	
+E0998	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	The Steelpan	skill			Converts a junk/prop card into a scoring instrument card.	
+E0999	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	The stick game (Tahtib)	unknown			A light sparring duel node.	
+E1000	designdocs	DESIGN_REFERENCES.md §A9 Africa	The Stilt-walker	skill			Remains spotlit even when one card covers it.	
+E1001	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The Stray Whistle	unknown			A random Entrance card drops early into a random column.	
+E1002	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	The Streak	unknown			Per-card win streaks are tracked on the card itself; fame scales with streak, and a broken streak fires a mourning event.	
+E1003	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	The String Figure	unknown			Copy a displayed board-pattern with the player's cards for a bonus.	
+E1004	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Sweet Tooth (Morrison)	type			All +rank buffs are permanent instead of lasting only one show.	
+E1005	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Synthetic Idol	skill			An Automaton whose skill is assembled from fragments of other cards' skills.	
+E1006	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The System	skill			A card that 'predicted' whatever just happened (retroactive prophecy bonus); inspecting it reveals the trick and halves the bonus.	
+E1007	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Talking Wire	skill			Scores as both Acrobat and Clown class on the same trigger.	
+E1008	designdocs	DESIGN_RECOMMENDATIONS.md §6 Fortune Teller	The Tarot Reading	skill			Cue: look at the top 5 cards of the deck and reorder them.	
+E1009	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Tent Challenge	unknown			A town champion calls out one of the player's cards for a duel: win for gold, lose a rank.	
+E1010	designdocs	DESIGN_RECOMMENDATIONS.md §10 Secrets & Mysteries	The Three Rings	unknown			Score three separate 5-card rings (rows) in one submit to permanently unlock a third zone rule card.	
+E1011	designdocs	DESIGN_REFERENCES.md §F5 Puppetry, Mime & Street	The Throw (ventriloquism)	skill			Cues a card's ability as if it were located in a different column.	
+E1012	designdocs	DESIGN_RECOMMENDATIONS.md §7 Leaders	The Tiger Queen (Stark)	type			Consumption effects have no cap.	
+E1013	designdocs	DESIGN_REFERENCES.md §A6 Japan	The Top	skill			Set spinning via cue; keeps scoring a little every turn until it topples after a random duration.	
+E1014	designdocs	DESIGN_REFERENCES.md §G The Modern Era	The Traceur	skill			Moves across the tops of columns, never entering stacks.	
+E1015	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	The Trance	rule			A card enters trance (acts autonomously, immune to everything) for N turns, then suffers a hard Exhaust.	
+E1016	designdocs	DESIGN_RECOMMENDATIONS.md §6 Acrobat	The Triple	skill			If this card ends a run of exactly 3 cards assembled this turn, score it 3x.	
+E1017	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	The Turk	skill			An Automaton card secretly powered by the card hidden beneath it; its power equals the hidden card's rank, and removing that card stops it.	
+E1018	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	The Two Masks	skill			A flip-state card: comedy side buffs neighbors, tragedy side buffs itself; flips every time it scores.	
+E1019	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	The Uncredited Artist	unknown			A hidden signature on the card art that, once found, adds the artist as a playable card.	
+E1020	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	The Unicorn	skill			An Animal Gaff that scores as legendary until any player effect inspects it.	
+E1021	designdocs	DESIGN_REFERENCES.md §B1 Aerial & Wire	The Unsanctioned Show	unknown			Performing in a locked/forbidden node grants enormous fame; failing it loses the run's tips.	
+E1022	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	The Vine	stamp			The first time this card would be destroyed by a fall/discard, it stops short and survives (once per tour).	
+E1023	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	The Wedding	unknown			Permanently pair two cards so they always draw together.	
+E1024	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	The White Elephant War	unknown			A rival offers a White Elephant card (huge points, drains gold); refusing makes the next Rival Show boss harder.	
+E1025	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	The Widow's Succession	rule			When a leader card is destroyed, its partner card inherits the leader slot and one signature power.	
+E1026	designdocs	DESIGN_REFERENCES.md §A10 The Americas	The Wing Walker	skill			Transfers a card between two moving columns during the Next-phase drop.	
+E1027	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Three-box shuffle	skill			Rearrange any 3 adjacent cards' order on cue.	
+E1028	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Thrown cards	skill			A Knives/card-throwing crossover card.	
+E1029	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Ticket Stub	type			Consumed as currency at shops for a discount; worthless if brought into the Ring.	
+E1030	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Till Eulenspiegel deal	unknown			A trickster's deal does exactly what its text says, not what was meant (monkey's-paw style reward).	
+E1031	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Tour pre-planning	rule			Players open by planning their tour (choosing which cities to visit); beginners plan small tours, veterans plan longer routes.	
+E1032	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Town size score requirements	rule			Small towns vs. big cities carry different score requirements.	
+E1033	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Tragedy scoring (Circo criollo)	skill			Drama acts score on failed shows (tragedy sells).	
+E1034	designdocs	DESIGN_DOC.md §15 Map v2 (Triangle)	Triangle map boss phase	boss			Every few rows features a boss phase, drawable as terrain, with fights possibly restricted to boss phases only.	
+E1035	designdocs	DESIGN_DOC.md §15 Map v2 (Triangle)	Triangle map choice	rule			Player chooses from the next 3 card options; picking moves them up a tier while keeping the triangle shape; moving left permanently loses the right lanes (and vice versa), the middle loses both outer lanes.	
+E1036	designdocs	DESIGN_DOC.md §15 Map v2 (Triangle)	Triangle map holes/packs	rule			The triangle can have holes; nodes should contain card packs rather than just single cards.	
+E1037	designdocs	DESIGN_DOC.md §5 Scoring	Trigger order	rule			Card effects trigger in order: field effects first, then the deck top-down, then the board left-to-right/top-to-bottom (including the input row), then the discard pile top-down.	
+E1038	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Troupe adoption	unknown			Any non-class card gains the current leader's class tag.	
+E1039	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Turning the tip	rule			Converts an audience faction into fame; a blow-off is a hidden bonus objective revealed only after clearing a show.	
+E1040	designdocs	DESIGN_REFERENCES.md §A11 South America	Two-faction city (Parintins)	boss			Picking a faction on arrival changes the goal, the shop, and who heckles the player.	
+E1041	designdocs	DESIGN_DOC.md §3 Board & Zones	Two-zone board (Entrance/Ring)	rule			Board has an upper zone (Grand Entrance, where drawn cards wait) and a lower zone (The Ring, where the board is built).	
+E1042	designdocs	DESIGN_DOC.md §8 Rule Deck (implemented)	TypeInput	type			On turn start, passes its held child cards to the paired lower column, then takes a random card from the deck.	
+E1043	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	UI-manipulation win con	unknown			Shelved idea: an alt win condition based on manipulating the scoring UI itself (duplicate-or-remove), with no good design found.	
+E1044	designdocs	DESIGN_DOC.md §2 Core Game Loop refinements	Undo at outcome screen	rule			Pressing Undo at the win/lose screen dismisses the outcome and rewinds the final Submit.	

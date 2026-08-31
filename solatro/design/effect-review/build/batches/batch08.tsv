@@ -1,0 +1,260 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E1828	cryptid	cryptid	Double M Tag	tag			Shop has a Jolly M Joker	
+E1829	cryptid	cryptid	Double Scale	joker	Epic		Scaling Jokers scale quadratically instead of linearly (e.g. +1, +3, +6, +10)	
+E1830	cryptid	cryptid	Double-Sided	card_modifier			Card can be flipped to reveal a different (optionally merged) card on its back side (removed in v0.5.16b)	
+E1831	cryptid	cryptid	Dropshot	joker	Rare		Gains X0.2 Mult per played nonscoring card of a suit that changes every round	
+E1832	cryptid	cryptid	Dubious Joker	joker	Common		+20 Chips if played hand contains a High Card	
+E1833	cryptid	cryptid	Duplicare	joker	Exotic		Gains X1 Mult when a Joker or playing card is scored	
+E1834	cryptid	cryptid	Echo Card	card_modifier			1 in 2 chance to retrigger 2 additional times when scored	
+E1835	cryptid	cryptid	Edition Deck	deck			All cards are a chosen Edition and cannot change editions	
+E1836	cryptid	cryptid	Effarcire	joker	Exotic		Draws the full deck to hand when Blind is selected	
+E1837	cryptid	cryptid	Ember Stake	stake			All items give no money when sold	
+E1838	cryptid	cryptid	Emerald Stake	stake			30% chance for cards, packs, and vouchers in shop/booster packs to be face down until purchased	
+E1839	cryptid	cryptid	Emergency Chips	joker	Common		Immediately gains 20% of the blind requirement as score when sold	
+E1840	cryptid	cryptid	Empowered Tag	tag			Gives a free Spectral Pack containing The Soul and Gateway	
+E1841	cryptid	cryptid	Encoded Deck	deck			Starts with a Code Joker and a Copy/Paste; only Code Cards appear in shop	
+E1842	cryptid	cryptid	Energia	joker	Exotic		When a Tag is acquired, creates 1 copy of it, with the number of copies increasing by 1 each time	
+E1843	cryptid	cryptid	Enhancement Deck	deck			All playing cards are a chosen Enhancement	
+E1844	cryptid	cryptid	Enter the Gungeon	challenge			All Blinds are Boss Blinds and skipping is disabled; starts with an Eternal AP Joker	
+E1845	cryptid	cryptid	Epic Tag	tag			Shop has a half-price Epic Joker	
+E1846	cryptid	cryptid	ERROR	joker	Epic		Adds Glitched to all cards, vouchers, and consumables in the shop at end of round; after 1-10 random rounds, selling it duplicates all owned Jokers	
+E1847	cryptid	cryptid	Eternal Flame	joker	Rare		Gains X0.2 Mult for each card sold	
+E1848	cryptid	cryptid	Exoplanet	joker	Common		Other Holographic cards each give +15 Mult	
+E1849	cryptid	cryptid	Exponentia	joker	Exotic		Gains ^0.03 Mult whenever XMult is triggered	
+E1850	cryptid	cryptid	Exposed	joker	Rare		Retriggers all scored non-face cards 2 additional times; all face cards are debuffed	
+E1851	cryptid	cryptid	Facile	joker	Exotic		^3 Mult if played cards are scored 10 or fewer times	
+E1852	cryptid	cryptid	Fading Joker	joker	Uncommon		Gains X1 Mult whenever a Perishable card is debuffed	
+E1853	cryptid	cryptid	Familiar Currency	joker	Rare		Creates a Meme Joker at end of round for $19 if possible (must have room)	
+E1854	cryptid	cryptid	Fast Food M	joker	Common		+40 Mult, self-destructs in 2 rounds, increased by 1 round each time a Jolly Joker is sold	
+E1855	cryptid	cryptid	Fidget Spinner	joker	Common		+6 Chips if played hand is not your most-played hand	
+E1856	cryptid	cryptid	Flesh Panopticon	joker	Epic		X20 Boss Blind size; when Boss Blind is defeated, self-destructs and creates a Negative Gateway card	
+E1857	cryptid	cryptid	Formidiulosus	joker	Exotic		Destroys any Cursed Joker obtained, creates 3 Negative Candies at end of shop, and gains ^0.01 Mult per Candy owned	
+E1858	cryptid	cryptid	Foxy Joker	joker	Common		+130 Chips if played hand contains a Full House	
+E1859	cryptid	cryptid	Fractal Fingers	joker	Rare		+2 card selection limit	
+E1860	cryptid	cryptid	Fragile	card_modifier			X3 Mult; 7 in 8 chance this card isn't destroyed when triggered; unriggable	
+E1861	cryptid	cryptid	Fragile Tag	tag			Next base-edition shop Joker is free and becomes Fragile	
+E1862	cryptid	cryptid	Fridge Magnet	joker	Common		Earns $2 at end of round, X5 that amount if 4 or fewer Joker cards owned	
+E1863	cryptid	cryptid	Fucked-Up Joker/Tidy Joker	joker	Common		+37 Mult if played hand contains a Clusterfuck/Cluster	
+E1864	cryptid	cryptid	Gambler's Tag	tag			1 in 4 chance to create an Empowered Tag	
+E1865	cryptid	cryptid	Garden of Forking Paths	joker	Rare		Earns $7 if played hand contains an Ace and a 7	
+E1866	cryptid	cryptid	Gemini	joker	Exotic		Doubles all values of the leftmost Joker at end of round	
+E1867	cryptid	cryptid	Ghost	joker	Cursed		At end of round, 1 in 2 chance to possess a random Joker, 1 in 6 chance to self-destruct (removed)	
+E1868	cryptid	cryptid	Glass Stake	stake			1 in 30 cards shatter when scored	
+E1869	cryptid	cryptid	Glitched	card_modifier			All values on this card are randomized between X0.1 and X10, where possible	
+E1870	cryptid	cryptid	Glitched Tag	tag			Next base-edition shop Joker is free and becomes Glitched	
+E1871	cryptid	cryptid	Glowing Deck	deck			Multiplies the values of all Jokers by X1.25 when Boss Blind is defeated	
+E1872	cryptid	cryptid	Gold Joker	joker	Epic		Earns 0% of total money at end of round, +2% payout per played Gold card scored	
+E1873	cryptid	cryptid	Golden	card_modifier			Earns $2 when used or triggered	
+E1874	cryptid	cryptid	Golden Tag	tag			Next base-edition shop Joker is free and becomes Golden	
+E1875	cryptid	pokermon	Good As Gold	challenge			6 hand size, starts with $6; deck is a standard 52-card deck where all cards are Gold; starts with Eternal Gholdengo	
+E1876	cryptid	cryptid	Googol Play Card	joker	Epic		1 in 8 chance for X1.0e100 Mult	
+E1877	cryptid	cryptid	Gourmand Tag	tag			Shop has a free Food Joker	
+E1878	cryptid	cryptid	Gray Stake	stake			Rerolls increase in cost by $2 each	
+E1879	cryptid	cryptid	Green Seal	card_modifier			Creates a Code card when played and unscoring (must have room)	
+E1880	cryptid	pokermon	Hammertime	challenge			2 hands and 1 discard per round; deck is only ranks 2,3,4,5,A (20 cards), Ace of Spades is Steel; starts with Eternal Tinkaton	
+E1881	cryptid	cryptid	Happy House	joker	Uncommon		Gains ^4 Mult only after playing 114 hands	
+E1882	cryptid	cryptid	High Five	joker	Rare		If highest scoring rank is 5, converts all scoring cards into 5s (Aces count as 1)	
+E1883	cryptid	cryptid	Horizon Stake	stake			When Blind is selected, adds a random card to the deck	
+E1884	cryptid	cryptid	Huge	joker	Epic		X7 Mult until end of round if poker hand is a Pair	
+E1885	cryptid	cryptid	Hunting Season	joker	Uncommon		If played hand contains exactly 3 cards, destroys the center card after scoring	
+E1886	cryptid	cryptid	Infinite Deck	deck			You can select any number of cards; +1 hand size	
+E1887	cryptid	cryptid	Iterum	joker	Exotic		Retriggers all played cards 1 time; each played card gives X2 Mult when scored	
+E1888	cryptid	cryptid	Jade Stake	stake			1 in 20 cards are drawn face down	
+E1889	cryptid	cryptid	Jawbreaker	joker	Candy		When Boss Blind is defeated, doubles the values of adjacent Jokers, then self-destructs	
+E1890	cryptid	cryptid	Jimball	joker	Rare		Gains X0.15 Mult per consecutive hand played while playing your most-played poker hand	
+E1891	cryptid	cryptid	Jimbo-tron 9000	joker	Epic		Gains ^1 Mult for each default Joker owned	
+E1892	cryptid	cryptid	Joker Poker	challenge			Skipping, rerolling, booster packs, and consumables are all disabled, 0 discards per round and 0 consumable slots; all Jokers that interact with those systems are banned	
+E1893	cryptid	cryptid	Jolly	card_modifier			+8 Mult; changes the Joker's name to start with M	
+E1894	cryptid	cryptid	Jolly Joker?	joker	Common		Creates a Jolly Joker when a Joker is sold, once per round	
+E1895	cryptid	cryptid	Jolly Tag	tag			Next base-edition shop Joker is free and becomes Jolly	
+E1896	cryptid	cryptid	Kaleidoscope	joker	Rare		Adds Polychrome to a random Joker when Boss Blind is defeated	
+E1897	cryptid	cryptid	Key Change	joker	Uncommon		Gains X0.25 Mult if the current poker hand has not been played this round, resetting at end of round	
+E1898	cryptid	cryptid	Kidnapping	joker	Common		Earns $1 at end of round, +$3 more when a Mult-type or Chips-type Joker is sold	
+E1899	cryptid	cryptid	Kitty Printer	joker	Uncommon		X2 Mult; all skip tags become Cat Tags	
+E1900	cryptid	cryptid	Krusty the Clown	joker	Uncommon		Gains X0.02 Mult when each played card is scored	
+E1901	cryptid	cryptid	Labyrinth	joker	Common		All hands are considered the first hand and all discards the first discard of the round	
+E1902	cryptid	cryptid	Lavender Loop	boss_blind			1.25X blind requirement every 1.5 seconds spent this round	
+E1903	cryptid	cryptid	LeBaron James	joker	Rare		Played and scoring Kings give +1 hand size and trigger held-in-hand effects	
+E1904	cryptid	cryptid	Legendary Deck	deck			Starts with a Legendary Joker; 1 in 5 chance to create another when Boss Blind is defeated (must have room)	
+E1905	cryptid	cryptid	Lemon Trophy	boss_blind			Mult cannot exceed Chips	
+E1906	cryptid	cryptid	Lens Tag	tag			Applies Negative to 2 random consumables	
+E1907	cryptid	cryptid	Light Card	card_modifier			When played with 5 other scoring cards, gains X0.2 Mult and increases its requirement by 5	
+E1908	cryptid	pokermon	Little Cup	challenge			Small and Big Blinds give no reward money, 3 Joker Slots; starts with Negative Eternal Everstone	
+E1909	cryptid	pokermon	Lonesome	challenge			Jokers no longer appear in shop, 1 Joker Slot, 10 Consumable Slots; starts with Eternal Cubone	
+E1910	cryptid	cryptid	Loopy	joker	Common		Retriggers all Jokers once for each Jolly Joker sold this round	
+E1911	cryptid	cryptid	Loss	tag			Gives a free Meme Pack	
+E1912	cryptid	cryptid	Lucky Joker	joker	Common		Earns $5 every time a Lucky card successfully triggers	
+E1913	cryptid	cryptid	Luigi	joker	Legendary		All Jokers give X3 Chips (removed)	
+E1914	cryptid	cryptid	m	joker	Epic		Gains X13 Mult when Jolly Joker is sold (starts at X1)	
+E1915	cryptid	cryptid	M	joker	Epic		Creates a Negative Jolly Joker when Blind is selected	
+E1916	cryptid	cryptid	M Chain	joker	Common		Sell this card to add $1 of sell value to every Joker card	
+E1917	cryptid	cryptid	M Stack	joker	Rare		Retriggers all played cards once for every 3 Jolly Jokers sold	
+E1918	cryptid	cryptid	Macabre Joker	joker	Common		When Blind is selected, destroys every Joker except M Jokers and Jolly Jokers, creating a Jolly Joker for each destroyed card	
+E1919	cryptid	cryptid	Many Have Lost Their Minds Comprehending This Joker	joker	Common		+8.07e67 Chips if played hand contains The Entire Fucking Deck/The Entire Deck	
+E1920	cryptid	cryptid	Mario	joker	Legendary		Retriggers all Jokers 2 additional times (removed)	
+E1921	cryptid	cryptid	Maximized	joker	Rare		All face cards are considered Kings, all numbered cards are considered 10s	
+E1922	cryptid	cryptid	Megg	joker	Common		Sell this card to create 0 Jolly Jokers, +1 more at end of round	
+E1923	cryptid	cryptid	Mellowcreme	joker	Candy		Sell this card to multiply the sell value of all consumables by X4	
+E1924	cryptid	cryptid	Membership Card	joker	Legendary		X0.1 Mult per member in the Cryptid Discord server (live count)	
+E1925	cryptid	cryptid	Memory Tag	tag			Creates 2 copies of the last non-copying Tag used this run	
+E1926	cryptid	cryptid	Meteor Shower	joker	Common		Other Foil cards each give +75 Chips	
+E1927	cryptid	cryptid	Misprint Deck	deck			Values of cards and poker hands are randomized	
+E1928	cryptid	cryptid	Misprinted Sleeve	sleeve			Values in cards are randomized	
+E1929	cryptid	cryptid	Mondrian	joker	Uncommon		Gains X0.25 Mult if no discards were used	
+E1930	cryptid	cryptid	Monkey Dagger	joker	Uncommon		When Blind is selected, destroys Joker to the left and permanently adds 10x its sell value as +Chips	
+E1931	cryptid	cryptid	Monopoly Money	joker	Cursed		1 in 4 chance to destroy purchased items; halves money when sold	
+E1932	cryptid	cryptid	Monster	joker	Common		Future copies of this Joker gain X0.75 Mult at end of round	
+E1933	cryptid	cryptid	Morse Code	joker	Common		Earns $1 at end of round, +$2 more when a card with an Edition is sold	
+E1934	cryptid	cryptid	Mosaic	card_modifier			X2.5 Chips	
+E1935	cryptid	cryptid	Mosaic Tag	tag			Next base-edition shop Joker is free and becomes Mosaic	
+E1936	cryptid	cryptid	Motebook	joker	Rare		1 in 7 chance per shop reroll to gain +1 Joker slot (always triggers with 4+ Jolly Jokers owned), once per round	
+E1937	cryptid	cryptid	Mult Joker	joker	Epic		1 in 3 chance per played Mult card scored to create a Cryptid card (must have room)	
+E1938	cryptid	pokermon	Mystery Dungeon	challenge			Starts with an Eternal Joker and applies a random Pokermon Deck effect; resets daily at 04:00 PM PST	
+E1939	cryptid	cryptid	Nebulous Joker	joker	Common		+30 Chips if played hand is None	
+E1940	cryptid	cryptid	Necromancer	joker	Uncommon		When a Joker is sold for more than $0, gain a random Joker sold this run that had $0 sell value	
+E1941	cryptid	cryptid	Negative Joker	joker	Epic		+4 Joker slots	
+E1942	cryptid	cryptid	Neon M	joker	Uncommon		Earns $0 at end of round, +$1 more per Jolly Joker or M Joker owned	
+E1943	cryptid	cryptid	Nice	joker	Rare		+420 Chips if played hand contains a 6 and a 9	
+E1944	cryptid	cryptid	Night	joker	Rare		^3 Mult on the final hand of the round, then self-destructs	
+E1945	cryptid	cryptid	Noisy	card_modifier			+0-30 Mult and +0-150 Chips (random each time)	
+E1946	cryptid	cryptid	Non Verisimile	joker	Exotic		When any probability check succeeds, gains XMult equal to its listed odds	
+E1947	cryptid	cryptid	None	poker_hand			0 Chips x 0 Mult; scored by playing a hand containing 0 cards	
+E1948	cryptid	cryptid	Nostalgic Arm	boss_blind			Must play 4 or fewer cards	
+E1949	cryptid	cryptid	Nostalgic Candy	joker	Epic		Sell this card to permanently gain +3 hand size	
+E1950	cryptid	cryptid	Nostalgic Deck	deck			Joker and Consumable slots are combined; Nostalgic Blinds replace their updated Blind	
+E1951	cryptid	cryptid	Nostalgic Fish	boss_blind			All hands start with 1 Mult	
+E1952	cryptid	cryptid	Nostalgic Flint	boss_blind			No Flushes allowed	
+E1953	cryptid	cryptid	Nostalgic Googol Play Card	joker	Epic		Sell this card to create 2 copies of the leftmost Joker (excludes copying itself)	
+E1954	cryptid	cryptid	Nostalgic House	boss_blind			No Full Houses allowed	
+E1955	cryptid	cryptid	Nostalgic Invisible Joker	joker	Legendary		Duplicates a random Joker every 4 Jokers sold (excluding itself)	
+E1956	cryptid	cryptid	Nostalgic Manacle	boss_blind			Divides Mult by number of discards used	
+E1957	cryptid	cryptid	Nostalgic Mark	boss_blind			No hands containing a Pair allowed	
+E1958	cryptid	cryptid	Nostalgic Ox	boss_blind			All hands start with 0 Chips	
+E1959	cryptid	cryptid	Nostalgic Pillar	boss_blind			No Straights allowed	
+E1960	cryptid	cryptid	Nostalgic Serpent	boss_blind			Divides Mult by the level of the played poker hand	
+E1961	cryptid	cryptid	Number Blocks	joker	Epic		Earns $1 at end of round, +$1 more for each card of a rank (which changes every round) held in hand	
+E1962	cryptid	pokermon	Nuzlocke	challenge			Jokers no longer appear in shop, all Jokers are Eternal, 1 Joker slot (+1 per Boss Blind defeated up to 5), first shop of each Ante has a Buffoon Pack	
+E1963	cryptid	cryptid	Obsidian Orb	boss_blind			Applies the abilities of all previously defeated bosses	
+E1964	cryptid	cryptid	Oil Lamp	joker	Rare		Increases the values of the Joker to the right by X1.2 at end of round	
+E1965	cryptid	cryptid	Old Blueprint	joker	Common		Copies the ability of the Joker to the right; 1 in 4 chance it is destroyed at end of round	
+E1966	cryptid	cryptid	Old Membership Card	joker	Epic		+1 Chips per member in the Cryptid Discord server (live count)	
+E1967	cryptid	cryptid	On the Flip Side	joker	Uncommon		Double-Sided Jokers use their back side's effect instead of the front; retriggers all Double-Sided Jokers	
+E1968	cryptid	cryptid	One for All	joker	Epic		+1 Booster Pack slot, +1 hand size, +1 consumable slot, +1 card in shop, +1 voucher slot	
+E1969	cryptid	cryptid	Oversaturated	card_modifier			All values on this card are doubled, where possible	
+E1970	cryptid	cryptid	Oversaturated Tag	tag			Next base-edition shop Joker is free and becomes Oversaturated	
+E1971	cryptid	cryptid	Palette Cleanser Tag	tag			Removes a random sticker from a random Joker or playing card	
+E1972	cryptid	cryptid	Panopticon	joker	Common		All hands are considered the last hand of each round	
+E1973	cryptid	pokermon	Parenthood	challenge			Jokers no longer appear in shop, earn no Interest at end of round, 2 Joker Slots; starts with 2x Mystery Egg	
+E1974	cryptid	cryptid	Paved Joker	joker	Common		Stone Cards may fill gaps of 1 rank in Straights and Flushes	
+E1975	cryptid	cryptid	Penetrating Joker	joker	Common		+270 Chips if played hand contains a Clusterfuck/Cluster	
+E1976	cryptid	cryptid	Pickle	joker	Uncommon		When Blind is skipped, creates 3 Tags, reduced by 1 each time a Blind is selected	
+E1977	cryptid	cryptid	Pink Stake	stake			Required score scales faster for each Ante	
+E1978	cryptid	cryptid	Pirate Dagger	joker	Uncommon		When Blind is selected, destroys Joker to the right and gains one-fourth of its sell value as XChips	
+E1979	cryptid	cryptid	Pity Prize	joker	Common		On skipping a Booster Pack, gain a random Tag	
+E1980	cryptid	cryptid	Pizza	joker	Rare		After 3 rounds, sells itself to create 6 Pizza Slices	
+E1981	cryptid	cryptid	Pizza Slice	joker	Rare		Gains X0.5 Mult when a Pizza Slice is sold	
+E1982	cryptid	cryptid	Platinum Stake	stake			Small Blinds are removed, leaving only 2 Blinds per Ante	
+E1983	cryptid	cryptid	Poor Joker	joker	Uncommon		Gains +4 Mult whenever a Rental card takes money from you	
+E1984	cryptid	cryptid	Pot of Jokes	joker	Rare		-2 hand size, increasing by 1 every round	
+E1985	cryptid	cryptid	Primus	joker	Exotic		Gains ^0.17 Mult if all cards in played hand are Aces, 2s, 3s, 5s, or 7s	
+E1986	cryptid	cryptid	Pumpkin	joker	Rare		Prevents Death if chips scored are at least 50% of required chips; turns into Carved Pumpkin when destroyed (removed)	
+E1987	cryptid	cryptid	Python	joker	Uncommon		Gains X0.15 Mult when a Code card is used	
+E1988	cryptid	cryptid	Quartz Stake	stake			30% chance for cards to have a Pinned sticker, keeping Jokers stuck at the leftmost position	
+E1989	cryptid	cryptid	Queen's Gambit	joker	Common		If played hand is a Royal Flush, destroys the scored Queen and creates a Negative Rare Joker	
+E1990	cryptid	pokermon	Randomizer	challenge			Pokemon Jokers evolve into random Pokemon Jokers	
+E1991	cryptid	cryptid	Red Bloon	joker	Common		Earns $20 after 2 rounds, then self-destructs	
+E1992	cryptid	cryptid	Redeemed Deck	deck			When a Voucher is purchased, also gain its extra tiers	
+E1993	cryptid	cryptid	Redeo	joker	Exotic		-1 Ante when a rising money threshold (starting at $10) is spent, doubling exponentially after each use	
+E1994	cryptid	cryptid	Reverse Card	joker	Uncommon		Fills all empty Joker slots (max 100) with Holographic Jolly Jokers if the discarded poker hand is a Pair, then self-destructs	
+E1995	cryptid	cryptid	Rework Tag	tag			Shop has a Joker with the edition of whatever Joker ://REWORK destroyed	
+E1996	cryptid	cryptid	RNG	challenge			All Jokers are RNJoker	
+E1997	cryptid	cryptid	RNJoker	joker	Uncommon		Randomizes its ability every Ante	
+E1998	cryptid	cryptid	Rotten Egg	joker	Cursed		Sets sell value of all current and future Jokers to $1, reduces all Joker sell values by $1, and self-destructs after earning $10 total from Joker sales	
+E1999	cryptid	cryptid	Ruby Stake	stake			30% chance for Big Blinds to become a Boss Blind (still skippable)	
+E2000	cryptid	cryptid	Rush Hour I	challenge			All Boss Blinds are The Clock or Lavender Loop	
+E2001	cryptid	cryptid	Rush Hour II	challenge			All Boss Blinds are The Clock or Lavender Loop, all Blinds are Boss Blinds, and skipping is disabled	
+E2002	cryptid	cryptid	Rush Hour III	challenge			All Boss Blinds are The Clock or Lavender Loop scaling twice as fast, all Blinds are Boss Blinds, and skipping is disabled; deck gets +1 Jack of each suit, starts with Negative Eternal Hit the Road	
+E2003	cryptid	cryptid	Sacrifice	joker	Common		Creates an Uncommon Joker and 3 Jolly Jokers when a Spectral card is used, once per round	
+E2004	cryptid	pokermon	Safety First	challenge			Jokers and Energy cards no longer appear in shop, 3 Joker Slots; starts with Eternal Mudkip, Roggenrola, and Bronzor	
+E2005	cryptid	cryptid	Sapling	joker	Uncommon		After scoring 18 Enhanced cards, sells itself to create an Epic Joker (Rare if Epic Jokers disabled)	
+E2006	cryptid	cryptid	Sapphire Stake	stake			Lose 25% of current money (up to $10) at end of Ante	
+E2007	cryptid	cryptid	Sapphire Stamp	boss_blind			Select an extra card, then deselect a random card before scoring; selecting only 1 card permanently unlocks the None hand	
+E2008	cryptid	cryptid	Savvy Joker	joker	Common		+170 Chips if played hand contains a Five of a Kind	
+E2009	cryptid	cryptid	Scalae	joker	Exotic		Scaling Jokers scale as a degree-2 polynomial instead of linearly, raising the degree by 1 at end of round (excludes itself)	
+E2010	cryptid	cryptid	Schematic Tag	tag			Shop has a Brainstorm	
+E2011	cryptid	cryptid	Scope Tag	tag			+2 hands and discards next round	
+E2012	cryptid	cryptid	Scrabble Tile	joker	Uncommon		1 in 4 chance to create a Jolly Uncommon Joker when a hand is played	
+E2013	cryptid	cryptid	Seal Deck	deck			All playing cards have a chosen Seal and cannot change seals	
+E2014	cryptid	cryptid	Seal The Deal	joker	Uncommon		Adds a random seal to each card scored on the final hand of the round	
+E2015	cryptid	cryptid	Shrewd Joker	joker	Common		+150 Chips if played hand contains a Four of a Kind	
+E2016	cryptid	cryptid	Sob	joker	Epic		Creates a Negative Absolute Obelisk when acquired, and a regular Obelisk whenever almost anything happens while an open Joker slot exists	
+E2017	cryptid	cryptid	Sock and Sock	joker	Uncommon		Retriggers all played Abstract cards 1 time	
+E2018	cryptid	cryptid	Solo Card	challenge			Starts with $10 and a single Blue Seal Ace of Clubs plus a Popcorn Joker; many Jokers, packs, consumables, and tags are banned	
+E2019	cryptid	cryptid	Spectrogram	joker	Epic		Retriggers rightmost Joker once for every Echo card played and scored	
+E2020	cryptid	cryptid	Speculo	joker	Exotic		Creates a Negative copy of a random Joker at the end of the shop (does not copy other Speculo)	
+E2021	cryptid	cryptid	Spooky Deck	deck			Starts with an Eternal Chocolate Die; after each Ante, creates a Candy or Cursed Joker	
+E2022	cryptid	cryptid	Spy	joker	Cursed		X0.5 Mult, +1 Joker slot; appears in shop disguised as another Joker and is revealed on purchase (removed)	
+E2023	cryptid	cryptid	Stardust	joker	Common		Other Polychrome cards each give X2 Mult	
+E2024	cryptid	cryptid	Starfruit	joker	Epic		^2 Mult, losing ^0.2 Mult per shop reroll	
+E2025	cryptid	cryptid	Stella Mortis	joker	Exotic		Destroys a random Planet card and gains ^0.4 Mult at the end of the shop	
+E2026	cryptid	cryptid	Sticker Deck	deck			All cards are a chosen Sticker	
+E2027	cryptid	cryptid	Sticker Sheet	challenge			All Jokers are simultaneously Eternal, Perishable, Rental, Pinned, and Banana; many Jokers banned	
+E2028	cryptid	cryptid	Sticker Sheet+	challenge			All purchasable items have every sticker applied; many Jokers banned	
+E2029	cryptid	cryptid	Subtle Joker	joker	Common		+240 Chips if played hand contains a Flush House	
+E2030	cryptid	cryptid	Suit Deck	deck			All playing cards are a chosen Suit and cannot change suits	
+E2031	cryptid	cryptid	Supercell	joker	Epic		X2 Chips, X2 Mult, earns $3 at end of round	
+E2032	cryptid	cryptid	SUS	joker	Rare		At end of round, creates a copy of a random card held in hand and destroys all others (Kings of Hearts prioritized)	
+E2033	cryptid	cryptid	Sync Catalyst	joker	Epic		Balances Chips and Mult (averages them)	
+E2034	cryptid	cryptid	Tax Fraud	joker	Rare		Gains $6 per Rental Joker owned at end of round	
+E2035	cryptid	cryptid	Tenebris	joker	Exotic		+25 Joker slots; earns $25 at end of round	
+E2036	cryptid	cryptid	Thalia and Melpomeme	joker	Legendary		X1 Mult for every pair of unique rarities among owned Jokers	
+E2037	cryptid	cryptid	The Box	boss_blind			All Common Jokers are debuffed	
+E2038	cryptid	cryptid	The Chromatic	boss_blind			x-1 Mult on every odd-numbered hand	
+E2039	cryptid	cryptid	The Clock	boss_blind			+0.1X blind requirement every 12 seconds spent this ante, multiplied by game speed	
+E2040	cryptid	cryptid	The Complete and Utter Annihilation of Everything That Makes Balatro Sacred	joker	Rare		^5.2 Mult if played hand contains The Entire Fucking Deck/The Entire Deck	
+E2041	cryptid	cryptid	The Decision	boss_blind			Fastens Jokers on play or discard; opens a Baneful Buffoon pack after the round	
+E2042	cryptid	cryptid	The Entire Fucking Deck/The Entire Deck	poker_hand			5.253e29 Chips x 5.253e28 Mult; requires a hand containing every card of a standard 52-card deck	
+E2043	cryptid	cryptid	The Greed	boss_blind			+0.25X base blind requirement per $5 held when selected	
+E2044	cryptid	cryptid	The Hammer	boss_blind			All cards with odd rank are debuffed	
+E2045	cryptid	cryptid	The Home	joker	Rare		X3.5 Mult if played hand contains a Full House	
+E2046	cryptid	cryptid	The Joke	boss_blind			If score exceeds 2X requirement, sets ante to a multiple of the final ante	
+E2047	cryptid	cryptid	The Landlord	boss_blind			Applies Rental to a random Joker when a hand is played	
+E2048	cryptid	cryptid	The Magic	boss_blind			All cards with even rank are debuffed	
+E2049	cryptid	cryptid	The Pin	boss_blind			Jokers with Epic or higher rarity are debuffed	
+E2050	cryptid	cryptid	The Repulsor	boss_blind			Retriggers the rightmost and leftmost Jokers; all other Jokers do not trigger	
+E2051	cryptid	cryptid	The Scorch	boss_blind			Must play 5 cards; destroys played and discarded cards	
+E2052	cryptid	cryptid	The Shackle	boss_blind			All Negative Jokers are debuffed	
+E2053	cryptid	cryptid	The Striker	boss_blind			All Rare Jokers are debuffed	
+E2054	cryptid	cryptid	The Tax	boss_blind			Score per hand capped at 0.4X blind requirement	
+E2055	cryptid	cryptid	The Trick	boss_blind			After each hand, flips all face-up cards held in hand	
+E2056	cryptid	cryptid	The WHIP	joker	Uncommon		Gains X0.5 Mult if played hand contains a 2 and 7 of different suits	
+E2057	cryptid	cryptid	The Windmill	boss_blind			All Uncommon Jokers are debuffed	
+E2058	cryptid	cryptid	Tiny	joker	Epic		Creates a Double M tag if poker hand is a Pair	
+E2059	cryptid	cryptid	Translucent Joker	joker	Common		Sell this card to create a Banana Perishable copy of a random Joker	
+E2060	cryptid	cryptid	Treacherous Joker	joker	Common		+170 Chips if played hand contains an Ultimate Pair	
+E2061	cryptid	cryptid	Tredecim	joker	Exotic		Creates an M Joker at end of round; each Jolly/M Joker gives ^1.05 Mult, increasing by ^0.04 each time a Jolly Joker is sold (excludes itself)	
+E2062	cryptid	cryptid	Trick-or-Treat	joker	Uncommon		When sold, 3 in 4 chance to create 2 Candies, otherwise creates a Cursed Joker (can overflow)	
+E2063	cryptid	cryptid	Tricksy Joker	joker	Common		+170 Chips if played hand contains a Straight Flush	
+E2064	cryptid	cryptid	Triple Tag	tag			Gives 2 copies of the next selected non-copying Tag	
+E2065	cryptid	cryptid	Triplet Rhythm	joker	Common		X3 Mult if scoring hand contains exactly three 3s	
+E2066	cryptid	cryptid	Tropical Smoothie	joker	Rare		Sell this card to multiply the values of owned Jokers by 1.5	
+E2067	cryptid	cryptid	Turquoise Tornado	boss_blind			2 in 3 chance for a played hand to not score	
+E2068	cryptid	cryptid	Twilight Stake	stake			30% chance for cards to have a Banana sticker (1 in 10 chance of being destroyed each round)	
+E2069	cryptid	cryptid	Ultimate Pair	poker_hand			220 Chips x 22 Mult; requires two Two Pairs where each Two Pair is a single suit, across two suits total	
+E2070	cryptid	cryptid	Undefined Joker	joker	Common		+5 Mult if played hand is None	
+E2071	cryptid	cryptid	Universe	joker	Rare		Other Astral cards each give ^1.2 Mult	
+E2072	cryptid	cryptid	Universum	joker	Exotic		Poker hands gain X2 Mult and X2 Chips when leveled up	
+E2073	cryptid	cryptid	Unjust Dagger	joker	Uncommon		When Blind is selected, destroys Joker to the left and gains one-fifth of its sell value as XMult	
+E2074	cryptid	cryptid	Unlimited Sleeve	sleeve			You can select any number of cards	
+E2075	cryptid	cryptid	Vermillion Virus	boss_blind			One random Joker is replaced every hand	
+E2076	cryptid	cryptid	Very Fair Deck	deck			-2 hands and -2 discards every round; Vouchers no longer appear in the shop	
+E2077	cryptid	cryptid	Virgo	joker	Epic		Gains $4 of sell value if poker hand contains a Pair; sell this card to create a Polychrome Jolly Joker per $4 of sell value (min 1)	
+E2078	cryptid	cryptid	Waluigi	joker	Legendary		All Jokers give X2.5 Mult	
+E2079	cryptid	cryptid	Wario	joker	Legendary		All Jokers give $3 when triggered	
+E2080	cryptid	cryptid	Wheel of Hope	joker	Uncommon		Gains X0.5 Mult when failing a Wheel of Fortune	
+E2081	cryptid	cryptid	Wonka Bar	joker	Candy		Sell this card to permanently gain +1 card selection limit	
+E2082	cryptid	cryptid	Words Can't Even Begin to Describe This Joker	joker	Common		X52,000,000 Mult if played hand contains The Entire Fucking Deck/The Entire Deck	
+E2083	cryptid	cryptid	Wormhole Deck	deck			Starts with an Exotic Joker; Jokers are 20X more likely to be Negative; -2 Joker slots	
+E2084	cryptid	cryptid	Wrapped Candy	joker	Candy		Creates a random Food Joker after 2 rounds, then self-destructs	
+E2085	cryptid	cryptid	Yellow Stake	stake			Stickers can appear on all purchasable items	
+E2086	cryptid	cryptid	Zooble	joker	Uncommon		If played hand does not contain a Straight, gains +1 Mult per unique rank in the scoring hand	

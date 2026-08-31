@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E1045	designdocs	DESIGN_DOC.md §5 Scoring v3 (combo)	Uniqueness multiplier	rule			A separate early idea: a multiplier that grows with every unique effect triggered during a submit.	
+E1046	designdocs	DESIGN_DOC.md §8 Rule Deck	Universal deck resolves last	rule			The Universal (rule) deck is probably applied last in all modifier resolution order.	
+E1047	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Universal placement ability	skill			A card ability lets any card be placed on top of it, overriding default stacking legality.	
+E1048	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	Unpierceable	stamp			Knife-suit projectiles pass through this card harmlessly (still counts as a 'miss' for stuntman bonuses).	
+E1049	designdocs	DESIGN_REFERENCES.md §A11 South America	Verse duel (repentistas)	unknown			Alternate 'stanzas' (mini-submits) with a town champion; the first to fail a beat loses.	
+E1050	designdocs	DESIGN_DOC.md §8 Rule Deck	Viewable game laws	unknown			Game laws are viewable as plain text via a greyed-out '?' button before the player has unlocked the rule deck itself, needed to explain prop-card abilities.	
+E1051	designdocs	DESIGN_DOC.md §7 Spotlight System	Visible-to-trigger + hidden-trigger stamp	stamp			Abilities must be visible to trigger by default; a stamp lets a card trigger even while hidden/covered; deck triggers surface visually on the deck slot as they fire.	
+E1052	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Voladores calendar meld	unknown			A hidden ritual meld: 4 cards descending 13 ranks each (4x13=52) grants an end-of-run celestial bonus.	
+E1053	designdocs	DESIGN_DOC.md §8 Rule Deck	Voucher effects in main deck	consumable			Voucher-type effects (player-side) go in the main deck instead of the rule deck.	
+E1054	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Walking Through the Wall	skill			Move a card through an occupied slot to the other side.	
+E1055	designdocs	DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman	Wall of Death	skill			Adjacent columns score +mult, but cards there take 1 Exhaust debuff per show.	
+E1056	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Water Torture Cell escape chain	skill			A card locked under 3 conditions unlocks one per turn, paying out on the full escape.	
+E1057	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Wax	type			Rank slowly decreases each show it shares a column with a Flame-suit card.	
+E1058	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	Wax and Gold	skill			A card carries two rule texts: the visible 'wax' effect and a hidden 'gold' effect discovered by fulfilling the wax one.	
+E1059	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Wheel of Death roulette	rule			A spinning bonus wheel whose payout lands where the last knife-suit card scored.	
+E1060	designdocs	DESIGN_RECOMMENDATIONS.md §6 Producer/Manager	White Elephant	skill			Scores huge points, but each show it remains in the deck it eats 1 Gold card.	
+E1061	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	Whiteface/Auguste pairing	rule			A Whiteface card issues a cue that an adjacent Auguste card executes 'wrongly,' with a better result.	
+E1062	designdocs	DESIGN_DOC.md §2 Core Game Loop v2 (latest)	Whole-board submit	rule			Player continuously draws to build the board; pressing Submit evaluates and scores the entire board state, then clears it, with Entrance cards dropping down to seed the next board.	
+E1063	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Wild pip	suit			A wild pip class tracks the previous pip inside itself, e.g. randomly choosing from pips present on the board/row/column, updating on every board change with cycling visuals.	
+E1064	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Wildcard Pip (summary)	rank			Adopts the rank/suit of the card below it.	
+E1065	designdocs	DESIGN_RECOMMENDATIONS.md §8 Map-layer systems	Winter Quarters	unknown			Named meta-hub where prestige currency is spent between runs to prepare the next season.	
+E1066	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	X-Ray Eyes	skill			While this card is covered (blinded), the player can see all facedown/hidden cards.	
+E1067	designdocs	DESIGN_DOC.md §5 Scoring	Yu-Gi-Oh number scaling	rule			Base scoring values should be rebalanced upward so numbers are never single digits and always feel big.	
+E1068	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Zip's Question Mark	unknown			A card whose text is permanently just '?'.	
+E1069	designdocs	DESIGN_DOC.md §14.4 Rule cards	Zone Adder (lower)	rule			Adds 1 Ring column per copy in the rule deck.	
+E1070	braindump	gam draft.txt:515	+1 reroll, no-repeat rerolls	skill			Add +1 reroll per game; for the rest of the game, repeated reroll actions do not give the same results.	
+E1071	braindump	gam draft.txt:96	15 as rank via ability only	rule			Rank 15 is too hard to visually read and should only exist via an ability, not as a default rank.	
+E1072	braindump	gam draft.txt:1263	3 grids side by side, commit to one	rule			Each game fills 3 side-by-side 5x5 grids; card effects can influence other grids; player chooses which grid the next 5 entrance cards go into but must commit to a single grid once chosen.	
+E1073	braindump	gam draft.txt:437	3 submits as 3 acts	rule			3 submits per match could reference 3 performance acts.	
+E1074	braindump	gam draft.txt:1429	31/99-style fixed point values	rank			31/99-style rank values: ace worth 1 or 11, 10 worth -10, King worth 99, others their rank; goal is reaching a target total.	
+E1075	braindump	gam draft.txt:1269	3D stacking as extra rows/cols	rule			Allow stacking cards on top of each other on the grid, adding a 3D element that functions as theoretical additional rows/columns.	
+E1076	braindump	pokerpatience.txt:12	4-coordinate card position	rule			Every card's position is defined by 4 coordinates: which grid, x, y, and height.	
+E1077	braindump	gam draft.txt:1180	5 starting suits	rule			Starting with 5 suits instead of 4 is more balanced: makes flushes harder and allows an anti-flush hand.	
+E1078	braindump	gam draft.txt:90	5-wide board for row hands	rule			A 5-column-wide board allows row-wide poker hands as well as column hands.	
+E1079	braindump	gam draft.txt:1333	500 Rummy free-meld-adding	rule			500 Rummy: any player, regardless of turn order, can add to existing melds and take more than the top discard.	
+E1080	braindump	gam draft.txt:1334	500 Rummy turn-stealing	rule			500 Rummy: a player can steal a turn if an opponent discards a card that could extend another meld.	
+E1081	braindump	random potential effects.csv:31	5D multiverse time-travel card	skill			Sends a card into the past to play out that board state until it clashes with the present, keeping only the differences.	
+E1082	braindump	gam draft.txt:1262	5x5 grid entrance placement redesign	rule			Core redesign: entrance shows top 5 cards as normal, but the player freely chooses where in a 5x5 grid below to place each one.	
+E1083	braindump	pokerpatience.txt:5	5x5 grid replaces drop zones	rule			Replace the 5-6 drop-in zones with a 5x5 grid the player manually places entrance cards into.	
+E1084	braindump	gam draft.txt:1196	Accordion pile-combining rule	rule			Accordion Solitaire: piles whose top cards match and are 3 apart (or adjacent) can be combined, newer cards going on top.	
+E1085	braindump	gam draft.txt:1195	Accordion pile-matching rule	rule			Accordion Solitaire: draw a card, create a new pile if it doesn't match the newest pile's top card by suit or rank; can only stack on the newest pile.	
+E1086	braindump	gam draft.txt:606	Acrobatic tap-or-carryover charge	skill			Acrobatic card has 1 charge triggerable by tap; if unused, the charge carries to the next round.	
+E1087	braindump	gam draft.txt:445	Acrobatics leader archetype	skill			Acrobatics leader archetype: focuses on card movement.	
+E1088	braindump	gam draft.txt:653	Action-triggered negative events	map			Events triggered by player actions, e.g. sacrificing too many talent cards causes a union strike, or having too many cards triggers a tax-evasion penalty losing basic cards.	
+E1089	braindump	gam draft.txt:234	Add all cards to map	map			Add all cards to the map (as collectibles/nodes), not just special ones.	
+E1090	braindump	gam draft.txt:1385	Adjacency-required marriage melds	rule			Add marriage-style melds that require cards to be exactly adjacent rather than merely in the same row/column.	
+E1091	braindump	random potential effects.csv:4	Air material (top of deck)	type			Air material type stays on top of the deck.	
+E1092	braindump	random potential effects.csv:3	All In card	skill			On the next score, double the total score, then double the score needed for the next round.	
+E1093	braindump	random potential effects.csv:29	Amogus fake card	boss			A card is secretly fake: when played it loses score and ignores the rules on certain turns; the player must find and remove it.	
+E1094	braindump	gam draft.txt:446	Animal trainer leader archetype	skill			Animal trainer leader archetype: focuses on stacking, including eating cards and cards auto-moving through the field.	
+E1095	braindump	gam draft.txt:223	Any card placeable on this card	skill			Card ability: any card can be placed on top of this card, modifying stacking rules.	
+E1096	braindump	pokerpatience.txt:38	Any-grid line-completion detector	skill			A card that detects a new 5-in-a-line completion anywhere across all grids and triggers its scoring.	
+E1097	braindump	random potential effects.csv:5	Anything-stacks-here card	skill			Any card can be placed on top of this card.	
+E1098	braindump	gam draft.txt:1029	Applause scales with score	rule			Applause/cheer feedback gets more impactful the higher an individual score is.	
+E1099	braindump	gam draft.txt:371	Ascension debuff cards	meta			Ascensions: each ascension level adds a chosen negative-effect card to the deck or rules deck, including permanent versions of boss environmental hazards.	
+E1100	braindump	gam draft.txt:1387	Auction Pinochle bidder-only meld	rule			Auction Pinochle: only the auction winner picks trump and can score melds; other players act as defenders.	
+E1101	braindump	gam draft.txt:736	Audience patience meter	rule			Audience patience system: moving cards drops patience, triggering unique effects delays the drop, and cards auto-drop when patience hits 0.	
+E1102	braindump	gam draft.txt:1448	Autochess-style ring type combo	rule			Autochess-inspired: multiple copies of a class/type of card within a single ring create special scaling effects, e.g. tying hoop/ball/fire/knife prop synergies to a same-type count in that ring.	
+E1103	braindump	gam draft.txt:485	Balanced prop targeting rules	suit			Alt balance: knives hit non-skill cards and hoops hit skill cards; balls buff skill cards and fire buffs non-skill cards, spreading buffs as evenly across the column as possible.	
+E1104	braindump	curated effects pre grid.csv:98	Balloon type	type			Opposite of a heavy card: always rises to the top of the stack.	
+E1105	braindump	curated effects pre grid.csv:8	Balls	suit			Base suit: ball props (count = rank) arc down the column applying a Juggling status that pays out column score when that card later scores; stacking requires different suit and adjacent rank.	
+E1106	braindump	gam draft.txt:99	Base scoring: vertical runs + horizontal poker	rule			Base scoring is vertical runs (with a minimum size) plus horizontal poker hands.	
+E1107	braindump	gam draft.txt:481	Basic suit props sweep board	suit			Scored basic (non-skill) cards summon rank-scaled prop objects in their row/column that move across the board and interact with other cards.	
+E1108	braindump	gam draft.txt:1427	Beehive four-of-a-kind removal	rule			Beehive Solitaire: allows removing a four-of-a-kind 'swarm' from the board.	
+E1109	braindump	gam draft.txt:1300	Beggar My Neighbor forfeit rule	rule			Beggar My Neighbor: playing a face card forces the next player to pay a forfeit (4 cards for ace, 3 for K, 2 for Q, 1 for J).	
+E1110	braindump	gam draft.txt:1299	Beggar My Neighbor number-card play	rule			Beggar My Neighbor: play continues normally on number cards (2-10).	
+E1111	braindump	gam draft.txt:1301	Beggar My Neighbor pile-win rule	rule			Beggar My Neighbor: if all forfeit cards are non-face, the face-card player takes the whole middle pile; a face card among the forfeit passes the effect to the new face card.	
+E1112	braindump	curated effects pre grid.csv:37	Best Bower	suit			Wild suit that counts as every suit for melds/flushes and can stack anywhere; if untalented, randomly selects a prop from the entire game to trigger.	
+E1113	braindump	gam draft.txt:1369	Bid-before-play mechanic proposal	skill			Proposed bid mechanic for this game: bet before play to gain extra points for hitting an exact number of melds.	
+E1114	braindump	gam draft.txt:641	Biome-based world/act map	map			Game runs on a level/act/world system (One Step From Eden style) traveling through biomes that each affect map generation differently.	
+E1115	braindump	gam draft.txt:1406	Blackjack bust rule	rule			Blackjack: score exactly 21 to win; going over 21 loses instantly.	
+E1116	braindump	random potential effects.csv:8	Blackjack meld idea	skill			Blackjack-referencing scoring idea (unelaborated).	
+E1117	braindump	curated effects pre grid.csv:58	Blank rank	rank			Rank effectively 0; always passes stacking rank comparisons but cannot participate in rank-based melds or effects.	
+E1118	braindump	gam draft.txt:316	Board has deck/discard/ruleset zones	rule			The board has a deck zone, a discard deck zone, and a ruleset deck zone.	
+E1119	braindump	todo.md:229	Booster reroll pool	rule			Booster reroll pool ships at 5 with a planned but unwritten reroll-count modifier content hook (a luck()-style effect).	
+E1120	braindump	gam draft.txt:1451	Boss: adjacency-only placement	boss			Boss variant of entrance cards: only allows placing cards adjacent to each other when placing on the grid.	
+E1121	braindump	gam draft.txt:301	Boss debuffs as ruleset cards	boss			Negative boss-battle effects are temporary cards added to the ruleset deck, defined to self-destruct after the game/act.	
+E1122	braindump	random potential effects.csv:25	Boss fire-breathing fight	boss			A boss appears that must be defeated with specific hands or raw point damage while it slowly breathes fire onto the player's actual score.	
+E1123	braindump	gam draft.txt:148	Boss phase every few rows	boss			Every few rows of the triangle map is a boss phase, visually designed to look like terrain.	
+E1124	braindump	gam draft.txt:721	Branching escalating-difficulty paths	map			Branching map paths with escalating difficulty; split roguelike map campaigns from Klondike-like preset puzzle levels; battle levels use a preset board plus the player's own unlocked deck.	
+E1125	braindump	gam draft.txt:695	Bribery/memory-wipe extra life	consumable			Bribery/Memory Wipe card: grants an extra life if a city/show is failed, letting the player keep going as if they had won.	
+E1126	braindump	gam draft.txt:1276	Built-in symmetric PvP mode	rule			Built-in PvP mode: both players start with the same deck and aim for the highest score.	
+E1127	braindump	todo.md:132	Burning cascades as combo source	rule			Open scoring knob: whether Burning-status cascades should count as a combo source.	
+E1128	braindump	gam draft.txt:276	Buttons and shops as cards	meta			All buttons should themselves be cards; e.g. a shop reroll is itself a tappable card on the board.	
+E1129	braindump	gam draft.txt:1200	Calculation Solitaire base piles	rule			Calculation Solitaire: suits don't matter; start with ace/2/3/4 foundation piles, one waste pile each.	
+E1130	braindump	gam draft.txt:1201	Calculation Solitaire looping stacks	rule			Calculation Solitaire: foundation piles stack in increments of their base number (1s, 2s, 3s, 4s), looping around past King.	
+E1131	braindump	gam draft.txt:1202	Calculation Solitaire waste-pile rule	rule			Calculation Solitaire: cards that don't fit go on a waste pile; only the waste pile's top card can move to a foundation, and only if legal.	
+E1132	braindump	gam draft.txt:1338	Canasta rank-based wildcards	rule			Canasta: certain ranks (e.g. 2s) act as wildcards.	
+E1133	braindump	gam draft.txt:1208	Canfield 3-card stock draw	rule			Canfield Solitaire: stock is drawn 3 cards at a time, only the top of the 3 usable (then the next below it once used).	
+E1134	braindump	gam draft.txt:1211	Canfield foundation build rule	rule			Canfield Solitaire: foundations build with same suit, ascending rank only.	
+E1135	braindump	gam draft.txt:1210	Canfield foundation-rank feed	rule			Canfield Solitaire: a card matching the foundation base's rank, wherever found in reserve or stock, goes straight to the foundation.	
+E1136	braindump	gam draft.txt:1206	Canfield tableau stacking rule	rule			Canfield Solitaire: tableau stacks 1 rank lower and opposite color; a whole stack can move if it follows this rule.	
+E1137	braindump	gam draft.txt:563	Card debuff statuses	skill			Debuff status effects on cards: e.g. Exhausted (loses rank at round end if it was on board), plus proposed Cancer and Parasites statuses.	
+E1138	braindump	gam draft.txt:457	Card groups boosted by leaders	skill			Cards belong to groups, and leader cards can boost the members of their group.	
+E1139	braindump	gam draft.txt:368	Card unlocks: action-based and score-based	meta			Dual unlock system: some cards unlock from specific in-game actions, others from reaching score/win thresholds; common cards from generic progress, rare cards from genre-specific play.	
+E1140	braindump	gam draft.txt:65	Cards as currency	meta			Instead of currency, cards themselves are the currency and are traded.	
+E1141	braindump	gam draft.txt:117	Cards auto-drop, no manual drag down	rule			Cards come down on their own and cannot be dragged down manually.	
+E1142	braindump	gam draft.txt:1266	Cards bounce/swap between grids	skill			Card effects that can bounce cards to other grids or swap places between grids.	
+E1143	braindump	gam draft.txt:315	Cards have 1 parent/1 child stack	rule			Cards can have exactly 1 parent and 1 child card, forming a stack.	
+E1144	braindump	gam draft.txt:478	Carnival meta shop	map			The overall meta shop is themed as a carnival.	
+E1145	braindump	gam draft.txt:1054	Carrier-stacking bonus points	skill			Talents doing tricks on top of other 'carrier' talent cards earn extra points.	
+E1146	braindump	random potential effects.csv:3	Champion card	skill			Cards of the same rank directly above or below this card are discarded.	
+E1147	braindump	gam draft.txt:1314	Cheat bluff-discard rule	rule			Cheat: discard face-down while announcing (possibly falsely) what rank you're playing; next player can claim one rank higher, lower, or the same.	
+E1148	braindump	gam draft.txt:1315	Cheat call-out resolution	rule			Cheat: calling 'cheat' makes the accused pick up the whole pile if lying, or the caller picks it up if the accused was truthful.	
+E1149	braindump	gam draft.txt:565	Cheat Day card	skill			Cheat Day: cards remaining in the deck get a rank increase.	
+E1150	braindump	gam draft.txt:233	Check scoring in deck/discard	rule			Scoring should also check cards sitting in the deck and discard pile, not just the board.	
+E1151	braindump	gam draft.txt:1439	Checkers hop-capture card	skill			Checkers-inspired 'frog' card: allowed to hop over existing cards.	
+E1152	braindump	random potential effects.csv:5	Cheering Team card	skill			Each scored card of the same suit as this card gets extra points.	
+E1153	braindump	gam draft.txt:660	Circular map / return-to-start	map			Alt map shape ideas: circle the map instead of a final city, or require returning to the start after reaching a big enough city.	
+E1154	braindump	gam draft.txt:429	Circus suits, rank cap question	suit			Suits become clowns/dancers/flames/juggling balls/hoops/knives; aces are the actual performers; considering capping rank at 10.	
+E1155	braindump	gam draft.txt:737	Clown set bonus raises patience	skill			Each unique clown card on board raises patience by 1; collecting all of them gives a set bonus chance to not consume patience.	
+E1156	braindump	gam draft.txt:1137	Clowns as wildcard/joker stand-ins	skill			Clowns can stand in for other cards, similar to a joker/wildcard, reflecting how circus clowns spoofed other acts.	
+E1157	braindump	gam draft.txt:447	Clowns leader archetype	skill			Clowns leader archetype: focuses on pip manipulation.	
+E1158	braindump	gam draft.txt:46	Collect number cards to progress	boss			Collect all number cards to progress to a stage where remaining boss face cards must be faced (Deadman Wonderland reference).	
+E1159	braindump	random potential effects.csv:8	Column card	type			Column-type card gives points to its column on score.	
+E1160	braindump	gam draft.txt:1268b	Column-locked entrance placement	rule			Restrict each column to accept only 1 entrance card, from any of the 5 entrance cards, rather than free column choice.	
+E1161	braindump	random potential effects.csv:6	Combo card	skill			During scoring, cards gain temporary points equal to the hand they were scored in.	
+E1162	braindump	gam draft.txt:389	Combo increments per unique effect	rule			Row/column scoring becomes a combo system: score increments by 1 for each unique effect triggered, with heavier emphasis on card effects that do direct damage under specific conditions.	
+E1163	braindump	pokerpatience.txt:5	Commit-to-grid entrance rule	rule			Once the player places a card in a grid, all current entrance cards must be placed in that same grid before the entrance refreshes with 5 new cards.	
+E1164	braindump	gam draft.txt:568	Common-doubles-rare chain	skill			Common card: doubles the chance of rares appearing.	
+E1165	braindump	gam draft.txt:272	Compress-board button	view			QOL: a compress-all-cards button converts the board into a flavorless sheet showing only pips and bright ability names (dimmed if inactive), maximizing readability.	
+E1166	braindump	gam draft.txt:452	Concessions leader archetype	skill			Concessions/food leader archetype: focuses on positive effects.	
+E1167	braindump	random potential effects.csv:6	Connect 4 mini-mode	map			Mini-game mode idea themed on Connect 4.	
+E1168	braindump	gam draft.txt:645	Constellation tour map, no backtrack	map			FTL-style constellation map: cannot backtrack, touring cities to build fame, with environmental hazards and surprise weather.	
+E1169	braindump	gam draft.txt:453	Costume designer leader archetype	skill			Costume designer leader archetype: focuses on equipment/clothing/stamp slots.	
+E1170	braindump	gam draft.txt:1340	Crazy Eights wild-suit rule	rule			Crazy Eights: eights are wild and choose the next suit; must stack matching suit or rank; drawing up to 3 cards if unable to play.	
+E1171	braindump	gam draft.txt:1353	Crazy Tan escalating draw penalty	rule			Crazy Tan: unable-to-move players draw and skip, with the required draw increasing by 1 for each consecutive skip until someone moves.	
+E1172	braindump	gam draft.txt:1394	Cribbage phase-1 scoring events	rule			Cribbage phase 1 scores for: total of exactly 15, pairing the opponent's last card, first card being a jack, or a sequence of 3+ consecutive cards (order-independent).	
+E1173	braindump	gam draft.txt:1393	Cribbage phase-1 stack-to-31	rule			Cribbage phase 1: play cards building a running total up to 31 (ace=1, faces=10).	
+E1174	braindump	gam draft.txt:1397	Cribbage phase-2 hand scoring	rule			Cribbage phase 2: score the played hand for 15-combinations, pairs, runs, 4/5-card flushes, and a jack.	
+E1175	braindump	gam draft.txt:1177	Crit chance to increase score	rule			A chance to crit, increasing score.	
+E1176	braindump	gam draft.txt:583	Cross-game score carryover	meta			Scoring done outside the main game (side content) carries over into the next game.	
+E1177	braindump	pokerpatience.txt:18	Cross-grid row expansion setting	rule			A setting to make other grids expand their rows/zones too if one grid's rows expand due to increasing height.	
+E1178	braindump	gam draft.txt:1268c	Cross-path entrance bonus	skill			Card effect that rewards entrance cards crossing each other's paths on the way to their destination column.	
+E1179	braindump	gam draft.txt:543	Custom deck as final deck	meta			A player-built custom deck can serve as the final/endgame deck.	
+E1180	braindump	gam draft.txt:448	Dancer leader archetype	skill			Dancer/skill-tricks leader archetype: focuses on specific formations.	
+E1181	braindump	curated effects pre grid.csv:71	Decimal numbers (Half-Step hat)	stamp			Rank evaluates as both itself and +1 simultaneously for all purposes (e.g. a 3 with this hat also counts as 2.5/2), letting one card double-count toward multiple melds like pairs and straights.	
+E1182	braindump	random potential effects.csv:3	Deck auto-slotter	skill			While in the deck, if an open card with a legal slot is ever available, this card moves from the deck into that slot.	
+E1183	braindump	gam draft.txt:13	Deck click drop	rule			Each click of the deck causes new cards to drop down, rounds remaining decrease, and slots on the right score whatever card is put on them.	
+E1184	braindump	gam draft.txt:370	Deck unlocks combined with gimmick runs	meta			Deck unlocks (Balatro-style) combined with gimmick-run variants instead of a separate tab.	
+E1185	braindump	gam draft.txt:22	Deck variants change rules	map			Different decks influence the starting deck and rules; decks can be combined and picked up during a run.	
+E1186	braindump	gam draft.txt:310	Decks as playable solitaire boards (vetoed)	map			Considered (then vetoed) making every deck its own playable solitaire board so players could reorder or extract cards from it.	
+E1187	braindump	random potential effects.csv:3	Deja Vu card	skill			This card remembers its board placement; the next time an open slot appears there, it moves there from anywhere.	
+E1188	braindump	todo.md:274	Deterministic per-subsystem RNG streams	rule			Planned but unimplemented: deterministic per-subsystem RNG streams, required before any seed-sharing feature.	
+E1189	braindump	gam draft.txt:1425	Devil's Grip +3 rank stacking	rule			Devil's Grip Solitaire: stacking requires strictly +3 rank, with the starting row determining the sequence.	
+E1190	braindump	curated effects pre grid.csv:92	Diamond type	type			Doubles this card's score; costs +3 when traded in at shops.	
+E1191	braindump	gam draft.txt:733	Digital card cannot be discarded	stamp			Digital card type: cannot be discarded from the board.	
+E1192	braindump	gam draft.txt:635	Disaster card packs	boss			Disaster-themed card packs appear as choices on the board.	
+E1193	braindump	random potential effects.csv:3	Discard-to-deck on score	skill			On score, put 2 random cards from the discard pile back into the deck; an Exhaust variant skips the whole discard step.	
+E1194	braindump	random potential effects.csv:4	Distancing card	skill			Card hovers at the top of the stack without blocking the card below it, and cannot be clicked (counts as an extra row).	
+E1195	braindump	gam draft.txt:1024	Diversity-based scoring instead of combo	rule			Idea of scoring 'diversity' (variety of suits/types on board) as an alternative axis to the combo system.	
+E1196	braindump	gam draft.txt:72	Double trigger seal	stamp			Seal: this card's effect triggers twice.	
+E1197	braindump	gam draft.txt:87	Draw-through then submit	rule			Constantly draw through the deck like classic solitaire, then submit to evaluate the entire board state and reset.	
+E1198	braindump	gam draft.txt:324	Dynamic input/board card count from rules	rule			The number of input cards and board cards is decided dynamically at game creation by iterating the rule deck (e.g. a rule dictating 5 input columns and 5 board columns).	
+E1199	braindump	random potential effects.csv:3	Earth material (bottom of deck)	type			Earth material type stays on the bottom of the deck.	
+E1200	braindump	random potential effects.csv:11	Earthquake card	boss			Scrambles the board.	
+E1201	braindump	gam draft.txt:423	Effect art pops up on trigger	view			When an effect plays, its art pops up on screen in the background as if it is being performed.	
+E1202	braindump	gam draft.txt:130	Effect trigger order	rule			Card effects trigger in order: field effects, then deck top-down (soon-to-be-drawn first, order hidden), then left-right top-down including entrance, then discard pile top-down (recent discards first).	
+E1203	braindump	random potential effects.csv:7	Effect-trigger point gain	skill			Whenever a card triggers its effect, gain a point.	
+E1204	braindump	random potential effects.csv:3	Egg card	skill			When submitted, this card instead becomes a completely random other card of higher rank.	
+E1205	braindump	curated effects pre grid.csv:26	Electricity	suit			On score (if untalented), scores points based on this card's rank plus the ranks of all orthogonally/diagonally connected electric-suit cards; stacking requires different suit and adjacent rank.	
+E1206	braindump	gam draft.txt:81	Elemental materials	type			Elemental card materials: Earth, Air, Water, Fire.	
+E1207	braindump	gam draft.txt:102	Elemental movement types	type			Elemental card types have custom movement, such as always staying on top or bottom of a stack.	
+E1208	braindump	gam draft.txt:1280	Empty-zone rank buff (mancala effect)	skill			Manipulate what an empty zone does to the next card placed on it, e.g. a mancala-style effect where a zone temporarily raises the rank of whatever is placed there (shown as +X).	
+E1209	braindump	gam draft.txt:620	Encounters as mini solitaire games	map			Map encounters could be mini solitaire games in their own right.	
+E1210	braindump	gam draft.txt:1268d	End show early with good entrance	rule			Entrance cards are global by default; during the final performance, the player can choose to end early if the current entrance cards are good.	
+E1211	braindump	gam draft.txt:321	Entrance cards act via ability	rule			Entrance/input cards get their draw-and-pass functionality implemented as an ability: on turn start, pass child cards to the board card in the same column, then draw a random card from the deck.	
+E1212	braindump	todo.md:273	Entrance drop-down between acts	rule			Planned but unimplemented: an entrance drop-down step between acts.	
+E1213	braindump	gam draft.txt:1410	Entrance-set betting proposal	skill			Proposed betting system comparing the value of the current entrance set versus the next entrance set.	
+E1214	braindump	pokerpatience.txt:37	Entrance zone cards seed first column	rule			5 entrance/input zone cards work as today, refreshing in random draw order once empty or the current grid is full; the 1st input card corresponds to the 1st column of the 5x5 grid.	
+E1215	braindump	random potential effects.csv:15	Eruption card	boss			Cards receive a burned effect that spreads in an expanding snake pattern, with no counter available.	
+E1216	braindump	gam draft.txt:449	Escape artist leader archetype	skill			Escape artist/stuntsman leader archetype: focuses on negative effects.	
+E1217	braindump	gam draft.txt:230	Every 5th row red	rule			Every 5 rows, make that row red (visual scoring marker/threshold).	
+E1218	braindump	gam draft.txt:275	Exchange Voucher card	consumable			Exchange Voucher: a special deck card usable to swap itself with any card currently on screen.	
+E1219	braindump	gam draft.txt:375	Eye of God card	consumable			Eye of God: allows seeing all decks and true (unobscured) card descriptions.	
+E1220	braindump	gam draft.txt:342	Eye stamp shows mini skill art	stamp			Eye stamp allows a card to stay active despite being covered, showing a miniature version of the skill art inside the stamp.	
+E1221	braindump	gam draft.txt:25	Face cards worth 10	rank			Face cards all count as 10 when adding to a hand total.	
+E1222	braindump	gam draft.txt:642	Fame gate every 10 levels	meta			Every 10 levels, the player must have a certain fame level to progress to the next stage.	
+E1223	braindump	gam draft.txt:658	Fame improves card rarity odds	meta			Odds of better-rarity cards increase with total fame.	
+E1224	braindump	gam draft.txt:1351	Fan Tan foundation-build rule	rule			Fan Tan: 7s are foundation cards; can only extend with a same-suit card one rank higher or lower; unable-to-play forfeits a chip.	
+E1225	braindump	random potential effects.csv:9	FEMA mode	boss			After a number of weather cards, disaster relief becomes available.	
+E1226	braindump	curated effects pre grid.csv:114	Fifteen (cribbage) talent	skill			Spotlight ability checks the scoring hand (row or column) for cards summing to 15 for bonus points; alt version melds this card with adjacent neighbors whose ranks sum to 15 with it.	
+E1227	braindump	gam draft.txt:149	Fights only on boss phases	map			Fights may be restricted to only happen on boss phases of the map.	
+E1228	braindump	gam draft.txt:560	Final act score multiplier	rule			The final act gets an extra points multiplier, or each act gets an increasing multiplier.	
+E1229	braindump	gam draft.txt:466	Final-act type	type			Final-act card type shows up alone after all other cards are drawn.	
+E1230	braindump	random potential effects.csv:6	Fire material (moves up)	type			Fire material type moves upward one position per turn.	
+E1231	braindump	random potential effects.csv:18	Fire spreading card	boss			Fire spreads to wood-type cards but is blocked by road-type cards.	
+E1232	braindump	gam draft.txt:484	Firework suit column score	suit			Firework suit directly adds points to its column based on its rank.	
+E1233	braindump	curated effects pre grid.csv:14	Fireworks	suit			On score, the rocket rises its column and banks the column score directly based on rank; alt version has each firework trigger add +1 firework to the next trigger; stacking requires different suit and adjacent rank.	
+E1234	braindump	gam draft.txt:464	First-act type	type			First-act card type shows up alone before any other cards.	
+E1235	braindump	random potential effects.csv:7	Fishing minigame card	map			Place this card over the deck to trigger a fishing minigame to get a card from the deck.	
+E1236	braindump	curated effects pre grid.csv:11	Flames	suit			Base suit: fire props arc down the column applying Flaming stacks that multiply each burning prop's effect (not applicable to fire-suit or talent cards, but inherited by spawned props); stacking requires different suit and adjacent rank.	
+E1237	braindump	gam draft.txt:390	Flat points multiplied by combo	rule			Flat points come from scoring, while row combo and column combo values are multiplied into the flat points.	
+E1238	braindump	todo.md:274	Fog of war on map	map			Planned but unimplemented: fog of war limiting map visibility.	
+E1239	braindump	gam draft.txt:643	Fog of war on tour map	map			Tour theme with fog of war reducing visibility of further map choices.	
+E1240	braindump	gam draft.txt:377	Foot of God card	consumable			Foot of God: can switch locations with any card on screen.	
+E1241	braindump	gam draft.txt:680	Forbidden click-to-stack solitaire event	map			A forbidden solitaire variant where you just click cards to stack them into your hand, possibly used for events.	
+E1242	braindump	gam draft.txt:450	Fortune teller leader archetype	skill			Fortune teller leader archetype: focuses on deck manipulation.	
+E1243	braindump	gam draft.txt:67	Frankenstein card	skill			On submission, this card combines with the bottom and top cards into a 3-card merged stack that remains in the submission zone after scoring.	
+E1244	braindump	gam draft.txt:730	Freakshow off-rank cards	rank			Freakshow-class cards do not have normal rank numbers.	
+E1245	braindump	gam draft.txt:1423	Free Cell reserve slots	skill			Free Cell-style reserve/free slots that can hold cards (possibly via stacking) and be grabbed anytime.	
+E1246	braindump	gam draft.txt:47	FTL-style map with special cards	map			Map is FTL-like; each location is marked by a single special card the player collects, which has special effects.	
+E1247	braindump	pokerpatience.txt:11	Full-stack scoring on tall stacks	rule			Scoring a height-10 (or taller) stack scores the entire stack at once.	
+E1248	braindump	gam draft.txt:1168	Fun-house-mirror effect modifiers	skill			Fun-house mirrors: skills that modify nearby effects in some way.	
+E1249	braindump	random potential effects.csv:5	Future Sight card	skill			See the next 5 cards in the deck.	
+E1250	braindump	gam draft.txt:589	Genie wish card	consumable			Genie: make a wish by choosing a card to create a copy of in hand.	
+E1251	braindump	gam draft.txt:1331	Gin Rummy early-end scoring	rule			Gin Rummy: a player can end the round early if mostly done with combinations, and is rewarded for having more complete combinations than opponents.	
+E1252	braindump	curated effects pre grid.csv:95	Glass type	type			Spotlights cards behind it, but breaks if a heavy-type card passes through it.	
+E1253	braindump	gam draft.txt:1270	Global vs ring-local card effects	skill			Grid-based card effects can be scoped as global (all grids) or local to a single ring.	
+E1254	braindump	gam draft.txt:1311	Go Fish ask-and-fish rule	rule			Go Fish: ask another player for a rank you hold; if they have it they hand it over, otherwise you draw ('fish') from stock.	
+E1255	braindump	random potential effects.csv:4	Goalpost card	skill			Enhances a random viable score type, which changes each game.	
+E1256	braindump	random potential effects.csv:7	Gold as money material	type			Gold cards act as money/currency.	
+E1257	braindump	gam draft.txt:66	Gold heavy to bottom	type			Gold cards are heavy and always sink to the bottom of the deck.	
+E1258	braindump	curated effects pre grid.csv:89	Gold type	type			Sinks to the bottom of stack, heavier than Iron (stops at other heavy cards); costs +2 when traded in at shops.	
+E1259	braindump	gam draft.txt:426	Grand Entrance / The Ring zones	rule			Circus rename: upper and lower play zones become 'Grand Entrance' and 'The Ring'.	
+E1260	braindump	pokerpatience.txt:36	Grid-creation card owns its zones	skill			When a 5x5 grid-creation card becomes active it creates the 5x5 zone cards it owns; when inactive, its grid of zone cards is removed and any cards it contains are discarded.	
+E1261	braindump	pokerpatience.txt:35	Grid-creation rule card	skill			A rule card that, on game start, checks the deck size and adds one 5x5 grid-creation card to the rules deck per 25 cards in the deck.	
+E1262	braindump	pokerpatience.txt:6	Grid refill on completion	rule			If a grid is completed with entrance cards remaining, it frees up for another grid and its empty slots are refilled with the remaining cards in their current slot.	
+E1263	braindump	gam draft.txt:180	Guarantee early entrance cards	rule			Some way to guarantee that newly chosen cards show up first, or sooner, in the entrance.	
+E1264	braindump	gam draft.txt:717	Guaranteed card in pack preview	map			Card packs show at least 1 guaranteed card from the pack in the map preview.	
+E1265	braindump	gam draft.txt:376	Hand of God card	consumable			Hand of God: allows moving cards to any location on the board and reordering cards within a deck.	
+E1266	braindump	gam draft.txt:507	Hard cap on flush win-con plays	rule			Alt win condition idea: win via 1 flush, but a hard cap exists on total flushes ever playable so it cannot be repeated infinitely.	
+E1267	braindump	gam draft.txt:1379	Hearts avoid-scoring rule	rule			Hearts: avoid winning tricks containing hearts (1 point each) or the queen of spades (13 points).	
+E1268	braindump	gam draft.txt:1381	Hearts-style negative-suit boss mechanic	boss			Boss mechanic where certain suits cause a meld to score 0 or negative if scored.	
+E1269	braindump	gam draft.txt:79	Heavy material	type			Heavy card type sinks to the bottom of the deck.	
+E1270	braindump	pokerpatience.txt:11	Height as a 4th coordinate	rule			Stacking cards on top of each other adds a 4th coordinate (height); 5 cards aligned in height complete a scorable line at that height, including a same-x,y stack of 5.	
+E1271	braindump	pokerpatience.txt:11	Height diagonal scoring updates nearest corner	rule			A diagonal line across height updates the corner score label closest to the highest height involved, to avoid overlap.	
+E1272	braindump	pokerpatience.txt:14	Height removal drops cards above	rule			Removing a card from a height stack causes the cards above it to drop down.	
+E1273	braindump	pokerpatience.txt:11	Height scoring triggers only building up	rule			Height-based scoring only triggers when a stack builds upward through a multiple of 5; dropping back down through those intervals does not retrigger scoring.	
+E1274	braindump	gam draft.txt:217	Hidden trigger stamp	stamp			Hidden trigger: ability activates even when the card is hidden (covered), unlike default active abilities that need visibility.	
+E1275	braindump	gam draft.txt:666	High-score gated progress	meta			Progress is gated behind reaching certain high scores that require luck or complex card play; more complex cards award more points, pushing players toward dynamic decks.	
+E1276	braindump	random potential effects.csv:3	Hippo card	skill			When a single card is placed on top of this card, consume it and gain its rank in value (rank wraps around).	
+E1277	braindump	curated effects pre grid.csv:2	Hoops	suit			Base suit: when a scored Hoops card is untalented, hoop props (count = rank) sweep the scored row and every skill card the hoop passes through scores again; stacking requires different suit and adjacent rank.	
+E1278	braindump	random potential effects.csv:5	Hurricane card	boss			Cards in a donut shape get wet; the hurricane starts at a random category 1-5, moves, and weakens over time.	
+E1279	braindump	gam draft.txt:710	Hype mechanic doubles fame requirement	meta			Hype mechanic: choose to double the fame required to defeat the next show in exchange for better goodie odds.	
+E1280	braindump	todo.md:274	Hype-wagering system	meta			Planned but unimplemented: a hype/wagering system.	
+E1281	braindump	gam draft.txt:1274	Immediate vs delayed row/col scoring	rule			Choice between scoring a completed row/column immediately on completion versus scoring everything at the end; card effects could trigger specifically on completion, rewarding early vs late finishers.	
+E1282	braindump	gam draft.txt:650	In-run temporary prestige events	meta			Events can grant temporary prestige points to allocate mid-run instead of only pre-game.	
+E1283	braindump	gam draft.txt:1175	Injury clears if unused	rule			An injury stack is lost if the card goes through an act without performing.	
+E1284	braindump	gam draft.txt:1028	Injury stacking status	skill			Injury stacking status effect: each injury stack increases the chance a card is permanently removed/retired.	
+E1285	braindump	curated effects pre grid.csv:47	Integer numbers (default rank)	rank			Default rank A-K (1-13), possibly extended to -99..99; negative ranks apply a negative status/shader inverting effects and reducing score, while still counting uniquely toward combo.	
+E1286	braindump	curated effects pre grid.csv:86	Iron type	type			Sinks to the bottom of any stack, respecting physical weight order.	
+E1287	braindump	random potential effects.csv:5	Jenga card	skill			Clicking a non-top card moves it to the top of the next-smallest stack, leaving an empty space; rows may have at most 4 empty spaces and must stay connected, or this card is discarded; empty spaces collapse once inactive.	
+E1288	braindump	gam draft.txt:727	King chess card	skill			King: moves like a chess king, never captures (only swaps with adjacent cards), auto-moves out of check from another chess card on any action, and is worth a ton of points if captured by a chess card.	
+E1289	braindump	gam draft.txt:1219	Klondike empty-space king rule	rule			Klondike Solitaire: empty tableau spaces can only be filled by a king-headed stack.	
+E1290	braindump	gam draft.txt:1218	Klondike reveal-on-move rule	rule			Klondike Solitaire: moving a face-up card off a pile reveals the card beneath as face up.	
+E1291	braindump	gam draft.txt:1216	Klondike stacking rule	rule			Klondike Solitaire: tableau stacks opposite color, one rank lower.	
+E1292	braindump	curated effects pre grid.csv:108	Kuroko hat	stamp			This card is unseen: does not block Spotlight beneath it and cannot be targeted by effects.	
+E1293	braindump	gam draft.txt:1227	La Belle Lucie merci rule	rule			La Belle Lucie: if no moves or redeals remain, one merci move is allowed, shifting a card position up or down by one.	
+E1294	braindump	gam draft.txt:1225	La Belle Lucie redeal limit	rule			La Belle Lucie: three tries to win; redeal reshuffles all cards and redistributes in threes.	
+E1295	braindump	gam draft.txt:1223	La Belle Lucie stacking rule	rule			La Belle Lucie: only top cards of each pile are playable, moved to foundation or stacked one rank lower, same suit.	
+E1296	braindump	gam draft.txt:304	Label/Evident rule-visibility card	skill			A 'Label/Evident' type card announces its ruleset-deck effect as an active effect on the board even when the universal/rules deck itself is not visible.	
+E1297	braindump	gam draft.txt:147	Lane loss on lateral movement	map			Moving to the left lane permanently loses access to both right lanes; moving to the middle lane loses both left and right lanes.	
+E1298	braindump	gam draft.txt:440	Leader/champion cards	skill			Leader/champion cards start the game already on the board (or entrance) and do not leave on submit.	
+E1299	braindump	gam draft.txt:442	Leader flavor debuffs	skill			Optional leader debuffs, e.g. fear of fire/knives preventing placement on fire/knife cards.	
+E1300	braindump	todo.md:274	Leaders/acts system	skill			Planned but unimplemented: a leaders/acts system.	
+E1301	braindump	gam draft.txt:111	Legal stack ascending/descending, no same suit	rule			Legal stacks are ascending or descending rank order and cannot stack same suit.	
+E1302	braindump	gam draft.txt:93	Legal stacks only, harder over time	rule			Only legal stacks can be picked up, and moving stacks becomes more difficult with time.	
+E1303	braindump	gam draft.txt:80	Light material	type			Light card type rises to the top of the deck.	
+E1304	braindump	random potential effects.csv:4	Lightning card	boss			Lightning strikes the highest-value card on the board, causing a shock effect.	
+E1305	braindump	gam draft.txt:1431	Loaned temporary cards	skill			Loaned cards: temporary cards that last only a few rounds (Game of Life reference).	

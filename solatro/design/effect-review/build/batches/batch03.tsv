@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E0523	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Epic (chain)	skill			Doubles the chance of Legendary cards appearing.	
+E0524	designdocs	DESIGN_DOC.md §16 Economy & Shop	Escalating reroll cost	rule			Shop reroll/refresh costs increase with each use.	
+E0525	designdocs	DESIGN_DOC.md §11 Class list	Escape Artist / Stuntsman class	unknown			Class mechanical focus: negative-effects (debuffs).	
+E0526	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Escaramuza formation bonus	skill			A synchronized-formation bonus for symmetrical board states.	
+E0527	designdocs	DESIGN_DOC.md §19 Meta Progression	Event-recycled prestige	unknown			An in-run event grants temporary prestige points to allocate, reusing the meta-progression system mid-run.	
+E0528	designdocs	DESIGN_DOC.md §8 Rule Deck (vetoed)	Every deck as its own solitaire board	unknown			Vetoed: making every deck (draw/discard/rule) itself a playable solitaire board with no layout control, leading to unsolvable boards.	
+E0529	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Exchange Voucher	skill			Usable from the deck: swap it with any card currently on screen.	
+E0530	designdocs	DESIGN_DOC.md §16 Economy & Shop	Exponential price curve	rule			Card power/cost sits on an exponential curve: stronger cards are priced cheaper than linear scaling would suggest, since high cost trades off against flexibility.	
+E0531	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Exposition City	boss			An enormous once-per-map goal where every suit is welcomed.	
+E0532	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Exposure cost	rule			Revealing a Gaff's true nature (the player's own or a boss's) carries a cost.	
+E0533	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Eye of God	skill			See all decks (including the rule deck) and their true descriptions.	
+E0534	designdocs	DESIGN_DOC.md §8 Rule Deck	Eye of God true vision	unknown			A prestige unlock grants 'true vision': seeing all decks (including the rule deck) and true card descriptions.	
+E0535	designdocs	DESIGN_DOC.md §7 Spotlight System	Eye stamp mini-art	stamp			The hidden-trigger (eye) stamp shows a miniature of the card's skill art inside the stamp icon.	
+E0536	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	Face/heel alignment	rule			Cards have face/heel modes with different bonuses; towns prefer one alignment or the other.	
+E0537	designdocs	DESIGN_RECOMMENDATIONS.md §6 Concessions	Fairy Floss	skill			When scored, adjacent cards gain +1 rank for this show.	
+E0538	designdocs	DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe	Fame as antagonist reframe	rule			Rename the goal score to 'Fame needed'; overscore grants tips; no separate enemy HP is added.	
+E0539	designdocs	DESIGN_DOC.md §2 Core Game Loop refinements	Fame banks at Continue	rule			Fame is only committed when the player presses Continue after a win, not at the outcome screen itself, so a win stays undoable until then.	
+E0540	designdocs	DESIGN_DOC.md §15 Map (implemented)	Fame gates pack rarity	rule			Accumulated fame raises a run-wide luck value that gates stamp/skill/type rolls in packs.	
+E0541	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Fame improves offer rarity	unknown			Total accumulated fame improves the rarity odds of card offers.	
+E0542	designdocs	DESIGN_DOC.md §5 Scoring (circus framing)	Fame/tips framing	rule			Scoring represents exciting the audience; cheering audio scales with score; overscoring pays out tips; the required score is the fame the show must earn.	
+E0543	designdocs	DESIGN_REFERENCES.md §A11 South America	Family-tent deck	unknown			Starts weak, but gains a permanent heirloom card each finished tour.	
+E0544	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	Festival mini-contest node	unknown			Win any 1 of 3 mini-contests (score/formation/speed) for the prize.	
+E0545	designdocs	DESIGN_DOC.md §11 Act types	Final Act	type			Deck-position type: shows up after all other cards are drawn, possibly carrying an extra multiplier.	
+E0546	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Fire breather	skill			Projects a Flames buff across an entire row, then Exhausts itself.	
+E0547	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Fire = Burning status	suit			Fire drops a Burning status on its target, multiplying that card's own suit-effect prop count.	
+E0548	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Fire-knife dual-suit pip	suit			A pip counting as both Knives and Flames suits simultaneously.	
+E0549	designdocs	DESIGN_DOC.md §10 Suits	Fireworks suit (proposed)	suit			Fireworks suit directly adds points to its column based on rank.	
+E0550	designdocs	DESIGN_DOC.md §11 Act types	First Act	type			Deck-position type: shows up alone, before any other cards are drawn.	
+E0551	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	First of May	unknown			A rookie joins: gain a random Common card with a hidden growth condition that upgrades it after scoring 10 times.	
+E0552	designdocs	DESIGN_DOC.md §14.3 Types	First / Second / Final Act (type entry)	type			Deck-position control types (see §11 Act types).	
+E0553	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Flash	type			Scores triple points, but only the first time it would ever score, once per show.	
+E0554	designdocs	DESIGN_RECOMMENDATIONS.md §6 Animal Trainer	Flea Circus	skill			Scores as if it were 5 cards of rank 1, for combo-counting purposes.	
+E0555	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Flooded rows	rule			Water-covered rows let cards float (move freely sideways) while the cards beneath stay hidden but active.	
+E0556	designdocs	DESIGN_REFERENCES.md §B1 Aerial & Wire	Flyer & catcher system	skill			The Flyer card can be 'thrown' to any column containing the Catcher card.	
+E0557	designdocs	DESIGN_DOC.md §15 Map v3 (Biome tour)	Fog of war on choices	rule			Fog of war obscures further map choices ahead, themed as 'going on tour.'	
+E0558	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Fog-of-war route arrows	rule			Arrow markers stay visible on map edges the player has already scouted.	
+E0559	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Fool's License	skill			Ignore one rule card of the player's choice while this card is spotlit.	
+E0560	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Foot of God	skill			Switch locations with any card currently on screen.	
+E0561	designdocs	DESIGN_DOC.md §21 Events & Encounters	Forbidden-solitaire event mode	unknown			An event mode variant where clicking cards sends them directly to the player's hand.	
+E0562	designdocs	DESIGN_DOC.md §8 Rule Deck	Force-trigger via stacking	skill			A card that force-triggers a linked on-trigger card whenever it is tapped via stacking; judged probably too hard to implement well.	
+E0563	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	Formation alt win cons (rejected)	unknown			Rejected: alt win conditions tied to formations, since a crafted deck can guarantee the formation every time.	
+E0564	designdocs	DESIGN_DOC.md §11 Class list	Fortune Teller class	unknown			Class mechanical focus: deck manipulation.	
+E0565	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Forward somersault (Con Colleano)	skill			Flip a card over the one directly above it (swap upward).	
+E0566	designdocs	DESIGN_REFERENCES.md §A5 China	Friendly Acrobat town	boss			Acrobat cards cost less here, and acrobat packs are guaranteed.	
+E0567	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	FTL constellation map	rule			A constellation/DAG map with no backtracking; touring city to city builds fame; environmental hazards and surprise weather occur en route.	
+E0568	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Gambler leader (Poker Alice)	type			A leader built for a casino-flavored deck.	
+E0569	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Genie's Wish	consumable			Choose a card to create a copy of in the player's hand.	
+E0570	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Gentleman juggling	skill			Prop (non-feat) cards in this card's row count as Balls suit.	
+E0571	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Gentling	rule			Animal cards can be buffed into loyalty instead of being consumed, as an alternative to eating mechanics.	
+E0572	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Ghost Card (summary)	stamp			Doesn't block Spotlight for cards beneath it.	
+E0573	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Glass	type			Scores double points, but is destroyed (shatters) after being scored 3 times.	
+E0574	designdocs	DESIGN_DOC.md §15 Map (implemented)	Goal curve formula	rule			Show goals follow G0 x (N-hat/N0)^ALPHA x difficulty x BOSS x LAP^lap, baked per progress step with a monotone clamp.	
+E0575	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Gold card	skill			Money-token card; heavy, so it always sinks to the bottom of the deck.	
+E0576	designdocs	DESIGN_REFERENCES.md §A5 China	Gold suit	suit			A literal money suit, playable as a normal suit as well as functioning as currency.	
+E0577	designdocs	DESIGN_DOC.md §16 Economy & Shop	Gold token cards	type			Gold cards are heavy token cards minted by Producer-class effects or money-on-trigger stamps.	
+E0578	designdocs	DESIGN_RECOMMENDATIONS.md §6 Special Effects	Grand Spec	skill			If all columns scored this submit, double the show's combo.	
+E0579	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	Gym node (Zurkhaneh)	unknown			Permanently +1 rank to one card; chivalry rule: only applies if that card has never been used to destroy another card.	
+E0580	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	Half-step rank	rank			Rank of 5½ (etc.): stacks between 5 and 6 in a run but can never meld into a poker hand.	
+E0581	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Hall of Mirrors	boss			The boss show duplicates the board's reflection with fake copies (Gaffs) of the player's cards to play around.	
+E0582	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Halo charge display	rule			The halo doesn't resize but gains black divider lines to show remaining charge uses.	
+E0583	designdocs	DESIGN_REFERENCES.md §B1 Aerial & Wire	Handicap flourish	skill			Voluntarily debuff this card's move for double its score.	
+E0584	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	Harlequin pip	suit			Dual-suit pip: counts as two suits at once for scoring purposes.	
+E0585	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Head of state attends	unknown			Pass the show to permanently raise the fame floor.	
+E0586	designdocs	DESIGN_REFERENCES.md §F2 Kayfabe & Sports Entertainment	Heat as second currency	rule			Heel shows earn heat instead of fame; some towns pay more for a villain.	
+E0587	designdocs	DESIGN_DOC.md §14.3 Types	Heavy	type			Sinks to the bottom of the deck after shuffling.	
+E0588	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Held-button full description	rule			Reading a card's full description requires holding a button or an info toggle (also applies in deck/pack viewers).	
+E0589	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Helium Card	type			Named version of the Light material: rises during Next.	
+E0590	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	Hey Rube! (boss)	boss			Each submit, the rightmost column is attacked: cards there are debuffed unless guarded by a Stuntsman/Strongman card.	
+E0591	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Hidden bearers (costaleros)	rule			Covered cards beneath a scoring card add their ranks to it.	
+E0592	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Hidden-identity reveal cards	rule			Identity/rarity is revealed only after N scores, as a fanfare moment.	
+E0593	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Hidden micro-text art	unknown			A card's art contains legible hidden micro-text.	
+E0594	designdocs	DESIGN_DOC.md §8 Rule Deck	Hidden Rules Deck	rule			A normally-hidden Rules Deck holds cards that define the default ruleset (stacking, scoring, input/zone counts, draw-on-Next); changing the ruleset means changing cards in this deck.	
+E0595	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	High-score luck gates	unknown			Progress is gated behind occasional extreme high scores that demand luck or complicated decks, pushing toward dynamic, animated builds.	
+E0596	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Hippodrome factions	boss			Each show, an audience faction favors one suit; ignoring them too long spawns a Riot boss.	
+E0597	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Hire a claque	unknown			Guarantees minimum fame this show, but demands payment at every subsequent show.	
+E0598	designdocs	DESIGN_DOC.md §21 Events & Encounters	History-driven strike/tax events	unknown			Run behavior triggers events: sacrificing too many talents causes a union strike; hoarding too many cards causes tax evasion (lose a portion of basic cards).	
+E0599	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	HONK	skill			On cue (tap), makes a honk noise; unlimited uses.	
+E0600	designdocs	DESIGN_REFERENCES.md §A5 China	Hoop tower	skill			Consecutive same-suit hoop cards multiply their score.	
+E0601	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	Houses	rule			Cards belong to named houses with Mother/leader cards; category walks are judged-show scoring events.	
+E0602	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Hundred Entertainments deck	unknown			A 100-card variant deck of all commons, focused on combo scoring.	
+E0603	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Hype mechanic	rule			Voluntarily double the fame required for the next show in exchange for better goodies.	
+E0604	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Illegal stack submission spot	rule			Early rule: an illegal stack could only be placed on the submission spot (removed with the loop v2 rewrite).	
+E0605	designdocs	DESIGN_DOC.md §14.3 Types	Immovable (unnamed)	type			Type that resists being moved once placed.	
+E0606	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Improving town (Chautauqua)	boss			No Danger acts allowed, but Concessions/education-tagged cards score double.	
+E0607	designdocs	DESIGN_DOC.md §2 Core Game Loop v1	Incoming card mulligan	rule			Incoming cards can be mulliganed via a click + discard button before dropping.	
+E0608	designdocs	DESIGN_DOC.md §2 Core Game Loop v1	Incoming card rearrange	rule			Incoming cards can be rearranged before they drop into play.	
+E0609	designdocs	DESIGN_DOC.md §14.3 Types	Input	type			Zone-header type: on Next, drops its held stack to the paired lower column, then draws a new card.	
+E0610	designdocs	DESIGN_DOC.md §14.4 Rule cards	Input Adder (upper)	rule			Adds 1 Entrance input column per copy in the rule deck.	
+E0611	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Inverted-blessing naming	unknown			Debuff-granting cards carry well-wishing names, and vice versa.	
+E0612	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Jack-of-all-trades	skill			Counts as every class at once, but at half effect (masters none).	
+E0613	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Jaded city (Richiardi)	boss			Only shock (Danger/negative) acts impress here; a horror-show variant scoring rule applies.	
+E0614	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Jaded fear-show town	boss			Debuff-inflicting cards are the headliners in fear shows.	
+E0615	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	John Robinson (elite)	boss			Shortened show: 2 submits instead of 3.	
+E0616	designdocs	DESIGN_REFERENCES.md §A11 South America	Judged-category scoring	rule			Some shows grade formation, suit variety, and stamps as separate scored categories instead of one total.	
+E0617	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Judged festival (City Dionysia)	boss			Scores in separate categories (best formation/suit spread/single meld) instead of one total.	
+E0618	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Juggler leader (Rastelli)	type			Balls-suit cards can be kept aloft (re-scored) as long as one scores each submit.	
+E0619	designdocs	DESIGN_DOC.md §10 Suit projectiles v2	Jump/duck reactions	unknown			Feat cards dynamically jump up through hoops and duck under knives as projectiles pass.	
+E0620	designdocs	DESIGN_REFERENCES.md §A6 Japan	Karuta duel	unknown			A speed-pick minigame where the first click rewards.	
+E0621	designdocs	DESIGN_REFERENCES.md §A11 South America	Kneeling Devil	skill			A negative-effect card that, if kept a full tour, converts into a positive card at the final city.	
+E0622	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Knife suit	suit			Mirrors Hoop but launches from the opposite row side and scores plain (prop) cards instead of talents.	
+E0623	designdocs	DESIGN_DOC.md §10 Suit projectiles v1	Knives/Hoops horizontal projectiles	suit			Scored knife and hoop cards fly horizontally across their scored row; balls and fire drop down columns.	
+E0624	designdocs	DESIGN_REFERENCES.md §A6 Japan	Kuroko	stamp			This card is 'unseen': doesn't block Spotlight, can't be targeted by bosses.	
+E0625	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Label / Evident	rule			Announces its rule-deck effect on the board even while the rule deck stays hidden.	
+E0626	designdocs	DESIGN_DOC.md §8 Rule Deck	Label/Evident card	skill			A card announces its rule-deck effect on the board while the rule deck itself stays hidden ('Baba Is You' visibility trick).	
+E0627	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Lazzi trigger-macros	skill			Equippable trigger-macros: small scripted combos a card can rehearse.	
+E0628	designdocs	DESIGN_DOC.md §14.3 Types	Leader (type entry)	type			Type that starts a card on the board or in the Entrance and boosts its group.	
+E0629	designdocs	DESIGN_DOC.md §11 Classes, Groups & Leaders	Leader chassis	type			Leader cards start already on the board (or in the Entrance) and do not leave play on submit; different starting decks ship different leaders.	
+E0630	designdocs	DESIGN_DOC.md §11 Classes, Groups & Leaders	Leader elemental fears	type			Optional debuff: some leaders fear fire/knives and cannot be placed on fire/knife cards.	
+E0631	designdocs	DESIGN_DOC.md §11 Classes, Groups & Leaders	Leader group boost	type			Cards belong to groups/classes, and leader cards boost their group.	
+E0632	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Leader lineage succession	unknown			Retiring a maxed leader unlocks its heir with a carried-over power.	
+E0633	designdocs	DESIGN_RECOMMENDATIONS.md §6 Animal Trainer	Liberty Horses	skill			On Next, all Animal-tagged cards in the Entrance rearrange themselves into ascending order.	
+E0634	designdocs	DESIGN_DOC.md §14.3 Types	Light	type			Rises to the top of the deck (counterpart to Heavy, never built).	
+E0635	designdocs	DESIGN_DOC.md §7 Spotlight System	Literal spotlight beam	unknown			Triggering cards get a literal spotlight beam instead of a generic glow; the whole screen may dim during submit.	
+E0636	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Lithograph	type			While in the Entrance (not the Ring), broadcasts its skill globally.	
+E0637	designdocs	DESIGN_DOC.md §2 Core Game Loop refinements	Live undo during resolution	rule			Pressing Undo during a resolving act cancels it: the resolution fast-forwards and the pre-act board state restores, with no act consumed.	
+E0638	designdocs	DESIGN_DOC.md §19 Meta Progression	Lore scraps unlock	unknown			Wins/actions unlock lore scraps.	
+E0639	designdocs	DESIGN_RECOMMENDATIONS.md §6 Animal Trainer	Mabel's Tigers	skill			Consumes the card it's dropped on (like Gluttony) but only prop cards; +rank per meal.	
+E0640	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Magic deck	unknown			Each suit is an element; submitting elemental combinations casts spells.	
+E0641	designdocs	DESIGN_DOC.md §11 Class list	Magician class	unknown			Class mechanical focus: card creation and deletion.	
+E0642	designdocs	DESIGN_REFERENCES.md §A6 Japan	Magician leader (Tenkatsu)	type			Produces token cards.	
+E0643	designdocs	DESIGN_DOC.md §16 Economy & Shop	Mana cards	type			Any card can serve as a resource instead of an abstract mana bar.	
+E0644	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Mancala targeting	suit			Ball/Fire projectiles are ballistic: a mancala walk down the column picks a fixed count of talent targets at spawn; Fire's eligibility skips talents and other Fire props.	
+E0645	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Map alternative topologies	rule			Alternatives considered: no final city (circle the map), must return to start, or visited points become revisitable after enough time passes.	
+E0646	designdocs	DESIGN_DOC.md §15 Map v1 (Minesweeper)	Map click seeds next drop	rule			Clicking a map card made it the first card dropped in the next match.	
+E0647	designdocs	DESIGN_DOC.md §15 Map (implemented)	MapNodeRoles	rule			Deterministically assigns show/booster/anchor roles to map nodes from the run seed.	
+E0648	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Marked stamp	stamp			The player always knows where this card currently sits in the deck.	
+E0649	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Marketed monster	skill			Terrifies (debuffs) adjacent cards while secretly being a gentle Humbug.	
+E0650	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Masked satire (Talchum)	rule			Heat (infamy) is earned safely because a mask absorbs the town's anger.	
+E0651	designdocs	DESIGN_DOC.md §14.2 Stamps	Maximum Effort / Exhaust	stamp			Double (or flat bonus) points from this card on score; only refreshes if the card is NOT played/scored the following show.	
+E0652	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Meal call (cookhouse flag)	rule			A mid-tour rest tick heals one debuff per card, once per region.	
+E0653	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Mid-show instant tips	rule			Overscoring a single meld pays out instantly instead of at show end.	
+E0654	designdocs	DESIGN_RECOMMENDATIONS.md §6 Escape Artist/Stuntsman	Milk Can	skill			Cue: place a card inside; it leaves play; retrieve it any later turn.	
+E0655	designdocs	DESIGN_DOC.md §15 Map v1 (Minesweeper)	Minesweeper board	boss			Full deck laid face-down; only cards adjacent to a revealed card can be clicked; clicking triggers a battle for that card and reveals its neighbors; win by uncovering all cards.	
+E0656	designdocs	DESIGN_DOC.md §21 Events & Encounters	Mini-game score-free events	unknown			Some encounters replace score-to-win with alternate win-con puzzles, e.g. 'trigger 5 times to win.'	
+E0657	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Misdirection theft	unknown			When the biggest meld of a submit scores, a pickpocket event may trigger, or a card steals from the town for bonus gold.	
+E0658	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Misrule show	unknown			For one show, all ranks are reversed (2 counts high, King counts low); winning it pays huge tips.	
+E0659	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Mobile pageant zone	rule			A zone/column relocates each turn.	
+E0660	designdocs	DESIGN_REFERENCES.md §A7 India & South Asia	Mock the Booking	skill			Reduce the declared Booking goal once per tour.	
+E0661	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Modifier-driven grab/place legality	rule			Stacking legality is decided by a resolver pass: all cards' allow/deny effects are gathered into a whitelist and blacklist, with the blacklist winning over the whitelist.	
+E0662	designdocs	DESIGN_DOC.md §14.2 Stamps	Money on Trigger	stamp			Gain money whenever the card triggers.	
+E0663	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	Moonstruck (Pierrot)	skill			Buffs on alternating ('night') shows, pines (does nothing/less) otherwise.	
+E0664	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Mountebank tonics	consumable			Cheap buffs with a chance of doing nothing (being water).	
+E0665	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Movement-resistant cards	type			Cards that resist being moved once placed.	
+E0666	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	Mud Show	boss			Picking up any stack costs 1 discard.	
+E0667	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Mystery Box	skill			On game start, becomes a random skill.	
+E0668	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Named court card identities	unknown			Face cards have hidden historical identities discoverable through play; uncovering all 12 grants a meta reward.	
+E0669	designdocs	DESIGN_DOC.md §15 Map v3 (Biome tour)	Negative weather effects	boss			Weather events impose negative effects, framed as 'the show must go on.'	
+E0670	designdocs	DESIGN_DOC.md §11 Skill taxonomy	New scoring methods	unknown			Skill taxonomy category: cards that create new ways to score.	
+E0671	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	No-conditions cue	skill			This card's cue works with zero requirements, from anywhere.	
+E0672	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Nominal suit subclasses	suit			Each suit is a nominal PipSuit subclass (Hoop/Knife/Ball/Fire/Firework) with no ordinal value, constructed explicitly rather than compared by index.	
+E0673	designdocs	DESIGN_DOC.md §3 Board & Zones	Null cards	type			Null cards take up space on the board and are highlighted when selected so hovering over null space reads clearly.	
+E0674	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Odd couple buff	skill			The thinnest (lowest rank) and heaviest (highest rank) card in a row buff each other.	
+E0675	designdocs	DESIGN_DOC.md §14.4 Rule cards	OG Grabber	rule			Provides the default grab legality: ascending/descending runs, no same-suit stacking.	
+E0676	designdocs	DESIGN_DOC.md §14.4 Rule cards	OG Placer	rule			Provides the default placement legality rule.	
+E0677	designdocs	DESIGN_REFERENCES.md §A11 South America	One-upmanship duel (scissors dance)	unknown			Alternate melds with a rival, each must out-score the last; first to fall short loses everything wagered.	
+E0678	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Only first poker hand scores	rule			Only the first (best) scored poker hand on a row actually scores; later poker hands on the same line are ignored.	
+E0679	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Only legal stacks liftable	rule			Only legal stacks can be picked up at all, making moving stacks harder as the run progresses.	
+E0680	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Out-of-game ARG secret	unknown			A mystery solvable only through outside research.	
+E0681	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Outcast Troupe deck	unknown			Cheaper everywhere but banned from rich towns; built from exactly six classes (one per Namsadang art).	
+E0682	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Outlawed cards	type			Cards banned in pious towns (cannot score there) but score double in others; persecution can spawn an underground-shows event chain.	
+E0683	designdocs	DESIGN_DOC.md §15 Map (implemented)	Overscore tax retired	rule			The overscore tax was retired: wins now bank the full score as fame with no separate penalty.	
+E0684	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Overscoring ramps requirements	rule			Overscoring ramps up future score requirements, so the player balances declaring a big score (fame wagering) against the risk of missing it.	
+E0685	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Paired giants	skill			Each of a pair gets +mult while both are on the board.	
+E0686	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Panem et circenses free show	unknown			Give a free show: zero gold earned, big fame gain, town loyalty increased.	
+E0687	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	Panorama consumable	consumable			Reveals the whole map's silhouette.	
+E0688	designdocs	DESIGN_DOC.md §14.3 Types	Paper	type			Default/basic material with no special effect.	
+E0689	designdocs	DESIGN_RECOMMENDATIONS.md §6 Concessions	Peanut Pitch	skill			Cue (3 charges): add points to any one card, thrown from anywhere.	
+E0690	designdocs	DESIGN_DOC.md §7 Spotlight System	Peek-over presentation	skill			Cards with skills idly move and peek over the card blocking them; blocked active cards shift the row below to show at least their upper art half.	
+E0691	designdocs	DESIGN_REFERENCES.md §C3 Automata & Illusion Technology	Pepper's Ghost	skill			An intangible duplicate of one card appears in the opposite zone; scores as if real but can't be touched or attacked.	
+E0692	designdocs	DESIGN_DOC.md §2 Core Game Loop refinements	Per-act score multiplier	rule			Each act (or only the final act) could carry an increasing score multiplier.	
+E0693	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Per-card personal bests	unknown			Personal bests are recorded on the card itself; beating one's own record fires a fame event.	
+E0694	designdocs	DESIGN_DOC.md §8 Rule Deck (rejected)	Per-level rule deck	rule			Rejected: replacing the rule deck with a per-level deck, since score goals live outside the rule deck and building UI from it is scope creep.	
+E0695	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Per-meld suit firing	suit			A scored card's suit effect fires once per meld membership (once for its row, once for its column); talented (skill-bearing) cards suppress their own suit effect.	
+E0696	designdocs	DESIGN_DOC.md §8 Rule Deck	Per-scenario rule decks	rule			Game rules determine what Next and Submit do; different scenarios swap in different rule decks, and edits during a run are permanent for that run.	
+E0697	designdocs	DESIGN_DOC.md §5 Scoring	Performance Rings (origin)	rule			Every 5 rows scored increases points 'by layer' / turns the row red — the seed idea that became Performance Rings.	
+E0698	designdocs	DESIGN_DOC.md §5 Scoring	Performance Rings	rule			Score zones by board depth: the First Ring (rows 1-5) scores at 1x, rows 6-10 at 2x, rows 11-15 at 3x, and so on, enabling effects keyed to reaching outer rings.	
+E0699	designdocs	DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe	Performance Rings as depth multiplier	rule			Performance Rings act as multipliers on the column combo specifically, rewarding tall play.	
+E0700	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Permanent-toggle effect archetype	skill			An effect archetype that, once activated, stays active for the rest of the game and can never be toggled off again.	
+E0701	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Persistent spin-buff (Sangmo)	rule			A spin-buff persists as long as the combo continues.	
+E0702	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Pip comparator resolver	rule			A pip resolver/comparator class governs all rank/suit comparisons; card mods are asked first (on_compare_ranks/suits) with numeric fallback.	
+E0703	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Pip-registered scoring methods	rule			Each pip class can register its own static scoring methods as defaults for that pip; pip effects are permanently active, unlike skills.	
+E0704	designdocs	DESIGN_DOC.md §8 Rule Deck	Player-editable rule deck	unknown			Metagame idea: the player can modify the ruleset deck during a run by adding or removing default cards.	
+E0705	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Poker Crown (unnamed)	skill			When scored, this card and the 4 cards above it are scored together as a poker hand.	
+E0706	designdocs	DESIGN_DOC.md §14.4 Rule cards	Poker Evaluator	rule			Performs best-poker-hand evaluation per line.	
+E0707	designdocs	DESIGN_DOC.md §18 Rarity, Packs & Collection	Power-sort rarity	unknown			Rarity is determined by how far a base effect has been power-climbed into a stronger version of the same idea (e.g. Hippo to Sin of Gluttony).	
+E0708	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Pre-show challenge dance	rule			Sacrifice a turn to open with an intimidation display that lowers the fame goal.	
+E0709	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Presentation	skill			Moving cards into ascending order gives multiplier points.	
+E0710	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Press Bribery / Memory Wipe	skill			Extra life: on failing a city, keep going as if the player had won; possibly a straight win if held to the end.	
+E0711	designdocs	DESIGN_DOC.md §19 Meta Progression	Prestige meta-shop	unknown			Wins grant prestige currency spent in the Carnival meta-shop on map odds, starting resources, true vision, guaranteed cards/packs, a full unlock reset, or the custom deck editor; spending raises per-show score requirements.	
+E0712	designdocs	DESIGN_DOC.md §11 Class list	Producer / Manager class	unknown			Class mechanical focus: token cards — gold/money cards and basic cards.	
+E0713	designdocs	DESIGN_DOC.md §10 Suit projectiles v1	Projectile hit/miss bonuses	suit			Gain mult for every hoop passing through an animal or acrobat, every knife missing a stuntsman, every ball hitting a juggler or animal; fire buffs cards it passes through.	
+E0714	designdocs	DESIGN_DOC.md §10 Suit projectiles v2 (latest)	Prop-vs-feat suit targeting	suit			Knives reward hitting non-feat (prop) cards, hoops reward hitting feat cards; balls buff feat cards, fire buffs non-feat cards, with balls/fire spreading buffs evenly across the column.	
+E0715	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Psycho	skill			An Automaton card plays a card from the deck by itself every Next.	
+E0716	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Punch	skill			Beats adjacent cards for points.	
+E0717	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Punk / Minimal unlockable decks	unknown			A Punk deck (rule-breaking commons, no Producer class) and a Minimal deck (pips only) as unlockable philosophies.	
+E0718	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	Quests (TFT-style)	unknown			Extremely random conditions cause permanent effects, emphasizing unlocking; effects upgrade themselves into better versions when conditions are met.	
+E0719	designdocs	DESIGN_REFERENCES.md §A6 Japan	Quick-change (Hikinuki)	skill			On scoring, swap this card's stamp with any stamp in reserve.	
+E0720	designdocs	DESIGN_RECOMMENDATIONS.md §8 Towns, Bosses & Hazards	Railroad Jump (route hazard)	boss			Traveling a long map edge costs a card from the deck (left behind on the platform).	
+E0721	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Random standard suit roster	suit			The standard random suit roster is [Hoop, Knife, Ball, Fire]; Firework is excluded from random rolls and instead rises up its column, banking column score at the top.	
+E0722	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Rare (chain)	skill			Doubles the chance of Epic cards appearing.	
+E0723	designdocs	DESIGN_DOC.md §18 Rarity, Packs & Collection	Rarity visual tiers	unknown			Different rarities get different borders, shines, and possibly holographic effects.	
+E0724	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Removing unwanted cards	unknown			Skill taxonomy category: cards that remove unwanted cards.	
+E0725	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Repositioning	unknown			Skill taxonomy category: cards that reposition cards on the board.	
+E0726	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Reroll Blessing effect archetype	skill			+1 reroll per game; repeated actions will not repeat the same results for the rest of the game.	
+E0727	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Residency mode	unknown			An alternate endless mode where the player stays in one evolving city instead of circling the map.	
+E0728	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Resort towns	boss			Lower goals, better shops, no bosses.	
+E0729	designdocs	DESIGN_DOC.md §14.2 Stamps	Revealing (Eye)	stamp			Card triggers even when hidden/covered.	
+E0730	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Ringmaster	type			No suit/rank; starts in the Entrance; always grabbable; can be placed anywhere uncovered; survives submission.	
+E0731	designdocs	DESIGN_DOC.md §11 Classes, Groups & Leaders	Ringmaster leader spec	type			No suit or rank; type starts it in the Entrance; stamp lets it always be picked up and placed anywhere uncovered; skill keeps it on board after submission.	
+E0732	designdocs	DESIGN_RECOMMENDATIONS.md §3 Suits & Pips	Roman numeral rank	rank			Cosmetic rank skin; melds identically to a normal rank.	
+E0733	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Rookie growth cards	skill			Rookie commons with growth conditions that upgrade them over time.	
+E0734	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Rosin	type			Cards placed on it cannot be picked up again, but score +1 per ring depth when scored.	
+E0735	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Rotation re-trigger naming / fail-to-unlock	skill			Re-trigger counts are named as rotations; a card must publicly fail N times before unlocking its true form.	
+E0736	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Route-as-song bonus	rule			Repeating a traveled route pattern 'in the right order' grants a strengthening bonus.	
+E0737	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	Route-length achievements	unknown			Achievements for total walked/traveled map distance.	
+E0738	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Row-then-column evaluation order	rule			Evaluation proceeds top-down: poker hands are scored first, with each column's run calculated simultaneously as that row resolves; refined to score all rows first, then all lanes simultaneously at that row.	
+E0739	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Row x column aggregation	rule			All vertical (column) scores are multiplied together with all horizontal (row) scores at the end of a submit.	
+E0740	designdocs	DESIGN_DOC.md §8 Rule Deck	Rule cards as a type	type			Rule cards are not special: they are a card type whose skill is 'always global spotlight'; other types can define 'return to deck X when Y.'	
+E0741	designdocs	DESIGN_DOC.md §8 Rule Deck	Rule cards get random pips	rule			Rule cards are given a random suit and rank in case a player ever extracts one into normal play.	
+E0742	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Rules-in-hand deck	unknown			Rule deck is empty; all rules are shuffled into the main deck.	
+E0743	designdocs	DESIGN_DOC.md §8 Rule Deck	Rules-in-hand deck variant	unknown			A deck variant where the rule deck is empty and all rules are shuffled into and drawn from the main deck.	
+E0744	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Run the monte (thrower)	unknown			Play the monte-thrower role yourself for gold, risking town reputation.	
+E0745	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	Séance Night	unknown			Pick the Gaff out of 3 face-down cards for a reward.	
+E0746	designdocs	DESIGN_REFERENCES.md §A6 Japan	Sacred juggling (Daikagura)	skill			Balls-suit scoring removes one debuff per juggling meld.	
+E0747	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	Satirical Animal Trainer leader	type			Satire angers towns (fame up, town relations down); pigs can mock the Booking.	
+E0748	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Sawdust	type			When discarded, leaves a marker on its board slot; the next card placed there gets +points.	
+E0749	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Scan deck/discard for scoring	rule			Open idea: scoring could also scan the draw deck and discard pile, not just the board.	
+E0750	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	Score goal per-layer increment	rule			Score goal increments per match, currently x1.1 per layer.	
+E0751	designdocs	DESIGN_DOC.md §2 Core Game Loop v1	Score slots	rule			Score slots on the right score whatever is placed on them and double as free spaces between deck clicks.	
+E0752	designdocs	DESIGN_REFERENCES.md §B5 Clowning Across Cultures	Scripted clown combos	rule			Clown combos are scripted sequences (lazzi) with an end-of-sequence bonus.	
+E0753	designdocs	DESIGN_RECOMMENDATIONS.md §1 How I read your design	Searing Knife (adopt)	skill			Column hazard card enables town/boss content around knife scoring.	
+E0754	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Searing Knife (summary)	skill			On score, burns its column, locking it for 2 turns.	
+E0755	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	Seasonal crown	unknown			A per-season champion title (Calypso Monarch); extempo joins the verse-duel family.	
+E0756	designdocs	DESIGN_DOC.md §11 Act types	Second Act	type			Deck-position type: shows up alone after half the deck has been drawn.	
+E0757	designdocs	DESIGN_DOC.md §18 Rarity, Packs & Collection	Secret meld unlocks new rules	skill			Cards can carry secret on-add-to-deck effects that add entirely new rules once discovered.	
+E0758	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Self-granted title	stamp			A card names itself Rare, counting as one rarity higher for effect purposes only (not for drop pools).	
+E0759	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Seven Pyramid	skill			A 7-card stack formation meld with a huge payout.	
+E0760	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Shared charge system	rule			All charge-based effects share one charge system so charges can be gained/lost from any source; unused charges auto-spend on Next.	
+E0761	designdocs	DESIGN_DOC.md §16 Economy & Shop	Shop-as-board-buttons	rule			Shops are built out of the game board itself; every button (e.g. reroll) is a tappable card.	
+E0762	designdocs	DESIGN_DOC.md §7 Spotlight System	Show-all-active toggle	rule			A half-open-eye QOL toggle pushes stacks apart so every spotlit card is fully visible; disabled while holding a stack.	
+E0763	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Sin of Gluttony	skill			Upgraded Hippo: no value cap, can be fed from anywhere including decks, and permanently consumes fed cards.	
+E0764	designdocs	DESIGN_RECOMMENDATIONS.md §1 How I read your design	Sliced Reality (reject)	unknown			Changes column count; redundant with ZoneAdder rule cards.	
+E0765	designdocs	DESIGN_DOC.md §14.5 Summary-only cards	Sliced Reality (summary)	skill			Splits a column into two, or merges two columns into one.	
+E0766	designdocs	DESIGN_DOC.md §18 Rarity, Packs & Collection	Slot-machine pack opening	unknown			Pack opening shows all possible contents in the background, slot-machine styled, with results seed-fixed.	
+E0767	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Small-tent starting deck (Carpas)	unknown			A weak starting deck with an underdog-to-star meta arc.	
+E0768	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Snake Oil	consumable			A buff that sometimes does nothing (is secretly a Gaff); selling it yourself is an economy event with reputation risk.	
+E0769	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	Spangle	stamp			+1 combo whenever this card is part of any meld.	
+E0770	designdocs	DESIGN_DOC.md §11 Class list	Special Effects class	unknown			Class mechanical focus: points/combo manipulation.	
+E0771	designdocs	DESIGN_DOC.md §15 Map v1 (Minesweeper)	Special map squares	boss			Special squares carry fixed effects, e.g. all 7-value squares are shops; higher ranks are likelier toward the center (probability rings).	
+E0772	designdocs	DESIGN_RECOMMENDATIONS.md §2.4 Suits: 4 + specials	Special suits via packs only	suit			Fireworks and Electric are special suits that appear only via packs/effects, never in the base roster, like wild/stone enhancements.	
+E0773	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Speedrun endless categories	unknown			Endless-mode rulesets are shipped as speedrun categories (Any%, 100%, Glitchless) with named personal bests.	
+E0774	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Spiderweb	skill			1 point per card diagonal to this card, in a cross/X shape.	
+E0775	designdocs	DESIGN_REFERENCES.md §A5 China	Spinning-plate buffs	rule			Stackable buffs that decay unless re-triggered.	
+E0776	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	Spirit Photo consumable	consumable			Capture a 'ghost copy' of any card for one show.	
+E0777	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Sponsorship	rule			A patron funds the tour (gold every show) but stamps ads on cards, imposing a fame tax.	
+E0778	designdocs	DESIGN_DOC.md §7 Spotlight System (latest)	Spotlight rebrand	rule			Active state is rebranded Spotlight/Focus: a card is 'in the spotlight' when unblocked/topmost; card text gets an icon marking which effects need spotlight and which don't.	
+E0779	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Stamp as diegetic hat/equipment	stamp			Stamps could be reflavored as an equippable hat or other equipment (shoes, costume), tying into a Costume Designer class.	
+E0780	designdocs	DESIGN_DOC.md §7 Spotlight System (implemented)	StampGlobal	stamp			Card's modifiers are active from anywhere, including inside decks.	
+E0781	designdocs	DESIGN_DOC.md §7 Spotlight System (implemented)	StampRevealing	stamp			Card's modifiers remain active even while covered (not topmost).	
+E0782	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Status array	rule			CardData carries a status dictionary (effect name -> value) processed by rule cards per effect, as the general mechanism for debuffs.	
+E0783	designdocs	DESIGN_DOC.md §14.3 Types	Stone	type			Stubbed material type with no defined effect yet.	

@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E0262	catalog	CARD_CATALOG	The Incubator		Rare	skill;Concessions;status;protection;growth	Each turn a card is covered by this card, it removes one debuff and restores 1 lost rank from that card.	
+E0263	catalog	CARD_CATALOG	The Invisible Wall		Uncommon	skill;Escape Artist;protection;movement	Cue: block one empty column so no card may enter or leave it for one turn, hazards included.	
+E0264	catalog	CARD_CATALOG	The Joey		Common	pip;Clown	Jacks are renamed and count as Clown-class cards for group effects.	Vetoed (rank that is always 11 is boring, joey should be a clown token with actual effect)
+E0265	catalog	CARD_CATALOG	The Jongleur		Uncommon	skill;Clown;combo	Counts as every class for group effects, but all class bonuses apply at half value.	
+E0266	catalog	CARD_CATALOG	The Juggler King		Epic	leader;prop;combo;persistence	Leader: Balls-suit cards can be re-scored each act as long as at least one Balls card scores every submit.	
+E0267	catalog	CARD_CATALOG	The Kecak Chorus		Common	skill;Clown;combo;token	When any meld scores, gains bonus multiplier per rank-1 card currently on the board.	
+E0268	catalog	CARD_CATALOG	The Kickline		Rare	skill;Dancer;formation;combo	When all five columns' top cards share a suit at scoring, the row above them scores again.	
+E0269	catalog	CARD_CATALOG	The King		Epic	skill;freakshow;movement;gamble;secret	Moves like a king but only swaps, never captures; automatically steps out of check whenever the player acts; if a chess card captures it, the captor gains a large bonus and +1 rank.	
+E0270	catalog	CARD_CATALOG	The Kite		Uncommon	skill;Special Effects;growth;deck-manip	Cue: remove a card from play temporarily; choose the turn it returns, landing with +rank equal to the turns spent aloft, up to a max of 3.	
+E0271	catalog	CARD_CATALOG	The Kneeling Devil		Rare	skill;Escape Artist;status;persistence;gamble	Debuffs its column each show; if kept in the deck for the entire tour, converts at the final city into a Legendary card.	
+E0272	catalog	CARD_CATALOG	The Knight		Uncommon	skill;freakshow;movement;destruction	May be placed onto any card 2+1 slots away (an L-shape), discarding and replacing it, ignoring stacking legality.	
+E0273	catalog	CARD_CATALOG	The Learned Pig		Uncommon	skill;Animal Trainer;info	Once per turn: reveals the description/identity of any facedown, hidden, or unknown card.	
+E0274	catalog	CARD_CATALOG	The Leotard		Uncommon	skill;Acrobat;movement	Cue: move this card and everything above it to the top of any column, ignoring legality.	
+E0275	catalog	CARD_CATALOG	The Light and Heavy Chest		Rare	skill;Magician;movement;protection	The player can always grab this card, but board effects and hazards cannot move or discard it.	
+E0276	catalog	CARD_CATALOG	The Lion Dance		Rare	skill;Animal Trainer;Dancer;destruction;secret	When destroyed, splits into two rank-half cards instead of dying; when placed onto a card, harvests bonus points from the card beneath it.	
+E0277	catalog	CARD_CATALOG	The Lion's Bride		Rare	skill;Animal Trainer;gamble;formation	Scores bonus points each act it shares a column with a consuming Animal card without being eaten.	
+E0278	catalog	CARD_CATALOG	The Living Statue		Common	skill;Dancer;persistence;formation	Gains bonus points at show end for every show it was never moved; any grab resets the bonus to zero.	
+E0279	catalog	CARD_CATALOG	The Lobbyist		Rare	skill;meta-effect;rule;deck-manip;gamble	Extract one rule card from the rules deck into the play deck; its rule stops applying and it gains random pips.	
+E0280	catalog	CARD_CATALOG	The Loggione		Rare	hazard;economy	Town hazard: Common cards score nothing here; Legendary cards score triple.	
+E0281	catalog	CARD_CATALOG	The Loophole		Rare	skill;meta-effect;rule;hazard;gamble	Choose one active town/boss hazard: its effect inverts to benefit the player for this show.	
+E0282	catalog	CARD_CATALOG	The Major Arcana		Legendary	consumable;collection;secret;meta	Consumable series of 22 unique one-shot consumables; collecting all 22 across runs grants a profile reward.	
+E0283	catalog	CARD_CATALOG	The Marathon		Epic	hazard;persistence;formation	Boss gauntlet: a 3-show run where the board does not fully reset between shows (cards, statuses, and lava persist) and goals stack cumulatively.	
+E0284	catalog	CARD_CATALOG	The Marionette		Epic	skill;meta-effect;prop;movement	Take direct control of one prop for the act: it moves one slot per tick in the chosen direction, and inputs are recorded so replay steers identically.	
+E0285	catalog	CARD_CATALOG	The Mask Maker		Rare	skill;Costume Designer;secret;protection	Cue, once per show: apply a Masked status to any card, hiding its identity/rarity from inspections and towns until it scores twice.	
+E0286	catalog	CARD_CATALOG	The Metronome		Common	skill;meta-effect;charges	All charge-based effects on your cards get +1 maximum charge.	
+E0287	catalog	CARD_CATALOG	The Mime		Uncommon	skill;Escape Artist;protection	Attaches to a stack and absorbs the first hostile event targeting any card in that stack.	
+E0288	catalog	CARD_CATALOG	The Mitt Camp Reading		Common	consumable;info;gamble	Consumable: pay 1 Gold to receive one true fact about the next 3 nodes.	
+E0289	catalog	CARD_CATALOG	The Monkey		Uncommon	skill;Animal Trainer;charges;movement	Spawns a token that climbs its column one row per Next, freely cueing whatever card it sits on.	
+E0290	catalog	CARD_CATALOG	The Mulligan		Uncommon	skill;Fortune Teller;discard;deck-manip	Allows discarding 1 card from the Grand Entrance per turn before it drops; further copies add +1 discard each.	
+E0291	catalog	CARD_CATALOG	The Net		Uncommon	skill;meta-effect;prop;movement	Once per act: catch a ballistic prop (Ball/Fire) mid-flight and re-aim it at any card in the same column.	
+E0292	catalog	CARD_CATALOG	The Ninot		Rare	skill;Special Effects;economy;persistence;event-granted	Cue: bank any amount of the act's score into this card each show; at the final city, burning it pays triple everything invested, or a seeded public vote may pardon it to survive into the next run.	
+E0293	catalog	CARD_CATALOG	The Odd Couple		Uncommon	skill;Dancer;formation;combo	The lowest- and highest-ranked cards in this card's row give each other bonus points when the row scores.	
+E0294	catalog	CARD_CATALOG	The One-Man Band		Uncommon	skill;Clown;combo	Counts as three classes chosen at acquisition, each at one-third effect.	
+E0295	catalog	CARD_CATALOG	The Ouija Board		Uncommon	consumable;info;secret	Consumable, 3 charges: ask one true/false question about the deck per show, answered truthfully from the seed.	
+E0296	catalog	CARD_CATALOG	The Ox		Rare	skill;Animal Trainer;destruction;persistence	When destroyed, grants bonus fame and revives into the deck next show.	
+E0297	catalog	CARD_CATALOG	The Paired Giants		Uncommon	skill;Dancer;formation	Pair: each gains bonus multiplier while both are anywhere on the board.	
+E0298	catalog	CARD_CATALOG	The Panorama		Common	consumable;info;meta	Consumable: reveals the type (show/booster/boss) of every node on the world map, but not its contents.	
+E0299	catalog	CARD_CATALOG	The Patch		Uncommon	consumable;protection;hazard	Consumable: cancels one town penalty/hazard rule card before the show starts.	
+E0300	catalog	CARD_CATALOG	The Pawn		Common	skill;freakshow;movement;destruction	If stacked under a card, swaps upward with it on Next (2 slots if bottommost); if placed diagonally upward onto a card, captures it (discards it and takes its place).	
+E0301	catalog	CARD_CATALOG	The Prepared Town		Rare	hazard;info;secret	Boss: pre-inspects everything, revealing and disabling all Gaff/Humbug/fake/Masked cards for the show.	
+E0302	catalog	CARD_CATALOG	The Prompter		Common	skill;meta-effect;spotlight	While spotlit, choose one card anywhere in this card's column; that card's modifiers stay active regardless of covering.	
+E0303	catalog	CARD_CATALOG	The Prop Master		Uncommon	skill;meta-effect;prop;combo	Every prop-spawning suit effect produces +1 additional prop per volley.	
+E0304	catalog	CARD_CATALOG	The Puszta Five		Legendary	skill;Acrobat;formation;combo	Cue, once per show: for one scoring pass this card counts as a member of every column's meld.	
+E0305	catalog	CARD_CATALOG	The Pyramid		Rare	skill;Acrobat;Dancer;formation	Formation: when three adjacent columns hold stacks of exactly 3, 2, and 1 cards, the formation scores a bonus meld.	
+E0306	catalog	CARD_CATALOG	The Queen		Rare	skill;freakshow;movement;destruction	May be placed onto any card along any open line or diagonal, capturing it.	
+E0307	catalog	CARD_CATALOG	The Raree Box		Common	consumable;info;deck-manip	Consumable: pay 1 Gold to peek at the next 5 cards of the draw deck in order.	
+E0308	catalog	CARD_CATALOG	The Rat Sheet		Rare	consumable;gamble;economy	Consumable: raises the next Rival Show's difficulty for both players; if both would pass, steals 25% of its fame payout.	
+E0309	catalog	CARD_CATALOG	The Red Wagon		Epic	skill;Producer;economy;combo	While spotlit, all Gold token cards in the deck count as wildcards toward every column run.	
+E0310	catalog	CARD_CATALOG	The Regurgitator		Rare	skill;Escape Artist;deck-manip;movement	Cue: swallow up to 3 board cards, then produce them later to the Entrance in any chosen order.	
+E0311	catalog	CARD_CATALOG	The Repertoire		Legendary	skill;meta-effect;collection;combo	Holds three skills in one slot; the active one rotates each act, with a cue to rotate early.	
+E0312	catalog	CARD_CATALOG	The Rewinder		Rare	skill;meta-effect;economy;gamble	Cue: destroy your oldest undo snapshots for bonus points per snapshot destroyed, up to 5 per act.	
+E0313	catalog	CARD_CATALOG	The Rider		Rare	skill;Fortune Teller;secret;gamble	Carries one hidden instruction; obeying it all show scores this card double, violating it scores it zero silently.	
+E0314	catalog	CARD_CATALOG	The Rigger		Rare	skill;meta-effect;combo;secret	Cue: swap the wiring of two cards so each card's skill now answers the other card's events.	
+E0315	catalog	CARD_CATALOG	The Ringmaster		Epic	leader;movement	Leader with no suit or rank; starts in the Grand Entrance, is always grabbable, placeable anywhere uncovered, and remains on the board after submission.	
+E0316	catalog	CARD_CATALOG	The Ringmistress		Common	pip;Producer	Queens are renamed and count as Producer-class cards for group effects.	Vetoed (reference can be recycled)
+E0317	catalog	CARD_CATALOG	The Rival Show		Epic	hazard;economy;collection	Recurring boss: a rival plays the town first, raising the goal by 30%; beating it steals one card from the rival's themed deck.	
+E0318	catalog	CARD_CATALOG	The Rodeo Clown		Rare	skill;Clown;protection	Once per turn, when a boss/town effect targets another of your cards, redirects the hit to itself.	
+E0319	catalog	CARD_CATALOG	The Rook		Rare	skill;freakshow;movement;destruction	May be placed onto any card along its open row or column, capturing it.	
+E0320	catalog	CARD_CATALOG	The Séance Buster		Rare	skill;Escape Artist;info;combo	Cue: reveal all Gaff/Humbug/fake cards on the board, yours and the town's, scoring bonus points per fake exposed.	
+E0321	catalog	CARD_CATALOG	The Satirist		Epic	leader;economy;gamble	Leader: shows earn +25% fame, but each town's snub/hazard is one tier harsher.	
+E0322	catalog	CARD_CATALOG	The Second Sight		Uncommon	skill;Fortune Teller;info	Pair: while both cards are on the board, the top card of the draw deck is always revealed.	
+E0323	catalog	CARD_CATALOG	The Seven Pyramid		Legendary	skill;Acrobat;formation;persistence	Formation: a single stack of exactly 7 legally-run cards scores a large bonus; if the stack is broken by a hazard, rebuilding it once scores double.	
+E0324	catalog	CARD_CATALOG	The Sharpshooter		Epic	leader;combo;gamble	Leader: choose a rank at each show start; cards of that rank score double for the show.	
+E0325	catalog	CARD_CATALOG	The Showbag		Common	consumable;economy	Consumable pack: gives 4 random Common cards, one guaranteed Concessions-class card.	
+E0326	catalog	CARD_CATALOG	The Showman		Epic	leader;economy;secret	Leader: shops offer +1 extra card, and all Gaff/Humbug/fake cards cost nothing to acquire.	
+E0327	catalog	CARD_CATALOG	The Sibyl		Epic	leader;info;economy	Leader: the top of the draw deck is always revealed, and the first reroll at every shop is free.	
+E0328	catalog	CARD_CATALOG	The Sparkler		Common	skill;Special Effects;combo	When this card scores, banks +10 flat points to its column score.	
+E0329	catalog	CARD_CATALOG	The Spirit Cabinet		Rare	skill;Fortune Teller;spotlight;formation	While this card is fully covered, its whole column's card effects trigger as if spotlit.	
+E0330	catalog	CARD_CATALOG	The Sponsorship		Rare	skill;Producer;economy;persistence	Gain 2 Gold tokens every show start, but occupies a stamp slot on the two highest cards and reduces payouts by 10%.	
+E0331	catalog	CARD_CATALOG	The Stage Manager		Uncommon	skill;meta-effect;rule;info	Cue, once per show: reorder the rules deck, changing which rule answers first for grabs, placement, and scoring disputes.	
+E0332	catalog	CARD_CATALOG	The Steelpan		Uncommon	skill;Special Effects;growth;token	Cue, once per show: permanently convert one prop (skill-less) card so it gains this skill: bonus points when its row melds.	
+E0333	catalog	CARD_CATALOG	The Stilt-Walker		Uncommon	skill;Acrobat;spotlight	This card is spotlit even when covered by one card.	
+E0334	catalog	CARD_CATALOG	The Sunshine Clown		Uncommon	skill;Clown;status;protection	While spotlit, removes one debuff/status per turn from the cards directly below it; never applies debuffs itself.	
+E0335	catalog	CARD_CATALOG	The Surveyor		Rare	skill;meta-effect;movement;formation	While spotlit, your drops resolve to the bottom of the target column instead of on top.	
+E0336	catalog	CARD_CATALOG	The Sweet Tooth		Epic	leader;growth;status	Leader: all +rank buffs from your effects become permanent instead of per-show.	
+E0337	catalog	CARD_CATALOG	The System		Rare	skill;Fortune Teller;gamble;combo;secret	After each act scores, gains bonus points scaled to the act's combo; any inspection effect halves this bonus permanently.	
+E0338	catalog	CARD_CATALOG	The Tailor's Dummy		Common	skill;Costume Designer;collection	This prop card can never hold a skill, but can hold two stamps.	
+E0339	catalog	CARD_CATALOG	The Tango Pair		Uncommon	skill;Dancer;formation;movement	Pair: the two cards must always stay adjacent (the free one slides to rejoin on Next); each turn they alternate lead, and only the leader's skill fires, at +50%.	
+E0340	catalog	CARD_CATALOG	The Target Girl		Uncommon	skill;Escape Artist;prop;combo	In a Knife-prop row, converts every knife miss into points.	
+E0341	catalog	CARD_CATALOG	The Tarot Reading		Uncommon	skill;Fortune Teller;deck-manip;info	Cue, once per show: look at the top 5 cards of the draw deck and reorder them freely.	
+E0342	catalog	CARD_CATALOG	The Three Rings		Legendary	rule;secret;formation;meta	Hidden rule: scoring three separate full 5-card poker hands (three full rows) in one submit permanently unlocks a third-zone rule card for the profile.	
+E0343	catalog	CARD_CATALOG	The Tiger Queen		Epic	leader;destruction;growth	Leader: removes the cap on consumption effects (Hippo's 13 limit removed; Tigers/Gluttony rank gains unbounded).	
+E0344	catalog	CARD_CATALOG	The Time Signature		Epic	skill;meta-effect;combo;formation;gamble	Splits Submit: rows score at submit as normal, columns score at the start of the next turn against the board state then; combo persists across the split.	
+E0345	catalog	CARD_CATALOG	The Tower		Epic	consumable;destruction;gamble	Consumable: destroys an entire column, scoring half the summed base of its cards as flat points.	
+E0346	catalog	CARD_CATALOG	The Traceur		Rare	skill;Acrobat;movement	This card moves only across the tops of columns, never entering stacks; cue to move any distance sideways along topmost slots.	
+E0347	catalog	CARD_CATALOG	The Triple		Epic	skill;Acrobat;combo;formation	If this card completes a run of exactly 3 cards fully assembled that turn, that run scores triple.	
+E0348	catalog	CARD_CATALOG	The Turk		Rare	skill;Magician;formation;secret	This card's rank counts as the rank of the card directly beneath it in the stack; if that card is removed, its rank is 0.	
+E0349	catalog	CARD_CATALOG	The Unicorn		Rare	skill;Animal Trainer;gamble;secret	Scores as Legendary (5x base) until any inspection effect examines it, after which it is revealed and scores half forever.	
+E0350	catalog	CARD_CATALOG	The Vidushaka		Rare	skill;Clown;economy;gamble	Once per tour: reduce the current show's goal (or Booking target) by 20%.	
+E0351	catalog	CARD_CATALOG	The Vine		Uncommon	stamp;protection;gamble	The first time this card would be destroyed or discarded by a fall or hazard each tour, it survives instead.	
+E0352	catalog	CARD_CATALOG	The Voladores		Legendary	rule;secret;formation;meta	Hidden rule: scoring four different columns each containing a 13-rank descent in one show banks 52x base fame.	
+E0353	catalog	CARD_CATALOG	The Volcano		Rare	hazard;status;formation	Terrain boss: the bottom row of the board is lava; any card ending a turn there gains Burning and loses 1 rank per turn.	
+E0354	catalog	CARD_CATALOG	The Wall of Death		Rare	skill;Escape Artist;status;formation;gamble	Both adjacent columns score bonus multiplier, but every card in them gains one Exhausted debuff at show end.	
+E0355	catalog	CARD_CATALOG	The Wardrobe Trunk		Uncommon	skill;Costume Designer;collection;economy	Holds one stamp in reserve; cue to permanently apply the reserved stamp to any spotlit card, then the trunk refills at the next shop.	
+E0356	catalog	CARD_CATALOG	The Water Torture Cell		Rare	skill;Escape Artist;gamble;formation	Arrives locked under 3 conditions (covered, column unscored, not moved); one unlocks per turn in order, and a full escape pays a large bonus.	
+E0357	catalog	CARD_CATALOG	The Wedding Band		Rare	stamp;deck-manip;formation	Applied to two cards: the pair always shuffles adjacent to each other and is always drawn together.	
+E0358	catalog	CARD_CATALOG	The Wheel		Epic	consumable;random;gamble	Consumable: re-rolls the ranks of every card in one row, seeded.	
+E0359	catalog	CARD_CATALOG	The Wildcard		Rare	pip;random;deck-manip	On every board change, this card becomes a copy of a rank/suit currently present in its row, chosen deterministically.	Added (is any rank instead)
+E0360	catalog	CARD_CATALOG	The Wing Walker		Uncommon	skill;Acrobat;movement;deck-manip	During the Next-phase drop, this card may transfer mid-air from its input column to an adjacent one, chosen on cue before Next.	
+E0361	catalog	CARD_CATALOG	The Yakuza Hand		Legendary	rule;secret;gamble	Hidden rule: scoring a meld of exactly ranks 8-9-3 pays a large jackpot.	
+E0362	catalog	CARD_CATALOG	Ticket Stub		Common	type;economy;token;Producer	Worth double trade value at shops; scores 0 and never melds on the board.	
+E0363	catalog	CARD_CATALOG	Tinder		Uncommon	type;status;prop	Whenever this card is covered by another card, the covering card catches Burning.	
+E0364	catalog	CARD_CATALOG	Tintype		Rare	type;deck-manip;collection	On acquisition, permanently copies the rank and suit of the card it was created from.	
+E0365	catalog	CARD_CATALOG	Top Billing		Uncommon	stamp;combo;info	This card always scores first within its meld, controlling trigger order ahead of board-order dispatch.	
+E0366	catalog	CARD_CATALOG	Tumbler's Poise		Common	skill;Acrobat;charges;movement	1 charge per turn: cue to hop this card one column sideways; an unused charge auto-spends on Next.	
+E0367	catalog	CARD_CATALOG	Twin Harmony		Uncommon	skill;Dancer;combo	Doubles any combo or multiplier effect on cards adjacent to it.	
+E0368	catalog	CARD_CATALOG	Understudy		Uncommon	stamp;destruction;deck-manip	If the card directly above this one in a stack is destroyed or consumed, this card permanently copies that card's skill.	
+E0369	catalog	CARD_CATALOG	Unpierceable		Uncommon	stamp;protection;prop	Knife props pass through this card harmlessly, but still count as a miss for miss-triggered bonuses.	
+E0370	catalog	CARD_CATALOG	Utter Chaos		Rare	skill;Magician;random;combo	Becomes a random skill on every Next, deterministic per history hash.	
+E0371	catalog	CARD_CATALOG	Walking Through the Wall		Rare	skill;Magician;movement	Cue: move this card through an occupied slot to the empty slot beyond it.	
+E0372	catalog	CARD_CATALOG	Water		Uncommon	type;movement	On Next, if an adjacent column is shorter, this card flows sideways into it, always seeking the lowest level.	Added
+E0373	catalog	CARD_CATALOG	Wax		Uncommon	type;status	At each show end, loses 1 rank for every Flames-suit card that shared its column that show, and is destroyed at rank 0.	
+E0374	catalog	CARD_CATALOG	Wax and Gold		Rare	skill;Fortune Teller;secret;growth	Has a visible effect (+points when scored in a row meld) and a hidden effect unlocked after the visible one triggers 5 times (then +combo on every meld).	
+E0375	catalog	CARD_CATALOG	Weary Willie		Rare	skill;Clown;growth;persistence	Gains +1 rank permanently every time one of your cards is destroyed or a show is failed.	
+E0376	catalog	CARD_CATALOG	White Elephant		Rare	skill;Producer;economy;gamble;event-granted	Scores huge points, but each show it stays in the deck it consumes 1 Gold token, or 1 rank from the richest card if none are available.	
+E0377	catalog	CARD_CATALOG	Whiteface & Auguste		Rare	skill;Clown;random;combo	Cue the first card to issue an order (choose an adjacent card's cue); the second card executes it on a different valid target instead, at 150% effect.	
+E0378	catalog	CARD_CATALOG	X-Ray Eyes		Uncommon	skill;Fortune Teller;info;spotlight	While this card is covered, reveals all facedown and hidden board cards and the top 3 deck cards.	
+E0379	designdocs	DESIGN_DOC.md §17 Turn Resources	1 free undo per turn	rule			1 free undo is granted per turn by default and does not carry over.	
+E0380	designdocs	DESIGN_DOC.md §2 Core Game Loop refinements	3 submits per match	rule			A match consists of 3 submits ('acts'); winning/losing is decided after the 3rd.	
+E0381	designdocs	DESIGN_DOC.md §3 Board & Zones	5-column board	rule			Board is 5 columns wide so a full row forms a 5-card poker hand.	
+E0382	designdocs	DESIGN_REFERENCES.md §A5 China	72 Transformations	skill			A wild card may transform up to 72 tracked times per run; at 72 it ascends into a permanently upgraded form.	
+E0383	designdocs	DESIGN_REFERENCES.md §A6 Japan	8-9-3 jackpot	unknown			Scoring a meld of exactly 8-9-3 pays out a massive jackpot ('the worthless hand').	
+E0384	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Acrobat (unnamed charge example)	skill			Has 1 charge; triggers by cue, or auto-spends on Next if unused.	
+E0385	designdocs	DESIGN_DOC.md §11 Class list	Acrobat class	unknown			Class mechanical focus: card movement.	
+E0386	designdocs	DESIGN_DOC.md §7 Spotlight System	All-revealed-trigger (earliest)	rule			Earliest rule: all revealed cards perform their abilities unconditionally.	
+E0387	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Amplifying existing points	unknown			Skill taxonomy category: cards that amplify existing point sources.	
+E0388	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Amusement city (Coney Island)	boss			Layout/offers differ every visit; the town may burn down as a map event and rebuild changed.	
+E0389	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	Animal-puppet tokens	skill			Animal effects that count as Puppet-type, immune to animal bans and gentling-friendly.	
+E0390	designdocs	DESIGN_DOC.md §11 Class list	Animal Trainer class	unknown			Class mechanical focus: stacking — eating cards, cards auto-moving through the field.	
+E0391	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Antique poster / benefit show	unknown			An antique poster found at a node becomes a real card; a benefit-show event sends all proceeds to one card, massively buffing it.	
+E0392	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Arena/naumachia town	boss			Arena towns only let Danger-tagged cards score; a naumachia event floods the board's bottom rows.	
+E0393	designdocs	DESIGN_DOC.md §19 Meta Progression	Ascensions	unknown			Each ascension adds a chosen negative card into the deck or rules deck, resolving the overlap with prestige debuff-for-points ideas.	
+E0394	designdocs	DESIGN_REFERENCES.md §A6 Japan	Automaton type (Karakuri)	type			Acts by itself every Next, performing its cue for free, but can never be manually cued.	
+E0395	designdocs	DESIGN_DOC.md §5 Scoring	Avalanche	skill			After scoring, all cards on the board 'attack the scoreboard,' reducing the goal score by the number of cards on the board.	
+E0396	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Axis-distinguishing score display	rule			Score display distinguishes axes: '-2-' denotes row points, '|1|' denotes column points.	
+E0397	designdocs	DESIGN_DOC.md §10 Suit-Props (implemented)	Ball = Juggling status	suit			Ball drops a Juggling status, which pays out column score when that card later scores.	
+E0398	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Bamberg dynasty saves	unknown			A family line of decks where each generation inherits one card.	
+E0399	designdocs	DESIGN_REFERENCES.md §A6 Japan	Ban-evasion deck (Hanafuda)	unknown			When a town outlaws a suit, cards in this deck reskin themselves to dodge the ban.	
+E0400	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Bartholomew Fair town	boss			Every shop type is available at once, but pickpocket events fire between purchases.	
+E0401	designdocs	DESIGN_RECOMMENDATIONS.md §2.4 Suits: 4 + specials	Base four suits	suit			Standardize on 4 base suits (Knives, Hoops, Balls, Flames) instead of 6, mapping 1:1 to projectile mechanics.	
+E0402	designdocs	DESIGN_REFERENCES.md §A5 China	Bian lian instant pip-swap	unknown			Instant pip-swap on cue, with the swap method hidden from the player; unlocked via a family-lineage condition.	
+E0403	designdocs	DESIGN_DOC.md §5 Scoring	BigNumber class	rule			An infinite/arbitrary-precision number class is used so scores can grow unboundedly large.	
+E0404	designdocs	DESIGN_DOC.md §15 Map content & UX	Biome/route meta-unlocks	unknown			More biomes and extended routes can be unlocked with meta progress.	
+E0405	designdocs	DESIGN_DOC.md §15 Map v3 (Biome tour)	Biome tour structure	rule			Level/act/world structure where traveling through biomes affects map generation, with Umamusume-style fame gates roughly every 10 levels.	
+E0406	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	Blackout turn	rule			One turn is played entirely with a facedown board.	
+E0407	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Board/deck contract	rule			The game has a board with 2 zones, a draw deck, a discard deck, and a hidden rule-set deck, which is parsed at game creation to decide board layout.	
+E0408	designdocs	DESIGN_DOC.md §15 Map (implemented)	Booster node packs	rule			Booster nodes force-add a 5-card pack that the player takes in full.	
+E0409	designdocs	DESIGN_DOC.md §14.3 Types	Booster / Talent pack	type			Card-pack generation type used on the map.	
+E0410	designdocs	DESIGN_DOC.md §8 Rule Deck	Boss effects as temporary rule cards	boss			Boss/negative effects are implemented as temporary cards added to the rules deck, defined to self-destroy after the game/show ends.	
+E0411	designdocs	DESIGN_DOC.md §14.4 Rule cards	Boss/hazard rule cards	boss			Temporary negative rule cards that self-destruct after the game/show ends.	
+E0412	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Bottom Deal	skill			Draw from the bottom of the deck this turn.	
+E0413	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	Bound pair (Karagöz)	skill			Each of a pair gets +mult when placed in opposite zones.	
+E0414	designdocs	DESIGN_RECOMMENDATIONS.md §5 Stamps	Brass Check	stamp			On trigger, mint a Gold card to the top of the deck.	
+E0415	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Build-to-burn (Las Fallas)	rule			Invest in a card all tour, then burn it at the finale for a payout proportional to investment; exactly one card can be 'pardoned' from any mass-destruction effect.	
+E0416	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Bull-leap vault	skill			When a boss attacks a column, this card dodges the attack and scores instead.	
+E0417	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Bullet Catch graveyard secret	unknown			A hidden secret tracks repeat users of the Bullet Catch card, referencing its many in-fiction deaths.	
+E0418	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Buried alive	skill			Bury a card (remove from game) for N shows; it returns transformed (+rarity) or not at all (small chance).	
+E0419	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Burning Man build-to-burn	unknown			Build a temporary venue from the player's own cards and burn it for a payout; ending the show with an empty board grants a 'Leave No Trace' bonus.	
+E0420	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Burst acrobatics (Hopak)	skill			A Dancer card jumps its whole stack one row in a single cue.	
+E0421	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Buttons as cards (shop)	rule			Shop buttons (e.g. reroll) are implemented as tappable cards on the game board rather than UI widgets.	
+E0422	designdocs	DESIGN_REFERENCES.md §A14 The Caribbean & Central America	Cabaret city	boss			Night-show rules apply; Dancer/Concessions cards are favored.	
+E0423	designdocs	DESIGN_REFERENCES.md §A11 South America	Calendar shows (Inti Raymi)	unknown			Bonus festivals appear on fixed 'dates' (every Nth node).	
+E0424	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	Call-and-response	rule			When an adjacent card triggers, this card may 'answer' by mirroring the trigger at half power.	
+E0425	designdocs	DESIGN_RECOMMENDATIONS.md §6 Special Effects	Calliope	skill			+combo for every different class that scored this submit.	
+E0426	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Canfield rules economy	rule			Pay cards to play, earn gold per card scored, as an explicit town/deck economy variant.	
+E0427	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Cannon dynasty inheritance	unknown			Cannon acts are inheritable between runs, framed as a family dynasty.	
+E0428	designdocs	DESIGN_REFERENCES.md §B1 Aerial & Wire	Cannot-retire veteran card	unknown			A veteran card that cannot retire, used as endless-mode flavor.	
+E0429	designdocs	DESIGN_RECOMMENDATIONS.md §4 Types (materials)	Canvas	type			Sturdy default material for circus-born cards; an upgrade tier above Paper.	
+E0430	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Card anatomy contract	rule			Every card has a suit, a rank, a stamp slot, a skill slot, and a card type; cards can have 1 parent and 1 child (a stack).	
+E0431	designdocs	DESIGN_DOC.md §15 Map content & UX	Card pack node offers	rule			Nodes offer card packs, or occasionally rarer single cards; packs show at least 1 guaranteed card in the map preview.	
+E0432	designdocs	DESIGN_DOC.md §16 Economy & Shop	Card-stack shop pricing	rule			Shop cost is a stack of cards at the bottom, randomly chosen from the player's deck to be equivalent to the listed price, so buying doubles as deck thinning.	
+E0433	designdocs	DESIGN_DOC.md §19 Meta Progression	Card unlock tracks	unknown			Dual unlock system: specific in-game actions unlock specific cards, while a threshold/achievement-pass track unlocks commons via generic, order-independent progress and rares via archetype-specific play.	
+E0434	designdocs	DESIGN_DOC.md §16 Economy & Shop	Cards as currency	rule			Cards themselves are the currency; there is no abstract gold, only trading in cards.	
+E0435	designdocs	DESIGN_DOC.md §17 Turn Resources	Cards cannot retire until scored	rule			Cards cannot be sold/removed until they have scored or their ability has activated.	
+E0436	designdocs	DESIGN_DOC.md §2 Core Game Loop v2 (latest)	Cards enter only via drop	rule			Cards enter play by dropping automatically from the input row; they cannot be dragged down manually.	
+E0437	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Cards with a price	unknown			Skill taxonomy category: cards that come at a price/cost.	
+E0438	designdocs	DESIGN_DOC.md §16 Economy & Shop	Carnival meta-shop	unknown			The Carnival meta-shop lets the player spend prestige to improve odds of cards/events on the map, but this also raises the score required per show.	
+E0439	designdocs	DESIGN_REFERENCES.md §B3 Strength & Endurance	Carries a chosen card	skill			Carries one chosen card wherever it moves, so they relocate together.	
+E0440	designdocs	DESIGN_DOC.md §14.4 Rule cards	Cascade Scorer	rule			Performs the whole-board row/column scoring pass.	
+E0441	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Censorship-immune puppets	rule			In towns that ban speech/satire acts, Puppet-type cards perform unhindered.	
+E0442	designdocs	DESIGN_REFERENCES.md §B4 Danger Acts	Centrifugal column (Wall of Death)	skill			Cards in this column can't fall or be discarded while it spins, for a limited number of turns.	
+E0443	designdocs	DESIGN_REFERENCES.md §A5 China	Chair stack	skill			+mult per card in the tallest column.	
+E0444	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Changing game rules	unknown			Skill taxonomy category: cards that change game rules.	
+E0445	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Changing how other skills work	unknown			Skill taxonomy category: cards that alter how other skills function.	
+E0446	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Charivari opening	rule			Turn-1 bonus for flooding the Ring with many low-rank cards at once.	
+E0447	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Cheat Day	skill			Cards remaining in the deck get a rank-up, rewarding winning early with cards to spare.	
+E0448	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	Cherry Pie	unknown			Take a debuff card for this show in exchange for gold cards.	
+E0449	designdocs	DESIGN_REFERENCES.md §A8 Middle East, Central Asia, Mongolia	Chick production (gali-gali)	skill			Produces chick tokens under scored face-down cards ('cups').	
+E0450	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Chorus cards	skill			Reveal the boss's next intent one turn early while any two Chorus cards share a row.	
+E0451	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Circus Maximus race show	boss			Reach the goal score within N turns.	
+E0452	designdocs	DESIGN_DOC.md §10 Suits	Circus suit roster	suit			Planned circus suits: clowns, background dancers, flames, juggling balls, hoops, nails/knives, plus special suits fireworks and electric.	
+E0453	designdocs	DESIGN_REFERENCES.md §C2 Séance, Spiritualism & Paranormal	Clever Hans	skill			Appears to calculate a rank but actually copies its neighbor's value; if the neighbor leaves, it's revealed as rank 1.	
+E0454	designdocs	DESIGN_DOC.md §11 Class list	Clown class	unknown			Class mechanical focus: pip manipulation.	
+E0455	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	Clown + companion token	skill			Comes with a free 1-rank dog token.	
+E0456	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Club passing	rule			Two Juggler cards in different columns trade a buff back and forth every Next.	
+E0457	designdocs	DESIGN_REFERENCES.md §A13 Korea & Southeast Asia	Color-wheel booth	unknown			Bet a gold card on a suit at a color-wheel game.	
+E0458	designdocs	DESIGN_DOC.md §3 Board & Zones	Column count via rule cards	rule			Column count is not hardcoded: rule cards (input/zone adders) each add one column at game creation, so effects can add or remove columns.	
+E0459	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Column Poker (unnamed)	rule			Every 5 cards per column are scored as a poker hand.	
+E0460	designdocs	DESIGN_DOC.md §2 Core Game Loop	Combine and pick up decks	unknown			Early undeveloped idea to combine and pick up multiple decks.	
+E0461	designdocs	DESIGN_DOC.md §5 Scoring v3 (combo, shipped)	Combo payout formula	rule			Act payout = row-score x column-score x combo, where combo = 1 + 0.1 x U, and U = number of distinct combo classes (archetype+size+copies) scored this act.	
+E0462	designdocs	DESIGN_DOC.md §5 Scoring v3 (combo)	Combo per unique effect	rule			Combo increments by 1 for each unique effect triggered; flat points come from card effects ('cards are ammo'), multiplied by row-combo and col-combo.	
+E0463	designdocs	DESIGN_RECOMMENDATIONS.md §2.1 Scoring: combo reframe	Combo scoring formula	rule			Show score = sum of card effect points, multiplied by (1 + row combo) and by (1 + col combo), where row/col combo = number of unique row/column melds scored this submit.	
+E0464	designdocs	DESIGN_REFERENCES.md §A2 Medieval & Renaissance Europe	Commedia dell'arte roster	type			An entire face-card family or leader roster built from stock commedia characters.	
+E0465	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Common (chain)	skill			Doubles the chance of Rare cards appearing.	
+E0466	designdocs	DESIGN_DOC.md §7 Spotlight System	Compress board toggle	rule			A QOL 'compress board' view strips card art to pips plus ability names (dim when inactive), turning a stack into a stiff column when picked up.	
+E0467	designdocs	DESIGN_DOC.md §11 Class list	Concessions / Food class	unknown			Class mechanical focus: positive effects (buffs).	
+E0468	designdocs	DESIGN_REFERENCES.md §E The Fairground, Midway & Business	Configurable rhythm-buff (calliope organ)	consumable			A punched-card organ mechanic where the player configures a programmable rhythm-buff card.	
+E0469	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Congress deck	unknown			Starts with one card from every regional tradition, with cross-culture synergy tags.	
+E0470	designdocs	DESIGN_REFERENCES.md §A3 Golden Age Western Circus	Conjoined cards	rule			Two cards are permanently fused side-by-side, move as one unit, but score as two.	
+E0471	designdocs	DESIGN_DOC.md §11 Class list	Costume Designer class	unknown			Class mechanical focus: equipment/clothing/stamp manipulation.	
+E0472	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Creating mini-games	unknown			Skill taxonomy category: cards that create mini-games.	
+E0473	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Creating temporary cards	unknown			Skill taxonomy category: cards that create temporary cards.	
+E0474	designdocs	DESIGN_REFERENCES.md §F4 Dance, Drag & Ballroom	Crew formation battle / class legalization	unknown			Crew vs. crew formation battles; a street class becomes town-legal as the meta progresses.	
+E0475	designdocs	DESIGN_DOC.md §5 Scoring v1 (cribbage)	Cribbage-style scoring	rule			Face cards all count as 10; 2 points per 15-sum, 2 points per 31-sum, 2 for a pair, 6 for a triple, 12 for a quad, 3-7 points for runs of 3-7 cards.	
+E0476	designdocs	DESIGN_REFERENCES.md §A4 Russia & the Soviet Circus	Cross-class Clown leader	type			A comedy leader whose buff reaches every class.	
+E0477	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Cross-game persistence	unknown			Skill taxonomy category: effects persisting into the next game.	
+E0478	designdocs	DESIGN_REFERENCES.md §F3 Music, Concerts & Festivals	Crowd glow	rule			During a low-scoring turn, the crowd trickles in small fame regardless.	
+E0479	designdocs	DESIGN_DOC.md §12 Tapping / Cues & Charges	Cue via right-click	rule			Cards are tapped ('cued') via right-click; tappable cards get a glowing halo border that is removed once spent.	
+E0480	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Cups and balls minigame	unknown			A three-facedown-cards shuffle minigame usable in shops/events; the humblest commons can be buffed by an 'oldest trick' tag.	
+E0481	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Custom deck (final unlockable)	unknown			A fully custom deck as the final unlockable deck variant.	
+E0482	designdocs	DESIGN_DOC.md §8 Rule Deck (vetoed)	Custom rule deck pack	unknown			Vetoed: an unlock letting players build fully custom rule decks, up to re-implementing default solitaire — rejected as scope creep.	
+E0483	designdocs	DESIGN_RECOMMENDATIONS.md §9 Events	Cutting Up Jackpots	unknown			Reroll any one card in the deck into another card of the same class.	
+E0484	designdocs	DESIGN_DOC.md §5 Scoring v3 (combo, unbuilt)	Damage/antagonist reframing	rule			Points are reframed as damage dealt against an antagonist, Slay-the-Spire/TCG style, with row and column scorers becoming a combo system.	
+E0485	designdocs	DESIGN_DOC.md §11 Class list	Dancer / trick artist class	unknown			Class mechanical focus: specific formation bonuses.	
+E0486	designdocs	DESIGN_REFERENCES.md §D Cards, Gambling & Fortune	Dead Man's Hand	unknown			Scoring two pair, aces over eights, triggers a morbid jackpot plus a ghost event.	
+E0487	designdocs	DESIGN_DOC.md §20 Difficulty, Bosses & Win Cons	Debuff statuses	type			Cards can catch statuses via the status array, e.g. Exhausted (loses a rank at round end if it appeared on board this show).	
+E0488	designdocs	DESIGN_DOC.md §2 Core Game Loop v1	Deck-click drops loop	rule			Every click of the deck drops new cards down; a limited number of clicks/rounds are allowed per match.	
+E0489	designdocs	DESIGN_DOC.md §2 Core Game Loop	Deck influences ruleset	unknown			Different starting decks influence both the card pool and the rules the player plays under, via the rule deck.	
+E0490	designdocs	DESIGN_DOC.md §11 Skill taxonomy	Deck manipulation	unknown			Skill taxonomy category: cards that manipulate the deck.	
+E0491	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Deck unlocks as gimmick runs	unknown			Deck unlocks double as Balatro-style gimmick runs, unifying two systems into one.	
+E0492	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Declared jump (Evel Knievel)	rule			Anchors the Booking system: declare a jump, sell tickets, then attempt to survive it.	
+E0493	designdocs	DESIGN_REFERENCES.md §A1 The Ancient World	Dedi's Resurrection	skill			Restore one destroyed card per show.	
+E0494	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Default stack legality	rule			A legal stack is an ascending or descending run; same-suit cards cannot stack.	
+E0495	designdocs	DESIGN_DOC.md §6 Card Anatomy & Pips	Deterministic own RNG	rule			The engine implements its own RNG with seed offsets that are themselves randomized per-seed, so everything stays deterministic.	
+E0496	designdocs	DESIGN_REFERENCES.md §F1 Theater & Opera	Deus ex machina consumable	consumable			One automatic show-save per run, deliberately framed as feeling like a cheat.	
+E0497	designdocs	DESIGN_REFERENCES.md §A11 South America	Devil Parade	unknown			Play debuffed cards as the show; each one scored converts its debuff into fame.	
+E0498	designdocs	DESIGN_REFERENCES.md §A5 China	Diabolo juggle	skill			A card is juggled between two columns, alternating position every Next and buffing both.	
+E0499	designdocs	DESIGN_DOC.md §15 Map content & UX	Disaster card packs	rule			Disaster card packs can appear on the board as a choosable option.	
+E0500	designdocs	DESIGN_DOC.md §17 Turn Resources	Discard-driven board building	rule			Discards are a main method of building the board: repeatedly discard Entrance cards until getting what's wanted, then let them drop; an upgrade chain grants more discards or more cards per discard.	
+E0501	designdocs	DESIGN_DOC.md §14.1 Skills/Feats	Discard Joker (unnamed)	skill			Allows discarding 1 Entrance card per turn; upgradable to more discards or more cards per discard.	
+E0502	designdocs	DESIGN_REFERENCES.md §A16 Africa & the Arctic	Dispute settled by performance	unknown			A diplomatic show variant where a town dispute is settled by performance instead of score.	
+E0503	designdocs	DESIGN_DOC.md §13 Special Decks & Variants	Double Everything deck	unknown			Ranks are doubled, deck size doubled, initial slots doubled, score required doubled, card packs doubled.	
+E0504	designdocs	DESIGN_DOC.md §14.2 Stamps	Double Trigger	stamp			Card's effects trigger twice.	
+E0505	designdocs	DESIGN_REFERENCES.md §C1 Golden-Age Stage Magic	Dove production	skill			Scored melds release dove tokens: rank-1 fliers that land on random columns as free cards.	
+E0506	designdocs	DESIGN_REFERENCES.md §A5 China	Dragon meld	rule			A scored run moves as one body afterward, relocatable as a unit next turn.	
+E0507	designdocs	DESIGN_RECOMMENDATIONS.md §6 Special Effects	Drumroll	skill			The last meld scored this submit gets +mult.	
+E0508	designdocs	DESIGN_DOC.md §5 Scoring v2 (dual-axis, latest)	Dual-axis base scoring	rule			Base scoring combines vertical runs (with a minimum size) per column with horizontal poker hands per row.	
+E0509	designdocs	DESIGN_REFERENCES.md §A15 Iberia, Nordics & Eastern Europe	Duende	rule			A rare emergent state under specific combo/tension conditions triples a card's score with unique presentation; never purchasable, only summoned.	
+E0510	designdocs	DESIGN_DOC.md §3 Board & Zones	Duplicate rule card identifiers	rule			Duplicate rule cards (e.g. multiple zone adders) use their rank as an identifier.	
+E0511	designdocs	DESIGN_REFERENCES.md §A12 Australia & Oceania	Dynasty save bonus	unknown			A bonus for consecutive finished tours in one save file.	
+E0512	designdocs	DESIGN_DOC.md §14.3 Types	Earth / Air / Water / Fire materials	type			Elemental materials with custom movement, such as always sitting on top or bottom of a stack.	
+E0513	designdocs	DESIGN_DOC.md §25 Cross-Reference	Effect-order deck viewer	skill			An effect-viewer that shows skill trigger order even when the deck is randomized (could itself be implemented as a skill).	
+E0514	designdocs	DESIGN_DOC.md §10 Suits	Electric suit (proposed)	suit			Electric suit buffs cards that are connected/chained together in a certain way.	
+E0515	designdocs	DESIGN_REFERENCES.md §F6 Film Stunts & Spectacle Sports	Element boards (ice/water)	rule			Ice rows slide placed cards to the column's end; water rows let cards float/drift.	
+E0516	designdocs	DESIGN_DOC.md §4 Stacking & Movement Rules	Elemental custom movement	type			Elemental card types with custom movement rules, such as always sitting on top or bottom of a stack.	
+E0517	designdocs	DESIGN_REFERENCES.md §B2 Juggling & Object Manipulation	Elevate a prop	skill			Permanently convert one prop card into a feat card.	
+E0518	designdocs	DESIGN_RECOMMENDATIONS.md §2.2 Alt win cons: The Booking	Endless bookings	unknown			In endless mode, bookings become increasingly absurd contracts each repeat.	
+E0519	designdocs	DESIGN_DOC.md §15 Map (implemented)	Endless lap reversal	unknown			Finishing a lap enters endless mode: the tour reverses end-to-start on the same map, with goals scaling per lap and traveled history accumulating.	
+E0520	designdocs	DESIGN_DOC.md §15 Map v4 (FTL, latest)	Endless mode unlock	unknown			Finishing the final city wins the run and unlocks endless mode, repeating the final city with guaranteed repeating choices until the player loses.	
+E0521	designdocs	DESIGN_REFERENCES.md §G The Modern Era	Endurance lineage cards	skill			Modern endurance cards explicitly cite a lineage chain of ancestor cards (Hunger Artist family).	
+E0522	designdocs	DESIGN_REFERENCES.md §A10 The Americas	Engineer-impresario leader	type			Danger acts this leader 'designs' cost less.	

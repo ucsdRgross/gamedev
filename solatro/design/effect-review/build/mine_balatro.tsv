@@ -1,0 +1,250 @@
+source	category	name	rarity	mechanic
+balatro	joker	Joker	Common	+4 Mult.
+balatro	joker	Greedy Joker	Common	Played cards with Diamond suit give +3 Mult when scored.
+balatro	joker	Lusty Joker	Common	Played cards with Heart suit give +3 Mult when scored.
+balatro	joker	Wrathful Joker	Common	Played cards with Spade suit give +3 Mult when scored.
+balatro	joker	Gluttonous Joker	Common	Played cards with Club suit give +3 Mult when scored.
+balatro	joker	Jolly Joker	Common	+8 Mult if played hand contains a Pair.
+balatro	joker	Zany Joker	Common	+12 Mult if played hand contains a Three of a Kind.
+balatro	joker	Mad Joker	Common	+10 Mult if played hand contains a Two Pair.
+balatro	joker	Crazy Joker	Common	+12 Mult if played hand contains a Straight.
+balatro	joker	Droll Joker	Common	+10 Mult if played hand contains a Flush.
+balatro	joker	Sly Joker	Common	+50 Chips if played hand contains a Pair.
+balatro	joker	Wily Joker	Common	+100 Chips if played hand contains a Three of a Kind.
+balatro	joker	Clever Joker	Common	+80 Chips if played hand contains a Two Pair.
+balatro	joker	Devious Joker	Common	+100 Chips if played hand contains a Straight.
+balatro	joker	Crafty Joker	Common	+80 Chips if played hand contains a Flush.
+balatro	joker	Half Joker	Common	+20 Mult if played hand contains 3 or fewer cards.
+balatro	joker	Joker Stencil	Uncommon	X1 Mult for each empty Joker slot (including this card).
+balatro	joker	Four Fingers	Uncommon	All Flushes and Straights can be made with 4 cards.
+balatro	joker	Mime	Uncommon	Retrigger all card held-in-hand abilities.
+balatro	joker	Credit Card	Common	Allows going up to -$20 in debt.
+balatro	joker	Ceremonial Dagger	Uncommon	When Blind is selected, destroys the Joker to the right and adds double its sell value as a permanent Mult bonus.
+balatro	joker	Banner	Common	+30 Chips for each remaining discard.
+balatro	joker	Mystic Summit	Common	+15 Mult when 0 discards remaining.
+balatro	joker	Marble Joker	Uncommon	Adds one Stone card to the deck when Blind is selected.
+balatro	joker	Loyalty Card	Uncommon	X4 Mult every 6 hands played.
+balatro	joker	8 Ball	Common	1 in 4 chance for each played 8 to create a Tarot card when scored.
+balatro	joker	Misprint	Common	+0 to +23 Mult (random) per hand.
+balatro	joker	Dusk	Uncommon	Retrigger all played cards in the final hand of the round.
+balatro	joker	Raised Fist	Common	Adds double the rank of the lowest ranked card held in hand to Mult.
+balatro	joker	Chaos the Clown	Common	1 free reroll per shop.
+balatro	joker	Fibonacci	Uncommon	Each played Ace, 2, 3, 5, or 8 gives +8 Mult when scored.
+balatro	joker	Steel Joker	Uncommon	Gives X0.2 Mult for each Steel Card in your full deck.
+balatro	joker	Scary Face	Common	Played face cards give +30 Chips when scored.
+balatro	joker	Abstract Joker	Common	+3 Mult for each Joker card.
+balatro	joker	Delayed Gratification	Common	Earn $2 per discard if no discards are used by end of round.
+balatro	joker	Hack	Uncommon	Retrigger each played 2, 3, 4, or 5.
+balatro	joker	Pareidolia	Uncommon	All cards are considered face cards.
+balatro	joker	Gros Michel	Common	+15 Mult; 1 in 6 chance this card is destroyed at end of round.
+balatro	joker	Even Steven	Common	Played cards with even rank give +4 Mult when scored.
+balatro	joker	Odd Todd	Common	Played cards with odd rank give +31 Chips when scored.
+balatro	joker	Scholar	Common	Played Aces give +20 Chips and +4 Mult when scored.
+balatro	joker	Business Card	Common	Played face cards have a 1 in 2 chance to give $2 when scored.
+balatro	joker	Supernova	Common	Adds the number of times the played poker hand has been played this run to Mult.
+balatro	joker	Ride the Bus	Common	Gains +1 Mult per consecutive hand played without a scoring face card; resets to 0 when a face card scores.
+balatro	joker	Space Joker	Uncommon	1 in 4 chance to upgrade the level of the played poker hand.
+balatro	joker	Egg	Common	Gains $3 of sell value at end of round.
+balatro	joker	Burglar	Uncommon	When Blind is selected, gain +3 Hands and lose all discards for the round.
+balatro	joker	Blackboard	Uncommon	X3 Mult if all cards held in hand are Spades or Clubs.
+balatro	joker	Runner	Common	Gains +15 Chips permanently if played hand contains a Straight.
+balatro	joker	Ice Cream	Common	+100 Chips, -5 Chips for every hand played.
+balatro	joker	DNA	Rare	If the first hand of the round has only 1 card, adds a permanent copy of that card to the deck and draws it to hand.
+balatro	joker	Splash	Common	Every played card counts in scoring.
+balatro	joker	Blue Joker	Common	+2 Chips for each remaining card in the draw deck.
+balatro	joker	Sixth Sense	Uncommon	If the first hand of the round is a single 6, destroys it and creates a Spectral card.
+balatro	joker	Constellation	Uncommon	Gains X0.1 Mult permanently every time a Planet card is used.
+balatro	joker	Hiker	Uncommon	Every played card permanently gains +5 Chips when scored.
+balatro	joker	Faceless Joker	Common	Earn $5 if 3 or more face cards are discarded at the same time.
+balatro	joker	Green Joker	Common	+1 Mult per hand played, -1 Mult per discard, for the round.
+balatro	joker	Superposition	Common	Creates a Tarot card if played poker hand contains an Ace and a Straight.
+balatro	joker	To Do List	Common	Earn $4 if the played poker hand matches a specific target hand; the target hand changes at the end of round.
+balatro	joker	Cavendish	Common	X3 Mult; 1 in 1000 chance this card is destroyed at end of round.
+balatro	joker	Card Sharp	Uncommon	X3 Mult if the played poker hand has already been played this round.
+balatro	joker	Red Card	Common	Gains +3 Mult permanently whenever any Booster Pack is skipped.
+balatro	joker	Madness	Uncommon	When Small Blind or Big Blind is selected, gains X0.5 Mult and destroys a random other Joker.
+balatro	joker	Square Joker	Common	Gains +4 Chips permanently if played hand has exactly 4 cards.
+balatro	joker	Seance	Uncommon	If poker hand is a Straight Flush, creates a random Spectral card.
+balatro	joker	Riff-Raff	Common	When Blind is selected, creates 2 Common Jokers (if there is room).
+balatro	joker	Vampire	Uncommon	Gains X0.1 Mult permanently per scoring Enhanced card played, and removes that card's Enhancement.
+balatro	joker	Shortcut	Uncommon	Allows Straights to be made with gaps of 1 rank.
+balatro	joker	Hologram	Uncommon	Gains X0.25 Mult permanently every time a playing card is added to your deck.
+balatro	joker	Vagabond	Rare	Creates a Tarot card if hand is played with $4 or less.
+balatro	joker	Baron	Rare	Each King held in hand gives X1.5 Mult.
+balatro	joker	Cloud 9	Uncommon	Earn $1 for each 9 in your full deck at end of round.
+balatro	joker	Rocket	Uncommon	Earn $1 at end of round; payout increases by $2 permanently when a Boss Blind is defeated.
+balatro	joker	Obelisk	Rare	Gains X0.2 Mult permanently per consecutive hand played without playing your most-played poker hand; resets when that hand is played.
+balatro	joker	Midas Mask	Uncommon	All played face cards become Gold cards when scored.
+balatro	joker	Luchador	Uncommon	Sell this card to disable the current Boss Blind's effect for the round.
+balatro	joker	Photograph	Common	First played face card gives X2 Mult when scored.
+balatro	joker	Gift Card	Uncommon	Adds $1 of sell value to every other Joker and Consumable card at end of round.
+balatro	joker	Turtle Bean	Uncommon	+5 hand size, reducing by 1 each round until it reaches 0.
+balatro	joker	Erosion	Uncommon	+4 Mult for each card below the deck's starting size in your full deck.
+balatro	joker	Reserved Parking	Common	Each face card held in hand has a 1 in 2 chance to give $1.
+balatro	joker	Mail-In Rebate	Common	Earn $5 for each discarded card of a target rank; the target rank changes every round.
+balatro	joker	To the Moon	Uncommon	Earn an extra $1 of interest for every $5 you have at end of round.
+balatro	joker	Hallucination	Common	1 in 2 chance to create a Tarot card when any Booster Pack is opened.
+balatro	joker	Fortune Teller	Common	+1 Mult per Tarot card used this run.
+balatro	joker	Juggler	Common	+1 hand size.
+balatro	joker	Drunkard	Common	+1 discard each round.
+balatro	joker	Stone Joker	Uncommon	Gives +25 Chips for each Stone Card in your full deck.
+balatro	joker	Golden Joker	Common	Earn $4 at end of round.
+balatro	joker	Lucky Cat	Uncommon	Gains X0.25 Mult permanently every time a Lucky card successfully triggers.
+balatro	joker	Baseball Card	Rare	Every Uncommon Joker gives X1.5 Mult.
+balatro	joker	Bull	Uncommon	+2 Chips for each $1 you have.
+balatro	joker	Diet Cola	Uncommon	Sell this card to create a free Double Tag.
+balatro	joker	Trading Card	Uncommon	If first discard of round has only 1 card, destroys it and earns $3.
+balatro	joker	Flash Card	Uncommon	Gains +2 Mult permanently per reroll in the shop.
+balatro	joker	Popcorn	Common	+20 Mult, -4 Mult per round played.
+balatro	joker	Spare Trousers	Uncommon	Gains +2 Mult permanently if played hand contains a Two Pair.
+balatro	joker	Ancient Joker	Rare	Each played card of a target suit gives X1.5 Mult when scored; the target suit changes at end of round.
+balatro	joker	Ramen	Uncommon	X2 Mult, losing X0.01 Mult permanently per card discarded.
+balatro	joker	Walkie Talkie	Common	Each played 10 or 4 gives +10 Chips and +4 Mult when scored.
+balatro	joker	Seltzer	Uncommon	Retrigger all played cards for the next 10 hands, then this card is destroyed.
+balatro	joker	Castle	Uncommon	Gains +3 Chips permanently per discarded card of a target suit; the target suit changes every round.
+balatro	joker	Smiley Face	Common	Played face cards give +5 Mult when scored.
+balatro	joker	Campfire	Rare	Gains X0.25 Mult permanently for each card sold; resets when a Boss Blind is defeated.
+balatro	joker	Golden Ticket	Common	Played Gold cards earn $4 when scored.
+balatro	joker	Mr. Bones	Uncommon	Prevents death if chips scored are at least 25% of required chips; this card is then sold/destroyed.
+balatro	joker	Acrobat	Uncommon	X3 Mult on final hand of round.
+balatro	joker	Sock and Buskin	Uncommon	Retrigger all played face cards.
+balatro	joker	Swashbuckler	Common	Adds the sell value of all other owned Jokers to Mult.
+balatro	joker	Troubadour	Uncommon	+2 hand size, -1 hand each round.
+balatro	joker	Certificate	Uncommon	When round begins, adds a random playing card with a random Seal to your hand.
+balatro	joker	Smeared Joker	Uncommon	Hearts and Diamonds count as the same suit; Spades and Clubs count as the same suit.
+balatro	joker	Throwback	Uncommon	X0.25 Mult for each Blind skipped this run.
+balatro	joker	Hanging Chad	Common	Retriggers the first played card used in scoring 2 additional times.
+balatro	joker	Rough Gem	Uncommon	Played cards with Diamond suit earn $1 when scored.
+balatro	joker	Bloodstone	Uncommon	1 in 2 chance for played Heart-suit cards to give X1.5 Mult when scored.
+balatro	joker	Arrowhead	Uncommon	Played cards with Spade suit give +50 Chips when scored.
+balatro	joker	Onyx Agate	Uncommon	Played cards with Club suit give +7 Mult when scored.
+balatro	joker	Glass Joker	Uncommon	Gains X0.75 Mult permanently for every Glass Card that is destroyed.
+balatro	joker	Showman	Uncommon	Joker, Tarot, Planet, and Spectral cards may appear multiple times.
+balatro	joker	Flower Pot	Uncommon	X3 Mult if played hand contains a Diamond, Club, Heart, and Spade card.
+balatro	joker	Blueprint	Rare	Copies the ability of the Joker to the right.
+balatro	joker	Wee Joker	Rare	Gains +8 Chips permanently when each played 2 is scored.
+balatro	joker	Merry Andy	Uncommon	+3 discards each round, -1 hand size.
+balatro	joker	Oops! All 6s	Uncommon	Doubles all listed probabilities (e.g. 1 in X becomes 2 in X).
+balatro	joker	The Idol	Uncommon	Each played card matching a target rank and suit gives X2 Mult when scored; the target card changes every round.
+balatro	joker	Seeing Double	Uncommon	X2 Mult if played hand has a scoring Club card and a scoring card of any other suit.
+balatro	joker	Matador	Uncommon	Earn $8 if played hand triggers the Boss Blind's ability.
+balatro	joker	Hit the Road	Rare	Gains X0.5 Mult for the rest of the round for every Jack discarded.
+balatro	joker	The Duo	Rare	X2 Mult if played hand contains a Pair.
+balatro	joker	The Trio	Rare	X3 Mult if played hand contains a Three of a Kind.
+balatro	joker	The Family	Rare	X4 Mult if played hand contains a Four of a Kind.
+balatro	joker	The Order	Rare	X3 Mult if played hand contains a Straight.
+balatro	joker	The Tribe	Rare	X2 Mult if played hand contains a Flush.
+balatro	joker	Stuntman	Rare	+250 Chips, -2 hand size.
+balatro	joker	Invisible Joker	Rare	After being held through 2 rounds, can be sold to duplicate a random other Joker.
+balatro	joker	Brainstorm	Rare	Copies the ability of the leftmost Joker.
+balatro	joker	Satellite	Uncommon	Earn $1 at end of round per unique Planet card used this run.
+balatro	joker	Shoot the Moon	Common	Each Queen held in hand gives +13 Mult.
+balatro	joker	Driver's License	Rare	X3 Mult if you have at least 16 Enhanced cards in your full deck.
+balatro	joker	Cartomancer	Uncommon	Creates a Tarot card when Blind is selected.
+balatro	joker	Astronomer	Uncommon	All Planet cards and Celestial Packs in the shop are free.
+balatro	joker	Burnt Joker	Rare	Upgrades the level of the first discarded poker hand each round.
+balatro	joker	Bootstraps	Uncommon	+2 Mult for every $5 you have.
+balatro	joker	Canio	Legendary	Gains X1 Mult permanently when a face card is destroyed.
+balatro	joker	Triboulet	Legendary	Played Kings and Queens each give X2 Mult when scored.
+balatro	joker	Yorick	Legendary	Gains X1 Mult permanently every 23 cards discarded.
+balatro	joker	Chicot	Legendary	Disables the effect of every Boss Blind.
+balatro	joker	Perkeo	Legendary	Creates a Negative copy of 1 random consumable card at end of shop.
+balatro	edition	Base		No additional effect.
+balatro	edition	Foil		+50 Chips when scored (on a playing card), or +50 Chips added directly before the Joker is scored (on a Joker).
+balatro	edition	Holographic		+10 Mult when scored (on a playing card), or +10 Mult added directly before the Joker is scored (on a Joker).
+balatro	edition	Polychrome		X1.5 Mult when scored (on a playing card), or X1.5 Mult applied directly after the Joker is scored (on a Joker).
+balatro	edition	Negative		+1 Joker slot (on a Joker) or +1 Consumable slot (on a Tarot/Planet/Spectral card).
+balatro	enhancement	Bonus Card		+30 Chips when scored.
+balatro	enhancement	Mult Card		+4 Mult when scored.
+balatro	enhancement	Wild Card		Considered to be every suit simultaneously.
+balatro	enhancement	Glass Card		X2 Mult when scored; 1 in 4 chance to be destroyed after scoring is finished.
+balatro	enhancement	Steel Card		X1.5 Mult while held in hand.
+balatro	enhancement	Stone Card		Has no rank or suit, always scores, and its Chip value is fixed at +50 Chips.
+balatro	enhancement	Gold Card		Gives $3 if held in hand at end of round.
+balatro	enhancement	Lucky Card		1 in 5 chance to give +20 Mult and 1 in 15 chance to give $20 when scored.
+balatro	seal	Gold Seal		Earn $3 when this card is played and scores.
+balatro	seal	Red Seal		Retrigger this card 1 additional time.
+balatro	seal	Blue Seal		Creates the Planet card for the final played poker hand of the round, if this card is held in hand at end of round.
+balatro	seal	Purple Seal		Creates a Tarot card when this card is discarded.
+balatro	stake	White Stake		Base difficulty, no additional modifiers.
+balatro	stake	Red Stake		Small Blind gives no reward money.
+balatro	stake	Green Stake		Required score to beat Blinds scales faster for each Ante.
+balatro	stake	Black Stake		30% chance for Jokers in shops or booster packs to have an Eternal Sticker (cannot be sold or destroyed).
+balatro	stake	Blue Stake		-1 Discard per round.
+balatro	stake	Purple Stake		Required score to beat Blinds scales even faster for each Ante.
+balatro	stake	Orange Stake		30% chance for Jokers in shops or booster packs to have a Perishable Sticker (destroyed if not scored with within 5 rounds).
+balatro	stake	Gold Stake		30% chance for Jokers in shops or booster packs to have a Rental Sticker (costs $3 per round).
+balatro	blind	Small Blind		No special effect; can be skipped to receive a Tag.
+balatro	blind	Big Blind		No special effect; can be skipped to receive a Tag.
+balatro	boss_blind	The Hook		Discards 2 random cards held in hand after every hand played.
+balatro	boss_blind	The Ox		Playing a hand of the most-played poker hand type this run sets money to $0.
+balatro	boss_blind	The House		First hand of the round is dealt face down.
+balatro	boss_blind	The Wall		Extra large blind requiring 4x base Chips to beat.
+balatro	boss_blind	The Wheel		1 in 7 cards are dealt face down during the round.
+balatro	boss_blind	The Arm		Permanently decreases the level of the poker hand played by 1.
+balatro	boss_blind	The Club		All Club cards are debuffed (score no Chips or Mult).
+balatro	boss_blind	The Fish		Cards are drawn face down after each hand played.
+balatro	boss_blind	The Psychic		Must play exactly 5 cards each hand (not all need to score).
+balatro	boss_blind	The Goad		All Spade cards are debuffed.
+balatro	boss_blind	The Water		Start the round with 0 discards.
+balatro	boss_blind	The Window		All Diamond cards are debuffed.
+balatro	boss_blind	The Manacle		-1 hand size.
+balatro	boss_blind	The Eye		No poker hand type can be played more than once this round.
+balatro	boss_blind	The Mouth		Only one poker hand type can be played all round.
+balatro	boss_blind	The Plant		All face cards are debuffed.
+balatro	boss_blind	The Serpent		After every play or discard, always draw back up to 3 cards.
+balatro	boss_blind	The Pillar		Cards played in previous hands this Ante are debuffed.
+balatro	boss_blind	The Needle		Play only 1 hand the entire round, requiring 1x base Chips.
+balatro	boss_blind	The Head		All Heart cards are debuffed.
+balatro	boss_blind	The Tooth		Lose $1 for each card played.
+balatro	boss_blind	The Flint		Base Chips and Mult for played poker hands are halved.
+balatro	boss_blind	The Mark		All face cards are dealt face down.
+balatro	boss_blind	Amber Acorn		Flips and shuffles the order of all Joker cards.
+balatro	boss_blind	Verdant Leaf		All cards are debuffed until a Joker is sold.
+balatro	boss_blind	Violet Vessel		Very large blind requiring 6x base Chips to beat.
+balatro	boss_blind	Crimson Heart		One random Joker is disabled each hand played.
+balatro	boss_blind	Cerulean Bell		Forces one card in hand to always be selected for play/discard.
+balatro	tag	Boss Tag		Rerolls the Boss Blind for the current Ante.
+balatro	tag	Buffoon Tag		Gives a free Mega Buffoon Pack.
+balatro	tag	Charm Tag		Gives a free Mega Arcana Pack.
+balatro	tag	Coupon Tag		Initial cards and booster packs in the next shop are free.
+balatro	tag	D6 Tag		Rerolls in the next shop start at $0.
+balatro	tag	Double Tag		Gives a copy of the next Tag selected.
+balatro	tag	Economy Tag		Doubles your money, up to a maximum of $40 gained.
+balatro	tag	Ethereal Tag		Gives a free Spectral Pack.
+balatro	tag	Foil Tag		Next base-edition shop Joker is free and becomes Foil.
+balatro	tag	Garbage Tag		Gives $1 per unused discard this run.
+balatro	tag	Handy Tag		Gives $1 per hand played this run.
+balatro	tag	Holographic Tag		Next base-edition shop Joker is free and becomes Holographic.
+balatro	tag	Investment Tag		Gain $25 after defeating the next Boss Blind.
+balatro	tag	Juggle Tag		+3 hand size for the next round.
+balatro	tag	Meteor Tag		Gives a free Mega Celestial Pack.
+balatro	tag	Negative Tag		Next base-edition shop Joker is free and becomes Negative.
+balatro	tag	Orbital Tag		Upgrades a random poker hand by 3 levels.
+balatro	tag	Polychrome Tag		Next base-edition shop Joker is free and becomes Polychrome.
+balatro	tag	Rare Tag		Shop contains a free Rare Joker.
+balatro	tag	Speed Tag		Gives $5 per Blind skipped this run.
+balatro	tag	Standard Tag		Gives a free Mega Standard Pack.
+balatro	tag	Top-up Tag		Creates up to 2 Common Jokers, if there is room.
+balatro	tag	Uncommon Tag		Shop contains a free Uncommon Joker.
+balatro	tag	Voucher Tag		Adds one Voucher to the next shop.
+balatro	challenge	The Omelette		Blinds and extra hands give no reward money and no interest is earned; starts with 5 Egg Jokers; economy-related vouchers/Jokers are banned.
+balatro	challenge	15 Minute City		Starts with an Eternal Ride the Bus and an Eternal Shortcut Joker; deck contains two copies of each face card and no Aces, 2s, or 3s.
+balatro	challenge	Rich get Richer		Chips scored cannot exceed current money; starts with $100 and the Seed Money and Money Tree vouchers.
+balatro	challenge	On a Knife's Edge		Starts with an Eternal Ceremonial Dagger pinned to the leftmost Joker slot.
+balatro	challenge	X-ray Vision		1 in 4 cards are dealt face down.
+balatro	challenge	Mad World		Extra hands earn no money and no interest is earned; deck is restricted to ranks 2-9 (32 cards); The Plant boss blind is banned.
+balatro	challenge	Luxury Tax		Hand size (base 10) is reduced by 1 for every $5 held.
+balatro	challenge	Non-Perishable		All Jokers are Eternal; self-destructing Jokers (e.g. Gros Michel, Cavendish, Ice Cream) and the Verdant Leaf blind are banned.
+balatro	challenge	Medusa		Starts with an Eternal Marble Joker; all face cards in the deck are replaced with Stone cards.
+balatro	challenge	Double or Nothing		All played cards become debuffed after scoring; uses a standard 52-card deck with every card given a Red Seal.
+balatro	challenge	Typecast		After the Ante 4 boss is defeated, all Jokers become Eternal and Joker slots are set to 0; Verdant Leaf blind is banned.
+balatro	challenge	Inflation		Every shop purchase permanently raises all prices by $1; starts with a Credit Card Joker; discount vouchers are banned.
+balatro	challenge	Bram Poker		Jokers no longer appear in the shop; starts with an Eternal Vampire Joker and extra Tarot cards.
+balatro	challenge	Fragile		Starts with 2 Eternal Negative Oops! All 6s Jokers; uses a standard 52-card deck with every card given Glass enhancement; all other card-enhancement methods are banned.
+balatro	challenge	Monolith		Starts with an Eternal Obelisk and an Eternal Negative Marble Joker.
+balatro	challenge	Blast Off		2 hands and 2 discards per round, 4 Joker slots; includes Planet-card vouchers; hand/discard-boosting vouchers and the Burglar Joker are banned.
+balatro	challenge	Five-Card Draw		6 discards per round, 5 hand size, 7 Joker slots; starts with Card Sharp and a base Joker; hand-size-expanding Jokers are banned.
+balatro	challenge	Golden Needle		Each discard costs $1; 1 hand and 6 discards per round; starts with $10; hand-boosting vouchers and the Burglar Joker are banned.
+balatro	challenge	Cruelty		Small and Big Blinds give no reward money; 3 Joker slots.
+balatro	challenge	Jokerless		Jokers no longer appear in the shop and Joker slots are set to 0; all other Joker-acquisition methods (Judgement, Wraith, Soul cards, tags, certain blinds, Antimatter voucher, Buffoon packs) are banned.

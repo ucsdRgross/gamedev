@@ -1,0 +1,262 @@
+eid	origin	source	name	slot	rarity	groups	mechanic	status
+E1306	braindump	gam draft.txt:48	Location difficulty from card	map			A map location's suit and rank determine its difficulty and type.	
+E1307	braindump	gam draft.txt:444	Magician leader archetype	skill			Magician leader archetype: focuses on card creation and deletion.	
+E1308	braindump	gam draft.txt:1279	Mahjong hand check across ring	rule			Check whether a ring satisfies mahjong-style hands, e.g. 4 triplets and a pair across its 5 rows or 5 columns.	
+E1309	braindump	curated effects pre grid.csv:81	Mahjong rank/suit	unknown			Placeholder entry referencing a mahjong-based rank/suit mechanic; no effect detail given in the sheet.	
+E1310	braindump	gam draft.txt:552	Mana cards instead of mana bar	rule			Instead of a mana bar, use mana cards similar to MTG; any card can serve as a resource.	
+E1311	braindump	gam draft.txt:64	Map card seeds next entrance	map			Clicking a card on the map makes it the first card to appear in the drop-down/entrance area of the subsequent match.	
+E1312	braindump	gam draft.txt:617	Map high-rarity loose cards	map			The map can sometimes place single high-rarity cards lying around instead of the usual card pack.	
+E1313	braindump	gam draft.txt:698	Map node preview before travel	map			Clicking a map node shows a preview plus a separate button to actually travel to it.	
+E1314	braindump	gam draft.txt:51	Map probability rings	map			Map could be a square with rings of probability where higher-rank cards are more likely toward the middle.	
+E1315	braindump	gam draft.txt:50	Map special squares	map			Some map squares are special locations like shops; e.g. all 7s could be shops.	
+E1316	braindump	gam draft.txt:105	Match end condition	rule			Match ends when the deck runs out of cards or the required score is reached.	
+E1317	braindump	gam draft.txt:1342	Mau Mau wildcard/win-call rule	rule			Mau Mau: jacks are wild, no redeal limit; must call 'Mau' on your last card, 'Mau Mau' if that card is wild.	
+E1318	braindump	gam draft.txt:663	Maximum Effort/Exhaust stamp	stamp			Maximum Effort/Exhaust: doubles points (or gives flat points) from this card on score, but only refreshes if the card is not played/scored again on the next show.	
+E1319	braindump	gam draft.txt:1192	Merci: shift an obstructing card	skill			Merci (solitaire cheat): allowed once, to move an obstructing card out of the way.	
+E1320	braindump	todo.md:274	Meta progression system	meta			Planned but unimplemented: a meta-progression system.	
+E1321	braindump	gam draft.txt:300	Metagame editing ruleset deck	meta			Metagame where the player tries to modify the default ruleset deck during a run by adding or removing rule cards.	
+E1322	braindump	gam draft.txt:501	Metashop odds vs required score	meta			Spending points in the meta-shop to manipulate overall card odds also increases the score required per show.	
+E1323	braindump	gam draft.txt:1437	Minesweeper bomb-prefilled grid	boss			Minesweeper-inspired: rings prefilled with random bombs; number tiles indicate nearby bombs; placing a card on a bomb lowers its value.	
+E1324	braindump	gam draft.txt:49	Minesweeper map reveal	map			Deck starts fully visible but face-down like Minesweeper; can only click a card adjacent to a face-down card, battling for it and revealing adjacent cards; win by uncovering all cards.	
+E1325	braindump	gam draft.txt:654	Mini-game events with puzzle win-con	map			Some events are mini-games where score is not the goal but an alternate puzzle win condition, e.g. trigger an effect 5 times to win.	
+E1326	braindump	random potential effects.csv:22	Mini Metro mode	map			Mini-game mode: ends of straights become metro stations connected by the straights as lines, which must serve passengers over N turns.	
+E1327	braindump	random potential effects.csv:17	Monopoly card	skill			Playing a flush of five of a card removes that card from future generation.	
+E1328	braindump	gam draft.txt:1414	Monopoly pay-to-unlock squares	map			Monopoly-inspired: certain map squares require sacrificing/paying a card to unlock before use.	
+E1329	braindump	random potential effects.csv:3	More Poker card	skill			Poker hands give double the points.	
+E1330	braindump	gam draft.txt:623	Move-resistant cards	skill			Some cards can resist being moved.	
+E1331	braindump	gam draft.txt:17	Mulligan entrance cards	rule			Mulligan incoming cards by clicking them and pressing a discard button.	
+E1332	braindump	gam draft.txt:612	Mulligan entrance via tap	skill			Card effect that allows mulliganing entrance cards when tapped.	
+E1333	braindump	gam draft.txt:609	Mulligan-style card packs	consumable			Card packs where, instead of choosing cards directly, the player mulligans (rerolls) the pack's results arena-style, with an increasable mulligan count.	
+E1334	braindump	gam draft.txt:124	Multiply vertical by horizontal	rule			All vertical scores are multiplied together with all horizontal scores at the end.	
+E1335	braindump	gam draft.txt:555	Mystery Box card	skill			Mystery Box: at game start, this card becomes a random skill.	
+E1336	braindump	gam draft.txt:1445	Neighbor-type value bonus (3-Ring Circus)	skill			3-Ring Circus board game reference: cards care about the type of cards to their left/right to increase their own value.	
+E1337	braindump	gam draft.txt:1176	Net card lowers retirement, raises injury	skill			Net card: increases chance of injury but lowers chance of retirement.	
+E1338	braindump	gam draft.txt:1343	Neuner 9s-wild variant	rule			Neuner: like Mau Mau but 9s are wild plus an added Joker, and players may draw at will.	
+E1339	braindump	pokerpatience.txt:5	New grid per 25/50 deck cards	rule			A new 5x5 grid is unlocked for every 25/50 cards (tunable) in the starting deck.	
+E1340	braindump	gam draft.txt:1373	Ninety-Nine suit-value bidding	rule			Ninety-Nine: discard 3 of 12 cards to set your bid, where club=+3, heart=+2, spade=+1, diamond=+0.	
+E1341	braindump	gam draft.txt:1267	No-adjacency placement with shifting	rule			Alternative: no restriction requiring cards be placed near others, but with a shifting mechanic where a second card placed 5 away determines the first card's final position.	
+E1342	braindump	gam draft.txt:86	No submit slot, whole board scores	rule			There is no special submit slot; the entire board is considered for submission on final score, using entrance cards similar to jokers.	
+E1343	braindump	random potential effects.csv:7	Noble Family card	skill			Each scored face card increases the points of the next scored face card by 1.	
+E1344	braindump	gam draft.txt:1273	Non-5x5 ring layouts with hazards	map			Allow alternative ring layouts that are not 5x5, including prefilled zones with cards or hazards.	
+E1345	braindump	random potential effects.csv:5	Non-scoring bonus card	skill			If this card is not part of any scoring hand, it gives 10 points.	
+E1346	braindump	gam draft.txt:186	Null cards	type			Null cards take up space on the board and are highlighted on hover to show over the null space.	
+E1347	braindump	gam draft.txt:1366	Oh Hell bid-exact-tricks rule	rule			Oh Hell!: players bid exactly how many tricks they intend to win after seeing their hand, capped at the hand size.	
+E1348	braindump	gam draft.txt:1368	Oh Hell scoring rule	rule			Oh Hell!: 1 point per trick won, plus 10 bonus points for hitting your exact bid.	
+E1349	braindump	gam draft.txt:1318	Old Maid pair-discard rule	rule			Old Maid: discard strict pairs from your hand; goal is to not be left holding the queen.	
+E1350	braindump	gam draft.txt:726	Other chess-piece cards	skill			Other chess-piece cards can stack anywhere permitted by that piece's chess movement, discarding and taking the place of the card they land on.	
+E1351	braindump	random potential effects.csv:4	Paintbrush card	skill			Cards placed on top of this card become the same suit as it.	
+E1352	braindump	curated effects pre grid.csv:83	Paper (default type)	type			Default no-effect base material type; exists so every card has a type slot filled.	
+E1353	braindump	random potential effects.csv:5	Parasite card	skill			Attaches to the next card placed on top of it; on submission, replaces the host card with the parasite card.	
+E1354	braindump	todo.md:222	Patience meter mechanic	rule			Patience system: idle/non-scoring moves drain a patience meter (patience_max, ships at 3); reaching 0 auto-drops cards; rule cards can raise patience_max via a grant path.	
+E1355	braindump	gam draft.txt:725	Pawn chess card	skill			Pawn: if stacked on the card above it, swaps places (moves up), or two above if bottommost; if stacked diagonally upward, replaces (captures) that card, discarding it.	
+E1356	braindump	gam draft.txt:1174	Per-act injury chance	rule			Each act/trigger has a chance of creating an injury stack; injury stacks increase the chance of permanent retirement/death.	
+E1357	braindump	gam draft.txt:1268e	Per-ring independent entrances	rule			Each ring/grid has its own independent 5-card entrance, and the player can play them in any order between rings, triggering effects whenever.	
+E1358	braindump	gam draft.txt:434	Performance ring score multiplier	rule			Each 'ring' of 5 rows increases the score multiplier for cards scored within it (1st ring 1x, 2nd ring 2x, 3rd ring 3x, etc.).	
+E1359	braindump	gam draft.txt:427	Performers and Feats rename	rule			Circus rename: cards are 'performers'; skills are 'feats'.	
+E1360	braindump	gam draft.txt:516	Permanently-active toggle	stamp			Once activated, an effect stays active for the rest of the game and can no longer be toggled off.	
+E1361	braindump	gam draft.txt:1020	Pickpocket card	skill			Pickpocket: adds an extra card to the deck if this card is never scored.	
+E1362	braindump	gam draft.txt:59	Pickup vs legal placement	rule			A stack can be picked up from anywhere, but if the resulting stack is illegal it can only be placed back on the submission spot.	
+E1363	braindump	gam draft.txt:1383	Pinochle meld types	rule			Pinochle: melds include runs (A-K-Q-J-10), marriages (King-Queen), the pinochle meld (J diamond + Q heart), and sets (4 Qs).	
+E1364	braindump	gam draft.txt:259	Pip effects permanently active	rule			Pip effects (suit/rank abilities) should be permanently active, independent of the resolver class.	
+E1365	braindump	pokerpatience.txt:10	Placed cards are locked by default	rule			By default, a card placed on an empty grid zone cannot be moved or have cards stacked on it; those actions are reserved for future effects.	
+E1366	braindump	gam draft.txt:646	Player plans tour route length	map			Players plan their tour route ahead of time, starting with small tours and unlocking longer routes through more cities as they finish tours.	
+E1367	braindump	gam draft.txt:231	Points increase by layer	rule			Points scored increase based on the layer/height a card is stacked at.	
+E1368	braindump	gam draft.txt:1235	Poker hand scoring table	rule			Poker Patience scoring table (UK vs Barry scoring) for pair/two pair/three of a kind/straight/flush/full house/four of a kind/straight or royal flush.	
+E1369	braindump	gam draft.txt:1230	Poker Patience adjacency placement	rule			Poker Patience variant: each new card placed must be adjacent or diagonal to a previously placed card, so the first card can end up anywhere in the final square.	
+E1370	braindump	gam draft.txt:1229	Poker Patience base rule	rule			Poker Patience: lay out 25 cards into a 5x5 square, forming 10 poker hands from the 5 rows and 5 columns.	
+E1371	braindump	gam draft.txt:1233	Poker Patience diagonal scoring variant	rule			Poker Patience variant: also count the 2 longest diagonals for additional scoring.	
+E1372	braindump	gam draft.txt:1234	Poker Patience PvP mode	rule			Poker Patience PvP: one player calls out the next card and both players build their own square with the same cards in the same order.	
+E1373	braindump	gam draft.txt:1232	Poker Patience win threshold	rule			Poker Patience: win if the total added score across rows and columns reaches 200 under Barry Scoring.	
+E1374	braindump	gam draft.txt:1284	Poker shuffle: pre-commit reshuffle	skill			Poker Shuffle rule: allows shifting placed cards around before all 25 grid spaces are filled, effectively allowing a perfect hand.	
+E1375	braindump	random potential effects.csv:4	Pot of Greed card	skill			When this card sits alone in a slot, discard it and replace with two cards from the deck.	
+E1376	braindump	gam draft.txt:357	Power-sorted rarity tiers	meta			Create common base effects, then progressively stronger versions of those effects as separate, rarer cards; rarity is determined by how far a card climbs the effect-value ladder.	
+E1377	braindump	gam draft.txt:469	Presentation-stage preview	view			Preview area is themed as a presentation stage where text scrolls but the card itself does not.	
+E1378	braindump	gam draft.txt:1399	President climbing-rank rule	rule			President: each turn plays equal-or-higher rank or passes; 2s are highest, suit irrelevant.	
+E1379	braindump	gam draft.txt:1400	President matched-count play rule	rule			President: subsequent players must match the number of cards the first player placed, at increasing rank.	
+E1380	braindump	gam draft.txt:1403	President Palace hidden-hand variant	rule			Palace variant of President: play with 3 private cards, 3 face-up cards, and 3 face-down cards, playable only after the previous set is used.	
+E1381	braindump	gam draft.txt:1402	President scum tribute rule	rule			President: the last player to empty their hand ('Scum') must give their two highest cards to the winner.	
+E1382	braindump	gam draft.txt:369	Prestige system reshapes map odds	meta			Prestige currency from wins can be spent to manipulate the odds of cards/events spawning on the map, or to unlock true-vision (seeing the rule deck and true card descriptions).	
+E1383	braindump	gam draft.txt:454	Producer/manager leader archetype	skill			Producer/manager leader archetype: focuses on token cards like gold-money cards and basic cards.	
+E1384	braindump	gam draft.txt:498	Prop cards defined as feat-less	rule			Cards without feats (skills) are classified as 'prop' cards.	
+E1385	braindump	gam draft.txt:483	Prop-hits-target mult gain	suit			Gain mult when a hoop passes through an animal/acrobat card, a knife misses a stuntsman, or a ball hits a juggler/animal; fire buffs cards it passes through.	
+E1386	braindump	curated effects pre grid.csv:107	PropArtist hat	stamp			This card's suit prop effects still apply even if the card is talented (has a skill).	
+E1387	braindump	gam draft.txt:1421	Pyramid entrance-match removal	rule			Pyramid/Golf Solitaire variant: remove a board card if it matches the current entrance card by a rule such as rank +/-1.	
+E1388	braindump	gam draft.txt:1420	Pyramid pair-removal rule	rule			Pyramid/Golf Solitaire: remove pairs of cards from the board if they match or sum to 13.	
+E1389	braindump	gam draft.txt:1049	Quest-chain triggered stage acts	meta			Story/quest acts are performed by triggering specific effects in a specific order, with the next quest section unlocking only after the previous one completes.	
+E1390	braindump	random potential effects.csv:3	Rabbit card	skill			If this card is clicked/grabbed, it moves away to the furthest orthogonal location.	
+E1391	braindump	pokerpatience.txt:6	Randomized placement on partial refill	rule			If the deck cannot refill the entire entrance zone, new card placement is randomized instead of the default left-to-right order.	
+E1392	braindump	gam draft.txt:686	Rank as duplicate rule-card identifier	rule			Duplicate rule cards during creation use their rank as an identifier, e.g. zone-adder 1 has rank 1, zone-adder 5 has rank 5.	
+E1393	braindump	todo.md:80	Rank-merging meld rule	skill			A comparator-bucket rank-merging meld rule multiplies a scored line's points based on line size (measured x2.0 at 5 cards up to x6.0 at 13, x5.1 at 30).	
+E1394	braindump	gam draft.txt:354	Rarity affects card borders/shine	view			Rarer cards could have different borders and shine/holographic effects.	
+E1395	braindump	todo.md:136	Rarity gates non-null rolls	rule			Rarity tiers currently gate only whether a stamp/skill/type roll is non-null, based on luck.	
+E1396	braindump	pokerpatience.txt:15	Re-adding retriggers line scoring	rule			Removing a card from a completed 5-line and re-adding it retriggers that line's scoring event.	
+E1397	braindump	gam draft.txt:18	Rearrange entrance cards	rule			Player can rearrange incoming/entrance cards before placing them.	
+E1398	braindump	gam draft.txt:672	Repeatable entrance discard gambling	rule			Repeatedly discard entrance cards until satisfied, then commit them to drop; starts with 1 discard per turn (possibly a joker effect), allowing gambling for a better entrance hand.	
+E1399	braindump	gam draft.txt:602	Retirement requires ability activation	rule			Cards cannot retire (leave play) until scored or until an ability is activated on them; with no ability, there is no retirement condition.	
+E1400	braindump	gam draft.txt:270	Reveal-all active ability button	view			QOL: a half-open-eye button that opens fully, causing all cards with an eye stamp (or always-active cards) to push cards stacked on top downward so the active card is fully visible.	
+E1401	braindump	gam draft.txt:56	Revealed cards act	rule			All revealed cards perform their abilities.	
+E1402	braindump	gam draft.txt:564	Reward fast/lean wins	skill			Reward winning fast or with fewer cards via card effects, e.g. extra gold cards for winning faster, or buffs to cards remaining in the deck.	
+E1403	braindump	random potential effects.csv:4	Rewrite card	skill			On entering the board, remembers the cards below it; on submission, replaces the same number of cards below it.	
+E1404	braindump	gam draft.txt:1268	Ring unlocks per 25 deck cards	rule			Increase the number of grids/rings relative to cards in the deck, e.g. every 25 cards in the deck unlocks a new ring (with a max ring cap to avoid excess).	
+E1405	braindump	gam draft.txt:441	Ringmaster leader card	skill			Ringmaster: no suit/rank; type makes it start in the entrance like other leaders; stamp lets it always be picked up and placed anywhere with nothing on top; skill keeps it on the board after submission.	
+E1406	braindump	gam draft.txt:1115	Risk/reward doubled-points tricks	skill			Higher-tier tricks give better rewards but higher fail chance; players can manage risk with risk-lowering cards, or opt into doubled points for doubled risk.	
+E1407	braindump	random potential effects.csv:3	Robber card	boss			Between turns, robbers steal high-value cards from the board.	
+E1408	braindump	curated effects pre grid.csv:33	Rock Paper Scissors	suit			At game start randomly becomes rock, paper, or scissors; when stacking on another RPS card it must win RPS to stack (ties resolved by higher rank); stacks normally on non-RPS cards.	
+E1409	braindump	curated effects pre grid.csv:53	Roman Numerals rank	rank			Ranks 1-12 that wrap on increase/decrease; time effect advances the rank by +1 per player action.	
+E1410	braindump	gam draft.txt:1371	Romanian Whist variable hand size	rule			Romanian Whist: each round deals a different number of cards; must follow trump suit if unable to follow the leading suit.	
+E1411	braindump	random potential effects.csv:9	Row card	type			Row-type card gives points to its row on score.	
+E1412	braindump	pokerpatience.txt:9	Row/column scoring happens on placement	rule			Scoring occurs immediately as rows/columns are filled in, rather than on submit; pressing submit/end just fires its own hooks and ends the game without a separate scoring round, and can be pressed at any time.	
+E1413	braindump	gam draft.txt:135	Row-first then simultaneous column scoring	rule			All row scoring happens first, then all 5 lanes are scored simultaneously with the same per-row scoring repeated for each column, returning scored cards that go through the card-effect loop and get elevated.	
+E1414	braindump	gam draft.txt:120	Row-then-column top-down scoring order	rule			Submission evaluates top-down, one row at a time and 5 cards at a time, so poker hands score first while runs are calculated per column simultaneously.	
+E1415	braindump	gam draft.txt:1264	Rows spanning multiple grids	rule			Allow super-long rows that span across multiple grids.	
+E1416	braindump	gam draft.txt:576	Rule cards always globally spotlit	rule			Rule cards are a special card type whose top skill is always globally in the spotlight (active), making them not special from normal deck mechanics otherwise.	
+E1417	braindump	gam draft.txt:307	Rule cards have random suit/rank	rule			Rule-deck cards carry a random suit and rank in case the player is able to extract them onto the playing field.	
+E1418	braindump	gam draft.txt:586	Rules deck defines next/submit behavior	rule			Game rules (via the rules deck) determine what the Next and Submit buttons do; different rules decks per scenario, permanently changeable during a run.	
+E1419	braindump	gam draft.txt:345	Rules-in-main-deck variant	meta			A deck variant where the rule deck is empty and all rules are embedded as cards in the main deck.	
+E1420	braindump	gam draft.txt:317	Ruleset deck parsed at game creation	rule			On game creation, the ruleset deck is parsed to decide the board layout.	
+E1421	braindump	gam draft.txt:1328	Rummy early-meld risk	rule			Rummy: melds can be placed face-up early to guarantee they count, but this risks other players adding to them for their own points.	
+E1422	braindump	gam draft.txt:1325	Rummy meld types	rule			Rummy: scoring melds are a 3+ same-suit consecutive run, or a 3-4 same-rank set.	
+E1423	braindump	gam draft.txt:1326	Rummy win condition	rule			Rummy: first to arrange the whole hand into melds with exactly 1 card left to discard wins.	
+E1424	braindump	gam draft.txt:388	Score as damage vs antagonist	boss			Recontextualize the points system as damage dealt against an antagonist, similar to Slay the Spire enemy health.	
+E1425	braindump	gam draft.txt:30	Score for 15	rule			Score 2 points for every combination that sums to 15.	
+E1426	braindump	gam draft.txt:32	Score for pair	rule			Score 2 points for a pair.	
+E1427	braindump	gam draft.txt:34	Score for quad	rule			Score 12 points for a quad.	
+E1428	braindump	gam draft.txt:35	Score for run	rule			Score 3-7 points for a run of 3 to 7 cards.	
+E1429	braindump	gam draft.txt:33	Score for triple	rule			Score 6 points for a triple.	
+E1430	braindump	random potential effects.csv:9	Score input cards on submit	rule			On submit, score the entrance/input cards too, not just the board.	
+E1431	braindump	gam draft.txt:14	Score slot as free space	rule			The score slot can be used as a free/empty space between deck clicks.	
+E1432	braindump	gam draft.txt:465	Second-act type	type			Second-act card type shows up alone after half the deck is drawn.	
+E1433	braindump	gam draft.txt:632	Secret melds via add-to-deck effects	rule			Secret melds to discover, implemented as cards with hidden on-add-to-deck effects that add new scoring rules.	
+E1434	braindump	random potential effects.csv:3	Selection sort card	skill			Card moves up one position if the card above it has a smaller rank.	
+E1435	braindump	gam draft.txt:242	Self-upgrading effect	skill			An effect that upgrades itself into a better version of itself if the player meets certain conditions.	
+E1436	braindump	gam draft.txt:1389	Setback point-card trick bidding	rule			Setback/Pitch: different cards are worth different points, and players bid on how many point-carrying tricks they can win.	
+E1437	braindump	gam draft.txt:1433	Sets-of-3 rank boost (Risk)	skill			Risk-inspired: sets of 3 matching cards trigger effects such as increased ranks.	
+E1438	braindump	gam draft.txt:605	Shared charge system	rule			All charge-based effects share the same charge system, so anything with charges can gain more or less charge from different sources.	
+E1439	braindump	gam draft.txt:360	Shop buy/sell in cards	meta			Shop sells cards priced in a stack of cards taken from the player's deck (equivalent value); card packs on the map add cards while the shop removes them; shop can sell packs too; reroll cost increases each use.	
+E1440	braindump	todo.md:274	Shop & economy system	meta			Planned but unimplemented: a shop and economy system.	
+E1441	braindump	gam draft.txt:644	Show-must-go-on weather hazards	boss			Negative weather effects are thematized as 'the show must go on'.	
+E1442	braindump	gam draft.txt:285	Sin of Gluttony card	skill			Sin of Gluttony: a Hippo-type card with no value cap that can be fed from anywhere, including decks, permanently consuming cards without returning them.	
+E1443	braindump	gam draft.txt:1307	Slapjack slap-on-jack rule	rule			Slapjack: everyone places a card in the middle; if it's a jack, first to slap the pile wins it.	
+E1444	braindump	gam draft.txt:68	Sliced Bread card	skill			On submission, if there is a same-suit card later down the stack, gain a point for each card in between.	
+E1445	braindump	gam draft.txt:537	Slot-machine pack opening	view			Card pack opening could show all possible cards from the pack cycling in the background slot-machine style, though the result is fixed by seed.	
+E1446	braindump	random potential effects.csv:5	Snake card	skill			Smaller-rank cards below this card are consumed, leaving behind a temporary body card of the same rank.	
+E1447	braindump	gam draft.txt:1305	Snap matching-pile call	rule			Snap: if a newly revealed card matches rank with any other player's pile, first to call 'snap' wins both piles.	
+E1448	braindump	random potential effects.csv:5	Sniper card	skill			On next press, lowers the rank of the last-interacted card by one, discarding it if its rank reaches one.	
+E1449	braindump	random potential effects.csv:3	Spaceship card	skill			This card can be placed in 'the void' (an otherwise-illegal empty/off-board slot).	
+E1450	braindump	gam draft.txt:451	Special effects leader archetype	skill			Special-effects (fireworks) leader archetype: focuses on points/combo manipulation.	
+E1451	braindump	gam draft.txt:1320	Spit legal-stack speed rule	rule			Spit/Speed: no turn order; players race to empty their hand onto shared center stacks under standard legal-stacking rules.	
+E1452	braindump	gam draft.txt:1290	Spite and Malice communal foundations	rule			Spite and Malice: dispose of cards into up to 4 communal foundations built 1 through Queen (suits irrelevant, king wild); completed foundations are set aside.	
+E1453	braindump	gam draft.txt:1291	Spite and Malice waste-pile rule	rule			Spite and Malice: personal waste piles accept 1 discard per turn and can only stack same-or-one-lower rank; top waste card can move to a foundation.	
+E1454	braindump	todo.md:85	Split meld undercounts matches	rule			A split meld can show three matching cards on the board but only counts two toward the scored meld, with no on-screen cue explaining the discrepancy.	
+E1455	braindump	gam draft.txt:519	Spotlight/focus rename	rule			'Active' is rebranded as Spotlight/Focus: cards that are unblocked (uncovered) are in the spotlight.	
+E1456	braindump	gam draft.txt:406	Status effect array on cards	rule			Cards carry a status array (dictionary of status-effect name to value) processed by a rule card each turn.	
+E1457	braindump	gam draft.txt:596	Storyteller point carryover	skill			Storyteller: preserves some points for the next game.	
+E1458	braindump	random potential effects.csv:6	Stowaway card	skill			This card moves to the free slot if it is open, after being scored.	
+E1459	braindump	gam draft.txt:108	Submit clears and cascades board	rule			Pressing submit scores everything and clears the board, with upper cards coming down to start a new board state without a full wipe.	
+E1460	braindump	gam draft.txt:1435	Sudoku-rule grid bonus	rule			Sudoku-inspired: if the ranks in the grid satisfy Sudoku constraints, grant a bonus.	
+E1461	braindump	gam draft.txt:511	Suit-nerfing towns	boss			Certain towns don't score certain suits at all, e.g. 'knifetown' gives no points for knife scoring, similarly firetown/juggletown/hooptown.	
+E1462	braindump	gam draft.txt:482	Suit-specific prop movement	suit			Knives and hoops move horizontally across their scored row; balls and fire drop down their column.	
+E1463	braindump	gam draft.txt:39	Survivor deck	map			Survivor deck: each suit represents a resource such as food, water, or a weapon.	
+E1464	braindump	gam draft.txt:1346	Switch chaining +2/+4/skip/reverse	rule			Switch: ace is wild; 2s are +2 (chainable), 4s are +4 (chainable), 8 skips a turn, jack reverses turn order.	
+E1465	braindump	gam draft.txt:328	Tap-to-force-trigger card	skill			A card that can force a linked on-trigger card to fire whenever it is tapped, likely via stacking.	
+E1466	braindump	gam draft.txt:1417	Tetris shape-matching bonus tiles	skill			Tetris-inspired: certain board tiles want a random preset Tetris-piece shape placed on top (rotatable) for a bonus, matched by suit or rank.	
+E1467	braindump	curated effects pre grid.csv:122	The Half Card talent	skill			On drop, splits into two half-cards along the diagonal (one keeps rank+hat, the other keeps only suit), changing stacking rules; recombines and scores its own meld if the two halves are stacked together on score; alt version splits the rank value in half between the two cards.	
+E1468	braindump	random potential effects.csv:4	The One Ring card	skill			Player always knows exactly where this card is; if it is permanently destroyed, the match is won.	
+E1469	braindump	gam draft.txt:428	Tips for overscoring	meta			Scoring is themed as audience excitement with cheering; player gains 'tips' currency for overscoring, playing as the Ringmaster.	
+E1470	braindump	random potential effects.csv:13	Tornado card	boss			Affects a 1x1 area, or a scaling area based on random tornado scale, wherever it is played.	
+E1471	braindump	todo.md:274	Tour planning system	map			Planned but unimplemented: a tour-planning system for choosing a route.	
+E1472	braindump	gam draft.txt:510	Town-specific hazards	boss			Different towns present different hazards; e.g. performing at a volcano might cause lava hazards.	
+E1473	braindump	random potential effects.csv:4	Trap card	skill			Creates an extra empty space; the next card placed there instead goes below this card, and the empty space is removed.	
+E1474	braindump	gam draft.txt:350	Triangle map holes hold card packs	map			The triangle map can have holes that contain card packs instead of individual cards.	
+E1475	braindump	gam draft.txt:146	Triangle map tier choice	map			Choose from the next 3 card options, moving the player up a tier of a triangle-shaped map and playing a match, repeating.	
+E1476	braindump	gam draft.txt:1271	Trigger cross-ring effects while placing	skill			Allow using trigger effects from other rings while placing a card in the currently chosen ring.	
+E1477	braindump	gam draft.txt:74	Trigger in deck seal	stamp			Seal: this card's effect can trigger while still in the deck.	
+E1478	braindump	gam draft.txt:73	Trigger when hidden seal	stamp			Seal: this card's effect triggers even when hidden (covered).	
+E1479	braindump	gam draft.txt:1352	Trump Fan Tan wild-suit rule	rule			Trump Fan Tan: one suit is wild; a wild-suit card taking another card's place forces that card to be played to the wild foundation.	
+E1480	braindump	random potential effects.csv:7	Tsunami card	boss			Washes from the bottom upward, lowering the max card-stack count, then recedes.	
+E1481	braindump	random potential effects.csv:7	Tunneler card	skill			Single cards placed on this card move to the bottom of the stack.	
+E1482	braindump	random potential effects.csv:8	Turntable card	skill			Flips the entire board vertically.	
+E1483	braindump	gam draft.txt:288	Uniqueness multiplier	rule			A multiplier that increases with every unique effect triggered during a run.	
+E1484	braindump	gam draft.txt:331	Unlockable ruleset card packs	meta			A ruleset card pack that can be unlocked, allowing cards that change fundamental rules of the game.	
+E1485	braindump	gam draft.txt:1277	Unused entrance cards persist	rule			Unused entrance cards stay in place for the next round rather than being replaced.	
+E1486	braindump	gam draft.txt:613	Upgraded pack results with stamps	meta			Pack mulligan results can have a chance to be upgraded, including bonus types and stamps.	
+E1487	braindump	gam draft.txt:557	Utter Chaos card	skill			Utter Chaos: becomes a random skill on every 'next' action.	
+E1488	braindump	random potential effects.csv:27	Vampire Survivors edge-eating	boss			Vampires begin eating cards at the board's edge over N turns; the player must play all of them to remove the threat.	
+E1489	braindump	gam draft.txt:335	Vampire Survivors-style prestige shop	meta			Prestige points system: each win grants points spendable in a menu to change the odds of cards appearing or to apply debuffs for more points.	
+E1490	braindump	gam draft.txt:114	Vertical poker hands ability	skill			Ability that makes poker hands also considered vertically (columns), not just rows.	
+E1491	braindump	gam draft.txt:1308	War tie-breaking rule	rule			War: higher rank wins both cards; on a tie, both players place face-down cards and the next comparison's winner takes everything.	
+E1492	braindump	random potential effects.csv:5	Water material (moves down)	type			Water material type moves downward one position per turn.	
+E1493	braindump	curated effects pre grid.csv:100	Water type	type			Always flows sideways into the shortest adjacent column.	
+E1494	braindump	gam draft.txt:1358	Whist trick-taking rule	rule			Whist: highest card of the leading suit wins the trick, unless a trump is played, in which case the highest trump wins; trick winner leads next.	
+E1495	braindump	gam draft.txt:1357	Whist trump-suit reveal	rule			Whist: the first card revealed determines the trump suit for the hand.	
+E1496	braindump	gam draft.txt:261	Wild pip random selection	suit			Wild pip randomly chooses itself from among existing pips on the same board/row/column.	
+E1497	braindump	gam draft.txt:260	Wild pip tracks previous pip	suit			A Wild pip type tracks and mimics whichever pip it last resolved to.	
+E1498	braindump	curated effects pre grid.csv:62	Wild rank (copycat/understudy)	rank			Rank effectively 0 that simultaneously mimics any rank already present in the player's deck for rank-based effects like stacking and melds; behaves like Blank if nothing to copy.	
+E1499	braindump	random potential effects.csv:20	Windy Day card	boss			Cards randomly shift over by 1 row/column because it's too windy.	
+E1500	braindump	gam draft.txt:1441	Wordle-style hidden target card	skill			Wordle-inspired card: sets a randomized target rank/suit combo and reports whether the last placed card is wrong, close (wrong position), or correct; first correctly-placed row/column wins.	
+E1501	braindump	gam draft.txt:657	World tour fame ramp	map			World tour: build fame across cities before reaching the final city; exceeding a city's score requirement raises the requirement for the next city.	
+E1502	balatro	balatro	15 Minute City	challenge			Starts with an Eternal Ride the Bus and an Eternal Shortcut Joker; deck contains two copies of each face card and no Aces, 2s, or 3s.	
+E1503	balatro	balatro	8 Ball	joker	Common		1 in 4 chance for each played 8 to create a Tarot card when scored.	
+E1504	balatro	balatro	Abstract Joker	joker	Common		+3 Mult for each Joker card.	
+E1505	balatro	balatro	Acrobat	joker	Uncommon		X3 Mult on final hand of round.	
+E1506	balatro	balatro	Amber Acorn	boss_blind			Flips and shuffles the order of all Joker cards.	
+E1507	balatro	balatro	Ancient Joker	joker	Rare		Each played card of a target suit gives X1.5 Mult when scored; the target suit changes at end of round.	
+E1508	balatro	balatro	Arrowhead	joker	Uncommon		Played cards with Spade suit give +50 Chips when scored.	
+E1509	balatro	balatro	Astronomer	joker	Uncommon		All Planet cards and Celestial Packs in the shop are free.	
+E1510	balatro	balatro	Banner	joker	Common		+30 Chips for each remaining discard.	
+E1511	balatro	balatro	Baron	joker	Rare		Each King held in hand gives X1.5 Mult.	
+E1512	balatro	balatro	Base	edition			No additional effect.	
+E1513	balatro	balatro	Baseball Card	joker	Rare		Every Uncommon Joker gives X1.5 Mult.	
+E1514	balatro	balatro	Black Stake	stake			30% chance for Jokers in shops or booster packs to have an Eternal Sticker (cannot be sold or destroyed).	
+E1515	balatro	balatro	Blackboard	joker	Uncommon		X3 Mult if all cards held in hand are Spades or Clubs.	
+E1516	balatro	balatro	Blast Off	challenge			2 hands and 2 discards per round, 4 Joker slots; includes Planet-card vouchers; hand/discard-boosting vouchers and the Burglar Joker are banned.	
+E1517	balatro	balatro	Bloodstone	joker	Uncommon		1 in 2 chance for played Heart-suit cards to give X1.5 Mult when scored.	
+E1518	balatro	balatro	Blue Joker	joker	Common		+2 Chips for each remaining card in the draw deck.	
+E1519	balatro	balatro	Blue Seal	seal			Creates the Planet card for the final played poker hand of the round, if this card is held in hand at end of round.	
+E1520	balatro	balatro	Blue Stake	stake			-1 Discard per round.	
+E1521	balatro	balatro	Blueprint	joker	Rare		Copies the ability of the Joker to the right.	
+E1522	balatro	balatro	Bonus Card	enhancement			+30 Chips when scored.	
+E1523	balatro	balatro	Bootstraps	joker	Uncommon		+2 Mult for every $5 you have.	
+E1524	balatro	balatro	Boss Tag	tag			Rerolls the Boss Blind for the current Ante.	
+E1525	balatro	balatro	Brainstorm	joker	Rare		Copies the ability of the leftmost Joker.	
+E1526	balatro	balatro	Bram Poker	challenge			Jokers no longer appear in the shop; starts with an Eternal Vampire Joker and extra Tarot cards.	
+E1527	balatro	balatro	Buffoon Tag	tag			Gives a free Mega Buffoon Pack.	
+E1528	balatro	balatro	Bull	joker	Uncommon		+2 Chips for each $1 you have.	
+E1529	balatro	balatro	Burglar	joker	Uncommon		When Blind is selected, gain +3 Hands and lose all discards for the round.	
+E1530	balatro	balatro	Burnt Joker	joker	Rare		Upgrades the level of the first discarded poker hand each round.	
+E1531	balatro	balatro	Business Card	joker	Common		Played face cards have a 1 in 2 chance to give $2 when scored.	
+E1532	balatro	balatro	Campfire	joker	Rare		Gains X0.25 Mult permanently for each card sold; resets when a Boss Blind is defeated.	
+E1533	balatro	balatro	Canio	joker	Legendary		Gains X1 Mult permanently when a face card is destroyed.	
+E1534	balatro	balatro	Card Sharp	joker	Uncommon		X3 Mult if the played poker hand has already been played this round.	
+E1535	balatro	balatro	Cartomancer	joker	Uncommon		Creates a Tarot card when Blind is selected.	
+E1536	balatro	balatro	Castle	joker	Uncommon		Gains +3 Chips permanently per discarded card of a target suit; the target suit changes every round.	
+E1537	balatro	balatro	Cavendish	joker	Common		X3 Mult; 1 in 1000 chance this card is destroyed at end of round.	
+E1538	balatro	balatro	Ceremonial Dagger	joker	Uncommon		When Blind is selected, destroys the Joker to the right and adds double its sell value as a permanent Mult bonus.	
+E1539	balatro	balatro	Certificate	joker	Uncommon		When round begins, adds a random playing card with a random Seal to your hand.	
+E1540	balatro	balatro	Cerulean Bell	boss_blind			Forces one card in hand to always be selected for play/discard.	
+E1541	balatro	balatro	Chaos the Clown	joker	Common		1 free reroll per shop.	
+E1542	balatro	balatro	Charm Tag	tag			Gives a free Mega Arcana Pack.	
+E1543	balatro	balatro	Chicot	joker	Legendary		Disables the effect of every Boss Blind.	
+E1544	balatro	balatro	Clever Joker	joker	Common		+80 Chips if played hand contains a Two Pair.	
+E1545	balatro	balatro	Cloud 9	joker	Uncommon		Earn $1 for each 9 in your full deck at end of round.	
+E1546	balatro	balatro	Constellation	joker	Uncommon		Gains X0.1 Mult permanently every time a Planet card is used.	
+E1547	balatro	balatro	Coupon Tag	tag			Initial cards and booster packs in the next shop are free.	
+E1548	balatro	balatro	Crafty Joker	joker	Common		+80 Chips if played hand contains a Flush.	
+E1549	balatro	balatro	Crazy Joker	joker	Common		+12 Mult if played hand contains a Straight.	
+E1550	balatro	balatro	Credit Card	joker	Common		Allows going up to -$20 in debt.	
+E1551	balatro	balatro	Crimson Heart	boss_blind			One random Joker is disabled each hand played.	
+E1552	balatro	balatro	Cruelty	challenge			Small and Big Blinds give no reward money; 3 Joker slots.	
+E1553	balatro	balatro	D6 Tag	tag			Rerolls in the next shop start at $0.	
+E1554	balatro	balatro	Delayed Gratification	joker	Common		Earn $2 per discard if no discards are used by end of round.	
+E1555	balatro	balatro	Devious Joker	joker	Common		+100 Chips if played hand contains a Straight.	
+E1556	balatro	balatro	Diet Cola	joker	Uncommon		Sell this card to create a free Double Tag.	
+E1557	balatro	balatro	DNA	joker	Rare		If the first hand of the round has only 1 card, adds a permanent copy of that card to the deck and draws it to hand.	
+E1558	balatro	balatro	Double or Nothing	challenge			All played cards become debuffed after scoring; uses a standard 52-card deck with every card given a Red Seal.	
+E1559	balatro	balatro	Double Tag	tag			Gives a copy of the next Tag selected.	
+E1560	balatro	balatro	Driver's License	joker	Rare		X3 Mult if you have at least 16 Enhanced cards in your full deck.	
+E1561	balatro	balatro	Drunkard	joker	Common		+1 discard each round.	
+E1562	balatro	balatro	Dusk	joker	Uncommon		Retrigger all played cards in the final hand of the round.	
+E1563	balatro	balatro	Economy Tag	tag			Doubles your money, up to a maximum of $40 gained.	
+E1564	balatro	balatro	Egg	joker	Common		Gains $3 of sell value at end of round.	
+E1565	balatro	balatro	Erosion	joker	Uncommon		+4 Mult for each card below the deck's starting size in your full deck.	
+E1566	balatro	balatro	Ethereal Tag	tag			Gives a free Spectral Pack.	
