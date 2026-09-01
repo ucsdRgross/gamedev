@@ -60,6 +60,7 @@ func _ready() -> void:
 	test_default_layout_repacks_without_dropping_or_overlapping_any_picture()
 	behavior_section("PER-GRID CAMERA POSE")
 	test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid()
+	test_panned_state_is_the_offset_primitive_grid_state_delegates_to()
 	_teardown_wall()
 	finish()
 
@@ -877,16 +878,17 @@ func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_
 	var window := Vector2(1152.0, 648.0)
 	var resting_grid := 1
 
+	var pitch := PlayArea.grid_position_size_px(settings).x
+
 	var rest := WallPicture.resting_state(rect, window, settings)
-	var s0 := WallPicture.grid_state(rect, window, settings, 0, resting_grid)
-	var s1 := WallPicture.grid_state(rect, window, settings, 1, resting_grid)
-	var s2 := WallPicture.grid_state(rect, window, settings, 2, resting_grid)
+	var s0 := WallPicture.grid_state(rect, window, settings, 0, resting_grid, pitch)
+	var s1 := WallPicture.grid_state(rect, window, settings, 1, resting_grid, pitch)
+	var s2 := WallPicture.grid_state(rect, window, settings, 2, resting_grid, pitch)
 
 	var rest_pos : Vector2 = rest["position"]
 	var pos0 : Vector2 = s0["position"]
 	var pos1 : Vector2 = s1["position"]
 	var pos2 : Vector2 = s2["position"]
-	var pitch := PlayArea.grid_position_size_px(settings).x
 	var zoom1 : float = s1["zoom"]
 	var rest_zoom : float = rest["zoom"]
 
@@ -905,3 +907,48 @@ func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_
 	check(is_equal_approx(pos0.y, rest_pos.y) and is_equal_approx(pos2.y, rest_pos.y),
 			"position.y is unchanged from resting_state() at every grid, only x steps",
 			"y0=%.4f y2=%.4f rest_y=%.4f" % [pos0.y, pos2.y, rest_pos.y])
+
+## `WallPicture.panned_state()`, the offset primitive `grid_state()` is now expressed in terms of.
+## Proves it directly, then proves the two AGREE on the identity that makes `grid_state()` a
+## delegation rather than a second, separately-maintained computation.
+func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void:
+	var settings := SettingsManager.settings
+	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+			Vector4.ZERO)
+	var window := Vector2(1152.0, 648.0)
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var resting_grid := 1
+	var grid_index := 2
+
+	var rest := WallPicture.resting_state(rect, window, settings)
+	var zero_offset := WallPicture.panned_state(rect, window, settings, 0.0)
+	var rest_pos : Vector2 = rest["position"]
+	var zero_pos : Vector2 = zero_offset["position"]
+	var rest_zoom : float = rest["zoom"]
+	var zero_zoom : float = zero_offset["zoom"]
+	check(zero_pos.is_equal_approx(rest_pos) and is_equal_approx(zero_zoom, rest_zoom),
+			"a zero offset reproduces resting_state() exactly",
+			"pos=%s rest=%s zoom=%.6f rest_zoom=%.6f" % [zero_pos, rest_pos, zero_zoom, rest_zoom])
+
+	var offset_x := 137.0
+	var offset_state := WallPicture.panned_state(rect, window, settings, offset_x)
+	var offset_pos : Vector2 = offset_state["position"]
+	var offset_zoom : float = offset_state["zoom"]
+	check(is_equal_approx(offset_pos.x - rest_pos.x, offset_x),
+			"a non-zero offset moves position.x by exactly that amount",
+			"delta=%.4f offset=%.4f" % [offset_pos.x - rest_pos.x, offset_x])
+	check(is_equal_approx(offset_pos.y, rest_pos.y),
+			"...and leaves position.y untouched", "offset_y=%.4f rest_y=%.4f" % [offset_pos.y, rest_pos.y])
+	check(is_equal_approx(offset_zoom, rest_zoom),
+			"...and leaves zoom untouched", "offset_zoom=%.6f rest_zoom=%.6f" % [offset_zoom, rest_zoom])
+
+	# THE identity: grid_state() must equal panned_state() called at the same offset the grid
+	# implies, or grid_state() has drifted into a second, separately-maintained computation.
+	var via_grid := WallPicture.grid_state(rect, window, settings, grid_index, resting_grid, pitch)
+	var via_offset := WallPicture.panned_state(rect, window, settings,
+			pitch * float(grid_index - resting_grid))
+	var via_grid_pos : Vector2 = via_grid["position"]
+	var via_offset_pos : Vector2 = via_offset["position"]
+	check(via_grid_pos.is_equal_approx(via_offset_pos),
+			"grid_state() agrees with panned_state() called at the equivalent offset -- one "
+			+ "computation, not two", "grid=%s offset=%s" % [via_grid_pos, via_offset_pos])
