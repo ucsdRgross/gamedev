@@ -32,10 +32,9 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PlayContainer" type="Control" parent="SceneRoot" unique_id=1980564137]
-anchors_preset = 0
-offset_left = 423.0
+anchors_preset = -1
+anchor_right = 1.0
 offset_top = 3.0
-offset_right = 1142.0
 offset_bottom = 639.0
 
 [node name="PlayArea" parent="SceneRoot/PlayContainer" unique_id=1317398588 instance=ExtResource("4_fiyor")]

@@ -1484,7 +1484,9 @@ func test_lights_track_a_scrolled_board() -> void:
 	# does, so its fixture has to overflow the container whatever the shipped card_scale is; a
 	# relative bump stops overflowing the moment the default comes down and the test then proves
 	# nothing while still passing its own vacuity guard.
-	SettingsManager.settings.card_scale = 5.0
+	# ⚠ The board's window is now as wide as the game picture, so the scale that used to overflow
+	# a window-shaped one no longer does: measured, 5.0 gave 1041 px of content against 1152.
+	SettingsManager.settings.card_scale = 8.0
 	pa.flush_rebuild()
 	for _i : int in 3: await _tick_seconds()
 

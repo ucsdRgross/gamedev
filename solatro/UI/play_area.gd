@@ -391,47 +391,42 @@ func _sync_cell_score_labels() -> void:
 ## One height-score label per cell that has scored, keyed the same way `scores_cell` is.
 var _cell_score_labels : Dictionary[Vector3i, BigNumberLabel] = {}
 
-## X SLAVED TO THE BOARD'S HORIZONTAL SCROLL (owner spec): the Entrance never scrolls on its own
-## in X, it mirrors whatever the board's own scroll reads, so its columns stay under the grid's.
+## X SLAVED TO THE COLUMNS OF THE GRID THE VIEW IS ON (owner spec): the Entrance never scrolls on
+## its own in X, it sits under the grid the player is looking at, so its slots stay under that
+## grid's columns.
 ##
-## ⚠ **ONE SHARED WIDTH, NOT TWO INDEPENDENT ONES.** Before the Entrance was pinned, `GridContainer`
-## and `UpperZone` were BOTH direct children of the same `TopLevelVBox`, each filling it (default
-## `SIZE_FILL`) — so `TopLevelVBox`'s own width was the max of BOTH their natural (minimum)
-## widths, and THAT shared width is what `GridContainer`'s panels (SIZE_SHRINK_CENTER) and
-## `upper_zone_right` (ALIGNMENT_CENTER) each centred inside — the same box, so their centres
-## agreed. Splitting them into two separate branches loses that unless this reproduces the
-## SAME shared width on both sides: `GridContainer` is stretched to it too (`custom_minimum_size`),
-## exactly mirroring what the old shared VBox parent gave it for free. Using `grid_container.size.x`
-## alone (a NARROWER, already-settled value) left the two centred in different-width boxes and
-## measurably 4 px apart (TP-80k) on a board narrower than an Entrance with more columns than it.
+## ⚠ **THERE IS EXACTLY ONE ENTRANCE, AND IT FOLLOWS THE VIEW** -- the owner's rule is that it
+## behaves like a player's hand. The grids stand one per grid position, a whole position apart, so
+## an Entrance parked on the first grid would sit a position away from the grid being played.
+##
+## ⚠ **THE TRACK TAKES THE GRID'S OWN CELL BLOCK, NOT A WIDTH SHARED WITH THE WHOLE BOARD.**
+## Both halves are read off the cells' live rect rather than reconstructed from the scroll offset:
+## the scrolled content carries a constant margin of its own (measured: 4 px) that arithmetic from
+## the raw scroll delta cannot see, and the cells -- not the panel -- are where the columns start,
+## since a row-label gutter sits between the two (measured: 20 px, the gutter's width).
 func _sync_entrance_x() -> void:
 	if not is_instance_valid(entrance_h_track) or not is_instance_valid(scroll_container): return
-	# ⚠ **ANCHORED TO THE GRID'S OWN RESOLVED POSITION, NOT `-scroll_horizontal` FROM ZERO.**
-	# `grid_container` sits inside `SmoothScrollContainer`'s content, which carries its own
-	# internal layout (a ScrollContainer reserves margin the plain `EntranceStrip` chain never
-	# had) -- mirroring the raw scroll delta reproduced the SCROLL, correctly, but not the
-	# CONSTANT offset baked into where the scrolled content starts, which is exactly the same
-	# "control-rect read, not arithmetic" fix `_grid_slot_center_global`'s own panel-origin cache
-	# already made once (measured: 4 px, TP-80k). Reading `grid_container`'s live global position
-	# folds the scroll delta AND that constant in together, correct by construction either way.
-	# ⚠ **SLAVED TO THE COLUMNS, NOT TO THE CONTAINER.** The Entrance's slots line up with the grid
-	# COLUMNS above them, and once a panel carries a row-label gutter the container's left edge is
-	# no longer where the columns start — measured: every slot 20 px out, exactly the gutter's width.
+	# ⚠ **THE BOARD'S CONTENT STAYS AT LEAST AS WIDE AS THE ENTRANCE, OR AN ENTRANCE WIDER THAN
+	# THE WINDOW CANNOT BE REACHED.** The Entrance rides the board's horizontal scroll, so the scroll
+	# needs the reach even on a board with no grid of its own to supply it. The Entrance's own
+	# minimum is read, never the container's own width, which would fold in last call's answer and
+	# could then only ever grow.
+	grid_container.custom_minimum_size.x = upper_zone_right.get_combined_minimum_size().x
 	var columns_x := grid_container.global_position.x
-	if grid_container.get_child_count() > 0:
-		var first_cells := _cells_root(grid_container.get_child(0) as Control)
-		if first_cells: columns_x = first_cells.global_position.x
+	var columns_w := grid_container.size.x
+	var cells := _view_grid_cells()
+	if cells:
+		columns_x = cells.global_position.x
+		columns_w = cells.size.x * maxf(board_zoom, 0.0001)
 	entrance_h_track.position.x = columns_x - entrance_strip.global_position.x
-	# ⚠ ZERO `grid_container`'s OWN override BEFORE measuring it: `get_combined_minimum_size()`
-	# folds in `custom_minimum_size`, and this function is the only writer of that override — an
-	# un-reset read would fold in LAST call's answer, so `shared_width` could only ever grow
-	# (never shrink back down once an Entrance was briefly wider), converging on a WRONG, sticky
-	# value instead of the two containers' true natural widths.
-	grid_container.custom_minimum_size.x = 0.0
-	var shared_width := maxf(grid_container.get_combined_minimum_size().x,
-			upper_zone_right.get_combined_minimum_size().x)
-	grid_container.custom_minimum_size.x = shared_width
-	entrance_h_track.size.x = shared_width
+	entrance_h_track.size.x = columns_w
+
+## The cell block of the grid the view is centred on, or null when the board has no grids.
+func _view_grid_cells() -> Control:
+	if not is_instance_valid(grid_container): return null
+	var last := grid_container.get_child_count() - 1
+	if last < 0: return null
+	return _cells_root(grid_container.get_child(clampi(pan_grid, 0, last)) as Control)
 
 ## The strip's fixed visible height, and the matching reservation carved out of the board's own
 ## scroll so the two never overlap on screen. A multiple of one card's height
@@ -1832,7 +1827,15 @@ func _recentre_probe() -> Vector3:
 	return Vector3(cells.global_position.x - grid_container.global_position.x,
 			grid_container.size.x, reach)
 
-## **THE GAP BETWEEN TWO GRIDS IS MEASURED BETWEEN THEIR CELL BLOCKS**, and is `grid_buffer_px`.
+## **ONE GRID PER GRID POSITION: THE PITCH BETWEEN TWO CELL BLOCKS IS ONE GRID POSITION WIDE.**
+## The picture holds `grid_max_count` positions side by side and the camera frames one of them at
+## rest, so spacing the grids at that pitch is what makes the camera's step land on the NEXT GRID
+## instead of on bare picture. ⚠ `grid_buffer_px` no longer sets this gap directly -- it is a term
+## in `grid_position_size_px()`, so it still widens the pitch, but the number on screen between two
+## cell blocks is the position width less one block.
+## ⚠ **THE PITCH IS A PICTURE LENGTH AND IS DIVIDED BY THE ZOOM**, like every other screen quantity
+## the board lays out against: the focused view scales the content, so a pitch stored unscaled would
+## multiply and throw the neighbouring grids a position and a half out.
 ## Each panel carries score gutters either side of its cells (row labels left, the special-meld
 ## label right); those gutters sit INSIDE the buffer rather than adding to the board's width, so a
 ## wider label never widens the board. The container's own separation is therefore the buffer LESS
@@ -1848,18 +1851,20 @@ func _apply_grid_buffer() -> void:
 	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
 	var left := 0.0
 	var right := 0.0
+	# ⚠ Divided by the zoom: the gutters are compared against BOARD lengths, while the positions
+	# they are measured from are screen ones.
+	var z := maxf(board_zoom, 0.0001)
 	for i : int in grid_container.get_child_count():
 		var panel := grid_container.get_child(i) as Control
 		if not panel: continue
 		var cells := _cells_root(panel)
 		if not cells: continue
-		# ⚠ Divided by the zoom: these gutters are compared against `grid_buffer_px`, which is a
-		# BOARD length, while the positions they come from are screen ones.
-		var z := maxf(board_zoom, 0.0001)
 		left = maxf(left, (cells.global_position.x - panel.global_position.x) / z)
 		right = maxf(right, panel.global_position.x / z + panel.size.x
 				- (cells.global_position.x / z + cells.size.x))
-	var wanted := roundi(maxf(SettingsManager.settings.grid_buffer_px - left - right, 0.0))
+	var pitch := grid_position_size_px(SettingsManager.settings).x / z
+	var block := grid_block_size_px(SettingsManager.settings, GridData.new()).x
+	var wanted := roundi(maxf(pitch - block - left - right, 0.0))
 	if grid_container.get_theme_constant(&"separation") == wanted: return
 	grid_container.add_theme_constant_override("separation", wanted)
 

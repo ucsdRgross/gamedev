@@ -16,9 +16,12 @@ extends Control
 const OUT_DIR_FALLBACK := "user://reveal_shots"
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const SAVE_TAG := "grid_zoom_shot"
-const GRID_COUNT := 3
+## How many grids the board is stood up with. `GRID_COUNT` in the environment overrides it, so the
+## same instrument answers the centring rule at one, two and three grids.
+const GRID_COUNT_DEFAULT := 3
 
 var _out_dir : String
+var _grid_count := GRID_COUNT_DEFAULT
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -30,6 +33,8 @@ func _ready() -> void:
 	if _out_dir.begins_with("user://"): DirAccess.make_dir_recursive_absolute(_out_dir)
 	TestSuite.backup_real_save(SAVE_TAG)
 
+	var env_count := OS.get_environment("GRID_COUNT")
+	if env_count.is_valid_int(): _grid_count = maxi(env_count.to_int(), 1)
 	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
 	print("[grid_zoom_shot] picture design_size %d x %d" % [design.x, design.y])
 	DisplayServer.window_set_size(design)
@@ -59,15 +64,15 @@ func _ready() -> void:
 	CardEnvironment.CURRENT = view.game
 	var g := view.game
 	var pa := view.play_area
-	while g.state.grids.size() < GRID_COUNT:
+	while g.state.grids.size() < _grid_count:
 		Board.add_grid(g.state, GridData.new())
-	while g.state.grids.size() > GRID_COUNT:
+	while g.state.grids.size() > _grid_count:
 		Board.remove_grid(g.state, g.state.grids.size() - 1)
 	pa.flush_rebuild()
 	await get_tree().process_frame
 
 	# Cards on the board, so the shot shows what a player sees rather than an empty lattice.
-	for gi : int in GRID_COUNT:
+	for gi : int in _grid_count:
 		var grid : GridData = g.state.grids[gi]
 		for x : int in mini(5, grid.grid_width):
 			var card := g.draw_card()
@@ -79,7 +84,7 @@ func _ready() -> void:
 	pa.open_zoomed_out()
 	await _settle(view)
 	await _shoot(pa, "overview")
-	pa.focus_grid(1)
+	pa.focus_grid(_grid_count / 2)
 	await _settle(view)
 	await _shoot(pa, "focused")
 
@@ -117,8 +122,8 @@ func _shoot(pa: PlayArea, tag: String) -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
-	img.save_png("%s/grid_zoom_%s.png" % [_out_dir, tag])
-	print("[grid_zoom_shot] wrote grid_zoom_%s.png" % tag)
+	img.save_png("%s/grid_zoom_%d_%s.png" % [_out_dir, _grid_count, tag])
+	print("[grid_zoom_shot] wrote grid_zoom_%d_%s.png" % [_grid_count, tag])
 
 ## Waits until the board stops moving, so a shot is never taken mid-transition.
 func _settle(view: GameView) -> void:
