@@ -15,6 +15,10 @@ const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 ## The real wall picture, for the render-target checks: the game screen is a picture on the wall,
 ## so its render target is only meaningful through the node that owns one.
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
+## The real app root, for the camera-dependent checks (`GAP-026`=(a)) — see `_stand_up_main_grids`.
+const MAIN_SCENE := preload("res://Levels/main.tscn")
+const KEY_COMMA := 44
+const KEY_PERIOD := 46
 
 var _prev_run : RunState
 var _prev_save_info : RunState
@@ -51,6 +55,7 @@ func _ready() -> void:
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
 	await run_the_game_picture_fits_exactly_three_grids_test()
 	await run_the_render_target_never_exceeds_the_clamp_test()
+	await run_the_camera_steps_between_grid_positions_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -94,6 +99,89 @@ func _tear_down(view: GameView) -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
+
+## THE `Main`-HOSTED FIXTURE (`GAP-026`=(a)): OVERVIEW stepping now lives on the wall camera, so any
+## check that reads it needs a REAL `Main`/`Wall`/`%Camera2D`, not the bare `GameView` above — a
+## hand-wired stand-in is exactly what hard rule 6 forbids. Modelled on
+## `Tests/Visual/overview_pan_route_probe.gd`, proven to produce a camera that really steps: same
+## `Levels/main.tscn` instantiation, same `enter_game()` entry, same real-save park/restore.
+func _stand_up_main_grids(n: int) -> Main:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	run.pending_goal = 1_000_000_000
+	run.pending_node_id = 2
+	seed(20260829)
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false   # Wall._ready() sets this globally; undone same as the probe.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await main.enter_game()
+	await get_tree().process_frame
+	var view := _main_game_view(main)
+	CardEnvironment.CURRENT = view.game
+	while view.game.state.grids.size() < n:
+		Board.add_grid(view.game.state, GridData.new())
+	while view.game.state.grids.size() > n:
+		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
+	view.play_area.flush_rebuild()
+	await get_tree().process_frame
+	return main
+
+## The live `GameView` `Main.enter_game()` mounted, reached through the wall picture it is a screen
+## of — the same lookup the route probe uses.
+func _main_game_view(main: Main) -> GameView:
+	var game_wp : WallPicture = main._pictures[&"game"]
+	return game_wp.screen_root as GameView
+
+## The one `%Camera2D` the whole app shares, owned by `Main`'s `Wall`.
+func _main_camera(main: Main) -> Camera2D:
+	return main.wall.get_node(^"%Camera2D") as Camera2D
+
+func _tear_down_main(main: Main) -> void:
+	_main_game_view(main).queue_free()
+	await get_tree().process_frame
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = _prev_run
+	Main.save_info = _prev_save_info
+	main.queue_free()
+	await get_tree().process_frame
+
+## Fires the `pressed` half of a real `InputEventKey` through the engine's own pipeline — the same
+## route a physical key press takes, never a direct call to the handler it drives.
+func _fire_key(keycode: int) -> void:
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.physical_keycode = keycode
+	ev.pressed = true
+	Input.parse_input_event(ev)
+
+## The matching release — a real key press is press-then-release, and leaving it held could confuse
+## the next simulated key.
+func _fire_key_release(keycode: int) -> void:
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.physical_keycode = keycode
+	ev.pressed = false
+	Input.parse_input_event(ev)
+
+## Wait for the CAMERA to stop moving, mirroring `_settle_scroll` for the fixture whose horizontal
+## authority is the camera rather than the scroll container (`GAP-024`=(b)). The step is tweened
+## over ~18 frames, so a frame count is the wrong instrument here too.
+func _settle_camera(camera: Camera2D) -> void:
+	var last := INF
+	var waited := 0.0
+	while waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if is_equal_approx(camera.position.x, last): return
+		last = camera.position.x
 
 ## Wait for the geometry to STOP MOVING, never for a fixed frame count — a container sorts its
 ## children a frame after the rebuild that changed them. Same shape as the Phase 5 suite's helper,
@@ -1760,3 +1848,73 @@ func _game_entry() -> PictureEntry:
 ## The board width `n` grid blocks of `block_x` px span, spaced by `grid_buffer_px`.
 func _grid_span(block_x: float, n: int) -> float:
 	return float(n) * block_x + float(n - 1) * SettingsManager.settings.grid_buffer_px
+
+# ==============================================================================
+# TP-105 — THE CAMERA STEPS BETWEEN THE 3 GRID POSITIONS THE FRAME HOLDS (`H22`), through the
+# `Main`-hosted fixture (`GAP-026`=(a)).
+#
+# ⚠ DRIVES REAL INPUT THROUGH `PlayArea`, THE SAME ROUTE A PLAYER TAKES — never a direct call to
+# `Main._on_overview_pan_requested()`, which is exactly the shape the dead touch-swipe shipped in
+# while its own tests stayed green.
+# ==============================================================================
+
+## The grid's own cell block, in the SAME world space as `%Camera2D.position` — the picture's
+## design-pixel layout scaled by the WallPicture's real packed rect, never assumed 1:1.
+func _grid_world_rect(main: Main, pa: PlayArea, gi: int) -> Rect2:
+	var wp : WallPicture = main._pictures[&"game"]
+	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
+	var local := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
+	var scale := wp.rect.size / design
+	var top_left := wp.rect.centre - wp.rect.size * 0.5
+	return Rect2(top_left + local.position * scale, local.size * scale)
+
+func run_the_camera_steps_between_grid_positions_test() -> void:
+	behavior_section("THE CAMERA STEPS BETWEEN GRID POSITIONS")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	var window_size := main.get_viewport().get_visible_rect().size
+	var pitch := PlayArea.grid_position_size_px(SettingsManager.settings).x
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: the board is in the overview, where H22 stepping lives (TP-105)",
+			"mode %d" % pa.view_mode)
+	var rest_grid := pa.pan_grid
+	var rest_x := camera.position.x
+
+	_fire_key(KEY_PERIOD)
+	await get_tree().process_frame
+	_fire_key_release(KEY_PERIOD)
+	await _settle_camera(camera)
+	check(pa.pan_grid == rest_grid + 1,
+			"a real grid_pan_right key press steps the view one grid (TP-105)",
+			"pan_grid %d" % pa.pan_grid)
+	check(is_equal_approx(camera.position.x - rest_x, pitch),
+			"the camera stepped by EXACTLY one grid position's pitch, not a scroller's own aim "
+			+ "(TP-105)",
+			"moved %.3f vs pitch %.3f" % [camera.position.x - rest_x, pitch])
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var stepped_rect := _grid_world_rect(main, pa, pa.pan_grid)
+	check(visible.encloses(stepped_rect),
+			"the grid stepped onto sits wholly inside the camera's OWN visible_rect() (TP-105)",
+			"visible %s vs grid %s" % [visible, stepped_rect])
+
+	for _i : int in range(pa.grid_container.get_child_count() + 2):
+		_fire_key(KEY_PERIOD)
+		await get_tree().process_frame
+		_fire_key_release(KEY_PERIOD)
+		await _settle_camera(camera)
+	check(pa.pan_grid == pa.grid_container.get_child_count() - 1,
+			"repeated pan-right presses stop at the board's last grid (TP-105)",
+			"pan_grid %d of %d" % [pa.pan_grid, pa.grid_container.get_child_count()])
+	var edge_x := camera.position.x
+	_fire_key(KEY_PERIOD)
+	await get_tree().process_frame
+	_fire_key_release(KEY_PERIOD)
+	await _settle_camera(camera)
+	check(is_equal_approx(camera.position.x, edge_x),
+			"one more pan-right at the board's end does not move the camera past it (TP-105)",
+			"edge %.3f vs after %.3f" % [edge_x, camera.position.x])
+	await _tear_down_main(main)
