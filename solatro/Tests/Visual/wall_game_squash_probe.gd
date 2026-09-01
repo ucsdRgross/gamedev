@@ -113,6 +113,69 @@ func _ready() -> void:
 			% [SettingsManager.settings.wall_transition_delay])
 
 	# ============================================================================================
+	# GAP-024 MAGNIFICATION MEASUREMENT (throwaway, one-shot):
+	#  1) Focus grid 1 of a 3-grid board -- the real focused-zoom path (board_zoom pipeline).
+	#  2) Log board_zoom, the render-target size and the texture-px -> screen-px ratio that chain
+	#     produces TODAY.
+	#  3) Screenshot TODAY's focused framing.
+	#  4) Reset to OVERVIEW (board_zoom back to 1, whole board unclipped in the SAME fixed-size
+	#     render target) and additionally zoom the CAMERA by the measured board_zoom, to approximate
+	#     what GAP-024=(a) would show: the camera magnifying a texture that was never re-rendered at
+	#     the larger scale. Screenshot that for a by-eye comparison.
+	# ============================================================================================
+	var screen_node : Sprite2D = wp.get_node(^"%Screen")
+	var out_path_pre := _resolve_out_path()
+	var out_dir_pre := out_path_pre.get_base_dir()
+	if out_dir_pre.begins_with("user://"): DirAccess.make_dir_recursive_absolute(out_dir_pre)
+	var out_base_pre := out_path_pre.get_basename()
+	var out_ext_pre := out_path_pre.get_extension()
+
+	pa.focus_grid(1)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var measured_board_zoom : float = pa.board_zoom
+	var render_size_focused : Vector2i = wp.viewport.size
+	var base_ratio := screen_node.scale.x * camera.zoom.x
+	print("[GAP-024] focused board_zoom=%.6f render_target_size=%s screen.scale=%s camera.zoom=%s"
+			% [measured_board_zoom, render_size_focused, screen_node.scale, camera.zoom])
+	print("[GAP-024] texture-px -> screen-px ratio TODAY (whole-picture chain, screen.scale.x*camera.zoom.x) = %.6f"
+			% base_ratio)
+	print("[GAP-024] implied EXTRA magnification camera-only zoom (a) would add beyond today's chain = board_zoom = %.6f"
+			% measured_board_zoom)
+
+	await RenderingServer.frame_post_draw
+	var today_img := get_viewport().get_texture().get_image()
+	var today_path := "%s_gap024_today_focused.%s" % [out_base_pre, out_ext_pre]
+	today_img.save_png(today_path)
+	print("[GAP-024] wrote=%s" % ProjectSettings.globalize_path(today_path))
+
+	# Simulate (a): overview content (board_zoom back to 1.0, whole board unclipped, re-rendered
+	# into the SAME fixed render target), camera zoomed in further by the SAME factor board_zoom
+	# was giving the content, camera position left as-is (approx -- grid 1 is the middle grid, and
+	# the camera is already centred on the picture).
+	pa.open_zoomed_out()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	camera.zoom = state["zoom"] * measured_board_zoom * Vector2.ONE
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	print("[GAP-024] simulated-(a) board_zoom(should be 1.0)=%.6f render_target_size=%s screen.scale=%s camera.zoom=%s"
+			% [pa.board_zoom, wp.viewport.size, screen_node.scale, camera.zoom])
+	var sim_img := get_viewport().get_texture().get_image()
+	var sim_path := "%s_gap024_simulated_camera_zoom.%s" % [out_base_pre, out_ext_pre]
+	sim_img.save_png(sim_path)
+	print("[GAP-024] wrote=%s" % ProjectSettings.globalize_path(sim_path))
+
+	# Restore to the normal focused framing for the rest of the probe (unchanged downstream logic).
+	pa.focus_grid(1)
+	camera.zoom = state["zoom"] * Vector2.ONE
+	camera.position = state["position"]
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	# ============================================================================================
 	# SAMPLING: log the screen sprite scale, rect size, camera zoom/position and viewport render
 	# size every frame for SAMPLE_FRAMES frames, with NO input, then wait for it to go still (the
 	# `_settle_layout` pattern used elsewhere) so the report can say whether the values ever stop

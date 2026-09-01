@@ -12,6 +12,11 @@ signal info_requested(entry: InfoEntry)
 ## of poll. Pair with visuals_ready() for the already-ready case (check-then-await).
 signal board_visuals_ready
 
+## OVERVIEW ONLY: the view should rest on grid `grid_index`. The horizontal aim is dead range in
+## the overview (the container is picture-wide), so the CAMERA is the single horizontal authority
+## there; whoever owns the wall camera listens and drives it from `WallPicture.grid_state()`.
+signal overview_pan_requested(grid_index: int)
+
 ## The board has exactly TWO view modes and nothing in between: OVERVIEW shows every grid for
 ## orientation, FOCUSED shows the one grid the player is acting on. Switching is a transition —
 ## there is no intermediate zoom to sit at.
@@ -282,6 +287,11 @@ var new_data_card : Dictionary[CardData, CardVisual]
 
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
+	# ⚠ **THE HORIZONTAL SCROLLBAR MUST NOT ADVERTISE WHICH MECHANISM IS MOVING THE VIEW** (owner
+	# ruling, `GAP-023`) -- a camera step in the overview and a scroll in focused mode must read as
+	# the same motion. Only the bar is hidden; the vertical axis keeps its own bar and its `H13` job.
+	var h_bar := scroll_container.get_h_scroll_bar()
+	if h_bar: h_bar.visible = false
 	# Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on
 	# the first card that catches fire mid-act.
 	FxAttachment.warm(overlay_layer)
@@ -590,7 +600,7 @@ func open_zoomed_out() -> void:
 ## FOCUSED: the grid being acted on, and it is the ONLY grid the "no cut-off grid" rule speaks about
 ## — a neighbour sliced by the window edge is not a defect.
 ## OVERVIEW: the MIDDLE grid, which is what puts the whole board in the middle of the window.
-func _resting_grid() -> int:
+func resting_grid() -> int:
 	var last := grid_container.get_child_count() - 1
 	if last < 0: return NO_GRID
 	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
@@ -601,7 +611,7 @@ func _resting_grid() -> int:
 ## losing a grid move it the same way — including its wait for the panels to stop moving, which is
 ## what makes this safe to call before the layout has ever run.
 func rest_board() -> void:
-	var gi := _resting_grid()
+	var gi := resting_grid()
 	if gi == NO_GRID: return
 	pan_grid = gi
 	_recentre_board()
@@ -729,6 +739,11 @@ func pan_by_grids(step: int) -> void:
 func pan_to_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	pan_grid = gi
+	# ⚠ **OVERVIEW: THE CAMERA IS THE SINGLE HORIZONTAL AUTHORITY.** The scroller's horizontal aim
+	# is dead range there (`GAP-024`) — retired rather than left as a second writer.
+	if view_mode == ViewMode.OVERVIEW:
+		overview_pan_requested.emit(gi)
+		return
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return
 	var cells := _cells_root(grid_container.get_child(gi) as Control)
@@ -747,8 +762,7 @@ func pan_to_grid(gi: int) -> void:
 	# window unless it is framed, and the edge to frame it by is the FLOOR every grid grows up out
 	# of. In the overview the board is at rest vertically and a pan must not yank a player who has
 	# scrolled up to read a stack.
-	if view_mode == ViewMode.FOCUSED:
-		smooth.scroll_y_to(window.y - (local.position.y + local.size.y) - origin.y, dur)
+	smooth.scroll_y_to(window.y - (local.position.y + local.size.y) - origin.y, dur)
 
 ## A board control's rect in the CONTENT's own unzoomed space. ⚠ `global_position` already carries
 ## the zoom while `size` never does, so the two cannot be mixed: everything an aim is built from is

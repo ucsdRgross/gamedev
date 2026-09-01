@@ -18,6 +18,9 @@ signal run_lost
 ## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card. The board has
 ## no business knowing whether Info mode wants it shown — see `Main._on_screen_info_hovered()`.
 signal info_requested(entry: InfoEntry)
+## Relayed from `PlayArea` so `Main` can step its wall camera -- the board lives inside this view's
+## own `SubViewport` and has no reach to the camera outside it.
+signal overview_pan_requested(grid_index: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
 const CONTINUE_FONT_SIZE := 40
@@ -97,6 +100,8 @@ func _ready() -> void:
 	undo_button.pressed.connect(_on_undo_pressed)
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
+	play_area.overview_pan_requested.connect(
+			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
 	(deck_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
 	(discard_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
 	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))

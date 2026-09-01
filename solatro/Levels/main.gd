@@ -240,10 +240,54 @@ func _settle_camera() -> void:
 		camera.zoom = Vector2.ONE * wall.wall_view_zoom(_window_size)
 		return
 	var focused_rect : PictureRect = _rects[_current_focus]
-	var state := WallPicture.resting_state(focused_rect, _window_size, settings,
-			_info_card_height())
+	var state := _camera_resting_state(focused_rect, settings)
 	camera.position = state["position"] as Vector2
 	camera.zoom = Vector2.ONE * (state["zoom"] as float)
+
+## `WallPicture.resting_state()`, stepped by the game's OVERVIEW pan when that is what is showing
+## (`GAP-024`=(b)): the scroller keeps the focused zoom untouched, so only the OVERVIEW steps
+## through the camera. Every other picture, and the game while FOCUSED, is the plain resting pose.
+func _camera_resting_state(rect: PictureRect, settings: PlayerSettings) -> Dictionary:
+	var area := _game_play_area()
+	if _current_focus == &"game" and area and area.view_mode == PlayArea.ViewMode.OVERVIEW \
+			and area.grid_container.get_child_count() > 0:
+		var pitch := PlayArea.grid_position_size_px(settings).x
+		return WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
+				area.resting_grid(), pitch, _info_card_height())
+	return WallPicture.resting_state(rect, _window_size, settings, _info_card_height())
+
+## The live game's `PlayArea`, or null while no `GameView` is mounted -- the OVERVIEW's camera
+## step has nothing to read `pan_grid` off until the show is actually attached.
+func _game_play_area() -> PlayArea:
+	var game_wp : WallPicture = _pictures.get(&"game")
+	if not game_wp or not game_wp.screen_root: return null
+	var view := game_wp.screen_root as GameView
+	return view.play_area if view else null
+
+## OVERVIEW grid-stepping's live move: `PlayArea.overview_pan_requested` crosses from inside the
+## game's `SubViewport` and this is where the wall camera answers it, on the SAME clock
+## (`grid_pan_duration`) and curve the wall's own travel uses, so a step reads like the rest of the
+## wall's motion rather than a second mechanism.
+##
+## ⚠ **SEQUENCED AGAINST `WallTransition`/`_animate_camera` BY `_move_in_flight`.** Both already
+## write `camera.position`/`camera.zoom` unconditionally while a move is in flight; a step that
+## lands mid-move would fight them for the same property. Dropped rather than queued -- `pan_grid`
+## already moved on `PlayArea`'s side, so the eventual `_settle_camera()` this move ends with lands
+## on the right grid regardless.
+func _on_overview_pan_requested(grid_index: int) -> void:
+	if _current_focus != &"game" or _move_in_flight: return
+	var area := _game_play_area()
+	if not area: return
+	var settings := SettingsManager.settings
+	var rect : PictureRect = _rects[&"game"]
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var state := WallPicture.grid_state(rect, _window_size, settings, grid_index,
+			area.resting_grid(), pitch, _info_card_height())
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	var tween := camera.create_tween()
+	tween.tween_property(camera, "position", state["position"] as Vector2,
+			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
+			.set_ease(settings.wall_travel_ease)
 
 ## The info card's height on screen right now, or -1 when nothing is showing — `info_zoom_state()`
 ## then falls back to the authored cap. Reserving the CAP on every entry pulls the camera back as
@@ -655,6 +699,7 @@ func enter_game() -> void:
 		new_view.game_ended.connect(game_ended)
 		new_view.run_lost.connect(_on_run_lost)
 		new_view.info_requested.connect(_on_screen_info_hovered)
+		new_view.overview_pan_requested.connect(_on_overview_pan_requested)
 		game_wp.attach_screen(new_view)
 	await _focus_picture(&"game")
 

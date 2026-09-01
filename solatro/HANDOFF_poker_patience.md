@@ -446,6 +446,22 @@ true now.
     ⚠ RESIDUAL CLEANUP OWED: grid_state() is INDEX-shaped and should sit on top of an
     OFFSET-shaped primitive; and it reuses PlayArea.grid_position_size_px(), giving wall_picture.gd
     a PlayArea dependency it never had -- take the pitch as a parameter like resting_grid.
+- id: S33cam2
+  description: 'GAP-024=(b): the camera steps in OVERVIEW; the scroller keeps the focused zoom.'
+  status: in_progress
+  notes: >
+    THE ROUTE IS PROVEN with real key events through the production chain -- camera steps by exactly
+    one pitch (1218.56), tweened ~18 frames, bounces at the last grid, and drops its ANIMATION but
+    not its STATE while a wall transition owns the camera.
+    ⚠ 13 GRID VIEW tests now fail: they assert the SCROLLER's horizontal position, which in overview
+    is dead range by design. RE-POINTING THEM IS THE NEXT STEP -- and do it only now the route is
+    proven, never before, or the new assertions just describe whatever the camera happens to do.
+    ⚠ TWO REAL HOLES, both flagged rather than dropped: H10's edge bounce is NOT re-pointed
+    (_bounce_board still nudges the scroller, so OVERVIEW has no bounce -- grid_bounce_velocity_px is
+    a scroller-shaped number and camera overdrag needs a ruling), and WallTransition.visible_rect()
+    is promoted but not yet consumed by any test.
+    ⚠ BY-EYE IS NOT CLOSED: the step is confirmed NUMERICALLY only, because all three grids are
+    empty placeholders and the two renders look identical. Close it with a content-bearing render.
 - id: S32
   description: 'The saved pan and resting_state() (H18, H19).'
   status: pending
@@ -502,7 +518,7 @@ true now.
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — twenty-four filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(a)
+## Gaps — twenty-four filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b)
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they

@@ -88,10 +88,12 @@ static func _wide_zoom(source_rect: PictureRect, window_size: Vector2,
 	var needed := source_frame.size + source_rect.size * margin_fraction
 	return minf(window_size.x / needed.x, window_size.y / needed.y)
 
-## The camera's visible rect in wall space at a given position/zoom.
+## The camera's visible rect in wall space at a given position/zoom. PRODUCT API — the one home
+## for "what is the camera showing right now", reused by any caller (product or test) that needs
+## an on-screen/off-screen judgement instead of reconstructing the rect by hand.
 ## ⚠ `Camera2D.zoom` is DIRECT MAGNIFICATION: the visible span is `window_size / zoom`, never
 ## `window_size * zoom`.
-static func _visible_rect(position: Vector2, zoom: float, window_size: Vector2) -> Rect2:
+static func visible_rect(position: Vector2, zoom: float, window_size: Vector2) -> Rect2:
 	var size := window_size / zoom
 	return Rect2(position - size * 0.5, size)
 
@@ -196,7 +198,7 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 		s.camera_position = (source_info["position"] as Vector2).lerp(
 				dest_info["position"] as Vector2, eased)
 		s.camera_zoom = lerpf(source_info["zoom"] as float, dest_info["zoom"] as float, eased)
-		var info_visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
+		var info_visible := visible_rect(s.camera_position, s.camera_zoom, window_size)
 		s.source_frame_in_view = info_visible.encloses(WallPacker.frame_outer_rect(source_rect))
 		s.dest_visible = info_visible.intersects(
 				Rect2(dest_rect.centre - dest_rect.size * 0.5, dest_rect.size))
@@ -243,7 +245,7 @@ static func sample_at(elapsed: float, total: float, source_rect: PictureRect,
 			settings.wall_zoom_trans, settings.wall_zoom_in_ease)
 	s.camera_zoom = lerpf(after_out, dest_zoom, in_progress)
 
-	var visible := _visible_rect(s.camera_position, s.camera_zoom, window_size)
+	var visible := visible_rect(s.camera_position, s.camera_zoom, window_size)
 	s.source_frame_in_view = visible.encloses(WallPacker.frame_outer_rect(source_rect))
 	s.dest_visible = visible.intersects(
 			Rect2(dest_rect.centre - dest_rect.size * 0.5, dest_rect.size))
