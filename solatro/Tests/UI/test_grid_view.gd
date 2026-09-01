@@ -183,6 +183,22 @@ func _settle_camera(camera: Camera2D) -> void:
 		if is_equal_approx(camera.position.x, last): return
 		last = camera.position.x
 
+## Grid `gi`'s cut-off, in px, against the CAMERA's OWN `visible_rect()` — never reconstructed from
+## `resting_state()`/`grid_state()` (`GAP-026`). 0 when the grid's cell block sits wholly inside it.
+## Reuses `_grid_world_rect` (`TP-105`), the world-space rect through the real `WallPicture.rect`.
+func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> float:
+	var window_size := main.get_viewport().get_visible_rect().size
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var r := _grid_world_rect(main, pa, gi)
+	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
+
+## Does grid `gi`'s cell block put any pixel inside the CAMERA's OWN `visible_rect()`?
+func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
+	var window_size := main.get_viewport().get_visible_rect().size
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var r := _grid_world_rect(main, pa, gi)
+	return r.end.x > visible.position.x and r.position.x < visible.end.x
+
 ## Wait for the geometry to STOP MOVING, never for a fixed frame count — a container sorts its
 ## children a frame after the rebuild that changed them. Same shape as the Phase 5 suite's helper,
 ## including its re-assertion of the shared `CardEnvironment.CURRENT` on every frame it waits.
@@ -509,10 +525,13 @@ func run_panning_has_its_own_actions_test() -> void:
 # ==============================================================================
 func run_every_pan_lands_a_grid_centred_test() -> void:
 	behavior_section("EVERY PAN LANDS A GRID CENTRED")
-	var view := await _stand_up()
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
 	var pa := view.play_area
+	var camera := _main_camera(main)
 	await _settle_layout(view)
 	await _settle_scroll(view)
+	await _settle_camera(camera)
 	check(_board_overflows(pa),
 			"precondition: three grids are wider than the window, so a pan can move (TP-101)",
 			"content %f window %f" % [pa.grid_container.size.x, pa.scroll_container.size.x])
@@ -520,29 +539,31 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 	check(rest_grid == 1,
 			"precondition: the overview rests on the middle of three grids (TP-101)",
 			"pan_grid %d" % rest_grid)
-	check(_cut_off_px(pa, rest_grid) <= 1.0,
+	check(_camera_cut_off_px(main, pa, camera, rest_grid) <= 1.0,
 			"the grid the view rests on is wholly on screen, with no pan asked for (TP-101)",
-			"%f px off screen" % _cut_off_px(pa, rest_grid))
+			"%f px off screen" % _camera_cut_off_px(main, pa, camera, rest_grid))
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
 	await _settle_scroll(view)
+	await _settle_camera(camera)
 	check(pa.pan_grid == rest_grid + 1,
 			"a pan-right press steps ONE grid, to grid %d (TP-101)" % (rest_grid + 1),
 			"pan_grid %d" % pa.pan_grid)
-	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
+	check(_camera_cut_off_px(main, pa, camera, pa.pan_grid) <= 1.0,
 			"the grid it stepped onto rests wholly on screen -- no cut-off grid UNDER THE VIEW",
-			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
+			"%f px off screen" % _camera_cut_off_px(main, pa, camera, pa.pan_grid))
 
 	for _i : int in [0, 1]:
 		pa._unhandled_input(_action(&"grid_pan_left"))
 		await _settle_scroll(view)
+		await _settle_camera(camera)
 	check(pa.pan_grid == rest_grid - 1,
 			"two pan-left presses step back two grids, to grid %d" % (rest_grid - 1),
 			"pan_grid %d" % pa.pan_grid)
-	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
+	check(_camera_cut_off_px(main, pa, camera, pa.pan_grid) <= 1.0,
 			"and that grid rests wholly on screen too",
-			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
-	await _tear_down(view)
+			"%f px off screen" % _camera_cut_off_px(main, pa, camera, pa.pan_grid))
+	await _tear_down_main(main)
 
 # ==============================================================================
 # TP-138 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
@@ -557,20 +578,23 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 # ==============================================================================
 func run_the_board_rests_positioned_test() -> void:
 	behavior_section("THE BOARD RESTS POSITIONED ON THE GRID THE VIEW IS ON")
-	var view := await _stand_up_grids(5)
+	var main := await _stand_up_main_grids(5)
+	var view := _main_game_view(main)
 	var pa := view.play_area
+	var camera := _main_camera(main)
 	var smooth := _scroller(pa)
 	await _settle_layout(view)
 	await _settle_scroll(view)
+	await _settle_camera(camera)
 	check(_board_overflows(pa),
 			"precondition: five grids overflow the window, so resting position is the scroll's job"
 			+ " (TP-138)")
 	check(pa.pan_grid == 2,
 			"the overview rests on the MIDDLE grid, so the whole board is centred (TP-138)",
 			"pan_grid %d" % pa.pan_grid)
-	check(_cut_off_px(pa, pa.pan_grid) <= 1.0,
+	check(_camera_cut_off_px(main, pa, camera, pa.pan_grid) <= 1.0,
 			"...and the grid it rests on is wholly in frame (TP-138)",
-			"%f px off screen" % _cut_off_px(pa, pa.pan_grid))
+			"%f px off screen" % _camera_cut_off_px(main, pa, camera, pa.pan_grid))
 	var rest := smooth.pos.x
 	pa.pan_to_grid(pa.pan_grid)
 	await _settle_scroll(view)
@@ -579,8 +603,9 @@ func run_the_board_rests_positioned_test() -> void:
 			+ "POSITIONED, not left at scroll zero (TP-138)",
 			"rest %.1f vs explicit pan %.1f" % [rest, smooth.pos.x])
 
-	# FOCUSED: the resting grid is the focused one, and it is the only grid the cut-off rule speaks
-	# about — its neighbours may be sliced by the window edge and that is not a defect.
+	# FOCUSED: the scroller is still the view (`GAP-024`=(b)), so the resting-grid cut-off stays the
+	# scroller-based instrument — its neighbours may be sliced by the window edge and that is not a
+	# defect.
 	pa.focus_grid(3)
 	await _settle_scroll(view)
 	var focused_rest := smooth.pos.x
@@ -595,7 +620,7 @@ func run_the_board_rests_positioned_test() -> void:
 	check(absf(smooth.pos.x - focused_rest) <= 1.0,
 			"...at exactly the position an explicit pan to it lands (TP-138)",
 			"rest %.1f vs explicit pan %.1f" % [focused_rest, smooth.pos.x])
-	await _tear_down(view)
+	await _tear_down_main(main)
 
 # ==============================================================================
 # TP-139 — THE FOCUSED GRID IS AS TALL AS ITS WINDOW. The two view modes differ ON SCREEN and not
@@ -673,38 +698,39 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 # ==============================================================================
 func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 	behavior_section("FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW")
-	# ⚠ MOUNTED INSIDE THE PICTURE'S OWN SUBVIEWPORT, sized `game_picture_design_size` -- the game
-	# screen is authored at fixed offsets and does not reflow, so measuring "in frame" against the
-	# suite's own default 1152x648 root window checks the board against a window narrower than the
-	# picture it actually pans across. Same fixture TP-141 already uses.
-	var vp := SubViewport.new()
-	vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
-	add_child(vp)
-	var view := await _stand_up_grids(3, vp)
+	# `Main`-hosted (`GAP-026`=(a)): "out of view" here means outside the CAMERA's `visible_rect()`
+	# (`GAP-024`=(b), confirmed by that gap's own measurement for this exact check), which only a
+	# real `%Camera2D` under a real `Main`/`Wall` can answer.
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
 	var pa := view.play_area
+	var camera := _main_camera(main)
 	await _settle_layout(view)
 	pa.open_zoomed_out()
 	await _settle_layout(view)
 	await _settle_scroll(view)
-	check(_overlaps_window(pa, 0) or _overlaps_window(pa, 2),
+	await _settle_camera(camera)
+	check(_camera_overlaps(main, pa, camera, 0) or _camera_overlaps(main, pa, camera, 2),
 			"precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one "
 			+ "(TP-140)",
-			"grid 0 %s grid 2 %s" % [str(_overlaps_window(pa, 0)), str(_overlaps_window(pa, 2))])
+			"grid 0 %s grid 2 %s"
+			% [str(_camera_overlaps(main, pa, camera, 0)), str(_camera_overlaps(main, pa, camera, 2))])
 
 	pa.focus_grid(1)
 	await _settle_layout(view)
 	await _settle_scroll(view)
-	check(_cut_off_px(pa, 1) <= 1.0,
+	await _settle_camera(camera)
+	check(_camera_cut_off_px(main, pa, camera, 1) <= 1.0,
 			"the FOCUSED grid is wholly in frame (TP-140)",
-			"%.1f px off screen" % _cut_off_px(pa, 1))
+			"%.1f px off screen" % _camera_cut_off_px(main, pa, camera, 1))
+	var window_size := main.get_viewport().get_visible_rect().size
 	for gi : int in [0, 2]:
-		check(not _overlaps_window(pa, gi),
+		check(not _camera_overlaps(main, pa, camera, gi),
 				"grid %d is OUT OF VIEW while another grid is focused (TP-140)" % gi,
 				"cells %s vs window %s"
-				% [str(_screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))),
-				str(_window_x(pa))])
-	await _tear_down(view)
-	vp.queue_free()
+				% [str(_grid_world_rect(main, pa, gi)),
+				str(WallTransition.visible_rect(camera.position, camera.zoom.x, window_size))])
+	await _tear_down_main(main)
 
 ## Does grid `gi`'s cell block put any pixel inside the board's window? The instrument for "out of
 ## view" — an off-screen DISTANCE cannot tell "just outside" from "half in".
@@ -980,6 +1006,14 @@ func _grids_in_frame(pa: PlayArea) -> Array[int]:
 		if _cut_off_px(pa, gi) <= 1.0: seen.append(gi)
 	return seen
 
+## The grids wholly on screen right now against the CAMERA's OWN `visible_rect()`, by index,
+## ascending -- the OVERVIEW instrument (`GAP-024`=(b), `GAP-026`=(a)).
+func _camera_grids_in_frame(main: Main, pa: PlayArea, camera: Camera2D) -> Array[int]:
+	var seen : Array[int] = []
+	for gi : int in range(pa.grid_container.get_child_count()):
+		if _camera_cut_off_px(main, pa, camera, gi) <= 1.0: seen.append(gi)
+	return seen
+
 ## The lowest index in frame, or -1 when nothing is. Written out because `Array.min()` is a Variant.
 func _lowest(seen: Array[int]) -> int:
 	var best := -1
@@ -996,8 +1030,12 @@ func _highest(seen: Array[int]) -> int:
 
 func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	behavior_section("PANNING SHIFTS WHICH GRIDS ARE IN FRAME")
-	var view := await _stand_up_grids(5)
+	# `Main`-hosted (`GAP-026`=(a)): this is the OVERVIEW instrument, where "in frame" means inside
+	# the CAMERA's own `visible_rect()` (`GAP-024`=(b)).
+	var main := await _stand_up_main_grids(5)
+	var view := _main_game_view(main)
 	var pa := view.play_area
+	var camera := _main_camera(main)
 	await _settle_layout(view)
 	check(pa.grid_container.get_child_count() == 5,
 			"precondition: five grids on the board (TP-106)",
@@ -1008,7 +1046,8 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 
 	pa.pan_to_grid(1)
 	await _settle_scroll(view)
-	var before := _grids_in_frame(pa)
+	await _settle_camera(camera)
+	var before := _camera_grids_in_frame(main, pa, camera)
 	check(not before.is_empty(),
 			"instrument check: some grid is in frame at rest, so 'in frame' means something",
 			"%s" % [before])
@@ -1029,10 +1068,11 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	for _i : int in [0, 1]:
 		pa._unhandled_input(_action(&"grid_pan_right"))
 		await _settle_scroll(view)
+		await _settle_camera(camera)
 	check(pa.pan_grid == 3,
 			"two pan-right presses step the view onto grid 3 (TP-106)",
 			"pan_grid %d" % pa.pan_grid)
-	var after := _grids_in_frame(pa)
+	var after := _camera_grids_in_frame(main, pa, camera)
 	check(not after.is_empty(),
 			"grids are still in frame after the pan",
 			"%s" % [after])
@@ -1049,7 +1089,8 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	for _i : int in [0, 1]:
 		pa._unhandled_input(_action(&"grid_pan_left"))
 		await _settle_scroll(view)
-	var back := _grids_in_frame(pa)
+		await _settle_camera(camera)
+	var back := _camera_grids_in_frame(main, pa, camera)
 	check(pa.pan_grid == 1,
 			"panning back left returns to the grid it started on",
 			"pan_grid %d" % pa.pan_grid)
@@ -1061,7 +1102,7 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	check(_highest(back) < _highest(after),
 			"...having given up the far grid it had panned onto",
 			"%s vs %s" % [back, after])
-	await _tear_down(view)
+	await _tear_down_main(main)
 
 # ==============================================================================
 # S29 — MOVING THE SELECTION. Arrows across grids, the overview's grid cursor, and the one-finger
