@@ -1,6 +1,6 @@
 ---
 name: plan-run
-description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the ten ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
+description: Execute an already-written implementation plan using an overseer session plus implementer subagents — the step that follows /flowchart-design. Sets up the worktree and reversed commit policy, shapes each step brief so components cannot ship unwired, and carries the verification hierarchy plus the ways a test passes while proving nothing. Use when DESIGN/PLAN/TEST_PLAN/NAMES exist and the work is execution, or when asked to run a plan with subagents.
 ---
 
 # Running a plan with an overseer and implementer subagents
@@ -81,7 +81,7 @@ assertions silently missing — the same shape as the defect you are hunting.
 ⚠ When a fix makes an existing test fail, **investigate before adjusting it** — one run found a
 tolerance that had been calibrated to the bug, so it passed *because* the defect existed.
 
-## The ten ways a test passes while proving nothing
+## The ways a test passes while proving nothing
 
 **[[tests-that-prove-nothing]] carries the list.** Read it before writing a step brief and before
 accepting one. The two that bite hardest in this pattern: a fixture that clears the ambient global

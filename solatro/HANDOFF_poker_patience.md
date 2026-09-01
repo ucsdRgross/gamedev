@@ -16,10 +16,31 @@ refocus on removal. Its by-eye gate at 1, 2 and 3 grids was rendered and looked 
 adversarial pass at the boundary found four defects that a green suite could not — including a
 **touch swipe that no finger could reach while both its tests passed.**
 
-**Next is PHASE 7 — the wall** (`S31`-`S34`). ⚠ `S31` also owes `TP-105` and the camera migration
-`GAP-016`=(d) deferred to it, and **part 3 of `GAP-017`'s ruling: the focused grid sized to the
-viewport height with the other grids out of view** — a zoom Phase 6 deliberately does not have.
-Phase 9 is the owner's call; Phase 10's remaining three steps are last.
+**PHASE 7 IS IN PROGRESS.** Landed and committed: `S31` (the wide picture, height rule, render
+clamp), `S31b` (the focused zoom — `GAP-017` part 3), `S31c` (clipping, so "other grids out of view"
+is true of the PIXELS), `S31d` (the picture widened to three grid positions, giving the camera a
+real step). Phase 9 is the owner's call; Phase 10's remaining three steps are last.
+
+⚠⚠ **START HERE: `S31e` IS IN PROGRESS AND ITS WORK IS UNCOMMITTED.** Four files are modified in
+the working tree (`Levels/game_view.tscn`, `UI/play_area.gd`, `Tests/UI/test_visual_layers.gd`,
+`Tests/Visual/grid_zoom_shot.gd`). **The implementer ran out of turns mid-step; there is NO
+red-then-green and NO by-eye pass for it.** Its brief is `GAP-021`'s answer — one grid per grid
+position. **Either finish it (re-verify from scratch) or `git checkout --` those four files and
+start it clean.** The last VERIFIED commit is `58b223aa`.
+
+⚠ **THE TREE AS LEFT IS RED — measured, 2 failures, both in GRID VIEW:**
+```
+precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one (TP-140)
+  -- grid 0 false grid 2 false
+...and that grid is in frame -- [0]
+GRID VIEW: 176 passed, 2 FAILED of 178
+```
+**Both are EXPECTED REACTORS, not mysteries**: spreading the grids one per position is exactly what
+stops a neighbour being in frame beside the middle one, so `TP-140`'s precondition and its companion
+check describe the OLD layout. They need re-measuring against the new one — which is the
+"expect reactors and investigate each" work the step did not reach. ⚠ **Re-measure them; do not
+loosen them**, and check the rest of the reactor list (`TP-101`, `TP-103`, `TP-106`, `TP-113`,
+`TP-138`, `TP-139`, `TP-141`) at the same time.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
@@ -537,17 +558,30 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. **`S30`** — refocus when the focused grid is removed, and re-centring (`G16`-`G18`). It is the
-   last step of Phase 6.
-2. **Phase 7** — `S31`-`S34`: the wall. ⚠ **`S31` now also owes `TP-105` and the camera migration
-   `GAP-016` deferred to it.**
+1. ⚠ **DECIDE `S31e` FIRST.** Uncommitted, unverified work sits in the tree (see State). Finish it
+   with a real red-then-green and a by-eye pass, or `git checkout --` the four files and redo it
+   from `GAP-021`'s answer. **Nothing below is safe to start while that is undecided.**
+2. **`TP-105`** — the camera steps between the 3 grid positions. Parked through four steps; it
+   becomes writable the moment `S31e` puts a grid in each position. **Its measurement is the gate:
+   does a pan land on a GRID, or on background?**
+3. **`S32`** — the saved pan and `resting_state()` (`GAP-020`=(b): resize first, then implement
+   `H18` literally). `TP-116`'s claim is already TRUE of the scroller and just needs asserting;
+   `TP-115`/`TP-117` need the camera to have a pose family.
+4. **`S33`** (`H20`, `H21` — the wall re-packs, Info mode) and **`S34`** (`wall_editor` drives every
+   new wall knob, `Q186`=a). ⚠ `S33`'s `H21` was predicted to be blocked by the same root cause as
+   `TP-105`; re-check it once `S31e` lands.
+5. **Then Phase 9** (owner's call) and **Phase 10's remaining `S40`, `S41`, `S44`.**
 
-⚠ **`doc_check.py` CANNOT EXPRESS A FILENAME CONTAINING SPACES.** Its reference regex keeps only the
-last space-free run, so spelling out the post-grid curated effects CSV in a living doc reports a
-dangling reference to a name that is really just its tail. The exact spelling lives in
-`START_HERE.md`'s read-first table; every other doc calls it "the post-grid curated effects CSV".
-That file is where any new card idea now goes, and every row there must declare `scope` as
-`grid-local` or `global`.
+**Open, not blocking, owner's call when convenient:**
+- **`GAP-018`** — `grid_swipe_threshold_mm`'s 8 mm default is 30.2 px at 96 DPI, under its own
+  `[32, 96]` clamp, so the knob is dead at its default. `Q190`=(a) fixes the clamp and the settings
+  table fixes the default; they disagree.
+- **`grid_buffer_px` is 220 RAW px against a 216 px grid block** — §1i's table is stated at
+  `card_scale` 2.5 and the game ships at 1.0. The owner has twice declined to rule. It is most of
+  what makes the grid pitch 846 px.
+- **Two cosmetic residues**: ~8 px of the focused grid's top row is cut (the zoom overshoots its
+  window by 7.8 px; clipping turned overdraw into a cut), and the COMBO label draws over the End
+  button.
 
 ### Opening prompt for the next session
 
@@ -555,43 +589,51 @@ That file is where any new card idea now goes, and every row there must declare 
 Continue the poker-patience grid work on branch `poker-patience`.
 
 READ IN THIS ORDER:
-  1. solatro/HANDOFF_poker_patience.md - THIS FILE. Its Environment, "Standing rules", "three
-     gates" and Open bugs sections are the traps; do not rediscover them.
-  2. solatro/design/poker-patience/PLAN.md section 3 (Phase 6), section 1 (contracts).
-  3. solatro/design/poker-patience/DESIGN.md section 36 - FLOWCHART H, which Phase 6 implements.
-  4. solatro/design/grid-view/DESIGN.md - charts J, K, L, M, N, P.
-  5. The gap files: SEVENTEEN filed, sixteen resolved, GAP-017 open but blocking nothing. Answers are quoted verbatim at the top of
-     each and OUTRANK PLAN.md and NAMES.md.
-  6. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
+  1. solatro/HANDOFF_poker_patience.md - THIS FILE. Its State, Environment, "Standing rules",
+     "three gates" and Open bugs sections are the traps; do not rediscover them.
+  2. solatro/design/poker-patience/PLAN.md section 3 (Phase 7), section 1 (contracts).
+  3. solatro/design/poker-patience/DESIGN.md section 36 - FLOWCHART H, which Phase 7 implements.
+  4. The gap files: TWENTY-ONE filed. GAP-016, 017, 019, 020, 021 are the Phase 6/7 chain and
+     their OWNER ANSWER sections OUTRANK PLAN.md, TEST_PLAN.md and NAMES.md.
+  5. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
      CardModifier.api, and a suite gate enforces it.
 
-GROUND TRUTH BEFORE TRUSTING ANY `done` (see Environment for the import trap on a new box):
-    GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
-  Expect ALL 44 SUITES, zero failures. Last verified 3624 CHECKS PASSED.
+FIRST, BEFORE ANYTHING ELSE: `git status`. If those four files are still modified, S31e is
+half-done and UNVERIFIED - finish it properly or `git checkout --` them. Last verified
+commit is 58b223aa.
 
-THE WORK: S26-S29 are LANDED and committed. Next is S30, the last step of Phase 6, then
-  Phase 7 - where S31 owes TP-105 and the camera migration GAP-016 deferred to it, plus
-  GAP-017's two knobs if the owner puts them there.
+GROUND TRUTH (see Environment for the import trap on a new box):
+    GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
+  Expect ALL 45 SUITES, zero failures. Judge by the failure SET and the SUITE COUNT, never
+  the check total. ⚠ A single green run is NOT evidence: three assertions race an eased
+  layout and flake - but two of them were a REAL regression once, so re-run to
+  discriminate and never widen their tolerances.
+
+THE WORK: S31e, then TP-105, then S32, S33, S34.
 
 NON-NEGOTIABLES, each of which caught a real defect on this stream:
   - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.
+    Compare PER-SUITE counts across the red and green runs: if they match, nothing aborted.
     Do the red runs YOURSELF; never accept a self-reported green.
-  - VERIFY VISUALS BY EYE. Tests/Visual/grid_layer_shot.tscn shows a POPULATED grid and
-    prints card-vs-cell draw indices. A green suite is not evidence about pixels - the owner
-    found a card drawing behind its own cell that 43 green suites did not.
-  - CHECK THE SUITE COUNT (44) and the failure SET, never the check total, which swings by
-    tens between runs.
-  - AT EVERY PHASE BOUNDARY: read the diff, run an adversarial pass tracing what a PLAYER
-    does, and run `py .claude/tools/doc_check.py` (baseline: 0 errors, 7 warnings).
-  - Every step brief names THE CALL SITE. Never accept `done` on a component whose consumer
-    does not exist.
+  - VERIFY VISUALS BY EYE, with the RIGHT instrument. grid_zoom_shot renders inside the REAL
+    picture; grid_layer_shot renders a bare 1152x648 window and its multi-grid framing is a
+    harness artefact. grid_clip_flight_shot shows a card in flight, frame by frame.
+  - ASSERT WHAT IS PAINTED OR MEASURED, not an int the code just assigned itself.
+  - MEASURE BEFORE YOU BUILD. Four Phase 7 steps ended `blocked` because a premise was false;
+    each was worth more than the code would have been.
+  - NO COMMENT INSIDE A METHOD BODY (owner rule). A `##` comment above the method says WHY it
+    exists. Wanting an inline comment means the code needs a NAME.
+  - COMMITS ARE ALLOWED on this branch (owner: "you are allowed to commit when its not in
+    main branch"), one verified step per commit, evidence in the message.
   - REUSE, don't reinvent. Declining reuse is fine ON RECORD with the reason in the file.
 
 If you hit a decision no document fixes: file a gap at solatro/design/<slug>/gaps/GAP-NNN.md
 following GAP-001's shape, park that thread, keep the unaffected ones moving, and QUOTE the
-gap's own option text to the owner. A bug is not a gap: if exactly one choice is defensible
-it is a defect - fix it and record it. And check for a FOURTH option before filing: GAP-014
-was filed correctly and still turned out to be a defect.
+gap's own option text to the owner. A bug is not a gap. ⚠ CHECK FOR A FOURTH OPTION FIRST -
+five gaps on this stream were answered with an option nobody had listed, two of them written
+by the owner. ⚠ And VERIFY A CLAIM BEFORE BUILDING A GAP ON IT: GAP-017 was filed claiming a
+question was unanswered when it was answered, and GAP-016 arose from citing Q182, which sits
+on a pruned branch.
 ```
 
 ## References

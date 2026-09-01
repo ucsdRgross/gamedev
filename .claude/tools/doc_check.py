@@ -379,6 +379,37 @@ def comment_lines(path: Path) -> list[tuple[int, str]]:
     return out
 
 
+def comments_inside_methods(path: Path) -> list[tuple[int, str]]:
+    """(line, text) for every comment sitting INSIDE a method body.
+
+    Owner rule: a comment explains WHY a method exists, above it. Nothing goes inside — what the
+    code does is read from the code. Indentation decides: a comment indented deeper than the `func`
+    (or `def`) that opened the block is inside it, and the block ends at the first non-blank line
+    back at or left of that column.
+
+    Only `.gd` and `.py` are scanned, where indentation is the block grammar. Brace languages
+    would need a real parser, and a checker that guesses is worse than one that abstains.
+    """
+    if path.suffix not in {".gd", ".py"}:
+        return []
+    out: list[tuple[int, str]] = []
+    body_col: int | None = None
+    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        s = raw.strip()
+        col = len(raw) - len(raw.lstrip())
+        if not s:
+            continue
+        if body_col is not None and col <= body_col:
+            body_col = None
+        if body_col is None:
+            if s.startswith("func ") or s.startswith("static func ") or s.startswith("def "):
+                body_col = col
+            continue
+        if s.startswith("#"):
+            out.append((i, s.lstrip("#").strip()))
+    return out
+
+
 def check_code_comments(verbose: bool, names: set[str]) -> int:
     """The living-doc rules, applied to comments. Returns the number of files scanned.
 
@@ -409,6 +440,9 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
             if block_len > COMMENT_BLOCK_MAX:
                 style_hit("long block", f"{rel(path)}:{block_start} ({block_len} lines)")
             block_len = 0
+
+        for i, text in comments_inside_methods(path):
+            style_hit("inside a method", f"{rel(path)}:{i}: {text[:70]}")
 
         for i, text in comments:
             if DATE.search(text):
@@ -466,6 +500,7 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
 
     blurb = {
         "dated": "the rule belongs, the date is git's",
+        "inside a method": "a comment explains WHY a method exists, above it — nothing goes inside",
         "history": "keep the rule and the number, drop the story",
         "long block": f"over {COMMENT_BLOCK_MAX} lines — say what it is FOR, point at the doc",
         "line ref": "a line number is a dead reference waiting to happen; name the symbol",
@@ -475,7 +510,7 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
                                  "layering breach, not a style nit",
     }
     for kind in ("design id in a string", "design id", "restated", "line ref", "history",
-                 "long block", "dated"):
+                 "long block", "dated", "inside a method"):
         hits = style.get(kind)
         if not hits:
             continue

@@ -35,7 +35,18 @@ proving nothing, each of which looked fine in review; later runs added two more:
     later one landed last. Separate them before asserting, or the test measures which writer ran
     second.
 
-**The rule that catches all ten: prove every new test red-then-green.** Neutralise the behaviour,
+11. **The test drives an INTERNAL handler, so it proves the reader and never the ROUTE.** Measured,
+    and it shipped a dead feature: a touch-swipe reader was correct and fully covered, but both its
+    tests called the node's input handler directly. Driven the way the engine delivers an event —
+    through the viewport — nothing happened at all, because an ancestor consumed it first. **If a
+    behaviour depends on an event REACHING your code, the test must send it the way the platform
+    does.** Green tests plus a feature no user could trigger.
+12. **The test SETS UP the very condition whose absence is the bug.** Measured: a "no cut-off grid
+    at rest" test called the centring routine itself before measuring — the one call the resting
+    product never made — so it could not see that nothing positioned the view at startup. **A test
+    that arranges the state it is meant to observe is a tautology.**
+
+**The rule that catches every one: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting
 nothing.
 
@@ -45,6 +56,11 @@ banner then reads `ALL N CHECKS PASSED` with the assertions silently missing. Me
 did exactly that while two tests never ran.
 
 ⚠ When a fix makes an existing test fail, **investigate before adjusting it** — see item 7.
+
+⚠ **Compare PER-SUITE counts across the red and green runs.** If every suite reports the same number
+of checks in both, nothing aborted; a suite whose count DROPPED in the red run had assertions
+silently skipped. This is the sharpest cheap evidence available, and it is stronger than the total,
+which drifts whenever a randomised suite is in the run.
 
 Applies to any suite in any project here. See [[running-godot-scenes]] for what a banner does and
 does not prove.

@@ -10,6 +10,16 @@ metadata:
 
 Keep lines of code low by REMOVING old unused code outright (no dormant paths), while ADDING `##` doc comments that explain each method's intended purpose. Plans should include a references/sources section for easy handoff.
 
+⚠⚠ **NO COMMENT GOES INSIDE A METHOD BODY.** Owner rule, verbatim: *"comments dont exist inline of
+methods, and only explains why the methods exists and nothing else. no historical stuff or what
+method does since that can be read through the code."*
+
+So a comment sits **above** the method, as a `##` doc comment, and says **why the method exists** —
+not what it does, and not how it came to be. If an inline comment feels necessary, that is a signal
+the code needs a name (extract the step into a well-named helper), not a signal it needs prose.
+`py .claude/tools/doc_check.py` reports these as `inside a method`; the repo carries a large
+standing backlog of them, so judge a regression by whether YOUR diff added any.
+
 ⚠ **A doc comment is a rule, not a story. Go straight to the point.** Same content, fewer words — every time. Cut in particular:
 - **The narrative of how a bug was found** ("the first build did X, and that was wrong twice over"). Keep the rule it produced and the number it measured; drop the plot.
 - **Facts that change nothing for the reader** — who reported it, what the old behaviour was, which session it landed in. Git has that.

@@ -34,6 +34,12 @@ Docs describe the system as it is now, for someone about to change it.
 - **Say it in as few words as carry the rule.** This applies to code comments too. Keep the rule and
   the measured number; drop the story of how it was found, who reported it, and what it used to do.
   State a fact once, at the site that enforces it, and point at that name from anywhere else.
+- ⚠ **NO COMMENT INSIDE A METHOD BODY.** Owner, verbatim: *"comments dont exist inline of methods,
+  and only explains why the methods exists and nothing else. no historical stuff or what method does
+  since that can be read through the code."* A comment sits ABOVE the method as `##`, and says WHY
+  it exists. Wanting an inline comment is a signal the code needs a NAME — extract a helper.
+  `doc_check.py` reports these as `inside a method`; there is a large standing backlog, so judge a
+  regression by what YOUR diff added.
 - A date earns its place only when the fact is *about* a moment (a measurement's conditions, a
   version boundary). "The suite runs windowed" needs no date; "measured on Box A" does.
 - Plan and handoff docs are temporary: once landed, fold the residue into the living doc and
@@ -41,7 +47,7 @@ Docs describe the system as it is now, for someone about to change it.
 
 `py .claude/tools/doc_check.py` enforces the mechanical half — dangling `[[memory links]]`, an
 index out of sync with disk, references to files that do not exist, hard-coded absolute paths,
-dated lines, and **design-process ids that have escaped into the code** (`Q183=a`, `GAP-017=c`,
+dated lines, **comments inside method bodies**, and **design-process ids that have escaped into the code** (`Q183=a`, `GAP-017=c`,
 `PLAN.md §1.8` — see [[design-ids-stay-out-of-code]]). It covers **code comments as well as `.md` files**: a comment is a doc that lives
 in a source file, and a comment deferring to a doc is only useful if the doc resolves. Run it after
 any docs change. The judgement half is the `/docs` skill.
@@ -54,8 +60,10 @@ for that.
 
 ## Hard rules (they override defaults)
 
-1. **No `git add`, no commits, no staging.** The owner commits through GitHub Desktop. Just edit
-   files. Ask before committing anything, ever.
+1. **No `git add`, no commits, no staging ON `main`.** The owner commits through GitHub Desktop.
+   ⚠ **On a feature branch commits ARE allowed** — owner, verbatim: *"you are allowed to commit when
+   its not in main branch."* One logical step per commit, after a verification you ran yourself,
+   with the evidence in the message. Anywhere else, just edit files and ask first.
 2. **Never kill a process by image name or wildcard.** A hook blocks it
    (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
    with unsaved work. An explicit verified `-Id <pid>` passes.
