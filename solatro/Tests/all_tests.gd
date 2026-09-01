@@ -23,21 +23,20 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
 ## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
 ## exactly once before the first suite writes a line. @export values are applied before _enter_tree.
+##
+## ⚠ **`SettingsManager.isolated` IS SET HERE TOO, NOT IN `_ready()`.** `_ready()` fires bottom-up
+## (every child suite's `_ready` runs first), so a suite whose own `backup_real_settings()`/
+## `use_own_settings()` call was not the very first line of its `_ready` had a real window, before
+## this ran, in which a knob write reached the player's live `user://settings.tres`. `_enter_tree`
+## fires parent-first — before ANY child suite exists — so setting it here closes that window
+## completely instead of only covering suites that remember to isolate before their first write.
 func _enter_tree() -> void:
+	SettingsManager.isolated = true
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 	TestLog.speed_base_delay = speed_base_delay
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())
 
 func _ready() -> void:
-	# ⚠ **NO SUITE MAY WRITE THE PLAYER'S SETTINGS, AND THIS IS WHERE THAT IS GUARANTEED.**
-	# Owner ruling: tests own the settings they test with, so tuning a knob cannot break a test and
-	# a test cannot overwrite a knob. Setting it per suite was not enough — only the eleven suites
-	# that call `backup_real_settings()` were covered, and `test_line_detect` (which drops
-	# `act_event_cap` from 6000 to 60) is not one of them, so it went on rewriting
-	# `user://settings.tres` on every run. Setting it HERE covers the whole process, including any
-	# suite added later that never thinks about settings at all.
-	# ⚠ Nothing clears it: the run exits, and a suite's own restore must not re-open the hole.
-	SettingsManager.isolated = true
 	var suites: Array[TestSuite] = []
 	for child in get_children():
 		if child is TestSuite:

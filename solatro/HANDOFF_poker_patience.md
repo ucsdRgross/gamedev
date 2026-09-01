@@ -112,23 +112,41 @@ duplicates production setup drifts from it and then certifies the wrong thing. S
 in `all_tests.tscn`; the suite stays at 45. Delete the throwaway
 `Tests/Visual/interaction_click_probe.{gd,tscn}`, whose findings are recorded above.
 
-⚠⚠ **THERE IS NO GREEN COMMIT ON THIS BRANCH. `58b223aa` IS NOT GREEN EITHER** — it reproduces 2
-GRID LAYOUT failures across two runs, so they are reproducible, not flake, and they are **NOT the
-documented flaky family** (neither is the Entrance-stacks push-up nor the lowest-card-clears-Entrance
-assertion):
+⚠⚠ **THE TWO GRID LAYOUT FAILURES ARE SETTINGS-DRIVEN — PROVEN BY EXPERIMENT, AND THE POISON CUTS
+BOTH WAYS.** The owner's `user://settings.tres` was parked (byte copy, restored afterwards) and the
+suite re-run on in-memory defaults:
+
 ```
-GRID LAYOUT: ...the arithmetic lands on the same point the card's own CONTROL does, at every
-             height -- worst 116.0 px out
-GRID LAYOUT: TP-85: caught mid-growth, the row is PART WAY to its new height -- row 78.0,
-             was 58.0, will be 78.0
+POISONED (as shipped in user://)      CLEAN (defaults)
+  GRID LAYOUT  2 FAILED                 GRID LAYOUT  ALL PASS   <- both gone
+  WALL FOCUS   130/130                  WALL FOCUS   2 FAILED   <- newly exposed
 ```
-⚠ **LIVE CANDIDATE CAUSE — `user://settings.tres` IS POISONED AND STAYS POISONED.** After a run that
-exited 0 it holds test values (`base_delay = 0.1`, `wall_transition_delay = 0.001`) and its **mtime
-is MID-run, not at the run's end** — so the suite writes test settings at start and the restore does
-not run on the normal exit route. This is not a one-off from some killed run; every run leaves it.
-A geometry-affecting setting moves every row on the board, which is why this is a candidate for the
-116 px failure. **NOT YET INVESTIGATED. Do not overwrite `settings.tres` by guessing — those may be
-the owner's real values.** Recover a pristine default from the repo, or ask.
+
+- **Both GRID LAYOUT failures vanish on clean settings**, including the `116.0 px` card-on-cell
+  disagreement that had failed at EVERY commit on this branch. **It is not a geometry defect.**
+- ⚠⚠ **AND THE SAME POISON MASKS TWO WALL FOCUS FAILURES**: *"the camera actually moved to the info
+  zoom -- rest pos=(0.0, 0.0) zoom=(1.0, 1.0) -- info pos=(0.0, 0.0) zoom=(1.0, 1.0)"* and
+  *"wall_info_mode is false after toggling Info off"*. They pass only because
+  `wall_transition_delay = 0.001` makes transitions instant. **A test measuring before the thing it
+  measures has happened** — the same fixed-tick-racing-an-eased-transition shape as `TP-112`.
+
+⚠ **THE FIX IS `S21settings`'s OWN RULING, NOT A SETTINGS EDIT.** Owner, verbatim: *"tests should
+have its own settings it tests with over range of possible settings values, that way tuning settings
+wont break tests, and tests that any setting is valid."* **Neither `GRID LAYOUT` nor `WALL FOCUS`
+calls `use_own_settings()`** — both read the live shared `SettingsManager.settings`.
+⚠ `GRID LAYOUT` also never calls `await_siblings_except` while reading shared geometry knobs
+concurrently with WALL RENDER / WALL FOCUS / WALL PROFILE / WALL INPUT / UI VIEWERS — a separate
+cross-suite race, still unproven but plausible.
+
+⚠ **THE WRITE WINDOW IS CLOSED**: `SettingsManager.isolated` moved from `all_tests.gd::_ready()` to
+`_enter_tree()`. `_ready()` fires BOTTOM-UP, so every child suite ran before isolation was armed.
+Verified: a full run with the file parked recreated NO `settings.tres` at all.
+⚠ **File-parking for settings was tried before and DELIBERATELY REVERTED** (`settings_manager.gd`
+records why): a kill mid-move can corrupt or lose the file, whereas a write-suppression flag can
+never be left half-undone. **Do not rebuild it.**
+⚠ **The existing poisoned file is NOT cleaned by any of this** — `isolated` suppresses writes, so a
+poisoned file simply persists. A pristine default is recoverable from `PlayerSettings.new()`'s
+exported defaults. **Do not overwrite it without the owner.**
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
