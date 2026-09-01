@@ -21,12 +21,13 @@ clamp), `S31b` (the focused zoom — `GAP-017` part 3), `S31c` (clipping, so "ot
 is true of the PIXELS), `S31d` (the picture widened to three grid positions, giving the camera a
 real step). Phase 9 is the owner's call; Phase 10's remaining three steps are last.
 
-⚠⚠ **START HERE: `S31e` IS IN PROGRESS AND ITS WORK IS UNCOMMITTED.** Four files are modified in
-the working tree (`Levels/game_view.tscn`, `UI/play_area.gd`, `Tests/UI/test_visual_layers.gd`,
-`Tests/Visual/grid_zoom_shot.gd`). **The implementer ran out of turns mid-step; there is NO
-red-then-green and NO by-eye pass for it.** Its brief is `GAP-021`'s answer — one grid per grid
-position. **Either finish it (re-verify from scratch) or `git checkout --` those four files and
-start it clean.** The last VERIFIED commit is `58b223aa`.
+⚠⚠ **START HERE: `S31e` IS COMMITTED BUT UNVERIFIED, AND HEAD IS RED.** It is commit `6ed95277`,
+committed deliberately to carry the work across a session boundary — **not because it works.** The
+implementer ran out of turns mid-step: there is **no red-then-green and no by-eye pass** for it. Its
+brief is `GAP-021`'s answer — one grid per grid position, with the furniture NOT duplicated (`Q39`
+has the Entrance follow the camera, `Q40`=(a) has it stay with its committed grid).
+**Finish it — re-verify from scratch — or `git revert 6ed95277` and redo it clean.** The last fully
+verified commit is `58b223aa`.
 
 ⚠ **THE TREE AS LEFT IS RED — measured, 2 failures, both in GRID VIEW:**
 ```
@@ -552,9 +553,9 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. ⚠ **DECIDE `S31e` FIRST.** Uncommitted, unverified work sits in the tree (see State). Finish it
-   with a real red-then-green and a by-eye pass, or `git checkout --` the four files and redo it
-   from `GAP-021`'s answer. **Nothing below is safe to start while that is undecided.**
+1. ⚠ **DECIDE `S31e` FIRST — HEAD IS RED.** It is committed as `6ed95277` but unverified (see
+   State). Finish it with a real red-then-green and a by-eye pass, or `git revert 6ed95277` and redo
+   it from `GAP-021`'s answer. **Nothing below is safe to start while that is undecided.**
 2. **`TP-105`** — the camera steps between the 3 grid positions. Parked through four steps; it
    becomes writable the moment `S31e` puts a grid in each position. **Its measurement is the gate:
    does a pan land on a GRID, or on background?**
@@ -592,9 +593,9 @@ READ IN THIS ORDER:
   5. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
      CardModifier.api, and a suite gate enforces it.
 
-FIRST, BEFORE ANYTHING ELSE: `git status`. If those four files are still modified, S31e is
-half-done and UNVERIFIED - finish it properly or `git checkout --` them. Last verified
-commit is 58b223aa.
+FIRST, BEFORE ANYTHING ELSE: run the suite. HEAD (6ed95277) is S31e, which is COMMITTED BUT
+UNVERIFIED and leaves 2 GRID VIEW failures - finish it properly or `git revert 6ed95277`.
+Last fully verified commit is 58b223aa.
 
 GROUND TRUTH (see Environment for the import trap on a new box):
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
