@@ -355,6 +355,29 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     stays in `EntranceCardLayer`, outside the clip.
     A jumping card at the top of the board and a hoop bracketing a card near the edge were both
     checked and draw whole.
+- id: S31d
+  description: 'WIDEN THE GAME PICTURE to grid_max_count grid positions, so the camera has a step.'
+  status: done
+  evidence: >
+    Overseer-verified: ALL 45 SUITES: 3806 CHECKS PASSED, zero failures. doc_check 0 errors; no
+    design ids added to product code.
+    RED: exactly 3 failures, all TP-113 -- and NOTHING else reacted. TP-101, TP-103, TP-106, TP-114,
+    TP-138-TP-141 and the whole flaky family stayed green in both runs, which is the evidence that
+    none of them was calibrated to the old picture width.
+    Picture 1219x685 -> **3656x685**. Camera slack at rest **0.6 px -> 2438 px (~2 grid positions)**.
+  notes: >
+    ⚠⚠ **THE HEIGHT RULE APPLIED TO THE WHOLE PICTURE IS PROVABLY INCOMPATIBLE WITH `H22` AT ANY
+    WIDTH.** `focused_scale()` rests the camera by OVERFILLING (the max of the axis ratios), so a
+    picture whose aspect IS the window's is framed WHOLE at rest -- at 1219x685 and equally at
+    3456x1944 (zoom 0.3333 on both axes, 100% visible). **A wider picture alone does not give the
+    camera a step; the overseer's suggested 3456x1944 would NOT have worked.**
+    The resolution: apply `H2`'s aspect minimum to **ONE GRID POSITION**, not the whole picture, and
+    make the picture `grid_max_count` positions wide. `Q160` states it literally -- *"camera will pan
+    over 3 possible grid positions since that is size of picture frame"*. Recorded in ASSUMPTIONS.md.
+    ⚠ The clamp does NOT bite at 3656 (< 4096) and `size_2d_override` stays ZERO. At
+    `grid_max_count` 4 it would (6096 -> 4096 on x) and the override then holds the layout at 6096.
+    ⚠ **`grid_buffer_px` is untouched and still 220 raw px against a 216 px block** -- it lives
+    entirely inside one grid position, so this step neither improved nor worsened it. Still unruled.
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done

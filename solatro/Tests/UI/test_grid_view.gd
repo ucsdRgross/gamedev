@@ -1563,9 +1563,15 @@ func run_the_board_recentres_after_any_removal_test() -> void:
 	await _tear_down(view)
 
 # ==============================================================================
-# TP-113 - the game picture is sized for exactly `grid_max_count` grids, plus margins, at the
-# height the zoomed-out view needs. The size is read through `Wall.load_layout()` - the one seam
-# every real wall build goes through - so a picture that stopped being sized fails here.
+# TP-113 - the game picture is sized for exactly `grid_max_count` GRID POSITIONS, each of which is
+# in turn wide enough for exactly `grid_max_count` grids plus margins, at the height the zoomed-out
+# view needs. The size is read through `Wall.load_layout()` - the one seam every real wall build
+# goes through - so a picture that stopped being sized fails here.
+#
+# The "exactly three grids" claim did not weaken when the picture was widened, it MOVED: it is now
+# asserted of one grid position (design.x / grid_max_count), which is the rect the wall camera rests
+# on, and a second claim was added that the picture is a whole number of those positions. The old
+# assertions read the same rule off the same numbers one level up.
 # ==============================================================================
 func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	behavior_section("THE GAME PICTURE FITS EXACTLY THREE GRIDS")
@@ -1584,33 +1590,56 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	check(st.grid_max_count == 3,
 			"precondition: the shipped cap is three grids (TP-113)",
 			"grid_max_count %d" % st.grid_max_count)
-	check(float(design.x) >= span_3,
-			"the game picture is wide enough for three grid blocks and the two buffers between "
+	var position_size := PlayArea.grid_position_size_px(st)
+	check(absf(float(design.x) - position_size.x * float(st.grid_max_count)) <= 1.0,
+			"the game picture is exactly `grid_max_count` grid positions wide, so the camera has "
+			+ "that many resting poses to step between (TP-113)",
+			"design %d px, %d positions of %.1f px" % [design.x, st.grid_max_count,
+			position_size.x])
+	check(position_size.x < float(design.x) - 1.0,
+			"...so the picture is WIDER than the position the camera frames - the camera cannot "
+			+ "step across a picture it already sees whole (TP-113)",
+			"position %.1f px, design %d px" % [position_size.x, design.x])
+	check(position_size.x >= span_3,
+			"one grid position is wide enough for three grid blocks and the two buffers between "
 			+ "them (TP-113)",
-			"design %d px, three grids span %.1f px" % [design.x, span_3])
-	check(float(design.x) < span_4,
+			"position %.1f px, three grids span %.1f px" % [position_size.x, span_3])
+	check(position_size.x < span_4,
 			"...and NOT wide enough for a fourth - exactly three, not merely at least three "
 			+ "(TP-113)",
-			"design %d px, four grids span %.1f px" % [design.x, span_4])
-	check(absf(float(design.x) - span_3 - 2.0 * st.grid_overview_margin * span_3) <= 1.0,
+			"position %.1f px, four grids span %.1f px" % [position_size.x, span_4])
+	check(absf(position_size.x - span_3 - 2.0 * st.grid_overview_margin * span_3) <= 1.0,
 			"...with the leftover width being exactly the overview margin on each side (TP-113)",
-			"leftover %.1f px, margin %.3f of %.1f px" % [float(design.x) - span_3,
+			"leftover %.1f px, margin %.3f of %.1f px" % [position_size.x - span_3,
 			st.grid_overview_margin, span_3])
-	# The height rule: the natural board height or the aspect minimum, whichever is LARGER.
+	# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION,
+	# whichever is LARGER. Measured on the position, never the whole picture: a picture at the
+	# window's own aspect is framed whole at rest and leaves the camera nothing to step across.
 	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
 	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
-	var aspect_minimum := float(design.x) * ref_h / ref_w
+	var aspect_minimum := position_size.x * ref_h / ref_w
 	check(float(design.y) >= block.y - 1.0,
 			"the picture is at least the board's own natural height (TP-113)",
 			"design %d px, natural %.1f px" % [design.y, block.y])
 	check(float(design.y) >= aspect_minimum - 1.0,
-			"...and at least the height the window aspect needs, so the zoomed-out view is "
-			+ "entirely picture (TP-113)",
+			"...and at least the height one grid position's window aspect needs, so the zoomed-out "
+			+ "view of that position is entirely picture (TP-113)",
 			"design %d px, aspect minimum %.1f px" % [design.y, aspect_minimum])
 	check(float(design.y) <= maxf(block.y, aspect_minimum) + 1.0,
 			"...and no taller than the LARGER of the two - whichever is larger, not their sum "
 			+ "(TP-113)",
 			"design %d px, larger of %.1f / %.1f" % [design.y, block.y, aspect_minimum])
+	# The camera's step, in the picture's own units: what `resting_state` frames against what
+	# exists. This is the property `H22` names and the reason the picture was widened at all.
+	var window_size := Vector2(ref_w, ref_h)
+	var rest_zoom := WallPicture.focused_scale(Vector2(design), window_size,
+			st.wall_overfill_margin)
+	var visible_w := window_size.x / maxf(rest_zoom, 0.0001)
+	check(float(design.x) - visible_w > position_size.x * 0.5,
+			"at its resting pose the camera sees LESS THAN the picture by more than half a grid "
+			+ "position, so stepping is a real move and not a nudge onto bare frame (TP-113)",
+			"sees %.1f px of %d px, slack %.1f px, position %.1f px"
+			% [visible_w, design.x, float(design.x) - visible_w, position_size.x])
 
 # ==============================================================================
 # TP-114 - FIX-FULL-15: the focused game picture's render target never exceeds

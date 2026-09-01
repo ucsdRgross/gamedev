@@ -144,15 +144,15 @@ static func grid_block_size_px(settings_res: PlayerSettings, grid: GridData) -> 
 	var h := float(maxi(grid.grid_height, 1))
 	return Vector2(w * card.x + (w - 1.0) * sep, h * card.y + (h - 1.0) * sep)
 
-## The size the game picture is laid out at: wide enough for exactly `grid_max_count` grids of the
-## DEFAULT shape, spaced by `grid_buffer_px`, with `grid_overview_margin` of that span as margin on
-## each side. Height is the board's own natural height, or the height the project's window aspect
-## needs for the zoomed-out view to be entirely picture, whichever is LARGER.
+## ONE GRID POSITION: the window-shaped view the wall camera rests on. Wide enough for exactly
+## `grid_max_count` grids of the DEFAULT shape, spaced by `grid_buffer_px`, with
+## `grid_overview_margin` of that span as margin on each side.
 ##
-## ⚠ **DERIVED FROM THE CAP AND THE DEFAULT GRID SHAPE, NEVER FROM THE GRIDS A RUN HAS.** The
-## picture is one fixed size for every run: a deck that unlocks a second grid mid-show must not
-## resize a render target, and a 1-grid run sits in a picture built for three.
-static func game_picture_design_size(settings_res: PlayerSettings) -> Vector2i:
+## ⚠ **THIS, NOT THE WHOLE PICTURE, IS WHAT THE ASPECT MINIMUM APPLIES TO.** The camera rests by
+## OVERFILLING the window, so a picture whose own aspect is the window's is framed WHOLE at rest
+## and the camera has nowhere to step -- measured, at every width. Sizing the POSITION to the
+## window aspect and the picture to `grid_max_count` of them is what leaves the camera a step.
+static func grid_position_size_px(settings_res: PlayerSettings) -> Vector2:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var count := float(maxi(settings_res.grid_max_count, 1))
 	var span := count * block.x + (count - 1.0) * settings_res.grid_buffer_px
@@ -161,7 +161,19 @@ static func game_picture_design_size(settings_res: PlayerSettings) -> Vector2i:
 	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
 	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
 	var aspect_minimum := width * ref_h / ref_w if ref_w > 0.0 and ref_h > 0.0 else 0.0
-	return Vector2i(roundi(width), roundi(maxf(block.y, aspect_minimum)))
+	return Vector2(width, maxf(block.y, aspect_minimum))
+
+## The size the game picture is laid out at: `grid_max_count` GRID POSITIONS side by side, one
+## position tall. The camera frames one position at rest, so the picture is several times wider
+## than the window and the camera has that many resting poses to step between.
+##
+## ⚠ **DERIVED FROM THE CAP AND THE DEFAULT GRID SHAPE, NEVER FROM THE GRIDS A RUN HAS.** The
+## picture is one fixed size for every run: a deck that unlocks a second grid mid-show must not
+## resize a render target, and a 1-grid run sits in a picture built for three.
+static func game_picture_design_size(settings_res: PlayerSettings) -> Vector2i:
+	var position_size := grid_position_size_px(settings_res)
+	var count := float(maxi(settings_res.grid_max_count, 1))
+	return Vector2i(roundi(position_size.x * count), roundi(position_size.y))
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
 ## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
