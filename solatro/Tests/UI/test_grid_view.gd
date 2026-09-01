@@ -585,7 +585,14 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 # ==============================================================================
 func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 	behavior_section("FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW")
-	var view := await _stand_up()
+	# ⚠ MOUNTED INSIDE THE PICTURE'S OWN SUBVIEWPORT, sized `game_picture_design_size` -- the game
+	# screen is authored at fixed offsets and does not reflow, so measuring "in frame" against the
+	# suite's own default 1152x648 root window checks the board against a window narrower than the
+	# picture it actually pans across. Same fixture TP-141 already uses.
+	var vp := SubViewport.new()
+	vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
+	add_child(vp)
+	var view := await _stand_up_grids(3, vp)
 	var pa := view.play_area
 	await _settle_layout(view)
 	pa.open_zoomed_out()
@@ -609,6 +616,7 @@ func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 				% [str(_screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))),
 				str(_window_x(pa))])
 	await _tear_down(view)
+	vp.queue_free()
 
 ## Does grid `gi`'s cell block put any pixel inside the board's window? The instrument for "out of
 ## view" — an off-screen DISTANCE cannot tell "just outside" from "half in".
@@ -1229,7 +1237,13 @@ func _swipe(pa: PlayArea, from: Vector2, by: float, steps: int) -> void:
 
 func run_a_swipe_fires_once_test() -> void:
 	behavior_section("A SWIPE FIRES ONCE")
-	var view := await _stand_up_grids(5)
+	# ⚠ MOUNTED INSIDE THE PICTURE'S OWN SUBVIEWPORT, sized `game_picture_design_size` -- same reason
+	# TP-140/TP-141 need it: "in frame" is measured against the board's real scroll window, which the
+	# suite's own default 1152x648 root window is narrower than.
+	var picture_vp := SubViewport.new()
+	picture_vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
+	add_child(picture_vp)
+	var view := await _stand_up_grids(5, picture_vp)
 	var pa := view.play_area
 	await _settle_layout(view)
 	pa.pan_to_grid(0)
@@ -1313,6 +1327,7 @@ func run_a_swipe_fires_once_test() -> void:
 			"swiping the other way pans one grid back, once",
 			"pan_grid %d" % pa.pan_grid)
 	await _tear_down(view)
+	picture_vp.queue_free()
 
 # ==============================================================================
 # TP-110 — FIX-GRID-1: a drag that STARTS ON A CARD places; one starting on empty board pans.

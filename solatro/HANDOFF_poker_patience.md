@@ -21,27 +21,111 @@ clamp), `S31b` (the focused zoom — `GAP-017` part 3), `S31c` (clipping, so "ot
 is true of the PIXELS), `S31d` (the picture widened to three grid positions, giving the camera a
 real step). Phase 9 is the owner's call; Phase 10's remaining three steps are last.
 
-⚠⚠ **START HERE: `S31e` IS COMMITTED BUT UNVERIFIED, AND HEAD IS RED.** It is commit `6ed95277`,
-committed deliberately to carry the work across a session boundary — **not because it works.** The
-implementer ran out of turns mid-step: there is **no red-then-green and no by-eye pass** for it. Its
-brief is `GAP-021`'s answer — one grid per grid position, with the furniture NOT duplicated (`Q39`
-has the Entrance follow the camera, `Q40`=(a) has it stay with its committed grid).
-**Finish it — re-verify from scratch — or `git revert 6ed95277` and redo it clean.** The last fully
-verified commit is `58b223aa`.
+⚠⚠ **START HERE: `S31e` IS COMMITTED, UNVERIFIED, AND HAS A REAL PRODUCT DEFECT.** It is commit
+`6ed95277`, committed deliberately to carry the work across a session boundary — **not because it
+works.** There is no red-then-green and no by-eye pass. Its brief is `GAP-021`'s answer — one grid
+per grid position, furniture NOT duplicated (`Q39` has the Entrance follow the camera, `Q40`=(a) has
+it stay with its committed grid).
 
-⚠ **THE TREE AS LEFT IS RED — measured, 2 failures, both in GRID VIEW:**
+⚠ **THE COMMIT MESSAGE UNDERCOUNTS THE DAMAGE. Measured by controlled comparison — same box, same
+poisoned settings, only the code varying:**
+
 ```
-precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one (TP-140)
-  -- grid 0 false grid 2 false
-...and that grid is in frame -- [0]
-GRID VIEW: 176 passed, 2 FAILED of 178
+58b223aa (pre-S31e): 3802 passed, 2 FAILED   GRID VIEW 178/178, INTERACTION 52/52, GRID LAYOUT 69/71
+6ed95277 (S31e):     3790 passed, 5 FAILED   GRID VIEW 176/178, INTERACTION 51/52, GRID LAYOUT 69/71
 ```
-**Both are EXPECTED REACTORS, not mysteries**: spreading the grids one per position is exactly what
-stops a neighbour being in frame beside the middle one, so `TP-140`'s precondition and its companion
-check describe the OLD layout. They need re-measuring against the new one — which is the
-"expect reactors and investigate each" work the step did not reach. ⚠ **Re-measure them; do not
-loosen them**, and check the rest of the reactor list (`TP-101`, `TP-103`, `TP-106`, `TP-113`,
-`TP-138`, `TP-139`, `TP-141`) at the same time.
+GRID VIEW totals 178 in BOTH runs, so nothing aborted and the comparison is sound.
+
+**`S31e` introduced THREE failures, not two:**
+1. `GRID VIEW: precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one
+   (TP-140) -- grid 0 false grid 2 false`
+2. `GRID VIEW: ...and that grid is in frame -- [0]`
+3. ⚠⚠ `INTERACTION: a mouse click over a card emits its selection -- 0` — **UNDOCUMENTED IN THE
+   COMMIT MESSAGE, and it is the player's primary verb.**
+
+⚠ **(3) IS A TEST-FIXTURE RACE, NOT A PRODUCT DEFECT — MEASURED, and the first reading was wrong.**
+The click LANDS (the viewport's focus owner after it is the correct control), which rules out rects,
+routing, `mouse_filter` and `S31c`'s clipping. The gate that fails is in `_on_gui_input`
+(`UI/play_area.gd:973-980`): `focused_control == moused_hovered_control`, and
+`moused_hovered_control` (`UI/play_area.gd:35`) is cleared by a native `mouse_exited` between the
+hover event and the button-down.
+**Why: `test_interaction.gd` waits 2 FRAMES after `focus_grid(0)`, and the Entrance track eases for
+~11.** Measured series, no input, `entrance_h_track.position.x`:
+```
+3 grids: -94.93  26.22  31.08  34.92  36.52  37.72  38.29  38.65  38.78  38.81  38.8112 (flat)
+1 grid:  173.59 354.75 357.88 360.63 362.10 363.13 363.83 364.27 364.54 364.72 364.8052 (flat)
+```
+**It SETTLES** — asymptotic, bit-stable by frame ~11-13, and it reproduces at 1 grid exactly as at 3,
+so this is NOT the `_physics_process` never-settles trap and NOT specific to the multi-position
+spread. Causal proof: the same fixture clicking after 2 frames gets `selections: 0`; waiting 15
+frames for the ease to converge gets `selections: 1`. **The Entrance moving on a view change is
+`Q39` working as designed** (*"follows the camera, think of it like a player hand"*).
+⚠ **The fix is `_settle_layout`, never a frame count and never a widened tolerance** — the standing
+rule below already says so. ⚠ **STILL OPEN: why the pre-`S31e` code won this race.** Nobody has
+diffed the ease DURATION or confirmed the old `_sync_entrance_x` converged faster. Until that is
+answered, "stale fixture" is the leading reading, not a proven one.
+⚠ **Worth an owner glance, not blocking:** for ~11 frames after a view change a click on an Entrance
+card silently does nothing, because the card is sliding out from under the cursor. Defensible (the
+card is visibly moving) but it is a real player-facing wart.
+
+⚠ **THE SECOND GRID VIEW FAILURE WAS MISFILED.** It is **`TP-109`'s swipe test**, not a `TP-140`
+companion — the commit message and the earlier handoff text both got this wrong. `TP-109` and the
+INTERACTION failure are now **FIXED and green**. What remains red is `TP-140`'s own two OUT-OF-VIEW
+assertions, and they are **blocked on `GAP-022`, not on calibration:**
+
+⚠⚠ **`S31e` SILENTLY STRETCHED `PlayContainer` TO THE WHOLE PICTURE — SEE `GAP-022`.**
+`Levels/game_view.tscn` went from `anchors_preset = 0, offset_left = 423, offset_right = 1142` to
+`anchors_preset = -1, anchor_right = 1.0`. Measured board window: **x (0.0 .. 3640.476)** of a 3656
+px picture. **No grid can leave a window that wide**, so `TP-140`'s assertions and `H22` are
+STRUCTURALLY UNSATISFIABLE, and `S31c`'s clip has nothing left to clip against. This is `GAP-021`
+option (a) implemented without a ruling, against `GAP-021`'s own instruction to *"report it rather
+than assuming"*. **The two assertions are left RED, unweakened and undeleted** — a check that cannot
+express its intent must not be softened into passing.
+⚠ **OWNER HAS PULLED `H20` (`S33`) AHEAD OF `S32`**, which bears directly on `GAP-022`: until the
+wall re-packs, what a "window" of the picture IS remains undefined, so (a) vs (b) cannot be answered
+against stable geometry.
+
+⚠⚠ **THE PICTURE RENDERS HORIZONTALLY SQUASHED TO ~1/3 WIDTH ON THE REAL WALL — CONFIRMED BY EYE.**
+`wall_packer._picture_size()` derives the packed width from `design_size.y * window_aspect` and
+**never reads `design_size.x`**, so a 3656x685 design packs into a ~1218x685 wall rect and
+`wall_picture._rescale_screen()` scales the sprite **(0.333, 1.0)**. Cards read as unreadable
+vertical slivers; the Wall shell's own buttons are unaffected, which is the control. **Latent since
+`S31`/`S31d`, nothing to do with `S31e`; `S33`'s `H20` owns it.**
+⚠ **IT IS THE STEADY STATE, NOT A SETTLING ARTEFACT — TESTED, because that was the obvious
+objection.** Sampled every frame for 120 frames with no input: `%Screen.scale` reads
+**`(0.33309, 1.0)` flat from frame 1 to frame 120**, `rect.size` and `viewport.size` likewise, and a
+settle-until-still wait reports `still_moving_after_sample = false`. **The discriminating detail: the
+GRIDS do settle across that window** (frame 1 has them bunched mid-layout, frame 120 has all three
+spread with the hand dealt) **and the squash is pixel-identical in both frames** — so something was
+moving, and it was not this. `_rescale_screen()` is called synchronously from `build()`/`focus()`/
+`update_wall_view_size()`, never from a tween, so no time-based mechanism exists on this path.
+`wall_transition_delay` is read only by `WallTransition` and `animate_reposition`, neither of which
+is on it — the poisoned `0.001` does not mask a real transition here.
+⚠⚠ **AND IT PASSED TWO BY-EYE GATES BECAUSE EVERY SHOT WAS BLIND TO IT.** `grid_zoom_shot` and
+`grid_layer_shot` both instantiate `GameView` DIRECTLY and never touch the `WallPicture` sprite path.
+**`Tests/Visual/wall_game_squash_probe.{gd,tscn}` (untracked) is the only instrument that renders the
+product's REAL framing** — through `res://UI/Wall/wall.tscn` with a real `WallPicture` and a real
+`GameView` as the live screen. ⚠ **PROMOTE IT INTO A PERMANENT NAMED SHOT** (not registered in
+`all_tests.tscn`; the suite stays at 45) or this blind spot reopens. Delete the throwaway
+`Tests/Visual/interaction_click_probe.{gd,tscn}` once done.
+
+⚠⚠ **THERE IS NO GREEN COMMIT ON THIS BRANCH. `58b223aa` IS NOT GREEN EITHER** — it reproduces 2
+GRID LAYOUT failures across two runs, so they are reproducible, not flake, and they are **NOT the
+documented flaky family** (neither is the Entrance-stacks push-up nor the lowest-card-clears-Entrance
+assertion):
+```
+GRID LAYOUT: ...the arithmetic lands on the same point the card's own CONTROL does, at every
+             height -- worst 116.0 px out
+GRID LAYOUT: TP-85: caught mid-growth, the row is PART WAY to its new height -- row 78.0,
+             was 58.0, will be 78.0
+```
+⚠ **LIVE CANDIDATE CAUSE — `user://settings.tres` IS POISONED AND STAYS POISONED.** After a run that
+exited 0 it holds test values (`base_delay = 0.1`, `wall_transition_delay = 0.001`) and its **mtime
+is MID-run, not at the run's end** — so the suite writes test settings at start and the restore does
+not run on the normal exit route. This is not a one-off from some killed run; every run leaves it.
+A geometry-affecting setting moves every row on the board, which is why this is a candidate for the
+116 px failure. **NOT YET INVESTIGATED. Do not overwrite `settings.tres` by guessing — those may be
+the owner's real values.** Recover a pristine default from the repo, or ask.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
@@ -64,7 +148,9 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
 
 ## Environment — traps that have each cost real time
 
-- Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records it per box. ⚠ **A cache built
+- Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records it per box. ⚠ That table
+  still lists **4.7.1** for Box A, which is STALE — Box A now has
+  `Godot_v4.7.2-stable_win64_console.exe` and the suite runs on it. ⚠ **A cache built
   by a different Godot build CRASHES the suite** with `0xC0000005` and no banner. Fix:
   `<godot> --headless --path solatro --import`, then re-run. Do that once on a machine you have not
   run the suite on before.
@@ -453,7 +539,7 @@ and the plan's dependency note — Phase 10 depends on everything and runs last 
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — eighteen filed, seventeen resolved, ONE OPEN
+## Gaps — twenty-two filed, ONE OPEN (`GAP-018`); `GAP-022` = (a)
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
@@ -513,6 +599,10 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
     (`lowest card bottom 531.0 vs Entrance top 501.0`). Measured: **both failed on one overseer run
     and both passed on the very next run of the same tree**, which then read
     `ALL 45 SUITES: 3782 CHECKS PASSED`.
+  - `test_grid_view.gd` **`TP-112`** *"...and it TRAVELLED there — mid-move it is further off centre
+    than at rest"* (`94.2 px mid-move vs 93.8 px at rest`). **Measured 1 failure in 3 runs of one
+    unchanged tree** — sub-pixel margin, same shape. NOT fallout from the `TP-140`/`TP-109` fixture
+    change, which was the competing reading and was ruled out by re-running.
   ⚠ **The fix is a settle-until-still wait (`_settle_layout` / `_settle_scroll` already exist and
   are the right instrument), NEVER a widened tolerance** — widening would silence the only thing
   telling you the geometry had not finished moving.
@@ -553,30 +643,58 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-1. ⚠ **DECIDE `S31e` FIRST — HEAD IS RED.** It is committed as `6ed95277` but unverified (see
-   State). Finish it with a real red-then-green and a by-eye pass, or `git revert 6ed95277` and redo
-   it from `GAP-021`'s answer. **Nothing below is safe to start while that is undecided.**
-2. **`TP-105`** — the camera steps between the 3 grid positions. Parked through four steps; it
-   becomes writable the moment `S31e` puts a grid in each position. **Its measurement is the gate:
-   does a pan land on a GRID, or on background?**
-3. **`S32`** — the saved pan and `resting_state()` (`GAP-020`=(b): resize first, then implement
-   `H18` literally). `TP-116`'s claim is already TRUE of the scroller and just needs asserting;
-   `TP-115`/`TP-117` need the camera to have a pose family.
-4. **`S33`** (`H20`, `H21` — the wall re-packs, Info mode) and **`S34`** (`wall_editor` drives every
-   new wall knob, `Q186`=a). ⚠ `S33`'s `H21` was predicted to be blocked by the same root cause as
-   `TP-105`; re-check it once `S31e` lands.
-5. **Then Phase 9** (owner's call) and **Phase 10's remaining `S40`, `S41`, `S44`.**
+⚠ **`S31e` IS PART-LANDED AND BLOCKED ON `GAP-022`, NOT ABANDONED.** Verified by two overseer runs
+of the tree as it stands (quoting the second):
+```
+GRID VIEW 176/178   INTERACTION 52/52   GRID LAYOUT 69/71 (pre-existing)
+```
+Fixed and green: the INTERACTION click race (`_settle_layout` on the Entrance track — the ease is
+UNCHANGED between the two trees, the Entrance simply travels ~151 px instead of ~25) and `TP-109`'s
+swipe. Still red and DELIBERATELY NOT WEAKENED: `TP-140`'s two out-of-view assertions, which now
+fail with a message naming the real cause (`vs window (0.0, 3640.476)`) instead of a vacuous
+precondition.
+
+1. ⚠⚠ **`GAP-022` = (a) — ANSWERED. `PlayContainer` KEEPS the stretch, and "out of view" now means
+   OUTSIDE THE CAMERA'S RECT, not outside the scroll container.** ⚠ **This makes the camera
+   load-bearing before `S31e` can close**: `TP-105` stops being a step that follows `S31e` and
+   becomes part of what makes it verifiable. `S31b`'s zoom and `S31c`'s clip must be re-pointed at
+   the camera; ⚠ **`TP-141`'s painted-pixel evidence must be RE-EARNED, not re-labelled** — a
+   position-based assertion passed both before and after the defect it once proved. `TP-140` is then
+   satisfiable and must be re-measured, still not loosened. ⚠ **The HUD is off screen at rest under
+   this answer and NOTHING RULES ON IT** — `Q39` covers only the Entrance. Raise a gap rather than
+   assuming; assuming is exactly what `S31e` did.
+2. **`S33`'s `H20` — the wall re-packs around the wider picture.** Pulled forward by owner ruling.
+   ⚠ **This is now the gating step for the whole phase**: until it lands the product renders
+   horizontally squashed to ~1/3 width, so every by-eye gate on this branch is either blind (the
+   `GameView`-direct shots) or shows a broken board. `_picture_size()` never reading `design_size.x`
+   is the mechanism.
+3. **Promote `Tests/Visual/wall_game_squash_probe.{gd,tscn}` into a permanent named shot** — it is
+   the ONLY instrument that renders the product's real framing, and its absence is why the squash
+   passed two by-eye gates. Not in `all_tests.tscn`; the suite stays at 45. Delete
+   `Tests/Visual/interaction_click_probe.{gd,tscn}`, whose findings are recorded above.
+4. **Chase the `user://settings.tres` restore bug** (owner ruling: chase it). The suite writes test
+   values at run start and the restore does not run on the normal exit route. Live suspect for the
+   two pre-existing GRID LAYOUT failures, which are why **there is no green commit on this branch.**
+   ⚠ Do not overwrite the file by guessing — recover a pristine default from the repo or ask.
+5. **`TP-105`** (the camera steps between grid positions), then **`S32`**, then `S34`.
+6. **Then Phase 9** (owner's call) and **Phase 10's remaining `S40`, `S41`, `S44`.**
+
+⚠ **THIS FILE IS ~720 LINES AGAINST A ~300-LINE RULE.** Prune it before adding more: the landed-step
+`notes:` blocks are the bulk and their forensics belong in the commits and the gap files.
 
 **Open, not blocking, owner's call when convenient:**
+- **The rest of the HUD at rest** — under `GAP-022`=(a) the Deck, score column and buttons sit at
+  the picture's edges while the camera rests on the middle position. Reachable only by panning,
+  which no answered node asks for. Needs a ruling before `S32`.
 - **`GAP-018`** — `grid_swipe_threshold_mm`'s 8 mm default is 30.2 px at 96 DPI, under its own
   `[32, 96]` clamp, so the knob is dead at its default. `Q190`=(a) fixes the clamp and the settings
   table fixes the default; they disagree.
 - **`grid_buffer_px` is 220 RAW px against a 216 px grid block** — §1i's table is stated at
-  `card_scale` 2.5 and the game ships at 1.0. The owner has twice declined to rule. It is most of
-  what makes the grid pitch 846 px.
-- **Two cosmetic residues**: ~8 px of the focused grid's top row is cut (the zoom overshoots its
-  window by 7.8 px; clipping turned overdraw into a cut), and the COMBO label draws over the End
-  button.
+  `card_scale` 2.5 and the game ships at 1.0. The owner has twice declined to rule.
+- **For ~11 frames after a view change a click on an Entrance card silently does nothing**, because
+  the card is easing out from under the cursor. Defensible (the card is visibly moving), but real.
+- **Two cosmetic residues**: ~8 px of the focused grid's top row is cut, and the COMBO label draws
+  over the End button.
 
 ### Opening prompt for the next session
 

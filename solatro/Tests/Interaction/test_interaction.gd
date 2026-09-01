@@ -94,7 +94,20 @@ func _setup_view() -> void:
 	# orientation and places nothing; selection and placement — which is what this suite drives —
 	# only happen once a grid is focused.
 	pa.focus_grid(0)
-	await frames(2)
+	await _settle_layout()
+
+## Wait for the Entrance to STOP MOVING, never for a fixed frame count -- it follows the camera
+## (`_sync_entrance_x`) and a click landing mid-ease races a native `mouse_exited` the moment the
+## hovered control slides out from under the cursor. Same shape as the grid-view suite's helper.
+func _settle_layout() -> void:
+	var last := INF
+	var waited := 0.0
+	while waited < 2.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now := pa.entrance_h_track.position.x
+		if is_equal_approx(now, last): return
+		last = now
 
 func _teardown_view() -> void:
 	view.queue_free()   # frees its Game child too
