@@ -36,6 +36,7 @@ func _ready() -> void:
 	await run_the_board_rests_positioned_test()
 	await run_the_focused_grid_is_as_tall_as_its_window_test()
 	await run_focusing_takes_the_other_grids_out_of_view_test()
+	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
 	await run_one_scroll_container_on_the_board_test()
@@ -59,7 +60,9 @@ func _stand_up() -> GameView:
 	return await _stand_up_grids(3)
 
 ## The same stand-up at any grid count: FIX-GRID-3 at 3, FIX-GRID-1 at 1.
-func _stand_up_grids(n: int) -> GameView:
+## `host` is where the view is mounted; the suite itself by default. TP-141 passes a SubViewport of
+## the picture's own size, because a rendered pixel is only the product's pixel inside one.
+func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
@@ -69,7 +72,8 @@ func _stand_up_grids(n: int) -> GameView:
 	run.pending_node_id = 2
 	seed(20260829)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
+	var mount : Node = host if host else self
+	mount.add_child(view)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = view.game
@@ -612,6 +616,121 @@ func _overlaps_window(pa: PlayArea, gi: int) -> bool:
 	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
 	var win := _window_x(pa)
 	return r.end.x > win.x and r.position.x < win.y
+
+# ==============================================================================
+# TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,
+# the other grids are OUT OF VIEW).
+#
+# ⚠ **THIS ASKS WHAT WAS PAINTED, NOT WHERE ANYTHING SITS, AND THAT IS THE WHOLE POINT.** TP-140
+# already proves the neighbours are positioned outside the window, and that was TRUE while a whole
+# grid still drew across the side panels — the board's scroll container did not clip, so a grid
+# outside its window was painted over the Deck button and the score column all the same. A check
+# built on `_screen_rect` alone passes either way and proves nothing.
+#
+# So this one RENDERS the board and asks whether HIDING a non-focused grid changes any pixel
+# outside the window. A grid whose paint is contained changes none; a grid that paints there
+# changes many.
+#
+# ⚠ IT NEEDS THE PICTURE'S OWN VIEWPORT. The board's geometry is only the product's inside a
+# viewport of `game_picture_design_size` (grid_zoom_shot records why), and the suite's own root
+# viewport holds every other suite's nodes at once.
+# ==============================================================================
+
+## The renderer guard. A dummy renderer rasterizes nothing, so every claim below would be vacuous —
+## reported as a FAILURE with the fix in the message, never as a skip.
+func _check_renderer() -> bool:
+	var display := DisplayServer.get_name()
+	var live := display != "headless"
+	check(live, "the run has a real renderer, so what is PAINTED can be checked at all (TP-141)",
+			"DisplayServer is '%s' — re-run all_tests.tscn WITHOUT --headless" % display)
+	return live
+
+func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
+	behavior_section("A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE WINDOW")
+	if not _check_renderer(): return
+	var vp := SubViewport.new()
+	vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(vp)
+	var view := await _stand_up_grids(3, vp)
+	var pa := view.play_area
+	await _settle_layout(view)
+
+	# THE INSTRUMENT CHECK, taken where a grid is SUPPOSED to paint: in the overview, hiding a grid
+	# has to change the picture. An assertion that counts zero changed pixels passes trivially on a
+	# probe that can see nothing at all.
+	pa.open_zoomed_out()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	var whole := Rect2i(Vector2i.ZERO, vp.size)
+	var seen := await _paint_delta(view, vp, 0, whole)
+	check(seen > 0,
+			"instrument check: the probe SEES paint — hiding a grid changes the rendered picture "
+			+ "(TP-141)",
+			"%d px changed" % seen)
+
+	pa.focus_grid(1)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(_cut_off_px(pa, 1) <= 1.0,
+			"precondition: the focused grid is wholly in frame, so the window is where it belongs",
+			"%.1f px off screen" % _cut_off_px(pa, 1))
+	for gi : int in [0, 2]:
+		var outside := await _paint_delta(view, vp, gi, _outside_window_band(pa, vp, gi == 0))
+		check(outside == 0,
+				"grid %d paints NOTHING outside the board window while another grid is focused "
+				% gi + "(TP-141)",
+				"%d px changed outside the window" % outside)
+	await _tear_down(view)
+	vp.queue_free()
+
+## The strip of the picture on one side of the board's window: everything the clip must keep the
+## board out of. ⚠ Measured off the scroll container's OWN rect, not `_window_x` — the clip is to
+## that rect, and `_window_x` steps in off the right edge by the scrollbar, which is inside it.
+func _outside_window_band(pa: PlayArea, vp: SubViewport, left: bool) -> Rect2i:
+	var r := _screen_rect(pa.scroll_container)
+	if left: return Rect2i(0, 0, maxi(int(floorf(r.position.x)), 0), vp.size.y)
+	var from := mini(int(ceilf(r.end.x)), vp.size.x)
+	return Rect2i(from, 0, vp.size.x - from, vp.size.y)
+
+## How many pixels of `area` CHANGE when grid `gi`'s panel is hidden — the render's own answer to
+## "does this grid paint here". Outside the window nothing else moves when a grid goes: the side
+## panels are laid out beside the scroll container, not inside it.
+func _paint_delta(view: GameView, vp: SubViewport, gi: int, area: Rect2i) -> int:
+	var panel := view.play_area.grid_container.get_child(gi) as Control
+	panel.visible = false
+	await _settle_layout(view)
+	var without := await _shot(view, vp)
+	panel.visible = true
+	await _settle_layout(view)
+	var shown := await _shot(view, vp)
+	return _differing_px(shown, without, area)
+
+## One rendered frame of `vp`, read back. Two waits: the first carries the layout change into a
+## drawn frame, the second is the frame that is read.
+func _shot(view: GameView, vp: SubViewport) -> Image:
+	await RenderingServer.frame_post_draw
+	CardEnvironment.CURRENT = view.game
+	await RenderingServer.frame_post_draw
+	CardEnvironment.CURRENT = view.game
+	return vp.get_texture().get_image()
+
+## A small tolerance, not an equality: the render target is 8 bit and a channel can land a step
+## either side. Same reasoning as `PixelProbe.COLOUR_EPS`, which is where it is written down.
+const PAINT_EPS := 2.5 / 255.0
+
+## How many pixels of `area` differ between two frames.
+func _differing_px(a: Image, b: Image, area: Rect2i) -> int:
+	var clipped := area.intersection(Rect2i(Vector2i.ZERO, a.get_size()))
+	var n := 0
+	for y : int in range(clipped.position.y, clipped.end.y):
+		for x : int in range(clipped.position.x, clipped.end.x):
+			var p := a.get_pixel(x, y)
+			var q := b.get_pixel(x, y)
+			if absf(p.r - q.r) > PAINT_EPS or absf(p.g - q.g) > PAINT_EPS \
+					or absf(p.b - q.b) > PAINT_EPS or absf(p.a - q.a) > PAINT_EPS:
+				n += 1
+	return n
 
 # ==============================================================================
 # TP-102 - FIX-GRID-3: the board edge bounces.

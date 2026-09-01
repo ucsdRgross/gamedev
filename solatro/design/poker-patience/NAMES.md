@@ -277,4 +277,5 @@ divided by the same factor so the window keeps its pixels.
 | `PlayArea._apply_board_zoom_rect(strip_h)` | method | |
 | `PlayArea._board_window_local()` / `_board_content_origin()` / `_board_local_rect(c)` | method | Zoom-aware geometry. ⚠ Every site that added a measured GLOBAL position to a LOCAL size had to become zoom-aware; the suite's `_window_x` / `_cut_off_px` mixed the two and now read the engine's global transform. |
 | `PlayArea._board_strip_h` | `float` | |
+| `Tests/Visual/grid_clip_flight_shot.gd` / `.tscn` | instrument | A card IN FLIGHT between the Entrance and a grid, inside the real picture: a burst of consecutive frames, plus a top-row stack and a jump. The Entrance sits outside the board's clipped scroll container and the grids inside it, so a placement crosses that edge and only a moving frame shows it. Not registered in `all_tests.tscn`. |
 | `Tests/Visual/grid_zoom_shot.gd` / `.tscn` | instrument | ⚠ **The only shot that renders inside the REAL picture** (`game_picture_design_size`), rather than `grid_layer_shot`'s bare 1152x648 window. Shoots both modes. Not registered in `all_tests.tscn`. |

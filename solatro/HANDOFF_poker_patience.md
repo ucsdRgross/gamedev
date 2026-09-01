@@ -332,6 +332,29 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
     made to read the SCROLLER's window, which the Entrance's RESERVATION carves out, while the floor
     must clear its ACTUAL height. They differ exactly when the Entrance stacks. **So that family is
     not pure noise: it caught a real bug. Investigate before dismissing a failure there.**
+- id: S31c
+  description: 'Clip the board scroll container, so "other grids out of view" is true of the PIXELS.'
+  status: done
+  evidence: >
+    Overseer-verified: ALL 45 SUITES: 3801 CHECKS PASSED, zero failures. GRID VIEW 170 -> 175.
+    doc_check 0 errors.
+    RED: 1 FAILED, and per-suite counts were identical across the two runs for all 45 except GRID
+    VIEW (the added check) and the randomised BOARD FUZZ -- nothing aborted.
+    BY EYE, on a mid-flight frame the overseer looked at: **the flying card is drawn WHOLE, no cut
+    edge**, and the left column of UI (Deck, Goal, Total, skill text, Discard, Rules) is clean where
+    a whole grid used to paint over it.
+  notes: >
+    ⚠ **TP-141 COUNTS PAINTED PIXELS, NOT GEOMETRY -- and that is the whole point.** The neighbours
+    were ALREADY positioned outside the window before this fix, so any position-based assertion
+    passes both before and after and proves nothing. It renders into a picture-sized viewport and
+    counts the pixels OUTSIDE the container's rect that change when a non-focused panel is hidden:
+    **100,908 px red, 0 px green.**
+    ⚠ **CLIPPING DOES NOT CUT A CARD IN FLIGHT** -- the risk that made this a decision. Verified by
+    building `Tests/Visual/grid_clip_flight_shot`, which calls the real `place_card_in_grid` WITHOUT
+    awaiting it and saves 14 consecutive frames. A held Entrance card never enters the question: it
+    stays in `EntranceCardLayer`, outside the clip.
+    A jumping card at the top of the board and a hoop bracketing a card near the edge were both
+    checked and draw whole.
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
@@ -431,40 +454,12 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Open bugs
 
-- ⚠⚠ **THE UNCLIPPED BOARD NOW BREAKS THE OWNER'S OWN RULING, AND IT IS THE LAST THING BETWEEN THE
-  CODE AND `GAP-017` PART 3.** The ruling says *"while focused, other grids should be out of view"*.
-  Measured with the zoom in: the neighbours ARE outside the board window (grid 0 ends at x 146.0
-  against a window starting at 423.0; grid 2 starts at 1419.0 against a window ending at 1142.0) —
-  **but `clip_contents = false` still PAINTS them**, and by eye a whole grid draws across the Deck
-  button, the skill text and up to the Goal/Total column. Out of the window, not out of view.
-  ⚠ **The zoom made this WORSE, not moot** — it was a 19 px sliver before `grid_buffer_px`, then a
-  sliced neighbour, and it is now a full grid. Three mechanisms, and they differ observably:
-  **clip** the scroll container (cheapest, but board cards live inside it, so a card animating
-  between the Entrance and a grid would be clipped at the boundary — needs its own verification),
-  **cull** the non-focused panels, or **move** them. **Owner's call; not picked.**
-- ⚠ **THE BOARD'S SCROLL CONTAINER IS EXPLICITLY UNCLIPPED** (`clip_contents = false`), so a board
-  wider than its window PAINTS OVER the surrounding UI — visible in the `S31` n=3 shot, where sliced
-  cards draw across the score column. Pre-existing; it was hidden while the overflow was only 19 px
-  and `grid_buffer_px` exposed it. Options if it is worth fixing: clip the container (a springing or
-  jumping card is then cut at the edge), leave it (the wide picture makes overflow rare), or clip
-  only the cell controls and leave `%CardLayer` free. **Not filed as a gap — raise it if the wide
-  picture does not make it moot.**
-- ⚠ **`TP-105` IS PARKED A SECOND TIME, AND THE ZOOM DISCONFIRMED THE HYPOTHESIS BEHIND `GAP-019`=(e).**
-  Re-measured with the zoom in place: the picture holds **1.44** grid positions where `H22` wants 3,
-  and the board's own window holds **0.85** — the zoom moved that number AWAY from 3 (it was 2.80
-  and 1.65 unzoomed), because neither the picture nor the board window changed size while the grid
-  pitch doubled to 846 px. **The camera still has no grid step to make**, and `GAP-019`'s options
-  (a)/(c) — resizing the picture — remain prerequisites. ⚠ The buffer question feeds straight into
-  it: `grid_buffer_px` 220 against a 216 px grid block is most of what makes the pitch 846.
-- ⚠ **SUPERSEDED, and kept only as the record of what was true before `S31b`:**
-  Owner ruling, verbatim: *"no cutoff grid only holds for focused grid. goal is that focused grid
-  has height matching viewport height. while focused, other grids should be out of view"*.
-  Parts 1 and 2 landed: the board now RESTS positioned on the grid the view is on (`scroll 13.5`,
-  was a raw `0.0`), and the cut-off rule is scoped to that grid. **Part 3 — the focused grid sized
-  to the viewport height, with the other grids out of view — is a SCALE, and Phase 6 ships no
-  zoom by `GAP-016`=(d).** Until it lands, a focused view still shows its neighbours.
-  ⚠ **This is the piece that makes `S26`'s two view modes visually real.** They are currently state
-  plus input consequence only.
+- ⚠ **~8 px OF THE FOCUSED GRID'S TOP ROW IS NOW CUT.** The zoom overshoots its window by 7.8 px
+  (the focused grid's cells measure `y [-4.8 .. 558.0]` against a board window of `y [3.0 .. 558.0]`),
+  and clipping turned that overshoot from "drawn over the DEBUG button row" into "cut". **The
+  overshoot is the ZOOM's, not the clip's** — `focused_board_zoom` sizes the CELL BLOCK to the
+  window, and the row's outline rim sits outside it. Cosmetic, and the fix belongs with the zoom's
+  sizing rather than the clip.
 - ⚠ **`pan_to_grid` measures the scroll container's FULL rect**, so it aims ~4 px right of the
   visible window once the vertical scrollbar shows (measured: the middle grid rests at 775.0 against
   a window centre of 778.5). Deliberately left alone — fixing it moves every pan on the board.

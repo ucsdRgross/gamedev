@@ -246,6 +246,7 @@ watch it fail.
 | TP-138 | The board RESTS positioned on the grid the view is on — not at raw scroll 0 | 5 grids | `GAP-017` | S30 | G |
 | TP-139 | The focused grid is as tall as its window — the zoom is wired to the mode change | 3 grids | `GAP-017` part 3 | S31b | G |
 | TP-140 | Focusing takes the other grids out of the window | 3 grids | `GAP-017` part 3 | S31b | G |
+| TP-141 | A non-focused grid **paints** nothing outside the board window — rendered, not positioned | 3 grids | `GAP-017` part 3 | S31b | G |
 | TP-113 | `design_size` fits exactly 3 grids | — | H1, Q166 | S31 | G |
 | TP-114 | **`SubViewport.size` never exceeds `game_picture_max_render_px`** | `FIX-FULL-15` | H3, Q169 | S31 | G |
 | TP-115 | `resting_state()` returns the saved-pan pose, not the picture centre | — | H18, Q171 | S32 | G |

@@ -28,7 +28,7 @@ grow_vertical = 2
 script = ExtResource("1_34k5y")
 
 [node name="SmoothScrollContainer" type="ScrollContainer" parent="." unique_id=860459358]
-clip_contents = false
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
