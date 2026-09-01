@@ -428,7 +428,22 @@ true now.
     GAP-023=(e): a CONTINUOUS PAN OFFSET crosses the SubViewport boundary, not a grid index.
     Grid step = animate the offset to n * pitch; touch drag = set it from the finger delta; one
     mechanism, so the player cannot feel the seam. THE HORIZONTAL SCROLLBAR MUST BE HIDDEN.
-    ⚠ TWO CLEANUPS OWED BEFORE WIRING: grid_state() is INDEX-shaped and should sit on top of an
+    SLICE 2 LANDED (ed8dfb0b): panned_state() is the OFFSET primitive and grid_state() delegates
+    to it; wall_picture.gd no longer references PlayArea in code.
+    ⚠⚠ GAP-024=(a): THE FOCUSED ZOOM MOVES ONTO THE CAMERA. The SubViewport texture is currently a
+    CLIPPED single-grid slice -- board_zoom scales scroll_container up while _apply_board_zoom_rect
+    pins the on-screen rect to the UNZOOMED window, so off-window content is never rendered. A
+    camera can only crop pixels that exist, which is why TP-105 could not be a re-point.
+    ⚠ TP-139 and TP-141 must RE-EARN their evidence. S31b's identity (focused grid's cells
+    y [3.0..558.0] against a board window of y [3.0..558.0]) is what the camera zoom must reproduce,
+    and H20's sprite scale (1.0, 1.0) must not regress.
+    ⚠⚠ TP-140 WAS RE-POINTED AND THE CHANGE WAS REVERTED ON PURPOSE. The only camera rect reachable
+    from the fixture is RECONSTRUCTED from resting_state(), which knows nothing about grid focus, so
+    it would have stayed GREEN THROUGHOUT THE REWRITE regardless of whether the real camera was
+    correct -- turning the one check that can catch the rewrite into one that cannot.
+    ⚠ THE FIX: the PRODUCT should expose the camera's visible x-range, and the test should read the
+    same thing the product uses. Do it as part of the rewrite.
+    ⚠ RESIDUAL CLEANUP OWED: grid_state() is INDEX-shaped and should sit on top of an
     OFFSET-shaped primitive; and it reuses PlayArea.grid_position_size_px(), giving wall_picture.gd
     a PlayArea dependency it never had -- take the pitch as a parameter like resting_grid.
 - id: S32
@@ -487,7 +502,7 @@ true now.
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — twenty-three filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e)
+## Gaps — twenty-four filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(a)
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
