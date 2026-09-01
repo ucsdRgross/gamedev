@@ -293,6 +293,7 @@ text = "5
 label_settings = SubResource("LabelSettings_xc73h")
 
 [node name="Preview" type="Control" parent="SceneRoot" unique_id=1233425980]
+unique_name_in_owner = true
 anchors_preset = 0
 offset_left = 65.0
 offset_top = 391.0

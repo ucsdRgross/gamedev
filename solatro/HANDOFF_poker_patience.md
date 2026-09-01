@@ -250,6 +250,32 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
   independent draw orderings sharing one index space re-queue every frame until the stack
   overflows.**
 
+**The view, the camera and the wall**
+- ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`.** The viewport's focus-neighbour
+  search runs in the GUI pass and CONSUMES any arrow that finds a neighbour, so an
+  `_unhandled_input` reader never runs while a cell has focus. Arrows are MODE-DEPENDENT
+  (`Q162`=b): cells when FOCUSED, whole grids in the OVERVIEW.
+- **The zoom level stack is focused -> overview -> wall.** Back zooms out one level and, once in the
+  overview, FALLS THROUGH so `wall_back` still reaches the wall. That fall-through is the case the
+  owner's example does not cover.
+- **A board narrower than the window parks LEFT** -- a `ScrollContainer` hands its content the
+  content's own minimum width. Fixed by `SIZE_EXPAND_FILL` on `TopLevelVBox`, **HORIZONTAL ONLY**;
+  the floor is `ALIGNMENT_END` and must stay untouched.
+- ⚠ **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** -- a `Container` rewrites its
+  children's scale on every sort. Its rect is divided by the same factor so the window keeps its
+  pixels. **The scale is NOT animated**: the scroller clamps every aim against the reach it can see
+  at that instant, so an eased scale destroys the aim issued with it.
+- ⚠ **`SubViewport.size` LIES WHEN OVERSIZED** -- past the GPU cap the framebuffer is destroyed and
+  the size set to 0 internally while the GDScript property still reports what it was given. Assert
+  the pure `clamped_render_size()` and that the writer engaged `size_2d_override`, never a read-back.
+- ⚠ **`focused_scale()` RESTS THE CAMERA BY OVERFILLING**, so a picture whose aspect IS the window's
+  is framed WHOLE at rest at any size. **A wider picture alone gives the camera no step** -- the
+  aspect minimum applies to ONE GRID POSITION, and the picture is `grid_max_count` positions wide.
+- ⚠ **A BY-EYE INSTRUMENT THAT DUPLICATES PRODUCTION SETUP DRIFTS FROM IT** and then certifies the
+  wrong thing. `wall_game_squash_probe` builds its `PictureEntry` from `Wall.load_layout()` for
+  exactly this reason. `grid_zoom_shot`/`grid_layer_shot` instantiate `GameView` DIRECTLY and are
+  structurally blind to the whole wall composite -- that blindness is why the squash passed two gates.
+
 **Tests**
 - **A test must wait for the geometry to STOP MOVING** (`_settle_layout`), not for a frame count: a
   container sorts its children a frame after the rebuild that changed them.
@@ -266,14 +292,15 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
 
 ## Tasks
 
-⚠ **The stale-step tooling only recognises `S<digits>`.** `designloop/src/gaps.mjs::planSteps()`
-does NOT see the lettered ids (`S19b`, `S20b2b`, `S20c`, …), so a gap whose blast radius names a
-lettered step will not appear in its stale list. The lettered convention predates this stream and is
-used in `PLAN.md` too; renumbering would break its citations. Check lettered steps by hand.
+⚠ **The stale-step tooling only recognises `S<digits>`.** `designloop/src/gaps.mjs::planSteps()` does
+NOT see the lettered ids (`S19b`, `S20b4b`, `S31b`...), so a gap whose blast radius names a lettered
+step will not appear in its stale list. Check lettered steps by hand.
+
+⚠ **LANDED STEPS CARRY NO FORENSICS HERE.** The evidence is in the commit messages, the decisions in
+the gap files, and the durable rules in "Standing rules" above. This ledger records only what is
+true now.
 
 ```yaml
-# --- LANDED. Evidence is in the commit messages; forensics are in the gap files; the durable
-# --- rules are in "Standing rules" above.
 - id: S1
   description: 'BoardCoord; GridData and grid storage; the position index; the cell mutation API.'
   status: done
@@ -289,220 +316,113 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
 - id: S19
   description: 'THE REBUILD: rules1 becomes the grid game; six suites follow it.'
   status: done
-- id: S35
-  description: 'Phase 8: every placement an undo step; pending_action replay; validate() aliasing.'
-  status: done
 - id: S19b
   description: 'The legacy coordinate migration -- SUPERSEDED, folded into S20b by GAP-009.'
   status: superseded
-- id: S37
-  description: 'The closing pass: adversarial review, /simplify, /docs; CARD_SEPARATION re-derived.'
-  status: done
 - id: S20
-  description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, the zone renderers deleted, the pinned Entrance.'
+  description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, zone renderers deleted, the pinned Entrance.'
   status: done
-  notes: >
-    Covers S20b1-S20c. Game.next()/_perform_next() STAY -- only the BUTTON retired. ⚠ S20bDraw was
-    found BY EYE through 43 green suites: a card drew BEHIND its own cell.
+  notes: 'Covers S20b1-S20c. Game.next()/_perform_next() STAY -- only the BUTTON retired.'
 - id: S20b4b
-  description: 'The layering port: the hoop split and the reveal both take a BoardCoord; 5 fixtures ported.'
+  description: 'The layering port: hoop split and reveal both take a BoardCoord; 5 fixtures ported.'
   status: done
-  notes: >
-    All three sub-steps landed. PlayArea.coord_of_data is DELETED -- GameData.grid_position_of
-    already answered for the whole board. The three Entrance hoop tests are deliberately NOT ported:
-    porting them would delete coverage rather than add it.
+  notes: 'The three Entrance hoop tests are deliberately NOT ported -- porting would delete coverage.'
 - id: S21
   description: 'PHASE 5, the flipped board: upward stacks, eased row heights, the spring, score labels.'
   status: done
-  notes: >
-    Covers S21-S25. ⚠ TP-93 is a RATCHET against grid subtotals: it passes trivially and fails the
-    day a panel displays one, and it proves it can SEE labels before asserting none is a subtotal.
+  notes: 'Covers S21-S25. TP-93 is a RATCHET against grid subtotals -- it proves it can SEE labels first.'
 - id: S21settings
   description: 'Tests own the settings they test with, and sweep the range. SETTINGS RANGE suite.'
   status: done
-  notes: >
-    Owner ruling: "tests should have its own settings it tests with over range of possible settings
-    values, that way tuning settings wont break tests, and tests that any setting is valid."
-    Verified: user://settings.tres byte-identical after a full run AND after one killed by its
-    timeout -- the damage this fixes.
-- id: S42
-  description: 'PHASE 10, CSV HALF, taken out of order: CARD_CATALOG axis columns, superseded marks.'
+- id: S35
+  description: 'Phase 8: every placement an undo step; pending_action replay; validate() aliasing.'
   status: done
-  notes: >
-    ⚠ THE AXIS COLUMNS ARE KEYWORD-DERIVED FROM THE EFFECT TEXT, NOT HAND-JUDGED -- a filter aid, not
-    a contract; nothing should branch on them. `scope` is the exception: only `grid-local` and
-    `global` are legal, per the owner. 378 rows -> 599.
+- id: S37
+  description: 'The closing pass: adversarial review, /simplify, /docs; CARD_SEPARATION re-derived.'
+  status: done
+- id: S42
+  description: 'PHASE 10, CSV HALF, out of order: CARD_CATALOG axis columns, superseded marks.'
+  status: done
+  notes: 'AXIS COLUMNS ARE KEYWORD-DERIVED, a filter aid, NOT a contract -- nothing may branch on them.'
 - id: S43
   description: 'The draft appended, the post-grid curated effects CSV, the accepted-ideas CSV, blinds.'
   status: done
-  notes: >
-    ⚠ COVERAGE IS MECHANICALLY PROVEN, not asserted: every row cites its source line and a checker
-    expands the ranges -- 2788 non-blank lines, none missed. NEW, not in PLAN.md: blinds.csv, 90 rows.
-    ⚠ EVERY BLIND PAYS FOR PLAYING INTO IT (owner ruling); asserted: no empty `payoff`.
+  notes: 'EVERY BLIND PAYS FOR PLAYING INTO IT (owner ruling); asserted: no empty payoff.'
 
-# --- PHASE 6: the view. PLAN.md section 3; flowchart H is DESIGN.md section 36.
+# --- PHASE 6: the view. PLAN.md section 3; flowchart H is DESIGN.md section 36. ALL LANDED.
 - id: S26
   description: 'Two view modes; opens zoomed out; a click in the overview ORIENTS instead of placing.'
   status: done
-  evidence: 'Commit 842e95c5. Overseer-verified green; TP-97, TP-98.'
-  notes: >
-    ⚠ Q147=b is the discriminating case: in the overview a click FOCUSES and must NOT place. Opening
-    zoomed out runs in `_ready()`, deliberately NOT `setup_gui()`, which is also the undo-rebuild
-    path and would zoom out on every undo. PLAN.md §3 also lists H22 here; TEST_PLAN routes H22's
-    only assertion (TP-105) to S31, and the test plan won.
 - id: S27
   description: 'Back/Forward zoom as a level stack; discrete centred panning; edge bounce.'
   status: done
-  evidence: 'Commit 4cf42f8e. Overseer-verified green; TP-99 - TP-103.'
-  notes: >
-    ⚠ THE LEVEL STACK reconciles Q148 with Q187: focused -> overview -> wall. Back zooms out one
-    level and, once in the overview, FALLS THROUGH so wall_back still reaches the wall. That
-    fall-through is the case the owner's example does not cover.
-    ⚠ TP-103 CAUGHT A REAL DEFECT: a board narrower than the window parked LEFT, because a
-    ScrollContainer hands its content the content's own minimum width. Fixed by
-    `size_flags_horizontal = SIZE_EXPAND_FILL` on TopLevelVBox -- HORIZONTAL ONLY; the floor is
-    ALIGNMENT_END and is untouched.
 - id: S28
   description: 'The one-scroll-container ratchet; >3 grids shifts which are in frame.'
   status: done
-  evidence: 'Commit 7d114a0a. Overseer-verified green; TP-104, TP-106. NO product code changed.'
-  notes: >
-    ⚠ TP-104 PROVES ITS INSTRUMENT FIRST -- it asserts the finder can SEE more than one
-    ScrollContainer before asserting the board holds exactly one. An assertion that counts zero
-    things passes trivially.
-    ⚠ TP-106 reaches the 4+ grid case Q7's cap hides by standing up five grids directly:
-    `grid_max_count` governs UNLOCKING, not `Board.add_grid`.
+  notes: 'NO product code changed. grid_max_count governs UNLOCKING, not Board.add_grid.'
 - id: S29
   description: 'Cross-grid arrow selection, the overview grid cursor, and touch swipe.'
   status: done
-  evidence: 'Commit 82670456, plus the swipe route fix in ee9dea68. TP-107 - TP-110.'
-  notes: >
-    ⚠ ARROWS ARE MODE-DEPENDENT (Q162=b): cells when FOCUSED, whole grids in the OVERVIEW.
-    ⚠ THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`. The viewport's focus-neighbour search
-    runs in the GUI pass and CONSUMES any arrow that finds a neighbour, so an `_unhandled_input`
-    reader never runs while a cell has focus.
-    ⚠ TP-109's FIXTURE IS FIVE GRIDS ON PURPOSE: from grid 1 of THREE, a doubling swipe reader's
-    second step bounces off the board's end and lands on the SAME pan_grid a correct reader
-    produces -- the defect hides.
-    ⚠⚠ **THE SWIPE SHIPPED DEAD AND ITS TESTS PASSED** -- see Open bugs' entry on proving the ROUTE.
-- id: S31
-  description: 'PHASE 7: the game picture sized for 3 grids, the height rule, the render-target clamp.'
-  status: done
-  evidence: >
-    Overseer-verified: ALL 45 SUITES: 3789 CHECKS PASSED, zero failures, console and log agreeing.
-    doc_check 0 errors / 7 warnings; no design ids, sentinel violations or tunable literals added.
-    RED (the clamp call and the _size_game_picture call removed): 5 FAILED -- TP-113's margin check
-    and all four TP-114 wiring checks. GRID VIEW 159 of 159 in BOTH runs, so nothing aborted.
-    BY EYE at 2 grids: a clean 220 px gap, symmetric at -218.0/+218.0, nothing cut off.
-  notes: >
-    ⚠ **Q166=(a) OVERRODE ITS OWN DEFAULT**: `design_size` stays AUTHORED data sized for exactly 3
-    grids, NOT computed at show start from the actual grid count (the rejected (c)).
-    ⚠ **`SubViewport.size` LIES WHEN OVERSIZED** -- over the GPU cap the framebuffer is destroyed and
-    the size set to 0 internally while the GDScript property still reports the value it was given.
-    So TP-114 asserts the pure `clamped_render_size()` at and past the cap, and that `build()` and
-    `focus()` each WROTE the clamped value and engaged `size_2d_override` -- never a read-back.
-    ⚠ **`grid_buffer_px` LANDED HERE** as the cell-block-to-cell-block gap (`Q35`=b), applied as a
-    dynamically computed HBox separation (buffer less the measured label gutters) because one
-    container separation cannot vary per pair.
-    ⚠ ONE existing check reacted -- TP-106's `before.has(0)`. Investigated, not loosened: at a 220 px
-    buffer only the grid the view RESTS on is wholly in frame, and a sliced neighbour is explicitly
-    not a defect under GAP-017 part 1. Re-pointed at `before.has(pa.pan_grid)`, the identity the
-    layout owes.
-    ⚠ TP-113's 7th check ("sized by the rule, not the entry default") was added AFTER the red run,
-    so it alone is not red-proven -- at test `card_scale` the 1152 px default still passed the
-    three-grid width check, which is why it exists.
-- id: S31b
-  description: 'THE FOCUSED ZOOM: the focused grid is as tall as its window (GAP-017 ruling part 3).'
-  status: done
-  evidence: >
-    Overseer-verified: ALL 45 SUITES: 3805 CHECKS PASSED, zero failures. GRID VIEW 160 -> 170.
-    doc_check 0 errors; no design ids or sentinel violations added.
-    RED (the wiring cut -- focus_grid's call to the zoom removed, nothing else): 4 FAILED, and
-    GRID VIEW read 170 of 170 in BOTH runs, GRID LAYOUT 71 in both, VISUAL LAYERS 220 in both, so
-    nothing aborted.
-    BY EYE via the new `grid_zoom_shot`, which renders inside the REAL picture: the focused grid
-    measures y [3.0 .. 558.0] against a board window of y [3.0 .. 558.0] -- **the grid's height IS
-    the viewport's height, exactly.**
-  notes: >
-    ⚠ **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** -- a `Container` rewrites its
-    children's scale on every sort (measured: `TopLevelVBox` was back at 1 the next frame). Its rect
-    is divided by the same factor so the window keeps its pixels.
-    ⚠ **THE SCALE IS NOT ANIMATED** (`Q145`: "no intermediate zoom exists", read literally) and
-    measured: the scroller clamps every aim against the reach it can see at that instant, so an
-    eased scale DESTROYS the aim issued with it. The transition the player sees is the pan.
-    ⚠ **EVERY SITE THAT ADDED A MEASURED GLOBAL POSITION TO A LOCAL SIZE HAD TO BECOME ZOOM-AWARE.**
-    The suite's own `_window_x` / `_cut_off_px` mixed the two -- a latent error the zoom exposed;
-    corrected to read the engine's global transform, not widened.
-    ⚠ **TWO "FLAKY FAMILY" FAILURES HERE WERE A REAL REGRESSION, NOT FLAKE** -- the board's floor was
-    made to read the SCROLLER's window, which the Entrance's RESERVATION carves out, while the floor
-    must clear its ACTUAL height. They differ exactly when the Entrance stacks. **So that family is
-    not pure noise: it caught a real bug. Investigate before dismissing a failure there.**
-- id: S31c
-  description: 'Clip the board scroll container, so "other grids out of view" is true of the PIXELS.'
-  status: done
-  evidence: >
-    Overseer-verified: ALL 45 SUITES: 3801 CHECKS PASSED, zero failures. GRID VIEW 170 -> 175.
-    doc_check 0 errors.
-    RED: 1 FAILED, and per-suite counts were identical across the two runs for all 45 except GRID
-    VIEW (the added check) and the randomised BOARD FUZZ -- nothing aborted.
-    BY EYE, on a mid-flight frame the overseer looked at: **the flying card is drawn WHOLE, no cut
-    edge**, and the left column of UI (Deck, Goal, Total, skill text, Discard, Rules) is clean where
-    a whole grid used to paint over it.
-  notes: >
-    ⚠ **TP-141 COUNTS PAINTED PIXELS, NOT GEOMETRY -- and that is the whole point.** The neighbours
-    were ALREADY positioned outside the window before this fix, so any position-based assertion
-    passes both before and after and proves nothing. It renders into a picture-sized viewport and
-    counts the pixels OUTSIDE the container's rect that change when a non-focused panel is hidden:
-    **100,908 px red, 0 px green.**
-    ⚠ **CLIPPING DOES NOT CUT A CARD IN FLIGHT** -- the risk that made this a decision. Verified by
-    building `Tests/Visual/grid_clip_flight_shot`, which calls the real `place_card_in_grid` WITHOUT
-    awaiting it and saves 14 consecutive frames. A held Entrance card never enters the question: it
-    stays in `EntranceCardLayer`, outside the clip.
-    A jumping card at the top of the board and a hoop bracketing a card near the edge were both
-    checked and draw whole.
-- id: S31d
-  description: 'WIDEN THE GAME PICTURE to grid_max_count grid positions, so the camera has a step.'
-  status: done
-  evidence: >
-    Overseer-verified: ALL 45 SUITES: 3806 CHECKS PASSED, zero failures. doc_check 0 errors; no
-    design ids added to product code.
-    RED: exactly 3 failures, all TP-113 -- and NOTHING else reacted. TP-101, TP-103, TP-106, TP-114,
-    TP-138-TP-141 and the whole flaky family stayed green in both runs, which is the evidence that
-    none of them was calibrated to the old picture width.
-    Picture 1219x685 -> **3656x685**. Camera slack at rest **0.6 px -> 2438 px (~2 grid positions)**.
-  notes: >
-    ⚠⚠ **THE HEIGHT RULE APPLIED TO THE WHOLE PICTURE IS PROVABLY INCOMPATIBLE WITH `H22` AT ANY
-    WIDTH.** `focused_scale()` rests the camera by OVERFILLING (the max of the axis ratios), so a
-    picture whose aspect IS the window's is framed WHOLE at rest -- at 1219x685 and equally at
-    3456x1944 (zoom 0.3333 on both axes, 100% visible). **A wider picture alone does not give the
-    camera a step; the overseer's suggested 3456x1944 would NOT have worked.**
-    The resolution: apply `H2`'s aspect minimum to **ONE GRID POSITION**, not the whole picture, and
-    make the picture `grid_max_count` positions wide. `Q160` states it literally -- *"camera will pan
-    over 3 possible grid positions since that is size of picture frame"*. Recorded in ASSUMPTIONS.md.
-    ⚠ The clamp does NOT bite at 3656 (< 4096) and `size_2d_override` stays ZERO. At
-    `grid_max_count` 4 it would (6096 -> 4096 on x) and the override then holds the layout at 6096.
-    ⚠ **`grid_buffer_px` is untouched and still 220 raw px against a 216 px block** -- it lives
-    entirely inside one grid position, so this step neither improved nor worsened it. Still unruled.
+  notes: 'THE SWIPE SHIPPED DEAD AND ITS TESTS PASSED -- prove the ROUTE, not the handler.'
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
-  evidence: 'Commit d5d0b172. Overseer-verified green; TP-111, TP-112, TP-138.'
-  notes: >
-    ⚠ Chart G's G16-no edge goes STRAIGHT to G18 and G17 also flows into it, so the re-centre
-    happens on EVERY removal and only the refocus is conditional. A test that only removes the
-    FOCUSED grid cannot tell a correct implementation from one that re-centres solely on that path.
-    ⚠ TWO WEAKER TP-112 FIXTURES WERE REJECTED AND ONE PASSED WITH THE WIRING CUT: at three grids
-    the survivors FIT so the layout centres them with no scroll, and near an edge the clamp lands
-    the board where a re-centre would. The middle grid of FIVE has slack both sides.
-    ⚠ The resting claim is an identity the layout OWES -- the board lands where an explicit
-    `pan_to_grid` lands -- not an absolute centre.
-    Q318=(a) OVERRODE ITS OWN DEFAULT: nearest survivor PREFERRING THE LEFT, not nearest to centre.
-```
+  notes: 'Q318=(a) OVERRODE ITS DEFAULT: nearest survivor PREFERRING THE LEFT, not nearest to centre.'
 
-After Phase 6 comes Phase 7 (`S31`-`S34`, the wall), then Phase 9 (goal-curve refit, the owner's
-call). ⚠ **Phase 10 was taken out of order, and only its CSV half.** `S42` and `S43` are done; `S40`
-(ARCHITECTURE_REVIEW), `S41` (alternate design docs) and `S44` (the remaining doc updates) are NOT,
-and the plan's dependency note — Phase 10 depends on everything and runs last — still holds for them.
+# --- PHASE 7: the wall.
+- id: S31
+  description: 'The game picture sized for 3 grids, the height rule, the render-target clamp.'
+  status: done
+- id: S31b
+  description: 'THE FOCUSED ZOOM: the focused grid is as tall as its window (GAP-017 part 3).'
+  status: done
+- id: S31c
+  description: 'Clip the board scroll container, so "other grids out of view" is true of the PIXELS.'
+  status: done
+  notes: 'TP-141 COUNTS PAINTED PIXELS, NOT GEOMETRY -- and that is the whole point.'
+- id: S31d
+  description: 'WIDEN THE GAME PICTURE to grid_max_count grid positions, so the camera has a step.'
+  status: done
+- id: S31e
+  description: 'One grid per grid position (GAP-021), furniture not duplicated.'
+  status: blocked
+  notes: >
+    PART-LANDED, commit 1c8a2ae1. The INTERACTION click race and TP-109 are FIXED and green.
+    TP-140's two out-of-view assertions are RED and DELIBERATELY UNWEAKENED, blocked on GAP-022's
+    camera boundary. See the State section.
+- id: S33
+  description: 'PHASE 7: H20 the wall re-packs around the wider picture; H21 Info mode.'
+  status: in_progress
+  notes: >
+    PULLED AHEAD OF S32 by owner ruling. H20 LANDED, commit 112424c5 -- keep_aspect on the game
+    entry, the squash gone, verified by eye. H21/TP-119 (Q178=(a)) is the remaining half.
+- id: S33hud
+  description: 'GAP-022 follow-on: the whole HUD follows the camera.'
+  status: blocked
+  notes: >
+    Code landed, suite clean, BY-EYE FAILS. PlayArea.pan_window_left_x() extracted from the
+    expression _sync_entrance_x already computed, so there is ONE writer read twice. But the
+    furniture follows pan_grid while the CAMERA IS STATIC at the picture centre and reads nothing
+    about pan_grid -- so the HUD points at picture-left and the camera looks at picture-middle.
+    BLOCKED ON THE CAMERA MIGRATION (TP-105/H22), which makes it correct by construction.
+    Undo IS included per owner ruling.
+- id: S32
+  description: 'The saved pan and resting_state() (H18, H19).'
+  status: pending
+  notes: 'GAP-020=(b): resize first, then implement H18 literally.'
+- id: S34
+  description: 'Tools/wall_editor.tscn drives every new wall knob (Q186=a).'
+  status: pending
+- id: S40
+  description: 'PHASE 10: ARCHITECTURE_REVIEW.'
+  status: pending
+- id: S41
+  description: 'PHASE 10: alternate design docs.'
+  status: pending
+- id: S44
+  description: 'PHASE 10: the remaining doc updates.'
+  status: pending
+```
 
 ## Verified vs assumed
 
@@ -657,7 +577,14 @@ swipe. Still red and DELIBERATELY NOT WEAKENED: `TP-140`'s two out-of-view asser
 fail with a message naming the real cause (`vs window (0.0, 3640.476)`) instead of a vacuous
 precondition.
 
-1. ⚠⚠ **`GAP-022` = (a) — ANSWERED. `PlayContainer` KEEPS the stretch, and "out of view" now means
+1. ⚠⚠ **THE CAMERA MIGRATION (`TP-105`/`H22`) IS NOW THE GATING STEP FOR EVERYTHING LEFT.**
+   `GAP-022`=(a) makes it a prerequisite for BOTH remaining pieces: `TP-140`'s out-of-view
+   assertions need the camera boundary, and the HUD needs the camera to STEP WITH `pan_grid`.
+   Today the camera is static at the picture centre and reads nothing about `pan_grid`
+   (`resting_state()` returns `rect.centre`), so the two are decoupled and neither can be verified.
+   ⚠ **Do not build more against a static camera** — that is calibrating against geometry about to
+   move, the mistake `H20`-first avoided.
+2. ⚠⚠ **`GAP-022` = (a) — ANSWERED. `PlayContainer` KEEPS the stretch, and "out of view" now means
    OUTSIDE THE CAMERA'S RECT, not outside the scroll container.** ⚠ **This makes the camera
    load-bearing before `S31e` can close**: `TP-105` stops being a step that follows `S31e` and
    becomes part of what makes it verifiable. `S31b`'s zoom and `S31c`'s clip must be re-pointed at

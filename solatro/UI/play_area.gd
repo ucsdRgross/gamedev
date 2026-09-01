@@ -421,6 +421,16 @@ func _sync_entrance_x() -> void:
 	entrance_h_track.position.x = columns_x - entrance_strip.global_position.x
 	entrance_h_track.size.x = columns_w
 
+## The picture x the board's current pan puts under the LEFT edge of the grid the view is
+## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
+## Exposed so anything OUTSIDE the scroll (the rest of the HUD) can ride the identical pan
+## rather than a second, independent measure of where the view currently rests. The board's
+## scroll window spans the whole picture, so this is a LIVE layout position -- the grid
+## positions sit side by side in the wide picture rather than one scrolling past a narrow window.
+func pan_window_left_x() -> float:
+	var cells := _view_grid_cells()
+	return cells.global_position.x if cells else grid_container.global_position.x
+
 ## The cell block of the grid the view is centred on, or null when the board has no grids.
 func _view_grid_cells() -> Control:
 	if not is_instance_valid(grid_container): return null
