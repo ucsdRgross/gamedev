@@ -212,10 +212,8 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
   description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, the zone renderers deleted, the pinned Entrance.'
   status: done
   notes: >
-    Covers S20b1, S20b2, S20b2b0, S20b2b, S20b3, S20b4a, S20bDraw, S20bRatchet, S20bPort and S20c.
-    Game.next()/_perform_next() STAY -- only the BUTTON retired; _perform_next still serves the
-    &"on_next" replay. ⚠ S20bDraw was found BY EYE through 43 green suites: _order_board_cards never
-    ordered grid cards, so a card drew BEHIND its own cell.
+    Covers S20b1-S20c. Game.next()/_perform_next() STAY -- only the BUTTON retired. ⚠ S20bDraw was
+    found BY EYE through 43 green suites: a card drew BEHIND its own cell.
 - id: S20b4b
   description: 'The layering port: the hoop split and the reveal both take a BoardCoord; 5 fixtures ported.'
   status: done
@@ -227,12 +225,8 @@ used in `PLAN.md` too; renumbering would break its citations. Check lettered ste
   description: 'PHASE 5, the flipped board: upward stacks, eased row heights, the spring, score labels.'
   status: done
   notes: >
-    Covers S21 (upward stacks, one container per row, the board floor), S22 (a row eases into its
-    height; the Entrance is row -1 and raises the board; _reveal_geometry_exists DELETED), S23 (the
-    spring), S24 (score labels, one per line AND per height -- GAP-015) and S25 (cross-grid row
-    alignment, off by default, proven not to touch scoring).
-    ⚠ TP-93 is a RATCHET against grid subtotals: it passes trivially and fails the day a panel
-    displays one. It proves it can SEE labels before asserting none is a subtotal.
+    Covers S21-S25. ⚠ TP-93 is a RATCHET against grid subtotals: it passes trivially and fails the
+    day a panel displays one, and it proves it can SEE labels before asserting none is a subtotal.
 - id: S21settings
   description: 'Tests own the settings they test with, and sweep the range. SETTINGS RANGE suite.'
   status: done
