@@ -251,6 +251,13 @@ a gap by picking an answer. Do not delete a gap — it is closed by a new design
   overflows.**
 
 **The view, the camera and the wall**
+- ⚠⚠ **AN INTEGER INDEX BEATS A MEASURED POSITION.** The furniture's pan shift is
+  `pan_grid * grid_position_size_px().x` — nothing to settle, nothing to latch, nothing to go stale.
+  Two earlier fixes were both managing the consequences of choosing a MEASURED quantity as the
+  reference, and both were deleted when the arithmetic replaced them.
+- ⚠ **A FRESHLY-ADDED PANEL'S `Cells` NODE EXISTS BEFORE ITS `global_position` IS VALID** — the
+  deferred sort has not run, so a null-check is NOT enough to know a measured position is settled,
+  and the stale value can equal the very value you are trying to avoid.
 - ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`.** The viewport's focus-neighbour
   search runs in the GUI pass and CONSUMES any arrow that finds a neighbour, so an
   `_unhandled_input` reader never runs while a cell has focus. Arrows are MODE-DEPENDENT
@@ -398,14 +405,20 @@ true now.
     entry, the squash gone, verified by eye. H21/TP-119 (Q178=(a)) is the remaining half.
 - id: S33hud
   description: 'GAP-022 follow-on: the whole HUD follows the camera.'
-  status: blocked
+  status: done
   notes: >
-    Code landed, suite clean, BY-EYE FAILS. PlayArea.pan_window_left_x() extracted from the
-    expression _sync_entrance_x already computed, so there is ONE writer read twice. But the
-    furniture follows pan_grid while the CAMERA IS STATIC at the picture centre and reads nothing
-    about pan_grid -- so the HUD points at picture-left and the camera looks at picture-middle.
-    BLOCKED ON THE CAMERA MIGRATION (TP-105/H22), which makes it correct by construction.
-    Undo IS included per owner ruling.
+    Code landed, suite clean. NOT blocked on the camera -- that earlier claim was wrong.
+    pan_window_left_x() is extracted from the expression _sync_entrance_x already computed, so
+    there is ONE writer read twice. Undo IS included per owner ruling.
+    ⚠ THE REAL DEFECT, measured: _recapture_pan_origin() is deferred off board_changed and one
+    deferred call fires while the new grid panel's cell subtree does not exist, so
+    pan_window_left_x() takes its SILENT FALLBACK to grid_container.global_position.x (4.0)
+    instead of the settled 1723.0. The origin is captured ONCE and latched, leaving the furniture
+    permanently 1719 px out. _sync_entrance_x survives the identical fallback because it
+    RE-DERIVES EVERY FRAME.
+    ⚠⚠ A VALUE THAT IS SAFE TO READ PER-FRAME IS NOT AUTOMATICALLY SAFE TO CAPTURE ONCE.
+    FIXED, and verified by eye: shift is now pan_grid * grid_position_size_px().x. All the
+    furniture is on screen with the board.
 - id: S32
   description: 'The saved pan and resting_state() (H18, H19).'
   status: pending
@@ -522,7 +535,7 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
     (`lowest card bottom 531.0 vs Entrance top 501.0`). Measured: **both failed on one overseer run
     and both passed on the very next run of the same tree**, which then read
     `ALL 45 SUITES: 3782 CHECKS PASSED`.
-  - `test_grid_view.gd` **`TP-112`** *"...and it TRAVELLED there — mid-move it is further off centre
+  - `test_grid_view.gd` **`TP-112`** — **measured 2 failures in 5 runs** of unchanged code. *"...and it TRAVELLED there — mid-move it is further off centre
     than at rest"* (`94.2 px mid-move vs 93.8 px at rest`). **Measured 1 failure in 3 runs of one
     unchanged tree** — sub-pixel margin, same shape. NOT fallout from the `TP-140`/`TP-109` fixture
     change, which was the competing reading and was ruled out by re-running.
@@ -577,13 +590,16 @@ swipe. Still red and DELIBERATELY NOT WEAKENED: `TP-140`'s two out-of-view asser
 fail with a message naming the real cause (`vs window (0.0, 3640.476)`) instead of a vacuous
 precondition.
 
-1. ⚠⚠ **THE CAMERA MIGRATION (`TP-105`/`H22`) IS NOW THE GATING STEP FOR EVERYTHING LEFT.**
-   `GAP-022`=(a) makes it a prerequisite for BOTH remaining pieces: `TP-140`'s out-of-view
-   assertions need the camera boundary, and the HUD needs the camera to STEP WITH `pan_grid`.
-   Today the camera is static at the picture centre and reads nothing about `pan_grid`
-   (`resting_state()` returns `rect.centre`), so the two are decoupled and neither can be verified.
-   ⚠ **Do not build more against a static camera** — that is calibrating against geometry about to
-   move, the mistake `H20`-first avoided.
+1. ⚠⚠ **THE CAMERA MIGRATION (`TP-105`/`H22`) GATES `TP-140` — BUT NOT THE HUD.**
+   `GAP-022`=(a) means "out of view" resolves against the CAMERA's rect, so `TP-140`'s two
+   assertions cannot be satisfied until the camera exists. Today it is static at the picture centre
+   and reads nothing about `pan_grid` (`resting_state()` returns `rect.centre`).
+   ⚠⚠ **CORRECTION — commit `5e7fb2cf`'s message and an earlier version of this section BOTH say the
+   HUD is blocked on the camera. THAT IS WRONG.** It was an inherited inference, promoted without
+   testing. **Measured:** `pan_grid` rests correctly at 1 and holds through frame 120; the HUD was
+   off screen because of a latched-origin bug in the new code (below), not because of the camera.
+   ⚠ **THE LESSON, which this stream keeps re-paying for:** a plausible cause is not a measured one.
+   The discriminating observation cost one render.
 2. ⚠⚠ **`GAP-022` = (a) — ANSWERED. `PlayContainer` KEEPS the stretch, and "out of view" now means
    OUTSIDE THE CAMERA'S RECT, not outside the scroll container.** ⚠ **This makes the camera
    load-bearing before `S31e` can close**: `TP-105` stops being a step that follows `S31e` and

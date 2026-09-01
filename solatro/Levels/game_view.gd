@@ -47,17 +47,12 @@ var spotlight_director : SpotlightDirector = null
 
 ## The furniture: the Deck, the Goal/Total/MultScore score column, the skill text and the
 ## End/Discard/Rules buttons -- everything the owner ruling has follow the board's pan rather
-## than sit at a fixed spot on the wide picture. `PlayArea.pan_window_left_x()` is the ONE
-## writer of where the pan currently rests; this only reads it.
+## than sit at a fixed spot on the wide picture. The furniture is authored against grid 0's
+## resting position; `PlayArea.pan_grid` is the ONE writer of which grid the view rests on.
 @onready var _furniture : Array[Control] = [deck_ui, discard_ui, rules_ui, submit_button,
-		%Goal, %Total, %MultScore, %Preview]
+		undo_button, %Goal, %Total, %MultScore, %Preview]
 ## Each control's authored x -- fixed forever, read once off the scene.
 var _furniture_authored_x : Array[float] = []
-## Where `PlayArea.pan_window_left_x()` sat when the furniture's authored x was measured
-## against it. Re-taken whenever the board's grid layout can have moved that window (a grid
-## added or removed shifts every grid's position), so a shift computed against a stale origin
-## never accumulates.
-var _furniture_pan_origin_x : float = 0.0
 
 func _ready() -> void:
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
@@ -112,7 +107,6 @@ func _ready() -> void:
 	# a fresh goal / resumed score shows immediately.
 	_refresh_hud.call_deferred()
 	_capture_furniture_authored_x()
-	_recapture_pan_origin.call_deferred()
 
 ## Debug prop stepping (owner tool): a toggle that holds every finished prop tick
 ## open (PropLayer.manual_step — the whole run_props loop pauses at its SYNC await), and a
@@ -196,31 +190,23 @@ func _on_combo_changed(_count: int) -> void:
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
-	# A grid added or removed moves where every grid position sits, so the origin the furniture
-	# shift is measured against is stale the moment the rebuild it queued above lands.
-	_recapture_pan_origin.call_deferred()
 
 ## Reads each furniture control's authored x straight off the scene. Runs once; the scene's own
-## offsets never change afterwards, only the pan origin they are measured against does.
+## offsets never change afterwards.
 func _capture_furniture_authored_x() -> void:
 	_furniture_authored_x.clear()
 	for control : Control in _furniture:
 		_furniture_authored_x.append(control.position.x)
 
-## Re-anchors the pan origin the furniture shift is measured from to wherever the board's pan
-## currently rests.
-func _recapture_pan_origin() -> void:
-	if not is_instance_valid(play_area): return
-	_furniture_pan_origin_x = play_area.pan_window_left_x()
-
-## Slides every furniture control by the same x the board's pan has moved since the origin was
-## last taken -- generalises `PlayArea._sync_entrance_x`'s mechanism (one writer of where the
-## pan sits) rather than adding a second one. Recomputed every frame, unconditionally, the same
-## rule `PlayArea._physics_process` already follows for its own pan-slaved control.
+## Slides every furniture control by `pan_grid` grid positions from its authored (grid-0) x --
+## `pan_grid` is an integer index, not a measured position, so there is nothing to latch and
+## nothing to go stale, unlike a captured pan-window-left-x origin. Recomputed every frame,
+## unconditionally, the same rule `PlayArea._physics_process` already follows for its own
+## pan-slaved control.
 func _process(_delta: float) -> void:
 	if not is_instance_valid(play_area) or _furniture_authored_x.size() != _furniture.size():
 		return
-	var shift := play_area.pan_window_left_x() - _furniture_pan_origin_x
+	var shift := play_area.pan_grid * PlayArea.grid_position_size_px(SettingsManager.settings).x
 	for i : int in _furniture.size():
 		var control : Control = _furniture[i]
 		if is_instance_valid(control): control.position.x = _furniture_authored_x[i] + shift

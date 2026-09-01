@@ -82,15 +82,23 @@ func _ready() -> void:
 		Board.add_grid(g.state, GridData.new())
 	while g.state.grids.size() > GRID_COUNT:
 		Board.remove_grid(g.state, g.state.grids.size() - 1)
+	# Diagnostic-only: trace the pan values frame by frame BEFORE flush_rebuild forces
+	# anything synchronously, so the report can see how pan_grid and pan_window_left_x settle.
+	for trace_i : int in 6:
+		_log_pan_state(view, pa, "trace pre-flush frame %d" % trace_i)
+		await get_tree().process_frame
 	pa.flush_rebuild()
 	await get_tree().process_frame
+	_log_pan_state(view, pa, "after first flush_rebuild")
 	# Real deal via the engine's own path (REUSE, not reinvented placement arithmetic) -- two
 	# Nexts, the same fixture shape test_interaction.gd's _setup_view() uses.
 	await g.next()
 	await g.next()
 	pa.flush_rebuild()
 	await get_tree().process_frame
+	_log_pan_state(view, pa, "after second flush_rebuild")
 	pa.open_zoomed_out()
+	_log_pan_state(view, pa, "immediately after open_zoomed_out")
 
 	wp.focus()   # main.gd's own _focus_picture path -- forces UPDATE_ALWAYS + full-res render.
 
@@ -125,6 +133,8 @@ func _ready() -> void:
 		await get_tree().process_frame
 		print("[wall_game_squash_probe] frame %d screen.scale=%s rect.size=%s camera.zoom=%s camera.position=%s viewport.size=%s"
 				% [frame_i, screen.scale, wp.rect.size, camera.zoom, camera.position, viewport_size(wp)])
+		if frame_i == 60 or frame_i == 120:
+			_log_pan_state(view, pa, "frame %d" % frame_i)
 		if frame_i in SHOT_FRAMES:
 			await RenderingServer.frame_post_draw
 			var shot_img := get_viewport().get_texture().get_image()
@@ -165,6 +175,32 @@ func _ready() -> void:
 ## The SubViewport render-target size backing `wp`'s screen, for the per-frame settling log.
 func viewport_size(wp: WallPicture) -> Vector2i:
 	return wp.viewport.size
+
+## Dumps pan_grid, pan_window_left_x(), the furniture shift and two furniture controls'
+## authored/local/global x against the three grids' own cell-block global x, so the report can
+## tell whether (i) pan_grid is stuck at 0 or (ii) it rests correctly and the offset arithmetic
+## that slides the furniture is wrong.
+func _log_pan_state(view: GameView, pa: PlayArea, tag: String) -> void:
+	var pan_left_x := pa.pan_window_left_x()
+	var shift := pa.pan_grid * PlayArea.grid_position_size_px(SettingsManager.settings).x
+	print("[wall_game_squash_probe] PAN[%s] pan_grid=%d grid_children=%d pan_window_left_x=%.3f shift=%.3f grid_container.global_position.x=%.3f"
+			% [tag, pa.pan_grid, pa.grid_container.get_child_count(), pan_left_x, shift, pa.grid_container.global_position.x])
+	var deck_idx := view._furniture.find(view.deck_ui)
+	var end_idx := view._furniture.find(view.submit_button)
+	if deck_idx >= 0:
+		var deck_authored : float = view._furniture_authored_x[deck_idx]
+		print("[wall_game_squash_probe] PAN[%s] deck authored_x=%.3f position.x=%.3f global_position.x=%.3f"
+				% [tag, deck_authored, view.deck_ui.position.x, view.deck_ui.global_position.x])
+	if end_idx >= 0:
+		var end_authored : float = view._furniture_authored_x[end_idx]
+		print("[wall_game_squash_probe] PAN[%s] submit(End) authored_x=%.3f position.x=%.3f global_position.x=%.3f"
+				% [tag, end_authored, view.submit_button.position.x, view.submit_button.global_position.x])
+	for gi : int in pa.grid_container.get_child_count():
+		var panel : Control = pa.grid_container.get_child(gi) as Control
+		var cells : Control = pa._cells_root(panel)
+		var cells_x : float = cells.global_position.x if cells else -1.0
+		print("[wall_game_squash_probe] PAN[%s] grid %d cells.global_position.x=%.3f"
+				% [tag, gi, cells_x])
 
 func _resolve_out_path() -> String:
 	var env := OS.get_environment("OUT_PATH")
