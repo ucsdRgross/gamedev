@@ -419,6 +419,18 @@ true now.
     ⚠⚠ A VALUE THAT IS SAFE TO READ PER-FRAME IS NOT AUTOMATICALLY SAFE TO CAPTURE ONCE.
     FIXED, and verified by eye: shift is now pan_grid * grid_position_size_px().x. All the
     furniture is on screen with the board.
+- id: S33cam
+  description: 'TP-105/H22: the wall camera steps between grid positions.'
+  status: in_progress
+  notes: >
+    SCOPED, and the first slice landed: WallPicture.grid_state() beside resting_state(), with
+    5 checks in WALL RENDER. NO product wiring yet -- nothing pans on the camera.
+    GAP-023=(e): a CONTINUOUS PAN OFFSET crosses the SubViewport boundary, not a grid index.
+    Grid step = animate the offset to n * pitch; touch drag = set it from the finger delta; one
+    mechanism, so the player cannot feel the seam. THE HORIZONTAL SCROLLBAR MUST BE HIDDEN.
+    ⚠ TWO CLEANUPS OWED BEFORE WIRING: grid_state() is INDEX-shaped and should sit on top of an
+    OFFSET-shaped primitive; and it reuses PlayArea.grid_position_size_px(), giving wall_picture.gd
+    a PlayArea dependency it never had -- take the pitch as a parameter like resting_grid.
 - id: S32
   description: 'The saved pan and resting_state() (H18, H19).'
   status: pending
@@ -475,7 +487,7 @@ true now.
    assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
    gate until its name is struck off, so the list cannot rot.
 
-## Gaps — twenty-two filed, ONE OPEN (`GAP-018`); `GAP-022` = (a)
+## Gaps — twenty-three filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e)
 
 `design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
 Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
@@ -535,7 +547,7 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
     (`lowest card bottom 531.0 vs Entrance top 501.0`). Measured: **both failed on one overseer run
     and both passed on the very next run of the same tree**, which then read
     `ALL 45 SUITES: 3782 CHECKS PASSED`.
-  - `test_grid_view.gd` **`TP-112`** — **measured 2 failures in 5 runs** of unchanged code. *"...and it TRAVELLED there — mid-move it is further off centre
+  - `test_grid_view.gd` **`TP-112`** — **measured 3 failures in 6 runs** of unchanged code. *"...and it TRAVELLED there — mid-move it is further off centre
     than at rest"* (`94.2 px mid-move vs 93.8 px at rest`). **Measured 1 failure in 3 runs of one
     unchanged tree** — sub-pixel margin, same shape. NOT fallout from the `TP-140`/`TP-109` fixture
     change, which was the competing reading and was ruled out by re-running.

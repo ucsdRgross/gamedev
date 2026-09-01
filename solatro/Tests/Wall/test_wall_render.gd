@@ -58,6 +58,8 @@ func _ready() -> void:
 	behavior_section("THE WALL RE-PACKS AROUND THE WIDER GAME PICTURE (H20)")
 	test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect()
 	test_default_layout_repacks_without_dropping_or_overlapping_any_picture()
+	behavior_section("PER-GRID CAMERA POSE")
+	test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid()
 	_teardown_wall()
 	finish()
 
@@ -860,3 +862,46 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	restore[start.id] = start
 	_wall.apply_layout(restore, false)
 	restore_real_settings()
+
+# ------------------------------------------------------------------ per-grid camera pose
+
+## `WallPicture.grid_state()` on a 3-grid board: the resting grid (index 1, `PlayArea._resting_grid`'s
+## own "middle of the grids" rule for an odd count) must reproduce `resting_state()` exactly, and
+## each neighbour must sit exactly one `PlayArea.grid_position_size_px()` pitch away -- the step
+## between consecutive grids' positions must equal that pitch, not just "some" offset, so a
+## neutralisation that drops the offset term still fails here.
+func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid() -> void:
+	var settings := SettingsManager.settings
+	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+			Vector4.ZERO)
+	var window := Vector2(1152.0, 648.0)
+	var resting_grid := 1
+
+	var rest := WallPicture.resting_state(rect, window, settings)
+	var s0 := WallPicture.grid_state(rect, window, settings, 0, resting_grid)
+	var s1 := WallPicture.grid_state(rect, window, settings, 1, resting_grid)
+	var s2 := WallPicture.grid_state(rect, window, settings, 2, resting_grid)
+
+	var rest_pos : Vector2 = rest["position"]
+	var pos0 : Vector2 = s0["position"]
+	var pos1 : Vector2 = s1["position"]
+	var pos2 : Vector2 = s2["position"]
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var zoom1 : float = s1["zoom"]
+	var rest_zoom : float = rest["zoom"]
+
+	check(pos1.is_equal_approx(rest_pos),
+			"the resting grid's pose equals resting_state()'s exactly",
+			"pos1=%s rest=%s" % [pos1, rest_pos])
+	check(is_equal_approx(zoom1, rest_zoom),
+			"zoom is unchanged from resting_state() at the resting grid",
+			"zoom1=%.6f rest_zoom=%.6f" % [zoom1, rest_zoom])
+	check(is_equal_approx(pos1.x - pos0.x, pitch),
+			"the step from grid 0 to grid 1 equals grid_position_size_px().x exactly",
+			"step=%.4f pitch=%.4f" % [pos1.x - pos0.x, pitch])
+	check(is_equal_approx(pos2.x - pos1.x, pitch),
+			"the step from grid 1 to grid 2 equals grid_position_size_px().x exactly",
+			"step=%.4f pitch=%.4f" % [pos2.x - pos1.x, pitch])
+	check(is_equal_approx(pos0.y, rest_pos.y) and is_equal_approx(pos2.y, rest_pos.y),
+			"position.y is unchanged from resting_state() at every grid, only x steps",
+			"y0=%.4f y2=%.4f rest_y=%.4f" % [pos0.y, pos2.y, rest_pos.y])

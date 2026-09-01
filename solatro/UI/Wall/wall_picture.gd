@@ -429,6 +429,22 @@ static func resting_state(rect: PictureRect, window_size: Vector2, settings: Pla
 	return {"position": rect.centre,
 			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
 
+## The camera pose for grid position `grid_index` on a multi-grid board -- same shape as
+## `resting_state()`, whose `zoom` and `position.y` it reuses unchanged. `position.x` steps away
+## from the resting pose's by one `PlayArea.grid_position_size_px()` pitch per grid away from
+## `resting_grid`, so grid `resting_grid` itself reproduces `resting_state()` exactly.
+##
+## `resting_grid` is a caller-supplied parameter, not recomputed here: this stays a pure function
+## of its own inputs rather than reaching into `PlayArea`'s live view-mode state to rediscover it.
+static func grid_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
+		grid_index: int, resting_grid: int, card_height_px: float = -1.0) -> Dictionary:
+	var state := resting_state(rect, window_size, settings, card_height_px)
+	var rest_position : Vector2 = state["position"]
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var offset_x := pitch * float(grid_index - resting_grid)
+	state["position"] = Vector2(rest_position.x + offset_x, rest_position.y)
+	return state
+
 ## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`.
 ##
 ## ⚠ **THE POINT IS THAT NOTHING IS COVERED.** Info mode exists to read a screen while a card
