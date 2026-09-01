@@ -2,9 +2,10 @@ extends Node2D
 # res://Tests/Visual/wall_game_squash_probe.gd
 # ==============================================================================
 # THROWAWAY MEASUREMENT PROBE (not part of the suite). Stands up the REAL res://UI/Wall/wall.tscn
-# plus ONE real WallPicture built exactly the way wall.gd/main.gd build the "game" picture --
-# design_size = PlayArea.game_picture_design_size(), keep_aspect left at its default (false), a
-# real GameView attached as the live screen (main.gd's attach_screen path) -- then focuses it
+# plus ONE real WallPicture built exactly the way wall.gd/main.gd build the "game" picture -- the
+# entry itself comes straight out of Wall.load_layout(), the single seam that sizes AND flags it,
+# so this probe cannot drift from what production actually ships -- a real GameView attached as
+# the live screen (main.gd's attach_screen path) -- then focuses it
 # (WallPicture.focus(), the same call main.gd's _focus_picture uses) and screenshots what the
 # WallPicture's own Sprite2D actually shows, so the picture's own rescale (`_rescale_screen`) is
 # IN THE SHOT, unlike grid_zoom_shot / grid_layer_shot, which both instantiate GameView directly
@@ -36,15 +37,15 @@ func _ready() -> void:
 	var wall : Wall = WALL_SCENE.instantiate()
 	add_child(wall)
 
-	# ⚠ Mirrors wall.gd's OWN "game" PictureEntry exactly (id, slot, frame_texture, and --
-	# deliberately -- NO keep_aspect override, matching the real one), except design_size, which
-	# wall.gd itself derives the same way: PlayArea.game_picture_design_size(settings).
-	var entry := PictureEntry.new()
-	entry.id = &"game"
-	entry.slot = 0
-	entry.frame_texture = WallPicture.shared_frame_texture()
-	entry.design_size = PlayArea.game_picture_design_size(SettingsManager.settings)
-	print("[wall_game_squash_probe] design_size %s" % [entry.design_size])
+	# ⚠ Pulled straight from Wall.load_layout() -- the real "game" PictureEntry, with whatever
+	# design_size and keep_aspect production actually sets, rather than a hand-copied duplicate
+	# that can silently fall out of sync with the seam.
+	var loaded_layout := Wall.load_layout()
+	var entry : PictureEntry = null
+	for e : PictureEntry in loaded_layout.pictures:
+		if e.id == Wall.GAME_PICTURE_ID: entry = e
+	print("[wall_game_squash_probe] design_size %s keep_aspect %s"
+			% [entry.design_size, entry.keep_aspect])
 
 	var layout := WallLayout.new()
 	layout.gap_px = 24.0

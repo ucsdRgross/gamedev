@@ -55,6 +55,9 @@ func _ready() -> void:
 	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
 	test_debug_memory_readout_counts_screens_and_viewports()
 	test_debug_readout_gated_by_wall_debug_readout_flag()
+	behavior_section("THE WALL RE-PACKS AROUND THE WIDER GAME PICTURE (H20)")
+	test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect()
+	test_default_layout_repacks_without_dropping_or_overlapping_any_picture()
 	_teardown_wall()
 	finish()
 
@@ -542,6 +545,78 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 	settings.wall_debug_readout = prev
 	restore_real_settings()
 	main.queue_free()
+
+# ------------------------------------------------------------------ TP-118 (H20)
+
+## TP-118: the game picture's rect keeps its OWN authored width, unstretched to the window
+## aspect -- the fix for the packer squashing a 3656x685 picture down to ~1218x685.
+func test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect() -> void:
+	var layout := Wall.load_layout()
+	var game_entry : PictureEntry = null
+	for e : PictureEntry in layout.pictures:
+		if e.id == Wall.GAME_PICTURE_ID: game_entry = e
+	check(game_entry != null, "the layout carries a game picture entry")
+	if game_entry == null: return
+	check(game_entry.keep_aspect,
+			"the game entry keeps its own aspect -- the packer's window-aspect stretch never "
+			+ "reaches it", str(game_entry.keep_aspect))
+
+	var unlocked : Array[StringName] = [Wall.GAME_PICTURE_ID]
+	var rects := WallPacker.pack(layout, unlocked, 1152.0 / 648.0)
+	check(rects.size() == 1, "the game picture produced a rect", str(rects.size()))
+	if rects.is_empty(): return
+	var expected_width : float = float(game_entry.design_size.x) * game_entry.size_multiplier
+	check(is_equal_approx(rects[0].size.x, expected_width),
+			"the packed width is the picture's own authored width, not a window-aspect-derived "
+			+ "sliver", "packed=%.3f expected=%.3f" % [rects[0].size.x, expected_width])
+
+## TP-118: packing the wall's real default-unlocked layout around the now much wider game
+## picture still produces a rect for every unlocked picture, and none of their FRAME rects
+## overlap -- at the default window aspect, a narrower aspect, and with every registered picture
+## (including the normally-locked `book`) unlocked at once, which is the case that actually
+## forces the wider game frame to push a neighbour (`settings`) to a new position -- measured:
+## `settings` moves from centre (2237.354, -641.244) with the fix to a different position without
+## it, proving the re-pack, not just the absence of an error.
+func test_default_layout_repacks_without_dropping_or_overlapping_any_picture() -> void:
+	var layout := Wall.load_layout()
+	var default_unlocked : Array[StringName] = []
+	var all_ids : Array[StringName] = []
+	for e : PictureEntry in layout.pictures:
+		all_ids.append(e.id)
+		if e.unlocked_by_default: default_unlocked.append(e.id)
+
+	for window_aspect : float in [1152.0 / 648.0, 9.0 / 16.0, 1.0]:
+		var rects := WallPacker.pack(layout, default_unlocked, window_aspect)
+		check(rects.size() == default_unlocked.size(),
+				"every default-unlocked picture produced a rect at window aspect %.4f"
+						% window_aspect, "%d of %d" % [rects.size(), default_unlocked.size()])
+		check(not _rects_overlap(rects),
+				"no two frame rects overlap at window aspect %.4f" % window_aspect)
+
+	var all_rects := WallPacker.pack(layout, all_ids, 1152.0 / 648.0)
+	check(all_rects.size() == all_ids.size(),
+			"every registered picture (book included) produced a rect with the wide game picture "
+			+ "in the mix", "%d of %d" % [all_rects.size(), all_ids.size()])
+	check(not _rects_overlap(all_rects),
+			"no two frame rects overlap with every picture unlocked at once")
+	var settings_rect : PictureRect = null
+	for r : PictureRect in all_rects:
+		if r.id == &"settings": settings_rect = r
+	check(settings_rect != null and not settings_rect.centre.is_equal_approx(Vector2(1224.0, 0.0)),
+			"settings was pushed off its narrow-game-picture position -- the wall genuinely "
+			+ "re-arranged around the wider picture, not merely avoided an error",
+			str(settings_rect.centre) if settings_rect else "missing")
+
+## Whether any two of `rects`' FRAME OUTER rects intersect (same idiom `test_wall_packer.gd`'s
+## `_has_any_overlap` uses).
+func _rects_overlap(rects: Array[PictureRect]) -> bool:
+	for i : int in rects.size():
+		for j : int in range(i + 1, rects.size()):
+			var ri : PictureRect = rects[i]
+			var rj : PictureRect = rects[j]
+			if WallPacker.frame_outer_rect(ri).intersects(WallPacker.frame_outer_rect(rj)):
+				return true
+	return false
 
 # ------------------------------------------------------------------ drawn extent
 

@@ -85,29 +85,32 @@ express its intent must not be softened into passing.
 wall re-packs, what a "window" of the picture IS remains undefined, so (a) vs (b) cannot be answered
 against stable geometry.
 
-⚠⚠ **THE PICTURE RENDERS HORIZONTALLY SQUASHED TO ~1/3 WIDTH ON THE REAL WALL — CONFIRMED BY EYE.**
-`wall_packer._picture_size()` derives the packed width from `design_size.y * window_aspect` and
-**never reads `design_size.x`**, so a 3656x685 design packs into a ~1218x685 wall rect and
-`wall_picture._rescale_screen()` scales the sprite **(0.333, 1.0)**. Cards read as unreadable
-vertical slivers; the Wall shell's own buttons are unaffected, which is the control. **Latent since
-`S31`/`S31d`, nothing to do with `S31e`; `S33`'s `H20` owns it.**
-⚠ **IT IS THE STEADY STATE, NOT A SETTLING ARTEFACT — TESTED, because that was the obvious
-objection.** Sampled every frame for 120 frames with no input: `%Screen.scale` reads
-**`(0.33309, 1.0)` flat from frame 1 to frame 120**, `rect.size` and `viewport.size` likewise, and a
-settle-until-still wait reports `still_moving_after_sample = false`. **The discriminating detail: the
-GRIDS do settle across that window** (frame 1 has them bunched mid-layout, frame 120 has all three
-spread with the hand dealt) **and the squash is pixel-identical in both frames** — so something was
-moving, and it was not this. `_rescale_screen()` is called synchronously from `build()`/`focus()`/
-`update_wall_view_size()`, never from a tween, so no time-based mechanism exists on this path.
-`wall_transition_delay` is read only by `WallTransition` and `animate_reposition`, neither of which
-is on it — the poisoned `0.001` does not mask a real transition here.
-⚠⚠ **AND IT PASSED TWO BY-EYE GATES BECAUSE EVERY SHOT WAS BLIND TO IT.** `grid_zoom_shot` and
+✅ **THE WALL SQUASH IS FIXED (`H20`, first half of `S33`).** `Wall._size_game_picture()` now also
+pins `keep_aspect = true` on the game entry, so `WallPacker._picture_size()` takes its early return
+instead of the window-aspect stretch that discarded `design_size.x`. Sprite scale
+**(0.333, 1.0) -> (1.0, 1.0)**; packed rect **(1217.778, 685) -> (3656, 685)**.
+**BY EYE: cards are correctly proportioned and their ranks and suits are readable.**
+⚠ **`Q180`=(a) was the authority and the old behaviour was the REJECTED (b)** — the footprint had
+been capped to window aspect with the board squashed inside it, which is (b) plus `Q181`=(a), and
+`Q181` only exists under (b).
+⚠ **The packer risk was measured at the case that FORCES contention**, not the easy one: with all
+six pictures unlocked, `settings` moved `(1224.0, -350.808) -> (2237.354, -641.244)` — the wall
+genuinely re-arranged. Count stayed 6, no overlap, no drop, at three window aspects. `size_multiplier`
+untouched at 1.0.
+⚠ **The camera now frames ~1194 of 3656 wall units — about ONE GRID POSITION.** `H22`'s premise is
+true in the pixels for the first time.
+
+⚠⚠ **AND THE HUD IS NOW OFF SCREEN AT REST — ANSWERED: THE WHOLE HUD FOLLOWS THE CAMERA.** See
+`GAP-022`'s follow-on ruling. Reuse `_sync_entrance_x`'s mechanism; do not invent a second writer.
+
+⚠ **WHY IT PASSED TWO BY-EYE GATES: EVERY SHOT WAS BLIND TO IT.** `grid_zoom_shot` and
 `grid_layer_shot` both instantiate `GameView` DIRECTLY and never touch the `WallPicture` sprite path.
-**`Tests/Visual/wall_game_squash_probe.{gd,tscn}` (untracked) is the only instrument that renders the
-product's REAL framing** — through `res://UI/Wall/wall.tscn` with a real `WallPicture` and a real
-`GameView` as the live screen. ⚠ **PROMOTE IT INTO A PERMANENT NAMED SHOT** (not registered in
-`all_tests.tscn`; the suite stays at 45) or this blind spot reopens. Delete the throwaway
-`Tests/Visual/interaction_click_probe.{gd,tscn}` once done.
+**`Tests/Visual/wall_game_squash_probe.{gd,tscn}` is the only instrument that renders the product's
+REAL framing.** ⚠ It now builds its `PictureEntry` from `Wall.load_layout()` rather than a
+hand-duplicated copy — **it had silently gone stale against the fix.** A by-eye instrument that
+duplicates production setup drifts from it and then certifies the wrong thing. Still not registered
+in `all_tests.tscn`; the suite stays at 45. Delete the throwaway
+`Tests/Visual/interaction_click_probe.{gd,tscn}`, whose findings are recorded above.
 
 ⚠⚠ **THERE IS NO GREEN COMMIT ON THIS BRANCH. `58b223aa` IS NOT GREEN EITHER** — it reproduces 2
 GRID LAYOUT failures across two runs, so they are reproducible, not flake, and they are **NOT the

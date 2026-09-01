@@ -40,10 +40,16 @@ const GAME_PICTURE_ID := &"game"
 ## fixed size for the whole session, and nothing resizes a render target mid-show.
 ##
 ## Every other entry keeps the size authored in the layout resource.
+##
+## ⚠ Also pins `keep_aspect = true`: the game picture is authored far wider than the window
+## aspect on purpose (it holds a whole grid spread), and `WallPacker`'s window-aspect stretch
+## (rule 2) would otherwise squash it down to a sliver instead of packing its real width.
 static func _size_game_picture(layout: WallLayout) -> void:
 	var wanted := PlayArea.game_picture_design_size(SettingsManager.settings)
 	for e : PictureEntry in layout.pictures:
-		if e.id == GAME_PICTURE_ID: e.design_size = wanted
+		if e.id == GAME_PICTURE_ID:
+			e.design_size = wanted
+			e.keep_aspect = true
 
 ## The wall's starting content, used to seed `layout_default.tres` the first time and as the
 ## fallback when it is missing. Six registered ids; `entry.scene` is null on every one:
