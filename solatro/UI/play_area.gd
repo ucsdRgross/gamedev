@@ -361,6 +361,11 @@ func _physics_process(_delta: float) -> void:
 ## every card and prop on the board is placed by — would have to know about it. Riding
 ## `slot_center_global` instead means the label follows the stack through a growth ease, a spring
 ## and a reveal for free, and the row geometry never learns it exists.
+##
+## ⚠ **`at` IS A MEASURED GLOBAL, ALREADY SCALED BY `board_zoom`; THE CARD AND LABEL SIZES ARE
+## NOT.** Both live in `card_layer`, scaled with the board through `scroll_container`, so their
+## local magnitudes must be taken into screen pixels by `board_zoom` before being subtracted from
+## `at` — the same convention `_grid_slot_center_global` and `_apply_grid_buffer` already follow.
 func _sync_cell_score_labels() -> void:
 	if not is_inside_tree() or not is_instance_valid(card_layer): return
 	var game := CardEnvironment.get_current_game()
@@ -390,8 +395,8 @@ func _sync_cell_score_labels() -> void:
 		# ABOVE the topmost card: its centre, less half a card, less the label's own height.
 		var top := BoardCoord.new(key.x, key.y, key.z, depth - 1)
 		var at := slot_center_global(top)
-		label.global_position = Vector2(at.x - label.size.x * 0.5,
-				at.y - CardVisual.card_size_play.y * 0.5 - label.size.y)
+		label.global_position = Vector2(at.x - label.size.x * board_zoom * 0.5,
+				at.y - CardVisual.card_size_play.y * board_zoom * 0.5 - label.size.y * board_zoom)
 	for key : Vector3i in _cell_score_labels.keys():
 		if live.has(key): continue
 		var doomed : BigNumberLabel = _cell_score_labels[key]

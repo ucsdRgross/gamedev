@@ -45,6 +45,7 @@ func _ready() -> void:
 	await run_no_subtotal_is_displayed_anywhere_test()
 	await run_score_labels_sit_where_the_design_puts_them_test()
 	await run_a_height_label_sits_above_its_stack_test()
+	await run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test()
 	restore_real_settings()
 	finish()
 
@@ -993,4 +994,41 @@ func run_a_height_label_sits_above_its_stack_test() -> void:
 			"Q309: it RISES by one depth pitch as the stack grows — above the STACK, not above the "
 			+ "cell, which is the reading a one-card fixture cannot tell apart",
 			"moved %.1f, pitch %.1f" % [before - label.global_position.y, pitch])
+	await _tear_down(view)
+
+# ==============================================================================
+# A height label stays above its stack when the board is FOCUSED, where `board_zoom` departs
+# from 1.0 -- a check that is arithmetically blind at the overview's own zoom of exactly 1.
+# ==============================================================================
+func run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test() -> void:
+	behavior_section("A HEIGHT LABEL STAYS ABOVE ITS STACK AT A NON-1.0 BOARD ZOOM")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var coord := BoardCoord.new(0, 3, 2, 0)
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], coord)
+	await g.place_card_in_grid(g.state.upper_zone[1].datas[0], coord)
+	g.state.bank_cell_score(0, Vector2i(3, 2), 12)
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	check(not is_equal_approx(pa.board_zoom, 1.0),
+			"precondition: focusing a grid takes the board off the overview's own zoom of 1.0",
+			"board_zoom %.3f" % pa.board_zoom)
+
+	var key := Vector3i(0, 3, 2)
+	var label : BigNumberLabel = pa._cell_score_labels.get(key)
+	check(label != null and is_instance_valid(label),
+			"a cell that has scored gets a height label at all")
+	if label == null:
+		await _tear_down(view)
+		return
+
+	var top_card_y := pa.slot_center_global(BoardCoord.new(0, 3, 2, 1)).y
+	var expected_gap := CardVisual.card_size_play.y * pa.board_zoom * 0.5
+	var label_bottom := label.global_position.y + label.size.y * pa.board_zoom
+	check(absf((top_card_y - expected_gap) - label_bottom) < 1.5,
+			"the label's bottom sits exactly half a (zoom-scaled) card above its stack's top card, "
+			+ "even off the overview's own zoom of 1.0",
+			"label bottom %.1f vs expected %.1f" % [label_bottom, top_card_y - expected_gap])
 	await _tear_down(view)
