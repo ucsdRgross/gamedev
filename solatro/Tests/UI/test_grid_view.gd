@@ -889,19 +889,24 @@ func _differing_px(a: Image, b: Image, area: Rect2i) -> int:
 # A BOUNCE IS A MOTION, NOT A POSE. Sampled over frames: the board must MOVE past its resting edge
 # and then come back to it. A still frame either side proves nothing.
 # ==============================================================================
+## THE OVERVIEW's HALF (`GAP-025`=(a)): a show opens on the all-grids view (`PlayArea._ready()` calls
+## `open_zoomed_out()`), so this is where `H10`'s edge lives by default -- and OVERVIEW's pan is the
+## wall camera (`GAP-024`=(b)), so the bounce needs the real `Main`/`Wall`/`%Camera2D`, same reason
+## `GAP-026` moved the other camera-dependent checks onto `_stand_up_main_grids`.
 func run_the_board_edge_bounces_test() -> void:
 	behavior_section("THE BOARD EDGE BOUNCES")
-	var view := await _stand_up()
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
 	var pa := view.play_area
-	await _settle_layout(view)
-	check(_board_overflows(pa),
-			"precondition: the board overflows, so it has an edge to bounce off (TP-102)")
-	var smooth := _scroller(pa)
+	var camera := _main_camera(main)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: a show opens on the all-grids view, where the edge is (TP-102)",
+			"mode %d" % pa.view_mode)
 	pa.pan_to_grid(2)
-	await _settle_scroll(view)
+	await _settle_camera(camera)
 	check(pa.pan_grid == 2,
 			"precondition: the view is on the LAST grid, with nowhere further right to go")
-	var rest := smooth.pos.x
+	var rest := camera.position.x
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
 	var farthest := 0.0
@@ -910,21 +915,21 @@ func run_the_board_edge_bounces_test() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
-		farthest = maxf(farthest, absf(smooth.pos.x - rest))
+		farthest = maxf(farthest, absf(camera.position.x - rest))
 	check(farthest > 1.0,
-			"pressing right at the last grid PUSHES the board past its edge (TP-102)",
+			"pressing right at the last grid PUSHES the camera past its edge (TP-102)",
 			"%f px past rest" % farthest)
 	check(pa.pan_grid == 2,
 			"...without stepping onto a grid that is not there",
 			"pan_grid %d" % pa.pan_grid)
-	await _settle_scroll(view)
-	check(absf(smooth.pos.x - rest) <= 1.0,
+	await _settle_camera(camera)
+	check(absf(camera.position.x - rest) <= 1.0,
 			"...and the board comes back to its edge: a bounce, not a scroll",
-			"rest %f -> %f" % [rest, smooth.pos.x])
-	check(_cut_off_px(pa, 2) <= 1.0,
+			"rest %f -> %f" % [rest, camera.position.x])
+	check(_camera_cut_off_px(main, pa, camera, 2) <= 1.0,
 			"the last grid is wholly on screen again once the bounce settles",
-			"%f px off screen" % _cut_off_px(pa, 2))
-	await _tear_down(view)
+			"%f px off screen" % _camera_cut_off_px(main, pa, camera, 2))
+	await _tear_down_main(main)
 
 # ==============================================================================
 # TP-103 - FIX-GRID-1: the clamp collapses to centre on an axis that already fits.

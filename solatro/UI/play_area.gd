@@ -17,6 +17,10 @@ signal board_visuals_ready
 ## there; whoever owns the wall camera listens and drives it from `WallPicture.grid_state()`.
 signal overview_pan_requested(grid_index: int)
 
+## OVERVIEW ONLY: a pan was attempted past the first or last grid. `step` carries the direction
+## (`pan_by_grids`'s own sign) so the listener can push the camera the same way and spring it back.
+signal overview_bounce_requested(step: int)
+
 ## The board has exactly TWO view modes and nothing in between: OVERVIEW shows every grid for
 ## orientation, FOCUSED shows the one grid the player is acting on. Switching is a transition —
 ## there is no intermediate zoom to sit at.
@@ -776,14 +780,40 @@ func _board_local_rect(c: Control) -> Rect2:
 	var z := maxf(scroll_container.scale.x, 0.0001)
 	return Rect2((c.global_position - top_level_vbox.global_position) / z, c.size)
 
-## The edge push-back: velocity spent into the scroll container's OWN overdrag, which supplies the
-## counterforce and carries the board back to rest. Reused rather than hand-tweened so the board's
-## edge feels like every other overscroll in the game — and so nothing here can park the board off
-## its own edge.
+## The edge push-back. FOCUSED keeps the scroll container's OWN overdrag, which supplies the
+## counterforce and carries the board back to rest — reused rather than hand-tweened so the board's
+## edge feels like every other overscroll in the game, and so nothing here can park the board off
+## its own edge. OVERVIEW has no scroller range to spend a kick into (`GAP-024`=(b) moved that
+## panning to the camera), so it asks the camera's owner to bounce instead.
 func _bounce_board(step: int) -> void:
+	if view_mode == ViewMode.OVERVIEW:
+		overview_bounce_requested.emit(step)
+		return
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return
 	smooth.scroll_horizontally(float(step) * SettingsManager.settings.grid_bounce_velocity_px)
+
+## How far `velocity_px` carries a scroller under `damper`'s OWN physics before it settles —
+## simulated frame by frame through `ScrollDamper.slide()`, the same public call the scroller's own
+## `_process()` makes, so a camera bounce reaches exactly as far as the scroller's kick would.
+## `grid_bounce_velocity_px` already lives in the same design-pixel space `grid_position_size_px()`
+## does (both native SubViewport pixels; OVERVIEW's `board_zoom` is `OVERVIEW_BOARD_ZOOM == 1.0`),
+## which is the same space `WallPicture.grid_state()` writes straight into `camera.position` with no
+## rescale — so the returned peak is added to a camera position the same way, unscaled.
+static func bounce_peak_px(damper: ScrollDamper, velocity_px: float) -> float:
+	if not damper or is_zero_approx(velocity_px): return 0.0
+	var velocity := velocity_px
+	var offset := 0.0
+	var peak := 0.0
+	var dt := 1.0 / 60.0
+	var steps := 0
+	while absf(velocity) > 0.5 and steps < 600:
+		var result := damper.slide(velocity, dt)
+		velocity = result[0]
+		offset += result[1]
+		peak = maxf(peak, absf(offset))
+		steps += 1
+	return peak
 
 ## The single write path for the view mode; announces only real changes.
 func _set_view(mode: ViewMode, gi: int) -> void:

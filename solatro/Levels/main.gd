@@ -289,6 +289,34 @@ func _on_overview_pan_requested(grid_index: int) -> void:
 			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
 			.set_ease(settings.wall_travel_ease)
 
+## `H10`'s edge bounce, OVERVIEW's half (`GAP-025`=(a)): the camera overshoots past its resting grid
+## and springs back, through the SAME writer and clock `_on_overview_pan_requested()` above uses.
+## `pan_grid` never moved for a bounce, so the rest pose is `grid_state()` at the grid the view is
+## already on -- no second source of truth for where "home" is.
+func _on_overview_bounce_requested(step: int) -> void:
+	if _current_focus != &"game" or _move_in_flight: return
+	var area := _game_play_area()
+	if not area: return
+	var settings := SettingsManager.settings
+	var rect : PictureRect = _rects[&"game"]
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var card_height := _info_card_height()
+	var rest := WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
+			area.resting_grid(), pitch, card_height)
+	var smooth := area.scroll_container as SmoothScrollContainer
+	var damper : ScrollDamper = smooth.wheel_scroll_damper if smooth else null
+	var peak := PlayArea.bounce_peak_px(damper, float(step) * settings.grid_bounce_velocity_px)
+	var out := WallPicture.panned_state(rect, _window_size, settings, signf(float(step)) * peak,
+			card_height)
+	var camera : Camera2D = wall.get_node(^"%Camera2D")
+	var tween := camera.create_tween()
+	tween.tween_property(camera, "position", out["position"] as Vector2,
+			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
+			.set_ease(settings.wall_travel_ease)
+	tween.tween_property(camera, "position", rest["position"] as Vector2,
+			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
+			.set_ease(settings.wall_travel_ease)
+
 ## The info card's height on screen right now, or -1 when nothing is showing — `info_zoom_state()`
 ## then falls back to the authored cap. Reserving the CAP on every entry pulls the camera back as
 ## far as the longest description would, whatever is actually being read.
@@ -700,6 +728,7 @@ func enter_game() -> void:
 		new_view.run_lost.connect(_on_run_lost)
 		new_view.info_requested.connect(_on_screen_info_hovered)
 		new_view.overview_pan_requested.connect(_on_overview_pan_requested)
+		new_view.overview_bounce_requested.connect(_on_overview_bounce_requested)
 		game_wp.attach_screen(new_view)
 	await _focus_picture(&"game")
 

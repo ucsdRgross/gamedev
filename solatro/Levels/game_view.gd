@@ -21,6 +21,9 @@ signal info_requested(entry: InfoEntry)
 ## Relayed from `PlayArea` so `Main` can step its wall camera -- the board lives inside this view's
 ## own `SubViewport` and has no reach to the camera outside it.
 signal overview_pan_requested(grid_index: int)
+## Relayed from `PlayArea` so `Main` can bounce its wall camera off the board's OVERVIEW edge --
+## same reach problem as `overview_pan_requested` above.
+signal overview_bounce_requested(step: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
 const CONTINUE_FONT_SIZE := 40
@@ -102,6 +105,8 @@ func _ready() -> void:
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
 	play_area.overview_pan_requested.connect(
 			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
+	play_area.overview_bounce_requested.connect(
+			func(step: int) -> void: overview_bounce_requested.emit(step))
 	(deck_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
 	(discard_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
 	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
