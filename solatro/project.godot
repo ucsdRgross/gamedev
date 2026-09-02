@@ -30,6 +30,7 @@ SettingsManager="*uid://0icgb7ix0tbx"
 ProfileManager="*res://Scripts/profile_manager.gd"
 RunManager="*res://Scripts/run_manager.gd"
 LeakSentinel="*res://Scripts/leak_sentinel.gd"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]
 
@@ -51,7 +52,7 @@ window/stretch/aspect="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/yard/plugin.cfg", "res://addons/worldgen/plugin.cfg")
+enabled=PackedStringArray("res://addons/SmoothScroll/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/script-ide/plugin.cfg", "res://addons/worldgen/plugin.cfg", "res://addons/yard/plugin.cfg")
 
 [global_group]
 
