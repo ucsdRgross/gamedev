@@ -4,379 +4,183 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** **Phases 1-5 are complete, and so is Phase 8.** The engine scores grids, the legacy zones
-are gone, the Entrance is pinned to the bottom of the window with its slots under their columns, the
-board stacks UPWARD off a fixed floor, rows ease into their height, a jump carries the stack above
-it, and every row, column and stack shows its own score. Phase 10's CSV half (`S42`, `S43`) landed
-out of order at the owner's instruction.
-
-**PHASE 6 IS COMPLETE** (`S26`-`S30`, all committed and overseer-verified): two view modes, a
-Back/Forward zoom level stack, discrete centred panning, cross-grid arrow selection, touch swipe, and
-refocus on removal. Its by-eye gate at 1, 2 and 3 grids was rendered and looked at, and an
-adversarial pass at the boundary found four defects that a green suite could not — including a
-**touch swipe that no finger could reach while both its tests passed.**
-
-**PHASE 7 IS IN PROGRESS.** Landed and committed: `S31` (the wide picture, height rule, render
-clamp), `S31b` (the focused zoom — `GAP-017` part 3), `S31c` (clipping, so "other grids out of view"
-is true of the PIXELS), `S31d` (the picture widened to three grid positions, giving the camera a
-real step). Phase 9 is the owner's call; Phase 10's remaining three steps are last.
-
-⚠⚠ **START HERE: `S31e` IS COMMITTED, UNVERIFIED, AND HAS A REAL PRODUCT DEFECT.** It is commit
-`6ed95277`, committed deliberately to carry the work across a session boundary — **not because it
-works.** There is no red-then-green and no by-eye pass. Its brief is `GAP-021`'s answer — one grid
-per grid position, furniture NOT duplicated (`Q39` has the Entrance follow the camera, `Q40`=(a) has
-it stay with its committed grid).
-
-⚠ **THE COMMIT MESSAGE UNDERCOUNTS THE DAMAGE. Measured by controlled comparison — same box, same
-poisoned settings, only the code varying:**
-
-```
-58b223aa (pre-S31e): 3802 passed, 2 FAILED   GRID VIEW 178/178, INTERACTION 52/52, GRID LAYOUT 69/71
-6ed95277 (S31e):     3790 passed, 5 FAILED   GRID VIEW 176/178, INTERACTION 51/52, GRID LAYOUT 69/71
-```
-GRID VIEW totals 178 in BOTH runs, so nothing aborted and the comparison is sound.
-
-**`S31e` introduced THREE failures, not two:**
-1. `GRID VIEW: precondition: in the OVERVIEW a neighbouring grid is in frame beside the middle one
-   (TP-140) -- grid 0 false grid 2 false`
-2. `GRID VIEW: ...and that grid is in frame -- [0]`
-3. ⚠⚠ `INTERACTION: a mouse click over a card emits its selection -- 0` — **UNDOCUMENTED IN THE
-   COMMIT MESSAGE, and it is the player's primary verb.**
-
-⚠ **(3) IS A TEST-FIXTURE RACE, NOT A PRODUCT DEFECT — MEASURED, and the first reading was wrong.**
-The click LANDS (the viewport's focus owner after it is the correct control), which rules out rects,
-routing, `mouse_filter` and `S31c`'s clipping. The gate that fails is in `_on_gui_input`
-(`UI/play_area.gd:973-980`): `focused_control == moused_hovered_control`, and
-`moused_hovered_control` (`UI/play_area.gd:35`) is cleared by a native `mouse_exited` between the
-hover event and the button-down.
-**Why: `test_interaction.gd` waits 2 FRAMES after `focus_grid(0)`, and the Entrance track eases for
-~11.** Measured series, no input, `entrance_h_track.position.x`:
-```
-3 grids: -94.93  26.22  31.08  34.92  36.52  37.72  38.29  38.65  38.78  38.81  38.8112 (flat)
-1 grid:  173.59 354.75 357.88 360.63 362.10 363.13 363.83 364.27 364.54 364.72 364.8052 (flat)
-```
-**It SETTLES** — asymptotic, bit-stable by frame ~11-13, and it reproduces at 1 grid exactly as at 3,
-so this is NOT the `_physics_process` never-settles trap and NOT specific to the multi-position
-spread. Causal proof: the same fixture clicking after 2 frames gets `selections: 0`; waiting 15
-frames for the ease to converge gets `selections: 1`. **The Entrance moving on a view change is
-`Q39` working as designed** (*"follows the camera, think of it like a player hand"*).
-⚠ **The fix is `_settle_layout`, never a frame count and never a widened tolerance** — the standing
-rule below already says so. ⚠ **STILL OPEN: why the pre-`S31e` code won this race.** Nobody has
-diffed the ease DURATION or confirmed the old `_sync_entrance_x` converged faster. Until that is
-answered, "stale fixture" is the leading reading, not a proven one.
-⚠ **Worth an owner glance, not blocking:** for ~11 frames after a view change a click on an Entrance
-card silently does nothing, because the card is sliding out from under the cursor. Defensible (the
-card is visibly moving) but it is a real player-facing wart.
-
-⚠ **THE SECOND GRID VIEW FAILURE WAS MISFILED.** It is **`TP-109`'s swipe test**, not a `TP-140`
-companion — the commit message and the earlier handoff text both got this wrong. `TP-109` and the
-INTERACTION failure are now **FIXED and green**. What remains red is `TP-140`'s own two OUT-OF-VIEW
-assertions, and they are **blocked on `GAP-022`, not on calibration:**
-
-⚠⚠ **`S31e` SILENTLY STRETCHED `PlayContainer` TO THE WHOLE PICTURE — SEE `GAP-022`.**
-`Levels/game_view.tscn` went from `anchors_preset = 0, offset_left = 423, offset_right = 1142` to
-`anchors_preset = -1, anchor_right = 1.0`. Measured board window: **x (0.0 .. 3640.476)** of a 3656
-px picture. **No grid can leave a window that wide**, so `TP-140`'s assertions and `H22` are
-STRUCTURALLY UNSATISFIABLE, and `S31c`'s clip has nothing left to clip against. This is `GAP-021`
-option (a) implemented without a ruling, against `GAP-021`'s own instruction to *"report it rather
-than assuming"*. **The two assertions are left RED, unweakened and undeleted** — a check that cannot
-express its intent must not be softened into passing.
-⚠ **OWNER HAS PULLED `H20` (`S33`) AHEAD OF `S32`**, which bears directly on `GAP-022`: until the
-wall re-packs, what a "window" of the picture IS remains undefined, so (a) vs (b) cannot be answered
-against stable geometry.
-
-✅ **THE WALL SQUASH IS FIXED (`H20`, first half of `S33`).** `Wall._size_game_picture()` now also
-pins `keep_aspect = true` on the game entry, so `WallPacker._picture_size()` takes its early return
-instead of the window-aspect stretch that discarded `design_size.x`. Sprite scale
-**(0.333, 1.0) -> (1.0, 1.0)**; packed rect **(1217.778, 685) -> (3656, 685)**.
-**BY EYE: cards are correctly proportioned and their ranks and suits are readable.**
-⚠ **`Q180`=(a) was the authority and the old behaviour was the REJECTED (b)** — the footprint had
-been capped to window aspect with the board squashed inside it, which is (b) plus `Q181`=(a), and
-`Q181` only exists under (b).
-⚠ **The packer risk was measured at the case that FORCES contention**, not the easy one: with all
-six pictures unlocked, `settings` moved `(1224.0, -350.808) -> (2237.354, -641.244)` — the wall
-genuinely re-arranged. Count stayed 6, no overlap, no drop, at three window aspects. `size_multiplier`
-untouched at 1.0.
-⚠ **The camera now frames ~1194 of 3656 wall units — about ONE GRID POSITION.** `H22`'s premise is
-true in the pixels for the first time.
-
-⚠⚠ **AND THE HUD IS NOW OFF SCREEN AT REST — ANSWERED: THE WHOLE HUD FOLLOWS THE CAMERA.** See
-`GAP-022`'s follow-on ruling. Reuse `_sync_entrance_x`'s mechanism; do not invent a second writer.
-
-⚠ **WHY IT PASSED TWO BY-EYE GATES: EVERY SHOT WAS BLIND TO IT.** `grid_zoom_shot` and
-`grid_layer_shot` both instantiate `GameView` DIRECTLY and never touch the `WallPicture` sprite path.
-**`Tests/Visual/wall_game_squash_probe.{gd,tscn}` is the only instrument that renders the product's
-REAL framing.** ⚠ It now builds its `PictureEntry` from `Wall.load_layout()` rather than a
-hand-duplicated copy — **it had silently gone stale against the fix.** A by-eye instrument that
-duplicates production setup drifts from it and then certifies the wrong thing. Still not registered
-in `all_tests.tscn`; the suite stays at 45. Delete the throwaway
-`Tests/Visual/interaction_click_probe.{gd,tscn}`, whose findings are recorded above.
-
-⚠⚠ **THE TWO GRID LAYOUT FAILURES ARE SETTINGS-DRIVEN — PROVEN BY EXPERIMENT, AND THE POISON CUTS
-BOTH WAYS.** The owner's `user://settings.tres` was parked (byte copy, restored afterwards) and the
-suite re-run on in-memory defaults:
-
-```
-POISONED (as shipped in user://)      CLEAN (defaults)
-  GRID LAYOUT  2 FAILED                 GRID LAYOUT  ALL PASS   <- both gone
-  WALL FOCUS   130/130                  WALL FOCUS   2 FAILED   <- newly exposed
-```
-
-- **Both GRID LAYOUT failures vanish on clean settings**, including the `116.0 px` card-on-cell
-  disagreement that had failed at EVERY commit on this branch. **It is not a geometry defect.**
-- ⚠⚠ **AND THE SAME POISON MASKS TWO WALL FOCUS FAILURES**: *"the camera actually moved to the info
-  zoom -- rest pos=(0.0, 0.0) zoom=(1.0, 1.0) -- info pos=(0.0, 0.0) zoom=(1.0, 1.0)"* and
-  *"wall_info_mode is false after toggling Info off"*. They pass only because
-  `wall_transition_delay = 0.001` makes transitions instant. **A test measuring before the thing it
-  measures has happened** — the same fixed-tick-racing-an-eased-transition shape as `TP-112`.
-
-⚠ **THE FIX IS `S21settings`'s OWN RULING, NOT A SETTINGS EDIT.** Owner, verbatim: *"tests should
-have its own settings it tests with over range of possible settings values, that way tuning settings
-wont break tests, and tests that any setting is valid."* **Neither `GRID LAYOUT` nor `WALL FOCUS`
-calls `use_own_settings()`** — both read the live shared `SettingsManager.settings`.
-⚠ `GRID LAYOUT` also never calls `await_siblings_except` while reading shared geometry knobs
-concurrently with WALL RENDER / WALL FOCUS / WALL PROFILE / WALL INPUT / UI VIEWERS — a separate
-cross-suite race, still unproven but plausible.
-
-⚠ **THE WRITE WINDOW IS CLOSED**: `SettingsManager.isolated` moved from `all_tests.gd::_ready()` to
-`_enter_tree()`. `_ready()` fires BOTTOM-UP, so every child suite ran before isolation was armed.
-Verified: a full run with the file parked recreated NO `settings.tres` at all.
-⚠ **File-parking for settings was tried before and DELIBERATELY REVERTED** (`settings_manager.gd`
-records why): a kill mid-move can corrupt or lose the file, whereas a write-suppression flag can
-never be left half-undone. **Do not rebuild it.**
-⚠ **The existing poisoned file is NOT cleaned by any of this** — `isolated` suppresses writes, so a
-poisoned file simply persists. A pristine default is recoverable from `PlayerSettings.new()`'s
-exported defaults. **Do not overwrite it without the owner.**
+**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is nearly done**: the wall
+packs the game picture at its real width, the HUD follows the camera, `H22`'s camera stepping is
+proven end-to-end through a real key route, and `TP-105` exists and is green for the first time.
+**The suite sits at 5 failures and every one is attributed** — none is a mystery.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
-⚠ Flowchart **H — the one Phase 6 implements — is §36 of `design/poker-patience/DESIGN.md`**, not of
-the grid-view design, whose charts are J/K/L/M/N/P.
+⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
+
+## ⚠ THE FIVE FAILURES, AND WHO OWNS EACH
+
+```
+2  GRID LAYOUT  116.0 px card-on-cell, TP-85 mid-growth   CROSS-SUITE INTERFERENCE
+3  GRID VIEW    TP-140 precondition, TP-106 x2            GAP-027, owner ruling
+```
+- ⚠ **GRID LAYOUT ALONE IS `ALL 85 CHECKS PASSED`** with a 0.0 px delta at every height. The
+  failures exist only in the full suite. **Deterministic interference reads exactly like a
+  deterministic bug** — a constant `116.0` survived five wrong diagnoses before isolation settled
+  it. See the settings-isolation entry under Open bugs.
+- The three GRID VIEW ones are `GAP-027`: the overview frames exactly ONE grid.
+
+## ⚠ FIVE DECISIONS WAIT ON THE OWNER
+
+1. **`GAP-027` — the overview zoom.** It frames one grid, contradicting `H5` ("as many grids as fit
+   at a **readable** zoom"). Fitting the whole picture renders a cell block at ~68 px, measured and
+   unusable. Needs a readability floor in pixels, which no default supplies.
+2. **`grid_buffer_px`** — 220 raw px against a 216 px cell block, §1i's table stated at
+   `card_scale` 2.5 while the game ships at 1.0, and no code scales it. ⚠ **MEASURED: it IS a live
+   term in `grid_position_size_px().x`** (`span = count*block + (count-1)*buffer`, `width = span *
+   1.12` reproduces the 1219 pitch exactly), so shrinking it DOES move grids closer. ⚠ **But it
+   will NOT dissolve `GAP-027`**: the camera's visible width is `window.x / zoom` and
+   `focused_scale` picks that zoom from the picture's HEIGHT, so the camera sees ~1218 px however
+   wide the picture is. Even at buffer 0 a neighbour misses the frame by a few px.
+3. **Settings isolation** — the architecture problem below.
+4. **`GAP-028`'s `H24` half** — `H24` wants >3 grids; the picture is authored for exactly 3 and
+   `Q166`=(a) forbids sizing it from the run. Unreachable today (`Q7` caps at 3).
+5. **Row-label authority is ANSWERED** (cells authoritative) and shipped; nothing owed.
+
+⚠ **`GAP-025`, `GAP-026`, `GAP-027`'s withdrawn attempt and `GAP-028`'s narrow half were decided
+UNDER STANDING AUTHORISATION, not by the owner.** Each says so at the top of its file. Review them.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
-Derived from `design/poker-patience/DESIGN.md` version 2 and `design/grid-view/DESIGN.md` version 2.
+Derived from `design/poker-patience/DESIGN.md` v2 and `design/grid-view/DESIGN.md` v2.
 
-If you are executing this and you reach a decision the design does not cover:
-1. Reversible and clearly within intent -> do it, and append one line to `ASSUMPTIONS.md` citing the
-   node you were working on. Never silently.
-2. Otherwise -> **park that thread, file a gap, keep working on unaffected threads, tell the owner.**
+Reaching a decision the design does not cover:
+1. Reversible and clearly within intent -> do it, append one line to `ASSUMPTIONS.md` citing the
+   node. Never silently.
+2. Otherwise -> **park that thread, file a gap, keep unaffected threads moving, tell the owner.**
 3. The design contradicts itself or the code -> always a gap, highest priority.
 4. ⚠ Two documents disagreeing is NOT automatically (3) — read the answer they are both restating.
 
-File gaps at `design/<slug>/gaps/GAP-NNN.md`, options in the questionnaire grammar. Do not resolve
-a gap by picking an answer. Do not delete a gap — it is closed by a new design version.
+Gaps live at `design/<slug>/gaps/GAP-NNN.md`, options in the questionnaire grammar. Do not resolve a
+gap by picking an answer. Do not delete one — it is closed by a new design version.
+⚠ **CHECK FOR A FOURTH OPTION FIRST.** Six gaps here were answered with an option nobody listed,
+including `GAP-023`, where the owner replied with a CRITERION (touch-drag feel) that invalidated all
+four options as written.
 
 ## Environment — traps that have each cost real time
 
-- Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records it per box. ⚠ That table
-  still lists **4.7.1** for Box A, which is STALE — Box A now has
-  `Godot_v4.7.2-stable_win64_console.exe` and the suite runs on it. ⚠ **A cache built
-  by a different Godot build CRASHES the suite** with `0xC0000005` and no banner. Fix:
-  `<godot> --headless --path solatro --import`, then re-run. Do that once on a machine you have not
-  run the suite on before.
+- Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records the binary per box.
+  ⚠ A cache built by a different build CRASHES the suite with `0xC0000005` and no banner — fix with
+  `<godot> --headless --path solatro --import`.
 - Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400` from the repo
-  root. Runs WINDOWED, ~4 min, self-quits. **Close the owner's editor first.**
-- ⚠ **PARSE-CHECK A TEST FILE BEFORE SPENDING THE FULL RUN ON IT**:
-  `<godot> --headless --path . --check-only --script <file> 2>&1 | grep <file>`. Real `Parse Error`
-  lines name their line number; the trailing `Compilation failed` at the first autoload reference is
-  noise this mode always produces. ⚠ **GDScript treats "Variant provided where a subtype is
-  required" as a PARSE ERROR** — `dict.get(...)` and `Array.min()` both return Variant, so assign
-  them to a typed local first. A suite that fails to parse HANGS every suite waiting on it, and the
-  run dies on the 400 s timeout with no banner.
-- ⚠ **A new `class_name` referenced from an existing script HANGS the suite** rather than failing to
-  parse. Fix: `--headless --path . --import`. Always pass `--timeout` so a hang fails fast.
-- ⚠ `export PYTHONIOENCODING=utf-8` before any python heredoc, or the console encoding kills the
-  script MID-EDIT and leaves a source file half-written.
-- ⚠ **Judge by the failure SET and the SUITE COUNT, never the check total** — the total varies run to
-  run, and a suite that fails to compile silently drops out (measured: 43 -> 41, twice). Read the log
-  for `SCRIPT ERROR` even when the banner says all passed.
-- ⚠⚠ **A KILLED SUITE POISONS `user://` AND LATER RUNS THEN HANG WITH NO BANNER.** Suites park the
-  real save and the real SETTINGS and restore them at the end; a run killed by `--timeout` never
-  reaches the restore, so TEST values become the live `user://settings.tres`. The save backup is
-  self-healing (`backup_real_save` restores first); the SETTINGS are not. **Before blaming your own
-  diff for a no-banner run, check `user://settings.tres` for test values and `user://run_save/` for
-  a leftover `*.testbak`.**
-- ⚠ **NEVER RUN TWO SUITES AT ONCE.** Two Godot processes write the same log, and the console banner
-  and the log banner then DISAGREE (measured: console "3465 CHECKS PASSED" against the log's
-  "3 FAILED"). Check no `Godot_v4.7.2-stable_win64_console` process is alive before starting, and
-  make console and log agree before believing either.
-- ⚠ **THE TEST LOG IS `<user data>/Solatro/logs/test/test_output_all.log`.** A file of the SAME NAME
-  sits directly under `Solatro/` and is months stale — it greps clean while the banner reports
-  failures. Check the mtime.
-- ⚠ **`doc_check.py --changed` is STRICTER than the full run on design-id citations.** Touch an old
-  file and it reports the standing backlog as errors in that file. The full run is the gate: 0
-  errors, 7 warnings. Judge a regression by the full run plus a diff check for ADDED ids.
-- By-eye rendering: `<godot> --path solatro res://Tests/Visual/reveal_shot.tscn` and
-  `res://Tests/Visual/grid_layer_shot.tscn`, which write `user://reveal_shots/*.png`. They stand up a
-  REAL `GameView`; they are the only things that show the board. ⚠ **`grid_layer_shot` now shoots
-  the board at 1, 2 AND 3 grids** (`grid_board_1/2/3.png`) and prints each grid's panel centre, the
-  window centre and per-grid off-screen px — a picture plus the numbers behind it. It is NOT
-  registered in `all_tests.tscn`; the suite stays at 45.
-  ⚠⚠ **SINCE `S31`, `grid_layer_shot` NO LONGER SHOWS THE PRODUCT'S FRAMING FOR MULTI-GRID BOARDS.**
-  It renders the board in a **1152x648** window, but `S31` sized the game picture to fit three grids
-  (far wider). So its n=3 shot reports grids 0 and 2 cut off by ~185/~193 px — **that is HARNESS
-  framing, not the product.** n=1 and n=2 still read true (they fit either way). **Whoever next
-  needs a by-eye pass on a 3-grid board must render inside the real picture**, or the image is
-  answering a question nobody asked.
+  root. WINDOWED, ~4 min. **Close the owner's editor first.**
+- ⚠ **RUN ONE SUITE ALONE to discriminate interference**:
+  `<godot> --path solatro res://Tests/UI/test_grid_layout.tscn --windowed`, ~2 min. This is the
+  cheapest discriminating test in the repo and it was overlooked for hours.
+- ⚠ **`--check-only --script` IS NOT USABLE HERE** — it fails on unresolved autoloads for every test
+  file. **Launch one scene for two seconds instead**; a compile break is instant to see.
+- ⚠ **A COMPILE ERROR CASCADES AND NAMES NONE OF ITS SYMPTOMS.** One bad call in `game_view.gd` took
+  down `card_data.gd`/`pip_suit.gd` and surfaced as "the map won't start a game" and "cards have no
+  pips". ⚠ **Confirm a method EXISTS** (`ClassDB.class_get_method_list`) before calling it;
+  `Camera2D.get_global_transform_interpolated()` does not exist in 4.7.2.
+- ⚠ **NEVER TWO GODOT PROCESSES AT ONCE** — console and log banners then disagree. Check before every
+  run. ⚠ **Never kill by image name** (a hook blocks it; it has twice closed the owner's editor).
+  List `Id, MainWindowTitle`; only `Solatro (DEBUG)` is a harness orphan; `Solatro - Godot Engine` is
+  the owner's session — STOP and ask.
+- ⚠ **Judge by the failure SET and PER-SUITE counts, never the check total.**
+- ⚠ **The log is `<user data>/Solatro/logs/test/test_output_all.log`** — a same-named file under
+  `Solatro/` is months stale. Check the mtime.
+- `export PYTHONIOENCODING=utf-8` before any python heredoc.
+- ⚠ **`user://settings.tres` is POISONED with test values and stays that way.** `isolated` suppresses
+  writes, so a poisoned file simply persists. A pristine default is recoverable from
+  `PlayerSettings.new()`. **Do not overwrite it without the owner.**
 
 ## Standing rules this stream paid for — do not rediscover them
 
-**Scoring and the engine**
-- The runaway guard (`act_event_cap`, `MAX_TICKS`) is CORRECTNESS-critical: there is no line-scored
-  memory and no within-pass guard, so a remove-and-replace effect re-scores forever without it.
-- `save_state()` is called LAST in `place_card_in_grid` — the scores live on `state`, so an earlier
-  snapshot rewinds the board without rewinding what it scored.
-- **`upper_zone` IS the Entrance**, and `BoardCoord` always named it `ENTRANCE_ROW`. The LOWER zone
-  stays deliberately unmapped; a path that needs it is a real gap.
-- Prop routes REUSE `LineGeometry.row_cells`, which structurally cannot leave its grid.
+**Instruments and evidence**
+- ⚠ **BY-EYE BEATS GREEN, and it has caught four defects the suite could not**: the wall squash, both
+  label bugs, and a fix whose own purpose-built check passed while the render showed the defect.
+- ⚠ **RED-THEN-GREEN IS NECESSARY, NOT SUFFICIENT.** It proves a check responds to a change, not that
+  it measures what a player sees.
+- ⚠ **THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT, NOT THE ONE THAT DESCRIBES IT.**
+  Uneven card DEPTHS was the symptom; uneven banked score LEVELS was the driver. A zoom bug is
+  invisible while a harness never leaves zoom 1.0, because `1.0 * anything == anything`.
+- ⚠ **AN INSTRUMENT THAT DUPLICATES PRODUCTION SETUP DRIFTS FROM IT** and then certifies the wrong
+  thing. `wall_game_squash_probe` builds its `PictureEntry` from `Wall.load_layout()` for that
+  reason. `grid_zoom_shot`/`grid_layer_shot` instantiate `GameView` DIRECTLY and are blind to the
+  whole wall composite — that blindness is why the squash passed two by-eye gates.
+- ⚠ **A STILL FRAME IS THE WRONG INSTRUMENT FOR ANYTHING WITH A DURATION.** Run it, report what MOVED.
 
 **The board's geometry**
-- ⚠ **THE UNIT OF A GRID "ROW" IS THE HEIGHT LAYER `h`, NOT THE CELL ROW `y`.**
-  `_append_grids_row_major` orders grid cards `for h: for every cell`, so a height layer is
-  contiguous in `card_layer` and a row `y` is not — and only the contiguous unit is bracketable.
-- **ONE CONTAINER PER ROW** (owner ruling), not a `GridContainer`, which gives every cell the row's
-  full height so a cell has nothing to bottom-align against. **The cell's own frame is the LAST child
-  of the slot** — it marks the CELL and does not rise with the stack.
-- **The floor comes from `TopLevelVBox` via `ALIGNMENT_END`**, not `size_flags_vertical`. Caching it
-  is safe because it does not move when a stack deepens; a per-PANEL rect cache lagged a whole depth
-  pitch and slid every row on the board. ⚠ Do not refresh a rect cache from `_physics_process` if the
-  floor code writes to that rect — the board never settles.
+- ⚠ **THE UNIT OF A GRID ROW IS THE HEIGHT LAYER `h`, NOT THE CELL ROW `y`.**
+- **ONE CONTAINER PER ROW** (owner ruling). The cell's own frame is the LAST child of the slot.
+- **The floor comes from `TopLevelVBox` via `ALIGNMENT_END`.** Do not refresh a rect cache from
+  `_physics_process` if the floor code writes to that rect.
 - **The panel and the cell block are NOT the same rect.** Everything that walks rows goes through
-  `_cells_root`, and `_grid_slot_center_global` measures from the CELL block; reading the panel put
-  every card a gutter off its cell. The Entrance x-slaves to the COLUMNS for the same reason.
-- **Cross-grid alignment lives in `_measure_grid_row_height` and nowhere else** — that is what keeps
-  it purely visual, since scoring never reads a row height.
-- **A setting that changes geometry must be part of the row-height memo's key**; it moves every row
-  on the board without touching `state.revision`.
-- **An eased row height cannot use the revision memo** — while easing it is a function of time, and
-  the memo froze the animation on its first frame.
-- **Growth is tracked separately from the reveal** (`_layer_grown`): a reveal opens and then CLOSES,
-  and `set_reveal_cards` replaces its wanted-set every section, so growth living there would shrink
-  a row under a card still on it.
-- **The Entrance's visible strip and its own height are two different numbers.** Only the FLOOR
-  clears the real height; the strip stays the player's setting.
-- **Board knowledge lives in `PlayArea.jump_card_with_its_stack`, never in `CardVisual`.** The lift
-  rides `offset`, inside the card root and invisible to the containers — the one place the "rows
-  never overlap" rule is deliberately broken.
-- **The height label is positioned by arithmetic in `card_layer`, not parented into the cell**, or it
-  would add its own height to `_measure_grid_row_height`, the arithmetic every card and prop is
-  placed by.
-- **One label per (line, height)** (`GAP-015`), bottom-aligned with `h` rising.
-- ⚠ **ONE RENDERER AT A TIME** if this area is ever reworked — the pinned Entrance only landed on the
-  third attempt, after the coordinate migrated and the zones stopped rendering. And ⚠ **two
-  independent draw orderings sharing one index space re-queue every frame until the stack
-  overflows.**
+  `_cells_root`.
+- **Cross-grid alignment lives in `_measure_grid_row_height` and nowhere else.**
+- **An eased row height cannot use the revision memo** — the memo froze the animation on frame one.
+- ⚠ **EVERY SITE THAT ADDS A MEASURED GLOBAL TO A LOCAL SIZE MUST BE ZOOM-AWARE.** Height labels were
+  47 px out in focused mode for exactly this reason.
+- ⚠ **`custom_minimum_size` IS A FLOOR, NOT A CAP.** A `VBoxContainer` is
+  `max(own minimum, sum of children + separations)`, so surplus children push a bottom-aligned
+  gutter's rows upward and the error accumulates.
+- ⚠ **A VALUE SAFE TO READ PER-FRAME IS NOT SAFE TO CAPTURE ONCE.** `_sync_entrance_x` survives a
+  fallback it re-derives every frame; a latched copy was poisoned forever.
+- ⚠ **A FRESHLY-ADDED PANEL'S `Cells` NODE EXISTS BEFORE ITS `global_position` IS VALID** — a
+  null-check is not enough to know a measured position has settled.
 
 **The view, the camera and the wall**
-- ⚠⚠ **AN INTEGER INDEX BEATS A MEASURED POSITION.** The furniture's pan shift is
-  `pan_grid * grid_position_size_px().x` — nothing to settle, nothing to latch, nothing to go stale.
-  Two earlier fixes were both managing the consequences of choosing a MEASURED quantity as the
-  reference, and both were deleted when the arithmetic replaced them.
-- ⚠ **A FRESHLY-ADDED PANEL'S `Cells` NODE EXISTS BEFORE ITS `global_position` IS VALID** — the
-  deferred sort has not run, so a null-check is NOT enough to know a measured position is settled,
-  and the stale value can equal the very value you are trying to avoid.
-- ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`.** The viewport's focus-neighbour
-  search runs in the GUI pass and CONSUMES any arrow that finds a neighbour, so an
-  `_unhandled_input` reader never runs while a cell has focus. Arrows are MODE-DEPENDENT
-  (`Q162`=b): cells when FOCUSED, whole grids in the OVERVIEW.
-- **The zoom level stack is focused -> overview -> wall.** Back zooms out one level and, once in the
-  overview, FALLS THROUGH so `wall_back` still reaches the wall. That fall-through is the case the
-  owner's example does not cover.
-- **A board narrower than the window parks LEFT** -- a `ScrollContainer` hands its content the
-  content's own minimum width. Fixed by `SIZE_EXPAND_FILL` on `TopLevelVBox`, **HORIZONTAL ONLY**;
-  the floor is `ALIGNMENT_END` and must stay untouched.
-- ⚠ **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** -- a `Container` rewrites its
-  children's scale on every sort. Its rect is divided by the same factor so the window keeps its
-  pixels. **The scale is NOT animated**: the scroller clamps every aim against the reach it can see
-  at that instant, so an eased scale destroys the aim issued with it.
-- ⚠ **`SubViewport.size` LIES WHEN OVERSIZED** -- past the GPU cap the framebuffer is destroyed and
-  the size set to 0 internally while the GDScript property still reports what it was given. Assert
-  the pure `clamped_render_size()` and that the writer engaged `size_2d_override`, never a read-back.
-- ⚠ **`focused_scale()` RESTS THE CAMERA BY OVERFILLING**, so a picture whose aspect IS the window's
-  is framed WHOLE at rest at any size. **A wider picture alone gives the camera no step** -- the
-  aspect minimum applies to ONE GRID POSITION, and the picture is `grid_max_count` positions wide.
-- ⚠ **A BY-EYE INSTRUMENT THAT DUPLICATES PRODUCTION SETUP DRIFTS FROM IT** and then certifies the
-  wrong thing. `wall_game_squash_probe` builds its `PictureEntry` from `Wall.load_layout()` for
-  exactly this reason. `grid_zoom_shot`/`grid_layer_shot` instantiate `GameView` DIRECTLY and are
-  structurally blind to the whole wall composite -- that blindness is why the squash passed two gates.
+- ⚠ **THE ARROW READER MUST SIT ON THE CELL'S OWN `gui_input`** — the viewport's focus-neighbour
+  search consumes arrows in the GUI pass.
+- **The zoom level stack is focused -> overview -> wall**, with Back falling through in the overview.
+- ⚠ **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** — a `Container` rewrites its
+  children's scale on every sort. **It is not animated**: the scroller clamps every aim against the
+  reach it can see that instant.
+- ⚠ **`SubViewport.size` LIES WHEN OVERSIZED** — past the GPU cap the framebuffer is destroyed while
+  the property still reports what it was given. Assert the pure `clamped_render_size()`.
+- ⚠ **THE WALL CAMERA FRAMES A `Sprite2D` OF THE SUBVIEWPORT'S TEXTURE**, not the live scene. So
+  camera zoom MAGNIFIES a fixed render target: at the focused `board_zoom` of 1.94 that visibly
+  softens the card art, which is why `GAP-024` was answered (b). ⚠ **Zooming OUT minifies and is
+  safe**; only magnification costs sharpness.
+- ⚠ **`focused_scale()` PICKS ITS ZOOM FROM THE PICTURE'S HEIGHT**, so the camera's visible WIDTH is
+  ~1218 px however wide the picture is. No width change widens the view.
+- ⚠ **PHYSICS INTERPOLATION FORCES `Camera2D` ONTO THE PHYSICS TICK** while `_process` reads on idle,
+  so a sampled position is not the rendered one. This is the open HUD jitter.
 
 **Tests**
-- **A test must wait for the geometry to STOP MOVING** (`_settle_layout`), not for a frame count: a
-  container sorts its children a frame after the rebuild that changed them.
-- **A test waiting for a jump to settle waits for `absf(y)` to fall, not for the sign to flip** — the
-  descent is `TRANS_BACK` and overshoots.
-- **A test helper must not be named `run_*`** — that is the registration gate's entry-point
-  convention and it will demand the helper be called from `_ready`.
-- **A touch test must run AFTER the mouse tests**: a touch leaves no HOVER and the mouse selection
-  path needs one.
-- **`SettingsManager.isolated` is set run-wide by `all_tests`, not per suite.** `use_own_settings()`
-  (a fresh `PlayerSettings`) is opt-in and must be called before a suite builds anything — swapping
-  the resource mid-suite orphans every reference already taken.
-- **The sentinel gate's needles are built by concatenation**, or it flags its own constant.
+- **A test must wait for the geometry to STOP MOVING** (`_settle_layout`), never a frame count.
+  ⚠ `_settle_layout` polls the COMPUTED SLOT, not a visual's tween — `_settle_visuals` exists for
+  checks that compare an ANIMATED position.
+- **A test helper must not be named `run_*`** — that is the registration gate's entry-point rule.
+- **A touch test must run AFTER the mouse tests.**
+- ⚠ **`use_own_settings()` and `restore_real_settings()` REASSIGN A GLOBAL**; `backup_real_settings()`
+  alone does not.
 
 ## Tasks
 
-⚠ **The stale-step tooling only recognises `S<digits>`.** `designloop/src/gaps.mjs::planSteps()` does
-NOT see the lettered ids (`S19b`, `S20b4b`, `S31b`...), so a gap whose blast radius names a lettered
-step will not appear in its stale list. Check lettered steps by hand.
-
-⚠ **LANDED STEPS CARRY NO FORENSICS HERE.** The evidence is in the commit messages, the decisions in
-the gap files, and the durable rules in "Standing rules" above. This ledger records only what is
-true now.
+⚠ `designloop/src/gaps.mjs::planSteps()` only sees `S<digits>` — lettered ids (`S31b`, `S33cam`) must
+be checked by hand.
 
 ```yaml
 - id: S1
-  description: 'BoardCoord; GridData and grid storage; the position index; the cell mutation API.'
+  description: 'BoardCoord; GridData; the position index; the cell mutation API.'
   status: done
 - id: S5
-  description: 'CardDataIterator over grids; line enumeration (ROW, COL, DIAG, HEIGHT_V); the section.'
+  description: 'CardDataIterator; line enumeration (ROW, COL, DIAG, HEIGHT_V); the section.'
   status: done
 - id: S9
-  description: 'The detector card, the scoring wiring, height scoring, the buckets, grid_score.'
+  description: 'The detector card, scoring wiring, height scoring, the buckets, grid_score.'
   status: done
 - id: S14
-  description: 'The combo model; the allotment and creator meta cards; TypeInput refill; commit.'
+  description: 'The combo model; allotment and creator meta cards; TypeInput refill; commit.'
   status: done
 - id: S19
   description: 'THE REBUILD: rules1 becomes the grid game; six suites follow it.'
   status: done
-- id: S19b
-  description: 'The legacy coordinate migration -- SUPERSEDED, folded into S20b by GAP-009.'
-  status: superseded
 - id: S20
-  description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, zone renderers deleted, the pinned Entrance.'
+  description: 'THE VIEW REPLACEMENT: GridPanel/CellSlot, zone renderers deleted, pinned Entrance.'
   status: done
-  notes: 'Covers S20b1-S20c. Game.next()/_perform_next() STAY -- only the BUTTON retired.'
-- id: S20b4b
-  description: 'The layering port: hoop split and reveal both take a BoardCoord; 5 fixtures ported.'
-  status: done
-  notes: 'The three Entrance hoop tests are deliberately NOT ported -- porting would delete coverage.'
 - id: S21
-  description: 'PHASE 5, the flipped board: upward stacks, eased row heights, the spring, score labels.'
+  description: 'PHASE 5: upward stacks, eased row heights, the spring, score labels.'
   status: done
-  notes: 'Covers S21-S25. TP-93 is a RATCHET against grid subtotals -- it proves it can SEE labels first.'
-- id: S21settings
-  description: 'Tests own the settings they test with, and sweep the range. SETTINGS RANGE suite.'
-  status: done
-- id: S35
-  description: 'Phase 8: every placement an undo step; pending_action replay; validate() aliasing.'
-  status: done
-- id: S37
-  description: 'The closing pass: adversarial review, /simplify, /docs; CARD_SEPARATION re-derived.'
-  status: done
-- id: S42
-  description: 'PHASE 10, CSV HALF, out of order: CARD_CATALOG axis columns, superseded marks.'
-  status: done
-  notes: 'AXIS COLUMNS ARE KEYWORD-DERIVED, a filter aid, NOT a contract -- nothing may branch on them.'
-- id: S43
-  description: 'The draft appended, the post-grid curated effects CSV, the accepted-ideas CSV, blinds.'
-  status: done
-  notes: 'EVERY BLIND PAYS FOR PLAYING INTO IT (owner ruling); asserted: no empty payoff.'
-
-# --- PHASE 6: the view. PLAN.md section 3; flowchart H is DESIGN.md section 36. ALL LANDED.
 - id: S26
-  description: 'Two view modes; opens zoomed out; a click in the overview ORIENTS instead of placing.'
+  description: 'PHASE 6: two view modes; opens zoomed out; a click in the overview ORIENTS.'
   status: done
 - id: S27
   description: 'Back/Forward zoom as a level stack; discrete centred panning; edge bounce.'
@@ -384,102 +188,36 @@ true now.
 - id: S28
   description: 'The one-scroll-container ratchet; >3 grids shifts which are in frame.'
   status: done
-  notes: 'NO product code changed. grid_max_count governs UNLOCKING, not Board.add_grid.'
 - id: S29
-  description: 'Cross-grid arrow selection, the overview grid cursor, and touch swipe.'
+  description: 'Cross-grid arrow selection, the overview grid cursor, touch swipe.'
   status: done
   notes: 'THE SWIPE SHIPPED DEAD AND ITS TESTS PASSED -- prove the ROUTE, not the handler.'
 - id: S30
   description: 'Refocus the left survivor on removal; re-centre on EVERY removal.'
   status: done
-  notes: 'Q318=(a) OVERRODE ITS DEFAULT: nearest survivor PREFERRING THE LEFT, not nearest to centre.'
-
-# --- PHASE 7: the wall.
 - id: S31
-  description: 'The game picture sized for 3 grids, the height rule, the render-target clamp.'
+  description: 'PHASE 7: the picture sized for 3 grids, the height rule, the render clamp.'
   status: done
-- id: S31b
-  description: 'THE FOCUSED ZOOM: the focused grid is as tall as its window (GAP-017 part 3).'
-  status: done
-- id: S31c
-  description: 'Clip the board scroll container, so "other grids out of view" is true of the PIXELS.'
-  status: done
-  notes: 'TP-141 COUNTS PAINTED PIXELS, NOT GEOMETRY -- and that is the whole point.'
-- id: S31d
-  description: 'WIDEN THE GAME PICTURE to grid_max_count grid positions, so the camera has a step.'
-  status: done
-- id: S31e
-  description: 'One grid per grid position (GAP-021), furniture not duplicated.'
-  status: blocked
-  notes: >
-    PART-LANDED, commit 1c8a2ae1. The INTERACTION click race and TP-109 are FIXED and green.
-    TP-140's two out-of-view assertions are RED and DELIBERATELY UNWEAKENED, blocked on GAP-022's
-    camera boundary. See the State section.
+  notes: 'Covers S31b (focused zoom), S31c (clip), S31d (widen), S31e (one grid per position).'
 - id: S33
-  description: 'PHASE 7: H20 the wall re-packs around the wider picture; H21 Info mode.'
+  description: 'H20 the wall re-packs; H21 Info mode; plus the camera work GAP-024 pulled in.'
   status: in_progress
   notes: >
-    PULLED AHEAD OF S32 by owner ruling. H20 LANDED, commit 112424c5 -- keep_aspect on the game
-    entry, the squash gone, verified by eye. H21/TP-119 (Q178=(a)) is the remaining half.
-- id: S33hud
-  description: 'GAP-022 follow-on: the whole HUD follows the camera.'
+    H20 LANDED: keep_aspect on the game entry, squash gone, verified by eye. The camera steps in
+    OVERVIEW (GAP-024=(b)), the bounce follows it (GAP-025), and the HUD follows the camera.
+    REMAINING: H21/TP-119 (Info mode, Q178=(a)), and the HUD jitter.
+- id: S35
+  description: 'Phase 8: every placement an undo step; pending_action replay; validate() aliasing.'
   status: done
-  notes: >
-    Code landed, suite clean. NOT blocked on the camera -- that earlier claim was wrong.
-    pan_window_left_x() is extracted from the expression _sync_entrance_x already computed, so
-    there is ONE writer read twice. Undo IS included per owner ruling.
-    ⚠ THE REAL DEFECT, measured: _recapture_pan_origin() is deferred off board_changed and one
-    deferred call fires while the new grid panel's cell subtree does not exist, so
-    pan_window_left_x() takes its SILENT FALLBACK to grid_container.global_position.x (4.0)
-    instead of the settled 1723.0. The origin is captured ONCE and latched, leaving the furniture
-    permanently 1719 px out. _sync_entrance_x survives the identical fallback because it
-    RE-DERIVES EVERY FRAME.
-    ⚠⚠ A VALUE THAT IS SAFE TO READ PER-FRAME IS NOT AUTOMATICALLY SAFE TO CAPTURE ONCE.
-    FIXED, and verified by eye: shift is now pan_grid * grid_position_size_px().x. All the
-    furniture is on screen with the board.
-- id: S33cam
-  description: 'TP-105/H22: the wall camera steps between grid positions.'
-  status: in_progress
-  notes: >
-    SCOPED, and the first slice landed: WallPicture.grid_state() beside resting_state(), with
-    5 checks in WALL RENDER. NO product wiring yet -- nothing pans on the camera.
-    GAP-023=(e): a CONTINUOUS PAN OFFSET crosses the SubViewport boundary, not a grid index.
-    Grid step = animate the offset to n * pitch; touch drag = set it from the finger delta; one
-    mechanism, so the player cannot feel the seam. THE HORIZONTAL SCROLLBAR MUST BE HIDDEN.
-    SLICE 2 LANDED (ed8dfb0b): panned_state() is the OFFSET primitive and grid_state() delegates
-    to it; wall_picture.gd no longer references PlayArea in code.
-    ⚠⚠ GAP-024=(a): THE FOCUSED ZOOM MOVES ONTO THE CAMERA. The SubViewport texture is currently a
-    CLIPPED single-grid slice -- board_zoom scales scroll_container up while _apply_board_zoom_rect
-    pins the on-screen rect to the UNZOOMED window, so off-window content is never rendered. A
-    camera can only crop pixels that exist, which is why TP-105 could not be a re-point.
-    ⚠ TP-139 and TP-141 must RE-EARN their evidence. S31b's identity (focused grid's cells
-    y [3.0..558.0] against a board window of y [3.0..558.0]) is what the camera zoom must reproduce,
-    and H20's sprite scale (1.0, 1.0) must not regress.
-    ⚠⚠ TP-140 WAS RE-POINTED AND THE CHANGE WAS REVERTED ON PURPOSE. The only camera rect reachable
-    from the fixture is RECONSTRUCTED from resting_state(), which knows nothing about grid focus, so
-    it would have stayed GREEN THROUGHOUT THE REWRITE regardless of whether the real camera was
-    correct -- turning the one check that can catch the rewrite into one that cannot.
-    ⚠ THE FIX: the PRODUCT should expose the camera's visible x-range, and the test should read the
-    same thing the product uses. Do it as part of the rewrite.
-    ⚠ RESIDUAL CLEANUP OWED: grid_state() is INDEX-shaped and should sit on top of an
-    OFFSET-shaped primitive; and it reuses PlayArea.grid_position_size_px(), giving wall_picture.gd
-    a PlayArea dependency it never had -- take the pitch as a parameter like resting_grid.
-- id: S33cam2
-  description: 'GAP-024=(b): the camera steps in OVERVIEW; the scroller keeps the focused zoom.'
-  status: in_progress
-  notes: >
-    THE ROUTE IS PROVEN with real key events through the production chain -- camera steps by exactly
-    one pitch (1218.56), tweened ~18 frames, bounces at the last grid, and drops its ANIMATION but
-    not its STATE while a wall transition owns the camera.
-    ⚠ 13 GRID VIEW tests now fail: they assert the SCROLLER's horizontal position, which in overview
-    is dead range by design. RE-POINTING THEM IS THE NEXT STEP -- and do it only now the route is
-    proven, never before, or the new assertions just describe whatever the camera happens to do.
-    ⚠ TWO REAL HOLES, both flagged rather than dropped: H10's edge bounce is NOT re-pointed
-    (_bounce_board still nudges the scroller, so OVERVIEW has no bounce -- grid_bounce_velocity_px is
-    a scroller-shaped number and camera overdrag needs a ruling), and WallTransition.visible_rect()
-    is promoted but not yet consumed by any test.
-    ⚠ BY-EYE IS NOT CLOSED: the step is confirmed NUMERICALLY only, because all three grids are
-    empty placeholders and the two renders look identical. Close it with a content-bearing render.
+- id: S37
+  description: 'The closing pass: adversarial review, /simplify, /docs.'
+  status: done
+- id: S42
+  description: 'PHASE 10, CSV half: CARD_CATALOG axis columns, superseded marks.'
+  status: done
+- id: S43
+  description: 'The curated effects CSV, the accepted-ideas CSV, blinds.'
+  status: done
 - id: S32
   description: 'The saved pan and resting_state() (H18, H19).'
   status: pending
@@ -498,269 +236,129 @@ true now.
   status: pending
 ```
 
-## Verified vs assumed
-
-- **Verified** — `ALL 44 SUITES: 3624 CHECKS PASSED`, zero failures, console banner and log banner
-  AGREEING (see the two-process trap in Environment). 23 placeholder warnings; 22 ObjectDB instances
-  leaked at exit plus two PagedAllocator/resource errors, which is the standing exit-time noise the
-  wrapper reports and the in-run gate cannot see (they are in the process streams, not `godot.log`).
-  `py .claude/tools/doc_check.py`: 0 errors, 7 warnings (the standing style backlog). Zero design ids
-  in product code.
-- **Verified** — `npm --prefix designloop run check -- solatro/poker-patience`: 0 errors, 0 warnings,
-  0 dag defects, 0 stale chart nodes, 10 gaps closed and 0 open. The standing notes it does report
-  are 41 prose answers with no option and 23 `⚑contract` questions no PLAN §1 block cites.
-- **Verified by eye** — `grid_occupied.png` from `Tests/Visual/grid_layer_shot.tscn`: cards cover
-  their cells, empty cells still frame, the Entrance strip is welded to the BOTTOM OF THE WINDOW with
-  its five slots exactly under the five grid columns, and the scored line fired. At 4x on the top
-  row, each hoop ring passes BEHIND the card faces on its upper arc and IN FRONT across the lower —
-  a GRID-anchored prop bracketing, which did not happen before.
-- **Assumed, not checked** — that `card_scale` 1.0 suits every OTHER screen (deck viewer, map, info
-  card). Only the play area was looked at.
-- ⚠ **Measured, and NOT a defect**: sampling showed 0 of 16 props moving over 90 frames. A HARNESS
-  artefact — `run_props` is awaited inside `place_card_in_grid`, so the flight is over before any
-  polling loop starts. To watch motion you must sample DURING the placement await.
-
 ## The three gates a change here must satisfy
 
-1. **The card effect API** — a modifier may NOT touch `Game`, `GameData` or `Board` directly;
-   everything goes through `CardEffectApi` as `CardModifier.api`, and a suite gate fails on any
-   direct reference inside a modifier. ⚠ Extending the layer (with a `##` comment) is the sanctioned
-   move. The gate matches the substring `"Board."`, so `BoardCoord` passes but `Board.locate_in_cell`
-   would trip it. The five `PipSuit` subclasses are gated; `PropModifier` is not. See
-   `design/card-effect-api/DESIGN.md`.
-2. **The sentinel gate** — nothing anywhere writes `== BoardCoord.NOWHERE` or `!=`. `NOWHERE` is a
-   shared instance and `==` on a RefCounted is IDENTITY, so a rebuilt sentinel is not equal to it.
-   Use `is_nowhere()`; compare coords with `equals()`; key dictionaries and `Array.find` on `pack()`.
-   Comment lines are exempt, which is how the rule can be written down.
-3. **The zone-only ratchet** — `test_game_headless.gd::ZONE_ONLY_TESTS` lists the 6 test files that
-   assert against the legacy renderer. The set may SHRINK, never grow, and porting a file fails the
-   gate until its name is struck off, so the list cannot rot.
+1. **The card effect API** — a modifier reaches the game only through `CardEffectApi` as
+   `CardModifier.api`; a suite gate fails on any direct `Game`/`GameData`/`Board` reference inside
+   one. The gate matches the substring `"Board."`, so `BoardCoord` passes.
+2. **The sentinel gate** — nothing writes `== BoardCoord.NOWHERE`. `NOWHERE` is a shared instance and
+   `==` on a RefCounted is IDENTITY. Use `is_nowhere()`, `equals()`, and `pack()` for keys.
+3. **The zone-only ratchet** — `ZONE_ONLY_TESTS` lists the 6 files asserting against the legacy
+   renderer. The set may SHRINK, never grow. All six test live legacy machinery; any leaving would
+   be a bug.
 
-## Gaps — twenty-four filed, ONE OPEN (`GAP-018`); `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b)
+## Gaps — twenty-eight filed
 
-`design/poker-patience/gaps/GAP-001..009` and `GAP-015..016`, `design/grid-view/gaps/GAP-010..014`.
-Answers are quoted verbatim at the top of each and **outrank `PLAN.md` and `NAMES.md`, because they
-are newer.**
-
-⚠ **`GAP-018` IS OPEN — `grid_swipe_threshold_mm`'s default is dead against its own clamp.** 8 mm at
-96 DPI is 30.2 px, under the `[32, 96]` touch-target floor, so turning the knob down does nothing and
-turning it up does nothing until ~8.47 mm. `Q190`=(a) fixes the CLAMP and the settings table fixes
-the DEFAULT at 8; they disagree, and which gives way is the owner's call. Blocks nothing.
-
-**`GAP-017` = answered** (the escalation below is what it was answering) (escalated from a timing question by
-the by-eye gate — the absent knob is producing wrong geometry now, not later). `grid_buffer_px` and `grid_overview_margin`
-are registered in `NAMES.md` §6 against `S28`, which after `GAP-016`=(d) has no site for either —
-but the missing buffer is what makes the 3-grid board 731 px wide in a 703 px viewport.
-⚠ **The gap as filed claimed `Q35` is unanswered; it is not — `Q35`=(b)** fixes that grids are
-spaced by their CELL blocks with the labels in the buffer, so only the TIMING is open. Corrected in
-the file. `S29`/`S30` are unaffected; the natural home is `S31`.
-
-**`GAP-016` = (d)**, the fourth option found per `GAP-014`'s lesson: Phase 6 finishes on the
-scroller and the camera migration lands in Phase 7 with the picture it needs. `TP-105` moved from
-`S28` to `S31`; no design node amended. ⚠ **This does NOT license the scroller keeping grid-stepping
-forever — Phase 7 still owes the migration.**
-`GAP-014` is NOT A GAP — resolved as a defect, because a fourth option existed. It is kept because it
-was filed correctly and the reasoning matters: **check for a fourth option before filing.**
+**Open:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own clamp),
+`GAP-027` (the overview zoom), `GAP-028`'s `H24` half.
+**Owner-ruled:** `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b).
+⚠ **Decided under standing authorisation, NOT by the owner — review:** `GAP-025`, `GAP-026`,
+`GAP-028`'s narrow half, and `GAP-027`'s withdrawn attempt.
 
 ## Owner working agreements
 
-- **Reuse, do not reinvent.** Verbatim: *"reducing duplicate code as much as possible and no
-  reinventing existing setups, or using existing engine methods when available."* ⚠ Put it in every
-  step brief. Declining reuse is fine ON RECORD, with the reason in the file.
+- **Never commit to `main`** — the owner drives it through GitHub Desktop. **On any other branch
+  committing is fine and needs no permission**; one verified step per commit, evidence in the message.
+- **Reuse, do not reinvent.** Declining reuse is fine ON RECORD with the reason.
 - **The light layer is out of scope.**
 - **No design ids in product code** — not in a comment, not in an `@export_group` label. `Tests/` is
   exempt.
-- **By-eye beats green.** The draw-order defect was found by the owner looking, not by 44 suites.
-- **Old tests do not block the rebuild.** Verbatim: *"dont let tests from old version stop you since
-  they need to be remade too."*
+- **No comment inside a method body.** A `##` above it says WHY.
+- **Online research is allowed and expected** when a blocker may be a misunderstanding of engine
+  mechanics. Cite the source; keep "the docs say X" separate from "I measured X here".
+- **Old tests do not block the rebuild.**
 
 ## Open bugs
 
-- ⚠ **~8 px OF THE FOCUSED GRID'S TOP ROW IS NOW CUT.** The zoom overshoots its window by 7.8 px
-  (the focused grid's cells measure `y [-4.8 .. 558.0]` against a board window of `y [3.0 .. 558.0]`),
-  and clipping turned that overshoot from "drawn over the DEBUG button row" into "cut". **The
-  overshoot is the ZOOM's, not the clip's** — `focused_board_zoom` sizes the CELL BLOCK to the
-  window, and the row's outline rim sits outside it. Cosmetic, and the fix belongs with the zoom's
-  sizing rather than the clip.
-- ⚠ **`pan_to_grid` measures the scroll container's FULL rect**, so it aims ~4 px right of the
-  visible window once the vertical scrollbar shows (measured: the middle grid rests at 775.0 against
-  a window centre of 778.5). Deliberately left alone — fixing it moves every pan on the board.
-- ⚠⚠ **THE SUITE HAS A FLAKY FAMILY, AND A SINGLE GREEN RUN IS NOT EVIDENCE ON IT.** Three
-  assertions, all the same shape — **a fixed tick allowance racing an EASED layout or scroll** —
-  fail intermittently on IDENTICAL production code:
-  - `test_visual_layers.gd` *"a light follows its card across a board SCROLL"* (measured 2 failures
-    in 4 runs; `373.00 px off` when it fails). It writes `scroll_horizontal` directly and allows 3
-    ticks for a SMOOTH scroller to catch up.
-  - `test_grid_layout.gd` *"a card on the GRID is pushed UP when the Entrance stacks"*
-    (`496.0 -> 504.0`) and *"the board's LOWEST card clears the Entrance's real height"*
-    (`lowest card bottom 531.0 vs Entrance top 501.0`). Measured: **both failed on one overseer run
-    and both passed on the very next run of the same tree**, which then read
-    `ALL 45 SUITES: 3782 CHECKS PASSED`.
-  - `test_grid_view.gd` **`TP-112`** — **measured 3 failures in 6 runs** of unchanged code. *"...and it TRAVELLED there — mid-move it is further off centre
-    than at rest"* (`94.2 px mid-move vs 93.8 px at rest`). **Measured 1 failure in 3 runs of one
-    unchanged tree** — sub-pixel margin, same shape. NOT fallout from the `TP-140`/`TP-109` fixture
-    change, which was the competing reading and was ruled out by re-running.
-  ⚠ **The fix is a settle-until-still wait (`_settle_layout` / `_settle_scroll` already exist and
-  are the right instrument), NEVER a widened tolerance** — widening would silence the only thing
-  telling you the geometry had not finished moving.
-  ⚠ **Practical consequence for anyone verifying: on a failure in this family, RE-RUN before
-  believing it, and say which run you are quoting.**
-- ⚠ **AN EMPTY CELL'S ZONE CARD COUNTS AS "ON A CARD"** for `H17`'s drag-vs-pan discrimination
-  (`S29`), because it is the cell's drop target. `Q192`=(a) says *"a drag that STARTS on a card is a
-  placement; a drag that starts on empty board is a pan"* and this follows it literally — but if the
-  owner meant an empty cell reads as empty BOARD, it is a one-line change in
-  `PlayArea._card_control_at`. **Worth an owner ruling before Phase 7.**
-- ⚠ **THE SCROLL CONTENT'S OWN ORIGIN CAN SHIFT** as the region around it resizes (measured: its top
-  moved -1 -> +7 when the Entrance's reservation changed). The board tracks the FLOOR exactly, which
-  is correct — but "the board moved by exactly X" is an identity the layout does not owe, and a test
-  asserting one will fail on a board that is behaving. ⚠ **Phase 6 rewrites this path; read it
-  first.**
-- ⚠ **THE PAN IS THE SCROLLER DOING THE CAMERA'S JOB UNTIL PHASE 7.** `GAP-016`=(d) parked this
-  deliberately: `QR3`=a and `H11`/`H23` put grid-stepping on the wall's camera, `S27` shipped it on
-  the `SmoothScrollContainer`, and the migration lands in **`S31`** with the wide picture a camera
-  pan needs. ⚠ **Phase 7 owes it — do not let `S31` close without it.**
-- ⚠ **SIX test files still assert only against the legacy renderer, and NONE of them can port.**
-  `ZONE_ONLY_TESTS` is now entirely MACHINERY (3 — `test_board`, `test_mods`, `test_spotlight`)
-  testing legacy code that is still LIVE (`find_data_vec3` has 9 product callers,
-  `get_zone_from_vec3` 7, `is_data_topmost` 7, `add_column`/`remove_column` 9), plus ENTRANCE-ONLY
-  (3) naming `upper_zone`, which IS the Entrance. Any of these leaving the list would be a BUG, not
-  progress. A name APPEARING there means a new zone-only test was written.
-- ⚠ **`Tools/spotlight_tool.gd` traces no cascade.** PRE-EXISTING: `git log -S place_card_in_grid` on
-  it is empty — it has only ever used `move_data_to_coord` into the legacy lower zone.
-- ⚠ **`Tests/Interaction/test_interaction.gd:459` is `check(true, ...)`** — a parked check that can
-  never fail. Restore it to assert `game.processing` once a placement is a paced, cancellable act.
-- **The COMBO label draws over the End button** — visible in `grid_occupied.png`.
+- ⚠⚠ **THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 5 failures.**
+  `use_own_settings()` and `restore_real_settings()` REASSIGN the global `SettingsManager.settings`;
+  `backup_real_settings()` alone does not. Three suites swap it — `SETTINGS RANGE` (chained),
+  `GRID LAYOUT` and `WALL FOCUS` (unchained). **The ordering chain only orders its own
+  participants**, so a non-participant is unordered against everyone and no chain position helps.
+  ⚠ **TWO ATTEMPTS TO SERIALISE VIA `await_siblings_except` DEADLOCKED** (`GRID LAYOUT` ↔
+  `SETTINGS RANGE`, then ↔ `GRID VIEW`; identical exclusion lists both times), each costing a 400 s
+  timeout. **DO NOT TRY A THIRD SHAPE WITHOUT MAPPING THE WHOLE WAIT GRAPH.** The chain is
+  `INTERACTION → UI PROPS → VISUAL LAYERS → GRID VIEW → SETTINGS RANGE → E2E RUN → LEAK CANARY →
+  WALL PAUSE`, each excluding everything after it.
+  Candidate fixes, none picked: (a) every settings-touching suite joins the chain; (b) stop
+  `use_own_settings()` mutating a global; (c) snapshot values rather than swapping the object.
+- ⚠ **THE HUD JITTERS DURING A PAN.** It no longer leaves the screen, but its offset oscillates
+  ±150-360 px because physics interpolation puts `Camera2D` on the physics tick while
+  `GameView._process` reads it on idle. ⚠ **The fix is NOT a smoothing lerp** — that is a second
+  easing mechanism chasing the first.
+- **Two cosmetic overlaps**: the Deck and Undo draw over the wall shell's Back/Forward/Wall buttons,
+  and the skill text is clipped at x~0.
+- **~8 px of the focused grid's top row is cut** — the zoom overshoots its window by 7.8 px.
+- **`pan_to_grid` measures the scroll container's FULL rect**, aiming ~4 px right of the visible
+  window once the vertical scrollbar shows. Deliberately left alone.
+- ⚠ **An empty cell's zone card counts as "on a card"** for the drag-vs-pan discrimination. `Q192`=(a)
+  read literally; worth an owner ruling if an empty cell should read as empty BOARD.
+- **For ~11 frames after a view change, a click on an Entrance card silently does nothing** — the
+  card is easing out from under the cursor.
+- **`Tests/Interaction/test_interaction.gd:459` is `check(true, ...)`** — a parked check.
+- **The COMBO label draws over the End button.**
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
-- **`PLAN.md` §3 says `S26` implements H22; `TEST_PLAN.md` assigns H22's only test (TP-105) to
-  `S28`.** Resolved in favour of the test plan — H22 lands with H23 in `S28`. The PLAN.md
-  parenthetical for `S26` should read *(implements H4, H6)*; it was left unedited.
-- **`PLAN.md` 1.1 / `TEST_PLAN.md` TP-02 state an arithmetically wrong example** — *"5 columns left
-  of (grid 1, x 0) is (grid 0, x 4)"*. At width 5 it is ONE column left. Tests assert the correct
-  behaviour; the docs were left unedited.
 
 ## Next up
 
-**Suite as it stands: `ALL 45 SUITES: 3825 passed, 9 FAILED`.** Every failure is understood and
-attributed; none is a mystery.
-
-### ⚠ TWO OWNER RULINGS BLOCK REAL WORK
-
-1. **`GAP-027` — the overview frames ONE grid, so it is not an overview.** Parked, not answered:
-   choosing the zoom means choosing the number that decides how the game looks at its most-used
-   view, and `H5`'s word *"readable"* is what no default supplies. Attempted answer (a) was
-   MEASURED WRONG — fitting the whole picture renders a 216 px cell block at ~68 px.
-   ⚠ **The oddity underneath may be the real question**: a grid POSITION is 1219 px while a cell
-   block is 216 px — ~1000 px of empty board between neighbours, traced to `grid_buffer_px` being
-   220 raw px against a 216 px block with §1i's table stated at `card_scale` 2.5 while the game
-   ships at 1.0. **Twice declined; now load-bearing.**
-2. **ROW LABEL ALIGNMENT — the owner reported it by eye and it is real.** `RowLabels` is a
-   `VBoxContainer` whose per-row height is FIXED by score `levels` (`play_area.gd:2035`), while
-   `Cells`' per-row height is DEPTH-DRIVEN (`_own_grid_row_height`, `:1324`). They agree only at the
-   container's top and bottom edge, so they drift on any board with uneven stacks, at any zoom.
-   Three fixes, each a real cost: **cells authoritative** (labels take the measured row height;
-   the gutter's rows become uneven), **labels authoritative** (rows forced uniform; contradicts the
-   eased depth-driven height `S21`-`S23` built), or **arithmetic** (labels leave the container and
-   are positioned per row like the height labels already are; a second positioner to keep in sync).
-
-### THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 9 failures
-
-⚠ **`GRID LAYOUT` ALONE IS GREEN: `ALL 74 CHECKS PASSED`, 0.0 px delta at every height.** In the
-full suite it reads exactly `116.0` every time. **Deterministic cross-suite interference, not
-geometry** — a constant value misled five separate diagnoses before isolation settled it.
-Likely mechanism, unproven: `test_grid_layout.gd:587` reads `entrance_visible_rows` off the LIVE
-SHARED settings; another suite changing it moves the Entrance height, hence the floor, hence every
-card by a fixed amount.
-⚠ **The root cause is structural**: `use_own_settings()` and `restore_real_settings()` both REASSIGN
-the global `SettingsManager.settings` (`backup_real_settings()` alone does NOT — it only sets
-`isolated`). Three suites swap it: `SETTINGS RANGE` (chained), `GRID LAYOUT` and `WALL FOCUS`
-(unchained). **The ordering chain only orders its own participants**, so a non-participant is
-unordered against everyone and NO chain position can protect against it.
-⚠⚠ **TWO ATTEMPTS TO SERIALISE VIA `await_siblings_except` DEADLOCKED** — `GRID LAYOUT` ↔
-`SETTINGS RANGE`, then `GRID LAYOUT` ↔ `GRID VIEW` (identical exclusion lists both times). Each cost
-a 400 s timeout. **DO NOT TRY A THIRD SHAPE WITHOUT MAPPING THE WHOLE WAIT GRAPH FIRST.**
-The chain, for reference: `INTERACTION → UI PROPS → VISUAL LAYERS → GRID VIEW → SETTINGS RANGE →
-E2E RUN → LEAK CANARY → WALL PAUSE`, each excluding everything after it.
-Candidate fixes, none picked: (a) every settings-touching suite joins the chain; (b) stop
-`use_own_settings()` mutating a global; (c) snapshot/restore values rather than swapping the object.
-
-### THE REMAINING SEVEN GRID VIEW FAILURES
-
-- **2 bounce checks** — `GAP-025`, the feature genuinely is not built. `_bounce_board()` still nudges
-  the scroller, dead range in overview. **Left honestly red on purpose.**
-- **4 overview-framing checks** — `GAP-027`, above.
-- **1 unexplained: `TP-138` "wholly in frame -- 253.050110 px off screen"**. ⚠ A 216 px cell block
-  inside a ~1194 px camera window should fit with room to spare. **NOT DIAGNOSED. Measure it before
-  assuming any gap covers it** — the likely lead is the handoff's own rule that *"the panel and the
-  cell block are NOT the same rect"*.
-
-### THEN
-
-`TP-141`'s painted-pixel evidence RE-EARNED against the camera boundary (not relabelled), `S32`
-(saved pan / `resting_state()`), `S34` (`wall_editor` knobs), the two HUD cosmetic overlaps
-(Deck/Undo over the wall shell buttons; skill text clipped at x~0), Phase 9 (owner's call), and
-Phase 10's `S40`/`S41`/`S44`.
-
-**Open, not blocking:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own clamp);
-the ~11-frame window after a view change where a click on an Entrance card silently does nothing.
+1. **The five owner decisions above** — `GAP-027` and `grid_buffer_px` gate the visual work.
+2. **The HUD jitter** — physics-tick vs idle-tick sampling.
+3. **`TP-141` must RE-EARN its painted-pixel evidence** against the camera boundary, not be
+   relabelled. It counts pixels precisely because a position assertion passed both before and after
+   the defect it once proved.
+4. **`S33`'s `H21`** (Info mode, `Q178`=(a)), then **`S32`**, then **`S34`**.
+5. **Phase 9** (owner's call) and **Phase 10's `S40`, `S41`, `S44`.**
 
 ### Opening prompt for the next session
 
 ```
-Continue the poker-patience grid work on branch `poker-patience`.
+Continue the poker-patience grid work on branch `poker-patience`, in the worktree
+gamedev-poker-patience.
 
 READ IN THIS ORDER:
-  1. solatro/HANDOFF_poker_patience.md - THIS FILE. Its State, Environment, "Standing rules",
-     "three gates" and Open bugs sections are the traps; do not rediscover them.
-  2. solatro/design/poker-patience/PLAN.md section 3 (Phase 7), section 1 (contracts).
-  3. solatro/design/poker-patience/DESIGN.md section 36 - FLOWCHART H, which Phase 7 implements.
-  4. The gap files: TWENTY-ONE filed. GAP-016, 017, 019, 020, 021 are the Phase 6/7 chain and
-     their OWNER ANSWER sections OUTRANK PLAN.md, TEST_PLAN.md and NAMES.md.
-  5. solatro/design/card-effect-api/DESIGN.md - modifiers reach the game only via
-     CardModifier.api, and a suite gate enforces it.
+  1. solatro/HANDOFF_poker_patience.md — THIS FILE. Its "five failures", Environment,
+     "Standing rules" and Open bugs sections are the traps; do not rediscover them.
+  2. The gap files. TWENTY-EIGHT filed. ⚠ GAP-025, GAP-026, GAP-028's narrow half and
+     GAP-027's withdrawn attempt were decided UNDER STANDING AUTHORISATION, not by the
+     owner — each says so at its top. Confirm them before building further.
+  3. solatro/design/poker-patience/DESIGN.md §36 — flowchart H.
 
-FIRST, BEFORE ANYTHING ELSE: run the suite. HEAD (6ed95277) is S31e, which is COMMITTED BUT
-UNVERIFIED and leaves 2 GRID VIEW failures - finish it properly or `git revert 6ed95277`.
-Last fully verified commit is 58b223aa.
-
-GROUND TRUTH (see Environment for the import trap on a new box):
+FIRST: run the suite. Expect ALL 45 SUITES with 5 FAILED, all attributed:
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
-  Expect ALL 45 SUITES, zero failures. Judge by the failure SET and the SUITE COUNT, never
-  the check total. ⚠ A single green run is NOT evidence: three assertions race an eased
-  layout and flake - but two of them were a REAL regression once, so re-run to
-  discriminate and never widen their tolerances.
+  ⚠ Close the owner's editor first. ⚠ Never two Godot processes at once.
+  ⚠ RUN ONE SUITE ALONE to discriminate interference — GRID LAYOUT alone is 85/85.
 
-THE WORK: S31e, then TP-105, then S32, S33, S34.
+A GODOT MCP IS AVAILABLE THIS SESSION. Use it where it beats the shell:
+  - editor_screenshot / project_run for by-eye gates, which caught four defects the
+    suite missed;
+  - logs_read instead of grepping the log file, and note WHICH log;
+  - node_get_properties / scene_get_hierarchy to measure a live rect instead of
+    writing a throwaway probe;
+  - script_patch for surgical edits.
+  ⚠ It does NOT replace the rules: no two Godot processes, by-eye still beats green,
+  and a compile error still cascades into scripts that name none of the symptoms.
 
-NON-NEGOTIABLES, each of which caught a real defect on this stream:
-  - RED-THEN-GREEN for every new test, and check the red failed the checks you EXPECTED.
-    Compare PER-SUITE counts across the red and green runs: if they match, nothing aborted.
-    Do the red runs YOURSELF; never accept a self-reported green.
-  - VERIFY VISUALS BY EYE, with the RIGHT instrument. grid_zoom_shot renders inside the REAL
-    picture; grid_layer_shot renders a bare 1152x648 window and its multi-grid framing is a
-    harness artefact. grid_clip_flight_shot shows a card in flight, frame by frame.
-  - ASSERT WHAT IS PAINTED OR MEASURED, not an int the code just assigned itself.
-  - MEASURE BEFORE YOU BUILD. Four Phase 7 steps ended `blocked` because a premise was false;
-    each was worth more than the code would have been.
-  - NO COMMENT INSIDE A METHOD BODY (owner rule). A `##` comment above the method says WHY it
-    exists. Wanting an inline comment means the code needs a NAME.
-  - COMMITS ARE ALLOWED on this branch (owner: "you are allowed to commit when its not in
-    main branch"), one verified step per commit, evidence in the message.
-  - REUSE, don't reinvent. Declining reuse is fine ON RECORD with the reason in the file.
+NON-NEGOTIABLES, each of which caught a real defect:
+  - VERIFY VISUALS BY EYE, with an instrument that renders the PRODUCT's framing.
+    grid_zoom_shot and grid_layer_shot instantiate GameView directly and are blind to
+    the wall composite.
+  - RED-THEN-GREEN for every new check — and remember it is NECESSARY, NOT SUFFICIENT.
+  - THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT.
+  - CONFIRM AN API EXISTS before calling it (ClassDB.class_get_method_list), then
+    launch one scene for two seconds. A compile error cascades.
+  - MEASURE BEFORE YOU BUILD. Five Phase 7 threads ended blocked on a false premise.
+  - NO COMMENT INSIDE A METHOD BODY; no design ids in product code.
+  - COMMITS ARE FINE off `main`, one verified step each.
 
-If you hit a decision no document fixes: file a gap at solatro/design/<slug>/gaps/GAP-NNN.md
-following GAP-001's shape, park that thread, keep the unaffected ones moving, and QUOTE the
-gap's own option text to the owner. A bug is not a gap. ⚠ CHECK FOR A FOURTH OPTION FIRST -
-five gaps on this stream were answered with an option nobody had listed, two of them written
-by the owner. ⚠ And VERIFY A CLAIM BEFORE BUILDING A GAP ON IT: GAP-017 was filed claiming a
-question was unanswered when it was answered, and GAP-016 arose from citing Q182, which sits
-on a pruned branch.
+If you hit a decision no document fixes: file a gap, park that thread, keep the others
+moving, and QUOTE the gap's own option text to the owner. ⚠ CHECK FOR A FOURTH OPTION —
+six gaps here were answered with an option nobody listed.
 ```
 
 ## References
 
-- `design/poker-patience/PLAN.md` - the steps; section 1 the normative contracts.
-- `design/poker-patience/DESIGN.md` - the authority on the game's behaviour; section 36 is chart H.
-- `design/grid-view/DESIGN.md` - the view's design, its answers and its six charts.
-- `design/poker-patience/TEST_PLAN.md` and `NAMES.md` - every planned test; every identifier.
-- `design/card-effect-api/DESIGN.md` - the modifier boundary the first gate enforces.
-- `ARCHITECTURE_REVIEW.md` - the engine's contracts (undo, pending-action replay, layering).
+- `design/poker-patience/PLAN.md` — the steps; §1 the normative contracts.
+- `design/poker-patience/DESIGN.md` — the authority on behaviour; §36 is chart H.
+- `design/grid-view/DESIGN.md` — the view's design and its charts.
+- `design/poker-patience/TEST_PLAN.md`, `NAMES.md` — every planned test; every identifier.
+- `design/card-effect-api/DESIGN.md` — the modifier boundary the first gate enforces.
