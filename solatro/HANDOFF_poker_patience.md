@@ -77,7 +77,11 @@ four options as written.
   ⚠ A cache built by a different build CRASHES the suite with `0xC0000005` and no banner — fix with
   `<godot> --headless --path solatro --import`.
 - Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 600` from the repo
-  root. WINDOWED. **Close the owner's editor first.**
+  root. WINDOWED.
+  ⚠ **THE OWNER'S GODOT EDITOR STAYS OPEN — IT HOSTS THE `godot-ai` MCP.** Owner ruling: it "should
+  not cause any issues". **Do NOT close it and do NOT ask to.** This SUPERSEDES the older
+  "close the owner's editor first" instruction. The one-process rule still binds for GAME and TEST
+  processes: never run two of those at once.
   ⚠ **USE 600, NOT 400.** `--timeout` is a GLOBAL wall-clock limit on the whole 45-suite run (one
   Godot process; `run_tests.py` `process.wait(timeout=...)`), and the runner's own default is 600.
   **Warm the run is ~190 s, but COLD — right after the editor closes — it exceeds 400 s** and dies
@@ -93,10 +97,13 @@ four options as written.
   down `card_data.gd`/`pip_suit.gd` and surfaced as "the map won't start a game" and "cards have no
   pips". ⚠ **Confirm a method EXISTS** (`ClassDB.class_get_method_list`) before calling it;
   `Camera2D.get_global_transform_interpolated()` does not exist in 4.7.2.
-- ⚠ **NEVER TWO GODOT PROCESSES AT ONCE** — console and log banners then disagree. Check before every
-  run. ⚠ **Never kill by image name** (a hook blocks it; it has twice closed the owner's editor).
-  List `Id, MainWindowTitle`; only `Solatro (DEBUG)` is a harness orphan; `Solatro - Godot Engine` is
-  the owner's session — STOP and ask.
+- ⚠ **NEVER TWO GAME OR TEST PROCESSES AT ONCE** — console and log banners then disagree. Check
+  before every run. ⚠ **Never kill by image name** (a hook blocks it; it has twice closed the owner's
+  editor). List `Id, MainWindowTitle`; only `Solatro (DEBUG)` is a harness orphan.
+  ⚠ **`Solatro - Godot Engine` is the owner's editor and it is EXPECTED to be running** — it hosts
+  the `godot-ai` MCP. Leave it alone; do not stop it, and do not treat it as a blocker.
+  ⚠ It uses `Godot_v4.7.2-stable_win64.exe` (GUI); the suite uses `..._console.exe`. Different
+  binaries, so both being present is normal.
 - ⚠ **Judge by the failure SET and PER-SUITE counts, never the check total.**
 - ⚠ **The log is `<user data>/Solatro/logs/test/test_output_all.log`** — a same-named file under
   `Solatro/` is months stale. Check the mtime.
