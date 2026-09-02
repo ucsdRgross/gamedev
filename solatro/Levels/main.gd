@@ -245,7 +245,7 @@ func _settle_camera() -> void:
 	camera.zoom = Vector2.ONE * (state["zoom"] as float)
 
 ## `WallPicture.resting_state()`, stepped by the game's OVERVIEW pan when that is what is showing
-## (`GAP-024`=(b)): the scroller keeps the focused zoom untouched, so only the OVERVIEW steps
+## the scroller keeps the focused zoom untouched, so only the OVERVIEW steps
 ## through the camera. Every other picture, and the game while FOCUSED, is the plain resting pose.
 func _camera_resting_state(rect: PictureRect, settings: PlayerSettings) -> Dictionary:
 	var area := _game_play_area()
@@ -289,7 +289,7 @@ func _on_overview_pan_requested(grid_index: int) -> void:
 			settings.grid_pan_duration).set_trans(settings.wall_travel_trans) \
 			.set_ease(settings.wall_travel_ease)
 
-## `H10`'s edge bounce, OVERVIEW's half (`GAP-025`=(a)): the camera overshoots past its resting grid
+## The edge bounce, OVERVIEW's half: the camera overshoots past its resting grid
 ## and springs back, through the SAME writer and clock `_on_overview_pan_requested()` above uses.
 ## `pan_grid` never moved for a bounce, so the rest pose is `grid_state()` at the grid the view is
 ## already on -- no second source of truth for where "home" is.

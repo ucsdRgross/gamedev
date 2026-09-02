@@ -64,3 +64,28 @@ which drifts whenever a randomised suite is in the run.
 
 Applies to any suite in any project here. See [[running-godot-scenes]] for what a banner does and
 does not prove.
+
+## ⚠ RED-THEN-GREEN IS NECESSARY, NOT SUFFICIENT
+
+It proves a check RESPONDS to the change. It does not prove the check measures what a player sees.
+
+Measured: a row-label alignment check went red without its fix (5 failures) and green with it, and
+was **still measuring the wrong thing** — its fixture banked one score per row, so the grid-wide
+level count never exceeded one, so the overflow that causes the defect could not occur. The suite
+said fixed; the rendered board plainly showed the bug. **Only the by-eye gate caught it.**
+
+⚠ **THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT, NOT THE ONE THAT DESCRIBES IT.**
+The visible symptom was uneven CARD DEPTHS; the driving variable was uneven BANKED SCORE LEVELS.
+Specifying the symptom produced a check that passed against a broken implementation.
+Same shape elsewhere: a zoom-dependent bug is invisible while the harness never leaves zoom `1.0`,
+because `1.0 * anything == anything`.
+
+## ⚠ RUN THE SUITE ALONE TO DISCRIMINATE CROSS-SUITE INTERFERENCE
+
+When a failure is reproducible but its cause resists explanation, **run that suite by itself.**
+Measured: two checks failed at every commit on a branch and survived five different diagnoses
+(a settings value, contention, chain serialisation, a real geometry defect, a settling instrument).
+The suite alone passed 74/74 with a 0.0 px delta. **Deterministic interference reads exactly like a
+deterministic bug** — a constant value looks like geometry and is not.
+⚠ The tell is a **rotating casualty**: the same suites pass alone and fail together while WHICH
+check fails changes run to run. That is one problem, not several.

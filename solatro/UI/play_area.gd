@@ -292,8 +292,8 @@ var new_data_card : Dictionary[CardData, CardVisual]
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
 	# ⚠ **THE HORIZONTAL SCROLLBAR MUST NOT ADVERTISE WHICH MECHANISM IS MOVING THE VIEW** (owner
-	# ruling, `GAP-023`) -- a camera step in the overview and a scroll in focused mode must read as
-	# the same motion. Only the bar is hidden; the vertical axis keeps its own bar and its `H13` job.
+	# a camera step in the overview and a scroll in focused mode must read as the same motion. Only
+	# the bar is hidden; the vertical axis keeps its own bar and its tall-stack job.
 	var h_bar := scroll_container.get_h_scroll_bar()
 	if h_bar: h_bar.visible = false
 	# Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on
@@ -749,7 +749,7 @@ func pan_to_grid(gi: int) -> void:
 	if gi < 0 or gi >= grid_container.get_child_count(): return
 	pan_grid = gi
 	# ⚠ **OVERVIEW: THE CAMERA IS THE SINGLE HORIZONTAL AUTHORITY.** The scroller's horizontal aim
-	# is dead range there (`GAP-024`) — retired rather than left as a second writer.
+	# is dead range there — retired rather than left as a second writer.
 	if view_mode == ViewMode.OVERVIEW:
 		overview_pan_requested.emit(gi)
 		return
@@ -783,7 +783,7 @@ func _board_local_rect(c: Control) -> Rect2:
 ## The edge push-back. FOCUSED keeps the scroll container's OWN overdrag, which supplies the
 ## counterforce and carries the board back to rest — reused rather than hand-tweened so the board's
 ## edge feels like every other overscroll in the game, and so nothing here can park the board off
-## its own edge. OVERVIEW has no scroller range to spend a kick into (`GAP-024`=(b) moved that
+## its own edge. OVERVIEW has no scroller range to spend a kick into (that
 ## panning to the camera), so it asks the camera's owner to bounce instead.
 func _bounce_board(step: int) -> void:
 	if view_mode == ViewMode.OVERVIEW:

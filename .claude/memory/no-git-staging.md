@@ -1,6 +1,6 @@
 ---
 name: no-git-staging
-description: "User uses GitHub Desktop; don't run git add/stage commands (deletions via git rm are fine when needed, but plain file deletion works too)"
+description: "Never commit to main — the owner drives it through GitHub Desktop; on ANY OTHER BRANCH committing is fine and needs no permission"
 metadata: 
   node_type: memory
   type: feedback

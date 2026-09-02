@@ -11,7 +11,7 @@
 - [Machine profiles](machine-profiles.md) — per-box repo root, Godot binary, GPU, Node; the ONLY home for absolute paths
 
 **Working agreements**
-- [No git staging](no-git-staging.md) — never `git add` or commit; the owner uses GitHub Desktop
+- [No git staging](no-git-staging.md) — never commit to `main`; on any other branch committing is fine
 - [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments, kept short
 - [Design ids stay out of code](design-ids-stay-out-of-code.md) — no `Q183=a`/`GAP-017` in a comment, never in a user-facing string
 - [Verify visuals by eye](verify-visuals-by-eye.md) — describe the rendered image; a still cannot verify a duration
