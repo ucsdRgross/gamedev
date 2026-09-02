@@ -199,6 +199,16 @@ func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bo
 	var r := _grid_world_rect(main, pa, gi)
 	return r.end.x > visible.position.x and r.position.x < visible.end.x
 
+## Does the board's real span, first grid to last, exceed the CAMERA's OWN `visible_rect()`? The
+## OVERVIEW pan is the camera (`GAP-024`=(b)), so this is the overview's version of
+## `_board_overflows()`, which measures the scroller instead.
+func _camera_board_overflows(main: Main, pa: PlayArea, camera: Camera2D) -> bool:
+	var window_size := main.get_viewport().get_visible_rect().size
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var first := _grid_world_rect(main, pa, 0)
+	var last := _grid_world_rect(main, pa, pa.grid_container.get_child_count() - 1)
+	return last.end.x - first.position.x > visible.size.x
+
 ## Wait for the geometry to STOP MOVING, never for a fixed frame count — a container sorts its
 ## children a frame after the rebuild that changed them. Same shape as the Phase 5 suite's helper,
 ## including its re-assertion of the shared `CardEnvironment.CURRENT` on every frame it waits.
@@ -532,9 +542,13 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
-	check(_board_overflows(pa),
-			"precondition: three grids are wider than the window, so a pan can move (TP-101)",
-			"content %f window %f" % [pa.grid_container.size.x, pa.scroll_container.size.x])
+	check(_camera_board_overflows(main, pa, camera),
+			"precondition: three grids are wider than the camera frame, so a pan can move (TP-101)",
+			"content %f window %f" % [
+					_grid_world_rect(main, pa, pa.grid_container.get_child_count() - 1).end.x
+							- _grid_world_rect(main, pa, 0).position.x,
+					WallTransition.visible_rect(camera.position, camera.zoom.x,
+							main.get_viewport().get_visible_rect().size).size.x])
 	var rest_grid := pa.pan_grid
 	check(rest_grid == 1,
 			"precondition: the overview rests on the middle of three grids (TP-101)",
@@ -569,43 +583,58 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 # TP-138 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
 # explicit pan to the grid the view is on puts it.
 #
-# ⚠ FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own clamp parks the board
-# hard left anyway, so an unpositioned board and a correctly positioned one are the SAME number and
-# the check passes with the wiring cut. The resting grid has to be one the clamp cannot supply.
+# ⚠ OVERVIEW SECTION: THREE GRIDS, MATCHING THE CANVAS BUDGET. `game_picture_design_size()` is
+# authored for `grid_max_count` grids (currently 3, unlocked in production), so an OVERVIEW check
+# needs a fixture the canvas was actually sized for -- more grids than the budget shift the middle
+# grid's cell-block position off a canvas that was never resized to match.
+#
+# ⚠ FOCUSED SECTION: FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own
+# clamp parks the board hard left anyway, so an unpositioned board and a correctly positioned one
+# are the SAME number and the check passes with the wiring cut. The resting grid has to be one the
+# clamp cannot supply.
 #
 # ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE: where a grid comes to rest is the layout's business,
 # so the reference is the player's own pan to that same grid — the same reference TP-112 uses.
 # ==============================================================================
 func run_the_board_rests_positioned_test() -> void:
 	behavior_section("THE BOARD RESTS POSITIONED ON THE GRID THE VIEW IS ON")
-	var main := await _stand_up_main_grids(5)
-	var view := _main_game_view(main)
-	var pa := view.play_area
-	var camera := _main_camera(main)
-	var smooth := _scroller(pa)
-	await _settle_layout(view)
-	await _settle_scroll(view)
-	await _settle_camera(camera)
-	check(_board_overflows(pa),
-			"precondition: five grids overflow the window, so resting position is the scroll's job"
-			+ " (TP-138)")
-	check(pa.pan_grid == 2,
+	var overview_main := await _stand_up_main_grids(3)
+	var overview_view := _main_game_view(overview_main)
+	var overview_pa := overview_view.play_area
+	var overview_camera := _main_camera(overview_main)
+	var overview_smooth := _scroller(overview_pa)
+	await _settle_layout(overview_view)
+	await _settle_scroll(overview_view)
+	await _settle_camera(overview_camera)
+	check(_camera_board_overflows(overview_main, overview_pa, overview_camera),
+			"precondition (_board_overflows): three grids overflow the camera frame, so resting "
+			+ "position is the camera's job (TP-138)")
+	check(overview_pa.pan_grid == 1,
 			"the overview rests on the MIDDLE grid, so the whole board is centred (TP-138)",
-			"pan_grid %d" % pa.pan_grid)
-	check(_camera_cut_off_px(main, pa, camera, pa.pan_grid) <= 1.0,
+			"pan_grid %d" % overview_pa.pan_grid)
+	check(_camera_cut_off_px(overview_main, overview_pa, overview_camera, overview_pa.pan_grid) <= 1.0,
 			"...and the grid it rests on is wholly in frame (TP-138)",
-			"%f px off screen" % _camera_cut_off_px(main, pa, camera, pa.pan_grid))
-	var rest := smooth.pos.x
-	pa.pan_to_grid(pa.pan_grid)
-	await _settle_scroll(view)
-	check(absf(smooth.pos.x - rest) <= 1.0,
+			"%f px off screen"
+			% _camera_cut_off_px(overview_main, overview_pa, overview_camera, overview_pa.pan_grid))
+	var overview_rest := overview_smooth.pos.x
+	overview_pa.pan_to_grid(overview_pa.pan_grid)
+	await _settle_scroll(overview_view)
+	check(absf(overview_smooth.pos.x - overview_rest) <= 1.0,
 			"the board at rest is already where an explicit pan to that grid puts it -- it was "
 			+ "POSITIONED, not left at scroll zero (TP-138)",
-			"rest %.1f vs explicit pan %.1f" % [rest, smooth.pos.x])
+			"rest %.1f vs explicit pan %.1f" % [overview_rest, overview_smooth.pos.x])
+	await _tear_down_main(overview_main)
 
 	# FOCUSED: the scroller is still the view (`GAP-024`=(b)), so the resting-grid cut-off stays the
 	# scroller-based instrument — its neighbours may be sliced by the window edge and that is not a
 	# defect.
+	var main := await _stand_up_main_grids(5)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_camera(_main_camera(main))
+	var smooth := _scroller(pa)
 	pa.focus_grid(3)
 	await _settle_scroll(view)
 	var focused_rest := smooth.pos.x
