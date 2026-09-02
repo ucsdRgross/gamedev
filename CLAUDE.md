@@ -54,8 +54,10 @@ for that.
 
 ## Hard rules (they override defaults)
 
-1. **No `git add`, no commits, no staging.** The owner commits through GitHub Desktop. Just edit
-   files. Ask before committing anything, ever.
+1. **Never commit to `main`.** On `main` the owner commits through GitHub Desktop — just edit files,
+   and ask first. **On any other branch, committing is fine and needs no permission**: one verified
+   step per commit, evidence in the message. ⚠ `/plan-run` goes further on a worktree branch and
+   makes commits MANDATORY for the overseer, because they are that run's only rollback points.
 2. **Never kill a process by image name or wildcard.** A hook blocks it
    (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
    with unsaved work. An explicit verified `-Id <pid>` passes.
@@ -66,7 +68,14 @@ for that.
    park and restore a file around a deliberate red-then-green run.
 4. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
    the image, describe what it actually shows — or say UNVERIFIED.
-5. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
+5. **Online research is allowed, and is expected when a blocker might be a MISUNDERSTANDING rather
+   than a design gap.** Engine semantics, an API's actual contract, a container's sizing rules, a
+   platform quirk — look them up rather than inferring from behaviour. ⚠ **Say which it was:** cite
+   the source, and keep "the docs say X" separate from "I measured X here". A gap is for a decision
+   the design does not cover; if the real problem is that nobody knew how the engine behaves, that
+   is research, not a gap, and filing one wastes an owner ruling. Measurement still outranks
+   documentation when the two disagree — the engine in front of you is the authority.
+6. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
    disagree with what it models. ⚠ One sanctioned exception: `Tools/wall_editor.tscn` carries a
    `use_placeholder_content` toggle, **default off**, so the default path still hosts real
    scenes — `solatro/design/picture-wall/gaps/GAP-017.md` records why.
