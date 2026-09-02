@@ -25,25 +25,34 @@ proven end-to-end through a real key route, and `TP-105` exists and is green for
   it. See the settings-isolation entry under Open bugs.
 - The three GRID VIEW ones are `GAP-027`: the overview frames exactly ONE grid.
 
-## ⚠ FIVE DECISIONS WAIT ON THE OWNER
+## THE FIVE DECISIONS ARE RULED — see the gap files for the full text
 
-1. **`GAP-027` — the overview zoom.** It frames one grid, contradicting `H5` ("as many grids as fit
-   at a **readable** zoom"). Fitting the whole picture renders a cell block at ~68 px, measured and
-   unusable. Needs a readability floor in pixels, which no default supplies.
-2. **`grid_buffer_px`** — 220 raw px against a 216 px cell block, §1i's table stated at
-   `card_scale` 2.5 while the game ships at 1.0, and no code scales it. ⚠ **MEASURED: it IS a live
-   term in `grid_position_size_px().x`** (`span = count*block + (count-1)*buffer`, `width = span *
-   1.12` reproduces the 1219 pitch exactly), so shrinking it DOES move grids closer. ⚠ **But it
-   will NOT dissolve `GAP-027`**: the camera's visible width is `window.x / zoom` and
-   `focused_scale` picks that zoom from the picture's HEIGHT, so the camera sees ~1218 px however
-   wide the picture is. Even at buffer 0 a neighbour misses the frame by a few px.
-3. **Settings isolation** — the architecture problem below.
-4. **`GAP-028`'s `H24` half** — `H24` wants >3 grids; the picture is authored for exactly 3 and
-   `Q166`=(a) forbids sizing it from the run. Unreachable today (`Q7` caps at 3).
-5. **Row-label authority is ANSWERED** (cells authoritative) and shipped; nothing owed.
-
-⚠ **`GAP-025`, `GAP-026`, `GAP-027`'s withdrawn attempt and `GAP-028`'s narrow half were decided
-UNDER STANDING AUTHORISATION, not by the owner.** Each says so at the top of its file. Review them.
+1. ⚠⚠ **`GAP-027` — ITS PREMISE IS DISPROVED. DO NOT BUILD ON IT. SEE `GAP-031`.**
+   It was answered **(d) AND (e) together**, readability floor **128 px**, but the floor was derived
+   from *"the camera's visible WIDTH is ~1218 px however wide the picture is"* — and that sentence
+   is **FALSE**. `grid_position_size_px()` derives the picture's HEIGHT from its WIDTH
+   (`aspect_minimum := width * ref_h / ref_w`), so narrowing the picture shrinks the visible width
+   by the same factor. **Measured: pitch x0.7573, visible width x0.7576, frame/pitch UNCHANGED.**
+   The aspect minimum dominates at every buffer value down to 0, so **the overview frames one grid
+   BY CONSTRUCTION and (e) is a NO-OP, not merely insufficient.** `GAP-031` carries the proof. The overview
+   picks the largest zoom fitting as many grid positions as possible without a cell block rendering
+   below 128 px. ⚠ **(e) alone is not sufficient**: at buffer 88 the pitch is 923 px while the
+   camera's visible width stays ~1218 px, so a neighbour still misses the frame. The floor is
+   DERIVED from that arithmetic, not yet measured live — confirm it against the running product.
+2. **`grid_buffer_px`** — answered: scaled by `card_scale`, shipped value **88** raw px. Filed as
+   **`GAP-029`**, which carries the measured formula and what it does NOT fix.
+3. **Settings isolation** — answered **(b)**, stop mutating a global. Filed as **`GAP-030`**.
+   ⚠ **Measured cost: 77 production read sites across 22 files** (`play_area` 18, `main` 16,
+   `prop_layer` 11 = 58%; then a 19-file tail). The owner saw that number and chose
+   **staged (b): build the injection seam first, then migrate readers in batches, heaviest files
+   first, each batch its own commit with a full suite between.**
+4. **`GAP-028`'s `H24` half** — answered **(c)**, the board scrolls within a 3-position picture.
+   ⚠ **(c) carries its own stated cost — "needs the clipping question answered again"** — and it
+   puts the scroller back into contention with the camera `GAP-024`=(b) deliberately separated.
+   **That contention is unresolved; expect a follow-up gap rather than an implementer's judgement.**
+5. **The four standing-authorisation gaps are CONFIRMED by the owner**: `GAP-025`=(a),
+   `GAP-026`=(a), `GAP-028`'s narrow fixture half, and `GAP-027`(a) stays withdrawn. Nothing is
+   still resting on standing authorisation.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
@@ -67,8 +76,14 @@ four options as written.
 - Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records the binary per box.
   ⚠ A cache built by a different build CRASHES the suite with `0xC0000005` and no banner — fix with
   `<godot> --headless --path solatro --import`.
-- Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 400` from the repo
-  root. WINDOWED, ~4 min. **Close the owner's editor first.**
+- Suite: `GODOT_BIN=<4.7.2 console exe> py solatro/Tools/run_tests.py --timeout 600` from the repo
+  root. WINDOWED. **Close the owner's editor first.**
+  ⚠ **USE 600, NOT 400.** `--timeout` is a GLOBAL wall-clock limit on the whole 45-suite run (one
+  Godot process; `run_tests.py` `process.wait(timeout=...)`), and the runner's own default is 600.
+  **Warm the run is ~190 s, but COLD — right after the editor closes — it exceeds 400 s** and dies
+  with `NO SUITE BANNER`, which reads exactly like a hang. That cost two 400 s runs to rediscover.
+  ⚠ A standalone test scene **does not quit after printing its banner** — it idles. That idle is not
+  a hang either; read the banner and stop it.
 - ⚠ **RUN ONE SUITE ALONE to discriminate interference**:
   `<godot> --path solatro res://Tests/UI/test_grid_layout.tscn --windowed`, ~2 min. This is the
   cheapest discriminating test in the repo and it was overlooked for hours.
@@ -247,13 +262,14 @@ be checked by hand.
    renderer. The set may SHRINK, never grow. All six test live legacy machinery; any leaving would
    be a bug.
 
-## Gaps — twenty-eight filed
+## Gaps — THIRTY filed
 
-**Open:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own clamp),
-`GAP-027` (the overview zoom), `GAP-028`'s `H24` half.
-**Owner-ruled:** `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b).
-⚠ **Decided under standing authorisation, NOT by the owner — review:** `GAP-025`, `GAP-026`,
-`GAP-028`'s narrow half, and `GAP-027`'s withdrawn attempt.
+**Open:** `GAP-018` only (`grid_swipe_threshold_mm`'s default dead against its own clamp).
+**Owner-ruled:** `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b), `GAP-025`=(a), `GAP-026`=(a),
+`GAP-027`=(d)+(e) with a 128 px floor, `GAP-028`=(c) plus its narrow half, `GAP-029`, `GAP-030`.
+✅ **Nothing rests on standing authorisation any more** — all four were reviewed and confirmed.
+⚠ `GAP-028`=(c) is ruled but NOT fully specified: it "needs the clipping question answered again"
+and re-opens scroller-vs-camera contention. Expect a follow-up gap when `H24` is implemented.
 
 ## Owner working agreements
 
@@ -318,13 +334,16 @@ gamedev-poker-patience.
 READ IN THIS ORDER:
   1. solatro/HANDOFF_poker_patience.md — THIS FILE. Its "five failures", Environment,
      "Standing rules" and Open bugs sections are the traps; do not rediscover them.
-  2. The gap files. TWENTY-EIGHT filed. ⚠ GAP-025, GAP-026, GAP-028's narrow half and
-     GAP-027's withdrawn attempt were decided UNDER STANDING AUTHORISATION, not by the
-     owner — each says so at its top. Confirm them before building further.
+  2. The gap files. THIRTY filed. All five outstanding decisions are now OWNER-RULED
+     and nothing rests on standing authorisation. GAP-027=(d)+(e) floor 128 px,
+     GAP-029 (grid_buffer_px -> 88), GAP-030 (settings isolation, staged (b)),
+     GAP-028=(c). GAP-018 is the only one still open.
   3. solatro/design/poker-patience/DESIGN.md §36 — flowchart H.
 
 FIRST: run the suite. Expect ALL 45 SUITES with 5 FAILED, all attributed:
-    GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 400
+    GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 600
+  ⚠ USE 600, NOT 400 — it is a GLOBAL limit and a COLD run exceeds 400 s, dying with
+    "NO SUITE BANNER" which reads exactly like a hang. Warm it is ~190 s.
   ⚠ Close the owner's editor first. ⚠ Never two Godot processes at once.
   ⚠ RUN ONE SUITE ALONE to discriminate interference — GRID LAYOUT alone is 85/85.
 
