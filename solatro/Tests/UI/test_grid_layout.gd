@@ -27,6 +27,8 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ GRID LAYOUT TEST PASS ============")
+	backup_real_settings()
+	use_own_settings()   # geometry checks must not depend on the player's tuning
 	check_all_tests_registered()
 	await run_a_panel_per_grid_and_a_slot_per_cell_test()
 	await run_a_placed_card_has_a_control_a_visual_and_a_position_test()
@@ -43,6 +45,7 @@ func _ready() -> void:
 	await run_no_subtotal_is_displayed_anywhere_test()
 	await run_score_labels_sit_where_the_design_puts_them_test()
 	await run_a_height_label_sits_above_its_stack_test()
+	restore_real_settings()
 	finish()
 
 ## A real GameView on the frozen 52-card deck: one grid, dealt Entrance, nothing crafted.
@@ -122,6 +125,26 @@ func _prop_tick(pl: PropLayer, live: Array, spawned: Array) -> bool:
 func _tick() -> float:
 	await get_tree().process_frame
 	return get_process_delta_time()
+
+## Waits for every CardVisual's OWN control-center position to stop moving. `_settle_layout` waits
+## for the computed slot, which is stable the instant the layout pass lands, while a CardVisual eases
+## toward it -- a check comparing the visual to the arithmetic must wait for the visual's tween, not
+## the arithmetic, or it reads a card mid-flight.
+func _settle_visuals(visuals: Array[CardVisual]) -> void:
+	var last : Array[Vector2] = []
+	for i in visuals.size(): last.append(Vector2.INF)
+	var waited := 0.0
+	while waited < 2.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var moving := false
+		for i in visuals.size():
+			var vis := visuals[i]
+			if not vis or not is_instance_valid(vis) or not vis.control_anchor: continue
+			var now := vis.get_card_control_center(vis.control_anchor)
+			if not now.is_equal_approx(last[i]): moving = true
+			last[i] = now
+		if not moving: return
 
 ## The cell grid inside grid `gi`'s panel.
 ## Grid `gi`'s row `ry` — one HBox of cells. Rows are their own containers so a deep stack in
@@ -352,9 +375,14 @@ func run_a_stack_grows_upward_test() -> void:
 
 	# ⚠ **COMPARE THE ARITHMETIC TO THE CONTROLS, NOT TO A CARD IN FLIGHT.** The claim that matters
 	# is that `slot_center_global` and the control tree name the same point — that is what keeps a
-	# card on its cell. A CardVisual EASES to that point, so measuring the visual measures the
-	# flight: it read 116 px out while every settled card was exactly 0.0 out, and no settle loop
-	# makes that anything but flaky. The visual's own target is `get_card_control_center`.
+	# card on its cell. A CardVisual EASES to that point, so the visual itself must be settled first
+	# -- `_settle_layout` only waits for the computed slot, which is stable long before the tween is.
+	var visuals : Array[CardVisual] = []
+	for h : int in 3:
+		var vis : CardVisual = pa.data_card.get(stack[h])
+		if vis: visuals.append(vis)
+	await _settle_visuals(visuals)
+
 	var worst := 0.0
 	for h : int in 3:
 		var vis : CardVisual = pa.data_card.get(stack[h])

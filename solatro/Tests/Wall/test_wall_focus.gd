@@ -26,6 +26,8 @@ func suite_name() -> String:
 
 func _ready() -> void:
 	TestLog.line("============ WALL FOCUS TEST PASS ============")
+	backup_real_settings()
+	use_own_settings()   # navigation timing checks must not depend on the player's tuning
 	behavior_section("BACK / FORWARD RETRACE VISIT ORDER")
 	test_back_retraces_visit_order()
 	test_revisit_moves_to_top()
@@ -72,6 +74,7 @@ func _ready() -> void:
 	await test_a_second_destination_mid_move_is_ignored()
 	behavior_section("INPUT IS INERT MID-MOVE, AND UNLOCKS EARLY (C5/S16, I12/Q96=a, C13/Q58)")
 	await test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends()
+	restore_real_settings()
 	finish()
 
 ## F1 (Q63=a): visit a, b, c -> back() retraces to b, the picture visited just before c.
@@ -442,6 +445,20 @@ func test_info_card_is_mounted_on_the_wall() -> void:
 
 # ------------------------------------------------------------------ A2 (PICTURE_WALL.md)
 
+## Waits until the wall camera's position AND zoom stop changing, so a check right after a move
+## reads the LANDED pose rather than a race against the tween's own last frame.
+func _settle_wall_camera(camera: Camera2D) -> void:
+	var last_pos := Vector2.INF
+	var last_zoom := Vector2.INF
+	var waited := 0.0
+	while waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if camera.position.is_equal_approx(last_pos) and camera.zoom.is_equal_approx(last_zoom):
+			return
+		last_pos = camera.position
+		last_zoom = camera.zoom
+
 func _probe_info_entry() -> InfoEntry:
 	var e := InfoEntry.new()
 	e.title = "probe"
@@ -459,7 +476,6 @@ func _probe_info_entry() -> InfoEntry:
 ## already established this exact pattern) park the real `user://settings.tres`, since
 ## `wall_info_mode` saves on every change.
 func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
-	backup_real_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	get_tree().paused = false
@@ -472,6 +488,7 @@ func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
 	var rest_zoom := camera.zoom
 
 	await main._on_info_toggled(true)
+	await _settle_wall_camera(camera)
 	check(settings.wall_info_mode, "wall_info_mode is true after toggling Info on")
 	check(not camera.position.is_equal_approx(rest_position)
 			or not camera.zoom.is_equal_approx(rest_zoom),
@@ -483,6 +500,7 @@ func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
 	check(info_card.visible, "sanity: the card can be shown while info mode is on")
 
 	await main._on_info_toggled(false)
+	await _settle_wall_camera(camera)
 	check(not settings.wall_info_mode, "wall_info_mode is false after toggling Info off")
 	check(not info_card.visible,
 			"leaving info mode resets %InfoCard to hidden (J6) -- proven able to fail: it was "
@@ -493,7 +511,6 @@ func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
 					% [camera.position, camera.zoom, rest_position, rest_zoom])
 
 	settings.wall_info_mode = prev_mode
-	restore_real_settings()
 	main.queue_free()
 
 # ------------------------------------------------------------------ A4 (PICTURE_WALL.md, NAMES.md)
@@ -549,7 +566,6 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 ## `backup_real_settings()`/`restore_real_settings()` park the real file, since this genuinely
 ## writes it (twice: the simulated "previous session" write, and Main's own reset write).
 func test_info_mode_does_not_survive_a_relaunch() -> void:
-	backup_real_settings()
 	var settings := SettingsManager.settings
 	settings.wall_info_mode = true   # stands in for a previous session's own persisted value
 
@@ -562,7 +578,6 @@ func test_info_mode_does_not_survive_a_relaunch() -> void:
 			+ "left it true -- info mode never survives a relaunch (C3)")
 
 	main.queue_free()
-	restore_real_settings()
 
 # ------------------------------------------------------------------ M1 (PICTURE_WALL.md, S17)
 
@@ -632,7 +647,6 @@ func test_a_real_resize_reaches_the_wall() -> void:
 	# mid-flight half to a couple of frames.
 	# Every PlayerSettings setter writes user://settings.tres, so the real file is parked first --
 	# the same reason the C3 test above does it.
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 	main._focus_picture(&"map")
@@ -651,7 +665,6 @@ func test_a_real_resize_reaches_the_wall() -> void:
 	await main.wall.transition_landed
 	await get_tree().process_frame   # _focus_picture finishes its own body after that emit
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 	check(main._current_focus == &"map",
 			"it still landed on the ORIGINAL destination -- the geometry changed, the target did not",
 			str(main._current_focus))
@@ -675,7 +688,6 @@ func test_a_real_resize_reaches_the_wall() -> void:
 ## ⚠ One `Main`, held for as few frames as possible, at a tiny `wall_transition_delay` -- see
 ## `test_a_real_resize_reaches_the_wall()` above for why that matters.
 func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> void:
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
@@ -711,7 +723,6 @@ func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> voi
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
@@ -727,7 +738,6 @@ func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> voi
 ## ⚠ One `Main`, tiny `wall_transition_delay`, bounded frame waits -- see
 ## `test_a_real_resize_reaches_the_wall()` above for why all three matter here.
 func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
@@ -777,7 +787,6 @@ func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() 
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 
 ## Feeds one action through the REAL `Wall._unhandled_input()` and waits, BOUNDED, for `settled` to
 ## report the move finished. Never `await` on a signal: the emit runs Main's handler synchronously
@@ -805,7 +814,6 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 ##   3. `map_scene` no longer owns a second card at all.
 ## Claim 3 is what stops 1 and 2 from being satisfied by a second card nobody looked at.
 func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
-	backup_real_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
@@ -833,7 +841,6 @@ func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
 	info_card.reset()
 	SettingsManager.settings.wall_info_mode = false
 	main.queue_free()
-	restore_real_settings()
 
 # ------------------------------------------------------------------ M8 (PICTURE_WALL.md)
 
@@ -853,7 +860,6 @@ func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
 ## focused", and a cold launch opens FOCUSED on start_menu -- written without the trip to wall view,
 ## this test failed exactly there, which is the contract working rather than a fixture problem.
 func test_hovering_a_picture_in_info_mode_describes_it() -> void:
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 	var main : Main = MAIN_SCENE.instantiate()
@@ -898,7 +904,6 @@ func test_hovering_a_picture_in_info_mode_describes_it() -> void:
 	SettingsManager.settings.wall_info_mode = false
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 
 ## Moves the pointer to a WALL-space point through the real `Wall._unhandled_input()` path. The
 ## wall-space point is converted with the viewport's own `canvas_transform`, the exact inverse of
@@ -936,7 +941,6 @@ func _hover_wall_at(main: Main, wall_pos: Vector2) -> void:
 ## this fix reported `focused=[&"deck", &"game"]`, i.e. TWO focused pictures at once, which a
 ## single-id check would have missed entirely.
 func test_a_second_destination_mid_move_is_ignored() -> void:
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
@@ -979,7 +983,6 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 
 # ------------------------------------------------------------------ C5's other half (S16, C13)
 
@@ -994,7 +997,6 @@ func test_a_second_destination_mid_move_is_ignored() -> void:
 ## unlock fired" distinguishes C13 from an ordinary unlock-at-the-end, and that is the entire point
 ## of S16.
 func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> void:
-	backup_real_settings()
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
@@ -1046,7 +1048,6 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 
 	main.queue_free()
 	SettingsManager.settings.wall_transition_delay = real_transition_delay
-	restore_real_settings()
 
 # ------------------------------------------------------------------ overlay focus
 
@@ -1126,7 +1127,6 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 ## tree: dropping the reference orphaned it in ObjectDB for the whole session. Info mode is
 ## force-cleared at every launch (C3), so OFF is the NORMAL state and this was the normal path.
 func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
-	backup_real_settings()
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	get_tree().paused = false   # concurrency workaround, same as every other Main fixture here
@@ -1158,7 +1158,6 @@ func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
 
 	SettingsManager.settings.wall_info_mode = false
 	main.queue_free()
-	restore_real_settings()
 
 # ------------------------------------------------------------------ C3 (not persisted)
 
@@ -1173,7 +1172,6 @@ func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
 ## prove the file would have appeared if anything had asked for it, so this cannot pass by the save
 ## path being broken outright.
 func test_toggling_info_mode_does_not_write_the_settings_file() -> void:
-	backup_real_settings()
 	# ⚠ **COUNT THE SIGNAL, DO NOT WATCH THE FILE.** Suites now run on their own PlayerSettings with
 	# `SettingsManager.isolated` set, so NOTHING writes `user://settings.tres` — a file probe would
 	# report "no write" for every knob alike and this test would pass while proving nothing. The
@@ -1197,4 +1195,3 @@ func test_toggling_info_mode_does_not_write_the_settings_file() -> void:
 	SettingsManager.settings.wall_view_min_texture_px = prev
 
 	SettingsManager.settings_changed.disconnect(counter)
-	restore_real_settings()
