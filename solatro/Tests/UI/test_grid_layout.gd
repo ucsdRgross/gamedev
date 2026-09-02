@@ -46,6 +46,7 @@ func _ready() -> void:
 	await run_score_labels_sit_where_the_design_puts_them_test()
 	await run_a_height_label_sits_above_its_stack_test()
 	await run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test()
+	await run_a_row_label_lines_up_with_its_own_row_test()
 	restore_real_settings()
 	finish()
 
@@ -1031,4 +1032,64 @@ func run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test(
 			"the label's bottom sits exactly half a (zoom-scaled) card above its stack's top card, "
 			+ "even off the overview's own zoom of 1.0",
 			"label bottom %.1f vs expected %.1f" % [label_bottom, top_card_y - expected_gap])
+	await _tear_down(view)
+
+# ==============================================================================
+# ROW LABEL `ry` MUST LINE UP WITH CELL ROW `ry`. TP-91/TP-93/TP-94 only ever compare the WHOLE
+# label gutter rect to the WHOLE cell block rect -- left-of, below-of, counts, text -- so a gutter
+# that gives every row a fixed height regardless of its cells' real depth reads green there while
+# every row past the first drifts off its cards.
+#
+# ⚠ THE DISCRIMINATING FIXTURE IS UNEVEN BANKED SCORE LEVELS, NOT UNEVEN CARD DEPTH. A grid-wide
+# `levels` computed from the whole grid's deepest banked score still fits every row's real height
+# when every row banks the SAME number of scores -- both a correct, per-row-sized gutter and a
+# broken, grid-wide-sized one put every row at the same height. Only a row that banks MORE scores
+# than another row can force the broken gutter's surplus fixed-height children past that row's
+# `_grid_row_height`, so row 2 here banks three scores while row 0 banks one, matching
+# `Tests/Visual/uneven_stack_score_shot.gd`'s shape.
+# ==============================================================================
+func run_a_row_label_lines_up_with_its_own_row_test() -> void:
+	behavior_section("A ROW LABEL LINES UP WITH ITS OWN ROW, NOT A FIXED GUTTER SLOT")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var st := g.state
+
+	# Row 0 stays one card deep; row 2 goes three deep, so the two rows' real, measured heights
+	# differ -- the case a fixed per-level gutter cannot follow.
+	await g.place_card_in_grid(g.state.upper_zone[0].datas[0], BoardCoord.new(0, 0, 0, 0))
+	for i in 3:
+		await g.place_card_in_grid(g.state.upper_zone[1 + i].datas[0], BoardCoord.new(0, 0, 2, 0))
+	# Row 0 banks one score; row 2 banks three, one per height -- the uneven LEVEL count that a
+	# grid-wide `levels` cannot follow without overflowing row 0's gutter.
+	st.bank_line_score(st.scores_row, 0, 0, 0, 5)
+	st.bank_line_score(st.scores_row, 0, 2, 0, 7)
+	st.bank_line_score(st.scores_row, 0, 2, 1, 9)
+	st.bank_line_score(st.scores_row, 0, 2, 2, 11)
+	pa.queue_rebuild()
+	await _settle_layout(view)
+
+	var panel : Control = pa.grid_container.get_child(0)
+	var cells := pa._cells_root(panel)
+	var board : Control = panel.get_node_or_null("Board")
+	var row_labels : Control = board.get_node_or_null("RowLabels") if board else null
+	check(cells != null and row_labels != null,
+			"precondition: the panel carries both a cell block and a row gutter")
+	if cells == null or row_labels == null:
+		await _tear_down(view)
+		return
+
+	for ry in st.grids[0].grid_height:
+		var cell_row := cells.get_child(ry) as Control
+		var label_row := row_labels.get_child(ry) as Control
+		check(cell_row != null and label_row != null,
+				"row %d has both a cell row and a label row" % ry)
+		if cell_row == null or label_row == null: continue
+		var cell_rect := cell_row.get_global_rect()
+		var label_rect := label_row.get_global_rect()
+		check(absf(cell_rect.position.y - label_rect.position.y) < 1.5
+				and absf(cell_rect.end.y - label_rect.end.y) < 1.5,
+				"row %d's score label lines up with row %d's cells, top and bottom" % [ry, ry],
+				"cell row y [%.1f, %.1f], label row y [%.1f, %.1f]"
+				% [cell_rect.position.y, cell_rect.end.y, label_rect.position.y, label_rect.end.y])
 	await _tear_down(view)

@@ -2030,21 +2030,20 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 	var state := game.state
 	var board := panel.get_node_or_null("Board") as Control
 	if not board: return
-	var levels := maxi(state.line_score_levels(state.scores_row, gi),
-			state.line_score_levels(state.scores_col, gi))
+	var col_levels := state.line_score_levels(state.scores_col, gi)
 
 	var row_labels := board.get_node_or_null("RowLabels") as Control
 	if row_labels:
 		_fit_children(row_labels, grid.grid_height, _create_label_stack)
 		for ry : int in grid.grid_height:
 			_fill_label_stack(row_labels.get_child(ry) as VBoxContainer, state.scores_row,
-					gi, ry, levels, true)
+					gi, ry, _row_score_levels(state.scores_row, gi, ry), true)
 	var col_labels := panel.get_node_or_null("ColLabels") as Control
 	if col_labels:
 		_fit_children(col_labels, grid.grid_width, _create_label_stack)
 		for cx : int in grid.grid_width:
 			_fill_label_stack(col_labels.get_child(cx) as VBoxContainer, state.scores_col,
-					gi, cx, levels, false)
+					gi, cx, col_levels, false)
 	var special := board.get_node_or_null("SpecialLabel") as BigNumberLabel
 	if special:
 		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
@@ -2052,6 +2051,14 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null
 		if value: special.current_num = value
 		else: special.text = ""
+
+## THAT ROW's own score-level count, not the grid-wide max `state.line_score_levels` returns —
+## a shallow row must never get surplus fixed-height children forcing it past `_grid_row_height`.
+func _row_score_levels(bucket: Dictionary[Vector3i, BigNumber], gi: int, ry: int) -> int:
+	var deepest := -1
+	for key : Vector3i in bucket:
+		if key.x == gi and key.y == ry: deepest = maxi(deepest, key.z)
+	return deepest + 1
 
 ## One line's labels: a VBox of one label per height, built like a `CellSlot` so the stack reads
 ## in the same direction the cards do.
@@ -2064,6 +2071,11 @@ func _create_label_stack() -> Control:
 
 ## ⚠ **HIGHEST HEIGHT FIRST**, so the column reads bottom-up exactly like the cards beside it: the
 ## last child is height 0, level with the height-0 cards, and each earlier child is one level up.
+## ⚠ **A ROW STACK'S OWN MINIMUM HEIGHT FOLLOWS `_grid_row_height`, THE CELLS' MEASURED HEIGHT** —
+## the cell block is authoritative, so the label gutter's row `ry` is only ever as tall as cell row
+## `ry` actually is (never a fixed per-level size), and it tracks an easing row through the ease the
+## same way `_grid_row_height` already does for the cells. Column stacks stay levels-sized: a column's
+## width never varies by data the way a row's height does.
 func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNumber],
 		gi: int, index: int, levels: int, is_row: bool) -> void:
 	if not stack: return
@@ -2078,6 +2090,8 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""
+	if is_row:
+		stack.custom_minimum_size = Vector2(CardVisual.card_separation_play, _grid_row_height(gi, index))
 
 func _create_score_label() -> Control:
 	return BigNumberLabel.new()
