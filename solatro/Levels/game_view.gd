@@ -59,6 +59,12 @@ var spotlight_director : SpotlightDirector = null
 		undo_button, %Goal, %Total, %MultScore, %Preview]
 ## Each control's authored x -- fixed forever, read once off the scene.
 var _furniture_authored_x : Array[float] = []
+## `Main`'s ONE wall camera and a live getter for the game picture's rect centre-x -- `Main` is the
+## only writer of both; this view only ever reads them, never computes where the camera should be.
+## Null/invalid until `bind_wall_camera()` runs, which `Main.enter_game()` does right after
+## instantiating this view.
+var _wall_camera : Camera2D = null
+var _wall_rect_centre_x : Callable = Callable()
 
 func _ready() -> void:
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
@@ -208,15 +214,35 @@ func _capture_furniture_authored_x() -> void:
 	for control : Control in _furniture:
 		_furniture_authored_x.append(control.position.x)
 
-## Slides every furniture control by `pan_grid` grid positions from its authored (grid-0) x --
-## `pan_grid` is an integer index, not a measured position, so there is nothing to latch and
-## nothing to go stale, unlike a captured pan-window-left-x origin. Recomputed every frame,
-## unconditionally, the same rule `PlayArea._physics_process` already follows for its own
-## pan-slaved control.
+## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
+## furniture can track the camera's CURRENT position every frame instead of the `pan_grid` index
+## it was set from -- the camera's own tween runs on a separate clock, so following the index
+## desyncs for the length of every pan. Called once, right after `Main` instantiates this view.
+func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
+	_wall_camera = camera
+	_wall_rect_centre_x = rect_centre_x
+
+## Slides every furniture control from its authored (grid-0) x. FOCUSED: `pan_grid` grid positions
+## -- the scroller pans there, the camera never moves, and `pan_grid` updates synchronously with
+## it, so there is nothing to desync. OVERVIEW: the wall camera's LIVE position, read fresh every
+## frame and never latched -- `pan_grid` there only names the camera's TARGET grid, while
+## `Main._on_overview_pan_requested()`/`_on_overview_bounce_requested()` tween the camera there on
+## their own clock, so a pan or a bounce must be read off the camera itself to stay in sync.
+## ⚠ Physics interpolation forces `Camera2D` onto the physics tick, so its rendered position on an
+## idle frame differs from the raw `.position` this reads -- the furniture holds the board through a
+## pan but still shivers against it. ⚠ `get_global_transform_interpolated()` DOES NOT EXIST in Godot
+## 4.7.2 (checked against `ClassDB.class_get_method_list`); calling it stops this script compiling,
+## which cascades into `card_data.gd`/`pip_suit.gd` and makes the map unable to enter a game.
 func _process(_delta: float) -> void:
 	if not is_instance_valid(play_area) or _furniture_authored_x.size() != _furniture.size():
 		return
-	var shift := play_area.pan_grid * PlayArea.grid_position_size_px(SettingsManager.settings).x
+	var pitch := PlayArea.grid_position_size_px(SettingsManager.settings).x
+	var shift : float = play_area.pan_grid * pitch
+	if play_area.view_mode == PlayArea.ViewMode.OVERVIEW and is_instance_valid(_wall_camera) \
+			and _wall_rect_centre_x.is_valid():
+		shift = pitch * play_area.resting_grid() \
+				+ (_wall_camera.position.x \
+						- (_wall_rect_centre_x.call() as float))
 	for i : int in _furniture.size():
 		var control : Control = _furniture[i]
 		if is_instance_valid(control): control.position.x = _furniture_authored_x[i] + shift
