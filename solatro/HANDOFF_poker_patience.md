@@ -640,68 +640,68 @@ was filed correctly and the reasoning matters: **check for a fourth option befor
 
 ## Next up
 
-⚠ **`S31e` IS PART-LANDED AND BLOCKED ON `GAP-022`, NOT ABANDONED.** Verified by two overseer runs
-of the tree as it stands (quoting the second):
-```
-GRID VIEW 176/178   INTERACTION 52/52   GRID LAYOUT 69/71 (pre-existing)
-```
-Fixed and green: the INTERACTION click race (`_settle_layout` on the Entrance track — the ease is
-UNCHANGED between the two trees, the Entrance simply travels ~151 px instead of ~25) and `TP-109`'s
-swipe. Still red and DELIBERATELY NOT WEAKENED: `TP-140`'s two out-of-view assertions, which now
-fail with a message naming the real cause (`vs window (0.0, 3640.476)`) instead of a vacuous
-precondition.
+**Suite as it stands: `ALL 45 SUITES: 3825 passed, 9 FAILED`.** Every failure is understood and
+attributed; none is a mystery.
 
-1. ⚠⚠ **THE CAMERA MIGRATION (`TP-105`/`H22`) GATES `TP-140` — BUT NOT THE HUD.**
-   `GAP-022`=(a) means "out of view" resolves against the CAMERA's rect, so `TP-140`'s two
-   assertions cannot be satisfied until the camera exists. Today it is static at the picture centre
-   and reads nothing about `pan_grid` (`resting_state()` returns `rect.centre`).
-   ⚠⚠ **CORRECTION — commit `5e7fb2cf`'s message and an earlier version of this section BOTH say the
-   HUD is blocked on the camera. THAT IS WRONG.** It was an inherited inference, promoted without
-   testing. **Measured:** `pan_grid` rests correctly at 1 and holds through frame 120; the HUD was
-   off screen because of a latched-origin bug in the new code (below), not because of the camera.
-   ⚠ **THE LESSON, which this stream keeps re-paying for:** a plausible cause is not a measured one.
-   The discriminating observation cost one render.
-2. ⚠⚠ **`GAP-022` = (a) — ANSWERED. `PlayContainer` KEEPS the stretch, and "out of view" now means
-   OUTSIDE THE CAMERA'S RECT, not outside the scroll container.** ⚠ **This makes the camera
-   load-bearing before `S31e` can close**: `TP-105` stops being a step that follows `S31e` and
-   becomes part of what makes it verifiable. `S31b`'s zoom and `S31c`'s clip must be re-pointed at
-   the camera; ⚠ **`TP-141`'s painted-pixel evidence must be RE-EARNED, not re-labelled** — a
-   position-based assertion passed both before and after the defect it once proved. `TP-140` is then
-   satisfiable and must be re-measured, still not loosened. ⚠ **The HUD is off screen at rest under
-   this answer and NOTHING RULES ON IT** — `Q39` covers only the Entrance. Raise a gap rather than
-   assuming; assuming is exactly what `S31e` did.
-2. **`S33`'s `H20` — the wall re-packs around the wider picture.** Pulled forward by owner ruling.
-   ⚠ **This is now the gating step for the whole phase**: until it lands the product renders
-   horizontally squashed to ~1/3 width, so every by-eye gate on this branch is either blind (the
-   `GameView`-direct shots) or shows a broken board. `_picture_size()` never reading `design_size.x`
-   is the mechanism.
-3. **Promote `Tests/Visual/wall_game_squash_probe.{gd,tscn}` into a permanent named shot** — it is
-   the ONLY instrument that renders the product's real framing, and its absence is why the squash
-   passed two by-eye gates. Not in `all_tests.tscn`; the suite stays at 45. Delete
-   `Tests/Visual/interaction_click_probe.{gd,tscn}`, whose findings are recorded above.
-4. **Chase the `user://settings.tres` restore bug** (owner ruling: chase it). The suite writes test
-   values at run start and the restore does not run on the normal exit route. Live suspect for the
-   two pre-existing GRID LAYOUT failures, which are why **there is no green commit on this branch.**
-   ⚠ Do not overwrite the file by guessing — recover a pristine default from the repo or ask.
-5. **`TP-105`** (the camera steps between grid positions), then **`S32`**, then `S34`.
-6. **Then Phase 9** (owner's call) and **Phase 10's remaining `S40`, `S41`, `S44`.**
+### ⚠ TWO OWNER RULINGS BLOCK REAL WORK
 
-⚠ **THIS FILE IS ~720 LINES AGAINST A ~300-LINE RULE.** Prune it before adding more: the landed-step
-`notes:` blocks are the bulk and their forensics belong in the commits and the gap files.
+1. **`GAP-027` — the overview frames ONE grid, so it is not an overview.** Parked, not answered:
+   choosing the zoom means choosing the number that decides how the game looks at its most-used
+   view, and `H5`'s word *"readable"* is what no default supplies. Attempted answer (a) was
+   MEASURED WRONG — fitting the whole picture renders a 216 px cell block at ~68 px.
+   ⚠ **The oddity underneath may be the real question**: a grid POSITION is 1219 px while a cell
+   block is 216 px — ~1000 px of empty board between neighbours, traced to `grid_buffer_px` being
+   220 raw px against a 216 px block with §1i's table stated at `card_scale` 2.5 while the game
+   ships at 1.0. **Twice declined; now load-bearing.**
+2. **ROW LABEL ALIGNMENT — the owner reported it by eye and it is real.** `RowLabels` is a
+   `VBoxContainer` whose per-row height is FIXED by score `levels` (`play_area.gd:2035`), while
+   `Cells`' per-row height is DEPTH-DRIVEN (`_own_grid_row_height`, `:1324`). They agree only at the
+   container's top and bottom edge, so they drift on any board with uneven stacks, at any zoom.
+   Three fixes, each a real cost: **cells authoritative** (labels take the measured row height;
+   the gutter's rows become uneven), **labels authoritative** (rows forced uniform; contradicts the
+   eased depth-driven height `S21`-`S23` built), or **arithmetic** (labels leave the container and
+   are positioned per row like the height labels already are; a second positioner to keep in sync).
 
-**Open, not blocking, owner's call when convenient:**
-- **The rest of the HUD at rest** — under `GAP-022`=(a) the Deck, score column and buttons sit at
-  the picture's edges while the camera rests on the middle position. Reachable only by panning,
-  which no answered node asks for. Needs a ruling before `S32`.
-- **`GAP-018`** — `grid_swipe_threshold_mm`'s 8 mm default is 30.2 px at 96 DPI, under its own
-  `[32, 96]` clamp, so the knob is dead at its default. `Q190`=(a) fixes the clamp and the settings
-  table fixes the default; they disagree.
-- **`grid_buffer_px` is 220 RAW px against a 216 px grid block** — §1i's table is stated at
-  `card_scale` 2.5 and the game ships at 1.0. The owner has twice declined to rule.
-- **For ~11 frames after a view change a click on an Entrance card silently does nothing**, because
-  the card is easing out from under the cursor. Defensible (the card is visibly moving), but real.
-- **Two cosmetic residues**: ~8 px of the focused grid's top row is cut, and the COMBO label draws
-  over the End button.
+### THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 9 failures
+
+⚠ **`GRID LAYOUT` ALONE IS GREEN: `ALL 74 CHECKS PASSED`, 0.0 px delta at every height.** In the
+full suite it reads exactly `116.0` every time. **Deterministic cross-suite interference, not
+geometry** — a constant value misled five separate diagnoses before isolation settled it.
+Likely mechanism, unproven: `test_grid_layout.gd:587` reads `entrance_visible_rows` off the LIVE
+SHARED settings; another suite changing it moves the Entrance height, hence the floor, hence every
+card by a fixed amount.
+⚠ **The root cause is structural**: `use_own_settings()` and `restore_real_settings()` both REASSIGN
+the global `SettingsManager.settings` (`backup_real_settings()` alone does NOT — it only sets
+`isolated`). Three suites swap it: `SETTINGS RANGE` (chained), `GRID LAYOUT` and `WALL FOCUS`
+(unchained). **The ordering chain only orders its own participants**, so a non-participant is
+unordered against everyone and NO chain position can protect against it.
+⚠⚠ **TWO ATTEMPTS TO SERIALISE VIA `await_siblings_except` DEADLOCKED** — `GRID LAYOUT` ↔
+`SETTINGS RANGE`, then `GRID LAYOUT` ↔ `GRID VIEW` (identical exclusion lists both times). Each cost
+a 400 s timeout. **DO NOT TRY A THIRD SHAPE WITHOUT MAPPING THE WHOLE WAIT GRAPH FIRST.**
+The chain, for reference: `INTERACTION → UI PROPS → VISUAL LAYERS → GRID VIEW → SETTINGS RANGE →
+E2E RUN → LEAK CANARY → WALL PAUSE`, each excluding everything after it.
+Candidate fixes, none picked: (a) every settings-touching suite joins the chain; (b) stop
+`use_own_settings()` mutating a global; (c) snapshot/restore values rather than swapping the object.
+
+### THE REMAINING SEVEN GRID VIEW FAILURES
+
+- **2 bounce checks** — `GAP-025`, the feature genuinely is not built. `_bounce_board()` still nudges
+  the scroller, dead range in overview. **Left honestly red on purpose.**
+- **4 overview-framing checks** — `GAP-027`, above.
+- **1 unexplained: `TP-138` "wholly in frame -- 253.050110 px off screen"**. ⚠ A 216 px cell block
+  inside a ~1194 px camera window should fit with room to spare. **NOT DIAGNOSED. Measure it before
+  assuming any gap covers it** — the likely lead is the handoff's own rule that *"the panel and the
+  cell block are NOT the same rect"*.
+
+### THEN
+
+`TP-141`'s painted-pixel evidence RE-EARNED against the camera boundary (not relabelled), `S32`
+(saved pan / `resting_state()`), `S34` (`wall_editor` knobs), the two HUD cosmetic overlaps
+(Deck/Undo over the wall shell buttons; skill text clipped at x~0), Phase 9 (owner's call), and
+Phase 10's `S40`/`S41`/`S44`.
+
+**Open, not blocking:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own clamp);
+the ~11-frame window after a view change where a click on an Entrance card silently does nothing.
 
 ### Opening prompt for the next session
 
