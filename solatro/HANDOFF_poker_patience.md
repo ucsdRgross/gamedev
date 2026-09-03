@@ -322,15 +322,35 @@ and re-opens scroller-vs-camera contention. Expect a follow-up gap when `H24` is
 - **The COMBO label draws over the End button.**
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
 
-## Next up
+## Next up — the queue, in order
 
-1. **The five owner decisions above** — `GAP-027` and `grid_buffer_px` gate the visual work.
-2. **The HUD jitter** — physics-tick vs idle-tick sampling.
-3. **`TP-141` must RE-EARN its painted-pixel evidence** against the camera boundary, not be
-   relabelled. It counts pixels precisely because a position assertion passed both before and after
-   the defect it once proved.
-4. **`S33`'s `H21`** (Info mode, `Q178`=(a)), then **`S32`**, then **`S34`**.
-5. **Phase 9** (owner's call) and **Phase 10's `S40`, `S41`, `S44`.**
+⚠ **`GAP-033` and `GAP-035` overlap heavily. Do `GAP-035` FIRST** — it restructures the Entrance's
+container, and `GAP-033` reverses build order INSIDE that container. Doing them the other way round
+means doing `GAP-033` twice.
+
+1. **`GAP-034`** — row score labels get BOTTOM-ALIGNED TEXT, in place. Small and contained.
+   ⚠ The `RowLabels` container is ALREADY `ALIGNMENT_END`; what is asked for is the TEXT alignment
+   inside each label. Do not change the container's — the floor rule depends on it.
+   ⚠ Row-label alignment has burned this stream twice. **Green is not evidence; render and look.**
+2. **`GAP-035`** — the Entrance joins the board's scroller, sticky at the bottom, grows instead of
+   clipping. **Retires `S20`'s pinning** (recorded in the gap; not a violation).
+   ⚠ Likely deletes `_apply_entrance_zoom_rect()` as dead code. `entrance_strip_height_px()` and the
+   focused-zoom fixed point must SURVIVE.
+3. **`GAP-033`** — the Entrance stacks upward. ⚠ **NOT a `bottom_anchored := true` flip** — the grid
+   reverses control-build order; the gap file carries the full roadmap.
+4. **The clipped focused top row** — visible in the render, worse than the recorded 7.8 px.
+5. **`GAP-030`** — the staged settings migration: the injection seam, then the 77 read sites in
+   batches heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own commit
+   with a full suite between. Clears the last 2 standing failures.
+6. **`GAP-028`=(c)** — `H24`'s board-scrolls-within-3. ⚠ Still owes its clipping question and
+   re-opens scroller-vs-camera contention. **Expect a follow-up gap, not an implementer's judgement.**
+
+## Known coverage gap — not closed
+
+`TP-113`'s *"camera sees the WHOLE picture within a block's slack"* assertion did **not** go red under
+a synthetic span defect, because `WallPicture.focused_scale()` auto-fits whatever `design_size` it is
+given. It guards camera-fits-design, **not** span-is-3-grids. Narrow but real; disclosed rather than
+hidden.
 
 ### Opening prompt for the next session
 
