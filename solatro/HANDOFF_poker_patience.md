@@ -324,26 +324,30 @@ and re-opens scroller-vs-camera contention. Expect a follow-up gap when `H24` is
 
 ## Next up — the queue, in order
 
-⚠ **`GAP-033` and `GAP-035` overlap heavily. Do `GAP-035` FIRST** — it restructures the Entrance's
-container, and `GAP-033` reverses build order INSIDE that container. Doing them the other way round
-means doing `GAP-033` twice.
+⚠ **`GAP-035` is LANDED, so `GAP-033` is now unblocked.** The ordering constraint that mattered
+(restructure before build-order reversal) is satisfied.
 
-1. **`GAP-034`** — row score labels get BOTTOM-ALIGNED TEXT, in place. Small and contained.
-   ⚠ The `RowLabels` container is ALREADY `ALIGNMENT_END`; what is asked for is the TEXT alignment
-   inside each label. Do not change the container's — the floor rule depends on it.
-   ⚠ Row-label alignment has burned this stream twice. **Green is not evidence; render and look.**
-2. **`GAP-035`** — the Entrance joins the board's scroller, sticky at the bottom, grows instead of
-   clipping. **Retires `S20`'s pinning** (recorded in the gap; not a violation).
-   ⚠ Likely deletes `_apply_entrance_zoom_rect()` as dead code. `entrance_strip_height_px()` and the
-   focused-zoom fixed point must SURVIVE.
-3. **`GAP-033`** — the Entrance stacks upward. ⚠ **NOT a `bottom_anchored := true` flip** — the grid
-   reverses control-build order; the gap file carries the full roadmap.
-4. **The clipped focused top row** — visible in the render, worse than the recorded 7.8 px.
-5. **`GAP-030`** — the staged settings migration: the injection seam, then the 77 read sites in
-   batches heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own commit
-   with a full suite between. Clears the last 2 standing failures.
-6. **`GAP-028`=(c)** — `H24`'s board-scrolls-within-3. ⚠ Still owes its clipping question and
-   re-opens scroller-vs-camera contention. **Expect a follow-up gap, not an implementer's judgement.**
+1. **`GAP-041`** — the board must OPEN scrolled to the bottom. The mechanism exists
+   (`_anchor_scroll_to_bottom`) and mistimes itself: it waits ONE frame, but the scroll range settles
+   over several. ⚠ **Do not fix it with more frames** — that is the same defect with a bigger
+   literal. Wait for the range to STOP CHANGING, and keep the on-entry-only property.
+2. **`GAP-038`** — row label pitch must equal the card row pitch. ⚠ **This is a regression caused by
+   `GAP-034`'s `SIZE_EXPAND_FILL`.** The fix is to give the text slack by CAPPING THE AUTOSIZE, not
+   by growing the box — growing the box is what broke the pitch.
+3. **`GAP-033`** — the Entrance stacks upward. ⚠ **NOT a `bottom_anchored := true` flip**; the grid
+   reverses control-build order. The gap file carries the measured roadmap and the owner's ruling
+   that the bespoke highlight block is DROPPED for the grid's own logic.
+4. **`GAP-039`** — verify the Entrance transitions smoothly between grids. Likely already true
+   (`_sync_entrance_x` re-derives every frame). ⚠ **Verify by RUNNING it** — a still frame is the
+   wrong instrument for anything with a duration.
+5. **The clipped focused top row** — visible in an earlier render, worse than the recorded 7.8 px.
+6. **`GAP-030`** — the staged settings migration: the seam, then 77 read sites in batches
+   heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own commit.
+7. **`GAP-028`=(c)** — `H24`'s board-scrolls-within-3. ⚠ Still owes its clipping question and
+   re-opens scroller-vs-camera contention. **Expect a follow-up gap, not a judgement call.**
+
+**Deferred by owner ruling:** `GAP-037` (an Entrance column deeper than the render target renders
+off-screen) — *"no limit for now"*. Known, not safe; its reachability is still unmeasured.
 
 ## ⚠⚠ STANDING REGRESSION — `TP-140`, committed deliberately as an honest red
 
