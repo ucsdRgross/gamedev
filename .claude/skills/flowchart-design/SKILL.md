@@ -420,10 +420,49 @@ Per the grammar above. Additional rules:
   want the common path genuinely shorter, the roots have to be framed so that the *expected* answer
   prunes, which usually means asking "is X in v1?" rather than "do you want X?".
 
+- ⚠ **ASK WHAT MUST STAY TRUE *BETWEEN* ELEMENTS, NOT ONLY WHAT EACH ELEMENT DOES.** A questionnaire
+  naturally enumerates things; the misses cluster in the RELATIONSHIPS between them. For every pair
+  that shares a screen, ask: **what scales together, what aligns to what, which way does each grow,
+  and what moves when its neighbour grows?**
+  Poker-patience settled that the Entrance is row −1 and that its height pushes the board up — and
+  never asked whether Entrance cards share the grid's SCALE (they did not, and the desync was
+  visible), which way an Entrance stack GROWS (downward, while every other card grew upward), or
+  whether a zone MOVES when cards stack on it. Three separate owner reports, one missing category.
+
+- ⚠ **WHEN A CHANGE MOVES A SHARED LANDMARK, ENUMERATE WHAT WAS ANCHORED TO THE OLD ONE AND ASK
+  ABOUT EACH.** §4 does this for code usages; do it for physical and visual landmarks too.
+  Poker-patience moved the card's pip row from the top edge to the bottom. It then asked about the
+  card separation constant, the row band anchor, and the height score label — and missed the
+  Entrance's stack direction and the row score labels' relation to the pips, both of which came back
+  as owner reports much later. **The question is not "what does the flip change?" but "list
+  everything that pointed at the old landmark, and answer for each."**
+
+- ⚠ **EVERY VIEW HAS A RESTING STATE, AND IT IS A DECISION.** Where a scroll sits on open, which
+  element has focus, what is selected, what the camera frames — if no node says, someone will pick
+  it by accident and the owner will find it by looking. Poker-patience never asked where the board's
+  scrollbar rests, and it opened at the top of a board whose content grows UP from a floor.
+
+- ⚠ **CHECK THE CHARTS FOR NODES THAT ARE INDIVIDUALLY REASONABLE AND JOINTLY IMPOSSIBLE.** The DAG
+  sanity-check above catches unreachable questions; it does not catch two ANSWERED nodes that the
+  architecture cannot satisfy at once. Poker-patience shipped "the all-grids view shows as many grids
+  as fit" alongside "the picture frame holds N grid positions and the camera steps between them" —
+  both sensible, and jointly unsatisfiable, because sizing a position to the window's aspect makes
+  exactly one fill the frame BY CONSTRUCTION. **For any pair of nodes that constrain the same
+  geometry, do the arithmetic once and confirm a value exists that satisfies both.**
+
 ### 6. Ship a tunables section
 
 Every number the feature introduces, in the project's canonical tuning home, with a suggested
 starting value and what it means.
+
+- ⚠ **EVERY TUNABLE STATES THE SPACE IT IS MEASURED IN** — raw pixels, art units, or scaled by which
+  factor. A number whose units are implicit will be read in the wrong space by whoever ships it.
+  Poker-patience registered a buffer of `220` whose table was written at `card_scale` 2.5 while the
+  game shipped at 1.0; nothing scaled it, and it took a measurement to find that the number meant
+  two different things.
+- ⚠ **A tunable that is DERIVABLE from a rule should be derived, not registered.** If the correct
+  value follows from a requirement — "wide enough that a focused grid isolates its neighbours" —
+  register the RULE. A stored default is then one more thing that can silently disagree with it.
 
 ### 7. Header, footer, and the gap protocol
 

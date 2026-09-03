@@ -111,7 +111,7 @@ start** (`Q6`=a).
 - 2 grids: placed so the exact centre of the picture is the **buffer between them**.
 - 3 grids: the middle grid sits exactly where a single grid would.
 
-`grid_buffer_px` stays a knob; the centring is the contract.
+The centring is the contract. ⚠ **The buffer is DERIVED, not a knob** — `PlayArea.isolating_grid_buffer_px()` solves for the value at which a focused grid isolates its neighbours, and it is the picture's edge margin too. The stored `grid_buffer_px` setting is gone.
 
 ### 1.3 Grid shape (`Q10`)
 
