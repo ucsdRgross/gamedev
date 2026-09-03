@@ -397,6 +397,43 @@ preserved as a patch (`S55_floor_fix.patch`, 183 lines). Its `_stick_board_scrol
 position — two writers on one observable, which is the likely cause of the scrollbar that renders and
 will not move. **Do not re-apply it unchanged.**
 
+## ⚠⚠ RUNTIME LEAK — one whole show's cards survive UNREACHABLE
+
+**Owner-reported, from the running game** (`LeakSentinel`, `leak_sentinel.gd:65`):
+```
+201 CardData alive, 143 reachable -- 58 unreachable for 3 checks
+  25x ZONE  [type_grid_cell.gd]        <- exactly one 5x5 grid's cell zone cards
+   5x ZONE  [type_input.gd]            <- exactly the Entrance's 5 slots
+  28x assorted DRAW / RULES / PLAY     <- deck, rules and played cards
+```
+
+**That is one entire show**: a grid's 25 cell zones (`Q204`=a fixes 25 per grid), the Entrance's 5
+slots, and the cards around them. It reads as a show that was left and never released.
+
+### ⚠ UNREACHABLE-BUT-ALIVE MEANS A REFERENCE CYCLE
+`CardData` is `RefCounted`, and **`RefCounted` cannot collect a cycle.** So this is not "somebody
+still holds them" — it is a loop that keeps its own refcounts up. Do not go looking for a stray
+holder; look for the loop.
+
+**Candidate loop, to be CONFIRMED not assumed:**
+```
+CardData -> CardModifier.api -> CardEffectApi -> Game -> GameData -> grids
+         -> GridData cells -> CardData
+```
+Every hop there is a design contract, so if this is the cycle it is architectural rather than a slip.
+⚠ Also note `Cards/Skills/Rules/skill_grid_creator.gd` holds `@export_storage var grid_data :
+GridData` — *"The grid this card built, so `on_unspotlight` can find and remove exactly that one"* —
+a strong reference from a card to a grid, and the rules deck PERSISTS between shows (`Q202`).
+
+### ⚠ THE SUITE DOES NOT CATCH IT — that is the more important finding
+`Tests/Engine/test_leak_canary.gd` runs session cycles that are *"a whole double-show each"* and it
+**PASSES** in the full suite. So the leak lives on a path the canary does not exercise, or below the
+threshold it trips at. **Whatever the fix, the canary needs to be able to SEE this** — a leak the
+suite cannot reproduce will come back.
+
+⚠ `LeakSentinel` is an autoload and reports only after a count stays unreachable across several
+checks (*"for 3 checks"*), so it is reporting a settled leak, not a transient mid-teardown state.
+
 ## ⚠⚠ THE FOCUSED VIEW CLIPS, AND ITS MINIMUM FRAMING IS NOW SPECIFIED
 
 **Owner, from the running game:** *"clicking on grid zooms in but everything is clipped instead of
