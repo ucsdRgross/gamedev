@@ -397,6 +397,49 @@ preserved as a patch (`S55_floor_fix.patch`, 183 lines). Its `_stick_board_scrol
 position — two writers on one observable, which is the likely cause of the scrollbar that renders and
 will not move. **Do not re-apply it unchanged.**
 
+## ⚠⚠ THE FOCUSED VIEW CLIPS, AND ITS MINIMUM FRAMING IS NOW SPECIFIED
+
+**Owner, from the running game:** *"clicking on grid zooms in but everything is clipped instead of
+fitting in 5x5 grid + entrance row as minimum size."*
+
+**THE CONTRACT: the focused view's MINIMUM framing is the whole 5x5 cell block PLUS the Entrance
+row.** Anything less is a defect. Today the top row is cut at the window's edge and the Entrance is
+barely in frame.
+
+⚠ **There are TWO scales stacked here and they must be reasoned about together**, which is what
+makes this easy to get wrong:
+1. `focused_board_zoom()` fits the board's content inside the PLAY AREA, and
+2. the wall camera fits the PICTURE inside the WINDOW.
+A zoom that fits the block into an 841 px picture still clips if the camera then crops that picture
+into a ~651 px window. **Measure both layers before changing either.**
+
+⚠ This interacts directly with the ruling that the HUD scales with the picture, and with whether
+`PlayContainer` keeps tracking the picture height. **Treat them as one geometry pass, not three
+fixes.**
+
+## ⚠ WITH ONE GRID, NO CLICK SHOULD BE NEEDED TO ZOOM IN
+
+**Owner:** *"clicking to zoom in when there is only 1 grid should not be necessary."*
+
+`H4` says the show OPENS zoomed out on the all-grids view, and `H6` makes clicking a grid the way to
+focus it. **With exactly one grid the all-grids view and the focused view frame the same thing**, so
+the click is a step that buys nothing. The show should open already focused when `grid_count == 1`.
+
+⚠ `Q4`=(d) and `Q5` make one grid the case for any deck of 52 or fewer — **this is the DEFAULT
+starting configuration, not an edge case.**
+
+## ⚠⚠ THE BY-EYE INSTRUMENT DOES NOT REPRODUCE THE REAL FOCUSED VIEW — TRUST IT LESS
+
+`Tests/Visual/wall_game_squash_probe` renders a "focused" frame showing all five rows with the
+Entrance below it. **The running game, focused, shows the top row cut off and the Entrance barely in
+frame.** Same nominal state, materially different framing.
+
+**So the probe is not reproducing the product's focused pose**, and every by-eye sign-off taken
+through it is weaker evidence than it appeared. ⚠ **Fix the instrument before trusting another
+by-eye gate on focused-mode geometry** — an instrument that disagrees with the product certifies the
+wrong thing, which is the exact failure the `grid_zoom_shot` / `grid_layer_shot` note already warns
+about. The owner's own screenshots are currently better evidence than the probe.
+
 ## Next up — the queue, in order
 
 ### 1. Row score labels sit TOO HIGH on their card
