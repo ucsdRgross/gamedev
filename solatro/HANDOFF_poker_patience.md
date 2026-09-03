@@ -25,34 +25,30 @@ proven end-to-end through a real key route, and `TP-105` exists and is green for
   it. See the settings-isolation entry under Open bugs.
 - The three GRID VIEW ones are `GAP-027`: the overview frames exactly ONE grid.
 
-## THE FIVE DECISIONS ARE RULED — see the gap files for the full text
+## The board's settled geometry — facts, not open questions
 
-1. ⚠⚠ **`GAP-027` — ITS PREMISE IS DISPROVED. DO NOT BUILD ON IT. SEE `GAP-031`.**
-   It was answered **(d) AND (e) together**, readability floor **128 px**, but the floor was derived
-   from *"the camera's visible WIDTH is ~1218 px however wide the picture is"* — and that sentence
-   is **FALSE**. `grid_position_size_px()` derives the picture's HEIGHT from its WIDTH
-   (`aspect_minimum := width * ref_h / ref_w`), so narrowing the picture shrinks the visible width
-   by the same factor. **Measured: pitch x0.7573, visible width x0.7576, frame/pitch UNCHANGED.**
-   The aspect minimum dominates at every buffer value down to 0, so **the overview frames one grid
-   BY CONSTRUCTION and (e) is a NO-OP, not merely insufficient.** `GAP-031` carries the proof. The overview
-   picks the largest zoom fitting as many grid positions as possible without a cell block rendering
-   below 128 px. ⚠ **(e) alone is not sufficient**: at buffer 88 the pitch is 923 px while the
-   camera's visible width stays ~1218 px, so a neighbour still misses the frame. The floor is
-   DERIVED from that arithmetic, not yet measured live — confirm it against the running product.
-2. **`grid_buffer_px`** — answered: scaled by `card_scale`, shipped value **88** raw px. Filed as
-   **`GAP-029`**, which carries the measured formula and what it does NOT fix.
-3. **Settings isolation** — answered **(b)**, stop mutating a global. Filed as **`GAP-030`**.
-   ⚠ **Measured cost: 77 production read sites across 22 files** (`play_area` 18, `main` 16,
-   `prop_layer` 11 = 58%; then a 19-file tail). The owner saw that number and chose
-   **staged (b): build the injection seam first, then migrate readers in batches, heaviest files
-   first, each batch its own commit with a full suite between.**
-4. **`GAP-028`'s `H24` half** — answered **(c)**, the board scrolls within a 3-position picture.
-   ⚠ **(c) carries its own stated cost — "needs the clipping question answered again"** — and it
-   puts the scroller back into contention with the camera `GAP-024`=(b) deliberately separated.
-   **That contention is unresolved; expect a follow-up gap rather than an implementer's judgement.**
-5. **The four standing-authorisation gaps are CONFIRMED by the owner**: `GAP-025`=(a),
-   `GAP-026`=(a), `GAP-028`'s narrow fixture half, and `GAP-027`(a) stays withdrawn. Nothing is
-   still resting on standing authorisation.
+All of this is implemented; the code is the authority. Recorded here only because it is expensive to
+re-derive and easy to contradict by accident.
+
+- **The picture is 3 GRIDS wide**, not 3 grid POSITIONS. It used to be 3 positions of 3 grids each —
+  nine grids of width to hold three — which is where ~1000 px of empty board between grids came from.
+- **The camera KEEPS A STEP inside those 3**: it rests on one grid and steps between them, and
+  zooming out is what shows all three. `H22` and `H9` stay literally intact.
+- **The gap between grids and the gap at the picture's edge are ONE number**, and it is DERIVED, not
+  stored: `PlayArea.isolating_grid_buffer_px()` solves in closed form for the buffer at which a
+  FOCUSED grid isolates its neighbours. ⚠ It obtains its coefficients by SAMPLING the real
+  `grid_position_size_px()` at two candidate buffers, never by re-deriving its formula — that is what
+  stops it drifting from the function it inverts. **Do not replace it with a hand-derived formula.**
+- **`focused_board_zoom()` is a closed-form FIXED POINT**, `size.y / (block_h + base_strip)`. It was
+  once an order-dependent read that returned different answers depending on how many times the layout
+  loop had run. ⚠ **Do not "simplify" it back.**
+- **`PlayContainer`'s height tracks `game_picture_design_size().y`**, as its width already tracked the
+  design width. The old authored offset capped the play area at 636 px while the picture was 841, and
+  every zoom read that height.
+- **Entrance and grid cards scale together**; the Entrance is unclipped rather than resized, and the
+  board's FLOOR — not the visible strip — tracks the Entrance's real depth. ⚠ Resizing the strip
+  itself re-lays out everything anchored inside it and drifts a prop 4-17 px off its slot. That is
+  measured, and it has bitten twice.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
@@ -269,14 +265,16 @@ be checked by hand.
    renderer. The set may SHRINK, never grow. All six test live legacy machinery; any leaving would
    be a bug.
 
-## Gaps — THIRTY filed
+## Gaps
 
-**Open:** `GAP-018` only (`grid_swipe_threshold_mm`'s default dead against its own clamp).
-**Owner-ruled:** `GAP-022`=(a), `GAP-023`=(e), `GAP-024`=(b), `GAP-025`=(a), `GAP-026`=(a),
-`GAP-027`=(d)+(e) with a 128 px floor, `GAP-028`=(c) plus its narrow half, `GAP-029`, `GAP-030`.
-✅ **Nothing rests on standing authorisation any more** — all four were reviewed and confirmed.
-⚠ `GAP-028`=(c) is ruled but NOT fully specified: it "needs the clipping question answered again"
-and re-opens scroller-vs-camera contention. Expect a follow-up gap when `H24` is implemented.
+**Open and genuinely undecided:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own
+clamp), `GAP-028`'s `H24` half, `GAP-030` (settings isolation — ruled (b) staged, not yet built),
+`GAP-037` (an Entrance column deeper than the render target; owner deferred, *"no limit for now"*).
+
+⚠ **A gap is a DECISION THE DESIGN DOES NOT COVER — not a bug.** If exactly one choice is defensible
+it is a defect: fix it, and let the commit be the record. **Do not file a gap for a solved bug or for
+an instruction that arrived with its own answer** — a directory of settled items is pure cost to the
+next reader, and the code is the source of truth for anything already built.
 
 ## Owner working agreements
 
@@ -324,54 +322,76 @@ and re-opens scroller-vs-camera contention. Expect a follow-up gap when `H24` is
 
 ## Next up — the queue, in order
 
-⚠ **`GAP-035` is LANDED, so `GAP-033` is now unblocked.** The ordering constraint that mattered
-(restructure before build-order reversal) is satisfied.
+### 1. Row score labels sit TOO HIGH on their card
+**Owner:** *"score labels should be aligned with bottom of card instead of top of card now that pip
+row is on bottom of card"*, then, when asked what should actually differ: *"the label sits too high
+on the card."* **The label BAND's position within its row must move** — not text alignment inside it.
 
-1. **`GAP-041`** — the board must OPEN scrolled to the bottom. The mechanism exists
-   (`_anchor_scroll_to_bottom`) and mistimes itself: it waits ONE frame, but the scroll range settles
-   over several. ⚠ **Do not fix it with more frames** — that is the same defect with a bigger
-   literal. Wait for the range to STOP CHANGING, and keep the on-entry-only property.
-2. **`GAP-038`** — row label pitch must equal the card row pitch. ⚠ **This is a regression caused by
-   `GAP-034`'s `SIZE_EXPAND_FILL`.** The fix is to give the text slack by CAPPING THE AUTOSIZE, not
-   by growing the box — growing the box is what broke the pitch.
-3. **`GAP-033`** — the Entrance stacks upward. ⚠ **NOT a `bottom_anchored := true` flip**; the grid
-   reverses control-build order. The gap file carries the measured roadmap and the owner's ruling
-   that the bespoke highlight block is DROPPED for the grid's own logic.
-4. **`GAP-039`** — verify the Entrance transitions smoothly between grids. Likely already true
-   (`_sync_entrance_x` re-derives every frame). ⚠ **Verify by RUNNING it** — a still frame is the
-   wrong instrument for anything with a duration.
-5. **The clipped focused top row** — visible in an earlier render, worse than the recorded 7.8 px.
-6. **`GAP-030`** — the staged settings migration: the seam, then 77 read sites in batches
-   heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own commit.
-7. **`GAP-028`=(c)** — `H24`'s board-scrolls-within-3. ⚠ Still owes its clipping question and
-   re-opens scroller-vs-camera contention. **Expect a follow-up gap, not a judgement call.**
+⚠ **A previous attempt shipped and was WRONG; it is reverted work, not new work.** Setting
+`vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM` is INERT: measured on a real scored label,
+`label.size (16,17)` vs autosized text `(14,17)` — **zero vertical slack**, so top and bottom render
+identically. Giving it slack via `size_flags_vertical = SIZE_EXPAND_FILL` then broke the pitch match
+with the card rows, which is the misalignment the owner reported.
 
-**Deferred by owner ruling:** `GAP-037` (an Entrance column deeper than the render target renders
-off-screen) — *"no limit for now"*. Known, not safe; its reachability is still unmeasured.
+**Do:** revert both of those in `_fill_label_stack` (restores the pitch match), then **MEASURE** the
+label band's global rect against its own card's bottom edge and REPORT before moving anything.
+⚠ The geometry is not obvious: a card is ~110 px tall but the fan pitch is ~17 px, so a covered card
+shows only a ~17 px bottom strip — the same height as the label band.
+⚠ **`custom_minimum_size` IS A FLOOR, NOT A CAP** — growing children past the stack's sum pushes a
+bottom-aligned gutter's rows upward and ACCUMULATES. That is the owner-reported bug whose FIRST FIX
+WAS A FALSE GREEN.
 
-## ⚠⚠ STANDING REGRESSION — `TP-140`, committed deliberately as an honest red
+### 2. The Entrance must stack UPWARD
+**Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
+like all other cards."*
 
-**`TP-140` ("grid 0 / grid 2 is OUT OF VIEW while another grid is focused") FAILS**, and it was
-committed that way on an owner ruling, not overlooked.
+⚠ **NOT a `bottom_anchored := true` flip.** `CardVisual.get_card_control_center()` hangs a
+bottom-anchored card from its OWN control's bottom edge, so the grid **reverses control-build order**
+— newest card is child 0, the cell's frame card LAST (`_bind_grid_panel`, `update_grid_zone_visuals`).
+The Entrance builds header-first, so a naive flip renders the header **upside-down off the top of the
+strip**. The real change:
+- mirror the grid's reversed-order convention in `set_card_zone` / `update_card_zone_visuals`;
+- rewrite `_entrance_slot_center_global` (documented as fanning *"from control tops"*) to measure
+  from a FLOOR the way `_grid_slot_center_global` does.
 
-```
-cells [-928.9 .. -554.6]   window [-600.0 .. 600.0]   -> ~45 px of each neighbour bleeds in
-```
+**Owner ruling on the fallout:** the bespoke selected/held highlight in `update_card_zone_visuals`
+(Entrance-specific `vbox.get_child(0)`/`get_child(1)` indices) is **DROPPED** in favour of the grid's
+own `on_control_focus_entered` widening. ⚠ The highlight's appearance when picking up from the
+Entrance WILL change — verify by eye.
 
-**Cause:** `focused_board_zoom()` is now the closed-form fixed point
-`size.y / (block_h + base_strip)`, which is genuinely SMALLER than the old order-dependent value
-(block 374 px, was 419). `isolating_grid_buffer_px()` still models the OLD zoom, so it early-outs to
-`0.0` — **two models of one quantity.** ⚠ Confirmed in **GRID VIEW ALONE**, so it is NOT cross-suite
-interference.
+⚠ Watch: the known **~11-frame dead-click window** on Entrance cards runs through this code — check
+whether it widens. And an upward Entrance stack grows TOWARD the board; confirm it cannot occlude the
+grid's bottom row.
 
-**THE FIX IS DEFERRED ON PURPOSE, AND IT IS OWED.** `GAP-035` moves the Entrance into the board's
-scroller and changes the focused-zoom formula AGAIN, so the buffer solver is re-derived **once**,
-after that — not twice. ⚠ **Do this immediately after `GAP-035` lands. Do not let it become
-background noise: it is a real defect a player would see.**
+### 3. Verify the Entrance transitions smoothly between grids
+**Owner note:** *"if entrance is not snapped to a grid, it should smoothly transition between them.
+Shouldn't really be an issue though since entrance should be tied to camera or view looking at each
+grid first."* Likely already true — `_sync_entrance_x` re-derives X from the board's pan every frame.
+⚠ **Verify by RUNNING it** — a still frame is the wrong instrument for anything with a duration.
 
-⚠ **Do NOT fix it by reverting the fixed point.** That reinstates a focused zoom whose value depends
-on how many times the loop has been evaluated ("first focus 555.0, stepped 478.8"), which is the
-genuine defect `TP-139` caught.
+### 4. The focused grid's clipped top row
+Visible in the composite render; the standing note records the zoom overshooting its window by
+7.8 px, and it looks worse than that now.
+
+### 5. Settings isolation — the staged migration (a TRUE GAP, see `gaps/GAP-030.md`)
+Owner ruled **(b)**, staged: build the injection seam, then migrate the **77 read sites across 22
+files** in batches heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own
+commit with a full suite between. Clears the last 2 standing failures.
+
+### 6. `H24`'s board-scrolls-within-3 (`GAP-028`)
+⚠ Still owes its clipping question and re-opens scroller-vs-camera contention. Expect a follow-up
+gap, not an implementer's judgement call.
+
+**Deferred by owner ruling — see `gaps/GAP-037.md`:** an Entrance column deeper than the render
+target renders off-screen. *"No limit for now."* Known, not safe; reachability still unmeasured.
+
+## ⚠ Test fixtures that still lay out at OS-window size
+
+`Tests/Support/test_game_view_host.gd` hosts a `GameView` at `game_picture_design_size`, the way
+production does. **`test_e2e_run`, `test_leak_canary`, `test_grid_layout` and several
+`Tests/Visual/` probes still `add_child(view)` directly**, so they lay out against the OS window.
+They pass today and carry the same latent drift that silently broke UI PROPS, VISUAL LAYERS and
+INTERACTION once the play area stopped matching the window height.
 
 ## ⚠ The GRID LAYOUT interference is NOT fully deterministic
 
@@ -393,15 +413,20 @@ Continue the poker-patience grid work on branch `poker-patience`, in the worktre
 gamedev-poker-patience.
 
 READ IN THIS ORDER:
-  1. solatro/HANDOFF_poker_patience.md — THIS FILE. Its "five failures", Environment,
-     "Standing rules" and Open bugs sections are the traps; do not rediscover them.
-  2. The gap files. THIRTY filed. All five outstanding decisions are now OWNER-RULED
-     and nothing rests on standing authorisation. GAP-027=(d)+(e) floor 128 px,
-     GAP-029 (grid_buffer_px -> 88), GAP-030 (settings isolation, staged (b)),
-     GAP-028=(c). GAP-018 is the only one still open.
+  1. solatro/HANDOFF_poker_patience.md — THIS FILE. Its "settled geometry",
+     Environment, "Standing rules" and Open bugs sections are the traps; do not
+     rediscover them.
+  2. The gap files, for the FOUR still undecided only: GAP-018, GAP-028's H24 half,
+     GAP-030 (settings isolation, ruled (b) staged but not built), GAP-037 (deferred).
+     ⚠ A gap is a DECISION THE DESIGN DOES NOT COVER, never a bug. Do not file one for
+     a solved bug or for an instruction that came with its own answer — the code is
+     the source of truth for anything already built.
   3. solatro/design/poker-patience/DESIGN.md §36 — flowchart H.
+     ⚠ §36 is STALE against the shipped board: the picture is now 3 GRIDS wide, not 3
+     grid positions. Read it with the "settled geometry" section beside it.
 
-FIRST: run the suite. Expect ALL 45 SUITES with 5 FAILED, all attributed:
+FIRST: run the suite. Expect ALL 45 SUITES with 2 FAILED, both the known GRID LAYOUT
+cross-suite interference:
     GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 600
   ⚠ USE 600, NOT 400 — it is a GLOBAL limit and a COLD run exceeds 400 s, dying with
     "NO SUITE BANNER" which reads exactly like a hang. Warm it is ~190 s.

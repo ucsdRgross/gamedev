@@ -33,7 +33,7 @@ var game : Game
 var pa : PlayArea
 ## The picture's own SubViewport, sized `game_picture_design_size` -- production lays the board out
 ## at that size inside the wall's viewport (`wall_picture.gd`), never against the OS window, so a
-## taller-than-window play area (GAP-040) still lands every synthesized click where a player's would.
+## taller-than-window play area still lands every synthesized click where a player's would.
 var picture_vp : SubViewport
 var prev_run : RunState
 var prev_save_info : RunState

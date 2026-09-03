@@ -1,7 +1,7 @@
 class_name TestGameViewHost
 ## Hosts a real GameView the way production does: inside a SubViewport sized to
 ## `game_picture_design_size` (production lays the board out at that size inside the wall's own
-## SubViewport, `UI/Wall/wall_picture.gd`), never against the OS window (GAP-040). Instantiating
+## SubViewport, `UI/Wall/wall_picture.gd`), never against the OS window. Instantiating
 ## GameView directly into a suite's own tree lays it out against the OS window instead, which
 ## drifted from production once PlayContainer's height stopped matching the window height.
 ## Shared by every suite that hosts a real GameView, so the hosting logic exists once.
