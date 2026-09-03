@@ -2179,6 +2179,8 @@ func _create_label_stack() -> Control:
 ## `ry` actually is (never a fixed per-level size), and it tracks an easing row through the ease the
 ## same way `_grid_row_height` already does for the cells. Column stacks stay levels-sized: a column's
 ## width never varies by data the way a row's height does.
+## Row labels expand to fill the stack's already-authoritative height (never grow it) so their
+## text has real room to sit at the bottom, level with the pip row on a card's bottom edge.
 func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNumber],
 		gi: int, index: int, levels: int, is_row: bool) -> void:
 	if not stack: return
@@ -2190,6 +2192,9 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 		var label : BigNumberLabel = stack.get_child(i)
 		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
 				CardVisual.card_separation_play_custom) if is_row 				else Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play)
+		if is_row:
+			label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""
