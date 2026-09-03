@@ -1,7 +1,7 @@
 {
   "slug": "effect-review",
-  "doc_hash": "sha256:02fe99864105c5862360e0d074d9b426a022ffb0956d1404ee7de5c939e307f9",
-  "updated": "2026-09-01T11:09:43Z",
+  "doc_hash": "sha256:8e7016c750d2a43548110155cdc0c603b4a1ca5f4e91aeaa341f3e3720ad9fea",
+  "updated": "2026-09-03T12:10:18Z",
   "answers": {
     "Q0001": {
       "state": "chosen",
@@ -254,6 +254,303 @@
       "active": true,
       "round": 1,
       "at": "2026-09-01T11:09:43Z"
+    },
+    "Q0029": {
+      "state": "chosen",
+      "option": null,
+      "note": "tap to trigger rescore as if this card was just placed there again",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-02T06:28:10Z"
+    },
+    "Q0030": {
+      "state": "chosen",
+      "option": null,
+      "note": "can be placed outside of grid as if grid is (n+1)x(n+1) size. Participates in melds as if meld is 6 long now.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T01:40:24Z"
+    },
+    "Q0031": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T01:41:11Z"
+    },
+    "Q0032": {
+      "state": "chosen",
+      "option": null,
+      "note": "Triggers the skill once all grids are filled",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T01:42:35Z"
+    },
+    "Q0033": {
+      "state": "chosen",
+      "option": null,
+      "note": "once grid is full, score entire grid as one meld.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T01:43:57Z"
+    },
+    "Q0034": {
+      "state": "chosen",
+      "option": null,
+      "note": "replay last effect that triggered, ignoring caps on limits it can be triggered for all cards impacted by the effect (possibly reduce limits first)",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T08:48:51Z"
+    },
+    "Q0035": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T08:50:08Z"
+    },
+    "Q0036": {
+      "state": "chosen",
+      "option": null,
+      "note": "when tapped, row and columns scores are averaged by their total first, at cost of half the current combo.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T08:52:13Z"
+    },
+    "Q0037": {
+      "state": "chosen",
+      "option": null,
+      "note": "points earned interacting with this card such as through melds are instead absorbed by the card, gaining interest between games. Tap before it absorbs any score to score the total absorbed amount into current game score, but can no longer absorb anything that game. Banked amount is never lost, it accumulates on rounds it is not used.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T08:56:28Z"
+    },
+    "Q0038": {
+      "state": "chosen",
+      "option": "d",
+      "note": "This already exists through score labels and is hard-coded into game, making it a rule makes no sense since this is just UX.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T08:58:07Z"
+    },
+    "Q0039": {
+      "state": "chosen",
+      "option": null,
+      "note": "scores large multiplier scaling based on amount of hazards/boss effects seen by this card",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:00:11Z"
+    },
+    "Q0040": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:00:25Z"
+    },
+    "Q0041": {
+      "state": "chosen",
+      "option": null,
+      "note": "raises multiplier by a lot if this is first card on a grid",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:28:01Z"
+    },
+    "Q0042": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:51:33Z"
+    },
+    "Q0043": {
+      "state": "chosen",
+      "option": null,
+      "note": "Duplicate the high card in the same meld as the card with this skill.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:55:01Z"
+    },
+    "Q0044": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:55:42Z"
+    },
+    "Q0045": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:56:56Z"
+    },
+    "Q0046": {
+      "state": "chosen",
+      "option": null,
+      "note": "permanent multiplier for consecutive meld different from the last one scored, resets if two same melds scored after each other",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T09:58:17Z"
+    },
+    "Q0047": {
+      "state": "chosen",
+      "option": null,
+      "note": "on new refilled entrance, score all cards in entrance as a meld",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:03:19Z"
+    },
+    "Q0048": {
+      "state": "chosen",
+      "option": null,
+      "note": "(a) Adds to the multiplier the number of times the scoring hand type has been played this run\nand can include variant to add number of times all scoring hands other than this type has been scired added to multiplier to reward diversity",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:05:59Z"
+    },
+    "Q0049": {
+      "state": "chosen",
+      "option": null,
+      "note": "meld its a part of gets negative multiplier if equal or more odd ranks in its meld than even ranks. \n(can be a good counter to hazards that cause negative multipliers)",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:16:37Z"
+    },
+    "Q0050": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:17:22Z"
+    },
+    "Q0051": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:18:18Z"
+    },
+    "Q0052": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:19:24Z"
+    },
+    "Q0053": {
+      "state": "chosen",
+      "option": null,
+      "note": "when scored in a meld, jumps to closest cell in the grid that would not complete a line, otherwise hop once to closest cell and complete the meld without jumping again.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:25:19Z"
+    },
+    "Q0054": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, keep track of score of last meld. gain score based on difference between highest scored meld and last highest scored meld. rewards building up from low scores to high scores.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T10:31:01Z"
+    },
+    "Q0055": {
+      "state": "chosen",
+      "option": null,
+      "note": "prevents immediate scoring when meld containing this card is complete. Finally scores all connected melds containing this card when tapped. gain points for each meld scored before being tapped.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:04:36Z"
+    },
+    "Q0056": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, when placed in grid, causes next skill B already in the grid that would trigger to be instead be tracked by the current skill A, preventing all triggers of B. Then when skill A is scored in a meld, trigger B for amount of times it was prevented from triggering times 2 and releasing it from skill A lock for future triggers.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:26:28Z"
+    },
+    "Q0057": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:27:16Z"
+    },
+    "Q0058": {
+      "state": "chosen",
+      "option": null,
+      "note": "Moves away into open cell 1 away from current position instead of scoring, each dodge increases multiplier for meld it is eventually scored in. Once it has scored in a meld, it stops dodging.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:30:03Z"
+    },
+    "Q0059": {
+      "state": "chosen",
+      "option": null,
+      "note": "boss rule, you start with 3 patience, each entrance refill removes a patience, each scored meld refills a patience, lose if you run out of patience. goal is to force player to constantly form melds instead of delaying.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:37:05Z"
+    },
+    "Q0060": {
+      "state": "chosen",
+      "option": null,
+      "note": "if goal is already met, scored cards containing this card in new melds get their current type converted to gold type cards",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T11:42:05Z"
+    },
+    "Q0061": {
+      "state": "chosen",
+      "option": null,
+      "note": "At end of show, this card increases rank by one and gets random stamp/seal/hat",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-03T12:10:18Z"
     }
   }
 }
