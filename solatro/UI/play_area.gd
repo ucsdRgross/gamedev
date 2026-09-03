@@ -675,11 +675,24 @@ func _publish_cell_rects() -> void:
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
+## ⚠ WAITS FOR THE SCROLL RANGE TO STOP CHANGING before aiming -- panel positions, the shared
+## width and the scroll range all settle separately over several frames, so reading `max_value`
+## after a single frame clamps the aim against a range that is still growing. Re-read `max_value`
+## every frame rather than latching a copy, which would freeze at the same stale value. The wait
+## is capped at the pan clock so a board that never settles still gets an aim.
 func _anchor_scroll_to_bottom() -> void:
 	if not is_instance_valid(scroll_container): return
-	await get_tree().process_frame
 	var bar := scroll_container.get_v_scroll_bar()
-	if bar: scroll_container.scroll_vertical = int(bar.max_value)
+	if not bar: return
+	var last := INF
+	var waited := 0.0
+	while waited < SettingsManager.settings.grid_pan_duration:
+		await get_tree().process_frame
+		if not is_instance_valid(scroll_container) or not is_instance_valid(bar): return
+		waited += get_process_delta_time()
+		if is_equal_approx(bar.max_value, last): break
+		last = bar.max_value
+	scroll_container.scroll_vertical = int(bar.max_value)
 
 func update_gui() -> void:
 	set_separation()
