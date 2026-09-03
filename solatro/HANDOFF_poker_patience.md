@@ -585,54 +585,143 @@ hidden.
 
 ```
 Continue the poker-patience grid work on branch `poker-patience`, in the worktree
-gamedev-poker-patience.
+C:\Users\khanr\Documents\GitHub\gamedev-poker-patience. Do NOT create a worktree.
+Committing on this branch is fine and needs no permission: one verified step per commit,
+evidence in the message.
 
-READ IN THIS ORDER:
-  1. solatro/HANDOFF_poker_patience.md — THIS FILE. Its "settled geometry",
-     Environment, "Standing rules" and Open bugs sections are the traps; do not
-     rediscover them.
-  2. The gap files, for the FOUR still undecided only: GAP-018, GAP-028's H24 half,
-     GAP-030 (settings isolation, ruled (b) staged but not built), GAP-037 (deferred).
-     ⚠ A gap is a DECISION THE DESIGN DOES NOT COVER, never a bug. Do not file one for
-     a solved bug or for an instruction that came with its own answer — the code is
-     the source of truth for anything already built.
-  3. solatro/design/poker-patience/DESIGN.md §36 — flowchart H.
-     ⚠ §36 is STALE against the shipped board: the picture is now 3 GRIDS wide, not 3
-     grid positions. Read it with the "settled geometry" section beside it.
+READ IN THIS ORDER
+  1. solatro/HANDOFF_poker_patience.md -- THIS FILE, in full. Its "settled geometry",
+     "Standing rules", Environment and Open bugs sections are traps that each cost real
+     time. Do not rediscover them.
+  2. solatro/design/poker-patience/PLAN.md -- ACTUALLY READ IT, at least 0-1.13 and 2.
+     A previous session ran for a long time having only grepped it, and missed that 1.8
+     fixes the pip row at y 13-23 with the card bottom at 27 -- which decides where
+     score labels belong.
+  3. solatro/design/poker-patience/TEST_PLAN.md -- its rules section and the row table.
+     Every step owes named TP rows; dropping a planned row is a gap, not a judgement
+     call. Rows marked E are BY-EYE and need the OWNER to sign them off, not you.
+  4. DESIGN.md 36 (flowchart H) when you need it. It is the authority on behaviour.
 
-FIRST: run the suite. Expect ALL 45 SUITES with 2 FAILED, both the known GRID LAYOUT
-cross-suite interference:
-    GODOT_BIN="<godot 4.7.2 console exe>" py solatro/Tools/run_tests.py --timeout 600
-  ⚠ USE 600, NOT 400 — it is a GLOBAL limit and a COLD run exceeds 400 s, dying with
-    "NO SUITE BANNER" which reads exactly like a hang. Warm it is ~190 s.
-  ⚠ Close the owner's editor first. ⚠ Never two Godot processes at once.
-  ⚠ RUN ONE SUITE ALONE to discriminate interference — GRID LAYOUT alone is 85/85.
+FIRST, BEFORE ANY CODE -- run the suite:
+    GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 600
+  EXPECT: ALL 45 SUITES, 2 FAILED -- GRID LAYOUT's 116.0 px and its flaky TP-85, both
+  known cross-suite interference. GRID LAYOUT ALONE is 85/85; never chase them.
+  GRID VIEW's TP-112 is a known timing flake (samples mid-move, lands 0.1-0.3 px from
+  at-rest) and may or may not fire.
+  ! USE 600, NOT 400 -- it is a GLOBAL limit, and a COLD run exceeds 400 s and dies with
+  "NO SUITE BANNER", which reads exactly like a hang. Warm it is ~190 s.
+  ! Judge by WHICH checks fail, never the count. Totals wobble 3835-3865.
+  ! The owner's Godot editor stays OPEN -- it hosts the MCP. Leave it alone. The
+  one-process rule binds GAME and TEST processes only. Never kill by image name or a
+  Get-Process|Where-Object pipeline (a hook blocks it); stop a verified
+  "Solatro (DEBUG)" orphan by explicit -Id. Agents repeatedly left 3-4 running.
 
-A GODOT MCP IS AVAILABLE THIS SESSION. Use it where it beats the shell:
-  - editor_screenshot / project_run for by-eye gates, which caught four defects the
-    suite missed;
-  - logs_read instead of grepping the log file, and note WHICH log;
-  - node_get_properties / scene_get_hierarchy to measure a live rect instead of
-    writing a throwaway probe;
-  - script_patch for surgical edits.
-  ⚠ It does NOT replace the rules: no two Godot processes, by-eye still beats green,
-  and a compile error still cascades into scripts that name none of the symptoms.
+THE TREE IS CLEAN at a verified-green commit. Nothing is half-applied.
 
-NON-NEGOTIABLES, each of which caught a real defect:
-  - VERIFY VISUALS BY EYE, with an instrument that renders the PRODUCT's framing.
-    grid_zoom_shot and grid_layer_shot instantiate GameView directly and are blind to
-    the wall composite.
-  - RED-THEN-GREEN for every new check — and remember it is NECESSARY, NOT SUFFICIENT.
-  - THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT.
-  - CONFIRM AN API EXISTS before calling it (ClassDB.class_get_method_list), then
-    launch one scene for two seconds. A compile error cascades.
-  - MEASURE BEFORE YOU BUILD. Five Phase 7 threads ended blocked on a false premise.
-  - NO COMMENT INSIDE A METHOD BODY; no design ids in product code.
-  - COMMITS ARE FINE off `main`, one verified step each.
+DO THIS FIRST -- THE BY-EYE INSTRUMENT IS BROKEN
+  Tests/Visual/wall_game_squash_probe renders a "focused" frame showing all five rows
+  with the Entrance below. The RUNNING GAME, focused, shows the top row cut off and the
+  Entrance barely in frame. The probe does not reproduce the product's focused pose, so
+  every by-eye sign-off taken through it is weak evidence. FIX THE INSTRUMENT BEFORE
+  TRUSTING ANOTHER BY-EYE GATE on focused geometry. Until then the owner's screenshots
+  are better evidence than the probe.
 
-If you hit a decision no document fixes: file a gap, park that thread, keep the others
-moving, and QUOTE the gap's own option text to the owner. ⚠ CHECK FOR A FOURTH OPTION —
-six gaps here were answered with an option nobody listed.
+THEN THE GEOMETRY PASS -- FOUR OWNER RULINGS, ONE CHANGE
+  Do not split these. They move the same geometry, and deriving the focused zoom three
+  times against a shifting layout is how earlier cycles were lost.
+   a. SceneRoot holds the AUTHORED 1152x648 and scales uniformly to the picture
+      (1495x841 -- ratio 1.2977 on both axes, because the picture is exactly the
+      window's aspect, so nothing distorts). Owner: "HUD scales with the picture".
+   b. PlayContainer then returns to its authored height. ! MEASURE FIRST whether that
+      regresses TP-140: focused_board_zoom() reads PlayArea.size.y, and a too-small
+      value there was the whole reason the height tracking was added.
+   c. The board's available area is the play area LESS the HUD's rectangle. Owner:
+      "the grid should be offset from how much space the hud rectangle takes."
+   d. The focused view must frame, AS A MINIMUM, the 5x5 cell block PLUS the Entrance
+      row -- inside the post-HUD space, not the full width.
+  ! TWO SCALES STACK: focused_board_zoom() fits content into the play area, and the wall
+  camera fits the picture into the window. A zoom that fits an 841 px picture still
+  clips when the camera crops it into a ~651 px window. Measure both layers.
+  ! Coherence already checked: 5x5 (216x286) + strip (81) fits easily in the ~752x648
+  left after the HUD. The clipping is NOT "doesn't fit" -- the board is sized for a
+  space the camera does not show.
+
+THEN, in order
+  1. With grid_count == 1, open FOCUSED -- no click. Owner: "clicking to zoom in when
+     there is only 1 grid should not be necessary." Q4=(d)/Q5 make one grid the case for
+     any deck of 52 or fewer, so this is the DEFAULT, not an edge case.
+  2. The runtime LEAK (see its section in this file). CardData is RefCounted and cannot
+     collect a CYCLE, so unreachable-but-alive is a loop, not a stray holder.
+     test_leak_canary runs double-show cycles and PASSES, so the canary must be taught
+     to see it or the leak returns.
+  3. Row score labels: the label BAND sits too high. ! Revert the SIZE_EXPAND_FILL +
+     VERTICAL_ALIGNMENT_BOTTOM pair first -- it is a regression that broke the pitch
+     match with the card rows -- then MEASURE the band against the card's PIP ROW.
+     PLAN.md 1.8 puts pips at y 13-23 with the card bottom at 27, so "align to the
+     bottom" is 4 art units off the thing the owner actually wants.
+  4. The Entrance stacks upward. ! NOT a bottom_anchored := true flip -- the grid
+     REVERSES control-build order, and the Entrance builds header-first, so a naive flip
+     renders the header upside-down off the top of the strip. Full roadmap is in this
+     file's queue section.
+  5. The focused grid's clipped top row; then GAP-030 (settings migration, staged (b));
+     then GAP-028=(c).
+
+A REVERTED FIX IS PARKED, NOT LOST
+  The floor fix (a grown TopLevelVBox drags _board_floor_y into the Entrance, making a
+  placed bottom-row card invisible) was reverted to restore a working build, and is
+  preserved as a patch in the previous session's scratchpad (S55_floor_fix.patch).
+  ! DO NOT RE-APPLY IT UNCHANGED: its _stick_board_scroll_to_bottom() wrote
+  scroll_vertical every physics tick against a SmoothScrollContainer that animates its
+  own position -- two writers on one observable, and the likely cause of a scrollbar
+  that renders but will not move. The DIAGNOSIS is sound and worth keeping: the grown
+  content hangs below the scroll container's window, present in world space (so a
+  global-position probe reads fine) but clipped from the render.
+
+GAPS -- THE POLICY CHANGED
+  A gap is a DECISION THE DESIGN DOES NOT COVER. It is NOT a bug, and NOT an instruction
+  that arrived with its own answer. 11 files were deleted for being one of those.
+  Owner: "code should be source of truth... bugs should never be recorded if they are
+  already solved, since all they do is waste time for future readers."
+  Only FOUR remain open: GAP-018, GAP-028's H24 half, GAP-030, GAP-037.
+
+NON-NEGOTIABLES, each of which caught a real defect here
+  - MEASURE BEFORE YOU BUILD, and say whether a number is measured or inferred. Five
+    premises died on contact with a measurement in the last session, several of them the
+    overseer's own arithmetic.
+  - RED-THEN-GREEN for every check, and confirm the red failed the checks you EXPECTED.
+    Neutralise the BEHAVIOUR, not the test -- and neutralise the site that owns the
+    failing checks: one agent neutralised the wrong fixture and read all-passed.
+  - THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT. A harness sitting at the
+    default card_scale cannot see a bug that only appears at a larger one.
+  - ASSERT ON OBSERVED GEOMETRY, never on a recomputation of the formula under test.
+    ! A global-position assertion CANNOT see render clipping -- that is exactly how a
+    card "present in world space but clipped from the render" passed a position check.
+  - CONFIRM AN API EXISTS (ClassDB.class_get_method_list) before calling it; Godot is
+    4.7.2. A compile error CASCADES and names none of its symptoms.
+  - NO COMMENT INSIDE A METHOD BODY. NO DESIGN IDS IN PRODUCT CODE (Tests/ is exempt) --
+    three agents leaked these and they had to be stripped by hand.
+  - A tunable literal in a source file is a defect, even when it looks like an epsilon.
+  - If a probe mutates settings, use `isolated`. One poisoned user://settings.tres and
+    caused a spurious 23-failure run.
+  - DO NOT DELETE A COMMENT THAT RECORDS A MEASURED CONSTRAINT. One agent deleted the
+    "resizing the strip re-lays out everything anchored inside it (4 px)" comment and
+    reproduced that exact 4.00 px drift within one suite run.
+
+WHERE THE PHASE ACTUALLY IS
+  PLAN.md Phase 7's done-when is TP-105 and TP-113..TP-120 green.
+    green  TP-105, TP-113, TP-114, TP-118
+    absent TP-115/116/117 (S32), TP-119 (S33's H21), TP-120 (S34)
+  4 of 9. THREE STEPS CLOSE THE PHASE: S32, the rest of S33, and S34.
+  ! Almost none of the recent work touched those rows -- it was owner-directed visual
+  refinement, all landed and all real, but orthogonal to the phase gate. If the goal is
+  to CLOSE PHASE 7, do S32/S33/S34; the refinement queue above is separate work, and
+  the owner should be told which one you are doing.
+
+If you hit a decision no document fixes: file a gap under the policy above, park that
+thread, keep the others moving, and QUOTE the gap's own option text to the owner.
+! CHECK FOR A FOURTH OPTION FIRST -- seven gaps here were answered with an option nobody
+had listed, including one where the owner replied with a criterion that invalidated all
+four options as written.
 ```
 
 ## References
