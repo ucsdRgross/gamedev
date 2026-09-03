@@ -337,11 +337,16 @@ var new_data_card : Dictionary[CardData, CardVisual]
 @onready var overlay_layer: Node2D = %OverlayLayer
 
 ## **THE PINNED ENTRANCE.** A sibling of `SmoothScrollContainer`, outside the board's scroll, so
-## it never scrolls away vertically: `EntranceStrip` is the fixed, clipped window; `EntranceHTrack`
-## is the wide (board-content-width) track slid in X to mirror the board's own horizontal scroll
-## (`_sync_entrance_x`); `EntranceVScroll` is the Entrance's OWN vertical scroll for a stack
-## deeper than the strip; `EntranceCardLayer` is its OWN card layer — a card layer INSIDE the
-## board's scroll cannot pin, because its cards would scroll away from their own pinned controls.
+## it never scrolls away vertically -- the board's own scrollbar is the ONLY one on screen, since
+## `EntranceVScroll`'s own bar is hidden (nothing left for it to reveal -- see below) and
+## `EntranceStrip` no longer clips: `EntranceStrip` is the fixed visible window; `EntranceHTrack` is
+## the wide (board-content-width) track slid in X to mirror the board's own horizontal scroll
+## (`_sync_entrance_x`); `EntranceVScroll` does not resize or clip -- a stack deeper than the
+## configured strip simply draws past the window rather than being cropped or needing a second bar
+## to reach it (resizing the strip itself was tried and rejected: it re-lays out everything anchored
+## inside it, drifting a prop off its own slot mid-cycle); `EntranceCardLayer` is its OWN card
+## layer — a card layer INSIDE the board's scroll cannot pin, because its cards would scroll away
+## from their own pinned controls.
 @onready var entrance_strip: Control = %EntranceStrip
 @onready var entrance_h_track: Control = %EntranceHTrack
 @onready var entrance_v_scroll: ScrollContainer = %EntranceVScroll
@@ -518,6 +523,14 @@ func _apply_entrance_zoom_rect() -> void:
 	entrance_v_scroll.offset_right = local.x - window.x
 	entrance_v_scroll.offset_bottom = local.y - window.y
 
+## The Entrance's REAL depth, past the configured visible strip -- what the board's floor must
+## clear so a deep Entrance never covers a grid card. Distinct from the visible strip on purpose:
+## the strip itself must stay fixed (see `_apply_entrance_strip_height`), or resizing it re-lays
+## out everything anchored inside it and a prop or slot drifts off its own anchor mid-cycle
+## (measured: 4 px).
+func _entrance_strip_full_height() -> float:
+	return maxf(entrance_strip_height_px(SettingsManager.settings, board_zoom), _entrance_row_height())
+
 ## The picture x the board's current pan puts under the LEFT edge of the grid the view is
 ## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
 ## Exposed so anything OUTSIDE the scroll (the rest of the HUD) can ride the identical pan
@@ -535,26 +548,19 @@ func _view_grid_cells() -> Control:
 	if last < 0: return null
 	return _cells_root(grid_container.get_child(clampi(pan_grid, 0, last)) as Control)
 
-## The strip's fixed visible height, and the matching reservation carved out of the board's own
+## The strip's FIXED visible height, and the matching reservation carved out of the board's own
 ## scroll so the two never overlap on screen. A multiple of one card's height
-## (`entrance_visible_rows`) — re-applied on every settings change since `card_scale` resizes
-## the card the multiple is measured against.
+## (`entrance_visible_rows`) — re-applied on every settings change since `card_scale` resizes the
+## card the multiple is measured against. Stays fixed even when the Entrance stacks deeper: the
+## strip is a player setting, and resizing it re-lays out everything anchored inside it (see
+## `_entrance_strip_full_height`). The board's floor is what clears the real depth instead.
 func _apply_entrance_strip_height() -> void:
 	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
-	# ⚠ **THE VISIBLE STRIP AND THE ENTRANCE'S OWN HEIGHT ARE TWO DIFFERENT NUMBERS.** The strip is
-	# a player setting — how much Entrance is on screen — and it must NOT move when cards land in
-	# the Entrance: resizing it re-lays out everything anchored INSIDE it, which drifted a prop off
-	# its slot mid-reveal (4 px) and moved an Entrance slot 17 px between cycles. What Q313 asks for
-	# is that the BOARD rises, and only the board.
 	var h := entrance_strip_height_px(SettingsManager.settings, board_zoom)
 	entrance_strip.offset_top = -h
 	_apply_board_zoom_rect(h)
 	_apply_entrance_zoom_rect()
-	# ⚠ **THE FLOOR CLEARS THE ENTRANCE'S ACTUAL HEIGHT, NOT ITS RESERVATION** (`Q313`=a, owner:
-	# *"it raises everything above it up as well so as to not cover any card in the grid"*). A
-	# stacked Entrance that outgrows its strip pushes the board up by the overflow; a shallow one
-	# changes nothing.
-	_give_the_board_a_floor(maxf(h, _entrance_row_height()))
+	_give_the_board_a_floor(_entrance_strip_full_height())
 
 ## Put the board's window back where it was after the zoom made it bigger.
 ##

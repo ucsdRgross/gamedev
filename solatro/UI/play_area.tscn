@@ -72,7 +72,6 @@ unique_name_in_owner = true
 
 [node name="EntranceStrip" type="Control" parent="." unique_id=3021554101]
 unique_name_in_owner = true
-clip_contents = true
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -94,6 +93,7 @@ mouse_filter = 1
 
 [node name="EntranceVScroll" type="ScrollContainer" parent="EntranceStrip/EntranceHTrack" unique_id=3021554103]
 unique_name_in_owner = true
+clip_contents = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -101,6 +101,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
 script = ExtResource("1_07a3p")
 wheel_scroll_damper = SubResource("Resource_ent_wheel")
 dragging_scroll_damper = SubResource("Resource_ent_drag")
