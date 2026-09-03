@@ -320,6 +320,43 @@ next reader, and the code is the source of truth for anything already built.
 - **The COMBO label draws over the End button.**
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
 
+## ⚠ PHASE 7 PROGRESS — 4 of 9 done-when rows green
+
+`PLAN.md` Phase 7's done-when is **`TP-105` and `TP-113`-`TP-120` green**, plus
+`knobs_this_preview_does_not_drive` still empty.
+
+```
+TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅
+TP-115 ❌  TP-116 ❌  TP-117 ❌   -- S32: the saved pan and resting_state() (H18, H19)
+TP-119 ❌                        -- S33's H21 half: Info mode (Q178=a)
+TP-120 ❌                        -- S34: Tools/wall_editor.tscn drives every wall knob (Q186=a)
+```
+
+**Three steps close the phase: `S32`, the remainder of `S33`, and `S34`.**
+
+⚠ **MOST RECENT WORK WAS OWNER-DIRECTED REFINEMENT, NOT PLAN STEPS.** The 3-grid canvas, the derived
+buffer, the edge margin, `PlayContainer`'s height, Entrance scaling and clipping, label alignment and
+scroll-to-bottom are all real and all landed — but **none of them is a plan step and none closes a
+done-when row.** That is the whole explanation for effort spent versus phase progress. Anyone
+resuming should know the phase closes via `S32`/`S33`/`S34`, not via more refinement.
+
+## ⚠ Zone cards — two rules that are easy to violate
+
+**Owner:**
+> *"stacking cards on a zone should not cause the zone to move relative to grid."*
+
+> *"zone cards are not technically part of the board data wise to prevent cards looking below
+> themselves and seeing a zone card, so that zones are never interactable outside of UI, which is how
+> zones worked before grid and should still work that way now."*
+
+- **A zone does not move when cards stack on it.** The stack grows; the zone stays put relative to
+  its grid. ⚠ This is the same failure shape as the Entrance strip: *resizing the thing that holds
+  cards re-lays out everything anchored inside it.* Do not let a deepening stack move its zone.
+- **Zone cards are NOT board data.** A card must never look below itself and find a zone card, and a
+  zone is **never interactable outside the UI**. This is how zones behaved before grids and must keep
+  behaving. ⚠ Anything that walks a cell's stack — the iterator, the line detector, `validate()`,
+  undo — must not see a zone card as an occupant.
+
 ## Next up — the queue, in order
 
 ### 1. Row score labels sit TOO HIGH on their card
