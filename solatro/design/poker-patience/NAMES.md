@@ -132,7 +132,6 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 |---|---|---|
 | `grid_cards_per_unlock` | `52` | |
 | `grid_max_count` | `3` | |
-| `grid_buffer_px` | `220.0` | Centring is fixed; the gap is a knob. |
 | `grid_pan_duration` | `0.35` | |
 | `grid_overview_margin` | `0.06` | |
 | `grid_swipe_threshold_mm` | `8.0` | Converted through `WallInput.mm_to_px`, clamped. |
@@ -252,9 +251,11 @@ that shipped.
 
 | Name | Kind | Notes |
 |---|---|---|
-| `PlayArea.game_picture_design_size()` | method | The picture's authored size: three grid blocks, two `grid_buffer_px` buffers, `grid_overview_margin` **per side**, height = the board's natural height or the window-aspect minimum, whichever is larger. |
+| `PlayArea.game_picture_design_size()` | method | The picture's authored size: three grid blocks, two `PlayArea.isolating_grid_buffer_px()` buffers, `grid_overview_margin` **per side**, height = the board's natural height or the window-aspect minimum, whichever is larger. |
 | `PlayArea.grid_block_size_px()` | method | One grid's block, cell-block measured. |
-| `PlayArea.board_separation_px()` | method | `grid_buffer_px` less the measured label gutters — one `HBox` separation cannot vary per pair, so the widest pair wins. |
+| `PlayArea.isolating_grid_buffer_px()` | method | DERIVED buffer between two grid panels, closed-form solved so a FOCUSED grid isolates its neighbours. |
+| `PlayArea.grid_pitch_px()` | method | The ACTUAL applied panel-to-panel pitch: one block plus the rounded container separation and its gutters — what the camera step must match. |
+| `PlayArea.board_separation_px()` | method | The DERIVED buffer less the measured label gutters — one `HBox` separation cannot vary per pair, so the widest pair wins. |
 | `PlayArea.BOARD_SEPARATION` | const | |
 | `PlayArea._apply_grid_buffer()` | method | Applies the separation to the live board. |
 | `Wall._size_game_picture()` | method | The single seam where the game picture's `design_size` is set; called from `load_layout()`, so `_build_pictures()`, `_repack_wall()` and `_on_window_resized()` all pass through it. |

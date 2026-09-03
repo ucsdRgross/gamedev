@@ -251,9 +251,8 @@ func _camera_resting_state(rect: PictureRect, settings: PlayerSettings) -> Dicti
 	var area := _game_play_area()
 	if _current_focus == &"game" and area and area.view_mode == PlayArea.ViewMode.OVERVIEW \
 			and area.grid_container.get_child_count() > 0:
-		var pitch := PlayArea.grid_position_size_px(settings).x
 		return WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
-				area.resting_grid(), pitch, _info_card_height())
+				area.resting_grid(), area.grid_pitch_px(), _info_card_height())
 	return WallPicture.resting_state(rect, _window_size, settings, _info_card_height())
 
 ## The live game's `PlayArea`, or null while no `GameView` is mounted -- the OVERVIEW's camera
@@ -280,7 +279,7 @@ func _on_overview_pan_requested(grid_index: int) -> void:
 	if not area: return
 	var settings := SettingsManager.settings
 	var rect : PictureRect = _rects[&"game"]
-	var pitch := PlayArea.grid_position_size_px(settings).x
+	var pitch := area.grid_pitch_px()
 	var state := WallPicture.grid_state(rect, _window_size, settings, grid_index,
 			area.resting_grid(), pitch, _info_card_height())
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
@@ -299,7 +298,7 @@ func _on_overview_bounce_requested(step: int) -> void:
 	if not area: return
 	var settings := SettingsManager.settings
 	var rect : PictureRect = _rects[&"game"]
-	var pitch := PlayArea.grid_position_size_px(settings).x
+	var pitch := area.grid_pitch_px()
 	var card_height := _info_card_height()
 	var rest := WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
 			area.resting_grid(), pitch, card_height)

@@ -542,6 +542,12 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
+	# Re-pointed to FOCUSED (owner ruling): the picture now fits whole in the OVERVIEW, so
+	# nothing there overflows the camera frame any more -- H9's pan-lands-centred claim moves to
+	# the FOCUSED scroll-stepping mechanism, which still has a board wider than its window.
+	pa.focus_grid(1)
+	await _settle_scroll(view)
+	await _settle_camera(camera)
 	check(_camera_board_overflows(main, pa, camera),
 			"precondition: three grids are wider than the camera frame, so a pan can move (TP-101)",
 			"content %f window %f" % [
@@ -551,7 +557,7 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 							main.get_viewport().get_visible_rect().size).size.x])
 	var rest_grid := pa.pan_grid
 	check(rest_grid == 1,
-			"precondition: the overview rests on the middle of three grids (TP-101)",
+			"precondition: the view is focused on the middle of three grids (TP-101)",
 			"pan_grid %d" % rest_grid)
 	check(_camera_cut_off_px(main, pa, camera, rest_grid) <= 1.0,
 			"the grid the view rests on is wholly on screen, with no pan asked for (TP-101)",
@@ -583,10 +589,13 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 # TP-138 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
 # explicit pan to the grid the view is on puts it.
 #
-# ⚠ OVERVIEW SECTION: THREE GRIDS, MATCHING THE CANVAS BUDGET. `game_picture_design_size()` is
-# authored for `grid_max_count` grids (currently 3, unlocked in production), so an OVERVIEW check
-# needs a fixture the canvas was actually sized for -- more grids than the budget shift the middle
-# grid's cell-block position off a canvas that was never resized to match.
+# ⚠ OVERVIEW-FIXTURE SECTION: THREE GRIDS, MATCHING THE CANVAS BUDGET, CHECKED FOCUSED. At
+# <=3 grids the picture fits whole in the OVERVIEW by design, so nothing overflows there any more --
+# the resting-position claim is exercised through a focus onto this same three-grid fixture instead
+# (the same repoint TP-101 took). `game_picture_design_size()` is authored for `grid_max_count`
+# grids (currently 3, unlocked in production), so the fixture needs to be the canvas budget itself --
+# more grids than the budget shift the middle grid's cell-block position off a canvas that was never
+# resized to match.
 #
 # ⚠ FOCUSED SECTION: FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own
 # clamp parks the board hard left anyway, so an unpositioned board and a correctly positioned one
@@ -604,6 +613,12 @@ func run_the_board_rests_positioned_test() -> void:
 	var overview_camera := _main_camera(overview_main)
 	var overview_smooth := _scroller(overview_pa)
 	await _settle_layout(overview_view)
+	await _settle_scroll(overview_view)
+	await _settle_camera(overview_camera)
+	# Re-pointed to FOCUSED (owner ruling): the picture now fits whole in the OVERVIEW, so nothing
+	# there overflows the camera frame any more -- the "resting position is the camera's job"
+	# precondition moves to the FOCUSED scroll-stepping mechanism, the same repoint TP-101 took.
+	overview_pa.focus_grid(1)
 	await _settle_scroll(overview_view)
 	await _settle_camera(overview_camera)
 	check(_camera_board_overflows(overview_main, overview_pa, overview_camera),
@@ -1090,7 +1105,7 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 			"%s in frame" % [before])
 	# ⚠ **THE GRID THE VIEW IS ON, NOT ITS NEIGHBOUR.** This asked for grid 0 while the view sat on
 	# grid 1, which held only while grids were spaced 4 px apart and two of them fitted the window
-	# at once. `grid_buffer_px` puts a real gap between cell blocks, so at this window size the
+	# at once. The DERIVED isolating buffer puts a real gap between cell blocks, so at this window size the
 	# grid in the middle is the only one WHOLLY in frame -- and a neighbour sliced by the window
 	# edge is explicitly not a defect (the no-cut-off rule is scoped to the focused grid). What the
 	# layout owes, and what the "near edge moves along" check below rests on, is that the grid at
@@ -1741,15 +1756,14 @@ func run_the_board_recentres_after_any_removal_test() -> void:
 	await _tear_down(view)
 
 # ==============================================================================
-# TP-113 - the game picture is sized for exactly `grid_max_count` GRID POSITIONS, each of which is
-# in turn wide enough for exactly `grid_max_count` grids plus margins, at the height the zoomed-out
-# view needs. The size is read through `Wall.load_layout()` - the one seam every real wall build
-# goes through - so a picture that stopped being sized fails here.
+# TP-113 - the game picture IS one grid position: wide enough for exactly `grid_max_count` grids
+# plus the buffers and margins between them, at the height the zoomed-out view needs. The size is
+# read through `Wall.load_layout()` - the one seam every real wall build goes through - so a
+# picture that stopped being sized fails here.
 #
-# The "exactly three grids" claim did not weaken when the picture was widened, it MOVED: it is now
-# asserted of one grid position (design.x / grid_max_count), which is the rect the wall camera rests
-# on, and a second claim was added that the picture is a whole number of those positions. The old
-# assertions read the same rule off the same numbers one level up.
+# The picture and the position are the SAME rect (owner ruling, superseding the earlier picture of
+# `grid_max_count` positions each holding `grid_max_count` grids): the camera fills the picture
+# whole at rest, which is what lets zooming out show every grid at once.
 # ==============================================================================
 func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	behavior_section("THE GAME PICTURE FITS EXACTLY THREE GRIDS")
@@ -1769,15 +1783,10 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"precondition: the shipped cap is three grids (TP-113)",
 			"grid_max_count %d" % st.grid_max_count)
 	var position_size := PlayArea.grid_position_size_px(st)
-	check(absf(float(design.x) - position_size.x * float(st.grid_max_count)) <= 1.0,
-			"the game picture is exactly `grid_max_count` grid positions wide, so the camera has "
-			+ "that many resting poses to step between (TP-113)",
-			"design %d px, %d positions of %.1f px" % [design.x, st.grid_max_count,
-			position_size.x])
-	check(position_size.x < float(design.x) - 1.0,
-			"...so the picture is WIDER than the position the camera frames - the camera cannot "
-			+ "step across a picture it already sees whole (TP-113)",
-			"position %.1f px, design %d px" % [position_size.x, design.x])
+	check(absf(float(design.x) - position_size.x) <= 1.0,
+			"the game picture IS the one grid position -- the whole picture, not `grid_max_count` "
+			+ "of them (TP-113)",
+			"design %d px, position %.1f px" % [design.x, position_size.x])
 	check(position_size.x >= span_3,
 			"one grid position is wide enough for three grid blocks and the two buffers between "
 			+ "them (TP-113)",
@@ -1813,11 +1822,11 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	var rest_zoom := WallPicture.focused_scale(Vector2(design), window_size,
 			st.wall_overfill_margin)
 	var visible_w := window_size.x / maxf(rest_zoom, 0.0001)
-	check(float(design.x) - visible_w > position_size.x * 0.5,
-			"at its resting pose the camera sees LESS THAN the picture by more than half a grid "
-			+ "position, so stepping is a real move and not a nudge onto bare frame (TP-113)",
-			"sees %.1f px of %d px, slack %.1f px, position %.1f px"
-			% [visible_w, design.x, float(design.x) - visible_w, position_size.x])
+	check(float(design.x) - visible_w < block.x,
+			"at its resting pose the camera sees the WHOLE picture within a grid block's width -- "
+			+ "every grid in frame at once, not stepping onto one at a time (TP-113)",
+			"sees %.1f px of %d px, slack %.1f px, block %.1f px" % [visible_w, design.x,
+			float(design.x) - visible_w, block.x])
 
 # ==============================================================================
 # TP-114 - FIX-FULL-15: the focused game picture's render target never exceeds
@@ -1920,9 +1929,11 @@ func _game_entry() -> PictureEntry:
 		if e.id == Wall.GAME_PICTURE_ID: return e
 	return null
 
-## The board width `n` grid blocks of `block_x` px span, spaced by `grid_buffer_px`.
+## The board width `n` grid blocks of `block_x` px span, spaced by the DERIVED isolating buffer,
+## matching `PlayArea.grid_position_size_px()`.
 func _grid_span(block_x: float, n: int) -> float:
-	return float(n) * block_x + float(n - 1) * SettingsManager.settings.grid_buffer_px
+	var st := SettingsManager.settings
+	return float(n) * block_x + float(n - 1) * PlayArea.isolating_grid_buffer_px(st)
 
 # ==============================================================================
 # TP-105 — THE CAMERA STEPS BETWEEN THE 3 GRID POSITIONS THE FRAME HOLDS (`H22`), through the
@@ -1950,7 +1961,6 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 	var pa := view.play_area
 	var camera := _main_camera(main)
 	var window_size := main.get_viewport().get_visible_rect().size
-	var pitch := PlayArea.grid_position_size_px(SettingsManager.settings).x
 	pa.open_zoomed_out()
 	await _settle_camera(camera)
 	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
@@ -1958,6 +1968,10 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 			"mode %d" % pa.view_mode)
 	var rest_grid := pa.pan_grid
 	var rest_x := camera.position.x
+	# OBSERVED, not recomputed: the world-space distance between two adjacent grid panels' own
+	# cell blocks, read the same way `stepped_rect` below is -- never the production formula that
+	# lays them out, so this cannot agree with a wrong pitch the way a copy of it would.
+	var pitch := _grid_world_rect(main, pa, rest_grid + 1).get_center().x 			- _grid_world_rect(main, pa, rest_grid).get_center().x
 
 	_fire_key(KEY_PERIOD)
 	await get_tree().process_frame

@@ -579,13 +579,6 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_max_count = maxi(value, 1)
 		settings_changed.emit()
-## The gap between two grids' CELL BLOCKS, in board pixels. The score gutters (row labels left,
-## the special-meld label right) sit INSIDE this gap rather than adding to it, so widening a
-## label never widens the board. Centring is fixed; only this gap is tunable.
-@export_range(0.0, 1000.0, 1.0, "or_greater") var grid_buffer_px : float = 220.0:
-	set(value):
-		grid_buffer_px = maxf(value, 0.0)
-		settings_changed.emit()
 ## Margin around the all-grids overview, as a fraction of the board's own span, applied on EACH
 ## side. It is what stops the board touching the picture's edges at the zoomed-out view.
 @export_range(0.0, 0.5, 0.005) var grid_overview_margin : float = 0.06:

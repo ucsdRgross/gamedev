@@ -153,18 +153,70 @@ static func grid_block_size_px(settings_res: PlayerSettings, grid: GridData) -> 
 	var h := float(maxi(grid.grid_height, 1))
 	return Vector2(w * card.x + (w - 1.0) * sep, h * card.y + (h - 1.0) * sep)
 
-## ONE GRID POSITION: the window-shaped view the wall camera rests on. Wide enough for exactly
-## `grid_max_count` grids of the DEFAULT shape, spaced by `grid_buffer_px`, with
-## `grid_overview_margin` of that span as margin on each side.
-##
-## ⚠ **THIS, NOT THE WHOLE PICTURE, IS WHAT THE ASPECT MINIMUM APPLIES TO.** The camera rests by
-## OVERFILLING the window, so a picture whose own aspect is the window's is framed WHOLE at rest
-## and the camera has nowhere to step -- measured, at every width. Sizing the POSITION to the
-## window aspect and the picture to `grid_max_count` of them is what leaves the camera a step.
-static func grid_position_size_px(settings_res: PlayerSettings) -> Vector2:
+## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
+## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
+## own resting half-width, which is what the wall camera actually shows at rest since it always fits
+## the whole picture whole.
+## ⚠ **CLOSED FORM, NOT A SEARCH.** `grid_position_size_px()`'s width and (per the aspect minimum
+## dominating `block.y` at every buffer this game ships) height are both AFFINE in the buffer, so
+## the isolation inequality `neighbour_near_edge(buffer) >= visible_half(buffer)` expands to exactly
+## `a*buffer^2 + b*buffer + c >= 0`; sampling the real function at buffer 0 and 1 reads its two
+## affine coefficients exactly, with no formula of this function's own to drift from
+## `grid_position_size_px()`. With one grid there is no neighbour to isolate.
+static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
+	var count := maxi(settings_res.grid_max_count, 1)
+	if count <= 1: return 0.0
+	var block := grid_block_size_px(settings_res, GridData.new())
+	var by := maxf(block.y, 0.0001)
+	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
+	var strip_h := CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows
+	var p0 := grid_position_size_px(settings_res, 0.0)
+	var p1 := grid_position_size_px(settings_res, 1.0)
+	var height_intercept := p0.y - strip_h
+	var height_slope := p1.y - p0.y
+	var width_slope := p1.x - p0.x
+	var a := height_slope / by
+	var b := height_intercept / by + height_slope * block.x / (2.0 * by) - width_slope / (2.0 * wom)
+	var c := height_intercept * block.x / (2.0 * by) - p0.x / (2.0 * wom)
+	if c >= 0.0: return 0.0
+	if is_zero_approx(a):
+		return maxf(-c / b, 0.0) if not is_zero_approx(b) else 0.0
+	var disc := b * b - 4.0 * a * c
+	if disc < 0.0: return 0.0
+	var sq := sqrt(disc)
+	var root_lo := minf((-b - sq) / (2.0 * a), (-b + sq) / (2.0 * a))
+	var root_hi := maxf((-b - sq) / (2.0 * a), (-b + sq) / (2.0 * a))
+	return maxf(root_hi, 0.0) if a > 0.0 else (root_lo if root_lo > 0.0 else 0.0)
+
+## Does buffer `buffer` isolate a FOCUSED grid's neighbours? Reads `grid_position_size_px()` at the
+## candidate buffer for the picture's own width/height, so this can never disagree with the thing
+## it is certifying -- the only math left here is the isolation check itself, which exists nowhere
+## else to duplicate.
+static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> bool:
+	var block := grid_block_size_px(settings_res, GridData.new())
+	var picture := grid_position_size_px(settings_res, buffer)
+	var strip_h := CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows
+	var available_h := maxf(picture.y - strip_h, 0.0)
+	var z := available_h / maxf(block.y, 0.0001)
+	if z <= 0.0: return false
+	var visible_half := picture.x / (2.0 * maxf(settings_res.wall_overfill_margin, 0.0001))
+	var neighbour_near_edge := z * (buffer + block.x * 0.5)
+	return neighbour_near_edge >= visible_half
+
+## THE WHOLE PICTURE'S span: `grid_max_count` grids of the DEFAULT shape side by side, spaced by
+## `isolating_grid_buffer_px()` (a RAW pixel quantity, like the card and cell sizes it sits
+## between), with `grid_overview_margin` of that span as margin on each side, at the height the
+## window aspect needs. The OVERVIEW camera rests on this whole span -- every grid the picture
+## holds fits inside it at once, which is what lets zooming out show them all. FOCUSED reuses the
+## same span too: isolation comes from the buffer, not from a second camera box.
+## `buffer_override` lets a candidate buffer be tried without re-entering the derivation that
+## produces the real one -- pass a value `>= 0.0` to use it as-is; the default (`-1.0`) resolves
+## through `isolating_grid_buffer_px()` as every non-solving caller wants.
+static func grid_position_size_px(settings_res: PlayerSettings, buffer_override: float = -1.0) -> Vector2:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var count := float(maxi(settings_res.grid_max_count, 1))
-	var span := count * block.x + (count - 1.0) * settings_res.grid_buffer_px
+	var buffer := buffer_override if buffer_override >= 0.0 else isolating_grid_buffer_px(settings_res)
+	var span := count * block.x + (count - 1.0) * buffer
 	var width := span * (1.0 + 2.0 * settings_res.grid_overview_margin)
 	# The reference aspect is the project's own window shape, read from it rather than restated.
 	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
@@ -172,17 +224,17 @@ static func grid_position_size_px(settings_res: PlayerSettings) -> Vector2:
 	var aspect_minimum := width * ref_h / ref_w if ref_w > 0.0 and ref_h > 0.0 else 0.0
 	return Vector2(width, maxf(block.y, aspect_minimum))
 
-## The size the game picture is laid out at: `grid_max_count` GRID POSITIONS side by side, one
-## position tall. The camera frames one position at rest, so the picture is several times wider
-## than the window and the camera has that many resting poses to step between.
+## The size the game picture is laid out at: `grid_max_count` grids side by side, exactly the span
+## `grid_position_size_px()` already computes -- three cell blocks, two isolating buffers,
+## `grid_overview_margin` per side, height the larger of the board's own height or the window-aspect
+## minimum. The whole picture is therefore window-shaped and fits in frame at once.
 ##
 ## ⚠ **DERIVED FROM THE CAP AND THE DEFAULT GRID SHAPE, NEVER FROM THE GRIDS A RUN HAS.** The
 ## picture is one fixed size for every run: a deck that unlocks a second grid mid-show must not
 ## resize a render target, and a 1-grid run sits in a picture built for three.
 static func game_picture_design_size(settings_res: PlayerSettings) -> Vector2i:
-	var position_size := grid_position_size_px(settings_res)
-	var count := float(maxi(settings_res.grid_max_count, 1))
-	return Vector2i(roundi(position_size.x * count), roundi(position_size.y))
+	var span := grid_position_size_px(settings_res)
+	return Vector2i(roundi(span.x), roundi(span.y))
 
 ## The EXTRA height this row currently carries over a stacked strip. Zero for every row on a board
 ## with no reveal up, which is what keeps the unexpanded layout bit-for-bit what it was.
@@ -1886,32 +1938,31 @@ func _recentre_probe() -> Vector3:
 	return Vector3(cells.global_position.x - grid_container.global_position.x,
 			grid_container.size.x, reach)
 
-## **ONE GRID PER GRID POSITION: THE PITCH BETWEEN TWO CELL BLOCKS IS ONE GRID POSITION WIDE.**
-## The picture holds `grid_max_count` positions side by side and the camera frames one of them at
-## rest, so spacing the grids at that pitch is what makes the camera's step land on the NEXT GRID
-## instead of on bare picture. ⚠ `grid_buffer_px` no longer sets this gap directly -- it is a term
-## in `grid_position_size_px()`, so it still widens the pitch, but the number on screen between two
-## cell blocks is the position width less one block.
-## ⚠ **THE PITCH IS A PICTURE LENGTH AND IS DIVIDED BY THE ZOOM**, like every other screen quantity
-## the board lays out against: the focused view scales the content, so a pitch stored unscaled would
-## multiply and throw the neighbouring grids a position and a half out.
+## **ONE GRID PER GRID POSITION: THE PITCH BETWEEN TWO CELL BLOCKS IS ONE BLOCK PLUS ONE BUFFER.**
+## The picture holds `grid_max_count` grids side by side, each its own position, so spacing the
+## panels at that pitch is what places them edge to edge with just the buffer between -- never the
+## whole picture's width, which would scatter them across empty board. The buffer itself is
+## `isolating_grid_buffer_px()`, DERIVED so a FOCUSED grid isolates its neighbours.
 ## Each panel carries score gutters either side of its cells (row labels left, the special-meld
 ## label right); those gutters sit INSIDE the buffer rather than adding to the board's width, so a
 ## wider label never widens the board. The container's own separation is therefore the buffer LESS
 ## the gutters it has to absorb. Where panels' gutters differ, the WIDEST pair sets it, so no two
 ## cell blocks are ever closer than the buffer.
 ##
+## ⚠ THE SEPARATION IS RAW, NOT DIVIDED BY THE ZOOM: it grows on screen with `board_zoom`, the
+## same as every other authored length on the board -- that growth IS the isolating mechanism
+## `isolating_grid_buffer_px()` solves for, so dividing it back out would defeat the derivation.
+##
 ## ⚠ Measured every frame, not once: a score label appearing changes a gutter's width, and grids
 ## laid out against a stale gutter sit at the wrong pitch. The override is written only when the
 ## value actually changes, so a settled board stops re-sorting. Safe against the feedback the
 ## per-panel floor code hit -- every quantity here is panel-RELATIVE, and the container's own
 ## separation does not move a panel's cells inside it.
-func _apply_grid_buffer() -> void:
-	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
+## The widest score gutter on each side, in BOARD (design) px -- divided by the zoom, since the
+## positions they are measured from are screen ones. `Vector2.ZERO` while no panel carries cells yet.
+func _grid_gutters() -> Vector2:
 	var left := 0.0
 	var right := 0.0
-	# ⚠ Divided by the zoom: the gutters are compared against BOARD lengths, while the positions
-	# they are measured from are screen ones.
 	var z := maxf(board_zoom, 0.0001)
 	for i : int in grid_container.get_child_count():
 		var panel := grid_container.get_child(i) as Control
@@ -1921,11 +1972,27 @@ func _apply_grid_buffer() -> void:
 		left = maxf(left, (cells.global_position.x - panel.global_position.x) / z)
 		right = maxf(right, panel.global_position.x / z + panel.size.x
 				- (cells.global_position.x / z + cells.size.x))
-	var pitch := grid_position_size_px(SettingsManager.settings).x / z
-	var block := grid_block_size_px(SettingsManager.settings, GridData.new()).x
-	var wanted := roundi(maxf(pitch - block - left - right, 0.0))
+	return Vector2(left, right)
+
+func _apply_grid_buffer() -> void:
+	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
+	var gutters := _grid_gutters()
+	var buffer := isolating_grid_buffer_px(SettingsManager.settings)
+	var wanted := roundi(maxf(buffer - gutters.x - gutters.y, 0.0))
 	if grid_container.get_theme_constant(&"separation") == wanted: return
 	grid_container.add_theme_constant_override("separation", wanted)
+
+## The screen-independent distance from one grid panel's cell block centre to the next -- ONE BLOCK
+## PLUS THE ACTUAL APPLIED BUFFER (the rounded container separation plus the gutters it absorbed),
+## never `isolating_grid_buffer_px()`'s own unrounded value: the camera step this feeds has to land
+## on the panel `_apply_grid_buffer()` actually placed, not the buffer it rounded away from.
+func grid_pitch_px() -> float:
+	var block := grid_block_size_px(SettingsManager.settings, GridData.new())
+	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0:
+		return block.x + isolating_grid_buffer_px(SettingsManager.settings)
+	var gutters := _grid_gutters()
+	var wanted := float(grid_container.get_theme_constant(&"separation"))
+	return block.x + wanted + gutters.x + gutters.y
 
 ## A panel: a positioning node that draws nothing, holding the cell grid.
 func _create_grid_panel() -> Control:
