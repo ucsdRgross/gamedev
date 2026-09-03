@@ -579,12 +579,6 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_max_count = maxi(value, 1)
 		settings_changed.emit()
-## Margin around the all-grids overview, as a fraction of the board's own span, applied on EACH
-## side. It is what stops the board touching the picture's edges at the zoomed-out view.
-@export_range(0.0, 0.5, 0.005) var grid_overview_margin : float = 0.06:
-	set(value):
-		grid_overview_margin = clampf(value, 0.0, 1.0)
-		settings_changed.emit()
 ## The largest render target the game picture may ask the GPU for, per axis, in pixels.
 ## ⚠ **A `SubViewport` over the GPU's maximum texture size fails SILENTLY**: the framebuffer is
 ## destroyed and the size is internally set to 0 while the script property still reports the

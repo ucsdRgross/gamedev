@@ -1096,7 +1096,6 @@ to say where it lives and what it starts at.
 | `grid_max_count` | 4 | Cap on grids however large the deck | `QR2`=(a), `Q7` |
 | `grid_pan_duration` | 0.35 s | How long a one-grid pan takes | `QR2`=(a), `Q152` |
 | `grid_pan_curve` | ease-out | The pan's easing | `QR2`=(a) |
-| `grid_overview_margin` | 0.06 | Fraction of margin around the all-grids view | `QR2`=(a) |
 | `grid_swipe_threshold_mm` | 8 | Finger travel before a drag counts as a pan | `QR2`=(a), `Q190` |
 | `stack_offset_px` | = `card_separation_play_custom` | Visible strip of a covered card in a stack | `QR1`≠(c), `Q71` |
 | `stack_soft_cap` | 20 | Height past which a `push_error` fires | `QR1`≠(c), `Q70` |

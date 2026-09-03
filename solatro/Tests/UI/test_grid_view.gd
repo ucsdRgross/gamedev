@@ -1795,10 +1795,11 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"...and NOT wide enough for a fourth - exactly three, not merely at least three "
 			+ "(TP-113)",
 			"position %.1f px, four grids span %.1f px" % [position_size.x, span_4])
-	check(absf(position_size.x - span_3 - 2.0 * st.grid_overview_margin * span_3) <= 1.0,
-			"...with the leftover width being exactly the overview margin on each side (TP-113)",
-			"leftover %.1f px, margin %.3f of %.1f px" % [position_size.x - span_3,
-			st.grid_overview_margin, span_3])
+	var buffer := PlayArea.isolating_grid_buffer_px(st)
+	check(absf(position_size.x - span_3 - 2.0 * buffer) <= 1.0,
+			"...with the leftover width being exactly the isolating buffer again on each side "
+			+ "(TP-113)",
+			"leftover %.1f px, buffer %.1f px" % [position_size.x - span_3, buffer])
 	# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION,
 	# whichever is LARGER. Measured on the position, never the whole picture: a picture at the
 	# window's own aspect is framed whole at rest and leaves the camera nothing to step across.

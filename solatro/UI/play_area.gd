@@ -163,6 +163,17 @@ static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) 
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
 ## own resting half-width, which is what the wall camera actually shows at rest since it always fits
 ## the whole picture whole.
+## ⚠ **MEASURED, NOT INFERRED: `wall_overfill_margin` DOES apply here.** The picture's height is
+## rounded to a whole pixel (`game_picture_design_size()`), which breaks the exact aspect match with
+## the window by a hair -- `WallPicture.focused_scale()`'s axis ratios then differ enough that
+## `is_equal_approx` reads them as unequal, so the margin branch fires. Confirmed by reading
+## `focused_scale()`'s own return against the live design size rather than assumed from the intent
+## behind the rounding.
+## ⚠ **THE ZOOM MUST BE `focused_board_zoom()`'s OWN FIXED POINT, NOT A FLAT SUBTRACTION.** A flat
+## `(picture.y - strip_h) / block.y` is a DIFFERENT, smaller quantity than the real
+## `picture.y / (block.y + strip_h)` the board actually focuses to -- confirmed by evaluating both
+## against a live picture (2.340 modelled vs 2.044 real), and the smaller real zoom is exactly why a
+## buffer solved against the flat model still left a neighbour in frame.
 ## ⚠ **CLOSED FORM, NOT A SEARCH.** `grid_position_size_px()`'s width and (per the aspect minimum
 ## dominating `block.y` at every buffer this game ships) height are both AFFINE in the buffer, so
 ## the isolation inequality `neighbour_near_edge(buffer) >= visible_half(buffer)` expands to exactly
@@ -173,17 +184,16 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var count := maxi(settings_res.grid_max_count, 1)
 	if count <= 1: return 0.0
 	var block := grid_block_size_px(settings_res, GridData.new())
-	var by := maxf(block.y, 0.0001)
-	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
 	var strip_h := entrance_strip_height_px(settings_res, 1.0)
+	var by := maxf(block.y + strip_h, 0.0001)
+	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
 	var p0 := grid_position_size_px(settings_res, 0.0)
 	var p1 := grid_position_size_px(settings_res, 1.0)
-	var height_intercept := p0.y - strip_h
 	var height_slope := p1.y - p0.y
 	var width_slope := p1.x - p0.x
 	var a := height_slope / by
-	var b := height_intercept / by + height_slope * block.x / (2.0 * by) - width_slope / (2.0 * wom)
-	var c := height_intercept * block.x / (2.0 * by) - p0.x / (2.0 * wom)
+	var b := p0.y / by + height_slope * block.x / (2.0 * by) - width_slope / (2.0 * wom)
+	var c := p0.y * block.x / (2.0 * by) - p0.x / (2.0 * wom)
 	if c >= 0.0: return 0.0
 	if is_zero_approx(a):
 		return maxf(-c / b, 0.0) if not is_zero_approx(b) else 0.0
@@ -197,24 +207,28 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 ## Does buffer `buffer` isolate a FOCUSED grid's neighbours? Reads `grid_position_size_px()` at the
 ## candidate buffer for the picture's own width/height, so this can never disagree with the thing
 ## it is certifying -- the only math left here is the isolation check itself, which exists nowhere
-## else to duplicate.
+## else to duplicate. The zoom is `focused_board_zoom()`'s own fixed-point shape, not a flat
+## subtraction -- see `isolating_grid_buffer_px()`.
 static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> bool:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var picture := grid_position_size_px(settings_res, buffer)
 	var strip_h := entrance_strip_height_px(settings_res, 1.0)
-	var available_h := maxf(picture.y - strip_h, 0.0)
-	var z := available_h / maxf(block.y, 0.0001)
+	var z := picture.y / maxf(block.y + strip_h, 0.0001)
 	if z <= 0.0: return false
 	var visible_half := picture.x / (2.0 * maxf(settings_res.wall_overfill_margin, 0.0001))
 	var neighbour_near_edge := z * (buffer + block.x * 0.5)
-	return neighbour_near_edge >= visible_half
+	# The closed-form root sits exactly ON this boundary -- an exact equality two different
+	# arithmetic paths (this and the solver's quadratic formula) can round to either side of.
+	return neighbour_near_edge >= visible_half or is_equal_approx(neighbour_near_edge, visible_half)
 
 ## THE WHOLE PICTURE'S span: `grid_max_count` grids of the DEFAULT shape side by side, spaced by
 ## `isolating_grid_buffer_px()` (a RAW pixel quantity, like the card and cell sizes it sits
-## between), with `grid_overview_margin` of that span as margin on each side, at the height the
-## window aspect needs. The OVERVIEW camera rests on this whole span -- every grid the picture
-## holds fits inside it at once, which is what lets zooming out show them all. FOCUSED reuses the
-## same span too: isolation comes from the buffer, not from a second camera box.
+## between), with that SAME buffer again as margin on each side against the picture's own edge
+## (owner ruling: the edge gap and the inter-grid gap read as the same thing, so they ARE the same
+## quantity), at the height the window aspect needs. The OVERVIEW camera rests on this whole span --
+## every grid the picture holds fits inside it at once, which is what lets zooming out show them
+## all. FOCUSED reuses the same span too: isolation comes from the buffer, not from a second camera
+## box.
 ## `buffer_override` lets a candidate buffer be tried without re-entering the derivation that
 ## produces the real one -- pass a value `>= 0.0` to use it as-is; the default (`-1.0`) resolves
 ## through `isolating_grid_buffer_px()` as every non-solving caller wants.
@@ -223,7 +237,7 @@ static func grid_position_size_px(settings_res: PlayerSettings, buffer_override:
 	var count := float(maxi(settings_res.grid_max_count, 1))
 	var buffer := buffer_override if buffer_override >= 0.0 else isolating_grid_buffer_px(settings_res)
 	var span := count * block.x + (count - 1.0) * buffer
-	var width := span * (1.0 + 2.0 * settings_res.grid_overview_margin)
+	var width := span + 2.0 * buffer
 	# The reference aspect is the project's own window shape, read from it rather than restated.
 	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
 	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
@@ -231,9 +245,9 @@ static func grid_position_size_px(settings_res: PlayerSettings, buffer_override:
 	return Vector2(width, maxf(block.y, aspect_minimum))
 
 ## The size the game picture is laid out at: `grid_max_count` grids side by side, exactly the span
-## `grid_position_size_px()` already computes -- three cell blocks, two isolating buffers,
-## `grid_overview_margin` per side, height the larger of the board's own height or the window-aspect
-## minimum. The whole picture is therefore window-shaped and fits in frame at once.
+## `grid_position_size_px()` already computes -- three cell blocks, two isolating buffers between
+## them, that same buffer again on each edge, height the larger of the board's own height or the
+## window-aspect minimum. The whole picture is therefore window-shaped and fits in frame at once.
 ##
 ## ⚠ **DERIVED FROM THE CAP AND THE DEFAULT GRID SHAPE, NEVER FROM THE GRIDS A RUN HAS.** The
 ## picture is one fixed size for every run: a deck that unlocks a second grid mid-show must not
