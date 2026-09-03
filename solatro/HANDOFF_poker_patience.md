@@ -357,6 +357,46 @@ resuming should know the phase closes via `S32`/`S33`/`S34`, not via more refine
   behaving. ⚠ Anything that walks a cell's stack — the iterator, the line detector, `validate()`,
   undo — must not see a zone card as an occupant.
 
+## ⚠⚠ NEXT: the HUD must scale with the picture — and it likely UNDOES `PlayContainer` height tracking
+
+**Owner-reported, seen in the running game:** the board sits low and runs off the bottom of the
+screen while the HUD stays clustered at the top-left, with a scrollbar that renders but will not move.
+
+**Cause, measured.** The HUD furniture are siblings of `PlayContainer` under `SceneRoot` at ABSOLUTE
+top offsets authored for a ~648-tall screen:
+```
+Undo 18   Deck 28   Goal 80   Total 144   Discard 486   Rules 485
+```
+Making `PlayContainer` track the picture height moved the play area **636 -> 841**, dropping the
+board's floor ~205 px while every HUD element stayed where it was. The 841 itself is correct —
+`Q168`=(c) makes the height the aspect minimum, and `1495 x 0.5625 = 841`.
+
+**OWNER RULING: the HUD scales with the picture.** `SceneRoot` keeps its AUTHORED layout and the
+whole canvas scales to the picture, preserving the composition as authored.
+```
+picture 1495 x 841   authored 1152 x 648   ratio 1.2977 both axes -- a UNIFORM scale, no distortion
+```
+`SceneRoot` is `anchors_preset 15` today (fills the viewport). It should hold the reference size from
+`ProjectSettings` and scale instead.
+
+### ⚠ MEASURE THIS BEFORE BUILDING — it may undo the `PlayContainer` height work
+If `SceneRoot` scales, `PlayContainer` should go back to its AUTHORED height inside the authored
+canvas rather than tracking `design_size.y`. **But `focused_board_zoom()` reads `PlayArea.size.y`**,
+and that was the whole reason the height tracking was added — a too-small height was why no buffer
+value could make `TP-140` pass.
+
+**So the open question is: with the scale on `SceneRoot`, does `PlayArea.size.y` (authored 636) still
+give `focused_board_zoom()` the right answer, or does reverting the height tracking regress
+`TP-140`?** ⚠ **Measure it; do not assume either way.** The scale sits ABOVE `PlayArea`, so its own
+`size` stays authored while its rendering scales — the same "scale on the container, not the content"
+pattern the board already uses for `board_zoom`.
+
+⚠ **The unverified floor fix is NOT in the tree.** It was reverted to restore a working build and is
+preserved as a patch (`S55_floor_fix.patch`, 183 lines). Its `_stick_board_scroll_to_bottom()` wrote
+`scroll_vertical` every physics tick against a `SmoothScrollContainer` that animates its own
+position — two writers on one observable, which is the likely cause of the scrollbar that renders and
+will not move. **Do not re-apply it unchanged.**
+
 ## Next up — the queue, in order
 
 ### 1. Row score labels sit TOO HIGH on their card
