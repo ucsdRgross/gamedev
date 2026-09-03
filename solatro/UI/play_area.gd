@@ -153,6 +153,12 @@ static func grid_block_size_px(settings_res: PlayerSettings, grid: GridData) -> 
 	var h := float(maxi(grid.grid_height, 1))
 	return Vector2(w * card.x + (w - 1.0) * sep, h * card.y + (h - 1.0) * sep)
 
+## The Entrance strip's height, in screen pixels, at a given zoom. `zoom = 1.0` for the two
+## static picture-sizing sites (the render-target picture is fixed and zoom-independent);
+## the live strip passes `board_zoom` so it tracks the same scale the grid renders at.
+static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) -> float:
+	return CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows * zoom
+
 ## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
 ## own resting half-width, which is what the wall camera actually shows at rest since it always fits
@@ -169,7 +175,7 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var by := maxf(block.y, 0.0001)
 	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
-	var strip_h := CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows
+	var strip_h := entrance_strip_height_px(settings_res, 1.0)
 	var p0 := grid_position_size_px(settings_res, 0.0)
 	var p1 := grid_position_size_px(settings_res, 1.0)
 	var height_intercept := p0.y - strip_h
@@ -195,7 +201,7 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> bool:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var picture := grid_position_size_px(settings_res, buffer)
-	var strip_h := CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows
+	var strip_h := entrance_strip_height_px(settings_res, 1.0)
 	var available_h := maxf(picture.y - strip_h, 0.0)
 	var z := available_h / maxf(block.y, 0.0001)
 	if z <= 0.0: return false
@@ -491,6 +497,26 @@ func _sync_entrance_x() -> void:
 		columns_w = cells.size.x * maxf(board_zoom, 0.0001)
 	entrance_h_track.position.x = columns_x - entrance_strip.global_position.x
 	entrance_h_track.size.x = columns_w
+	_apply_entrance_zoom_rect()
+
+## **THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT** (same rule
+## `_apply_board_zoom_rect` follows) — `%EntranceVScroll` carries `board_zoom` so the Entrance's
+## cards scale with the grid's, and its rect is divided by the zoom first so the
+## visible, on-screen window stays exactly `entrance_h_track`'s own rect.
+##
+## ⚠ Height is RECOMPUTED, never read off `entrance_h_track.size.y`: a strip resize (`offset_top`)
+## has not necessarily reached this Control's own rect yet (a layout pass lags an offset write,
+## same trap `_board_window_local` avoids), and this runs both right after that write and every
+## physics frame. Width is safe to read live -- `_sync_entrance_x` writes it explicitly, above.
+func _apply_entrance_zoom_rect() -> void:
+	if not is_instance_valid(entrance_v_scroll) or not is_instance_valid(entrance_h_track): return
+	var z := maxf(board_zoom, 0.0001)
+	var window := Vector2(entrance_h_track.size.x,
+			entrance_strip_height_px(SettingsManager.settings, z))
+	var local := window / z
+	entrance_v_scroll.scale = Vector2.ONE * z
+	entrance_v_scroll.offset_right = local.x - window.x
+	entrance_v_scroll.offset_bottom = local.y - window.y
 
 ## The picture x the board's current pan puts under the LEFT edge of the grid the view is
 ## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
@@ -520,9 +546,10 @@ func _apply_entrance_strip_height() -> void:
 	# the Entrance: resizing it re-lays out everything anchored INSIDE it, which drifted a prop off
 	# its slot mid-reveal (4 px) and moved an Entrance slot 17 px between cycles. What Q313 asks for
 	# is that the BOARD rises, and only the board.
-	var h := CardVisual.card_size_play.y * SettingsManager.settings.entrance_visible_rows
+	var h := entrance_strip_height_px(SettingsManager.settings, board_zoom)
 	entrance_strip.offset_top = -h
 	_apply_board_zoom_rect(h)
+	_apply_entrance_zoom_rect()
 	# ⚠ **THE FLOOR CLEARS THE ENTRANCE'S ACTUAL HEIGHT, NOT ITS RESERVATION** (`Q313`=a, owner:
 	# *"it raises everything above it up as well so as to not cover any card in the grid"*). A
 	# stacked Entrance that outgrows its strip pushes the board up by the overflow; a shallow one
@@ -566,15 +593,15 @@ func _board_window_local() -> Vector2:
 ## board happens to sit above. The configured `entrance_visible_rows` stays the FLOOR of that: a
 ## shallow Entrance still shows the strip the player expects.
 func _entrance_row_height() -> float:
-	var full := CardVisual.card_size_play.y
+	var full := CardVisual.card_size_play.y * board_zoom
 	var game := CardEnvironment.get_current_game()
 	if not game: return full
 	var deepest := 0
 	for col : ArrayCardData in game.state.upper_zone:
 		deepest = maxi(deepest, col.datas.size())
 	if deepest == 0: return full
-	var depth_pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	return float(separation) + full + float(deepest - 1) * depth_pitch
+	var depth_pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * board_zoom
+	return float(separation) * board_zoom + full + float(deepest - 1) * depth_pitch
 
 ## ⚠ **THE BOARD NEEDS A FLOOR TO GROW UP OFF, AND A SCROLL CONTAINER DOES NOT GIVE IT ONE.**
 ## `TopLevelVBox` hugs its own content, so without this the grid block starts at the top of the
@@ -707,16 +734,21 @@ var board_zoom : float = OVERVIEW_BOARD_ZOOM
 ## Derived from the grid's own shape and the window, never authored -- a taller grid zooms less.
 ## ⚠ The block, not the grid's live height: a stack growing upward must not re-scale the board
 ## under the player's hand.
+##
+## ⚠ **SOLVED IN CLOSED FORM, NOT READ OFF `_board_strip_h`.** The window and the Entrance strip
+## both scale with THIS zoom, so "the block exactly fills the window" is
+## `block_h * z == size.y - base_strip * z` with `base_strip` the zoom-independent strip height --
+## a fixed point in `z`, not a value `_board_strip_h` (last zoom's strip) can supply. Solving it
+## directly (`z = size.y / (block_h + base_strip)`) is the only value that does not depend on which
+## zoom was live when this was called -- reading the previous zoom's strip made the first focus and
+## a later step land at different scales for the identical grid.
 func focused_board_zoom(gi: int) -> float:
 	if not is_instance_valid(scroll_container): return OVERVIEW_BOARD_ZOOM
 	var grid : GridData = _bound_grids[gi] if gi >= 0 and gi < _bound_grids.size() else GridData.new()
 	var block_h := grid_block_size_px(SettingsManager.settings, grid).y
-	# ⚠ **THE WINDOW IN SCREEN PIXELS, NOT THE SCROLLER'S OWN HEIGHT.** The scroller's height is
-	# already divided by the current zoom, so reading it while FOCUSED answers "one" every time and
-	# stepping from one focused grid to the next would quietly drop the board back to overview size.
-	var window_h := maxf(size.y - _board_strip_h, 0.0)
-	if block_h <= 0.0 or window_h <= 0.0: return OVERVIEW_BOARD_ZOOM
-	return window_h / block_h
+	var base_strip := entrance_strip_height_px(SettingsManager.settings, 1.0)
+	if block_h <= 0.0 or size.y <= 0.0: return OVERVIEW_BOARD_ZOOM
+	return size.y / (block_h + base_strip)
 
 ## Take the board to scale `z` over the pan clock -- the same clock a grid pan and the removal
 ## re-centre use, so a mode change is one motion and not two.
@@ -1282,17 +1314,21 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	var origin := upper_zone_right.global_position
 	if upper_zone_right.get_child_count() > 0:
 		origin = (upper_zone_right.get_child(0) as Control).global_position
-	var width := CardVisual.card_size_play.x
-	var pitch := float(CardVisual.card_separation_play_custom) + float(separation)
-	var x := origin.x + float(coord.x) * (width + float(separation)) + width * 0.5
-	var y := origin.y + float(separation) + pitch * float(coord.h) + CardVisual.card_size_play.y * 0.5
+	# ⚠ **`origin` IS ALREADY A SCREEN POINT UNDER THE ZOOMED ANCESTOR** (`%EntranceVScroll` now
+	# carries `board_zoom`), so every board LENGTH added to it has to be taken into screen
+	# pixels first, exactly as `_grid_slot_center_global` already does for the grid.
+	var width := CardVisual.card_size_play.x * board_zoom
+	var sep := float(separation) * board_zoom
+	var pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * board_zoom
+	var x := origin.x + float(coord.x) * (width + sep) + width * 0.5
+	var y := origin.y + sep + pitch * float(coord.h) + CardVisual.card_size_play.y * board_zoom * 0.5
 	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal lets
 	# one row's strip grow, so the rows below it are pushed down by an amount the pitch does not
 	# describe. Without this term a prop anchored under an expanding row stays where the unexpanded
 	# maths says it should be and visibly detaches from its slot.
 	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
 	# the controls, so geometry stays independent of container relayout timing (owner spec).
-	y += _row_open_offset(coord)
+	y += _row_open_offset(coord) * board_zoom
 	return Vector2(x, y)
 
 ## A grid cell: column and row come from the DATA (`coord.x`, `coord.y`), height from the cell's
