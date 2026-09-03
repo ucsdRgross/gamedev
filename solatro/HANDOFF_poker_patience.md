@@ -417,6 +417,24 @@ into a ~651 px window. **Measure both layers before changing either.**
 `PlayContainer` keeps tracking the picture height. **Treat them as one geometry pass, not three
 fixes.**
 
+## ⚠ THE GRID IS OFFSET BY THE HUD'S RECTANGLE
+
+**Owner:** *"the grid should be offset from how much space the hud rectangle takes."*
+
+The HUD is not an overlay the board may sit under. **The board's available area is the play area
+LESS the HUD's rectangle**, and the board lays out in what remains. Today `Undo`, `Goal`, `Total`,
+`End`, `Discard` and `Rules` draw over the grid's leftmost columns.
+
+⚠ **THIS TIGHTENS THE FRAMING CONTRACT ABOVE.** The focused view must fit the 5x5 cell block plus the
+Entrance row **inside the space left over after the HUD** — not inside the whole play area. Solving
+the framing against the full width and then subtracting the HUD afterwards gives a board that fits
+on paper and clips on screen.
+
+⚠ The furniture's authored x is read off the scene by `GameView._capture_furniture_authored_x()`
+(*"Runs once; the scene's own offsets never change afterwards"*). **If the HUD's rectangle becomes a
+layout input, that assumption needs re-checking** — a value captured once is not safe if the thing it
+measures now moves with the picture scale.
+
 ## ⚠ WITH ONE GRID, NO CLICK SHOULD BE NEEDED TO ZOOM IN
 
 **Owner:** *"clicking to zoom in when there is only 1 grid should not be necessary."*
