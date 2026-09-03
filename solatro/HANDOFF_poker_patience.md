@@ -345,6 +345,36 @@ means doing `GAP-033` twice.
 6. **`GAP-028`=(c)** — `H24`'s board-scrolls-within-3. ⚠ Still owes its clipping question and
    re-opens scroller-vs-camera contention. **Expect a follow-up gap, not an implementer's judgement.**
 
+## ⚠⚠ STANDING REGRESSION — `TP-140`, committed deliberately as an honest red
+
+**`TP-140` ("grid 0 / grid 2 is OUT OF VIEW while another grid is focused") FAILS**, and it was
+committed that way on an owner ruling, not overlooked.
+
+```
+cells [-928.9 .. -554.6]   window [-600.0 .. 600.0]   -> ~45 px of each neighbour bleeds in
+```
+
+**Cause:** `focused_board_zoom()` is now the closed-form fixed point
+`size.y / (block_h + base_strip)`, which is genuinely SMALLER than the old order-dependent value
+(block 374 px, was 419). `isolating_grid_buffer_px()` still models the OLD zoom, so it early-outs to
+`0.0` — **two models of one quantity.** ⚠ Confirmed in **GRID VIEW ALONE**, so it is NOT cross-suite
+interference.
+
+**THE FIX IS DEFERRED ON PURPOSE, AND IT IS OWED.** `GAP-035` moves the Entrance into the board's
+scroller and changes the focused-zoom formula AGAIN, so the buffer solver is re-derived **once**,
+after that — not twice. ⚠ **Do this immediately after `GAP-035` lands. Do not let it become
+background noise: it is a real defect a player would see.**
+
+⚠ **Do NOT fix it by reverting the fixed point.** That reinstates a focused zoom whose value depends
+on how many times the loop has been evaluated ("first focus 555.0, stepped 478.8"), which is the
+genuine defect `TP-139` caught.
+
+## ⚠ The GRID LAYOUT interference is NOT fully deterministic
+
+The handoff previously called it deterministic. **Measured otherwise:** `TP-85` PASSED in one run and
+FAILED in others within the same tree. The `116.0 px` check is the stable one. Judge that suite by
+which checks fail, never by the count alone.
+
 ## Known coverage gap — not closed
 
 `TP-113`'s *"camera sees the WHOLE picture within a block's slack"* assertion did **not** go red under
