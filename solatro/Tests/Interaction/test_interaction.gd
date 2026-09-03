@@ -7,9 +7,9 @@ extends TestSuite
 # mid-act, and the game-over overlay contract (covers ONLY the board; Undo
 # rewinds the outcome; no card input of ANY mode leaks through).
 #
-# Events go through Input.parse_input_event (the full pipeline: mouse
-# emulation, hover, focus routing) — never direct handler calls — so a broken
-# signal connection or mouse filter fails here exactly like it fails a player.
+# Events go through Viewport.push_input (the full pipeline: mouse emulation,
+# hover, focus routing) — never direct handler calls — so a broken signal
+# connection or mouse filter fails here exactly like it fails a player.
 #
 # CATEGORY MAP: all BEHAVIOR — every check is "a player pressed X and saw Y".
 #
@@ -31,6 +31,10 @@ func suite_name() -> String:
 var view : GameView
 var game : Game
 var pa : PlayArea
+## The picture's own SubViewport, sized `game_picture_design_size` -- production lays the board out
+## at that size inside the wall's viewport (`wall_picture.gd`), never against the OS window, so a
+## taller-than-window play area (GAP-040) still lands every synthesized click where a player's would.
+var picture_vp : SubViewport
 var prev_run : RunState
 var prev_save_info : RunState
 ## Every data_selected emission from the play area — the "input reached the card
@@ -81,8 +85,11 @@ func _setup_view() -> void:
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
+	picture_vp = SubViewport.new()
+	picture_vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
+	add_child(picture_vp)
 	view = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
+	picture_vp.add_child(view)
 	await frames(2)
 	game = view.game
 	pa = view.play_area
@@ -110,7 +117,7 @@ func _settle_layout() -> void:
 		last = now
 
 func _teardown_view() -> void:
-	view.queue_free()   # frees its Game child too
+	picture_vp.queue_free()   # frees view and its Game child too
 	await frames(1)
 	CardEnvironment.CURRENT = null
 	# join any in-flight background save BEFORE clearing, then put reality back
@@ -121,18 +128,15 @@ func _teardown_view() -> void:
 	Main.save_info = prev_save_info
 
 # ==============================================================================
-# INPUT SYNTHESIS — everything through Input.parse_input_event + flush, so the
-# full pipeline (emulation, hover, focus routing) runs like a real device.
+# INPUT SYNTHESIS — everything through `picture_vp.push_input`, so the full
+# pipeline (emulation, hover, focus routing) runs like a real device.
 #
-# COORDINATES: parse_input_event takes WINDOW coordinates, but every rect we
-# measure (get_global_rect) is in CANVAS coordinates. In a desktop window the
-# two coincide, so raw positions happen to work — but headless the window is
-# 0x0 (Godot clamps the root to 100x100) while canvas_items stretch keeps the
-# canvas at 1152 wide, so the window->canvas inverse transform blows raw canvas
-# positions ~11x past every control and no positioned click ever lands (all 10
-# position-based checks failed headless). to_window maps canvas ->
-# window via the root's final transform; identity in a normal window, so this
-# is correct everywhere, not a headless special case.
+# COORDINATES: the board is hosted inside `picture_vp`, a SubViewport sized to
+# `game_picture_design_size` (production lays it out the same way, inside the
+# wall's own SubViewport — `wall_picture.gd`). A SubViewport is not on the OS
+# input path, so `Input.parse_input_event` never reaches it; `push_input`
+# delivers directly to it instead, and its local coordinates already match
+# every rect we measure (`get_global_rect`), so no window transform is needed.
 # ==============================================================================
 func frames(n: int) -> void:
 	for _i : int in n:
@@ -146,36 +150,28 @@ func wait_until(pred: Callable) -> bool:
 	return pred.call() as bool
 
 func send(ev: InputEvent) -> void:
-	Input.parse_input_event(ev)
-	Input.flush_buffered_events()
+	picture_vp.push_input(ev)
 	await get_tree().process_frame
 
-## Canvas -> window coordinates (see COORDINATES above). All the positioned
-## event builders below take canvas positions and convert here.
-func to_window(pos: Vector2) -> Vector2:
-	return get_viewport().get_final_transform() * pos
-
 func mouse_move_to(pos: Vector2) -> void:
-	var wpos := to_window(pos)
 	var mm := InputEventMouseMotion.new()
-	mm.position = wpos
-	mm.global_position = wpos
+	mm.position = pos
+	mm.global_position = pos
 	await send(mm)
 
 func mouse_click(pos: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
 	await mouse_move_to(pos)   # hover first: selection requires the hovered control
-	var wpos := to_window(pos)
 	var down := InputEventMouseButton.new()
 	down.button_index = button
 	down.pressed = true
-	down.position = wpos
-	down.global_position = wpos
+	down.position = pos
+	down.global_position = pos
 	await send(down)
 	var up := InputEventMouseButton.new()
 	up.button_index = button
 	up.pressed = false
-	up.position = wpos
-	up.global_position = wpos
+	up.position = pos
+	up.global_position = pos
 	await send(up)
 
 func key_tap(keycode: Key) -> void:
@@ -200,18 +196,41 @@ func joy_tap(button: JoyButton) -> void:
 	up.pressed = false
 	await send(up)
 
+## `Input.parse_input_event` synthesizes the companion mouse form of a touch itself
+## (`emulate_mouse_from_touch`) before a real device's events ever reach a Viewport; pushed straight
+## into `picture_vp` the raw touch alone never selects, because selection reads the hover/focus state
+## only a mouse form sets (`_on_gui_input`). Built by hand here, `device = -1`, same shape
+## `test_grid_view.gd`'s swipe fixture uses for the same reason.
 func touch_tap(pos: Vector2) -> void:
-	var wpos := to_window(pos)
 	var down := InputEventScreenTouch.new()
 	down.index = 0
-	down.position = wpos
+	down.position = pos
 	down.pressed = true
+	var motion := InputEventMouseMotion.new()
+	motion.position = pos
+	motion.global_position = pos
+	motion.device = -1
+	await send(motion)
 	await send(down)
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.pressed = true
+	mouse_down.position = pos
+	mouse_down.global_position = pos
+	mouse_down.device = -1
+	await send(mouse_down)
 	var up := InputEventScreenTouch.new()
 	up.index = 0
-	up.position = wpos
+	up.position = pos
 	up.pressed = false
 	await send(up)
+	var mouse_up := InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.pressed = false
+	mouse_up.position = pos
+	mouse_up.global_position = pos
+	mouse_up.device = -1
+	await send(mouse_up)
 
 ## Any focusable board control (card or empty-column header) — the selection probe target.
 func a_card_control() -> Control:
@@ -435,11 +454,11 @@ func test_controller_focus_navigation() -> void:
 	if not control: return
 	control.grab_focus()
 	await frames(1)
-	var before : Control = get_viewport().gui_get_focus_owner()
+	var before : Control = picture_vp.gui_get_focus_owner()
 	await joy_tap(JOY_BUTTON_DPAD_RIGHT)
-	if get_viewport().gui_get_focus_owner() == before:
+	if picture_vp.gui_get_focus_owner() == before:
 		await joy_tap(JOY_BUTTON_DPAD_DOWN)   # edge column: no right neighbor — go down
-	var after : Control = get_viewport().gui_get_focus_owner()
+	var after : Control = picture_vp.gui_get_focus_owner()
 	check(after != null and after != before,
 			"the dpad moves focus off the first control (controller navigation lives)")
 
@@ -525,7 +544,7 @@ func test_game_over_interactivity() -> void:
 			any_focusable = true
 	check(not any_focusable,
 			"no covered card control is keyboard/controller focusable at game over")
-	check(get_viewport().gui_get_focus_owner() == view._continue_button,
+	check(picture_vp.gui_get_focus_owner() == view._continue_button,
 			"the Continue button holds focus for keyboard/controller")
 	selections.clear()
 	await mouse_click(pa_rect.get_center())

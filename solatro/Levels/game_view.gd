@@ -31,6 +31,7 @@ const CONTINUE_OFFSET_Y := 220.0
 
 var game : Game = null
 
+@onready var play_container: Control = %PlayContainer
 @onready var play_area: PlayArea = %PlayArea
 @onready var submit_button: Button = %Submit
 @onready var undo_button: Button = %Undo
@@ -80,6 +81,8 @@ func _ready() -> void:
 	game.run_lost.connect(func() -> void: run_lost.emit())
 	# THE SPOTLIGHT WIRE. Bound after `game` is built (it IS the CardEnvironment the cue comes
 	# from) and before the deal, so the first placement of the run is already lit.
+	_apply_play_container_height()
+	SettingsManager.settings_changed.connect(_apply_play_container_height)
 	spotlight_director = SpotlightDirector.new()
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
@@ -206,6 +209,13 @@ func _on_combo_changed(_count: int) -> void:
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
+
+## PlayContainer's height tracks the picture it lays out, exactly as its anchored width already
+## does -- a fixed authored offset would go stale the moment `isolating_grid_buffer_px()` moves
+## `game_picture_design_size()`, so this is re-applied on every settings change, not just at start.
+func _apply_play_container_height() -> void:
+	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
+	play_container.offset_bottom = play_container.offset_top + design.y
 
 ## Reads each furniture control's authored x straight off the scene. Runs once; the scene's own
 ## offsets never change afterwards.
