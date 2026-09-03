@@ -85,11 +85,8 @@ func _setup_view() -> void:
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
-	picture_vp = SubViewport.new()
-	picture_vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
-	add_child(picture_vp)
 	view = GAME_VIEW_SCENE.instantiate()
-	picture_vp.add_child(view)
+	picture_vp = TestGameViewHost.host(self, view)
 	await frames(2)
 	game = view.game
 	pa = view.play_area

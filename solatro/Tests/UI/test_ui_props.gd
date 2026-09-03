@@ -1022,7 +1022,7 @@ func test_game_view_scoring_pass_with_props() -> void:
 	run.pending_node_id = 2
 	seed(424242)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
+	var picture_vp := TestGameViewHost.host(self, view)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var g := view.game
@@ -1097,7 +1097,7 @@ func test_game_view_scoring_pass_with_props() -> void:
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card is at rest after the whole submit (no stuck meld jump or spin)",
 			rest_detail[0])
-	view.queue_free()   # frees its Game child too
+	picture_vp.queue_free()   # frees view and its Game child too
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	# join any in-flight background save BEFORE clearing, then put reality back (E2E pattern)
@@ -1228,7 +1228,7 @@ func test_all_kinds_live_in_game_view() -> void:
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
+	var picture_vp := TestGameViewHost.host(self, view)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var g := view.game
@@ -1317,7 +1317,7 @@ func test_all_kinds_live_in_game_view() -> void:
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card returns to rest after the effects pass (no stuck jump/spin)",
 			rest_detail[0])
-	view.queue_free()   # frees its Game child too
+	picture_vp.queue_free()   # frees its Game child too
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()

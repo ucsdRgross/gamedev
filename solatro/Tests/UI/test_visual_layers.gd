@@ -1602,6 +1602,9 @@ func test_end_screen_above_board() -> void:
 ## twelve-line ceremony instead of eight slightly-divergeable ones.
 var _prev_run : RunState = null
 var _prev_save_info : RunState = null
+## The design-sized SubViewport hosting the most recent `_stand_up_view()` -- torn down in
+## `_teardown_view` instead of the view directly, since the view is its child.
+var _stand_up_vp : SubViewport = null
 
 ## Park the save, start a seeded run, instantiate a real GameView and settle it two frames.
 ## Callers needing a deterministic global stream call `seed()` BEFORE this — `new_run` uses its
@@ -1615,13 +1618,13 @@ func _stand_up_view() -> GameView:
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
+	_stand_up_vp = TestGameViewHost.host(self, view)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return view
 
 func _teardown_view(view: GameView) -> void:
-	view.queue_free()
+	_stand_up_vp.queue_free()   # frees view and its Game child too
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
