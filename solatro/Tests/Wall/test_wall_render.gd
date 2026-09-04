@@ -61,6 +61,8 @@ func _ready() -> void:
 	behavior_section("PER-GRID CAMERA POSE")
 	test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid()
 	test_panned_state_is_the_offset_primitive_grid_state_delegates_to()
+	behavior_section("THE SAVED PAN SNAPS TO A WHOLE GRID (S32, H19, Q173, Q179)")
+	test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board()
 	_teardown_wall()
 	finish()
 
@@ -952,3 +954,44 @@ func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void
 	check(via_grid_pos.is_equal_approx(via_offset_pos),
 			"grid_state() agrees with panned_state() called at the equivalent offset -- one "
 			+ "computation, not two", "grid=%s offset=%s" % [via_grid_pos, via_offset_pos])
+
+## `WallPicture.snap_pan_to_grid()` -- the arithmetic `Q173`/`Q179` put between a SAVED pan and the
+## board it is restored onto. Three separate obligations, and a neutralisation that drops any one of
+## them fails here: it rounds a pan that fell between two grids onto a whole step, it clamps a pan
+## that names a grid the board no longer has, and it leaves a pan that already names a real grid
+## exactly alone.
+##
+## `resting_grid` is 1 throughout -- an odd board's middle -- so a NEGATIVE offset is a real grid
+## rather than an out-of-range one, which is what makes the clamp check below distinguishable from
+## the round check.
+func test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board() -> void:
+	var pitch := 846.0
+	var resting := 1
+
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, resting, 3), pitch),
+			"a pan that already names a real grid is returned untouched",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(-pitch, pitch, resting, 3), -pitch),
+			"...and so is a NEGATIVE one, which is grid 0 on a board resting on grid 1",
+			str(WallPicture.snap_pan_to_grid(-pitch, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 0.6, pitch, resting, 3), pitch),
+			"a pan BETWEEN two grids rounds to the nearer whole step, not to the one it passed",
+			str(WallPicture.snap_pan_to_grid(pitch * 0.6, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 0.4, pitch, resting, 3), 0.0),
+			"...and rounds the other way below the halfway point, so the round is a real round",
+			str(WallPicture.snap_pan_to_grid(pitch * 0.4, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 5.0, pitch, resting, 3), pitch),
+			"a pan naming a grid past the LAST one clamps to the last grid the board has",
+			str(WallPicture.snap_pan_to_grid(pitch * 5.0, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * -5.0, pitch, resting, 3), -pitch),
+			"...and one past the FIRST clamps to grid 0",
+			str(WallPicture.snap_pan_to_grid(pitch * -5.0, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 1), 0.0),
+			"a one-grid board has nowhere to pan to, so every pan collapses to its centre",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 1)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 0), 0.0),
+			"a board with NO grids answers 0 rather than dividing by a pitch it cannot use",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 0)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3), 0.0),
+			"...and so does a zero pitch, which is what a board measured before layout reports",
+			str(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3)))

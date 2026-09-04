@@ -59,6 +59,9 @@ func _ready() -> void:
 	await run_the_camera_steps_between_grid_positions_test()
 	await run_the_focused_view_frames_the_block_and_the_entrance_test()
 	await run_a_card_between_grids_is_never_clipped_away_test()
+	await run_the_camera_rests_at_the_saved_pan_test()
+	await run_leaving_and_re_entering_restores_the_pan_test()
+	await run_a_resize_re_derives_the_pose_from_the_saved_pan_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -2167,3 +2170,189 @@ func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 				% gi + "is not culled",
 				"cell x %.1f vs clip window [%.1f .. %.1f]" % [at.x, win.position.x, win.end.x])
 	await _tear_down(view)
+
+# ==============================================================================
+# S32 — THE SAVED PAN (`H18`, `H19`): TP-115, TP-116, TP-117.
+#
+# The picture is three grids wide, so the camera finally has somewhere to rest that is NOT the
+# picture's centre, and `GAP-020`'s answer (b) — "resize the picture first, then implement H18
+# literally" — is what these three rows prove landed.
+#
+# ⚠ **THE LOAD-BEARING CHECK IN EACH IS THE ONE THAT NAMES THE CENTRE.** A pose that happens to be
+# one pitch from where the camera was is satisfied by any offset; only "and it is NOT the picture's
+# centre" fails when the saved pan is dropped and `resting_state()` answers again.
+#
+# ⚠ The pitch here is OBSERVED between two real grid panels, the same way `TP-105` reads it, never
+# recomputed from the production formula that placed them.
+#
+# ⚠ **SOME CHECKS HERE ARE REGRESSION GUARDS, NOT DISCRIMINATORS, AND THE RED RUN NAMED THEM.**
+# While a board is mounted the camera ALREADY rested on the pan, by re-deriving it from `PlayArea`
+# every settle — so "the camera is not at the centre", "the board comes back on the grid it was
+# left on" and "the grid survives a resize" all pass with the saved pan deleted. They stay because
+# each is a property a future change can break; what proves THIS step are the checks naming
+# `saved_pan_x` itself, and the one that asks with no live board to read.
+# ==============================================================================
+
+## The world-space distance between two adjacent grids' cell blocks — `TP-105`'s own measurement,
+## reused so a wrong pitch cannot agree with itself.
+func _observed_pitch(main: Main, pa: PlayArea, gi: int) -> float:
+	return _grid_world_rect(main, pa, gi + 1).get_center().x \
+			- _grid_world_rect(main, pa, gi).get_center().x
+
+## The camera pose the game picture would rest at with NO saved pan — `WallPicture.resting_state()`
+## on the real packed rect. The thing every check below must differ from.
+func _unpanned_rest_x(main: Main) -> float:
+	var wp : WallPicture = main._pictures[&"game"]
+	var window := main.get_viewport().get_visible_rect().size
+	var state := WallPicture.resting_state(wp.rect, window, SettingsManager.settings)
+	return (state["position"] as Vector2).x
+
+func run_the_camera_rests_at_the_saved_pan_test() -> void:
+	behavior_section("THE CAMERA RESTS AT THE SAVED PAN, NOT THE PICTURE CENTRE (TP-115)")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	var wp : WallPicture = main._pictures[&"game"]
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: the board is in the overview, the one view whose pan the camera makes "
+			+ "(TP-115)", "mode %d" % pa.view_mode)
+	var centre_x := _unpanned_rest_x(main)
+	check(is_equal_approx(wp.saved_pan_x, 0.0),
+			"precondition: an unpanned picture's saved pan is zero, which IS its centre (TP-115)",
+			"saved %.3f" % wp.saved_pan_x)
+
+	var rest_grid := pa.pan_grid
+	var pitch := _observed_pitch(main, pa, rest_grid)
+	_fire_key(KEY_PERIOD)
+	await get_tree().process_frame
+	_fire_key_release(KEY_PERIOD)
+	await _settle_camera(camera)
+	check(pa.pan_grid == rest_grid + 1,
+			"sanity: a real pan-right key press moved the view one grid, so there IS a pan to save "
+			+ "(TP-115)", "pan_grid %d" % pa.pan_grid)
+	check(is_equal_approx(wp.saved_pan_x, pitch),
+			"the picture's saved pan is exactly one grid pitch — the step the player just made, "
+			+ "stored on the picture (TP-115)",
+			"saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
+	check(not is_equal_approx(camera.position.x, centre_x),
+			"...and the camera is NOT at the picture's centre, which is where resting_state() "
+			+ "alone would have put it (TP-115)",
+			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
+	check(is_equal_approx(camera.position.x - centre_x, wp.saved_pan_x),
+			"...it is the centre plus exactly the saved pan (TP-115)",
+			"offset %.3f vs saved %.3f" % [camera.position.x - centre_x, wp.saved_pan_x])
+
+	# ⚠ THE CASE A BARE `resting_state()` GOT WRONG. `Main._camera_resting_state()` reads the live
+	# board back into the saved pan whenever there is one — so the only way to see the SAVED value
+	# answering on its own is to ask while there is no board to read, which is the state every
+	# frame of a transition and every detached show is in. The real field is set aside and put
+	# back, never a stand-in board.
+	var real_screen := wp.screen_root
+	wp.screen_root = null
+	var state := main._camera_resting_state(&"game", wp.rect, SettingsManager.settings)
+	wp.screen_root = real_screen
+	var pose_x : float = (state["position"] as Vector2).x
+	check(is_equal_approx(pose_x - centre_x, pitch),
+			"with no live board to read, the resting pose is still the SAVED pan — the frames a "
+			+ "transition and a detached show run in (TP-115)",
+			"pose %.3f, centre %.3f, saved %.3f" % [pose_x, centre_x, wp.saved_pan_x])
+	await _tear_down_main(main)
+
+func run_leaving_and_re_entering_restores_the_pan_test() -> void:
+	behavior_section("LEAVING AND RE-ENTERING RESTORES THE PAN, SNAPPED (TP-116)")
+	var settings := SettingsManager.settings
+	var prev_delay : float = settings.wall_transition_delay
+	settings.wall_transition_delay = 0.001
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	var wp : WallPicture = main._pictures[&"game"]
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	var rest_grid := pa.pan_grid
+	var pitch := _observed_pitch(main, pa, rest_grid)
+	var centre_x := _unpanned_rest_x(main)
+	_fire_key(KEY_PERIOD)
+	await get_tree().process_frame
+	_fire_key_release(KEY_PERIOD)
+	await _settle_camera(camera)
+	var left_on := pa.pan_grid
+	check(left_on == rest_grid + 1,
+			"sanity: the show is left on a grid that is NOT the one it rests on (TP-116)",
+			"left on %d, rests on %d" % [left_on, rest_grid])
+
+	await main._focus_picture(&"map")
+	check(main._current_focus == &"map",
+			"sanity: the player really left the show for another picture (TP-116)",
+			str(main._current_focus))
+	# A saved pan predates any grid-count change, so `Q173`=(b) restores it SNAPPED rather than
+	# replayed. Nothing a player does produces a pan between two grids, so the value is set here
+	# to one — 0.6 of a pitch past the grid it was left on, which rounds up onto the next grid and
+	# then clamps back to the last grid the board has.
+	wp.saved_pan_x = pitch * 1.6
+	await main.enter_game()
+	await _settle_camera(camera)
+	check(pa.pan_grid == left_on,
+			"re-entering puts the BOARD back on the grid the snapped pan names, not on whatever "
+			+ "grid a fresh layout rests on (TP-116)",
+			"pan_grid %d, expected %d" % [pa.pan_grid, left_on])
+	check(is_equal_approx(wp.saved_pan_x, pitch),
+			"...and the pan that was 1.6 pitches out is snapped back onto a whole grid (TP-116)",
+			"saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
+	check(not is_equal_approx(camera.position.x, centre_x),
+			"...and the camera came back to the pan, not to the picture's centre (TP-116)",
+			"camera %.3f vs centre %.3f" % [camera.position.x, centre_x])
+	check(is_equal_approx(camera.position.x - centre_x, wp.saved_pan_x),
+			"...at exactly the restored pan's offset (TP-116)",
+			"offset %.3f vs saved %.3f" % [camera.position.x - centre_x, wp.saved_pan_x])
+	await _tear_down_main(main)
+	settings.wall_transition_delay = prev_delay
+
+func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
+	behavior_section("A RESIZE RE-DERIVES THE POSE FROM THE SAVED PAN (TP-117)")
+	var main := await _stand_up_main_grids(3)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	var wp : WallPicture = main._pictures[&"game"]
+	pa.open_zoomed_out()
+	await _settle_camera(camera)
+	var rest_grid := pa.pan_grid
+	var pitch := _observed_pitch(main, pa, rest_grid)
+	_fire_key(KEY_PERIOD)
+	await get_tree().process_frame
+	_fire_key_release(KEY_PERIOD)
+	await _settle_camera(camera)
+	var centre_x := _unpanned_rest_x(main)
+	check(is_equal_approx(camera.position.x - centre_x, pitch),
+			"sanity: the camera is one grid off centre before the resize (TP-117)",
+			"offset %.3f vs pitch %.3f" % [camera.position.x - centre_x, pitch])
+
+	# ⚠ `DisplayServer.window_set_size()` CANNOT go below the project minimum, so a suite cannot
+	# drive a real resize to an arbitrary size. What a resize actually IS, to this code, is
+	# `Main._window_size` disagreeing with the viewport — so that disagreement is created and the
+	# real handler is run against the real window, rather than a size being faked into it.
+	main._window_size = Vector2(1.0, 1.0)
+	main._on_window_resized()
+	await _settle_camera(camera)
+	check(main._window_size.is_equal_approx(main.get_viewport().get_visible_rect().size),
+			"sanity: the resize handler really ran and took the window's size (TP-117)",
+			"%s" % main._window_size)
+	check(is_equal_approx(wp.saved_pan_x, pitch),
+			"the saved pan survives the resize — it is a board position, not a screen one "
+			+ "(TP-117)", "saved %.3f vs pitch %.3f" % [wp.saved_pan_x, pitch])
+	check(pa.pan_grid == rest_grid + 1,
+			"...and so does the grid the board is on (TP-117)",
+			"pan_grid %d" % pa.pan_grid)
+	var after_centre_x := _unpanned_rest_x(main)
+	check(not is_equal_approx(camera.position.x, after_centre_x),
+			"...and the re-derived pose is NOT the picture's centre (TP-117)",
+			"camera %.3f vs centre %.3f" % [camera.position.x, after_centre_x])
+	check(is_equal_approx(camera.position.x - after_centre_x, wp.saved_pan_x),
+			"...it is the centre plus the saved pan, re-derived after the resize (TP-117)",
+			"offset %.3f vs saved %.3f" % [camera.position.x - after_centre_x, wp.saved_pan_x])
+	await _tear_down_main(main)

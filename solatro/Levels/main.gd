@@ -227,6 +227,7 @@ func _on_window_resized() -> void:
 	if _move_in_flight:
 		_resize_pending = true
 		return
+	_resnap_saved_pan()
 	_settle_camera()
 
 ## The camera's RESTING pose for whatever the wall currently shows: the info-mode pose while Info
@@ -240,20 +241,59 @@ func _settle_camera() -> void:
 		camera.zoom = Vector2.ONE * wall.wall_view_zoom(_window_size)
 		return
 	var focused_rect : PictureRect = _rects[_current_focus]
-	var state := _camera_resting_state(focused_rect, settings)
+	var state := _camera_resting_state(_current_focus, focused_rect, settings)
 	camera.position = state["position"] as Vector2
 	camera.zoom = Vector2.ONE * (state["zoom"] as float)
 
-## `WallPicture.resting_state()`, stepped by the game's OVERVIEW pan when that is what is showing
-## the scroller keeps the focused zoom untouched, so only the OVERVIEW steps
-## through the camera. Every other picture, and the game while FOCUSED, is the plain resting pose.
-func _camera_resting_state(rect: PictureRect, settings: PlayerSettings) -> Dictionary:
+## The camera's resting pose for the focused picture: `WallPicture.resting_state()` shifted along
+## the picture's width by that picture's OWN SAVED PAN, never the picture's bare centre.
+##
+## ⚠ **THE SAVED PAN IS THE ANSWER, AND THE LIVE BOARD ONLY REFRESHES IT.** A live `PlayArea` is
+## the sole source of a new pan, so it is read back into `saved_pan_x` whenever there is one — but
+## it is absent for every frame of a transition, a detached show and every picture that never pans,
+## and those are exactly the frames a bare centre used to throw the camera back to grid 0. A
+## picture that has never panned rests at 0, which IS its centre.
+func _camera_resting_state(id: StringName, rect: PictureRect,
+		settings: PlayerSettings) -> Dictionary:
+	var wp : WallPicture = _pictures.get(id)
+	if wp == null:
+		return WallPicture.resting_state(rect, _window_size, settings, _info_card_height())
 	var area := _game_play_area()
-	if _current_focus == &"game" and area and area.view_mode == PlayArea.ViewMode.OVERVIEW \
-			and area.grid_container.get_child_count() > 0:
-		return WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
-				area.resting_grid(), area.grid_pitch_px(), _info_card_height())
-	return WallPicture.resting_state(rect, _window_size, settings, _info_card_height())
+	if id == &"game" and area:
+		wp.saved_pan_x = _live_pan_offset_px(area)
+	return WallPicture.panned_state(rect, _window_size, settings, wp.saved_pan_x,
+			_info_card_height())
+
+## The pan the live board is showing, in the picture's own units: the OVERVIEW's step off its
+## resting grid, and 0 in FOCUSED, where the scroller pans inside a camera that does not move.
+func _live_pan_offset_px(area: PlayArea) -> float:
+	if area.view_mode != PlayArea.ViewMode.OVERVIEW: return 0.0
+	if area.grid_container.get_child_count() == 0: return 0.0
+	return area.grid_pitch_px() * float(area.pan_grid - area.resting_grid())
+
+## Re-snap the game picture's saved pan to the nearest grid the board has NOW, and return the grid
+## index it lands on -- `PlayArea.NO_GRID` when there is no board to snap against. The stored offset
+## was measured against the grid count and pitch of the moment it was saved; a resize or a removed
+## grid can have moved either since, so it is re-derived rather than replayed.
+func _resnap_saved_pan() -> int:
+	var area := _game_play_area()
+	if area == null: return PlayArea.NO_GRID
+	var count := area.grid_container.get_child_count()
+	var pitch := area.grid_pitch_px()
+	if count == 0 or pitch <= 0.0: return PlayArea.NO_GRID
+	var wp : WallPicture = _pictures[&"game"]
+	var resting := area.resting_grid()
+	wp.saved_pan_x = WallPicture.snap_pan_to_grid(wp.saved_pan_x, pitch, resting, count)
+	return resting + int(roundf(wp.saved_pan_x / pitch))
+
+## The return half of the saved pan: the board is aimed back at the grid the snapped pan names, so
+## re-entering a show resumes the view it was left on instead of whatever grid a fresh layout
+## rested on. `pan_to_grid()` is the SAME entry a key press uses, so a restore and a step move the
+## board by one mechanism rather than two.
+func _restore_saved_pan() -> void:
+	var gi := _resnap_saved_pan()
+	if gi == PlayArea.NO_GRID: return
+	_game_play_area().pan_to_grid(gi)
 
 ## The live game's `PlayArea`, or null while no `GameView` is mounted -- the OVERVIEW's camera
 ## step has nothing to read `pan_grid` off until the show is actually attached.
@@ -279,9 +319,10 @@ func _on_overview_pan_requested(grid_index: int) -> void:
 	if not area: return
 	var settings := SettingsManager.settings
 	var rect : PictureRect = _rects[&"game"]
-	var pitch := area.grid_pitch_px()
-	var state := WallPicture.grid_state(rect, _window_size, settings, grid_index,
-			area.resting_grid(), pitch, _info_card_height())
+	var wp : WallPicture = _pictures[&"game"]
+	wp.saved_pan_x = area.grid_pitch_px() * float(grid_index - area.resting_grid())
+	var state := WallPicture.panned_state(rect, _window_size, settings, wp.saved_pan_x,
+			_info_card_height())
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var tween := camera.create_tween()
 	tween.tween_property(camera, "position", state["position"] as Vector2,
@@ -298,15 +339,18 @@ func _on_overview_bounce_requested(step: int) -> void:
 	if not area: return
 	var settings := SettingsManager.settings
 	var rect : PictureRect = _rects[&"game"]
-	var pitch := area.grid_pitch_px()
 	var card_height := _info_card_height()
-	var rest := WallPicture.grid_state(rect, _window_size, settings, area.pan_grid,
-			area.resting_grid(), pitch, card_height)
+	# ⚠ **BOTH POSES ARE MEASURED FROM THE SAVED PAN, WHICH IS WHERE THE CAMERA ACTUALLY IS.** A
+	# bounce only ever fires at the board's EDGE, which on any board wider than one grid is never
+	# the grid the camera rests on — so an overshoot measured from the picture's centre throws the
+	# camera a whole grid inward before springing it back.
+	var rest := _camera_resting_state(&"game", rect, settings)
+	var pan_x : float = _pictures[&"game"].saved_pan_x
 	var smooth := area.scroll_container as SmoothScrollContainer
 	var damper : ScrollDamper = smooth.wheel_scroll_damper if smooth else null
 	var peak := PlayArea.bounce_peak_px(damper, float(step) * settings.grid_bounce_velocity_px)
-	var out := WallPicture.panned_state(rect, _window_size, settings, signf(float(step)) * peak,
-			card_height)
+	var out := WallPicture.panned_state(rect, _window_size, settings,
+			pan_x + signf(float(step)) * peak, card_height)
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var tween := camera.create_tween()
 	tween.tween_property(camera, "position", out["position"] as Vector2,
@@ -457,10 +501,11 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 		source_wp.unfocus(_footprint(source_rect))
 		wall.transition_landed.emit(id)
 	else:
-		# The move's target is the picture's RESTING pose, which honours Info mode — aiming at the
-		# focused pose would land there and be cut to the info pose by the settle below.
-		var rest := WallPicture.resting_state(dest_rect, _window_size, settings,
-				_info_card_height())
+		# The move's target is the picture's RESTING pose, which honours Info mode AND the
+		# picture's saved pan — aiming at the focused pose would land there and be cut to the info
+		# pose by the settle below, and aiming at the bare centre lands a panned picture one grid
+		# off and is cut the same way.
+		var rest := _camera_resting_state(id, dest_rect, settings)
 		await _animate_camera(rest["position"] as Vector2, rest["zoom"] as float,
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
@@ -731,6 +776,10 @@ func enter_game() -> void:
 		new_view.bind_wall_camera(wall.get_node(^"%Camera2D") as Camera2D,
 				func() -> float: return _rects[&"game"].centre.x)
 		game_wp.attach_screen(new_view)
+	# ⚠ **BEFORE THE FOCUS, NOT AFTER IT.** `_focus_picture()` settles the camera, and that settle
+	# reads the LIVE board back into `saved_pan_x` -- a restore run afterwards would be overwriting
+	# the board with a value the board had just overwritten.
+	_restore_saved_pan()
 	await _focus_picture(&"game")
 
 ## Won game handing back: the show is genuinely OVER, not frozen — detach and free the GameView,

@@ -53,6 +53,12 @@ var screen_root : Node = null
 ## without re-deriving them from this node's children.
 var rect : PictureRect = null
 
+## Where the camera RESTS along this picture's width, in the picture's own units, measured from its
+## centre. SESSION STATE: it survives leaving and re-entering while the app runs, is never written
+## to the run save, and `detach_screen()` clears it because a screen that is gone has no pan left to
+## remember. Zero for every picture that does not pan, which is the picture's centre exactly.
+var saved_pan_x : float = 0.0
+
 ## The entry's `background_texture`, remembered so `attach_screen()`/`detach_screen()` can show and
 ## hide it as `screen_root` comes and goes. A live screen always wins; this is the fallback. Null
 ## when the entry authored none.
@@ -191,6 +197,7 @@ func detach_screen() -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
 	screen_root = null
+	saved_pan_x = 0.0
 	# With the live screen gone, the authored background (if any) reappears.
 	_show_background()
 
@@ -451,6 +458,21 @@ static func grid_state(rect: PictureRect, window_size: Vector2, settings: Player
 		grid_index: int, resting_grid: int, pitch: float, card_height_px: float = -1.0) -> Dictionary:
 	return panned_state(rect, window_size, settings, pitch * float(grid_index - resting_grid),
 			card_height_px)
+
+## `pan_x` re-expressed as the nearest whole grid step on a board of `grid_count` grids resting on
+## `resting_grid`, clamped into that board.
+##
+## ⚠ **A SAVED PAN IS SNAPPED ON THE WAY OUT, NOT TRUSTED AS STORED.** It was measured against the
+## grid count and pitch of the moment it was saved, and either can have changed since — a grid
+## removed while the picture was unfocused leaves an offset pointing past the board's last grid.
+## Rounding to a whole step is also what makes a restore land CENTRED on a grid rather than between
+## two of them.
+static func snap_pan_to_grid(pan_x: float, pitch: float, resting_grid: int,
+		grid_count: int) -> float:
+	if grid_count <= 0 or pitch <= 0.0:
+		return 0.0
+	var index := clampi(resting_grid + int(roundf(pan_x / pitch)), 0, grid_count - 1)
+	return pitch * float(index - resting_grid)
 
 ## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`.
 ##
