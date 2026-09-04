@@ -57,6 +57,7 @@ func _ready() -> void:
 	await run_the_game_picture_fits_exactly_three_grids_test()
 	await run_the_render_target_never_exceeds_the_clamp_test()
 	await run_the_camera_steps_between_grid_positions_test()
+	await run_the_focused_view_frames_the_block_and_the_entrance_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -1995,12 +1996,26 @@ func _grid_span(block_x: float, n: int) -> float:
 ## The grid's own cell block, in the SAME world space as `%Camera2D.position` — the picture's
 ## design-pixel layout scaled by the WallPicture's real packed rect, never assumed 1:1.
 func _grid_world_rect(main: Main, pa: PlayArea, gi: int) -> Rect2:
+	return _control_world_rect(main, pa._cells_root(pa.grid_container.get_child(gi) as Control))
+
+## Any control inside the game screen, in WALL WORLD space -- what the camera actually frames.
+## ⚠ The screen draws at `rect.size / design_size`, so a control's own rect has to cross that
+## scale before it can be compared with a camera rect. `_screen_rect` already carries the board
+## zoom; this carries the picture's.
+func _control_world_rect(main: Main, c: Control) -> Rect2:
 	var wp : WallPicture = main._pictures[&"game"]
 	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
-	var local := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
+	var local := _screen_rect(c)
 	var scale := wp.rect.size / design
 	var top_left := wp.rect.centre - wp.rect.size * 0.5
 	return Rect2(top_left + local.position * scale, local.size * scale)
+
+## How far `r` hangs outside `visible`, per edge, as "left, top, right, bottom" -- positive means
+## OUTSIDE. ⚠ A single worst-case number cannot tell a cut top row from a cut Entrance, and those
+## are different defects with different causes.
+func _outside_px(r: Rect2, visible: Rect2) -> Array[float]:
+	return [visible.position.x - r.position.x, visible.position.y - r.position.y,
+			r.end.x - visible.end.x, r.end.y - visible.end.y] as Array[float]
 
 func run_the_camera_steps_between_grid_positions_test() -> void:
 	behavior_section("THE CAMERA STEPS BETWEEN GRID POSITIONS")
@@ -2054,4 +2069,49 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 	check(is_equal_approx(camera.position.x, edge_x),
 			"one more pan-right at the board's end does not move the camera past it (TP-105)",
 			"edge %.3f vs after %.3f" % [edge_x, camera.position.x])
+	await _tear_down_main(main)
+
+# ==============================================================================
+# THE FOCUSED VIEW'S MINIMUM FRAMING: the whole 5x5 cell block PLUS the Entrance row, inside what
+# the CAMERA shows. Owner: "clicking on grid zooms in but everything is clipped instead of fitting
+# in 5x5 grid + entrance row as minimum size."
+#
+# ⚠ **THE TARGET IS THE CAMERA'S RECT, NOT THE PLAY AREA'S.** Two scales stack: the board fits its
+# content into the play area (`focused_board_zoom`), and then the wall camera fits the PICTURE into
+# the WINDOW. A fit that exactly fills an 841 px picture still clips once the camera crops that
+# picture into the window, and only a real `Main`/`Wall`/`%Camera2D` can answer the second half.
+#
+# ⚠ **ONE GRID, WHICH IS THE DEFAULT.** A deck of 52 or fewer unlocks exactly one, and a one-grid
+# show opens focused, so this is the pose a player sees first.
+#
+# ⚠ **THE EDGES ARE NAMED SEPARATELY ON PURPOSE.** A cut top row and a cut Entrance have different
+# causes; a single worst-case number cannot tell them apart, and the owner reported both at once.
+# ==============================================================================
+func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
+	behavior_section("THE FOCUSED VIEW FRAMES THE CELL BLOCK AND THE ENTRANCE")
+	var main := await _stand_up_main_grids(1)
+	var view := _main_game_view(main)
+	var pa := view.play_area
+	var camera := _main_camera(main)
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_camera(camera)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and not is_equal_approx(pa.board_zoom, 1.0),
+			"precondition: the board is FOCUSED and off the overview's own zoom",
+			"mode %d, board_zoom %.4f" % [pa.view_mode, pa.board_zoom])
+
+	var window_size := main.get_viewport().get_visible_rect().size
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var block := _grid_world_rect(main, pa, 0)
+	var strip := _control_world_rect(main, pa.entrance_strip)
+
+	var b := _outside_px(block, visible)
+	check(maxf(maxf(b[0], b[1]), maxf(b[2], b[3])) <= 1.0,
+			"the whole 5x5 cell block is inside what the camera shows",
+			"outside by left %.2f top %.2f right %.2f bottom %.2f" % [b[0], b[1], b[2], b[3]])
+	var e := _outside_px(strip, visible)
+	check(maxf(maxf(e[0], e[1]), maxf(e[2], e[3])) <= 1.0,
+			"...and so is the Entrance row beneath it",
+			"outside by left %.2f top %.2f right %.2f bottom %.2f" % [e[0], e[1], e[2], e[3]])
 	await _tear_down_main(main)
