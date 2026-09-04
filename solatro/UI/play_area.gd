@@ -375,11 +375,18 @@ var new_data_card : Dictionary[CardData, CardVisual]
 
 func _ready() -> void:
 	SettingsManager.settings_changed.connect(update_gui)
-	# ⚠ **THE HORIZONTAL SCROLLBAR MUST NOT ADVERTISE WHICH MECHANISM IS MOVING THE VIEW** (owner
-	# a camera step in the overview and a scroll in focused mode must read as the same motion. Only
-	# the bar is hidden; the vertical axis keeps its own bar and its tall-stack job.
-	var h_bar := scroll_container.get_h_scroll_bar()
-	if h_bar: h_bar.visible = false
+	# ⚠ **NEITHER SCROLLBAR MAY ADVERTISE WHICH MECHANISM IS MOVING THE VIEW** (owner): a camera step
+	# in the overview and a scroll in focused mode must read as the same motion, and *"no scrollbar
+	# should be visible"* when a focused grid opens.
+	# ⚠ **SIZING THE BOARD TO CLEAR THE BAR IS NOT ENOUGH.** Measured: the vertical bar shows at
+	# EXACT equality of content and page — hidden at a 1152x648 window, shown at 1147x649 with the
+	# identical 313 == 313 — so any fit lands on a coin toss between two widths five pixels apart.
+	# ⚠ `SCROLL_MODE_SHOW_NEVER` hides a bar and KEEPS ITS BAND; `_scroller_frame_h()` is what pays
+	# for the horizontal one, so the board still clears the space the container reserves.
+	# Scrolling itself is untouched — the zoom, the pan actions, the touch drag and a deep stack all
+	# still move the board.
+	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	scroll_container.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	# Pay every FX shader's first-use compile here, on invisible one-pixel quads, rather than on
 	# the first card that catches fire mid-act.
 	FxAttachment.warm(overlay_layer)
