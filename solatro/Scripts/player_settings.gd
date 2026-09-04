@@ -632,10 +632,9 @@ var wall_info_mode : bool = false
 ## The share of the board's width the HUD column occupies. The furniture is SCALED to fit it, so
 ## this is what the HUD costs the board however wide the picture gets.
 ##
-## ⚠ **A FRACTION, NOT AN ABSOLUTE, AND THAT IS LOAD-BEARING.** The HUD scaling with the picture
-## while the picture is sized to isolate a neighbour AGAINST the HUD is a feedback loop: a bigger
-## reserve demands a wider picture, which scales the HUD, which demands a wider picture again. A
-## fixed share cannot run away.
+## The split is exactly what it reads as: the HUD gets this share of the width and the board gets
+## the rest. Nothing sizes anything else -- the picture's own width is derived from the board alone
+## (`isolating_grid_buffer_px`), and the HUD is then scaled to its share of whatever that came to.
 @export var hud_width_fraction : float = 0.25:
 	set(value):
 		hud_width_fraction = clampf(value, 0.0, 0.9)
