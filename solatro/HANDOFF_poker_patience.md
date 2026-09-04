@@ -13,21 +13,56 @@ failures and both are attributed** — neither is a mystery.
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE THREE FAILURES, AND WHO OWNS EACH
+## ⚠ THE SEVEN FAILURES, AND WHO OWNS EACH
 
 ```
-1  GRID LAYOUT  116.0 px card-on-cell                     CROSS-SUITE INTERFERENCE, unexplained
-2  GRID VIEW    the focused framing gate, both edges      GAP-039, red ON PURPOSE
+2  GRID LAYOUT  116.0 px card-on-cell; TP-85 mid-growth flake   INTERFERENCE, unexplained
+4  GRID VIEW    TP-139, TP-140 x2, TP-101                       GAP-039, now IMPOSSIBLE
+1  GRID VIEW    the framing gate's Entrance half                left/right only
 ```
-- ⚠ **GRID LAYOUT ALONE IS `ALL 89 CHECKS PASSED`.** The `116.0` exists only in the full suite.
-  **Deterministic interference reads exactly like a deterministic bug** — that constant survived
-  five wrong diagnoses before isolation settled it. ⚠ It is UNMOVED by the `CardVisual` scale fix
-  that repaired every other reading of the same two functions, so it is a DIFFERENT mechanism and
-  still genuinely open. `TP-85`'s mid-growth flake is gone.
-- **The two `GRID VIEW` failures are the framing gate, and it is SUPPOSED to be red** — it is the
-  gate `GAP-039` is about. Do not "fix" it; answer the gap.
-- `GRID VIEW`'s `TP-112` is a known timing flake (samples mid-move, lands 0.1-0.3 px from at-rest)
-  and may or may not fire.
+- ⚠ **GRID LAYOUT ALONE IS `ALL 89 CHECKS PASSED`.** `116.0` exists only in the full suite and is
+  UNMOVED by the `CardVisual` scale fix, so it is a different mechanism and genuinely open. `TP-85`
+  comes and goes.
+- **The four `GRID VIEW` geometry failures are `GAP-039`, and they are the owner's own rulings
+  landing.** The card-row buffer takes `S` from 367 to 510, which puts the isolating picture width
+  at 2029 against the 1512 that "exactly three grids" allows — a **517 px** gap nothing can close.
+  ⚠ `TP-139`'s WORDING is now wrong, not just its value: the board's window also holds the panel's
+  gutter, the two buffers and the scroller's band, so block == window is no longer the definition of
+  the focused fit. **Rewriting a planned row is a gap, not an implementer's call.**
+- The framing gate's Entrance half fails on left/right ONLY — the strip spans the picture's full
+  width while the camera crops 14.66 px a side. Top and bottom are inside. The cell-block half
+  passes.
+
+## ⚠ THE FOCUSED VIEW'S HEIGHT, AS IT NOW STANDS
+
+`PlayContainer` **fills the view** (anchors, no code — `_apply_play_container_height()` is gone), so
+it is the window's own height in the wall and in a bare `game_view.tscn` alike. That scene was
+unplayable before: the container was forced to the picture's 841 in a 651 px window, so the board
+hung below the screen with the Entrance under it.
+
+```
+focused_board_zoom = min(height fit, width fit)
+height denominator = block + panel gutter + Entrance strip + 2 x edge pad + scroller band
+```
+- `board_edge_pad_rows` (PlayerSettings, default **1.0**, **0 == off for a phone**) — the clear band
+  above the board and below the Entrance, in CARD ROWS, scaled with the board.
+- `_panel_gutter_h()` — the column-label row and its gap, 27 px. ⚠ **MEASURED FROM THE PANEL**: the
+  label's height is FONT-derived and no constant produces it. Taken as the difference of two MINIMUM
+  sizes, which a container answers from its children on demand — no stale rect — and subtracting the
+  cells' own minimum takes the stacks' DEPTH back out, so a deepening stack cannot re-scale the
+  board.
+- `_scroller_frame_h()` — the 8 px band the scroller keeps for its horizontal bar.
+
+⚠ **BOTH SCROLLBARS ARE `SCROLL_MODE_SHOW_NEVER`, AND SIZING ALONE COULD NOT DO IT.** Measured: the
+vertical bar shows at EXACT equality of content and page — hidden at 1152x648, shown at 1147x649,
+both reading `313 == 313`. Any fit is a coin toss between two widths five pixels apart.
+⚠ **SHOW_NEVER HIDES A BAR AND KEEPS ITS BAND**, which is why `_scroller_frame_h()` still exists.
+
+**Verified by eye and by measurement at 1147x649, 1152x648, 1920x600, 800x480 and 412x892:** no
+scrollbar, the whole 5x5 block and the Entrance row inside the window, a card-row buffer at each end.
+⚠ `DisplayServer.window_set_size` CANNOT go below the project minimum — asking for 412x892 returns
+1152x2494 — so `Tests/Visual/standalone_view_shot` hosts the view in a SubViewport of the size under
+test. A sweep driven through the real window silently tests one size four times.
 
 ## The board's settled geometry — facts, not open questions
 
