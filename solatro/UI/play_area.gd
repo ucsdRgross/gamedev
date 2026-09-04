@@ -192,6 +192,19 @@ static func board_edge_pad_px(settings_res: PlayerSettings) -> float:
 static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) -> float:
 	return CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.entrance_visible_rows * zoom
 
+## Everything `focused_board_zoom()` divides the board's window by, in board units -- the cell
+## block, the Entrance strip and the two card-row edge buffers.
+##
+## ⚠ **THE BUFFER DERIVATION MUST SOLVE FOR THE ZOOM THE BOARD REALLY USES.** It solved for
+## `picture.y / (block.y + strip)` while the live fit had grown two card rows of edge buffer in its
+## denominator -- 108 of 475 units unmodelled -- so the buffer it produced isolated nothing.
+## ⚠ **STILL AN UNDER-COUNT, AND DELIBERATELY.** The live fit also carries the panel's column-label
+## gutter and the scroller's reserved band, both of which come from a FONT and a THEME and cannot be
+## known before a board exists, while this sizes the picture before one does. The remainder is ~35
+## units of ~510; the two card-row buffers were the term worth closing.
+static func focused_content_height_px(settings_res: PlayerSettings) -> float:
+	return grid_block_size_px(settings_res, GridData.new()).y 			+ entrance_strip_height_px(settings_res, 1.0) 			+ 2.0 * board_edge_pad_px(settings_res)
+
 ## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
 ## own resting half-width, which is what the wall camera actually shows at rest since it always fits
@@ -217,8 +230,8 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var count := maxi(settings_res.grid_max_count, 1)
 	if count <= 1: return 0.0
 	var block := grid_block_size_px(settings_res, GridData.new())
-	var strip_h := entrance_strip_height_px(settings_res, 1.0)
-	var by := maxf(block.y + strip_h, 0.0001)
+	var strip_h := focused_content_height_px(settings_res)
+	var by := maxf(strip_h, 0.0001)
 	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
 	var p0 := grid_position_size_px(settings_res, 0.0)
 	var p1 := grid_position_size_px(settings_res, 1.0)
@@ -245,8 +258,7 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> bool:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var picture := grid_position_size_px(settings_res, buffer)
-	var strip_h := entrance_strip_height_px(settings_res, 1.0)
-	var z := picture.y / maxf(block.y + strip_h, 0.0001)
+	var z := picture.y / maxf(focused_content_height_px(settings_res), 0.0001)
 	if z <= 0.0: return false
 	var visible_half := picture.x / (2.0 * maxf(settings_res.wall_overfill_margin, 0.0001))
 	var neighbour_near_edge := z * (buffer + block.x * 0.5)
