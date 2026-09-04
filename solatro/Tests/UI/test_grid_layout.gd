@@ -895,7 +895,7 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 	var panel : Control = pa.grid_container.get_child(0)
 	var board : Control = panel.get_node_or_null("Board")
 	var row_labels : Control = board.get_node_or_null("RowLabels") if board else null
-	var col_labels : Control = panel.get_node_or_null("ColRow/ColLabels")
+	var col_labels : Control = panel.get_node_or_null("Board/CellsColumn/ColLabels")
 	var special : BigNumberLabel = board.get_node_or_null("SpecialLabel") if board else null
 	check(row_labels != null and col_labels != null and special != null,
 			"the panel carries a row gutter, a column gutter and one special label")

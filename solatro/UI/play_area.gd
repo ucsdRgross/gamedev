@@ -497,6 +497,13 @@ func setup_gui() -> void:
 	# placed or removed, because `scroll_vertical` was being written by the hover. The board's own
 	# `pan_to_grid`/`_recentre_board` are the only things allowed to aim it.
 	if is_instance_valid(scroll_container): scroll_container.follow_focus = false
+	# ⚠ **THE BOARD DOES NOT CLIP, AND THAT IS A RULING, NOT AN OVERSIGHT.** `%CardLayer` lives
+	# inside this scroller, so a clip here CULLS card visuals outright -- and props and animations
+	# are authored to leave the board's edges on purpose, so it was cutting effects that are
+	# supposed to overflow. Owner: *"clipping content cant work because i see it clipping stuff
+	# like props and animations which specifically go outside edges of board visually."*
+	# Hiding a neighbouring grid is the CAMERA's job and only the camera's.
+	if is_instance_valid(scroll_container): scroll_container.clip_contents = false
 	_last_scroll_max = -1.0
 	_scroll_growth_carry = 0.0
 	_anchor_scroll_to_bottom.call_deferred()
@@ -510,7 +517,6 @@ func setup_gui() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_apply_grid_buffer()
-	_apply_column_label_indent()
 	_follow_board_growth()
 	_sync_row_label_heights()
 	_sync_score_label_font()
@@ -2316,6 +2322,8 @@ func _create_grid_panel() -> Control:
 	# cross-grid row alignment off (the default) the bottom edge is the ONLY thing that lines up.
 	panel.size_flags_vertical = Control.SIZE_SHRINK_END
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# Stated for the same reason the cell slots state it: this board's fixed edge is the bottom.
+	panel.alignment = BoxContainer.ALIGNMENT_END
 	# ⚠ **ONE CONTAINER PER ROW, NOT ONE GRID FOR THE WHOLE PANEL** (owner spec). A `GridContainer`
 	# gives every cell in a row the row's full height, so a cell has nothing to bottom-align
 	# against and a deep stack bleeds into the row above. A row of its own is the same shape the
@@ -2335,33 +2343,33 @@ func _create_grid_panel() -> Control:
 	row_labels.name = "RowLabels"
 	row_labels.add_theme_constant_override("separation", separation)
 	row_labels.alignment = BoxContainer.ALIGNMENT_END
+	# ⚠ Takes its OWN height at the top of the row, not the whole row's. Its stacks already mirror
+	# the cell rows, so its own minimum IS the cell block's height and its bottom edge lands on the
+	# cells' -- which stays true now that the column labels have made `Board` taller than `Cells`.
+	row_labels.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	board.add_child(row_labels)
+	# ⚠ **THE COLUMN LABELS ARE A SIBLING OF THE CELLS, IN THE CELLS' OWN COLUMN.** That is what
+	# puts a column's label under that column: the container does it, and nothing measures or
+	# maintains an indent. As a bare child of the panel they began at the PANEL's left edge, which
+	# is the row gutter's edge, and every label sat most of a column left of the column it names.
+	var cells_column := VBoxContainer.new()
+	cells_column.name = "CellsColumn"
+	cells_column.add_theme_constant_override("separation", separation)
+	board.add_child(cells_column)
 	var cells := VBoxContainer.new()
 	cells.name = "Cells"
 	cells.add_theme_constant_override("separation", separation)
 	cells.alignment = BoxContainer.ALIGNMENT_END
-	board.add_child(cells)
+	cells_column.add_child(cells)
 	var special := BigNumberLabel.new()
 	special.name = "SpecialLabel"
 	special.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	board.add_child(special)
 	panel.add_child(board)
-	# ⚠ **THE COLUMN LABELS SIT IN THEIR OWN ROW, INDENTED PAST THE ROW-LABEL GUTTER.** As a bare
-	# child of the panel they started at the PANEL's left edge, which is the row gutter's edge, so
-	# every column label sat most of a column left of the column it names. `ColGutter` mirrors the
-	# row gutter's width and `ColRow` adds no separation of its own, so the labels begin exactly
-	# where the cells do.
-	var col_row := HBoxContainer.new()
-	col_row.name = "ColRow"
-	col_row.add_theme_constant_override("separation", 0)
-	var col_gutter := Control.new()
-	col_gutter.name = "ColGutter"
-	col_row.add_child(col_gutter)
 	var col_labels := HBoxContainer.new()
 	col_labels.name = "ColLabels"
 	col_labels.add_theme_constant_override("separation", separation)
-	col_row.add_child(col_labels)
-	panel.add_child(col_row)
+	cells_column.add_child(col_labels)
 	# ⚠ **`resized` IS NOT ENOUGH, AND THE CLAIM THAT IT COVERS POSITION WAS FALSE.** `resized`
 	# fires on SIZE changes only; a panel shoved up or sideways by a sibling — which is exactly
 	# what happens to a bottom-aligned panel when the board grows — changes POSITION with no size
@@ -2388,8 +2396,16 @@ func _create_grid_row() -> Control:
 func _create_cell_slot() -> Control:
 	var slot := VBoxContainer.new()
 	slot.name = "CellSlot"
-	slot.add_theme_constant_override("separation", separation)
+	# ⚠ **NO SEPARATION; EACH CARD CARRIES ITS OWN GAP** -- see `update_grid_zone_visuals()`, which
+	# is where the reason lives. Set here as well so the authored value is not a different number
+	# from the one the board actually runs on.
+	slot.add_theme_constant_override("separation", 0)
 	slot.size_flags_vertical = Control.SIZE_SHRINK_END
+	# ⚠ **STATED, NOT LEFT TO THE DEFAULT.** The slot shrinks to its own stack today, so packing
+	# from the top is invisible -- but a board that grows UPWARD wants the bottom edge to be the
+	# fixed one, and a stack that ever gets surplus height must not drift off its row's line. The
+	# label gutters had exactly this bug from exactly this default.
+	slot.alignment = BoxContainer.ALIGNMENT_END
 	return slot
 
 ## Grows or truncates `parent`'s children to exactly `wanted`, building new ones with `make`.
@@ -2430,7 +2446,7 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		for ry : int in grid.grid_height:
 			_fill_label_stack(row_labels.get_child(ry) as VBoxContainer, state.scores_row,
 					gi, ry, _row_score_levels(state.scores_row, gi, ry), true)
-	var col_labels := panel.get_node_or_null("ColRow/ColLabels") as Control
+	var col_labels := panel.get_node_or_null("Board/CellsColumn/ColLabels") as Control
 	if col_labels:
 		_fit_children(col_labels, grid.grid_width, _create_label_stack)
 		for cx : int in grid.grid_width:
@@ -2486,7 +2502,7 @@ func _score_labels_of(panel: Control) -> Array[BigNumberLabel]:
 	var out : Array[BigNumberLabel] = []
 	var board := panel.get_node_or_null("Board") as Control
 	if not board: return out
-	for gutter_path : String in ["RowLabels", "../ColRow/ColLabels"]:
+	for gutter_path : String in ["RowLabels", "CellsColumn/ColLabels"]:
 		var gutter := board.get_node_or_null(gutter_path) as Control
 		if not gutter: continue
 		for stack : Node in gutter.get_children():
@@ -2518,34 +2534,6 @@ func _sync_row_label_heights() -> void:
 			if is_equal_approx(stack.custom_minimum_size.y, wanted): continue
 			stack.custom_minimum_size = Vector2(CardVisual.card_size_play.x, wanted)
 
-## Indents every panel's column-label row by however far its cells sit inside its panel, so a
-## column's label sits under the column it names.
-##
-## ⚠ **MEASURED LIVE, EVERY TICK, NEVER LATCHED** -- the same treatment `_apply_grid_buffer()` gets
-## and for the same reason. The row-label gutter's width is its LABELS' width, and those are
-## `AutosizeLabel`s that resize themselves after the layout that placed them, so a value captured
-## once is a transient. The write happens only when the number actually changes, so a settled board
-## stops re-sorting.
-##
-## ⚠ **THIS CANNOT FEED BACK INTO THE PANEL'S WIDTH.** `ColLabels`'s minimum is the cells' own
-## minimum, so `ColRow` is always narrower than `Board` by the special gutter plus a separation and
-## never sets the panel's width -- if that stopped being true, widening the gutter would widen the
-## panel, which would move the cells, which would widen the gutter again.
-func _apply_column_label_indent() -> void:
-	if not is_instance_valid(grid_container): return
-	var z := maxf(board_zoom, 0.0001)
-	for i : int in grid_container.get_child_count():
-		var panel := grid_container.get_child(i) as Control
-		if not panel: continue
-		var board := panel.get_node_or_null("Board") as Control
-		var cells := _cells_root(panel)
-		var gutter := panel.get_node_or_null("ColRow/ColGutter") as Control
-		if not board or not cells or not gutter: continue
-		var wanted := (cells.global_position.x - board.global_position.x) / z
-		if wanted < 0.0: continue
-		if is_equal_approx(gutter.custom_minimum_size.x, wanted): continue
-		gutter.custom_minimum_size = Vector2(wanted, 0.0)
-
 ## Pop the ONE score label a grid line just banked into, the way a legacy gutter label pops.
 ##
 ## ⚠ **THE LABELS ARE RE-BOUND FIRST.** A line scoring at a height nothing has reached before has
@@ -2575,7 +2563,7 @@ func _grid_score_label(panel: Control, section: ScoringSection) -> BigNumberLabe
 			return _label_in_stack(board.get_node_or_null("RowLabels") as Control,
 					section.index, section.height)
 		ScoringSection.LineKind.COL:
-			return _label_in_stack(panel.get_node_or_null("ColRow/ColLabels") as Control,
+			return _label_in_stack(panel.get_node_or_null("Board/CellsColumn/ColLabels") as Control,
 					section.index, section.height)
 		ScoringSection.LineKind.HEIGHT_V:
 			return _cell_score_labels.get(Vector3i(panel.get_index(), section.cell.x,
@@ -2611,8 +2599,8 @@ func _create_label_stack() -> Control:
 	# cell slots use, for the same reason.
 	stack.add_theme_constant_override("separation", 0)
 	stack.size_flags_vertical = Control.SIZE_SHRINK_END
-	# ⚠ **BOTTOM-ALIGNED, LIKE THE CARDS BESIDE IT.** A `VBoxContainer` packs from the TOP by
-	# default, so a stack as tall as its row put its scores against the row's top edge -- the old
+	# ⚠ **BOTTOM-ALIGNED, LIKE THE CARDS BESIDE IT.** `alignment` was simply left at its default of
+	# BEGIN, so a stack as tall as its row packed its scores against the row's TOP edge -- the old
 	# pre-grid position, and 37 px (60.5 at the focused zoom) above the pip row they name. The
 	# label pitch already equals the card depth pitch, so aligning the group to the bottom lines
 	# up EVERY height at once rather than only the first.
@@ -2658,7 +2646,7 @@ func _create_score_label() -> Control:
 ## start reading a gutter as a row.
 func _cells_root(panel: Control) -> Control:
 	var board := panel.get_node_or_null("Board") as Control
-	return board.get_node_or_null("Cells") as Control if board else null
+	return board.get_node_or_null("CellsColumn/Cells") as Control if board else null
 
 func _cell_slot(panel: Control, grid: GridData, ci: int) -> VBoxContainer:
 	var w := maxi(grid.grid_width, 1)
@@ -2735,7 +2723,6 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 			# the row grew by that separation the moment its FIRST card landed. A stack of one is
 			# exactly one card tall, so the gap lives in the depth strip instead, where it only
 			# exists once there is a second card to be a gap between.
-			slot.add_theme_constant_override("separation", 0)
 			var zone_control : Control = slot.get_child(-1)
 			zone_control.custom_minimum_size = CardVisual.card_size_play 					if slot.get_child_count() == 1 else Vector2(CardVisual.card_size_play.x, 0)
 			# The TOPMOST card of the stack (child 0 after the flip) shows whole; every card under it

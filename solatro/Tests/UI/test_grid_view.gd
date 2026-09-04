@@ -904,12 +904,19 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	check(_cut_off_px(pa, 1) <= 1.0,
 			"precondition: the focused grid is wholly in frame, so the window is where it belongs",
 			"%.1f px off screen" % _cut_off_px(pa, 1))
+	# ⚠ **TP-141's ORIGINAL CLAIM IS RETIRED BY OWNER RULING (`GAP-040`=(a)).** It asserted that a
+	# non-focused grid paints NOTHING outside the board's window, which was true only because the
+	# scroller clipped -- and that clip also cut props and animations authored to leave the board's
+	# edges. Isolation is now wholly the CAMERA's, which is what `TP-140` asserts. What is checked
+	# here instead is the ruling itself: the board DOES paint through its own window now.
+	var painted_outside := 0
 	for gi : int in [0, 2]:
-		var outside := await _paint_delta(view, vp, gi, _outside_window_band(pa, vp, gi == 0))
-		check(outside == 0,
-				"grid %d paints NOTHING outside the board window while another grid is focused "
-				% gi + "(TP-141)",
-				"%d px changed outside the window" % outside)
+		painted_outside += await _paint_delta(view, vp, gi, _outside_window_band(pa, vp, gi == 0))
+	check(painted_outside > 0,
+			"the board paints THROUGH its window -- nothing on the card layer is clipped away, "
+			+ "which is what lets a prop or an animation leave the board's edge (TP-141, "
+			+ "GAP-040=(a))",
+			"%d px changed outside the window" % painted_outside)
 	await _tear_down(view)
 	vp.queue_free()
 
@@ -2153,13 +2160,14 @@ func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 #
 # ⚠ **THE CLIP AND THE CAMERA ARE DIFFERENT MECHANISMS AND ONLY ONE OF THEM MAY ISOLATE.** The
 # owner ruled that "out of view" means OFF CAMERA. `%CardLayer` is a child of
-# `SmoothScrollContainer/TopLevelVBox` and that scroller has `clip_contents = true`, so the board's
-# window CULLS card visuals outright -- a neighbour hidden by the clip takes any card flying to it
-# with it. The camera may hide a grid; the clip may not.
+# `SmoothScrollContainer/TopLevelVBox`, so a clip on that scroller CULLS card visuals outright --
+# a neighbour hidden by the clip takes any card flying to it with it. The camera may hide a grid;
+# the clip may not.
 #
-# Asserts the ENDPOINTS of a cross-grid move rather than a flight, and that is deliberate: if
-# either end is outside the clip window then every path between them is cut at that end, whatever
-# curve an effect chooses. A flight test would prove less and depend on one effect's easing.
+# ⚠ **THE BOARD THEREFORE DOES NOT CLIP AT ALL, and the owner's reason is not tall stacks:** props
+# and animations are authored to leave the board's edges on purpose, and the clip was cutting those
+# too. So this no longer asks whether a neighbour's cells happen to fall inside a window -- it asks
+# the stronger question directly, that there IS no window to fall outside of.
 # ==============================================================================
 func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 	behavior_section("A CARD BETWEEN GRIDS IS NEVER CLIPPED AWAY")
@@ -2173,14 +2181,30 @@ func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 			"precondition: three grids, focused on the middle one",
 			"mode %d, %d panels" % [pa.view_mode, pa.grid_container.get_child_count()])
 
+	check(not pa.scroll_container.clip_contents,
+			"the board's scroller does not clip, so NOTHING on the card layer is ever culled -- "
+			+ "not a card flying between grids, and not a prop or an animation that leaves the "
+			+ "board's edge on purpose")
+	var node : Node = pa.card_layer
+	var clippers : Array[String] = []
+	while node and node != pa.get_parent():
+		var c := node as Control
+		if c and c.clip_contents: clippers.append(str(node.name))
+		node = node.get_parent()
+	check(clippers.is_empty(),
+			"...and nothing ELSE between the card layer and the play area clips either -- the "
+			+ "whole chain is checked, so a clip re-appearing one level up cannot hide here",
+			"clipping: %s" % [clippers])
+	# The endpoints a cross-grid move runs between still have to EXIST off the focused window --
+	# that is what makes the check above load-bearing rather than vacuous.
 	var win := _screen_rect(pa.scroll_container)
+	var outside_any := false
 	for gi : int in 3:
 		var at := pa.slot_center_global(BoardCoord.new(gi, 0, 0, 0))
-		var inside := at.x >= win.position.x and at.x <= win.end.x
-		check(inside,
-				"grid %d's own cells are inside the board's CLIP window, so a card moving there "
-				% gi + "is not culled",
-				"cell x %.1f vs clip window [%.1f .. %.1f]" % [at.x, win.position.x, win.end.x])
+		if at.x < win.position.x or at.x > win.end.x: outside_any = true
+	check(outside_any,
+			"instrument check: a neighbouring grid's cells really do sit outside the board's "
+			+ "window, so 'never culled' is a claim about something that would otherwise be cut")
 	await _tear_down(view)
 
 # ==============================================================================
