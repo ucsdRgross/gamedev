@@ -377,8 +377,10 @@ func _ready() -> void:
 	# the first card that catches fire mid-act.
 	FxAttachment.warm(overlay_layer)
 	setup_gui()
-	# THE SHOW OPENS ZOOMED OUT. A show is one PlayArea, so this is the show's opening view.
-	open_zoomed_out()
+	# THE SHOW OPENS ON ITS OPENING VIEW. A show is one PlayArea, so this is that view -- and with
+	# no grids built yet it is the all-grids view, which the first rebuild that has one revisits.
+	open_show_view()
+	_show_view_opened = grid_container.get_child_count() > 0
 	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
 	# X-SLAVING RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off like `_process`
 	# above): a board scroll can happen at any time regardless of whether the focus inspector or
@@ -708,7 +710,28 @@ func update_gui() -> void:
 # orientation, so a click there costs the player nothing: it moves the view and never the board.
 # ==============================================================================
 
-## Open the all-grids view with nothing focused. The show's opening view.
+## The show's OPENING view: the all-grids view, or the single grid FOCUSED when that is all there
+## is. The overview is orientation BETWEEN grids, so with exactly one it frames what focused mode
+## already frames and the click that leaves it buys the player nothing (owner ruling). One grid is
+## the DEFAULT and not an edge case -- a deck of 52 or fewer unlocks exactly one.
+func open_show_view() -> void:
+	if grid_container.get_child_count() == 1:
+		focus_grid(0)
+		return
+	open_zoomed_out()
+
+## True once the opening view has been settled against the grids that actually EXIST.
+## ⚠ **THERE ARE NO GRIDS AT `_ready()`.** The rules deck builds them during the deal, so the
+## opening view cannot be chosen until the first rebuild that has one -- and it must be chosen
+## exactly ONCE, or a player who zoomed out is yanked back on the next placement.
+var _show_view_opened := false
+
+func _open_show_view_once() -> void:
+	if _show_view_opened or grid_container.get_child_count() == 0: return
+	_show_view_opened = true
+	open_show_view()
+
+## Open the all-grids view with nothing focused.
 func open_zoomed_out() -> void:
 	_set_view(ViewMode.OVERVIEW, NO_GRID)
 	_zoom_board_to(OVERVIEW_BOARD_ZOOM)
@@ -1603,6 +1626,7 @@ func set_card_zones() -> void:
 	if board_focus_locked:
 		for control : Control in ui_data:
 			control.focus_mode = Control.FOCUS_NONE
+	_open_show_view_once()
 	# The CardVisuals just created queued their add_child via call_deferred; this deferred emit
 	# is queued AFTER them (FIFO), so it fires once they're all in-tree and _ready.
 	_emit_board_visuals_ready.call_deferred()

@@ -263,6 +263,13 @@ func make_play_area() -> PlayArea:
 	# props on exact slot geometry (mark every kind formation-checked with none present).
 	for kind : int in range(PropFormationSet.KIND_NAMES.size()):
 		pa.prop_layer._formation_checked[kind] = true
+	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
+	# and one grid is what the default deck gives -- which would put every check below on a
+	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
+	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
+	# written against, and the opening view stays the product's own decision everywhere else.
+	pa._show_view_opened = true
+	pa.open_zoomed_out()
 	return pa
 
 
@@ -1619,6 +1626,13 @@ func _stand_up_view() -> GameView:
 	run.pending_node_id = 2
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
 	_stand_up_vp = TestGameViewHost.host(self, view)
+	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
+	# and one grid is what the default deck gives -- which would put every check below on a
+	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
+	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
+	# written against, and the opening view stays the product's own decision everywhere else.
+	view.play_area._show_view_opened = true
+	view.play_area.open_zoomed_out()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return view

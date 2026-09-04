@@ -103,6 +103,13 @@ func make_play_area() -> PlayArea:
 	# test_batch_props_stagger injects its OWN formation AFTER this to test the formation path.
 	# (The real-GameView submit tests below use the shipped formations on purpose.)
 	_disable_formations(pa.prop_layer)
+	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
+	# and one grid is what the default deck gives -- which would put every check below on a
+	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
+	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
+	# written against, and the opening view stays the product's own decision everywhere else.
+	pa._show_view_opened = true
+	pa.open_zoomed_out()
 	return pa
 
 ## Mark every prop kind as "formation-checked, none present" so _formation_set() returns null and

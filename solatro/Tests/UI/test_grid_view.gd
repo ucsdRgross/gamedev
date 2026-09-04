@@ -33,6 +33,7 @@ func _ready() -> void:
 	TestLog.line("============ GRID VIEW TEST PASS ============")
 	check_all_tests_registered()
 	await run_the_show_opens_zoomed_out_test()
+	await run_one_grid_opens_focused_test()
 	await run_clicking_a_grid_zooms_in_on_it_test()
 	await run_back_zooms_out_and_forward_returns_test()
 	await run_panning_has_its_own_actions_test()
@@ -87,6 +88,11 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
+	# ⚠ THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS ALREADY OPENED, which production never
+	# does — the rules deck builds every grid in one deal, so `PlayArea` settles its opening view
+	# once and latches. Re-opening it here puts the fixture back in the state the same grid count
+	# would have reached on its own, and it is the product's own entry point deciding, not the test.
+	view.play_area.open_show_view()
 	await get_tree().process_frame
 	return view
 
@@ -128,6 +134,7 @@ func _stand_up_main_grids(n: int) -> Main:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
+	view.play_area.open_show_view()   # same reason as `_stand_up_grids` above
 	await get_tree().process_frame
 	return main
 
@@ -261,6 +268,43 @@ func run_the_show_opens_zoomed_out_test() -> void:
 	check(pa.focused_grid == PlayArea.NO_GRID,
 			"nothing is focused until the player chooses a grid",
 			"focused_grid %d" % pa.focused_grid)
+	await _tear_down(view)
+
+# ==============================================================================
+# FIX-GRID-1: with exactly one grid the show opens FOCUSED, so no click is needed to zoom in
+# (owner ruling: "clicking to zoom in when there is only 1 grid should not be necessary").
+#
+# ⚠ NOT AN EDGE CASE. Q4=(d) and Q5 make one grid the answer for any deck of 52 or fewer, so this
+# is the DEFAULT starting configuration.
+#
+# ⚠ THE BOARD ZOOM IS ASSERTED, NOT ONLY THE MODE. A mode flag that never reached the zoom is
+# exactly the defect TP-139 exists for; a view that claims to be focused at OVERVIEW_BOARD_ZOOM
+# shows the player the overview.
+# ==============================================================================
+func run_one_grid_opens_focused_test() -> void:
+	behavior_section("ONE GRID OPENS FOCUSED")
+	var view := await _stand_up_grids(1)
+	var pa := view.play_area
+	await _settle_layout(view)
+	check(pa.grid_container.get_child_count() == 1,
+			"precondition: exactly one grid is on the board (FIX-GRID-1)",
+			"%d panels" % pa.grid_container.get_child_count())
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"a one-grid show opens FOCUSED -- no click is needed to zoom in",
+			"mode %d" % pa.view_mode)
+	check(pa.focused_grid == 0,
+			"...on the only grid there is",
+			"focused_grid %d" % pa.focused_grid)
+	check(pa.board_zoom > PlayArea.OVERVIEW_BOARD_ZOOM,
+			"...and the ZOOM went with the mode, not just the flag",
+			"board_zoom %.4f vs overview %.4f" % [pa.board_zoom, PlayArea.OVERVIEW_BOARD_ZOOM])
+	# The Back level stack is untouched: the overview is still reachable from a focused one-grid
+	# board, so nothing the player could do before is gone.
+	pa.open_zoomed_out()
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"the all-grids view is still reachable with one grid -- Back loses nothing",
+			"mode %d" % pa.view_mode)
+	await _settle_scroll(view)
 	await _tear_down(view)
 
 # ==============================================================================
@@ -966,10 +1010,13 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 	# The cell block sits a few px off the panel's own centre because the row-label gutter on the
 	# left and the column-label gutter below are not the same width -- that is S24's layout, not a
 	# centring error.
+	# ⚠ A GLOBAL ORIGIN PLUS A LOCAL SIZE IS NOT A GLOBAL CENTRE once the board is zoomed:
+	# `global_position` carries the zoom and `size` never does. Harmless while a one-grid board
+	# opened at OVERVIEW_BOARD_ZOOM; it reads 157 px off now that one grid opens focused.
 	var panel := pa.grid_container.get_child(0) as Control
 	var win := _window_x(pa)
 	var window_centre := (win.x + win.y) * 0.5
-	var grid_centre := panel.global_position.x + panel.size.x * 0.5
+	var grid_centre := panel.global_position.x + panel.size.x * 0.5 * pa.board_zoom
 	check(absf(grid_centre - window_centre) <= 2.0,
 			"the board that already fits sits CENTRED, not parked at an edge (TP-103)",
 			"grid %f vs window %f" % [grid_centre, window_centre])
@@ -978,7 +1025,7 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 		pa._unhandled_input(_action(a))
 	await _settle_scroll(view)
 	var after := pa.grid_container.get_child(0) as Control
-	var after_centre := after.global_position.x + after.size.x * 0.5
+	var after_centre := after.global_position.x + after.size.x * 0.5 * pa.board_zoom
 	check(absf(after_centre - window_centre) <= 2.0,
 			"panning either way leaves it centred: the clamp collapsed the whole range",
 			"grid %f vs window %f" % [after_centre, window_centre])

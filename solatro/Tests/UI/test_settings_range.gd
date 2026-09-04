@@ -171,6 +171,13 @@ func _stand_up() -> PlayArea:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	pa.flush_rebuild()
+	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
+	# and one grid is what the default deck gives -- which would put every check below on a
+	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
+	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
+	# written against, and the opening view stays the product's own decision everywhere else.
+	pa._show_view_opened = true
+	pa.open_zoomed_out()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return pa

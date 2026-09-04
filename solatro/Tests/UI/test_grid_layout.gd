@@ -74,6 +74,13 @@ func _stand_up() -> GameView:
 	# immediately and do nothing, so the board silently stops rebuilding and every check here
 	# reads a stale control tree.
 	CardEnvironment.CURRENT = view.game
+	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
+	# and one grid is what the default deck gives -- which would put every check below on a
+	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
+	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
+	# written against, and the opening view stays the product's own decision everywhere else.
+	view.play_area._show_view_opened = true
+	view.play_area.open_zoomed_out()
 	return view
 
 func _tear_down(view: GameView) -> void:
