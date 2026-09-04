@@ -669,7 +669,7 @@ static func sanitize(proposed: Variant, previous: Array[Array], hand: Array[Card
 			if not card or members.has(card): continue
 			if not hand.has(card) and not (env and env.has_card_data(card)):
 				push_error("comparator_buckets: a grouping rule named a CardData that is on "
-						+ "no collection — a rule may pull a board card in, never invent one (Q89=b)")
+						+ "no collection — a rule may pull a board card in, never invent one")
 				continue
 			members.append(card)
 		if not members.is_empty(): clean.append(members)
