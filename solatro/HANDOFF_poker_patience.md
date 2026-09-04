@@ -13,29 +13,39 @@ failures and both are attributed** — neither is a mystery.
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE NINE FAILURES, AND WHO OWNS EACH
+## ⚠ THE TWELVE FAILURES, AND WHO OWNS EACH
 
 ```
-2  GRID LAYOUT  116.0 px card-on-cell; TP-85 mid-growth flake   INTERFERENCE, unexplained
-6  GRID VIEW    TP-139, TP-140 x2, TP-141, TP-101 x2            GAP-038 + GAP-039, ONE question
-1  GRID VIEW    the framing gate's Entrance half                right edge only now
+3  GRID LAYOUT    116.0 px card-on-cell; TP-85 flake; a height label at the new zoom
+2  VISUAL LAYERS  two PRECONDITIONS -- the board no longer overflows its container
+6  GRID VIEW      TP-139, TP-140 grid 0, TP-141, TP-113, a pan check, 2 clip-window checks
 ```
-⚠ **`TP-141` AND THE SECOND PAN CHECK ARE THE HUD RESERVE**, not a new defect: centring the board in
-what the HUD leaves shifts it right by half the reserve, which pushes the left neighbour further
-into frame. `GAP-038`'s centring and `GAP-039`'s isolation are the same quantity and **cannot be
-closed separately.**
-- ⚠ **GRID LAYOUT ALONE IS `ALL 89 CHECKS PASSED`.** `116.0` exists only in the full suite and is
-  UNMOVED by the `CardVisual` scale fix, so it is a different mechanism and genuinely open. `TP-85`
-  comes and goes.
-- **The four `GRID VIEW` geometry failures are `GAP-039`, and they are the owner's own rulings
-  landing.** The card-row buffer takes `S` from 367 to 510, which puts the isolating picture width
-  at 2029 against the 1512 that "exactly three grids" allows — a **517 px** gap nothing can close.
-  ⚠ `TP-139`'s WORDING is now wrong, not just its value: the board's window also holds the panel's
-  gutter, the two buffers and the scroller's band, so block == window is no longer the definition of
-  the focused fit. **Rewriting a planned row is a gap, not an implementer's call.**
-- The framing gate's Entrance half fails on left/right ONLY — the strip spans the picture's full
-  width while the camera crops 14.66 px a side. Top and bottom are inside. The cell-block half
-  passes.
+- `GRID LAYOUT`'s **116.0 px** is the standing cross-suite interference: that suite ALONE passes,
+  and the `CardVisual` scale fix did not move it, so it is a different mechanism and still open.
+- ⚠ **THE THREE NEW ONES ARE ZOOM/WINDOW ASSUMPTIONS, NOT NEW DEFECTS, AND ARE NOT YET ATTRIBUTED.**
+  `VISUAL LAYERS`'s two are PRECONDITIONS — *"the widened board really does overflow its container"*
+  no longer holds now that the board is fitted to its window, so those tests cannot reach the case
+  they exist for. `GRID LAYOUT`'s height-label check moved with the new focused zoom. **Read them
+  before touching them; the earlier pinning pattern probably applies.**
+- **The six `GRID VIEW` ones are `GAP-039` and they are one question.** Grid 0 alone still intrudes,
+  because the HUD reserve is one-sided: it shifts the board right by half of itself, clearing the
+  RIGHT neighbour for free and pulling the LEFT one in by the same amount.
+
+## ⚠ THE HUD IS A FIXED SHARE OF THE WIDTH, AND THAT IS LOAD-BEARING
+
+`hud_width_fraction` (PlayerSettings, **0.25**) is the share of the board's width the HUD column
+takes; the furniture is SCALED to fit it. ⚠ **NOT AN ABSOLUTE.** The HUD scaling with the picture
+while the picture is sized to isolate a neighbour AGAINST the HUD is a feedback loop — a bigger
+reserve demands a wider picture, which scales the HUD, which demands a wider picture again.
+
+⚠ **TWO FIXES DIED ON THAT LOOP AND ARE RECORDED IN `GAP-039` SO NOBODY RETRIES THEM:** insetting
+the board symmetrically (measured: the width fit collapses to zoom 1.0 and the focused view stops
+being bigger than the overview), and growing the picture until spacing isolates (measured: ~2461 px,
+and the focused grid gets SMALLER on screen because the buffer grows faster than the block).
+
+**Measured now, in the wall:** design `1872x1053`, `board_zoom` 2.0647, HUD spanning to ~468 == a
+quarter of the width, and **the 5x5 block and the Entrance strip BOTH FULLY FRAMED** — the framing
+gate is green for the first time this stream.
 
 ## ⚠ THE FOCUSED VIEW'S HEIGHT, AS IT NOW STANDS
 
