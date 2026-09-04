@@ -4,7 +4,7 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is 7 of its 9 done-when
+**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is 8 of its 9 done-when
 rows**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
 camera stepping is proven end-to-end through a real key route, and the saved pan (`S32`) is in.
 **Every standing failure is attributed** — none is a mystery.
@@ -301,7 +301,7 @@ be checked by hand.
   notes: 'Covers S31b (focused zoom), S31c (clip), S31d (widen), S31e (one grid per position).'
 - id: S33
   description: 'H20 the wall re-packs; H21 Info mode; plus the camera work GAP-024 pulled in.'
-  status: in_progress
+  status: done
   notes: >
     H20 LANDED: keep_aspect on the game entry, squash gone, verified by eye. The camera steps in
     OVERVIEW (GAP-024=(b)), the bounce follows it (GAP-025), and the HUD follows the camera.
@@ -413,18 +413,26 @@ next reader, and the code is the source of truth for anything already built.
   positions. Run the game and report what MOVED before calling either done.
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
 
-## ⚠ PHASE 7 PROGRESS — 7 of 9 done-when rows green
+## ⚠ PHASE 7 PROGRESS — 8 of 9 done-when rows green
 
 `PLAN.md` Phase 7's done-when is **`TP-105` and `TP-113`-`TP-120` green**, plus
 `knobs_this_preview_does_not_drive` still empty.
 
 ```
-TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅  TP-115 ✅  TP-116 ✅  TP-117 ✅
-TP-119 ❌                        -- S33's H21 half: Info mode (Q178=a)
+TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅  TP-115 ✅  TP-116 ✅  TP-117 ✅  TP-119 ✅
 TP-120 ❌                        -- S34: Tools/wall_editor.tscn drives every wall knob (Q186=a)
 ```
 
-**Two steps close the phase: the remainder of `S33`, and `S34`.**
+**ONE step closes the phase: `S34`.**
+
+⚠ **WHAT `S34` ACTUALLY NEEDS, before anyone starts it.** `knobs_this_preview_does_not_drive`
+already returns `""` whenever a real `Wall` exists, so a test that only reads it when the tool is
+RUN passes without proving anything. The knobs this stream added — `board_edge_pad_rows` and
+`hud_width_fraction` — are **`PlayArea` knobs read through `SettingsManager.settings`**, not through
+`WallPicture.settings()`, and the editor's preview hosts `WallPicture`s rather than a live
+`GameView`. So the real question `S34` has to answer first is whether the wall editor hosts a real
+board at all; if it does not, those two knobs cannot be driven from it and the honest move is an
+`EDITOR_INERT_KNOBS` entry plus a gap, not a green check.
 
 ⚠ **MOST RECENT WORK WAS OWNER-DIRECTED REFINEMENT, NOT PLAN STEPS.** The 3-grid canvas, the derived
 buffer, the edge margin, `PlayContainer`'s height, Entrance scaling and clipping, label alignment and
