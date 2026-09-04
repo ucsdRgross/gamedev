@@ -58,6 +58,7 @@ func _ready() -> void:
 	await run_the_render_target_never_exceeds_the_clamp_test()
 	await run_the_camera_steps_between_grid_positions_test()
 	await run_the_focused_view_frames_the_block_and_the_entrance_test()
+	await run_a_card_between_grids_is_never_clipped_away_test()
 	finish()
 
 ## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
@@ -2115,3 +2116,40 @@ func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 			"...and so is the Entrance row beneath it",
 			"outside by left %.2f top %.2f right %.2f bottom %.2f" % [e[0], e[1], e[2], e[3]])
 	await _tear_down_main(main)
+
+
+# ==============================================================================
+# A CARD MOVING BETWEEN GRIDS IS NEVER CLIPPED AWAY (owner: *"if an effect makes a card move
+# between grids it should not disappear"*).
+#
+# ⚠ **THE CLIP AND THE CAMERA ARE DIFFERENT MECHANISMS AND ONLY ONE OF THEM MAY ISOLATE.** The
+# owner ruled that "out of view" means OFF CAMERA. `%CardLayer` is a child of
+# `SmoothScrollContainer/TopLevelVBox` and that scroller has `clip_contents = true`, so the board's
+# window CULLS card visuals outright -- a neighbour hidden by the clip takes any card flying to it
+# with it. The camera may hide a grid; the clip may not.
+#
+# Asserts the ENDPOINTS of a cross-grid move rather than a flight, and that is deliberate: if
+# either end is outside the clip window then every path between them is cut at that end, whatever
+# curve an effect chooses. A flight test would prove less and depend on one effect's easing.
+# ==============================================================================
+func run_a_card_between_grids_is_never_clipped_away_test() -> void:
+	behavior_section("A CARD BETWEEN GRIDS IS NEVER CLIPPED AWAY")
+	var view := await _stand_up_grids(3)
+	var pa := view.play_area
+	await _settle_layout(view)
+	pa.focus_grid(1)
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.grid_container.get_child_count() == 3,
+			"precondition: three grids, focused on the middle one",
+			"mode %d, %d panels" % [pa.view_mode, pa.grid_container.get_child_count()])
+
+	var win := _screen_rect(pa.scroll_container)
+	for gi : int in 3:
+		var at := pa.slot_center_global(BoardCoord.new(gi, 0, 0, 0))
+		var inside := at.x >= win.position.x and at.x <= win.end.x
+		check(inside,
+				"grid %d's own cells are inside the board's CLIP window, so a card moving there "
+				% gi + "is not culled",
+				"cell x %.1f vs clip window [%.1f .. %.1f]" % [at.x, win.position.x, win.end.x])
+	await _tear_down(view)
