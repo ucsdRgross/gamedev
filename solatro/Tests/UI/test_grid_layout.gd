@@ -47,6 +47,7 @@ func _ready() -> void:
 	await run_a_height_label_sits_above_its_stack_test()
 	await run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test()
 	await run_a_row_label_lines_up_with_its_own_row_test()
+	await run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test()
 	restore_real_settings()
 	finish()
 
@@ -1039,6 +1040,66 @@ func run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test(
 			"the label's bottom sits exactly half a (zoom-scaled) card above its stack's top card, "
 			+ "even off the overview's own zoom of 1.0",
 			"label bottom %.1f vs expected %.1f" % [label_bottom, top_card_y - expected_gap])
+	await _tear_down(view)
+
+# ==============================================================================
+# A ROW'S ZONE CARDS SHARE ONE LINE, AT A BOARD ZOOM THAT IS NOT 1.0 (owner ruling: "stacking
+# cards on a zone should not cause the zone to move relative to grid").
+#
+# ⚠ TWO THINGS MUST BOTH VARY OR THIS CHECK IS BLIND.
+#  * THE DEPTHS MUST BE UNEVEN, AND ONE CELL MUST BE EMPTY. An empty cell's frame control is a
+#    WHOLE CARD while an occupied one's is collapsed to zero, and those are the two ends of the
+#    error. An even row cannot tell "every frame on the row's bottom line" from "every frame at
+#    its own stack's bottom" — they are the same picture until one cell differs.
+#  * THE BOARD MUST BE FOCUSED. The defect is a control-local length added to a scaled global
+#    position, so it is EXACTLY ZERO at the overview's own zoom of 1.0. Measured: 69.74 px of
+#    spread at board_zoom 2.29, 0.00 px at 1.0.
+#
+# Asserts the VISUALS, not the controls: the containers were already right — every occupied
+# slot's frame control sat on one line — and it was the card that drew somewhere else.
+# ==============================================================================
+func run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test() -> void:
+	behavior_section("A ROW'S ZONE CARDS SHARE ONE LINE AT A NON-1.0 BOARD ZOOM")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	var depths : Array[int] = [2, 1, 0, 3]
+	for x : int in depths.size():
+		for _h : int in depths[x]:
+			var card := g.draw_card()
+			if not card: break
+			await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, _h))
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	check(not is_equal_approx(pa.board_zoom, 1.0),
+			"precondition: the board is FOCUSED, so board_zoom is off 1.0 and the defect can show",
+			"board_zoom %.4f" % pa.board_zoom)
+
+	var grid : GridData = g.state.grids[0]
+	var empty_seen := false
+	var occupied_seen := false
+	var visuals : Array[CardVisual] = []
+	for x : int in depths.size():
+		var zone_card : CardData = grid.cell_types[grid.cell_index(x, 0)]
+		var vis : CardVisual = pa.data_card.get(zone_card)
+		if vis: visuals.append(vis)
+		if depths[x] == 0: empty_seen = true
+		else: occupied_seen = true
+	check(empty_seen and occupied_seen and visuals.size() == depths.size(),
+			"precondition: the row mixes an EMPTY cell with occupied ones, and every zone card drew",
+			"%d visuals, empty %s, occupied %s" % [visuals.size(), empty_seen, occupied_seen])
+	await _settle_visuals(visuals)
+
+	var lo := INF
+	var hi := -INF
+	for vis : CardVisual in visuals:
+		lo = minf(lo, vis.global_position.y)
+		hi = maxf(hi, vis.global_position.y)
+	check(hi - lo < 1.0,
+			"every zone card in one row draws on ONE line however deep its own cell is stacked",
+			"spread %.2f px across %d cells" % [hi - lo, visuals.size()])
+
 	await _tear_down(view)
 
 # ==============================================================================

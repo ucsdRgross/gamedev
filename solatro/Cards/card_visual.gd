@@ -659,12 +659,21 @@ func _game_view() -> GameView:
 ## Where this card's centre sits on its anchor control. Hanging from the control's BOTTOM edge is
 ## the whole of the shared-bottom-edge rule: a thin strip control then shows the card's bottom
 ## while the rest of it rises over the card beneath.
+## ⚠ **A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE.** `global_position` carries every scale above
+## the control -- the board's zoom lives on the scroll container -- while `size` and `card_size`
+## never do. Adding them raw put a collapsed cell frame 27 px above its own control instead of
+## 27 * board_zoom, and a full-card frame the same distance the other way: measured, a 69.74 px
+## spread across ONE row's zone cards at board_zoom 2.29, and exactly 0 at 1.0, which is why it
+## stayed invisible while the board only ever rested unzoomed.
+func _control_scale(control:Control) -> Vector2:
+	return control.get_global_transform().get_scale()
+
 func get_card_control_center(control:Control) -> Vector2:
 	var y := (control.size.y - card_size.y / 2) if bottom_anchored else (card_size.y / 2)
-	return control.global_position + Vector2(control.size.x / 2, y)
+	return control.global_position + Vector2(control.size.x / 2, y) * _control_scale(control)
 
 func get_control_center(control:Control) -> Vector2:
-	return control.global_position + control.size/2
+	return control.global_position + control.size / 2.0 * _control_scale(control)
 
 func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
