@@ -200,6 +200,56 @@ func _ready() -> void:
 		_report_growth(session_baseline_census, session_after_census)
 
 	implementation_section("LEAK SENTINEL")
+	# ⚠ **AN OWNER THE SENTINEL CANNOT SEE READS AS A WHOLE LEAKED BOARD**, and that is a defect in
+	# the SENTINEL, not in the game. `Game._debug_history` holds full `to_saveable()` duplicates in
+	# debug builds; before `debug_snapshots()` was scanned, the first commit of a show put 90 cards
+	# alive and unreachable, SUSTAINED across every check — the exact shape of the owner-reported
+	# leak (25 cell zone cards, 5 Entrance slots, the deck and rules around them).
+	#
+	# ⚠ **THE FIXTURE MUST COMMIT ONE.** `_debug_commit()` only fires on a real placement, so a
+	# fixture that stands a game up and looks at it can never see this. The session cycles above are
+	# exactly that kind of fixture from the sentinel's point of view: they drop the whole run doc
+	# each time, so the holder is released before any count could be taken.
+	var dbg_run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = dbg_run
+	dbg_run.pending_goal = 1_000_000_000
+	dbg_run.pending_node_id = 2
+	seed(20260903)
+	var dbg_view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(dbg_view)
+	await _settle()
+	var dbg_game := dbg_view.game
+	await TestGridFixtures.place_row_from_deck(dbg_game, 0, 0, 1)
+	await _settle()
+	check_impl(dbg_game.debug_snapshots().size() > 0,
+			"precondition: a real placement committed a debug rewind snapshot",
+			"%d snapshots" % dbg_game.debug_snapshots().size())
+	# ⚠ **ASSERT THE PROPERTY, NOT THE TOTAL.** Every suite in this run abandons cards on
+	# purpose, so the sentinel's absolute count is other suites' garbage plus ours -- it passes this
+	# suite alone and fails by 143 in the full run. What must hold is narrower and interference-
+	# proof: no card a debug snapshot HOLDS may read as unreachable.
+	var reachable := LeakSentinel._reachable_set()
+	var snapshot_cards : Dictionary[CardData, bool] = {}
+	for snap : GameData in dbg_game.debug_snapshots():
+		for c : CardData in snap.all_card_datas():
+			snapshot_cards[c] = true
+	var missed := 0
+	for c : CardData in snapshot_cards:
+		if not reachable.has(c): missed += 1
+	check_impl(snapshot_cards.size() > 0,
+			"precondition: those snapshots actually hold cards",
+			"%d cards" % snapshot_cards.size())
+	check_impl(missed == 0,
+			"a debug rewind snapshot is an OWNER, not a leak — the sentinel walks debug_snapshots()",
+			"%d of %d snapshot-held cards read as unreachable" % [missed, snapshot_cards.size()])
+	dbg_view.queue_free()
+	await _settle()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	Main.save_info = RunState.new()
+	await _settle()
+
 	# The sentinel is quiet under the test runner (TestLog._started), so drive tick()
 	# directly: cards held alive but unreachable from any legitimate owner must raise the
 	# unreachable count, and enough over-slack ticks must fire the report (which resets

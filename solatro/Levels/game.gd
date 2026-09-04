@@ -520,6 +520,19 @@ var _debug_history : Array[GameData] = []
 ## replaying a stale one would restore a board that never followed from the current one.
 var _debug_redo : Array[GameData] = []
 
+## Both debug histories as one list, for `LeakSentinel`'s reachability walk.
+##
+## ⚠ **A LEGITIMATE OWNER THE SENTINEL COULD NOT SEE READS AS A WHOLE LEAKED BOARD.** Every entry
+## here is a full `to_saveable()` duplicate, so the first commit of a show puts an entire board —
+## deck, cell zone cards, Entrance slots, rules cards — alive and unreachable from anything the
+## sentinel scanned. Measured: 90 cards, sustained across every check, 100% of them held here.
+## Empty in release builds, where neither array is ever written.
+func debug_snapshots() -> Array[GameData]:
+	var out : Array[GameData] = []
+	out.append_array(_debug_history)
+	out.append_array(_debug_redo)
+	return out
+
 func _debug_commit() -> void:
 	if not OS.is_debug_build(): return
 	_debug_history.append(state.to_saveable())
