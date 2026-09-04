@@ -13,39 +13,41 @@ failures and both are attributed** — neither is a mystery.
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE TWELVE FAILURES, AND WHO OWNS EACH
+## ⚠ THE NINE FAILURES, AND WHO OWNS EACH
 
 ```
-3  GRID LAYOUT    116.0 px card-on-cell; TP-85 flake; a height label at the new zoom
-2  VISUAL LAYERS  two PRECONDITIONS -- the board no longer overflows its container
-6  GRID VIEW      TP-139, TP-140 grid 0, TP-141, TP-113, a pan check, 2 clip-window checks
+1  GRID LAYOUT  116.0 px card-on-cell                              INTERFERENCE, unexplained
+8  GRID VIEW    TP-139, TP-140 x2, TP-141, a pan check, the gate's  ONE question -- see below
+                Entrance edge, and the 2 clip-window checks
 ```
-- `GRID LAYOUT`'s **116.0 px** is the standing cross-suite interference: that suite ALONE passes,
-  and the `CardVisual` scale fix did not move it, so it is a different mechanism and still open.
-- ⚠ **THE THREE NEW ONES ARE ZOOM/WINDOW ASSUMPTIONS, NOT NEW DEFECTS, AND ARE NOT YET ATTRIBUTED.**
-  `VISUAL LAYERS`'s two are PRECONDITIONS — *"the widened board really does overflow its container"*
-  no longer holds now that the board is fitted to its window, so those tests cannot reach the case
-  they exist for. `GRID LAYOUT`'s height-label check moved with the new focused zoom. **Read them
-  before touching them; the earlier pinning pattern probably applies.**
-- **The six `GRID VIEW` ones are `GAP-039` and they are one question.** Grid 0 alone still intrudes,
-  because the HUD reserve is one-sided: it shifts the board right by half of itself, clearing the
-  RIGHT neighbour for free and pulling the LEFT one in by the same amount.
+- `GRID LAYOUT`'s **116.0 px** is the standing cross-suite interference: that suite ALONE passes and
+  the `CardVisual` scale fix did not move it, so it is a different mechanism and still open.
+- ⚠ **`TP-140` NOW FAILS SYMMETRICALLY ON BOTH NEIGHBOURS, AND THAT IS PROGRESS, NOT A REGRESSION.**
+  It used to fail on the LEFT one only, because the HUD's share was taken off the left and the board
+  was measured against the whole picture. Isolation is now measured in the board's OWN area, so both
+  neighbours sit the same distance out and both are short by the SAME amount.
+- **The remaining shortfall is exactly the terms the derivation cannot see** — see the next section.
 
-## ⚠ THE HUD IS A FIXED SHARE OF THE WIDTH, AND THAT IS LOAD-BEARING
+## ⚠ THE ISOLATION DERIVATION IS SHORT BY 35 OF 510, AND THE 35 IS FONT AND THEME
 
-`hud_width_fraction` (PlayerSettings, **0.25**) is the share of the board's width the HUD column
-takes; the furniture is SCALED to fit it. ⚠ **NOT AN ABSOLUTE.** The HUD scaling with the picture
-while the picture is sized to isolate a neighbour AGAINST the HUD is a feedback loop — a bigger
-reserve demands a wider picture, which scales the HUD, which demands a wider picture again.
+```
+focused_content_height_px()  475   block 286 + Entrance strip 81 + 2 edge pads 108
+the live focused fit divides  510   ...plus the panel's column-label gutter 27 and the
+                                    scroller's reserved horizontal band 8
+so the solver models z = 834/475 = 1.756 where the board really uses 834/510 = 1.635 -- 7% low
+```
 
-⚠ **TWO FIXES DIED ON THAT LOOP AND ARE RECORDED IN `GAP-039` SO NOBODY RETRIES THEM:** insetting
-the board symmetrically (measured: the width fit collapses to zoom 1.0 and the focused view stops
-being bigger than the overview), and growing the picture until spacing isolates (measured: ~2461 px,
-and the focused grid gets SMALLER on screen because the buffer grows faster than the block).
+⚠ **THE 27 IS A FONT METRIC AND THE 8 IS A THEME ONE**, and `game_picture_design_size()` runs before
+any board exists to measure either. That is the whole of what is left of `GAP-039`.
+⚠ **DO NOT CLOSE IT BY DELETING THE TWO TERMS FROM THE LIVE FIT.** The gutter is real content and
+the band is really reserved; dropping them makes the model agree by letting the board overflow its
+window, and the board is bottom-anchored, so the overflow goes off the TOP and the top row clips
+again — which is the bug this whole stream started on.
 
-**Measured now, in the wall:** design `1872x1053`, `board_zoom` 2.0647, HUD spanning to ~468 == a
-quarter of the width, and **the 5x5 block and the Entrance strip BOTH FULLY FRAMED** — the framing
-gate is green for the first time this stream.
+**The cheapest honest route, NOT yet chosen:** measure both once from real controls and cache them,
+so the static sizing can read a measured number rather than a derived one. ⚠ It needs a tree to
+resolve a theme, and `H1` requires the picture stay ONE fixed size for a run, so where that
+measurement happens is a design decision and belongs to the owner.
 
 ## ⚠ THE FOCUSED VIEW'S HEIGHT, AS IT NOW STANDS
 
