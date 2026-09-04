@@ -625,3 +625,11 @@ var wall_info_mode : bool = false
 	set(value):
 		entrance_visible_rows = maxf(value, 0.5)
 		settings_changed.emit()
+
+## The clear band above the board and below the Entrance, in CARD ROWS, so the focused view does
+## not hug the screen edge. **0 turns it off**, which is what a phone-sized screen wants: on a
+## short screen the band costs more of the board than the breathing room is worth.
+@export var board_edge_pad_rows : float = 1.0:
+	set(value):
+		board_edge_pad_rows = maxf(value, 0.0)
+		settings_changed.emit()

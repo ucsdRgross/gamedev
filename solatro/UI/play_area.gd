@@ -153,6 +153,13 @@ static func grid_block_size_px(settings_res: PlayerSettings, grid: GridData) -> 
 	var h := float(maxi(grid.grid_height, 1))
 	return Vector2(w * card.x + (w - 1.0) * sep, h * card.y + (h - 1.0) * sep)
 
+## The clear band kept ABOVE the board and BELOW the Entrance so neither hugs the window's edge
+## (owner ruling: *"add 1 row full card height buffer to top and bottom of the play area so it
+## doesnt hug screen edge so tightly"*). One whole card, in BOARD units, so it scales with the
+## board exactly as a row does -- an unscaled band would read as half a card once focused.
+static func board_edge_pad_px(settings_res: PlayerSettings) -> float:
+	return CardVisual.CARD_SIZE.y * settings_res.card_scale * settings_res.board_edge_pad_rows
+
 ## The Entrance strip's height, in screen pixels, at a given zoom. `zoom = 1.0` for the two
 ## static picture-sizing sites (the render-target picture is fixed and zoom-independent);
 ## the live strip passes `board_zoom` so it tracks the same scale the grid renders at.
@@ -573,7 +580,9 @@ func _view_grid_cells() -> Control:
 func _apply_entrance_strip_height() -> void:
 	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
 	var h := entrance_strip_height_px(SettingsManager.settings, board_zoom)
-	entrance_strip.offset_top = -h
+	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	entrance_strip.offset_top = -h - pad
+	entrance_strip.offset_bottom = -pad
 	_apply_board_zoom_rect(h)
 	_apply_entrance_zoom_rect()
 	_give_the_board_a_floor(_entrance_strip_full_height())
@@ -590,9 +599,11 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	if not is_instance_valid(scroll_container): return
 	_board_strip_h = strip_h
 	var local := _board_window_local()
+	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
+	scroll_container.offset_top = pad
 	scroll_container.offset_right = local.x - size.x
-	scroll_container.offset_bottom = local.y - size.y
+	scroll_container.offset_bottom = pad + local.y - size.y
 
 ## The strip the board's window is currently giving up to the Entrance, kept so the window can be
 ## recomputed without waiting for a layout pass.
@@ -605,7 +616,8 @@ var _board_strip_h := 0.0
 ## reading the PREVIOUS mode's window -- which is a whole grid's worth of aim, and a board floor
 ## left where the unzoomed board had it.
 func _board_window_local() -> Vector2:
-	return Vector2(size.x, maxf(size.y - _board_strip_h, 0.0)) / maxf(board_zoom, 0.0001)
+	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	return Vector2(size.x, maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
 
 ## ⚠ **THE ENTRANCE IS ROW −1, AND ITS OWN HEIGHT PUSHES THE BOARD UP** (`Q313`=a, owner: *"if
 ## entrance/input cards are somehow stacked with multiple cards as well increasing in height, then
@@ -640,7 +652,10 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 	# while the content is laid out in the scroller's own, smaller ones. ⚠ It must not be taken from
 	# the scroller's window either -- that window is carved out by the Entrance's RESERVATION while
 	# this floor clears its ACTUAL height, and the two differ exactly when the Entrance stacks.
-	top_level_vbox.custom_minimum_size.y = maxf(size.y - strip_h, 0.0) / maxf(board_zoom, 0.0001)
+	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	top_level_vbox.custom_minimum_size.y = maxf(
+			maxf(size.y - strip_h - 2.0 * pad, 0.0) / maxf(board_zoom, 0.0001)
+			- _scroller_frame_h(), 0.0)
 	top_level_vbox.alignment = BoxContainer.ALIGNMENT_END
 	_publish_board_floor()
 	if not top_level_vbox.resized.is_connected(_publish_board_floor):
@@ -803,8 +818,50 @@ func focused_board_zoom(gi: int) -> float:
 	var grid : GridData = _bound_grids[gi] if gi >= 0 and gi < _bound_grids.size() else GridData.new()
 	var block_h := grid_block_size_px(SettingsManager.settings, grid).y
 	var base_strip := entrance_strip_height_px(SettingsManager.settings, 1.0)
-	if block_h <= 0.0 or size.y <= 0.0: return OVERVIEW_BOARD_ZOOM
-	return size.y / (block_h + base_strip)
+	var pad := board_edge_pad_px(SettingsManager.settings)
+	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
+	var tall := size.y / (block_h + _panel_gutter_h(gi) + base_strip + 2.0 * pad
+			+ _scroller_frame_h())
+	var wide := _panel_width(gi)
+	return tall if wide <= 0.0 else minf(tall, size.x / wide)
+
+## The band the scroller keeps for its HORIZONTAL bar, which it reserves whether or not that bar is
+## on screen -- `SCROLL_MODE_SHOW_NEVER` hides the bar and keeps the band.
+##
+## ⚠ **`page` IS WHAT DECIDES WHETHER THE VERTICAL BAR SHOWS**, not the scroller's rect, and `page`
+## is the rect LESS this. A board fitted to the rect overflows the page by exactly this much, and
+## the player gets a scrollbar on a board they have not touched. Measured: a content of 313 against
+## a page of 305.
+func _scroller_frame_h() -> float:
+	if not is_instance_valid(scroll_container): return 0.0
+	var h_bar := scroll_container.get_h_scroll_bar()
+	return h_bar.get_combined_minimum_size().y if h_bar else 0.0
+
+## The whole panel's width — the row-label gutter, the cells and the special-meld label — as one
+## MINIMUM-size query, for the same reasons `_panel_gutter_h()` gives.
+func _panel_width(gi: int) -> float:
+	if gi < 0 or gi >= grid_container.get_child_count(): return 0.0
+	var panel := grid_container.get_child(gi) as Control
+	return panel.get_combined_minimum_size().x if panel else 0.0
+
+## The score furniture a grid panel carries BELOW its cells: the column-label row and the gap above
+## it. Part of what the board's window must hold, or the panel overflows it and the scroller shows a
+## bar on a board the player has not even touched.
+##
+## ⚠ **MEASURED FROM THE PANEL, AND IT HAS TO BE.** The label's height comes from the FONT (23 px at
+## the shipped one), so there is no constant to derive it from.
+## ⚠ **THE DIFFERENCE OF TWO MINIMUM SIZES, NOT OF TWO RECTS.** A container answers
+## `get_combined_minimum_size()` from its children on demand rather than from the last layout pass,
+## so this cannot serve a stale rect the way a `size` read would -- and subtracting the cells' own
+## minimum takes the stacks' DEPTH back out, which is what keeps a deepening stack from re-scaling
+## the board under the player's hand.
+func _panel_gutter_h(gi: int) -> float:
+	if gi < 0 or gi >= grid_container.get_child_count(): return 0.0
+	var panel := grid_container.get_child(gi) as Control
+	if not panel: return 0.0
+	var cells := _cells_root(panel)
+	if not cells: return 0.0
+	return maxf(panel.get_combined_minimum_size().y - cells.get_combined_minimum_size().y, 0.0)
 
 ## Take the board to scale `z` over the pan clock -- the same clock a grid pan and the removal
 ## re-centre use, so a mode change is one motion and not two.
