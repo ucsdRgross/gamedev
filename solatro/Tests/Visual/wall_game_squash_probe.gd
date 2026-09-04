@@ -11,6 +11,13 @@ extends Node2D
 # IN THE SHOT, unlike grid_zoom_shot / grid_layer_shot, which both instantiate GameView directly
 # and are structurally blind to it.
 #
+# WARNING: THIS PROBE'S "FOCUSED" FRAME IS NOT THE PRODUCT'S. It hand-builds the camera pose and
+# forces THREE grids where the default deck yields ONE, and it shows all five rows with the
+# Entrance below where the running game cuts the top row. Use it for the wall-composite and
+# magnification measurements it was written for; take FRAMING evidence from
+# res://Tests/Visual/focused_pose_probe.tscn, which boots main.tscn and enters through
+# Main.enter_game().
+#
 # Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
 #     OUT_PATH=<path> <console exe> --path solatro res://Tests/Visual/wall_game_squash_probe.tscn
 # ==============================================================================
