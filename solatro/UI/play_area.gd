@@ -2249,9 +2249,6 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 		var label : BigNumberLabel = stack.get_child(i)
 		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
 				CardVisual.card_separation_play_custom) if is_row 				else Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play)
-		if is_row:
-			label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-			label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""
