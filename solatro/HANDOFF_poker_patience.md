@@ -360,42 +360,32 @@ resuming should know the phase closes via `S32`/`S33`/`S34`, not via more refine
   behaving. ⚠ Anything that walks a cell's stack — the iterator, the line detector, `validate()`,
   undo — must not see a zone card as an occupant.
 
-## ⚠⚠ RUNTIME LEAK — one whole show's cards survive UNREACHABLE
+## The runtime leak was the SENTINEL missing an owner — SOLVED, and the trap it left
 
-**Owner-reported, from the running game** (`LeakSentinel`, `leak_sentinel.gd:65`):
-```
-201 CardData alive, 143 reachable -- 58 unreachable for 3 checks
-  25x ZONE  [type_grid_cell.gd]        <- exactly one 5x5 grid's cell zone cards
-   5x ZONE  [type_input.gd]            <- exactly the Entrance's 5 slots
-  28x assorted DRAW / RULES / PLAY     <- deck, rules and played cards
-```
+Kept only because the wrong premise is written down in several places and is expensive to fall for
+again. `Game._debug_history` holds a FULL `to_saveable()` duplicate per placement; the sentinel
+walked `save_history` and never that, so the first commit of every fresh show read as an entire
+leaked board — 25 cell zone cards, 5 Entrance slots, the deck and rules around them. `Game` now
+publishes `debug_snapshots()` and the sentinel walks it.
 
-**That is one entire show**: a grid's 25 cell zones (`Q204`=a fixes 25 per grid), the Entrance's 5
-slots, and the cards around them. It reads as a show that was left and never released.
+⚠ **"UNREACHABLE BUT ALIVE" DOES NOT IMPLY A CYCLE.** A `RefCounted` also stays alive on a plain
+strong reference the reachability scan does not FOLLOW. The cycle premise sent the previous session
+hunting an architectural loop that does not exist; the persistent-rules-card hypothesis
+(`ZoneAdder.card_data` / `SkillGridCreator.grid_data`) was also tested and is FALSE — zero cards
+attributed to either.
 
-### ⚠ UNREACHABLE-BUT-ALIVE MEANS A REFERENCE CYCLE
-`CardData` is `RefCounted`, and **`RefCounted` cannot collect a cycle.** So this is not "somebody
-still holds them" — it is a loop that keeps its own refcounts up. Do not go looking for a stray
-holder; look for the loop.
+⚠ **A RESUMED SHOW CANNOT SEE IT.** `_resume_show()` sets `_debug_history` FROM `save_history`,
+sharing objects the sentinel already walks, so only a FRESH show commits a duplicate. One sample of
+the wrong show says there is no problem.
 
-**Candidate loop, to be CONFIRMED not assumed:**
-```
-CardData -> CardModifier.api -> CardEffectApi -> Game -> GameData -> grids
-         -> GridData cells -> CardData
-```
-Every hop there is a design contract, so if this is the cycle it is architectural rather than a slip.
-⚠ Also note `Cards/Skills/Rules/skill_grid_creator.gd` holds `@export_storage var grid_data :
-GridData` — *"The grid this card built, so `on_unspotlight` can find and remove exactly that one"* —
-a strong reference from a card to a grid, and the rules deck PERSISTS between shows (`Q202`).
+`Tests/Visual/leak_holder_probe` is the instrument: it names a holder for every unreachable card and
+samples five settled checks, so a transient cannot pass as a leak. Its last stage deliberately drops
+the run doc while a local still holds it — a synthetic leak that must stay visible, which is what
+proves a sentinel fix taught it an owner rather than blinding it.
 
-### ⚠ THE SUITE DOES NOT CATCH IT — that is the more important finding
-`Tests/Engine/test_leak_canary.gd` runs session cycles that are *"a whole double-show each"* and it
-**PASSES** in the full suite. So the leak lives on a path the canary does not exercise, or below the
-threshold it trips at. **Whatever the fix, the canary needs to be able to SEE this** — a leak the
-suite cannot reproduce will come back.
-
-⚠ `LeakSentinel` is an autoload and reports only after a count stays unreachable across several
-checks (*"for 3 checks"*), so it is reporting a settled leak, not a transient mid-teardown state.
+⚠ **THE SUITE'S ABSOLUTE UNREACHABLE COUNT IS MEANINGLESS.** Every suite abandons cards on purpose,
+so `LeakSentinel.tick() == 0` passes alone and fails by 143 in the full run. Assert the PROPERTY —
+no card a known owner holds may read as unreachable.
 
 ## ⚠⚠ THE FOCUSED VIEW'S GEOMETRY IS PARKED ON `GAP-038`
 
@@ -462,12 +452,7 @@ zoom 1.
 
 ## Next up — the queue, in order
 
-### 1. The runtime LEAK
-See its own section above. `CardData` is `RefCounted` and cannot collect a CYCLE, so
-unreachable-but-alive is a loop, not a stray holder. `test_leak_canary` runs double-show cycles and
-PASSES, so the canary must be taught to see it or the leak returns.
-
-### 2. Row score labels — MEASURED, not yet moved
+### 1. Row score labels — MEASURED, not yet moved
 The wrong fix (`SIZE_EXPAND_FILL` + `VERTICAL_ALIGNMENT_BOTTOM`) is reverted and the pitch match is
 back. Measured with `uneven_stack_score_shot`, overview, card 54 px tall, fan pitch 20 px:
 
@@ -485,7 +470,7 @@ and not a cap — the accumulation trap whose first fix was a false green.
 ⚠ That probe's FOCUSED figures are unusable: it reads `card_size_play`, which does not carry
 `board_zoom`, while `slot_center_global` does. Only its overview numbers are sound.
 
-### 3. The Entrance must stack UPWARD
+### 2. The Entrance must stack UPWARD
 **Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
 like all other cards."*
 
@@ -507,18 +492,18 @@ Entrance WILL change — verify by eye.
 whether it widens. And an upward Entrance stack grows TOWARD the board; confirm it cannot occlude the
 grid's bottom row.
 
-### 4. Verify the Entrance transitions smoothly between grids
+### 3. Verify the Entrance transitions smoothly between grids
 **Owner note:** *"if entrance is not snapped to a grid, it should smoothly transition between them.
 Shouldn't really be an issue though since entrance should be tied to camera or view looking at each
 grid first."* Likely already true — `_sync_entrance_x` re-derives X from the board's pan every frame.
 ⚠ **Verify by RUNNING it** — a still frame is the wrong instrument for anything with a duration.
 
-### 5. Settings isolation — the staged migration (`gaps/GAP-030.md`)
+### 4. Settings isolation — the staged migration (`gaps/GAP-030.md`)
 Owner ruled **(b)**, staged: build the injection seam, then migrate the **77 read sites across 22
 files** in batches heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own
 commit with a full suite between. Clears the last 2 standing failures.
 
-### 6. `H24`'s board-scrolls-within-3 (`GAP-028`)
+### 5. `H24`'s board-scrolls-within-3 (`GAP-028`)
 ⚠ Still owes its clipping question and re-opens scroller-vs-camera contention. Expect a follow-up
 gap, not an implementer's judgement call.
 
@@ -613,21 +598,26 @@ THE BY-EYE INSTRUMENT IS FIXED
   Main.enter_game(), and it reproduces the owner's report. Use it, not
   wall_game_squash_probe, for any framing evidence.
 
+THE RUNTIME LEAK IS SOLVED -- AND ITS PREMISE WAS WRONG
+  It was the SENTINEL missing an owner, not a reference cycle: Game._debug_history
+  holds a full to_saveable() duplicate per placement and nothing walked it, so the
+  first commit of every FRESH show read as a whole leaked board (90 cards, sustained).
+  ! "Unreachable but alive" does NOT imply a cycle -- a RefCounted also stays alive on
+  a plain strong reference the scan does not FOLLOW. That premise cost a session.
+  ! The suite's absolute unreachable count is meaningless (every suite abandons cards
+  on purpose); assert the PROPERTY instead. Instrument: Tests/Visual/leak_holder_probe.
+
 THEN, in order
-  1. The runtime LEAK (see its section in this file). CardData is RefCounted and cannot
-     collect a CYCLE, so unreachable-but-alive is a loop, not a stray holder.
-     test_leak_canary runs double-show cycles and PASSES, so the canary must be taught
-     to see it or the leak returns.
-  2. Row score labels. The wrong fix is already reverted and the band is MEASURED: it
+  1. Row score labels. The wrong fix is already reverted and the band is MEASURED: it
      sits 37 px above the pip row's centre at card_scale 1.0, occupying the card's top
      16 px while the pips sit 40..50 px down. Moving it is a whole-stack shift against a
      VBoxContainer whose custom_minimum_size is a FLOOR, not a cap.
-  3. The Entrance stacks upward. ! NOT a bottom_anchored := true flip -- the grid
+  2. The Entrance stacks upward. ! NOT a bottom_anchored := true flip -- the grid
      REVERSES control-build order, and the Entrance builds header-first, so a naive flip
      renders the header upside-down off the top of the strip. Full roadmap is in this
      file's queue section.
-  4. GAP-030 (settings migration, staged (b)); then GAP-028=(c).
-  5. If the goal is to CLOSE PHASE 7 rather than refine, do S32/S33/S34 -- see "WHERE THE
+  3. GAP-030 (settings migration, staged (b)); then GAP-028=(c).
+  4. If the goal is to CLOSE PHASE 7 rather than refine, do S32/S33/S34 -- see "WHERE THE
      PHASE ACTUALLY IS" below. The refinement queue is separate work and the owner should
      be told which one you are doing.
 
