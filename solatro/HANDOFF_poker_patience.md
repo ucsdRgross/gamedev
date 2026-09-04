@@ -554,6 +554,42 @@ corner and wrong in the other. That mixture was latent in `TP-103` and in 22 che
 `GRID LAYOUT`, `VISUAL LAYERS` and `SETTINGS RANGE`, invisible while a one-grid board opened at
 zoom 1.
 
+## ⚠ THE OWNER'S BOARD REPORT — WHAT LANDED AND WHAT IS STILL OPEN
+
+Seven reported bugs. Five are fixed and guarded; the measurements are in the commits.
+
+**Landed:** the special-meld label's box; the column labels' one-column offset; the first card in
+a cell widening its row; the card scoring while still held; grid scores never popping; the board
+sinking under the Entrance as stacks deepen; the board scrolling itself under the mouse.
+
+**Two latent defects the measurements exposed, both fixed:**
+- `ScoringSection.of_line_at()` — the *grid-model* constructor — never stored `grid` or `height`,
+  so every section it built read `grid = -1` and banked into the **legacy zone gutters**, which the
+  grid board does not render. Three production callers: two prop mods and
+  `CardEffectApi.section_for()`.
+- `hide_focus_info()` switched off `_process` checking only `_row_open`, never `_layer_grown`, so
+  anything closing the inspector mid-growth froze the row arithmetic part-grown.
+
+### ⚠ STILL OPEN, and each needs an owner call
+
+1. **The top edge pad is 0 and the bottom pad is not.** Measured at rest, focused, one grid:
+   the cell block sits flush with the top of its window (`top_gap 0.0`) with the whole 37.6-44.2 px
+   of slack below it. `board_edge_pad_rows` defaults to 1.0 and `focused_board_zoom`'s denominator
+   reserves `2 * pad`, so the fit pays for two bands and the layout puts both at the bottom. This
+   is the other half of *"buffers are still clipping"* and it sits inside `GAP-039`'s arithmetic —
+   do not change it without re-reading that gap.
+2. **Row and column score labels are not the same size as each other.** Measured, `card_scale`
+   1.0, text "1.23k": a row label's box is 16x16 and renders at font **8**; a column label's is
+   40x16 and renders at font **14**. The special label was the reported outlier and now matches
+   the ROW label exactly (`Q110`: *"opposite side of row labels"*). Making all three equal means
+   either widening the row gutter to the column's 40 px or pinning
+   `AutosizeLabel.font_size_override` on every score label — a look decision, not a defect.
+   ⚠ Widening a gutter is geometrically SAFE: `_apply_grid_buffer()` absorbs gutter width into the
+   container separation, so `grid_pitch_px() == block + buffer` either way.
+3. **Verify by eye, in the running game.** Every fix above is proven by measurement and by the
+   suite; the ones with a DURATION — the card settling before the score, the pop, the growth —
+   have not been watched by a human.
+
 ## Next up — the queue, in order
 
 ### 1. Row score labels — MEASURED, not yet moved
