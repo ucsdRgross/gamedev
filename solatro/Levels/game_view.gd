@@ -212,9 +212,31 @@ func _on_board_changed() -> void:
 ## offsets never change afterwards.
 func _capture_furniture_authored_x() -> void:
 	_furniture_authored_x.clear()
+	_furniture_authored_y.clear()
 	for control : Control in _furniture:
 		_furniture_authored_x.append(control.position.x)
+		_furniture_authored_y.append(control.position.y)
 	_publish_hud_reserve()
+
+## Each control's authored y, captured with its x. ⚠ Needed because the HUD now SCALES: `_process`
+## rewrites x every frame, but y is written once per picture size and would otherwise compound.
+var _furniture_authored_y : Array[float] = []
+
+## How much the HUD is drawn larger than it was authored: the picture's width over the reference
+## viewport's. `SceneRoot` fills the picture, so without this the furniture keeps its authored size
+## on a canvas a third wider again and reads as a small cluster in one corner.
+##
+## ⚠ **ONLY THE HUD SCALES** (owner ruling). The board is NOT scaled with it: the board lays out in
+## PICTURE pixels and `game_picture_design_size()` IS its own span, so scaling it too would render a
+## 1495-wide board inside a 1495-wide picture at 1940 px.
+## ⚠ **THE WINDOW'S SHAPE NEVER REACHES THIS.** The picture is a fixed aspect, so the HUD's canvas is
+## the same shape whatever the screen is (owner: *"hud does not matter for picture, it is not
+## technically part of it... window proportions shouldnt affect hud layout for portrait vs landscape
+## view"*). There is no portrait case for the HUD to answer.
+func hud_scale() -> float:
+	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
+	if ref_w <= 0.0: return 1.0
+	return float(PlayArea.game_picture_design_size(SettingsManager.settings).x) / ref_w
 
 ## Hands the board the width the HUD's rectangle takes on the left, so the grid centres in what is
 ## LEFT of the screen rather than on the screen (owner: *"center of screen for stuff like grid
@@ -225,11 +247,14 @@ func _capture_furniture_authored_x() -> void:
 ## the board with it. The authored offsets are the HUD's real footprint and they never move.
 func _publish_hud_reserve() -> void:
 	if not is_instance_valid(play_area): return
+	var k := hud_scale()
 	var right := 0.0
 	for i : int in _furniture.size():
 		var control : Control = _furniture[i]
 		if not is_instance_valid(control): continue
-		right = maxf(right, _furniture_authored_x[i] + control.get_combined_minimum_size().x)
+		control.scale = Vector2.ONE * k
+		control.position.y = _furniture_authored_y[i] * k
+		right = maxf(right, (_furniture_authored_x[i] + control.get_combined_minimum_size().x) * k)
 	play_area.board_inset_left = right
 
 ## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
@@ -263,7 +288,10 @@ func _process(_delta: float) -> void:
 						- (_wall_rect_centre_x.call() as float))
 	for i : int in _furniture.size():
 		var control : Control = _furniture[i]
-		if is_instance_valid(control): control.position.x = _furniture_authored_x[i] + shift
+		# ⚠ The authored x is scaled; the PAN is not. The pan is already a picture-pixel quantity
+		# (`grid_position_size_px`), while the authored offsets are in the reference viewport's.
+		if is_instance_valid(control):
+			control.position.x = _furniture_authored_x[i] * hud_scale() + shift
 
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
