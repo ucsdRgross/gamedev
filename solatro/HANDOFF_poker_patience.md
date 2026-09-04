@@ -13,13 +13,17 @@ failures and both are attributed** — neither is a mystery.
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE SEVEN FAILURES, AND WHO OWNS EACH
+## ⚠ THE NINE FAILURES, AND WHO OWNS EACH
 
 ```
 2  GRID LAYOUT  116.0 px card-on-cell; TP-85 mid-growth flake   INTERFERENCE, unexplained
-4  GRID VIEW    TP-139, TP-140 x2, TP-101                       GAP-039, now IMPOSSIBLE
-1  GRID VIEW    the framing gate's Entrance half                left/right only
+6  GRID VIEW    TP-139, TP-140 x2, TP-141, TP-101 x2            GAP-038 + GAP-039, ONE question
+1  GRID VIEW    the framing gate's Entrance half                right edge only now
 ```
+⚠ **`TP-141` AND THE SECOND PAN CHECK ARE THE HUD RESERVE**, not a new defect: centring the board in
+what the HUD leaves shifts it right by half the reserve, which pushes the left neighbour further
+into frame. `GAP-038`'s centring and `GAP-039`'s isolation are the same quantity and **cannot be
+closed separately.**
 - ⚠ **GRID LAYOUT ALONE IS `ALL 89 CHECKS PASSED`.** `116.0` exists only in the full suite and is
   UNMOVED by the `CardVisual` scale fix, so it is a different mechanism and genuinely open. `TP-85`
   comes and goes.
