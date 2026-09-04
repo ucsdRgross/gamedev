@@ -205,6 +205,20 @@ static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) 
 static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 	return grid_block_size_px(settings_res, GridData.new()).y 			+ entrance_strip_height_px(settings_res, 1.0) 			+ 2.0 * board_edge_pad_px(settings_res)
 
+## What the picture's width is divided by to get the half-width a neighbour must clear.
+##
+## ⚠ **THE BOARD'S OWN AREA IS THE VIEW ISOLATION IS MEASURED IN, NOT THE CAMERA'S WHOLE RECT**
+## (owner: *"the center should be on halfway through the 0.75 section... pretend 0.75 area is the
+## entire camera view, so its truly centered"*). The HUD takes `hud_width_fraction` off the left, so
+## the board's own view is the remaining share and a neighbour is out of view once it clears THAT.
+##
+## ⚠ **THIS IS WHY THE CONDITION IS SYMMETRIC AGAIN.** The board centres in its own area, so both
+## neighbours sit the same distance from its edges -- the one-sided HUD offset that made the LEFT
+## neighbour cost more than the right cancels out the moment the board's area is the frame of
+## reference. It also asks LESS than the old `wall_overfill_margin` did: `0.375 W` against `0.49 W`.
+static func board_view_divisor(settings_res: PlayerSettings) -> float:
+	return 1.0 / maxf(1.0 - settings_res.hud_width_fraction, 0.0001)
+
 ## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
 ## own resting half-width, which is what the wall camera actually shows at rest since it always fits
@@ -232,7 +246,7 @@ static func isolating_grid_buffer_px(settings_res: PlayerSettings) -> float:
 	var block := grid_block_size_px(settings_res, GridData.new())
 	var strip_h := focused_content_height_px(settings_res)
 	var by := maxf(strip_h, 0.0001)
-	var wom := maxf(settings_res.wall_overfill_margin, 0.0001)
+	var wom := board_view_divisor(settings_res)
 	var p0 := grid_position_size_px(settings_res, 0.0)
 	var p1 := grid_position_size_px(settings_res, 1.0)
 	var height_slope := p1.y - p0.y
@@ -260,7 +274,7 @@ static func _isolates_at_buffer(settings_res: PlayerSettings, buffer: float) -> 
 	var picture := grid_position_size_px(settings_res, buffer)
 	var z := picture.y / maxf(focused_content_height_px(settings_res), 0.0001)
 	if z <= 0.0: return false
-	var visible_half := picture.x / (2.0 * maxf(settings_res.wall_overfill_margin, 0.0001))
+	var visible_half := picture.x / (2.0 * board_view_divisor(settings_res))
 	var neighbour_near_edge := z * (buffer + block.x * 0.5)
 	# The closed-form root sits exactly ON this boundary -- an exact equality two different
 	# arithmetic paths (this and the solver's quadratic formula) can round to either side of.

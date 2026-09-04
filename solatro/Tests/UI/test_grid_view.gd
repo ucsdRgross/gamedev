@@ -196,17 +196,31 @@ func _settle_camera(camera: Camera2D) -> void:
 ## `resting_state()`/`grid_state()` (`GAP-026`). 0 when the grid's cell block sits wholly inside it.
 ## Reuses `_grid_world_rect` (`TP-105`), the world-space rect through the real `WallPicture.rect`.
 func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> float:
-	var window_size := main.get_viewport().get_visible_rect().size
-	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
 	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
 
 ## Does grid `gi`'s cell block put any pixel inside the CAMERA's OWN `visible_rect()`?
 func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
-	var window_size := main.get_viewport().get_visible_rect().size
-	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
 	return r.end.x > visible.position.x and r.position.x < visible.end.x
+
+## What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
+## the left.
+##
+## ⚠ **ISOLATION IS MEASURED IN THE BOARD'S AREA, NOT THE CAMERA'S WHOLE RECT** (owner: *"the center
+## should be on halfway through the 0.75 section... pretend 0.75 area is the entire camera view, so
+## its truly centered"*). The board centres in its own area, so measuring "out of view" against the
+## whole picture asked the LEFT neighbour to clear a boundary the right one did not -- the two
+## become symmetric the moment the board's area is the frame of reference.
+func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
+	var window_size := main.get_viewport().get_visible_rect().size
+	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
+	var wp : WallPicture = main._pictures[&"game"]
+	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.hud_width_fraction
+	return visible.intersection(Rect2(Vector2(left, visible.position.y),
+			Vector2(maxf(visible.end.x - left, 1.0), visible.size.y)))
 
 ## Does the board's real span, first grid to last, exceed the CAMERA's OWN `visible_rect()`? The
 ## OVERVIEW pan is the camera (`GAP-024`=(b)), so this is the overview's version of
