@@ -13,18 +13,21 @@ failures and both are attributed** — neither is a mystery.
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE TWO FAILURES, AND WHO OWNS EACH
+## ⚠ THE THREE FAILURES, AND WHO OWNS EACH
 
 ```
-2  GRID LAYOUT  116.0 px card-on-cell, TP-85 mid-growth   CROSS-SUITE INTERFERENCE
+1  GRID LAYOUT  116.0 px card-on-cell                     CROSS-SUITE INTERFERENCE, unexplained
+2  GRID VIEW    the focused framing gate, both edges      GAP-039, red ON PURPOSE
 ```
-- ⚠ **GRID LAYOUT ALONE IS `ALL 85 CHECKS PASSED`** with a 0.0 px delta at every height. The
-  failures exist only in the full suite. **Deterministic interference reads exactly like a
-  deterministic bug** — a constant `116.0` survived five wrong diagnoses before isolation settled
-  it. See the settings-isolation entry under Open bugs.
+- ⚠ **GRID LAYOUT ALONE IS `ALL 89 CHECKS PASSED`.** The `116.0` exists only in the full suite.
+  **Deterministic interference reads exactly like a deterministic bug** — that constant survived
+  five wrong diagnoses before isolation settled it. ⚠ It is UNMOVED by the `CardVisual` scale fix
+  that repaired every other reading of the same two functions, so it is a DIFFERENT mechanism and
+  still genuinely open. `TP-85`'s mid-growth flake is gone.
+- **The two `GRID VIEW` failures are the framing gate, and it is SUPPOSED to be red** — it is the
+  gate `GAP-039` is about. Do not "fix" it; answer the gap.
 - `GRID VIEW`'s `TP-112` is a known timing flake (samples mid-move, lands 0.1-0.3 px from at-rest)
-  and may or may not fire. The three `GAP-027` failures are gone: the overview frames one grid and
-  the suite agrees.
+  and may or may not fire.
 
 ## The board's settled geometry — facts, not open questions
 
@@ -50,6 +53,33 @@ re-derive and easy to contradict by accident.
   board's FLOOR — not the visible strip — tracks the Entrance's real depth. ⚠ Resizing the strip
   itself re-lays out everything anchored inside it and drifts a prop 4-17 px off its slot. That is
   measured, and it has bitten twice.
+
+## ⚠ A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE — the rule that cost the most this stream
+
+`CardVisual` read a control's rect as `global_position + Vector2(size.x/2, size.y - card_h/2)`.
+`global_position` carries every scale above the control — **the board's zoom lives on the scroll
+container** — while `size` and `card_size` never do. Measured, one row at depths 3/1/0/5/2 at
+`board_zoom` 2.2916: **69.74 px of spread across that row's zone cards**, and exactly **0.00 at
+zoom 1.0**. Fixed by scaling the control-local offset by the control's own global transform scale.
+
+⚠ **THE CONTAINERS WERE ALWAYS RIGHT.** Every occupied slot's frame control sat on one line and the
+empty cell's full-card control ended there — `SIZE_SHRINK_END` on the slot does exactly its job.
+Only the card drew somewhere else. **Do not go rewriting the layout tree for this class of bug.**
+
+⚠ **THE SAME MIXTURE IS LATENT EVERYWHERE.** It was in `TP-103` and in 22 checks across
+`GRID LAYOUT`, `VISUAL LAYERS` and `SETTINGS RANGE`, invisible while the board only ever rested
+unzoomed. **Read a control's drawn rect as `get_global_transform() * Rect2(Vector2.ZERO, size)`,
+never from `position` and `size` directly.**
+
+⚠ Two things MEASURED AND FALSE, so nobody re-runs them: `on_control_focus_entered`'s
+`custom_minimum_size` writes are INERT (`set_card_zones_visuals()` overwrites them in the same
+call — every rect identical before and after a real hover), and this is NOT a container-stretch
+problem.
+
+⚠ **Residual, measured and open:** the frame line sits 19.4 px below the h 0 card where the
+arithmetic says one separation (9.2 px) — the control tree's row bottom and
+`_grid_slot_center_global`'s disagree by ~10 px. Same family as the standing `116.0 px` check.
+`Tests/Visual/zone_drift_probe` is the instrument.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
@@ -272,7 +302,8 @@ be checked by hand.
 clamp), `GAP-028`'s `H24` half, `GAP-030` (settings isolation — ruled (b) staged, not yet built),
 `GAP-037` (an Entrance column deeper than the render target; owner deferred, *"no limit for now"*),
 `GAP-038` (the HUD-scales-with-the-picture ruling contradicts the board's own units — the whole
-focused-geometry pass is parked on it).
+HUD-and-offset pass is parked on it), `GAP-039` (isolation, exactly-three and no-clipping are
+mutually unsatisfiable — **the clipping IS the slack**).
 
 ⚠ **A gap is a DECISION THE DESIGN DOES NOT COVER — not a bug.** If exactly one choice is defensible
 it is a defect: fix it, and let the commit be the record. **Do not file a gap for a solved bug or for
@@ -405,26 +436,41 @@ own path:
 ⚠ **Do not re-derive either of those.** Read `gaps/GAP-038.md`; it carries the four options and
 what any answer must not break.
 
-### The clipping has a SEPARABLE cause, and none of the four options fixes it
+### The clipping is NOT separable, and it is NOT a margin bug — see `GAP-039`
 
-`WallPicture.focused_scale()` applies `wall_overfill_margin` (1.02) to a picture that ALREADY
-matches the window's aspect: `game_picture_design_size()` rounds the height to a whole pixel, the
-two axis ratios then differ by 6e-5, and `is_equal_approx` reads them as unequal. Measured, window
-`1152x648`:
+⚠ **THE EARLIER READING HERE WAS WRONG AND IS CORRECTED.** `focused_scale()` does apply
+`wall_overfill_margin` (1.02) to a picture that already matches the window's aspect, and that is
+the mechanism — but removing it does not fix anything, because the margin is what ISOLATES a
+focused grid's neighbours. Three shipped contracts are mutually unsatisfiable:
 
 ```
-camera shows 1465.69 x 824.45 of a 1495 x 841 picture
-  -> 14.66 px cut each side, 8.28 px cut top and bottom
-focused: board_zoom 2.291553, cell block drawn at (506.4, 3.0) 495.0 x 655.4
-  -> the top 5.28 px of the block is outside the camera   <- the owner's clipped top row
-Entrance strip y 658.4..844.0 -> its bottom 11.28 px is outside the camera
-PlayArea spans y 3..844 of an 841-tall picture: the authored offset_top 3 survives
-  _apply_play_container_height()'s design-height write
+exactly three (TP-113, Q166=a)   W < 7B = 1512
+no clipping                      z = W*r / (m*S)          m = the camera's crop
+isolation (TP-140)               z*(b + B/2) >= W/(2m)
+substituting, W AND m BOTH CANCEL:  b >= S/(2r) - B/2 = 218.22  ->  W >= 1520.89
 ```
 
-⚠ Removing the margin is NOT a one-line deletion: `isolating_grid_buffer_px()` reads
-`wall_overfill_margin` and its comment records that the margin genuinely applies. A wider visible
-half-width demands a wider buffer, so the derivation moves with it — coherent, but one change.
+⚠ **`m` CANCELLING IS THE FINDING. THE CLIPPING IS THE SLACK** — the board is sized to the
+PICTURE's height while the camera shows less, and that overshoot is the only reason isolation fits
+inside "exactly three". Size the board to what the camera really shows and the margin stops helping
+at all.
+
+Measured at both corners on the product's own path, not modelled:
+
+```
+W=1495 shipped        isolation OK, exactly-three OK, block top cut 5.28, Entrance 11.28, sides 14.66
+W=1536 aspect-exact   isolation OK (all four TP-140), block fully framed, sides 0.00,
+                      TP-113 red: "1536.0 px, four grids span 1530.0 px"
+```
+
+`GAP-039` carries four options and shows the deciding question is narrow: `entrance_visible_rows`
+defaults to **1.5**, so the strip is 81 px where one card row is 54, and that 27 px is the whole
+difference between infeasible and comfortable. At `S = 340` a `1440x810` picture satisfies all
+three with nothing else moving.
+
+⚠ **THE GATE IS `run_the_focused_view_frames_the_block_and_the_entrance_test` IN `GRID VIEW`**, and
+it is red on purpose. It asserts against the CAMERA's own visible rect — the right target, because
+two scales stack — and names the clipped EDGE rather than a worst case.
 
 ## ⚠ THE BY-EYE INSTRUMENT IS FIXED — USE THE NEW ONE
 
@@ -597,6 +643,21 @@ THE BY-EYE INSTRUMENT IS FIXED
   Tests/Visual/focused_pose_probe boots the real main.tscn and enters through
   Main.enter_game(), and it reproduces the owner's report. Use it, not
   wall_game_squash_probe, for any framing evidence.
+
+THE FRAMING GATE IS RED ON PURPOSE -- GAP-039
+  GRID VIEW's run_the_focused_view_frames_the_block_and_the_entrance_test asserts
+  the 5x5 block and the Entrance sit inside the CAMERA's visible rect. It fails by
+  5.28 px at the top and 11.28 at the bottom. Do NOT fix it: isolation,
+  exactly-three and no-clipping are mutually unsatisfiable and THE CLIPPING IS THE
+  SLACK -- read gaps/GAP-039.md and take the owner's answer. The aspect-exact fix
+  was built, measured on both corners, and reverted.
+
+A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE
+  global_position carries the board zoom (it lives on the scroll container); size
+  and card_size never do. That mix put 69.74 px of spread across one row's zone
+  cards at zoom 2.29 and exactly 0.00 at zoom 1.0, which is why it survived. Read a
+  control's drawn rect as get_global_transform() * Rect2(Vector2.ZERO, size), never
+  from position and size directly. The CONTAINERS were always right.
 
 THE RUNTIME LEAK IS SOLVED -- AND ITS PREMISE WAS WRONG
   It was the SENTINEL missing an owner, not a reference cycle: Game._debug_history
