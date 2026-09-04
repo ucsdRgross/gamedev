@@ -234,9 +234,10 @@ var _furniture_authored_y : Array[float] = []
 ## technically part of it... window proportions shouldnt affect hud layout for portrait vs landscape
 ## view"*). There is no portrait case for the HUD to answer.
 func hud_scale() -> float:
-	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
-	if ref_w <= 0.0: return 1.0
-	return float(PlayArea.game_picture_design_size(SettingsManager.settings).x) / ref_w
+	var authored := _hud_authored_width()
+	if authored <= 0.0: return 1.0
+	var design := float(PlayArea.game_picture_design_size(SettingsManager.settings).x)
+	return SettingsManager.settings.hud_width_fraction * design / authored
 
 ## Hands the board the width the HUD's rectangle takes on the left, so the grid centres in what is
 ## LEFT of the screen rather than on the screen (owner: *"center of screen for stuff like grid
@@ -248,14 +249,23 @@ func hud_scale() -> float:
 func _publish_hud_reserve() -> void:
 	if not is_instance_valid(play_area): return
 	var k := hud_scale()
-	var right := 0.0
 	for i : int in _furniture.size():
 		var control : Control = _furniture[i]
 		if not is_instance_valid(control): continue
 		control.scale = Vector2.ONE * k
 		control.position.y = _furniture_authored_y[i] * k
-		right = maxf(right, (_furniture_authored_x[i] + control.get_combined_minimum_size().x) * k)
-	play_area.board_inset_left = right
+	play_area.board_inset_left = _hud_authored_width() * k
+
+## The furniture's own width at its AUTHORED offsets, before any scaling.
+## ⚠ **AUTHORED, NEVER LIVE:** `_process()` slides every control by the board's pan, so a width read
+## off `position` would breathe in and out with each pan and drag the board with it.
+func _hud_authored_width() -> float:
+	var right := 0.0
+	for i : int in _furniture.size():
+		var control : Control = _furniture[i]
+		if not is_instance_valid(control): continue
+		right = maxf(right, _furniture_authored_x[i] + control.get_combined_minimum_size().x)
+	return right
 
 ## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
 ## furniture can track the camera's CURRENT position every frame instead of the `pan_grid` index

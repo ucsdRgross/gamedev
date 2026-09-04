@@ -629,6 +629,18 @@ var wall_info_mode : bool = false
 ## The clear band above the board and below the Entrance, in CARD ROWS, so the focused view does
 ## not hug the screen edge. **0 turns it off**, which is what a phone-sized screen wants: on a
 ## short screen the band costs more of the board than the breathing room is worth.
+## The share of the board's width the HUD column occupies. The furniture is SCALED to fit it, so
+## this is what the HUD costs the board however wide the picture gets.
+##
+## ⚠ **A FRACTION, NOT AN ABSOLUTE, AND THAT IS LOAD-BEARING.** The HUD scaling with the picture
+## while the picture is sized to isolate a neighbour AGAINST the HUD is a feedback loop: a bigger
+## reserve demands a wider picture, which scales the HUD, which demands a wider picture again. A
+## fixed share cannot run away.
+@export var hud_width_fraction : float = 0.25:
+	set(value):
+		hud_width_fraction = clampf(value, 0.0, 0.9)
+		settings_changed.emit()
+
 @export var board_edge_pad_rows : float = 1.0:
 	set(value):
 		board_edge_pad_rows = maxf(value, 0.0)
