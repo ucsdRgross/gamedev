@@ -216,6 +216,15 @@ static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 ## neighbours sit the same distance from its edges -- the one-sided HUD offset that made the LEFT
 ## neighbour cost more than the right cancels out the moment the board's area is the frame of
 ## reference. It also asks LESS than the old `wall_overfill_margin` did: `0.375 W` against `0.49 W`.
+##
+## ⚠ **SYMMETRIC IN THE BOARD'S AREA IS NOT SYMMETRIC ON THE SCREEN, AND THAT IS EXPECTED.** With
+## the HUD on the left the board's area is offset right, so a left-hand grid really does sit nearer
+## the screen's edge than a right-hand one. Isolation does not care -- it is measured in the board's
+## area -- but anything that reasons about DISTANCE TO THE SCREEN EDGE must not assume the two sides
+## match.
+## ⚠ **THIS DIVISOR IS HORIZONTAL, AND IT ASSUMES THE HUD IS A LEFT COLUMN.** A HUD on TOP takes
+## nothing off the width, so the horizontal divisor is 1 and the share comes off the HEIGHT instead
+## -- and then neither side is nearer the screen's edge. Whoever moves the HUD moves this with it.
 static func board_view_divisor(settings_res: PlayerSettings) -> float:
 	return 1.0 / maxf(1.0 - settings_res.hud_width_fraction, 0.0001)
 
