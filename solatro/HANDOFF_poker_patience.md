@@ -6,24 +6,25 @@ they can look at.
 
 **State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is nearly done**: the wall
 packs the game picture at its real width, the HUD follows the camera, `H22`'s camera stepping is
-proven end-to-end through a real key route, and `TP-105` exists and is green for the first time.
-**The suite sits at 5 failures and every one is attributed** — none is a mystery.
+proven end-to-end through a real key route, and `TP-105` exists and is green. **The suite sits at 2
+failures and both are attributed** — neither is a mystery.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
 ⚠ Flowchart **H is §36 of `design/poker-patience/DESIGN.md`**, not of the grid-view design.
 
-## ⚠ THE FIVE FAILURES, AND WHO OWNS EACH
+## ⚠ THE TWO FAILURES, AND WHO OWNS EACH
 
 ```
 2  GRID LAYOUT  116.0 px card-on-cell, TP-85 mid-growth   CROSS-SUITE INTERFERENCE
-3  GRID VIEW    TP-140 precondition, TP-106 x2            GAP-027, owner ruling
 ```
 - ⚠ **GRID LAYOUT ALONE IS `ALL 85 CHECKS PASSED`** with a 0.0 px delta at every height. The
   failures exist only in the full suite. **Deterministic interference reads exactly like a
   deterministic bug** — a constant `116.0` survived five wrong diagnoses before isolation settled
   it. See the settings-isolation entry under Open bugs.
-- The three GRID VIEW ones are `GAP-027`: the overview frames exactly ONE grid.
+- `GRID VIEW`'s `TP-112` is a known timing flake (samples mid-move, lands 0.1-0.3 px from at-rest)
+  and may or may not fire. The three `GAP-027` failures are gone: the overview frames one grid and
+  the suite agrees.
 
 ## The board's settled geometry — facts, not open questions
 
@@ -269,7 +270,9 @@ be checked by hand.
 
 **Open and genuinely undecided:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own
 clamp), `GAP-028`'s `H24` half, `GAP-030` (settings isolation — ruled (b) staged, not yet built),
-`GAP-037` (an Entrance column deeper than the render target; owner deferred, *"no limit for now"*).
+`GAP-037` (an Entrance column deeper than the render target; owner deferred, *"no limit for now"*),
+`GAP-038` (the HUD-scales-with-the-picture ruling contradicts the board's own units — the whole
+focused-geometry pass is parked on it).
 
 ⚠ **A gap is a DECISION THE DESIGN DOES NOT COVER — not a bug.** If exactly one choice is defensible
 it is a defect: fix it, and let the commit be the record. **Do not file a gap for a solved bug or for
@@ -357,46 +360,6 @@ resuming should know the phase closes via `S32`/`S33`/`S34`, not via more refine
   behaving. ⚠ Anything that walks a cell's stack — the iterator, the line detector, `validate()`,
   undo — must not see a zone card as an occupant.
 
-## ⚠⚠ NEXT: the HUD must scale with the picture — and it likely UNDOES `PlayContainer` height tracking
-
-**Owner-reported, seen in the running game:** the board sits low and runs off the bottom of the
-screen while the HUD stays clustered at the top-left, with a scrollbar that renders but will not move.
-
-**Cause, measured.** The HUD furniture are siblings of `PlayContainer` under `SceneRoot` at ABSOLUTE
-top offsets authored for a ~648-tall screen:
-```
-Undo 18   Deck 28   Goal 80   Total 144   Discard 486   Rules 485
-```
-Making `PlayContainer` track the picture height moved the play area **636 -> 841**, dropping the
-board's floor ~205 px while every HUD element stayed where it was. The 841 itself is correct —
-`Q168`=(c) makes the height the aspect minimum, and `1495 x 0.5625 = 841`.
-
-**OWNER RULING: the HUD scales with the picture.** `SceneRoot` keeps its AUTHORED layout and the
-whole canvas scales to the picture, preserving the composition as authored.
-```
-picture 1495 x 841   authored 1152 x 648   ratio 1.2977 both axes -- a UNIFORM scale, no distortion
-```
-`SceneRoot` is `anchors_preset 15` today (fills the viewport). It should hold the reference size from
-`ProjectSettings` and scale instead.
-
-### ⚠ MEASURE THIS BEFORE BUILDING — it may undo the `PlayContainer` height work
-If `SceneRoot` scales, `PlayContainer` should go back to its AUTHORED height inside the authored
-canvas rather than tracking `design_size.y`. **But `focused_board_zoom()` reads `PlayArea.size.y`**,
-and that was the whole reason the height tracking was added — a too-small height was why no buffer
-value could make `TP-140` pass.
-
-**So the open question is: with the scale on `SceneRoot`, does `PlayArea.size.y` (authored 636) still
-give `focused_board_zoom()` the right answer, or does reverting the height tracking regress
-`TP-140`?** ⚠ **Measure it; do not assume either way.** The scale sits ABOVE `PlayArea`, so its own
-`size` stays authored while its rendering scales — the same "scale on the container, not the content"
-pattern the board already uses for `board_zoom`.
-
-⚠ **The unverified floor fix is NOT in the tree.** It was reverted to restore a working build and is
-preserved as a patch (`S55_floor_fix.patch`, 183 lines). Its `_stick_board_scroll_to_bottom()` wrote
-`scroll_vertical` every physics tick against a `SmoothScrollContainer` that animates its own
-position — two writers on one observable, which is the likely cause of the scrollbar that renders and
-will not move. **Do not re-apply it unchanged.**
-
 ## ⚠⚠ RUNTIME LEAK — one whole show's cards survive UNREACHABLE
 
 **Owner-reported, from the running game** (`LeakSentinel`, `leak_sentinel.gd:65`):
@@ -434,89 +397,95 @@ suite cannot reproduce will come back.
 ⚠ `LeakSentinel` is an autoload and reports only after a count stays unreachable across several
 checks (*"for 3 checks"*), so it is reporting a settled leak, not a transient mid-teardown state.
 
-## ⚠⚠ THE FOCUSED VIEW CLIPS, AND ITS MINIMUM FRAMING IS NOW SPECIFIED
+## ⚠⚠ THE FOCUSED VIEW'S GEOMETRY IS PARKED ON `GAP-038`
 
-**Owner, from the running game:** *"clicking on grid zooms in but everything is clipped instead of
-fitting in 5x5 grid + entrance row as minimum size."*
+**Four owner rulings — the HUD scales with the picture, `PlayContainer` returns to its authored
+height, the board is offset by the HUD's rectangle, and the focused view frames the 5x5 block plus
+the Entrance — CANNOT ALL BE BUILT AS WRITTEN.** Two measurements settle it, both on the product's
+own path:
 
-**THE CONTRACT: the focused view's MINIMUM framing is the whole 5x5 cell block PLUS the Entrance
-row.** Anything less is a defect. Today the top row is cut at the window's edge and the Entrance is
-barely in frame.
+- **The board lays out DIRECTLY IN PICTURE PIXELS.** `play_area.size` is `(1495, 841)`, the
+  picture's design size exactly, and the cell block is `216x286` at `board_zoom` 1.0. Every board
+  quantity is in those units and `game_picture_design_size()` IS their span, so scaling `SceneRoot`
+  by 1.2977 renders a 1495-wide span at **1940 px inside a 1495 px picture**.
+- **Reverting `PlayContainer`'s height regresses `TP-140`.** `GRID VIEW` alone goes 1 failure -> 3,
+  both halves of `TP-140` red. The derived buffer sits EXACTLY on the isolation boundary
+  (`2.2916 x (211.75 + 108) = 732.7` against a visible half-width of `732.8`).
 
-⚠ **There are TWO scales stacked here and they must be reasoned about together**, which is what
-makes this easy to get wrong:
-1. `focused_board_zoom()` fits the board's content inside the PLAY AREA, and
-2. the wall camera fits the PICTURE inside the WINDOW.
-A zoom that fits the block into an 841 px picture still clips if the camera then crops that picture
-into a ~651 px window. **Measure both layers before changing either.**
+⚠ **Do not re-derive either of those.** Read `gaps/GAP-038.md`; it carries the four options and
+what any answer must not break.
 
-⚠ This interacts directly with the ruling that the HUD scales with the picture, and with whether
-`PlayContainer` keeps tracking the picture height. **Treat them as one geometry pass, not three
-fixes.**
+### The clipping has a SEPARABLE cause, and none of the four options fixes it
 
-## ⚠ THE GRID IS OFFSET BY THE HUD'S RECTANGLE
+`WallPicture.focused_scale()` applies `wall_overfill_margin` (1.02) to a picture that ALREADY
+matches the window's aspect: `game_picture_design_size()` rounds the height to a whole pixel, the
+two axis ratios then differ by 6e-5, and `is_equal_approx` reads them as unequal. Measured, window
+`1152x648`:
 
-**Owner:** *"the grid should be offset from how much space the hud rectangle takes."*
+```
+camera shows 1465.69 x 824.45 of a 1495 x 841 picture
+  -> 14.66 px cut each side, 8.28 px cut top and bottom
+focused: board_zoom 2.291553, cell block drawn at (506.4, 3.0) 495.0 x 655.4
+  -> the top 5.28 px of the block is outside the camera   <- the owner's clipped top row
+Entrance strip y 658.4..844.0 -> its bottom 11.28 px is outside the camera
+PlayArea spans y 3..844 of an 841-tall picture: the authored offset_top 3 survives
+  _apply_play_container_height()'s design-height write
+```
 
-The HUD is not an overlay the board may sit under. **The board's available area is the play area
-LESS the HUD's rectangle**, and the board lays out in what remains. Today `Undo`, `Goal`, `Total`,
-`End`, `Discard` and `Rules` draw over the grid's leftmost columns.
+⚠ Removing the margin is NOT a one-line deletion: `isolating_grid_buffer_px()` reads
+`wall_overfill_margin` and its comment records that the margin genuinely applies. A wider visible
+half-width demands a wider buffer, so the derivation moves with it — coherent, but one change.
 
-⚠ **THIS TIGHTENS THE FRAMING CONTRACT ABOVE.** The focused view must fit the 5x5 cell block plus the
-Entrance row **inside the space left over after the HUD** — not inside the whole play area. Solving
-the framing against the full width and then subtracting the HUD afterwards gives a board that fits
-on paper and clips on screen.
+## ⚠ THE BY-EYE INSTRUMENT IS FIXED — USE THE NEW ONE
 
-⚠ The furniture's authored x is read off the scene by `GameView._capture_furniture_authored_x()`
-(*"Runs once; the scene's own offsets never change afterwards"*). **If the HUD's rectangle becomes a
-layout input, that assumption needs re-checking** — a value captured once is not safe if the thing it
-measures now moves with the picture scale.
+`Tests/Visual/focused_pose_probe` boots the REAL `res://Levels/main.tscn` and enters a show through
+`Main.enter_game()`, so the camera pose, the grid count and the board zoom are the product's. It
+reports both stacked scales in ONE coordinate system (the picture's design units) and names the
+clipped EDGE and the pixels. **Verified by eye against the owner's own report**: top row cut,
+Entrance barely in frame.
 
-## ⚠ WITH ONE GRID, NO CLICK SHOULD BE NEEDED TO ZOOM IN
+```
+OUT_PATH=<path> <console exe> --path solatro res://Tests/Visual/focused_pose_probe.tscn
+      knobs: WINDOW=<w>x<h> (default 1152x648), GRIDS=<n> (default: whatever the deck gives)
+```
 
-**Owner:** *"clicking to zoom in when there is only 1 grid should not be necessary."*
+⚠ **`wall_game_squash_probe`'s framing is still not the product's** — it hand-builds the camera pose
+and forces THREE grids where the default deck yields ONE. It carries a warning header now, and it is
+still the right instrument for the wall composite and the `GAP-024` magnification measurement.
 
-`H4` says the show OPENS zoomed out on the all-grids view, and `H6` makes clicking a grid the way to
-focus it. **With exactly one grid the all-grids view and the focused view frame the same thing**, so
-the click is a step that buys nothing. The show should open already focused when `grid_count == 1`.
-
-⚠ `Q4`=(d) and `Q5` make one grid the case for any deck of 52 or fewer — **this is the DEFAULT
-starting configuration, not an edge case.**
-
-## ⚠⚠ THE BY-EYE INSTRUMENT DOES NOT REPRODUCE THE REAL FOCUSED VIEW — TRUST IT LESS
-
-`Tests/Visual/wall_game_squash_probe` renders a "focused" frame showing all five rows with the
-Entrance below it. **The running game, focused, shows the top row cut off and the Entrance barely in
-frame.** Same nominal state, materially different framing.
-
-**So the probe is not reproducing the product's focused pose**, and every by-eye sign-off taken
-through it is weaker evidence than it appeared. ⚠ **Fix the instrument before trusting another
-by-eye gate on focused-mode geometry** — an instrument that disagrees with the product certifies the
-wrong thing, which is the exact failure the `grid_zoom_shot` / `grid_layer_shot` note already warns
-about. The owner's own screenshots are currently better evidence than the probe.
+⚠ **`size` IS NOT THE RENDERED SIZE inside the focused board.** The zoom is a scale on the SCROLL
+CONTAINER, so a cell block keeps its authored `216x286` while drawing 2.29x that, and
+`global_position` already carries the scale. A rect built from position and size is right in one
+corner and wrong in the other. That mixture was latent in `TP-103` and in 22 checks across
+`GRID LAYOUT`, `VISUAL LAYERS` and `SETTINGS RANGE`, invisible while a one-grid board opened at
+zoom 1.
 
 ## Next up — the queue, in order
 
-### 1. Row score labels sit TOO HIGH on their card
-**Owner:** *"score labels should be aligned with bottom of card instead of top of card now that pip
-row is on bottom of card"*, then, when asked what should actually differ: *"the label sits too high
-on the card."* **The label BAND's position within its row must move** — not text alignment inside it.
+### 1. The runtime LEAK
+See its own section above. `CardData` is `RefCounted` and cannot collect a CYCLE, so
+unreachable-but-alive is a loop, not a stray holder. `test_leak_canary` runs double-show cycles and
+PASSES, so the canary must be taught to see it or the leak returns.
 
-⚠ **A previous attempt shipped and was WRONG; it is reverted work, not new work.** Setting
-`vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM` is INERT: measured on a real scored label,
-`label.size (16,17)` vs autosized text `(14,17)` — **zero vertical slack**, so top and bottom render
-identically. Giving it slack via `size_flags_vertical = SIZE_EXPAND_FILL` then broke the pitch match
-with the card rows, which is the misalignment the owner reported.
+### 2. Row score labels — MEASURED, not yet moved
+The wrong fix (`SIZE_EXPAND_FILL` + `VERTICAL_ALIGNMENT_BOTTOM`) is reverted and the pitch match is
+back. Measured with `uneven_stack_score_shot`, overview, card 54 px tall, fan pitch 20 px:
 
-**Do:** revert both of those in `_fill_label_stack` (restores the pitch match), then **MEASURE** the
-label band's global rect against its own card's bottom edge and REPORT before moving anything.
-⚠ The geometry is not obvious: a card is ~110 px tall but the fan pitch is ~17 px, so a covered card
-shows only a ~17 px bottom strip — the same height as the label band.
-⚠ **`custom_minimum_size` IS A FLOOR, NOT A CAP** — growing children past the stack's sum pushes a
-bottom-aligned gutter's rows upward and ACCUMULATES. That is the owner-reported bug whose FIRST FIX
-WAS A FALSE GREEN.
+```
+row 0, scored     BAND y 402.0..418.0  h 16.0   card y 402.0..456.0   PIP ROW y 442.0..452.0
+band centre - pip centre = -37.0 px at EVERY scored band, every height
+```
 
-### 2. The Entrance must stack UPWARD
+The band occupies the card's TOP 16 px while the pips sit 40..50 px down from the card's top. It
+must come DOWN 37 px at `card_scale` 1.0 for its centre to meet the pip row's.
+
+⚠ **The move is not a per-label property.** Every label in a stack shares one pitch, so shifting the
+band means shifting the whole stack against a `VBoxContainer` whose `custom_minimum_size` is a FLOOR
+and not a cap — the accumulation trap whose first fix was a false green.
+⚠ That probe's FOCUSED figures are unusable: it reads `card_size_play`, which does not carry
+`board_zoom`, while `slot_center_global` does. Only its overview numbers are sound.
+
+### 3. The Entrance must stack UPWARD
 **Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
 like all other cards."*
 
@@ -538,17 +507,13 @@ Entrance WILL change — verify by eye.
 whether it widens. And an upward Entrance stack grows TOWARD the board; confirm it cannot occlude the
 grid's bottom row.
 
-### 3. Verify the Entrance transitions smoothly between grids
+### 4. Verify the Entrance transitions smoothly between grids
 **Owner note:** *"if entrance is not snapped to a grid, it should smoothly transition between them.
 Shouldn't really be an issue though since entrance should be tied to camera or view looking at each
 grid first."* Likely already true — `_sync_entrance_x` re-derives X from the board's pan every frame.
 ⚠ **Verify by RUNNING it** — a still frame is the wrong instrument for anything with a duration.
 
-### 4. The focused grid's clipped top row
-Visible in the composite render; the standing note records the zoom overshooting its window by
-7.8 px, and it looks worse than that now.
-
-### 5. Settings isolation — the staged migration (a TRUE GAP, see `gaps/GAP-030.md`)
+### 5. Settings isolation — the staged migration (`gaps/GAP-030.md`)
 Owner ruled **(b)**, staged: build the injection seam, then migrate the **77 read sites across 22
 files** in batches heaviest-first (`play_area` 18, `main` 16, `prop_layer` 11), each batch its own
 commit with a full suite between. Clears the last 2 standing failures.
@@ -559,6 +524,18 @@ gap, not an implementer's judgement call.
 
 **Deferred by owner ruling — see `gaps/GAP-037.md`:** an Entrance column deeper than the render
 target renders off-screen. *"No limit for now."* Known, not safe; reachability still unmeasured.
+
+## ⚠ THE LAYOUT SUITES ARE PINNED TO THE OVERVIEW, AND THAT IS A COVERAGE GAP
+
+With one grid the show now opens FOCUSED, so the product's DEFAULT board is zoomed. That put 22
+checks red across `GRID LAYOUT`, `VISUAL LAYERS` and `SETTINGS RANGE` — every one measuring a gap
+from global positions (which carry `board_zoom`) against a pitch computed from settings (which never
+does). Those suites assert the board's LAYOUT ARITHMETIC and were written at the overview's scale, so
+their fixtures now latch the opening view and reset to the overview: exactly the state they had.
+
+⚠ **They therefore no longer cover the product's default state.** The zoomed board is `GRID VIEW`'s
+subject and the focused-pose probe's. Fixing those 22 to be zoom-aware would be strictly better and
+is not done.
 
 ## ⚠ Test fixtures that still lay out at OS-window size
 
@@ -618,58 +595,46 @@ FIRST, BEFORE ANY CODE -- run the suite:
 
 THE TREE IS CLEAN at a verified-green commit. Nothing is half-applied.
 
-DO THIS FIRST -- THE BY-EYE INSTRUMENT IS BROKEN
-  Tests/Visual/wall_game_squash_probe renders a "focused" frame showing all five rows
-  with the Entrance below. The RUNNING GAME, focused, shows the top row cut off and the
-  Entrance barely in frame. The probe does not reproduce the product's focused pose, so
-  every by-eye sign-off taken through it is weak evidence. FIX THE INSTRUMENT BEFORE
-  TRUSTING ANOTHER BY-EYE GATE on focused geometry. Until then the owner's screenshots
-  are better evidence than the probe.
+THE GEOMETRY PASS IS PARKED ON GAP-038 -- DO NOT RESTART IT
+  The four owner rulings (SceneRoot scales, PlayContainer returns to its authored height,
+  the board is offset by the HUD rectangle, the focused view frames 5x5 + Entrance)
+  cannot all be built as written. Two measurements settle it and BOTH ARE RECORDED:
+  the board lays out directly in PICTURE pixels (play_area.size == the design size, so
+  scaling SceneRoot renders a 1495-wide span at 1940 px inside a 1495 px picture), and
+  reverting PlayContainer's height takes GRID VIEW from 1 failure to 3 with both halves
+  of TP-140 red. Read gaps/GAP-038.md and take the owner's answer; do not re-measure.
+  ! The CLIPPING has a separable cause the gap records and none of the four options
+  fixes: focused_scale() applies wall_overfill_margin 1.02 to a picture that already
+  matches the window aspect, costing 8.28 px top and bottom. That is the clipped top row.
+  Fixing it moves isolating_grid_buffer_px() too -- one change, not a deletion.
 
-THEN THE GEOMETRY PASS -- FOUR OWNER RULINGS, ONE CHANGE
-  Do not split these. They move the same geometry, and deriving the focused zoom three
-  times against a shifting layout is how earlier cycles were lost.
-   a. SceneRoot holds the AUTHORED 1152x648 and scales uniformly to the picture
-      (1495x841 -- ratio 1.2977 on both axes, because the picture is exactly the
-      window's aspect, so nothing distorts). Owner: "HUD scales with the picture".
-   b. PlayContainer then returns to its authored height. ! MEASURE FIRST whether that
-      regresses TP-140: focused_board_zoom() reads PlayArea.size.y, and a too-small
-      value there was the whole reason the height tracking was added.
-   c. The board's available area is the play area LESS the HUD's rectangle. Owner:
-      "the grid should be offset from how much space the hud rectangle takes."
-   d. The focused view must frame, AS A MINIMUM, the 5x5 cell block PLUS the Entrance
-      row -- inside the post-HUD space, not the full width.
-  ! TWO SCALES STACK: focused_board_zoom() fits content into the play area, and the wall
-  camera fits the picture into the window. A zoom that fits an 841 px picture still
-  clips when the camera crops it into a ~651 px window. Measure both layers.
-  ! Coherence already checked: 5x5 (216x286) + strip (81) fits easily in the ~752x648
-  left after the HUD. The clipping is NOT "doesn't fit" -- the board is sized for a
-  space the camera does not show.
+THE BY-EYE INSTRUMENT IS FIXED
+  Tests/Visual/focused_pose_probe boots the real main.tscn and enters through
+  Main.enter_game(), and it reproduces the owner's report. Use it, not
+  wall_game_squash_probe, for any framing evidence.
 
 THEN, in order
-  1. With grid_count == 1, open FOCUSED -- no click. Owner: "clicking to zoom in when
-     there is only 1 grid should not be necessary." Q4=(d)/Q5 make one grid the case for
-     any deck of 52 or fewer, so this is the DEFAULT, not an edge case.
-  2. The runtime LEAK (see its section in this file). CardData is RefCounted and cannot
+  1. The runtime LEAK (see its section in this file). CardData is RefCounted and cannot
      collect a CYCLE, so unreachable-but-alive is a loop, not a stray holder.
      test_leak_canary runs double-show cycles and PASSES, so the canary must be taught
      to see it or the leak returns.
-  3. Row score labels: the label BAND sits too high. ! Revert the SIZE_EXPAND_FILL +
-     VERTICAL_ALIGNMENT_BOTTOM pair first -- it is a regression that broke the pitch
-     match with the card rows -- then MEASURE the band against the card's PIP ROW.
-     PLAN.md 1.8 puts pips at y 13-23 with the card bottom at 27, so "align to the
-     bottom" is 4 art units off the thing the owner actually wants.
-  4. The Entrance stacks upward. ! NOT a bottom_anchored := true flip -- the grid
+  2. Row score labels. The wrong fix is already reverted and the band is MEASURED: it
+     sits 37 px above the pip row's centre at card_scale 1.0, occupying the card's top
+     16 px while the pips sit 40..50 px down. Moving it is a whole-stack shift against a
+     VBoxContainer whose custom_minimum_size is a FLOOR, not a cap.
+  3. The Entrance stacks upward. ! NOT a bottom_anchored := true flip -- the grid
      REVERSES control-build order, and the Entrance builds header-first, so a naive flip
      renders the header upside-down off the top of the strip. Full roadmap is in this
      file's queue section.
-  5. The focused grid's clipped top row; then GAP-030 (settings migration, staged (b));
-     then GAP-028=(c).
+  4. GAP-030 (settings migration, staged (b)); then GAP-028=(c).
+  5. If the goal is to CLOSE PHASE 7 rather than refine, do S32/S33/S34 -- see "WHERE THE
+     PHASE ACTUALLY IS" below. The refinement queue is separate work and the owner should
+     be told which one you are doing.
 
 A REVERTED FIX IS PARKED, NOT LOST
   The floor fix (a grown TopLevelVBox drags _board_floor_y into the Entrance, making a
   placed bottom-row card invisible) was reverted to restore a working build, and is
-  preserved as a patch in the previous session's scratchpad (S55_floor_fix.patch).
+  preserved as a patch in an earlier session's scratchpad (S55_floor_fix.patch).
   ! DO NOT RE-APPLY IT UNCHANGED: its _stick_board_scroll_to_bottom() wrote
   scroll_vertical every physics tick against a SmoothScrollContainer that animates its
   own position -- two writers on one observable, and the likely cause of a scrollbar
@@ -677,16 +642,16 @@ A REVERTED FIX IS PARKED, NOT LOST
   content hangs below the scroll container's window, present in world space (so a
   global-position probe reads fine) but clipped from the render.
 
-GAPS -- THE POLICY CHANGED
+GAPS -- THE POLICY
   A gap is a DECISION THE DESIGN DOES NOT COVER. It is NOT a bug, and NOT an instruction
   that arrived with its own answer. 11 files were deleted for being one of those.
   Owner: "code should be source of truth... bugs should never be recorded if they are
   already solved, since all they do is waste time for future readers."
-  Only FOUR remain open: GAP-018, GAP-028's H24 half, GAP-030, GAP-037.
+  Only FIVE remain open: GAP-018, GAP-028's H24 half, GAP-030, GAP-037, GAP-038.
 
 NON-NEGOTIABLES, each of which caught a real defect here
   - MEASURE BEFORE YOU BUILD, and say whether a number is measured or inferred. Five
-    premises died on contact with a measurement in the last session, several of them the
+    premises died on contact with a measurement in one session, several of them the
     overseer's own arithmetic.
   - RED-THEN-GREEN for every check, and confirm the red failed the checks you EXPECTED.
     Neutralise the BEHAVIOUR, not the test -- and neutralise the site that owns the
@@ -694,8 +659,10 @@ NON-NEGOTIABLES, each of which caught a real defect here
   - THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT. A harness sitting at the
     default card_scale cannot see a bug that only appears at a larger one.
   - ASSERT ON OBSERVED GEOMETRY, never on a recomputation of the formula under test.
-    ! A global-position assertion CANNOT see render clipping -- that is exactly how a
-    card "present in world space but clipped from the render" passed a position check.
+    ! A global-position assertion CANNOT see render clipping.
+    ! A GLOBAL POSITION PLUS A LOCAL SIZE IS NOT A GLOBAL RECT once the board is zoomed:
+      global_position carries board_zoom and size never does. That mixture was latent in
+      TP-103 and in 22 checks across three suites.
   - CONFIRM AN API EXISTS (ClassDB.class_get_method_list) before calling it; Godot is
     4.7.2. A compile error CASCADES and names none of its symptoms.
   - NO COMMENT INSIDE A METHOD BODY. NO DESIGN IDS IN PRODUCT CODE (Tests/ is exempt) --
@@ -706,6 +673,8 @@ NON-NEGOTIABLES, each of which caught a real defect here
   - DO NOT DELETE A COMMENT THAT RECORDS A MEASURED CONSTRAINT. One agent deleted the
     "resizing the strip re-lays out everything anchored inside it (4 px)" comment and
     reproduced that exact 4.00 px drift within one suite run.
+  - BACKTICKS DIE INSIDE `py -c "..."` FROM THE BASH TOOL -- bash command-substitutes
+    them and silently empties the text. Use a heredoc or write the script to a file.
 
 WHERE THE PHASE ACTUALLY IS
   PLAN.md Phase 7's done-when is TP-105 and TP-113..TP-120 green.
@@ -713,9 +682,7 @@ WHERE THE PHASE ACTUALLY IS
     absent TP-115/116/117 (S32), TP-119 (S33's H21), TP-120 (S34)
   4 of 9. THREE STEPS CLOSE THE PHASE: S32, the rest of S33, and S34.
   ! Almost none of the recent work touched those rows -- it was owner-directed visual
-  refinement, all landed and all real, but orthogonal to the phase gate. If the goal is
-  to CLOSE PHASE 7, do S32/S33/S34; the refinement queue above is separate work, and
-  the owner should be told which one you are doing.
+  refinement, all landed and all real, but orthogonal to the phase gate.
 
 If you hit a decision no document fixes: file a gap under the policy above, park that
 thread, keep the others moving, and QUOTE the gap's own option text to the owner.
