@@ -987,16 +987,28 @@ func run_the_board_edge_bounces_test() -> void:
 	var rest := camera.position.x
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
+	# ⚠ **SIGNED, NOT ABSOLUTE.** An `absf()` here is satisfied by a swing in EITHER direction, and
+	# a bounce that threw the camera a whole grid INWARD before springing back passed it for as
+	# long as it existed. What a bounce means is that the board is pushed FURTHER OUT and comes
+	# back, so both extremes are tracked and each is asserted on its own side of rest.
 	var farthest := 0.0
+	var deepest_inward := 0.0
 	var waited := 0.0
 	while waited < 1.0:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
-		farthest = maxf(farthest, absf(camera.position.x - rest))
+		farthest = maxf(farthest, camera.position.x - rest)
+		deepest_inward = minf(deepest_inward, camera.position.x - rest)
 	check(farthest > 1.0,
-			"pressing right at the last grid PUSHES the camera past its edge (TP-102)",
+			"pressing right at the last grid PUSHES the camera past its edge, to the RIGHT "
+			+ "(TP-102)",
 			"%f px past rest" % farthest)
+	check(deepest_inward >= -1.0,
+			"...and it never swings the other way first -- an overshoot measured from the "
+			+ "picture's centre rather than the pan the camera is actually on drags it a whole "
+			+ "grid inward before springing back",
+			"%f px inward of rest" % deepest_inward)
 	check(pa.pan_grid == 2,
 			"...without stepping onto a grid that is not there",
 			"pan_grid %d" % pa.pan_grid)

@@ -4,10 +4,10 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is nearly done**: the wall
-packs the game picture at its real width, the HUD follows the camera, `H22`'s camera stepping is
-proven end-to-end through a real key route, and `TP-105` exists and is green. **The suite sits at 2
-failures and both are attributed** — neither is a mystery.
+**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is 7 of its 9 done-when
+rows**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
+camera stepping is proven end-to-end through a real key route, and the saved pan (`S32`) is in.
+**Every standing failure is attributed** — none is a mystery.
 
 **Entry docs:** `START_HERE.md`; `design/poker-patience/{PLAN.md,DESIGN.md,TEST_PLAN.md,NAMES.md}`;
 `design/grid-view/DESIGN.md`; `design/card-effect-api/DESIGN.md`; `HEADLESS_TESTING.md`.
@@ -320,8 +320,13 @@ be checked by hand.
   status: done
 - id: S32
   description: 'The saved pan and resting_state() (H18, H19).'
-  status: pending
-  notes: 'GAP-020=(b): resize first, then implement H18 literally.'
+  status: done
+  notes: >
+    WallPicture.saved_pan_x plus the pure snap_pan_to_grid(); Main writes it at the step, reads it
+    for every resting pose, re-snaps on a resize, and restores it into the board BEFORE re-focusing.
+    Also fixed two defects in the same arithmetic: the non-transition move aimed at the picture's
+    CENTRE, and the edge bounce measured its overshoot from the centre while springing back to the
+    pan.
 - id: S34
   description: 'Tools/wall_editor.tscn drives every new wall knob (Q186=a).'
   status: pending
@@ -403,21 +408,23 @@ next reader, and the code is the source of truth for anything already built.
   card is easing out from under the cursor.
 - **`Tests/Interaction/test_interaction.gd:459` is `check(true, ...)`** — a parked check.
 - **The COMBO label draws over the End button.**
+- ⚠ **`S32`'s two removed camera snaps are UNVERIFIED BY EYE.** Entering a panned show and the edge
+  bounce both used to jump, both have a DURATION, and both are now proven only by sampled camera
+  positions. Run the game and report what MOVED before calling either done.
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
 
-## ⚠ PHASE 7 PROGRESS — 4 of 9 done-when rows green
+## ⚠ PHASE 7 PROGRESS — 7 of 9 done-when rows green
 
 `PLAN.md` Phase 7's done-when is **`TP-105` and `TP-113`-`TP-120` green**, plus
 `knobs_this_preview_does_not_drive` still empty.
 
 ```
-TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅
-TP-115 ❌  TP-116 ❌  TP-117 ❌   -- S32: the saved pan and resting_state() (H18, H19)
+TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅  TP-115 ✅  TP-116 ✅  TP-117 ✅
 TP-119 ❌                        -- S33's H21 half: Info mode (Q178=a)
 TP-120 ❌                        -- S34: Tools/wall_editor.tscn drives every wall knob (Q186=a)
 ```
 
-**Three steps close the phase: `S32`, the remainder of `S33`, and `S34`.**
+**Two steps close the phase: the remainder of `S33`, and `S34`.**
 
 ⚠ **MOST RECENT WORK WAS OWNER-DIRECTED REFINEMENT, NOT PLAN STEPS.** The 3-grid canvas, the derived
 buffer, the edge margin, `PlayContainer`'s height, Entrance scaling and clipping, label alignment and
@@ -627,11 +634,16 @@ production does. **`test_e2e_run`, `test_leak_canary`, `test_grid_layout` and se
 They pass today and carry the same latent drift that silently broke UI PROPS, VISUAL LAYERS and
 INTERACTION once the play area stopped matching the window height.
 
-## ⚠ The GRID LAYOUT interference is NOT fully deterministic
+## ⚠ The cross-suite interference is NOT fully deterministic, and it is not only GRID LAYOUT
 
-The handoff previously called it deterministic. **Measured otherwise:** `TP-85` PASSED in one run and
-FAILED in others within the same tree. The `116.0 px` check is the stable one. Judge that suite by
-which checks fail, never by the count alone.
+**Measured, same tree, two consecutive full runs:** `TP-85` fired in one and not the other, and
+`UI VIEWERS`' `repeated show_deck replaces instead of stacking` fired once and not the other — with
+`live 0`, no viewer at all, not two. `UI VIEWERS` passes ALONE (`ALL 26 CHECKS`), so it is
+interference, not a defect in it. The `116.0 px` check is the stable one.
+
+⚠ **A single full run is therefore not enough to attribute a NEW failure.** Run the suite twice, or
+run the suspect suite alone, before blaming a change. `UI VIEWERS` is the one UI suite with no
+`await_siblings_except`, which is why it is the one that moves.
 
 ## Known coverage gap — not closed
 
@@ -661,10 +673,12 @@ READ IN THIS ORDER
 FIRST, BEFORE ANY CODE -- run the suite:
     GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 600
   EXPECT: ALL 45 SUITES, 9 FAILED -- 1 GRID LAYOUT (the standing 116.0 px) and 8 GRID
-  VIEW, every one of them attributed below. TP-85's mid-growth flake may or may not fire.
+  VIEW, every one of them attributed below. TP-85's mid-growth flake may or may not fire,
+  and so may one UI VIEWERS check -- see the non-determinism section.
   ! USE 600, NOT 400 -- it is a GLOBAL limit and a COLD run exceeds 400 s, dying with
   "NO SUITE BANNER", which reads exactly like a hang. Warm it is ~190 s.
-  ! Judge by WHICH checks fail, never the count.
+  ! Judge by WHICH checks fail, never the count. A NEW failure needs TWO full runs, or
+  the suspect suite run alone, before you blame a change for it.
   ! The owner's Godot editor stays OPEN -- it hosts the MCP. Leave it alone. The
   one-process rule binds GAME and TEST processes only. Never kill by image name or a
   Get-Process|Where-Object pipeline (a hook blocks it); stop a verified
@@ -686,18 +700,12 @@ THE NINE FAILURES ARE TWO QUESTIONS, NOT NINE BUGS
   1 GRID LAYOUT 116.0 px = GAP-030's settings interference. That suite ALONE passes.
 
 PICK A TRACK AND TELL THE OWNER WHICH
-  Phase 7 is 4 of 9 done-when rows and HAS NOT MOVED for two sessions. Both of those
-  sessions were owner-directed refinement plus real bug fixes, all landed, none of it
-  closing a row. If the goal is to CLOSE PHASE 7, do S32/S33/S34; if it is to finish the
-  board, do the queue. They are different work.
+  Phase 7 is 7 of 9 done-when rows. S32 landed the saved pan; TWO steps are left.
 
   TO CLOSE THE PHASE (PLAN.md Phase 7):
-    S32  TP-115/116/117 -- the saved pan and resting_state() (H18, H19). THREE rows in
-         one step, pure wall/camera state, entangled with nothing GAP-039 holds. Start
-         here if you want the phase to move. GAP-020=(b): resize first, then H18
-         literally.
     S33  TP-119 -- Info mode fits the window-aspect view (H21, Q178=a). The H20 half is
-         already landed.
+         already landed. Do this first: it is the smaller of the two and entangled with
+         nothing GAP-039 holds.
     S34  TP-120 -- Tools/wall_editor.tscn drives every new wall knob (Q186=a), with
          `knobs_this_preview_does_not_drive` empty. ! It has grown knobs this stream:
          board_edge_pad_rows and hud_width_fraction both need driving.
@@ -723,6 +731,11 @@ PICK A TRACK AND TELL THE OWNER WHICH
        clears the 116.0 px, and it is the biggest blast radius of the three.
     5. GAP-028's H24 half. Expect a follow-up gap, not a judgement call.
 
+  ! S32 LEFT ONE BY-EYE DEBT. The saved pan removed two camera snaps -- entering a panned
+  show, and the edge bounce -- and both have a DURATION, so neither is provable by a still
+  frame or by the checks that landed. Run the game, pan off the resting grid, leave to the
+  map and come back, and bounce off the board's edge. Report what MOVED.
+
 THE INSTRUMENTS -- USE THEM, THEY ARE WHY THIS STREAM'S NUMBERS ARE TRUSTWORTHY
   Tests/Visual/focused_pose_probe    boots main.tscn, enters via Main.enter_game(); the
                                      product's own pose. Knobs WINDOW=, GRIDS=.
@@ -739,7 +752,10 @@ NON-NEGOTIABLES, each of which caught a real defect here
     this stream's own recommendations died on contact with a measurement; all three are
     recorded in the gaps so nobody retries them.
   - RED-THEN-GREEN for every check, and confirm the red failed the checks you EXPECTED.
-    Neutralise the BEHAVIOUR, not the test.
+    Neutralise the BEHAVIOUR, not the test. ! S32's red run caught three of its own checks
+    asserting a different quantity from the one their message named, and three more that
+    pass with the feature deleted. A green new test proves nothing until you have seen it
+    red for the right reason.
   - THE FIXTURE MUST VARY THE QUANTITY THAT DRIVES THE DEFECT. A harness at board_zoom
     1.0 cannot see a bug whose error is proportional to the zoom.
   - ASSERT THE PROPERTY, NOT THE TOTAL. Every suite abandons cards on purpose, so an
