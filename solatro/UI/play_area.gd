@@ -513,6 +513,7 @@ func _physics_process(_delta: float) -> void:
 	_apply_column_label_indent()
 	_follow_board_growth()
 	_sync_row_label_heights()
+	_sync_score_label_font()
 	_sync_entrance_x()
 	# ⚠ ONE control's rect, on the tick `_sync_entrance_x` already reads on. `resized` alone left
 	# this 8 px stale (562 against a real 554) because the content's POSITION can settle without
@@ -2440,13 +2441,61 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		# ⚠ **THE SPECIAL LABEL NEEDS A BOX OR IT IS NOT A SCORE LABEL.** With none it shrank to
 		# whatever its own text measured and `AutosizeLabel` pinned its font at the minimum. It is
 		# the row gutter's mirror on the far side of the cells, so it takes the row gutter's box.
-		special.custom_minimum_size = Vector2(CardVisual.card_separation_play,
-				CardVisual.card_separation_play_custom)
+		special.custom_minimum_size = Vector2(CardVisual.card_size_play.x, _depth_pitch_px())
 		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
 		# ruling, and the bucket really is one in the data too.
 		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null
 		if value: special.current_num = value
 		else: special.text = ""
+
+## One depth layer's pitch in BOARD units: the strip a covered card shows plus the gap above it.
+## The ONE place a score gutter and the cells agree about how far apart two heights are.
+func _depth_pitch_px() -> float:
+	return float(CardVisual.card_separation_play_custom) + float(separation)
+
+## Give every score label on a grid ONE font size: the smallest any of them would pick for its own
+## box and its own text.
+##
+## ⚠ **EQUAL BOXES ARE NOT ENOUGH.** `AutosizeLabel` fits its font to its own TEXT as well as its
+## box, so a four-digit row score and a two-digit column score in identical boxes still render at
+## different sizes. The owner's rule is that the set reads as one set, which is a property of the
+## GROUP and cannot be decided by any label alone.
+##
+## ⚠ **ASKING DOES NOT DEPEND ON THE ANSWER.** `best_font_size()` measures against
+## `custom_minimum_size`, which the container hands back unchanged whatever font is applied, so
+## this cannot oscillate. Written only on change, so a settled board stops re-sorting.
+func _sync_score_label_font() -> void:
+	if not is_instance_valid(grid_container): return
+	for gi : int in grid_container.get_child_count():
+		var panel := grid_container.get_child(gi) as Control
+		if not panel: continue
+		var labels := _score_labels_of(panel)
+		if labels.is_empty(): continue
+		var smallest := 0x7FFFFFFF
+		for label : BigNumberLabel in labels:
+			if label.text.is_empty(): continue
+			smallest = mini(smallest, label.best_font_size())
+		if smallest == 0x7FFFFFFF: continue
+		for label : BigNumberLabel in labels:
+			label.force_font_size(smallest)
+
+## Every score label a grid panel carries: the row gutter, the column gutter and the one special
+## label. NOT the per-cell height labels, which live in the card layer and are positioned by
+## arithmetic rather than by this panel.
+func _score_labels_of(panel: Control) -> Array[BigNumberLabel]:
+	var out : Array[BigNumberLabel] = []
+	var board := panel.get_node_or_null("Board") as Control
+	if not board: return out
+	for gutter_path : String in ["RowLabels", "../ColRow/ColLabels"]:
+		var gutter := board.get_node_or_null(gutter_path) as Control
+		if not gutter: continue
+		for stack : Node in gutter.get_children():
+			for label : Node in stack.get_children():
+				var l := label as BigNumberLabel
+				if l: out.append(l)
+	var special := board.get_node_or_null("SpecialLabel") as BigNumberLabel
+	if special: out.append(special)
+	return out
 
 ## Keep every row-label stack exactly as tall as the cell row it names.
 ##
@@ -2467,7 +2516,7 @@ func _sync_row_label_heights() -> void:
 			var stack := row_labels.get_child(ry) as Control
 			var wanted := _grid_row_height(gi, ry)
 			if is_equal_approx(stack.custom_minimum_size.y, wanted): continue
-			stack.custom_minimum_size = Vector2(CardVisual.card_separation_play, wanted)
+			stack.custom_minimum_size = Vector2(CardVisual.card_size_play.x, wanted)
 
 ## Indents every panel's column-label row by however far its cells sit inside its panel, so a
 ## column's label sits under the column it names.
@@ -2555,8 +2604,19 @@ func _row_score_levels(bucket: Dictionary[Vector3i, BigNumber], gi: int, ry: int
 func _create_label_stack() -> Control:
 	var stack := VBoxContainer.new()
 	stack.name = "LabelStack"
-	stack.add_theme_constant_override("separation", separation)
+	# ⚠ **NO SEPARATION; EACH LABEL CARRIES THE DEPTH PITCH ITSELF.** A stack's pitch has to equal
+	# the CARD depth pitch exactly or the scores fan away from the cards they name -- measured, a
+	# label 20 px tall plus a 4 px separation walked 6.5 px per level off a 32.7 px card pitch, so
+	# height 2's score sat 14.7 px above its pip row while height 0's sat on it. The same shape the
+	# cell slots use, for the same reason.
+	stack.add_theme_constant_override("separation", 0)
 	stack.size_flags_vertical = Control.SIZE_SHRINK_END
+	# ⚠ **BOTTOM-ALIGNED, LIKE THE CARDS BESIDE IT.** A `VBoxContainer` packs from the TOP by
+	# default, so a stack as tall as its row put its scores against the row's top edge -- the old
+	# pre-grid position, and 37 px (60.5 at the focused zoom) above the pip row they name. The
+	# label pitch already equals the card depth pitch, so aligning the group to the bottom lines
+	# up EVERY height at once rather than only the first.
+	stack.alignment = BoxContainer.ALIGNMENT_END
 	return stack
 
 ## ⚠ **HIGHEST HEIGHT FIRST**, so the column reads bottom-up exactly like the cards beside it: the
@@ -2577,13 +2637,18 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 	for i : int in stack.get_child_count():
 		var h := stack.get_child_count() - 1 - i   # child 0 is the HIGHEST height
 		var label : BigNumberLabel = stack.get_child(i)
-		label.custom_minimum_size = Vector2(CardVisual.card_separation_play,
-				CardVisual.card_separation_play_custom) if is_row 				else Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play)
+		# ⚠ **ONE WIDTH FOR EVERY SCORE LABEL** (owner: *"all score labels should be same size as
+		# each other"*). `AutosizeLabel` fits its font to its own box, so a 16 px row gutter and a
+		# 40 px column gutter rendered the same number at 8 px and 14 px. The heights still differ
+		# by kind: a row label's is the depth strip, because its stack's pitch has to match the
+		# cards'.
+		label.custom_minimum_size = Vector2(CardVisual.card_size_play.x, _depth_pitch_px())
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""
 	if is_row:
-		stack.custom_minimum_size = Vector2(CardVisual.card_separation_play, _grid_row_height(gi, index))
+		stack.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
+				_grid_row_height(gi, index))
 
 func _create_score_label() -> Control:
 	return BigNumberLabel.new()

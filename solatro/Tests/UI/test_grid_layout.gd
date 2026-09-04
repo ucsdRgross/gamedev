@@ -53,6 +53,8 @@ func _ready() -> void:
 	await run_the_card_is_put_down_before_anything_scores_test()
 	await run_a_deepening_stack_grows_the_board_upward_test()
 	await run_hovering_the_board_does_not_move_it_test()
+	await run_every_score_label_is_the_same_size_test()
+	await run_a_row_score_sits_on_its_pip_row_test()
 	restore_real_settings()
 	finish()
 
@@ -1564,4 +1566,118 @@ func run_hovering_the_board_does_not_move_it_test() -> void:
 			"worst scroll delta %.2f" % worst_scroll)
 	check(not pa.scroll_container.follow_focus,
 			"the board's scroller has follow_focus OFF")
+	await _tear_down(view)
+
+
+# ==============================================================================
+# EVERY SCORE LABEL IS THE SAME SIZE AS EVERY OTHER.
+#
+# Owner: *"all score labels should be same size as each other"*.
+#
+# `AutosizeLabel` fits its font to its own box AND its own text, so this needs two things: one box
+# for every score label (a 16 px row gutter against a 40 px column gutter rendered the same number
+# at 8 px and 14 px), and then one shared size across the group, because a four-digit row score and
+# a two-digit column score in identical boxes still choose differently.
+# ==============================================================================
+func run_every_score_label_is_the_same_size_test() -> void:
+	behavior_section("EVERY SCORE LABEL IS THE SAME SIZE")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var st := view.game.state
+	# Deliberately DIFFERENT lengths: equal boxes alone would still size these differently.
+	st.bank_line_score(st.scores_row, 0, 1, 0, 1234567)
+	st.bank_line_score(st.scores_col, 0, 2, 0, 7)
+	st.resize_grid_bucket(st.score_special, 1)
+	st.score_special[0].plus_equals(42)
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	var panel : Control = pa.grid_container.get_child(0)
+	var labels := pa._score_labels_of(panel)
+	var shown : Array[BigNumberLabel] = []
+	for l : BigNumberLabel in labels:
+		if not l.text.is_empty(): shown.append(l)
+	check(shown.size() >= 3,
+			"precondition: a row, a column and the special label all carry a number, and they are "
+			+ "not the same length", "%d labels with text" % shown.size())
+	if shown.size() < 3:
+		await _tear_down(view)
+		return
+
+	var first_font := shown[0].get_theme_font_size("font_size")
+	var first_box := shown[0].custom_minimum_size
+	var same_font := true
+	var same_box := true
+	for l : BigNumberLabel in shown:
+		if l.get_theme_font_size("font_size") != first_font: same_font = false
+		if not l.custom_minimum_size.is_equal_approx(first_box): same_box = false
+	check(same_box, "every score label carries the same box", "first %s" % first_box)
+	check(same_font,
+			"...and every one renders at the SAME font size, however long its own number is",
+			"sizes %s" % [shown.map(func(l: BigNumberLabel) -> int:
+			return l.get_theme_font_size("font_size"))])
+	check(first_font > 8,
+			"...and that size is the one the shared box supports, not the autosize floor a 16 px "
+			+ "gutter used to force", "font %d" % first_font)
+	await _tear_down(view)
+
+# ==============================================================================
+# A ROW'S SCORE SITS ON THE PIP ROW OF THE CARD IT NAMES.
+#
+# Owner: *"row score not aligned with bottom card row separation against pips still. still aligned
+# to top like old non grid version."*
+#
+# A `VBoxContainer` packs from the TOP, so a label stack as tall as its row put its scores against
+# the row's top edge -- 60.5 px above the pip row at the focused zoom, measured at every height.
+# Two things fix it: the stack aligns to the END, and its pitch is the CARD depth pitch, or the
+# labels fan away from the cards one separation per level.
+#
+# ⚠ **THE TARGET IS THE PIP ROW, NOT THE CARD'S BOTTOM EDGE.** The pips span art y 13..23 on a face
+# running -27..27, so the bottom edge is 4 art units below what the player actually reads.
+# ⚠ **AND IT IS CHECKED AT EVERY HEIGHT.** Only the bottom label lines up if the pitch is wrong,
+# and the bottom label is the one a single-card fixture would show.
+# ==============================================================================
+func run_a_row_score_sits_on_its_pip_row_test() -> void:
+	behavior_section("A ROW'S SCORE SITS ON ITS PIP ROW")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	for h : int in 3:
+		var c := g.draw_card()
+		if c: await g.place_card_in_grid(c, BoardCoord.new(0, 0, 2, h))
+	for h : int in 3:
+		g.state.bank_line_score(g.state.scores_row, 0, 2, h, 1234)
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	var panel : Control = pa.grid_container.get_child(0)
+	var board : Control = panel.get_node_or_null("Board")
+	var row_labels : Control = board.get_node_or_null("RowLabels")
+	var stack : Control = row_labels.get_child(2)
+	check(stack.get_child_count() == 3,
+			"precondition: the row banked three heights, so there are three bands to line up",
+			"%d bands" % stack.get_child_count())
+	if stack.get_child_count() != 3:
+		await _tear_down(view)
+		return
+
+	var art_to_px : float = CardVisual.card_size_play.y / CardVisual.CARD_SIZE.y
+	var worst := 0.0
+	for i : int in stack.get_child_count():
+		var h : int = stack.get_child_count() - 1 - i
+		var label : Control = stack.get_child(i)
+		var band := label.get_global_transform() * Rect2(Vector2.ZERO, label.size)
+		var centre := pa.slot_center_global(BoardCoord.new(0, 0, 2, h))
+		var pip_mid : float = centre.y + 18.0 * art_to_px * pa.board_zoom
+		worst = maxf(worst, absf(band.get_center().y - pip_mid))
+	check(worst < 6.0,
+			"every height's score band is centred on the PIP ROW of the card it names, not on the "
+			+ "top of the row",
+			"worst %.1f px out over %d heights" % [worst, stack.get_child_count()])
 	await _tear_down(view)
