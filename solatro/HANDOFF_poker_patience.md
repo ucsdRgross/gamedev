@@ -570,25 +570,25 @@ sinking under the Entrance as stacks deepen; the board scrolling itself under th
 - `hide_focus_info()` switched off `_process` checking only `_row_open`, never `_layer_grown`, so
   anything closing the inspector mid-growth froze the row arithmetic part-grown.
 
-### ⚠ STILL OPEN, and each needs an owner call
+**Second round, landed:** every score label renders at ONE size (the owner ruled they must match;
+it needed a shared BOX *and* a shared font pass, because equal boxes still size different-length
+numbers differently), and a row's score sits level with the pip row of the card it names — measured
+-1.6 px at every height, from -60.5 uniform before. ⚠ The label stack's pitch must equal the CARD
+depth pitch: with the stack's own separation left in, the labels fanned 6.5 px per level.
 
-1. **The top edge pad is 0 and the bottom pad is not.** Measured at rest, focused, one grid:
-   the cell block sits flush with the top of its window (`top_gap 0.0`) with the whole 37.6-44.2 px
-   of slack below it. `board_edge_pad_rows` defaults to 1.0 and `focused_board_zoom`'s denominator
-   reserves `2 * pad`, so the fit pays for two bands and the layout puts both at the bottom. This
-   is the other half of *"buffers are still clipping"* and it sits inside `GAP-039`'s arithmetic —
-   do not change it without re-reading that gap.
-2. **Row and column score labels are not the same size as each other.** Measured, `card_scale`
-   1.0, text "1.23k": a row label's box is 16x16 and renders at font **8**; a column label's is
-   40x16 and renders at font **14**. The special label was the reported outlier and now matches
-   the ROW label exactly (`Q110`: *"opposite side of row labels"*). Making all three equal means
-   either widening the row gutter to the column's 40 px or pinning
-   `AutosizeLabel.font_size_override` on every score label — a look decision, not a defect.
-   ⚠ Widening a gutter is geometrically SAFE: `_apply_grid_buffer()` absorbs gutter width into the
-   container separation, so `grid_pitch_px() == block + buffer` either way.
-3. **Verify by eye, in the running game.** Every fix above is proven by measurement and by the
-   suite; the ones with a DURATION — the card settling before the score, the pop, the growth —
-   have not been watched by a human.
+### ⚠ STILL OPEN
+
+1. **`GAP-040` — the clip that cuts a tall stack IS the clip that isolates a neighbouring grid.**
+   The owner proposed turning off the scroll container's clipping and is right about the mechanism
+   (`CardLayer < TopLevelVBox < SmoothScrollContainer(clip)`; the block sits 45.8 px above its
+   window). But `TP-141` asserts a neighbouring grid paints NOTHING outside that window, so the
+   fix retires the isolation contract by construction. **Four options filed; parked on the owner.**
+   ⚠ Also measured there: `_give_the_board_a_floor()` reserves `2 * board_edge_pad_px` through a
+   `custom_minimum_size`, which is a FLOOR — content 350 against a minimum of 313, so both edge
+   pads stop applying the moment the board grows past them.
+2. **Verify by eye, in the running game.** Every fix is proven by measurement and by the suite; the
+   ones with a DURATION — the card settling before the score, the pop, the growth — have not been
+   watched by a human.
 
 ## Next up — the queue, in order
 
