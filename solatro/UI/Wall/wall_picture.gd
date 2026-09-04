@@ -499,9 +499,16 @@ static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 			else settings.wall_info_card_max_height
 	var reserve := maxf(card_height - settings.wall_info_card_overlap, 0.0)
 	var free_height := maxf(window_size.y - reserve, 1.0)
+	# ⚠ **WHAT IS FITTED IS THE SUB-RECT THE FOCUSED POSE SHOWS, NOT THE WHOLE PICTURE.** A picture
+	# several window-widths wide is one the focused camera never showed whole either, so fitting all
+	# of it would pull the camera back until the screen the card is describing is unreadable — which
+	# is the opposite of what Info mode is for. On a picture already at the window's aspect the two
+	# are the same rect and nothing moves.
+	var framed := window_size / maxf(
+			focused_scale(rect.size, window_size, settings.wall_overfill_margin), 0.0001)
 	# "Fit", the MIN of the two axis ratios — against `focused_scale()`'s "fill" MAX, which is what
-	# crops. Nothing is cropped at or below this.
-	var zoom := minf(window_size.x / rect.size.x, free_height / rect.size.y)
+	# crops. Nothing of the framed view is cropped at or below this.
+	var zoom := minf(window_size.x / framed.x, free_height / framed.y)
 	# The picture now sits in the TOP `free_height` of the window, so its centre must appear above
 	# the window's centre by half the reserve. The camera therefore sits BELOW the picture's centre
 	# by that same distance in wall units.
