@@ -490,6 +490,8 @@ func setup_gui() -> void:
 	# The board grows UPWARD out of the Entrance, so the Entrance is the part the player acts on
 	# and it is the bottom of the picture. Anchor the scroll there ON ENTRY -- deferred, because
 	# the containers have not been sized yet at this point and the maximum is still 0.
+	_last_scroll_max = -1.0
+	_scroll_growth_carry = 0.0
 	_anchor_scroll_to_bottom.call_deferred()
 	update_score_controls()
 	_apply_entrance_strip_height()
@@ -501,6 +503,9 @@ func setup_gui() -> void:
 
 func _physics_process(_delta: float) -> void:
 	_apply_grid_buffer()
+	_apply_column_label_indent()
+	_follow_board_growth()
+	_sync_row_label_heights()
 	_sync_entrance_x()
 	# ⚠ ONE control's rect, on the tick `_sync_entrance_x` already reads on. `resized` alone left
 	# this 8 px stale (562 against a real 554) because the content's POSITION can settle without
@@ -776,6 +781,65 @@ func _publish_cell_rects() -> void:
 		# ⚠ A GLOBAL origin plus a LOCAL size is not a global edge once the board is zoomed --
 		# `global_position` carries the zoom and `size` never does.
 		_grid_cells_bottom[i] = cells.global_position.y + cells.size.y * board_zoom
+
+## The scroll range the board last had. -1 until a tick has seen one, so a rebuild re-baselines
+## rather than treating the whole range as fresh growth.
+var _last_scroll_max := -1.0
+## The sub-pixel part of the growth not yet handed to `scroll_vertical`, which is an INT. Carried
+## rather than rounded away: rounding each step independently drifts by up to half a unit per card,
+## measured at 5.1 px of accumulated slip over six placements.
+var _scroll_growth_carry := 0.0
+
+## Keep the board's BOTTOM line where it is as the board gets taller.
+##
+## ⚠ **THE BOARD GROWS UPWARD, AND THAT MEANS ITS BOTTOM DOES NOT MOVE.** A deepening stack makes
+## the scroll content taller; with the offset left alone every new pixel appears BELOW the window,
+## so the board reads as sinking out of its own frame and under the Entrance. Measured on a single
+## column: at depth 3 the cell block already hung 14.7 px past the window's bottom edge, and at
+## depth 6, 112.8 px. Adding the growth to the offset puts the new height at the TOP, where the
+## stack actually grew.
+##
+## ⚠ **THIS IS NOT `_anchor_scroll_to_bottom()`.** That one SNAPS to the bottom and runs on entry
+## only, because a rebuild that snapped would yank the view away from a player who had scrolled
+## somewhere else. Following the growth keeps whatever offset the player chose, measured from the
+## bottom instead of from the top.
+func _follow_board_growth() -> void:
+	if not is_instance_valid(scroll_container): return
+	var bar := scroll_container.get_v_scroll_bar()
+	if not bar: return
+	var now := bar.max_value
+	if _last_scroll_max < 0.0:
+		_last_scroll_max = now
+		return
+	var grown := now - _last_scroll_max
+	_last_scroll_max = now
+	if grown <= 0.0: return
+	_scroll_growth_carry += grown
+	var whole := int(floorf(_scroll_growth_carry))
+	if whole <= 0: return
+	_scroll_growth_carry -= float(whole)
+	scroll_container.scroll_vertical += whole
+
+## Wait for `card`'s visual to reach the cell it was just placed in.
+##
+## ⚠ **TWO FRAMES BEFORE THE FIRST POLL, AND THEY ARE NOT OPTIONAL.** The rebuild that starts the
+## card's flight is deferred, so on the frame the placement commits there is no `move_tween` yet --
+## polling immediately reads "not moving" and returns before the card has begun to travel.
+## ⚠ Bounded by the act clock: a visual that never settles must not stall the show.
+func await_card_settled(card: CardData) -> void:
+	if not is_inside_tree(): return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var visual : CardVisual = data_card.get(card)
+	if not visual or not is_instance_valid(visual): return
+	var game := CardEnvironment.get_current_game()
+	var limit : float = game.get_delay() if game else SettingsManager.settings.base_delay
+	var waited := 0.0
+	while waited < maxf(limit, 0.05):
+		if not is_instance_valid(visual): return
+		if not (visual.move_tween and visual.move_tween.is_running()): return
+		await get_tree().process_frame
+		waited += get_process_delta_time()
 
 ## Scroll to the bottom of the board. ⚠ ON ENTRY ONLY -- a rebuild that re-anchored would yank
 ## the view out from under a player who had scrolled somewhere else.
@@ -1564,9 +1628,10 @@ func _grid_slot_center_global(coord: BoardCoord) -> Vector2:
 	var bottom : float = _grid_cells_bottom.get(coord.grid, _board_floor_y)
 	for r : int in range(coord.y + 1, _grid_rows(coord.grid)):
 		bottom -= (_grid_row_height(coord.grid, r) + float(separation)) * board_zoom
-	# The cell's own frame sits ON the row's bottom line; the stack starts one `separation` above
-	# it — the gap the CellSlot puts between the frame and the card covering it.
-	var y := bottom - sep - depth_pitch * float(coord.h) - full * 0.5
+	# ⚠ **THE STACK STARTS ON THE ROW'S BOTTOM LINE, NOT ONE SEPARATION ABOVE IT.** A covered cell
+	# frame is HIDDEN rather than flattened, so it takes no separation under the stack any more —
+	# the height-0 card's bottom edge IS the row's bottom line, exactly where the frame's was.
+	var y := bottom - depth_pitch * float(coord.h) - full * 0.5
 	return Vector2(x, y)
 
 ## ⚠ **MEMOISED ON THE STATE'S REVISION, AND IT HAS TO BE.** `slot_center_global` runs for every
@@ -1665,7 +1730,10 @@ func _own_grid_row_height(g: int, r: int) -> float:
 	var grown := 0.0
 	for h : int in range(1, deepest):
 		grown += depth_pitch * _layer_arrival(g, h)
-	return float(separation) + full + grown
+	# ⚠ **NOTHING IS ADDED FOR THE FIRST CARD.** A stack of one is exactly one card tall -- there
+	# is no gap inside it -- and every layer above brings its own pitch, which already carries the
+	# separation its own gap needs.
+	return full + grown
 
 ## How far depth layer `h` of grid `g` is through arriving, 0..1. ⚠ **THE GUARD IS ABOUT THE STACK,
 ## NOT ABOUT WHAT IS ABOVE IT** (`Q77`=b, re-derived for the flipped direction): the old reveal
@@ -2270,10 +2338,22 @@ func _create_grid_panel() -> Control:
 	special.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	board.add_child(special)
 	panel.add_child(board)
+	# ⚠ **THE COLUMN LABELS SIT IN THEIR OWN ROW, INDENTED PAST THE ROW-LABEL GUTTER.** As a bare
+	# child of the panel they started at the PANEL's left edge, which is the row gutter's edge, so
+	# every column label sat most of a column left of the column it names. `ColGutter` mirrors the
+	# row gutter's width and `ColRow` adds no separation of its own, so the labels begin exactly
+	# where the cells do.
+	var col_row := HBoxContainer.new()
+	col_row.name = "ColRow"
+	col_row.add_theme_constant_override("separation", 0)
+	var col_gutter := Control.new()
+	col_gutter.name = "ColGutter"
+	col_row.add_child(col_gutter)
 	var col_labels := HBoxContainer.new()
 	col_labels.name = "ColLabels"
 	col_labels.add_theme_constant_override("separation", separation)
-	panel.add_child(col_labels)
+	col_row.add_child(col_labels)
+	panel.add_child(col_row)
 	# ⚠ **`resized` IS NOT ENOUGH, AND THE CLAIM THAT IT COVERS POSITION WAS FALSE.** `resized`
 	# fires on SIZE changes only; a panel shoved up or sideways by a sibling — which is exactly
 	# what happens to a bottom-aligned panel when the board grows — changes POSITION with no size
@@ -2342,7 +2422,7 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		for ry : int in grid.grid_height:
 			_fill_label_stack(row_labels.get_child(ry) as VBoxContainer, state.scores_row,
 					gi, ry, _row_score_levels(state.scores_row, gi, ry), true)
-	var col_labels := panel.get_node_or_null("ColLabels") as Control
+	var col_labels := panel.get_node_or_null("ColRow/ColLabels") as Control
 	if col_labels:
 		_fit_children(col_labels, grid.grid_width, _create_label_stack)
 		for cx : int in grid.grid_width:
@@ -2350,11 +2430,110 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 					gi, cx, col_levels, false)
 	var special := board.get_node_or_null("SpecialLabel") as BigNumberLabel
 	if special:
+		# ⚠ **THE SPECIAL LABEL NEEDS A BOX OR IT IS NOT A SCORE LABEL.** With none it shrank to
+		# whatever its own text measured and `AutosizeLabel` pinned its font at the minimum. It is
+		# the row gutter's mirror on the far side of the cells, so it takes the row gutter's box.
+		special.custom_minimum_size = Vector2(CardVisual.card_separation_play,
+				CardVisual.card_separation_play_custom)
 		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
 		# ruling, and the bucket really is one in the data too.
 		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null
 		if value: special.current_num = value
 		else: special.text = ""
+
+## Keep every row-label stack exactly as tall as the cell row it names.
+##
+## ⚠ **PER TICK, BECAUSE A ROW'S HEIGHT IS A FUNCTION OF TIME WHILE A LAYER IS ARRIVING.** The
+## stacks take their height at bind time, and anything that binds mid-growth -- a score popping its
+## own label, for one -- latched whatever fraction the ease had reached. The cells then finished
+## growing and the gutter did not, leaving every row label sitting below the row it belongs to.
+## Written only on change, so a settled board stops re-sorting.
+func _sync_row_label_heights() -> void:
+	if not is_instance_valid(grid_container): return
+	for gi : int in grid_container.get_child_count():
+		var panel := grid_container.get_child(gi) as Control
+		if not panel: continue
+		var board := panel.get_node_or_null("Board") as Control
+		var row_labels := board.get_node_or_null("RowLabels") as Control if board else null
+		if not row_labels: continue
+		for ry : int in row_labels.get_child_count():
+			var stack := row_labels.get_child(ry) as Control
+			var wanted := _grid_row_height(gi, ry)
+			if is_equal_approx(stack.custom_minimum_size.y, wanted): continue
+			stack.custom_minimum_size = Vector2(CardVisual.card_separation_play, wanted)
+
+## Indents every panel's column-label row by however far its cells sit inside its panel, so a
+## column's label sits under the column it names.
+##
+## ⚠ **MEASURED LIVE, EVERY TICK, NEVER LATCHED** -- the same treatment `_apply_grid_buffer()` gets
+## and for the same reason. The row-label gutter's width is its LABELS' width, and those are
+## `AutosizeLabel`s that resize themselves after the layout that placed them, so a value captured
+## once is a transient. The write happens only when the number actually changes, so a settled board
+## stops re-sorting.
+##
+## ⚠ **THIS CANNOT FEED BACK INTO THE PANEL'S WIDTH.** `ColLabels`'s minimum is the cells' own
+## minimum, so `ColRow` is always narrower than `Board` by the special gutter plus a separation and
+## never sets the panel's width -- if that stopped being true, widening the gutter would widen the
+## panel, which would move the cells, which would widen the gutter again.
+func _apply_column_label_indent() -> void:
+	if not is_instance_valid(grid_container): return
+	var z := maxf(board_zoom, 0.0001)
+	for i : int in grid_container.get_child_count():
+		var panel := grid_container.get_child(i) as Control
+		if not panel: continue
+		var board := panel.get_node_or_null("Board") as Control
+		var cells := _cells_root(panel)
+		var gutter := panel.get_node_or_null("ColRow/ColGutter") as Control
+		if not board or not cells or not gutter: continue
+		var wanted := (cells.global_position.x - board.global_position.x) / z
+		if wanted < 0.0: continue
+		if is_equal_approx(gutter.custom_minimum_size.x, wanted): continue
+		gutter.custom_minimum_size = Vector2(wanted, 0.0)
+
+## Pop the ONE score label a grid line just banked into, the way a legacy gutter label pops.
+##
+## ⚠ **THE LABELS ARE RE-BOUND FIRST.** A line scoring at a height nothing has reached before has
+## no label yet, and a pop on a label that does not exist is a silently dropped animation — which
+## is what "the scores are not popping up" looked like from the outside.
+func pop_grid_score_label(section: ScoringSection) -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var gi := section.grid
+	if gi < 0 or gi >= grid_container.get_child_count() or gi >= game.state.grids.size(): return
+	var grid : GridData = game.state.grids[gi]
+	if not grid: return
+	var panel := grid_container.get_child(gi) as Control
+	_bind_grid_score_labels(panel, grid)
+	_sync_cell_score_labels()
+	var label := _grid_score_label(panel, section)
+	if label: label.anim_pop()
+
+## The score label a section banks into, or null when it has none yet.
+func _grid_score_label(panel: Control, section: ScoringSection) -> BigNumberLabel:
+	var board := panel.get_node_or_null("Board") as Control
+	if not board: return null
+	match section.kind:
+		ScoringSection.LineKind.DIAG:
+			return board.get_node_or_null("SpecialLabel") as BigNumberLabel
+		ScoringSection.LineKind.ROW:
+			return _label_in_stack(board.get_node_or_null("RowLabels") as Control,
+					section.index, section.height)
+		ScoringSection.LineKind.COL:
+			return _label_in_stack(panel.get_node_or_null("ColRow/ColLabels") as Control,
+					section.index, section.height)
+		ScoringSection.LineKind.HEIGHT_V:
+			return _cell_score_labels.get(Vector3i(panel.get_index(), section.cell.x,
+					section.cell.y))
+	return null
+
+## Height `h`'s label inside gutter stack `index`. ⚠ **A STACK IS BUILT HIGHEST FIRST**, so height
+## 0 is the LAST child, not the first — the same order `_fill_label_stack` writes them in.
+func _label_in_stack(gutter: Control, index: int, h: int) -> BigNumberLabel:
+	if not gutter or index < 0 or index >= gutter.get_child_count(): return null
+	var stack : Control = gutter.get_child(index)
+	var i := stack.get_child_count() - 1 - h
+	if i < 0 or i >= stack.get_child_count(): return null
+	return stack.get_child(i) as BigNumberLabel
 
 ## THAT ROW's own score-level count, not the grid-wide max `state.line_score_levels` returns —
 ## a shallow row must never get surplus fixed-height children forcing it past `_grid_row_height`.
@@ -2478,16 +2657,21 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		for ci : int in grid.cells.size():
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 			if not slot: continue
-			slot.add_theme_constant_override("separation", separation)
-			# The cell's zone card is the LAST child: a full card while the cell is empty (it IS what
-			# an empty cell shows), collapsed to nothing once a card covers it.
+			# ⚠ **A CELL SLOT HAS NO SEPARATION OF ITS OWN; EACH CARD CARRIES ITS OWN GAP.** The
+			# cell's zone card is the LAST child and collapses to nothing once a card covers it —
+			# but a zero-height child STILL takes a separation from a `VBoxContainer`, so with one
+			# the row grew by that separation the moment its FIRST card landed. A stack of one is
+			# exactly one card tall, so the gap lives in the depth strip instead, where it only
+			# exists once there is a second card to be a gap between.
+			slot.add_theme_constant_override("separation", 0)
 			var zone_control : Control = slot.get_child(-1)
 			zone_control.custom_minimum_size = CardVisual.card_size_play 					if slot.get_child_count() == 1 else Vector2(CardVisual.card_size_play.x, 0)
 			# The TOPMOST card of the stack (child 0 after the flip) shows whole; every card under it
-			# contributes only its own bottom strip.
+			# contributes only its own bottom strip, plus the gap above that strip.
 			for j : int in slot.get_child_count() - 1:
 				(slot.get_child(j) as Control).custom_minimum_size = Vector2(
-						CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
+						CardVisual.card_size_play.x,
+						CardVisual.card_separation_play_custom + separation)
 			if slot.get_child_count() > 1:
 				(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
 
@@ -2763,7 +2947,12 @@ func hide_focus_info() -> void:
 	_focus_info_anchor = null
 	# ⚠ ONLY IF THE REVEAL IS ALSO IDLE. This used to be an unconditional `set_process(false)`, which
 	# with S16 would freeze a row mid-open the moment the focus panel closed.
-	if _row_open.is_empty(): set_process(false)  # nothing to pin while hidden
+	# ⚠ **AND ONLY IF NO DEPTH LAYER IS STILL ARRIVING.** `_process` drives both easings; checking
+	# the reveal alone froze a growing row at whatever fraction it had reached, leaving the row
+	# arithmetic permanently short of the height its container had already taken. Measured: a row
+	# stuck at 54 against a container at 74, with a growth entry that never cleared.
+	if _row_open.is_empty() and _layer_grown.is_empty():
+		set_process(false)  # nothing to pin while hidden
 	if not _focus_info or not is_instance_valid(_focus_info):
 		_focus_info = null
 		return

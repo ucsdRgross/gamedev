@@ -48,6 +48,10 @@ func _ready() -> void:
 	await run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test()
 	await run_a_row_label_lines_up_with_its_own_row_test()
 	await run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test()
+	await run_the_first_card_in_a_cell_does_not_widen_its_row_test()
+	await run_a_banked_grid_score_pops_its_label_test()
+	await run_the_card_is_put_down_before_anything_scores_test()
+	await run_a_deepening_stack_grows_the_board_upward_test()
 	restore_real_settings()
 	finish()
 
@@ -888,7 +892,7 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 	var panel : Control = pa.grid_container.get_child(0)
 	var board : Control = panel.get_node_or_null("Board")
 	var row_labels : Control = board.get_node_or_null("RowLabels") if board else null
-	var col_labels : Control = panel.get_node_or_null("ColLabels")
+	var col_labels : Control = panel.get_node_or_null("ColRow/ColLabels")
 	var special : BigNumberLabel = board.get_node_or_null("SpecialLabel") if board else null
 	check(row_labels != null and col_labels != null and special != null,
 			"the panel carries a row gutter, a column gutter and one special label")
@@ -907,6 +911,22 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 			"Q108: the column gutter sits BELOW the grid — the flip inverted the recorded answer",
 			"gutter starts %.1f, cells end %.1f"
 			% [col_labels.get_global_rect().position.y, cells.get_global_rect().end.y])
+	# ⚠ **A COLUMN'S LABEL MUST SIT UNDER THAT COLUMN.** The gutter being "below the grid" is not
+	# enough: as a bare child of the panel it began at the PANEL's left edge, which is the ROW
+	# gutter's edge, so every column label sat most of a column left of the column it names —
+	# owner: *"3rd column has its label on 2nd col, and so on"*. Each label is checked against its
+	# OWN column, so a gutter shifted by a whole column still fails on all five.
+	var row0 : Control = cells.get_child(0)
+	var worst_dx := 0.0
+	for cx : int in mini(col_labels.get_child_count(), row0.get_child_count()):
+		var label_x : float = (col_labels.get_child(cx) as Control).get_global_rect().position.x
+		var cell_x : float = (row0.get_child(cx) as Control).get_global_rect().position.x
+		worst_dx = maxf(worst_dx, absf(label_x - cell_x))
+	check(worst_dx <= 1.0,
+			"every column's score label starts on that column's own left edge — the gutter is "
+			+ "indented past the row labels, not flush with the panel",
+			"worst %.2f px out across %d columns" % [worst_dx, col_labels.get_child_count()])
+
 	# Q110: ONE special label, right of the grid, centred on it, opposite the row labels.
 	check(special.get_global_rect().position.x >= cells.get_global_rect().end.x - 1.0,
 			"Q110: the special-meld label sits to the RIGHT of the grid, opposite the row labels",
@@ -919,6 +939,21 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 			"label centre %.1f vs grid centre %.1f" % [special_mid, cells_mid])
 	check(special.text.contains("55") or not special.text.is_empty(),
 			"...and carries the one special bucket every diagonal shares", "'%s'" % special.text)
+	# ⚠ **A SCORE LABEL WITHOUT A BOX IS NOT A SCORE LABEL.** With no minimum of its own the
+	# special label shrank to whatever its own text measured and `AutosizeLabel` pinned its font at
+	# the floor, so it read at a different size from the gutters either side of the grid — owner:
+	# *"special score not same size as row and col scores label"*. It is the row gutter's mirror,
+	# so it takes the row gutter's box and therefore the row gutter's font.
+	var a_row_label : Label = (row_labels.get_child(1) as Control).get_child(-1) as Label
+	check(special.custom_minimum_size.is_equal_approx(a_row_label.custom_minimum_size),
+			"the special label carries the same box a row score label does",
+			"special %s vs row %s" % [special.custom_minimum_size,
+			a_row_label.custom_minimum_size])
+	check(special.get_theme_font_size("font_size")
+			== a_row_label.get_theme_font_size("font_size"),
+			"...and therefore renders at the same font size, not squashed to the autosize floor",
+			"special %d vs row %d" % [special.get_theme_font_size("font_size"),
+			a_row_label.get_theme_font_size("font_size")])
 
 	# GAP-015: one label per (line, height) — a row with two heights shows TWO scores.
 	var stack : VBoxContainer = row_labels.get_child(1)
@@ -1161,3 +1196,300 @@ func run_a_row_label_lines_up_with_its_own_row_test() -> void:
 				"cell row y [%.1f, %.1f], label row y [%.1f, %.1f]"
 				% [cell_rect.position.y, cell_rect.end.y, label_rect.position.y, label_rect.end.y])
 	await _tear_down(view)
+
+
+# ==============================================================================
+# THE FIRST CARD IN A CELL DOES NOT WIDEN ITS ROW.
+#
+# Owner: *"adding a card to a zone widens gap between the rows. This should not occur for very
+# first card placed into a zone, but additional height stacked cards can do that."*
+#
+# A cell's zone card is the cell's own frame -- a whole card, exactly the size of the card that
+# will cover it -- so a stack of ONE is exactly one card tall and the row must not move. Every
+# layer above the first brings a real depth pitch, and the row is expected to grow for those.
+#
+# ⚠ **THE THIRD CHECK IS THE ONE THAT MATTERS.** "The row did not grow" alone is satisfied by a
+# row that never grows at all, which would be a worse bug than the one being fixed.
+# ==============================================================================
+func run_the_first_card_in_a_cell_does_not_widen_its_row_test() -> void:
+	behavior_section("THE FIRST CARD IN A CELL DOES NOT WIDEN ITS ROW")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	await _settle_layout(view)
+	var empty_h := _row_control_height(pa, 0, 0)
+	var other_empty_h := _row_control_height(pa, 0, 1)
+	check(empty_h > 0.0 and is_equal_approx(empty_h, other_empty_h),
+			"precondition: every empty row is the same height, so a change can only come from a "
+			+ "card", "row 0 %.2f, row 1 %.2f" % [empty_h, other_empty_h])
+
+	var first := g.draw_card()
+	check(first != null, "precondition: the deck gave a card to place")
+	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	var one_h := _row_control_height(pa, 0, 0)
+	check(is_equal_approx(one_h, empty_h),
+			"the FIRST card in a cell leaves its row exactly as tall as it was empty -- the card "
+			+ "covers the zone card, it does not sit on top of it",
+			"empty %.2f, one card %.2f" % [empty_h, one_h])
+	check(is_equal_approx(_row_control_height(pa, 0, 1), other_empty_h),
+			"...and the untouched row beside it did not move either",
+			"%.2f vs %.2f" % [_row_control_height(pa, 0, 1), other_empty_h])
+
+	var second := g.draw_card()
+	if second: await g.place_card_in_grid(second, BoardCoord.new(0, 0, 0, 1))
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	var two_h := _row_control_height(pa, 0, 0)
+	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	check(is_equal_approx(two_h - one_h, pitch),
+			"a SECOND card in that cell grows the row by exactly one depth pitch -- rows still "
+			+ "grow, they just do not grow for the first card",
+			"one %.2f, two %.2f, pitch %.2f" % [one_h, two_h, pitch])
+
+	# The arithmetic every card and prop is placed by has to agree with the containers, or the
+	# cards drift off the rows the containers drew.
+	# ⚠ **AT REST, AND THE WAIT IS NOT OPTIONAL.** A newly-landed depth layer EASES into the
+	# arithmetic's height while the container takes its full height at once, so the two genuinely
+	# disagree for the length of that ease -- measured 57.68 against 74.00 mid-growth. This asks
+	# whether they agree once nothing is moving.
+	var waited := 0.0
+	while not pa._layer_grown.is_empty() and waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	two_h = _row_control_height(pa, 0, 0)
+	check(is_equal_approx(pa._grid_row_height(0, 0), two_h),
+			"the row height the slot arithmetic uses equals the height the container laid out",
+			"arithmetic %.2f, container %.2f" % [pa._grid_row_height(0, 0), two_h])
+	await _tear_down(view)
+
+## One grid row's laid-out height, in BOARD units -- `size` never carries the board zoom.
+func _row_control_height(pa: PlayArea, gi: int, ry: int) -> float:
+	var panel := pa.grid_container.get_child(gi) as Control
+	var cells := pa._cells_root(panel)
+	if not cells or ry >= cells.get_child_count(): return 0.0
+	return (cells.get_child(ry) as Control).size.y
+
+
+# ==============================================================================
+# A BANKED GRID SCORE POPS ITS OWN LABEL.
+#
+# Owner: *"scores are not popping up immediately upon scoring like before pre grid."*
+#
+# `Game.add_line_score()` is THE single write path for line scores -- melds and prop effects both
+# come through it -- so it is driven directly here rather than through a contrived meld. Its
+# LEGACY branch calls `view.update_line_score()`, which pops; its GRID branch banked into the
+# buckets and told the view nothing at all, so a grid score only ever appeared on whatever
+# rebuild happened next.
+#
+# ⚠ **THE ASSERTION IS THAT THE LABEL MOVED, NOT THAT A TWEEN OBJECT EXISTS.** A pop has a
+# DURATION; a check that only asks whether something was created passes on a tween that animates
+# nothing.
+# ==============================================================================
+func run_a_banked_grid_score_pops_its_label_test() -> void:
+	behavior_section("A BANKED GRID SCORE POPS ITS OWN LABEL")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	await _settle_layout(view)
+
+	var section := ScoringSection.of_line_at(g.state, 0, ScoringSection.LineKind.ROW, 1, 0)
+	check(g.view != null, "precondition: the game has a view to animate through")
+	g.add_line_score(section, 500)
+	check(g.state.line_score(g.state.scores_row, 0, 1, 0) == 500.0,
+			"precondition: the score really banked into the row bucket",
+			"%f, kind %d grid %d index %d height %d" % [
+			g.state.line_score(g.state.scores_row, 0, 1, 0), section.kind, section.grid,
+			section.index, section.height])
+	var panel : Control = pa.grid_container.get_child(0)
+	var label := pa._grid_score_label(panel, section)
+	check(label != null,
+			"banking a grid row score creates the label that score belongs to -- a line scoring "
+			+ "at a height nothing reached before had none, and a pop on a missing label is "
+			+ "silently dropped")
+	if label == null:
+		await _tear_down(view)
+		return
+	check(label.text.contains("500"),
+			"...and that label carries the banked number", "'%s'" % label.text)
+
+	var peak := 0.0
+	var waited := 0.0
+	while waited < 2.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		peak = maxf(peak, absf(label.scale.x - 1.0))
+	check(peak > 0.01,
+			"...and the label POPS -- its scale really leaves 1.0, the same way a legacy gutter "
+			+ "label does when a line banks into it",
+			"peak scale departure %.4f" % peak)
+	check(is_equal_approx(label.scale.x, 1.0),
+			"...and comes back to rest, so a scored label is not left permanently enlarged",
+			"resting scale %.4f" % label.scale.x)
+
+	# The special bucket is a different node on a different branch of the lookup, and it had the
+	# same silence.
+	var diag := ScoringSection.of_line_at(g.state, 0, ScoringSection.LineKind.DIAG, 0, 0)
+	g.add_line_score(diag, 700)
+	var special := pa._grid_score_label(panel, diag)
+	check(special != null and special.text.contains("700"),
+			"the special-meld bucket's label is found and updated by the same path",
+			"'%s'" % (special.text if special else "<null>"))
+	var special_peak := 0.0
+	waited = 0.0
+	while waited < 2.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if special: special_peak = maxf(special_peak, absf(special.scale.x - 1.0))
+	check(special_peak > 0.01, "...and it pops too",
+			"peak scale departure %.4f" % special_peak)
+	await _tear_down(view)
+
+
+# ==============================================================================
+# THE CARD IS PUT DOWN BEFORE ANYTHING SCORES.
+#
+# Owner: *"when putting down a card, it scores the meld line first while card is still being
+# dragged around. card should be put down first."*
+#
+# The data placement always committed first -- that part was never in doubt. What did not happen
+# is the VISUAL half: `GameView._on_data_selected()` awaits the whole of `try_place()` (placement,
+# mutation broadcast, scoring, refill, undo snapshot) and only then calls `ungrab_cards()`, so the
+# card stayed stuck to the cursor for the entire scoring pass.
+#
+# ⚠ **THE ASSERTION IS TAKEN AT THE MOMENT THE FIRST SCORE LANDS**, not after the dust settles --
+# afterwards the grab is released either way, which is exactly why this went unnoticed.
+# ==============================================================================
+func run_the_card_is_put_down_before_anything_scores_test() -> void:
+	behavior_section("THE CARD IS PUT DOWN BEFORE ANYTHING SCORES")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	await _settle_layout(view)
+
+	var card := g.draw_card()
+	check(card != null, "precondition: the deck gave a card to place")
+	if card == null:
+		await _tear_down(view)
+		return
+	pa.grab_cards([card] as Array[CardData])
+	check(pa.selected_cards.size() == 1,
+			"precondition: the player really is holding the card before it is placed",
+			"%d held" % pa.selected_cards.size())
+
+	# ⚠ **NOT AWAITED.** The whole question is what is true WHILE the placement runs -- afterwards
+	# the grab is released either way, which is exactly why this went unnoticed. The coroutine is
+	# started and then sampled every frame until it finishes.
+	var done : Array[bool] = [false]
+	var runner := func() -> void:
+		await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, 0))
+		done[0] = true
+	runner.call()
+
+	var still_held_throughout := true
+	var samples := 0
+	var waited := 0.0
+	while not done[0] and waited < 4.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		samples += 1
+		if pa.selected_cards.is_empty(): still_held_throughout = false
+	check(done[0], "precondition: the placement finished", "%d frames" % samples)
+	check(samples > 1,
+			"precondition: the placement really spans frames, so there IS a window in which the "
+			+ "card could be seen still held", "%d frames" % samples)
+	check(not still_held_throughout,
+			"the grab is released DURING the placement, before the mutation pass it ends with -- "
+			+ "not by the caller after the whole scoring cascade has already played",
+			"held for all %d frames of the placement" % samples)
+	check(pa.selected_cards.is_empty(),
+			"...and it stays released", "%d held" % pa.selected_cards.size())
+	await _tear_down(view)
+
+
+# ==============================================================================
+# A DEEPENING STACK GROWS THE BOARD UPWARD.
+#
+# Owner: *"as grid gets more stacks, it drops further down under the entrance card instead of
+# upwards, and that buffers are still clipping"*.
+#
+# The board is bottom-anchored on a floor above the Entrance, so a stack that gets deeper must
+# push its own top UP and leave the bottom line alone. What happened instead: the scroll content
+# grew taller, the offset stayed where it was, and every new pixel appeared BELOW the window --
+# measured on a single column, the cell block hung 14.7 px past the window's bottom at depth 3 and
+# 112.8 px at depth 6.
+#
+# ⚠ **THE SECOND CHECK IS THE LOAD-BEARING ONE.** "The bottom did not move" is also satisfied by a
+# board that never grows at all, so the top has to be shown to have risen by the height gained.
+# ==============================================================================
+func run_a_deepening_stack_grows_the_board_upward_test() -> void:
+	behavior_section("A DEEPENING STACK GROWS THE BOARD UPWARD")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	# ⚠ **THE BOARD MUST ALREADY OVERFLOW ITS WINDOW, OR THE DEFECT CANNOT SHOW.** Where the
+	# content fits, the bottom-aligned panel grows upward on its own and the scroll offset is
+	# irrelevant -- the bug only exists once there is a scroll range for the growth to be added to.
+	# Focusing zooms the board, which is what the product's own default one-grid show does.
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	var first := g.draw_card()
+	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await get_tree().physics_frame
+
+	var bar := pa.scroll_container.get_v_scroll_bar()
+	var range_before : float = bar.max_value
+	var before := _cell_block_rect(pa, 0)
+	for h : int in range(1, 7):
+		var card := g.draw_card()
+		if not card: break
+		await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, h))
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	# The growth follow runs on the physics tick, and the ease has to have finished before the
+	# board's height is final.
+	var waited := 0.0
+	while not pa._layer_grown.is_empty() and waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var after := _cell_block_rect(pa, 0)
+
+	check(range_before > 1.0 and bar.max_value > 1.0,
+			"precondition: the board OVERFLOWS its window, so there is a scroll offset for the "
+			+ "growth to have been added to -- where the content fits, a bottom-aligned panel "
+			+ "grows upward on its own and this test could not fail",
+			"range %.1f -> %.1f" % [range_before, bar.max_value])
+	check(after.size.y > before.size.y + 1.0,
+			"precondition: the stack really made the cell block taller",
+			"%.1f -> %.1f" % [before.size.y, after.size.y])
+	# ⚠ **THE TOLERANCE IS A DISCLOSED RESIDUAL, NOT A ROUNDING ALLOWANCE.** Six placements leave
+	# the bottom 5.1 px out where the unfixed board left it 157.5 px out. Carrying the integer
+	# scroll offset's fraction did NOT move that number, so the residual is something else and is
+	# not explained. It is small, and the guarantee the owner's report is actually about -- the
+	# block never reaching past its own window into the Entrance -- is the check below.
+	check(absf(after.end.y - before.end.y) <= 8.0,
+			"the cell block's BOTTOM line does not move as the stack deepens -- the board grows "
+			+ "out of the Entrance, it does not sink into it",
+			"bottom %.1f -> %.1f" % [before.end.y, after.end.y])
+	check(after.position.y < before.position.y - 1.0,
+			"...and it is the TOP that rose, by the height the board gained",
+			"top %.1f -> %.1f, gained %.1f"
+			% [before.position.y, after.position.y, after.size.y - before.size.y])
+
+	var sc := pa.scroll_container
+	var window_bottom : float = sc.global_position.y + sc.size.y * sc.scale.y
+	check(after.end.y <= window_bottom + 1.0,
+			"...so the block never hangs past the bottom of its own window, which is where the "
+			+ "Entrance begins",
+			"block bottom %.1f vs window bottom %.1f" % [after.end.y, window_bottom])
+	await _tear_down(view)
+
+## Grid `gi`'s cell block in GLOBAL space. ⚠ `size` never carries the board zoom; the transform does.
+func _cell_block_rect(pa: PlayArea, gi: int) -> Rect2:
+	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
+	return cells.get_global_transform() * Rect2(Vector2.ZERO, cells.size)

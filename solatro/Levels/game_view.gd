@@ -355,6 +355,10 @@ func _on_show_unresolved() -> void:
 func release_grab() -> void:
 	play_area.ungrab_cards()
 
+## Wait for a just-placed card to finish travelling to its cell.
+func await_card_settled(card: CardData) -> void:
+	await play_area.await_card_settled(card)
+
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
 	play_area.setup_gui()
@@ -406,6 +410,13 @@ func reset_meld(result: Scoring.Result) -> void:
 ## Animate one gutter label to its new accumulated score.
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
+
+## The grid board's equivalent: pop the row, column, special or height label a grid line just
+## banked into. The grid buckets are keyed dictionaries rather than the legacy zone arrays, so
+## they cannot go through `update_line_score` -- but a score the player cannot see arrive is the
+## same defect either way.
+func pop_grid_line_score(section: ScoringSection) -> void:
+	play_area.pop_grid_score_label(section)
 
 ## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion
 ## (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Delegates to the PropLayer,

@@ -698,6 +698,15 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	# Broadcast where the card LANDED, not where it was asked to go: a placement stacks on
 	# top of whatever is already in the cell, so the requested height is not the real one.
 	var landed := state.grid_position_of(card)
+	# ⚠ **THE CARD IS PUT DOWN BEFORE ANYTHING SCORES.** The data placement commits instantly, but
+	# the card the player was holding is still stuck to the cursor -- `ungrab_cards()` used to run
+	# only after this whole coroutine returned -- and then still in flight to its cell. A scoring
+	# pass started here therefore played its meld and popped its labels around a card the player
+	# was visibly still carrying. Only a PLAYER's placement waits: a card placed by an effect
+	# mid-cascade belongs to that act's own timing and must not add a beat to it.
+	if not processing and view:
+		view.release_grab()
+		await view.await_card_settled(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
 	await refill_entrance_if_due()
@@ -1001,6 +1010,10 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 	# A grid line banks into its GRID's buckets, not the legacy zone gutters.
 	if section.grid >= 0:
 		_add_grid_line_score(section, amount)
+		# ⚠ **THE LABEL IS POPPED HERE OR NOWHERE.** The legacy path animates through
+		# `update_line_score`; the grid path used to bank into its buckets and say nothing, so a
+		# grid score only ever appeared on some later rebuild, with no pop and no timing of its own.
+		if view: view.pop_grid_line_score(section)
 		# The buckets are BigNumbers written in place, so nothing else announces this. Without
 		# the emit, the score a player is shown only catches up the next time some UNRELATED
 		# scalar happens to move -- and the show's whole score is derived from these buckets.

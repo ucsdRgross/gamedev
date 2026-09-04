@@ -68,6 +68,13 @@ static func of_line_at(state: GameData, grid: int, kind: LineKind, index: int, h
 	var section := ScoringSection.new()
 	section.kind = kind
 	section.index = index
+	# ⚠ **THE GRID AND THE HEIGHT ARE PART OF THE SECTION, NOT ONLY OF ITS COLLECTION.** They used
+	# to be consumed here and thrown away, so every section this grid-model constructor built came
+	# out reading `grid = -1` -- and a banked score then took the LEGACY zone-gutter branch, into
+	# an array the grid board does not render. The line still scored; nothing on the board showed
+	# it, and nothing popped.
+	section.grid = grid
+	section.height = height
 	section.line_key = StringName("grid%d:%s:%d:%d" % [grid, LineKind.keys()[kind], index, height])
 	section._recollect = _collect_grid_line.bind(state, grid, kind, index, height)
 	section.cards = section._recollect.call()
