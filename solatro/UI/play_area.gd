@@ -29,6 +29,32 @@ enum ViewMode { OVERVIEW, FOCUSED }
 ## No grid is focused. ⚠ Never 0 — grid 0 is a real grid.
 const NO_GRID := -1
 
+## The width the HUD's rectangle takes on the LEFT, published by `GameView`. The board lays out in
+## what is left of the screen and CENTRES THERE, not on the screen (owner ruling). Zero for any host
+## that mounts a bare `PlayArea` with no HUD around it.
+##
+## ⚠ **THE BOARD'S WINDOW IS WHAT MOVES, NOT THE CONTENT.** Insetting the scroller's own left edge
+## makes every centring the board already does -- the focused aim, the resting position, the
+## removal re-centre -- land in the post-HUD space for free. Offsetting the content instead would
+## leave each of those to re-discover the inset separately.
+var board_inset_left : float = 0.0:
+	set(value):
+		if is_equal_approx(board_inset_left, value): return
+		board_inset_left = maxf(value, 0.0)
+		if not is_instance_valid(scroll_container): return
+		# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED.** `GameView` reads the HUD's
+		# authored offsets at the END of its own `_ready()`, by which time the deal has built the
+		# board and `open_show_view()` has already fitted a focused grid against an inset of zero.
+		# Re-fitting here is what makes the arriving reserve reach the zoom; without it the board
+		# keeps the width it chose when it thought it had the whole screen.
+		# ⚠ **THE RECT FIRST, UNCONDITIONALLY.** `_zoom_board_to()` early-returns when the zoom is
+		# unchanged, and a reserve that arrives without moving the zoom is exactly that case — the
+		# scroller would keep the offsets it took when it thought it had the whole screen, and the
+		# board would centre on the SCREEN rather than on what the HUD leaves.
+		_apply_entrance_strip_height()
+		if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
+			focus_grid(focused_grid)
+
 ## The view mode changed. Carries the mode and the grid it focuses (`NO_GRID` in the overview).
 signal view_mode_changed(mode: ViewMode, grid: int)
 
@@ -590,6 +616,7 @@ func _apply_entrance_strip_height() -> void:
 	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
 	entrance_strip.offset_top = -h - pad
 	entrance_strip.offset_bottom = -pad
+	entrance_strip.offset_left = hud_reserve_px()
 	_apply_board_zoom_rect(h)
 	_apply_entrance_zoom_rect()
 	_give_the_board_a_floor(_entrance_strip_full_height())
@@ -609,7 +636,9 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
 	scroll_container.offset_top = pad
-	scroll_container.offset_right = local.x - size.x
+	var inset := hud_reserve_px()
+	scroll_container.offset_left = inset
+	scroll_container.offset_right = inset + local.x - size.x
 	scroll_container.offset_bottom = pad + local.y - size.y
 
 ## The strip the board's window is currently giving up to the Entrance, kept so the window can be
@@ -624,7 +653,23 @@ var _board_strip_h := 0.0
 ## left where the unzoomed board had it.
 func _board_window_local() -> Vector2:
 	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
-	return Vector2(size.x, maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+	return Vector2(maxf(size.x - hud_reserve_px(), 0.0),
+			maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+
+## `board_inset_left`, capped so the board is never starved of the room for a grid.
+##
+## ⚠ **THE HUD IS AUTHORED AGAINST A 1152-WIDE CANVAS AND DOES NOT SHRINK WITH THE SCREEN.** On a
+## 412 px phone its 402 px rectangle leaves the board TEN PIXELS -- measured, with the whole grid
+## off screen. The board yielding the room the HUD asks for is the owner's ruling; yielding room it
+## does not have is a different thing, and a grid that does not fit is not a layout.
+## ⚠ Derived from the panel the board must show, never a fraction or an authored floor: the rule is
+## "a grid still fits", and that is exactly what it says.
+## ⚠ The real fix is `GAP-038` -- the HUD either scales with the screen or moves off the board. This
+## keeps the board legible until that is answered; it does not stop the HUD overlapping it.
+func hud_reserve_px() -> float:
+	var panel := _panel_width(resting_grid())
+	if panel <= 0.0: return board_inset_left
+	return minf(board_inset_left, maxf(size.x - panel, 0.0))
 
 ## ⚠ **THE ENTRANCE IS ROW −1, AND ITS OWN HEIGHT PUSHES THE BOARD UP** (`Q313`=a, owner: *"if
 ## entrance/input cards are somehow stacked with multiple cards as well increasing in height, then
@@ -830,7 +875,7 @@ func focused_board_zoom(gi: int) -> float:
 	var tall := size.y / (block_h + _panel_gutter_h(gi) + base_strip + 2.0 * pad
 			+ _scroller_frame_h())
 	var wide := _panel_width(gi)
-	return tall if wide <= 0.0 else minf(tall, size.x / wide)
+	return tall if wide <= 0.0 else minf(tall, maxf(size.x - hud_reserve_px(), 1.0) / wide)
 
 ## The band the scroller keeps for its HORIZONTAL bar, which it reserves whether or not that bar is
 ## on screen -- `SCROLL_MODE_SHOW_NEVER` hides the bar and keeps the band.

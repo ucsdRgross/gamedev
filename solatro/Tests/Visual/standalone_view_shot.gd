@@ -88,6 +88,10 @@ func _ready() -> void:
 			hb.get_combined_minimum_size() if hb else Vector2.ZERO, hb.size if hb else Vector2.ZERO])
 	print("[standalone_view_shot]   scroller min=%s  v_bar rect=%s"
 			% [pa.scroll_container.get_combined_minimum_size(), bar.size])
+	var post_hud_centre := pa.board_inset_left + (pa.size.x - pa.board_inset_left) * 0.5
+	print("[standalone_view_shot] hud_inset=%.1f post-HUD centre=%.1f  block centre=%.1f  off=%.1f"
+			% [pa.board_inset_left, post_hud_centre, block.position.x + block.size.x * 0.5,
+			block.position.x + block.size.x * 0.5 - post_hud_centre])
 	print("[standalone_view_shot] CELL BLOCK %s" % [block])
 	print("[standalone_view_shot] ENTRANCE TRACK %s" % [strip])
 	var win := Rect2(Vector2.ZERO, Vector2(vp.size))

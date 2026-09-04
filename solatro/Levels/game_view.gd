@@ -214,6 +214,23 @@ func _capture_furniture_authored_x() -> void:
 	_furniture_authored_x.clear()
 	for control : Control in _furniture:
 		_furniture_authored_x.append(control.position.x)
+	_publish_hud_reserve()
+
+## Hands the board the width the HUD's rectangle takes on the left, so the grid centres in what is
+## LEFT of the screen rather than on the screen (owner: *"center of screen for stuff like grid
+## should be center of remaining space not taken by the hud"*).
+##
+## ⚠ **THE AUTHORED x, NEVER THE LIVE ONE.** `_process()` slides every furniture control by the
+## board's pan, so a reserve read off `position` would breathe in and out with every pan and drag
+## the board with it. The authored offsets are the HUD's real footprint and they never move.
+func _publish_hud_reserve() -> void:
+	if not is_instance_valid(play_area): return
+	var right := 0.0
+	for i : int in _furniture.size():
+		var control : Control = _furniture[i]
+		if not is_instance_valid(control): continue
+		right = maxf(right, _furniture_authored_x[i] + control.get_combined_minimum_size().x)
+	play_area.board_inset_left = right
 
 ## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
 ## furniture can track the camera's CURRENT position every frame instead of the `pan_grid` index
