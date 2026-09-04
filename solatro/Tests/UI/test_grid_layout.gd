@@ -52,6 +52,7 @@ func _ready() -> void:
 	await run_a_banked_grid_score_pops_its_label_test()
 	await run_the_card_is_put_down_before_anything_scores_test()
 	await run_a_deepening_stack_grows_the_board_upward_test()
+	await run_hovering_the_board_does_not_move_it_test()
 	restore_real_settings()
 	finish()
 
@@ -1493,3 +1494,74 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 func _cell_block_rect(pa: PlayArea, gi: int) -> Rect2:
 	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
 	return cells.get_global_transform() * Rect2(Vector2.ZERO, cells.size)
+
+
+# ==============================================================================
+# HOVERING THE BOARD DOES NOT MOVE THE BOARD.
+#
+# Owner: *"gap between entrance and grid moves around for some reason when moving mouse around,
+# presumably to reveal more of bottom part of grid, but it is already revealed. gap should stay
+# static."*
+#
+# A card control grabs focus on `mouse_entered`, and a `ScrollContainer` with `follow_focus` on
+# scrolls whatever just took focus into view -- so moving the mouse across the board scrolled it.
+# Measured before the fix: the gap between the cell block and the Entrance wandered between 44.2
+# and 25.3 px across twelve hovers, with nothing placed and nothing removed.
+#
+# ⚠ **FOCUS IS WHAT A HOVER DOES TO THIS TREE**, so focusing the controls in turn is the real
+# route and not a stand-in for one -- `create_card_control()` connects `mouse_entered` straight to
+# `grab_focus()`.
+# ==============================================================================
+func run_hovering_the_board_does_not_move_it_test() -> void:
+	behavior_section("HOVERING THE BOARD DOES NOT MOVE THE BOARD")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	for h : int in 2:
+		var card := g.draw_card()
+		if card: await g.place_card_in_grid(card, BoardCoord.new(0, 1, 2, h))
+	pa.queue_rebuild()
+	await _settle_layout(view)
+
+	var controls : Array[Control] = []
+	for node : Node in get_tree().get_nodes_in_group("CardVisualControl"):
+		var c := node as Control
+		if c and c.is_inside_tree() and pa.is_ancestor_of(c): controls.append(c)
+	check(controls.size() >= 4,
+			"precondition: there are card controls on the board to hover",
+			"%d controls" % controls.size())
+	if controls.size() < 4:
+		await _tear_down(view)
+		return
+
+	# One hover first, THEN the baseline: the first focus of a session legitimately settles the
+	# inspector and the focus widening. What the owner is describing is the board moving on every
+	# subsequent mouse move, which is what this measures.
+	controls[0].grab_focus()
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	var base := _cell_block_rect(pa, 0)
+	var base_scroll : float = pa.scroll_container.scroll_vertical
+
+	var worst := 0.0
+	var worst_scroll := 0.0
+	for i : int in mini(controls.size(), 10):
+		controls[i].grab_focus()
+		await get_tree().process_frame
+		await get_tree().physics_frame
+		worst = maxf(worst, absf(_cell_block_rect(pa, 0).end.y - base.end.y))
+		worst_scroll = maxf(worst_scroll,
+				absf(float(pa.scroll_container.scroll_vertical) - base_scroll))
+	check(worst <= 1.0,
+			"the cell block's bottom line does not move as the hover moves across the board -- "
+			+ "the gap to the Entrance stays put",
+			"worst %.2f px over %d hovers" % [worst, mini(controls.size(), 10)])
+	check(worst_scroll <= 0.5,
+			"...because nothing scrolled the board: the scroller does not chase focus, the "
+			+ "board's own pan is its only writer",
+			"worst scroll delta %.2f" % worst_scroll)
+	check(not pa.scroll_container.follow_focus,
+			"the board's scroller has follow_focus OFF")
+	await _tear_down(view)
