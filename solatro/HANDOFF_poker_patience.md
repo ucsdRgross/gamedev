@@ -618,7 +618,58 @@ and not a cap — the accumulation trap whose first fix was a false green.
 ⚠ That probe's FOCUSED figures are unusable: it reads `card_size_play`, which does not carry
 `board_zoom`, while `slot_center_global` does. Only its overview numbers are sound.
 
-### 2. The Entrance must stack UPWARD
+### 2. The Entrance must stack UPWARD — ⚠ BUILT, MEASURED, AND PARKED ON A 46-CHECK BLAST RADIUS
+
+**The owner has ruled it in** (*"entrance should stack upwards since downwards stacking hides pip
+row"*), and the change WORKS — it was implemented, measured and red-then-greened, then reverted
+because of what it does to the prop suites. Everything needed to redo it in minutes is below; do
+not re-derive any of it.
+
+**The change, exactly:**
+1. `set_card_zone()` — the column `VBoxContainer` takes `separation` 0 and `ALIGNMENT_END`; bind
+   REVERSED with the zone card LAST, mirroring `_bind_grid_panel()`:
+   `for j in depth: _bind_slot(vbox.get_child(j), stack[depth - 1 - j])` then
+   `_bind_slot(vbox.get_child(depth), type[i])`.
+2. `_bind_slot()` — `var bottom := true` (every card on the board hangs from its control's bottom
+   edge now, the Entrance included), replacing `target_layer == card_layer`.
+3. `update_card_zone_visuals()` — size it exactly like `update_grid_zone_visuals()`: zone card last
+   and collapsed when occupied, child 0 whole, the rest one `_depth_pitch_px()` each. The bespoke
+   held/selected widening by fixed child index goes (owner ruling), leaving
+   `on_control_focus_entered()` as the only highlight.
+4. `_apply_row_openings()` — ⚠ **IT IS THE LAST WRITER OF THOSE HEIGHTS** and was written for the
+   old top-down build, so it silently put the old sizes back every frame: the controls stepped 16
+   px where the arithmetic stepped 20. Follow the reversed order, `depth - 1 - j` for the reveal's
+   height, `_depth_pitch_px()` for the strips.
+5. `_entrance_slot_center_global()` — measure UP from the columns' shared bottom line
+   (`upper_zone_right`'s own bottom edge) instead of down from their tops, and SUBTRACT
+   `_row_open_offset()` rather than adding it.
+
+**Measured after the change** (focused, one grid, a 4-deep Entrance column):
+```
+h1 sits ABOVE h0 by 32.7 px -- exactly one depth pitch
+h0's pip row starts 776.8, h1's bottom edge 767.0  ->  pips VISIBLE by 9.8 px
+column children: min(40,54) whole | min(40,20) x3 strips | min(40,0) collapsed zone card
+control pitch 32.7 == the card arithmetic's 32.7
+```
+Red-then-green: with the old order restored the centres run DOWNWARD (544, 564, 584) and cards
+overlap **34 px into the pip row of the card beneath** — the owner's exact complaint, reproduced.
+
+⚠ **WHY IT IS PARKED: 46 CHECKS GO RED, ACROSS `UI PROPS` AND `VISUAL LAYERS`.** Neither suite is
+in `ZONE_ONLY_TESTS`, so these are LIVE assertions about the board's prop geometry, not legacy
+machinery being retired. Two root causes, both stale expectations of the old downward Entrance:
+- `test_ui_props` computes a card's anchor as `control.global_position + (w/2, card_h/2)` — the
+  TOP-hung formula. A bottom-anchored card is `+ (w/2, control.size.y - card_h/2)`, which is the
+  54 px difference the failures report. It also asserts the Entrance's row pitch is POSITIVE; it
+  is now negative by design.
+- `test_visual_layers`' row-bracketing checks turn on which card is "above" another, and the
+  Entrance's depth axis has inverted under them. The reveal offset flips with it.
+
+⚠ **DO NOT JUST REWRITE THE 46 TO MATCH.** That is rewriting tests to fit behaviour, which is the
+one thing this repo's test rules forbid outright. The pass needs an INDEPENDENT gate: render the
+prop layer over an Entrance stack and confirm by eye that the halves still bracket the right card
+(`/fx-verify` exists for exactly this), and only then update the expectations.
+
+### 2b. The ORIGINAL note on this item, kept for its warnings
 **Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
 like all other cards."*
 
