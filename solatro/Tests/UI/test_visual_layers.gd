@@ -1216,10 +1216,18 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	while settled < 3.0 and pa._row_open.get(pa._reveal_key(_ent(0)), 0.0) < 1.0:
 		settled += await _tick_seconds()
 	var open_y := pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y
-	check(open_y > closed_y,
-			"S17/K13: the slot BELOW it moved down by the opening — props anchored there follow",
-			"y %.1f -> %.1f (no movement means slot_center_global ignored the expansion)"
-			% [closed_y, open_y])
+	# ⚠ **THE DIRECTION IS READ OFF THE BOARD, NOT NAMED HERE.** An opening displaces the slots on
+	# its far side AWAY from it -- which is downward on a stack that grows down and upward on one
+	# that grows up. Naming a direction made this a second, silent assertion about which way the
+	# Entrance stacks, in a check that is about the REVEAL.
+	var stack_dir := signf(pa.slot_center_global(_ent(1)).y - pa.slot_center_global(_ent(0)).y)
+	var displaced := open_y - closed_y
+	check(not is_equal_approx(displaced, 0.0) and signf(displaced) == stack_dir,
+			"S17/K13: the slot past the opening is displaced by it, away from the opening — props "
+			+ "anchored there follow",
+			"y %.1f -> %.1f (moved %.1f, stack direction %.0f; no movement means "
+			% [closed_y, open_y, displaced, stack_dir]
+			+ "slot_center_global ignored the expansion)")
 	# ⚠ **ASSERTED ON THE RESULTING ROW PITCH, NOT ON THE STRIP'S GROWTH — and that distinction caught a
 	# real bug.** The old form checked the movement against
 	# `_row_open_height() - card_separation_play_custom`, which is the STRIP's growth and quietly
@@ -1229,7 +1237,8 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	# has to be measured.
 	var closed_pitch := closed_y - pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
 	var open_pitch := open_y - pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
-	check(absf(open_pitch - pa._row_open_height()) < 1.0,
+	# ⚠ The pitch's MAGNITUDE is the mode's promise; its sign is which way the stack grows.
+	check(absf(absf(open_pitch) - pa._row_open_height()) < 1.0,
 			"...leaving a row pitch of EXACTLY the mode's opening (GAP-009) — no stray separation",
 			"pitch %.1f -> %.1f, mode asks for %.1f" % [closed_pitch, open_pitch, pa._row_open_height()])
 	# ⚠ **AN ALREADY-OPEN ROW MUST FOLLOW A LIVE SETTINGS CHANGE.** Every term in the opening is read
@@ -1244,10 +1253,10 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	await get_tree().process_frame
 	var top_y := pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
 	var scaled_pitch := pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y - top_y
-	check(scaled_pitch > open_pitch + 1.0,
+	check(absf(scaled_pitch) > absf(open_pitch) + 1.0,
 			"a card_scale change mid-reveal actually MOVES the pitch, so the next check can fail",
 			"pitch %.1f -> %.1f" % [open_pitch, scaled_pitch])
-	check(absf(scaled_pitch - pa._row_open_height()) < 1.5,
+	check(absf(absf(scaled_pitch) - pa._row_open_height()) < 1.5,
 			"...and the OPEN row re-derives to the mode's new opening — nothing was captured at spawn",
 			"pitch %.1f, mode now asks for %.1f" % [scaled_pitch, pa._row_open_height()])
 	SettingsManager.settings.card_scale = prev_scale
