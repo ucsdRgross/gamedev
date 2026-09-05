@@ -4,7 +4,20 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** Phases 1-6, 7, 8 and Phase 10's CSV half are landed. **Phase 7 closed with `S34`**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
+**State:** ✅ **EVERY PHASE IS LANDED.** Phases 1-9 and now Phase 10 in full: `S40` amended
+`ARCHITECTURE_REVIEW.md` in place, `S41` produced grid versions of the three design companions
+with the pre-grid ones archived, and `S44` updated `START_HERE.md`, `PICTURE_WALL.md` and
+`LAYERING.md`. `S42`/`S43` (the CSV half) were done out of order earlier and are superseded by the
+effect-review stream. **IMPLEMENTED-BY: Claude Opus 5.**
+
+⚠ **PHASE 10 HAS A CROSS-BRANCH CONSEQUENCE THE OWNER HAS TO ACT ON.** The effect-review corpus
+(1,409 owner questions) lives on `main` and was mined FROM the pre-grid design documents this
+phase just replaced; 228 of its questions, and 7 of the 28 already answered, describe acts,
+Submits or patience. the effect review's own handoff on `main` now carries that as task `S12`,
+and it is **blocked on this branch being merged** — until then a re-mine would read the archived
+pre-grid text and change nothing.
+
+Phases 1-6, 7, 8 and Phase 10's CSV half were landed earlier. **Phase 7 closed with `S34`**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
 camera stepping is proven end-to-end through a real key route, and the saved pan (`S32`) is in.
 **Every standing failure is attributed** — none is a mystery.
 
@@ -347,14 +360,43 @@ be checked by hand.
     follows the tool's panel; that is also GAP-030's injection seam, first step.
     `knobs_this_preview_does_not_drive` is DERIVED now, not declared.
 - id: S40
-  description: 'PHASE 10: ARCHITECTURE_REVIEW.'
-  status: pending
+  description: 'PHASE 10: ARCHITECTURE_REVIEW amended in place (Q279=a).'
+  status: done
+  evidence: >
+    Sections 1, 2, 3, 5, 7 and 8 rewritten against the code; the rest left. doc_check 0 errors,
+    9 warnings -- identical to the pre-edit baseline.
+  notes: >
+    Section 2 is now 2a grid placement / 2b the legacy zone engine / 2c the shared mutation rule.
+    Section 3 gained a 3d for line completeness; 3c KEPT its number because five documents cite
+    ARCHITECTURE_REVIEW section 3c for the comparator buckets. Section 8 collected the five suite
+    gates that were only in this handoff. Corrected while there: the suite count said 31 and is
+    45; the deadlock chain named four suites and has nine.
 - id: S41
-  description: 'PHASE 10: alternate design docs.'
-  status: pending
+  description: 'PHASE 10: alternate design docs, older versions archived (Q280=b, Q281).'
+  status: done
+  evidence: >
+    solatro/{DESIGN_DOC,DESIGN_RECOMMENDATIONS,DESIGN_REFERENCES}.md are grid versions;
+    the pre-grid files moved unchanged to solatro/archive/ with a README. doc_check 0 errors.
+  notes: >
+    Owner verbatim (Q281): "alternate versions, lets archive the older versions for now".
+    archive/ is NOT in doc_check's LIVING_GLOBS, so the archived files keep their own dated
+    timelines without failing the hygiene rules -- which is the point of an archive. Their
+    BASENAMES are unchanged, so every pre-grid citation into them still resolves.
+    DESIGN_REFERENCES.md's historical corpus is deliberately untouched: it is a quarry and that
+    is its whole value. Only the framing and the eleven hooks whose mechanic was literally a
+    Submit were re-based.
 - id: S44
-  description: 'PHASE 10: the remaining doc updates.'
-  status: pending
+  description: 'PHASE 10: START_HERE, PICTURE_WALL and LAYERING (Q290=b).'
+  status: done
+  evidence: >
+    doc_check 0 errors, 9 warnings. LAYERING.md's draw-order tree verified against the live
+    VISUAL LAYERS dump in the run log, not only against the source.
+  notes: >
+    The board has TWO card layers and they are not siblings -- CardLayer inside the scroll for
+    the grids, EntranceCardLayer on a LATER PlayArea sibling for the Entrance. That is why an
+    Entrance card's FX draws in front of every grid, and it is the fact LAYERING.md most needed.
+    play_area.gd cited a `_build_grid_panel` that does not exist; the function is
+    `_create_grid_panel`. Comment only.
 ```
 
 ## The three gates a change here must satisfy
