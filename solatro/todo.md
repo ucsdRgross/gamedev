@@ -60,6 +60,16 @@ gone by the time you know you wanted it.
 
 ## Waiting on the owner
 
+- ⚠ **`GAP-042` — a prop scoring a card in the ENTRANCE banks into a dead bucket.**
+  `PropScoreProps`/`PropScoreTalents` use the legacy `ScoringSection.of_line` for an Entrance
+  card, which leaves `grid == -1`, so `add_line_score` takes the legacy path into
+  `scores_row_upper`/`row_total` — neither of which `live_total()` reads. The combo still bumps.
+  **LATENT: no shipped content can put a prop on the Entrance row** (props spawn only from a
+  scored meld, which is always a grid line), but `row_slot_path` has an explicit Entrance branch
+  and the first effect that re-routes a prop there fires it. Three options in
+  `design/poker-patience/gaps/GAP-042.md`; it is an owner call about whether the Entrance
+  participates in the economy at all.
+
 - ⬜ **Playtest the picture wall** — `HANDOFF_picture_wall.md` S40. Nothing else on that stream can
   be judged until someone drives it; two adversarial reviews traced journeys, neither played it.
 - ⬜ **Picture wall: decide what unlocks `book`** — until it exists a whole subsystem is dead code

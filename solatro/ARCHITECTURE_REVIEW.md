@@ -169,8 +169,11 @@ path which bumped `revision` without finishing the mutation that keeps them in s
   `SkillLineDetector` answers it, asks `LineGeometry.lines_through` for every line through the
   mutated cell, and scores whichever of them are complete — **ROW, then COL, then DIAG, then
   HEIGHT_V**, in that order, because the replay contract depends on it being deterministic.
-  Each line becomes a `ScoringSection`, is re-scored through `SkillEvalPokerBest`, and banks
-  via `Game.score_line` → `add_line_score` → `_add_grid_line_score` (data always; paced
+  Each line becomes a `ScoringSection` and is handed to `Game.score_line` **with a null result**:
+  the detector deliberately computes no hand, because `score_line` re-evaluates through
+  `Scoring.PokerHands.score()` over whatever is in the section AFTER every spotlight effect has
+  fired, and that re-derived hand is what banks. A result computed by the detector would only be
+  thrown away, and computing one would imply it survived the cascade. It banks → `add_line_score` → `_add_grid_line_score` (data always; paced
   visuals only `if view:`) → props (§4). **A mutation that only dropped cards down scores
   nothing**, and the mover sets that flag explicitly — it is never inferred by comparing
   heights.
@@ -188,7 +191,7 @@ path which bumped `revision` without finishing the mutation that keeps them in s
 
 1. Subclass `CardModifierSkill/Stamp/Type/Status` (or `PipSuit`), implement
    `get_str/get_description/get_frame`.
-2. Implement any hook: `on_next`, `on_run_scorer`, `on_can_grab_stack`,
+2. Implement any hook: `on_board_mutated`, `on_card_placed`, `on_next`, `on_can_grab_stack`,
    `on_can_place_stack`, `on_card_dropped_on`, `on_stack_cards`, `on_score_row`,
    `on_score_col`, `on_score`, `on_after_score`, `on_trigger`, `on_append`, `on_discard`,
    `on_game_start/end`, `on_compare_ranks/suits`, `on_anything`, `on_spotlight/on_unspotlight`,

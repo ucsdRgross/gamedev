@@ -42,9 +42,15 @@ var game : Game = null
 @onready var lose_screen: Label = %LoseScreen
 @onready var goal_label: Label = %Goal/Label
 @onready var total_label: Label = %Total/Label
+## ⚠ The `MultScore` label and its `Col` / `x` / `Row` children are the RETIRED act payout's
+## display (`mult_score`, `col_total`, `row_total`). Nothing in the grid economy writes any of
+## them, so they are emptied at startup and never written again -- the show's score is exactly
+## two numbers, `total_label` and `combo_label`. `Combo` is a CHILD of `MultScore`, which is why
+## the parent is emptied rather than hidden.
 @onready var mult_label: Label = %MultScore
 @onready var col_label: Label = %MultScore/Col
 @onready var row_label: Label = %MultScore/Row
+@onready var mult_x_label: Label = %MultScore/x
 @onready var combo_label: Label = %MultScore/Combo
 ## The spotlight's light layer, and the node that feeds it. ⚠ The DIRECTOR is created here rather
 ## than placed in the scene because it must bind AFTER `game` exists — it connects to
@@ -68,6 +74,13 @@ var _wall_camera : Camera2D = null
 var _wall_rect_centre_x : Callable = Callable()
 
 func _ready() -> void:
+	# The retired act payout's three labels, emptied once. They are authored with placeholder
+	# text in the scene, and with nothing writing them the player would otherwise read a frozen
+	# "0 0 x 0" beside the live total for the whole show.
+	mult_label.text = ""
+	col_label.text = ""
+	row_label.text = ""
+	mult_x_label.text = ""
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
 	# (CardEnvironment.CURRENT) and _ready (resume/fresh deal) run with the view fully bound.
 	game = Game.new()
@@ -181,9 +194,6 @@ func _refresh_hud() -> void:
 	# The show's score is DERIVED (every grid's total, times the combo) and always current --
 	# there is no act payout and no banking moment, so there is no stored total to show.
 	total_label.text = str(state.live_total())
-	mult_label.text = str(state.mult_score)
-	col_label.text = str(state.col_total)
-	row_label.text = str(state.row_total)
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
 	combo_label.visible = combo > 1.0   # owner ruling 2026-07-17: hidden at x1.0
