@@ -305,7 +305,9 @@ equipment — shoes, costume) 💭, connecting to the Costume Designer class (§
 - A **pip resolver/comparator class** (`PipComparator`) determines all interactions
   between pips; every rank/suit comparison funnels through it; mods get asked first
   (`on_compare_ranks/suits`) with numeric fallback.
-- Each pip gets its own class for visuals (`PipSuitStandard`, `PipRankNumeral` ✅).
+- Each pip gets its own class for visuals — one per suit (`PipSuitHoop`, `PipSuitKnife`,
+  `PipSuitBall`, `PipSuitFire`, `PipSuitFirework`) under the abstract `PipSuit`, plus
+  `PipRankNumeral` for ranks. ✅
 - Design Q&A from the notes, resolved: *can pips have abilities outside the resolver?* →
   Yes, for new scoring methods: each pip class can register static scoring methods as
   defaults for that pip. Pip effects are permanently active (unlike skills).

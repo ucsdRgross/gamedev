@@ -91,14 +91,13 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
 - **`Camera2D.zoom` here is DIRECT MAGNIFICATION**: the visible span is `window_size / zoom`.
-- ⚠ **A wide game picture has TWO clips, and they are not the same one.** The wall clips the
-  picture to the window; `PlayArea`'s own `GridContainer` clips the grids to the board's window
-  INSIDE the picture. A grid outside the board's window is out of VIEW, not merely out of
-  position — unclipped, a non-focused grid painted across the Deck button and the score column
-  while its geometry was already correct. The Entrance strip is a SIBLING of that container, so a
-  card being placed crosses the clip edge; measured, it spends one frame outside the picture
-  entirely and every later frame inside the board's window, so the clip takes nothing off the
-  flight.
+- ⚠ **THE WALL IS THE ONLY THING THAT CLIPS. THE BOARD INSIDE IT DOES NOT.** The wall clips the
+  picture to the window, and that is the whole of it: `PlayArea` sets
+  `scroll_container.clip_contents = false` and GRID VIEW asserts that nothing between the card
+  layer and the `PlayArea` clips either. **Hiding a non-focused grid is the CAMERA's job and only
+  the camera's** — props and animations are authored to leave the board's edges, and a clip there
+  culls them. So a grid that is off-window is off-CAMERA, not culled, and a card flying between
+  grids is never cut.
 - ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `GameView`
   publishes the HUD's width to `PlayArea.board_inset_left` and the board centres in what is
   LEFT of the screen, not on the screen. **The board's WINDOW is what moves, not the content** —

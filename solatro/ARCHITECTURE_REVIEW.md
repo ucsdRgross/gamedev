@@ -95,10 +95,11 @@ CardModifier (@abstract Resource)
  └─ PipSuit                                suit-as-modifier; dispatched ONLY via
                                            run_card_mods + spawn_props (see §4)
 
-Board (Scripts/board.gd) ....... LEGACY zone move engine (§2). Still the path for the
-                                 Entrance, and the only board the retired grab/place rules
-                                 cards understand. GRID placement does NOT go through it —
-                                 Game.place_card_in_grid / move_card_in_grid own that.
+Board (Scripts/board.gd) ....... BOTH move engines, in one file (§2). The anchor-based zone
+                                 engine (move_stack / place_card / add_column) AND the grid cell
+                                 primitives (place_in_cell / move_to_cell / locate_in_cell /
+                                 remove_from_cell). ⚠ A change here reaches the LIVE grid board,
+                                 not only the legacy zones.
 BoardCoord (Scripts/board_coord.gd) .. the four-component grid coordinate (below).
 GridData (Scripts/grid_data.gd) ...... ONE grid: its OWN grid_width/grid_height (nothing
                                  hard-codes 5), a row-major `cells` array holding each cell's
@@ -302,22 +303,37 @@ history stored in forward orientation).
 
 ## 2. THE MOVE ENGINE
 
-Two engines, and which one runs depends on which board the card is on.
+⚠ **`Scripts/board.gd` HOSTS BOTH MOVE ENGINES.** It is one file with two APIs: the anchor-based
+zone engine and the grid cell primitives. Reading it as "the legacy board" is the mistake this
+warning exists to prevent — **the blast radius of any change in that file is the live grid board
+as well as the legacy zones.** Both APIs are static and both obey §2c's mutation rule.
 
 ### 2a. Grid placement (the live path)
 
-`Game.place_card_in_grid(card, coord)` / `move_card_in_grid` / `remove_card_from_grid`.
+`Game.place_card_in_grid(card, coord)` / `move_card_in_grid` / `remove_card_from_grid` are the
+callers; **`Board.place_in_cell` / `move_to_cell` / `locate_in_cell` / `remove_from_cell` are the
+primitives that actually mutate.** Game owns the surrounding pass — the activation budget, the
+replay marker, the grid commitment, the broadcast — and Board owns the array.
+
 A placement appends to the target cell's stack, so **the height a card lands at is not the
 height that was requested** — read it back with `GameData.grid_position_of`, never by reusing
 the coordinate you asked for. `GameData.has_cell(coord)` is the landing question: false means
 there is nothing there to land on. Every one of these ends in `_broadcast_board_mutation`,
 which fires `on_board_mutated(coord, is_compaction)` — the broadcast the scorer answers.
 
-⚠ **`is_compaction` is set BY THE MOVER and is never inferred from before/after heights.** A
-pass whose mutation is a compaction scores nothing; getting the flag from geometry would make
-a drop-only settle look like a fresh arrival.
+⚠ **`is_compaction` is set BY THE MOVER and is never inferred from before/after heights.** It
+travels from the caller through `GridMoveResult` to the broadcast. A pass whose mutation is a
+compaction scores nothing; getting the flag from geometry would make a drop-only settle look
+like a fresh arrival. A REMOVAL passes `false` — the cards it compacted moved as a side effect
+of the array shift, not as a mover's own move.
 
-### 2b. The legacy zone engine (`Scripts/board.gd`)
+⚠ **`place_card_in_grid` opens a fresh activation budget only when `processing` is false.** A
+PLAYER's placement is the board action a Submit used to be; an effect placing a card mid-cascade
+reaches the same function, and resetting the counter there would hand the cascade an unlimited
+budget every time it placed something — which is exactly the unbounded re-scan the runaway guard
+is the only bound on. Nested placements spend the SAME budget.
+
+### 2b. The zone engine, in the same file
 
 Still the path for the **Entrance**, and the board the retired grab/place rules cards read.
 Destinations are **anchors** (card references), not indices — `OnTop(card)` /
@@ -1517,6 +1533,11 @@ still lets the others report "PASSED"). Never run headless while the owner's edi
 project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw,
 headless window size): **HEADLESS_TESTING.md**.
 
+⚠ **"SUBMIT" IS STILL A LIVE IDENTIFIER, AND GREPPING FOR IT PROVES NOTHING.** The End button's
+scene node is still named `Submit` with that label text, and `GameView` still carries
+`submit_button` and `submit_label_changed`. What was retired is the MECHANIC, and the gates in §8
+name the exact spellings that are forbidden — the bare word is not one of them.
+
 ⚠ **A BANNER CAN REPORT A FAILURE THAT IS NOT A CHECK.** `N FAILED (0 behavior, 0
 implementation)` means the engine-error gate fired, not that an assertion failed — read
 `test_output_errors.log` and the newest engine log's backtrace, not the check list.
@@ -1644,9 +1665,10 @@ Conventions (formerly UNIT_TESTS_PLAN):
   re-scores it every cycle. `act_event_cap` is the only bound. **Do not tune it away** (§3d).
 - **A grid line never crosses a grid boundary and never wraps**, whatever the geometry would
   otherwise allow.
-- **The Entrance's grid commitment lives on `GameData`** (`entrance_grid`, `@export_storage`),
-  so undo rewinds it with the board. It lifts only on undo or when no legal placement remains
-  in the committed grid.
+- **The Entrance's grid commitment lives on `GameData`** (`committed_grid`, `@export_storage`,
+  `-1` = uncommitted), so undo rewinds it with the board. Once set, a placement into any other
+  grid is refused outright; it lifts only on undo or when no legal placement remains in the
+  committed grid.
 - **No design ids in product code** — not in a comment, not in a `##` doc comment, and above
   all not in an `@export_group` label, which Godot renders as an Inspector heading. The code
   gets the RULE the answer produced; `design/poker-patience/PLAN.md` carries the traceability.

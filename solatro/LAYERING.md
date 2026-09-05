@@ -46,9 +46,7 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
    │  │  ├─ SmoothScrollContainer → TopLevelVBox   (clip_contents=false; carries scroll)
    │  │  │  ├─ GridContainer (HBoxContainer)  ── ONE GridPanel per GameData.grids entry,
    │  │  │  │    │                               left to right, all bottom-aligned on one floor
-   │  │  │  │    │  ⚠ IT CLIPS. A grid outside the board's window is OUT OF VIEW, not merely
-   │  │  │  │    │    out of position — unclipped, a non-focused grid painted across the Deck
-   │  │  │  │    │    button and the score column while its geometry was already correct.
+   │  │  │  │    │  ⚠ NOTHING HERE CLIPS — see the ruling below the tree.
    │  │  │  │    └─ GridPanel (VBoxContainer, ALIGNMENT_END)
    │  │  │  │       └─ Board (HBox)
    │  │  │  │          ├─ RowLabels (VBox)      — row scores, LEFT of the cells
@@ -114,6 +112,17 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
          EARLIER SILENTLY UN-DIMS whatever now draws after it, with no error and no failing
          test — the symptom is "that one thing never goes dark".
 ```
+
+⚠ **THE BOARD DOES NOT CLIP, ANYWHERE, AND THAT IS A RULING.** Not the scroller, not
+`GridContainer`, not anything between `CardLayer` and `PlayArea`. `%CardLayer` lives inside the
+scroller, so a clip there CULLS card visuals outright — and props and animations are authored to
+leave the board's edges on purpose. Owner: *"clipping content cant work because i see it clipping
+stuff like props and animations which specifically go outside edges of board visually."*
+**Hiding a neighbouring grid is the CAMERA's job and only the camera's.** `play_area.gd` sets
+`scroll_container.clip_contents = false` explicitly, and GRID VIEW's
+`run_a_card_between_grids_is_never_clipped_away_test` walks the WHOLE ancestor chain from
+`card_layer` up to `PlayArea` asserting nothing in it clips — so a clip re-appearing one level up
+cannot hide. ⚠ Do not "restore" a clip here; it is a gate, and it will fail.
 
 ⚠ **"ROW-MAJOR" ON THE GRID MEANS A HEIGHT LAYER, NOT A SCREEN ROW.** `_append_grids_row_major`
 emits `for h: for every cell`, so one height layer is contiguous in `CardLayer` and a screen row
