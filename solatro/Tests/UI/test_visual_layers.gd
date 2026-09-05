@@ -599,9 +599,17 @@ func test_hoop_split_multi_column() -> void:
 		check(vis != null and vis.lane_offset.is_equal_approx(jump_rise),
 				"a hoop's only offset is the card-jump rise, never a formation (separation %.1f)"
 				% sep_scale, str(vis.lane_offset) if vis else "no visual")
-		for _i in 6:
-			await get_tree().process_frame
+		# ⚠ **WAIT FOR THE CARD TO STOP MOVING, NOT A FIXED SIX FRAMES.** A card tweens to its slot,
+		# and how long that takes depends on how far it has to go -- which a layout change moves.
 		var occ_vis : CardVisual = pa.data_card.get(occupied)
+		var last_pos := Vector2(INF, INF)
+		var settle_waited := 0.0
+		while settle_waited < 2.0:
+			await get_tree().process_frame
+			settle_waited += get_process_delta_time()
+			if not occ_vis: break
+			if occ_vis.global_position.is_equal_approx(last_pos): break
+			last_pos = occ_vis.global_position
 		# The ring rides at the height a JUMPED card's centre reaches — that is the alignment the
 		# whole feature is: card centre + jump rise == ring centre.
 		check(vis != null and occ_vis != null

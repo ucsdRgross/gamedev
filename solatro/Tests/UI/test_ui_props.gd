@@ -294,15 +294,26 @@ func test_slot_geometry() -> void:
 	var control := pa.control_for_coord(slot(0))
 	check_impl(control != null, "an occupied slot coord maps to a board control")
 	if control:
-		var center := control.global_position + control.size * 0.5
+		# ⚠ A control's RECT centre is not where its card goes -- that was a third hand-copy of the
+		# anchoring, and it only agreed while every slot control happened to be a full card tall.
+		var visual : CardVisual = pa.data_card[pa.ui_data[control]]
+		var center := visual.get_card_control_center(control)
 		check_impl(pa.slot_center_global(slot_coord(0)).is_equal_approx(center),
-				"slot_center_global returns the control's rect center")
+				"slot_center_global lands where the card's own control anchoring puts it",
+				"%s vs %s" % [pa.slot_center_global(slot_coord(0)), center])
 	# Slots past the built rows have no control: the slot MATH extrapolates down the column.
 	var deep_a := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 4))
 	var deep_b := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 5))
-	check_impl(deep_b.y > deep_a.y and is_equal_approx(deep_a.x, deep_b.x),
-			"empty-slot fallback walks straight down the column",
-			"%s -> %s" % [deep_a, deep_b])
+	# ⚠ **THE DIRECTION IS MEASURED, NOT NAMED.** Which way a column grows is a design decision that
+	# has already changed once; what must always hold is that the fallback CONTINUES the direction
+	# the built slots establish, rather than reversing or flattening past the last control.
+	var built_step := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)).y \
+			- pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).y
+	check_impl(signf(deep_b.y - deep_a.y) == signf(built_step)
+			and not is_equal_approx(deep_a.y, deep_b.y)
+			and is_equal_approx(deep_a.x, deep_b.x),
+			"empty-slot fallback walks straight along the column, the same way the built slots do",
+			"%s -> %s, built step %.1f" % [deep_a, deep_b, built_step])
 	await cleanup(g, pa)
 	# A COMPLETELY EMPTY column: its header is that column's LAST control, so the
 	# "last control is full card height" rule inflates it — the fallback must anchor to
@@ -328,20 +339,33 @@ func test_slot_geometry() -> void:
 		g = make_board_game(3, [1] as Array[int])
 		pa = make_play_area()
 		await settle(pa)
+		# ⚠ **ASK THE CARD WHERE IT PUTS ITSELF; DO NOT RE-DERIVE IT HERE.** This used to hand-copy
+		# the anchoring formula (`control top + half a card`), so it agreed with the code by
+		# construction rather than by test: it could not catch a wrong anchor, it ignored the
+		# control's own scale, and it broke the moment the anchoring convention legitimately
+		# changed. `get_card_control_center()` IS the production answer, so what is compared now is
+		# the two INDEPENDENT routes to one slot -- the pure arithmetic a prop uses, and the real
+		# control a card hangs on.
 		var control_a := pa.control_for_coord(slot(0))
-		var anchor_a : Vector2 = control_a.global_position \
-				+ Vector2(control_a.size.x * 0.5, CardVisual.card_size_play.y * 0.5)
+		var visual_a : CardVisual = pa.data_card[pa.ui_data[control_a]]
+		var anchor_a := visual_a.get_card_control_center(control_a)
 		check_impl(pa.slot_center_global(slot_coord(0)).is_equal_approx(anchor_a),
-				"math slot center matches the built control's card anchor at separation %.1f" % sep_scale,
+				"the slot ARITHMETIC lands where the card's own control anchoring puts it, at "
+				+ "separation %.1f" % sep_scale,
 				"%s vs %s" % [pa.slot_center_global(slot_coord(0)), anchor_a])
 		check_impl(is_equal_approx(pa.slot_center_global(slot_coord(0)).y,
 				pa.slot_center_global(slot_coord(1)).y),
 				"empty column stays on the row line at separation %.1f" % sep_scale)
+		# ⚠ **MAGNITUDE AND DIRECTION ARE SEPARATE CLAIMS.** The pitch's SIZE is arithmetic every
+		# prop depends on; its SIGN is a design decision. Asserting a signed number folded the two
+		# together, so a deliberate change of stacking direction would read as an arithmetic
+		# regression. The direction is asserted separately, where the stack's own build order is.
 		var pitch := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)).y \
 				- pa.slot_center_global(slot_coord(0)).y
-		check_impl(is_equal_approx(pitch,
+		check_impl(is_equal_approx(absf(pitch),
 				float(CardVisual.card_separation_play_custom) + float(pa.separation)),
-				"row pitch = card strip + separation at separation %.1f" % sep_scale, str(pitch))
+				"one height step is exactly a card strip plus a separation, at separation %.1f"
+				% sep_scale, str(pitch))
 		await cleanup(g, pa)
 	SettingsManager.settings.card_separation_scale = prev_sep
 
