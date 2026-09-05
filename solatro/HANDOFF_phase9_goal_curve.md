@@ -5,6 +5,35 @@ tableau's. Extend the simulation to the grid model, then refit `goal_g0` / `goal
 
 **Phases 1–8 and 10 are done.** This is the last modelling work in `PLAN.md`.
 
+## STATE — S38 and S39 are BUILT; the phase is BLOCKED on `GAP-041`
+
+`S38` and `S39` are done and committed. The refit ran, and it says the shape moved:
+
+- **A show's score peaks at node 3 and ends the run at 0.16x that peak.** Two measured causes, both
+  in shipped code: the board holds **25 cells for the whole run** (`grid_cards_per_unlock` 52 is
+  never crossed, so a run never unlocks a second grid), and `TypeBoosterBasic` draws ranks
+  **1-13** against a start deck of **1-5**, thinning the collisions that make melds.
+- **No two constants fit that ladder.** The MINIMAX fit — the best any `(g0, alpha)` pair can do —
+  is still **100% out** at some node. That is the proof, not the least-squares R².
+- Committed at the **BEATABLE** fit (the hardest curve that stays winnable everywhere):
+  `goal_g0` **5376.0**, `goal_alpha` **0.26**. Validates at 17.2 / 15.2 / 10.5% run-win for
+  skilled / par / average. ⚠ A near-flat alpha is the curve admitting it has no driver.
+- **`GAP-041` carries the four options and is unanswered.** Do not pick one.
+
+⚠ **THE SIM IS NOW ASSERTED AGAINST THE ENGINE.** `Tools/scoring_parity.gd` dumps what
+`Scoring.PokerHands`, `GameData.grid_score` and `GameData.combo_mult` actually say, and
+`--parity` checks the port against it — 1200 lines, 0 score mismatches. Run BOTH after any
+change to either side:
+
+```bash
+Godot --path solatro res://Tools/scoring_parity.tscn
+py solatro/Tools/scoring_sim.py --parity "%APPDATA%/Godot/app_userdata/Solatro/scoring_parity.json"
+py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25
+```
+
+⚠ **TRIAL COUNT MOVES THE CONSTANTS.** 300 trials gave `5038.4 / 0.42` where 800 gave
+`5376.0 / 0.26`. The committed pair is the 800-trial run; quote the trial count with any refit.
+
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
 Derived from `design/poker-patience/DESIGN.md` v2 and `design/grid-view/DESIGN.md` v2.
@@ -23,11 +52,12 @@ including deciding `GAP-018` from platform research rather than from either file
 
 ## The two steps
 
-**S38** — Extend `Tools/scoring_sim.py` to the grid model and the §1.6 economy.
-**S39** — Refit `goal_g0` / `goal_alpha` and record the derivation.
+**S38** — DONE. `Tools/scoring_sim.py` carries the grid model as its own section; every tableau
+entry point now prints a RETIRED banner, and `score_additive` is gone.
+**S39** — DONE. Constants committed with their command; the derivation is in `GAP-041`.
 
 **Done-when (phase):** the sim runs end to end and the fitted constants are committed **with the
-command that produced them**.
+command that produced them**. Both hold. The PHASE still needs an owner answer on `GAP-041`.
 
 ⚠ There are **no `TEST_PLAN.md` rows for this phase** — its gate is the sim itself, not the suite.
 Do not go looking for TP numbers; do not invent them.
@@ -42,7 +72,9 @@ goal  = goal_g0 * (n_hat / goal_n0) ^ goal_alpha * difficulty * lap_mult ^ min(l
         (* boss_mult on a boss)
 ```
 
-Shipped today: `goal_g0` **130.0**, `goal_alpha` **4.2**. Both are `PlayerSettings` knobs.
+Shipped today: `goal_g0` **5376.0**, `goal_alpha` **0.26**. Both are `PlayerSettings` knobs.
+The pair they replaced (**130.0** / **4.2**) was fitted to the tableau and asked 130 at node 0
+against a measured median score of 9,360 — every goal in the game was trivial.
 
 ## ⚠ WHY A REFIT MAY NOT BE ENOUGH — READ THIS BEFORE FITTING TWO CONSTANTS
 
@@ -97,16 +129,17 @@ py solatro/Tools/scoring_sim.py --run-sim V2A   # full 12-node run simulation
 py solatro/Tools/scoring_sim.py --goals V2A     # the goal-curve view
 ```
 
+⚠ **THE CLI ABOVE IS THE RETIRED TABLEAU'S.** `--grid-goals`, `--grid-show` and `--parity` are the
+live ones; the file's own docstring now separates them.
+
 ⚠ **ITS OWN DOCSTRING LISTS THE SIMPLIFICATIONS IT ALREADY HAD** — arrangement is not
 legality-constrained, props are static rank-weighted gutter points with no ticks or cascades,
 Entrance persistence across acts is not modelled. Those were acceptable for the tableau. Decide
 explicitly which survive the grid model rather than inheriting them silently, and write the decision
 down.
 
-⚠ **THE SCORING-MATH PLAN THE SIM'S DOCSTRING CITES THROUGHOUT IS NOT IN THIS REPO.** Do not go
-hunting for it; those citations are dangling and worth deleting from the docstring while you are in
-there. (Named without a link on purpose — `doc_check.py` reads a filename in backticks as a
-reference and would flag this line for describing the problem.)
+The scoring-math plan the sim's docstring used to cite throughout is not in this repo; those
+dangling citations are gone.
 
 ## Environment — traps that have each cost real time
 

@@ -3,7 +3,7 @@
 TWO MODELS LIVE HERE, and only one of them is the shipped game.
 
   * THE GRID MODEL (--grid-goals) is the live one: the poker-patience economy of
-    PLAN.md 1.6 -- grids of cells, a placement scoring every complete line through
+    the shipped economy -- grids of cells, a placement scoring every complete line through
     it, three buckets per grid multiplied together, and one show-wide combo applied
     at display time. Its section carries its own simplifications banner.
   * THE TABLEAU MODEL (everything else) is RETIRED. It ports the old
@@ -578,7 +578,7 @@ class CsvOut:
 def run_baseline(trials, out):
     """Reproduce the plan-2 baseline table (V0, real deck11 / deck52)."""
     retired_banner('--baseline')
-    print("=== BASELINE (V0, must match SCORING_MATH_PLAN.md 2 within MC noise) ===")
+    print("=== BASELINE (V0, the retired tableau's own reference tables) ===")
     cells = [
         ('deck11 8/8/8 random', deck11, [8, 8, 8], 'random'),
         ('deck11 8/8/8 ranks', deck11, [8, 8, 8], 'ranks'),
@@ -1156,7 +1156,7 @@ def run_gsp(trials, out):
 
 
 # ============================================================================
-# GRID MODEL — the live game. Port of the poker-patience economy (PLAN.md 1.6).
+# GRID MODEL — the live game. Port of the shipped poker-patience economy.
 #
 # Everything ABOVE this banner models the RETIRED TABLEAU: acts, a submit, an
 # R x C act payout, an additive score option. None of it is the shipped game —
@@ -1533,21 +1533,42 @@ def nhat(k, start=GOAL_N0):
     return start + BOOSTER_YIELD * (k // NODES_PER_BOOSTER)
 
 
-# How a booster's five cards relate to the ranks already in the deck. 'schedule'
-# inherits the tableau sim's final_spread (1-5 to 25 cards, 1-8 to 40, 1-13 beyond);
-# 'fixed' keeps the start deck's 1-5 and lets boosters duplicate it. ⚠ NOT a
-# cosmetic switch: rank density is what makes melds, so this dominates the ladder.
-GRID_SPREAD_MODE = 'schedule'
+# What a booster's five cards are. ⚠ NOT a cosmetic switch: rank density is what
+# makes melds, so this dominates the whole ladder.
+#   'booster'  MEASURED, and the default. TypeBoosterBasic.get_possible_ranks()
+#              returns ranks 1-13 over the four standard suits, so from the FIRST
+#              booster onward the added cards are rank-uniform 1-13 while the
+#              start deck is ranks 1-5. Nothing narrows that pool.
+#   'schedule' the tableau sim's final_spread (1-5 to 25 cards, 1-8 to 40, 1-13
+#              beyond). Kept only to compare against the old calibration.
+#   'fixed'    a counterfactual: boosters duplicate the start deck's 1-5. Not what
+#              ships; it isolates board capacity from rank dilution.
+GRID_SPREAD_MODE = 'booster'
 
 
 def grid_spread(size):
-    return 5 if GRID_SPREAD_MODE == 'fixed' else final_spread(size)
+    """The widest rank a deck of `size` holds — reporting only."""
+    if GRID_SPREAD_MODE == 'fixed':
+        return 5
+    if GRID_SPREAD_MODE == 'booster':
+        return 5 if size <= GOAL_N0 else 13
+    return final_spread(size)
 
 
 def grid_deck(size):
-    """The run deck at `size` cards. deck14 (the 20-card start deck) is exactly
-    make_deck(20, 5, 0, 0); boosters follow GRID_SPREAD_MODE."""
-    return make_deck(size, grid_spread(size), 0, 0)
+    """The run deck at `size` cards. The first GOAL_N0 are deck14 exactly (ranks
+    1-5 over the four suits); anything above that is booster cards.
+
+    ⚠ Booster cards are DETERMINISTIC here, cycling ranks 1-13 across the suits,
+    where the game draws each one uniformly at random from that pool. Cycling gives
+    the pool's mean density without adding a second source of variance to a
+    quantile the goal is read off -- the deck ORDER is still shuffled per trial."""
+    if GRID_SPREAD_MODE != 'booster':
+        return make_deck(size, grid_spread(size), 0, 0)
+    out = [(r, s, False, False) for s in range(4) for r in range(1, 6)][:size]
+    for i in range(max(0, size - GOAL_N0)):
+        out.append(((i % 13) + 1, (i // 13) % 4, False, False))
+    return out
 
 
 def grid_show_totals(size, trials, skill, seed_off=0):
@@ -1610,6 +1631,40 @@ def fit_power_minimax(nodes, goals, start=GOAL_N0, steps=4000, amax=10.0):
     return math.exp(log_g0), alpha, math.exp(half) - 1.0
 
 
+def fit_power_beatable(nodes, goals, start=GOAL_N0, steps=6000, amin=-4.0, amax=10.0):
+    """The two constants worth SHIPPING when no power law fits the ladder.
+
+    Least squares and minimax both split the error either side of the measured
+    ladder, and a goal above it is not a harder node -- it is an unwinnable one.
+    So this fits under a one-sided constraint instead: the curve may never exceed
+    what par play actually reaches at any node, and subject to that it is pushed
+    as high as it will go (geometric mean of goal_fit / goal_measured).
+
+    For a fixed alpha the largest legal g0 is min_k goal_k / (N_k/start)^alpha, so
+    this too is a scan over alpha. Returns (g0, alpha, tightness) where tightness
+    is that geometric mean -- 1.0 would be a curve that sits exactly on the ladder
+    at every node, and anything well under 1.0 is slack the shape cannot remove.
+
+    ⚠ FEED IT THE UNCLAMPED LADDER. A monotone-clamped ladder carries a goal the
+    node it sits on cannot actually reach, and a curve fitted under it inherits
+    exactly that unwinnable node.
+
+    ⚠ ALPHA MAY BE NEGATIVE, and the scan starts below zero on purpose. A negative
+    alpha says goals should FALL as the deck grows, which is nonsense for a
+    difficulty ladder and is precisely why it must be allowed to come out: it is
+    how the fit reports that deck size is the wrong driver."""
+    xs = [nhat(k, start) / float(start) for k in nodes]
+    best = None
+    for i in range(steps + 1):
+        alpha = amin + (amax - amin) * i / steps
+        g0 = min(goals[k] / (x ** alpha) for x, k in zip(xs, nodes))
+        tight = math.exp(sum(math.log(g0 * (x ** alpha) / goals[k])
+                             for x, k in zip(xs, nodes)) / len(nodes))
+        if best is None or tight > best[2]:
+            best = (g0, alpha, tight)
+    return best
+
+
 PAR_SKILL = 0.9
 PERSONAS = (('skilled', 1.0), ('par', PAR_SKILL), ('average', 0.7))
 
@@ -1622,11 +1677,12 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
           % (q, skill, trials))
     print("  spread mode: %s" % GRID_SPREAD_MODE)
     print("    N  ranks  grids  cells  placed  median      goal   (shipped 130*(N/20)^4.2)")
-    goals, ks = {}, list(range(nodes))
+    goals, raw, ks = {}, {}, list(range(nodes))
     for k in ks:
         size = nhat(k)
         totals, placed = grid_show_totals(size, trials, skill, seed_off=k * 100003)
-        goals[k] = max(1, int(pct(totals, q)))
+        raw[k] = max(1, int(pct(totals, q)))
+        goals[k] = raw[k]
         if k > 0:
             goals[k] = max(goals[k], goals[k - 1])   # the ladder never descends
         n_g = target_grid_count(size)
@@ -1645,14 +1701,32 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
           % (g0, GOAL_N0, alpha, r2, 100 * worst))
     print("  MINIMAX:       goal(N) = %.1f * (N/%d)^%.2f  worst %.0f%% out"
           % (mg0, GOAL_N0, malpha, 100 * mworst))
+    # ⚠ against `raw`, never `goals`: see fit_power_beatable's own warning.
+    bg0, balpha, btight = fit_power_beatable(ks, raw)
+    print("  BEATABLE:      goal(N) = %.1f * (N/%d)^%.2f  tightness %.2f of the ladder"
+          % (bg0, GOAL_N0, balpha, btight))
     print("  shipped:       goal(N) = 130.0 * (N/20)^4.20")
     print("  ladder span: node 0 goal %d -> node %d goal %d  (x%.1f over the run)"
           % (goals[ks[0]], ks[-1], goals[ks[-1]], goals[ks[-1]] / float(goals[ks[0]])))
+    peak = max(ks, key=lambda k: raw[k])
+    print("  UNCLAMPED ladder peaks at node %d (%d) and ends at node %d (%d): x%.2f"
+          % (peak, raw[peak], ks[-1], raw[ks[-1]], raw[ks[-1]] / float(raw[peak])))
     out.add(stage='grid_fit', q=q, skill=skill, g0=round(g0, 1),
             alpha=round(alpha, 3), r2=round(r2, 4), worst=round(worst, 4),
             minimax_g0=round(mg0, 1), minimax_alpha=round(malpha, 3),
-            minimax_worst=round(mworst, 4))
-    print("\n=== FULL-RUN VALIDATION (%d nodes, the goals above) ===" % nodes)
+            minimax_worst=round(mworst, 4), beatable_g0=round(bg0, 1),
+            beatable_alpha=round(balpha, 3), tightness=round(btight, 4))
+    # ⚠ The validation runs against the FITTED CURVE, not against the measured
+    # ladder. The ladder is beatable at q by construction; the question the shipped
+    # constants have to answer is whether the CURVE is.
+    curve = {k: max(1, int(bg0 * (nhat(k) / float(GOAL_N0)) ** balpha)) for k in ks}
+    shipped = {k: max(1, int(130.0 * (nhat(k) / float(GOAL_N0)) ** 4.2)) for k in ks}
+    print("\n  node:   ", "".join("%8d" % k for k in ks))
+    print("  ladder: ", "".join("%8d" % goals[k] for k in ks))
+    print("  fitted: ", "".join("%8d" % curve[k] for k in ks))
+    print("  shipped:", "".join("%8d" % shipped[k] for k in ks))
+    goals = curve
+    print("\n=== FULL-RUN VALIDATION (%d nodes, the FITTED curve above) ===" % nodes)
     for pname, psk in PERSONAS:
         wins = [0] * nodes
         plays = [0] * nodes
@@ -1663,7 +1737,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
                 deck, rng = shuffled((lambda s=nhat(k): grid_deck(s)), t * 97 + k)
                 total, _b = play_grid_show(deck, rng, psk)
                 plays[k] += 1
-                if total < goals[k]:
+                if total < curve[k]:
                     break
                 wins[k] += 1
             else:
@@ -1673,10 +1747,10 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
             if plays[k] == 0:
                 break
             print("    node %2d: show-win=%5.1f%%  goal=%d"
-                  % (k, 100.0 * wins[k] / plays[k], goals[k]))
+                  % (k, 100.0 * wins[k] / plays[k], curve[k]))
             out.add(stage='grid_run', q=q, persona=pname, skill=psk, node=k,
-                    show_win=round(wins[k] / plays[k], 3), goal=goals[k])
-    return goals, (g0, alpha, r2, worst)
+                    show_win=round(wins[k] / plays[k], 3), goal=curve[k])
+    return raw, goals, curve, (bg0, balpha, btight)
 
 
 def run_grid_show(size, skill, trial=0):
@@ -1814,8 +1888,10 @@ def main():
                     help='LIVE grid model: play one show at N deck cards and dump the board')
     ap.add_argument('--parity', metavar='JSON',
                     help="assert the port against Tools/scoring_parity.gd's engine dump")
-    ap.add_argument('--spread', choices=['schedule', 'fixed'], default='schedule',
-                    help='grid model: boosters widen the rank spread, or duplicate 1-5')
+    ap.add_argument('--spread', choices=['booster', 'schedule', 'fixed'],
+                    default='booster',
+                    help='grid model: what a booster adds (booster = the measured '
+                         'TypeBoosterBasic pool, ranks 1-13)')
     ap.add_argument('--skill', type=float, default=PAR_SKILL,
                     help='grid model: fraction of placements chosen ideally (par %.2f)'
                          % PAR_SKILL)

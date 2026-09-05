@@ -314,14 +314,22 @@ enum SeparationMode {
 		difficulty = value
 		settings_changed.emit()
 
-## Goal at the 20-card start deck (re-fit via `py solatro/Tools/scoring_sim.py --final`).
-@export var goal_g0 : float = 130.0:
+## Goal at the 20-card start deck. Re-fit against the grid economy with
+## `py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25`.
+@export var goal_g0 : float = 5376.0:
 	set(value):
 		goal_g0 = value
 		settings_changed.emit()
 
-## Power on N̂/N0 (log-fit of the §15b table): how hard goals ramp per booster crossed.
-@export var goal_alpha : float = 4.2:
+## Power on N̂/N0: how hard goals ramp per booster crossed.
+## ⚠ NEARLY FLAT ON PURPOSE, and it is not a tuning preference. Measured, a show's
+## score peaks three nodes in and then FALLS: the board holds 25 cells for the whole
+## run (grid_cards_per_unlock 52 is never crossed), so past 25 cards a bigger deck
+## adds nothing, and booster cards are rank-uniform 1-13 against a start deck of
+## 1-5, which thins out the very collisions that make melds. Deck size is therefore
+## the wrong driver for this curve, and any larger power makes late nodes
+## unreachable rather than harder.
+@export var goal_alpha : float = 0.26:
 	set(value):
 		goal_alpha = value
 		settings_changed.emit()
