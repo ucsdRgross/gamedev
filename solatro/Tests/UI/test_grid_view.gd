@@ -1540,6 +1540,18 @@ func run_a_swipe_fires_once_test() -> void:
 	check(wider > threshold,
 			"the millimetre knob really drives the threshold — it is not a hard-coded px (TP-109)",
 			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 2.0, wider])
+	# ⚠ **THE DEFAULT MUST SIT INSIDE ITS OWN RANGE** (`GAP-018`=(b)). It was clamped to the
+	# TOUCH-TARGET bounds, whose floor is ~8.5 mm at 96 DPI -- above the knob's own 8 mm default --
+	# so turning the knob DOWN changed nothing at all and the shipped threshold was a clamp bound
+	# wearing a millimetre reading. A distance to travel is not a thing to hit: the platforms size
+	# a paging swipe at about a third of a touch target.
+	SettingsManager.settings.grid_swipe_threshold_mm = knob * 0.5
+	var narrower := pa._swipe_threshold_px()
+	SettingsManager.settings.grid_swipe_threshold_mm = knob
+	check(narrower < threshold,
+			"...and turning it DOWN narrows it too, so the default is a converted millimetre "
+			+ "reading rather than a clamp bound (TP-109, GAP-018=(b))",
+			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 0.5, narrower])
 	var from := _bare_point(pa)
 	check(pa._card_control_at(from) == null,
 			"instrument check: the swipe starts on BARE BOARD, over no card",

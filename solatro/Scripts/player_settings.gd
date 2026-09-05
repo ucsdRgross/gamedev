@@ -604,11 +604,30 @@ var wall_info_mode : bool = false
 		settings_changed.emit()
 ## How far a finger must travel before a one-finger drag counts as a pan, in MILLIMETRES.
 ## ⚠ Millimetres, not pixels: the same physical swipe must mean the same thing on every screen.
-## Converted through `WallInput.mm_to_px` and clamped to the touch-target bounds, because DPI is
-## unreliable on multi-monitor Windows and on Android.
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 8.0:
+##
+## ⚠ **A DISTANCE TO TRAVEL IS NOT A THING TO HIT, AND THE PLATFORMS KEEP THEM APART.** This was
+## clamped to the touch-target bounds, whose floor of 32 px is ~8.5 mm at 96 DPI -- so the old 8 mm
+## default was BELOW its own floor and turning the knob down did nothing at all. Android carries
+## three separate quantities: a touch target (Material: 48 dp, about 9 mm), plain touch slop (the
+## distance a touch may wander before it is a scroll, 8 dp, about 1.5 mm) and a PAGING touch slop
+## for a swipe between pages -- which is this gesture -- defined in `ViewConfiguration` as exactly
+## twice the plain slop, about 3 mm. A swipe threshold sized like a fingertip is roughly three
+## times what the platform asks for.
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 3.0:
 	set(value):
 		grid_swipe_threshold_mm = maxf(value, 0.0)
+		settings_changed.emit()
+## The swipe threshold's OWN bounds, in millimetres — the guard against a wild DPI reading, which
+## is what the clamp was for. Defaults bracket the gesture rather than the fingertip: the floor is
+## plain touch slop (below which a tap's own wander would page the board) and the ceiling is a
+## touch target (above which a swipe costs more travel than a button costs width).
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_min_mm : float = 1.5:
+	set(value):
+		grid_swipe_threshold_min_mm = maxf(value, 0.0)
+		settings_changed.emit()
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_max_mm : float = 9.0:
+	set(value):
+		grid_swipe_threshold_max_mm = maxf(value, 0.0)
 		settings_changed.emit()
 ## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
 ## scroll (independent of the board's) covers whatever a deep stack adds past this.

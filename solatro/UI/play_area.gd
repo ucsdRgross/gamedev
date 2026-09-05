@@ -1373,13 +1373,21 @@ var _swipe_armed := false
 var _swipe_fired := false
 
 ## How far a finger must travel before the drag is a pan, in px: the millimetre knob converted at
-## the screen's DPI and clamped to the same touch-target bounds, because a DPI reading is
-## unreliable on multi-monitor Windows (which reports the primary screen's for all of them) and on
-## Android, and an unclamped conversion can therefore produce any number at all.
+## the screen's DPI, clamped to the SWIPE's own millimetre bounds converted the same way.
+##
+## ⚠ **THE CLAMP GUARDS THE DPI READING, NOT THE GESTURE'S SIZE.** A DPI reading is unreliable on
+## multi-monitor Windows (which reports the primary screen's for all of them) and on Android, so an
+## unclamped conversion can produce any number at all -- that much stands. But the bounds used to be
+## the TOUCH-TARGET ones, and a distance to travel is not a thing to hit: their floor of 32 px is
+## ~8.5 mm at 96 DPI, which is roughly three times the paging slop Android uses for this very
+## gesture, and it sat ABOVE the knob's own default so turning the knob down did nothing.
+## Both bounds are millimetres now, so the whole clamp survives a DPI change together.
 func _swipe_threshold_px() -> float:
 	var s := PlayArea.settings()
-	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, DisplayServer.screen_get_dpi()),
-			s.wall_touch_target_min_px, s.wall_touch_target_max_px)
+	var dpi := DisplayServer.screen_get_dpi()
+	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, dpi),
+			WallInput.mm_to_px(s.grid_swipe_threshold_min_mm, dpi),
+			WallInput.mm_to_px(s.grid_swipe_threshold_max_mm, dpi))
 
 ## The bound board control under a point, or null for bare board. The zone card an EMPTY cell
 ## presents counts as a card: it is the cell's drop target, so a drag begun on it is a placement.

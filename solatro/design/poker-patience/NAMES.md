@@ -133,7 +133,9 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `grid_cards_per_unlock` | `52` | |
 | `grid_max_count` | `3` | |
 | `grid_pan_duration` | `0.35` | |
-| `grid_swipe_threshold_mm` | `8.0` | Converted through `WallInput.mm_to_px`, clamped. |
+| `grid_swipe_threshold_mm` | `3.0` | Converted through `WallInput.mm_to_px`, clamped to its OWN bounds below. Android's paging touch slop for this gesture is twice plain touch slop, ~3 mm. |
+| `grid_swipe_threshold_min_mm` | `1.5` | The swipe clamp's floor. Plain touch slop, below which a tap's own wander would page the board. |
+| `grid_swipe_threshold_max_mm` | `9.0` | The swipe clamp's ceiling. A touch target, above which a swipe costs more travel than a button costs width. |
 | `grid_align_rows_globally` | `false` | Per-grid sizing is the default. |
 | `stack_offset_px` | `= card_separation_play_custom` | |
 | `stack_soft_cap` | `20` | `push_error` past it; not a hard limit. |
@@ -240,7 +242,7 @@ that shipped.
 | `PlayArea._consume_as_grid_select(event)` | method | Overview: the arrows pick a whole GRID instead. |
 | `PlayArea._on_cell_gui_input(event, control)` | method | ⚠ **The only place the board can hear an arrow key** — the viewport's focus-neighbour search consumes arrows in the GUI pass, so `_unhandled_input` is too late. Connected per control in `create_card_control`. |
 | `PlayArea._consume_as_swipe(event)` | method | The one-finger swipe. Reads `InputEventScreenDrag` ONLY, ignores `device == -1`. |
-| `PlayArea._swipe_threshold_px()` | method | `grid_swipe_threshold_mm` through `WallInput.mm_to_px`, clamped to the touch-target bounds. |
+| `PlayArea._swipe_threshold_px()` | method | `grid_swipe_threshold_mm` through `WallInput.mm_to_px`, clamped to the swipe's OWN millimetre bounds converted the same way — a distance to travel is not a thing to hit. |
 | `PlayArea._card_control_at(at)` | method | The bound board control under a point, or null for bare board — the placement/pan discrimination. |
 | `PlayArea._board_control_has_focus()` | method | Does a board control genuinely hold the focus right now. |
 | `PlayArea._grid_widths()` / `_coord_of_control(c)` / `_cell_focus_control(coord)` | method | The lattice adaptors between controls and `BoardCoord`. |
