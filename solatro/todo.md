@@ -45,12 +45,18 @@ gone by the time you know you wanted it.
 
 ## Doc hygiene backlog (code comments — measured, not yet triaged)
 
-- ⬜ **`doc_check.py` scans code comments; the standing count over 230 source files is 138 dated ·
-  101 blocks over 16 lines · 78 history · 13 restated · 0 line refs.** Zero errors — every reference
-  resolves. ⚠ **A BACKLOG, not a regression**: the rules postdate the comments. Work it
-  opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
-  ⚠ **`dated` will not go to zero and should not**: 43 of them are measurements, where the date is
-  part of the fact, and the checker cannot tell those from bookkeeping.
+- ⬜ **`doc_check.py` scans code comments. Standing count over 304 source files: 5664 indented ·
+  2144 long doc · 739 long block · 599 trailing · 362 design id · 130 dated · 91 history ·
+  52 restated · 4 line refs.** Zero errors — every reference resolves.
+  ⚠ **A BACKLOG, not a regression**, and the numbers grew mostly because THE CHECKER GOT STRICTER,
+  not because the code got worse: `long block` went from "over 16 lines" to "over 3", and
+  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments. Work
+  it opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
+  ⚠ **`dated` will not go to zero and should not**: many are measurements, where the date is part
+  of the fact, and the checker cannot tell those from bookkeeping.
+  ⚠ **`design id` is the one that matters most** — 362 citations of design documents the code's
+  reader cannot open. It is a standing breach of the no-design-ids-in-code rule
+  (ARCHITECTURE_REVIEW §8), inherited from earlier work streams.
 
 ## Waiting on the owner
 
@@ -79,7 +85,7 @@ gone by the time you know you wanted it.
   expressible. What is left is the two things a test cannot answer:
   - **Balance.** `Tests/Engine/scoring_cost.tscn` now prints the impact: a rank-merging rule
     multiplies a scored LINE by **x2.0 (5 cards) → x3.5 (8) → x6.0 (13) → x5.1 (30)**, and every
-    line of a submit gets it. Extra rank values alone are **x1.0** — they move positions, not
+    line one placement completes gets it. Extra rank values alone are **x1.0** — they move positions, not
     score. Whether x5 per line is too strong is the same kind of call as everything under
     "Scoring / balance" below, which the sim explicitly cannot make.
   - **One UX judgement, `DEFERRED.md` R2.** A split meld shows three matching cards and counts
@@ -176,7 +182,7 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
   (E1, written): a scored line costs 9.5 ms on 30 cards unmodded, 16.2 ms with a rank-merging rule,
   31.9 ms with merging plus extra rank values. ⚠ `Game.score_line` runs per row AND column and
   `skill_eval_poker_best` scores both again from inside scoring, so a wide board with a merging
-  rules card is HUNDREDS of ms per submit. Numbers in PERFORMANCE.md §4d. Q57(a) scoped E3 out —
+  rules card is HUNDREDS of ms for a placement that completes several lines at once. Numbers in PERFORMANCE.md §4d. Q57(a) scoped E3 out —
   reopening it is an owner call, but it is no longer an argument from arithmetic.
 - ⬜ **Three fuzz invariants remain scoped rather than absolute** (3's held-cards set, 8's position
   model, 1's declared multi-key exception). Each is documented with why; each is also a place a real
@@ -191,7 +197,7 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 ## Props / UI (owner has NOT re-verified)
 
 - Description-panel scroll-lock, knife row behavior, hoop visibility, ballistic poof,
-  undo-across-submit feel, held-loop spin, formation system + editor end-to-end (no formation
+  undo-across-a-placement feel, held-loop spin, formation system + editor end-to-end (no formation
   `.tres` authored yet).
 - Firework in-run acquisition beyond deck12 (owner decision). Per-pip tooltip granularity.
 - Win/lose screen font (226px) clips long "Fame +N" text. `game.tscn` grabs no initial focus, so
@@ -215,43 +221,20 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
 - **`suit_pips.png` has a few off-palette pixels** (e.g. `#ec0037`, 27 from entry 2). Authored art,
   not a plumbing bug; `tools/palette_conformance.py` finds them.
 
-## Patience & rerolls (owner playtest pending)
+## Booster rerolls (owner playtest pending)
 
-Full behavior and the settings list: ARCHITECTURE_REVIEW §4e.
+Full behavior and the settings list: ARCHITECTURE_REVIEW §4f.
 
-- Tune `patience_max` (ships 3) and the per-stage `patience_influence_*` flags (ships PLAY only);
-  decide whether the legality query `on_can_place_stack` should count at all — if not, add it to
-  `patience_disabled_hooks` and re-tune what "interesting move" means.
-- ⚠ `patience_max` ships **3**, but the original spec asked for **1** — confirm which is intended
-  before drawing playtest conclusions (3 = three idle moves per round).
-- Rule cards that raise `patience_max` / grant patience: the grant path exists
-  (`patience_max_increased`), no content uses it yet.
-- Booster rerolls (§4f): pool ships at 5 (`booster_reroll_pool`); reroll-count modifiers (the
-  `luck()`-style content hook) not written yet.
-- Watch existing suites for auto-Next fallout: any test that makes 3+ boring moves in one round now
-  advances the round mid-test.
-- Comparator hooks reach patience, and **plan step S21 changed WHICH ones**. During the placement
-  legality query:
-  - `on_compare_ranks` still fires (`return_first_compare_mod_result`) — the placer asks
-    `compare_ranks` for run adjacency, which is a scalar and was deliberately left alone (Q55=a);
-  - `on_compare_suits` **no longer fires there at all** — the suit question now goes through
-    `stack_suits_same`, i.e. the STACK hooks;
-  - the four `on_stack_*` hooks fire instead, through `return_first_true_pair_result`, which calls
-    `_note_mod_fired` exactly as the old path did.
+- Pool ships at 5 (`booster_reroll_pool`); reroll-count modifiers (the `luck()`-style content hook)
+  are not written yet.
 
-  So ANY board card with one of those modifiers still holds the counter (once per round under
-  uniques) — but the decision this item is asking for now concerns a different set of hooks than it
-  used to. Decide whether that is the intended "interesting move" bar or whether some of them
-  belong in `patience_disabled_hooks`. ⚠ Note the two situations differ: a MELD rule fires during
-  scoring, a STACK rule during the legality query, and only the second is a "move".
-- `Game._on_patience_max_increased` edits `state.patience` with no commit — a mid-round grant is
-  lost on quit and reverted by undo. Fine for a settings knob; revisit when a rule CARD grants
-  patience (that grant should ride a committed action).
-- `Game._ready` connects to `SettingsManager.settings.patience_max_increased` without the N9
-  reconnect idiom, so the connection binds the settings resource that exists at show start. Only
-  matters if `SettingsManager.settings` is ever reassigned at runtime (its setter supports it).
-- Two gaps documented in ARCHITECTURE_REVIEW: the auto-Next pending-action replay caveat (§1.5) and
-  the seen-set-only commit gap in `_perform_next` (§4e).
+⚠ **PATIENCE IS RETIRED AND ITS BACKLOG IS GONE WITH IT.** The whole family went with the tableau
+(`design/poker-patience/PLAN.md` §1.6): no `patience_max`, no `patience_influence_*`, no
+`patience_disabled_hooks`, no `patience_max_increased`, no `state.patience`. `test_grid_economy.gd`'s
+TP-60 grep gate asserts zero readers of every one of those spellings in any `.gd` or `.tscn`, so
+they cannot come back by accident. The open questions that used to live here — what counts as an
+"interesting move", which comparator hooks should feed it — died with the mechanic; do not revive
+them from git history without an owner ruling that patience is back.
 
 ## Card size + outline — landed, one thing open
 
