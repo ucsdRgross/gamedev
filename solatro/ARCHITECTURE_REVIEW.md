@@ -19,7 +19,14 @@ resources attached to cards** (skills/stamps/types/suits/statuses) invoked by na
 broadcast system (`CardEnvironment.run_all_mods("on_xxx")`); **all visuals are rebuilt
 from the data on demand** (`GameData.board_changed` → `PlayArea.queue_rebuild`). The
 engine itself (`game.gd`) contains almost no rules — even scoring and drawing happen
-because a rule-card in `rules_deck` implements `on_run_scorer` / `on_next`.
+because a rule-card in `rules_deck` implements `on_board_mutated` / `on_next`.
+
+**The board is one to three grids, 5×5 by default, side by side, each cell holding a stack.**
+Cards arrive in the **Entrance**, a row attached above the grid it is committed to. The player
+places one card per action into a cell, and every placement that completes a line scores it on
+the spot. **There is no Submit, no act count and no end-of-show payout** — the number on screen
+is derived live from the score buckets (§3). A show ends when the player presses End.
+
 
 ### 1.2 Class map
 
@@ -29,20 +36,26 @@ Main (Levels/main.gd, scene root)
  │                               (Scripts/Map/) over the vendored worldgen addon; run
  │                               progression = RunState via RunManager autoload
  │                               (static Main.save_info aliases RunManager.run)
+ ├─ Wall (UI/Wall/wall.gd) ..... the pictures the show is played inside. The game picture is
+ │                               one of them and is several screens wide, so the wall camera
+ │                               PANS over it (PICTURE_WALL.md).
  └─ GameView (Levels/game_view.gd) .. the show's scene root: ALL UI/input/HUD/animation.
      │   Creates a headless Game child and injects itself (game.view = self); binds Game's
      │   reactive signals; buttons + card clicks call Game commands
-     │   (submit/next/undo/try_grab/try_place).
+     │   (end_show/next/undo/try_grab/try_place/place_card_in_grid).
      ├─ Game (Levels/game.gd) .. extends CardEnvironment; headless match logic. Mutates
      │   │                       only `state`; zero UI children; every visual touch is
      │   │                       `if view:` (view == null runs a full show — unit-tested)
-     │   ├─ state : GameData ... PURE DATA (Resource): draw/discard/rules decks,
-     │   │                       upper/lower zones (columns of stacks), score arrays,
-     │   │                       goal/total, submits_used, combo_classes.
+     │   ├─ state : GameData ... PURE DATA (Resource): draw/discard/rules decks, `grids`
+     │   │                       (each a GridData of stacked cells), the Entrance (still
+     │   │                       backed by `upper_zone`), the per-grid score buckets, goal,
+     │   │                       combo_classes/combo_repeats, show_ended, entrance_grid.
      │   └─ save_history ....... Array[GameData] saveable snapshots -> undo AND the
      │                           persisted run.game_history (survives quit)
      └─ PlayArea (UI/play_area.gd, %PlayArea)
-         ├─ builds a Control grid mirroring GameData zones (board_changed -> queued rebuild)
+         ├─ builds one Control grid per GridData plus the Entrance strip (board_changed ->
+         │  queued rebuild). TWO view modes and nothing in between: OVERVIEW (every grid, for
+         │  orientation) and FOCUSED (the one grid being played on).
          ├─ maps: ui_data (Control->CardData), data_ui, data_card (CardData->CardVisual)
          └─ CardVisual (Cards/card_visual.gd, Node2D) — lives on %CardLayer INSIDE the
              scroll content (sibling of PropLayer), so scroll carries controls, cards,
@@ -70,21 +83,42 @@ CardData (Cards/card_data.gd, Resource) — one card
 CardModifier (@abstract Resource)
  ├─ data : CardData ............ WEAKREF-BACKED property (see §6) — the backref cycle
  │                               cannot exist; saves carry no backref
- ├─ CardModifierSkill  (spotlit flag)      e.g. SkillEvalPokerBest, SkillGrabberOgLower
- │   └─ ZoneAdder (@abstract)              adds a zone column while spotlit
+ ├─ api : CardEffectApi ........ THE ONLY GAME SURFACE A MODIFIER MAY TOUCH (§1.4)
+ ├─ CardModifierSkill  (spotlit flag)      e.g. SkillLineDetector, SkillGridAllotment
+ │   ├─ ZoneAdder (@abstract)              adds a zone column while spotlit
+ │   └─ SkillGridCreator                   the same shape for a whole GRID
  ├─ CardModifierStamp                      e.g. StampDoubleTrigger, StampGlobal
- ├─ CardModifierType                       e.g. TypeInput (draw/drop pipeline)
+ ├─ CardModifierType                       e.g. TypeInput (draw/drop pipeline),
+ │   │                                     TypeGridCell (one per grid cell)
  │   └─ BoosterTemplate (@abstract)        card-pack generation (map screen)
  ├─ CardModifierStatus                     merge-by-class statuses (Burning, Juggling)
  └─ PipSuit                                suit-as-modifier; dispatched ONLY via
                                            run_card_mods + spawn_props (see §4)
 
-Board (Scripts/board.gd) ....... anchor-based move engine: locate/extract/insert_at/
-                                 move_stack/place_card/add_column/remove_column +
-                                 MUTATION GUIDELINES header. ALL board mutations go
-                                 through Board or Game's draw/discard/deck functions.
-GameData.position_of ........... LAZY revision-keyed position index — locate/
+Board (Scripts/board.gd) ....... LEGACY zone move engine (§2). Still the path for the
+                                 Entrance, and the only board the retired grab/place rules
+                                 cards understand. GRID placement does NOT go through it —
+                                 Game.place_card_in_grid / move_card_in_grid own that.
+BoardCoord (Scripts/board_coord.gd) .. the four-component grid coordinate (below).
+GridData (Scripts/grid_data.gd) ...... ONE grid: its OWN grid_width/grid_height (nothing
+                                 hard-codes 5), a row-major `cells` array holding each cell's
+                                 stack bottom-to-top, and a row-major `cell_types` array of
+                                 one TypeGridCell zone card per cell — the drop target an
+                                 EMPTY cell presents.
+GridCellWalk .................... marks a grid's cell array for CardDataIterator: cell by cell
+                                 in row-major order, each stack bottom to top, with NO early
+                                 stop, because a grid is sparse by nature.
+LineGeometry (static) .......... pure geometry: every ROW / COL / DIAG / HEIGHT_V line that
+                                 runs through one cell, within ONE grid, never wrapping and
+                                 never crossing a grid boundary. Finding a line here says
+                                 NOTHING about whether it is complete.
+ScoringSection ................. one scorer invocation's cards, plus the grid / kind / index /
+                                 height / cell its bucket derives from. Re-reads the LIVE
+                                 board through `refresh()`.
+CardEffectApi (Scripts/card_effect_api.gd) .. the modifier-facing facade (§1.4).
+GameData.position_of ........... LAZY revision-keyed legacy index — locate/
                                  find_data_vec3/is_data_topmost are O(1).
+GameData.card_at / grid_position_of .. the grid-side pair, rebuilt on the same revision bump.
 PipComparator (static) ......... every rank/suit comparison funnels through here; mods
                                  get asked first (on_compare_ranks/suits), numeric fallback.
 Scoring (Scripts/scoring.gd) ... poker-hand evaluation; ScoreModel = the only place hand
@@ -93,23 +127,61 @@ RunManager (autoload) .......... run lifecycle, goal curve, fame/luck, threaded 
 LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
 ```
 
-**Coordinates:** a card's location is `Vector3i(x=0 upper/1 lower, y=column, z=row)`;
-`z == -1` = the zone/type header card. `Vector3i.MIN` = not on board.
+**Coordinates — there are TWO, and they are not interchangeable.**
+
+- **The grid board:** `BoardCoord(grid, x, y, h)`. `grid` indexes `state.grids` left to right;
+  `x` is a column ordinate **continuous across grids**, so stepping five columns left from
+  `(grid 1, x 0)` lands on `(grid 0, x 4)`; `y` is a row, 0-based top to bottom, and
+  **`y == -1` is the Entrance** of whichever grid it is currently attached to; `h` is height
+  within the cell's stack, 0-based.
+  ⚠ **`y` counts DOWN while `h` counts UP.** Deliberate, not a bug: rows are the new
+  dimension, height is the old column depth re-read.
+  ⚠ **`BoardCoord` is a `RefCounted`, so `==` is IDENTITY** — two coordinates naming the same
+  cell are not `==`, and a rebuilt sentinel is not `NOWHERE`. Compare with `equals()`, key
+  dictionaries on `pack()`, and test the sentinel with `is_nowhere()`. A suite gate fails any
+  `== BoardCoord.NOWHERE`, which is the shape that reads correctly and is wrong.
+  ⚠ **`step(dx, dy, grid_widths)` never fails, clamps or returns NOWHERE.** Past either end of
+  the real board it keeps stepping through a virtual continuation at the nearest edge grid's
+  width, so movement looks identical to a grid being there. Whether a cell EXISTS at the
+  result is a separate question — `GameData.has_cell`, asked on landing, and false for a
+  virtual grid index, an out-of-bounds x or y, and a hole in a ragged grid.
+- **The legacy zones:** `Vector3i(x=0 upper/1 lower, y=column, z=row)`; `z == -1` = the
+  zone/type header card; `Vector3i.MIN` = not on board. Still live for the **Entrance**
+  (`upper_zone`). The LOWER zone has no grid coordinate and no shipped rules card that fills
+  it: `Decks.rules1` carries five `SkillAdderInputUpper`, one `SkillGridAllotment` and one
+  `SkillLineDetector`, and nothing else.
+
+`GameData` holds both indexes and rebuilds them together, once per `revision` change.
+`validate()`'s I4 check compares BOTH against an independent rescan — that is what catches a
+path which bumped `revision` without finishing the mutation that keeps them in step.
+
 
 ### 1.3 Key data flows
 
-- **Grab/place:** `PlayArea._on_gui_input` → `GameView._on_data_selected` (guarded on
-  `game.processing`) → `Game.try_grab/try_place` →
-  `return_first_data_array_result("on_can_grab_stack"/"on_can_place_stack")` — rule cards
-  decide legality → `Board.move_stack` mutates GameData → mods fire → `save_state()`.
-- **Submit:** `Game.submit()` → `run_all_mods("on_run_scorer")` → `SkillScorerCascadeLower`
-  walks lower-zone rows/cols → `SkillEvalPokerBest` → best `Result` → `Game.score_line`
-  (data always; paced visuals only `if view:`) → props (§4) → `apply_act_score`.
-- **Next:** `run_all_mods("on_next")` → `TypeInput.on_next` per input column: drop upper
-  stack into the lower zone, then `draw_card()` refills.
+- **Place a card:** `PlayArea._on_gui_input` → `GameView._on_data_selected` (guarded on
+  `game.processing`) → `Game.place_card_in_grid(card, coord)`. An EMPTY cell is presented by
+  its `TypeGridCell` zone card, so a click on one is turned back into the coordinate it means
+  by `GameData.cell_type_coord`. The card lands on TOP of whatever the cell already holds, so
+  the coordinate a mutation LANDED on comes from `grid_position_of` — never from the one that
+  was requested.
+- **Scoring:** every board mutation broadcasts `on_board_mutated(coord, is_compaction)`.
+  `SkillLineDetector` answers it, asks `LineGeometry.lines_through` for every line through the
+  mutated cell, and scores whichever of them are complete — **ROW, then COL, then DIAG, then
+  HEIGHT_V**, in that order, because the replay contract depends on it being deterministic.
+  Each line becomes a `ScoringSection`, is re-scored through `SkillEvalPokerBest`, and banks
+  via `Game.score_line` → `add_line_score` → `_add_grid_line_score` (data always; paced
+  visuals only `if view:`) → props (§4). **A mutation that only dropped cards down scores
+  nothing**, and the mover sets that flag explicitly — it is never inferred by comparing
+  heights.
+- **Next:** `run_all_mods("on_next")` → `TypeInput.on_next` per Entrance column, then
+  `draw_card()` refills.
+- **End:** `Game.end_show()` sets `state.show_ended`, bumps `revision` so the End leaves an
+  undo snapshot to rewind to, and resolves. **There is no Submit, no act count and no
+  end-of-show payout.** Fame banks in `exit_show()` (Continue), not at the outcome screen (§5).
 - **Undo:** every action ends in `save_state()` (saveable snapshot + background disk
   save). History is capped: `MAX_UNDO_HISTORY=100` hard, `Game.undo_cap=25` mod-adjustable
   (a mod-raised cap does NOT persist across resume). Full undo/game-over contract: §5.
+
 
 ### 1.4 The mod-hook extension contract
 
@@ -132,8 +204,10 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
    `active`, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
    is spotlit from anywhere (incl. decks), and `GameData.forced_spotlight` — the scoring beam —
    ORs on top of all of it.
-4. `combo_key(hook)` on the modifier controls combo participation (§3): default = the
-   script path (counts once per act); return `""` to opt out (engine rules mods do).
+4. `combo_key(hook)` on the modifier controls combo participation (§3a): default = the
+   script path. The FIRST activation of a class adds `combo_unique_step`, every later one adds
+   `combo_repeat_step`; nothing resets for the whole show. Return `""` to opt out — every
+   engine rules mod does, so machinery is never a combo class.
 5. Warnings-as-errors gotchas: class-ref arrays in a func body must be
    `var … : Array[GDScript]` not `const`; duck-typed hook calls on a typed base go
    through `obj.call(&"hook", …)`.
@@ -144,7 +218,8 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
 RunManager (Scripts/run_manager.gd) — owns RunState + all persistence
  ├─ run : RunState — the whole saved document: world_seed, current_node_id, lap, fame,
  │    traveled edges, card_datas/rule_datas (run deck), pending_goal/pending_node_id,
- │    game_history (the in-progress show's undo stack), game_submits, game_history_trimmed
+ │    game_history (the in-progress show's undo stack), game_history_trimmed,
+ │    pending_action / pending_placement_slot / pending_placement_coord
  └─ background save queue: request_save() (coalesced, threaded) / save_run() (sync);
       atomic temp-file rename; _exit_tree() flush.  user://run_save/
 Map (Levels/map.gd, extends CardEnvironment) — map screen + booster CardEnvironment
@@ -155,7 +230,8 @@ Map (Levels/map.gd, extends CardEnvironment) — map screen + booster CardEnviro
 ```
 
 **Flow:** Menu → new_run/continue → Map. Game/boss node → stash `pending_goal` → `Game`
-(3 acts/submits); win → `record_win` (fame) at **Continue** → map; loss → run over → menu
+(one show, ended by the player pressing End — there is no act budget); win → `record_win`
+(fame) at **Continue** → map; loss → run over → menu
 (save cleared). Booster node → take-all `ChoiceViewer`. End node = boss; winning flips to
 an endless reverse lap on the same graph (even lap forward, odd lap reversed; traveled
 history stored in forward orientation).
@@ -184,7 +260,7 @@ history stored in forward orientation).
   `restore_runtime()`/`_relink_cards` relink after load (shared helpers
   `GameData.unlink_card_backrefs`/`relink_card_backrefs` are THE slot list — extend both
   when adding a modifier slot).
-- **Pending-action replay:** Submit, Next and a grid PLACEMENT each persist a
+- **Pending-action replay:** Next, End and a grid PLACEMENT each persist a
   `RunState.pending_action` marker with the pre-action board before awaiting; killed
   mid-resolution → `_resume_show` replays the action with input locked. Requires those
   actions stay deterministic (no RNG in scoring; draws come from the ordered deck).
@@ -224,26 +300,50 @@ history stored in forward orientation).
 
 ---
 
-## 2. THE MOVE ENGINE (Board)
+## 2. THE MOVE ENGINE
 
-`Scripts/board.gd`: destinations are **anchors** (card references), not indices —
-`OnTop(card)` / `ColumnEnd(x,col)` / `ColumnStart(x,col)`. Four phases strictly ordered:
+Two engines, and which one runs depends on which board the card is on.
+
+### 2a. Grid placement (the live path)
+
+`Game.place_card_in_grid(card, coord)` / `move_card_in_grid` / `remove_card_from_grid`.
+A placement appends to the target cell's stack, so **the height a card lands at is not the
+height that was requested** — read it back with `GameData.grid_position_of`, never by reusing
+the coordinate you asked for. `GameData.has_cell(coord)` is the landing question: false means
+there is nothing there to land on. Every one of these ends in `_broadcast_board_mutation`,
+which fires `on_board_mutated(coord, is_compaction)` — the broadcast the scorer answers.
+
+⚠ **`is_compaction` is set BY THE MOVER and is never inferred from before/after heights.** A
+pass whose mutation is a compaction scores nothing; getting the flag from geometry would make
+a drop-only settle look like a fresh arrival.
+
+### 2b. The legacy zone engine (`Scripts/board.gd`)
+
+Still the path for the **Entrance**, and the board the retired grab/place rules cards read.
+Destinations are **anchors** (card references), not indices — `OnTop(card)` /
+`ColumnEnd(x,col)` / `ColumnStart(x,col)`. Four phases strictly ordered:
 RESOLVE (read-only) → VALIDATE (read-only; rejected moves leave the board bit-identical)
 → MUTATE (extract + insert; anchor resolved AFTER extraction) → NOTIFY (events fire on a
 consistent board). Policies (all pinned by Tests/Engine/test_board.gd): dest inside the
 moving stack = `ERR_DEST_INSIDE_STACK`; same-position drop = `OK_NOOP` (no events);
 `on_card_dropped_on` receives the real landing card.
 
+### 2c. Invariants and the mutation rule (BOTH engines)
+
 **Invariants** (`GameData.validate()`, debug builds + fuzz suites):
 I1 every card in exactly one container; I2 zone/zone_type lockstep; I3 stage matches
-container; I4 position index agrees with a full rescan; I5 no null entries.
+container; I4 **both** position indexes agree with a full rescan; I5 no null entries.
 
 **MUTATION GUIDELINES (sacred — a miss = stuck UI + stale caches + stale positions):**
-- All board mutations go through `Board.*` or Game's draw/discard/deck functions.
+- All board mutations go through `Board.*`, `Game.place_card_in_grid`/`move_card_in_grid`/
+  `remove_card_from_grid`, or Game's draw/discard/deck functions.
 - Every mutation bumps `GameData.revision` AFTER the state is consistent. The bump drives
   the coalesced PlayArea rebuild, keys the compare-implementer cache, AND invalidates the
-  lazy position index (`position_of`) — a missed bump now returns STALE positions, not
-  slow-but-correct scans.
+  lazy position indexes — a missed bump now returns STALE positions, not slow-but-correct
+  scans.
+- ⚠ **Banking a score is NOT a board mutation.** `_add_grid_line_score` writes BigNumbers in
+  place and emits `state_changed`; a `revision` bump there would rebuild the play area in the
+  middle of the scoring cascade. The same rule holds for `GameData.forced_spotlight`.
 - `revision` is ALSO the change detector for commits: `Game._last_saved_revision`
   holds the revision the last committed snapshot carried, and `save_state()` RETURNS EARLY
   when they match. So a legal-but-`OK_NOOP` placement pushes no undo entry ("an undo that
@@ -252,7 +352,8 @@ container; I4 position index agrees with a full rescan; I5 no null entries.
   setter resets the baseline to -1 (a swapped-in state is uncommitted until proven otherwise);
   `undo()`, `_restore_pre_act_board()` and `_resume_show()` re-baseline explicitly right after
   assigning, because those boards ARE history's top. **A mutation that forgets its revision
-  bump now also loses its undo entry.**
+  bump now also loses its undo entry.** `end_show()` bumps for exactly this reason: ending is
+  undoable but is not a board change, and without the bump there would be nothing to rewind.
 - Anything reading PlayArea's `ui_data`/`data_ui`/`data_card`/control tree calls
   `flush_rebuild()` first.
 - Statuses/mods must not call `move_data_*`/`discard_data` from hooks dispatched by
@@ -262,39 +363,78 @@ container; I4 position index agrees with a full rescan; I5 no null entries.
 
 ---
 
-## 3. SCORING & GOALS (settled design; formerly SCORING_MATH_PLAN §15 / SCORING_IMPL_PLAN)
 
-Implemented. `tools/scoring_sim.py` is the calibration oracle
-(`py tools/scoring_sim.py --final --q 0.35`); re-run and re-fit `goal_g0`/`goal_alpha`
-whenever deck/booster content changes. Do NOT touch `Scoring.ScoreModel` hand formulas
-casually — `test_scoring.gd` SECTION 8 leaderboard pins them.
+## 3. SCORING & GOALS
 
-### 3a. Act scoring (§15a — code comments cite this section number)
+`solatro/Tools/scoring_sim.py` is the calibration oracle
+(`py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25`); re-run and re-fit
+`goal_g0` / `goal_alpha` whenever deck or booster content changes. Do NOT touch
+`Scoring.ScoreModel`'s hand formulas casually — `test_scoring.gd` SECTION 8 pins them with a
+leaderboard.
+
+### 3a. The economy — buckets, product, live combo
 
 ```
-act payout = row_total × col_total × combo        (rounded ONCE per act payout)
-combo      = 1.0 + combo_step × U                 (resets every act; combo_step = 0.1)
-U          = distinct meld CLASSES scored this act
-             + distinct mod effects on their FIRST activation this act
+per grid:     row bucket, col bucket, special bucket
+grid_score  = the PRODUCT of every bucket whose value is > 0
+            = 0 when none of them is
+board_total = sum of grid_score over every grid
+combo       = 1 + combo_unique_step × firsts + combo_repeat_step × repeats
+displayed   = board_total × combo          ← recomputed at DISPLAY time, always current
 ```
 
+- ⚠ **A bucket that has not scored ADDS 0; it never multiplies by 0.** Owner's worked example:
+  `0+0+0`; row banks 10 → 10; col banks 5 → 10×5 = 50; special banks 2 → 10×5×2 = 100.
+- ⚠ **The test is the VALUE, never touched-ness.** A bucket worth 0 is excluded from the
+  product even when a line genuinely completed and scored 0.
+- ⚠ **The combo is applied at DISPLAY time, not at banking time**, so a line scored early is
+  worth exactly what the same line scored late is. `GameData.live_total()` derives it on
+  demand; there is no banking moment.
+- **Combo never resets.** `combo_classes` (distinct classes) and `combo_repeats` accumulate
+  for the whole show. `combo_unique_step` ships 1.0, `combo_repeat_step` 0.5, `combo_cap` 0.0
+  (= no cap). **Melds and effects contribute on exactly the same terms** — only whether the
+  class has been seen before decides which step applies.
 - **Meld class** (`Scoring.class_key`) = archetype + sub-hand size + copy count, with
-  flush-variant flags (`:FF`/`:MF`). Rank and suit do NOT differentiate. Lone high cards
-  never enter U. Duplicate-class melds still score base — they just don't raise U.
-- U lives on **GameData** (`combo_classes : Array[String]`) so undo/act-cancel/replay
-  reset it for free — the same reason `submits_used` lives on GameData: **any per-show
-  counter that undo must rewind belongs on GameData, not Game.**
-- `Game.register_combo(key)` is idempotent; empty keys never register. Mods feed U via
-  the `_note_mod_fired` dispatch hook + explicit `register_combo(combo_key())` calls at
-  prop/status `add_line_score` seams.
-- Fallback lever δ (`duplicate_class_scale`, ships 1.0 = off): duplicate-class melds
-  score ×δ — only lower if playtest shows dumping crushes everything.
-- `score_additive` (ships OFF): payout = `(R + C) × combo` instead — flips par policy to
-  even play at small decks; needs `goal_g0≈43, goal_alpha≈0.48` retune to playtest.
-- UI: combo label inside `%MultScore` (hidden at x1.0, empties after payout), pulses on
-  `combo_changed`.
+  flush-variant flags (`:FF`/`:MF`). Rank and suit do NOT differentiate. Lone high cards never
+  register. `Game.register_combo(key)` is idempotent for the FIRSTS set; a repeat still counts,
+  at its own smaller step. Empty keys never register, and every rules-deck card returns `""`
+  from `combo_key` so engine machinery is never a combo class.
+- Both counters live on **GameData**, so undo rewinds them for free. **Any per-show counter
+  that undo must rewind belongs on GameData, not Game.**
 
-### 3b. Goal curve (§15b)
+**Where a line banks** (`Game._add_grid_line_score`, the only place that decides):
+
+| Kind | Bucket |
+|---|---|
+| `ROW` / `COL` | `scores_row` / `scores_col`, keyed `Vector3i(grid, index, height)` |
+| `DIAG` | `score_special[grid]` — **one** bucket every diagonal and every future non-directional meld shares |
+| `HEIGHT_V` | `scores_cell`, keyed `Vector3i(grid, x, y)` — one bucket per cell |
+
+⚠ **A ROW bucket is per row AND per height.** A grid with five rows of two-high stacks displays
+ten row scores. There is no separate "raised" container; a raised level is another height key.
+The three-bucket product then sums a grid's own entries: `special` is the diagonal bucket **plus
+every cell bucket in that grid** — vertical stacks fold in there rather than forming a factor of
+their own.
+
+⚠ **Storage is coordinate-keyed dictionaries, not the 2-D arrays the plan first specified.** A
+grid's shape can change under an effect; a dictionary survives a grid that grows, shrinks or
+turns ragged where a width-by-height array would not. `BigNumber` is `RefCounted` and invisible
+to both `ResourceSaver` and `duplicate_deep`, so every bucket is copied by hand in
+`duplicate_state()` and flattened by `pack_scores()` / `unpack_scores()` for a save.
+
+⚠ **`GameData.apply_act_score()` and `discard_lower_board()` have no product caller.** They are
+the retired Submit economy; only legacy suites reach them. Do not wire anything new to either.
+
+**Retired, and not coming back:** Submit, the act count, `MAX_SUBMITS`/`submits_used`,
+`score_additive`, `duplicate_class_scale`, and the end-of-show multiply. `combo_step` still
+exists as a `PlayerSettings` knob but nothing reads it — `combo_mult()` uses the unique/repeat
+pair.
+
+⚠ **"Act" survives in the CODE as the name of a board ACTION, not of a Submit.** `_begin_act`,
+`act_calls`, `act_event_cap`, `act_cancelled` all bracket one placement's resolution. Reading
+them as the retired three-act structure is the mistake this section exists to prevent.
+
+### 3b. Goal curve
 
 ```
 goal(node) = G0 × (N̂(node)/N0)^ALPHA × difficulty × BOSS_MULT^is_boss × LAP_MULT^lap
@@ -303,10 +443,16 @@ N̂(node)   = N0 + BOOSTER_YIELD × boosters_on_path(node)
 
 - Goals scale with **opportunities** to grow (booster nodes on the path), not purchases —
   skipping boosters leaves you under the curve; that is the pressure.
-- Calibrated: `N0=20, G0≈130, ALPHA≈4.2, BOOSTER_YIELD=5` against the 20-card start deck
-  (`deck14`: ranks 1–5 × 4 suits, no talents).
-- **Monotone clamp** per path in `MapNodeRoles` (a spread extension can weaken par play;
-  the ladder must never descend). Boss ≥ every game goal of the lap.
+- Fitted against the grid economy: `N0=20, G0=5376, ALPHA=0.26, BOOSTER_YIELD=5`.
+- ⚠ **ALPHA is nearly flat ON PURPOSE, and that is not a tuning preference.** Measured, a
+  show's score PEAKS three nodes in and then falls: the board holds 25 cells for the whole run
+  (`grid_cards_per_unlock` ships at 52 and a run only reaches 40 cards, so a second grid never
+  unlocks), and booster cards are rank-uniform 1–13 against a start deck of 1–5, thinning out
+  the very collisions that make melds. Deck size is the wrong driver for this curve; a larger
+  power makes late nodes unreachable rather than harder. **`gaps/GAP-041.md` is OPEN on the
+  underlying problem** — the refit makes the curve reachable, it does not fix the sign.
+- **Monotone clamp** per path in `MapNodeRoles` (a spread extension can weaken par play; the
+  ladder must never descend). Boss ≥ every game goal of the lap.
 - `difficulty` is THE run-win-rate dial (±15% ≈ one persona band); future per-player
   difficulty ships as opt-in tiers (Stakes-style), never automatic in-run adjustment.
 - **Overscore is retired — a standing design ruling:** punishing overperformance breeds
@@ -315,15 +461,15 @@ N̂(node)   = N0 + BOOSTER_YIELD × boosters_on_path(node)
   `LAP_MULT^lap` is the owner-required endless pressure; the victory-lap stretch before
   the wall is intended feel.
 - All balance knobs live in `Scripts/player_settings.gd` "Balance —" groups, read live
-  via `SettingsManager.settings` (combo_step, duplicate_class_scale, score_additive,
-  difficulty, goal_g0/alpha/n0, booster_yield, boss_mult, lap_mult, luck_cap, fame_half).
-- Fame: `record_win` banks the full total as fame; fame → `luck()` (saturating) gates
+  via `SettingsManager.settings` (combo_unique_step, combo_repeat_step, combo_cap,
+  difficulty, goal_g0/alpha/n0, booster_yield, boss_mult, lap_mult, luck_cap, fame_half,
+  grid_cards_per_unlock, grid_max_count).
+- Fame: `record_win` banks `live_total()` as fame; fame → `luck()` (saturating) gates
   booster stamp/skill/type rolls. No real rarity system yet.
 
-Open playtest questions (not decidable in the sim): arrangement capacity reality (decides
-where in the 1.0–1.6 dump-vs-even range the game sits), difficulty default, combo_step
-0.1 vs 0.2 feel, mod-activation U generosity, Burning/prop cascades as a combo source,
-the δ trigger, spread-extension boosters as archetype pivots.
+Open playtest questions (not decidable in the sim): whether the combo steps feel right at
+1.0/0.5, difficulty default, mod-activation generosity, Burning/prop cascades as a combo
+source, and everything `GAP-041` parks.
 
 
 ### 3c. COMPARATOR BUCKETS — mods decide which cards count as the same
@@ -396,6 +542,45 @@ invariants, run once uncached and once on a cacheable board; `test_game_headless
 "COMPARATOR RULES CARDS, THROUGH A REAL GAME" for the end-to-end act.
 
 ---
+
+### 3d. Lines — what completes, and in what order
+
+`LineGeometry` is pure geometry and never answers "is this complete"; the detector card asks
+that by re-checking every cell of `Line.cells` against the live board.
+
+| Kind | Definition |
+|---|---|
+| `ROW` | every cell of one row of one grid, at one height |
+| `COL` | every cell of one column of one grid, at one height |
+| `DIAG` | the flat corner-to-corner runs plus the climbing family, full length, no wrapping |
+| `HEIGHT_V` | the vertical run of one cell, from height 0 up |
+
+- A horizontal line at height `h` needs a card **at** `h` in every cell; a taller stack still
+  has one, so it counts.
+- A vertical stack scores at every multiple of **5** (`LineGeometry.HEIGHT_SCORE_INTERVAL`) and
+  **pays the WHOLE stack** — 5 pays five, 10 pays all ten (the bottom five AGAIN, not netted
+  off), 15 pays all fifteen. **Heights 6–9 pay nothing.**
+- **Lines never cross a grid boundary** and never wrap.
+- Evaluation order for one mutation is **ROW, COL, DIAG, HEIGHT_V** — deterministic, because
+  the pending-action replay contract depends on it.
+- ⚠ **There is NO line-scored memory and NO within-pass guard.** Every completion scores, every
+  time; an effect that removes and replaces a card in a complete line re-scores it on every
+  cycle, and that is a legitimate archetype. **The runaway guard is therefore load-bearing for
+  CORRECTNESS, not just safety — do not tune it away** (§8).
+- ⚠ **The runaway budget is PER MELD, not per placement.** One placement can complete a row, a
+  column and both diagonals at once; charging all four against one budget made a legal board
+  action look like a runaway and aborted the act mid-way with its props frozen. `_begin_meld()`
+  resets the per-meld counter; `act_run_repeats` bounds re-entry ACROSS melds, and **without
+  that second counter the guard does not exist** — a runaway whose nature is re-scoring
+  re-enters `score_line()` and resets its own per-meld budget every lap.
+- ⚠ **Only a REPEAT charges the cap.** A unique activation is bounded by the board — finite
+  cards, hooks and lines — so however large a legal cascade gets it terminates. Measured: one
+  placement completing four lines spent 125 activations of which 44 were repeats.
+- ⚠ **`ScoringSection.refresh()` re-reads the LIVE board and must never be cached across a
+  hook.** A handler may have added a card to the section or compacted one out of it.
+
+---
+
 
 ## 4. SUIT PROPS & STATUSES (formerly PROPS_BUGFIX_HANDOFF / SUIT_PROPS_PLAN)
 
@@ -1227,24 +1412,46 @@ breakages above passed every test. After touching `@tool` scripts, shaders or `c
 
 Undo is live in every state; `Game.undo()` dispatches on three:
 
-- **Mid-act cancel:** Undo during Submit/Next resolution sets `act_cancelled` (only
-  inside the `_act_cancellable` span). The resolution FAST-FORWARDS (`get_delay()` → 0,
+- **Mid-action cancel:** Undo while a placement's resolution is running sets `act_cancelled`
+  (only inside the `_act_cancellable` span). The resolution FAST-FORWARDS (`get_delay()` → 0,
   `score_line`/`_run_score_effects` early-return, `run_props` breaks, manual-step hold
-  releases), then `_restore_pre_act_board()` rebuilds from `save_history[-1]` (acts
-  commit only at their END). Nothing pops from history. Mods keep mutating the doomed
+  releases), then `_restore_pre_act_board()` rebuilds from `save_history[-1]` (an action
+  commits only at its END). Nothing pops from history. Mods keep mutating the doomed
   state during the unwind — safe, it's replaced wholesale (and deliberately NOT unlinked).
 - **Game over:** Undo emits `show_unresolved` (view drops the overlay) then falls through
-  to a normal undo of the final Submit. Consequence: **fame banks in `exit_show()`
+  to a normal undo of the **End**. Consequence: **fame banks in `exit_show()`
   (Continue), not `_resolve_game()`** — the win stays undoable, and a quit-at-win-screen
   resume (which re-runs `_resolve_game`) can't double-bank fame.
 - Otherwise locked (resume load, replay tail): ignored.
 
+⚠ **`end_show()` bumps `revision` even though ending is not a board mutation.** `save_state()`
+returns early when the revision has not moved, so without the bump the End would leave no
+snapshot and there would be nothing for the game-over undo to rewind to. The state is fully
+consistent at that point, so the bump is safe.
+
+**Pending-action replay:** `_begin_action` marks the run with the action about to resolve, so a
+quit mid-resolution resumes by replaying it from the pre-action board. A **placement** needs two
+more things than a button press does — `_begin_placement(slot, coord)` records the Entrance
+**SLOT** and the target `BoardCoord`. ⚠ **The card is named by its slot, never by the object:**
+the board a replay starts from is a restored snapshot carrying its OWN copies of every card, so
+no reference to the original survives. A placement whose card is not in the Entrance (an effect
+placing one, a test driving the engine) records nothing — there is no slot to replay it from.
+
+**Debug history** (debug builds only): `_debug_history` / `_debug_redo` mirror `save_history`
+**uncapped**, for the owner's playtest loop — undo to before a bug, hit record, repeat the
+action, send the log. ⚠ **A second history, not a bigger `undo_cap`:** the production cap is a
+design decision about how far a PLAYER may rewind, and raising it to serve debugging would
+change the game to serve the tool. Never persisted, so a debug rewind cannot corrupt a real
+save. ⚠ `LeakSentinel` must be handed `debug_snapshots()` — every entry is a full board, and a
+legitimate owner the sentinel cannot see reads as a whole leaked board (measured: 90 cards).
+
 View side: win/lose overlays cover exactly the board (`PlayContainer` Labels + dim,
 mouse_filter STOP); Undo never disabled; `PlayArea.disable_board_focus()` strips + LOCKS
-card focus (`board_focus_locked` — the final Submit's deferred rebuild would otherwise
+card focus (`board_focus_locked` — the End's deferred rebuild would otherwise
 re-enable it); `enable_board_focus()` on dismissal.
 
 ---
+
 
 ## 6. MEMORY & LEAK RULES (weakref backrefs)
 
@@ -1298,18 +1505,25 @@ re-enable it); `enable_board_focus()` on dismissal.
 
 ## 7. TESTING
 
-Run: `py solatro/Tools/run_tests.py` (wrapper, preferred — see below) or
-`Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
-(changed: the PIXELS suite renders real effects and asserts on the image, and a
-dummy renderer cannot compile a shader — headless it FAILS with an explanation rather than
-skipping, per the owner's rule that tests must run properly rather than be skipped). Exit code
-= failure count; the bar is ALL suites green (count the run's own banner —
-PATIENCE, FX ATTACHMENT and PIXELS joined, and all run unordered like the other engine suites).
-Check TOTALS vary run-to-run (fuzz suites) — **compare failure sets, not counts.** ⚠ **The SUITE
-count is the stable number and it is 31**; a drop means a suite failed to LOAD (a parse error in one
-suite still lets the others report "PASSED"). Never run headless while the owner's editor has the
-project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw, headless
-window size): **HEADLESS_TESTING.md**.
+Run: `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py` (wrapper, preferred — see below)
+or `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
+(the PIXELS suite renders real effects and asserts on the image, and a dummy renderer cannot
+compile a shader — headless it FAILS with an explanation rather than skipping, per the owner's
+rule that tests must run properly rather than be skipped). Exit code = failure count; the bar is
+ALL suites green. ⚠ **Read the per-suite banners, never the aggregate count.** Check TOTALS vary
+run to run (fuzz suites) — **compare failure SETS, not counts.** ⚠ **The SUITE count is the
+stable number and it is 45**; a drop means a suite failed to LOAD (a parse error in one suite
+still lets the others report "PASSED"). Never run headless while the owner's editor has the
+project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw,
+headless window size): **HEADLESS_TESTING.md**.
+
+⚠ **A BANNER CAN REPORT A FAILURE THAT IS NOT A CHECK.** `N FAILED (0 behavior, 0
+implementation)` means the engine-error gate fired, not that an assertion failed — read
+`test_output_errors.log` and the newest engine log's backtrace, not the check list.
+
+⚠ **`GRID LAYOUT`'s card-on-cell measurement is a known cross-suite FLAKE.** That suite alone
+passes; the failure only appears in a full run, and the value it reports moves. Treat a lone
+GRID LAYOUT failure as interference until a single-suite run reproduces it.
 
 ⚠ **TWO GATES, AND THE SUITE CAN ONLY BE ONE OF THEM.** `all_tests.gd::_scan_engine_errors` fails the
 run on unexpected engine errors, read from `user://logs/godot.log` — but it runs inside `_ready`,
@@ -1321,6 +1535,7 @@ stdout+stderr (teardown errors are split across both) for error lines **absent f
 which is definitionally what the in-run gate could not see, and parses the allowlist out of
 `all_tests.gd` rather than restating it.
 
+
 Conventions (formerly UNIT_TESTS_PLAN):
 - Every suite extends `Tests/Support/test_base.gd` (`SolatroTest`); non-freezing
   `check(ok, ctx, detail)`, never `assert()`; each suite ends with `finish()`.
@@ -1331,9 +1546,17 @@ Conventions (formerly UNIT_TESTS_PLAN):
 - Fuzz tests take a seed, print it on failure, reproduce with `seed(reported_seed)`.
 - **⚠️ THE DEADLOCK RULE** (`Tests/Support/test_base.gd`): suite ordering uses
   `await_siblings_except` — waiting is a directed dependency; excludes must stay
-  consistent across ALL suites or the run hangs. Chain: everything else → INTERACTION →
-  UI PROPS → E2E → LEAK CANARY (last + alone). A new suite name needs the same exclude
-  treatment everywhere.
+  consistent across ALL suites or the run hangs. The canonical chain, each waiter excluding
+  every suite AFTER it: **<engine/map suites: no wait> → INTERACTION → UI PROPS → VISUAL
+  LAYERS → GRID VIEW → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE.** WALL PAUSE
+  is the permanent tail: it builds a real `Wall` whose `_ready()` pauses the tree and never
+  clears it, so nothing may run after it — it excludes nothing and everyone before it
+  excludes it by name. A new waiting suite needs the same exclude treatment everywhere.
+- ⚠ **Waiting protects the suite that NEEDS the shared state; nothing protects it from a
+  suite that needs nothing and MUTATES it in passing.** Constructing production objects has
+  production side effects — building a `Main` clears the shared `wall_info_mode`, which failed
+  WALL FOCUS from inside WALL RENDER, 2 runs in 3, naming a suite the change never touched. If
+  your fixture constructs something real, ask what it writes on the way up and restore it.
 - **Tests never ride `Decks/deck.gd`** (the owner's freely-changing playtest deck) —
   frozen compositions live in `Tests/Support/test_decks.gd`; existing TestDecks functions
   are replay contracts — add new ones, never edit. Shared factories:
@@ -1348,7 +1571,7 @@ Conventions (formerly UNIT_TESTS_PLAN):
      player's knobs. The backup name is per-suite (`suite_name()`) and self-healing on the next
      run — a single shared path would let concurrent suites swallow each other's parked file.
   2. `snapshot_settings(prefix)` / `restore_settings_snapshot()` put the LIVE resource back for
-     later suites. ⚠️ **Scope the prefix to the knobs your suite owns** (`"patience_"`,
+     later suites. ⚠️ **Scope the prefix to the knobs your suite owns** (`"grid_"`,
      `"booster_"`): suites that don't `await_siblings_except` run CONCURRENTLY against ONE
      shared PlayerSettings, so restoring a full snapshot stomps another suite's in-flight
      knobs. Only a suite that waits for its siblings (INTERACTION) may snapshot everything.
@@ -1360,11 +1583,13 @@ Conventions (formerly UNIT_TESTS_PLAN):
     exercises a path the game never takes. A cacheable double is four lines:
     `class X extends FakeEnvironment: var revision := 1` + `func _revision_key() -> Array: return
     [get_instance_id(), revision]`.
-  - **A real `Game` is available headless and cheap** — `test_game_headless.gd::make_game()` builds
-    one with `rules_deck`, both zones and `view == null`, and `submit()` runs the whole act. That is
-    the harness for "does this rules card actually change a score", and `test_game_headless.gd`'s
-    comparator section is the worked example. **A rules card written in a test is a real rules
-    card**; "no shipped card implements this hook yet" is not a reason to skip the end-to-end test.
+  - **A real `Game` is available headless and cheap.** `test_game_headless.gd::make_game()`
+    builds a LEGACY-ZONE show (grabber/placer/cascade-scorer rules cards, both zones, `view ==
+    null`); `test_grid_economy.gd::detector_game()` is the GRID equivalent, a real `Game` driven
+    through the real `SkillLineDetector`. Use the one whose board you are testing. That is the
+    harness for "does this rules card actually change a score". **A rules card written in a test
+    is a real rules card**; "no shipped card implements this hook yet" is not a reason to skip
+    the end-to-end test.
   - A suite must **never `await` a FRAME while it owns `CardEnvironment.CURRENT`** — the runner
     starts the next suite and CURRENT becomes someone else's, silently invalidating every later
     check. Suspend on a coroutine instead.
@@ -1390,12 +1615,51 @@ Conventions (formerly UNIT_TESTS_PLAN):
 
 ## 8. SHARP EDGES & OWNER RULINGS (do not "fix")
 
-Standing owner rulings:
+### The five suite gates — a change that trips one is wrong, not unlucky
+
+1. **The card-effect API gate.** A modifier reaches the game ONLY through `CardEffectApi` as
+   `CardModifier.api`; the gate fails on any direct `Game` / `GameData` / `Board.` reference
+   inside one. It matches the substring `"Board."`, so `BoardCoord` passes.
+2. **The sentinel gate.** Nothing writes `== BoardCoord.NOWHERE`. `NOWHERE` is a shared
+   instance and `==` on a `RefCounted` is IDENTITY. Use `is_nowhere()`, `equals()`, and
+   `pack()` for keys.
+3. **The zone-only ratchet.** `ZONE_ONLY_TESTS` lists the test files that assert against the
+   legacy renderer. **The set may SHRINK, never grow** — every member exercises live legacy
+   machinery, so one leaving is a bug.
+4. **The retired-act ratchet** (`test_game_headless.gd::test_retired_act_has_no_readers`): no
+   product file under `Levels/`, `Scripts/`, `Cards/`, `UI/` or `Tools/` may contain
+   `.submit(`, `func submit`, `_perform_submit` or `next_button`. ⚠ `next(` is deliberately
+   NOT on that list — `Game.next()` outlived the button that used to call it.
+5. **The retired-identifier grep gate** (`test_grid_economy.gd`, TP-60): `MAX_SUBMITS`,
+   `submits_used`, `game_submits`, `score_additive`, `duplicate_class_scale` and the whole
+   `patience*` family have ZERO readers in any `.gd` or `.tscn`. It reads the tree as TEXT,
+   because a retired identifier leaves no compile error behind once its last reader is gone.
+   ⚠ `CARD_CATALOG.csv` is deliberately NOT scanned — it catalogues design IDEAS, and its own
+   rule is "mark impossible rows superseded, never delete".
+
+### Standing owner rulings
+
+- **The runaway guard is CORRECTNESS-critical, not safety padding.** There is no line-scored
+  memory and no within-pass guard, so a legal effect that replaces a card in a complete line
+  re-scores it every cycle. `act_event_cap` is the only bound. **Do not tune it away** (§3d).
+- **A grid line never crosses a grid boundary and never wraps**, whatever the geometry would
+  otherwise allow.
+- **The Entrance's grid commitment lives on `GameData`** (`entrance_grid`, `@export_storage`),
+  so undo rewinds it with the board. It lifts only on undo or when no legal placement remains
+  in the committed grid.
+- **No design ids in product code** — not in a comment, not in a `##` doc comment, and above
+  all not in an `@export_group` label, which Godot renders as an Inspector heading. The code
+  gets the RULE the answer produced; `design/poker-patience/PLAN.md` carries the traceability.
+  `Tests/` is exempt. `py .claude/tools/doc_check.py` enforces it.
+- **No comment inside a method body.** A `##` above it says WHY.
+- **Do not migrate old saves.** Owner: *"just delete it manually or something."* That is the
+  whole migration story.
 - **B10:** `run_all_mods` iterates LIVE collections mods may mutate — by design; no
   snapshotting. (Hence: no board mutations from broadcast hooks — defer.)
 - **S6:** same-value `stage` re-sets DO re-emit `stage_changed` — relied upon.
 - **N8:** score arrays never shrink on zone removal — desync allowed so scores are never
-  lost.
+  lost. On GRID removal the same ruling holds in the other direction: the removed grid's
+  LABELS go, its already-banked contribution does not.
 - **skill_spotlight_check runs after every mod call** (not batched per event) — skills whose
   conditions become true must trigger immediately.
 - **Commented-out code policy:** TODO comment if it refers to unimplemented logic, delete
@@ -1476,8 +1740,9 @@ Sharp edges:
 - Anything fetched from `WorldMap2D`: the controller pins `overlay.z_index = 1` (child
   order isn't reliable). Never `bake_to_files()` after `reload_from_bake()` (corrupts
   graph.json); bake once after initial generation, then `release_generator()`.
-- Deterministic Submit/Next is load-bearing for pending-action replay AND prop-side
-  hashing — do not introduce RNG into act resolution.
+- **Deterministic action resolution is load-bearing** for pending-action replay AND prop-side
+  hashing — do not introduce RNG into a placement's resolution, and do not reorder the
+  ROW/COL/DIAG/HEIGHT_V scoring sweep.
 
 ## 9. THE SPOTLIGHT — the defects, and the seam each one hid in
 
