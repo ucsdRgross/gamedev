@@ -654,20 +654,29 @@ control pitch 32.7 == the card arithmetic's 32.7
 Red-then-green: with the old order restored the centres run DOWNWARD (544, 564, 584) and cards
 overlap **34 px into the pip row of the card beneath** — the owner's exact complaint, reproduced.
 
-⚠ **WHY IT IS PARKED: 46 CHECKS GO RED, ACROSS `UI PROPS` AND `VISUAL LAYERS`.** Neither suite is
-in `ZONE_ONLY_TESTS`, so these are LIVE assertions about the board's prop geometry, not legacy
-machinery being retired. Two root causes, both stale expectations of the old downward Entrance:
-- `test_ui_props` computes a card's anchor as `control.global_position + (w/2, card_h/2)` — the
-  TOP-hung formula. A bottom-anchored card is `+ (w/2, control.size.y - card_h/2)`, which is the
-  54 px difference the failures report. It also asserts the Entrance's row pitch is POSITIVE; it
-  is now negative by design.
-- `test_visual_layers`' row-bracketing checks turn on which card is "above" another, and the
-  Entrance's depth axis has inverted under them. The reveal offset flips with it.
+⚠ **WHAT IT COSTS IS NOW 8 CHECKS, ALL IN ONE FAMILY — down from 46.** The owner's question
+("*why is it dependent on anchoring at all*") was the key: most of the 46 were tests hand-copying
+the production anchoring formula. **That decoupling has LANDED separately and is on `main` of this
+branch** — `test_ui_props` and `test_visual_layers` now ask
+`CardVisual.get_card_control_center()` instead of re-deriving it, assert the pitch's MAGNITUDE
+rather than its sign, and measure the column's direction instead of naming it. With the flip
+applied on top of that, `UI PROPS` goes to **ALL 137 PASSED** and `VISUAL LAYERS` from ~34 red to
+**8** — with no expectation about prop behaviour touched.
 
-⚠ **DO NOT JUST REWRITE THE 46 TO MATCH.** That is rewriting tests to fit behaviour, which is the
-one thing this repo's test rules forbid outright. The pass needs an INDEPENDENT gate: render the
-prop layer over an Entrance stack and confirm by eye that the halves still bracket the right card
-(`/fx-verify` exists for exactly this), and only then update the expectations.
+⚠ **ONE MORE PRODUCT FIX IS PART OF THE FLIP AND IS IN THE PATCH:** `row_card_visuals()` walked the
+Entrance's CONTROLS at `idx = coord.h + 1`, hard-coding "child 0 is the header". Reversed, that
+index names a DIFFERENT card and every split prop brackets the wrong row. It must read
+`game.state.upper_zone` the way the grid branch already reads `grid.cells` — which is also the
+answer to the owner's question, one level up.
+
+⚠ **THE REMAINING 8 ARE THE REVEAL, AND THEY ARE NOT STALE TESTS.** `_row_open_offset()`,
+`row_open_extra()` and the prop anchoring that rides them were derived for a DOWNWARD Entrance:
+an opening pushes the rows below it down. Upward, an opening has to push the rows above it up, and
+a prop anchored across the expansion has to follow. Measured with the flip applied: a parked hoop
+sits 8 px off the card it rides (constant across three separation scales, so not a separation
+term), and `G3.1`'s prop drifts 27-34 px from its anchor during a reveal. **Deriving the reveal for
+an upward stack is the remaining work** — it is a real derivation, not a re-signing, and it needs a
+by-eye prop gate (`/fx-verify`).
 
 ### 2b. The ORIGINAL note on this item, kept for its warnings
 **Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
