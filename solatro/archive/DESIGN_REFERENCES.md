@@ -1,10 +1,6 @@
 # SOLATRO — Global Historical Reference Compendium
 
-**This is the GRID version.** The board is one to three grids of stacked cells; a placement
-scores the rows, columns, diagonals and height runs it completes, immediately. There is no
-Submit and no act. The pre-grid version is `archive/DESIGN_REFERENCES.md`.
-
-Third companion doc (after `DESIGN_DOC.md` — the owner's organized ideas — and
+Third companion doc (after `DESIGN_DOC.md` — your organized ideas — and
 `DESIGN_RECOMMENDATIONS.md` — my curated recommendations). This one is a **quarry, not a
 plan**: every thematic and historical reference I can surface from the worldwide history
 of circus, magic, sideshow, fairground, street performance, gambling, and card culture —
@@ -21,20 +17,6 @@ card sets, towns, events, and secrets.
 `Boss/Town` (hazard), `Event` (map node), `Consumable`, `Mechanic` (system),
 `Deck` (starting-deck variant), `Meta` (progression), `Visual` (juice/presentation),
 `Naming` (vocabulary/flavor), `Secret`.
-
-⚠ **The spatial vocabulary changed under this document, and most of it was mined before the
-change.** Where a hook below says "column" it was written for a two-zone tableau with one
-spatial axis that mattered. The grid has **four**: a row, a column, a diagonal (flat or
-climbing through height), and the vertical stack standing in one cell — within one grid, never
-crossing into the next. **Re-reading a hook usually means choosing which of the four it meant**,
-and that choice is often the whole card. The hooks reworked for the grid are marked
-**(re-based)**; the rest still say what they said, and their translation is left open on
-purpose — that is the quarry doing its job.
-
-⚠ **The systematic version of this re-basing already exists.** The effect review mined this
-file among others and puts one owner question per candidate effect, with three variants and a
-reject. Use that channel to propose anything from here; use this file to find it. ⚠ It is a
-separate work stream living on `main`, not on this branch.
 
 A spiritual ancestor for this whole document: Ricky Jay's book *Learned Pigs & Fireflies
 Everlasting* — a magician's own scholarly compendium of history's strangest performers.
@@ -219,7 +201,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Medicine shows & Clark Stanley, "The Rattlesnake King"** | Traveling variety shows selling tonics; Stanley's "snake oil" contained no snake — the literal origin of the term | `Consumable` — Snake Oil: a buff that is *sometimes* a Gaff (does nothing); selling it yourself is an economy event with reputation risk |
 | **Chautauqua circuits** | "Improving" tent circuits — lectures, music, uplift; Teddy Roosevelt called them "the most American thing in America" | `Town` — improving towns: no Danger acts allowed, but Concessions/education score double |
 | **Vaudeville & "playing the Palace"** | The Keith-Albee/Orpheum circuits; the Palace Theatre NYC as the summit of a performer's life | `Naming` — **the final city should be called The Palace**; circuits = route templates; "the death trail" = the hard route |
-| **Getting "the hook"** | Amateur nights: bad acts yanked offstage with a shepherd's crook | `Mechanic` — the Hook: a boss/town removes your weakest card every few placements unless it has scored since the last one **(re-based)** |
+| **Getting "the hook"** | Amateur nights: bad acts yanked offstage with a shepherd's crook | `Mechanic` — the Hook: a boss/town removes your weakest card mid-show unless it scored last submit |
 | **Barnstormers & wing walkers** (1920s) | Surplus-plane pilots and wing-walkers (Lillian Boyer, Ormer Locklear) selling rides and defying death county by county | `Skill` — the Wing Walker: transfers between two moving columns during the Next-phase drop (mid-air card transfer) |
 | **Niagara stunters: Annie Edson Taylor** (1901) | A 63-year-old teacher, first over the falls in a barrel, seeking fortune; got fame, died poor | `Event` — the Barrel: a one-time colossal fame gain with zero gold — the poignant gamble |
 | **The Great Farini** (William Hunt) | Niagara rope-crosser turned impresario — *designed Zazel's human-cannonball launcher* and much sideshow tech | `Leader` — the Engineer-impresario: your Special Effects leader; danger acts he "designs" cost less |
@@ -238,7 +220,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Parintins Folklore Festival** (Amazonas) | Two ox-troupes — Garantido (red) vs. Caprichoso (blue) — battle annually in a purpose-built "bumbódromo"; the whole town wears one color | `Town` — the two-faction city: pick red or blue on arrival; your choice changes the goal, the shop, and who heckles you |
 | **Bumba Meu Boi** | The folk pageant at Parintins' root: the prize ox is killed and *resurrected* amid celebration — death and revival as the show itself | `Skill` — the Ox: a card whose destruction IS its act — when destroyed, the town celebrates (fame), and it revives next show |
 | **Cordel literature** (NE Brazil) | Ballad-pamphlets hung from strings in markets — cheap woodcut covers, verse tales of bandits and miracles | `Meta/Visual` — your lore-scrap delivery format: unlockable verse pamphlets "hung on a string" in the Winter Quarters |
-| **Repentistas & payadores** | Improvised verse duelists (Brazil's repente, the gaucho payada) — alternating stanzas until one falters | `Event` — the verse duel: alternate placements with a town champion, each answering the other's line; first to place without completing one loses **(re-based)** |
+| **Repentistas & payadores** | Improvised verse duelists (Brazil's repente, the gaucho payada) — alternating stanzas until one falters | `Event` — the verse duel: alternate "stanzas" (mini-submits) with a town champion; first to fail a beat loses |
 | **Danza de las tijeras** (Peru) | The scissors dance: competing dancers (danzaq) trade increasingly acrobatic, painful feats in an endurance duel (atipanakuy), traditionally said to draw power from mountain spirits | `Event` — the one-upmanship duel: you and a rival alternate melds, each must out-score the last — first to fall short loses everything wagered |
 | **La Diablada** (Oruro, Bolivia) | Carnival devil-dance in fabulous masks: the archangel defeats the Seven Deadly Sins — evil paraded gorgeously, then beaten | `Event` — the Devil Parade: play your *debuffed* cards as the show; each one scored converts its debuff to fame |
 | **Diablos Danzantes de Yare** (Venezuela) | Red-masked devils dance through town, then kneel in submission at the church door — evil that surrenders on schedule | `Skill` — the Kneeling Devil: a negative-effect card that, if kept a full tour, converts to a positive card at the final city |
@@ -282,7 +264,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Barong vs. Rangda** (Bali) | The eternal battle: protective lion-spirit vs. the witch — and neither ever wins; the point is balance, not victory | `Boss` — **the Balance boss**: cannot be defeated, only balanced — end the show with row points and column points within X% of each other; the alt-win-con your notes were looking for |
 | **Kecak** (Bali) | The "monkey chant": a hundred bare-chested men as a single interlocking voice-orchestra (developed 1930s from the sanghyang trance ritual) | `Skill` — the Chorus: rank-1 commons chant — +mult per rank-1 card on board when any meld scores (mass-commons archetype) |
 | **Water puppetry / múa rối nước** (Vietnam) | Puppets dance ON a pond; puppeteers stand waist-deep behind a screen, hidden for a thousand years — born in flooded rice paddies | `Mechanic` — **flooded rows**: water-covered board rows where cards float (move freely sideways) and their operators (cards beneath) stay hidden but active |
-| **Yoke thé & zat pwe** (Myanmar) | Marionette theater so prestigious puppets outranked human actors; zat pwe = all-night variety marathons | `Event` — the All-Nighter: a triple-size show — all three grids unlocked at once, 3× goal, 3× reward **(re-based; this is the only content that would make the grid cap mean anything today)** |
+| **Yoke thé & zat pwe** (Myanmar) | Marionette theater so prestigious puppets outranked human actors; zat pwe = all-night variety marathons | `Event` — the All-Nighter: a triple-length show (3× submits, 3× goal, 3× reward) |
 | **Likay** (Thailand) | Glitter-drenched improvised folk theater — audiences pin money on performers MID-SCENE | `Mechanic` — mid-show tips: overscoring a single meld pays out instantly (not at show end) — dopamine timing |
 | **Khon** (Thailand) | The masked dance-drama of the Ramakien — codified roles: hero, demon, monkey | `Naming` — masked-role card family for a Thai region |
 | **Balagtasan** (Philippines) | Staged poetic debates — verse duels as public entertainment, named for the poet Balagtas | `Event` — the debate duel (the global verse-duel family: repentistas, flyting, extempo) |
@@ -319,7 +301,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Skalds & flyting** (Norse) | Court poets whose praise made reputations — and *flyting*, the formal exchange of poetic insults (the rap battle's ancestor) | `Event` — the Flyting: insult-duel a town champion; winner takes fame from the loser |
 | **Glíma** (Iceland) | Viking belt-wrestling, still practiced — codified, courteous, ancient | `Event` — the friendly grapple: a no-stakes duel node for practice (test a card against a boss's stats without risk) |
 | **Czech marionette tradition** | Under Habsburg and later occupations, puppets kept the Czech language and satire alive on stages where actors couldn't — puppetry as national resistance | `Mechanic` — puppets are immune to censorship: in towns that ban speech/satire acts, Puppet-type cards perform unhindered (ban-workaround family) |
-| **Vertep & szopka** (Ukraine/Poland) | Portable nativity puppet-theaters — a whole stage carried in a box | `Skill` — the Box Theater: a card containing a miniature grid — cue it to place a card into its own 3×3 and score it there **(re-based)** |
+| **Vertep & szopka** (Ukraine/Poland) | Portable nativity puppet-theaters — a whole stage carried in a box | `Skill` — the Box Theater: a card containing a miniature show — cue it to run a one-card mini-submit inside itself |
 | **The csikós & the Puszta Five** (Hungary) | Steppe horsemen standing astride five galloping horses at once | `Skill` — the Puszta Five: for one turn, one card straddles ALL columns (scores in every column's meld) — the Courier's endgame evolution |
 | **Hopak** (Ukraine) | The squat-kick acrobatic dance — explosive, competitive, showy | `Skill` — burst acrobatics: a Dancer that jumps its whole stack one row in a single cue |
 | **Fasnacht** (Basel) | Masked pre-dawn carnival — piccolos, drums, and lantern floats satirizing the year | `Event` — the Lantern Roast: the town satirizes YOU (your run's failures listed for laughs); accept it for fame, or take offense |
@@ -358,7 +340,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 
 | Reference | What it was | Game hook |
 |---|---|---|
-| **Enrico Rastelli** | The god of jugglers — trained obsessively, died at 34; numbers records still argued about | `Leader` — juggler leader: Balls-suit cards stay "aloft" (re-scored) as long as a Balls card scores at least once every N placements **(re-based)** |
+| **Enrico Rastelli** | The god of jugglers — trained obsessively, died at 34; numbers records still argued about | `Leader` — juggler leader: Balls-suit cards can be "kept aloft" (re-scored) as long as one scores each submit |
 | **Paul Cinquevalli** | The Victorian "greatest juggler": billiard-ball and everyday-object elegance | `Skill` — gentleman juggling: prop (non-feat) cards in his row count as Balls suit |
 | **Kara & the gentleman jugglers** | Immaculate evening-dress juggling of hats, canes, cigars — the everyday made virtuosic | `Skill` — elevate a prop: permanently convert one prop card into a feat card |
 | **W.C. Fields** | Vaudeville "tramp juggler" whose *fake mistakes* got bigger laughs than the tricks | `Skill` — **the Comedic Drop**: deliberately discard (drop) a card mid-show for a bonus larger than scoring it — failure as a scored act |
@@ -377,7 +359,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **Katie Sandwina** | Bent iron bars, lifted her husband overhead nightly for decades | `Skill` — carries one chosen card with her wherever she moves (they relocate together) |
 | **The Mighty Atom** (Joseph Greenstein) | 5'4" strongman: bit through nails, restrained aircraft, broke chains with his chest | `Skill` — small card, absurd strength: rank 3 that can hold ANY size stack legal above it |
 | **Zishe Breitbart** | Jewish strongman folk hero of the 1920s — "the modern Samson" | `Naming` — folk-hero card lore |
-| **Hunger artists** (Giovanni Succi et al.; Kafka's story) | Professional public fasters in barred cages — a real fad Kafka memorialized | `Skill` — **the Hunger Artist**: gains +N for every consecutive show it stays in the deck unplayed; huge burst when finally played, then resets (waiting literally scored) |
+| **Hunger artists** (Giovanni Succi et al.; Kafka's story) | Professional public fasters in barred cages — a real fad Kafka memorialized | `Skill` — **the Hunger Artist**: gains +N for every consecutive show it stays in the deck unplayed; huge burst when finally played, then resets (patience literally scored) |
 | **Flagpole sitters** (Shipwreck Kelly, 1920s) | Weeks-long endurance perching on poles above city crowds | `Skill` — the Sitter: rewards for a card remaining atop the same column across multiple shows |
 | **Dance marathons** (Depression era) | Grinding endurance contests — couples shuffling for weeks for prize money | `Boss/Event` — the Marathon: a multi-show gauntlet where your board doesn't fully reset between shows |
 | **Pedestrianism** (Edward Payson Weston) | Competitive long-distance walking — the 1870s' biggest spectator sport | `Meta` — route-length achievements ("walked the whole map") |
@@ -398,7 +380,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **The Globe/Wall of Death** | Motorcyclists riding vertical walls and mesh spheres | `Skill` — centrifugal column: cards in this column can't fall/be discarded while it spins (turn-limited) |
 | **The human cannonball** (Zazel → the Zacchinis) | Spring/compressed-air launchers; the Zacchinis made it a family industry | `Skill` — already specced; compendium adds the *family dynasty* framing → `Meta`: cannon acts inheritable between runs |
 | **Human blockhead** (Melvin Burkhart) | Hammering a nail into the nasal cavity — comedy timing over gore | `Skill` — the Blockhead: absorbs one Knife projectile per show as points instead of damage |
-| **Snake handling & big-cat "lion's bride" acts** | The caged-beauty tableaus of the menagerie era | `Skill` — the Lion's Bride: score for sharing a LINE with a dangerous Animal card without being eaten — sharing its CELL pays double and risks more **(re-based)** |
+| **Snake handling & big-cat "lion's bride" acts** | The caged-beauty tableaus of the menagerie era | `Skill` — the Lion's Bride: score for occupying the same column as a dangerous Animal card without being eaten |
 
 ## B5. Clowning Across Cultures
 
@@ -458,7 +440,7 @@ core slang are already placed in `DESIGN_RECOMMENDATIONS.md`; these are addition
 | **The Davenport brothers & the spirit cabinet** | Tied inside a cabinet, instruments played "by spirits"; Maskelyne exposed them, Houdini befriended the survivor | `Skill` — the Spirit Cabinet: cover this card fully and its column's effects trigger "by spirits" (as if spotlit) |
 | **Ectoplasm & spirit photography** (William Mumler) | Cheesecloth apparitions; Mumler's double-exposure "ghosts" — including Lincoln's — tried for fraud | `Visual/Skill` — ghost-image duplicates of scored cards drift in the background; a Spirit Photo consumable: capture a "ghost copy" of any card for one show |
 | **The Ouija board** (patented 1891) | The parlor "talking board" that became an industry | `Consumable` — the Board: ask the deck one yes/no question per show (will X be drawn? is the next node's pack good?) |
-| **Houdini vs. Margery** (1924) | The *Scientific American* prize committee, the boston medium, and magic's most famous fraud investigation | `Event` — the Committee: offer one of your Gaffs for "testing" — huge reward if it survives scrutiny, destroyed if not |
+| **Houdini vs. Margery** (1924) | The *Scientific American* prize committee, the boston medium, and magic's most famous fraud investigation | `Event` — the Committee: submit one of your Gaffs for "testing" — huge reward if it survives scrutiny, destroyed if not |
 | **Midnight spook shows** (1930s–50s) | Traveling theater ghost-blackout shows before horror films | `Secret` — already specced (the Ghost Show); compendium adds: blackout mechanics — one turn played in the dark (facedown board) |
 | **Kuda Bux** | Fire-walker and "X-ray eyes" blindfold act | `Skill` — X-Ray Eyes: while THIS card is covered (blinded), you can see all facedown/hidden cards |
 | **Clever Hans** (1900s) | The counting horse who actually read his questioner's body language — now a named scientific effect | `Skill` — **Clever Hans**: appears to calculate (shows a rank) but actually copies its neighbor's value; when the neighbor leaves, it's revealed as rank 1 |
@@ -566,7 +548,7 @@ several map onto Solatro's systems better than circus material does.
 | **The standing ovation** | The full house on its feet — the show's highest verdict | `Naming` — the perfect-show bonus tier above Straw House |
 | **Pantomime & "He's behind you!"** | British panto's sacred audience contract: the crowd screams warnings the hero can't hear; the dame, the principal boy, "oh no it isn't!" | `Mechanic` — **the audience warns you**: the game's hint system rendered diegetically — the crowd (UI) shouts when a hazard is about to hit a card; villains earn boos (heat) |
 | **Melodrama** | Mustache-twirling villains, sawmills, train tracks — morality as spectacle, the audience booing on cue | `Naming` — boss intro staging: villains announced with boo-able flourish |
-| **The Pledge, the Turn, the Prestige** | The three-act grammar of a magic trick (popularized by Priest's novel and Nolan's film, now standard vocabulary) | `Naming` — the three-act grammar has nothing left to name (there are no acts), but **the three score buckets do**: row, column and special as The Pledge, The Turn and The Prestige — and the product economy earns the escalation, since the third one multiplies the first two **(re-based)** |
+| **The Pledge, the Turn, the Prestige** | The three-act grammar of a magic trick (popularized by Priest's novel and Nolan's film, now standard vocabulary) | `Naming` — **name Solatro's three submits per show exactly this**: The Pledge, The Turn, The Prestige — free structure, free gravitas |
 
 ## F2. Kayfabe & Sports Entertainment (pro wrestling, lucha libre)
 
@@ -597,7 +579,7 @@ carnival cant), which makes it Solatro's legitimate cousin.
 |---|---|---|
 | **Stage diving & crowd surfing** | Trust the crowd or eat the floor | `Skill` — **the Crowd Surf**: pass a card across the TOPS of all columns, hand to hand — it gains +1 per column crossed, but if any column is empty it DROPS (discarded); risk traversal as an act |
 | **The rider & Van Halen's brown M&Ms** | The famous "no brown M&Ms" clause existed to test whether venues actually read the safety-critical contract — candy as a canary | `Skill` — **the Rider**: a card with long rule text hiding one small instruction; obey it and the card doubles — an attention test disguised as flavor (design's best inside joke) |
-| **Roadies & the soundcheck** | The invisible crew; the empty-hall rehearsal before doors | `Mechanic` — the Soundcheck: one free non-scoring placement at show start — the card lands, the line detector does not run **(re-based; the engine already has the flag for this, `is_compaction`)** |
+| **Roadies & the soundcheck** | The invisible crew; the empty-hall rehearsal before doors | `Mechanic` — the Soundcheck: one free non-scoring rehearsal turn at show start (see the board, move once, no submit) |
 | **The encore ritual** | see F1 | — |
 | **Lighters up / phone lights** | The audience becomes the light show during the slow song | `Visual/Mechanic` — during a low-scoring turn, the "crowd glow" trickles small fame — the game is gentle when you're building |
 | **Woodstock** (1969) | The fences fell, half a million came, nobody paid, and it became the legend of the century | `Event` — the Overrun: your show goes free — zero gold, enormous permanent fame, and the town is changed forever |
@@ -631,7 +613,7 @@ carnival cant), which makes it Solatro's legitimate cousin.
 | **Royal de Luxe & the Nantes giants** | Building-sized marionettes walked through cities by teams of "Lilliputian" operators on cranes | `Skill` — the Giant: a card occupying a 2×2 board footprint, operated (kept active) by adjacent crew cards |
 | **Handspring's War Horse** | Puppets so alive the audience grieves for plywood and cane | `Visual` — the believability bar: puppet-type cards gain lifelike idle animation as they level |
 | **Bread and Puppet Theater** (Vermont) | Political parade puppetry that hands out free bread — "art is cheap, like bread" | `Event` — the Free Show: give a no-fee performance, heal the whole deck one debuff, gain no gold |
-| **Living statues** | The street performer who scores by NOT moving | `Skill` — the Statue: +points for every placement made anywhere while it stays uncovered; being covered resets it **(re-based)** |
+| **Living statues** | The street performer who scores by NOT moving | `Skill` — the Statue: +points each turn it does not move; any movement resets it (patience literally paid) |
 | **The one-man band** | Cymbals between the knees, harmonica in the rack — everything at once, none of it well | `Skill` — the One-Man Band: counts as three classes at one-third effect each; the affectionate anti-specialist |
 
 ## F6. Film Stunts & Spectacle Sports
@@ -663,7 +645,7 @@ is Pepper's 1862 glass; David Blaine is Kafka's hunger artist; VTubers are kayfa
 | **Uri Geller on Carson** (1973) | Johnny Carson — an ex-magician, briefed by Randi — controlled the props himself; nothing bent that night | `Town` — the Prepared Town: pre-inspects everything; all Gaffs and Humbugs are disabled — the anti-fake boss check your build must survive |
 | **Shin Lim wins AGT** (2018) | Close-up card magic — just cards — winning the biggest talent show on television | `Naming` — the thesis card: an in-game card whose art is someone playing cards; cards as the whole act is the game's own pitch |
 | **The Golden Buzzer** | One judge's press sends an act straight through, confetti falling | `Consumable` — skip one town's requirement entirely, with confetti; rare, unearned-feeling, delightful |
-| **The Gong Show** | Gonged mid-act — failure as the entertainment | `Town` — the Gong: a run of N placements that complete no line ends the show immediately; the crowd loves the gong more than the acts **(re-based)** |
+| **The Gong Show** | Gonged mid-act — failure as the entertainment | `Town` — the Gong: any submit scoring under a floor ends the show immediately; the crowd loves the gong more than the acts |
 | **The Masked Singer** | Celebrities perform masked; the weekly unmasking is the show | `Mechanic` — hidden-identity cards (Bauta family, TV skin): identity/rarity revealed only after N scores — the reveal is a fanfare moment |
 | **Tupac at Coachella** (2012) | The "hologram" resurrection — which is Pepper's Ghost, the 1862 angled-glass trick, unchanged | `Skill` — the Hologram Tour: resurrect one destroyed card for one show as an intangible Pepper's Ghost duplicate — the Victorian trick literally modern |
 | **Hatsune Miku & the vocaloids** | A synthetic idol whose songs are written by thousands of fans — a performer who is a commons | `Skill` — the Synthetic Idol: an Automaton whose skill is assembled from fragments of your other cards' skills (the crowd writes the act) |
@@ -734,17 +716,13 @@ turned into jokes or loot:
 
 # PART I — QUICK-MINE INDEX (hook type → best candidates)
 
-- **New spatial verbs** (the game's core currency, and the grid gave it four axes instead of
-  one): the Courier (two columns), the Contortionist (two cards/one cell), Foot Juggler
-  (sub-slot), Walking Through the Wall, Wing Walker (mid-drop transfer), High Dive, the Dragon
-  meld, the Brass Ring — plus, from the expansion: the Castell crown (smallest card tops the
-  stack), Keaton's Falling Wall (the one safe cell), the Crowd Surf (traversal across the tops
-  of a row's stacks), the Invisible Wall, the Traceur (parkour across stack tops), the Clock
-  Hang (half-off-board), the Puszta Five (a whole line at once), flooded/ice rows (floating and
-  sliding cards). ⚠ **(re-based)** Every one of these has to say which axis it runs along;
-  several are *more* interesting on a diagonal or up a stack than along the row they were
-  written for, and the grid's own constraint — never crossing a grid boundary — is a free
-  design edge none of them use yet.
+- **New spatial verbs** (the game's core currency): the Courier (two columns), the
+  Contortionist (two cards/one slot), Foot Juggler (sub-slot), Walking Through the Wall,
+  Wing Walker (mid-drop transfer), High Dive, the Dragon meld, the Brass Ring — plus,
+  from the expansion: the Castell crown (smallest card tops the tower), Keaton's Falling
+  Wall (the one safe slot), the Crowd Surf (top-of-columns traversal), the Invisible
+  Wall, the Traceur (parkour tops), the Clock Hang (half-off-board), the Puszta Five
+  (all columns at once), flooded/ice rows (floating and sliding cards).
 - **Anti-spotlight designs** (want to be covered): the Mango Seed, Louis Cyr's Backlift,
   the Turk, Spirit Cabinet, X-Ray Eyes, Humbug (already specced), the Incubator — plus
   the costaleros (covered cards add rank to their carrier) and the water-puppet
@@ -792,9 +770,8 @@ turned into jokes or loot:
   school (Phare), Winter Quarters — plus Residency mode (the tour that stays),
   speedrun-category endless modes, the seasonal crown (Calypso Monarch), Guinness
   personal bests per card, the busker-to-space progression arc (Laliberté).
-- **Naming gifts**: call the three score buckets **The Pledge, The Turn, The Prestige**; call
-  the final city **The Palace**; call the discard pile **Showmen's Rest**; call a cell's stack
-  **The Tower** and a full grid **The Ring**.
+- **Naming gifts**: call the three submits **The Pledge, The Turn, The Prestige**; call
+  the final city **The Palace**; call the discard pile **Showmen's Rest**.
 - **The five stories most worth full flavor-text treatment**: Dr. Couney's incubators,
   Blackstone's calm evacuation, Adelaide Herrmann's bullet catch, Reginald Scot's
   merciful exposé, Pablo Fanque's poster becoming a Beatles song — and from the
