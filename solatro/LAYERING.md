@@ -1,7 +1,7 @@
 # LAYERING.md — board rendering order (draw-order reference)
 
-The `solatro` board (`Levels/game_view.tscn` → `UI/play_area.tscn`) draws its whole board on
-**one canvas layer** — there is **no `CanvasLayer` anywhere**. The entire board
+The `solatro` board (`Levels/game_view.tscn` → `UI/play_area.tscn`) draws its whole board — the
+grids, the Entrance, the score gutters, the props and the overlays — on **one canvas layer** — there is **no `CanvasLayer` anywhere**. The entire board
 draw order is **structural**: every board `CanvasItem` stays at **`z_index == 0`** and order is
 decided purely by **sibling position + parent nesting** (Godot draws a parent before its
 children, and earlier siblings before later ones; ties at equal effective z break by tree
@@ -33,57 +33,95 @@ bigger number.
 
 ## The nested draw-order list (bottom of each group renders ON TOP)
 
+⚠ **THE BOARD HAS TWO CARD LAYERS NOW, AND THEY ARE NOT SIBLINGS OF EACH OTHER.** The grids live
+inside the scroll container; the **Entrance** is a `Control` sibling of that container, with its
+own `EntranceCardLayer`. `PlayArea` orders each layer independently, with `move_child` calls
+confined to that layer alone — a card moving between them is a reparent, not a reorder.
+
 ```
 game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
 └─ SceneRoot (Control)
    ├─ PlayContainer (Control)
    │  ├─ PlayArea  ── drawn FIRST → underneath the overlays (earlier PlayContainer child)
-   │  │  └─ SmoothScrollContainer → TopLevelVBox   (clip_contents=false; carries scroll)
-   │  │     ├─ UpperZone / MiddleZone / LowerZone containers + score gutters
-   │  │     │    (invisible card-anchor Controls; BigNumberLabel gutter labels)
-   │  │     │     └─ earlier VBox siblings → BELOW CardLayer/PropLayer/OverlayLayer
-   │  │     ├─ CardLayer (Node2D, z 0)              [earlier sibling → below props/overlay]
-   │  │     │   ├─ CardVisual per card — CHILD INDEX = row-major rank (move_child, no z)
-   │  │     │   │    · later column / lower row = later child = drawn on top
-   │  │     │   │    · counter runs continuously across BOTH zones (upper first, then
-   │  │     │   │      lower) → every card gets a UNIQUE slot; lower zone draws over upper
-   │  │     │   │    · GRAB LIFT: a held card is move_child'd to the LAST CardVisual slot
-   │  │     │   │      (above all resting cards, still below PropLayer)
-   │  │     │   │    └─ inside each CardVisual (Offset → Visual), tree order:
-   │  │     │   │       ├─ Type / Rank / Suit / Stamp Polygon2D
-   │  │     │   │       ├─ Art Polygon2D            (last face polygon → on top of the face)
-   │  │     │   │       └─ StatusLayer (Node2D)     (added LAST under `visual` → on top; no z)
-   │  │     │   └─ two _PropHalf nodes per occupying split prop, BRACKETING the occupied
-   │  │     │       CardVisual: BACK half move_child'd to JUST BELOW it (behind the card, above
-   │  │     │       the row above); FRONT half JUST ABOVE it (in front of the card, but BELOW
-   │  │     │       the row below). Both parented to the STABLE CardLayer (never to the card),
-   │  │     │       transform synced to the PROP each frame so they never inherit the card's
-   │  │     │       jump/drag/float. The card passes THROUGH the ring.
-   │  │     ├─ PropLayer (Node2D, z 0)              [later sibling than CardLayer → above ALL cards]
-   │  │     │   └─ PropVisual per live prop (order = add/tree order)
-   │  │     │       └─ _draw(): non-split → whole body here (above all cards); split (hoop) while
-   │  │     │          over a card → nothing here, both arcs drawn by its two _PropHalf nodes
-   │  │     │          bracketing the occupied card in CardLayer (above); off-card → whole body here
-   │  │     └─ OverlayLayer (Node2D, z 0)           [LAST sibling → always on top of the board]
-   │  │        ├─ Focus inspector panel (PanelContainer)   — no z; tree order
-   │  │        └─ Score TextPopup (Node2D, transient)      — no z; tree order
+   │  │  ├─ SmoothScrollContainer → TopLevelVBox   (clip_contents=false; carries scroll)
+   │  │  │  ├─ GridContainer (HBoxContainer)  ── ONE GridPanel per GameData.grids entry,
+   │  │  │  │    │                               left to right, all bottom-aligned on one floor
+   │  │  │  │    │  ⚠ IT CLIPS. A grid outside the board's window is OUT OF VIEW, not merely
+   │  │  │  │    │    out of position — unclipped, a non-focused grid painted across the Deck
+   │  │  │  │    │    button and the score column while its geometry was already correct.
+   │  │  │  │    └─ GridPanel (VBoxContainer, ALIGNMENT_END)
+   │  │  │  │       └─ Board (HBox)
+   │  │  │  │          ├─ RowLabels (VBox)      — row scores, LEFT of the cells
+   │  │  │  │          ├─ CellsColumn (VBox)
+   │  │  │  │          │  ├─ Cells (VBox, ALIGNMENT_END) → one GridRow HBox PER ROW
+   │  │  │  │          │  │    ⚠ ONE CONTAINER PER ROW, never one GridContainer for the panel:
+   │  │  │  │          │  │      a real grid gives every cell the row's full height, so a cell
+   │  │  │  │          │  │      has nothing to bottom-align against and a deep stack bleeds
+   │  │  │  │          │  │      into the row above.
+   │  │  │  │          │  └─ ColLabels (HBox)   — column scores, BELOW the cells, and a SIBLING
+   │  │  │  │          │                          of Cells so the container puts each label under
+   │  │  │  │          │                          its own column with nothing measuring an indent
+   │  │  │  │          └─ SpecialLabel          — the ONE shared special-meld score, RIGHT of the
+   │  │  │  │                                     grid, centred, opposite the row labels
+   │  │  │  │       (all of these are invisible card-anchor Controls + BigNumberLabel gutters;
+   │  │  │  │        earlier VBox siblings → BELOW CardLayer/PropLayer/OverlayLayer)
+   │  │  │  ├─ CardLayer (Node2D, z 0)   ── THE GRIDS' cards  [earlier sibling → below props]
+   │  │  │  │   ├─ CardVisual per card — CHILD INDEX assigned by _append_grids_row_major:
+   │  │  │  │   │    · grid 0 before grid 1 before grid 2
+   │  │  │  │   │    · within a grid: every CELL ZONE card first (so a card always draws OVER
+   │  │  │  │   │      the cell frame it sits on), then the stacks HEIGHT-MAJOR — all of h 0
+   │  │  │  │   │      across every cell, then all of h 1, and so on
+   │  │  │  │   │    · GRAB LIFT: a held card is skipped by the ordering pass entirely and
+   │  │  │  │   │      stays at the layer's end (above all resting cards, below PropLayer)
+   │  │  │  │   │    └─ inside each CardVisual (Offset → Visual), tree order:
+   │  │  │  │   │       ├─ Type / Rank / Suit / Stamp Polygon2D
+   │  │  │  │   │       ├─ Art Polygon2D            (last face polygon → on top of the face)
+   │  │  │  │   │       └─ StatusLayer (Node2D)     (added LAST under `visual` → on top; no z)
+   │  │  │  │   └─ two _PropHalf nodes per occupying split prop, BRACKETING the occupied
+   │  │  │  │       CardVisual: BACK half move_child'd to JUST BELOW it; FRONT half JUST ABOVE
+   │  │  │  │       it. Both parented to the STABLE CardLayer (never to the card), transform
+   │  │  │  │       synced to the PROP each frame so they never inherit the card's jump or drag.
+   │  │  │  │       The card passes THROUGH the ring.
+   │  │  │  ├─ PropLayer (Node2D, z 0)     [later sibling than CardLayer → above ALL grid cards]
+   │  │  │  │   └─ PropVisual per live prop (order = add/tree order)
+   │  │  │  │       └─ _draw(): non-split → whole body here; split (hoop) while over a card →
+   │  │  │  │          nothing here, both arcs drawn by its two _PropHalf bracket nodes
+   │  │  │  ├─ ParticleLayer (Node2D, z 0) — ParticleEngine's world debris; no host to be
+   │  │  │  │                                occluded by, so ruling 2 does not apply to it
+   │  │  │  └─ OverlayLayer (Node2D, z 0)  [LAST TopLevelVBox sibling → on top of the board]
+   │  │  │     ├─ Focus inspector panel (PanelContainer)   — no z; tree order
+   │  │  │     └─ Score TextPopup (Node2D, transient)      — no z; tree order
+   │  │  └─ EntranceStrip (Control)  ── LATER PlayArea SIBLING → the whole Entrance draws OVER
+   │  │     │                            the scrolled grid content, which is what lets a card
+   │  │     │                            wait above a grid without being clipped by it
+   │  │     └─ EntranceHTrack → EntranceVScroll → EntranceContent
+   │  │        ├─ UpperZone (HSplitContainer) → UpperZoneLeft / UpperZoneRight
+   │  │        │    (the Entrance's own anchor Controls; still the legacy `upper_zone` arrays)
+   │  │        └─ EntranceCardLayer (Node2D, z 0) ── THE ENTRANCE'S cards, ordered by
+   │  │             _append_zone_row_major: headers first, then each depth across all slots
    │  ├─ WinScreen (Label)  ── above PlayArea (later PlayContainer child, by tree order)
    │  │   └─ Dim (ColorRect, show_behind_parent → behind the Label text)
    │  └─ LoseScreen (Label) └─ Dim (ColorRect, show_behind_parent)
-   ├─ Submit / Undo / Next / Reroll (Buttons)
+   ├─ Submit / Undo / Reroll (Buttons)   ── "Submit" is the node's NAME; it ends the show
    ├─ HUD Labels (ScoreName / Score / MultScore / Total / Goal / Turns / Rerolls / Preview)
    ├─ Deck / Discard / Rules (Control + Button)
    ├─ Background (TextureRect, visible=false; if shown, paints over SceneRoot — no back layer)
    └─ LightLayer (ColorRect, full rect, mouse_filter=IGNORE)   [LAST SIBLING → over EVERYTHING]
-       · the spotlight dim, circles and beams — one screen-space surface (Q240=b), NOT scrolling
-       · ⚠ ITS POSITION IS A CONTRACT, not a convenience. DESIGN.md v9 / GAP-004: the dim exempts
-         NOTHING — props, score popups, the focus panel and the HUD all dim, and so does the card
-         glow (Q77=a), which is the entire mechanism by which a glow reads only inside its circle
-         or beam. MOVING IT EARLIER SILENTLY UN-DIMS whatever now draws after it, with no error
-         and no failing test — the symptom is "that one thing never goes dark".
+       · the spotlight dim, circles and beams — one screen-space surface, NOT scrolling
+       · ⚠ ITS POSITION IS A CONTRACT, not a convenience. The dim exempts NOTHING — props,
+         score popups, the focus panel and the HUD all dim, and so does the card glow, which is
+         the entire mechanism by which a glow reads only inside its circle or beam. MOVING IT
+         EARLIER SILENTLY UN-DIMS whatever now draws after it, with no error and no failing
+         test — the symptom is "that one thing never goes dark".
 ```
 
----
+⚠ **"ROW-MAJOR" ON THE GRID MEANS A HEIGHT LAYER, NOT A SCREEN ROW.** `_append_grids_row_major`
+emits `for h: for every cell`, so one height layer is contiguous in `CardLayer` and a screen row
+`y` is scattered through it. That is deliberate and `PlayArea.row_card_visuals` agrees:
+`PropLayer._row_bounds` brackets `[first..last]` of whatever set it is handed, so a
+non-contiguous set would swallow every card between its ends. The Entrance agrees by
+construction — its depth is a level within a fanned slot, not a screen row.
+
 
 ## Shader FX is a CHILD of its host
 
@@ -130,19 +168,33 @@ exactly as its back arc does; a `u_half` uniform masks each half's emitters.
 `PropLayer` and `OverlayLayer`. Its particles are world debris with no host to be occluded by, so
 the ruling-2 logic does not apply to them.
 
+⚠ **An Entrance card's FX rides the Entrance strip, so it draws over the grids.** The FX is a
+child of its host and the host is in `EntranceCardLayer`, which is a later `PlayArea` sibling
+than the whole scroll container — so a burning card waiting in the Entrance burns in front of
+every grid, including the props on them. That follows from the strip's position and is correct;
+it is only surprising if you expect one card layer.
+
 ## Every moment the order can change
 
 - **Board rebuild** (`board_changed` → `queue_rebuild` → `set_card_zones_visuals` →
-  `_order_board_cards`, `play_area.gd`): re-orders every CardVisual in CardLayer via
-  **guarded `move_child`s** in ascending target order (a still board does zero moves). Order is
-  ROW-MAJOR ACROSS COLUMNS per zone — headers, then row 0 of every column, then
-  row 1, … (upper zone before lower): cards only overlap within a column, so this renders
-  identically for cards, but each row is CONTIGUOUS so a split prop can bracket a whole row.
-  Targets are assigned only to visuals verified in CardLayer at that moment (deduped), so a
-  move_child can never go out of bounds by construction.
-- **Card grab / drag** (`grab_cards`): the held card is `move_child`'d to the end of CardLayer
-  (last CardVisual slot). **Restored** by `ungrab_cards` → rebuild (row-major order).
-- **Scoring / submit** (`score_line`, `game.gd`): `popup_meld` jumps melded cards (offset only —
+  `_order_board_cards`, `play_area.gd`): orders **each layer separately** via guarded
+  `move_child`s in ascending target order (a still board does zero moves). `EntranceCardLayer`
+  gets headers then depth-major; `CardLayer` gets, per grid in order, every cell zone card and
+  then the stacks height-major. Targets are assigned only to visuals verified in THAT layer at
+  that moment (deduped), so a `move_child` can never go out of bounds by construction.
+- ⚠ **A freshly created CardVisual enters the tree deferred and is skipped by that pass.**
+  Creation order is COLUMN-major, so without a follow-up a fresh board keeps the wrong order
+  until some unrelated rebuild happens — which nothing guarantees, and the symptom was hoop
+  halves bracketing scattered indices with back arcs behind the row above (owner report).
+  Exactly ONE re-order is queued behind the pending `add_child`s (deferred FIFO: the adds run
+  first).
+- ⚠ **Grid cards used to get no index at all**, keeping creation order, so a cell frame rebuilt
+  after its card drew on top of it. The cell zone cards going first is what fixes that, and it
+  is why they lead each grid's block.
+- **Card grab / drag** (`grab_cards`): a held card is SKIPPED by the ordering pass, so it stays
+  at its layer's end — above every resting card, still below PropLayer. **Restored** by
+  `ungrab_cards` → rebuild.
+- **Scoring** (`score_line`, `game.gd`, once per completed line): `popup_meld` jumps melded cards (offset only —
   **draw order unchanged**; a later-ranked neighbor can still overlap a raised card); gutter
   labels pop; `popup_score` adds a `TextPopup` to **OverlayLayer**; `_run_score_effects` animates
   props on PropLayer over the jumped cards; `reset_meld` drops the jump after props finish.
@@ -196,9 +248,11 @@ the ruling-2 logic does not apply to them.
 
 ## Layering audit (latent issues; ✅ = resolved by the structural migration)
 
-1. **Upper vs lower zone once shared z 1..N** (`card_count` reset per zone → an add-order tie).
-   ✅ `_order_board_cards` gives every CardVisual a unique child index across both zones
-   (row-major within a zone, lower zone after upper so it draws over), deterministically.
+1. **Two halves of the board once shared z 1..N** (`card_count` reset per zone → an add-order
+   tie). ✅ The halves are now two SEPARATE layers with two separate orderings, and the strip's
+   position as a later `PlayArea` sibling decides which draws over which — so there is no tie
+   left to break. Within `CardLayer`, `_order_board_cards` gives every CardVisual a unique child
+   index across every grid, deterministically.
 2. **Held-card z did not clear props/panel.** ✅ Held card is `move_child`'d within CardLayer, so
    it is above resting cards but structurally still below PropLayer and OverlayLayer.
 3. **`anim_jump` raises a card without raising its order.** Still true by design — a jumped meld

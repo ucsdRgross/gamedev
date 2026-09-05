@@ -442,7 +442,7 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## S20b -- the grid board's root. One child per entry in `GameData.grids`, left to right.
 ## ⚠ Typed `HBoxContainer` and NAMED `GridContainer`: the name is the registry's, the type is
 ## what puts the panels side by side. The 5x5 of cells INSIDE each panel is the real
-## `GridContainer`, built per panel in `_build_grid_panel`.
+## `GridContainer`, built per panel in `_create_grid_panel`.
 ## ⚠ **IT CLIPS.** A grid outside the board's window is OUT OF VIEW, not merely out of
 ## position: unclipped, a non-focused grid painted across the Deck button and the score column
 ## while its geometry was already correct. The Entrance is a SIBLING of this container, so a

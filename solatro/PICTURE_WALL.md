@@ -5,6 +5,25 @@
 question id (`Q56`, `J1`, `G10`) from code all over this subsystem. This file is the authority on
 *how it is put together* and what will bite you.
 
+⚠ **THE GAME PICTURE IS SEVERAL SCREENS WIDE NOW, AND THE CAMERA PANS OVER IT.** A show is
+played on one to three grids side by side, so the game picture's resting pose stopped being one
+pose and became a **family** of them — one per grid. Everything in this file that talks about
+"the focused picture" still holds; what changed is that the focused game picture also has a
+horizontal position within itself, and that position is state the wall owns.
+
+| Concept | Where it lives |
+|---|---|
+| The pan offset, in picture pixels | `WallPicture.saved_pan_x` — written at the step, read for every resting pose, re-snapped on a resize, and restored into the board BEFORE re-focusing |
+| The rest pose at one grid | `WallPicture.grid_state()` — `resting_state()` evaluated at one of the pan's discrete target values |
+| Snapping a free pan back onto a grid | `WallPicture.snap_pan_to_grid()` — pure |
+| The board asking for a pan | `PlayArea.overview_pan_requested` → `GameView` → `Main`; the board lives inside the view's own `SubViewport` and has no reach to the camera outside it |
+| A pan past the first or last grid | `PlayArea.overview_bounce_requested`, carrying the direction, so `Main` can push the camera and spring it back |
+| The render-target ceiling | `settings().game_picture_max_render_px` (ships 4096) — a wide picture's `SubViewport.size` is clamped to it |
+
+⚠ **THE HORIZONTAL AIM IS DEAD RANGE IN THE OVERVIEW.** The board container is picture-wide
+there, so the CAMERA is the single horizontal authority — the board publishes the intent and
+must not also try to scroll itself, or the two fight.
+
 ## The map
 
 | File | Owns |
@@ -72,6 +91,20 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   `CardEnvironment.CURRENT` is non-null for as long as it lives. Any test holding one is visible to
   every concurrently-running suite.
 - **`Camera2D.zoom` here is DIRECT MAGNIFICATION**: the visible span is `window_size / zoom`.
+- ⚠ **A wide game picture has TWO clips, and they are not the same one.** The wall clips the
+  picture to the window; `PlayArea`'s own `GridContainer` clips the grids to the board's window
+  INSIDE the picture. A grid outside the board's window is out of VIEW, not merely out of
+  position — unclipped, a non-focused grid painted across the Deck button and the score column
+  while its geometry was already correct. The Entrance strip is a SIBLING of that container, so a
+  card being placed crosses the clip edge; measured, it spends one frame outside the picture
+  entirely and every later frame inside the board's window, so the clip takes nothing off the
+  flight.
+- ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `GameView`
+  publishes the HUD's width to `PlayArea.board_inset_left` and the board centres in what is
+  LEFT of the screen, not on the screen. **The board's WINDOW is what moves, not the content** —
+  insetting the scroller's own left edge makes every centring the board already does (the focused
+  aim, the resting position, the removal re-centre) land in the post-HUD space for free.
+  Offsetting the content instead leaves each of those to rediscover the inset separately.
 - **Gate on a PROPERTY, never on object identity.** The game loads `layout_default.tres` (C6), and a
   resource deserialises to a DIFFERENT instance than the one code generates — so
   `entry.frame_texture == shared_frame_texture()` was never true in the product while every fixture
@@ -222,3 +255,19 @@ Tracked in [todo.md](todo.md) under "Picture wall", with the stream's state in
 [HANDOFF_picture_wall.md](HANDOFF_picture_wall.md). Every gap in `design/picture-wall/gaps/` is
 answered. What is left is the playtest, what unlocks `book`, and the two composition calls — all
 three of them owner calls, and the composition ones are now judgeable live in the tool above.
+
+⚠ **Two gaps from the GRID side reach into this file and are NOT closed:**
+
+- **`design/poker-patience/gaps/GAP-038`** — answered `(d)` and **NOT BUILT**. The whole
+  HUD-scales-with-the-picture pass is parked on it.
+- **`design/poker-patience/gaps/GAP-039`** — the focused fit's isolation derivation is short by
+  35 px of 510, and the 35 is a FONT metric (the panel's column-label gutter, 27) plus a THEME one
+  (the scroller's reserved horizontal band, 8). `game_picture_design_size()` runs before any board
+  exists to measure either. ⚠ **DO NOT CLOSE IT BY DELETING THE TWO TERMS FROM THE LIVE FIT.**
+  The gutter is real content and the band is really reserved; dropping them makes the model agree
+  by letting the board overflow its window, and the board is bottom-anchored, so the overflow goes
+  off the TOP and the top row clips again — which is the bug that stream started on.
+
+⚠ **The wall currently RENDERS WRONG in the running game** — the map sits outside its frame and
+is unclickable. Known, reported by the owner, and owned by the wall stream rather than by any doc
+pass.
