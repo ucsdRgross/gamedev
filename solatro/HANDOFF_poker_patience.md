@@ -622,115 +622,23 @@ and not a cap — the accumulation trap whose first fix was a false green.
 ⚠ That probe's FOCUSED figures are unusable: it reads `card_size_play`, which does not carry
 `board_zoom`, while `slot_center_global` does. Only its overview numbers are sound.
 
-### 2. The Entrance must stack UPWARD — ⚠ BUILT, MEASURED, AND PARKED ON A 46-CHECK BLAST RADIUS
+### 2. The Entrance stacks UPWARD — ✅ LANDED
 
-**The owner has ruled it in** (*"entrance should stack upwards since downwards stacking hides pip
-row"*), and the change WORKS — it was implemented, measured and red-then-greened, then reverted
-because of what it does to the prop suites. Everything needed to redo it in minutes is below; do
-not re-derive any of it.
+The Entrance is not a mirror of a cell slot, it **IS** one. `_stack_slot_center()`,
+`_size_stack_slot()` and `_bind_stack()` serve both halves of the board (owner: *"all stacking
+should use same code. no duplication"*), and an Entrance column is built by `_create_cell_slot()`.
 
-**The change, exactly:**
-1. `set_card_zone()` — the column `VBoxContainer` takes `separation` 0 and `ALIGNMENT_END`; bind
-   REVERSED with the zone card LAST, mirroring `_bind_grid_panel()`:
-   `for j in depth: _bind_slot(vbox.get_child(j), stack[depth - 1 - j])` then
-   `_bind_slot(vbox.get_child(depth), type[i])`.
-2. `_bind_slot()` — `var bottom := true` (every card on the board hangs from its control's bottom
-   edge now, the Entrance included), replacing `target_layer == card_layer`.
-3. `update_card_zone_visuals()` — size it exactly like `update_grid_zone_visuals()`: zone card last
-   and collapsed when occupied, child 0 whole, the rest one `_depth_pitch_px()` each. The bespoke
-   held/selected widening by fixed child index goes (owner ruling), leaving
-   `on_control_focus_entered()` as the only highlight.
-4. `_apply_row_openings()` — ⚠ **IT IS THE LAST WRITER OF THOSE HEIGHTS** and was written for the
-   old top-down build, so it silently put the old sizes back every frame: the controls stepped 16
-   px where the arithmetic stepped 20. Follow the reversed order, `depth - 1 - j` for the reveal's
-   height, `_depth_pitch_px()` for the strips.
-5. `_entrance_slot_center_global()` — measure UP from the columns' shared bottom line
-   (`upper_zone_right`'s own bottom edge) instead of down from their tops, and SUBTRACT
-   `_row_open_offset()` rather than adding it.
+⚠ **THE PROOF THE CODE IS SHARED, NOT MERELY SIMILAR:** binding header-first again breaks the
+GRID's checks and the ENTRANCE's together, from one edit.
 
-**Measured after the change** (focused, one grid, a 4-deep Entrance column):
-```
-h1 sits ABOVE h0 by 32.7 px -- exactly one depth pitch
-h0's pip row starts 776.8, h1's bottom edge 767.0  ->  pips VISIBLE by 9.8 px
-column children: min(40,54) whole | min(40,20) x3 strips | min(40,0) collapsed zone card
-control pitch 32.7 == the card arithmetic's 32.7
-```
-Red-then-green: with the old order restored the centres run DOWNWARD (544, 564, 584) and cards
-overlap **34 px into the pip row of the card beneath** — the owner's exact complaint, reproduced.
-
-⚠ **WHAT IT COSTS IS NOW 8 CHECKS, ALL IN ONE FAMILY — down from 46.** The owner's question
-("*why is it dependent on anchoring at all*") was the key: most of the 46 were tests hand-copying
-the production anchoring formula. **That decoupling has LANDED separately and is on `main` of this
-branch** — `test_ui_props` and `test_visual_layers` now ask
-`CardVisual.get_card_control_center()` instead of re-deriving it, assert the pitch's MAGNITUDE
-rather than its sign, and measure the column's direction instead of naming it. With the flip
-applied on top of that, `UI PROPS` goes to **ALL 137 PASSED** and `VISUAL LAYERS` from ~34 red to
-**8** — with no expectation about prop behaviour touched.
-
-⚠ **ONE MORE PRODUCT FIX IS PART OF THE FLIP AND IS IN THE PATCH:** `row_card_visuals()` walked the
-Entrance's CONTROLS at `idx = coord.h + 1`, hard-coding "child 0 is the header". Reversed, that
-index names a DIFFERENT card and every split prop brackets the wrong row. It must read
-`game.state.upper_zone` the way the grid branch already reads `grid.cells` — which is also the
-answer to the owner's question, one level up.
-
-### ⚠ THE FLIP IS NOW **ONE** IDENTIFIED PROBLEM: THE ENTRANCE'S FLOOR LINE
-
-Everything else is done. `UI PROPS` and `VISUAL LAYERS` have both had their direction-naming and
-anchoring re-derivations landed on `main` of this branch, and they pass on BOTH stackings. With the
-flip applied on top, the whole suite is green **except** the Entrance's floor, and the cause is
-exact:
-
-`_entrance_slot_center_global()` measures UP from a floor. There are two candidate lines and each
-is wrong in a different case, which is the finding:
-
-| floor | breaks |
-|---|---|
-| `upper_zone_right`'s own bottom | **CONTENT-DRIVEN.** A reveal makes a column taller, the hbox grows with it, and the floor moves by exactly the opening — which cancels the opening the function subtracts. Measured: a revealed row appeared not to move at all, and a prop drifted 34 px. |
-| `entrance_strip`'s bottom | **FIXED, BUT NOT THE COLUMNS'.** Correct through the whole reveal (all reveal checks pass), but once the column content exceeds the strip the two diverge: the parked hoop went 13 px out at `card_separation_scale` 1.0 and 45 px at 2.0. |
-
-⚠ **THE FIX IS A CONTAINER ONE, NOT ARITHMETIC.** What the formula needs is a shared bottom line
-that does not move when a column grows — i.e. the Entrance's columns bottom-ANCHORED inside their
-strip, so growth extends upward and the bottom edge stays. Then `upper_zone_right`'s bottom is both
-content-independent and the columns' real line, and one floor serves both cases. Check
-`%EntranceVScroll` / `%EntranceHTrack`'s size flags before writing any more arithmetic.
-
-⚠ **AND ONE MEASURED CONSEQUENCE STILL TO HANDLE:** `row_open_extra()` subtracts one `separation`
-because "the VBox already puts `separation` between rows". The flipped Entrance column has
-separation **0** (each card carries its own gap), so that subtraction makes the opening one
-separation short. It did not show up in the checks, but it is wrong on purpose-built inspection.
-
-### The earlier note, kept for its measurements
-
-⚠ **THE REMAINING 8 WERE THE REVEAL, AND THEY WERE NOT STALE TESTS.** `_row_open_offset()`,
-`row_open_extra()` and the prop anchoring that rides them were derived for a DOWNWARD Entrance:
-an opening pushes the rows below it down. Upward, an opening has to push the rows above it up, and
-a prop anchored across the expansion has to follow. Measured with the flip applied: a parked hoop
-sits 8 px off the card it rides (constant across three separation scales, so not a separation
-term), and `G3.1`'s prop drifts 27-34 px from its anchor during a reveal. **Deriving the reveal for
-an upward stack is the remaining work** — it is a real derivation, not a re-signing, and it needs a
-by-eye prop gate (`/fx-verify`).
-
-### 2b. The ORIGINAL note on this item, kept for its warnings
-**Owner:** *"entrance cards should also stack upwards too since their pips are on bottom of cards
-like all other cards."*
-
-⚠ **NOT a `bottom_anchored := true` flip.** `CardVisual.get_card_control_center()` hangs a
-bottom-anchored card from its OWN control's bottom edge, so the grid **reverses control-build order**
-— newest card is child 0, the cell's frame card LAST (`_bind_grid_panel`, `update_grid_zone_visuals`).
-The Entrance builds header-first, so a naive flip renders the header **upside-down off the top of the
-strip**. The real change:
-- mirror the grid's reversed-order convention in `set_card_zone` / `update_card_zone_visuals`;
-- rewrite `_entrance_slot_center_global` (documented as fanning *"from control tops"*) to measure
-  from a FLOOR the way `_grid_slot_center_global` does.
-
-**Owner ruling on the fallout:** the bespoke selected/held highlight in `update_card_zone_visuals`
-(Entrance-specific `vbox.get_child(0)`/`get_child(1)` indices) is **DROPPED** in favour of the grid's
-own `on_control_focus_entered` widening. ⚠ The highlight's appearance when picking up from the
-Entrance WILL change — verify by eye.
-
-⚠ Watch: the known **~11-frame dead-click window** on Entrance cards runs through this code — check
-whether it widens. And an upward Entrance stack grows TOWARD the board; confirm it cannot occlude the
-grid's bottom row.
+⚠ **THE ENTRANCE'S RESTING LINE IS DERIVED FROM THE DATA, AND ALL THREE ALTERNATIVES WERE MEASURED
+WRONG** — do not "simplify" it back to a control read:
+- `upper_zone_right`'s bottom edge is CONTENT-driven; a reveal grows the column and the floor moves
+  with it, cancelling the opening. A revealed row appeared not to move at all.
+- `entrance_strip`'s bottom is fixed but stops being the columns' line once they outgrow it: 13 px
+  out at `card_separation_scale` 1.0, 45 px at 2.0.
+- Subtracting the growth back off the hbox works AT REST and lags MID-EASE by a frame — 34 px of
+  prop drift during the animation.
 
 ### 3. Verify the Entrance transitions smoothly between grids
 **Owner note:** *"if entrance is not snapped to a grid, it should smoothly transition between them.
