@@ -72,6 +72,15 @@ cycle, and that is a legitimate archetype. **`act_event_cap` / `MAX_TICKS` are t
 load-bearing for CORRECTNESS, not just safety — do not tune them away to make a distribution look
 nicer.**
 
+⚠ **THE RUNAWAY GUARD WAS REDESIGNED; DO NOT MODEL THE OLD ONE.** It no longer counts activations,
+it counts **repeats** — an activation keyed by (modifier instance, hook) that has fired before. It
+resets **per meld**, and carries a second counter over the whole act that no meld boundary resets,
+because a re-scoring runaway would otherwise reset its own budget every lap. Props and legality
+CHECKS do not charge it at all. The consequence for a balance model: **the cap no longer trips on
+the SIZE of a legal cascade**, so a distribution that used to be clipped by it is not any more and
+any table baked against that clipping is stale. Measured: one placement completing four lines spent
+125 activations, of which 1 was a repeat.
+
 ⚠ A vertical stack scores at every multiple of 5 and scores the WHOLE stack (5, 10, 15…), heights
 6–9 score nothing, and each completion is its own payout — the bottom five being paid again at
 height 10 is intended (`Q80`, `Q81`).
@@ -104,12 +113,19 @@ reference and would flag this line for describing the problem.)
 - Godot here is **4.7.2**; `.claude/memory/machine-profiles.md` records the binary per box.
 - Suite, from the repo root, WINDOWED:
   ```bash
-  GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 600
+  GODOT_BIN="C:\Users\khanr\Desktop\Godot_v4.7.2-stable_win64_console.exe" py solatro/Tools/run_tests.py --timeout 1800
   ```
-  **EXPECT: ALL 45 SUITES, 2–4 FAILED** — `GRID LAYOUT`'s standing `116.0 px` cross-suite
-  interference plus `TP-85`/`TP-87`'s mid-growth flakes. That suite **ALONE** is green.
-  ⚠ **USE 600, NOT 400.** It is a GLOBAL wall-clock limit on the whole run; a COLD run exceeds
-  400 s and dies with `NO SUITE BANNER`, which reads exactly like a hang.
+  **EXPECT: ALL 45 SUITES, ONE failure** — `TP-85`'s documented mid-growth flake, which may or may
+  not fire. Every other suite reports `ALL … CHECKS PASSED`.
+  ⚠ **USE 1800.** The old advice was 600, measured against a `user://settings.tres` poisoned with
+  `base_delay` 0.1 — a tenth of the real value — so every animation in every non-isolating suite
+  ran ten times too fast. That file is restored and the honest runtime is far longer: `SUIT PROPS`
+  alone takes **6m40s**. A run dying with `NO SUITE BANNER` reads exactly like a hang and is
+  usually just the timeout.
+  ⚠ **THE AGGREGATE BANNER'S COUNT DISAGREES WITH THE SUITES IT AGGREGATES.** Measured: it said
+  `12 FAILED (1 behavior, 0 implementation)` while every per-suite banner said `ALL … CHECKS
+  PASSED` except `GRID LAYOUT`'s `133 passed, 1 FAILED of 134`. Unexplained. **Read the per-suite
+  banners and the `[FAIL]` lines, never the aggregate.**
   ⚠ **Judge by WHICH checks fail, never the count.** A NEW failure needs TWO full runs, or the
   suspect suite run alone, before you blame a change for it.
 - ⚠ **The owner's Godot editor stays OPEN** — it hosts the `godot-ai` MCP. Leave it alone. The
@@ -119,8 +135,13 @@ reference and would flag this line for describing the problem.)
   scene for two seconds instead; a compile break is instant to see. The same applies to
   `--headless --script`: anything touching an autoload (`SettingsManager`) will not compile.
 - `export PYTHONIOENCODING=utf-8` before any python heredoc.
-- ⚠ **`user://settings.tres` is POISONED with test values and stays that way.** A pristine default
-  is recoverable from `PlayerSettings.new()`. **Do not overwrite it without the owner.**
+- ⚠ **`user://settings.tres` WAS poisoned and has been RESTORED to defaults** (owner permission).
+  It carried `act_event_cap` 60 against a default of 6000, which aborted any placement completing
+  several melds at once. If a suite ever dies by timeout again, check this file FIRST: a killed run
+  never reaches its restore, and test values become the player's live settings.
+  ⚠ **RESTORING IT ALSO RETIRED THE STANDING `116.0 px` GRID LAYOUT FAILURE** that `GAP-030`'s
+  "cross-suite settings interference" was blamed for throughout the board work. The injection seam
+  is still worth building; the symptom it was credited with was this file.
 
 ## Owner working agreements
 
@@ -151,6 +172,16 @@ reference and would flag this line for describing the problem.)
   silently empties the text. Use a heredoc or write the script to a file. Multi-line replace guards
   fail on invisible whitespace too; prefer the Edit tool for those, and beware that a `\` line
   continuation is easy to eat.
+
+## ⚠ Known broken, and NOT yours to fix
+
+- **The picture wall renders wrong** — the map's screen content draws outside its own frame, and the
+  map cannot be clicked. Confirmed **pre-existing** (pixel-identical at the commit the board work
+  started from) and confirmed **not** caused by the settings file. Nothing in Phase 9 touches it;
+  do not let it absorb the phase.
+- **`GAP-038` is answered (d) but NOT BUILT** — the HUD moves out of the picture onto the wall
+  overlay and fades into wall view. Its gap file carries a measurement a reader will otherwise get
+  wrong.
 
 ## References
 
