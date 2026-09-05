@@ -4,8 +4,7 @@
 board the player sees. Done when a player can deal, place, score, undo and End a show on a grid
 they can look at.
 
-**State:** Phases 1-6, 8 and Phase 10's CSV half are landed. **Phase 7 is 8 of its 9 done-when
-rows**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
+**State:** Phases 1-6, 7, 8 and Phase 10's CSV half are landed. **Phase 7 closed with `S34`**: the wall packs the game picture at its real width, the HUD follows the camera, `H22`'s
 camera stepping is proven end-to-end through a real key route, and the saved pan (`S32`) is in.
 **Every standing failure is attributed** — none is a mystery.
 
@@ -329,7 +328,12 @@ be checked by hand.
     pan.
 - id: S34
   description: 'Tools/wall_editor.tscn drives every new wall knob (Q186=a).'
-  status: pending
+  status: done
+  notes: >
+    Owner ruled the editor may host a real board. `PlayArea.settings()` now delegates to
+    `WallPicture.settings()` -- the accessor the wall half already shared -- so the hosted GameView
+    follows the tool's panel; that is also GAP-030's injection seam, first step.
+    `knobs_this_preview_does_not_drive` is DERIVED now, not declared.
 - id: S40
   description: 'PHASE 10: ARCHITECTURE_REVIEW.'
   status: pending
@@ -413,19 +417,19 @@ next reader, and the code is the source of truth for anything already built.
   positions. Run the game and report what MOVED before calling either done.
 - **`skill_scorer_cascade_lower.gd`** is an orphan in production, still a fixture in three suites.
 
-## ⚠ PHASE 7 PROGRESS — 8 of 9 done-when rows green
+## ⚠ PHASE 7 — CLOSED, 9 of 9 done-when rows green
 
 `PLAN.md` Phase 7's done-when is **`TP-105` and `TP-113`-`TP-120` green**, plus
 `knobs_this_preview_does_not_drive` still empty.
 
 ```
-TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅  TP-115 ✅  TP-116 ✅  TP-117 ✅  TP-119 ✅
-TP-120 ❌                        -- S34: Tools/wall_editor.tscn drives every wall knob (Q186=a)
+TP-105 ✅  TP-113 ✅  TP-114 ✅  TP-118 ✅  TP-115 ✅  TP-116 ✅  TP-117 ✅  TP-119 ✅  TP-120 ✅
 ```
 
-**ONE step closes the phase: `S34`.**
+**PHASE 7 IS CLOSED.** Every done-when row is green and
+`knobs_this_preview_does_not_drive` is empty when the editor is run.
 
-⚠ **WHAT `S34` ACTUALLY NEEDS, before anyone starts it.** `knobs_this_preview_does_not_drive`
+⚠ **WHAT `S34` NEEDED, kept because it is the shape of the trap:** `knobs_this_preview_does_not_drive`
 already returns `""` whenever a real `Wall` exists, so a test that only reads it when the tool is
 RUN passes without proving anything. The knobs this stream added — `board_edge_pad_rows` and
 `hud_width_fraction` — are **`PlayArea` knobs read through `SettingsManager.settings`**, not through
