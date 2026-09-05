@@ -65,7 +65,7 @@ func get_delay() -> float:
 
 ## Elapsed-processing accounting hook: Game overrides this to feed the runaway event cap
 ## (one call per mod invoked + per prop slot entry). No-op in base environments (map, tests).
-func note_processing(_weight := 1) -> void:
+func note_processing(_weight := 1, _key := "") -> void:
 	pass
 
 ## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
@@ -108,14 +108,14 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 			for mod : CardModifier in mods:
 				if mod and mod.has_method(function):
 					triggered = true
-					note_processing()
+					note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 					await Callable(mod, function).callv(params)
 					_note_mod_fired(mod, function)
 					await skill_spotlight_check()
 			var skill : CardModifierSkill = data.skill
 			if skill and skill.has_method(function) and skill.spotlit:
 				triggered = true
-				note_processing()
+				note_processing(1, "%d:%s" % [skill.get_instance_id(), function])
 				await Callable(skill, function).callv(params)
 				_note_mod_fired(skill, function)
 				await skill_spotlight_check()
@@ -288,12 +288,12 @@ func run_card_mods(card: CardData, function: StringName, ...params: Array) -> vo
 	mods.append_array(card.statuses)
 	for mod : CardModifier in mods:
 		if mod and mod.has_method(function):
-			note_processing()
+			note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 			await Callable(mod, function).callv(params)
 			_note_mod_fired(mod, function, false)
 	var skill : CardModifierSkill = card.skill
 	if skill and skill.spotlit and skill.has_method(function):
-		note_processing()
+		note_processing(1, "%d:%s" % [skill.get_instance_id(), function])
 		await Callable(skill, function).callv(params)
 		_note_mod_fired(skill, function, false)
 

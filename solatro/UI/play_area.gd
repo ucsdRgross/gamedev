@@ -2510,8 +2510,9 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		# whatever its own text measured and `AutosizeLabel` pinned its font at the minimum. It is
 		# the row gutter's mirror on the far side of the cells, so it takes the row gutter's box.
 		special.custom_minimum_size = Vector2(CardVisual.card_size_play.x, _depth_pitch_px())
-		# The special gutter is the row gutter's mirror on the far side, so it leans the other way.
-		special.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		# ⚠ Right-aligned like the ROW gutter, NOT mirrored (owner, reversing an earlier call):
+		# leaning it toward the cells made it read as belonging to whichever row it sat beside.
+		special.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
 		# ruling, and the bucket really is one in the data too.
 		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null

@@ -1639,8 +1639,9 @@ func run_every_score_label_is_the_same_size_test() -> void:
 	check(a_col.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER,
 			"a COLUMN score is centred on its column",
 			"alignment %d" % a_col.horizontal_alignment)
-	check(a_special.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
-			"the SPECIAL score is left-aligned -- the row gutter's mirror, leaning the other way",
+	check(a_special.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT,
+			"the SPECIAL score is right-aligned like the row scores -- leaning it toward the cells "
+			+ "made it read as belonging to whichever row it sat beside",
 			"alignment %d" % a_special.horizontal_alignment)
 	await _tear_down(view)
 

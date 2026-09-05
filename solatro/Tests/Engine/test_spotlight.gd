@@ -499,10 +499,17 @@ func test_self_feeding_chain_ends_at_act_cap() -> void:
 		var seed_card := play_card(5, TestFactories.uc())
 		seed_card.with_skill(SpotlightTestSkill.make("gen0", respawn))
 		return [seed_card] as Array[CardData])
-	# Park act_calls just under the cap instead of editing the SHARED settings resource, which
+	# Park the counter just under the cap instead of editing the SHARED settings resource, which
 	# concurrent suites are also reading. Same trip, no cross-suite damage.
+	# ⚠ **PARK THE COUNTER THE CAP ACTUALLY READS.** The cap moved off `act_calls` — which still
+	# counts every activation and drives the compression ramp — onto the REPEAT counters, because
+	# a unique activation is bounded by the board and only a repeat can run away. This chain is
+	# all-unique by construction: every generation spawns a NEW card with a NEW skill instance, so
+	# nothing here is ever a repeat. What still bounds it is `_spotlight_section()`'s deliberately
+	# UNKEYED count — an activation that cannot be identified always charges — and that is the
+	# counter to park.
 	g._begin_act()
-	g.act_calls = SettingsManager.settings.act_event_cap - 4
+	g.act_run_repeats = SettingsManager.settings.act_event_cap - 4
 	await score_column(g, 0)
 	check(g.act_overrun, "the self-feeding chain tripped act_event_cap",
 			"act_calls=%d generations=%d" % [g.act_calls, generations[0]])

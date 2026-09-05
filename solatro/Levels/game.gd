@@ -113,17 +113,66 @@ var _effect_api : CardEffectApi = null
 var act_calls : int = 0
 var act_overrun : bool = false
 
+## Activations that were a REPEAT of one already seen in this meld — the only thing the runaway cap
+## counts. `act_calls` still counts EVERY activation, because the compression ramp is about how much
+## has happened, not about whether it was new.
+var act_repeats : int = 0
+## The same count taken over the WHOLE act and never reset by a meld boundary.
+##
+## ⚠ **WITHOUT THIS THE GUARD DOES NOT EXIST.** A per-meld budget is reset by `score_line()`, and a
+## runaway whose whole nature is re-scoring re-enters `score_line()` — so it resets its own budget
+## every lap and spins forever. Caught by the detector runaway test blowing the stack, not by
+## reasoning. The per-meld counter bounds work INSIDE one meld; this one bounds re-entry ACROSS
+## them, and either tripping is an overrun.
+var act_run_repeats : int = 0
+## The (activation identity -> seen) set the repeat test is made against. Cleared per MELD.
+var _act_seen : Dictionary[String, bool] = {}
+## The same set over the whole act. Cleared only by `_begin_act()`.
+var _run_seen : Dictionary[String, bool] = {}
+
 ## Reset the activation counter (compression ramp + event cap) at the start of a board action.
 func _begin_act() -> void:
 	act_calls = 0
 	act_overrun = false
 	act_cancelled = false
+	act_run_repeats = 0
+	_run_seen.clear()
+	_begin_meld()
 
-## Count one unit of processing (per mod invoked, per prop slot entry); advances the compression
-## ramp and trips the runaway cap.
-func note_processing(weight := 1) -> void:
+## ⚠ **THE CAP IS PER MELD, NOT PER PLACEMENT** (owner). One placement can complete a row, a column
+## and both diagonals at once; charging all four against one budget made a legal board action look
+## like a runaway, and the act aborted part-way through the second meld with its props frozen and
+## its scoring unfinished. Each meld is bounded work and gets its own budget.
+func _begin_meld() -> void:
+	act_repeats = 0
+	_act_seen.clear()
+
+## Count one unit of processing (per mod invoked, per prop slot entry). Always advances the
+## compression ramp; charges the runaway cap **only when this activation is a REPEAT**.
+##
+## ⚠ **ONLY A REPEAT CAN RUN AWAY** (owner: *"cap should also only raise for repeated triggers and
+## actions, not unique ones"*). A unique activation is bounded by the board — finite cards, finite
+## hooks, finite lines — so however large a legal cascade gets, it terminates. A runaway is by
+## definition the same thing firing again. Counting every activation made the guard trip on SIZE
+## rather than on recursion: measured, one placement completing four lines on a real board spent
+## 125 activations of which only 44 were repeats.
+##
+## ⚠ `key` identifies the activation. An EMPTY key always counts — an activation that cannot be
+## identified cannot be shown to be unique, and the guard must not be talked out of firing by a
+## caller that simply declined to name itself.
+func note_processing(weight := 1, key := "") -> void:
 	act_calls += weight
-	if act_calls > SettingsManager.settings.act_event_cap:
+	var first_in_meld := not key.is_empty() and not _act_seen.has(key)
+	var first_in_act := not key.is_empty() and not _run_seen.has(key)
+	if not key.is_empty():
+		_act_seen[key] = true
+		_run_seen[key] = true
+	if not first_in_meld:
+		act_repeats += weight
+	if not first_in_act:
+		act_run_repeats += weight
+	var cap : int = SettingsManager.settings.act_event_cap
+	if act_repeats > cap or act_run_repeats > cap:
 		act_overrun = true
 
 ## Per-step pacing delay. Normal play returns the base delay untouched; only while a locked
@@ -896,6 +945,9 @@ func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	# a cancelled act discards its whole state — skip the remaining lines outright
 	if act_cancelled: return
+	# ⚠ Each meld gets its OWN runaway budget: completing four lines at once is a legal board
+	# action, not a runaway, and it must not be charged against one placement's single budget.
+	_begin_meld()
 	# The act's own spine in the visual log — every light, dim and popup below is read AGAINST this
 	# line, and without it a log of the presentation layer has no idea which line it is presenting.
 	if EventLog.is_on(EventLog.CH_ACT):
@@ -943,6 +995,9 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 ## Headless is identical and waits on nothing (`Q19`=a): there is no view call in here at all.
 func _spotlight_section(section: ScoringSection) -> void:
 	while true:
+		# ⚠ **DELIBERATELY UNKEYED, SO IT ALWAYS COUNTS.** This is the guard on a chain whose
+		# handlers invoke no other mod: it would otherwise spin forever without ever charging the
+		# cap. An unkeyed activation cannot be shown to be unique, which is exactly right here.
 		note_processing()
 		# D10 — the forced spotlight TRAVELS (`Q16`=c, design D20). It is never torn down
 		# between sections, which is what lets a light move rather than strobe; what moves is
@@ -1096,12 +1151,23 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 	var live_props : Array[PropData] = []
 	var owner_of : Dictionary = {}   # prop -> its spawner (to release the live slot on finish)
 	var tick := 0
+	# ⚠ **AN OVERRUN STOPS SPAWNING; IT DOES NOT ABANDON WHAT IS ALREADY IN FLIGHT** (owner:
+	# *"props should at least finish their animation/actions before stopping midway"*). Breaking out
+	# of the loop left live props frozen on screen with their `on_finish` never run and their
+	# spawner slots never released, and they stayed there until the next placement. Draining is
+	# still bounded: nothing new is emitted, every live prop is counting down, and `MAX_TICKS` is
+	# the hard stop either way.
+	var draining := false
 	while not live_props.is_empty() or spawners.any(func(s: PropSpawner) -> bool: return s.remaining > 0):
-		if act_overrun or act_cancelled or tick >= MAX_TICKS:
+		if tick >= MAX_TICKS:
 			break
+		if act_overrun or act_cancelled:
+			if live_props.is_empty(): break
+			draining = true
 		# SPAWN — each due spawner emits up to batch_size, throttled by max_live
 		var spawned : Array[PropData] = []
 		for sp in spawners:
+			if draining: break
 			if not sp.due(tick): continue
 			var emit_count := mini(sp.batch_size, mini(sp.remaining, sp.max_live - sp.live))
 			for i in emit_count:
@@ -1133,7 +1199,10 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 		if view: tick_done = view.begin_prop_tick(live_props, spawned, movers, relocated)
 		# EVENTS — new-slot props ONLY, in emission order; hooks stay await-light
 		for p in movers:
-			note_processing()               # per SLOT ENTRY: feeds the runaway cap
+			# ⚠ Keyed by (prop, slot): a prop entering a given slot ONCE is a unique action, and a
+			# board simply having many props is not a runaway. A prop re-entering a slot it has
+			# already visited is a genuine loop, and that is what the cap is for.
+			note_processing(1, "prop:%d:%s" % [p.get_instance_id(), p.at.pack()])
 			var card := state.card_at(p.at)
 			if card:                        # slot may have emptied mid-flight
 				p.pass_negated = false

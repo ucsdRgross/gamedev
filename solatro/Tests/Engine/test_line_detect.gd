@@ -713,7 +713,12 @@ func run_detector_runaway_guard_test() -> void:
 	check(effect.cycles > 1,
 			"the remove-and-replace ran many cycles, re-scoring each time",
 			"only %d cycles" % effect.cycles)
-	check(g.scored.size() >= effect.cycles,
+	# ⚠ **THE LAST CYCLE MAY BE CUT BEFORE ITS SCORING, AND THAT IS THE GUARD WORKING.** The claim
+	# here is the ABSENCE of line memory -- a completed line scores again every time round -- not an
+	# exact equality with the cycle count. Whether the cap trips between a cycle starting and that
+	# cycle scoring is arbitrary, and demanding equality made this check a hostage to where the
+	# budget happens to run out.
+	check(g.scored.size() >= effect.cycles - 1,
 			"a completed line scored again on every cycle -- there is no line memory",
 			"%d scorings over %d cycles" % [g.scored.size(), effect.cycles])
 	check(g.act_overrun,
