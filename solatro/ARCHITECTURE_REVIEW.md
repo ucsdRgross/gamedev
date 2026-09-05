@@ -1529,7 +1529,11 @@ rule that tests must run properly rather than be skipped). Exit code = failure c
 ALL suites green. ⚠ **Read the per-suite banners, never the aggregate count.** Check TOTALS vary
 run to run (fuzz suites) — **compare failure SETS, not counts.** ⚠ **The SUITE count is the
 stable number and it is 45**; a drop means a suite failed to LOAD (a parse error in one suite
-still lets the others report "PASSED"). Never run headless while the owner's editor has the
+still lets the others report "PASSED"). ⚠ **Re-derive it rather than trusting this line** — it is
+the count of `PackedScene` entries in `Tests/all_tests.tscn`:
+`grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`. A doc that hardcodes a
+stale count turns the run's only load-failure detector into a false negative, which is exactly
+what happened while it said 31. Never run headless while the owner's editor has the
 project open (see START_HERE.md). Environment traps (stale class cache, frame_post_draw,
 headless window size): **HEADLESS_TESTING.md**.
 

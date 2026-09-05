@@ -152,8 +152,11 @@ the hand; `compare_uncacheable` deleted).
 ## Verified
 
 Run `py solatro/Tools/run_tests.py`, `GODOT_BIN` from `.claude/memory/machine-profiles.md`,
-**WINDOWED**, **one run at a time**. Judge by the **suite count (31)** and the empty failure set —
-the check total varies because the fuzz suites randomise.
+**WINDOWED**, **one run at a time**. Judge by the **suite count** and the empty failure set —
+the check total varies because the fuzz suites randomise. ⚠ The count was 31 when this stream
+landed and is 45 now; re-derive it with
+`grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn` rather than trusting
+either number.
 
 - **GATES 1–7 all green**, each self-checking in the suite rather than asserted here.
 - **PLAN §6's six in-game checks — through a REAL `Game`.** `test_game_headless.gd`'s "COMPARATOR

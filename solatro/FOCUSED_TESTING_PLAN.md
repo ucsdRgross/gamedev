@@ -6,7 +6,7 @@ bounding), add the residue to `ARCHITECTURE_REVIEW.md` §7, update the memories 
 
 ## 1. The problem, in measured terms
 
-- `Tests/all_tests.tscn` has **43 suite children**, all-or-nothing. There is no way to run a subset
+- `Tests/all_tests.tscn` has **45 suite children**, all-or-nothing. There is no way to run a subset
   without hand-editing the scene.
 - A full attempt costs ~7 minutes (`todo.md`, hang item), windowed, GPU-bound, one run at a time
   ([[running-godot-scenes]]). That is the unit of feedback for a one-line change.
@@ -169,10 +169,14 @@ plan lands, so a half-done migration leaves the repo contradicting itself.
 - ⬜ `ARCHITECTURE_REVIEW.md` §7 — the filter is a testing convention and belongs with the rest.
 - ⬜ `START_HERE.md` — one row in the doc table while this plan is live; delete the row with the file.
 - ⬜ `todo.md` — one line pointing here; delete it when this lands.
-- ⬜ **Reconcile the suite count across docs.** The scene has 43 suite children; `todo.md`'s hang item
-  says 39 and `HEADLESS_TESTING.md`'s sample banner says 30. Since invariant 2 makes that number the
-  load-bearing detector, a stale count in a doc is a real defect. Prefer wording that does not
-  hardcode it.
+- ✅ **Reconcile the suite count across docs — DONE, ahead of this plan.** Every doc that stated
+  one now says 45 or re-derives it, and each site carries the derivation
+  `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn` (which returns 45) so a
+  reader can check rather than trust. The number is kept rather than removed because invariant 2
+  makes it the load-bearing detector, and a detector you cannot compare against detects nothing;
+  the derivation is what stops it going stale silently. Fixed at: `ARCHITECTURE_REVIEW.md` §7 (said
+  31), `HEADLESS_TESTING.md` (sample banner said 29/30), `HANDOFF_comparator_buckets.md` (said 31),
+  `HANDOFF_picture_wall.md` (said 39, now marked as an observation rather than a threshold).
 
 ### Skills
 

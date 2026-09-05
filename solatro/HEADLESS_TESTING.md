@@ -94,9 +94,11 @@ a local copy in a suite.
 
 ⚠ **A PARSE ERROR CAN ALSO PRESENT AS A GREEN-LOOKING RUN WITH A SMALLER SUITE COUNT.** When the
 broken script is one suite rather than `test_base.gd`, that suite simply fails to LOAD, every other
-suite finishes normally, and the banner reads `ALL 29 SUITES: ... PASSED` instead of 30. **The SUITE
+suite finishes normally, and the banner reads `ALL 44 SUITES: ... PASSED` instead of 45. **The SUITE
 count is the stable number — the check total drifts run to run**, so only the suite count can catch
-this. A `Variant` typing error in one suite drops the count to 29 while the run still reads as a pass.
+this. A `Variant` typing error in one suite drops the count by one while the run still reads as a
+pass. ⚠ **Re-derive the expected count, never trust a doc for it:**
+`grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`.
 
 **There is no working pre-flight parse check.** Both obvious candidates are useless here:
 
