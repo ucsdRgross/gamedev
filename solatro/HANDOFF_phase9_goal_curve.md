@@ -94,9 +94,10 @@ Entrance persistence across acts is not modelled. Those were acceptable for the 
 explicitly which survive the grid model rather than inheriting them silently, and write the decision
 down.
 
-⚠ **`SCORING_MATH_PLAN.md` DOES NOT EXIST IN THIS REPO** although the sim's docstring cites it
-throughout. Do not go hunting; it is a dangling reference and worth deleting from the docstring
-while you are in there.
+⚠ **THE SCORING-MATH PLAN THE SIM'S DOCSTRING CITES THROUGHOUT IS NOT IN THIS REPO.** Do not go
+hunting for it; those citations are dangling and worth deleting from the docstring while you are in
+there. (Named without a link on purpose — `doc_check.py` reads a filename in backticks as a
+reference and would flag this line for describing the problem.)
 
 ## Environment — traps that have each cost real time
 
