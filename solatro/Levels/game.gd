@@ -172,8 +172,18 @@ func note_processing(weight := 1, key := "") -> void:
 	if not first_in_act:
 		act_run_repeats += weight
 	var cap : int = SettingsManager.settings.act_event_cap
-	if act_repeats > cap or act_run_repeats > cap:
-		act_overrun = true
+	if act_overrun or (act_repeats <= cap and act_run_repeats <= cap): return
+	act_overrun = true
+	# ⚠ **SAY WHY, ONCE, THE MOMENT IT TRIPS.** An overrun aborts the act silently: scoring stops
+	# part-way, props stop spawning and the board unlocks, with nothing anywhere saying a guard did
+	# it. Whoever meets that next needs the counter that tripped, the budget it was measured
+	# against, and the activation that pushed it over -- guessing from the symptom cost this
+	# project a session.
+	var which := "per-meld" if act_repeats > cap else "whole-act"
+	var detail := "%s repeats over cap: meld=%d act=%d cap=%d, total activations=%d, last=%s" 			% [which, act_repeats, act_run_repeats, cap, act_calls,
+			key if not key.is_empty() else "<unkeyed>"]
+	EventLog.event(EventLog.CH_ACT, "act_overrun", detail)
+	push_warning("Solatro act runaway guard tripped — %s" % detail)
 
 ## Per-step pacing delay. Normal play returns the base delay untouched; only while a locked
 ## action is resolving does it shrink toward 0 with the number of activations processed (read
@@ -1199,10 +1209,9 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 		if view: tick_done = view.begin_prop_tick(live_props, spawned, movers, relocated)
 		# EVENTS — new-slot props ONLY, in emission order; hooks stay await-light
 		for p in movers:
-			# ⚠ Keyed by (prop, slot): a prop entering a given slot ONCE is a unique action, and a
-			# board simply having many props is not a runaway. A prop re-entering a slot it has
-			# already visited is a genuine loop, and that is what the cap is for.
-			note_processing(1, "prop:%d:%s" % [p.get_instance_id(), p.at.pack()])
+			# ⚠ **A PROP SLOT ENTRY IS NOT AN ACTIVATION** (owner). Props are bounded by their own
+			# routes and by `MAX_TICKS`, which is the loop's real stop; charging them to the act's
+			# cap only made a board with many props look like a runaway.
 			var card := state.card_at(p.at)
 			if card:                        # slot may have emptied mid-flight
 				p.pass_negated = false

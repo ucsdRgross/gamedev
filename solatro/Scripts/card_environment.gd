@@ -286,14 +286,16 @@ func skill_spotlight_check() -> void:
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
 	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
 	mods.append_array(card.statuses)
+	# ⚠ **THIS PATH DOES NOT CHARGE THE RUNAWAY CAP** (owner: *"it shouldnt trigger on checks, but
+	# only when effect actually triggers"*). `run_card_mods` is the comparator, legality-query and
+	# prop-per-card path -- the same one that already passes `feeds_combo = false` because it must
+	# not score either. Asking a card a question is not an effect firing.
 	for mod : CardModifier in mods:
 		if mod and mod.has_method(function):
-			note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 			await Callable(mod, function).callv(params)
 			_note_mod_fired(mod, function, false)
 	var skill : CardModifierSkill = card.skill
 	if skill and skill.spotlit and skill.has_method(function):
-		note_processing(1, "%d:%s" % [skill.get_instance_id(), function])
 		await Callable(skill, function).callv(params)
 		_note_mod_fired(skill, function, false)
 
