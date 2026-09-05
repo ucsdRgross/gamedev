@@ -92,7 +92,14 @@ design-id citations, plus dated and history lines. Run the full check by hand fo
    park and restore a file around a deliberate red-then-green run.
 5. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
    the image, describe what it actually shows — or say UNVERIFIED.
-6. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
+6. **Online research is allowed, and is expected when a blocker might be a MISUNDERSTANDING rather
+   than a design gap.** Engine semantics, an API's actual contract, a container's sizing rules, a
+   platform quirk — look them up rather than inferring from behaviour. ⚠ **Say which it was:** cite
+   the source, and keep "the docs say X" separate from "I measured X here". A gap is for a decision
+   the design does not cover; if the real problem is that nobody knew how the engine behaves, that
+   is research, not a gap, and filing one wastes an owner ruling. Measurement still outranks
+   documentation when the two disagree — the engine in front of you is the authority.
+7. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
    disagree with what it models. ⚠ One sanctioned exception: `Tools/wall_editor.tscn` carries a
    `use_placeholder_content` toggle, **default off**, so the default path still hosts real
    scenes — `solatro/design/picture-wall/gaps/GAP-017.md` records why.
