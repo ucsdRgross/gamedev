@@ -575,6 +575,9 @@ func _sync_cell_score_labels() -> void:
 		if not label or not is_instance_valid(label):
 			label = BigNumberLabel.new()
 			label.name = "CellScore_%d_%d_%d" % [key.x, key.y, key.z]
+			# A height score stands over its own column of cards, so it is centred like the
+			# column gutter is.
+			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			card_layer.add_child(label)
 			_cell_score_labels[key] = label
 		label.current_num = state.scores_cell[key]
@@ -2467,6 +2470,8 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 		# whatever its own text measured and `AutosizeLabel` pinned its font at the minimum. It is
 		# the row gutter's mirror on the far side of the cells, so it takes the row gutter's box.
 		special.custom_minimum_size = Vector2(CardVisual.card_size_play.x, _depth_pitch_px())
+		# The special gutter is the row gutter's mirror on the far side, so it leans the other way.
+		special.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		# ⚠ ONE label for every diagonal and every future non-directional meld — the owner's Q110
 		# ruling, and the bucket really is one in the data too.
 		var value : BigNumber = state.score_special[gi] if gi < state.score_special.size() else null
@@ -2640,6 +2645,10 @@ func _fill_label_stack(stack: VBoxContainer, bucket: Dictionary[Vector3i, BigNum
 		# by kind: a row label's is the depth strip, because its stack's pitch has to match the
 		# cards'.
 		label.custom_minimum_size = Vector2(CardVisual.card_size_play.x, _depth_pitch_px())
+		# ⚠ **EACH GUTTER LEANS TOWARD THE CELLS IT DESCRIBES** (owner). The row gutter sits LEFT of
+		# the grid, so its numbers are right-aligned, hard against the cells; the column gutter sits
+		# under its columns, so its numbers are centred on them.
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if is_row 				else HORIZONTAL_ALIGNMENT_CENTER
 		var key := Vector3i(gi, index, h)
 		if bucket.has(key): label.current_num = bucket[key]
 		else: label.text = ""

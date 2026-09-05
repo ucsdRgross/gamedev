@@ -1621,6 +1621,26 @@ func run_every_score_label_is_the_same_size_test() -> void:
 	check(first_font > 8,
 			"...and that size is the one the shared box supports, not the autosize floor a 16 px "
 			+ "gutter used to force", "font %d" % first_font)
+
+	# ⚠ **EACH GUTTER LEANS TOWARD THE CELLS IT DESCRIBES** (owner: *"make all row score labels
+	# right aligned instead. all column based labels centered. special score left aligned."*). The
+	# row gutter is LEFT of the grid and the special gutter is its mirror on the RIGHT, so they lean
+	# opposite ways; the column gutter sits under its own columns and centres on them.
+	var panel2 : Control = pa.grid_container.get_child(0)
+	var board2 : Control = panel2.get_node_or_null("Board")
+	var a_row : Label = ((board2.get_node("RowLabels") as Control).get_child(1) as Control) 			.get_child(-1) as Label
+	var a_col : Label = ((panel2.get_node("Board/CellsColumn/ColLabels") as Control)
+			.get_child(2) as Control).get_child(-1) as Label
+	var a_special : Label = board2.get_node("SpecialLabel") as Label
+	check(a_row.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT,
+			"a ROW score is right-aligned, hard against the cells it describes",
+			"alignment %d" % a_row.horizontal_alignment)
+	check(a_col.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER,
+			"a COLUMN score is centred on its column",
+			"alignment %d" % a_col.horizontal_alignment)
+	check(a_special.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
+			"the SPECIAL score is left-aligned -- the row gutter's mirror, leaning the other way",
+			"alignment %d" % a_special.horizontal_alignment)
 	await _tear_down(view)
 
 # ==============================================================================
