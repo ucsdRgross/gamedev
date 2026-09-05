@@ -402,6 +402,15 @@ func _reveal_stacks(coord: BoardCoord) -> Array[ArrayCardData]:
 
 ## Everything the layers ABOVE `coord.h` in the same half of the board have pushed down. ⚠ Above
 ## only: a layer's own opening grows the gap BELOW it, so it does not move its own card.
+## How much taller the reveal is currently making an Entrance column -- exactly what the hbox has
+## grown BY, so a floor taken from its bottom edge can be corrected back to its resting line.
+func _entrance_open_total() -> float:
+	var sum := 0.0
+	for key : Vector2i in _row_open:
+		if key.x != REVEAL_ENTRANCE_GRID: continue
+		sum += row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, key.y))
+	return sum
+
 func _row_open_offset(coord: BoardCoord) -> float:
 	var sum := 0.0
 	var axis := _reveal_key(coord).x
@@ -1613,32 +1622,93 @@ func card_layer_for(coord: BoardCoord) -> Node2D:
 ##     with row pitch = card strip height (card_separation_play_custom) + separation
 ##   card anchor = slot top + half a card — stacked row strips are thin while the card art hangs a
 ##     full card below its control top.
+## **THE ONE PLACE THE BOARD'S STACKING GEOMETRY LIVES.** A card at height `h` sits `h` depth
+## pitches ABOVE the line its stack rests on, and its centre is half a card above its own bottom
+## edge; column `column` is that many card-and-separation steps right of `origin_x`.
+##
+## ⚠ **A GRID CELL AND AN ENTRANCE COLUMN ARE THE SAME STACK** (owner: *"all stacking should use
+## same code. no duplication"*). They differ only in which line they rest on and where their columns
+## start — so that is all either caller supplies. Two copies of this arithmetic is exactly how the
+## Entrance came to fan downward while the grid stacked up.
+##
+## ⚠ **EVERY LENGTH HERE IS A BOARD LENGTH AND THE ORIGIN IS A SCREEN POINT.** The board draws at
+## `board_zoom`, so each is taken into screen pixels before it is added to a measured global.
+func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) -> Vector2:
+	var width := CardVisual.card_size_play.x * board_zoom
+	var sep := float(separation) * board_zoom
+	var x := origin_x + float(column) * (width + sep) + width * 0.5
+	var y := floor_y - _depth_pitch_px() * board_zoom * float(h) 			- CardVisual.card_size_play.y * board_zoom * 0.5
+	return Vector2(x, y)
+
+## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED.** The slot's own zone card is the LAST child and
+## collapses once a card covers it; the newest card takes the FIRST control and shows whole; every
+## card under it shows one depth pitch — the strip a covered card reveals, which is where its pips
+## are.
+##
+## ⚠ **NO SEPARATION; EACH CARD CARRIES ITS OWN GAP.** A zero-height child still takes a separation
+## from a `VBoxContainer`, so with one the row grew the moment its FIRST card landed. A stack of one
+## is exactly one card tall.
+func _size_stack_slot(slot: Control) -> void:
+	slot.add_theme_constant_override("separation", 0)
+	var occupied := slot.get_child_count() > 1
+	var zone_control : Control = slot.get_child(-1)
+	zone_control.custom_minimum_size = CardVisual.card_size_play if not occupied 			else Vector2(CardVisual.card_size_play.x, 0)
+	zone_control.focus_mode = Control.FOCUS_NONE if occupied else Control.FOCUS_ALL
+	for j : int in slot.get_child_count() - 1:
+		(slot.get_child(j) as Control).custom_minimum_size = Vector2(
+				CardVisual.card_size_play.x, _depth_pitch_px())
+	if occupied:
+		(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
+
+## **THE ONE PLACE A STACK'S CONTROL ORDER IS DECIDED.** A `VBoxContainer` lays its children out top
+## to bottom and a card hangs from its control's BOTTOM edge, so the card at the greatest height
+## takes the FIRST control and the slot's own zone card the very last one.
+##
+## ⚠ Leaving the zone card FIRST draws it a full card ABOVE an occupied slot: its control collapses
+## to zero height once a card covers it, so bottom-anchoring puts it off the top of the slot.
+func _bind_stack(slot: Control, stack: Array[CardData], zone_card: CardData) -> void:
+	_fit_children(slot, stack.size() + 1, create_card_control)
+	var depth := stack.size()
+	for j : int in depth:
+		_bind_slot(slot.get_child(j) as Control, stack[depth - 1 - j])
+	_bind_slot(slot.get_child(depth) as Control, zone_card)
+
 func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	# ⚠ **THE CONTAINER'S OWN `global_position` STOPS MIRRORING ITS CHILDREN THE MOMENT IT IS
-	# CENTRED** (`ALIGNMENT_CENTER`, set in `setup_gui` so the Entrance lines up with the grid):
-	# the columns start at an offset INSIDE the hbox, and the two disagree by half the slack
-	# (measured: 20 px). The first column's own `global_position` already carries that
-	# offset, so read it directly instead of teaching this formula the alignment math. Falls back
-	# to the container's own position for an entrance with no columns built yet.
+	# CENTRED** (`ALIGNMENT_CENTER`, set in `setup_gui` so the Entrance lines up with the grid): the
+	# columns start at an offset INSIDE the hbox and the two disagree by half the slack (measured:
+	# 20 px). The first column's own position already carries that offset, so read it directly.
 	var origin := upper_zone_right.global_position
 	if upper_zone_right.get_child_count() > 0:
 		origin = (upper_zone_right.get_child(0) as Control).global_position
-	# ⚠ **`origin` IS ALREADY A SCREEN POINT UNDER THE ZOOMED ANCESTOR** (`%EntranceVScroll` now
-	# carries `board_zoom`), so every board LENGTH added to it has to be taken into screen
-	# pixels first, exactly as `_grid_slot_center_global` already does for the grid.
-	var width := CardVisual.card_size_play.x * board_zoom
-	var sep := float(separation) * board_zoom
-	var pitch := (float(CardVisual.card_separation_play_custom) + float(separation)) * board_zoom
-	var x := origin.x + float(coord.x) * (width + sep) + width * 0.5
-	var y := origin.y + sep + pitch * float(coord.h) + CardVisual.card_size_play.y * board_zoom * 0.5
-	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal lets
-	# one row's strip grow, so the rows below it are pushed down by an amount the pitch does not
-	# describe. Without this term a prop anchored under an expanding row stays where the unexpanded
-	# maths says it should be and visibly detaches from its slot.
-	# ⚠ Still PURE MATH, no control-rect reads: the offset comes from the same eased numbers that size
-	# the controls, so geometry stays independent of container relayout timing (owner spec).
-	y += _row_open_offset(coord) * board_zoom
-	return Vector2(x, y)
+	# ⚠ **THE FLOOR IS THE LINE THE COLUMNS REST ON WITH NOTHING OPEN.** `upper_zone_right`'s own
+	# bottom edge is CONTENT-driven: a reveal makes a column taller and the hbox grows with it, so a
+	# floor read straight off it moves by exactly the opening and CANCELS the opening the reveal
+	# term then subtracts -- measured, a revealed row appeared not to move at all and a prop
+	# anchored across the expansion drifted 34 px. The growth is knowable, so it is taken back out.
+	# ⚠ Reading the STRIP instead is not the answer either: its height comes from
+	# `entrance_visible_rows`, so it stops being the columns' line the moment they outgrow it.
+	# ⚠ **THE RESTING LINE IS COMPUTED, NOT READ.** `upper_zone_right`'s bottom edge is
+	# CONTENT-driven: a reveal makes a column taller and the hbox grows DOWNWARD from its fixed top,
+	# so a floor read off that edge moves by the opening and cancels the opening the reveal term
+	# then subtracts. Subtracting the growth back off works at rest but LAGS mid-ease -- a control
+	# rect is a frame behind the eased numbers, which is the very thing every other comment here
+	# warns about, and it drifted a prop 34 px during the animation. The column's resting height is
+	# a function of the DATA, so it is derived: one whole card plus a pitch for every card above it.
+	var deepest := 0
+	var game := CardEnvironment.get_current_game()
+	if game:
+		for col : ArrayCardData in game.state.upper_zone:
+			deepest = maxi(deepest, col.datas.size())
+	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
+	var floor_y := upper_zone_right.global_position.y + resting_h * board_zoom
+	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
+	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal
+	# grows one layer's strip, lifting every layer above it by an amount the pitch does not
+	# describe. Still pure math: the offset comes from the same eased numbers that size the
+	# controls, so geometry stays independent of relayout timing.
+	at.y -= _row_open_offset(coord) * board_zoom
+	return at
 
 ## A grid cell: column and row come from the DATA (`coord.x`, `coord.y`), height from the cell's
 ## own stack (`coord.h`). The panel's origin is a cached publish (`_grid_panel_origin`), never a
@@ -1834,19 +1904,19 @@ func _seed_new_layers(game_state: GameData) -> void:
 func row_card_visuals(coord: BoardCoord) -> Array[CardVisual]:
 	var out : Array[CardVisual] = []
 	if coord.h < 0: return out
-	if coord.is_entrance():
-		var hbox : HBoxContainer = upper_zone_right
-		var idx := coord.h + 1   # child 0 = the zone/type header
-		for col : Node in hbox.get_children():
-			if idx >= col.get_child_count(): continue
-			var d : CardData = ui_data.get(col.get_child(idx))
-			_append_row_visual(out, d)
-		return out
-	# ⚠ Read the GRID from STATE, not from the cell controls: rebuilds are DEFERRED, so mid-mutation
-	# the controls still describe the previous board — the same reason `_row_covers_anything` reads
-	# state. The Entrance keeps its control walk because its fanned columns ARE the structure.
+	# ⚠ **READ FROM STATE, NOT FROM THE CONTROLS — BOTH HALVES OF THE BOARD.** Rebuilds are
+	# DEFERRED, so mid-mutation the controls still describe the previous board. The Entrance used to
+	# walk its controls at `h + 1`, hard-coding "child 0 is the header": when the Entrance was
+	# turned around to stack upward that index silently named a DIFFERENT card, and every split
+	# prop bracketed the wrong row. Which child holds which height is a layout detail; the stack
+	# itself is the fact.
 	var game := CardEnvironment.get_current_game()
 	if not game: return out
+	if coord.is_entrance():
+		for col : ArrayCardData in game.state.upper_zone:
+			if coord.h >= col.datas.size(): continue
+			_append_row_visual(out, col.datas[coord.h])
+		return out
 	var grids := game.state.grids
 	if coord.grid < 0 or coord.grid >= grids.size(): return out
 	var grid : GridData = grids[coord.grid]
@@ -1918,42 +1988,13 @@ func set_card_zones_visuals() -> void:
 	_sync_entrance_x()
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
-	var card_columns := type.size()
-	var column_diff: int = card_columns - hbox.get_child_count()
-	
-	# Structure layout columns
-	if column_diff > 0:
-		for i in column_diff:
-			var new_vbox := VBoxContainer.new()
-			new_vbox.add_theme_constant_override("separation", separation)
-			hbox.add_child(new_vbox)
-	elif column_diff < 0:
-		for i in absi(column_diff):
-			var child: Control = hbox.get_child(-1)
-			hbox.remove_child(child)
-			child.queue_free()
+	# ⚠ **AN ENTRANCE COLUMN *IS* A CELL SLOT** -- same constructor, so it cannot drift from one.
+	_fit_children(hbox, type.size(), _create_cell_slot)
 
-	# Structure rows per column and register data mappings
+	# ⚠ ONE bind path for the whole board: `_bind_stack()` fits the controls, orders them and binds
+	# them. A grid cell goes through the same call.
 	for i in type.size():
-		var card_rows := datas[i].datas.size() + 1 # +1 for zone/type
-		var vbox: VBoxContainer = hbox.get_child(i)
-		var row_diff: int = card_rows - vbox.get_child_count()
-		
-		if row_diff > 0:
-			for j in row_diff:
-				var new_control := create_card_control()
-				vbox.add_child(new_control)
-		elif row_diff < 0:
-			for j in absi(row_diff):
-				var child: Control = vbox.get_child(-1)
-				vbox.remove_child(child)
-				child.queue_free()
-				
-		# Map the main Zone/Type Control (Index 0), then the Row Cards (Index 1 onwards) —
-		# one bind path for both (E6)
-		_bind_slot(vbox.get_child(0) as Control, type[i])
-		for j in range(1, vbox.get_child_count()):
-			_bind_slot(vbox.get_child(j) as Control, datas[i].datas[j-1])
+		_bind_stack(hbox.get_child(i) as Control, datas[i].datas, type[i])
 
 ## Which `CardVisual` layer a slot control's card belongs in — the Entrance's own pinned layer
 ## if `c` lives under `upper_zone_right`, the board's otherwise. Walking `c`'s own ancestry (not
@@ -1978,10 +2019,10 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
 	var target_layer := _target_card_layer(c)
-	# A GRID card hangs from its control's BOTTOM edge (stacks grow upward, a row shares one bottom
-	# edge); the Entrance still fans downward from its control tops. The layer the control belongs
-	# to is exactly that distinction, so it is the one thing asked.
-	var bottom := target_layer == card_layer
+	# ⚠ **EVERY card on this board hangs from its control's BOTTOM edge**, the Entrance included:
+	# the pips are on a card's bottom, so a stack that grew downward buried the very row the player
+	# reads. Owner: *"entrance should stack upwards since downwards stacking hides pip row."*
+	var bottom := true
 	if connected_data in data_card and is_instance_valid(data_card[connected_data]):
 		var vis := data_card[connected_data]
 		vis.bottom_anchored = bottom
@@ -2112,29 +2153,7 @@ func _append_ordered_visual(out: Array[CardVisual], seen: Dictionary[CardVisual,
 
 func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	for i in type.size():
-		var vbox: VBoxContainer = hbox.get_child(i)
-		vbox.add_theme_constant_override("separation", separation)
-		
-		# 1. Visual settings for Zone/Type Card (Index 0)
-		var c: Control = vbox.get_child(0)
-		c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
-		c.focus_mode = Control.FOCUS_ALL
-		
-		if selected_cards:
-			if c == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
-			elif vbox.get_child_count() > 1 and vbox.get_child(1) == focused_control:
-				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom / 2.5)
-		elif vbox.get_child_count() != 1:
-			c.focus_mode = Control.FOCUS_NONE
-			
-		# 2. Visual settings for Row Cards (Index 1 onwards). (Structural ordering moved to the
-		# dedicated row-major pass — _order_board_cards, run once after both zones.)
-		for j in range(1, vbox.get_child_count()):
-			c = vbox.get_child(j)
-			c.custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
-
-		(vbox.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
+		_size_stack_slot(hbox.get_child(i) as Control)
 
 	# ⚠ S16: the loop above resets every strip to its stacked height, so a rebuild that lands mid-act
 	# would slam an open row shut. Re-push the live openings over the top of it.
@@ -2147,17 +2166,11 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 		left.focus_neighbor_right = right.get_path()
 		right.focus_neighbor_left = left.get_path()
 
-	# 4. Held stack expansion logic
-	if selected_cards and selected_cards[0] in data_ui:
-		var selected_control := data_ui[selected_cards[0]]
-		var control_index := selected_control.get_index()
-		if selected_control.get_index() > 0:
-			var vbox: Control = selected_control.get_parent()
-			(vbox.get_child(control_index - 1) as Control).custom_minimum_size = CardVisual.card_size_play
-			if selected_control.get_index() == 1:
-				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
-			else:
-				(vbox.get_child(-1) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom)
+	# ⚠ **THE BESPOKE HELD/SELECTED WIDENING IS GONE, BY OWNER RULING.** It reached into this
+	# container by fixed child index (`get_child(0)` / `get_child(1)` / `get_child(-1)`), which the
+	# reversal above inverts, and it was a second highlight mechanism beside the one every other
+	# card on the board already uses. `on_control_focus_entered()`'s widening is now the only one.
+	# ⚠ The look when picking a card up from the Entrance CHANGES; that is the ruling, not a bug.
 
 # ==============================================================================
 # S20b — THE GRID BOARD
@@ -2718,29 +2731,7 @@ func _bind_grid_panel(panel: Control, grid: GridData) -> void:
 	for ci : int in wanted:
 		var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 		if not slot: continue
-		var stack : Array[CardData] = grid.cells[ci].datas
-		var rows := stack.size() + 1   # +1 for the cell's own zone card
-		var row_diff := rows - slot.get_child_count()
-		if row_diff > 0:
-			for _j : int in row_diff:
-				slot.add_child(create_card_control())
-		elif row_diff < 0:
-			for _j : int in absi(row_diff):
-				var doomed : Node = slot.get_child(-1)
-				slot.remove_child(doomed)
-				doomed.queue_free()
-		# ⚠ **REVERSED, AND THE CELL'S OWN FRAME GOES LAST.** A VBox lays its children out top to
-		# bottom and a card now hangs from its control's BOTTOM edge, so: the card at the greatest
-		# height takes the FIRST control, h 0 the last CARD control, and the cell's zone card the very
-		# last one — because the frame marks the CELL, which sits on the row's bottom line and does
-		# not rise with the stack.
-		# ⚠ Leaving the frame FIRST drew it a full card ABOVE an occupied cell: its control collapses
-		# to zero height once a card covers it, so bottom-anchoring put the frame off the top of the
-		# cell and onto the row above — which reads as a whole extra row of frames. Found by eye.
-		var depth := stack.size()
-		for j : int in depth:
-			_bind_slot(slot.get_child(j) as Control, stack[depth - 1 - j])
-		_bind_slot(slot.get_child(depth) as Control, grid.cell_types[ci])
+		_bind_stack(slot, grid.cells[ci].datas, grid.cell_types[ci])
 
 ## Sizes every cell slot. An EMPTY cell takes a FULL card's worth, so a grid is a complete block
 ## of card-sized slots from the moment it is built and never changes shape as it fills; a covered
@@ -2753,23 +2744,7 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		panel.add_theme_constant_override("separation", separation)
 		for ci : int in grid.cells.size():
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
-			if not slot: continue
-			# ⚠ **A CELL SLOT HAS NO SEPARATION OF ITS OWN; EACH CARD CARRIES ITS OWN GAP.** The
-			# cell's zone card is the LAST child and collapses to nothing once a card covers it —
-			# but a zero-height child STILL takes a separation from a `VBoxContainer`, so with one
-			# the row grew by that separation the moment its FIRST card landed. A stack of one is
-			# exactly one card tall, so the gap lives in the depth strip instead, where it only
-			# exists once there is a second card to be a gap between.
-			var zone_control : Control = slot.get_child(-1)
-			zone_control.custom_minimum_size = CardVisual.card_size_play 					if slot.get_child_count() == 1 else Vector2(CardVisual.card_size_play.x, 0)
-			# The TOPMOST card of the stack (child 0 after the flip) shows whole; every card under it
-			# contributes only its own bottom strip, plus the gap above that strip.
-			for j : int in slot.get_child_count() - 1:
-				(slot.get_child(j) as Control).custom_minimum_size = Vector2(
-						CardVisual.card_size_play.x,
-						CardVisual.card_separation_play_custom + separation)
-			if slot.get_child_count() > 1:
-				(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
+			if slot: _size_stack_slot(slot)
 
 func create_card_control() -> Control:
 	var new_control := Control.new()
@@ -2959,15 +2934,20 @@ func _apply_row_openings() -> void:
 	# the Entrance's fanned strips and its score gutter have to be pushed by hand.
 	var hbox : HBoxContainer = upper_zone_right
 	if hbox:
+		# ⚠ **THIS FOLLOWS THE ENTRANCE'S REVERSED ORDER, AND IT IS THE LAST WRITER OF THOSE
+		# HEIGHTS.** Child 0 is the newest card and shows whole, each card under it shows one depth
+		# pitch, and the slot's own zone card is the last child -- `update_card_zone_visuals()` owns
+		# that one. Left on the old top-down build, this pass silently put the old sizes back every
+		# frame and the controls stepped 16 px where the card arithmetic steps 20.
 		for col : Node in hbox.get_children():
-			var last := col.get_child_count() - 1
-			for j : int in range(1, col.get_child_count()):
+			var depth := col.get_child_count() - 1
+			for j : int in depth:
 				var c := col.get_child(j) as Control
 				if not c: continue
-				var base : float = CardVisual.card_size_play.y if j == last \
-						else float(CardVisual.card_separation_play_custom)
+				var base : float = CardVisual.card_size_play.y if j == 0 else _depth_pitch_px()
 				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
-						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, j - 1)))
+						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW,
+						depth - 1 - j)))
 	var gutter : VBoxContainer = upper_zone_left
 	if not gutter: return
 	for i : int in gutter.get_child_count():

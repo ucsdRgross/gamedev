@@ -53,6 +53,7 @@ func _ready() -> void:
 	await run_the_card_is_put_down_before_anything_scores_test()
 	await run_a_deepening_stack_grows_the_board_upward_test()
 	await run_hovering_the_board_does_not_move_it_test()
+	await run_the_entrance_stacks_upward_test()
 	await run_every_score_label_is_the_same_size_test()
 	await run_a_row_score_sits_on_its_pip_row_test()
 	restore_real_settings()
@@ -1700,4 +1701,99 @@ func run_a_row_score_sits_on_its_pip_row_test() -> void:
 			"every height's score band is centred on the PIP ROW of the card it names, not on the "
 			+ "top of the row",
 			"worst %.1f px out over %d heights" % [worst, stack.get_child_count()])
+	await _tear_down(view)
+
+
+# ==============================================================================
+# THE ENTRANCE STACKS UPWARD, THROUGH THE SAME CODE THE GRID DOES.
+#
+# Owner: *"entrance should stack upwards since downwards stacking hides pip row"*, and
+# *"all stacking should use same code. no duplication"*.
+#
+# The pips are on a card's BOTTOM edge, so a stack that grew downward buried the very row the
+# player reads. The Entrance is not a mirror of a cell slot -- it IS one: `_bind_stack()`,
+# `_size_stack_slot()` and `_stack_slot_center()` serve both halves of the board, so the two cannot
+# drift apart again.
+#
+# ⚠ **THE LOAD-BEARING CHECK IS THE PIP ROW, NOT THE DIRECTION.** "Higher h is higher on screen" is
+# also satisfied by a stack whose cards overlap so tightly that the pips are still covered, which
+# would fix nothing the owner asked for.
+# ==============================================================================
+func run_the_entrance_stacks_upward_test() -> void:
+	behavior_section("THE ENTRANCE STACKS UPWARD")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	await _settle_layout(view)
+
+	var col : ArrayCardData = g.state.upper_zone[1]
+	while col.datas.size() < 3:
+		var c := g.draw_card()
+		if not c: break
+		col.datas.append(c)
+	g.state.revision += 1
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await get_tree().physics_frame
+	check(col.datas.size() >= 3,
+			"precondition: an Entrance column really is three deep, so there is a stack to read a "
+			+ "direction off", "%d cards" % col.datas.size())
+	if col.datas.size() < 3:
+		await _tear_down(view)
+		return
+
+	var z : float = pa.board_zoom
+	var art_to_px : float = CardVisual.card_size_play.y / CardVisual.CARD_SIZE.y
+	var centres : Array[float] = []
+	for h : int in col.datas.size():
+		centres.append(pa.slot_center_global(
+				BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, h)).y)
+	var rising := true
+	for h : int in range(1, centres.size()):
+		if centres[h] >= centres[h - 1]: rising = false
+	check(rising,
+			"each height sits HIGHER on screen than the one below it -- the Entrance grows upward",
+			"centres %s" % [centres])
+
+	# THE POINT OF IT: the card above must stop short of the pip row of the card below.
+	var worst_cover := -INF
+	for h : int in range(1, centres.size()):
+		var below_pip_top : float = centres[h - 1] + 13.0 * art_to_px * z
+		var above_bottom : float = centres[h] + CardVisual.card_size_play.y * z * 0.5
+		worst_cover = maxf(worst_cover, above_bottom - below_pip_top)
+	check(worst_cover <= 0.0,
+			"...and no card covers the PIP ROW of the card beneath it, which is the whole reason "
+			+ "the stack was turned around",
+			"worst overlap into the pips %.1f px" % worst_cover)
+
+	# The controls must step by the pitch the arithmetic does, or the cards drift off the controls
+	# the player actually clicks. This is what sharing `_size_stack_slot()` buys.
+	var vbox : Control = pa.upper_zone_right.get_child(1)
+	var zone_control : Control = vbox.get_child(-1)
+	check(vbox.get_child_count() == col.datas.size() + 1
+			and is_equal_approx(zone_control.custom_minimum_size.y, 0.0),
+			"the column has one control per card plus its own ZONE card LAST, collapsed the way a "
+			+ "covered cell frame is", "%d controls, zone min %s"
+			% [vbox.get_child_count(), zone_control.custom_minimum_size])
+	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)
+	check(is_equal_approx((vbox.get_child(0) as Control).custom_minimum_size.y,
+			CardVisual.card_size_play.y)
+			and is_equal_approx((vbox.get_child(1) as Control).custom_minimum_size.y, pitch),
+			"...the NEWEST card first showing whole, and every card under it one depth pitch tall",
+			"first %s, strip %s, pitch %.1f" % [(vbox.get_child(0) as Control).custom_minimum_size,
+			(vbox.get_child(1) as Control).custom_minimum_size, pitch])
+
+	# ⚠ The arithmetic and the control must AGREE -- that is what a shared `_stack_slot_center()`
+	# is for, and the drift it prevents was 5.1 px per height when they were separate.
+	var worst_gap := 0.0
+	for h : int in col.datas.size():
+		var ctrl : Control = pa.data_ui.get(col.datas[h])
+		var vis : CardVisual = pa.data_card.get(col.datas[h])
+		if ctrl and vis:
+			worst_gap = maxf(worst_gap, absf(pa.slot_center_global(
+					BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, h)).y
+					- vis.get_card_control_center(ctrl).y))
+	check(worst_gap <= 1.0,
+			"...and the slot ARITHMETIC lands where each card's own control anchoring puts it, at "
+			+ "every height", "worst %.2f px" % worst_gap)
 	await _tear_down(view)
