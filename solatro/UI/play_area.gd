@@ -79,7 +79,16 @@ var separation : int = BOARD_SEPARATION:
 		separation = value
 		set_separation()
 	get():
-		return separation * SettingsManager.settings.card_scale
+		return separation * PlayArea.settings().card_scale
+
+## Which `PlayerSettings` the BOARD reads. ⚠ **THE SAME ACCESSOR THE WALL USES, AND THAT IS THE
+## POINT.** `Tools/wall_editor.tscn` hosts a real `GameView` on its game picture, and the one
+## override it sets is `WallPicture.editor_settings` -- so a board that went straight to
+## `SettingsManager` ignored every knob the tool's own panel edits, and `board_edge_pad_rows` or
+## `hud_width_fraction` tuned there changed nothing on the board being previewed.
+## In the shipped game nothing sets that override and this resolves to `SettingsManager.settings`.
+static func settings() -> PlayerSettings:
+	return WallPicture.settings()
 
 ## **S16 — THE REVEAL. Which board rows are held open, and how far.** Value
 ## is the eased 0..1 this row is through its opening. A row at 0 is absent from the map entirely, so
@@ -137,7 +146,7 @@ var _grid_cells_bottom : Dictionary[int, float] = {}
 ## is then the lowest on the board, and the opening lifts rows *"that arent part of actual scored
 ## set"*.
 func _row_open_height() -> float:
-	return row_open_height(SettingsManager.settings, float(separation))
+	return row_open_height(PlayArea.settings(), float(separation))
 
 ## The two modes, STATIC so the tuning tool reads the same formula instead of a hand copy
 ## (its copy ignored the mode and kept the overshoot bug fixed below — the exact drift the tool
@@ -345,7 +354,7 @@ func row_open_extra(coord: BoardCoord) -> float:
 	# term. Sizing the STRIP to the full height therefore produced height + separation — an extra
 	# `4 * card_scale` (10 px at the shipped scale), which the owner saw as *"an odd gap between the
 	# rows, looks like an extra few pixels of separation"*. `row_open_span` supplies the remainder.
-	return row_open_span(SettingsManager.settings, float(separation)) * t
+	return row_open_span(PlayArea.settings(), float(separation)) * t
 
 ## Does any stack in `coord`'s half of the board hold a card BELOW depth `coord.h` — i.e. is there
 ## anything for this layer to uncover? The deepest layer covers nothing and must stay put. The
@@ -627,7 +636,7 @@ func _apply_entrance_zoom_rect() -> void:
 	if not is_instance_valid(entrance_v_scroll) or not is_instance_valid(entrance_h_track): return
 	var z := maxf(board_zoom, 0.0001)
 	var window := Vector2(entrance_h_track.size.x,
-			entrance_strip_height_px(SettingsManager.settings, z))
+			entrance_strip_height_px(PlayArea.settings(), z))
 	var local := window / z
 	entrance_v_scroll.scale = Vector2.ONE * z
 	entrance_v_scroll.offset_right = local.x - window.x
@@ -639,7 +648,7 @@ func _apply_entrance_zoom_rect() -> void:
 ## out everything anchored inside it and a prop or slot drifts off its own anchor mid-cycle
 ## (measured: 4 px).
 func _entrance_strip_full_height() -> float:
-	return maxf(entrance_strip_height_px(SettingsManager.settings, board_zoom), _entrance_row_height())
+	return maxf(entrance_strip_height_px(PlayArea.settings(), board_zoom), _entrance_row_height())
 
 ## The picture x the board's current pan puts under the LEFT edge of the grid the view is
 ## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
@@ -666,8 +675,8 @@ func _view_grid_cells() -> Control:
 ## `_entrance_strip_full_height`). The board's floor is what clears the real depth instead.
 func _apply_entrance_strip_height() -> void:
 	if not is_instance_valid(entrance_strip) or not is_instance_valid(scroll_container): return
-	var h := entrance_strip_height_px(SettingsManager.settings, board_zoom)
-	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	var h := entrance_strip_height_px(PlayArea.settings(), board_zoom)
+	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	entrance_strip.offset_top = -h - pad
 	entrance_strip.offset_bottom = -pad
 	entrance_strip.offset_left = hud_reserve_px()
@@ -687,7 +696,7 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	if not is_instance_valid(scroll_container): return
 	_board_strip_h = strip_h
 	var local := _board_window_local()
-	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
 	scroll_container.offset_top = pad
 	var inset := hud_reserve_px()
@@ -706,7 +715,7 @@ var _board_strip_h := 0.0
 ## reading the PREVIOUS mode's window -- which is a whole grid's worth of aim, and a board floor
 ## left where the unzoomed board had it.
 func _board_window_local() -> Vector2:
-	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	return Vector2(maxf(size.x - hud_reserve_px(), 0.0),
 			maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
 
@@ -758,7 +767,7 @@ func _give_the_board_a_floor(strip_h: float) -> void:
 	# while the content is laid out in the scroller's own, smaller ones. ⚠ It must not be taken from
 	# the scroller's window either -- that window is carved out by the Entrance's RESERVATION while
 	# this floor clears its ACTUAL height, and the two differ exactly when the Entrance stacks.
-	var pad := board_edge_pad_px(SettingsManager.settings) * board_zoom
+	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	top_level_vbox.custom_minimum_size.y = maxf(
 			maxf(size.y - strip_h - 2.0 * pad, 0.0) / maxf(board_zoom, 0.0001)
 			- _scroller_frame_h(), 0.0)
@@ -847,7 +856,7 @@ func await_card_settled(card: CardData) -> void:
 	var visual : CardVisual = data_card.get(card)
 	if not visual or not is_instance_valid(visual): return
 	var game := CardEnvironment.get_current_game()
-	var limit : float = game.get_delay() if game else SettingsManager.settings.base_delay
+	var limit : float = game.get_delay() if game else PlayArea.settings().base_delay
 	var waited := 0.0
 	while waited < maxf(limit, 0.05):
 		if not is_instance_valid(visual): return
@@ -868,7 +877,7 @@ func _anchor_scroll_to_bottom() -> void:
 	if not bar: return
 	var last := INF
 	var waited := 0.0
-	while waited < SettingsManager.settings.grid_pan_duration:
+	while waited < PlayArea.settings().grid_pan_duration:
 		await get_tree().process_frame
 		if not is_instance_valid(scroll_container) or not is_instance_valid(bar): return
 		waited += get_process_delta_time()
@@ -981,9 +990,9 @@ var board_zoom : float = OVERVIEW_BOARD_ZOOM
 func focused_board_zoom(gi: int) -> float:
 	if not is_instance_valid(scroll_container): return OVERVIEW_BOARD_ZOOM
 	var grid : GridData = _bound_grids[gi] if gi >= 0 and gi < _bound_grids.size() else GridData.new()
-	var block_h := grid_block_size_px(SettingsManager.settings, grid).y
-	var base_strip := entrance_strip_height_px(SettingsManager.settings, 1.0)
-	var pad := board_edge_pad_px(SettingsManager.settings)
+	var block_h := grid_block_size_px(PlayArea.settings(), grid).y
+	var base_strip := entrance_strip_height_px(PlayArea.settings(), 1.0)
+	var pad := board_edge_pad_px(PlayArea.settings())
 	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
 	var tall := size.y / (block_h + _panel_gutter_h(gi) + base_strip + 2.0 * pad
 			+ _scroller_frame_h())
@@ -1119,7 +1128,7 @@ func pan_to_grid(gi: int) -> void:
 	if not smooth: return
 	var cells := _cells_root(grid_container.get_child(gi) as Control)
 	if not cells: return
-	var dur : float = SettingsManager.settings.grid_pan_duration
+	var dur : float = PlayArea.settings().grid_pan_duration
 	var origin := _board_content_origin()
 	var local := _board_local_rect(cells)
 	# ⚠ **EVERY TERM HERE IS IN THE SCROLLER'S OWN LOCAL SPACE, WHICH THE ZOOM DOES NOT TOUCH.**
@@ -1153,7 +1162,7 @@ func _bounce_board(step: int) -> void:
 		return
 	var smooth := scroll_container as SmoothScrollContainer
 	if not smooth: return
-	smooth.scroll_horizontally(float(step) * SettingsManager.settings.grid_bounce_velocity_px)
+	smooth.scroll_horizontally(float(step) * PlayArea.settings().grid_bounce_velocity_px)
 
 ## How far `velocity_px` carries a scroller under `damper`'s OWN physics before it settles —
 ## simulated frame by frame through `ScrollDamper.slide()`, the same public call the scroller's own
@@ -1337,7 +1346,7 @@ var _swipe_fired := false
 ## unreliable on multi-monitor Windows (which reports the primary screen's for all of them) and on
 ## Android, and an unclamped conversion can therefore produce any number at all.
 func _swipe_threshold_px() -> float:
-	var s := SettingsManager.settings
+	var s := PlayArea.settings()
 	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, DisplayServer.screen_get_dpi()),
 			s.wall_touch_target_min_px, s.wall_touch_target_max_px)
 
@@ -1665,7 +1674,7 @@ func _row_heights_for(g: int) -> void:
 	# ⚠ **THE ALIGNMENT SETTING IS PART OF THE KEY.** It changes every row height on the board
 	# without touching the state, so a memo keyed on `revision` alone kept serving the pre-toggle
 	# answer — measured: a shallow grid stayed at its own 58 where the shared maximum was 98.
-	var aligned : bool = SettingsManager.settings.grid_align_rows_globally
+	var aligned : bool = PlayArea.settings().grid_align_rows_globally
 	if rev == _row_height_revision and aligned == _row_height_aligned: return
 	_row_height_cache.clear()
 	_row_height_revision = rev
@@ -1713,7 +1722,7 @@ func _grid_row_height(g: int, r: int) -> float:
 ## is what keeps it PURELY VISUAL — scoring never reads a row height, so the same board scores
 ## identically either way (`Q251`=b).
 func _measure_grid_row_height(g: int, r: int) -> float:
-	if not SettingsManager.settings.grid_align_rows_globally:
+	if not PlayArea.settings().grid_align_rows_globally:
 		return _own_grid_row_height(g, r)
 	var game := CardEnvironment.get_current_game()
 	if not game: return _own_grid_row_height(g, r)
@@ -2225,7 +2234,7 @@ func _recentre_board() -> void:
 	_recentre_waiting = true
 	var last := Vector3(INF, INF, INF)
 	var waited := 0.0
-	while waited < SettingsManager.settings.grid_pan_duration:
+	while waited < PlayArea.settings().grid_pan_duration:
 		await get_tree().process_frame
 		if not is_inside_tree() or not is_instance_valid(grid_container):
 			_recentre_waiting = false
@@ -2296,7 +2305,7 @@ func _grid_gutters() -> Vector2:
 func _apply_grid_buffer() -> void:
 	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0: return
 	var gutters := _grid_gutters()
-	var buffer := isolating_grid_buffer_px(SettingsManager.settings)
+	var buffer := isolating_grid_buffer_px(PlayArea.settings())
 	var wanted := roundi(maxf(buffer - gutters.x - gutters.y, 0.0))
 	if grid_container.get_theme_constant(&"separation") == wanted: return
 	grid_container.add_theme_constant_override("separation", wanted)
@@ -2306,9 +2315,9 @@ func _apply_grid_buffer() -> void:
 ## never `isolating_grid_buffer_px()`'s own unrounded value: the camera step this feeds has to land
 ## on the panel `_apply_grid_buffer()` actually placed, not the buffer it rounded away from.
 func grid_pitch_px() -> float:
-	var block := grid_block_size_px(SettingsManager.settings, GridData.new())
+	var block := grid_block_size_px(PlayArea.settings(), GridData.new())
 	if not is_instance_valid(grid_container) or grid_container.get_child_count() == 0:
-		return block.x + isolating_grid_buffer_px(SettingsManager.settings)
+		return block.x + isolating_grid_buffer_px(PlayArea.settings())
 	var gutters := _grid_gutters()
 	var wanted := float(grid_container.get_theme_constant(&"separation"))
 	return block.x + wanted + gutters.x + gutters.y
@@ -2949,8 +2958,8 @@ func _ease_row_openings(delta: float) -> bool:
 	var growing := _ease_layer_arrivals(delta)
 	if _row_open.is_empty(): return growing
 	var game := CardEnvironment.get_current_game()
-	var unit : float = game.get_delay() if game else SettingsManager.settings.base_delay
-	var span := maxf(unit * SettingsManager.settings.spotlight_reveal_fraction, 0.0001)
+	var unit : float = game.get_delay() if game else PlayArea.settings().base_delay
+	var span := maxf(unit * PlayArea.settings().spotlight_reveal_fraction, 0.0001)
 	var shut : Array[Vector2i] = []
 	var moved := false
 	for key : Vector2i in _row_open:
@@ -2981,8 +2990,8 @@ func _ease_row_openings(delta: float) -> bool:
 func _ease_layer_arrivals(delta: float) -> bool:
 	if _layer_grown.is_empty(): return false
 	var game := CardEnvironment.get_current_game()
-	var unit : float = game.get_delay() if game else SettingsManager.settings.base_delay
-	var span := maxf(unit * SettingsManager.settings.spotlight_reveal_fraction, 0.0001)
+	var unit : float = game.get_delay() if game else PlayArea.settings().base_delay
+	var span := maxf(unit * PlayArea.settings().spotlight_reveal_fraction, 0.0001)
 	var done : Array[Vector2i] = []
 	for key : Vector2i in _layer_grown:
 		var now : float = _layer_grown[key]

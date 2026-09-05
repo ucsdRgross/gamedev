@@ -63,6 +63,8 @@ func _ready() -> void:
 	test_panned_state_is_the_offset_primitive_grid_state_delegates_to()
 	behavior_section("THE SAVED PAN SNAPS TO A WHOLE GRID (S32, H19, Q173, Q179)")
 	test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board()
+	behavior_section("THE WALL EDITOR DRIVES EVERY KNOB IT SHOWS (TP-120, Q186=a)")
+	await test_the_wall_editor_drives_every_knob_it_shows()
 	_teardown_wall()
 	finish()
 
@@ -995,3 +997,49 @@ func test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board() ->
 	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3), 0.0),
 			"...and so does a zero pitch, which is what a board measured before layout reports",
 			str(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3)))
+
+
+# ==============================================================================
+# TP-120 (S34, Q186=a) — `Tools/wall_editor.tscn` DRIVES EVERY KNOB IT SHOWS.
+#
+# The tool's whole promise is that a number tuned on its panel reaches the same code the game runs
+# it through -- otherwise the preview is not evidence about anything. `knobs_this_preview_does_not
+# _drive` is the tool's own honest answer, and this asserts it is EMPTY on a real run.
+#
+# ⚠ **THE FIELD USED TO BE A CLAIM, NOT A READING.** It returned "" for any run that had a `Wall`
+# at all, so this row would have passed while the board knobs on the panel were being ignored
+# outright by the hosted `GameView` -- which is exactly what was happening. The second check below
+# is the one that gives the first any weight: the SCREENS the tool hosts must resolve to the same
+# `preview_settings` the panel edits.
+#
+# ⚠ **A REAL `wall_editor.tscn`, NOT A STAND-IN** (hard rule 6): the thing under test is the tool's
+# own wiring, and a hand-built copy of it could only ever agree with itself.
+# ==============================================================================
+func test_the_wall_editor_drives_every_knob_it_shows() -> void:
+	var previous := WallPicture.editor_settings
+	var editor_scene : PackedScene = load("res://Tools/wall_editor.tscn")
+	var editor : WallEditor = editor_scene.instantiate()
+	add_child(editor)
+	# `Wall._ready()` pauses the tree globally, exactly as it does in the game; undone here the same
+	# way every other Main-hosted fixture in this repo undoes it.
+	get_tree().paused = false
+	for _i : int in 4:
+		await get_tree().process_frame
+
+	check(editor.preview_settings != null,
+			"precondition: the tool has its own settings resource to tune (TP-120)")
+	check(PlayArea.settings() == editor.preview_settings,
+			"a knob tuned on the tool's panel reaches the BOARD it hosts -- `PlayArea.settings()` "
+			+ "resolves the same override the tool sets, so `board_edge_pad_rows` and the rest are "
+			+ "not silently inert (TP-120)",
+			"board reads %s, panel edits %s" % [PlayArea.settings(), editor.preview_settings])
+	check(WallPicture.settings() == editor.preview_settings,
+			"...and so does the WALL, through the accessor both halves share (TP-120)")
+	var undriven := editor.undriven_knobs()
+	check(undriven.is_empty(),
+			"`knobs_this_preview_does_not_drive` is EMPTY when the editor is run (TP-120, Q186=a)",
+			"undriven: %s" % [undriven])
+
+	editor.queue_free()
+	await get_tree().process_frame
+	WallPicture.editor_settings = previous
