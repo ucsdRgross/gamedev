@@ -673,7 +673,35 @@ index names a DIFFERENT card and every split prop brackets the wrong row. It mus
 `game.state.upper_zone` the way the grid branch already reads `grid.cells` — which is also the
 answer to the owner's question, one level up.
 
-⚠ **THE REMAINING 8 ARE THE REVEAL, AND THEY ARE NOT STALE TESTS.** `_row_open_offset()`,
+### ⚠ THE FLIP IS NOW **ONE** IDENTIFIED PROBLEM: THE ENTRANCE'S FLOOR LINE
+
+Everything else is done. `UI PROPS` and `VISUAL LAYERS` have both had their direction-naming and
+anchoring re-derivations landed on `main` of this branch, and they pass on BOTH stackings. With the
+flip applied on top, the whole suite is green **except** the Entrance's floor, and the cause is
+exact:
+
+`_entrance_slot_center_global()` measures UP from a floor. There are two candidate lines and each
+is wrong in a different case, which is the finding:
+
+| floor | breaks |
+|---|---|
+| `upper_zone_right`'s own bottom | **CONTENT-DRIVEN.** A reveal makes a column taller, the hbox grows with it, and the floor moves by exactly the opening — which cancels the opening the function subtracts. Measured: a revealed row appeared not to move at all, and a prop drifted 34 px. |
+| `entrance_strip`'s bottom | **FIXED, BUT NOT THE COLUMNS'.** Correct through the whole reveal (all reveal checks pass), but once the column content exceeds the strip the two diverge: the parked hoop went 13 px out at `card_separation_scale` 1.0 and 45 px at 2.0. |
+
+⚠ **THE FIX IS A CONTAINER ONE, NOT ARITHMETIC.** What the formula needs is a shared bottom line
+that does not move when a column grows — i.e. the Entrance's columns bottom-ANCHORED inside their
+strip, so growth extends upward and the bottom edge stays. Then `upper_zone_right`'s bottom is both
+content-independent and the columns' real line, and one floor serves both cases. Check
+`%EntranceVScroll` / `%EntranceHTrack`'s size flags before writing any more arithmetic.
+
+⚠ **AND ONE MEASURED CONSEQUENCE STILL TO HANDLE:** `row_open_extra()` subtracts one `separation`
+because "the VBox already puts `separation` between rows". The flipped Entrance column has
+separation **0** (each card carries its own gap), so that subtraction makes the opening one
+separation short. It did not show up in the checks, but it is wrong on purpose-built inspection.
+
+### The earlier note, kept for its measurements
+
+⚠ **THE REMAINING 8 WERE THE REVEAL, AND THEY WERE NOT STALE TESTS.** `_row_open_offset()`,
 `row_open_extra()` and the prop anchoring that rides them were derived for a DOWNWARD Entrance:
 an opening pushes the rows below it down. Upward, an opening has to push the rows above it up, and
 a prop anchored across the expansion has to follow. Measured with the flip applied: a parked hoop
