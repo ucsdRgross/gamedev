@@ -185,9 +185,21 @@ four options as written.
 - ⚠ **The log is `<user data>/Solatro/logs/test/test_output_all.log`** — a same-named file under
   `Solatro/` is months stale. Check the mtime.
 - `export PYTHONIOENCODING=utf-8` before any python heredoc.
-- ⚠ **`user://settings.tres` is POISONED with test values and stays that way.** `isolated` suppresses
-  writes, so a poisoned file simply persists. A pristine default is recoverable from
-  `PlayerSettings.new()`. **Do not overwrite it without the owner.**
+- ⚠ **`user://settings.tres` WAS POISONED, AND RESTORING IT CHANGED TWO THINGS.** It carried
+  `base_delay` 0.1 (default 1.0), `prop_tick_fraction` 1.0 (0.45), `act_event_cap` 60 (**6000**),
+  `wall_transition_delay` 0.001 (0.6) and `wall_selection_repeat_delay` 0.05 (0.4). Restored to
+  defaults by owner permission.
+  - ⚠ **THE SUITE GOT MUCH SLOWER, AND THAT IS THE HONEST SPEED.** Suites that do not isolate read
+    this file, so a `base_delay` of 0.1 was running every animation at a tenth of its real length.
+    `SUIT PROPS` alone went from under 4 minutes to **6m40s**. **Use `--timeout 1800`**; the
+    handoff's old "~190 s warm" was measured against the poisoned file.
+  - ⚠ **THE STANDING `116.0 px` GRID LAYOUT FAILURE WENT AWAY WITH IT.** With pristine settings the
+    whole suite is ONE failure — `TP-85`'s documented mid-growth flake. So `GAP-030`'s "settings
+    interference" was substantially this file, not a suite-ordering problem.
+  - ⚠ The aggregate banner said `12 FAILED (1 behavior, 0 implementation)` while every per-suite
+    banner said `ALL … CHECKS PASSED` except GRID LAYOUT's `133 passed, 1 FAILED of 134`. The
+    aggregate tally disagrees with the suites it aggregates; unexplained, and worth a look before
+    anyone trusts that number.
 
 ## Standing rules this stream paid for — do not rediscover them
 
