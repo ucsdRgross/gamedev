@@ -24,6 +24,10 @@ what that shipped. Everything below aims at that failure.
 - The implementer still never commits, never stages, never stashes.
 - Use `/handoff` for `<project>/HANDOFF_<topic>.md`. Record the EVIDENCE that proved each done-when
   (the grep output, the banner line), not prose. A cold overseer must be able to resume from it.
+- ⚠ **RECORD THE IMPLEMENTING MODEL IN THE HANDOFF, on the first line, as
+  `IMPLEMENTED-BY: <model>`.** Update it if the run changes models partway; list every model that
+  wrote code. The close reads this line and nothing else to pick a reviewer, so a run that does not
+  write it cannot be reviewed correctly.
 
 ## The overseer's rules
 
@@ -133,6 +137,53 @@ reset to the last commit and redo it. Never resume mid-step.
 ⚠ **Never reset the tree while a subagent is working in it.** One run did, and the agent correctly
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
 first, and confirm it has stopped.
+
+## Declaring the run ready to close
+
+**The last step's commit is not the end of the run.** The moment every step in `PLAN.md` is verified,
+say so explicitly and hand the owner the block below — do not start closing silently, and do not let
+the run just stop.
+
+Print exactly this, filled in:
+
+```
+READY FOR CLOSING — <project> / <branch>
+  steps verified : <n> of <n>          suite: <the banner line>
+  IMPLEMENTED-BY : <model that wrote the code>
+  REVIEWER MUST BE: <a different model — see the table below>
+
+Open a NEW session, select <reviewer model>, and paste:
+
+  Run the closing phase of /plan-run for the branch <branch> in <worktree path>.
+  The code was implemented by <model>. You are the reviewer and you are a
+  different model on purpose. Start by reading .claude/skills/plan-run/SKILL.md
+  "Closing the run", then work its numbered list in order.
+```
+
+⚠ **A NEW SESSION, NOT THIS ONE.** The overseer has held the plan for dozens of commits and has
+every reason to believe the work is done — that is exactly the bias the close exists to defeat. It
+is also the only way to change model, since a session's model is chosen when it starts.
+
+## ⚠ THE REVIEWER IS NEVER THE MODEL THAT IMPLEMENTED
+
+A model reviewing its own output shares its blind spots: the same misreading that produced the bug
+reads the bug as correct. Pick the reviewer from `IMPLEMENTED-BY`:
+
+| implemented by | reviewer |
+|---|---|
+| Opus | the next strongest NON-Opus available, at high effort |
+| Sonnet | Opus |
+| Fable | Opus |
+| a mix | a model that wrote NONE of the code |
+
+⚠ **THE `model:` FIELD ON A SUBAGENT SELECTS A FAMILY, NOT A VERSION** — `opus`, `sonnet`, `haiku`,
+`fable`. It cannot pin a specific point release. When the difference you need is between two
+versions of the same family, the ONLY reliable mechanism is a separate session with that model
+chosen at startup, which is why the block above hands over rather than dispatching.
+
+⚠ **If the only available model is the one that implemented, say so and stop.** Run the rest of the
+close, report that the adversarial review was skipped and why, and leave it for the owner. A
+same-model review recorded as a real one is worse than a gap on the checklist.
 
 ## Closing the run — a phase, not a gesture
 

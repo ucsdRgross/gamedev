@@ -62,10 +62,8 @@ ABSPATH = re.compile(r"[A-Za-z]:\\[^\s`\"'|)]+")
 PROJECTS = ["solatro", "worldgen", "palette", "designloop"]
 
 # --- code comments -------------------------------------------------------------------------
-# Comments are docs that happen to live in source files, and they drift the same way. They are
-# checked for the same three things a living doc is: references that resolve, no absolute paths,
-# no history — plus the two failure modes specific to them (a block that has become an essay, and
-# a fact restated at a second site instead of pointed at).
+# A comment is a doc that lives in a source file, so it gets the living-doc rules: references that
+# resolve, no absolute paths, no history — plus the placement and length rules below.
 CODE_GLOBS = ["*.gd", "*.gdshader", "*.mjs", "*.py"]
 CODE_SKIP = {".git", "node_modules", "godot-cpp", "addons", ".godot", ".import", "dist", "build"}
 # Two caps, because the two comment kinds do different jobs. A plain `#` block explains WHY a
@@ -94,10 +92,8 @@ DESIGN_ID = re.compile(
 # someone with no way to read it. Always an error, never summarised.
 DESIGN_ID_IN_STRING = re.compile(
     r"""["']([^"'\n]*(?<![\w-])(?:Q\d{1,3}|QR\d{1,2}|GAP-\d{3})(?![\w-])[^"'\n]*)["']""")
-# ⚠ Two exemptions from BOTH design-id checks. TEST files: a test's job is defending one decision,
-# so naming it — in an assertion message or the comment above it — says which decision just broke,
-# and nobody outside the suite reads either. DESIGNLOOP: question ids are that project's SUBJECT
-# MATTER, so there is no other layer for them to leak from.
+# ⚠ Exempt from BOTH design-id checks. A TEST defends one decision, so naming it says which one
+# broke, and nobody outside the suite reads it. In DESIGNLOOP question ids are the subject matter.
 DESIGN_ID_SKIP = ("Tests/", "/test/", "/tests/", "designloop/")
 # This file defines the patterns, so it necessarily contains examples of them.
 SELF = ".claude/tools/doc_check.py"
@@ -128,6 +124,11 @@ def living_docs() -> list[Path]:
 
 
 def check_memory_links_and_index() -> None:
+    """Wikilinks resolve, the index matches disk, and index lines stay hooks.
+
+    The index is loaded every session, so a line carrying status or a date costs every later
+    session tokens for something git already knows.
+    """
     if not INDEX.exists():
         err(f"{rel(INDEX)} is missing — the index is what a session actually loads")
         return
@@ -146,7 +147,6 @@ def check_memory_links_and_index() -> None:
     for name in sorted(files - indexed):
         err(f"{name}.md exists but MEMORY.md does not index it — it will never be recalled")
 
-    # The index is loaded every session. Hooks only.
     for i, line in enumerate(text.splitlines(), 1):
         if not line.strip().startswith("- ["):
             continue
@@ -157,12 +157,16 @@ def check_memory_links_and_index() -> None:
 
 
 def check_memory_scope() -> None:
+    """Memory holds only what applies across projects.
+
+    Citing one project as the example is fine; being ABOUT one project is not — that guidance
+    belongs in the project's own docs.
+    """
     for p in sorted(MEM.glob("*.md")):
         if p.stem in SCOPE_EXEMPT:
             continue
         text = p.read_text(encoding="utf-8", errors="replace").lower()
         counts = {proj: text.count(proj) for proj in PROJECTS if proj in text}
-        # Citing one project as the example is fine; being ABOUT one project is not.
         if len(counts) == 1:
             proj, n = next(iter(counts.items()))
             if n >= 4:
@@ -179,11 +183,26 @@ def repo_filenames() -> set[str]:
     return names
 
 
+def is_literal_line(line: str) -> bool:
+    """An indented literal or a fence marker — the line is sample text, not prose making a claim."""
+    return line.startswith("    ") or line.lstrip().startswith("```")
+
+
+def is_template_ref(base: str) -> bool:
+    """A stand-in rather than a filename: GAP-NNN.md, GAP-00N.md, GAP-001..008.md."""
+    return bool(re.search(r"N{2,}|\d[Nn]\.|\.\.", base))
+
+
+def is_clipped_ref(base: str, line: str, start: int) -> bool:
+    """The tail of a glob or a wildcard the reference regex clipped: *.test.js, <name>_visual.gd."""
+    return base.startswith(".") or line[max(0, start - 1)] in "*<>"
+
+
 def check_file_refs(docs: list[Path], names: set[str]) -> None:
     for doc in docs:
         for i, line in enumerate(doc.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-            if line.startswith("    ") or line.lstrip().startswith("```"):
-                continue  # code block or indented literal — not prose making a claim
+            if is_literal_line(line):
+                continue
             if GONE_ON_PURPOSE.search(line):
                 continue
             for m in FILEREF.finditer(line):
@@ -193,22 +212,21 @@ def check_file_refs(docs: list[Path], names: set[str]) -> None:
                     continue
                 if base in RUNTIME_ARTIFACTS or base in PLACEHOLDER_NAMES:
                     continue
-                # A template or a range, not a filename: GAP-NNN.md, GAP-00N.md, GAP-001..008.md
-                if re.search(r"N{2,}|\d[Nn]\.|\.\.", base):
-                    continue
-                # Tail of a glob or a wildcard the regex clipped: *.test.js, <name>_visual.gd
-                if base.startswith(".") or line[max(0, m.start(1) - 1)] in "*<>":
+                if is_template_ref(base) or is_clipped_ref(base, line, m.start(1)):
                     continue
                 if base not in names:
                     err(f"{rel(doc)}:{i}: references '{ref}', which does not exist")
 
 
 def check_dates(docs: list[Path], verbose: bool) -> None:
+    """Dates in living docs, skipping frontmatter and code blocks.
+
+    Frontmatter is machine-written metadata, not a claim, and it exists only when line 1 is exactly
+    '---'; anywhere else a '---' is a horizontal rule. A date inside a fence is sample data.
+    """
     for doc in docs:
         hits = []
         lines = doc.read_text(encoding="utf-8", errors="replace").splitlines()
-        # YAML frontmatter is machine-written metadata, not prose making a claim. It exists only
-        # when line 1 is exactly '---'; anywhere else a '---' is a horizontal rule.
         skip_to = 0
         if lines and lines[0].rstrip() == "---":
             for j, line in enumerate(lines[1:], 2):
@@ -222,7 +240,6 @@ def check_dates(docs: list[Path], verbose: bool) -> None:
             if line.lstrip().startswith("```"):
                 in_fence = not in_fence
                 continue
-            # A date inside a code block is sample data, not a claim about when work happened.
             if in_fence or line.startswith("    "):
                 continue
             if DATE.search(line):
@@ -245,7 +262,6 @@ def check_abs_paths(docs: list[Path]) -> None:
             if line.lstrip().startswith("```"):
                 in_fence = not in_fence
                 continue
-            # A path inside a command is the command; a path in prose is a claim about a machine.
             if in_fence or line.startswith("    "):
                 continue
             m = ABSPATH.search(line)
@@ -272,7 +288,6 @@ def changed_files() -> list[Path] | None:
         if len(line) < 4:
             continue
         name = line[3:].strip().strip('"')
-        # A rename reads `old -> new`; only the new path exists to be checked.
         if " -> " in name:
             name = name.split(" -> ", 1)[1]
         p = ROOT / name
@@ -396,45 +411,66 @@ def comment_lines(path: Path) -> list[tuple[int, str]]:
     return out
 
 
-def indented_comments(path: Path) -> list[tuple[int, str]]:
-    """(line, text) for every comment that has whitespace before it.
+def split_code_comment(raw: str, fence: str | None) -> tuple[str, str | None, str | None]:
+    """Split one line into (code, comment or None, the triple-quote fence still open after it).
 
-    Owner rule: a comment sits at column 0, above the method, and says WHY that method exists.
-    Anything indented is commentary inside code, and code that needs prose to explain itself needs
-    a NAME instead — extract a helper.
-
-    ⚠ ONE CARVE-OUT, and it is not a softening: a `##` doc comment directly above an indented
-    `func` is an INNER CLASS's method doc. GDScript forces that indentation, and such a comment is
-    exactly what the rule asks for. A plain `#` never qualifies, wherever it sits.
-
-    Only `.gd` and `.py` are scanned, where indentation is the block grammar. Brace languages would
-    need a real parser, and a checker that guesses is worse than one that abstains.
+    ⚠ A SCANNER, NOT A REGEX, AND THAT IS THE WHOLE POINT. The comment rules are ERRORS, so a `#`
+    inside a docstring or a string literal must not read as a comment — a false positive blocks work
+    that is already correct.
     """
-    if path.suffix not in {".gd", ".py"}:
-        return []
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    out: list[tuple[int, str]] = []
-    for i, raw in enumerate(lines, 1):
-        s = raw.strip()
-        if not s.startswith("#") or raw[:1] not in " \t":
+    i = 0
+    while i < len(raw):
+        if fence is not None:
+            if raw.startswith(fence, i):
+                fence, i = None, i + 3
+                continue
+            i += 1
             continue
-        if s.startswith("##") and _heads_an_indented_func(lines, i):
+        if raw.startswith('"""', i) or raw.startswith("'''", i):
+            fence, i = raw[i:i + 3], i + 3
             continue
-        out.append((i, s.lstrip("#").strip()))
+        ch = raw[i]
+        if ch == "#":
+            return raw[:i], raw[i:], fence
+        if ch in "\"'":
+            i += 1
+            while i < len(raw) and raw[i] != ch:
+                i += 2 if raw[i] == "\\" else 1
+            i += 1
+            continue
+        i += 1
+    return raw, None, fence
+
+
+def real_comments(path: Path) -> list[tuple[int, str, str]]:
+    """(line, code before it, comment text) for every comment that is really a comment."""
+    out: list[tuple[int, str, str]] = []
+    fence: str | None = None
+    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        code, comment, fence = split_code_comment(raw, fence)
+        if comment is not None:
+            out.append((i, code, comment))
     return out
 
 
-def _heads_an_indented_func(lines: list[str], one_based: int) -> bool:
-    """Whether the `##` run starting at this line is the doc comment of an indented `func`."""
-    for raw in lines[one_based:]:
-        s = raw.strip()
-        if s.startswith("##"):
+def indented_comments(path: Path) -> list[tuple[int, str]]:
+    """(line, text) for every plain `#` comment that has whitespace before it.
+
+    Owner rule: a plain comment sits at column 0, above the method, and says WHY that method exists.
+    Indented prose is commentary inside code, and code needing prose to explain itself wants a NAME.
+
+    ⚠ `##` IS EXEMPT FROM PLACEMENT. It is the label Godot renders beside an exported knob, so it
+    lives wherever its knob does — indented inside an inner class included. It pays for that freedom
+    with the one-line cap in DOC_COMMENT_MAX.
+    """
+    if path.suffix not in {".gd", ".py"}:
+        return []
+    out: list[tuple[int, str]] = []
+    for i, code, comment in real_comments(path):
+        if code.strip() or comment.startswith("##") or not code:
             continue
-        if not s:
-            return False
-        return (raw[:1] in " \t"
-                and (s.startswith("func ") or s.startswith("static func ") or s.startswith("def ")))
-    return False
+        out.append((i, comment.lstrip("#").strip()))
+    return out
 
 
 def comment_blocks(path: Path) -> list[tuple[int, int, bool]]:
@@ -444,10 +480,7 @@ def comment_blocks(path: Path) -> list[tuple[int, int, bool]]:
     explaining why a method exists gets COMMENT_BLOCK_MAX, an Inspector knob's label gets
     DOC_COMMENT_MAX.
     """
-    doc_at = {}
-    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-        if raw.strip().startswith("#"):
-            doc_at[i] = raw.strip().startswith("##")
+    doc_at = {i: c.startswith("##") for i, code, c in real_comments(path) if not code.strip()}
     out: list[tuple[int, int, bool]] = []
     start = length = 0
     is_doc = False
@@ -467,18 +500,20 @@ def trailing_comments(path: Path) -> list[tuple[int, str]]:
     """(line, text) for every comment sharing a line with code.
 
     A trailing comment is the same defect as an indented one wearing a different hat: it annotates a
-    statement instead of naming it. Quote parity keeps a `#` inside a string literal out of it.
+    statement instead of naming it.
     """
     if path.suffix not in {".gd", ".py"}:
         return []
-    out: list[tuple[int, str]] = []
-    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-        if raw.strip().startswith("#") or "#" not in raw:
-            continue
-        code = raw.split("#", 1)[0]
-        if code.strip() and code.count('"') % 2 == 0 and code.count("'") % 2 == 0:
-            out.append((i, raw.split("#", 1)[1].strip()))
-    return out
+    return [(i, c.lstrip("#").strip()) for i, code, c in real_comments(path) if code.strip()]
+
+
+def is_quoted_answer(text: str) -> bool:
+    """A blockquote, which the duplicate check must never flag.
+
+    ⚠ REPEATING AN OWNER'S VERBATIM WORDS AT EVERY SITE THAT RELIES ON THEM IS REQUIRED. Paraphrase
+    is the defect the provenance tooling exists to catch, so the duplicate rule inverts here.
+    """
+    return text.lstrip().startswith(">")
 
 
 def check_code_comments(verbose: bool, names: set[str]) -> int:
@@ -531,23 +566,13 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
                     continue
                 if base.startswith(".") or GONE_ON_PURPOSE.search(text):
                     continue
-                # A glob tail or a prose hyphen, not a filename: `<name>_visual.gd`, `non-.tres`.
-                if text[max(0, fm.start(1) - 1)] in "*<>" or Path(base).stem.endswith("-"):
+                if is_clipped_ref(base, text, fm.start(1)) or Path(base).stem.endswith("-"):
                     continue
                 if base not in names:
                     err(f"{rel(path)}:{i}: references '{ref}', which does not exist — a comment "
                         f"deferring to a doc is only useful if the doc resolves")
 
-            # ⚠ THE DUPLICATE CHECK IS THE POINT OF THIS WHOLE FUNCTION. Two copies of one fact
-            # is the seam behind most of this repo's defects; in comments it shows up as the same
-            # explanation written at two sites, where only one of them gets updated.
-            #
-            # ⚠ **A QUOTED OWNER ANSWER IS EXEMPT, AND THE OPPOSITE RULE APPLIES TO IT.** Repeating
-            # the owner's verbatim words at every site that relies on them is REQUIRED — paraphrase
-            # is the defect `provenance.mjs` and [[design-answers-need-a-claimant]] exist to catch.
-            # The first build of this check flagged one GAP-006 quote at three sites as duplication,
-            # which would have argued for exactly the summarising those rules forbid.
-            if text.lstrip().startswith(">"):
+            if is_quoted_answer(text):
                 continue
             for sentence in re.split(r"(?<=[.!?])\s+", text):
                 key = re.sub(r"[^a-z0-9 ]+", "", sentence.lower()).strip()
@@ -588,8 +613,8 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
 
 
 def main() -> int:
-    # Findings quote the line they are about, and this repo's docs are full of non-cp1252
-    # characters. Without this the checker dies on the first ⚠ it tries to report.
+    """Entry point. Reconfigures stdout first: findings quote lines full of non-cp1252 characters,
+    and without it the checker dies on the first one it tries to report."""
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except AttributeError:

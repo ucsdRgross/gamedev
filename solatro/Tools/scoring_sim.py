@@ -91,10 +91,8 @@ def final_score(types, m, n):
     return plain
 
 
-# ============================================================================
-# Line evaluator — best single Result per row/column (mirrors PokerHands).
-# Card = (rank:int, suit:int, is_skill:bool, is_prop:bool)
-# ============================================================================
+# Line evaluator — best single Result per row/column, mirroring PokerHands.
+# A card is (rank:int, suit:int, is_skill:bool, is_prop:bool).
 def all_same_suit(cards):
     return len(set(s for _, s in cards)) == 1
 
@@ -257,7 +255,6 @@ def make_deck(size=24, spread=4, skills=8, props=0):
     for k in range(min(skills, len(cards))):
         cards[(k * 3) % len(cards)][2] = True
     for k in range(min(props, len(cards))):
-        # spread prop flags over the deck, offset so they don't all overlap skills
         cards[(k * 5 + 1) % len(cards)][3] = True
     return [tuple(c) for c in cards]
 
@@ -281,7 +278,7 @@ def deck52():
 # Board building / arrangements
 # ============================================================================
 N_COLS = 6
-USED_COLS = 5  # Next deals into 5 paired columns round-robin
+USED_COLS = 5
 
 
 def deal_random(chunk, n_cols=N_COLS):
@@ -327,6 +324,11 @@ def arrange_degraded(chunk, f, rng, n_cols=N_COLS):
 
 
 def build_board(chunk, arrange, rng, degrade_f=0.6):
+    """RETIRED TABLEAU. One act's board under an arrangement model.
+
+    'capacity' is a fixed arrangement budget: the player places ~degrade_f CARDS per act and the
+    rest fall as dealt, so a small act is fully arranged and a dump is mostly chaos.
+    """
     if arrange == 'random':
         return deal_random(chunk)
     if arrange == 'ranks':
@@ -336,9 +338,6 @@ def build_board(chunk, arrange, rng, degrade_f=0.6):
     if arrange == 'degraded':
         return arrange_degraded(chunk, degrade_f, rng)
     if arrange == 'capacity':
- # Fixed arrangement budget (owner model 2026-07-17): the player can ideally
-        # place ~degrade_f CARDS per act; the rest fall as dealt. A small act is fully
-        # arranged, a dump is mostly chaos — bigger boards are inherently harder.
         return arrange_degraded(chunk, min(1.0, degrade_f / max(len(chunk), 1)), rng)
     raise ValueError(arrange)
 
@@ -347,8 +346,17 @@ def build_board(chunk, arrange, rng, degrade_f=0.6):
 # Scoring a board under a variant
 # ============================================================================
 class Variant:
-    """A full parameter set. combine: V0 (row*col, current), V2A (combo-mult),
-    V7 (row*col with re-anchored goals — same combine as V0)."""
+    """A full parameter set. RETIRED TABLEAU.
+
+    combine: V0 (row*col), V2A (combo-mult), V7 (row*col with re-anchored goals, same combine as
+    V0). combo_mode attaches the uniqueness bonus U — distinct meld identities on the board this
+    act, where duplicates score base but do not raise U: 'mult' payout*(1+u*U), 'flat' payout+k*U,
+    'row' (R+k*U)*C, 'col' R*(C+k*U), 'dedup' prices repeats at base*combo_u instead.
+    combo_stack_u is the dedup hybrid, multiplying payout by (1+this*U) as well.
+    combo_sig is the identity granularity: 'fine' (pair of 2s != pair of 3s), 'coarse'
+    (archetype, size, copies), 'class' (archetype, size), 'arch' (archetype only, U caps at 4).
+    overscore_cap and overscore_exp defang the goal inflation an overscoring run accrues.
+    """
 
     def __init__(self, combine='V0', w_r=0.5, w_c=0.5, high_card_floor=True,
                  act_bonus=0.0, overscore_cap=None, overscore_exp=1.5, name=None,
@@ -358,20 +366,12 @@ class Variant:
         self.w_c = w_c
         self.high_card_floor = high_card_floor
         self.act_bonus = act_bonus
-        self.overscore_cap = overscore_cap  # None = uncapped (current behavior)
+        self.overscore_cap = overscore_cap
         self.overscore_exp = overscore_exp
-        # Uniqueness combo bonus: U = distinct meld identities on the board this act
-        # (duplicates still score base, they just don't raise U). Attachment points:
-        #   'mult' payout*(1+u*U) | 'flat' payout+k*U | 'row' (R+k*U)*C | 'col' R*(C+k*U)
         self.combo_mode = combo_mode
         self.combo_u = combo_u
         self.combo_k = combo_k
-        self.combo_stack_u = 0.0  # dedup hybrid: also multiply payout by (1+this*U)
-        # Identity granularity for U:
-        #   'fine'   pair of 2s != pair of 3s (rank/suit in the identity)
-        #   'coarse' any pair is "a pair" — (archetype, size, copies)
-        #   'class'  hand classes — (archetype, size): quad-of-1s == 2x quad == "quads"
-        #   'arch'   archetype only: set / straight / flush / house (U caps at 4)
+        self.combo_stack_u = 0.0
         self.combo_sig = 'fine'
         self.name = name or combine
 
@@ -384,7 +384,7 @@ class Variant:
             pay = int((rt + ct) * (1.0 + self.w_r * row_melds)
                       * (1.0 + self.w_c * col_melds))
         else:
-            pay = rt * ct  # V0 and V7
+            pay = rt * ct
         if self.combo_mode == 'mult':
             pay = int(pay * (1.0 + self.combo_u * uniques))
         elif self.combo_mode == 'flat':
@@ -410,8 +410,6 @@ def score_board(cols, variant):
     """One act: rows then cols (+ static prop model), returns
     (row_total, col_total, row_melds, col_melds, payout, flat, uniques)."""
     hcf = variant.high_card_floor
-    # 'dedup' combo mode: a repeated meld identity scores base * combo_u (0 = repeats
-    # are worthless, 0.5 = half) — the punishing twin of the reward attachments.
     dedup = variant.combo_mode == 'dedup'
     sig_len = {'fine': 4, 'coarse': 3, 'class': 2, 'arch': 1}[variant.combo_sig]
     seen = set()
@@ -450,14 +448,13 @@ def score_board(cols, variant):
             col_melds += 1
             tags.append(norm(tag))
             seen.add(norm(tag))
-    # static prop model: each prop-source card adds `rank` points to its row gutter
     for ci, c in enumerate(cols):
         for ri, card in enumerate(c):
             if card[3]:
                 row_total += card[0]
     uniques = len(set(tags))
     payout = variant.payout(row_total, col_total, row_melds, col_melds, uniques)
-    flat = sum(10 for c in cols if c and c[-1][2])  # topmost ExtraPoint
+    flat = sum(10 for c in cols if c and c[-1][2])
     return row_total, col_total, row_melds, col_melds, payout, flat, uniques
 
 
@@ -470,7 +467,7 @@ def play_show(deck, policy, arrange, variant, rng, degrade_f=0.6):
         n = min(n, len(deck) - idx)
         if n <= 0:
             payouts.append(0)
-            unused += 1  # an act with no performed cards
+            unused += 1
             continue
         chunk = deck[idx:idx + n]
         idx += n
@@ -478,7 +475,7 @@ def play_show(deck, policy, arrange, variant, rng, degrade_f=0.6):
         rt, ct, rm, cm, pay, flat, uniq = score_board(cols, variant)
         uniques_per_act.append(uniq)
         total += pay + flat
-        payouts.append(pay)  # act payout excl. the flat ExtraPoint (plan-2 convention)
+        payouts.append(pay)
     if variant.act_bonus > 0.0 and unused > 0:
         total = int(total * (1.0 + variant.act_bonus * unused))
     return total, payouts, uniques_per_act
@@ -693,7 +690,6 @@ def run_grid(spec, trials, out):
         for size in (16, 24, 32, 52):
             for spread in (4, 5, 8, 13):
                 df = (lambda s=size, sp=spread: make_deck(s, sp, 8, 0))
-                # organization-difficulty proxy: oracle/random ratio
                 pol = policies_for(size)['mid']
                 t_or, _ = sim_shows(df, pol, 'ranks', V0, trials)
                 t_rd, _ = sim_shows(df, pol, 'random', V0, trials)
@@ -720,7 +716,6 @@ def run_lhs(n, trials, out):
         'floor': (0, 1),
         'act_bonus': (0.0, 0.5),
     }
-    # latin hypercube: one stratified sample per axis
     strata = {k: [lo + (hi - lo) * (i + rng.random()) / n for i in range(n)]
               for k, (lo, hi) in axes.items()}
     for k in strata:
@@ -736,7 +731,6 @@ def run_lhs(n, trials, out):
                     name='lhs%d' % i)
         df = (lambda s=size, sp=spread: make_deck(s, sp, 8, 0))
         conc, ev, du = concentration(df, v, max(200, trials // 5))
-        # bands: concentration in [1.3, 1.8]; act payouts <= 5 digits; positive growth
         digits_ok = du < 99999
         ok = 1.3 <= conc <= 1.8 and digits_ok
         out.add(stage='lhs', i=i, w=round(w, 3), size=size, spread=spread,
@@ -759,8 +753,10 @@ def expected_deck_size(k, start=24):
     return start + 5 * (k // 3)
 
 
-BOOSTER_MODE = 'standard'  # 'standard': spread widens to 1-13 past 32 cards; 'dupes': stays
-OVERSCORE_RATE = 0.25      # run_manager.gd OVERSCORE_RATE; --no-overscore sets 0
+# BOOSTER_MODE 'standard' widens the spread to 1-13 past 32 cards; 'dupes' keeps it.
+# OVERSCORE_RATE mirrors run_manager.gd; --no-overscore sets it to 0.
+BOOSTER_MODE = 'standard'
+OVERSCORE_RATE = 0.25
 
 
 def spread_at(size, spread=4):
@@ -826,7 +822,6 @@ def run_full(variant_name, q, trials, out):
                                      t * 13 + k)
                 pol = policies_for(size)[p['policy']]
                 total, _, _u = play_show(deck, pol, 'degraded', v, rng, p['f'])
-                # overscore inflation (defanged when the variant says so)
                 mult = (1.0 + OVERSCORE_RATE * over_sum) ** v.overscore_exp
                 goal = int(goals[k] * mult)
                 plays_by_node[k] += 1
@@ -879,7 +874,6 @@ def run_combo(trials, out):
     for f in (0.5, 0.0):
         settings.append(Variant('V0', combo_mode='dedup', combo_u=f,
                                 name='dedup f=%.1f' % f))
-    # reward + punish together: dedup pricing with the per-act combo multiplier on top
     hybrid = Variant('V0', combo_mode='dedup', combo_u=0.5, name='dedup+mult')
     hybrid.combo_stack_u = 0.25
     settings.append(hybrid)
@@ -1058,15 +1052,12 @@ def run_final(q, trials, out):
             total, _p, _u = play_show(deck, pol, 'capacity', v, rng, 7)
             totals.append(total)
         goals[k] = max(1, int(pct(totals, q)))
-        # monotone clamp: a spread extension can weaken par play (fewer collisions);
-        # the goal ladder must still never descend
         if k > 0:
             goals[k] = max(goals[k], goals[k - 1])
         print("  node %2d: N=%2d spread=1-%-2d par-policy=%-4s goal=%6d"
               % (k, size, final_spread(size), pol_name, goals[k]))
         out.add(stage='final_goals', q=q, node=k, deck=size,
                 spread=final_spread(size), policy=pol_name, goal=goals[k])
-    # log-linear fit of goal vs N-hat for the runtime interpolator
     xs = [math.log(nhat(k) / float(FINAL_START)) for k in goals]
     ys = [math.log(goals[k]) for k in goals]
     n = len(xs)
@@ -1121,14 +1112,14 @@ def run_gsp(trials, out):
     {0,5,8,12}, under even-degraded and dump-arranged play, per variant."""
     retired_banner('--gsp')
     print("\n=== GSP MOD LEVERAGE (median delta-total / goal) ===")
-    # each mod = the SAME base deck + one appended card (true marginal addition)
     def mod_card(name, spread):
+        """One mod as a card appended to the SAME base deck, so its yield is a true marginal."""
         r = spread // 2 + 1
         if name == 'blank_card':
             return (r, 0, False, False)
         if name == 'flat_+10':
             return (r, 0, True, False)
-        return (r, 0, False, True)  # gutter_prop
+        return (r, 0, False, True)
 
     for v in (V0, V2A):
         goals = goal_table(v, 0.6, max(400, trials // 4), nodes=[0, 5, 8, 12])
@@ -1142,7 +1133,6 @@ def run_gsp(trials, out):
             for mname in ('blank_card', 'flat_+10', 'gutter_prop'):
                 mod_deck = base_deck + [mod_card(mname, sp)]
                 mod_df = (lambda md=mod_deck: list(md))
-                # size the policy to the MOD deck so the added card actually gets played
                 mod_pol = policies_for(size + 1)['mid']
                 modt, _ = sim_shows(mod_df, mod_pol, 'degraded', v, trials)
                 dmed = st.median(sorted(m - b for m, b in zip(modt, base)))
@@ -1153,62 +1143,64 @@ def run_gsp(trials, out):
                       % (v.name, k, mname, dmed, gsp, tier))
                 out.add(stage='gsp', variant=v.name, node=k, mod=mname,
                         delta_median=round(dmed, 1), gsp_pct=round(gsp, 1), tier=tier)
+"""GRID MODEL — the live game. Port of the shipped poker-patience economy.
 
+Everything ABOVE this banner models the RETIRED TABLEAU: acts, a submit, an
+R x C act payout, an additive score option. None of it is the shipped game —
+Game.apply_act_score() has no caller in product code any more. It is kept for
+the calibration history it produced and is fenced off by retired_banner().
 
-# ============================================================================
-# GRID MODEL — the live game. Port of the shipped poker-patience economy.
-#
-# Everything ABOVE this banner models the RETIRED TABLEAU: acts, a submit, an
-# R x C act payout, an additive score option. None of it is the shipped game —
-# Game.apply_act_score() has no caller in product code any more. It is kept for
-# the calibration history it produced and is fenced off by retired_banner().
-#
-# What the live game is, and what this section ports, function by function:
-#   * The board is `grid_count` grids of GRID_W x GRID_H cells (SkillGridAllotment).
-#   * A placement scores every COMPLETE line through the placed cell, in
-#     ROW/COL/DIAG/HEIGHT_V order (SkillLineDetector).
-#   * A line banks into one of its grid's three buckets: row, col, special
-#     (every diagonal and every vertical stack shares `special`).
-#   * grid_score = the PRODUCT of that grid's buckets whose value is > 0, and 0
-#     when none is; board_total sums it over grids (GameData.grid_score).
-#   * displayed = board_total * combo, live, with combo = 1 + 1.0 * firsts
-#     + 0.5 * repeats, never reset (GameData.combo_mult / live_total).
-#
-# SIMPLIFICATIONS, decided for the grid model rather than inherited (S38):
-#   * KEPT, restated: no card effects at all. Props, statuses and stamps are out,
-#     so the tableau's static rank-weighted gutter model is DROPPED rather than
-#     carried over — it modelled a prop yield that banked into a row gutter that
-#     no longer exists.
-#   * CONSEQUENCE, and it is the whole shape of the model: stacking is
-#     EFFECT-ONLY (TypeGridCell answers only for an empty cell), so with no
-#     effects every card sits at height 0. HEIGHT_V therefore never reaches a
-#     scoring height and no raised row/col/diag ever completes. The port still
-#     enumerates and tests them, so a later effect model gets them for free.
-#   * DROPPED: the arrangement oracle. The grid game has no act and no
-#     rearrangement — the player places one held card into one empty cell, and
-#     skill is WHICH one. `skill` below replaces `degrade_f`.
-#   * KEPT: Entrance persistence across shows is not modelled; each show plays a
-#     fresh shuffle of the whole deck.
-#   * APPROXIMATION: a combo class key here is (archetype, copy_size,
-#     copies_count), which is Scoring.class_key WITHOUT its :FF / :MF flush
-#     suffixes, so in principle it merges "quads" with "quad flush" and the combo
-#     it reports is a lower bound. MEASURED over the 1200 engine-evaluated lines
-#     of the parity dump it merges nothing at all -- 9 distinct classes either
-#     way -- because a flush suffix needs a five-card same-suit structure that
-#     these spreads almost never deal. --parity reports both counts.
-# ============================================================================
-GRID_W = 5                      # GridData.grid_width
-GRID_H = 5                      # GridData.grid_height
-HEIGHT_SCORE_INTERVAL = 5       # LineGeometry.HEIGHT_SCORE_INTERVAL
-ENTRANCE_SLOTS = 5              # Deck._build_rules1: five upper adders
-GRID_CARDS_PER_UNLOCK = 52      # PlayerSettings.grid_cards_per_unlock
-GRID_MAX_COUNT = 3              # PlayerSettings.grid_max_count
-COMBO_UNIQUE_STEP = 1.0         # PlayerSettings.combo_unique_step
-COMBO_REPEAT_STEP = 0.5         # PlayerSettings.combo_repeat_step
-COMBO_CAP = 0.0                 # PlayerSettings.combo_cap; 0.0 means no cap
-GOAL_N0 = 20                    # PlayerSettings.goal_n0 == the deck14 start deck
-BOOSTER_YIELD = 5               # PlayerSettings.booster_yield
-NODES_PER_BOOSTER = 3           # booster cadence, unchanged from expected_deck_size
+What the live game is, and what this section ports, function by function:
+  * The board is `grid_count` grids of GRID_W x GRID_H cells (SkillGridAllotment).
+  * A placement scores every COMPLETE line through the placed cell, in
+    ROW/COL/DIAG/HEIGHT_V order (SkillLineDetector).
+  * A line banks into one of its grid's three buckets: row, col, special
+    (every diagonal and every vertical stack shares `special`).
+  * grid_score = the PRODUCT of that grid's buckets whose value is > 0, and 0
+    when none is; board_total sums it over grids (GameData.grid_score).
+  * displayed = board_total * combo, live, with combo = 1 + 1.0 * firsts
+    + 0.5 * repeats, never reset (GameData.combo_mult / live_total).
+
+SIMPLIFICATIONS, decided for the grid model rather than inherited (S38):
+  * KEPT, restated: no card effects at all. Props, statuses and stamps are out,
+    so the tableau's static rank-weighted gutter model is DROPPED rather than
+    carried over — it modelled a prop yield that banked into a row gutter that
+    no longer exists.
+  * CONSEQUENCE, and it is the whole shape of the model: stacking is
+    EFFECT-ONLY (TypeGridCell answers only for an empty cell), so with no
+    effects every card sits at height 0. HEIGHT_V therefore never reaches a
+    scoring height and no raised row/col/diag ever completes. The port still
+    enumerates and tests them, so a later effect model gets them for free.
+  * DROPPED: the arrangement oracle. The grid game has no act and no
+    rearrangement — the player places one held card into one empty cell, and
+    skill is WHICH one. `skill` below replaces `degrade_f`.
+  * KEPT: Entrance persistence across shows is not modelled; each show plays a
+    fresh shuffle of the whole deck.
+  * APPROXIMATION: a combo class key here is (archetype, copy_size,
+    copies_count), which is Scoring.class_key WITHOUT its :FF / :MF flush
+    suffixes, so in principle it merges "quads" with "quad flush" and the combo
+    it reports is a lower bound. MEASURED over the 1200 engine-evaluated lines
+    of the parity dump it merges nothing at all -- 9 distinct classes either
+    way -- because a flush suffix needs a five-card same-suit structure that
+    these spreads almost never deal. --parity reports both counts.
+============================================================================
+"""
+
+# Every constant below mirrors one engine name. GRID_W/GRID_H are GridData's, HEIGHT_SCORE_INTERVAL
+# and the SCORED_KINDS order are LineGeometry's and SkillLineDetector's, ENTRANCE_SLOTS is the five
+# upper adders Deck._build_rules1 creates, and the rest are PlayerSettings fields.
+GRID_W = 5
+GRID_H = 5
+HEIGHT_SCORE_INTERVAL = 5
+ENTRANCE_SLOTS = 5
+GRID_CARDS_PER_UNLOCK = 52
+GRID_MAX_COUNT = 3
+COMBO_UNIQUE_STEP = 1.0
+COMBO_REPEAT_STEP = 0.5
+COMBO_CAP = 0.0
+GOAL_N0 = 20
+BOOSTER_YIELD = 5
+NODES_PER_BOOSTER = 3
 
 ROW, COL, DIAG, HEIGHT_V = 'ROW', 'COL', 'DIAG', 'HEIGHT_V'
 # SkillLineDetector._SCORED_KINDS, in its order: one placement completing several
@@ -1285,7 +1277,7 @@ def flat_lines(w=GRID_W, h=GRID_H):
                     if k != kind or cells in seen:
                         continue
                     if any(c[2] != 0 for c in cells):
-                        continue        # a climb needs a stack; nothing builds one
+                        continue
                     if k == HEIGHT_V and not height_line_scores(cells[-1][2]):
                         continue
                     seen.add(cells)
@@ -1315,12 +1307,70 @@ def combo_key(tag):
     return None if tag is None else tag[:3]
 
 
+def _bucket_product(row, col, special, exp=(1.0, 1.0, 1.0)):
+    """GameData.grid_score, with per-term exponents. exp (1,1,1) is the shipped
+    rule verbatim: the product of the terms that are > 0, and 0 when none is."""
+    product = 0.0
+    for term, e in zip((row, col, special), exp):
+        if term <= 0.0:
+            continue
+        value = term if e == 1.0 else term ** e
+        product = value if product == 0.0 else product * value
+    return product
+
+
+class GridEconomy:
+    """One scoring system, as a set of levers over the same board and the same line
+    evaluator. SHIPPED() is the live economy; every other instance is a candidate.
+
+    ⚠ THE LINE EVALUATOR IS NOT A LEVER. What a five-card line is worth is the
+    ScoreModel port at the top of this file, asserted against the engine by
+    --parity. Everything here is about what happens to that number AFTER it is
+    banked, which is the only part a scoring-system question can be about.
+
+    bucket_exp     per-term exponents (r, c, s) in the grid product. (1,1,1) ships.
+    grid_combine   'buckets' = the product of the three bucket terms (ships)
+                   'lines'   = the product of every SCORED LINE's own score
+    board_combine  'sum' = grids add (ships) | 'product' = grids multiply
+    unique/repeat  the combo steps; cap 0.0 means uncapped, as shipped
+    per_unlock     grid_cards_per_unlock; 52 ships, so a run never leaves one grid
+    w, h           grid dimensions; 5x5 ships
+    """
+
+    def __init__(self, name, bucket_exp=(1.0, 1.0, 1.0), grid_combine='buckets',
+                 board_combine='sum', unique_step=COMBO_UNIQUE_STEP,
+                 repeat_step=COMBO_REPEAT_STEP, cap=COMBO_CAP,
+                 per_unlock=GRID_CARDS_PER_UNLOCK, w=GRID_W, h=GRID_H,
+                 max_grids=GRID_MAX_COUNT):
+        self.name = name
+        self.bucket_exp = bucket_exp
+        self.grid_combine = grid_combine
+        self.board_combine = board_combine
+        self.unique_step = unique_step
+        self.repeat_step = repeat_step
+        self.cap = cap
+        self.per_unlock = per_unlock
+        self.w, self.h = w, h
+        self.max_grids = max_grids
+
+    def grids_for(self, deck_size):
+        return target_grid_count(deck_size, self.per_unlock, self.max_grids)
+
+
+def SHIPPED():
+    """The economy exactly as it ships -- the control for every comparison."""
+    return GridEconomy('shipped')
+
+
 class GridBoard:
     """The live board: `n` grids of w x h flat cells, their three buckets each,
     and the show-wide combo. Line membership and per-line fill counts are kept
     incrementally so a candidate placement costs a handful of integer reads."""
 
-    def __init__(self, n, w=GRID_W, h=GRID_H):
+    def __init__(self, n, w=None, h=None, economy=None):
+        self.econ = economy or SHIPPED()
+        w = self.econ.w if w is None else w
+        h = self.econ.h if h is None else h
         self.n, self.w, self.h = n, w, h
         self.size = w * h
         self.cells = [[None] * self.size for _ in range(n)]
@@ -1336,6 +1386,7 @@ class GridBoard:
         self.row_term = [0.0] * n
         self.col_term = [0.0] * n
         self.special_term = [0.0] * n
+        self.line_product = [0.0] * n
         self.classes = set()
         self.repeats = 0
         self.committed = -1
@@ -1343,21 +1394,30 @@ class GridBoard:
 
     def combo_mult(self):
         """GameData.combo_mult."""
-        mult = 1.0 + COMBO_UNIQUE_STEP * len(self.classes) + COMBO_REPEAT_STEP * self.repeats
-        return min(mult, COMBO_CAP) if COMBO_CAP > 0.0 else mult
+        e = self.econ
+        mult = 1.0 + e.unique_step * len(self.classes) + e.repeat_step * self.repeats
+        return min(mult, e.cap) if e.cap > 0.0 else mult
 
     def grid_score(self, g):
         """GameData.grid_score: the product of the terms that are > 0, 0 when none is.
         A term that has not scored ADDS 0 — it never multiplies by 0."""
-        product = 0.0
-        for term in (self.row_term[g], self.col_term[g], self.special_term[g]):
-            if term <= 0.0:
-                continue
-            product = term if product == 0.0 else product * term
-        return product
+        if self.econ.grid_combine == 'lines':
+            return self.line_product[g]
+        return _bucket_product(self.row_term[g], self.col_term[g],
+                               self.special_term[g], self.econ.bucket_exp)
 
     def board_total(self):
-        return sum(self.grid_score(g) for g in range(self.n))
+        """GameData.board_total, plus the 'product' counterfactual. A grid at 0 is
+        skipped by the product for the same reason a bucket at 0 is."""
+        if self.econ.board_combine != 'product':
+            return sum(self.grid_score(g) for g in range(self.n))
+        out = 0.0
+        for g in range(self.n):
+            v = self.grid_score(g)
+            if v <= 0.0:
+                continue
+            out = v if out == 0.0 else out * v
+        return out
 
     def live_total(self):
         """GameData.live_total: the whole board's total times the combo, derived
@@ -1412,12 +1472,22 @@ class GridBoard:
             else:
                 seen.add(key)
                 firsts += 1
-        product = 0.0
-        for term in (row_t, col_t, spec_t):
-            if term <= 0.0:
-                continue
-            product = term if product == 0.0 else product * term
-        total = product + sum(self.grid_score(o) for o in range(self.n) if o != g)
+        if self.econ.grid_combine == 'lines':
+            product = self.line_product[g]
+            for _kind, sc, _tag in self._completed_by(g, ci, card):
+                if sc > 0:
+                    product = float(sc) if product == 0.0 else product * sc
+        else:
+            product = _bucket_product(row_t, col_t, spec_t, self.econ.bucket_exp)
+        others = [self.grid_score(o) for o in range(self.n) if o != g]
+        if self.econ.board_combine == 'product':
+            total = product
+            for v in others:
+                if v <= 0.0:
+                    continue
+                total = total * v if total > 0.0 else v
+        else:
+            total = product + sum(others)
         mult = 1.0 + COMBO_UNIQUE_STEP * (len(self.classes) + firsts) \
             + COMBO_REPEAT_STEP * (self.repeats + repeats)
         if COMBO_CAP > 0.0:
@@ -1447,6 +1517,9 @@ class GridBoard:
                 line = [(self.cells[g][i][0], self.cells[g][i][1]) for i in idxs]
                 completed.append((kind, score_line_cached(line)))
         for kind, (sc, tag) in completed:
+            if sc > 0:
+                self.line_product[g] = (float(sc) if self.line_product[g] == 0.0
+                                        else self.line_product[g] * sc)
             if kind == ROW:
                 self.row_term[g] += sc
             elif kind == COL:
@@ -1489,7 +1562,7 @@ def choose_placement(board, held, rng, skill):
     return best
 
 
-def play_grid_show(deck, rng, skill, n_grids=None):
+def play_grid_show(deck, rng, skill, n_grids=None, economy=None):
     """One show: deal five into the Entrance, place until it is empty, refill,
     repeat until the deck runs dry or no legal placement remains. Returns the
     displayed total at End Show.
@@ -1500,8 +1573,9 @@ def play_grid_show(deck, rng, skill, n_grids=None):
       * the first placement COMMITS a grid and no other grid accepts a card until
         the committed one has no legal placement left (Game.place_card_in_grid),
         which with no effects means until it is full."""
-    n = target_grid_count(len(deck)) if n_grids is None else n_grids
-    board = GridBoard(n)
+    econ = economy or SHIPPED()
+    n = econ.grids_for(len(deck)) if n_grids is None else n_grids
+    board = GridBoard(n, economy=econ)
     held, idx = [], 0
     while True:
         if not held:
@@ -1513,7 +1587,7 @@ def play_grid_show(deck, rng, skill, n_grids=None):
         pick = choose_placement(board, held, rng, skill)
         if pick is None:
             if board.committed != -1:
-                board.committed = -1        # the commitment lifts; try the other grids
+                board.committed = -1
                 continue
             break
         hi, g, ci = pick
@@ -1533,17 +1607,18 @@ def nhat(k, start=GOAL_N0):
     return start + BOOSTER_YIELD * (k // NODES_PER_BOOSTER)
 
 
-# What a booster's five cards are. ⚠ NOT a cosmetic switch: rank density is what
-# makes melds, so this dominates the whole ladder.
-#   'booster'  MEASURED, and the default. TypeBoosterBasic.get_possible_ranks()
-#              returns ranks 1-13 over the four standard suits, so from the FIRST
-#              booster onward the added cards are rank-uniform 1-13 while the
-#              start deck is ranks 1-5. Nothing narrows that pool.
-#   'schedule' the tableau sim's final_spread (1-5 to 25 cards, 1-8 to 40, 1-13
-#              beyond). Kept only to compare against the old calibration.
-#   'fixed'    a counterfactual: boosters duplicate the start deck's 1-5. Not what
-#              ships; it isolates board capacity from rank dilution.
-GRID_SPREAD_MODE = 'booster'
+"""What a booster's five cards are. ⚠ NOT a cosmetic switch: rank density is what makes melds, so
+GRID_SPREAD_MODE dominates the whole ladder.
+
+  'booster'  MEASURED, and the default. TypeBoosterBasic.get_possible_ranks() returns ranks 1-13
+             over the four standard suits, so from the FIRST booster onward the added cards are
+             rank-uniform 1-13 while the start deck is ranks 1-5. Nothing narrows that pool.
+  'schedule' the tableau sim's final_spread (1-5 to 25 cards, 1-8 to 40, 1-13 beyond). Kept only
+             to compare against the old calibration.
+  'fixed'    a counterfactual: boosters duplicate the start deck's 1-5. Not what ships; it
+             isolates board capacity from rank dilution.
+"""
+GRID_SPREAD_MODE = 'booster' 
 
 
 def grid_spread(size):
@@ -1571,7 +1646,7 @@ def grid_deck(size):
     return out
 
 
-def grid_show_totals(size, trials, skill, seed_off=0):
+def grid_show_totals(size, trials, skill, seed_off=0, economy=None):
     """(displayed totals, cards actually placed) over `trials` shows at `size`.
     The placed count is reported because it is the finding: past board capacity
     the deck keeps growing and the show cannot use the extra cards."""
@@ -1579,7 +1654,7 @@ def grid_show_totals(size, trials, skill, seed_off=0):
     totals, placed = [], []
     for t in range(trials):
         deck, rng = shuffled(deckf, seed_off + t)
-        total, board = play_grid_show(deck, rng, skill)
+        total, board = play_grid_show(deck, rng, skill, economy=economy)
         totals.append(total)
         placed.append(board.placed)
     return totals, placed
@@ -1669,24 +1744,26 @@ PAR_SKILL = 0.9
 PERSONAS = (('skilled', 1.0), ('par', PAR_SKILL), ('average', 0.7))
 
 
-def run_grid_goals(q, trials, skill, out, nodes=13):
+def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
     """S39. The goal at node k is the q-quantile of the PAR player's displayed
     total at N-hat(k); the two shipped constants are then the log-linear fit of
     that ladder. Difficulty stays the float q, exactly as in the tableau fit."""
-    print("=== GRID GOAL TABLE (q=%.2f, par skill=%.2f, %d trials/node) ==="
-          % (q, skill, trials))
+    econ = economy or SHIPPED()
+    print("=== GRID GOAL TABLE (q=%.2f, par skill=%.2f, %d trials/node, economy '%s') ==="
+          % (q, skill, trials, econ.name))
     print("  spread mode: %s" % GRID_SPREAD_MODE)
     print("    N  ranks  grids  cells  placed  median      goal   (shipped 130*(N/20)^4.2)")
     goals, raw, ks = {}, {}, list(range(nodes))
     for k in ks:
         size = nhat(k)
-        totals, placed = grid_show_totals(size, trials, skill, seed_off=k * 100003)
+        totals, placed = grid_show_totals(size, trials, skill, seed_off=k * 100003,
+                                          economy=econ)
         raw[k] = max(1, int(pct(totals, q)))
         goals[k] = raw[k]
         if k > 0:
-            goals[k] = max(goals[k], goals[k - 1])   # the ladder never descends
-        n_g = target_grid_count(size)
-        cells = n_g * GRID_W * GRID_H
+            goals[k] = max(goals[k], goals[k - 1])
+        n_g = econ.grids_for(size)
+        cells = n_g * econ.w * econ.h
         med_placed = st.median(placed)
         shipped = 130.0 * (size / 20.0) ** 4.2
         print("  %3d   1-%-2d   %3d   %4d   %5.1f  %8d  %8d   %12.0f"
@@ -1701,7 +1778,6 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
           % (g0, GOAL_N0, alpha, r2, 100 * worst))
     print("  MINIMAX:       goal(N) = %.1f * (N/%d)^%.2f  worst %.0f%% out"
           % (mg0, GOAL_N0, malpha, 100 * mworst))
-    # ⚠ against `raw`, never `goals`: see fit_power_beatable's own warning.
     bg0, balpha, btight = fit_power_beatable(ks, raw)
     print("  BEATABLE:      goal(N) = %.1f * (N/%d)^%.2f  tightness %.2f of the ladder"
           % (bg0, GOAL_N0, balpha, btight))
@@ -1716,9 +1792,6 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
             minimax_g0=round(mg0, 1), minimax_alpha=round(malpha, 3),
             minimax_worst=round(mworst, 4), beatable_g0=round(bg0, 1),
             beatable_alpha=round(balpha, 3), tightness=round(btight, 4))
-    # ⚠ The validation runs against the FITTED CURVE, not against the measured
-    # ladder. The ladder is beatable at q by construction; the question the shipped
-    # constants have to answer is whether the CURVE is.
     curve = {k: max(1, int(bg0 * (nhat(k) / float(GOAL_N0)) ** balpha)) for k in ks}
     shipped = {k: max(1, int(130.0 * (nhat(k) / float(GOAL_N0)) ** 4.2)) for k in ks}
     print("\n  node:   ", "".join("%8d" % k for k in ks))
@@ -1735,7 +1808,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13):
         for t in range(runs):
             for k in ks:
                 deck, rng = shuffled((lambda s=nhat(k): grid_deck(s)), t * 97 + k)
-                total, _b = play_grid_show(deck, rng, psk)
+                total, _b = play_grid_show(deck, rng, psk, economy=econ)
                 plays[k] += 1
                 if total < curve[k]:
                     break
@@ -1795,7 +1868,7 @@ def sim_class_key(tag, cards):
     parity gate — combo_key stays the coarser key the board actually counts with,
     and the gate reports the gap between the two."""
     if tag is None:
-        return 'HIGH:1x1'   # Scoring.class_key's default arch, copy_size 1, one copy
+        return 'HIGH:1x1'
     arch, size, copies = tag[0], tag[1], tag[2]
     name = {'XKIND': 'XKIND', 'STRAIGHT': 'STRAIGHT', 'FLUSH': 'FLUSH',
             'HOUSE': 'HOUSE'}[arch]
@@ -1863,6 +1936,90 @@ def run_parity(path):
 
 
 
+# ---------------------------------------------------------------------------
+# Economy sweep — candidate scoring systems, priced side by side
+# ---------------------------------------------------------------------------
+def candidate_economies():
+    """The candidates, each a single deviation from SHIPPED so the comparison
+    attributes its effect to one lever. Letters are the ones the options were
+    raised under.
+
+    ⚠ ALREADY RULED ON, DELIBERATELY ABSENT: buckets ADDING instead of
+    multiplying (the retired score_additive), repeats scored at a fraction
+    (retired duplicate_class_scale), and splitting `special` into separate
+    diagonal and stack factors (the owner consolidated those into one bucket and
+    one label). None of them is a candidate."""
+    return [
+        SHIPPED(),
+        GridEconomy('B special^2', bucket_exp=(1.0, 1.0, 2.0)),
+        GridEconomy('B all^1.5', bucket_exp=(1.5, 1.5, 1.5)),
+        GridEconomy('B all^0.6', bucket_exp=(0.6, 0.6, 0.6)),
+        GridEconomy('E combo .25/.1', unique_step=0.25, repeat_step=0.1),
+        GridEconomy('E combo 2/1', unique_step=2.0, repeat_step=1.0),
+        GridEconomy('E combo cap 5', cap=5.0),
+        GridEconomy('C line product', grid_combine='lines'),
+        GridEconomy('D 7x7 board', w=7, h=7),
+        GridEconomy('A 3 grids sum', per_unlock=15),
+        GridEconomy('A 3 grids product', per_unlock=15, board_combine='product'),
+    ]
+
+
+def economy_ladder(econ, q, trials, skill, nodes):
+    """The unclamped goal ladder and the median score at each node, for one
+    economy. Same seeds across economies -- the comparison is paired."""
+    raw, med = {}, {}
+    for k in range(nodes):
+        totals, _placed = grid_show_totals(nhat(k), trials, skill,
+                                           seed_off=k * 100003, economy=econ)
+        raw[k] = max(1, int(pct(totals, q)))
+        med[k] = int(st.median(totals))
+    return raw, med
+
+
+def run_economy_sweep(q, trials, skill, out, nodes=13, runs=200):
+    """Price every candidate scoring system on the SAME question the shipped one
+    failed: does a run have a growth axis the goal curve can ramp on?
+
+    The headline is `end/peak` -- the unclamped ladder at the last node over its
+    own peak. The shipped economy scores 0.16: a run ENDS at a sixth of its best
+    node, so deck size is anti-correlated with score and no goal curve keyed on it
+    can work. A healthy economy peaks at the LAST node and reads close to 1.00.
+
+    `alpha` is then what the beatable fit can support once the axis exists, and
+    `run-win` is par play against that economy's OWN fitted curve."""
+    print("=== ECONOMY SWEEP (q=%.2f, skill=%.2f, %d trials/node, %d runs) ==="
+          % (q, skill, trials, runs))
+    print("  ⚠ the line evaluator is identical in every row; only what happens to")
+    print("    a banked line score differs. --parity covers the part that is shared.")
+    print("")
+    print("  %-20s %10s %10s %5s %6s %9s %7s %8s"
+          % ("economy", "node0 med", "node12 med", "peak", "end/pk", "g0", "alpha", "run-win"))
+    for econ in candidate_economies():
+        raw, med = economy_ladder(econ, q, trials, skill, nodes)
+        ks = list(range(nodes))
+        peak = max(ks, key=lambda k: raw[k])
+        endpk = raw[ks[-1]] / float(raw[peak])
+        bg0, balpha, _tight = fit_power_beatable(ks, raw)
+        curve = {k: max(1, int(bg0 * (nhat(k) / float(GOAL_N0)) ** balpha)) for k in ks}
+        wins = 0
+        for t in range(runs):
+            for k in ks:
+                deck, rng = shuffled((lambda sz=nhat(k): grid_deck(sz)), t * 97 + k)
+                total, _b = play_grid_show(deck, rng, skill, economy=econ)
+                if total < curve[k]:
+                    break
+            else:
+                wins += 1
+        print("  %-20s %10.3g %10.3g %5d %6.2f %9.3g %7.2f %7.1f%%"
+              % (econ.name, med[0], med[nodes - 1], peak, endpk, bg0, balpha,
+                 100.0 * wins / runs))
+        out.add(stage='economy', q=q, skill=skill, economy=econ.name,
+                node0=med[0], node12=med[nodes - 1], peak=peak,
+                end_over_peak=round(endpk, 3), g0=round(bg0, 1),
+                alpha=round(balpha, 3), run_win=round(wins / float(runs), 3))
+
+
+
 # ============================================================================
 def main():
     global BASE_SEED
@@ -1884,6 +2041,11 @@ def main():
                     help='RETIRED tableau: the calibration that produced 130 / 4.2')
     ap.add_argument('--grid-goals', action='store_true',
                     help='LIVE grid model: goal ladder, curve fit and run validation (S39)')
+    ap.add_argument('--economy', metavar='NAME',
+                    help="with --grid-goals: run one candidate economy by name "
+                         "(see --economy-sweep for the list)")
+    ap.add_argument('--economy-sweep', action='store_true',
+                    help='LIVE grid model: candidate scoring systems priced side by side')
     ap.add_argument('--grid-show', type=int, metavar='N',
                     help='LIVE grid model: play one show at N deck cards and dump the board')
     ap.add_argument('--parity', metavar='JSON',
@@ -1948,8 +2110,20 @@ def main():
     if args.grid_show is not None:
         run_grid_show(args.grid_show, args.skill)
         ran = True
+    if args.economy_sweep:
+        run_economy_sweep(args.q, args.trials, args.skill, out)
+        ran = True
     if args.grid_goals:
-        run_grid_goals(args.q, args.trials, args.skill, out)
+        chosen = None
+        if args.economy:
+            named = [e for e in candidate_economies() if e.name == args.economy]
+            if not named:
+                print("no such economy %r; options: %s"
+                      % (args.economy, ", ".join(repr(e.name)
+                                                 for e in candidate_economies())))
+                return 1
+            chosen = named[0]
+        run_grid_goals(args.q, args.trials, args.skill, out, economy=chosen)
         ran = True
     if args.goals:
         run_goals(args.goals, args.q, args.trials, out)

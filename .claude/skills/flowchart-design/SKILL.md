@@ -832,6 +832,28 @@ better placed to make, with more context, under review. So the handoff ships **t
 | `TEST_PLAN.md` | **every test that must exist, planned in advance** | see below |
 | `NAMES.md` | the exact identifiers everything will be called | two agents invent two names for one thing |
 
+#### ⚠ `PLAN.md`'s LAST PHASE IS ALWAYS THE CLOSE, and you write it
+
+Every generated `PLAN.md` ends with a phase whose steps are the closing sequence in `/plan-run`
+("Closing the run"), not prose telling the reader to be careful. Without a phase, closing is
+optional — and a run whose last feature step goes green simply stops, which is exactly what
+happened before this rule existed.
+
+Write it as a real phase with a gate:
+
+```
+### Phase N — closing (ALWAYS LAST, never skipped)
+
+**S<n>** — Run the closing sequence in `/plan-run` in order, dispatching the reading work to
+subagents one at a time. The adversarial review MUST run on a model that did not implement.
+
+**Done-when (phase):** every numbered item in that sequence has run and its output is recorded in
+the handoff; `doc_check.py` is clean on a FULL run; no reviewer finding is left unreproduced.
+```
+
+Do not restate the sequence in `PLAN.md`. Two copies drift, and the skill is the one that gets
+maintained — cite it and let it own the list.
+
 #### `TEST_PLAN.md` — plan the tests, do not delegate inventing them
 
 **The designer writes the test plan, because the designer knows what the feature is for.** An
