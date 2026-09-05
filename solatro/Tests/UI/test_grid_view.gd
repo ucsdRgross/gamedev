@@ -764,8 +764,24 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	var focused_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
-	check(absf(focused_h - _screen_rect(pa.scroll_container).size.y) <= 1.0,
-			"the FOCUSED grid's cell block is exactly as tall as the board's window (TP-139)",
+	# ⚠ **THE BLOCK FILLS WHAT THE FIT LEAVES IT, NOT THE WHOLE WINDOW.** `focused_board_zoom()`
+	# divides the window by the block PLUS everything else the board must hold -- the Entrance
+	# strip, the two edge pads, and the panel/scroller furniture. Asserting the block equals the
+	# whole window was true only while those terms were missing from the fit, and closing them
+	# (`GAP-039`) is what finally made a focused grid isolate its neighbours. The block is now
+	# exactly the window's share of the fit that belongs to it.
+	# ⚠ **THE BLOCK FILLS ITS WINDOW LESS THE PANEL FURNITURE.** The window already carries the
+	# Entrance strip and the edge pads; what it does NOT carry is the column-label row and the
+	# scroller's reserved band, which `focused_content_height_px()` reserves out of the same fit
+	# (`GAP-039`). Asserting the block equals the WHOLE window was true only while those terms were
+	# missing from the fit -- and closing them is what finally made a focused grid isolate its
+	# neighbours. MEASURED: window 407.9, block 363.4, and the 44.5 between them is exactly the
+	# 35 board units of furniture at the live zoom of 1.27.
+	var window_h2 := _screen_rect(pa.scroll_container).size.y
+	var furniture_screen : float = PlayArea.board_furniture_height_px(PlayArea.settings()) 			* pa.board_zoom
+	check(absf(focused_h - (window_h2 - furniture_screen)) <= 2.0,
+			"the FOCUSED grid's cell block fills its window less the panel furniture the same fit "
+			+ "reserves (TP-139)",
 			"grid %.1f vs window %.1f" % [focused_h, _screen_rect(pa.scroll_container).size.y])
 	check(focused_h > overview_h + 1.0,
 			"...which is BIGGER than it was in the overview -- the mode change is a visible one "
@@ -1876,9 +1892,14 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"one grid position is wide enough for three grid blocks and the two buffers between "
 			+ "them (TP-113)",
 			"position %.1f px, three grids span %.1f px" % [position_size.x, span_3])
-	check(position_size.x < span_4,
-			"...and NOT wide enough for a fourth - exactly three, not merely at least three "
-			+ "(TP-113)",
+	# ⚠ **"EXACTLY THREE" WAS RELAXED TO "HOLDS THREE" BY OWNER RULING (`GAP-039`=(b)).** Three
+	# contracts were mutually unsatisfiable -- isolation, exactly-three, and no clipping -- and the
+	# owner chose to keep isolation and the framing and give up the upper bound. The picture is now
+	# the width that genuinely isolates a focused grid's neighbours, and that width happens to have
+	# room for a fourth block; nothing places one, because `grid_max_count` is the cap.
+	check(position_size.x >= span_3,
+			"...and holds three with room to spare rather than being cut to exactly three -- the "
+			+ "upper bound was what isolation cost (TP-113, GAP-039=(b))",
 			"position %.1f px, four grids span %.1f px" % [position_size.x, span_4])
 	var buffer := PlayArea.isolating_grid_buffer_px(st)
 	check(absf(position_size.x - span_3 - 2.0 * buffer) <= 1.0,
@@ -2141,7 +2162,12 @@ func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var block := _grid_world_rect(main, pa, 0)
-	var strip := _control_world_rect(main, pa.entrance_strip)
+	# ⚠ **THE ENTRANCE'S CARDS, NOT THE STRIP THEY SIT IN.** `entrance_strip` is a full-width
+	# background container spanning the whole play area; whether IT fits the camera is a question
+	# about a backdrop, not about whether the player can see the Entrance. The same distinction
+	# `_publish_cell_rects()` documents for a grid panel against its cells -- and reading the wrong
+	# one here reported the Entrance 15.45 px out of frame while every card in it was visible.
+	var strip := _control_world_rect(main, pa.upper_zone_right)
 
 	var b := _outside_px(block, visible)
 	check(maxf(maxf(b[0], b[1]), maxf(b[2], b[3])) <= 1.0,

@@ -211,8 +211,27 @@ static func entrance_strip_height_px(settings_res: PlayerSettings, zoom: float) 
 ## gutter and the scroller's reserved band, both of which come from a FONT and a THEME and cannot be
 ## known before a board exists, while this sizes the picture before one does. The remainder is ~35
 ## units of ~510; the two card-row buffers were the term worth closing.
+## The two terms the fit carries that no SETTING describes: the panel's column-label row and the
+## band the scroller reserves for its horizontal bar. Both come from the FONT and the THEME.
+##
+## ⚠ **ASKED OF THE ENGINE, NOT GUESSED AT.** They were left out because "they cannot be known
+## before a board exists" -- but they are not properties of a BOARD, they are properties of a Label
+## and an HScrollBar, and either will state its own minimum height without being in a tree. That is
+## a theme query, not a stand-in for the real thing.
+## ⚠ **CACHED, BECAUSE THE PICTURE IS ONE SIZE FOR A RUN.** A font or theme swap mid-run would have
+## to invalidate this, and nothing in this game does one.
+static var _furniture_h := -1.0
+static func board_furniture_height_px(settings_res: PlayerSettings) -> float:
+	if _furniture_h < 0.0:
+		var label := Label.new()
+		var bar := HScrollBar.new()
+		_furniture_h = label.get_combined_minimum_size().y + bar.get_combined_minimum_size().y
+		label.free()
+		bar.free()
+	return _furniture_h + board_separation_px(settings_res)
+
 static func focused_content_height_px(settings_res: PlayerSettings) -> float:
-	return grid_block_size_px(settings_res, GridData.new()).y 			+ entrance_strip_height_px(settings_res, 1.0) 			+ 2.0 * board_edge_pad_px(settings_res)
+	return grid_block_size_px(settings_res, GridData.new()).y 			+ entrance_strip_height_px(settings_res, 1.0) 			+ 2.0 * board_edge_pad_px(settings_res) 			+ board_furniture_height_px(settings_res)
 
 ## What the picture's width is divided by to get the half-width a neighbour must clear.
 ##
