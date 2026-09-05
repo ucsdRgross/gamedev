@@ -413,3 +413,8 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   run is not reliably attributable to the change that produced it (`HANDOFF_picture_wall.md` S44).
 - **PIXELS' mask-vs-art bound has never been ruled on** (0 mask-without-art, 3773 art-without-mask at
   rest). Its own comment forbids raising it to go green, so it stands as written (S41).
+- **The comment backlog drains whole-file on touch, and is not a sweep.** A full `doc_check` run
+  reports ~5.9k indented comments, ~2.1k over-long `##` docs, ~750 over-long `#` blocks and ~630
+  trailing ones. The rules are ERRORS on any file a session edits, so the count falls as files are
+  touched for other reasons. Do NOT open a branch to fix them all: the churn would be repo-wide,
+  unreviewable, and would collide with every stream in flight.

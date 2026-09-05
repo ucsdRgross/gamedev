@@ -77,8 +77,20 @@ skipped check as a pass.
 - **Warnings are errors** — type every array element and every for-loop variable.
 - **User-facing strings** go through `TRANSLATION.find` + the localisation CSV, never a literal.
 - **Tuning knobs** live in `Scripts/player_settings.gd` via `SettingsManager.settings`.
-- **`##` purpose comments** on every new method, stating the RULE in as few words as carry it.
-  Delete commented-out code rather than leaving it.
+- ⚠ **THE COMMENT RULES ARE HARD, AND `doc_check --changed` ERRORS ON THEM.** Comments are a code
+  smell; a comment earns its place only by saying WHY a method exists.
+  - **No comment may have whitespace before it** — a plain `#` sits at column 0, above the method.
+  - **No comment may share a line with code.**
+  - **A `#` block is at most 3 lines. A `##` doc comment is at most 1 line** — it is the label Godot
+    shows beside a knob in the Inspector, so it goes wherever its knob is, indented or not.
+  - Wanting an inline comment means the code needs a NAME. Extract a well-named helper instead.
+  - Delete commented-out code rather than leaving it.
+- ⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT — including comments you did not write.** The repo has a
+  large legacy backlog and this is how it drains: whatever file you touch, you clean. You are not
+  asked to sweep files the step does not touch.
+- ⚠ **REDUCE COMPLEXITY, and it is reviewed.** Use an existing Godot engine method before writing
+  your own; search for an existing helper in the project before adding one; keep each thing at its
+  proper altitude. Duplicated logic is a defect, not a style preference.
 - ⚠ **NEVER write a design-process id into the code** — no `Q183=a`, `GAP-017=c`, `S34`,
   `PLAN.md §1.10`. Not in a comment, and never in a string literal or an `@export_group("…")` label,
   which Godot renders as Inspector UI. Write what the answer DECIDED; the citation goes in your

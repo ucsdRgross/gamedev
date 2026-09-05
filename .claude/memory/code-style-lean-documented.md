@@ -10,15 +10,23 @@ metadata:
 
 Keep lines of code low by REMOVING old unused code outright (no dormant paths), while ADDING `##` doc comments that explain each method's intended purpose. Plans should include a references/sources section for easy handoff.
 
-⚠⚠ **NO COMMENT GOES INSIDE A METHOD BODY.** Owner rule, verbatim: *"comments dont exist inline of
-methods, and only explains why the methods exists and nothing else. no historical stuff or what
-method does since that can be read through the code."*
+⚠⚠ **COMMENTS ARE A CODE SMELL.** Owner rule, verbatim: *"comments dont exist inline of methods,
+and only explains why the methods exists and nothing else. no historical stuff or what method does
+since that can be read through the code."* Three rules follow, and `doc_check` errors on all three:
 
-So a comment sits **above** the method, as a `##` doc comment, and says **why the method exists** —
-not what it does, and not how it came to be. If an inline comment feels necessary, that is a signal
-the code needs a name (extract the step into a well-named helper), not a signal it needs prose.
-`py .claude/tools/doc_check.py` reports these as `inside a method`; the repo carries a large
-standing backlog of them, so judge a regression by whether YOUR diff added any.
+1. **No comment may have whitespace before it** — a plain `#` sits at column 0, above the method.
+2. **No comment may share a line with code.**
+3. **A `#` block is at most 3 lines; a `##` doc comment is at most 1.** `##` is the label Godot
+   renders beside an exported knob in the Inspector, so it lives wherever its knob does — indented
+   or not — and pays for that freedom with the tighter cap.
+
+If an inline comment feels necessary, that is a signal the code needs a name (extract the step into
+a well-named helper), not a signal it needs prose.
+
+⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT, including comments you did not write.** The repo carries a
+large legacy backlog and this is how it drains — whole-file on touch, never a repo-wide sweep. The
+rules are errors on changed files and a summary on a full run, so the report stays short enough to
+be read.
 
 ⚠ **A doc comment is a rule, not a story. Go straight to the point.** Same content, fewer words — every time. Cut in particular:
 - **The narrative of how a bug was found** ("the first build did X, and that was wrong twice over"). Keep the rule it produced and the number it measured; drop the plot.

@@ -68,10 +68,11 @@ PROJECTS = ["solatro", "worldgen", "palette", "designloop"]
 # a fact restated at a second site instead of pointed at).
 CODE_GLOBS = ["*.gd", "*.gdshader", "*.mjs", "*.py"]
 CODE_SKIP = {".git", "node_modules", "godot-cpp", "addons", ".godot", ".import", "dist", "build"}
-# Over this many consecutive comment lines, say what the block is FOR and point at the doc that
-# carries the detail. Tuned so the surviving long blocks are the ones that earn it (signature
-# tables, numbered contracts) rather than a round number.
-COMMENT_BLOCK_MAX = 16
+# Two caps, because the two comment kinds do different jobs. A plain `#` block explains WHY a
+# method exists and gets three lines. A `##` doc comment is the text Godot shows beside a knob in
+# the Inspector, so it gets one line and has to earn it.
+COMMENT_BLOCK_MAX = 3
+DOC_COMMENT_MAX = 1
 # A restated sentence has to be long enough that the repeat is prose, not a shared idiom.
 DUP_SENTENCE_MIN = 70
 LINE_REF = re.compile(r"\b[\w.-]+\.(?:gd|gdshader|mjs|js|py|tscn|tres)\s*:\s*\d+")
@@ -281,19 +282,35 @@ def changed_files() -> list[Path] | None:
 
 
 def check_changed(paths: list[Path], names: set[str]) -> None:
-    """The always-a-bug findings, on a given set of files.
+    """The always-a-bug findings, plus the three hard comment rules, on a given set of files.
 
-    ⚠ **STYLE FINDINGS ARE DELIBERATELY EXCLUDED.** This runs unattended at a task boundary, and the
-    repo carries a standing backlog of hundreds of dated and over-long comments (todo.md). Reporting
-    those on every edit trains the reader to skip the report, which costs the findings that are
-    always real: a reference that resolves to nothing, an absolute path, and a design-process id
-    that has escaped into the code.
+    ⚠ **THE COMMENT RULES ARE ERRORS HERE AND A SUMMARY ON A FULL RUN**, and the split is the whole
+    design. The repo carries thousands of pre-existing violations, so reporting them repo-wide on
+    every edit would train the reader to skip the report. Scoped to the files a session actually
+    touched, they are exact and few: no comment with whitespace before it, none sharing a line with
+    code, none longer than three lines.
+
+    ⚠ **THE REST OF THE STYLE FINDINGS STAY EXCLUDED** — dated lines, history, restatement. Those
+    are the standing backlog (todo.md), and mixing them back in costs the findings that are always
+    real: a reference that resolves to nothing, an absolute path, and a design-process id that has
+    escaped into the code.
     """
     docs = [p for p in paths if p.suffix == ".md"]
     code = [p for p in paths if p.suffix in {".gd", ".gdshader", ".mjs", ".py"}]
     if docs:
         check_file_refs(docs, names)
         check_abs_paths(docs)
+    for path in code:
+        for i, text in indented_comments(path):
+            err(f"{rel(path)}:{i}: comment has whitespace before it — a comment sits at column 0 "
+                f"above the method and says WHY it exists: \"{text[:60]}\"")
+        for i, text in trailing_comments(path):
+            err(f"{rel(path)}:{i}: comment shares a line with code — name the step instead of "
+                f"annotating it: \"{text[:60]}\"")
+        for start, length, is_doc in comment_blocks(path):
+            cap = DOC_COMMENT_MAX if is_doc else COMMENT_BLOCK_MAX
+            kind = "doc comment" if is_doc else "comment block"
+            err(f"{rel(path)}:{start}: {kind} is {length} lines — the limit is {cap}")
     for path in code:
         for i, text in design_ids_in_strings(path):
             err(f"{rel(path)}:{i}: the string \"{text}\" carries a design-process id — it reaches "
@@ -379,34 +396,88 @@ def comment_lines(path: Path) -> list[tuple[int, str]]:
     return out
 
 
-def comments_inside_methods(path: Path) -> list[tuple[int, str]]:
-    """(line, text) for every comment sitting INSIDE a method body.
+def indented_comments(path: Path) -> list[tuple[int, str]]:
+    """(line, text) for every comment that has whitespace before it.
 
-    Owner rule: a comment explains WHY a method exists, above it. Nothing goes inside — what the
-    code does is read from the code. Indentation decides: a comment indented deeper than the `func`
-    (or `def`) that opened the block is inside it, and the block ends at the first non-blank line
-    back at or left of that column.
+    Owner rule: a comment sits at column 0, above the method, and says WHY that method exists.
+    Anything indented is commentary inside code, and code that needs prose to explain itself needs
+    a NAME instead — extract a helper.
 
-    Only `.gd` and `.py` are scanned, where indentation is the block grammar. Brace languages
-    would need a real parser, and a checker that guesses is worse than one that abstains.
+    ⚠ ONE CARVE-OUT, and it is not a softening: a `##` doc comment directly above an indented
+    `func` is an INNER CLASS's method doc. GDScript forces that indentation, and such a comment is
+    exactly what the rule asks for. A plain `#` never qualifies, wherever it sits.
+
+    Only `.gd` and `.py` are scanned, where indentation is the block grammar. Brace languages would
+    need a real parser, and a checker that guesses is worse than one that abstains.
+    """
+    if path.suffix not in {".gd", ".py"}:
+        return []
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    out: list[tuple[int, str]] = []
+    for i, raw in enumerate(lines, 1):
+        s = raw.strip()
+        if not s.startswith("#") or raw[:1] not in " \t":
+            continue
+        if s.startswith("##") and _heads_an_indented_func(lines, i):
+            continue
+        out.append((i, s.lstrip("#").strip()))
+    return out
+
+
+def _heads_an_indented_func(lines: list[str], one_based: int) -> bool:
+    """Whether the `##` run starting at this line is the doc comment of an indented `func`."""
+    for raw in lines[one_based:]:
+        s = raw.strip()
+        if s.startswith("##"):
+            continue
+        if not s:
+            return False
+        return (raw[:1] in " \t"
+                and (s.startswith("func ") or s.startswith("static func ") or s.startswith("def ")))
+    return False
+
+
+def comment_blocks(path: Path) -> list[tuple[int, int, bool]]:
+    """(first line, length, is_doc) for every run of comment lines that exceeds its own cap.
+
+    A run is a doc run when it opens with `##`, and the two kinds are capped differently: prose
+    explaining why a method exists gets COMMENT_BLOCK_MAX, an Inspector knob's label gets
+    DOC_COMMENT_MAX.
+    """
+    doc_at = {}
+    for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        if raw.strip().startswith("#"):
+            doc_at[i] = raw.strip().startswith("##")
+    out: list[tuple[int, int, bool]] = []
+    start = length = 0
+    is_doc = False
+    for i in range(1, (max(doc_at) if doc_at else 0) + 2):
+        if i in doc_at:
+            if not length:
+                start, is_doc = i, doc_at[i]
+            length += 1
+            continue
+        if length > (DOC_COMMENT_MAX if is_doc else COMMENT_BLOCK_MAX):
+            out.append((start, length, is_doc))
+        length = 0
+    return out
+
+
+def trailing_comments(path: Path) -> list[tuple[int, str]]:
+    """(line, text) for every comment sharing a line with code.
+
+    A trailing comment is the same defect as an indented one wearing a different hat: it annotates a
+    statement instead of naming it. Quote parity keeps a `#` inside a string literal out of it.
     """
     if path.suffix not in {".gd", ".py"}:
         return []
     out: list[tuple[int, str]] = []
-    body_col: int | None = None
     for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-        s = raw.strip()
-        col = len(raw) - len(raw.lstrip())
-        if not s:
+        if raw.strip().startswith("#") or "#" not in raw:
             continue
-        if body_col is not None and col <= body_col:
-            body_col = None
-        if body_col is None:
-            if s.startswith("func ") or s.startswith("static func ") or s.startswith("def "):
-                body_col = col
-            continue
-        if s.startswith("#"):
-            out.append((i, s.lstrip("#").strip()))
+        code = raw.split("#", 1)[0]
+        if code.strip() and code.count('"') % 2 == 0 and code.count("'") % 2 == 0:
+            out.append((i, raw.split("#", 1)[1].strip()))
     return out
 
 
@@ -427,22 +498,14 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
         for i, text in design_ids_in_strings(path):
             style_hit("design id in a string", f"{rel(path)}:{i}: {text}")
         comments = comment_lines(path)
-        commented = {i for i, _ in comments}
+        for start, length, is_doc in comment_blocks(path):
+            style_hit("long doc" if is_doc else "long block",
+                      f"{rel(path)}:{start} ({length} lines)")
 
-        # A run of comment lines that has become an essay.
-        block_start, block_len = 0, 0
-        for i in range(1, (max(commented) if commented else 0) + 2):
-            if i in commented:
-                if not block_len:
-                    block_start = i
-                block_len += 1
-                continue
-            if block_len > COMMENT_BLOCK_MAX:
-                style_hit("long block", f"{rel(path)}:{block_start} ({block_len} lines)")
-            block_len = 0
-
-        for i, text in comments_inside_methods(path):
-            style_hit("inside a method", f"{rel(path)}:{i}: {text[:70]}")
+        for i, text in indented_comments(path):
+            style_hit("indented", f"{rel(path)}:{i}: {text[:70]}")
+        for i, text in trailing_comments(path):
+            style_hit("trailing", f"{rel(path)}:{i}: {text[:70]}")
 
         for i, text in comments:
             if DATE.search(text):
@@ -500,9 +563,11 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
 
     blurb = {
         "dated": "the rule belongs, the date is git's",
-        "inside a method": "a comment explains WHY a method exists, above it — nothing goes inside",
+        "indented": "a comment sits at column 0 above the method — indented prose wants a NAME",
+        "trailing": "no comment shares a line with code — name the step instead",
         "history": "keep the rule and the number, drop the story",
-        "long block": f"over {COMMENT_BLOCK_MAX} lines — say what it is FOR, point at the doc",
+        "long block": f"over {COMMENT_BLOCK_MAX} lines — say WHY the method exists, nothing else",
+        "long doc": f"over {DOC_COMMENT_MAX} line — a knob's Inspector label is one line",
         "line ref": "a line number is a dead reference waiting to happen; name the symbol",
         "restated": "state it once, point at that name from the other site",
         "design id": "names a doc the code's reader cannot see; state the rule the answer produced",
@@ -510,7 +575,7 @@ def check_code_comments(verbose: bool, names: set[str]) -> int:
                                  "layering breach, not a style nit",
     }
     for kind in ("design id in a string", "design id", "restated", "line ref", "history",
-                 "long block", "dated", "inside a method"):
+                 "long block", "long doc", "dated", "indented", "trailing"):
         hits = style.get(kind)
         if not hits:
             continue

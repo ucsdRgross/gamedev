@@ -44,8 +44,18 @@ but it MUST carry:
    done-when is only "TestX is green" will ship a component nothing calls. Require a test that fails
    when the wiring is removed.
 4. Any trap below that applies, named specifically.
+5. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
+   and says WHY the method exists. No comment may have whitespace before it and none may trail
+   code. An implementer that is not told this ships indented prose every time.
+6. ⚠ **The complexity rule, stated** — engine method before hand-rolled, existing helper before new
+   one, each thing at its proper altitude. See the section below.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
+
+⚠ **5 and 6 are here because they were reaching nobody.** They lived in memory and in `/simplify`
+while this template carried lines about tunable literals, design ids and registry names and not
+these — so briefs never said them, and the code came back with both violated. Where a rule matters,
+put it in the brief and gate it; restating it somewhere else is how it gets ignored.
 
 ⚠ **The brief hands the implementer design ids, and they come back out in the code unless you say
 so** — including into `@export_group` labels Godot renders as Inspector headings. **The citation
@@ -124,8 +134,78 @@ reset to the last commit and redo it. Never resume mid-step.
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
 first, and confirm it has stopped.
 
-## Closing the run
+## Closing the run — a phase, not a gesture
 
-Before calling it done: read the full diff yourself, run an adversarial review against the design,
-charts, plan and tests, and fix what they find. Then fold the run's residue into the living docs with
-`/docs` and delete the temporary plan documents the run produced.
+⚠ **THIS IS A NUMBERED PHASE AND EVERY ITEM EITHER RAN OR DID NOT.** It replaces an earlier prose
+close that said "run an adversarial review" and named no tool — a run could satisfy that by
+claiming it had thought hard. Every other gate here is written to be un-talk-past-able; so is this
+one. Record each result in the handoff the way a done-when is recorded: the output, not a claim.
+
+⚠ **DISPATCH THE READING WORK TO SUBAGENTS, ONE AT A TIME.** The overseer never reads source, so
+every item that reads code is a subagent. **A hook enforces one at a time** — they run the suite,
+which is a one-process rule, and a parallel fan-out makes a failure unattributable. Dispatch, wait
+for the report, dispatch the next.
+
+Run in this order. Earlier items change the diff the later ones read.
+
+1. **`py .claude/tools/doc_check.py`** — the FULL run, not `--changed`. Overseer runs this itself;
+   it reads no source. Phase boundaries use `--changed`; the close needs the whole repo, because a
+   doc this run invalidated may live in a file the run never touched.
+2. **`adversarial-review` subagent** over `main...HEAD`. Reads the design, plan, test plan and names
+   registry, then judges the entire branch. Its `PLAN DRIFT:` section is the half a code review
+   cannot produce.
+3. **`/code-review`** on the branch diff, at high effort — correctness.
+4. **`/simplify`** — the complexity section below is what it enforces.
+5. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
+   not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
+6. **Fix everything 1–5 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
+   — then re-run whichever of 1–5 your fixes could have invalidated.
+7. **`/docs`** — fold the run's residue into the living docs.
+8. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
+9. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a
+   skill, an agent definition or a memory did not warn about is a gap in the tooling, not bad luck.
+   Add it where it will be READ next time — the step-brief template, the agent's rules, the trap
+   list — and delete anything the run proved wrong.
+10. **Delete the temporary plan documents** the run produced.
+
+⚠ **8 AND 9 ARE THE ANTI-DEBT STEPS, AND THEY ARE THE FIRST TO BE SKIPPED.** A run that lands its
+code and skips these leaves every later session paying for it twice: re-reading memory that
+duplicates itself, and re-discovering a trap that was already paid for once. Both shrink what the
+next session must load — the cost of skipping them is measured in tokens on every run after this
+one, which is exactly why nobody notices it happening.
+
+⚠ **A finding is only fed back if it lands where the reader already looks.** Memory records the
+shape of this failure: the reuse rule lived in memory and in `/simplify` while the step-brief
+template did not carry it, so implementer briefs never said it and the code came back duplicated.
+Adding a rule to a document nobody reads at that moment is indistinguishable from not adding it.
+
+⚠ **A REVIEWER'S FINDING IS A CLAIM, NOT A VERDICT.** Reproduce it before you act: the reviewer is
+told to hunt aggressively and is explicitly allowed to file "suspected". Fixing an unreproduced
+finding is how a run acquires a defect it did not have.
+
+⚠ **2 through 5 do not substitute for each other.** The reviewer hunts defects and plan drift,
+`/code-review` reads the diff for correctness, `/simplify` reads it for duplication and altitude,
+`/fx-verify` looks at rendered pixels. Skipping one because another was green is how a run ships a
+component that passes its tests, contradicts its design, and renders wrong.
+
+## Reduce complexity — a review axis, not a preference
+
+Every step brief carries this, and `/simplify` and the close enforce it. Three rules, in the order
+they are usually violated:
+
+1. **Use the engine before writing your own.** Godot already has the tween, the timer, the easing
+   curve, the rect intersection, the string helper, the sort. A hand-rolled version is more code,
+   handles fewer edge cases, and drifts from engine behaviour the first time the engine changes.
+   Search the class reference before adding a helper — [[read-the-engine-docs]].
+2. **Reuse before you write.** Search for an existing helper in this project first. Measured cost of
+   skipping it: a bucket-growing helper was added that duplicated an existing one, and the same
+   constant ended up stated in two files — where the existing version was also the stricter of the
+   two. **All stacking uses the same code** is the owner's standing example.
+3. **Put each thing at its proper altitude.** A geometry question belongs in the geometry type, not
+   in the view that asked it; a rule belongs at the seam that enforces it, not restated at every
+   call site. If a method reaches through two objects to get what it needs, the thing it needs is at
+   the wrong level.
+
+⚠ **Wanting an inline comment is this section's loudest signal.** Code that needs prose to explain
+itself needs a NAME instead — extract a well-named helper. The comment rule and this section are the
+same rule wearing two hats.
