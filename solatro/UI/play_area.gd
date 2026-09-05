@@ -2780,8 +2780,6 @@ func on_control_focus_entered(control:Control) -> void:
 	# arrows, a click — is also what the overview's Enter will focus.
 	var focus_grid_index := _grid_index_of(control)
 	if focus_grid_index != NO_GRID: selected_grid = focus_grid_index
-	var row_index := control.get_index()
-	var column_node : Control = control.get_parent()
 	if focused_visual: focused_visual.focused = false
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
@@ -2798,16 +2796,14 @@ func on_control_focus_entered(control:Control) -> void:
 	else:
 		hide_focus_info()
 
-	# resize zone control so it is possible to place card behind first card
-	if focused_control and focused_control.get_index() == 0:
-		focused_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x, 0)
-		(focused_control.get_parent().get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
-	if row_index == 0:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom/1.5)
-		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
-	elif row_index == 1:
-		(column_node.get_child(0) as Control).custom_minimum_size = Vector2(CardVisual.card_size_play.x, CardVisual.card_separation_play_custom/2.5)
-		(column_node.get_child(-1) as Control).custom_minimum_size = CardVisual.card_size_play
+	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
+	# controls by fixed child index on every focus -- written when child 0 was the zone header and
+	# child -1 the newest card. The board stacks upward now and that order is REVERSED, so
+	# `get_child(-1)` names the ZONE card: hovering set it to a full card's height and the zone
+	# visibly dipped DOWN under the card being hovered. Owner: *"stacking cards on a zone should not
+	# cause the zone to move relative to grid."*
+	# ⚠ It was also a second sizing mechanism beside `_size_stack_slot()`, which `set_card_zones_visuals()`
+	# runs immediately below and which is the ONE place a stack's controls are sized.
 	focused_control = control
 	set_card_zones_visuals()
 
