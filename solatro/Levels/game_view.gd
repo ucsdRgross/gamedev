@@ -74,9 +74,14 @@ var _wall_camera : Camera2D = null
 var _wall_rect_centre_x : Callable = Callable()
 
 func _ready() -> void:
-	# The retired act payout's three labels, emptied once. They are authored with placeholder
-	# text in the scene, and with nothing writing them the player would otherwise read a frozen
+	# The retired act payout's four labels, emptied once. They are authored with placeholder text
+	# in the scene, and with nothing writing them the player would otherwise read a frozen
 	# "0 0 x 0" beside the live total for the whole show.
+	# ⚠ **%MultScore IS A FURNITURE CONTROL, AND `_hud_authored_width()` READS ITS LIVE MINIMUM
+	# SIZE** -- which for a Label depends on its TEXT. Emptying it therefore feeds the board's
+	# centring. It is safe only because it was never the widest: Rules is authored at x 302 and
+	# %MultScore at 202 plus one digit, so the max is unchanged. Re-check that before emptying or
+	# re-texting any other furniture label.
 	mult_label.text = ""
 	col_label.text = ""
 	row_label.text = ""
