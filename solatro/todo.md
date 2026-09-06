@@ -331,6 +331,15 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
   of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
   rule. Left as waste on a hover-enter path, deliberately.
+- **The Entrance's score LABELS are owed, and they belong to this pass.** Its row bucket already
+  banks (`GAP-042`'s data half is landed) and nothing renders it. Three things to add: label stacks
+  for the Entrance's rows, height labels placed BELOW the lower zone's stack instead of above it
+  (the column strip is in the centre), and `_sync_cell_score_labels` accepting a row that is not a
+  grid row. ⚠ A multi-row Entrance (the owner named 2x3) also decides whether its fan depth is a
+  ROW or a HEIGHT, which changes the bucket key -- settle that WITH the labels, since their
+  placement is what makes the two readings observably different. ⚠ Row/col label COUNTS and the
+  per-height stacks are ALREADY derived from the grid's own dimensions and buckets, so an 8x7 grid
+  needs no work there; do not rebuild them.
 - **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
   GAP-038 pass.** `%MultScore` and its `Col`/`x`/`Row` children showed a frozen "0 x 0" because
   nothing in the grid economy writes `mult_score`/`col_total`/`row_total`; `GameView._ready` now
