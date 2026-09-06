@@ -34,6 +34,7 @@ into the structure below and start executing.
 **Goal:** one sentence; what "done" means for the whole stream.
 **State:** one paragraph; where this actually stands right now.
 **Entry docs:** solatro/START_HERE.md, solatro/VFX.md
+**IMPLEMENTED-BY:** the model(s) that did the work, and which parts each did.
 
 ## Tasks
 ```yaml
@@ -46,6 +47,14 @@ into the structure below and start executing.
   evidence: ''                  # paste of the real output / measured numbers
   notes: ''                     # blockers, decisions, what was tried
 ```
+
+## ⚠ IMPLEMENTED-BY is not bookkeeping
+
+`/plan-run`'s reviewer floor picks the reviewer's tier AGAINST THE AUTHOR'S, so a stream that does
+not record which model wrote it leaves the next session guessing — and guessing low is the harmful
+direction, the one measured at 13 regressions against 3 fixes. Name each model and what it wrote;
+"a mix" with no detail forces the reviewer to the highest tier present, which is the safe reading
+but an expensive one.
 
 ## Verified vs assumed
 Per claim: the exact command plus measured numbers that prove it, or an explicit

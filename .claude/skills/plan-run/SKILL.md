@@ -83,6 +83,35 @@ after the work is already "complete".
 into a comment or a string survives every other layer here — it never fails a test and never breaks
 a journey — and it is the one thing an overseer can check without reading code.
 
+## The reviewer's model floor
+
+**A reviewer is never a weaker model than the author it reviews** — same generation or newer, same
+effort or higher, no exceptions. This binds layer 5, the run's highest-yield check.
+
+A weaker reviewer on stronger code is NET NEGATIVE, not merely useless: reviewing a strong draft, the
+weaker model rewrote whole solutions instead of patching, scoring 13 regressions against 3 fixes and
+dropping the pass rate 8.6 points (arXiv 2607.21656). In the same experiment a stronger reviewer on
+the weaker author's code gained 18.1 points. **Capability is the lever; a different model is not.**
+Cross-vendor review buys decorrelated blind spots and is worth having *at or above* the floor —
+never below it.
+
+`plan-implementer` runs `sonnet` at `effort: low`, so its reviewer starts at `sonnet` normal effort.
+`plan-auditor` runs `opus` and clears the floor. Raising an implementer's tier raises the floor with
+it.
+
+⚠ **THE FLOOR IS A RULE THE OVERSEER FOLLOWS, NOT ONE IT CAN CHECK.** `effort` is declared in agent
+frontmatter or a model override and is not visible at dispatch time, so nothing validates it. If it
+needs enforcing rather than instructing, that is a `PreToolUse` hook on `Agent`.
+
+⚠ **`model:` SELECTS A FAMILY, NOT A VERSION** — `opus`, `sonnet`, `haiku`, `fable`. It cannot pin a
+point release. When the distinction you need is between two versions of one family, the only
+reliable mechanism is a SEPARATE SESSION with that model chosen at startup, which is why the close
+hands over rather than dispatching.
+
+⚠ **RECORD WHO WROTE IT, OR THE FLOOR CANNOT BE APPLIED.** The reviewer's tier is chosen against the
+AUTHOR's, so a run that does not record `IMPLEMENTED-BY` leaves the next session guessing — and
+guessing low is the harmful direction. `/handoff` carries the convention.
+
 ## Red-then-green is mandatory
 
 For **every new test**, not only for bug fixes: neutralise the behaviour, watch the test fail,
@@ -149,41 +178,27 @@ Print exactly this, filled in:
 ```
 READY FOR CLOSING — <project> / <branch>
   steps verified : <n> of <n>          suite: <the banner line>
-  IMPLEMENTED-BY : <model that wrote the code>
-  REVIEWER MUST BE: <a different model — see the table below>
+  IMPLEMENTED-BY : <model that wrote the code, at <effort>>
+  REVIEWER FLOOR : <same generation or newer, same effort or higher — never weaker>
 
-Open a NEW session, select <reviewer model>, and paste:
+Open a NEW session, select a model AT OR ABOVE that floor, and paste:
 
   Run the closing phase of /plan-run for the branch <branch> in <worktree path>.
-  The code was implemented by <model>. You are the reviewer and you are a
-  different model on purpose. Start by reading .claude/skills/plan-run/SKILL.md
-  "Closing the run", then work its numbered list in order.
+  The code was implemented by <model> at <effort>. You are the reviewer, and you
+  must be at or above that: same generation or newer, same effort or higher. A
+  weaker reviewer on stronger code is net negative, not merely useless. Start by
+  reading .claude/skills/plan-run/SKILL.md "The reviewer's model floor" and then
+  "Closing the run", and work its numbered list in order.
 ```
+
+⚠ **THE SAME MODEL IS FINE; A WEAKER ONE IS NOT.** The floor is about capability, not variety — a
+same-model review at equal effort clears it. Reaching for a different vendor is a bonus worth having
+*at or above* the floor and never a reason to drop below it.
 
 ⚠ **A NEW SESSION, NOT THIS ONE.** The overseer has held the plan for dozens of commits and has
 every reason to believe the work is done — that is exactly the bias the close exists to defeat. It
-is also the only way to change model, since a session's model is chosen when it starts.
-
-## ⚠ THE REVIEWER IS NEVER THE MODEL THAT IMPLEMENTED
-
-A model reviewing its own output shares its blind spots: the same misreading that produced the bug
-reads the bug as correct. Pick the reviewer from `IMPLEMENTED-BY`:
-
-| implemented by | reviewer |
-|---|---|
-| Opus | the next strongest NON-Opus available, at high effort |
-| Sonnet | Opus |
-| Fable | Opus |
-| a mix | a model that wrote NONE of the code |
-
-⚠ **THE `model:` FIELD ON A SUBAGENT SELECTS A FAMILY, NOT A VERSION** — `opus`, `sonnet`, `haiku`,
-`fable`. It cannot pin a specific point release. When the difference you need is between two
-versions of the same family, the ONLY reliable mechanism is a separate session with that model
-chosen at startup, which is why the block above hands over rather than dispatching.
-
-⚠ **If the only available model is the one that implemented, say so and stop.** Run the rest of the
-close, report that the adversarial review was skipped and why, and leave it for the owner. A
-same-model review recorded as a real one is worse than a gap on the checklist.
+is also the only way to choose the reviewer's model, since a session's model is chosen when it
+starts and `model:` on a subagent selects only a family.
 
 ## Closing the run — a phase, not a gesture
 
