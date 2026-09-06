@@ -60,6 +60,16 @@ py .claude/tools/doc_check.py --changed   # only what git reports changed, broke
 So a clean hook means "no broken reference in what I touched", NOT "the docs are healthy". This
 skill is the full pass, and it is the only thing that looks at the style findings at all.
 
+⚠ **A CODE COMMENT IS NOT EVIDENCE ABOUT THE CODE, AND A DOCS PASS IS EXACTLY WHERE THAT BITES.**
+The cheapest way to write a doc is to quote the comment that already explains the thing — and a
+stale comment then propagates into every doc that quotes it, with the checker silent because every
+NAME in it resolves. Measured: a container's doc comment declared it **clips**, while ninety lines
+below, the line that actually runs set `clip_contents = false` with the owner's reason, and a live
+test asserted the second one the whole time. Two comments, one file, opposite claims, and the claim
+reached two living documents before an audit caught it. **Before repeating a comment in a doc, read
+the line it describes and the rest of its own file. The comment nearest the enforcing line wins.**
+See [[seam-checks-not-rereading]] — tools compare REFERENCES, never CLAIMS.
+
 It scans **code comments as well as `.md` files** — same rules, since a comment is a doc that lives
 in a source file. A comment referencing a file that does not exist is an ERROR, like anywhere else:
 a comment deferring to a doc is only useful if the doc resolves. The style findings (`restated`,

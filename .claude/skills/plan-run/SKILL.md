@@ -205,8 +205,21 @@ Run in this order. Earlier items change the diff the later ones read.
 2. **`adversarial-review` subagent** over `main...HEAD`. Reads the design, plan, test plan and names
    registry, then judges the entire branch. Its `PLAN DRIFT:` section is the half a code review
    cannot produce.
+   ⚠ **GIVE IT A PRIORITY ORDER AND TELL IT TO REPORT EARLY.** A reviewer handed "review 275
+   commits" spends its whole budget investigating and dies with nothing written down — measured:
+   one died to a session limit mid-investigation and returned zero findings, and the rerun found a
+   real defect inside its first third. Number the areas most likely to hurt a player, say "work in
+   this order, keep a running list, and if you sense you are running long STOP INVESTIGATING AND
+   REPORT WHAT YOU HAVE", and say that a partial report with three solid findings beats a thorough
+   investigation that never lands.
 3. **`/code-review`** on the branch diff, at high effort — correctness.
 4. **`/simplify`** — the complexity section below is what it enforces.
+   ⚠ **IT ASKS FOR FOUR PARALLEL AGENTS AND THIS REPO FORBIDS THAT.** `/simplify` is a built-in
+   skill and cannot be edited here; its Phase 1 says to launch four review agents "in a single
+   message so they run concurrently", which the one-subagent hook blocks. Run its four angles
+   (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
+   inline is strictly better anyway — four cold agents re-deriving context to read ten lines is
+   the expensive path.
 5. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
    not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
 6. **Fix everything 1–5 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
