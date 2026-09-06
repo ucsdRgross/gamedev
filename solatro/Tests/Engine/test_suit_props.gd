@@ -61,6 +61,13 @@ func row_game(cards: Array[CardData]) -> Game:
 		cols.append(TestFactories.col([c] as Array[CardData]))
 	s.upper_zone_type = types
 	s.upper_zone = cols
+	# ⚠ THE FIXTURE NEEDS A REAL GRID even though every card here sits in the ENTRANCE. An
+	# Entrance score banks into its attached grid's own row bucket, and `board_total()` walks
+	# `grids` -- with none, the bucket exists and the SCORE THE PLAYER SEES stays 0, which is
+	# exactly the failure these tests are here to catch.
+	var grid := GridData.new()
+	grid.build_cells()
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()
 	CardEnvironment.CURRENT = g
@@ -103,8 +110,14 @@ func test_hoop_scores_talents() -> void:
 	var hoop := suit_card(3, PipSuitHoop.new())
 	var g := row_game([hoop, talent(5), talent(5), plain(5)] as Array[CardData])
 	await g.run_props(hoop.suit.spawn_props())
-	check(g.state.row_total == 6,
-			"3 hoops x 2 talents x 1 point = 6 into the row gutter", str(g.state.row_total))
+	# ⚠ ASSERT THE SCORE THE PLAYER SEES, NEVER `row_total`. That field is the retired act
+	# payout's accumulator and `live_total()` does not read it, so a version of this check
+	# written against it passed for the whole time the Entrance banked into nothing.
+	check(g.state.board_total() == 6.0,
+			"3 hoops x 2 talents x 1 point = 6, and it reaches the board total",
+			"board_total=%f row_total=%d" % [g.state.board_total(), g.state.row_total])
+	check(g.state.live_total() > 0,
+			"...so the goal check can see it", "live_total=%d" % g.state.live_total())
 	done(g)
 
 func test_knife_scores_props() -> void:
@@ -113,8 +126,9 @@ func test_knife_scores_props() -> void:
 	var knife := suit_card(3, PipSuitKnife.new())
 	var g := row_game([knife, talent(5), plain(5), plain(5)] as Array[CardData])
 	await g.run_props(knife.suit.spawn_props())
-	check(g.state.row_total == 9,
-			"3 knives x 3 plain cards (incl. self) x 1 point = 9", str(g.state.row_total))
+	check(g.state.board_total() == 9.0,
+			"3 knives x 3 plain cards (incl. self) x 1 point = 9, into the board total",
+			"board_total=%f row_total=%d" % [g.state.board_total(), g.state.row_total])
 	done(g)
 
 func test_talented_suit_suppressed() -> void:

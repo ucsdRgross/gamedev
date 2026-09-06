@@ -785,6 +785,23 @@ func _sum_grid_buckets(bucket: Dictionary[Vector3i, BigNumber], grid: int) -> fl
 		if key.x == grid: total += bucket[key].to_float()
 	return total
 
+## The grid the Entrance banks into: the grid it is committed to, or grid 0 while nothing is
+## committed yet.
+## ⚠ NOT the same as an Entrance card's `BoardCoord.grid`, which `_scan_grid_positions` still
+## writes as 0 for every call site that addresses the Entrance as grid 0's row -1 (`PropLayer`,
+## the UI tests). Banking needs the REAL grid, because a bucket is keyed on it.
+func entrance_grid() -> int:
+	return committed_grid if committed_grid >= 0 else 0
+
+## The row index the Entrance banks into: one past the grid's own last row, so a 5-tall grid banks
+## it at row 5 -- the owner's *"its own row bucket as if grid is 5x6"*. Per grid, because a grid
+## carries its own height.
+## ⚠ This is a BANKING index, not a board coordinate. An Entrance card's `y` stays
+## `BoardCoord.ENTRANCE_ROW`; nothing about placement or geometry moves.
+func entrance_row_index(grid: int) -> int:
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return 0
+	return grids[grid].grid_height
+
 ## Adds to one ROW or COLUMN's bucket at one HEIGHT, creating it at zero on first use.
 ## `bucket` is `scores_row` or `scores_col`; `index` is which row/column, `height` its level.
 func bank_line_score(bucket: Dictionary[Vector3i, BigNumber], grid: int, index: int,

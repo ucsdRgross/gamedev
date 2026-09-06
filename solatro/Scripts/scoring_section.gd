@@ -132,6 +132,48 @@ static func _collect_geometric_line(state: GameData, grid: int, cells: Array[Vec
 		if card: out.append(card)
 	return out
 
+## A score attributed to a card sitting in the ENTRANCE, shaped as a ROW: it banks into the
+## Entrance's OWN row bucket, as if the grid were one row taller than it is. `height` is the card's
+## height within its Entrance slot's stack.
+## ⚠ This does NOT make the Entrance a detected line. Nothing completes here by default — the
+## section exists so a score that already happened lands in the right bucket instead of the legacy
+## one, which `live_total()` does not read.
+static func of_entrance_row(state: GameData, height: int) -> ScoringSection:
+	var section := ScoringSection.new()
+	section.kind = LineKind.ROW
+	section.grid = state.entrance_grid()
+	section.index = state.entrance_row_index(section.grid)
+	section.height = height
+	section.origin = &"entrance"
+	section.line_key = StringName("grid%d:ENTRANCE:%d" % [section.grid, height])
+	section._recollect = _collect_entrance_row.bind(state, height)
+	section.cards = section._recollect.call()
+	return section
+
+## A score attributed to an Entrance card, shaped as a COLUMN: it banks into that column's SHARED
+## bucket -- the same one the grid column above it uses. `column` is the Entrance slot's index.
+## ⚠ That slot-to-column alignment is MECHANICAL here. It is only a visual convention for
+## PLACEMENT, where a card from any slot may still go in any column.
+static func of_entrance_column(state: GameData, column: int, height: int) -> ScoringSection:
+	var section := ScoringSection.new()
+	section.kind = LineKind.COL
+	section.grid = state.entrance_grid()
+	section.index = column
+	section.height = height
+	section.origin = &"entrance"
+	section.line_key = StringName("grid%d:COL:%d:%d" % [section.grid, column, height])
+	section._recollect = _collect_entrance_row.bind(state, height)
+	section.cards = section._recollect.call()
+	return section
+
+## Every card the Entrance holds at `height`, left to right. Read live, like every other collector.
+static func _collect_entrance_row(state: GameData, height: int) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for col : ArrayCardData in state.upper_zone:
+		if col and height < col.datas.size() and col.datas[height]:
+			out.append(col.datas[height])
+	return out
+
 ## THE card list for a row or a column of `zone`. Static and pure so a re-derive is one call.
 static func collect(zone: Array, is_row: bool, index: int) -> Array[CardData]:
 	var out : Array[CardData] = []
