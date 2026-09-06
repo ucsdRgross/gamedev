@@ -331,6 +331,13 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
   of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
   rule. Left as waste on a hover-enter path, deliberately.
+- **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
+  GAP-038 pass.** `%MultScore` and its `Col`/`x`/`Row` children showed a frozen "0 x 0" because
+  nothing in the grid economy writes `mult_score`/`col_total`/`row_total`; `GameView._ready` now
+  blanks them. ⚠ **Deleting the nodes is the deeper fix and it is NOT free**: `%MultScore` is in
+  `_furniture`, and `_hud_authored_width()` maxes over that list to publish
+  `PlayArea.board_inset_left`, so removing it can shrink the HUD reserve and re-centre every grid.
+  That is HUD geometry, which is parked on `GAP-038`. Do it with that pass, not before.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
