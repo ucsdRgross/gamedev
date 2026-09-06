@@ -873,6 +873,35 @@ func line_score_levels(bucket: Dictionary[Vector3i, BigNumber], grid: int) -> in
 		if key.x == grid: deepest = maxi(deepest, key.z)
 	return deepest + 1
 
+## Does a banked ROW belong to the zone stacked past the grid rather than to the grid itself?
+## Rows run `0 .. grid_height-1` for the grid and continue from `grid_height` into the next zone,
+## which is the whole of what *"as if grid is 5x6"* means.
+func banked_row_is_entrance(grid: int, row: int) -> bool:
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return false
+	return row >= grids[grid].grid_height
+
+## The stack standing in a banked cell address, in whichever ZONE owns that row.
+## ⚠ Callers drawing a bucket come through here instead of reaching into `grids` — that reach is
+## what made an Entrance score render nothing, because its row is not a grid row.
+func stack_at_banked_cell(grid: int, x: int, row: int) -> ArrayCardData:
+	if banked_row_is_entrance(grid, row):
+		var ez := entrance_zone()
+		var local := row - grids[grid].grid_height
+		var i := local * maxi(ez.grid_width, 1) + x
+		return ez.cells[i] if i >= 0 and i < ez.cells.size() else null
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return null
+	var g : GridData = grids[grid]
+	if x < 0 or x >= g.grid_width or row < 0 or row >= g.grid_height: return null
+	return g.cells[g.cell_index(x, row)]
+
+## The board coordinate a banked cell address names. THE ONE PLACE the banking row and the board
+## coordinate meet: banking counts the Entrance's rows past the grid's own, while a board
+## coordinate still addresses an Entrance card at `BoardCoord.ENTRANCE_ROW`.
+func coord_for_banked_cell(grid: int, x: int, row: int, h: int) -> BoardCoord:
+	if banked_row_is_entrance(grid, row):
+		return BoardCoord.new(grid, x, BoardCoord.ENTRANCE_ROW, h)
+	return BoardCoord.new(grid, x, row, h)
+
 ## Adds to one CELL's bucket, creating it at zero on first use. Buckets are created lazily
 ## because a cell only gets one once it has scored, and a grid can change shape under an
 ## effect -- a missing bucket reads as "has not scored", never as an error.

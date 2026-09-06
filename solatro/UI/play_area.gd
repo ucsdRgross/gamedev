@@ -589,12 +589,11 @@ func _sync_cell_score_labels() -> void:
 	var state := game.state
 	var live : Dictionary[Vector3i, bool] = {}
 	for key : Vector3i in state.scores_cell:
-		if key.x < 0 or key.x >= state.grids.size(): continue
-		var grid : GridData = state.grids[key.x]
-		if not grid: continue
-		var idx := grid.cell_index(key.y, key.z)
-		if idx < 0 or idx >= grid.cells.size(): continue
-		var depth : int = grid.cells[idx].datas.size()
+		# Resolved through the ZONE that owns the row, never by reaching into `grids` -- a row past
+		# a grid's own height belongs to the Entrance, and reaching in rendered nothing for it.
+		var stack := state.stack_at_banked_cell(key.x, key.y, key.z)
+		if not stack: continue
+		var depth : int = stack.datas.size()
 		if depth <= 0: continue   # nothing to sit above yet
 		live[key] = true
 		var label : BigNumberLabel = _cell_score_labels.get(key)
@@ -608,7 +607,9 @@ func _sync_cell_score_labels() -> void:
 			_cell_score_labels[key] = label
 		label.current_num = state.scores_cell[key]
 		# ABOVE the topmost card: its centre, less half a card, less the label's own height.
-		var top := BoardCoord.new(key.x, key.y, key.z, depth - 1)
+		# The SAME arithmetic in every zone -- the owner's *"heights be above stacks always even
+		# for bottom"* -- so only the coordinate lookup knows which zone this is.
+		var top := state.coord_for_banked_cell(key.x, key.y, key.z, depth - 1)
 		var at := slot_center_global(top)
 		label.global_position = Vector2(at.x - label.size.x * board_zoom * 0.5,
 				at.y - CardVisual.card_size_play.y * board_zoom * 0.5 - label.size.y * board_zoom)

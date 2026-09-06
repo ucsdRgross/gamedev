@@ -47,6 +47,7 @@ func _ready() -> void:
 	await run_a_height_label_sits_above_its_stack_test()
 	await run_a_height_label_stays_above_its_stack_when_focused_zoom_is_not_one_test()
 	await run_a_row_label_lines_up_with_its_own_row_test()
+	await run_an_entrance_height_label_sits_above_its_stack_test()
 	await run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test()
 	await run_the_first_card_in_a_cell_does_not_widen_its_row_test()
 	await run_a_banked_grid_score_pops_its_label_test()
@@ -1003,6 +1004,47 @@ func run_score_labels_sit_where_the_design_puts_them_test() -> void:
 # the label over a one-card cell; only the first moves it when the stack deepens. So the assertion
 # is about the label MOVING UP by a depth pitch, not merely about where it starts.
 # ==============================================================================
+## The Entrance's stacks get height labels on the SAME terms as a grid cell's, and in the SAME
+## place -- above the stack. Owner: *"have heights be above stacks always even for bottom"*, and
+## *"no special cases"*, so this asserts the rule is uniform rather than mirrored.
+func run_an_entrance_height_label_sits_above_its_stack_test() -> void:
+	behavior_section("AN ENTRANCE HEIGHT LABEL SITS ABOVE ITS STACK, LIKE EVERY OTHER")
+	var view := await _stand_up()
+	var pa := view.play_area
+	var g := view.game
+	# The Entrance's rows are banked past the grid's own -- "as if grid is 5x6".
+	var entrance_row : int = g.state.entrance_row_index(0)
+	var slot := 1
+	if g.state.upper_zone.size() <= slot or g.state.upper_zone[slot].datas.is_empty():
+		check(false, "precondition: the Entrance holds a card in slot %d" % slot)
+		await _tear_down(view)
+		return
+	g.state.bank_cell_score(0, Vector2i(slot, entrance_row), 7)
+	await _settle_layout(view)
+	await get_tree().physics_frame
+
+	var key := Vector3i(0, slot, entrance_row)
+	var label : BigNumberLabel = pa._cell_score_labels.get(key)
+	check(label != null and is_instance_valid(label),
+			"an Entrance cell that has scored gets a height label, exactly as a grid cell does",
+			"row %d, key %s" % [entrance_row, key])
+	if label == null:
+		await _tear_down(view)
+		return
+	check(label.text.contains("7"), "...carrying that cell's own banked score",
+			"'%s'" % label.text)
+
+	# ABOVE, not below: the rule is uniform across zones.
+	var top_card_y := pa.slot_center_global(
+			BoardCoord.new(0, slot, BoardCoord.ENTRANCE_ROW, 0)).y
+	check(label.global_position.y + label.size.y <= top_card_y
+			- CardVisual.card_size_play.y * 0.5 + 1.0,
+			"...and sits entirely ABOVE the Entrance stack, the same side as a grid cell's",
+			"label bottom %.1f vs card top %.1f"
+					% [label.global_position.y + label.size.y,
+					top_card_y - CardVisual.card_size_play.y * 0.5])
+	await _tear_down(view)
+
 func run_a_height_label_sits_above_its_stack_test() -> void:
 	behavior_section("A HEIGHT LABEL SITS ABOVE ITS STACK")
 	var view := await _stand_up()
