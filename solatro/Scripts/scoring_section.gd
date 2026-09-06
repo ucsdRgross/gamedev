@@ -132,6 +132,15 @@ static func _collect_geometric_line(state: GameData, grid: int, cells: Array[Vec
 		if card: out.append(card)
 	return out
 
+## THE row section a score attributed to the card at `coord` banks into, whatever zone it is in.
+## ⚠ **THE ZONES DIFFER IN EXACTLY ONE PLACE, AND THIS IS IT.** Callers do not branch on where a
+## card sits; they hand over a coordinate. The Entrance's rows sit past the grid's own last row, so
+## resolving it is an index, not a different code path.
+static func of_row_at(state: GameData, coord: BoardCoord) -> ScoringSection:
+	if coord.is_entrance():
+		return of_entrance_row(state, coord.h)
+	return of_line_at(state, coord.grid, LineKind.ROW, coord.y, coord.h)
+
 ## A score attributed to a card sitting in the ENTRANCE, shaped as a ROW: it banks into the
 ## Entrance's OWN row bucket, as if the grid were one row taller than it is. `height` is the card's
 ## height within its Entrance slot's stack.

@@ -333,9 +333,13 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   rule. Left as waste on a hover-enter path, deliberately.
 - **The Entrance's score LABELS are owed, and they belong to this pass.** Its row bucket already
   banks (`GAP-042`'s data half is landed) and nothing renders it. Three things to add: label stacks
-  for the Entrance's rows, height labels placed BELOW the lower zone's stack instead of above it
-  (the column strip is in the centre), and `_sync_cell_score_labels` accepting a row that is not a
-  grid row. ⚠ A multi-row Entrance (the owner named 2x3) is SETTLED as real rows, with a slot's
+  for the Entrance's rows, height labels for the Entrance -- which stay ABOVE their stack like every
+  other, the owner having reversed an earlier call, so the arithmetic is unchanged and only the
+  separation band's BUDGET grows (column scores on top, Entrance height scores directly beneath) --
+  and a cell lookup in `_sync_cell_score_labels` that is ZONE-GENERIC rather than grid-only.
+  ⚠ Owner: *"no special cases"* -- no Entrance branch anywhere; the general form resolves a cell
+  through whichever zone owns it, which is why the Entrance was made a `GridData` in the first
+  place. What is still missing is an accessor handing back every zone rather than just `grids`. ⚠ A multi-row Entrance (the owner named 2x3) is SETTLED as real rows, with a slot's
   stack depth staying the HEIGHT axis -- which confirms the shipped banking rather than changing
   it. But `upper_zone` is a flat array of slots with nowhere to put a second row, so giving the
   Entrance rows is a STRUCTURAL change (it becomes cell-shaped like GridData), not a label one. ⚠ Row/col label COUNTS and the
