@@ -26,6 +26,16 @@ func suite_name() -> String:
 	return "GRID LAYOUT"
 
 func _ready() -> void:
+	# ⚠ **THIS SUITE MEASURES THROUGH `CardEnvironment.CURRENT`, AND IT AWAITS FRAMES.**
+	# `PlayArea._own_grid_row_height` resolves its grid through `get_current_game()`, so any check
+	# that samples across an `await` reads whatever board is CURRENT at that moment. Running
+	# concurrently, another suite takes CURRENT mid-await and the measurement silently answers
+	# about a different, grid-less game -- returning a bare card height that reads exactly like a
+	# row that never grew. Measured: TP-85 failed 10 runs in 11 that way, reporting
+	# "CURRENT is mine false, CURRENT depth -1" while its own board sat two cards deep.
+	# See TestSuite.await_siblings_except and its DEADLOCK RULE.
+	await await_siblings_except(["GRID VIEW", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"WALL PAUSE"])
 	TestLog.line("============ GRID LAYOUT TEST PASS ============")
 	backup_real_settings()
 	use_own_settings()   # geometry checks must not depend on the player's tuning
@@ -141,6 +151,13 @@ func _prop_tick(pl: PropLayer, live: Array, spawned: Array) -> bool:
 	return fired[0]
 
 ## One frame, and how long it took — for settling loops that must not spin forever.
+## The `base_delay` this suite runs the row-growth test at.
+## ⚠ **NOT A TUNING PREFERENCE — THE GROWTH IS UNOBSERVABLE BELOW IT.** The ease shares the
+## reveal's clock, `span = get_delay() * spotlight_reveal_fraction`, and the suite otherwise runs at
+## a compressed delay, so `delta / span` exceeds 1 and the whole growth lands inside ONE frame.
+## 0.5 puts the span around 0.2 s, a dozen frames, which is a window a poll can actually land in.
+const GROWTH_SAMPLE_DELAY := 0.5
+
 func _tick() -> float:
 	await get_tree().process_frame
 	return get_process_delta_time()
@@ -545,6 +562,17 @@ func run_a_row_grows_into_its_height_test() -> void:
 	var settled_before := pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y
 	var height_before := pa._grid_row_height(0, 0)
 
+	# ⚠ **SLOW THE CLOCK, OR THIS TEST CANNOT SEE WHAT IT ASSERTS.** The growth eases over
+	# `span = get_delay() * spotlight_reveal_fraction`; at the suite's compressed delay that is a
+	# few milliseconds, so `delta / span` exceeds 1 and the row reaches full height inside a single
+	# frame. The poll below then never catches mid-flight, and the failure detail reads the
+	# PRE-GROWTH height because `_grid_row_height` returns its cache the moment `_layer_grown`
+	# empties -- which is exactly the shape this failed in 10 runs of 11, looking like a product
+	# bug that snaps. The suite already parks the real settings file, so this cannot reach the
+	# player's.
+	var prev_delay : float = SettingsManager.settings.base_delay
+	SettingsManager.settings.base_delay = GROWTH_SAMPLE_DELAY
+
 	# A SECOND card into the same cell: the row now owes one depth pitch of growth.
 	await g.place_card_in_grid(g.state.upper_zone[1].datas[0], coord)
 	pa.flush_rebuild()
@@ -569,8 +597,12 @@ func run_a_row_grows_into_its_height_test() -> void:
 	check(caught_midway,
 			"TP-85: caught mid-growth, the row is PART WAY to its new height -- it eases rather "
 			+ "than snapping (a snap would only ever be at the old height or the new one)",
-			"row %.1f, was %.1f, will be %.1f" % [pa._grid_row_height(0, 0), height_before,
-			height_before + pitch])
+			"row %.1f, was %.1f, will be %.1f, growth t %.3f, CURRENT is mine %s -- a row that "
+			% [pa._grid_row_height(0, 0), height_before, height_before + pitch,
+			(pa._layer_grown.values()[0] if not pa._layer_grown.is_empty() else -1.0),
+			str(CardEnvironment.CURRENT == g)]
+			+ "reads its OLD height while the growth is mid-flight means the measurement answered "
+			+ "about another suite's board, not that the row snapped")
 
 	# It arrives, exactly one pitch taller, and stops.
 	waited = 0.0
@@ -583,6 +615,7 @@ func run_a_row_grows_into_its_height_test() -> void:
 	check(pa._layer_grown.is_empty(),
 			"...and an arrived board carries no growth state at all",
 			"%d left" % pa._layer_grown.size())
+	SettingsManager.settings.base_delay = prev_delay
 
 	# The bottom line of the row itself never moved: it grew UP off it.
 	check(absf(pa.slot_center_global(BoardCoord.new(0, 1, 0, 0)).y - settled_before) < 0.5,

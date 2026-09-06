@@ -44,8 +44,8 @@ var selections : Array[CardData] = []
 func _ready() -> void:
 	# Runs before UI PROPS / VISUAL LAYERS / E2E (they wait on this) — exclude them to avoid a
 	# deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "GRID VIEW", "SETTINGS RANGE",
-			"E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["UI PROPS", "VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW",
+			"SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ INTERACTION TEST PASS ============")
 	backup_real_save(suite_tag())
 	# the shared park-the-file isolation (TestSuite): every knob write during this suite lands

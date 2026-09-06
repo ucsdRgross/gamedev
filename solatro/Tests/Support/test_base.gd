@@ -57,7 +57,13 @@ func suite_name() -> String:
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
 #     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →
-#     GRID VIEW  →  SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
+#     GRID LAYOUT  →  GRID VIEW  →  SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
+#
+# ⚠ GRID LAYOUT joined the chain because it MEASURES THROUGH `CardEnvironment.CURRENT` and awaits
+# frames: `PlayArea._own_grid_row_height` resolves its grid from `get_current_game()`, so a sample
+# taken across an await answers about whichever board is CURRENT then. Concurrently, another suite
+# took it and a two-deep row measured as a bare card height -- indistinguishable from a row that
+# never grew, and it failed 10 runs in 11.
 #
 # WALL PAUSE (S12) is the permanent tail: it constructs a real Wall whose _ready() sets
 # get_tree().paused = true and never clears it (that persistence is what U1 tests), so nothing may
