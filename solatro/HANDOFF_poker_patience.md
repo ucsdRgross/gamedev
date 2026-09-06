@@ -399,6 +399,60 @@ be checked by hand.
     `_create_grid_panel`. Comment only.
 ```
 
+## THE CLOSING PHASE — what ran, and its output
+
+Every item of `/plan-run`'s numbered close, with the output rather than a claim.
+
+| # | Item | Result |
+|---|---|---|
+| 1 | full `doc_check.py` | **0 errors, 9 warnings** — identical to the pre-Phase-10 baseline |
+| 2 | adversarial review (Sonnet, ≠ Opus 5) | 3 findings; 1 real defect, 1 latent → `GAP-042`, 1 confirmed orphan |
+| 3 | `/code-review` high | 2 findings, both in the closing fix itself, both fixed |
+| 4 | `/simplify` | 1 altitude finding, recorded not fixed (parked on `GAP-038`); rest clean |
+| 5 | `/fx-verify` | **VERIFIED by eye** — rendered `standalone_view_shot`, looked at the PNG |
+| 6 | fix + re-run | suite green after every fix; see below |
+| 7 | `/docs` | retired-patience backlog deleted, suite count reconciled across 4 docs |
+| 8 | `consolidate-memory` | 2 memories updated, 0 added |
+| 9 | feed back into skills | 3 edits: `plan-run` ×2, `docs` ×1 |
+| 10 | delete the plan docs | **DELIBERATELY NOT DONE — see below** |
+
+**The suite, three full runs, all `ALL 45 SUITES` with every per-suite banner `CHECKS PASSED` and
+`0 behavior, 0 implementation`:** 3950 passed before the phase, 3964 after the doc pass, 3963 after
+the HUD fix. ⚠ The banner's `N FAILED` field is the ENGINE-ERROR gate, not assertions, and it is
+**not deterministic** — 17 errors, then 1, then 1, across identical code. Diff the per-suite banners.
+One error is stable across every run and predates this work: `SCRIPT ERROR: Trying to assign invalid
+previously freed instance` at teardown. **Not diagnosed. Not this phase's.**
+
+⚠ Only `game_view.gd` changed after the last green run, and only its COMMENTS. The
+`standalone_view_shot` render afterwards booted that exact file, laid the view out and printed
+correct geometry, so it parses and runs; no fourth suite run was spent on a comment.
+
+### ⚠ WHY STEP 10 DID NOT RUN, AND WHAT WOULD HAVE BEEN DESTROYED
+
+`/plan-run` says to delete the temporary plan documents. **`design/poker-patience/` is not deletable
+and deleting it would have been a serious mistake.** The rule assumes a run that has landed, merged
+and closed its gaps. This one has done none of those:
+
+- **THREE GAPS ARE OPEN AND A FOURTH IS ANSWERED-BUT-UNBUILT.** `GAP-039` (the isolation derivation,
+  short by a font metric and a theme one), `GAP-041` (the goal curve's growth term has the wrong
+  sign for most of a run), `GAP-042` (filed by this very close), and `GAP-038` answered `(d)` with
+  nothing built. A gap file IS the record of a parked owner decision; deleting it strands the
+  decision and the next session re-derives it from nothing.
+- **`answers.json` is the owner's 314 rulings.** It is the most expensive artefact in the stream and
+  it is not reconstructible. `PLAN.md` §1 quotes the normative ones verbatim precisely so the code
+  never has to carry a design id.
+- **THE BRANCH IS NOT MERGED.** This handoff is still the resume point, and the effect-review stream
+  on `main` is blocked on the merge (its `S12`).
+- **Eight living documents cite the directory**, including `START_HERE.md`, which now names
+  `design/poker-patience/DESIGN.md` as the authority on the grid's rules, and `ARCHITECTURE_REVIEW.md`,
+  which points at `PLAN.md` for the traceability the code deliberately does not carry. Deleting it
+  breaks every one of those, and `doc_check` would go red on the spot.
+
+**What SHOULD be deleted, and when:** after the merge, once `GAP-038`/`039`/`041`/`042` are closed
+and their residue is folded into `ARCHITECTURE_REVIEW.md`, delete `HANDOFF_poker_patience.md` and
+`TEST_PLAN.md`. **Keep `DESIGN.md`, `PLAN.md` §1, `answers.json` and `gaps/`** — they are the design
+record, not run scaffolding, and `START_HERE.md` points at them as such.
+
 ## The three gates a change here must satisfy
 
 1. **The card effect API** — a modifier reaches the game only through `CardEffectApi` as
