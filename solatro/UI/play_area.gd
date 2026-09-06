@@ -446,6 +446,12 @@ var new_data_card : Dictionary[CardData, CardVisual]
 ## ⚠ **NOTHING IN THE BOARD CLIPS.** Hiding a non-focused grid is the CAMERA's job and only the
 ## camera's -- the ruling and its reason are stated once, on the `clip_contents = false` that
 ## enforces it.
+## A panel's own answer to "which buckets, and from which row" -- set when a panel is mounted
+## somewhere `get_index()` cannot answer for it. Absent on a board grid, which still answers by
+## position, so this changes nothing for the grids.
+const META_BUCKET_GRID := &"bucket_grid"
+const META_ROW_OFFSET := &"row_offset"
+
 @onready var scroll_container: ScrollContainer = $SmoothScrollContainer
 @onready var grid_container: HBoxContainer = %GridContainer
 @onready var card_layer: Node2D = %CardLayer
@@ -2482,10 +2488,23 @@ func _fit_children(parent: Node, wanted: int, make: Callable) -> void:
 ## ⚠ That is why a row's labels are their own VBox built exactly like a `CellSlot` — bottom-aligned,
 ## `h` rising — rather than one label per row. Laying them out any other way would put a height-1
 ## score beside height-0 cards, which is the one thing the owner's wording pins down.
+## WHICH grid's score buckets a panel draws from. A board grid answers with its own position in
+## `GridContainer`; a panel mounted anywhere else -- the Entrance's, which lives in its own strip --
+## states it instead, because a child index there means nothing.
+func _panel_bucket_grid(panel: Control) -> int:
+	return panel.get_meta(META_BUCKET_GRID, panel.get_index())
+
+## WHERE a panel's first row sits inside those buckets. A board grid starts at 0; the Entrance
+## starts past the grid's own last row, which is the whole of the owner's *"its own row bucket as
+## if grid is 5x6"* -- expressed once, here, rather than at every reader.
+func _panel_row_offset(panel: Control) -> int:
+	return panel.get_meta(META_ROW_OFFSET, 0)
+
 func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
-	var gi := panel.get_index()
+	var gi := _panel_bucket_grid(panel)
+	var row0 := _panel_row_offset(panel)
 	var state := game.state
 	var board := panel.get_node_or_null("Board") as Control
 	if not board: return
@@ -2495,8 +2514,9 @@ func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 	if row_labels:
 		_fit_children(row_labels, grid.grid_height, _create_label_stack)
 		for ry : int in grid.grid_height:
+			var bucket_row := row0 + ry
 			_fill_label_stack(row_labels.get_child(ry) as VBoxContainer, state.scores_row,
-					gi, ry, _row_score_levels(state.scores_row, gi, ry), true)
+					gi, bucket_row, _row_score_levels(state.scores_row, gi, bucket_row), true)
 	var col_labels := panel.get_node_or_null("Board/CellsColumn/ColLabels") as Control
 	if col_labels:
 		_fit_children(col_labels, grid.grid_width, _create_label_stack)
@@ -2620,7 +2640,7 @@ func _grid_score_label(panel: Control, section: ScoringSection) -> BigNumberLabe
 			return _label_in_stack(panel.get_node_or_null("Board/CellsColumn/ColLabels") as Control,
 					section.index, section.height)
 		ScoringSection.LineKind.HEIGHT_V:
-			return _cell_score_labels.get(Vector3i(panel.get_index(), section.cell.x,
+			return _cell_score_labels.get(Vector3i(_panel_bucket_grid(panel), section.cell.x,
 					section.cell.y))
 	return null
 
