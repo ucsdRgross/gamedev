@@ -798,11 +798,12 @@ func entrance_grid() -> int:
 ## carries its own height.
 ## ⚠ This is a BANKING index, not a board coordinate. An Entrance card's `y` stays
 ## `BoardCoord.ENTRANCE_ROW`; nothing about placement or geometry moves.
-## ⚠ **ASSUMES A ONE-ROW ENTRANCE, WHICH IS ALL THAT SHIPS.** The owner has asked for shapes like
-## a 2x3 Entrance, and a multi-row Entrance occupies a RANGE of banking rows, not one. Whether its
-## fan depth is a ROW or a HEIGHT is undecided and decides both the key and the label -- see
-## `design/poker-patience/gaps/GAP-042.md`. Generalise this WITH the labels, not before: the
-## display is what makes the difference observable.
+## ⚠ **ONE-ROW ENTRANCE, WHICH IS ALL THAT SHIPS — AND `h` IS HEIGHT, NOT A SECOND ROW.** Owner:
+## *"should be row. height is gained from stacking cards in one slot"*. So a slot's stack depth is
+## the HEIGHT axis, exactly as it is in a grid cell, and the Entrance's rows are a SEPARATE axis it
+## does not have yet. A 2x3 Entrance means 2 slots wide by 3 ROWS, each slot still stacking for
+## height. When those rows exist this becomes `grid_height + entrance_row`; the `height` half of the
+## key is already right and does not move.
 func entrance_row_index(grid: int) -> int:
 	if grid < 0 or grid >= grids.size() or not grids[grid]: return 0
 	return grids[grid].grid_height

@@ -335,9 +335,10 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   banks (`GAP-042`'s data half is landed) and nothing renders it. Three things to add: label stacks
   for the Entrance's rows, height labels placed BELOW the lower zone's stack instead of above it
   (the column strip is in the centre), and `_sync_cell_score_labels` accepting a row that is not a
-  grid row. ⚠ A multi-row Entrance (the owner named 2x3) also decides whether its fan depth is a
-  ROW or a HEIGHT, which changes the bucket key -- settle that WITH the labels, since their
-  placement is what makes the two readings observably different. ⚠ Row/col label COUNTS and the
+  grid row. ⚠ A multi-row Entrance (the owner named 2x3) is SETTLED as real rows, with a slot's
+  stack depth staying the HEIGHT axis -- which confirms the shipped banking rather than changing
+  it. But `upper_zone` is a flat array of slots with nowhere to put a second row, so giving the
+  Entrance rows is a STRUCTURAL change (it becomes cell-shaped like GridData), not a label one. ⚠ Row/col label COUNTS and the
   per-height stacks are ALREADY derived from the grid's own dimensions and buckets, so an 8x7 grid
   needs no work there; do not rebuild them.
 - **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
