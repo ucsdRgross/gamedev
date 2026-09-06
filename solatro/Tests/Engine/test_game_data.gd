@@ -25,7 +25,56 @@ func _ready() -> void:
 	test_validate_clean_board()
 	test_validate_reports_injected_violations()
 	test_pack_unpack_edge_values()
+	behavior_section("THE ENTRANCE IS A GRID-SHAPED ZONE")
+	test_entrance_is_the_only_storage()
+	test_entrance_width_derives_from_its_cells()
+	test_entrance_survives_a_save_roundtrip()
 	finish()
+
+## The Entrance is a zone with a grid-like structure, and `upper_zone` is a VIEW of it -- not a
+## second array that has to be kept in step.
+func test_entrance_is_the_only_storage() -> void:
+	var s := make_state()
+	check(is_same(s.upper_zone, s.entrance_zone().cells),
+			"upper_zone IS the Entrance zone's cell array, not a copy of it")
+	check(is_same(s.upper_zone_type, s.entrance_zone().cell_types),
+			"upper_zone_type IS the Entrance zone's cell_types")
+	# A write through the old name has to land in the zone, or 265 existing call sites would be
+	# mutating something the zone never sees.
+	var before : int = s.entrance_zone().cells[0].datas.size()
+	s.upper_zone[0].datas.append(CardData.new())
+	check(s.entrance_zone().cells[0].datas.size() == before + 1,
+			"a write through upper_zone lands in the zone itself",
+			"%d -> %d" % [before, s.entrance_zone().cells[0].datas.size()])
+
+## The zone's declared width is DERIVED, so a slot added by appending through a reference -- which
+## is what both `Board.add_column` and the ZoneAdder-shaped path do -- cannot leave it stale.
+func test_entrance_width_derives_from_its_cells() -> void:
+	var s := make_state()
+	var slots : int = s.upper_zone.size()
+	check(s.entrance_zone().grid_width == slots,
+			"the zone's width matches its slot count to begin with",
+			"width %d, slots %d" % [s.entrance_zone().grid_width, slots])
+	# Append DIRECTLY, the way the fuzz's ZoneAdder-style action does -- no resync call anywhere.
+	s.upper_zone.append(ArrayCardData.new())
+	s.upper_zone_type.append(CardData.new())
+	check(s.entrance_zone().grid_width == slots + 1,
+			"...and it re-derives after a raw append, with nothing having called a resync",
+			"width %d, wanted %d" % [s.entrance_zone().grid_width, slots + 1])
+
+## The zone is what persists now; `upper_zone` is not stored at all.
+func test_entrance_survives_a_save_roundtrip() -> void:
+	var s := make_state()
+	var slots : int = s.upper_zone.size()
+	var restored := s.to_saveable().duplicate_state()
+	restored.restore_runtime()
+	check(restored.upper_zone.size() == slots,
+			"the Entrance's slots survive to_saveable + duplicate_state",
+			"%d of %d" % [restored.upper_zone.size(), slots])
+	check(is_same(restored.upper_zone, restored.entrance_zone().cells),
+			"...and the restored copy's upper_zone is still a view of its OWN zone")
+	check(not is_same(restored.entrance_zone(), s.entrance_zone()),
+			"...which is a different zone object from the original's")
 
 func _bn(m: float, e: int) -> BigNumber:
 	var bn := BigNumber.new()

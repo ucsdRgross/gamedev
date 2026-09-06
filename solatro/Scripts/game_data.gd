@@ -128,8 +128,49 @@ func has_met_goal() -> bool:
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
-@export_storage var upper_zone_type : Array[CardData]
-@export_storage var upper_zone : Array[ArrayCardData]
+## THE ENTRANCE, as its own grid-shaped ZONE. Owner: *"entrance being similar to grid is the idea.
+## same as previous lower zone vs upper zone distinction determining behavior, but each zone
+## contains its own grid like structure."* So a zone is cells-with-stacks exactly like the board's
+## grids are, and which zone a card is in decides BEHAVIOUR -- the Entrance stages, the grids score.
+## Ships one row of slots; a second row is what a 2x3 Entrance would use, and a slot's stack depth
+## stays the HEIGHT axis either way.
+@export_storage var entrance : GridData = null
+
+## The Entrance zone, built on first use and with its WIDTH DERIVED on the way out.
+##
+## Lazy so a state restored from a save written before the zone existed answers instead of
+## dereferencing null.
+##
+## ⚠ **THE WIDTH IS A CACHE OF `cells.size()`, REFRESHED HERE, NOT A SECOND SOURCE OF TRUTH.**
+## Zone slots are added and removed by appending to the cell array THROUGH A REFERENCE -- both
+## `Board.add_column` and the ZoneAdder-shaped path the fuzz exercises do exactly that -- so a
+## stored width drifts the moment anything skips whatever function was supposed to update it.
+## Deriving it at the ONE accessor every reader passes through means it cannot drift at all, which
+## is why there is no invariant checking it: there is nothing left to disagree.
+func entrance_zone() -> GridData:
+	if not entrance:
+		entrance = GridData.new()
+		entrance.grid_height = 1
+	var want := entrance.cells.size() / maxi(entrance.grid_height, 1)
+	if entrance.grid_width != want:
+		entrance.grid_width = want
+	return entrance
+
+## VIEWS over the Entrance zone -- `upper_zone` and `upper_zone_type` are no longer storage, so
+## there is ONE representation of the Entrance and nothing to keep in step with it.
+## ⚠ Every existing caller keeps working because a GDScript Array is a REFERENCE:
+## `upper_zone[c].datas.append(card)` mutates the zone itself, not a copy.
+var upper_zone_type : Array[CardData]:
+	get:
+		return entrance_zone().cell_types
+	set(value):
+		entrance_zone().cell_types = value
+
+var upper_zone : Array[ArrayCardData]:
+	get:
+		return entrance_zone().cells
+	set(value):
+		entrance_zone().cells = value
 @export_storage var lower_zone_type : Array[CardData]
 @export_storage var lower_zone : Array[ArrayCardData]
 # Runtime score accumulators. NOT serialized (BigNumber is RefCounted, invisible to
