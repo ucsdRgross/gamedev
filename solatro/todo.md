@@ -331,8 +331,10 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
   of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
   rule. Left as waste on a hover-enter path, deliberately.
-- **The Entrance's score LABELS are owed, and they belong to this pass.** Its row bucket already
-  banks (`GAP-042`'s data half is landed) and nothing renders it. Three things to add: label stacks
+- **The Entrance renders through the LEGACY zone renderer, and switching it is the last piece.** Banking, the zone shape and the
+  HEIGHT labels are all landed; what is left is its ROW label and multi-row cells, and both come
+  free once it binds to `_create_grid_panel` / `_bind_grid_panel` -- which already take a panel and
+  a `GridData` and never touch `state.grids`. Three things to add: label stacks
   for the Entrance's rows, height labels for the Entrance -- which stay ABOVE their stack like every
   other, the owner having reversed an earlier call, so the arithmetic is unchanged and only the
   separation band's BUDGET grows (column scores on top, Entrance height scores directly beneath) --
