@@ -483,17 +483,62 @@ under it is not fixed: see "Open bugs".
 
 ### ⚠ WHAT DID NOT RUN, AND WHY
 
-- **`/fx-verify` — NOT RUN, AND THE REASON GIVEN FOR SKIPPING IT NO LONGER HOLDS.** The original
-  reason: the visual changes in this range (the emptied HUD labels, the Entrance height labels) were
-  eye-verified in the FIRST close, and this close changed no rendering code — fix 3 moved comments,
-  fixes 1-2 are banking and index arithmetic. That much is still true.
-  ⚠ **BUT THE TIER C PASS THEN PRODUCED TWO ITEMS THAT NEED A RENDER**, and a third class that a
-  render is the only instrument for: the `anim_spring_lift` / `anim_jump` descent mismatch and the
-  hoop-split zoom bug (both have a DURATION, so a still frame is the wrong instrument), plus the four
-  zoom-awareness sites, which are wrong only in FOCUSED mode — where the layout suites, pinned to the
-  overview, cannot see them.
-  **So `/fx-verify` is now OWED, not declined.** It is the one item of the original numbered close
-  still outstanding, and it has concrete targets rather than a general obligation.
+- **`/fx-verify` — RAN. Results below.** (This bullet's earlier text explained why it was skipped;
+  the skip is no longer the state, and the reasoning is kept only in git.)
+
+### `/fx-verify` — what was rendered, measured, and what is still UNVERIFIED
+
+**✅ The light layer moves.** `Tools/spotlight_tool.tscn -- --verify`: **14 scenarios, 0 SUSPECT**,
+every one reporting real movement (`flips` 3-10, `dim=0.75`, `travel=Y`, `fade=Y`, `show_peaks`
+rising to 1.00 and returning to 0.03). Nothing is inert.
+
+**✅ MEASURED, not eyeballed — the hoop's jump alignment is correct AND scale-aware.**
+`prop_art_snapshot` → `15_hoop_alignment.png`, measured off the capture by colour-keying the ring,
+the card rect and the centre line:
+
+| | card-rect centre vs ring centre |
+|---|---|
+| `card_scale` 2.5, at rest | +30.0 px |
+| `card_scale` 2.5, JUMPED | **0.0** |
+| `card_scale` 4.0, at rest | +48.0 px |
+| `card_scale` 4.0, JUMPED | **0.0** |
+
+The shot's own invariant — *"a jumped card's centre is the ring's centre"* — holds EXACTLY at both
+scales, and the rest offset is exactly proportional (48/30 = 1.6 = 4.0/2.5). **So the jump-rise path
+is scale-aware and correct**, via `CARD_JUMP_RISE * settings().card_scale`.
+
+**✅ The hoop half art is correct.** `13_hoop_halves.png`: whole ring, back half (`(`), front half
+(`)`), and both recombined — the recombination reproduces the whole ring's silhouette with the split
+on the vertical diameter, no gap or doubling at the join.
+
+**⚠ UNVERIFIED — the claimed focused-zoom bug.** That harness varies `card_scale`, which is NOT
+`board_zoom`: the focused-mode zoom is applied at the SCROLL CONTAINER, and the Tier C claim is about
+`prop_layer.gd:193 _body_over_any_card` comparing a `get_global_rect()` that ignores it. **No Visual
+harness drives props at all** — `grep -l 'PropData|prop_layer|run_props' Tests/Visual/*.gd` returns
+nothing — so nothing renders a prop over a card at a non-1.0 board zoom. This needs a harness that
+does not exist, not another reading pass.
+
+**⚠ CONFIRMED BY CONSTRUCTION, UNVERIFIED BY RENDER — the spring/jump descent mismatch.** Read off
+the tween chains, which are declarative and leave no ambiguity:
+- `anim_jump` (`card_visual.gd:772`) tweens `offset.position:y` to `-CARD_JUMP_RISE` and **never
+  returns it**; only the SCALE pulses back. The jumped card is brought down separately, by
+  `anim_reset()`, and only when the prop's HOLD ends (`prop_layer.gd:669`, `:468`).
+- `anim_spring_lift` (`:802`) rises, holds for `card_jump_pulse_fraction`, then **returns y to 0
+  itself**.
+**So the riders descend while the jumped card is still held up.** `Q310`=a — *"as if jumping card has
+all above cards on its shoulder"* — holds for the lift and breaks for the rest of the hold.
+⚠ **The function's own doc comment says the opposite** (*"then down together"*, *"moves as ONE RIGID
+BODY"*), which is the stale-comment class again. ⚠ And because step 1 of `_update_reactions` re-calls
+`jump_card_with_its_stack` per arriving prop, a train of props re-lifts the riders repeatedly while
+the jumped card simply stays up.
+
+**⚠ TWO ENGINE ERRORS OBSERVED DURING THESE RENDERS**, neither previously recorded:
+- `prop_visual.gd:299` in `_notification` — *"Attempted to set an invalid (previously freed?) object
+  instance into a 'TypedArray'"*, twice, during `prop_art_snapshot` teardown.
+- `LeakSentinel` during `spotlight_tool --verify` — *10 CardData alive, 0 reachable, unreachable for
+  3 checks* (3 hoop, 3 fire, 2 knife, 2 ball).
+Both are in TOOL harnesses rather than the game, and neither is in the suite's error gate. Not
+diagnosed.
 - **The intermittent GRID VIEW hang was not attributed**, only characterised. See below.
 
 ### ⚠ THE INTERMITTENT HANG — 1 RUN IN 13, AND NOT REPRODUCED SINCE
