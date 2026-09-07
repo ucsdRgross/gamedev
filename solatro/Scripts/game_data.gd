@@ -845,6 +845,13 @@ func entrance_grid() -> int:
 ## does not have yet. A 2x3 Entrance means 2 slots wide by 3 ROWS, each slot still stacking for
 ## height. When those rows exist this becomes `grid_height + entrance_row`; the `height` half of the
 ## key is already right and does not move.
+## ⚠ **THE GUARD IS NOT DEAD, AND IT IS NOT A SPECULATIVE ONE.** Making it an `assert` (hard rule 6)
+## fired 12 times in a full run: fixtures that score an ENTRANCE card on a board with no grids at
+## all. Those are silently banking into a grid that does not exist, and `board_total()` walks
+## `grids`, so the score is lost. Two of them were fixed; the third cannot take a grid without
+## widening the board it exists to measure. Until a boardless state is either impossible or
+## legitimate, this returns a row index rather than crashing the suite -- see the handoff's
+## "THE ASSERT IN FIX 2 FOUND WHAT STATIC ANALYSIS MISSED".
 func entrance_row_index(grid: int) -> int:
 	if grid < 0 or grid >= grids.size() or not grids[grid]: return 0
 	return grids[grid].grid_height
@@ -925,6 +932,15 @@ func resize_grid_bucket(bucket: Array[BigNumber], n: int) -> void:
 		# A resize leaves NULL holes, and a caller may have grown the array itself, so fill
 		# every empty slot rather than only the ones this call appended.
 		if not bucket[i]: bucket[i] = _zero_big_number()
+
+## Follows `committed_grid` across a grid removal. `grids.pop_at` renumbers every later grid, so
+## an index held anywhere else has to move with it -- exactly the re-indexing `_drop_grid` does for
+## the buckets. Removing the COMMITTED grid lifts the commitment outright: there is nothing left to
+## be committed to, and the only other reset sits PAST the guard that would otherwise refuse every
+## placement for the rest of the show.
+func rebase_commitment(removed: int) -> void:
+	if committed_grid == removed: committed_grid = -1
+	elif committed_grid > removed: committed_grid -= 1
 
 ## Drops grid `index`'s score buckets and re-indexes every later grid down by one, keeping every
 ## bucket aligned with `grids` after a grid is removed. `total_score` is untouched -- a removed

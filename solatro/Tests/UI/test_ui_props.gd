@@ -88,6 +88,12 @@ func make_board_game(cols: int, empty_cols: Array[int] = []) -> Game:
 		columns.append(TestFactories.col([card] as Array[CardData]))
 	s.upper_zone_type = types
 	s.upper_zone = columns
+	# ⚠ A REAL GRID, because these cards sit in the ENTRANCE and an Entrance score banks into its
+	# attached grid's bucket. With no grid there is nothing to bank into -- the score the player
+	# sees stays 0, which is the very loss these prop tests exist to catch.
+	var grid := GridData.new()
+	grid.build_cells()
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()   # reset compression so get_delay() is the plain base delay
 	CardEnvironment.CURRENT = g

@@ -27,7 +27,73 @@ func _ready() -> void:
 	run_compaction_flag_test()
 	run_has_cell_test()
 	run_validate_catches_grid_aliasing_test()
+	run_removal_carries_the_commitment_test()
 	finish()
+
+# ==============================================================================
+# A grid removal renumbers, and the COMMITMENT has to move with it
+# ==============================================================================
+## `grids.pop_at` shifts every later grid down one. `remove_grid_score_data` re-indexes the score
+## buckets for exactly that reason; `committed_grid` was left naming the old numbering, and
+## `Game.place_card_in_grid` refuses every placement whose grid is not the committed one -- with
+## its only reset sitting past that same guard, so nothing could ever clear it again.
+func run_removal_carries_the_commitment_test() -> void:
+	behavior_section("A REMOVAL CARRIES THE COMMITMENT")
+	var state := GameData.new()
+	var grids : Array[GridData] = []
+	for _i in 3:
+		var g := GridData.new()
+		g.build_cells()
+		grids.append(g)
+	state.grids = grids
+
+	# Committed BELOW the removal: untouched, because its own index did not move.
+	state.committed_grid = 0
+	Board.remove_grid(state, 2)
+	check(state.committed_grid == 0,
+			"removing a grid ABOVE the committed one leaves the commitment alone",
+			"got %d" % state.committed_grid)
+
+	# Committed ABOVE the removal: the grid is still there, one index lower, and so is the
+	# commitment -- it must still name the SAME grid, not the one that slid into its place.
+	var state2 := GameData.new()
+	var grids2 : Array[GridData] = []
+	for _i in 3:
+		var g := GridData.new()
+		g.build_cells()
+		grids2.append(g)
+	state2.grids = grids2
+	var committed_to : GridData = grids2[2]
+	state2.committed_grid = 2
+	Board.remove_grid(state2, 0)
+	check(state2.committed_grid == 1,
+			"removing a grid BELOW the committed one shifts the commitment down with it",
+			"got %d" % state2.committed_grid)
+	# `find`, never `grids[committed_grid]`: a WRONG commitment is out of range, and indexing it
+	# would abort this function and take every check below it down silently.
+	check(state2.grids.find(committed_to) == state2.committed_grid,
+			"...and it still names the SAME grid, not the one that slid into its old index",
+			"grid sits at %d, commitment says %d"
+			% [state2.grids.find(committed_to), state2.committed_grid])
+
+	# Committing to a grid that is then removed: the commitment LIFTS. Left dangling it would
+	# name an index no grid has, and every later placement would be refused for the whole show.
+	var state3 := GameData.new()
+	var grids3 : Array[GridData] = []
+	for _i in 2:
+		var g := GridData.new()
+		g.build_cells()
+		grids3.append(g)
+	state3.grids = grids3
+	state3.committed_grid = 1
+	Board.remove_grid(state3, 1)
+	check(state3.committed_grid == -1,
+			"removing the COMMITTED grid lifts the commitment -- there is nothing to commit to",
+			"got %d" % state3.committed_grid)
+	check(state3.committed_grid < state3.grids.size(),
+			"...so the commitment never names an index the board does not have",
+			"committed %d, %d grids" % [state3.committed_grid, state3.grids.size()])
+
 
 # ==============================================================================
 # TP-01 -- a coordinate round-trips grid/x/y/h
