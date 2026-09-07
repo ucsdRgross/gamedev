@@ -256,6 +256,13 @@ def main():
 
     errors, warnings = scan_unseen(streams, log_text, allowlist)
 
+    # ⚠ **A FAILING RUN'S LOGS ARE AS PERISHABLE AS A STALLED ONE'S, AND FAR MORE OFTEN LOST.** The
+    # next run truncates them, and the reflex after a red run is to run it again -- so an
+    # INTERMITTENT failure erases its own evidence every time. Measured: a 1-in-6 behaviour failure
+    # was seen and lost inside three minutes. Preserved here, not only on a stall.
+    if not stalled and (suite_failures or errors or crashed):
+        print("[exit-time] this run was NOT clean; logs preserved at: %s" % preserve_logs("failed"))
+
     banner_line = next((line for line in streams.splitlines() if BANNER.search(line)), None)
     saw_banner = banner_line is not None
     print(banner_line.strip() if saw_banner else
