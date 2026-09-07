@@ -755,12 +755,18 @@ next reader, and the code is the source of truth for anything already built.
   dispatch hook does NOT reach it, so those self-registrations are LOAD-BEARING, not redundant.
   ⚠ **ORIGIN: `b36c5336`, a PRE-GRID commit.** `_act_cancellable` meant "an act is resolving" when
   the act WAS the `on_next` cycle. The scoring action moved to placement; the flag did not.
-  ⚠ **NOT FIXED HERE — IT CHANGES SCORING BALANCE, WHICH IS THE OWNER'S CALL.** The flag is
-  overloaded: it also means "undo may cancel this act" (`game.gd:539`). Gating combo on
-  cancellability conflates two things, and the defensible fix is to gate on *an act is in progress*
-  — which placement already establishes via `_begin_act()`. But turning this on makes every effect
-  activation feed the multiplier, and nobody has measured what that does to the curve. `GAP-041`
-  already has the goal curve open.
+  ⚠⚠ **NOT FIXED, AND THE ONE-LINE FIX WOULD BREAK SCORING OUTRIGHT — see `gaps/GAP-043.md`.**
+  Deleting the gate looks obvious and is wrong, because the grid game has NO COMBO RESET:
+  `combo_repeats` is never cleared anywhere (`game.gd:210` `+= 1` is its only production write), and
+  `combo_classes` is cleared only in `GameData.apply_act_score():94`, which is dead production code.
+  The multiplier is uncapped — `player_settings.gd` ships `combo_unique_step 1.0`,
+  `combo_repeat_step 0.5`, `combo_cap 0.0`, and a cap of 0 means none. **So the gate is currently the
+  only thing bounding combo growth from mod dispatch**; open it and every mod firing on every
+  placement adds +0.5 for the length of a show with no ceiling.
+  **D11 cannot be delivered by removing the gate. It needs a reset rule, and D13 — *"no act, no
+  banking moment"* — deliberately removed the event that used to provide one.** That is a decision
+  the design does not cover, so it is `GAP-043`, not a defect to fix in a close. Four options are
+  written out there, with the warning to check for a fifth.
 
 - ⚠⚠ **`SkillExtraPoint` AWARDS NOTHING, AND IT IS IN 19 DECK SLOTS.** Its description reads *"Gain 1
   Extra Point Per Score"*. `Cards/Skills/skill_extra_point.gd:19` `add_points()` has **no caller**:
