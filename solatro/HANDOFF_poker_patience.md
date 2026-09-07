@@ -731,6 +731,25 @@ next reader, and the code is the source of truth for anything already built.
 
 ## Open bugs
 
+- ⚠ **`GameData.apply_act_score()` IS DEAD PRODUCTION CODE, KEPT ALIVE ONLY BY ITS OWN TESTS.**
+  `game_data.gd:87`. Grep for callers outside `archive/`: **every one is a test** —
+  `test_act_score.gd` (7 calls), `test_combo.gd` (4), `test_game_headless.gd` (1, whose own comment
+  says *"there is no button that"* fires it). No production path calls it. It writes `mult_score`
+  and `total_score`; `game_view.gd:46` already describes `mult_score` / `col_total` / `row_total` as
+  *"the RETIRED act payout's display"* and this close emptied those labels.
+  **So the `ACT SCORE` suite, and `test_apply_act_score_combo` inside `COMBO`, are green forever
+  while proving nothing about the shipped game.** They are not broken tests — they correctly test a
+  function. That function is simply not part of the game any more, and their greenness is what makes
+  the dead code look live.
+  ⚠ **NOT DELETED HERE — IT IS AN OWNER CALL, NOT A CLOSE'S.** Removing it means deleting production
+  code plus a whole suite and part of another, and the question underneath is a design one: is the
+  act payout gone for good, or parked? `PLAN.md` §1.6 retired it in favour of the derived
+  `live_total()`, which argues for deletion — but that is a ruling to confirm, not to assume.
+  ⚠ **THE THREE `check()`s ON `row_total` / `col_total` IN `test_game_headless.gd` ARE DIFFERENT**
+  and should stay: they cover `add_line_score`'s LEGACY branch, which is still reachable and still
+  has a live defect in it (`PropBankColScore`, above). Do not sweep them up with the act payout.
+
+
 - ⚠⚠ **`PropBankColScore` LOSES EVERY FIREWORK COLUMN SCORE — LIVE, IN SHIPPED CONTENT, NOT LATENT.**
   `Cards/Props/Mods/prop_bank_col_score.gd:16-19` hand-builds a bare `ScoringSection.new()` and never
   sets `grid`, so it is **always** `-1` and `Game.add_line_score` **always** takes the legacy branch
