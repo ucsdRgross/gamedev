@@ -98,10 +98,24 @@ deterministic bug** — a constant value looks like geometry and is not.
 ⚠ The tell is a **rotating casualty**: the same suites pass alone and fail together while WHICH
 check fails changes run to run. That is one problem, not several.
 
-⚠ **INTERFERENCE ALSO PRESENTS AS A HANG WITH NO OUTPUT AT ALL, AND THAT LOOKS LIKE A BROKEN BUILD.**
-Measured: a suite printed its banner and then emitted ZERO checks for 27 minutes until the global
-timeout killed the run, whose report reads `NO SUITE BANNER — the run did not reach its own verdict`.
-Run alone, the same suite passed 215/215 in about a minute. **A slow suite still streams checks; a
-silent one after its banner is hung.** It was intermittent — 1 run in 4 — so a single timeout is not
-evidence that HEAD is broken. Re-run before concluding anything, and never revise a commit's claimed
-green result on one sample.
+⚠ **A RUN CAN ALSO STALL WITH NO OUTPUT AT ALL, AND THAT LOOKS LIKE A BROKEN BUILD.** Measured: a
+suite printed its banner and then emitted ZERO checks for 27 minutes until the global timeout killed
+the run, reporting `NO SUITE BANNER — the run did not reach its own verdict`. Run alone the same
+suite passed 215/215 in a minute. **A slow suite still streams checks; a silent one after its banner
+is stalled.** It was 1 run in 6, so a single timeout is not evidence a branch is broken — re-run
+before concluding, and never revise a commit's claimed green result on one sample.
+
+⚠ **DO NOT NAME A CAUSE YOU HAVE NOT MEASURED.** That stall was blamed first on concurrent suites
+(the suite had none — every sibling it excluded waited for IT) and then on an unbounded settle loop
+(every wait on the path was bounded). Both were reasoned, both were written into a living doc, and
+both were wrong. What the evidence actually supported was much narrower: the log flushes per line, so
+the stall sat between two consecutive log writes, in a window with no loop, no await and no branch.
+
+⚠ **PRESERVE THE LOGS BEFORE RE-RUNNING.** The harness reopens its log with truncate, so every
+subsequent run destroys the evidence of the stalled one. Copy the log directory aside the moment a
+run looks stuck — otherwise the only artefact of a 30-minute hang is that it happened.
+
+⚠ **A GLOBAL TIMEOUT IS NOT A WATCHDOG.** With only a whole-run wall clock, ONE stalled suite eats
+the entire budget and the runner discards the verdict of every other suite — the 44 that were fine
+report nothing. A per-suite silence detector that NAMES the quiet suite turns a 30-minute mystery
+into an attributable failure, and is worth building before chasing the cause.

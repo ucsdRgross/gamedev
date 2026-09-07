@@ -510,29 +510,61 @@ banner.
 ============ GRID VIEW: ALL 215 CHECKS PASSED ============     0 FAIL, empty errors log
 ```
 
-So the hang is **cross-suite interference, not a defect in GRID VIEW**. GRID VIEW excludes only
-`SETTINGS RANGE`, `E2E RUN`, `LEAK CANARY`, `WALL PAUSE`, so those four are its only concurrent
-siblings — and `SETTINGS RANGE` is one of the three suites that REASSIGN the global
-`SettingsManager.settings`, which is this document's own leading open bug and `GAP-030`'s subject.
+⚠ **AN EARLIER VERSION OF THIS SECTION BLAMED CROSS-SUITE INTERFERENCE. THAT WAS WRONG, TWICE, AND
+THE CORRECTION IS THE USEFUL PART.**
 
-⚠ **`785a1586` MOVED `GRID LAYOUT` INTO THE ORDERING CHAIN**, which changes which suites run
-concurrently with which. That is the one recent change that could newly expose this. The chain
-itself was checked for a cycle and is consistent — every waiter excludes exactly the suites after
-it — so the deadlock rule is NOT violated; the interference is through shared global state, not
-through the wait graph.
+**Wrong #1 — "GRID VIEW's concurrent siblings".** It has none. GRID VIEW waits for every sibling
+except `SETTINGS RANGE`, `E2E RUN`, `LEAK CANARY`, `WALL PAUSE` — and **all four of those wait for
+GRID VIEW** (each excludes only the suites after it in the chain). Verified by reading all nine
+exclude lists. **GRID VIEW runs alone.** Nothing can be concurrent with it, so no concurrent suite
+can have stolen a global from it.
 
-**WHY NO CODE FIX WAS APPLIED.** `/plan-run`'s rule: *a review pass REPORTS; only a green suite lets
-it APPLY* — the tests are the external feedback, and without them a model correcting its own work
-degrades it. With no green baseline, a fix cannot be told from a regression. The doc fixes below are
-not code and are not gated by it.
+**Wrong #2 — "a settle loop that never settles".** Every wait on the path is bounded:
+`_settle_layout` is `while waited < 2.0`, and `_stand_up_grids` only ever awaits
+`get_tree().process_frame` a fixed number of times. There is no unbounded loop to spin in.
 
-⚠ **IT IS INTERMITTENT, NOT A BROKEN HEAD.** Three further full runs went green, so the hang is
-1 in 4. It is a REAL standing flake with a four-suite suspect set, and `GAP-030` already owns the
-mechanism — but it did not block this close, and `730815bd`'s claimed green run does reproduce, just
-not every time.
+**WHAT IS ACTUALLY KNOWN, AND IT IS STRANGER THAN EITHER.** `TestLog.line` calls `flush()` on EVERY
+line, so the log is write-through and the last line written is genuinely the last line reached. The
+last line was the GRID VIEW banner. The very next statement is
+`check_all_tests_registered()`, whose FIRST action is `implementation_section("REGISTRATION GATE")`
+— another `TestLog.line`, which never appeared. **So the stall is between two consecutive log writes,
+in a window that contains no loop, no await and no branch** — while the process burned a full core
+(CPU 456s → 1556s over the stall, sampled).
 
-**WHAT THE NEXT SESSION SHOULD DO:** attribute it, or accept it as known. The cheapest lever is that
-GRID VIEW's concurrent set is exactly four suites wide.
+Ordinary GDScript control flow cannot stall there. That makes "GRID VIEW hung" the wrong frame: the
+suite is where the log stops, not necessarily where the process is stuck. The suspects are now at the
+ENGINE/process level, not the suite level, and nothing here distinguishes them.
+
+⚠ **IT IS INTERMITTENT, NOT A BROKEN HEAD.** One hang in six full runs this close; the other five
+went green. `730815bd`'s claimed green result does reproduce, just not every time. "Intermittent" is
+not the opposite of "deterministic": the suite seeds its RNG, but frame deltas are real-time, and
+`_settle_layout` accumulates `get_process_delta_time()` — so runs differ in timing even at identical
+code, and a timing-dependent stall is deterministic only given an interleaving nobody recorded.
+
+### ⚠ WHY IT COULD NOT BE ATTRIBUTED, AND THE ONE FIX THAT DOES NOT NEED ATTRIBUTION
+
+**THE ENGINE LOG FROM THE HUNG RUN IS GONE.** Every later run reopens `test_output_all.log` with
+`FileAccess.WRITE`, which truncates. Five runs followed. **Whoever chases this next must preserve the
+logs before re-running** — copy the whole `logs/test/` directory aside on the first sign of a stall.
+That is the single most expensive mistake this close made.
+
+**THERE IS NO PER-SUITE STALL DETECTION ANYWHERE.** `run_tests.py` has only ONE bound: a global
+wall-clock `--timeout` on the whole 45-suite process. So a single stalled suite consumes the entire
+budget and the run reports `NO SUITE BANNER — the run did not reach its own verdict`, **discarding
+the verdict of all 45 suites**, including the 44 that were fine. That is why one stall costs a
+30-minute run AND leaves nothing to attribute it with.
+
+**A per-suite watchdog is the fix that is worth making regardless of root cause**: a timer that
+notices no check has been recorded for N seconds and prints which suite is silent, then lets the run
+continue or die loudly with a name attached. It converts a 30-minute silent hang into a named,
+attributable failure, and it would have caught this one on its first occurrence. It was NOT built
+here — it changes the harness every suite runs under, which is not a thing to land in the middle of
+a close, on a branch about to merge, on the strength of one occurrence.
+
+**WHAT THE NEXT SESSION SHOULD DO, IN ORDER:** (1) build the per-suite watchdog; (2) run the suite in
+a loop, preserving `logs/test/` and Godot's own `godot.log` after every run, until it stalls again;
+(3) only then attribute it. Do not spend a session theorising — this document already contains two
+confident wrong answers, and both were reasoned rather than measured.
 
 ### STEPS 9-13 OF THE CLOSE
 
