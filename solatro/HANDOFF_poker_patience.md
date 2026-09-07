@@ -1003,6 +1003,29 @@ FAILURE, which is the more common and more perishable case — the reflex after 
 again, and every run truncates. It now preserves on any run that is not clean, under a `logs-failed-`
 tag. The next occurrence will leave evidence.
 
+## ⚠ OWNER RULINGS FROM THE CLOSE — both narrow the next session's work
+
+- **Combo: `"unbounded by design"`, and it never resets** (*"i dont expect combo to reset anymore due
+  to removal of acts"*). `GAP-043` is ANSWERED. **The design question is closed; one implementation
+  question is not** — which condition replaces `_act_cancellable` at `game.gd:231`. The gap writes it
+  out: not a bare deletion (setup would register), and **not `processing` either**, even though it
+  would work — that is the input lock, and overloading it repeats the very mistake that caused this
+  defect. An explicit act-open flag set in `_begin_act()` is the honest fix; the clear sites are the
+  work.
+
+- **Camera-based findings: TODO, not now.** Ruled by the owner. That parks, deliberately:
+  - `main.gd` / `wall_transition.gd` — the picture-to-picture branch still interpolates between bare
+    rect centres while the resting pose is `panned_state`, so the trailing `_settle_camera()` cuts a
+    grid pitch. The `else` branch was fixed for exactly this; the `map → game` route was not.
+  - `wall_picture.gd:235` — `focus()` engages a non-identity `size_2d_override` on a focused picture
+    when the render clamp bites, displacing every click inside the show.
+  - The four zoom-awareness sites (`play_area.gd:1399`, `:2919`, `prop_layer.gd:193`,
+    `card_visual.gd:696`), all correct at zoom 1.0 and claimed wrong in FOCUSED mode.
+  ⚠ **NONE OF THESE IS VERIFIED, AND THE SUITE CANNOT SEE THEM**: the layout suites are pinned to the
+  overview, and **no Visual harness drives props at all**, so nothing renders a prop over a card at a
+  non-1.0 board zoom. Whoever picks this up needs a harness that does not exist yet — that is the
+  first task, not the fix.
+
 ## Open bugs
 
 - ⚠⚠⚠ **NO EFFECT ACTIVATION FEEDS THE COMBO ON A PLACEMENT — THE GRID GAME'S ONLY SCORING ACTION.
