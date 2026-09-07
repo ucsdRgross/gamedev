@@ -731,6 +731,50 @@ next reader, and the code is the source of truth for anything already built.
 
 ## Open bugs
 
+- ⚠⚠⚠ **NO EFFECT ACTIVATION FEEDS THE COMBO ON A PLACEMENT — THE GRID GAME'S ONLY SCORING ACTION.
+  THIS CONTRADICTS AN EXPLICIT DESIGN RULING AND SHRINKS EVERY SHOW'S SCORE.**
+  `Levels/game.gd:231`: `if feeds_combo and _act_cancellable: register_combo(...)`.
+  Verified link by link, not taken on report:
+  1. `_act_cancellable` is written in exactly two places, `game.gd:452` and `:455`, both inside
+     `_perform_next()`, bracketing the `on_next` window. Nothing else writes it.
+  2. `place_card_in_grid` (`game.gd:726`) never sets it, though it does call `_begin_act()`.
+  3. `CardEnvironment.run_all_mods` is the ONLY dispatch that passes `feeds_combo = true`
+     (`card_environment.gd:113,120`); every other `_note_mod_fired` call site passes `false`.
+  4. The placement cascade calls it four times — `on_board_mutated` (`:689`), `on_card_placed`
+     (`:770`), `on_score` (`:1145`), `on_after_score` (`:1146`).
+  5. The base `CardModifier.combo_key` returns the modifier's script path, which is NON-empty, so
+     these mods would register if the gate let them.
+  6. `DESIGN.md:1337` **D11: *"melds and effects both feed combo on the same terms"*** (`Q323`=b).
+  `live_total() = board_total() * combo_mult()`, so the whole show is multiplied by a number smaller
+  than the design specifies, and `exit_show()` banks that smaller number as fame.
+  **What still feeds combo, so this is a shortfall not a freeze:** the meld class (`game.gd:989`) and
+  the three effects that self-register at their own seam (`prop_score_props.gd:16`,
+  `prop_score_talents.gd:16`, `status_juggling.gd:80`).
+  ⚠ **THOSE THREE CARRY A NOW-STALE COMMENT** — *"also reaches the dispatch hook via run_all_mods;
+  register_combo is idempotent, so the double registration is harmless."* On the placement path the
+  dispatch hook does NOT reach it, so those self-registrations are LOAD-BEARING, not redundant.
+  ⚠ **ORIGIN: `b36c5336`, a PRE-GRID commit.** `_act_cancellable` meant "an act is resolving" when
+  the act WAS the `on_next` cycle. The scoring action moved to placement; the flag did not.
+  ⚠ **NOT FIXED HERE — IT CHANGES SCORING BALANCE, WHICH IS THE OWNER'S CALL.** The flag is
+  overloaded: it also means "undo may cancel this act" (`game.gd:539`). Gating combo on
+  cancellability conflates two things, and the defensible fix is to gate on *an act is in progress*
+  — which placement already establishes via `_begin_act()`. But turning this on makes every effect
+  activation feed the multiplier, and nobody has measured what that does to the curve. `GAP-041`
+  already has the goal curve open.
+
+- ⚠⚠ **`SkillExtraPoint` AWARDS NOTHING, AND IT IS IN 19 DECK SLOTS.** Its description reads *"Gain 1
+  Extra Point Per Score"*. `Cards/Skills/skill_extra_point.gd:19` `add_points()` has **no caller**:
+  the only would-be call site is commented out at `:16`, so `on_score` merely re-announces a trigger
+  for the visual. Grep for `add_points` outside `archive/` returns the definition and the commented
+  line, nothing else. ⚠ Even if rewired, the body disagrees with the card: it calls
+  `api.add_total_score(10)`, not 1, and `GameData.total_score` has no other live writer in the grid
+  game (`apply_act_score`, above, is dead too). **Pre-existing — dead on `main` as well** — but this
+  branch re-plumbed the dead body from `game.state` to `api` and left it dead.
+  Same shape one file over: `skill_hungry_hippo.gd:19` `eat_card()`, whose caller `on_card_dropped_on`
+  (`:9`) is a `pass` stub. Between them they are the only consumers of
+  `CardEffectApi.add_total_score`, which therefore has no live caller either.
+
+
 - ⚠ **`GameData.apply_act_score()` IS DEAD PRODUCTION CODE, KEPT ALIVE ONLY BY ITS OWN TESTS.**
   `game_data.gd:87`. Grep for callers outside `archive/`: **every one is a test** —
   `test_act_score.gd` (7 calls), `test_combo.gd` (4), `test_game_headless.gd` (1, whose own comment
