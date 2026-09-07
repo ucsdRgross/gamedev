@@ -400,8 +400,6 @@ func _reveal_stacks(coord: BoardCoord) -> Array[ArrayCardData]:
 	var grid : GridData = grids[coord.grid]
 	return grid.cells if grid else empty
 
-## Everything the layers ABOVE `coord.h` in the same half of the board have pushed down. ⚠ Above
-## only: a layer's own opening grows the gap BELOW it, so it does not move its own card.
 ## How much taller the reveal is currently making an Entrance column -- exactly what the hbox has
 ## grown BY, so a floor taken from its bottom edge can be corrected back to its resting line.
 func _entrance_open_total() -> float:
@@ -411,6 +409,8 @@ func _entrance_open_total() -> float:
 		sum += row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, key.y))
 	return sum
 
+## Everything the layers ABOVE `coord.h` in the same half of the board have pushed down. ⚠ Above
+## only: a layer's own opening grows the gap BELOW it, so it does not move its own card.
 func _row_open_offset(coord: BoardCoord) -> float:
 	var sum := 0.0
 	var axis := _reveal_key(coord).x

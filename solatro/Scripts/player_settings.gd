@@ -637,8 +637,6 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_swipe_threshold_max_mm = maxf(value, 0.0)
 		settings_changed.emit()
-## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
-## scroll (independent of the board's) covers whatever a deep stack adds past this.
 ## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so
 ## a deep stack in one grid does not stretch the same row in every other. ON, row `r` takes a
 ## SHARED maximum across every grid, and the boards read as one ruled sheet.
@@ -648,6 +646,8 @@ var wall_info_mode : bool = false
 	set(value):
 		grid_align_rows_globally = value
 		settings_changed.emit()
+## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
+## scroll (independent of the board's) covers whatever a deep stack adds past this.
 @export var entrance_visible_rows : float = 1.5:
 	set(value):
 		entrance_visible_rows = maxf(value, 0.5)

@@ -896,7 +896,7 @@ right, and this is the mechanism behind it. **The real gate is: 45 suites, an EM
 an unchanged failure set.** ⚠ Also note `test_fuzz` has no check guarding that its walk executed at
 all, so a fuzz loop that did nothing would still report its iterations as passes.
 
-## ⚠⚠ THE BRANCH IS NOT RELIABLY GREEN — ~1 RUN IN 4 FAILS, AND NOBODY KNOWS WHY
+## ⚠⚠ THE BRANCH IS NOT RELIABLY GREEN — 2 FAILURES IN 16 RUNS, CAUSE UNKNOWN
 
 **Every full run of this close, tallied.** On the FINAL committed code — 8 runs — **2 failed.**
 
@@ -913,10 +913,18 @@ all, so a fuzz loop that did nothing would still report its iterations as passes
 | loop 2, 3, 4 | green ✅ final code |
 | loop 5 | **1 behaviour FAILED** ✅ final code |
 | loop 6 | green ✅ final code |
+| second loop, 8 runs | **all green** ✅ final code — the failure did NOT reproduce, and no logs were preserved, which independently confirms the corrected preservation condition does not fire on a clean run |
 
-⚠ **SO "THE SUITE IS GREEN" IS TRUE OF A RUN, NOT OF THE BRANCH.** Roughly 1 run in 4 comes back with
-one behaviour failure, at a commit with no code changing between runs. Every green number quoted in
-this document and in this close's commit messages is a SAMPLE, not a property.
+⚠ **SO "THE SUITE IS GREEN" IS TRUE OF A RUN, NOT OF THE BRANCH.** Every green number quoted in this
+document and in this close's commit messages is a SAMPLE, not a property.
+
+⚠ **QUOTE THE DENOMINATOR, NOT A RATE.** This section has now carried three different failure rates
+— "1 in 4", then "1 in 4" again from a bigger sample, now **2 in 16** — because each was computed off
+whatever sample existed at the time. **The honest statement is `2 failures in 16 runs of identical
+game code, both unattributed`.** A rate quoted without its denominator is how a 4-run sample became a
+confident number twice over. ⚠ Note the shape: BOTH failures fell in one 6-run block, and the 8 runs
+before it and 8 after were clean — which is either clustering or coincidence, and 16 runs cannot tell
+you which.
 
 ⚠ **THE STALL IS RARER THAN FIRST RECORDED.** 1 occurrence in 13 full runs, not the "1 in 4" an
 earlier draft of this section claimed off a 4-run sample. Six consecutive runs aimed at reproducing
@@ -929,8 +937,11 @@ same bug. Nothing yet connects them; do not assume one explains the other.
 
 Loop runs 1 AND 5 of 6 each reported `1 FAILED (1 behavior, 0 implementation)`; runs 2, 3, 4 and 6 at
 the same commit were clean. **Which check failed is unknown in both cases: run 1's logs were
-truncated by run 2, and run 5's by run 6, before either could be read.** At ~1 in 4 it is far more
-reproducible than the stall, so it is the one to chase first.
+truncated by run 2, and run 5's by run 6, before either could be read.** It was the more reproducible of the two faults when
+first seen — and then **8 consecutive runs aimed straight at it caught nothing**, so it is not
+reliably reproducible either. ⚠ Both faults have now survived a deliberate hunt: 6 runs found no
+stall, 8 found no failure. **The tooling to catch the next one is in place; the next occurrence is
+the opportunity, and it must not be re-run before its logs are read.**
 
 ⚠ **THAT IS A DIFFERENT FAULT FROM THE GRID VIEW STALL** — a behaviour check going red, not a silent
 hang — and it is a SECOND intermittent fault on this branch. Do not assume one explains the other.

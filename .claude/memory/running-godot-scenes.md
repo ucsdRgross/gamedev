@@ -133,4 +133,25 @@ of reality.
   Display-only Controls under the play-area scroll content must pre-claim
   `set_meta("_smooth_scroll_default_mouse_filter_set", true)` before `add_child`.
 
+## ⚠ A GREEN RUN IS A SAMPLE, NOT A PROPERTY OF THE BRANCH
+
+Measured: a branch reported `ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and **2 of
+16 runs of that identical code came back with a behaviour failure.** "The suite is green" was true of
+a run and false of the branch, and every number quoted from a single run inherited that.
+
+⚠ **QUOTE THE DENOMINATOR, NOT A RATE.** The same document carried three different failure rates in
+one night — each computed off whatever sample existed at that moment, each stated with confidence.
+Say `2 failures in 16 runs`, never "about one in four". A rate without its denominator is how a
+four-run sample becomes a claim.
+
+⚠ **AND THE CHECK TOTAL IS NOT AN ASSERTION COUNT.** In that suite `test_fuzz.gd` holds ONE `check()`
+and increments the pass counter by hand per iteration, so the headline number drifts by tens between
+identical runs (3956..3995 observed). **Gate on: the suite COUNT, an EMPTY errors log, and an
+unchanged failure SET** — never on the total.
+
+⚠ **AN INTERMITTENT FAULT DESTROYS ITS OWN EVIDENCE**, because the reflex after a red or hung run is
+to run it again and the harness reopens its logs with truncate. Preserve the log directory BEFORE
+re-running. Solatro's wrapper now does it automatically on a stall or a failure
+(`run_tests.py --stall-timeout`); elsewhere, copy it by hand.
+
 See [[godot-editor-disk-sync]] and [[architecture-map]].
