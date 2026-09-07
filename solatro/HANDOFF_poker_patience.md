@@ -555,8 +555,9 @@ GRID VIEW's concurrent set is exactly four suites wide.
   rule to be ready to back it out) and "Traps that are not about tests" (grep the agent definitions
   when a rule changes; agent definitions resolve from the session root, not the worktree; a test
   asserting an unread field). **Keep them at merge.**
-- **12 delete the borrowed tools** — done. `dup_check.py`, `diff_shape.py` and `bloat-reviewer.md`
-  were byte-copied in for this close and removed again; they belong to `main`.
+- **12 delete the borrowed tools** — done: `dup_check.py`, `diff_shape.py`, `bloat-reviewer.md` removed.
+  They were byte-copied in for this close and belong to `main`, so every command recorded below
+  names a tool this worktree deliberately does not carry.
 - **13 delete the plan docs** — **DECLINED AGAIN, and the reasons have got STRONGER, not weaker.**
   See "WHY STEP 10 DID NOT RUN" below, which still holds in full. Since it was written: `GAP-042`
   has grown a "WHAT IS NOT BUILT" section that is the entry point for the next piece of work, and
@@ -566,11 +567,12 @@ GRID VIEW's concurrent set is exactly four suites wide.
 
 ### THE TWO NEW TOOL BASELINES — first run of either on this branch
 
-`dup_check.py` and `diff_shape.py` live on `main` (uncommitted) and were byte-copied in for this
-close, then deleted again. Both resolve the repo root from their own location, so these numbers are
+`dup_check.py` and `diff_shape.py` live on `main` (uncommitted); the copies here were removed again.
+So the commands below name tools this branch does not carry — run them from `main`, or copy them
+in as this close did. Both resolve the repo root from their own location, so these numbers are
 about THIS worktree. **Treat them as backlog, not as this close's regressions.**
 
-`py .claude/tools/dup_check.py` — OUTPUT:
+`py .claude/tools/dup_check.py` (removed after this close) — OUTPUT:
 
 ```
 [dup-check] 80 duplicated block(s) involving 673 source files.
@@ -585,12 +587,12 @@ which is what a branch that added this much test surface should look like.
 ⚠ **ZERO pairs have both sides in production code inside `8eccfc2f~1..HEAD`.** Every pair that
 touches a file in the unreviewed range is test-to-test. This close introduced no duplication.
 
-`py .claude/tools/dup_check.py --changed` — OUTPUT: 4 pairs, ALL of them between
+`py .claude/tools/dup_check.py --changed` (removed after this close) — OUTPUT: 4 pairs, ALL of them between
 `Tests/Visual/hud_follow_camera_probe.gd` (UNTRACKED owner scratch) and the tracked
 `overview_pan_route_probe.gd` it was copied from. **Owner scratch, not this close's, not to be
 extracted.**
 
-`py .claude/tools/diff_shape.py --history 400` — OUTPUT:
+`py .claude/tools/diff_shape.py --history 400` (removed after this close) — OUTPUT:
 
 ```
 [diff-shape] baseline over 246 code-touching commit(s) of the last 400
