@@ -731,6 +731,83 @@ next reader, and the code is the source of truth for anything already built.
   mechanics. Cite the source; keep "the docs say X" separate from "I measured X here".
 - **Old tests do not block the rebuild.**
 
+## ⚠ THE TEST SURFACE — first review it has ever had, and what it found
+
+12,463 lines across 75 test files landed on this branch. **No review had ever read them**: the close
+scoped `/code-review` to six production files and explicitly told `bloat-reviewer` to ignore tests.
+An Opus pass over `Tests/Engine/` found the following. **Everything below I re-verified myself**; where
+the reviewer overstated, the correction is noted.
+
+### ⚠⚠ LINE DETECT CANNOT CATCH THE DEFECT CLASS THIS BRANCH HAS NOW HIT FOUR TIMES
+
+`Tests/Engine/test_line_detect.gd` (1201 lines) asserts through `RecordingGame.banked_amounts`, which
+records the `amount` ARGUMENT to `add_line_score` and calls `super`. **Verified: the file contains
+ZERO references to `live_total`, `board_total`, `grid_score`, `scores_row`, `scores_col`,
+`scores_cell` or `section.grid`.** Every assertion in TP-37..TP-45 is taken BEFORE
+`add_line_score` branches on `section.grid`, and `grid == -1` routes into `scores_col_legacy` /
+`col_total`, which `live_total()` does not read.
+
+**So a regression sending every grid section to the legacy bucket leaves the entire LINE DETECT suite
+green while the player's score goes to zero.** That is not hypothetical — it is exactly the defect
+found four times on this branch: the two prop mods, `CardEffectApi.line_section_at`, and
+`PropBankColScore` (still live). The suite that owns line scoring is blind to it.
+⚠ The justifying comments at `test_line_detect.gd:548-551` and `:915-916` — *"which bucket a section
+banks into is a later step"*, *"a grid line's bucket does not exist yet"* — are STALE. The buckets
+exist and are what the game reads.
+**Fix shape:** assert the destination, not the argument — one check on `state.board_total()` or on
+`line_score(scores_row, ...)` per scoring test.
+
+### Two more dead functions the handoff did not list
+
+Both verified by grep for callers outside `archive/`:
+- **`GameData.discard_lower_board()`** (`game_data.gd:106`) — zero production callers; kept alive
+  solely by `test_act_score.gd:100`. The same shape as `apply_act_score`, in the same suite.
+- **`Game.move_card_in_grid()` / `Game.remove_card_from_grid()`** (`game.gd:804`, `:815`) — zero
+  production callers, and **unreachable from shipped content**: `CardEffectApi` exposes no wrapper,
+  and `test_grid_cards.gd`'s own boundary gate forbids a modifier from naming `Game.`/`Board.`. Their
+  only callers are six sites in `test_line_detect.gd`, so TP-28's removal leg, TP-29 and TP-45 drive
+  a route the product does not have.
+
+### ⚠ COMBO LEAKS A `Game` AND LEAVES THE GLOBAL POINTING AT IT
+
+`Tests/Engine/test_combo.gd:123` `test_register_combo()` does `var g := Game.new()` and
+`CardEnvironment.CURRENT = g`, then **never frees it and never nulls `CURRENT`** — verified: the whole
+file contains ZERO `free()` and ZERO `CURRENT = null`. It is the LAST test in COMBO's `_ready()`.
+`Game extends CardEnvironment extends Node`, so this is checklist **mode 4** (a leaked `Node` needs an
+explicit `free()`) AND **mode 8** (global state left behind for whatever suite runs next). Every other
+Engine suite nulls `CURRENT` in a teardown helper. A plausible contributor to the standing
+*"135 ObjectDB instances were leaked at exit"* note. ⚠ **Not evidence about the stall** — the leaked
+`Game` is never added to the tree, so nothing of it runs.
+
+### Checks that assert less than they appear to
+
+| site | what it actually asserts |
+|---|---|
+| `test_prop_engine.gd:320` | literally `check(true, "...did not hang")`. **The real assertion is REACHING the line**, and its failure mode is a whole-run STALL, not a red check — which until tonight consumed the entire budget unattributably. The new `--stall-timeout` now names it. Worth keeping, worth saying so in the check text. |
+| `test_prop_engine.gd:332` | `logs[0] == logs[1]` — two EMPTY logs are equal, and nothing asserts the sample is non-empty first. Checklist mode 5. |
+| `test_grid_economy.gd:146` | `special >= row_bucket` where FIX-TRIPLE's four lines all hold `{1,1,1,1,7}` and score identically, so one diagonal satisfies `>=` at equality. Cannot fail for the "both diagonals share one bucket" defect it names. |
+| `test_spotlight.gd:562` | `col_total == 0` after scoring — identical to its own precondition, so it passes if the cascade never ran at all. |
+| `test_grid_cards.gd:201` | ⚠ **REVIEWER OVERSTATED.** It asserts `total_score == 500`, a value the test wrote, on a field with no live writer in the grid game — a DEAD-FIELD assertion (mode 13). It is not unfailable: zeroing it in `remove_grid` would fail it. Weak, not inert. |
+
+### TEST_PLAN drift — three rows that matter
+
+Twelve `TP-` rows are named by no test; most are merely unlabelled, but three are real gaps:
+- **TP-58** — *"a repeat adds `combo_repeat_step`"*. **Verified: `combo_repeat_step` has ZERO
+  references in the entire `Tests/` tree.** It is a shipped live knob (default 0.5) that multiplies
+  the player's score, and nothing tests it.
+- **TP-59** — *"melds and effects contribute on the same terms"* (D11 / `Q323`). No test, and this is
+  precisely the live score-shrinking defect at `game.gd:231`. **The ruling has neither an
+  implementation nor a test** — see `gaps/GAP-043.md`.
+- **TP-135/136** (performance) — `Tools/scoring_parity.gd` states it *"is NOT a test... asserts
+  nothing"*, and benches neither of them.
+
+### Not covered even now
+
+`Tests/UI/`, `Tests/Interaction/`, `Tests/Wall/`, `Tests/Visual/`, `Tests/Map/`, `Tests/E2E/` and
+`Tests/Support/` have had **no** test-quality review. Within `Tests/Engine/`, eleven files got only a
+mechanical sweep (retired accumulators, `check(true)`, await-on-non-signal, lambda capture, unfreed
+Nodes) rather than a line-by-line read.
+
 ## Open bugs
 
 - ⚠⚠⚠ **NO EFFECT ACTIVATION FEEDS THE COMBO ON A PLACEMENT — THE GRID GAME'S ONLY SCORING ACTION.
