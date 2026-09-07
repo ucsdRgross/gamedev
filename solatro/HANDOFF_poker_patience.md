@@ -483,13 +483,20 @@ under it is not fixed: see "Open bugs".
 
 ### ⚠ WHAT DID NOT RUN, AND WHY
 
-- **`/fx-verify` — NOT RUN.** The visual changes in this range (the emptied HUD labels, the Entrance
-  height labels) landed and were eye-verified in the FIRST close. This close changed no rendering
-  code: fix 3 moved comments, and fixes 1-2 are banking and index arithmetic with no visual output.
-  A render pass here would have certified the previous close's work again, not this one's.
+- **`/fx-verify` — NOT RUN, AND THE REASON GIVEN FOR SKIPPING IT NO LONGER HOLDS.** The original
+  reason: the visual changes in this range (the emptied HUD labels, the Entrance height labels) were
+  eye-verified in the FIRST close, and this close changed no rendering code — fix 3 moved comments,
+  fixes 1-2 are banking and index arithmetic. That much is still true.
+  ⚠ **BUT THE TIER C PASS THEN PRODUCED TWO ITEMS THAT NEED A RENDER**, and a third class that a
+  render is the only instrument for: the `anim_spring_lift` / `anim_jump` descent mismatch and the
+  hoop-split zoom bug (both have a DURATION, so a still frame is the wrong instrument), plus the four
+  zoom-awareness sites, which are wrong only in FOCUSED mode — where the layout suites, pinned to the
+  overview, cannot see them.
+  **So `/fx-verify` is now OWED, not declined.** It is the one item of the original numbered close
+  still outstanding, and it has concrete targets rather than a general obligation.
 - **The intermittent GRID VIEW hang was not attributed**, only characterised. See below.
 
-### ⚠ THE INTERMITTENT HANG — 1 RUN IN 4, NOT DETERMINISTIC
+### ⚠ THE INTERMITTENT HANG — 1 RUN IN 13, AND NOT REPRODUCED SINCE
 
 The first full run of this close TIMED OUT. Output, not a claim:
 
