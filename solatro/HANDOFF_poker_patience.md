@@ -554,17 +554,19 @@ budget and the run reports `NO SUITE BANNER — the run did not reach its own ve
 the verdict of all 45 suites**, including the 44 that were fine. That is why one stall costs a
 30-minute run AND leaves nothing to attribute it with.
 
-**A per-suite watchdog is the fix that is worth making regardless of root cause**: a timer that
-notices no check has been recorded for N seconds and prints which suite is silent, then lets the run
-continue or die loudly with a name attached. It converts a 30-minute silent hang into a named,
-attributable failure, and it would have caught this one on its first occurrence. It was NOT built
-here — it changes the harness every suite runs under, which is not a thing to land in the middle of
-a close, on a branch about to merge, on the strength of one occurrence.
+**✅ BUILT — `run_tests.py --stall-timeout`, default 600 s.** It watches the test log's size as a
+heartbeat, kills a run that has gone silent, NAMES the suite that started without finishing, and
+copies the log directory aside to `logs-stalled-<stamp>` before the kill. Landed in the PYTHON
+WRAPPER, not in the harness the suites run under, so it cannot change test behaviour — which is what
+made it safe to land here after all. Verified both ways: it fired on an idling standalone scene at
+`--stall-timeout 30`, and a full run at the default came back `ALL 45 SUITES: 3979 CHECKS PASSED`
+with no preserved directory created. The longest legitimate silence measured in a full run is
+~3 minutes, so 600 s has better than 3x margin. See `HEADLESS_TESTING.md`.
 
-**WHAT THE NEXT SESSION SHOULD DO, IN ORDER:** (1) build the per-suite watchdog; (2) run the suite in
-a loop, preserving `logs/test/` and Godot's own `godot.log` after every run, until it stalls again;
-(3) only then attribute it. Do not spend a session theorising — this document already contains two
-confident wrong answers, and both were reasoned rather than measured.
+**WHAT THE NEXT SESSION SHOULD DO:** run the suite in a loop until it stalls again — the watchdog now
+names the suite and keeps the logs for you — and only then attribute it. Do not spend a session
+theorising: this document already contained two confident wrong answers, and both were reasoned
+rather than measured.
 
 ### STEPS 9-13 OF THE CLOSE
 

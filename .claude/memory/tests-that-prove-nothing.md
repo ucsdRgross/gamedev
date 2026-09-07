@@ -118,4 +118,6 @@ run looks stuck — otherwise the only artefact of a 30-minute hang is that it h
 ⚠ **A GLOBAL TIMEOUT IS NOT A WATCHDOG.** With only a whole-run wall clock, ONE stalled suite eats
 the entire budget and the runner discards the verdict of every other suite — the 44 that were fine
 report nothing. A per-suite silence detector that NAMES the quiet suite turns a 30-minute mystery
-into an attributable failure, and is worth building before chasing the cause.
+into an attributable failure. **Solatro has one: `run_tests.py --stall-timeout`.** Put it in the
+WRAPPER, not in the harness the suites run under — there it cannot change what a test does, which is
+what makes it safe to add at any time.
