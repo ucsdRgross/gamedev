@@ -54,6 +54,14 @@ proving nothing, each of which looked fine in review; later runs added two more:
     the value the player is shown, or merely one that changes?* A retired field is the most
     dangerous kind, because it still moves.
 
+14. **The test is the only caller.** A production function whose ONLY callers are tests is dead
+    code that its own suite makes look live — the suite is green, the function is exercised, and
+    nothing in the shipped game ever reaches it. Measured on one branch: THREE of them, one with a
+    whole suite devoted to it, one unreachable from shipped content because the API exposes no
+    wrapper for it. ⚠ This inverts the usual reading of coverage: **the tests are not evidence the
+    code is used; they can be the only thing using it.** Ask of any function a test exercises: who
+    else calls this?
+
 **The rule that catches every one: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting
 nothing.

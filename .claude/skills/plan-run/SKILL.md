@@ -252,26 +252,42 @@ Run in this order. Earlier items change the diff the later ones read.
    REPORT WHAT YOU HAVE", and say that a partial report with three solid findings beats a thorough
    investigation that never lands.
 3. **`/code-review`** on the branch diff, at high effort — correctness.
-4. **`/simplify`** — the complexity section below is what it enforces.
+4. **A TEST-SURFACE review subagent — the tests, as their own pass.** Items 2 and 3 read
+   production; a test that passes while proving nothing is invisible to them by construction and
+   invisible to the suite by definition, so nothing else in this list can find it. Hand it
+   [[tests-that-prove-nothing]] as a CHECKLIST and scope it to the engine tests first.
+   ⚠ **DO NOT FOLD THIS INTO `/code-review` OR `bloat-reviewer`.** Both are pointed at production,
+   and `bloat-reviewer` is told tests are out of scope — so "the diff was reviewed" is routinely
+   true while 12,000 lines of tests in that same diff were read by nobody.
+   The four highest-yield questions, all measured on one branch:
+   - **Does a check assert a value the SHIPPED game reads?** One asserted a retired accumulator and
+     therefore passed BECAUSE points were being lost.
+   - **Does any production function have only TEST callers?** Three did — the suites certifying them
+     are what made the dead code look live.
+   - **Does a fixture omit ambient state the real game always has?** Three built a board with no
+     grids, silently banking score into a grid that does not exist.
+   - **Can this check fail at all?** `check(true, ...)`, an assertion on a constant, or a comparison
+     of two things that are equal when both are empty.
+5. **`/simplify`** — the complexity section below is what it enforces.
    ⚠ **IT ASKS FOR FOUR PARALLEL AGENTS AND THIS REPO FORBIDS THAT.** `/simplify` is a built-in
    skill and cannot be edited here; its Phase 1 says to launch four review agents "in a single
    message so they run concurrently", which the one-subagent hook blocks. Run its four angles
    (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
    inline is strictly better anyway — four cold agents re-deriving context to read ten lines is
    the expensive path.
-5. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
+6. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
    not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
-6. **Fix everything 1–5 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
-   — then re-run whichever of 1–5 your fixes could have invalidated.
-7. **`/docs`** — fold the run's residue into the living docs.
-8. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
-9. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a
+7. **Fix everything 1–6 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
+   — then re-run whichever of 1–6 your fixes could have invalidated.
+8. **`/docs`** — fold the run's residue into the living docs.
+9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
+10. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a
    skill, an agent definition or a memory did not warn about is a gap in the tooling, not bad luck.
    Add it where it will be READ next time — the step-brief template, the agent's rules, the trap
    list — and delete anything the run proved wrong.
-10. **Delete the temporary plan documents** the run produced.
+11. **Delete the temporary plan documents** the run produced.
 
-⚠ **8 AND 9 ARE THE ANTI-DEBT STEPS, AND THEY ARE THE FIRST TO BE SKIPPED.** A run that lands its
+⚠ **9 AND 10 ARE THE ANTI-DEBT STEPS, AND THEY ARE THE FIRST TO BE SKIPPED.** A run that lands its
 code and skips these leaves every later session paying for it twice: re-reading memory that
 duplicates itself, and re-discovering a trap that was already paid for once. Both shrink what the
 next session must load — the cost of skipping them is measured in tokens on every run after this
