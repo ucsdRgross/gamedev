@@ -808,6 +808,108 @@ Twelve `TP-` rows are named by no test; most are merely unlabelled, but three ar
 mechanical sweep (retired accumulators, `check(true)`, await-on-non-signal, lambda capture, unfreed
 Nodes) rather than a line-by-line read.
 
+## ⚠ TIER C — the view layer, reviewed at last, and NOT yet acted on
+
+The engine/cards pass declared these unread; an Opus pass covered all seven scope items, including
+**every `.tscn` in the diff, which no pass had ever opened**. ⚠ **I re-verified only the two marked
+VERIFIED below** — the reproduce loop held the only Godot process, so nothing here has been run, and
+none of it is fixed. Treat the rest as a reviewer's claims and reproduce before acting.
+
+### The one defect CLASS worth reading first — four missed zoom sites
+
+The handoff already calls *"EVERY SITE THAT ADDS A MEASURED GLOBAL TO A LOCAL SIZE MUST BE
+ZOOM-AWARE"* the rule that cost this stream the most, and records a fix pass over `CardVisual`'s
+slot-centre reads. The pass reports **four live sites it missed**, each correct at zoom 1.0 (the
+overview) and wrong in focused mode — which is why a suite pinned to the overview cannot see them:
+
+| site | claimed consequence |
+|---|---|
+| `play_area.gd:1399` `_card_control_at` — `get_global_rect()` ignores scale | a touch on a card arms the pan swipe |
+| `prop_layer.gd:193` `_body_over_any_card` | hoops stop bracketing and draw over cards they should thread |
+| `play_area.gd:2919` `_position_focus_info` | the inspector lands on top of the card it describes |
+| `card_visual.gd:696` held-card grab offset | grab point and multi-card fan pitch drift |
+
+⚠ **THE LAYOUT SUITES ARE PINNED TO THE OVERVIEW** — this document already records that as a known
+coverage gap. These four are what that gap costs.
+
+### Two regressions the pass attributes to THIS branch — unverified, and they matter for merge
+
+- **`Levels/main.gd` / `wall_transition.gd`** — the game picture's resting pose became `panned_state`
+  (centre + `saved_pan_x`), but `WallTransition` still interpolates between bare rect centres and
+  `_on_info_toggled` still aims at unpanned poses, so the trailing `_settle_camera()` cuts a full grid
+  pitch. The `else` branch of `_focus_picture` was fixed for exactly this and says so in its comment;
+  **the picture-to-picture branch — the route `map → game` actually takes — was not.**
+  `sample_at`'s own doc states the rule: *"BOTH ENDS MUST MATCH THE RESTING POSE, OR THE MOVE SNAPS
+  AT EACH END."*
+- **`UI/Wall/wall_picture.gd:235`** — `focus()` used to force `size_2d_override = Vector2i.ZERO` so
+  `WallInput.route()` maps into a plain viewport. The replacement engages a non-identity override on a
+  FOCUSED picture whenever the render clamp bites, displacing every click inside the show. Claimed
+  reachable by lowering `game_picture_max_render_px` (range floor 256) or `card_scale` past ~2.75.
+
+### Doc blocks attached to the wrong member — the same class already fixed twice here
+
+- ✅ **VERIFIED `Scripts/player_settings.gd:640`** — `entrance_visible_rows`'s documentation sits above
+  `grid_align_rows_globally`, and `entrance_visible_rows` ships BARE. ⚠ **These are `@export`s, so
+  Godot renders them as INSPECTOR TOOLTIPS**: the owner is shown the wrong help on both knobs. This is
+  the user-visible member of the class.
+- ✅ **VERIFIED `UI/play_area.gd:403`** — `_row_open_offset`'s paragraph is concatenated above
+  `_entrance_open_total`'s own. (The engine pass flagged this one too.)
+- Reported and NOT verified: `play_area.gd:204`, `:1629`, `:2317`, `player_settings.gd:662`. Each sits
+  100+ lines from the next declaration, so adjudicating them needs a reading pass, not a grep.
+
+### Smaller, all unverified
+
+Hard rule 7: `_row_heights_for(g)` and `_make_visual`'s `at` take parameters nothing uses; hard rule 6:
+`prop_layer.gd:310`'s guard is labelled "defensive only" by its own comment. Two unnamed tunable
+literals (`prop_layer.gd:598`'s `6.0`, `play_area.gd:1215`'s hard-coded 60 FPS), which this repo treats
+as defects. `wall.gd` bypasses the `WallPicture.settings()` accessor that ruling `S34` established.
+`card_visual.tscn:11-12` carries two dangling `[ext_resource]` lines left when the branch stripped its
+`ShaderMaterial` sub-resources.
+
+⚠ **`play_area.tscn` AUTHORS `clip_contents = true` AND `follow_focus = true`; `setup_gui()` OVERRIDES
+BOTH TO FALSE AT RUNTIME.** Not live — `setup_gui` runs in `_ready` — but it violates the convention
+stated in `play_area.gd` itself (*"the authored value is not a different number from the one the board
+actually runs on"*), and the authored `follow_focus = true` is what two stale comments still describe
+as live behaviour.
+
+### ⚠ TWO ITEMS NEED `/fx-verify`, NOT ANOTHER READING PASS
+
+Both have a DURATION, and this document's own rule is that a still frame is the wrong instrument for
+one: the `anim_spring_lift` / `anim_jump` mismatch (riders come down while the card beneath stays up),
+and whether the hoop-split zoom bug is visible at the shipped focused zoom. **Run them and report what
+MOVED.**
+
+## ⚠⚠ THE CHECK TOTAL IS NOT AN ASSERTION COUNT — STOP USING IT AS A GATE
+
+Six full runs at the SAME commit produced **3965, 3979, 3994, 3995** checks and counting. That is a
+~30-check spread with no code change between them, and here is why:
+
+**`Tests/Engine/test_fuzz.gd` contains exactly ONE `check(` call and does `_pass += 1` by hand once
+per iteration** (`:355`). `test_scoring.gd` does the same. So part of the headline total is an
+ITERATION COUNTER, not an assertion count, and it moves whenever a randomised walk takes a different
+number of steps.
+
+⚠ **CONSEQUENCE FOR EVERY NUMBER IN THIS DOCUMENT AND IN THE COMMIT MESSAGES.** "3970 checks",
+"3974", "3979", "3998" are not comparable to each other and none of them is a gate. This document
+already said *"judge by the failure SET and PER-SUITE counts, never the check total"* — that rule is
+right, and this is the mechanism behind it. **The real gate is: 45 suites, an EMPTY errors log, and
+an unchanged failure set.** ⚠ Also note `test_fuzz` has no check guarding that its walk executed at
+all, so a fuzz loop that did nothing would still report its iterations as passes.
+
+## ⚠ AN INTERMITTENT BEHAVIOUR FAILURE EXISTS, SEPARATE FROM THE STALL, AND IT IS UNATTRIBUTED
+
+Loop run 1 of 6 reported `ALL 45 SUITES: 3995 passed, 1 FAILED (1 behavior, 0 implementation)`.
+Runs 2, 3 and 4 at the same commit were clean. **Which check failed is unknown: its logs were
+truncated by run 2 before they could be read.**
+
+⚠ **THAT IS A DIFFERENT FAULT FROM THE GRID VIEW STALL** — a behaviour check going red, not a silent
+hang — and it is a SECOND intermittent fault on this branch. Do not assume one explains the other.
+
+**The tooling gap it exposed is now closed:** `run_tests.py` preserved logs on a STALL but not on a
+FAILURE, which is the more common and more perishable case — the reflex after a red run is to run it
+again, and every run truncates. It now preserves on any run that is not clean, under a `logs-failed-`
+tag. The next occurrence will leave evidence.
+
 ## Open bugs
 
 - ⚠⚠⚠ **NO EFFECT ACTIVATION FEEDS THE COMBO ON A PLACEMENT — THE GRID GAME'S ONLY SCORING ACTION.
