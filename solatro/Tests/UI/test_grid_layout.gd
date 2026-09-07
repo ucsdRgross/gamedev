@@ -567,9 +567,12 @@ func run_a_row_grows_into_its_height_test() -> void:
 	# few milliseconds, so `delta / span` exceeds 1 and the row reaches full height inside a single
 	# frame. The poll below then never catches mid-flight, and the failure detail reads the
 	# PRE-GROWTH height because `_grid_row_height` returns its cache the moment `_layer_grown`
-	# empties -- which is exactly the shape this failed in 10 runs of 11, looking like a product
-	# bug that snaps. The suite already parks the real settings file, so this cannot reach the
-	# player's.
+	# empties -- indistinguishable from a product bug that snaps. ⚠ **THIS IS A SECOND CONDITION
+	# THAT HIDES THE GROWTH, NOT THE DIAGNOSED CAUSE OF TP-85.** What was MEASURED there was a
+	# stolen `CardEnvironment.CURRENT` ("CURRENT is mine false"); this one was reasoned from the
+	# span arithmetic and fixed alongside it. Both produce the same reading, which is why the
+	# suite waits for its siblings AND slows the clock. The suite already parks the real settings
+	# file, so this cannot reach the player's.
 	var prev_delay : float = SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = GROWTH_SAMPLE_DELAY
 

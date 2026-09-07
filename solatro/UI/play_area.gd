@@ -2478,16 +2478,6 @@ func _fit_children(parent: Node, wanted: int, make: Callable) -> void:
 			parent.remove_child(doomed)
 			doomed.queue_free()
 
-## The slot for grid cell index `ci`, found through its row. Cells are row-major in the data, so
-## the row is `ci / width` and the column `ci % width`.
-## Fills a grid's score gutters from its buckets. ⚠ **EVERY (index, height) ENTRY GETS A LABEL**
-## (GAP-015, owner: *"each will need to be tracked and displayed ... so row could display 10 scores
-## if 5 rows each with 2 height cards at 0 and 1"*), and the heights **stack in the same order as
-## the cards they describe**: a row's height-0 label beside its height-0 cards, height-1 above it.
-##
-## ⚠ That is why a row's labels are their own VBox built exactly like a `CellSlot` — bottom-aligned,
-## `h` rising — rather than one label per row. Laying them out any other way would put a height-1
-## score beside height-0 cards, which is the one thing the owner's wording pins down.
 ## WHICH grid's score buckets a panel draws from. A board grid answers with its own position in
 ## `GridContainer`; a panel mounted anywhere else -- the Entrance's, which lives in its own strip --
 ## states it instead, because a child index there means nothing.
@@ -2500,6 +2490,14 @@ func _panel_bucket_grid(panel: Control) -> int:
 func _panel_row_offset(panel: Control) -> int:
 	return panel.get_meta(META_ROW_OFFSET, 0)
 
+## Fills a grid's score gutters from its buckets. ⚠ **EVERY (index, height) ENTRY GETS A LABEL**
+## (GAP-015, owner: *"each will need to be tracked and displayed ... so row could display 10 scores
+## if 5 rows each with 2 height cards at 0 and 1"*), and the heights **stack in the same order as
+## the cards they describe**: a row's height-0 label beside its height-0 cards, height-1 above it.
+##
+## ⚠ That is why a row's labels are their own VBox built exactly like a `CellSlot` — bottom-aligned,
+## `h` rising — rather than one label per row. Laying them out any other way would put a height-1
+## score beside height-0 cards, which is the one thing the owner's wording pins down.
 func _bind_grid_score_labels(panel: Control, grid: GridData) -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
@@ -2726,6 +2724,8 @@ func _cells_root(panel: Control) -> Control:
 	var board := panel.get_node_or_null("Board") as Control
 	return board.get_node_or_null("CellsColumn/Cells") as Control if board else null
 
+## The slot for grid cell index `ci`, found through its row. Cells are row-major in the data, so
+## the row is `ci / width` and the column `ci % width`.
 func _cell_slot(panel: Control, grid: GridData, ci: int) -> VBoxContainer:
 	var w := maxi(grid.grid_width, 1)
 	var ry := ci / w
