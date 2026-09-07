@@ -896,11 +896,41 @@ right, and this is the mechanism behind it. **The real gate is: 45 suites, an EM
 an unchanged failure set.** ⚠ Also note `test_fuzz` has no check guarding that its walk executed at
 all, so a fuzz loop that did nothing would still report its iterations as passes.
 
-## ⚠ AN INTERMITTENT BEHAVIOUR FAILURE EXISTS, SEPARATE FROM THE STALL, AND IT IS UNATTRIBUTED
+## ⚠⚠ THE BRANCH IS NOT RELIABLY GREEN — ~1 RUN IN 4 FAILS, AND NOBODY KNOWS WHY
 
-Loop run 1 of 6 reported `ALL 45 SUITES: 3995 passed, 1 FAILED (1 behavior, 0 implementation)`.
-Runs 2, 3 and 4 at the same commit were clean. **Which check failed is unknown: its logs were
-truncated by run 2 before they could be read.**
+**Every full run of this close, tallied.** On the FINAL committed code — 8 runs — **2 failed.**
+
+| run | result |
+|---|---|
+| baseline 1 | **STALL** (27 min silent, timeout, `NO SUITE BANNER`) |
+| baseline 2 | green |
+| after fix 1+2 | 1 FAILED — my own `assert`, since reverted |
+| after the ui_props fixtures | 1 behaviour FAILED — my own fixture change, since reverted |
+| after reverting the fixture | 1 FAILED — my own `assert` again |
+| after reverting the assert | green ✅ final code |
+| watchdog no-false-positive check | green ✅ final code |
+| loop 1 | **1 behaviour FAILED** ✅ final code |
+| loop 2, 3, 4 | green ✅ final code |
+| loop 5 | **1 behaviour FAILED** ✅ final code |
+| loop 6 | green ✅ final code |
+
+⚠ **SO "THE SUITE IS GREEN" IS TRUE OF A RUN, NOT OF THE BRANCH.** Roughly 1 run in 4 comes back with
+one behaviour failure, at a commit with no code changing between runs. Every green number quoted in
+this document and in this close's commit messages is a SAMPLE, not a property.
+
+⚠ **THE STALL IS RARER THAN FIRST RECORDED.** 1 occurrence in 13 full runs, not the "1 in 4" an
+earlier draft of this section claimed off a 4-run sample. Six consecutive runs aimed at reproducing
+it produced none.
+
+⚠ **AND THE TWO FAULTS ARE DIFFERENT.** A silent hang and a red behaviour check are not obviously the
+same bug. Nothing yet connects them; do not assume one explains the other.
+
+## ⚠ THE INTERMITTENT BEHAVIOUR FAILURE — UNATTRIBUTED, AND THE MORE REPRODUCIBLE OF THE TWO
+
+Loop runs 1 AND 5 of 6 each reported `1 FAILED (1 behavior, 0 implementation)`; runs 2, 3, 4 and 6 at
+the same commit were clean. **Which check failed is unknown in both cases: run 1's logs were
+truncated by run 2, and run 5's by run 6, before either could be read.** At ~1 in 4 it is far more
+reproducible than the stall, so it is the one to chase first.
 
 ⚠ **THAT IS A DIFFERENT FAULT FROM THE GRID VIEW STALL** — a behaviour check going red, not a silent
 hang — and it is a SECOND intermittent fault on this branch. Do not assume one explains the other.
