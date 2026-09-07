@@ -33,17 +33,27 @@ engine error"; the suite's own PASS/FAIL verdict is `all_tests.gd`'s.
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE)
 ALL_TESTS_GD = os.path.join(PROJECT, "Tests", "all_tests.gd")
 # The engine's own log, and the ONLY thing _scan_engine_errors reads — so it is also the definition
 # of what that gate can see. Same root as snapshot_diff.py's.
-GODOT_LOG = os.path.join(os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro"),
-                         "logs", "godot.log")
+LOG_DIR = os.path.join(os.path.expandvars(r"%APPDATA%\Godot\app_userdata\Solatro"), "logs")
+GODOT_LOG = os.path.join(LOG_DIR, "godot.log")
+# The suite's own transcript. `TestLog.line` flushes EVERY line, so its size is a live
+# heartbeat: while checks are being recorded it grows, and a silent suite stops it dead.
+TEST_LOG = os.path.join(LOG_DIR, "test", "test_output_all.log")
+
+# A suite writes `==== NAME TEST PASS ====` when it starts and `==== NAME: ... ====` when it
+# ends, so the last start with no matching end is the suite that never came back.
+SUITE_START = re.compile(r"^=+\s*(.+?)\s+TEST PASS\s*=+$")
+POLL_SECONDS = 5
 
 # The suite's grand-total line, reported for context only. ⚠ It is NOT the discriminator: it lands on
 # stderr when the run fails and stdout when it passes, which is what broke the first build.
@@ -106,6 +116,68 @@ def scan_unseen(stream_text, log_text, allowlist):
     return errors, warnings
 
 
+def stalled_suite(log_path):
+    """(the suite that never came back, the last line written); the name is None if all finished."""
+    try:
+        with open(log_path, encoding="utf-8", errors="replace") as handle:
+            lines = [line.rstrip() for line in handle]
+    except OSError:
+        return None, None
+    running = None
+    for line in lines:
+        match = SUITE_START.match(line.strip())
+        if match:
+            running = match.group(1).strip()
+        elif running and line.strip().startswith("=") and (running + ":") in line:
+            running = None
+    return running, next((line for line in reversed(lines) if line.strip()), "")
+
+
+def preserve_logs(tag):
+    """Copy the log directory aside, OUTSIDE it, before the next run destroys it.
+
+    Every run reopens these logs with truncate, so the next one erases this one's evidence -- and a
+    stall is both when that evidence matters most and when someone re-runs first.
+    """
+    dest = os.path.join(os.path.dirname(LOG_DIR),
+                        "logs-%s-%s" % (tag, time.strftime("%Y%m%d-%H%M%S")))
+    try:
+        shutil.copytree(LOG_DIR, dest)
+        return dest
+    except OSError as problem:
+        return "NOT PRESERVED (%s)" % problem
+
+
+def wait_or_stall(process, total_timeout, stall_timeout, log_path):
+    """Wait for the run, watching the test log's growth. Returns "ok", "timeout" or "stall".
+
+    A whole-run timeout cannot say WHICH suite consumed it: one silent suite spends the entire
+    budget, and the runner then reports no banner at all -- discarding the verdict of every suite
+    that did pass. Watching the heartbeat names the culprit instead, and stops far earlier.
+    """
+    deadline = time.monotonic() + total_timeout
+    last_size = -1
+    quiet_since = time.monotonic()
+    while True:
+        try:
+            process.wait(timeout=POLL_SECONDS)
+            return "ok"
+        except subprocess.TimeoutExpired:
+            pass
+        now = time.monotonic()
+        try:
+            size = os.path.getsize(log_path)
+        except OSError:
+            size = -1
+        if size != last_size:
+            last_size = size
+            quiet_since = now
+        if now >= deadline:
+            return "timeout"
+        if stall_timeout and now - quiet_since >= stall_timeout:
+            return "stall"
+
+
 def main():
     # ⚠ The engine's error lines are quoted verbatim and are not always cp1252-encodable. Without
     # this the gate CRASHES while reporting the error it exists to report.
@@ -120,6 +192,9 @@ def main():
     parser.add_argument("--scene", default="res://Tests/all_tests.tscn")
     parser.add_argument("--timeout", type=int, default=600,
                         help="seconds before the run is KILLED (default 600)")
+    parser.add_argument("--stall-timeout", type=int, default=600,
+                        help="kill once the test log has been SILENT this long, naming the suite "
+                             "that went quiet (default 600; 0 disables)")
     parser.add_argument("passthrough", nargs="*",
                         help="args for the scene itself, after a bare --")
     args = parser.parse_args()
@@ -139,15 +214,19 @@ def main():
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
          tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
         process = subprocess.Popen(command, stdout=out, stderr=err)
-        timed_out = False
-        try:
-            process.wait(timeout=args.timeout)
-        except subprocess.TimeoutExpired:
-            # ⚠ ALWAYS kill on timeout — a parse error leaves a blank window open forever and no
-            # in-scene watchdog can save it, because the script never loads.
+        # ⚠ ALWAYS kill on timeout — a parse error leaves a blank window open forever and no
+        # in-scene watchdog can save it, because the script never loads.
+        outcome = wait_or_stall(process, args.timeout, args.stall_timeout, TEST_LOG)
+        timed_out = outcome == "timeout"
+        stalled = outcome == "stall"
+        stalled_name, stalled_last, preserved = None, None, None
+        if stalled:
+            # Read the log BEFORE the kill, and copy it aside before anything can truncate it.
+            stalled_name, stalled_last = stalled_suite(TEST_LOG)
+            preserved = preserve_logs("stalled")
+        if outcome != "ok":
             process.kill()
             process.wait()
-            timed_out = True
         err.seek(0)
         stderr_text = err.read()
         out.seek(0)
@@ -188,6 +267,17 @@ def main():
     if timed_out:
         print("[exit-time] TIMEOUT — killed after %ds. Nothing below is a complete picture."
               % args.timeout)
+
+    if stalled:
+        print("[exit-time] STALLED — the test log went SILENT for %ds and the run was killed. "
+              "A slow suite still streams checks; a silent one has stopped."
+              % args.stall_timeout)
+        print("[exit-time] the suite that never came back: %s"
+              % (stalled_name if stalled_name else
+                 "none was mid-run — every suite that started also finished, so the process went "
+                 "quiet after the last one"))
+        print("[exit-time] last line written: %s" % (stalled_last or "<the log was empty>"))
+        print("[exit-time] logs preserved at: %s" % preserved)
 
     if crashed:
         print("[exit-time] ⚠ THE ENGINE TERMINATED ABNORMALLY — exit status %d (0x%X), which is "
