@@ -534,6 +534,36 @@ not every time.
 **WHAT THE NEXT SESSION SHOULD DO:** attribute it, or accept it as known. The cheapest lever is that
 GRID VIEW's concurrent set is exactly four suites wide.
 
+### STEPS 9-13 OF THE CLOSE
+
+- **9 `/docs`** — `doc_check.py` stays at **0 errors, 9 warnings**. The judgement half found four
+  things the mechanical half cannot see, all fixed: `GAP-042` still named `of_row_at` and described
+  `of_entrance_column` as existing after it was deleted; `design/grid-view/DESIGN.md` still announced
+  a rename to `entrance` / `entrance_type` when `entrance_type` exists nowhere in the tree; and
+  `GAP-005` / `GAP-015` cite `scores_row_h` / `scores_col_h`, which have ZERO references — those two
+  are historical rulings, so each now carries a one-line note saying what shipped instead, rather
+  than being rewritten.
+- **10 `consolidate-memory`** — 1 memory updated, 0 added. `tests-that-prove-nothing` gains item 13
+  (a check asserting a field the product does not READ — distinct from item 7's calibrated
+  tolerance) and, under the run-alone section, the fact that cross-suite interference also presents
+  as a HANG with no output, which reads exactly like a broken build. Nothing else this close learned
+  crosses projects: the rest is solatro's and lives here, or is `/plan-run`'s and lives there.
+- **11 feed back into the skills** — 5 additions to `/plan-run`, plus the agent-definition fix.
+  ⚠ **THEY ARE DELIBERATELY NOT IN "The reviewer's model floor".** That section exists on BOTH sides
+  of the merge and this branch's copy is to be deleted; anything written there would be lost. The
+  additions live in "The verification hierarchy" (an `assert` as a reachability oracle, and the
+  rule to be ready to back it out) and "Traps that are not about tests" (grep the agent definitions
+  when a rule changes; agent definitions resolve from the session root, not the worktree; a test
+  asserting an unread field). **Keep them at merge.**
+- **12 delete the borrowed tools** — done. `dup_check.py`, `diff_shape.py` and `bloat-reviewer.md`
+  were byte-copied in for this close and removed again; they belong to `main`.
+- **13 delete the plan docs** — **DECLINED AGAIN, and the reasons have got STRONGER, not weaker.**
+  See "WHY STEP 10 DID NOT RUN" below, which still holds in full. Since it was written: `GAP-042`
+  has grown a "WHAT IS NOT BUILT" section that is the entry point for the next piece of work, and
+  `GAP-005` / `GAP-015` have been annotated with what shipped. Deleting the directory now would
+  destroy the only record of three unbuilt destinations and 314 owner rulings, and `doc_check` would
+  go red on the eight living documents that cite it.
+
 ### THE TWO NEW TOOL BASELINES — first run of either on this branch
 
 `dup_check.py` and `diff_shape.py` live on `main` (uncommitted) and were byte-copied in for this

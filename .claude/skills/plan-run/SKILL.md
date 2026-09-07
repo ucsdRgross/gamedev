@@ -79,6 +79,19 @@ Each layer caught things the one above it missed.
 **Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
 after the work is already "complete".
 
+⚠ **AN `assert` IS A CHEAPER REACHABILITY ORACLE THAN ANY AMOUNT OF STATIC ANALYSIS, AND IT OUTRANKS
+LAYER 5 ON THAT ONE QUESTION.** Asked whether a guard's case has a caller, two independent reviewers
+at the floor each answered "no caller reaches it" with call-graph evidence. Replacing the guard with
+an `assert` fired **12 times on the next run**, naming three fixtures that had been silently banking
+score into a board that did not exist. If you want to know whether a branch is dead, assert it and
+run the suite — do not reason about it.
+
+⚠ **AND BE READY TO BACK THE ASSERT OUT.** It is a change with blast radius across every fixture, and
+one of those three could not be fixed without altering the board a geometry test exists to measure.
+The assert's value is the reachability answer and the bugs it exposes; landing it is optional. Keep
+the finding at the guard, in a comment, and move on — leaving a suite red to keep an assert is the
+wrong trade.
+
 **Also run `py .claude/tools/doc_check.py --changed` at every phase boundary.** A design id leaked
 into a comment or a string survives every other layer here — it never fails a test and never breaks
 a journey — and it is the one thing an overseer can check without reading code.
@@ -145,6 +158,17 @@ SAME observable, where the test measures which writer ran second.
   the registry being authoritative.
 - **Comments deferring to "a later step"** become lies when that step lands. Grep the deferral
   language when closing one.
+- ⚠ **WHEN YOU CHANGE A RULE IN A SKILL, GREP THE AGENT DEFINITIONS THAT ENFORCE IT.** A run
+  corrected the reviewer rule here and left `.claude/agents/adversarial-review.md` carrying the
+  inverted one — *"if you are the implementing model, review nothing"*. Dispatched at the floor it
+  would have refused and returned an empty report, and the close would have recorded a review that
+  never happened. A skill and the agent that implements it are one change, not two.
+- ⚠ **AGENT DEFINITIONS RESOLVE FROM THE SESSION'S PROJECT ROOT, NOT THE WORKTREE.** An agent that
+  exists only on the branch cannot be dispatched by name from a session rooted in the main checkout.
+  Inline its definition into a general-purpose agent and tell that agent to read the file.
+- ⚠ **A TEST THAT ASSERTS A FIELD THE PRODUCT DOES NOT READ PASSES BECAUSE THE DEFECT EXISTS.** Not
+  a tolerance calibrated to a bug — a whole check pointed at a retired accumulator that still moved.
+  Ask of every green check: *is this the value the player is shown, or merely one that changes?*
 
 ## Gaps
 

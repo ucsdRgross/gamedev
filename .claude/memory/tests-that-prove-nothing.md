@@ -1,6 +1,6 @@
 ---
 name: tests-that-prove-nothing
-description: "Ten ways a test passes while asserting nothing, and the red-then-green rule that catches all of them"
+description: "The ways a test passes while asserting nothing, and the red-then-green rule that catches all of them"
 metadata:
   type: feedback
 ---
@@ -46,6 +46,14 @@ proving nothing, each of which looked fine in review; later runs added two more:
     product never made — so it could not see that nothing positioned the view at startup. **A test
     that arranges the state it is meant to observe is a tautology.**
 
+13. **The check asserts a field the product does not READ.** Not item 7's calibrated tolerance — a
+    whole assertion pointed at a RETIRED accumulator that still moved. Measured: a status-effect
+    test asserted `col_total == 3` and passed for the life of a rewrite, while the points were
+    banking into a legacy total the shown score is not derived from. **It passed BECAUSE the defect
+    existed**, and it certified the loss it was written to catch. Ask of every green check: *is this
+    the value the player is shown, or merely one that changes?* A retired field is the most
+    dangerous kind, because it still moves.
+
 **The rule that catches every one: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting
 nothing.
@@ -89,3 +97,11 @@ The suite alone passed 74/74 with a 0.0 px delta. **Deterministic interference r
 deterministic bug** — a constant value looks like geometry and is not.
 ⚠ The tell is a **rotating casualty**: the same suites pass alone and fail together while WHICH
 check fails changes run to run. That is one problem, not several.
+
+⚠ **INTERFERENCE ALSO PRESENTS AS A HANG WITH NO OUTPUT AT ALL, AND THAT LOOKS LIKE A BROKEN BUILD.**
+Measured: a suite printed its banner and then emitted ZERO checks for 27 minutes until the global
+timeout killed the run, whose report reads `NO SUITE BANNER — the run did not reach its own verdict`.
+Run alone, the same suite passed 215/215 in about a minute. **A slow suite still streams checks; a
+silent one after its banner is hung.** It was intermittent — 1 run in 4 — so a single timeout is not
+evidence that HEAD is broken. Re-run before concluding anything, and never revise a commit's claimed
+green result on one sample.

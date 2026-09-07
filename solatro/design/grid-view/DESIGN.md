@@ -515,6 +515,9 @@ should all go in the existing plans, not create new ones."*
 
 - **`lower_zone` / `lower_zone_type` are DELETED**, fields and all. `Q213` already rules that old
   saves are not migrated, so the change of saved shape costs nothing.
+- ⚠ **THIS RENAME WAS SUPERSEDED — READ `NAMES.md` §2 FOR WHAT SHIPPED.** `GameData.entrance` is a
+  `GridData`, and `upper_zone` / `upper_zone_type` are alive as VIEWS of its cells, across ~284
+  call sites. There is no `entrance_type`. The intent below stands; the shape does not.
 - **`upper_zone` / `upper_zone_type` are RENAMED to `entrance` / `entrance_type`.** The owner named
   both zones, and the Entrance was only ever "zone 0" of a board that no longer exists; keeping the
   old name would leave the retired two-zone model alive in the vocabulary. Its STORAGE survives —
