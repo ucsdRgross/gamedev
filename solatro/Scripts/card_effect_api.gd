@@ -128,17 +128,11 @@ func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array
 func entity_side_for_row(coord: BoardCoord) -> bool:
 	return _game.entity_side_for_row(coord) if is_live() else false
 
-## The scoring section a ROW/COL prop write-back banks into at `coord` -- the Entrance reads
-## through the legacy `upper_zone` bridge, a real grid cell through the grid-model constructor;
-## both build the SAME ScoringSection shape `add_line_score` consumes.
+## The scoring section a ROW/COL prop write-back banks into at `coord`. One constructor resolves
+## which zone the card is in, so this does not branch on it.
 func line_section_at(coord: BoardCoord, kind: ScoringSection.LineKind) -> ScoringSection:
 	if not is_live(): return ScoringSection.new()
-	if coord.is_entrance():
-		var is_row := kind == ScoringSection.LineKind.ROW
-		var index := coord.h if is_row else coord.x
-		return ScoringSection.of_line(_game.state.upper_zone, is_row, index)
-	var index := coord.y if kind == ScoringSection.LineKind.ROW else coord.x
-	return ScoringSection.of_line_at(_game.state, coord.grid, kind, index, coord.h)
+	return ScoringSection.of_line_for(_game.state, coord, kind)
 
 # ==============================================================================
 # MUTATION — the write paths. Every one of these goes through Game/Board so the

@@ -14,7 +14,8 @@ func on_pass_card(_prop: PropData, g: Game, card: CardData) -> void:
 		var v := g.state.grid_position_of(card)
 		if v.is_nowhere(): return
 		g.register_combo(combo_key())
-		g.add_line_score(ScoringSection.of_row_at(g.state, v), points)
+		g.add_line_score(ScoringSection.of_line_for(g.state, v, ScoringSection.LineKind.ROW),
+				points)
 
 func reaction_for(_prop: PropData, card: CardData) -> int:
 	return PropData.Reaction.SPIN if card.skill else PropData.Reaction.NONE

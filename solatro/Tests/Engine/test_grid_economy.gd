@@ -30,6 +30,7 @@ func _ready() -> void:
 	await run_played_scores_survive_the_save_path_test()
 	run_retired_identifiers_grep_gate()
 	run_no_resurrected_act_count_test()
+	run_entrance_write_back_banks_where_the_score_is_read_test()
 	finish()
 # ==============================================================================
 # Helpers: the real detector in the rules deck, and a Game that records what banked.
@@ -462,6 +463,48 @@ const RETIRED_IDENTIFIERS : Array[String] = [
 	"score_additive", "duplicate_class_scale",
 	"patience", "patience_max", "patience_track_uniques", "patience_reset_uniques_on_act",
 ]
+
+## An ENTRANCE card's prop write-back banks where the score is actually read. The defect this
+## closes sent it through the legacy `of_line` bridge, which leaves `section.grid == -1`, so
+## `add_line_score` took the legacy branch into `scores_col_legacy` / `col_total` -- neither of
+## which `live_total()` reads. The points vanished while `register_combo` still moved the
+## multiplier, which is what made it look like a scoring bug rather than a banking one.
+func run_entrance_write_back_banks_where_the_score_is_read_test() -> void:
+	behavior_section("AN ENTRANCE WRITE-BACK BANKS WHERE THE SCORE IS READ")
+	var g := Game.new()
+	var s := GameData.new()
+	var grid := GridData.new()
+	grid.build_cells()
+	s.grids = [grid] as Array[GridData]
+	var card := CardData.new()
+	card.stage = CardData.Stage.PLAY
+	s.upper_zone = [TestFactories.col([card] as Array[CardData])] as Array[ArrayCardData]
+	g.state = s
+
+	var coord := BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)
+	check(coord.is_entrance(), "precondition: the coordinate really is an Entrance one")
+	check(s.board_total() == 0.0, "precondition: nothing has scored yet",
+			"board_total %f" % s.board_total())
+
+	# Through the API a real card effect uses -- StatusJuggling asks for exactly this.
+	var section := g.effect_api.line_section_at(coord, ScoringSection.LineKind.COL)
+	check(section.grid >= 0,
+			"an Entrance section carries a REAL grid, so add_line_score takes the grid branch",
+			"grid %d" % section.grid)
+	g.add_line_score(section, 7)
+
+	check(s.board_total() > 0.0,
+			"...so the points reach the buckets the shown score is derived from",
+			"board_total %f" % s.board_total())
+	check(s.col_total == 0 and s.scores_col_legacy.is_empty(),
+			"...and the retired legacy column arrays are never touched",
+			"col_total %d, legacy entries %d" % [s.col_total, s.scores_col_legacy.size()])
+
+	# The owner's ruling: a column-shaped Entrance score shares the grid column's bucket.
+	check(s.line_score(s.scores_col, 0, 0, 0) == 7.0,
+			"it is the SHARED column bucket, the same one the grid column above it uses",
+			"got %f" % s.line_score(s.scores_col, 0, 0, 0))
+
 
 func run_retired_identifiers_grep_gate() -> void:
 	implementation_section("RETIRED IDENTIFIERS GREP GATE")

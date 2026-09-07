@@ -132,14 +132,20 @@ static func _collect_geometric_line(state: GameData, grid: int, cells: Array[Vec
 		if card: out.append(card)
 	return out
 
-## THE row section a score attributed to the card at `coord` banks into, whatever zone it is in.
+## THE section a score attributed to the card at `coord`, shaped as `kind`, banks into -- in
+## whatever zone that card sits.
 ## ⚠ **THE ZONES DIFFER IN EXACTLY ONE PLACE, AND THIS IS IT.** Callers do not branch on where a
-## card sits; they hand over a coordinate. The Entrance's rows sit past the grid's own last row, so
-## resolving it is an index, not a different code path.
-static func of_row_at(state: GameData, coord: BoardCoord) -> ScoringSection:
+## card sits; they hand over a coordinate. An Entrance ROW banks into the Entrance's own bucket,
+## which sits past the grid's own last row -- an index, not a different code path. An Entrance
+## COLUMN banks into that column's SHARED bucket, the same one the grid column above it uses, so it
+## is the ordinary grid constructor keyed on the grid the Entrance is committed to.
+static func of_line_for(state: GameData, coord: BoardCoord, kind: LineKind) -> ScoringSection:
 	if coord.is_entrance():
-		return of_entrance_row(state, coord.h)
-	return of_line_at(state, coord.grid, LineKind.ROW, coord.y, coord.h)
+		if kind == LineKind.ROW:
+			return of_entrance_row(state, coord.h)
+		return of_line_at(state, state.entrance_grid(), kind, coord.x, coord.h)
+	var index := coord.y if kind == LineKind.ROW else coord.x
+	return of_line_at(state, coord.grid, kind, index, coord.h)
 
 ## A score attributed to a card sitting in the ENTRANCE, shaped as a ROW: it banks into the
 ## Entrance's OWN row bucket, as if the grid were one row taller than it is. `height` is the card's
@@ -155,22 +161,6 @@ static func of_entrance_row(state: GameData, height: int) -> ScoringSection:
 	section.height = height
 	section.origin = &"entrance"
 	section.line_key = StringName("grid%d:ENTRANCE:%d" % [section.grid, height])
-	section._recollect = _collect_entrance_row.bind(state, height)
-	section.cards = section._recollect.call()
-	return section
-
-## A score attributed to an Entrance card, shaped as a COLUMN: it banks into that column's SHARED
-## bucket -- the same one the grid column above it uses. `column` is the Entrance slot's index.
-## ⚠ That slot-to-column alignment is MECHANICAL here. It is only a visual convention for
-## PLACEMENT, where a card from any slot may still go in any column.
-static func of_entrance_column(state: GameData, column: int, height: int) -> ScoringSection:
-	var section := ScoringSection.new()
-	section.kind = LineKind.COL
-	section.grid = state.entrance_grid()
-	section.index = column
-	section.height = height
-	section.origin = &"entrance"
-	section.line_key = StringName("grid%d:COL:%d:%d" % [section.grid, column, height])
 	section._recollect = _collect_entrance_row.bind(state, height)
 	section.cards = section._recollect.call()
 	return section
