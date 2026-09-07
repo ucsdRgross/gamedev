@@ -44,19 +44,31 @@ but it MUST carry:
 
 1. The step id and its **exact done-when, quoted** from the plan.
 2. The **test-plan row ids** that step owes. A dropped planned row is a gap, not a judgement call.
-3. ⚠ **The CALL SITE.** "Where is this called from, and what breaks if it is deleted?" A step whose
+3. ⚠ **THE OWNER RULING THIS STEP IMPLEMENTS, QUOTED VERBATIM** from `PLAN.md` §1 (which quotes
+   `answers.json` for exactly this purpose). Not the id — the WORDS. **This is the only moment
+   drift against an answer is cheap to prevent**: the implementer has the ruling in front of them
+   while writing the code. At the close it is already built, and unbuilding it costs a run.
+   ⚠ **A done-when can be met while the ruling it came from is not.** Measured: `D11` — *"melds and
+   effects both feed combo on the same terms"* — has a step whose done-when was satisfied by tests
+   that assert the arithmetic directly, so the step went green while the ruling was never
+   implemented on the only path that scores. Nobody noticed until a close two phases later, and by
+   then the fix had grown a second open question. **State the ruling and make the done-when answer
+   to it**, not only to a test id.
+   ⚠ **Quote it; never paraphrase.** Paraphrasing a gap's options once got an answer given against
+   a mislabelled list.
+4. ⚠ **The CALL SITE.** "Where is this called from, and what breaks if it is deleted?" A step whose
    done-when is only "TestX is green" will ship a component nothing calls. Require a test that fails
    when the wiring is removed.
-4. Any trap below that applies, named specifically.
-5. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
+5. Any trap below that applies, named specifically.
+6. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
    and says WHY the method exists. No comment may have whitespace before it and none may trail
    code. An implementer that is not told this ships indented prose every time.
-6. ⚠ **The complexity rule, stated** — engine method before hand-rolled, existing helper before new
+7. ⚠ **The complexity rule, stated** — engine method before hand-rolled, existing helper before new
    one, each thing at its proper altitude. See the section below.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
-⚠ **5 and 6 are here because they were reaching nobody.** They lived in memory and in `/simplify`
+⚠ **6 and 7 are here because they were reaching nobody.** They lived in memory and in `/simplify`
 while this template carried lines about tunable literals, design ids and registry names and not
 these — so briefs never said them, and the code came back with both violated. Where a rule matters,
 put it in the brief and gate it; restating it somewhere else is how it gets ignored.
