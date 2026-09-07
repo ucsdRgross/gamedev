@@ -260,8 +260,12 @@ def main():
     # next run truncates them, and the reflex after a red run is to run it again -- so an
     # INTERMITTENT failure erases its own evidence every time. Measured: a 1-in-6 behaviour failure
     # was seen and lost inside three minutes. Preserved here, not only on a stall.
-    if not stalled and (suite_failures or errors or crashed):
-        print("[exit-time] this run was NOT clean; logs preserved at: %s" % preserve_logs("failed"))
+    # ⚠ NOT `errors`: the two exit-time teardown lines (PagedAllocator pages, resources in use) are
+    # present on EVERY run including a fully green one, so including them here preserved the logs of
+    # a passing run and would have filled the disk one copy per run. Standing noise is not
+    # perishable evidence -- only a real suite failure or an abnormal exit is.
+    if not stalled and (suite_failures or crashed):
+        print("[exit-time] this run FAILED; logs preserved at: %s" % preserve_logs("failed"))
 
     banner_line = next((line for line in streams.splitlines() if BANNER.search(line)), None)
     saw_banner = banner_line is not None
