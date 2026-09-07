@@ -49,9 +49,9 @@ plan carries the citation.
 | Name | Kind | Notes |
 |---|---|---|
 | `GameData.grids` | `Array[GridData]` | The grid list, left to right. `@export_storage`. |
-| `GameData.entrance` | `Array[ArrayCardData]` | The Entrance's slots. **Replaces `upper_zone`**, which was only ever "zone 0" of a two-zone board that no longer exists. `@export_storage`. |
-| `GameData.entrance_type` | `Array[CardData]` | The Entrance's header cards, one per slot. **Replaces `upper_zone_type`.** |
-| ~~`GameData.upper_zone`~~ / ~~`upper_zone_type`~~ | retired | Renamed above. The Entrance is not a zone of anything. |
+| `GameData.entrance` | `GridData` | The Entrance, stored as a grid-shaped zone so it carries cells, a width and a height like `grids` does. `@export_storage`. |
+| `GameData.upper_zone` | `Array[ArrayCardData]`, computed | A VIEW of `entrance.cells` — the live inner array, not a copy, so a write through it lands in `entrance`. Kept because ~284 call sites address the Entrance this way and one representation is the point. |
+| `GameData.upper_zone_type` | `Array[CardData]`, computed | The same view over `entrance.cell_types`. |
 | ~~`GameData.lower_zone`~~ / ~~`lower_zone_type`~~ | **deleted** | The tableau's half of the two-zone board. No renderer, no cards, no card that operates it. ⚠ Deleting the FIELDS changes the saved shape; that is fine — `Q213` rules that old saves are not migrated. |
 | `GridData` | `class_name`, Resource | One grid: its size and its cells. |
 | `GridData.grid_width` | `int`, default 5 | Per grid, not global. |
@@ -59,10 +59,10 @@ plan carries the citation.
 | `GridData.cells` | `Array[ArrayCardData]` | Row-major, one entry per cell; each holds that cell's stack bottom-to-top. |
 | `GridData.cell_types` | `Array[CardData]` | The 25 cell zone cards, row-major. |
 | `GameData.committed_grid` | `int`, default `-1` | Which grid the Entrance is committed to; `-1` = uncommitted. `@export_storage` so undo rewinds it. |
-| `GameData.scores_row` | `Array[BigNumber]` per grid | Height-0 row buckets. |
-| `GameData.scores_col` | `Array[BigNumber]` per grid | Height-0 column buckets. |
-| `GameData.scores_row_h` | 2-D, `[index][height]` | Raised-level row buckets. |
-| `GameData.scores_col_h` | 2-D, `[index][height]` | Raised-level column buckets. |
+| `GameData.scores_row` | `Dictionary[Vector3i, BigNumber]` | Row buckets, keyed `(grid, index, height)`. Height is IN the key — there is no separate raised-level container. |
+| `GameData.scores_col` | `Dictionary[Vector3i, BigNumber]` | Column buckets, same key. Shared between a grid column and the Entrance slot beneath it. |
+| `GameData.scores_cell` | `Dictionary[Vector3i, BigNumber]` | One vertical stack's bucket, keyed `(grid, x, row)`. Folds into `score_special`. |
+| `GameData.entrance_grid()` / `entrance_row_index(grid)` | method | Which grid the Entrance banks into, and the row it banks at — `grid_height`, one past the grid's own last row. |
 | `GameData.score_special` | `BigNumber` per grid | **One** bucket for every diagonal and every future special meld. |
 | `GameData.packed_*` | packed arrays | One pair per container above, mirroring the existing `pack_scores`/`unpack_scores` contract. |
 | `GameData.grid_score(grid)` | method | Product of the buckets whose value is `> 0`; `0` when none is. |

@@ -399,7 +399,181 @@ be checked by hand.
     `_create_grid_panel`. Comment only.
 ```
 
-## THE CLOSING PHASE — what ran, and its output
+## THE SECOND CLOSING PHASE — the GAP-042 stream, with its output
+
+The close over `8eccfc2f~1..HEAD` (24 commits, ~205 inserted / 35 deleted lines of production code
+in six files). The first close, below, covered Phase 10 and does NOT cover this range.
+
+**IMPLEMENTED-BY: Claude Opus 5, high effort. REVIEWED-BY: Claude Opus 5, high effort** — at the
+floor, not below it. The first close's review used Sonnet against Opus code and was below the
+corrected floor; it was redone here and its findings were treated as leads, not coverage.
+
+| # | Item | Result |
+|---|---|---|
+| 1 | full `doc_check.py` | **0 errors, 9 warnings** — matches baseline exactly |
+| 2 | `dup_check` / `diff_shape` baselines | established, below — first run of either on this branch |
+| 3 | adversarial review, Opus 5 high | 8 confirmed + 5 suspected; verified each against the code |
+| 4 | `/code-review` high | 8 findings (7 confirmed, 1 plausible) |
+| 5 | `/simplify` | 2 altitude findings, both recorded and parked, neither fixed |
+| 6 | `bloat-reviewer` | 6 findings; 1 of them (the inert panel meta) nothing else caught |
+| 7 | `/fx-verify` | **NOT RUN — see "what did not run" below** |
+| 8 | fix what 1-7 found | 3 code fixes + 4 fixture/test fixes, each red-then-green |
+
+### THE FIXES, WITH THEIR EVIDENCE
+
+Each was proved by neutralising it, watching the expected checks fail, restoring, watching them pass.
+
+1. **Entrance write-backs bank where the score is read.** `CardEffectApi.line_section_at` still took
+   the legacy `of_line` path for an Entrance coordinate, leaving `section.grid == -1`, so the points
+   went to `scores_col_legacy` / `col_total` — which `live_total()` does not read — while
+   `register_combo` had already moved the multiplier. **This was the GAP-042 defect surviving at a
+   third call site** after the two props were fixed. `ScoringSection.of_row_at` is now
+   `of_line_for(state, coord, kind)`, the ONE place that resolves which zone a coordinate is in, and
+   `line_section_at`'s branch is gone. `of_entrance_column` was DELETED, not wired: it had zero
+   callers and bound the ROW collector to a COL section, and the ruling's *"shared bucket the grid
+   column uses"* is plain `of_line_at`.
+   RED: `grid -1` / `board_total 0.000000` / `col_total 7, legacy entries 1`, 4 of 74 failed.
+   GREEN: `GRID ECONOMY: ALL 74 CHECKS PASSED`.
+2. **A grid removal carries the commitment with it.** `Board.remove_grid` renumbers via
+   `grids.pop_at` and `remove_grid_score_data` re-indexes the buckets on the very next line, but
+   `committed_grid` was left naming the old numbering. `Game.place_card_in_grid` refuses every
+   placement whose grid is not the committed one, and its only reset sits PAST that guard — so a
+   stale commitment soft-locks placement for the rest of the show. `GameData.rebase_commitment`
+   fixes it at the removal.
+   RED: `committed 1, 1 grids`, 4 of 100 failed. GREEN: `GRID BOARD: ALL 100 CHECKS PASSED`.
+3. **Three doc blocks reattached to the functions they describe** (`play_area.gd`). The two new panel
+   accessors were inserted BETWEEN `_bind_grid_score_labels` and its documentation, so the GAP-015
+   row-label ruling was documenting a one-line meta getter, and `_cell_slot` had no doc at all while
+   its doc sat 250 lines away. Also separated TP-85's MEASURED cause (a stolen `CURRENT`) from the
+   REASONED one (the growth span collapsing below a frame) in `test_grid_layout.gd`, which the
+   commit and the comment had asserted as if each were the single cause.
+
+### ⚠ THE ASSERT IN FIX 2 FOUND WHAT STATIC ANALYSIS MISSED
+
+Both the adversarial reviewer and `bloat-reviewer` concluded, independently and with call-graph
+evidence, that **no caller reaches `entrance_row_index`'s out-of-range case.** They were wrong. The
+assert fired **×12** on the first full run: two test fixtures build an Entrance-only `GameData` with
+NO grids — `test_suit_props.gd::col_game` and `test_ui_props.gd::make_board_game`. Both had been
+silently banking into a nonexistent grid's bucket, exactly the loss
+`test_suit_props.gd::entrance_game`'s own comment already warned about. Both now build a grid.
+
+⚠ **THE THIRD FIXTURE CANNOT TAKE A GRID, AND THAT IS WHY THE ASSERT WAS BACKED OUT.**
+`test_all_kinds_live_in_game_view`'s inline fixture is the assert's remaining source in a FULL run
+(not when UI PROPS runs alone — settings interference again), but a grid panel WIDENS the board,
+which is the very thing that test measures (*"the widest board the suite builds"*, the board
+`GAP-001` was measured on). With a grid it fails its scroll-reach check at `board right edge 1211.2
+vs scrollable right 1073.6`. Moving that expected number would calibrate the check to the change, so
+the grid came out and **`entrance_row_index` went back to returning a row index rather than
+asserting** — the guard now carries the finding at the site. Leaving the suite red to keep an assert
+is the wrong trade; its value is already banked in the two fixtures and the one test it corrected.
+
+⚠ **THERE IS A REAL QUESTION UNDER THAT CONFLICT, AND IT IS NOT ANSWERED.** The shipped game ALWAYS
+has at least one grid (`SkillGridAllotment.on_game_start` guarantees it). So a boardless Entrance is
+a board configuration that **cannot occur in play**, and the geometry test measures one. If that test
+were given the grid the real game always has, its scroll-reach check FAILS — which would make
+`board right edge 1211.2 vs scrollable right 1073.6` a genuine product finding about column
+reachability, not a fixture artefact. **Deciding which it is belongs with `GAP-001`, not with a
+close.**
+
+**And it exposed a test calibrated to the defect.** `test_juggling_pays_on_score` asserted
+`g.state.col_total == 3` — the RETIRED act total — and therefore **passed because the points were
+being lost.** It now asserts the bucket the shown score is derived from. ⚠ Its neighbour
+`test_firework_banks_column` still does this, and is left that way deliberately because the defect
+under it is not fixed: see "Open bugs".
+
+### ⚠ WHAT DID NOT RUN, AND WHY
+
+- **`/fx-verify` — NOT RUN.** The visual changes in this range (the emptied HUD labels, the Entrance
+  height labels) landed and were eye-verified in the FIRST close. This close changed no rendering
+  code: fix 3 moved comments, and fixes 1-2 are banking and index arithmetic with no visual output.
+  A render pass here would have certified the previous close's work again, not this one's.
+- **The intermittent GRID VIEW hang was not attributed**, only characterised. See below.
+
+### ⚠ THE INTERMITTENT HANG — 1 RUN IN 4, NOT DETERMINISTIC
+
+The first full run of this close TIMED OUT. Output, not a claim:
+
+```
+======== NO SUITE BANNER — the run did not reach its own verdict ========
+[exit-time] TIMEOUT — killed after 1800s. Nothing below is a complete picture.
+[exit-time] clean — every engine error this run was already visible to the in-run gate
+```
+
+**GRID VIEW printed its banner and then emitted ZERO check output for 27 minutes.** That is a hang,
+not slowness — a slow suite still streams `[PASS]` lines, and this one streamed none after its
+banner.
+
+**GRID VIEW ALONE IS FINE**, which is the discriminating datum (the handoff's own cheapest test):
+
+```
+<godot> --path solatro res://Tests/UI/test_grid_view.tscn --windowed
+============ GRID VIEW: ALL 215 CHECKS PASSED ============     0 FAIL, empty errors log
+```
+
+So the hang is **cross-suite interference, not a defect in GRID VIEW**. GRID VIEW excludes only
+`SETTINGS RANGE`, `E2E RUN`, `LEAK CANARY`, `WALL PAUSE`, so those four are its only concurrent
+siblings — and `SETTINGS RANGE` is one of the three suites that REASSIGN the global
+`SettingsManager.settings`, which is this document's own leading open bug and `GAP-030`'s subject.
+
+⚠ **`785a1586` MOVED `GRID LAYOUT` INTO THE ORDERING CHAIN**, which changes which suites run
+concurrently with which. That is the one recent change that could newly expose this. The chain
+itself was checked for a cycle and is consistent — every waiter excludes exactly the suites after
+it — so the deadlock rule is NOT violated; the interference is through shared global state, not
+through the wait graph.
+
+**WHY NO CODE FIX WAS APPLIED.** `/plan-run`'s rule: *a review pass REPORTS; only a green suite lets
+it APPLY* — the tests are the external feedback, and without them a model correcting its own work
+degrades it. With no green baseline, a fix cannot be told from a regression. The doc fixes below are
+not code and are not gated by it.
+
+⚠ **IT IS INTERMITTENT, NOT A BROKEN HEAD.** Three further full runs went green, so the hang is
+1 in 4. It is a REAL standing flake with a four-suite suspect set, and `GAP-030` already owns the
+mechanism — but it did not block this close, and `730815bd`'s claimed green run does reproduce, just
+not every time.
+
+**WHAT THE NEXT SESSION SHOULD DO:** attribute it, or accept it as known. The cheapest lever is that
+GRID VIEW's concurrent set is exactly four suites wide.
+
+### THE TWO NEW TOOL BASELINES — first run of either on this branch
+
+`dup_check.py` and `diff_shape.py` live on `main` (uncommitted) and were byte-copied in for this
+close, then deleted again. Both resolve the repo root from their own location, so these numbers are
+about THIS worktree. **Treat them as backlog, not as this close's regressions.**
+
+`py .claude/tools/dup_check.py` — OUTPUT:
+
+```
+[dup-check] 80 duplicated block(s) involving 673 source files.
+```
+
+Broken down: **51 of the 80 pairs are in `solatro/`**, and of those **8 have both sides in production
+code**, 1 is production-to-test (`Decks/deck.gd` ↔ `Tests/Support/test_decks.gd`) and **42 are
+test-to-test setup**. `main`'s comparable numbers are ~30 solatro pairs, ~8 touching production —
+so **the production duplication count is IDENTICAL to `main`'s**; the whole excess is test fixtures,
+which is what a branch that added this much test surface should look like.
+
+⚠ **ZERO pairs have both sides in production code inside `8eccfc2f~1..HEAD`.** Every pair that
+touches a file in the unreviewed range is test-to-test. This close introduced no duplication.
+
+`py .claude/tools/dup_check.py --changed` — OUTPUT: 4 pairs, ALL of them between
+`Tests/Visual/hud_follow_camera_probe.gd` (UNTRACKED owner scratch) and the tracked
+`overview_pan_route_probe.gd` it was copied from. **Owner scratch, not this close's, not to be
+extracted.**
+
+`py .claude/tools/diff_shape.py --history 400` — OUTPUT:
+
+```
+[diff-shape] baseline over 246 code-touching commit(s) of the last 400
+  added 37314, deleted 7177
+  deletions are 16.1% of changed lines
+  add-only commits (>=25 added, <10% deleted): 121 of 246 (49%)
+```
+
+`main`'s comparable deletion share is 19.3%. **16.1% vs 19.3% is not a finding on its own** — this
+branch is a feature build-out, where adding is the work. The number to watch is the trend on the
+NEXT stream, now that a baseline exists.
+
+## THE FIRST CLOSING PHASE (Phase 10) — what ran, and its output
 
 Every item of `/plan-run`'s numbered close, with the output rather than a claim.
 
@@ -492,6 +666,26 @@ next reader, and the code is the source of truth for anything already built.
 - **Old tests do not block the rebuild.**
 
 ## Open bugs
+
+- ⚠⚠ **`PropBankColScore` LOSES EVERY FIREWORK COLUMN SCORE — LIVE, IN SHIPPED CONTENT, NOT LATENT.**
+  `Cards/Props/Mods/prop_bank_col_score.gd:16-19` hand-builds a bare `ScoringSection.new()` and never
+  sets `grid`, so it is **always** `-1` and `Game.add_line_score` **always** takes the legacy branch
+  into `state.scores_col_legacy` / `state.col_total` — neither of which `GameData.live_total()`
+  reads. `register_combo` runs first, so the multiplier moves and the points do not.
+  **`PipSuitFirework` is shipped** (`CARD_CATALOG.csv` "Added", granted by deck12), and
+  `Game._run_score_effects` runs its spawner over any scored meld, so this fires in a real show.
+  ⚠ **NOT FIXED HERE, AND THE REASON IS A REAL EDGE CASE, NOT SHYNESS.** The fix is to build the
+  section from a coordinate — `ScoringSection.of_line_for(g.state, <coord>, COL)` — but the obvious
+  coordinate does not always exist: `on_finish` fires from `Levels/game.gd:1224` when
+  `p.route.is_empty()`, and a firework that starts with an EMPTY rise route never entered a slot, so
+  `p.at` is still `BoardCoord.NOWHERE`. That is not a corner case — it is the exact scenario
+  `Tests/Engine/test_suit_props.gd::test_firework_banks_column` covers. **Deciding what an
+  empty-route firework banks into (almost certainly `prop.source`'s grid position) is the work.**
+  ⚠ `test_firework_banks_column` asserts `g.state.col_total == 3` and therefore **passes because the
+  defect exists** — the same calibration that hid the Juggling bug. Re-point it at
+  `line_score(scores_col, ...)` as part of the fix, or it will keep certifying the loss.
+  Found by the second close, from the assert that fix 2 added; outside the range that close reviewed.
+
 
 - ⚠⚠ **THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 5 failures.**
   `use_own_settings()` and `restore_real_settings()` REASSIGN the global `SettingsManager.settings`;
