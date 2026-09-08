@@ -52,30 +52,66 @@ repo:** it says nothing about the standing style backlog (hundreds of dated and 
 ~900 design-id citations from earlier work streams, `solatro/todo.md`). Run the full check by hand
 for that.
 
+## Code hygiene
+
+Two more mechanical checks, same shape as `doc_check.py`, sharing the same `Stop` hook:
+
+- **`py .claude/tools/dup_check.py`** — the same logic in two homes. A green suite never fails on a
+  duplicate and `doc_check` stays silent because every NAME in it resolves, so nothing else here
+  sees it. Pairs are reported only WITHIN a top-level project: this is a monorepo of separate
+  games, and a shader one jam copied from another has no next edit that touches both.
+- **`py .claude/tools/diff_shape.py`** — a change that only ADDS lines to an existing file, which is
+  what bolting a new path alongside the old one looks like. `--history N` re-derives the baseline.
+
+**`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff duplicates existing
+logic**, with `[dup-ok]` in the commit message as the deliberate-duplication escape. It fires only
+on commits an agent makes, never on the owner's GitHub Desktop flow.
+
+⚠ **Duplication blocks; add-only shape only warns.** That split is measured, not taste: add-only
+commits are a third of this repo's history at the default threshold, so gating on them would fire
+constantly and the gate would be switched off. Re-derive before changing either threshold.
+
+The standing backlog is small enough to read: run `dup_check.py` bare and expect ~30 solatro pairs,
+most of them test-to-test setup. Only about eight touch production code.
+
 ## Hard rules (they override defaults)
 
 1. **Never commit to `main`.** On `main` the owner commits through GitHub Desktop — just edit files,
    and ask first. **On any other branch, committing is fine and needs no permission**: one verified
    step per commit, evidence in the message. ⚠ `/plan-run` goes further on a worktree branch and
    makes commits MANDATORY for the overseer, because they are that run's only rollback points.
-2. **Never kill a process by image name or wildcard.** A hook blocks it
+2. **ONE SUBAGENT AT A TIME.** A hook enforces it (`.claude/hooks/one-subagent-at-a-time.ps1`,
+   released on `SubagentStop`). Subagents here run the Godot suite, which is a one-process rule:
+   two at once race for the same `user://settings.tres`, the same `godot.log` and the same window,
+   and a failure stops being attributable to either. Dispatch, wait for the report, dispatch the
+   next. A lock older than 90 minutes is ignored, so a killed session cannot wedge the repo shut.
+3. **Never kill a process by image name or wildcard.** A hook blocks it
    (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
    with unsaved work. An explicit verified `-Id <pid>` passes.
-3. **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use the Edit
+4. **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use the Edit
    tool, or a python heredoc writing `encoding='utf-8'`. A hook blocks it
    (`.claude/hooks/block-source-rewrite.ps1`): `Set-Content`/`Out-File`/`Add-Content` aimed at a
    source extension is refused. `Copy-Item`/`Move-Item` are byte copies and pass — that is how you
    park and restore a file around a deliberate red-then-green run.
-4. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
+5. **Verify visuals by eye.** Green tests and metrics are not evidence about pixels. Render, look at
    the image, describe what it actually shows — or say UNVERIFIED.
-5. **Online research is allowed, and is expected when a blocker might be a MISUNDERSTANDING rather
+6. **Online research is allowed, and is expected when a blocker might be a MISUNDERSTANDING rather
    than a design gap.** Engine semantics, an API's actual contract, a container's sizing rules, a
    platform quirk — look them up rather than inferring from behaviour. ⚠ **Say which it was:** cite
    the source, and keep "the docs say X" separate from "I measured X here". A gap is for a decision
    the design does not cover; if the real problem is that nobody knew how the engine behaves, that
    is research, not a gap, and filing one wastes an owner ruling. Measurement still outranks
    documentation when the two disagree — the engine in front of you is the authority.
-6. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
+7. **No speculative defense.** No guard clause, `try`/`except`, null check or fallback branch
+   unless you can NAME the caller that produces that case, or you observed the failure. A
+   precondition gets `assert` — it compiles out in release, and a crash at the real cause beats a
+   fallback that hides it. ⚠ This is the repo's most likely source of bloat, not a hypothetical:
+   assistants differ ~7x in how much defensive handling they add unprompted, and the ones used here
+   sit at the high end.
+8. **No unrequested generality.** No parameter, flag, `@export` or extension point without a caller
+   TODAY. A new function needs two call sites or a test that needs the seam; otherwise inline it.
+   The `bloat-reviewer` subagent checks exactly rules 7 and 8 against one diff.
+9. **No mocks in tools.** A harness hosts the real scene and the real data; a stand-in cannot
    disagree with what it models. ⚠ One sanctioned exception: `Tools/wall_editor.tscn` carries a
    `use_placeholder_content` toggle, **default off**, so the default path still hosts real
    scenes — `solatro/design/picture-wall/gaps/GAP-017.md` records why.
@@ -107,7 +143,16 @@ Everything else is a smaller game-jam or study project.
   the docs feel scattered, and **before writing any new memory file**. Its mechanical half is
   `py .claude/tools/doc_check.py`, which proves every reference still resolves.
 - **`plan-auditor`** subagent — audits a plan or doc against the live code before you execute it.
+- **`bloat-reviewer`** subagent — reads ONE diff and asks only the three questions a single diff can
+  answer: hard rules 7 and 8, plus functions with one call site. Cross-file duplication is
+  `dup_check.py`'s job and the branch is `/simplify`'s; do not ask this one for a broad verdict.
 
-Deliberately NOT installed: a PostToolUse hook that runs the test suite after every Edit. The
-Solatro suite takes ~60 s and must run WINDOWED, so per-edit runs would fight the owner's editor.
-Run the suite at task boundaries instead.
+Deliberately NOT installed, each for a measured reason:
+
+- **A PostToolUse hook running the test suite after every Edit.** The Solatro suite takes ~60 s and
+  must run WINDOWED, so per-edit runs would fight the owner's editor. Run it at task boundaries.
+- **A pre-commit AI review.** A per-commit reviewer cannot see the duplicate it should catch — the
+  other copy is in a commit that is not in front of it — so it returns nits. The gate at commit time
+  is deterministic (`commit-gate.ps1`); the model-driven passes belong at the work-stream boundary
+  where the whole diff exists.
+- **A weaker model as reviewer, ever.** See `/plan-run`'s "The reviewer's model floor".

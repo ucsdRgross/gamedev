@@ -4,11 +4,13 @@ A circus-themed poker-solitaire deckbuilder in Godot. Read this before judging a
 
 ## The board
 
-- Cards are placed into **5×5 grids**. One grid is unlocked per 25 cards in the starting deck.
-  Multiple grids sit side by side; a zoomed-out view shows them all, a focused view shows one.
+- Cards are placed into **5×5 grids**. One grid is unlocked per **52** cards in the deck at game
+  start, floored at 1 and capped at 3 — so a normal run plays **one** grid and never reaches a
+  second. Multiple grids sit side by side; a zoomed-out view shows them all, a focused view one.
 - The **Entrance** holds 5 incoming cards. The player picks one up and places it in any empty
-  cell of a grid. Once the first card of a refresh is placed, the whole refresh is committed to
-  that grid. The Entrance refills only when it empties or the grid fills.
+  cell of a grid. The first placement **commits the grid**, and no other grid accepts a card until
+  the committed one has no legal placement left. The Entrance refills only when every slot is
+  empty, so the player commits all five before seeing the next five.
 - A **completed line of 5 scores immediately** as a poker hand. Lines are: the 5 rows, the
   5 columns, and the 2 long diagonals.
 - A placed card **cannot normally be moved or stacked on**. Both are reserved for effects.
@@ -18,15 +20,36 @@ A circus-themed poker-solitaire deckbuilder in Godot. Read this before judging a
 `(grid, x, y, height)`. Grids are aligned, so row 1 of every grid sits at the same y — "move
 5 left" lands in the same cell of the grid to the left. **Height** is stacking: cards stacked on
 a cell push the rows below down to make room. Five aligned at the same height is a line and
-scores. Five in one x,y column is a line and scores. Removing a card drops the stack above it.
-Removing and re-adding a card re-triggers its line.
+scores. A **vertical stack scores only at a multiple of 5 cards** and pays the WHOLE stack each
+time — heights 6–9 pay nothing, and the bottom five being paid again at 10 is intended. Removing
+a card drops the stack above it. Removing and re-adding a card re-triggers its line.
 
 ## Scoring
 
-Poker hands give flat points. **Every effect trigger adds +1 to mult by default** — the combo is
-built from distinct effects firing, so breadth of triggers matters as much as size of numbers.
-Row score × column score × combo is the act payout. Submit ends the show; there is no final
-scoring pass, so Submit only fires whatever is hooked to it.
+Poker hands give flat points, banked the instant a line completes. **There is no act, no Submit
+and no final scoring pass** — the player ends a show with End, and the score shown is always
+current.
+
+Each grid keeps **three buckets**: row, column, and **special** (every diagonal AND every vertical
+stack shares this one). A completed line adds into its bucket, so scores within a bucket ADD.
+
+```
+grid_score  = the PRODUCT of that grid's buckets whose value is > 0, and 0 when none is
+board_total = the SUM of grid_score over grids
+combo       = 1 + 1.0 x (first-of-its-class) + 0.5 x (repeats)
+displayed   = board_total x combo          # applied at DISPLAY time, live
+```
+
+⚠ **A bucket that has not scored ADDS 0 — it never multiplies by 0.** Owner's worked example: row
++ col + special = 0+0+0; row banks 10 and it is 10; col banks 5 and it is 50; special banks 2 and
+it is 100. The test is the VALUE, never touched-ness.
+
+⚠ **What this means for an effect.** A point is worth the product of the OTHER two buckets, so
+opening a grid's empty bucket is worth far more than growing a full one, and an effect that
+reaches a bucket the player struggles to fill (special, i.e. diagonals and stacks) is worth more
+than its raw number suggests. **Melds and effects feed the combo on the same terms** — a
+first-of-its-class adds 1.0, a repeat 0.5 — and the combo never resets for the whole show, so
+breadth of distinct triggers matters as much as size of numbers.
 
 ## A card's anatomy — every effect must fit ONE of these slots
 

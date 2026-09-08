@@ -67,6 +67,22 @@ func _ready() -> void:
 	play_area = owner as PlayArea   # the play_area.tscn root
 	top_level = false               # ride the scroll container's transform
 
+## Split-prop half nodes are NOT this node's children (they live in a CARD layer, back-brackets
+## for the CardVisual's own draw order), so a tree teardown frees THIS node's PropVisual children
+## and their half nodes on two INDEPENDENT branches with no ordering guarantee between them. A
+## PropVisual whose halves are freed first is left holding stale pointers its own PREDELETE
+## notification then reads (`prop_visual.gd`'s `_notification`) -- "previously freed" engine
+## errors. `_free_visual`/`abort_all` already null both refs before freeing; do the same here so
+## ANY teardown path is safe, not just the ones that route through this layer's own free calls.
+func _exit_tree() -> void:
+	for vis : PropVisual in _visuals.values():
+		vis.back_node = null
+		vis.front_node = null
+	for vis : PropVisual in _exiting:
+		if is_instance_valid(vis):
+			vis.back_node = null
+			vis.front_node = null
+
 ## The kind's authored formation set, or null (no formation). Tests may pre-seed
 ## _formation_sets to exercise assignment without touching the shipped .tres files.
 func _formation_set(kind: int) -> PropFormationSet:
@@ -176,7 +192,11 @@ func _update_back_halves() -> void:
 func _body_over_any_card(vis: PropVisual) -> bool:
 	var reach := CardVisual.card_size_play * 0.5 + vis.body_size * 0.5 * vis.scale
 	for cvis : CardVisual in play_area.data_card.values():
-		if not is_instance_valid(cvis) or cvis.get_parent() != play_area.card_layer: continue
+		# A card now draws in EITHER of two layers (the Entrance's own, pinned, or the board's) —
+		# the body-overlap test has to see cards in both.
+		if not is_instance_valid(cvis): continue
+		var parent := cvis.get_parent()
+		if parent != play_area.card_layer and parent != play_area.entrance_card_layer: continue
 		var d := vis.global_position - cvis.global_position
 		if absf(d.x) <= reach.x and absf(d.y) <= reach.y:
 			return true
@@ -184,11 +204,15 @@ func _body_over_any_card(vis: PropVisual) -> bool:
 
 ## Copy the prop's live transform/opacity onto one half node (the single fade/scale source); the
 ## half is visible only while the prop is splitting (else the PropVisual draws the whole body).
+## Parented into whichever layer the prop's anchor SLOT belongs to (`card_layer_for`) — the
+## Entrance and the grids no longer share one `CardLayer`, and a half node ordered
+## against the wrong layer's children is meaningless (trap 2).
 func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 	if not half or not is_instance_valid(half): return
-	if half.get_parent() != play_area.card_layer:
+	var layer := play_area.card_layer_for(vis.anchor_coord)
+	if half.get_parent() != layer:
 		if half.get_parent(): half.get_parent().remove_child(half)
-		play_area.card_layer.add_child(half)
+		layer.add_child(half)
 	half.global_position = vis.global_position
 	half.rotation = vis.rotation
 	half.scale = vis.scale
@@ -207,23 +231,26 @@ func _mirror_half(vis: PropVisual, half: Node2D, active: bool) -> void:
 ## own removal shifting indexes and converge in ≤2 frames.
 func _apply_split(vis: PropVisual) -> void:
 	var bounds : Array[int] = []
-	if vis.anchor_coord != Vector3i.MIN and _body_over_any_card(vis):
+	if not vis.anchor_coord.is_nowhere() and _body_over_any_card(vis):
 		bounds = _row_bounds(vis.anchor_coord)
 	var active := not bounds.is_empty()
 	vis.set_split_active(active)
 	var back := vis.ensure_back()
 	var front := vis.ensure_front()
 	if not back or not front: return
+	# The anchor's OWN layer: the Entrance and the grids no longer share one CardLayer,
+	# and a half ordered against the wrong layer's children brackets nothing (trap 2).
+	var layer := play_area.card_layer_for(vis.anchor_coord)
 	for half : Node2D in [back, front]:
-		if half.get_parent() != play_area.card_layer:
+		if half.get_parent() != layer:
 			if half.get_parent(): half.get_parent().remove_child(half)
-			play_area.card_layer.add_child(half)
+			layer.add_child(half)
 	if not active: return
 	# BACK in the gap between the previous row's last card and this row's first card.
 	var lo := bounds[0]
 	var bi := back.get_index()
 	if bi <= bounds[2] or bi >= lo:
-		play_area.card_layer.move_child(back, (lo - 1) if bi < lo else lo)
+		layer.move_child(back, (lo - 1) if bi < lo else lo)
 	# FRONT in the gap between this row's last card and the next row's first card (bounds
 	# re-read — the back move above may have shifted the whole row by one).
 	bounds = _row_bounds(vis.anchor_coord)
@@ -231,27 +258,30 @@ func _apply_split(vis: PropVisual) -> void:
 	var hi := bounds[1]
 	var fi := front.get_index()
 	if fi <= hi or fi >= bounds[3]:
-		play_area.card_layer.move_child(front, (hi + 1) if fi > hi else hi)
+		layer.move_child(front, (hi + 1) if fi > hi else hi)
 
-## The bracket geometry of slot `v`'s row in CardLayer: [row's first card index, row's last card
-## index, last card index BEFORE the row, first card index AFTER the row] — i.e. the two
-## inter-row gaps _apply_split may place halves in. prev/next default to -1 / child count at the
-## board's edges. Empty when the row has no in-layer visuals (nothing to bracket → unsplit).
-## Held cards are skipped (they ride lifted at the layer's end and would stretch the row bracket
-## over the whole board).
-func _row_bounds(v: Vector3i) -> Array[int]:
+## The bracket geometry of slot `v`'s BRACKET ROW — its HEIGHT LAYER, the unit `row_card_visuals`
+## returns and the only one `_order_board_cards` keeps contiguous — in ITS OWN layer
+## (`card_layer_for`):
+## [row's first card index, row's last card index, last card index BEFORE the row, first card
+## index AFTER the row] — i.e. the two inter-row gaps _apply_split may place halves in. prev/next
+## default to -1 / child count at the board's edges. Empty when the row has no in-layer visuals
+## (nothing to bracket -> unsplit). Held cards are skipped (they ride lifted at the layer's end
+## and would stretch the row bracket over the whole board).
+func _row_bounds(v: BoardCoord) -> Array[int]:
+	var layer := play_area.card_layer_for(v)
 	var lo := 2147483647
 	var hi := -1
 	var in_row : Dictionary[Node, bool] = {}
 	for rv : CardVisual in play_area.row_card_visuals(v):
-		if rv.get_parent() != play_area.card_layer or rv.held: continue
+		if rv.get_parent() != layer or rv.held: continue
 		in_row[rv] = true
 		lo = mini(lo, rv.get_index())
 		hi = maxi(hi, rv.get_index())
 	if hi < 0: return []
 	var prev_hi := -1
-	var next_lo := play_area.card_layer.get_child_count()
-	for child : Node in play_area.card_layer.get_children():
+	var next_lo := layer.get_child_count()
+	for child : Node in layer.get_children():
 		var cv := child as CardVisual
 		if not cv or cv in in_row: continue
 		var i := cv.get_index()
@@ -276,7 +306,7 @@ func _free_visual(vis: PropVisual) -> void:
 ## geometry locked to stale pixels walks a diagonal off its row (owner reports 2026-07-12,
 ## worst visibly OFF-BOARD where staged/void points had no live slot to follow).
 func _repin(vis: PropVisual) -> void:
-	if vis.anchor_coord == Vector3i.MIN or not play_area: return
+	if vis.anchor_coord.is_nowhere() or not play_area: return
 	var live_global := play_area.slot_center_global(vis.anchor_coord)
 	if live_global == Vector2.ZERO: return   # defensive only: slot math never returns ZERO now
 	var live := to_local(live_global)
@@ -365,7 +395,7 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 		vis.t_goal = minf(vis.t_goal + 1.0 / vis.span_ticks, 1.0)
 	var batch_points := _assign_formation_points(spawned)
 	for prop : PropData in spawned:
-		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
+		var origin : BoardCoord = prop.at if not prop.at.is_nowhere() else _spawn_origin_of(prop)
 		var vis := _make_visual(prop, Vector2.ZERO)
 		# Personal formation point (PropFormationSet, per kind+origin batch), applied to every
 		# slot point this prop travels through — a batch reads as a condensed formation, not a
@@ -387,8 +417,8 @@ func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Arra
 		vis.retarget(staged)
 		# Staged pixels hang off the route entry (or the origin card) so _repin keeps the
 		# whole off-board train riding the board through relayouts.
-		var anchor : Vector3i = prop.route[0] if prop.route.size() >= 2 else origin
-		if anchor != Vector3i.MIN:
+		var anchor : BoardCoord = prop.route[0] if prop.route.size() >= 2 else origin
+		if not anchor.is_nowhere():
 			vis.anchor_coord = anchor
 			vis.anchor_point = _slot_point(anchor)
 		if vis.face_travel and prop.route.size() >= 2:
@@ -475,8 +505,8 @@ func _assign_formation_points(spawned: Array) -> Dictionary[PropData, Array]:
 	var out : Dictionary[PropData, Array] = {}
 	var batches : Dictionary[String, Array] = {}
 	for prop : PropData in spawned:
-		var origin : Vector3i = prop.at if prop.at != Vector3i.MIN else _spawn_origin_of(prop)
-		var key := "%d|%s" % [prop.kind, origin]
+		var origin : BoardCoord = prop.at if not prop.at.is_nowhere() else _spawn_origin_of(prop)
+		var key := "%d|%s" % [prop.kind, origin.pack()]
 		if key not in batches: batches[key] = []
 		(batches[key] as Array).append(prop)
 	for key : String in batches:
@@ -534,8 +564,8 @@ func _prune_done(live: Array) -> void:
 # --- coordinate mapping (content-local, scroll-invariant) ---------------------
 
 ## Content-local point of any board slot (either zone; direction-agnostic).
-func _slot_point(coord: Vector3i) -> Vector2:
-	if not play_area or coord == Vector3i.MIN: return Vector2.ZERO
+func _slot_point(coord: BoardCoord) -> Vector2:
+	if not play_area or coord.is_nowhere(): return Vector2.ZERO
 	return to_local(play_area.slot_center_global(coord))
 
 ## Where a freshly spawned prop's visual appears. Travelers with a real path (route >= 2
@@ -544,7 +574,7 @@ func _slot_point(coord: Vector3i) -> Vector2:
 ## row/column line and marches in from the edge in ONE direction. Ballistic props (single
 ## target) appear at their source card, lifted a little per countdown so a volley isn't one
 ## stacked blob.
-func _staged_point(prop: PropData, origin: Vector3i) -> Vector2:
+func _staged_point(prop: PropData, origin: BoardCoord) -> Vector2:
 	if prop.route.size() >= 2:
 		var entry := _slot_point(prop.route[0])
 		var dir := _slot_point(prop.route[1]) - entry
@@ -570,17 +600,17 @@ func _void_point_of(vis: PropVisual) -> Vector2:
 	var pitch := maxf(dir.length(), CardVisual.card_size_play.x)
 	return vis.position + dir.normalized() * pitch
 
-func _spawn_origin_of(prop: PropData) -> Vector3i:
+func _spawn_origin_of(prop: PropData) -> BoardCoord:
 	# Props carry `at` once entered; a same-tick spawn hasn't moved, so pop out of the SOURCE
 	# CARD (plan §4.2 — the scored suit card bursts its props). The route head is only a
 	# fallback: for row props it is the far board edge, and spawning there made every knife
 	# of a meld materialize at one edge point instead of at its own card.
 	var game := _game()
 	if game and prop.source:
-		var v : Vector3i = game.find_data_vec3(prop.source)
-		if v != Vector3i.MIN: return v
+		var v : BoardCoord = game.state.grid_position_of(prop.source)
+		if not v.is_nowhere(): return v
 	if not prop.route.is_empty(): return prop.route[0]
-	return Vector3i.MIN
+	return BoardCoord.NOWHERE
 
 # --- card reactions -----------------------------------------------------------
 
@@ -597,29 +627,30 @@ func _update_reactions(live: Array, movers: Array) -> void:
 	if not game or not play_area: return
 	# 1. JUMP arrivals re-pulse per prop (anim_jump restarts cleanly; spin is hold-driven).
 	for prop: PropData in movers:
-		if prop.done or prop.at == Vector3i.MIN: continue
-		var card := game.find_vec3_data(prop.at)
+		if prop.done or prop.at.is_nowhere(): continue
+		var card := game.state.card_at(prop.at)
 		if not card: continue
 		var vis : CardVisual = play_area.data_card.get(card)
 		if not vis: continue
 		if PropData.Reaction.JUMP in prop.reactions_for(card):
-			vis.anim_jump()
+			# The stack above rides it (Q310=a) -- PlayArea owns that, a visual cannot know it.
+			play_area.jump_card_with_its_stack(card)
 	# 2. Holds. JUMP and SPIN both START on occupancy (prop.at over the card — never before
 	#    the first prop arrives); SPIN is additionally SUSTAINED, once started, while the card
 	#    is still in any spin-hinting prop's remaining route (more are coming: keep turning).
 	var holding : Dictionary[CardData, int] = {}
 	for prop: PropData in live:
 		if prop.done: continue
-		if prop.at != Vector3i.MIN:
-			var card := game.find_vec3_data(prop.at)
+		if not prop.at.is_nowhere():
+			var card := game.state.card_at(prop.at)
 			if card:
 				var reactions := prop.reactions_for(card)
 				if PropData.Reaction.JUMP in reactions:
 					holding[card] = holding.get(card, 0) | HOLD_JUMP
 				if PropData.Reaction.SPIN in reactions:
 					holding[card] = holding.get(card, 0) | HOLD_SPIN
-		for coord : Vector3i in prop.route:
-			var card := game.find_vec3_data(coord)
+		for coord : BoardCoord in prop.route:
+			var card := game.state.card_at(coord)
 			if card and (_reacting.get(card, 0) & HOLD_SPIN) \
 					and PropData.Reaction.SPIN in prop.reactions_for(card):
 				holding[card] = holding.get(card, 0) | HOLD_SPIN

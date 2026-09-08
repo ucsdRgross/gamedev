@@ -434,8 +434,8 @@ func test_hook_added_card_activates_in_the_same_phase() -> void:
 	var opener := SpotlightTestSkill.make("opener", func(s: SpotlightTestSkill) -> void:
 		var extra := play_card(9, TestFactories.uc())
 		extra.with_skill(arrival)
-		s.game.state.lower_zone[0].datas.append(extra)
-		s.game.state.revision += 1)
+		s.api.lower_zone()[0].datas.append(extra)
+		s.api.bump_revision())
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(3, TestFactories.uc())
 		bottom.with_skill(opener)
@@ -461,7 +461,7 @@ func test_discard_compacts_and_the_replacement_activates() -> void:
 	var trigger := SpotlightTestSkill.make("trigger", func(s: SpotlightTestSkill) -> void:
 		if doomed_ref.is_empty(): return
 		var doomed : CardData = doomed_ref.pop_back()
-		await s.game.discard_data(doomed))
+		await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(3, TestFactories.uc())
 		bottom.with_skill(trigger)
@@ -493,16 +493,23 @@ func test_self_feeding_chain_ends_at_act_cap() -> void:
 		if generations[0] >= WATCHDOG: return      # the brake: never spin past the watchdog
 		var heir := play_card(6, TestFactories.uc())
 		heir.with_skill(SpotlightTestSkill.make("gen%d" % generations[0], s.behaviour))
-		s.game.state.lower_zone[0].datas.append(heir)
-		await s.game.discard_data(s.data)
+		s.api.lower_zone()[0].datas.append(heir)
+		await s.api.discard_data(s.data)
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var seed_card := play_card(5, TestFactories.uc())
 		seed_card.with_skill(SpotlightTestSkill.make("gen0", respawn))
 		return [seed_card] as Array[CardData])
-	# Park act_calls just under the cap instead of editing the SHARED settings resource, which
+	# Park the counter just under the cap instead of editing the SHARED settings resource, which
 	# concurrent suites are also reading. Same trip, no cross-suite damage.
+	# ⚠ **PARK THE COUNTER THE CAP ACTUALLY READS.** The cap moved off `act_calls` — which still
+	# counts every activation and drives the compression ramp — onto the REPEAT counters, because
+	# a unique activation is bounded by the board and only a repeat can run away. This chain is
+	# all-unique by construction: every generation spawns a NEW card with a NEW skill instance, so
+	# nothing here is ever a repeat. What still bounds it is `_spotlight_section()`'s deliberately
+	# UNKEYED count — an activation that cannot be identified always charges — and that is the
+	# counter to park.
 	g._begin_act()
-	g.act_calls = SettingsManager.settings.act_event_cap - 4
+	g.act_run_repeats = SettingsManager.settings.act_event_cap - 4
 	await score_column(g, 0)
 	check(g.act_overrun, "the self-feeding chain tripped act_event_cap",
 			"act_calls=%d generations=%d" % [g.act_calls, generations[0]])
@@ -524,7 +531,7 @@ func test_broken_meld_rescores() -> void:
 	var breaker := SpotlightTestSkill.make("breaker", func(s: SpotlightTestSkill) -> void:
 		if doomed_ref.is_empty(): return
 		var doomed : CardData = doomed_ref.pop_back()
-		await s.game.discard_data(doomed))
+		await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(2, TestFactories.uc())
 		bottom.with_skill(breaker)
@@ -544,7 +551,7 @@ func test_emptied_section_scores_nothing() -> void:
 	var eraser := SpotlightTestSkill.make("eraser", func(s: SpotlightTestSkill) -> void:
 		while not doomed_ref.is_empty():
 			var doomed : CardData = doomed_ref.pop_back()
-			await s.game.discard_data(doomed))
+			await s.api.discard_data(doomed))
 	fill_lower(g, 1, func(_c: int) -> Array[CardData]:
 		var bottom := play_card(2, TestFactories.uc())
 		bottom.with_skill(eraser)

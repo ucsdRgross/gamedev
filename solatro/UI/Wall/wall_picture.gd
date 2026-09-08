@@ -53,6 +53,12 @@ var screen_root : Node = null
 ## without re-deriving them from this node's children.
 var rect : PictureRect = null
 
+## Where the camera RESTS along this picture's width, in the picture's own units, measured from its
+## centre. SESSION STATE: it survives leaving and re-entering while the app runs, is never written
+## to the run save, and `detach_screen()` clears it because a screen that is gone has no pan left to
+## remember. Zero for every picture that does not pan, which is the picture's centre exactly.
+var saved_pan_x : float = 0.0
+
 ## The entry's `background_texture`, remembered so `attach_screen()`/`detach_screen()` can show and
 ## hide it as `screen_root` comes and goes. A live screen always wins; this is the fallback. Null
 ## when the entry authored none.
@@ -112,7 +118,7 @@ func build(p_rect: PictureRect, entry: PictureEntry, viewports_parent: Node,
 	_design_size = entry.design_size
 
 	viewport = SubViewport.new()
-	viewport.size = entry.design_size
+	_apply_design_render_size()
 	# ⚠ MUST be set explicitly: a SubViewport defaults to LINEAR and does NOT inherit the
 	# project's texture-filter setting.
 	viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
@@ -191,6 +197,7 @@ func detach_screen() -> void:
 	if screen_root and is_instance_valid(screen_root):
 		screen_root.queue_free()
 	screen_root = null
+	saved_pan_x = 0.0
 	# With the live screen gone, the authored background (if any) reappears.
 	_show_background()
 
@@ -225,11 +232,7 @@ func focus() -> void:
 	# edge. A mouse-only player never sees it, because a click never selects.
 	_apply_position()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.size = _design_size
-	# Focused renders at full design size, so the canvas override has nothing to do — cleared
-	# rather than left at a 1:1 identity, so `WallInput.route()` maps into a plain viewport.
-	viewport.size_2d_override = Vector2i.ZERO
-	viewport.size_2d_override_stretch = false
+	_apply_design_render_size()
 	_rescale_screen()
 	# The live screen's root is flipped to ALWAYS. `screen_root` may be null when this picture has
 	# no scene, in which case there is nothing to flip.
@@ -240,6 +243,30 @@ func focus() -> void:
 	# A focused picture is always fully opaque: a reduced-motion cross-fade may have left this
 	# alpha mid-fade, and no resting state is ever partially faded.
 	set_screen_alpha(1.0)
+
+## The render-target size for a picture laid out at `design`: each axis capped at `max_px`.
+##
+## ⚠ **THE PROPERTY CANNOT BE READ BACK TO CHECK THIS.** Past the GPU's maximum texture size the
+## Compatibility renderer destroys the framebuffer and sets the size to 0 internally, while
+## `SubViewport.size` still reports the oversized value — the failure is invisible from script and
+## the picture is simply black. Older GPUs cap at 4096. The only defence is never writing one.
+static func clamped_render_size(design: Vector2i, max_px: int) -> Vector2i:
+	return Vector2i(mini(design.x, max_px), mini(design.y, max_px))
+
+## Writes `viewport`'s render target for a picture laid out at FULL design size — what `build()`
+## and `focus()` both want. Clamped to `game_picture_max_render_px`, with the canvas override
+## engaged ONLY when the clamp actually bites, so a picture too wide for the render target keeps
+## its layout at design size and pays sharpness instead of a destroyed framebuffer. That is the
+## same mechanism `update_wall_view_size()` uses; the difference is only which size is asked for.
+##
+## ⚠ **AT 1:1 THE OVERRIDE MUST BE CLEARED, NOT LEFT AT AN IDENTITY.** `WallInput.route()` maps
+## into a plain viewport and a stale override displaces every click inside a focused screen.
+func _apply_design_render_size() -> void:
+	var render := clamped_render_size(_design_size, settings().game_picture_max_render_px)
+	viewport.size = render
+	var clamped := render != _design_size
+	viewport.size_2d_override = _design_size if clamped else Vector2i.ZERO
+	viewport.size_2d_override_stretch = clamped
 
 ## Drops this out of focus: UPDATE_DISABLED, so rendering stops but the already-rendered texture
 ## persists on the GPU. Sized down to the wall-view footprint, never left at full `design_size`.
@@ -409,6 +436,44 @@ static func resting_state(rect: PictureRect, window_size: Vector2, settings: Pla
 	return {"position": rect.centre,
 			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
 
+## `resting_state()`'s pose with a continuous horizontal pan of `offset_x` pixels added to
+## `position.x` -- `zoom` and `position.y` unchanged. The primitive a touchscreen drag tracks
+## continuously; `grid_state()` below is just this evaluated at one of its discrete target values,
+## so a drag and a grid step never feel like two different mechanisms.
+static func panned_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
+		offset_x: float, card_height_px: float = -1.0) -> Dictionary:
+	var state := resting_state(rect, window_size, settings, card_height_px)
+	var rest_position : Vector2 = state["position"]
+	state["position"] = Vector2(rest_position.x + offset_x, rest_position.y)
+	return state
+
+## The camera pose for grid position `grid_index` on a multi-grid board of `pitch` pixels per
+## grid step -- `panned_state()` at the offset that many grids away from `resting_grid`, so grid
+## `resting_grid` itself reproduces `resting_state()` exactly.
+##
+## `resting_grid` and `pitch` are caller-supplied parameters, not recomputed here: this stays a
+## pure function of its own inputs rather than reaching into `PlayArea`'s live view-mode state to
+## rediscover them.
+static func grid_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
+		grid_index: int, resting_grid: int, pitch: float, card_height_px: float = -1.0) -> Dictionary:
+	return panned_state(rect, window_size, settings, pitch * float(grid_index - resting_grid),
+			card_height_px)
+
+## `pan_x` re-expressed as the nearest whole grid step on a board of `grid_count` grids resting on
+## `resting_grid`, clamped into that board.
+##
+## ⚠ **A SAVED PAN IS SNAPPED ON THE WAY OUT, NOT TRUSTED AS STORED.** It was measured against the
+## grid count and pitch of the moment it was saved, and either can have changed since — a grid
+## removed while the picture was unfocused leaves an offset pointing past the board's last grid.
+## Rounding to a whole step is also what makes a restore land CENTRED on a grid rather than between
+## two of them.
+static func snap_pan_to_grid(pan_x: float, pitch: float, resting_grid: int,
+		grid_count: int) -> float:
+	if grid_count <= 0 or pitch <= 0.0:
+		return 0.0
+	var index := clampi(resting_grid + int(roundf(pan_x / pitch)), 0, grid_count - 1)
+	return pitch * float(index - resting_grid)
+
 ## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`.
 ##
 ## ⚠ **THE POINT IS THAT NOTHING IS COVERED.** Info mode exists to read a screen while a card
@@ -434,9 +499,16 @@ static func info_zoom_state(rect: PictureRect, window_size: Vector2,
 			else settings.wall_info_card_max_height
 	var reserve := maxf(card_height - settings.wall_info_card_overlap, 0.0)
 	var free_height := maxf(window_size.y - reserve, 1.0)
+	# ⚠ **WHAT IS FITTED IS THE SUB-RECT THE FOCUSED POSE SHOWS, NOT THE WHOLE PICTURE.** A picture
+	# several window-widths wide is one the focused camera never showed whole either, so fitting all
+	# of it would pull the camera back until the screen the card is describing is unreadable — which
+	# is the opposite of what Info mode is for. On a picture already at the window's aspect the two
+	# are the same rect and nothing moves.
+	var framed := window_size / maxf(
+			focused_scale(rect.size, window_size, settings.wall_overfill_margin), 0.0001)
 	# "Fit", the MIN of the two axis ratios — against `focused_scale()`'s "fill" MAX, which is what
-	# crops. Nothing is cropped at or below this.
-	var zoom := minf(window_size.x / rect.size.x, free_height / rect.size.y)
+	# crops. Nothing of the framed view is cropped at or below this.
+	var zoom := minf(window_size.x / framed.x, free_height / framed.y)
 	# The picture now sits in the TOP `free_height` of the window, so its centre must appear above
 	# the window's centre by half the reserve. The camera therefore sits BELOW the picture's centre
 	# by that same distance in wall units.

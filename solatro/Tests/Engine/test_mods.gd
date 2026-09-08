@@ -29,7 +29,7 @@ func _ready() -> void:
 	await run_grabber_tests()
 	await run_placer_tests()
 	await run_type_input_place_tests()
-	await run_type_input_next_tests()
+	await run_type_input_refill_tests()
 	await run_zone_adder_tests()
 	await run_trigger_tests()
 	run_booster_tests()
@@ -213,33 +213,42 @@ func run_type_input_place_tests() -> void:
 
 
 # ==============================================================================
-# SECTION 4: TypeInput Next cycle — upper column drops to lower, deck refills upper
+# SECTION 4: TypeInput refill — the Entrance fills its own empty slots, left to right
 # ==============================================================================
-func run_type_input_next_tests() -> void:
-	behavior_section("SECTION 4: INPUT-ZONE NEXT CYCLE")
-	var a := play_card(3, 1)
-	var b := play_card(4, 2)
-	var g := make_game([], [[a, b]], [[]])
-	g.state.upper_zone_type[0].with_type(TypeInput.new())
+func run_type_input_refill_tests() -> void:
+	behavior_section("SECTION 4: ENTRANCE REFILL")
+	# Two Entrance slots, both empty, and two cards waiting in the deck. No grids at all,
+	# which is deliberate: with nowhere to place a card, the refill trigger is satisfied
+	# every time and the only thing under test is which slot each card lands in.
+	var g := make_game([], [[], []], [])
+	for header_card : CardData in g.state.upper_zone_type:
+		header_card.with_type(TypeInput.new())
 	var d1 := TestFactories.m_card(7, TestFactories.uc())
-	d1.stage = CardData.Stage.DRAW
-	g.state.draw_deck.append(d1)
+	var d2 := TestFactories.m_card(8, TestFactories.uc())
+	for d : CardData in [d1, d2]:
+		d.stage = CardData.Stage.DRAW
+	g.state.draw_deck.append_array([d1, d2] as Array[CardData])
 
 	await g.next()
-	check(lower_col(g, 0) == ([a, b] as Array[CardData]),
-			"Next drops the upper column into the paired lower column, order kept",
-			str(lower_col(g, 0)))
-	check(g.state.upper_zone[0].datas == ([d1] as Array[CardData]),
-			"Next refills the upper column from the draw deck")
-	check(g.state.draw_deck.is_empty() and d1.stage == CardData.Stage.PLAY,
-			"drawn card left the deck and entered play")
-	check(g.state.validate().is_empty(), "board validates after Next")
+	# draw_card() pops the BACK of the deck, and the headers fill in dispatch order, so the
+	# LEFTMOST slot takes the first card drawn. Asserting the exact card per slot, not merely
+	# that both are full: a right-to-left refill would pass a "both slots full" check.
+	check(g.state.upper_zone[0].datas == ([d2] as Array[CardData]),
+			"the leftmost Entrance slot takes the first card drawn",
+			str(g.state.upper_zone[0].datas))
+	check(g.state.upper_zone[1].datas == ([d1] as Array[CardData]),
+			"the next slot right takes the second", str(g.state.upper_zone[1].datas))
+	check(g.state.draw_deck.is_empty() and d1.stage == CardData.Stage.PLAY 			and d2.stage == CardData.Stage.PLAY,
+			"both drawn cards left the deck and entered play")
+	check(g.state.validate().is_empty(), "board validates after the refill")
 
-	#empty deck: the drop still happens, the refill silently skips
+	# An empty deck: the refill is still asked for and simply finds nothing to draw.
+	g.state.upper_zone[0].datas.clear()
 	await g.next()
-	check(lower_col(g, 0) == ([a, b, d1] as Array[CardData]),
-			"Next with an empty deck still drops; no crash, no refill")
-	check(g.state.validate().is_empty(), "board validates after empty-deck Next")
+	check(g.state.upper_zone[0].datas.is_empty() 			and g.state.upper_zone[1].datas == ([d1] as Array[CardData]),
+			"a refill with an empty deck leaves the slot empty; no crash, nothing invented",
+			str(g.state.upper_zone[0].datas))
+	check(g.state.validate().is_empty(), "board validates after the empty-deck refill")
 	done(g)
 
 

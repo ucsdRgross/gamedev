@@ -968,7 +968,7 @@ func _maybe_trace() -> void:
 	set_process(false)
 	EventLog.begin()
 	# ⚠ PARK THE PLAYER'S SAVE FIRST — `new_run()` clears and rewrites `user://run_save/run.tres`,
-	# and the trace's Game keeps saving over it on every submit. Restored before quit below.
+	# and the trace's Game keeps saving over it on every committed action. Restored before quit below.
 	_SAVE_GUARD.backup_real_save("spotlight_tool")
 	var run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = run
@@ -984,19 +984,15 @@ func _maybe_trace() -> void:
 	await g.next()
 	view.play_area.flush_rebuild()
 	await get_tree().process_frame
-	# ⚠ **SCENARIO 1 IS THE EMPTY BOARD AND IT IS A REAL SCENARIO, NOT A BLOCKER.** Submit fires
-	# whenever the button is pressed regardless of what is on the board, so "submit with nothing
-	# placed" is a case the spotlight has to survive: an act that scores nothing must light nothing
-	# and must leave the dim down.
+	# ⚠ **SCENARIO 1 IS THE EMPTY BOARD AND IT IS A REAL SCENARIO, NOT A BLOCKER.** A placement pass
+	# that places nothing is a case the spotlight has to survive: nothing must light and the dim
+	# must stay down.
 	for step : Array in [[0, 0], [3, 1], [6, 3]]:
 		var count : int = step[0]
 		var per_col : int = step[1]
 		EventLog.event(EventLog.CH_ACT, "SCENARIO", "place=%d per_col=%d" % [count, per_col])
 		if count > 0:
 			await _trace_place(view, count, per_col)
-		EventLog.event(EventLog.CH_ACT, "submit_begin")
-		await g.submit()
-		EventLog.event(EventLog.CH_ACT, "submit_end")
 		await get_tree().process_frame
 		await g.next()
 	EventLog.event(EventLog.CH_ACT, "SCENARIOS done")
@@ -1033,9 +1029,9 @@ func _trace_place(view : GameView, count : int, per_col : int) -> void:
 			"placed=%d board=%d" % [placed, view.play_area.data_card.size()])
 
 ## Shoot a frame at each capture-worthy transition WHILE the act runs.
-## ⚠ `submit()` is one long `await`, so nothing else gets a turn unless something watches from a
-## PARALLEL coroutine. `Callable.call()` starts this detached; `await` would block until it finished
-## (it never does) and a bare call will not compile.
+## ⚠ A resolving act is one long `await`, so nothing else gets a turn unless something watches from
+## a PARALLEL coroutine. `Callable.call()` starts this detached; `await` would block until it
+## finished (it never does) and a bare call will not compile.
 func _trace_capture(view : GameView) -> void:
 	var from := 0
 	while EventLog.enabled:

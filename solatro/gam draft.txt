@@ -1,4 +1,4 @@
-﻿Soltāro 
+Soltāro 
 Patience-mania tableau-mania Circus Solitaire (circus theme) Cardaganza The  Greatest Deck/Cardshow/Showitaire Show in Circustaire
 https://www.youtube.com/watch?v=h8zJ5xhz7uM
 Stranger Things Theme Song (C418 REMIX)
@@ -1446,7 +1446,48 @@ https://boardgamegeek.com/boardgame/371947/3-ring-circus
 
 
 Copy autochess in that multiple copies of a class or type of card in a single ring creates special effects, scaling with copies of the card type. Can have the current hoop/ball/fire/knife effects and other prop based effects rely on this type of combo in its ring to work?
+Makes more sense to have each effect to have a check to change its own effect based on what else is on the board, which simulates the entire class based effect without needing the class based effect to exist outside the the group of cards
 
 
-Entrance card variants that only allows placing cards next to each other when placing on grid as a boss 
+Entrance card variants that only allows placing cards next to each other when placing on grid as a boss, or cards can only be place in unique columns or rows from previously placed cards first
 Potential replay mechanic, on game end (replay entire round sped up?)
+
+
+Able to chain cannons into other cannons to launch multiple times, and other pushing piston and redstone and observer style
+
+
+Flip art so that talent/skill goes on top instead, and flip the column and height row scores. Scrolling goes up instead as height increases. Makes more sense when thinking of height, and puts more emphasis on the actual art and skill
+Alternatively, add second row below art for another set of rank and suit and add second possible stamp seal, shoe/pants type modifiers with no overlap with hat type stamp/seals (this is likely overkill, single item is enough, its what games like pokemon do)
+
+
+Lion card, always treated as king rank
+
+
+Boss where after entering game, deck size is doubled with temporary mirror versions of each card that doesnt last past the game. If a mirror and its original are next to each other, both are destroyed
+
+
+Shy clown, can be put back in entrance slot if there is open space in it and entrance is aligned with the grid it is in
+
+
+Summary at of round that records best play
+
+
+Go based gameplay, can capture cards by surrounding, othello card flipping
+
+
+Every single game has an additional goal that must be accomplished on top of hitting score (probably higher difficulty stuff, increase amount of objectives as difficulty increases along with higher score required)
+At least 1 tile must be empty, at least 5 pairs, one row/line must have combined rank between 20-30, at least 1 tile must have same rank in each grid, 1 row cannot have flush, cards must be in ascending or descending order from top to bottom in one column, some cards show up flipped until placed. Each blind chooses 1 effects, boss blinds get +1 blind effect. 1 effect can be stuff like like hazards as well. Candy crush style? Some cells subtract or increase rank value. Some cells force a specific suit to be placed there or causes it to become a suit when placed there.
+If you dont place a card in a grid, it automatically gets a random card placed there.
+Start with a flipped card placed down somewhere random, only revealed when something placed next to it.
+Some negative effects count for 2, such as lose a grid, so negative effects also have a cost. In exchange score from remaining grids is doubled. Maybe more balanced as lose score for each cell you use?
+Idea is that each hazard should reward you if you play into it and take a risk, and not just be a different ‘level’ with no downsides. Each increase in difficulty +1 blind per 3 levels. So at difficulty 4, 3rd level has 2 blinds.
+Add challenges on top of everything such as nuzlocke, each cards added to deck outside of initial deck is locked in and can no longer be traded in
+
+
+Back to having specific decks player can start with
+
+
+3 different options, talent pack, trading hall, special events. Only be able to see up to closest city so player doesnt get decision paralysis. Allow seeing more with card effects
+
+
+Possible inspiration from https://balatromods.miraheze.org/wiki/Main_Page https://balatrowiki.org/

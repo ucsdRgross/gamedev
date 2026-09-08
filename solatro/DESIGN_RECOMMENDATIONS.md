@@ -1,30 +1,51 @@
 # SOLATRO — Claude's Recommendations & Expansion Ideas
 
-Companion to `DESIGN_DOC.md` (the organized record of your ideas). Everything in THIS file
-is my interpretation, recommendation, or invention — kept separate on purpose so it never
-contaminates the record of what you actually designed. Written against the
-code of that date — implementation-status remarks (e.g. "fix N5 spotlight", "wire the
-worldgen map", §12 build-order steps 1–3) are OUTDATED: spotlight, the worldgen map/run
-layer, suit props, and the combo scoring formula have since shipped (see
-ARCHITECTURE_REVIEW.md). The design proposals themselves remain live material.
+**This is the GRID version.** The board is one to three grids of stacked cells, a placement
+scores the lines it completes immediately, and there is no Submit and no act. The pre-grid
+version of this file — whose §2.1 proposes a scoring formula the game no longer has — is
+`archive/DESIGN_RECOMMENDATIONS.md`.
+
+Companion to `DESIGN_DOC.md` (the organized record of the owner's ideas). Everything in THIS
+file is my interpretation, recommendation, or invention — kept separate on purpose so it never
+contaminates the record of what the owner actually designed.
+
+⚠ **Nothing here is a decision.** `design/poker-patience/DESIGN.md` is the answered
+questionnaire and outranks every proposal below; `ARCHITECTURE_REVIEW.md` says what the code
+actually does.
+
+⚠ **The card proposals below were written against the tableau.** Where one says "column" it now
+has to choose: a grid **column**, a **row**, a **diagonal**, or the vertical **stack** in one
+cell — four spatial axes where there used to be two. Each is flagged where the translation
+changes the card. **The systematic version of this re-basing is the effect review**
+(`design/effect-review/`), which mined this file among others and puts one owner question per
+candidate effect; treat that as the live channel and this file as the quarry it came from.
 
 ---
+
 
 ## 1. How I read your design (what the game actually is)
 
 Three pillars carry this game, and they're all already in your notes:
 
 1. **Spatial deckbuilding.** Balatro's genius is "poker hand + modifiers"; your genius is
-   that *position* matters — rows, columns, stacks, covering. No Balatro-like has this.
-   Every card you add should ask the player a *placement* question, not just a
-   *selection* question. The spiderweb card, performance rings, suit projectiles, and
-   formation classes are the best ideas in the notes for exactly this reason.
+   that *position* matters. **The grid multiplied this rather than replacing it**: there are
+   now four axes a card can care about — row, column, diagonal, and the height of the stack
+   it stands in — plus which grid it is on. Every card you add should ask the player a
+   *placement* question, not just a *selection* question. The spiderweb card, suit
+   projectiles, and formation classes are the best ideas in the notes for exactly this reason.
 2. **"Everything is a card."** The rule deck isn't just architecture elegance — it's the
-   endgame content engine (boss debuffs, ascensions, secret melds, Baba-Is-You unlocks
-   all reuse it). It's built. Lean on it.
-3. **The tour fantasy.** The circus theme solves the "campaign for Tetris" problem you
-   worried about: a *route* is a story. Fame, weather, towns that hate knives — the map
-   IS the narrative layer, and the worldgen addon already renders it.
+   endgame content engine. It is now literally load-bearing: the grids themselves exist
+   because `SkillGridAllotment` and `SkillGridCreator` are rule cards, and every score
+   happens because `SkillLineDetector` is one. It's built. Lean on it.
+3. **The tour fantasy.** The circus theme solves the "campaign for Tetris" problem: a *route*
+   is a story. Fame, weather, towns that hate knives — the map IS the narrative layer, and the
+   worldgen addon already renders it.
+
+**What the grid changed about my reading:** the old board had a scarcity of *turns* (three
+submits) and an abundance of *space*. The grid has the opposite — space is 25 cells and
+turns are unlimited, so **the pressure has to come from what you cannot un-place.** Cards
+that constrain future placements are now the strongest design lever in the game, and cards
+that hand out extra actions are the weakest. Rebalance proposals accordingly.
 
 **What I'd cut or defer (your own retention essay says don't multiply systems):**
 - Defer: quests (TFT), event-recycled prestige, lore scraps, cosmetics, the
@@ -34,50 +55,71 @@ Three pillars carry this game, and they're all already in your notes:
   fight your "cards are the currency" economy. Fold luck manipulation into the Fortune
   Teller class instead, where it has a face.
 - Decide deliberately on the ⚠️ summary-invented cards: I'd **adopt** Ghost Card
-  (spotlight-passthrough is a great stamp, see §5), The Acrobat (grab-while-covered),
-  and Searing Knife (column hazards enable town/boss content); **reject** The Anarchist
-  (silencing the rule deck breaks the one system everything runs on — make it a boss
-  effect, not a player card) and Sliced Reality (column count changes are already
-  ZoneAdder's job).
+  (spotlight-passthrough is a great stamp, see §5) and The Acrobat (grab-while-covered,
+  which on a grid means acting from *under* a stack and is more interesting than it was);
+  **reject** The Anarchist (silencing the rule deck now silences the board itself — make it a
+  boss effect, not a player card). Searing Knife and Sliced Reality both need re-reading:
+  "column hazards" and "column count changes" were tableau verbs, and on a grid the honest
+  versions are "line hazards" and "add or remove a whole GRID" — which is `SkillGridCreator`'s
+  job, already built.
 
 ---
 
+
 ## 2. Resolving your open design questions
 
-### 2.1 Scoring: adopt the combo reframe, keep the dual axes
-Your v3 "damage against an antagonist" instinct is right — but don't throw away row×col.
-Concrete proposal:
+### 2.1 Scoring: SETTLED — the per-grid bucket product
+
+⚠ **This section's original proposal (`effects × (1 + row combo) × (1 + col combo)`) is
+superseded and must not be built.** The owner settled the economy, and it is:
 
 ```
-show score = Σ (card effect points)  ×  (1 + row combo)  ×  (1 + col combo)
-row combo  = # of unique row melds scored this submit
-col combo  = # of unique runs scored this submit
+per grid:     a ROW bucket, a COL bucket, and one SPECIAL bucket
+grid score  = the PRODUCT of every bucket worth more than 0   (a 0 bucket ADDS 0, never multiplies)
+board total = every grid score, summed
+combo       = 1 + 1.0 per first-of-its-class + 0.5 per repeat, never reset
+displayed   = board total × combo, recomputed live
 ```
 
-- Poker hands and runs stop being the *points* and become the *multiplier*. Card effects
-  ("ammo") are the points. This makes every added skill card visibly matter, makes
-  boards without effects score honestly low, and preserves the -2- / |1| axis identity.
+Full statement in `DESIGN_DOC.md` §5 and `ARCHITECTURE_REVIEW.md` §3a.
+
+**What survives from the original proposal, and is worth keeping in mind when designing
+cards:**
 - **The audience IS the antagonist.** Don't add an enemy with HP — the goal score already
-  is one. Rename goal to "Fame needed"; overscore = tips; the crowd cheers per combo
-  increment. You get the StS feel with zero new systems.
-- Performance Rings then slot in cleanly as *depth multipliers on the col combo* —
-  rewarding tall play, which is the riskiest spatial behavior (covering your own cards).
-  That's good design tension with the Spotlight system: deep columns = big combo but
-  more covered (inactive) skills. This tension is the game. Protect it.
+  is one. Rename goal to "Fame needed"; the crowd cheers per combo increment. You get the
+  StS feel with zero new systems.
+- **Card effects feed the same combo melds do**, on identical terms — so the "effects are
+  ammo" instinct is honoured: a card that fires a new effect class raises the multiplier
+  exactly as much as a new meld class does. Designing effects IS designing score.
+- **Depth is still the risky spatial behaviour**, and the economy now pays it directly: a
+  stack scores at every fifth card and pays the whole stack, while every card you add covers
+  the one below it and takes its skill out of the spotlight. **Deep cells = big special
+  bucket but fewer live skills. This tension is the game. Protect it.**
+
+⚠ **The product is the thing to design around.** Under the old sum-and-multiply, a mediocre
+third axis added a little. Under a product, a grid that has never scored a diagonal is not
+scoring *slightly* less — it is scoring a whole factor less. So the highest-value card in the
+game is the one that opens a bucket you have not opened yet, and the most over-rewarded
+archetype is anything that repeats a bucket you already have. Price accordingly.
 
 ### 2.2 Alt win cons: you already solved it — formalize "The Booking"
 Your fame-wager idea (declare a score, lose if you miss) is the alternative to bigger
 numbers: **make declarations the win condition.** A tour is won by *fulfilling bookings*,
-not by max score. Bookings are contracts: "score X with no knife melds," "win in 2
-submits," "trigger 12 unique feats." That's your mini-game events, Balatro boss blinds,
-and the optimization-essay answer unified into one diegetic object — a **contract card**
-that sits in the rule deck for the show. Endless mode = increasingly absurd bookings.
+not by max score. Bookings are contracts: "score X with no knife melds," "fill a grid without
+scoring a diagonal," "trigger 12 unique feats." That's your mini-game events, Balatro boss
+blinds, and the optimization-essay answer unified into one diegetic object — a **contract
+card** that sits in the rule deck for the show. Endless mode = increasingly absurd bookings.
+⚠ Note the grid gives Bookings a natural clock they used to lack: a show ends when the board
+runs out of legal placements, so "in one show" is now a real constraint rather than a turn
+budget.
 
-### 2.3 Spotlight: fix N5 before designing any more cards
-Every skill you design is dead until "active while unblocked" is implemented
-(ARCHITECTURE_REVIEW N5). It also changes how cards *feel* to design — you'll discover
-that "covered" is a resource (things you deliberately hide vs. showcase). Do it first;
-re-evaluate the whole §14 catalog after playing with it for a week.
+### 2.3 Spotlight: SHIPPED — design against it now
+"Active while unblocked" is implemented, with `StampRevealing` (active while covered) and
+`StampGlobal` (active anywhere) as the overrides, and `GameData.forced_spotlight` as the
+scoring beam that lights a whole scored line at once. **"Covered" is now a resource**, and on
+a grid it is a much sharper one than it was: every card you stack deliberately silences the
+one beneath it, and the height economy pays you to do it anyway. Re-read the whole §6 catalog
+through that lens — a card whose skill is strong is a card you do not want to build height on.
 
 ### 2.4 Suits: 4 + specials, not 6
 Six base suits break poker-hand math (flush odds, deck size) and multiply art costs.
@@ -89,6 +131,7 @@ Recommendation:
   like Balatro's stone/wild enhancements. Rare suits printed on cards feel like loot.
 
 ---
+
 
 ## 3. New content: SUITS & PIPS (with historical sourcing)
 
@@ -172,7 +215,7 @@ Rarity uses your power-sort principle (chains listed together). "Class" uses you
 
 | Card | Rarity | Effect | Historical source | Why it's fun |
 |---|---|---|---|---|
-| **Clown Car** | Epic | On Next: draw an extra card into this card's column, +1 more per Clown scored last submit | Lou Jacobs's midget-car gag, Ringling 1950s | Escalating tempo engine — the board literally overflows with clowns |
+| **Clown Car** | Epic | On Next: draw an extra card into the Entrance, +1 more per Clown that scored since the last Next | Lou Jacobs's midget-car gag, Ringling 1950s | Escalating tempo engine — the board literally overflows with clowns |
 | **Slapstick** | Common | Cue: swap the ranks of this card and one adjacent card | The literal slap-stick (battacio) of commedia dell'arte | Cheap, tactile, always-useful pip fixer |
 | **Custard Pie** | Uncommon | Throw (cue): target card's suit becomes Balls; if that completes a flush row, +mult | Silent-film & circus pie fights | Suit fixing with a payoff condition — feels like aiming |
 | **Weary Willie** | Rare | Gains +1 rank permanently every time one of your cards is destroyed or a show is failed | Emmett Kelly's sad-tramp clown who famously "helped" at the 1944 Hartford fire | A loss-compensator that makes bad runs produce a souvenir — Kelly grew from the Depression |
@@ -216,9 +259,9 @@ Rarity uses your power-sort principle (chains listed together). "Class" uses you
 
 | Card | Rarity | Effect | Historical source | Why it's fun |
 |---|---|---|---|---|
-| **Calliope** | Uncommon | +combo for every DIFFERENT class that scored this submit | The steam calliope — heard miles before the circus arrived | Directly rewards the rainbow board; the anti-hyperfocus card your essay asked for |
-| **Grand Spec** | Epic | If all columns scored this submit, double the show's combo | The "spec" (spectacle) — the whole company's opening parade | The "perfect show" fantasy button |
-| **Drumroll** | Common | The last meld scored this submit gets +mult | Every circus trick ever | Trigger-order matters again; pairs with Top Billing |
+| **Calliope** | Uncommon | +combo for every DIFFERENT class that has scored this show (redundant now that the combo does exactly this — the salvageable version is +combo per different BUCKET its grid has opened) | The steam calliope — heard miles before the circus arrived | Directly rewards the rainbow board; the anti-hyperfocus card your essay asked for |
+| **Grand Spec** | Epic | If every column of one grid has scored, double the show's combo | The "spec" (spectacle) — the whole company's opening parade | The "perfect show" fantasy button |
+| **Drumroll** | Common | The last meld scored by this placement gets +mult (a placement can complete four lines, so "last" is the deterministic ROW/COL/DIAG/HEIGHT order) | Every circus trick ever | Trigger-order matters again; pairs with Top Billing |
 
 ### Concessions (positive effects)
 
@@ -233,7 +276,7 @@ Rarity uses your power-sort principle (chains listed together). "Class" uses you
 ## 7. LEADERS (historical roster)
 
 One per class, per your leaders-define-decks plan. Each gets the leader chassis (starts
-on board, survives submits) plus a signature:
+on board, never swept back into the deck) plus a signature:
 
 | Leader | Class | Signature | Source |
 |---|---|---|---|
@@ -241,7 +284,7 @@ on board, survives submits) plus a signature:
 | **The Showman** (P.T. Barnum) | Producer | Shops offer 1 extra card; all Gaff/Humbug cards cost nothing | Barnum — museums, hoaxes, "the Greatest Show on Earth" |
 | **The Escapologist** (Houdini) | Escape Artist | Your free undo becomes 2; debuffs expire 1 show sooner | Harry Houdini |
 | **The Joey** (Grimaldi) | Clown | Once per turn, free Slapstick (swap adjacent ranks) | Joseph Grimaldi, Regency London's superstar clown |
-| **The Aerialist** (Lillian Leitzel) | Acrobat | Re-scores the topmost meld once per submit (her endless planges); Glass-fragile: destroyed if her column ever fails to score | Leitzel — Ringling's biggest star; died in a rigging failure, 1931. The fragility is the history |
+| **The Aerialist** (Lillian Leitzel) | Acrobat | Re-scores the topmost meld once per placement (her endless planges); Glass-fragile: destroyed if the stack she stands in ever tops out without scoring | Leitzel — Ringling's biggest star; died in a rigging failure, 1931. The fragility is the history |
 | **The Tiger Queen** (Mabel Stark) | Animal Trainer | Consumption effects have no cap | Mabel Stark |
 | **The Sibyl** (Madame Zora archetype) | Fortune Teller | Top of deck always revealed; first reroll each shop is free | Midway mitt-camp tradition |
 | **The Cannon King** (Ildebrando Zacchini) | Special Effects | Fireworks-suit cards may score from the Entrance | The Zacchini family, human-cannonball dynasty |
@@ -258,13 +301,13 @@ temporary rule card (§8 of the design doc), exactly as you planned:
 
 | Encounter | Rule effect | Source |
 |---|---|---|
-| **Hey Rube!** (boss) | Townspeople brawl: each submit, the rightmost column is "attacked" — cards there are debuffed unless a Stuntsman/Strongman guards it | "Hey Rube!" — the historical rallying cry when a circus fought locals |
+| **Hey Rube!** (boss) | Townspeople brawl: every few placements the rightmost column of the focused grid is "attacked" — cards there are debuffed unless a Stuntsman/Strongman guards it | "Hey Rube!" — the historical rallying cry when a circus fought locals |
 | **Blowdown** (weather boss) | Storm: at show start and each Next, a random Entrance card is discarded. "The show must go on" | Tent blowdowns — the traveling show's most feared weather event |
 | **Mud Show** | Movement tax: picking up any stack costs 1 discard | Slang for small circuses slogging unpaved roads |
 | **The Fire Marshal** | Flames-suit cards cannot score; Flames in deck become Wax | Post-1944 Hartford fire regulations reshaped tenting forever |
 | **Temperance Town** | Concessions class disabled; shop prices doubled | Dry towns on the historical routes |
-| **John Robinson** (elite) | Shortened show: 2 submits instead of 3 | "John Robinson" was the code for "cut the show short" |
-| **Lot Lice** | Your first submit each show scores 0 fame (they watched free) | Slang for townsfolk who watched setup without paying |
+| **John Robinson** (elite) | Shortened show: one grid row is walled off and cannot be placed into | "John Robinson" was the code for "cut the show short" |
+| **Lot Lice** | The first line you complete each show scores 0 (they watched free) | Slang for townsfolk who watched setup without paying |
 | **The Rival Show** (recurring boss) | A rival circus plays your town first: goal score pre-raised, but beat it and steal one of THEIR cards | Circus wars — Barnum vs. Forepaugh, Ringling vs. everyone |
 | **Railroad Jump** (route hazard) | Long map edges cost a card from your deck (left on the platform) | The brutal overnight railroad jumps of the golden age |
 
@@ -310,9 +353,9 @@ generous here:
   them unlocks... something. Never fully explain it. The community will do the rest.
 - **The 42-Foot Ring**: Astley's ring is 42 feet because of horse physics. Hide 42
   everywhere — a secret meld triggers when row+column scores total exactly 42.
-- **Secret melds** (your idea, concretized): "The Three Rings" — score three separate
-  5-card rings (rows) in one submit → permanently unlock a third zone rule card.
-  "Sword Swallower" — a column that's one perfect descending run deck-to-floor.
+- **Secret melds** (your idea, concretized): "The Three Rings" — have all three grids scoring
+  at once → permanently unlock something. "Sword Swallower" — a cell whose stack is one
+  perfect descending run, floor to top.
 - **The Ghost Show**: after midnight (real system clock), the menu troupe wagon lights
   are off and one secret card can only be found then. (Spook shows — midnight horror
   performances in circus tents — are real history.)
@@ -334,7 +377,10 @@ hoped for:
 3. **Spatial mastery = skill expression**: unlike Balatro, a skilled Solatro player wins
    boards a weak player loses *with the identical deck*. That's replay depth no amount
    of content buys, and it's why effects should keep referencing position (adjacency,
-   rings, columns, covered/spotlit) rather than raw math.
+   rows, columns, diagonals, height, covered/spotlit, which grid) rather than raw math.
+   ⚠ The grid made this the game's whole difficulty: a placement is irreversible in the
+   fiction and undoable only by the undo button, so every card is a permanent commitment of
+   one of 25 cells.
 4. **The pivot ("yak shave") loop**: your note that players should get seduced into new
    strategies mid-run is served by: leaders (identity), Greasepaint (class splash),
    The Red Wagon (economy→scoring pivot), and Calliope (rainbow reward). Every run
@@ -345,7 +391,7 @@ hoped for:
 6. **Narrative scaffolding for free**: every card above ships with a true story. Flavor
    text with real history ("the trick that killed Chung Ling Soo") gives the game the
    "lore" your notes wanted without writing a campaign — the circus already wrote it.
-7. **Session shape**: shows are short (3 submits), tours are medium (one sitting), the
+7. **Session shape**: shows are short (one board, filled), tours are medium (one sitting), the
    route book & Winter Quarters are long. Three interlocking loops = the "one more"
    ladder every roguelite retention curve needs.
 
@@ -353,24 +399,33 @@ hoped for:
 
 ## 12. Build order (grounded in the current code)
 
-1. **Fix N5 (spotlight-while-unblocked)** + B10/E1 snapshot iteration. Nothing in §6 is
-   testable until skills on ordinary cards fire. (~days)
-2. **Adopt the scoring formula (§2.1)** in `SkillScorerCascadeLower`/`ScoreModel` —
-   effects-as-points, melds-as-combo. Retune deck1 around it. (~days)
-3. **Wire the worldgen map**: nodes → {town, shop, event, pack}; fame goal per node,
-   replacing the old triangle-map screen (since removed). The addon's `graph.json` bake +
-   overlay API is ready for this. (~1–2 weeks)
-4. **Ship the "First Season" card set**: ~40 cards — 4 base suits renamed, 4 classes
+Steps 1–3 of the original order are **done**: spotlight-while-unblocked shipped, the scoring
+formula was settled by the owner (§2.1) and built, and the worldgen map is wired with a fame
+goal per node. What remains, in order:
+
+1. **Finish the effect review.** 1,409 owner questions, one per candidate effect, exporting to
+   a single ruling sheet. Content design is blocked behind it in the useful sense: building
+   forty cards before the owner has ruled on which forty is the expensive way to find out.
+   ⚠ A share of those questions was mined from the PRE-GRID documents and still speaks in acts
+   and Submits, so the corpus needs re-mining against the versions above. ⚠ **It is a separate
+   work stream and it lives on `main`**, not on this branch; its own handoff there is the
+   state.
+2. **Close `GAP-041`.** The goal curve is reachable but its growth term has the wrong sign for
+   most of a run: a show's score peaks about three nodes in and then falls, because the board
+   holds 25 cells for the whole run and booster cards thin out the collisions that make melds.
+   **No amount of new card content fixes a run whose difficulty curve runs backwards**, and
+   every balance number set before this is set twice.
+3. **Ship the "First Season" card set**: ~40 cards — 4 base suits renamed, 4 classes
    (Producer, Clown, Acrobat, Fortune Teller), 2 leaders (Showman, Joey), 6 stamps,
    4 types, 3 town bosses (Hey Rube, Blowdown, John Robinson). Small enough to balance,
-   big enough to find archetypes.
-5. **Economy pass**: cards-as-currency shop with the stack-payment UI, Ticket Stubs,
+   big enough to find archetypes. ⚠ **Design at least one card per bucket** — row, column,
+   special, height — or the product economy will have a factor nothing in the set can open.
+4. **Economy pass**: cards-as-currency shop with the stack-payment UI, Ticket Stubs,
    Gold minting. (This is where the game becomes a deck*builder* rather than a puzzle.)
-6. **Then and only then**: meta layer (Winter Quarters, unlock pass, ascension cards),
+5. **Then and only then**: meta layer (Winter Quarters, unlock pass, ascension cards),
    deterministic RNG streams (before any seed-sharing feature), secrets.
 
 Rationale for the order: each step makes the previous step's content *testable in
-context* (skills need spotlight; map needs scoring; economy needs map nodes; meta needs
-economy). It also front-loads the two things no other game has — spatial scoring and the
-rule deck — and defers everything Balatro already proved (shops, unlocks) to when clones
+context*, and it front-loads the two things no other game has — spatial scoring and the
+rule deck — deferring everything Balatro already proved (shops, unlocks) to when clones
 of proven systems are cheap to add.

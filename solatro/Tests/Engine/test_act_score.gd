@@ -65,16 +65,16 @@ func test_scores_cleared_between_acts() -> void:
 	# The per-row/col BigNumber gutters must reset each act, or the next act's plus_equals
 	# stacks onto the previous act's values (the "old scores on top of new" double-count).
 	var state := GameData.new()
-	state.scores_col = _bn_array([12.0, 3.4])
+	state.scores_col_legacy = _bn_array([12.0, 3.4])
 	state.scores_row_lower = _bn_array([7.0])
 	state.scores_row_upper = _bn_array([1.0, 2.0, 3.0])
 	state.row_total = 5
 	state.col_total = 5
 	state.apply_act_score()
-	check(state.scores_col.is_empty() and state.scores_row_lower.is_empty()
+	check(state.scores_col_legacy.is_empty() and state.scores_row_lower.is_empty()
 			and state.scores_row_upper.is_empty(),
 			"apply_act_score clears the row/col score gutters",
-			"col=%d rl=%d ru=%d" % [state.scores_col.size(),
+			"col=%d rl=%d ru=%d" % [state.scores_col_legacy.size(),
 					state.scores_row_lower.size(), state.scores_row_upper.size()])
 	check(state.total_score == 25, "act still pays row x col before clearing", "total=%d" % state.total_score)
 
@@ -104,12 +104,20 @@ func test_discard_lower_board() -> void:
 	check(state.upper_zone[0].datas == ([upper] as Array[CardData]),
 			"the upper Entrance zone is NOT wiped")
 
+## The goal is measured against the LIVE board score, not against a banked act payout: there
+## is no banking moment any more. One grid with a single positive bucket makes the arithmetic
+## exact -- grid_score is the product of the buckets that are positive, so one bucket IS the
+## board total, and with no combo class registered the combo multiplier is exactly 1.
 func test_has_met_goal() -> void:
-	var state := GameData.new()
+	var state := TestGridFixtures.build_fix_grid_1()
 	state.goal = 100
-	state.total_score = 99
-	check(not state.has_met_goal(), "below goal -> not met (loss)")
-	state.total_score = 100
-	check(state.has_met_goal(), "exactly at goal -> met (win)")
-	state.total_score = 250
-	check(state.has_met_goal(), "overscore -> met")
+	state.bank_line_score(state.scores_row, 0, 0, 0, 99)
+	check(not state.has_met_goal(), "below goal -> not met (loss)",
+			"live %d" % state.live_total())
+	state.bank_line_score(state.scores_row, 0, 0, 0, 1)
+	check(state.has_met_goal(), "exactly at goal -> met (win)",
+			"live %d" % state.live_total())
+	state.bank_line_score(state.scores_row, 0, 0, 0, 150)
+	check(state.has_met_goal(), "overscore -> met", "live %d" % state.live_total())
+	check(state.total_score == 0,
+			"the goal never reads the retired act-payout total", str(state.total_score))

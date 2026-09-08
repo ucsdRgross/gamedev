@@ -19,9 +19,21 @@ vs the pixels; a still frame vs movement over time; a tool's `--shoot-all` vs it
 later. **The failure is BINDING, not reading** — a 2400-line design re-read at session start binds
 nothing to the line of code written later.
 
-⚠ **The two things that disagree are almost always of DIFFERENT KINDS.** Same-kind disagreements get
-caught, because one tool reads both. Cross-kind ones survive indefinitely because no single tool
-reads both representations, so the contradiction has nowhere to surface.
+⚠ **The two things that disagree are almost always of DIFFERENT KINDS.** Cross-kind ones survive
+indefinitely because no single tool reads both representations, so the contradiction has nowhere to
+surface.
+
+⚠ **BUT SAME-KIND IS NOT SAFE, AND ASSUMING IT WAS COST A DOC PASS.** Two COMMENTS in ONE FILE said
+opposite things: a doc comment declared a container **clips**, and ninety lines below, the line that
+actually runs set `clip_contents = false` with the owner's reason for it. A doc pass quoted the first
+one as evidence and shipped the claim into two living documents; a live test asserted the opposite
+the whole time. A checker reads both comments and still cannot compare them, because **tools compare
+REFERENCES, not CLAIMS** — `doc_check` proves every name resolves and has nothing to say about
+whether two prose sentences contradict each other.
+
+**So: a code comment is not evidence about the code.** When a comment is the thing you are about to
+repeat in a doc, read the code it describes and the rest of its own file first. The comment nearest
+the enforcing line wins; the far one is the one that went stale.
 
 ## How to apply
 

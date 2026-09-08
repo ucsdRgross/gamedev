@@ -102,7 +102,7 @@ func test_record_win() -> void:
 # copy-on-write assign-back (packing must actually populate the fields).
 func test_scores_packing() -> void:
 	var gs := GameData.new()
-	gs.scores_col = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
+	gs.scores_col_legacy = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
 	gs.scores_row_upper = _big_numbers([[2.5, 1]])
 	gs.scores_row_lower = []
 	gs.pack_scores()
@@ -115,11 +115,11 @@ func test_scores_packing() -> void:
 	check(gs.packed_row_upper_mant.size() == 1 and gs.packed_row_lower_mant.is_empty(),
 			"each score array packs independently (incl. empty ones)")
 	# Round-trip back to runtime BigNumbers.
-	gs.scores_col = []
+	gs.scores_col_legacy = []
 	gs.scores_row_upper = []
 	gs.unpack_scores()
-	check(gs.scores_col.size() == 3 \
-			and is_equal_approx(gs.scores_col[2].mantissa, 7.0) and gs.scores_col[2].exponent == 0,
+	check(gs.scores_col_legacy.size() == 3 \
+			and is_equal_approx(gs.scores_col_legacy[2].mantissa, 7.0) and gs.scores_col_legacy[2].exponent == 0,
 			"unpack rebuilds the BigNumber arrays exactly")
 	check(gs.scores_row_upper.size() == 1 and gs.scores_row_lower.is_empty(),
 			"unpack restores each array independently")
@@ -184,7 +184,6 @@ func test_game_state_round_trip() -> void:
 	var run := RunManager.new_run([] as Array[CardData], [] as Array[CardData])
 	# Build two runtime states (an undo stack of depth 2) and store them saveable.
 	run.game_history = [_show_state(100), _show_state(123)] as Array[GameData]
-	run.game_submits = 2
 	# A Submit was mid-scoring when saved — the marker must survive so resume replays it.
 	run.pending_action = &"on_run_scorer"
 	RunManager.save_run()
@@ -194,7 +193,7 @@ func test_game_state_round_trip() -> void:
 			"save_run actually writes run.tres to disk (temp file keeps a .tres extension)")
 
 	var loaded := RunManager.load_run()
-	check(loaded.game_history.size() == 2 and loaded.game_submits == 2,
+	check(loaded.game_history.size() == 2,
 			"full undo history + act count persist")
 	check(loaded.pending_action == &"on_run_scorer",
 			"pending-action marker persists (quit mid-scoring replays the Submit on resume)")
@@ -203,12 +202,13 @@ func test_game_state_round_trip() -> void:
 	top = top.duplicate_state()
 	top.restore_runtime()
 	check(top.goal == 500 and top.total_score == 123, "game state scalars round-trip")
-	var lp: CardData = top.lower_zone[0].datas[0]
+	var grid : GridData = top.grids[0]
+	var lp: CardData = grid.cells[grid.cell_index(0, 0)].datas[0]
 	check(lp.skill is SkillExtraPoint and lp.skill.data == lp,
 			"board cards + relinked modifier backrefs survive")
-	check(top.scores_col.size() == 1 \
-			and is_equal_approx(top.scores_col[0].mantissa, 4.2) \
-			and top.scores_col[0].exponent == 3,
+	check(top.scores_col_legacy.size() == 1 \
+			and is_equal_approx(top.scores_col_legacy[0].mantissa, 4.2) \
+			and top.scores_col_legacy[0].exponent == 3,
 			"BigNumber scores round-trip via the flattened snapshot")
 	RunManager.clear_save()
 
@@ -221,12 +221,18 @@ func _show_state(total: int) -> GameData:
 	var played := CardData.new().with_rank(PipRankNumeral.new().with_value(7)) \
 			.with_suit(PipSuitBall.new()).with_skill(SkillExtraPoint.new())
 	played.stage = CardData.Stage.PLAY
-	var col := ArrayCardData.new()
-	col.datas = [played] as Array[CardData]
-	gs.lower_zone = [col] as Array[ArrayCardData]
+	# ⚠ ON A GRID CELL, not the legacy lower zone. The claim is that a BOARD card and its relinked
+	# modifier backref survive the save round-trip; asserting it against storage nothing renders
+	# proved it for a board the player never sees.
+	var grid := GridData.new()
+	grid.grid_width = 1
+	grid.grid_height = 1
+	grid.build_cells()
+	grid.cells[grid.cell_index(0, 0)].datas = [played] as Array[CardData]
+	gs.grids = [grid] as Array[GridData]
 	var bn := BigNumber.new()
 	bn.mantissa = 4.2
 	bn.exponent = 3
-	gs.scores_col = [bn] as Array[BigNumber]
+	gs.scores_col_legacy = [bn] as Array[BigNumber]
 	var saveable := gs.to_saveable()
 	return saveable

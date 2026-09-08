@@ -13,7 +13,7 @@ machine by which repo root exists, then use that column.
 | | **Box A — daily driver** | **Box B — the fast one** |
 |---|---|---|
 | Repo root | `C:\Users\khanr\Documents\GitHub\gamedev` | `C:\richard\gamedev` |
-| Godot binary | `C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64_console.exe` | `C:\richard\Godot_v4.7-stable_win64_console.exe` |
+| Godot binary | `C:\Users\khanr\Desktop\Godot_v4.7.1-stable_win64_console.exe` | `C:\richard\Godot_v4.7.2-stable_win64_console.exe` |
 | GPU | Intel UHD (integrated) — **the perf target** | GTX 1070 |
 | Node | on PATH | `C:\Program Files\nodejs`, **not** on the tool-shell PATH |
 
@@ -36,7 +36,7 @@ Other per-box notes:
 - ⚠ **Box A has TWO disagreeing Pythons**: `py` is 3.9.7, `python` is 3.14.6. They do not share
   installed modules, which is why SCons runs under `python` and `doc_check.py` under `py`. Check
   `py --version` / `python --version` before assuming a script will find its imports.
-- Godot versions differ (4.7.1 vs 4.7). If a `class_name` suddenly won't resolve, it is the
+- Godot versions differ (4.7.1 vs 4.7.2). If a `class_name` suddenly won't resolve, it is the
   import cache, not the version — see [[running-godot-scenes]].
 
 If you are on a third machine, add a column rather than editing an existing one.

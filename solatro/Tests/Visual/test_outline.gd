@@ -59,6 +59,7 @@ func _ready() -> void:
 	implementation_section("THE RULES THAT KEEP THE RIM ON THE ART")
 	test_shader_taps_in_texture_space()
 	test_the_card_scene_ships_no_baked_material()
+	test_card_separation_derives_from_the_pip_row()
 	finish()
 
 ## The guard, copied in shape from `test_pixels`: a dummy renderer compiles no shader and rasterizes
@@ -475,3 +476,74 @@ func test_the_card_scene_ships_no_baked_material() -> void:
 			+ "suitless preview's uniforms, including an unclamped u_frame_uv)")
 	check(not text.contains("[sub_resource type=\"ShaderMaterial\""),
 			"card_visual.tscn defines no ShaderMaterial sub-resource")
+
+## TP-80 — CARD_SEPARATION is DERIVED from where the pips actually sit, not asserted to be 16.
+##
+## ⚠ THE WHOLE POINT IS THAT THE ART CAN MOVE. The visible strip of a covered card has to be
+## tall enough to show that card's pip row plus clearance for the idle rig, and the pip row's
+## position lives in `card_visual.tscn` where an art pass can change it. A check that read
+## `CARD_SEPARATION == 16` would pass with the pips moved anywhere at all, and the board's row
+## pitch would silently stop matching the art it exists to reveal.
+##
+## Stacks grow UPWARD, so the strip that stays visible is the card's BOTTOM band and the
+## margin that matters is the one below the pips. The arithmetic is the same as it was when
+## the strip was measured from the top, mirrored.
+func test_card_separation_derives_from_the_pip_row() -> void:
+	var text := FileAccess.get_file_as_string(CARD_SCENE_PATH)
+	check(not text.is_empty(), "the card scene is readable at %s" % CARD_SCENE_PATH)
+
+	# The Rank pip is positioned in the scene; its polygon gives the pip's own extent.
+	var rank_y := _scene_node_position_y(text, "Rank")
+	var pip_half := _scene_node_polygon_half_height(text, "Rank")
+	check(rank_y > 0.0 and pip_half > 0.0,
+			"the pip row's position and extent are readable from the scene",
+			"y %.1f, half-height %.1f" % [rank_y, pip_half])
+
+	var card_bottom : float = CardVisual.CARD_SIZE.y / 2.0
+	var pip_bottom := rank_y + pip_half
+	var margin_below := card_bottom - pip_bottom
+	var pip_height := pip_half * 2.0
+	# The one number that is a CHOICE rather than a measurement: the owner's clearance for the
+	# idle rig ("pip added 2 pixels, need 2 unit clearance to account for animations").
+	var rig_clearance := 2.0
+	var derived := margin_below + pip_height + rig_clearance
+
+	check(margin_below > 0.0,
+			"the pip row sits INSIDE the card's bottom edge, with a margin below it",
+			"card bottom %.1f, pip bottom %.1f" % [card_bottom, pip_bottom])
+	check(is_equal_approx(derived, float(CardVisual.CARD_SEPARATION)),
+			"CARD_SEPARATION is exactly the strip that shows a covered card's pips, "
+			+ "derived from where they actually are",
+			"%.1f margin + %.1f pip + %.1f clearance = %.1f, but CARD_SEPARATION is %d"
+			% [margin_below, pip_height, rig_clearance, derived, CardVisual.CARD_SEPARATION])
+
+## `position = Vector2(x, y)` of a named node in a saved scene, or 0.0.
+func _scene_node_position_y(text: String, node_name: String) -> float:
+	var block_text := _scene_node_block(text, node_name)
+	var re := RegEx.create_from_string("position = Vector2\\(\\s*-?[0-9.]+\\s*,\\s*(-?[0-9.]+)")
+	var m := re.search(block_text)
+	return float(m.get_string(1)) if m else 0.0
+
+## Half the vertical extent of a named node's `polygon`, or 0.0.
+func _scene_node_polygon_half_height(text: String, node_name: String) -> float:
+	var block_text := _scene_node_block(text, node_name)
+	var re := RegEx.create_from_string("polygon = PackedVector2Array\\(([^)]*)\\)")
+	var m := re.search(block_text)
+	if not m: return 0.0
+	var nums : Array[float] = []
+	for piece : String in m.get_string(1).split(","):
+		nums.append(float(piece.strip_edges()))
+	var top := 0.0
+	var bottom := 0.0
+	for i : int in range(1, nums.size(), 2):
+		top = minf(top, nums[i])
+		bottom = maxf(bottom, nums[i])
+	return (bottom - top) / 2.0
+
+## The text of one `[node name="..."]` block, up to the next node.
+func _scene_node_block(text: String, node_name: String) -> String:
+	var start := text.find("[node name=\"%s\"" % node_name)
+	if start == -1: return ""
+	var end := text.find("[node ", start + 1)
+	return text.substr(start, (end - start) if end > start else -1)
+

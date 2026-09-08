@@ -60,11 +60,29 @@ py .claude/tools/doc_check.py --changed   # only what git reports changed, broke
 So a clean hook means "no broken reference in what I touched", NOT "the docs are healthy". This
 skill is the full pass, and it is the only thing that looks at the style findings at all.
 
+⚠ **A CODE COMMENT IS NOT EVIDENCE ABOUT THE CODE, AND A DOCS PASS IS EXACTLY WHERE THAT BITES.**
+The cheapest way to write a doc is to quote the comment that already explains the thing — and a
+stale comment then propagates into every doc that quotes it, with the checker silent because every
+NAME in it resolves. Measured: a container's doc comment declared it **clips**, while ninety lines
+below, the line that actually runs set `clip_contents = false` with the owner's reason, and a live
+test asserted the second one the whole time. Two comments, one file, opposite claims, and the claim
+reached two living documents before an audit caught it. **Before repeating a comment in a doc, read
+the line it describes and the rest of its own file. The comment nearest the enforcing line wins.**
+See [[seam-checks-not-rereading]] — tools compare REFERENCES, never CLAIMS.
+
 It scans **code comments as well as `.md` files** — same rules, since a comment is a doc that lives
 in a source file. A comment referencing a file that does not exist is an ERROR, like anywhere else:
-a comment deferring to a doc is only useful if the doc resolves. The five style findings (`restated`,
-`line ref`, `history`, `long block`, `dated`) are counted by category rather than listed, because
-there are hundreds and a wall of warnings is a wall nobody reads.
+a comment deferring to a doc is only useful if the doc resolves. The style findings (`restated`,
+`line ref`, `history`, `long block`, `long doc`, `dated`, `indented`, `trailing`) are counted by
+category rather than listed, because there are thousands and a wall of warnings is a wall nobody
+reads.
+
+⚠ **THE THREE COMMENT RULES ARE ERRORS ON A CHANGED FILE AND A COUNT ON A FULL RUN**, and the split
+is deliberate. No comment may have whitespace before it, none may share a line with code, a `#`
+block is capped at 3 lines and a `##` doc comment at 1. The repo carries thousands of pre-existing
+violations, so the rules bind **whole-file on touch**: whatever a session edits, it leaves clean.
+This skill does not sweep the backlog — draining it that way is a separate job (`solatro/todo.md`),
+and attempting it here would bury the findings that are always bugs.
 
 Broken references and dangling links are always bugs — fix them. Scope violations and date
 density are prompts to look, not verdicts.

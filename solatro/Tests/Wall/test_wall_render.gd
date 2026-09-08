@@ -55,6 +55,16 @@ func _ready() -> void:
 	behavior_section("MEMORY READOUT (S39, E9, Q210=a)")
 	test_debug_memory_readout_counts_screens_and_viewports()
 	test_debug_readout_gated_by_wall_debug_readout_flag()
+	behavior_section("THE WALL RE-PACKS AROUND THE WIDER GAME PICTURE (H20)")
+	test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect()
+	test_default_layout_repacks_without_dropping_or_overlapping_any_picture()
+	behavior_section("PER-GRID CAMERA POSE")
+	test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid()
+	test_panned_state_is_the_offset_primitive_grid_state_delegates_to()
+	behavior_section("THE SAVED PAN SNAPS TO A WHOLE GRID (S32, H19, Q173, Q179)")
+	test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board()
+	behavior_section("THE WALL EDITOR DRIVES EVERY KNOB IT SHOWS (TP-120, Q186=a)")
+	await test_the_wall_editor_drives_every_knob_it_shows()
 	_teardown_wall()
 	finish()
 
@@ -543,6 +553,78 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 	restore_real_settings()
 	main.queue_free()
 
+# ------------------------------------------------------------------ TP-118 (H20)
+
+## TP-118: the game picture's rect keeps its OWN authored width, unstretched to the window
+## aspect -- the fix for the packer squashing a 3656x685 picture down to ~1218x685.
+func test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect() -> void:
+	var layout := Wall.load_layout()
+	var game_entry : PictureEntry = null
+	for e : PictureEntry in layout.pictures:
+		if e.id == Wall.GAME_PICTURE_ID: game_entry = e
+	check(game_entry != null, "the layout carries a game picture entry")
+	if game_entry == null: return
+	check(game_entry.keep_aspect,
+			"the game entry keeps its own aspect -- the packer's window-aspect stretch never "
+			+ "reaches it", str(game_entry.keep_aspect))
+
+	var unlocked : Array[StringName] = [Wall.GAME_PICTURE_ID]
+	var rects := WallPacker.pack(layout, unlocked, 1152.0 / 648.0)
+	check(rects.size() == 1, "the game picture produced a rect", str(rects.size()))
+	if rects.is_empty(): return
+	var expected_width : float = float(game_entry.design_size.x) * game_entry.size_multiplier
+	check(is_equal_approx(rects[0].size.x, expected_width),
+			"the packed width is the picture's own authored width, not a window-aspect-derived "
+			+ "sliver", "packed=%.3f expected=%.3f" % [rects[0].size.x, expected_width])
+
+## TP-118: packing the wall's real default-unlocked layout around the now much wider game
+## picture still produces a rect for every unlocked picture, and none of their FRAME rects
+## overlap -- at the default window aspect, a narrower aspect, and with every registered picture
+## (including the normally-locked `book`) unlocked at once, which is the case that actually
+## forces the wider game frame to push a neighbour (`settings`) to a new position -- measured:
+## `settings` moves from centre (2237.354, -641.244) with the fix to a different position without
+## it, proving the re-pack, not just the absence of an error.
+func test_default_layout_repacks_without_dropping_or_overlapping_any_picture() -> void:
+	var layout := Wall.load_layout()
+	var default_unlocked : Array[StringName] = []
+	var all_ids : Array[StringName] = []
+	for e : PictureEntry in layout.pictures:
+		all_ids.append(e.id)
+		if e.unlocked_by_default: default_unlocked.append(e.id)
+
+	for window_aspect : float in [1152.0 / 648.0, 9.0 / 16.0, 1.0]:
+		var rects := WallPacker.pack(layout, default_unlocked, window_aspect)
+		check(rects.size() == default_unlocked.size(),
+				"every default-unlocked picture produced a rect at window aspect %.4f"
+						% window_aspect, "%d of %d" % [rects.size(), default_unlocked.size()])
+		check(not _rects_overlap(rects),
+				"no two frame rects overlap at window aspect %.4f" % window_aspect)
+
+	var all_rects := WallPacker.pack(layout, all_ids, 1152.0 / 648.0)
+	check(all_rects.size() == all_ids.size(),
+			"every registered picture (book included) produced a rect with the wide game picture "
+			+ "in the mix", "%d of %d" % [all_rects.size(), all_ids.size()])
+	check(not _rects_overlap(all_rects),
+			"no two frame rects overlap with every picture unlocked at once")
+	var settings_rect : PictureRect = null
+	for r : PictureRect in all_rects:
+		if r.id == &"settings": settings_rect = r
+	check(settings_rect != null and not settings_rect.centre.is_equal_approx(Vector2(1224.0, 0.0)),
+			"settings was pushed off its narrow-game-picture position -- the wall genuinely "
+			+ "re-arranged around the wider picture, not merely avoided an error",
+			str(settings_rect.centre) if settings_rect else "missing")
+
+## Whether any two of `rects`' FRAME OUTER rects intersect (same idiom `test_wall_packer.gd`'s
+## `_has_any_overlap` uses).
+func _rects_overlap(rects: Array[PictureRect]) -> bool:
+	for i : int in rects.size():
+		for j : int in range(i + 1, rects.size()):
+			var ri : PictureRect = rects[i]
+			var rj : PictureRect = rects[j]
+			if WallPacker.frame_outer_rect(ri).intersects(WallPacker.frame_outer_rect(rj)):
+				return true
+	return false
+
 # ------------------------------------------------------------------ drawn extent
 
 ## What a picture DRAWS must equal its `PictureRect`, in every render-target state.
@@ -785,3 +867,179 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	restore[start.id] = start
 	_wall.apply_layout(restore, false)
 	restore_real_settings()
+
+# ------------------------------------------------------------------ per-grid camera pose
+
+## `WallPicture.grid_state()` on a 3-grid board: the resting grid (index 1, `PlayArea._resting_grid`'s
+## own "middle of the grids" rule for an odd count) must reproduce `resting_state()` exactly, and
+## each neighbour must sit exactly one `PlayArea.grid_position_size_px()` pitch away -- the step
+## between consecutive grids' positions must equal that pitch, not just "some" offset, so a
+## neutralisation that drops the offset term still fails here.
+func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid() -> void:
+	var settings := SettingsManager.settings
+	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+			Vector4.ZERO)
+	var window := Vector2(1152.0, 648.0)
+	var resting_grid := 1
+
+	var pitch := PlayArea.grid_position_size_px(settings).x
+
+	var rest := WallPicture.resting_state(rect, window, settings)
+	var s0 := WallPicture.grid_state(rect, window, settings, 0, resting_grid, pitch)
+	var s1 := WallPicture.grid_state(rect, window, settings, 1, resting_grid, pitch)
+	var s2 := WallPicture.grid_state(rect, window, settings, 2, resting_grid, pitch)
+
+	var rest_pos : Vector2 = rest["position"]
+	var pos0 : Vector2 = s0["position"]
+	var pos1 : Vector2 = s1["position"]
+	var pos2 : Vector2 = s2["position"]
+	var zoom1 : float = s1["zoom"]
+	var rest_zoom : float = rest["zoom"]
+
+	check(pos1.is_equal_approx(rest_pos),
+			"the resting grid's pose equals resting_state()'s exactly",
+			"pos1=%s rest=%s" % [pos1, rest_pos])
+	check(is_equal_approx(zoom1, rest_zoom),
+			"zoom is unchanged from resting_state() at the resting grid",
+			"zoom1=%.6f rest_zoom=%.6f" % [zoom1, rest_zoom])
+	check(is_equal_approx(pos1.x - pos0.x, pitch),
+			"the step from grid 0 to grid 1 equals grid_position_size_px().x exactly",
+			"step=%.4f pitch=%.4f" % [pos1.x - pos0.x, pitch])
+	check(is_equal_approx(pos2.x - pos1.x, pitch),
+			"the step from grid 1 to grid 2 equals grid_position_size_px().x exactly",
+			"step=%.4f pitch=%.4f" % [pos2.x - pos1.x, pitch])
+	check(is_equal_approx(pos0.y, rest_pos.y) and is_equal_approx(pos2.y, rest_pos.y),
+			"position.y is unchanged from resting_state() at every grid, only x steps",
+			"y0=%.4f y2=%.4f rest_y=%.4f" % [pos0.y, pos2.y, rest_pos.y])
+
+## `WallPicture.panned_state()`, the offset primitive `grid_state()` is now expressed in terms of.
+## Proves it directly, then proves the two AGREE on the identity that makes `grid_state()` a
+## delegation rather than a second, separately-maintained computation.
+func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void:
+	var settings := SettingsManager.settings
+	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
+			Vector4.ZERO)
+	var window := Vector2(1152.0, 648.0)
+	var pitch := PlayArea.grid_position_size_px(settings).x
+	var resting_grid := 1
+	var grid_index := 2
+
+	var rest := WallPicture.resting_state(rect, window, settings)
+	var zero_offset := WallPicture.panned_state(rect, window, settings, 0.0)
+	var rest_pos : Vector2 = rest["position"]
+	var zero_pos : Vector2 = zero_offset["position"]
+	var rest_zoom : float = rest["zoom"]
+	var zero_zoom : float = zero_offset["zoom"]
+	check(zero_pos.is_equal_approx(rest_pos) and is_equal_approx(zero_zoom, rest_zoom),
+			"a zero offset reproduces resting_state() exactly",
+			"pos=%s rest=%s zoom=%.6f rest_zoom=%.6f" % [zero_pos, rest_pos, zero_zoom, rest_zoom])
+
+	var offset_x := 137.0
+	var offset_state := WallPicture.panned_state(rect, window, settings, offset_x)
+	var offset_pos : Vector2 = offset_state["position"]
+	var offset_zoom : float = offset_state["zoom"]
+	check(is_equal_approx(offset_pos.x - rest_pos.x, offset_x),
+			"a non-zero offset moves position.x by exactly that amount",
+			"delta=%.4f offset=%.4f" % [offset_pos.x - rest_pos.x, offset_x])
+	check(is_equal_approx(offset_pos.y, rest_pos.y),
+			"...and leaves position.y untouched", "offset_y=%.4f rest_y=%.4f" % [offset_pos.y, rest_pos.y])
+	check(is_equal_approx(offset_zoom, rest_zoom),
+			"...and leaves zoom untouched", "offset_zoom=%.6f rest_zoom=%.6f" % [offset_zoom, rest_zoom])
+
+	# THE identity: grid_state() must equal panned_state() called at the same offset the grid
+	# implies, or grid_state() has drifted into a second, separately-maintained computation.
+	var via_grid := WallPicture.grid_state(rect, window, settings, grid_index, resting_grid, pitch)
+	var via_offset := WallPicture.panned_state(rect, window, settings,
+			pitch * float(grid_index - resting_grid))
+	var via_grid_pos : Vector2 = via_grid["position"]
+	var via_offset_pos : Vector2 = via_offset["position"]
+	check(via_grid_pos.is_equal_approx(via_offset_pos),
+			"grid_state() agrees with panned_state() called at the equivalent offset -- one "
+			+ "computation, not two", "grid=%s offset=%s" % [via_grid_pos, via_offset_pos])
+
+## `WallPicture.snap_pan_to_grid()` -- the arithmetic `Q173`/`Q179` put between a SAVED pan and the
+## board it is restored onto. Three separate obligations, and a neutralisation that drops any one of
+## them fails here: it rounds a pan that fell between two grids onto a whole step, it clamps a pan
+## that names a grid the board no longer has, and it leaves a pan that already names a real grid
+## exactly alone.
+##
+## `resting_grid` is 1 throughout -- an odd board's middle -- so a NEGATIVE offset is a real grid
+## rather than an out-of-range one, which is what makes the clamp check below distinguishable from
+## the round check.
+func test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board() -> void:
+	var pitch := 846.0
+	var resting := 1
+
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, resting, 3), pitch),
+			"a pan that already names a real grid is returned untouched",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(-pitch, pitch, resting, 3), -pitch),
+			"...and so is a NEGATIVE one, which is grid 0 on a board resting on grid 1",
+			str(WallPicture.snap_pan_to_grid(-pitch, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 0.6, pitch, resting, 3), pitch),
+			"a pan BETWEEN two grids rounds to the nearer whole step, not to the one it passed",
+			str(WallPicture.snap_pan_to_grid(pitch * 0.6, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 0.4, pitch, resting, 3), 0.0),
+			"...and rounds the other way below the halfway point, so the round is a real round",
+			str(WallPicture.snap_pan_to_grid(pitch * 0.4, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * 5.0, pitch, resting, 3), pitch),
+			"a pan naming a grid past the LAST one clamps to the last grid the board has",
+			str(WallPicture.snap_pan_to_grid(pitch * 5.0, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch * -5.0, pitch, resting, 3), -pitch),
+			"...and one past the FIRST clamps to grid 0",
+			str(WallPicture.snap_pan_to_grid(pitch * -5.0, pitch, resting, 3)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 1), 0.0),
+			"a one-grid board has nowhere to pan to, so every pan collapses to its centre",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 1)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 0), 0.0),
+			"a board with NO grids answers 0 rather than dividing by a pitch it cannot use",
+			str(WallPicture.snap_pan_to_grid(pitch, pitch, 0, 0)))
+	check(is_equal_approx(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3), 0.0),
+			"...and so does a zero pitch, which is what a board measured before layout reports",
+			str(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3)))
+
+
+# ==============================================================================
+# TP-120 (S34, Q186=a) — `Tools/wall_editor.tscn` DRIVES EVERY KNOB IT SHOWS.
+#
+# The tool's whole promise is that a number tuned on its panel reaches the same code the game runs
+# it through -- otherwise the preview is not evidence about anything. `knobs_this_preview_does_not
+# _drive` is the tool's own honest answer, and this asserts it is EMPTY on a real run.
+#
+# ⚠ **THE FIELD USED TO BE A CLAIM, NOT A READING.** It returned "" for any run that had a `Wall`
+# at all, so this row would have passed while the board knobs on the panel were being ignored
+# outright by the hosted `GameView` -- which is exactly what was happening. The second check below
+# is the one that gives the first any weight: the SCREENS the tool hosts must resolve to the same
+# `preview_settings` the panel edits.
+#
+# ⚠ **A REAL `wall_editor.tscn`, NOT A STAND-IN** (hard rule 6): the thing under test is the tool's
+# own wiring, and a hand-built copy of it could only ever agree with itself.
+# ==============================================================================
+func test_the_wall_editor_drives_every_knob_it_shows() -> void:
+	var previous := WallPicture.editor_settings
+	var editor_scene : PackedScene = load("res://Tools/wall_editor.tscn")
+	var editor : WallEditor = editor_scene.instantiate()
+	add_child(editor)
+	# `Wall._ready()` pauses the tree globally, exactly as it does in the game; undone here the same
+	# way every other Main-hosted fixture in this repo undoes it.
+	get_tree().paused = false
+	for _i : int in 4:
+		await get_tree().process_frame
+
+	check(editor.preview_settings != null,
+			"precondition: the tool has its own settings resource to tune (TP-120)")
+	check(PlayArea.settings() == editor.preview_settings,
+			"a knob tuned on the tool's panel reaches the BOARD it hosts -- `PlayArea.settings()` "
+			+ "resolves the same override the tool sets, so `board_edge_pad_rows` and the rest are "
+			+ "not silently inert (TP-120)",
+			"board reads %s, panel edits %s" % [PlayArea.settings(), editor.preview_settings])
+	check(WallPicture.settings() == editor.preview_settings,
+			"...and so does the WALL, through the accessor both halves share (TP-120)")
+	var undriven := editor.undriven_knobs()
+	check(undriven.is_empty(),
+			"`knobs_this_preview_does_not_drive` is EMPTY when the editor is run (TP-120, Q186=a)",
+			"undriven: %s" % [undriven])
+
+	editor.queue_free()
+	await get_tree().process_frame
+	WallPicture.editor_settings = previous

@@ -111,7 +111,7 @@ start** (`Q6`=a).
 - 2 grids: placed so the exact centre of the picture is the **buffer between them**.
 - 3 grids: the middle grid sits exactly where a single grid would.
 
-`grid_buffer_px` stays a knob; the centring is the contract.
+The centring is the contract. ⚠ **The buffer is DERIVED, not a knob** — `PlayArea.isolating_grid_buffer_px()` solves for the value at which a focused grid isolates its neighbours, and it is the picture's edge margin too. The stored `grid_buffer_px` setting is gone.
 
 ### 1.3 Grid shape (`Q10`)
 
@@ -529,8 +529,29 @@ green; suite count drops by exactly the moved suites and **no other suite change
 
 ### Phase 5 — geometry and the flipped board (VISUAL)
 
+⚠ **Phase 5 is preceded by `S20b`, which BUILDS the board these steps then shape.** `GAP-009`
+found that no step created the grid's view at all: `PlayArea` rendered only the two legacy zones,
+so `S21`–`S25` were geometry rules with nothing to apply them to. The owner's answer was that the
+grid view **replaces** the play area, which also subsumes the old `S19b` coordinate migration —
+the legacy `Vector3i` position and the legacy zone rendering retire together. Design and answers:
+`design/grid-view/DESIGN.md` version 2, charts `J`, `K`, `L`, `M`, `N`, `P`.
+
 **S20** *(implements E4, §1.8)* — `CARD_SEPARATION` re-derived from Phase 0's measurement.
-**Done-when:** `TP-80` green; by-eye sign-off that a covered card shows its pips.
+**Done-when:** `TP-80` green; by-eye sign-off that a covered card shows its pips. ✅ **LANDED.**
+
+**S20b** *(implements J1–J15, K1–K5, L1–L7, M1–M8, P1–P2)* — **THE GRID VIEW REPLACES THE PLAY
+AREA.** `%GridContainer` hosts one `%GridPanel` per grid; a panel builds
+`grid_width × grid_height` cells from the data and carries its own row/column/special labels;
+each cell is one control per card plus the cell's zone card; `CardVisual`s stay in `%CardLayer`
+positioned by arithmetic that mirrors the controls. `slot_center_global` takes a `BoardCoord` and
+nothing else, and the legacy `Vector3i` board position retires with the zones it described.
+`UpperZone`/`MiddleZone`/`LowerZone` and their per-column `VBox`es are deleted.
+**Done-when:** `TP-80b`–`TP-80h` green; by-eye sign-off that a dealt board draws, that a placement
+lands where the player clicked, and that a scored line fires props again.
+
+**S20c** *(implements P3, P4)* — **Retire the act.** `Game.submit()`, `_perform_submit()` and the
+Next button go; `end_show()` is the only thing that finishes a show. The `&"on_run_scorer"` pending
+action goes with them. **Done-when:** `TP-80i`, `TP-80j` green; grep proves `submit` has no readers.
 
 **S21** *(implements E7–E11, §1.8)* — Upward stacks, shared bottom edge, rows pushed up.
 **Done-when:** `TP-81`–`TP-84` green plus by-eye.
@@ -557,7 +578,8 @@ window.
 **S29** *(implements H14, H15, H16, H17)* — Keyboard/controller selection across grids; touch swipe.
 **S30** *(implements G16, G17, G18)* — Refocus when the focused grid is removed, and re-centring.
 
-**Done-when (phase):** `TP-97`–`TP-110` green, plus a by-eye pass at 1, 2 and 3 grids.
+**Done-when (phase):** `TP-97`–`TP-104`, `TP-106`–`TP-112` and `TP-138` green, plus a by-eye pass
+at 1, 2 and 3 grids. (`TP-105` moved to `S31` by `GAP-016`=(d).)
 
 ### Phase 7 — the wall (VISUAL)
 
@@ -567,9 +589,14 @@ window.
 view.
 **S34** — `Tools/wall_editor.tscn` drives every new wall knob (`Q186`=a).
 
-**Done-when (phase):** `TP-111`–`TP-120` green; `knobs_this_preview_does_not_drive` still empty.
+**Done-when (phase):** `TP-105` and `TP-113`–`TP-120` green; `knobs_this_preview_does_not_drive`
+still empty. (`TP-111`/`TP-112` belong to `S30`, in Phase 6.)
 
 ### Phase 8 — undo, save, resume
+
+⚠ **The `S19b` of the handoff is RETIRED as a separate step** — `GAP-009`'s answer folds the legacy
+coordinate migration into `S20b`, because the view cannot be replaced while `slot_center_global`
+takes a zone-keyed coordinate and the coordinate cannot migrate while the view still renders zones.
 
 **S35** *(implements §1.7, `Q230`, `Q231`)* — Every placement an undo step; scores rewind with the
 board.
@@ -601,6 +628,21 @@ effects CSV alongside the pre-grid one (`Q288`=a).
 **S44** — `START_HERE.md`, `PICTURE_WALL.md`, `LAYERING.md` updated (`Q290`=b); `doc_check.py` clean
 of **new** findings (`Q289`=a).
 
+**S42 and S43 are DONE, taken out of order at the owner's instruction** — the CSV half was run
+before Phase 6 because the play-area rework had settled far enough to restate every idea against
+the four-coordinate board. `S40`, `S41` and `S44` are untouched, and the phase's dependency (it
+runs last) still governs them.
+
+Two things the owner added that this section did not ask for:
+
+- **A `blinds.csv` category** — level modifiers, one row per blind effect. A level draws one and a
+  boss draws two; `weight` 2 marks a heavy negative such as losing a grid, which doubles the
+  remaining grids in exchange. **Every blind must reward playing into it** — owner verbatim:
+  *"each hazard should reward you if you play into it and take a risk, and not just be a different
+  'level' with no downsides."*
+- **`scope` is a two-valued column on every idea row** — owner verbatim: *"effects should be grid
+  local or global."* Nothing else is legal in it.
+
 **Done-when (phase):** `py .claude/tools/doc_check.py` reports no new findings, and an independent
 audit pass reads the **code**, not the rewrite (`Q291`=a).
 
@@ -629,7 +671,10 @@ One per phase, none talk-past-able.
 ## 4. Anti-scope — do NOT do these
 
 - **Do not touch the suit-prop system, statuses, or the VFX/shader layer** beyond what
-  `slot_center_global` forces (`Q294`).
+  `slot_center_global` forces (`Q294`). ⚠ At `S20b` that clause is finally load-bearing: the
+  signature change is exactly what `slot_center_global` forces, so the prop ROUTES move with it —
+  a row's route is that row's cells **in one grid**, left to right (`M5`), and a prop never crosses
+  the gap between grids (`M6`). Nothing else about props changes.
 - **Do not touch the comparator-bucket system** (`Q295`).
 - **Do not redesign the outline shader.** It is direction-agnostic; the flip does not affect it
   (`DESIGN.md` §1m′ row 8).

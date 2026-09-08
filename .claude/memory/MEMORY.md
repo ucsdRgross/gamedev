@@ -11,7 +11,7 @@
 - [Machine profiles](machine-profiles.md) — per-box repo root, Godot binary, GPU, Node; the ONLY home for absolute paths
 
 **Working agreements**
-- [No git staging](no-git-staging.md) — never `git add` or commit; the owner uses GitHub Desktop
+- [No git staging](no-git-staging.md) — never commit to `main`; on any other branch committing is fine
 - [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments, kept short
 - [Design ids stay out of code](design-ids-stay-out-of-code.md) — no `Q183=a`/`GAP-017` in a comment, never in a user-facing string
 - [Verify visuals by eye](verify-visuals-by-eye.md) — describe the rendered image; a still cannot verify a duration
@@ -28,7 +28,7 @@
 - [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
 
 **Running a plan** (everything else lives in the `/plan-run` skill)
-- [Tests that prove nothing](tests-that-prove-nothing.md) — ten ways a green test asserts nothing; prove every one red first
+- [Tests that prove nothing](tests-that-prove-nothing.md) — the ways a green test asserts nothing; prove every one red first
 - [Built but not wired](built-but-not-wired.md) — a done-when must name the call site, or the component ships with no caller
 - [One fix at a time](one-fix-at-a-time.md) — full suite between fixes; a crashing batch cannot be diagnosed
 

@@ -24,7 +24,7 @@ signal settings_changed
 		settings_changed.emit()
 ## Card size multiplier: scales the card footprint, the board layout pitch, formation offsets,
 ## and the prop art (props scale by card_scale / PropVisual.AUTHORED_CARD_SCALE).
-@export var card_scale : float = 2.5:
+@export var card_scale : float = 1.0:
 	set(value):
 		card_scale = value
 		settings_changed.emit()
@@ -285,20 +285,26 @@ enum SeparationMode {
 		combo_step = value
 		settings_changed.emit()
 
-## δ fallback lever (§15a): duplicate-CLASS melds score ×δ. 1.0 = off (ship default);
-## only lower during playtest if dump crushes everything.
-@export var duplicate_class_scale : float = 1.0:
+## What a FIRST-of-its-class meld or effect adds to the combo multiplier.
+@export var combo_unique_step : float = 1.0:
 	set(value):
-		duplicate_class_scale = value
+		combo_unique_step = value
 		settings_changed.emit()
 
-## TEST variant (2026-07-17, unpriced): act payout = (R + C) × combo instead of
-## (R × C) × combo. Linearizes payout growth — re-fit goal_g0/goal_alpha (sim
-## `--final --additive`) before judging difficulty with this on. Ships OFF.
-@export var score_additive : bool = false:
+## What a REPEAT of a class already seen adds. Melds and effects contribute on the same
+## terms; only whether the class is new decides which step applies.
+@export var combo_repeat_step : float = 0.5:
 	set(value):
-		score_additive = value
+		combo_repeat_step = value
 		settings_changed.emit()
+
+## Ceiling on the combo multiplier. 0 = OFF, no ceiling.
+@export var combo_cap : float = 0.0:
+	set(value):
+		combo_cap = value
+		settings_changed.emit()
+
+
 
 @export_group("Balance — goal curve (SCORING_MATH_PLAN §15b)")
 ## Global goal multiplier (§15b "difficulty"): ±15% ≈ one persona band. THE dial for
@@ -308,14 +314,22 @@ enum SeparationMode {
 		difficulty = value
 		settings_changed.emit()
 
-## Goal at the 20-card start deck (re-fit via `py solatro/Tools/scoring_sim.py --final`).
-@export var goal_g0 : float = 130.0:
+## Goal at the 20-card start deck. Re-fit against the grid economy with
+## `py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25`.
+@export var goal_g0 : float = 5376.0:
 	set(value):
 		goal_g0 = value
 		settings_changed.emit()
 
-## Power on N̂/N0 (log-fit of the §15b table): how hard goals ramp per booster crossed.
-@export var goal_alpha : float = 4.2:
+## Power on N̂/N0: how hard goals ramp per booster crossed.
+## ⚠ NEARLY FLAT ON PURPOSE, and it is not a tuning preference. Measured, a show's
+## score peaks three nodes in and then FALLS: the board holds 25 cells for the whole
+## run (grid_cards_per_unlock 52 is never crossed), so past 25 cards a bigger deck
+## adds nothing, and booster cards are rank-uniform 1-13 against a start deck of
+## 1-5, which thins out the very collisions that make melds. Deck size is therefore
+## the wrong driver for this curve, and any larger power makes late nodes
+## unreachable rather than harder.
+@export var goal_alpha : float = 0.26:
 	set(value):
 		goal_alpha = value
 		settings_changed.emit()
@@ -342,67 +356,6 @@ enum SeparationMode {
 @export var lap_mult : float = 2.5:
 	set(value):
 		lap_mult = value
-		settings_changed.emit()
-
-@export_group("Patience (idle-move pressure)")
-## Emitted when patience_max GROWS, with the increase. Owner ruling A1: raising the
-## cap also raises the LIVE counter by the same amount (a rule card granting patience takes effect
-## this round); lowering it does NOT touch the live counter. Game listens and edits state.patience.
-signal patience_max_increased(delta: int)
-
-## Idle card moves allowed per round before Next auto-fires. Also the value patience resets to.
-## Floored at 1 — a round must always allow at least one move.
-@export var patience_max : int = 3:
-	set(value):
-		var clamped : int = maxi(value, 1)
-		var delta : int = clamped - patience_max
-		patience_max = clamped
-		if delta > 0:
-			patience_max_increased.emit(delta)
-		settings_changed.emit()
-
-## Which card STAGES' triggered modifiers hold the countdown (a move that fires one of them was
-## interesting, so it costs no patience). Default: only cards in play on the board count.
-@export var patience_influence_play : bool = true:
-	set(value):
-		patience_influence_play = value
-		settings_changed.emit()
-@export var patience_influence_zone : bool = false:
-	set(value):
-		patience_influence_zone = value
-		settings_changed.emit()
-@export var patience_influence_draw : bool = false:
-	set(value):
-		patience_influence_draw = value
-		settings_changed.emit()
-@export var patience_influence_discard : bool = false:
-	set(value):
-		patience_influence_discard = value
-		settings_changed.emit()
-@export var patience_influence_rules : bool = false:
-	set(value):
-		patience_influence_rules = value
-		settings_changed.emit()
-
-## Track already-seen modifiers (like the combo class set): the SECOND time the same modifier
-## triggers this round it no longer holds patience. Off = every trigger holds.
-@export var patience_track_uniques : bool = true:
-	set(value):
-		patience_track_uniques = value
-		settings_changed.emit()
-
-## When the seen-set clears: false (default) = every Next, true = only after a Submit act.
-@export var patience_reset_uniques_on_act : bool = false:
-	set(value):
-		patience_reset_uniques_on_act = value
-		settings_changed.emit()
-
-## Hooks that never count toward patience even from an approved stage (e.g. add
-## &"on_can_place_stack" to stop the placement legality query itself from holding the counter).
-## Empty = every hook counts.
-@export var patience_disabled_hooks : Array[StringName] = []:
-	set(value):
-		patience_disabled_hooks = value
 		settings_changed.emit()
 
 @export_group("Leak sentinel (debug builds only)")
@@ -620,4 +573,101 @@ var wall_info_mode : bool = false
 @export var wall_selected_lift : Vector2 = Vector2(0.0, -14.0):
 	set(value):
 		wall_selected_lift = value
+		settings_changed.emit()
+
+@export_group("Balance — grid board")
+## Deck size per unlocked grid: the grid count target is
+## ceil(deck_size_at_game_start / grid_cards_per_unlock), clamped to [1, grid_max_count].
+@export var grid_cards_per_unlock : int = 52:
+	set(value):
+		grid_cards_per_unlock = maxi(value, 1)
+		settings_changed.emit()
+## Hard cap on the number of grids the deck-size allotment will ever create.
+@export var grid_max_count : int = 3:
+	set(value):
+		grid_max_count = maxi(value, 1)
+		settings_changed.emit()
+## The largest render target the game picture may ask the GPU for, per axis, in pixels.
+## ⚠ **A `SubViewport` over the GPU's maximum texture size fails SILENTLY**: the framebuffer is
+## destroyed and the size is internally set to 0 while the script property still reports the
+## oversized value. Older GPUs cap at 4096 and this project ships the Compatibility renderer, so
+## the clamp is the only thing standing between a wide picture and a black screen. The layout stays
+## at full size — only the resolution is capped.
+@export_range(256, 16384, 1) var game_picture_max_render_px : int = 4096:
+	set(value):
+		game_picture_max_render_px = maxi(value, 256)
+		settings_changed.emit()
+## How long the view takes to travel from one grid to the next, in seconds. 0 snaps.
+@export_range(0.0, 2.0, 0.01, "or_greater") var grid_pan_duration : float = 0.35:
+	set(value):
+		grid_pan_duration = maxf(value, 0.0)
+		settings_changed.emit()
+## How hard a pan past the outermost grid pushes the board, in pixels per second. Spent as
+## VELOCITY into the scroll container's own overdrag, which supplies the counterforce and carries
+## the board back to rest — so 0 silences the bounce without touching the pan, and no value can
+## leave the board parked off its edge.
+@export_range(0.0, 4000.0, 1.0, "or_greater") var grid_bounce_velocity_px : float = 900.0:
+	set(value):
+		grid_bounce_velocity_px = maxf(value, 0.0)
+		settings_changed.emit()
+## How far a finger must travel before a one-finger drag counts as a pan, in MILLIMETRES.
+## ⚠ Millimetres, not pixels: the same physical swipe must mean the same thing on every screen.
+##
+## ⚠ **A DISTANCE TO TRAVEL IS NOT A THING TO HIT, AND THE PLATFORMS KEEP THEM APART.** This was
+## clamped to the touch-target bounds, whose floor of 32 px is ~8.5 mm at 96 DPI -- so the old 8 mm
+## default was BELOW its own floor and turning the knob down did nothing at all. Android carries
+## three separate quantities: a touch target (Material: 48 dp, about 9 mm), plain touch slop (the
+## distance a touch may wander before it is a scroll, 8 dp, about 1.5 mm) and a PAGING touch slop
+## for a swipe between pages -- which is this gesture -- defined in `ViewConfiguration` as exactly
+## twice the plain slop, about 3 mm. A swipe threshold sized like a fingertip is roughly three
+## times what the platform asks for.
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 3.0:
+	set(value):
+		grid_swipe_threshold_mm = maxf(value, 0.0)
+		settings_changed.emit()
+## The swipe threshold's OWN bounds, in millimetres — the guard against a wild DPI reading, which
+## is what the clamp was for. Defaults bracket the gesture rather than the fingertip: the floor is
+## plain touch slop (below which a tap's own wander would page the board) and the ceiling is a
+## touch target (above which a swipe costs more travel than a button costs width).
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_min_mm : float = 1.5:
+	set(value):
+		grid_swipe_threshold_min_mm = maxf(value, 0.0)
+		settings_changed.emit()
+@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_max_mm : float = 9.0:
+	set(value):
+		grid_swipe_threshold_max_mm = maxf(value, 0.0)
+		settings_changed.emit()
+## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so
+## a deep stack in one grid does not stretch the same row in every other. ON, row `r` takes a
+## SHARED maximum across every grid, and the boards read as one ruled sheet.
+## ⚠ **PURELY VISUAL — it must never affect scoring**, and a test asserts the same board scores
+## identically with it on and off (`Q251`=b).
+@export var grid_align_rows_globally : bool = false:
+	set(value):
+		grid_align_rows_globally = value
+		settings_changed.emit()
+## The pinned Entrance strip's height, as a multiple of one card's height. Its OWN vertical
+## scroll (independent of the board's) covers whatever a deep stack adds past this.
+@export var entrance_visible_rows : float = 1.5:
+	set(value):
+		entrance_visible_rows = maxf(value, 0.5)
+		settings_changed.emit()
+
+## The clear band above the board and below the Entrance, in CARD ROWS, so the focused view does
+## not hug the screen edge. **0 turns it off**, which is what a phone-sized screen wants: on a
+## short screen the band costs more of the board than the breathing room is worth.
+## The share of the board's width the HUD column occupies. The furniture is SCALED to fit it, so
+## this is what the HUD costs the board however wide the picture gets.
+##
+## The split is exactly what it reads as: the HUD gets this share of the width and the board gets
+## the rest. Nothing sizes anything else -- the picture's own width is derived from the board alone
+## (`isolating_grid_buffer_px`), and the HUD is then scaled to its share of whatever that came to.
+@export var hud_width_fraction : float = 0.25:
+	set(value):
+		hud_width_fraction = clampf(value, 0.0, 0.9)
+		settings_changed.emit()
+
+@export var board_edge_pad_rows : float = 1.0:
+	set(value):
+		board_edge_pad_rows = maxf(value, 0.0)
 		settings_changed.emit()

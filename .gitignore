@@ -1,0 +1,10 @@
+
+.claude/.subagent.lock
+__pycache__/
+
+# Godot GDExtension hot-reload lock debris: the engine renames a locked dll to ~name
+# and leaves .TMP/.locked beside it. Never addon source, and it dirties the tree every run.
+~*.dll
+~*.TMP
+~*.locked
+~*.dll.locked

@@ -1,0 +1,6 @@
+{
+  "state": "ready",
+  "mode": "review",
+  "round": 1,
+  "summary": "Charts approved. Steps S20b/S20c and tests TP-80b..TP-80j are folded into the EXISTING poker-patience PLAN.md, TEST_PLAN.md and NAMES.md as instructed - no new plan documents. lower_zone deleted; upper_zone renamed to entrance."
+}

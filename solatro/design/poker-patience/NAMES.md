@@ -41,7 +41,7 @@ plan carries the citation.
 | `BoardCoord.h` | `int` | Height in the stack, **0-based**. |
 | `BoardCoord.NOWHERE` | `const` | The off-board sentinel. **Never `(0,0,0,0)`.** |
 | `BoardCoord.ENTRANCE_ROW` | `const int = -1` | Named, never typed as a literal `-1`. |
-| `BoardCoord.step_x(n)` | method | Column arithmetic that crosses grid boundaries. |
+| `BoardCoord.step(dx, dy, grid_widths)` | method | Two-axis movement over an unbounded lattice of per-grid blocks. Never clamps, never returns `NOWHERE`; whether a cell EXISTS at the result is `GameData.has_cell`, asked at landing. |
 | `BoardCoord.is_entrance()` | method | `y == ENTRANCE_ROW`. |
 
 ## 2. GameData
@@ -49,22 +49,33 @@ plan carries the citation.
 | Name | Kind | Notes |
 |---|---|---|
 | `GameData.grids` | `Array[GridData]` | The grid list, left to right. `@export_storage`. |
+| `GameData.entrance` | `GridData` | The Entrance, stored as a grid-shaped zone so it carries cells, a width and a height like `grids` does. `@export_storage`. |
+| `GameData.upper_zone` | `Array[ArrayCardData]`, computed | A VIEW of `entrance.cells` — the live inner array, not a copy, so a write through it lands in `entrance`. Kept because ~284 call sites address the Entrance this way and one representation is the point. |
+| `GameData.upper_zone_type` | `Array[CardData]`, computed | The same view over `entrance.cell_types`. |
+| ~~`GameData.lower_zone`~~ / ~~`lower_zone_type`~~ | **deleted** | The tableau's half of the two-zone board. No renderer, no cards, no card that operates it. ⚠ Deleting the FIELDS changes the saved shape; that is fine — `Q213` rules that old saves are not migrated. |
 | `GridData` | `class_name`, Resource | One grid: its size and its cells. |
 | `GridData.grid_width` | `int`, default 5 | Per grid, not global. |
 | `GridData.grid_height` | `int`, default 5 | Per grid, not global. |
 | `GridData.cells` | `Array[ArrayCardData]` | Row-major, one entry per cell; each holds that cell's stack bottom-to-top. |
 | `GridData.cell_types` | `Array[CardData]` | The 25 cell zone cards, row-major. |
 | `GameData.committed_grid` | `int`, default `-1` | Which grid the Entrance is committed to; `-1` = uncommitted. `@export_storage` so undo rewinds it. |
-| `GameData.scores_row` | `Array[BigNumber]` per grid | Height-0 row buckets. |
-| `GameData.scores_col` | `Array[BigNumber]` per grid | Height-0 column buckets. |
-| `GameData.scores_row_h` | 2-D, `[index][height]` | Raised-level row buckets. |
-| `GameData.scores_col_h` | 2-D, `[index][height]` | Raised-level column buckets. |
+| `GameData.scores_row` | `Dictionary[Vector3i, BigNumber]` | Row buckets, keyed `(grid, index, height)`. Height is IN the key — there is no separate raised-level container. |
+| `GameData.scores_col` | `Dictionary[Vector3i, BigNumber]` | Column buckets, same key. Shared between a grid column and the Entrance slot beneath it. |
+| `GameData.scores_cell` | `Dictionary[Vector3i, BigNumber]` | One vertical stack's bucket, keyed `(grid, x, row)`. Folds into `score_special`. |
+| `GameData.entrance_grid()` / `entrance_row_index(grid)` | method | Which grid the Entrance banks into, and the row it banks at — `grid_height`, one past the grid's own last row. |
 | `GameData.score_special` | `BigNumber` per grid | **One** bucket for every diagonal and every future special meld. |
 | `GameData.packed_*` | packed arrays | One pair per container above, mirroring the existing `pack_scores`/`unpack_scores` contract. |
 | `GameData.grid_score(grid)` | method | Product of the buckets whose value is `> 0`; `0` when none is. |
 | `GameData.board_total()` | method | Sum of `grid_score` over grids. |
+| `GameData.live_total()` | method | `board_total() * combo_mult()`, as an int. **The show's score**: what the goal is measured against and what fame banks. Derived on demand -- there is no banking moment and no stored total. |
 | `GameData.position_of(card)` | method | Existing name, now returning `BoardCoord`. |
 | `GameData.card_at(coord)` | method | The reverse index. |
+| `GameData.cell_type_coord(card)` | method | Where a cell's ZONE card sits, or `null`. Turns a drop aimed at an empty cell back into its coordinate. |
+| `PlayArea.slot_center_global(coord)` | method | ⚠ **Takes a `BoardCoord` and nothing else.** Stays pure arithmetic — no control-rect reads. The one function every prop, label and light anchors through. |
+| `PlayArea.control_for_coord(coord)` | method | Existing name, now taking a `BoardCoord`. |
+| ~~`Game.submit`~~ / ~~`_perform_submit`~~ / ~~`%Next`~~ | **retired** | A show has no acts. `end_show()` is the only thing that finishes one. |
+| `RunState.pending_placement_slot` | `int`, default `-1` | Which Entrance SLOT the pending placement took its card from. A placement is identified by slot, never by card: the pre-placement board a replay starts from is a restored snapshot carrying its own copies. |
+| `RunState.pending_placement_coord` | `Vector4i` | Where that placement was aimed, as `(grid, x, y, h)`. |
 
 ## 3. Board
 
@@ -97,16 +108,18 @@ plan carries the citation.
 |---|---|---|---|
 | `SkillGridAllotment` | `class_name` | 11 | The meta card: counts the deck, adds/subtracts creator cards. |
 | `SkillGridCreator` | `class_name` | 12 | `ZoneAdder`-shaped; builds and removes one 5×5 grid. |
-| `TypeGridCell` | `class_name` | 13 | The per-cell zone card. |
+| `TypeGridCell` | `class_name` | 13 | The per-cell zone card. Carries `on_can_place_stack`: a cell ALWAYS accepts. |
 | `SkillAdderInputUpper` | existing | 3 | **Unchanged.** Five of them make the Entrance five wide. |
-| `TypeInput` | existing | 2 | **Unchanged except `on_next` is removed.** |
+| `TypeInput` | existing | 2 | `on_next` removed; **gains `on_can_grab_stack`** — any card in its slot, regardless of what is stacked on it. |
 
-**Archived** (moved to `Cards/Skills/Rules/Archive/`, kept constructible): `SkillGrabberOgLower`,
-`SkillPlacerOgLower`, `SkillScorerCascadeLower`, `SkillAdderInputLower`, `SkillEvalPokerBest`.
+⚠ **There is no archive.** `SkillGrabberOgLower`, `SkillPlacerOgLower`,
+`SkillScorerCascadeLower`, `SkillAdderInputLower` and `SkillEvalPokerBest` are simply **absent
+from `rules1`**. Their scripts stay where they are and stay constructible; there is no
+`Cards/Skills/Rules/Archive/` directory and no `Deck.archive_rules1`.
 
-| Name | Kind | Notes |
-|---|---|---|
-| `Deck.archive_rules1` | method | Builds the archived tableau rules set for a future side mode. |
+`rules1` is now: 5 x `SkillAdderInputUpper`, 1 x `SkillGridAllotment`, 1 x `SkillLineDetector`.
+`TestDecks.standard_rules` is a frozen mirror of that composition and
+`TestDecks.rules_skill_names` is what compares the two.
 
 ⚠ **Frames 9–13 are claimed here.** `Assets/skill_art.png` is 16×16 = 256 frames; 0–8 were in use.
 Do not pick a frame that is not in this table.
@@ -119,10 +132,10 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 |---|---|---|
 | `grid_cards_per_unlock` | `52` | |
 | `grid_max_count` | `3` | |
-| `grid_buffer_px` | `220.0` | Centring is fixed; the gap is a knob. |
 | `grid_pan_duration` | `0.35` | |
-| `grid_overview_margin` | `0.06` | |
-| `grid_swipe_threshold_mm` | `8.0` | Converted through `WallInput.mm_to_px`, clamped. |
+| `grid_swipe_threshold_mm` | `3.0` | Converted through `WallInput.mm_to_px`, clamped to its OWN bounds below. Android's paging touch slop for this gesture is twice plain touch slop, ~3 mm. |
+| `grid_swipe_threshold_min_mm` | `1.5` | The swipe clamp's floor. Plain touch slop, below which a tap's own wander would page the board. |
+| `grid_swipe_threshold_max_mm` | `9.0` | The swipe clamp's ceiling. A touch target, above which a swipe costs more travel than a button costs width. |
 | `grid_align_rows_globally` | `false` | Per-grid sizing is the default. |
 | `stack_offset_px` | `= card_separation_play_custom` | |
 | `stack_soft_cap` | `20` | `push_error` past it; not a hard limit. |
@@ -131,6 +144,9 @@ All on `Scripts/player_settings.gd`, read via `SettingsManager.settings`.
 | `combo_repeat_step` | `0.5` | |
 | `combo_cap` | `0.0` (off) | |
 | `game_picture_max_render_px` | `4096` | The render-target clamp. |
+| `grid_bounce_velocity_px` | `900.0` | The edge push, spent as velocity into the scroll container's overdrag. Range `0.0..4000.0, or_greater`; `0` silences the bounce and no value parks the board off its edge. |
+
+⚠ **`stack_offset_px`, `stack_soft_cap` and `stack_spring_rise` are registered-but-absent** — every other knob in this table exists in `Scripts/player_settings.gd`.
 
 **Removed:** `score_additive`, `duplicate_class_scale`, `patience_max`,
 `patience_track_uniques`, `patience_reset_uniques_on_act`, `multi_line_reveal_scale`
@@ -142,8 +158,8 @@ Each needs **both** a reader and a binding, keyboard **and** joypad.
 
 | Action | Keyboard | Joypad | Means |
 |---|---|---|---|
-| `grid_pan_left` | `,` | L2 | Pan one grid left |
-| `grid_pan_right` | `.` | R2 | Pan one grid right |
+| `grid_pan_left` | `,` **and `Q`** | L2 (axis 4, deadzone 0.5) | Pan one grid left |
+| `grid_pan_right` | `.` **and `E`** | R2 (axis 5, deadzone 0.5) | Pan one grid right |
 | `grid_zoom_out` | — | — | ⚠ **Not a new action.** Intercepts `wall_back`. |
 | `grid_zoom_in` | — | — | ⚠ **Not a new action.** Intercepts `wall_forward` / click. |
 
@@ -180,6 +196,7 @@ wall. Do **not** rebind them.
 | `Tests/UI/test_grid_view.gd` / `.tscn` | Phase 6 |
 | `Tests/Wall/test_wall_saved_pan.gd` / `.tscn` | Phase 7 |
 | `Tests/Engine/test_grid_fuzz.gd` / `.tscn` | Fuzz |
+| `TestGridFixtures.board_digest(state)` | The board as comparable text: every cell, the Entrance, deck and discard in order, every bucket. Backs the headless/viewed parity gate and the save round-trip. |
 | `TestDecks.deck_standard_52` | `FIX-DECK-52`. **Frozen.** Never `Deck.deck4`. |
 | `TestDecks.deck_20` | `FIX-DECK-20` |
 | `TestDecks.deck_53` | `FIX-DECK-53` |
@@ -195,4 +212,72 @@ Fixture builder names match the `FIX-*` ids in `TEST_PLAN.md` §1, lowercased wi
 | `%GridContainer` | The board root inside `PlayArea`; hosts one child per grid. |
 | `%GridPanel` | One per grid. ⚠ **Draws nothing** — `Q14`=(b), the gap defines a grid. It is a positioning node only. |
 | `%SpecialScore` | The one special-meld label, right of the grid, aligned with its centre. |
+| `%CellSlot` | One per cell inside a `%GridPanel`; holds the cell's zone-card control and one control per card in its stack. |
+| `%EntranceStrip` | The Entrance's row of slots, one strip across the bottom of the whole picture — NOT a child of any `%GridPanel`. |
 | `%PanLeft` / `%PanRight` | The on-screen pan buttons; hidden at one grid. |
+
+## 11. The view modes
+
+On `PlayArea`. The registry carried no name for the view state before Phase 6; these are the ones
+that shipped.
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.ViewMode` | enum | `OVERVIEW`, `FOCUSED`. Exactly two — there is no intermediate zoom. |
+| `PlayArea.NO_GRID` | const | "No grid is focused." Never a bare `-1`. |
+| `PlayArea.view_mode` | `ViewMode` | ⚠ Class default is `FOCUSED`, deliberately, so a show that fails to open zoomed out cannot masquerade as the default. |
+| `PlayArea.focused_grid` | `int` | `NO_GRID` while in the overview. |
+| `PlayArea.view_mode_changed(mode, grid)` | signal | |
+| `PlayArea.open_zoomed_out()` | method | Called from `_ready()`, **not** `setup_gui()` — that is also the undo-rebuild path and would zoom out on every undo. |
+| `PlayArea.focus_grid(gi)` | method | |
+| `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |
+| `"GRID VIEW"` | suite name | `Tests/UI/test_grid_view.gd`, between VISUAL LAYERS and SETTINGS RANGE in the ordering chain. |
+| `PlayArea.pan_grid` | `int` | The grid the view is centred on. `focus_grid` also centres, so it cannot disagree with `focused_grid`. |
+| `PlayArea.pan_to_grid(gi)` / `pan_by_grids(step)` | method | Discrete, one grid per step, always landing centred. |
+| `PlayArea._consume_as_view_action(event)` | method | The Back/Forward interception. Returns false in the overview so the event still reaches the wall. |
+| `PlayArea._bounce_board(step)` | method | The edge bounce. |
+| `PlayArea.selected_grid` | `int` | The OVERVIEW's cursor: which grid the arrows have selected and Enter focuses. Kept in step with the board focus, so the mouse and the arrows cannot disagree. |
+| `PlayArea._arrow_delta(event)` | method | Which way an arrow/d-pad press points. ⚠ `y` grows DOWNWARD — row 0 is a grid's top row. |
+| `PlayArea._consume_as_cell_move(event, control)` | method | Focused mode: the selection moves along the lattice via `BoardCoord.step` and crossing a grid edge focuses (and centres) the next grid. |
+| `PlayArea._consume_as_grid_select(event)` | method | Overview: the arrows pick a whole GRID instead. |
+| `PlayArea._on_cell_gui_input(event, control)` | method | ⚠ **The only place the board can hear an arrow key** — the viewport's focus-neighbour search consumes arrows in the GUI pass, so `_unhandled_input` is too late. Connected per control in `create_card_control`. |
+| `PlayArea._consume_as_swipe(event)` | method | The one-finger swipe. Reads `InputEventScreenDrag` ONLY, ignores `device == -1`. |
+| `PlayArea._swipe_threshold_px()` | method | `grid_swipe_threshold_mm` through `WallInput.mm_to_px`, clamped to the swipe's OWN millimetre bounds converted the same way — a distance to travel is not a thing to hit. |
+| `PlayArea._card_control_at(at)` | method | The bound board control under a point, or null for bare board — the placement/pan discrimination. |
+| `PlayArea._board_control_has_focus()` | method | Does a board control genuinely hold the focus right now. |
+| `PlayArea._grid_widths()` / `_coord_of_control(c)` / `_cell_focus_control(coord)` | method | The lattice adaptors between controls and `BoardCoord`. |
+| `PlayArea._zoom_out_grid` | `int` | The grid Back left, so Forward can return to it. |
+
+## 12. The wide game picture (`S31`)
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.game_picture_design_size()` | method | The picture's authored size: three grid blocks, two `PlayArea.isolating_grid_buffer_px()` buffers between them, that same buffer **again per side** against the picture's edge, height = the board's natural height or the window-aspect minimum, whichever is larger. |
+| `PlayArea.grid_block_size_px()` | method | One grid's block, cell-block measured. |
+| `PlayArea.isolating_grid_buffer_px()` | method | DERIVED buffer between two grid panels, closed-form solved so a FOCUSED grid isolates its neighbours. |
+| `PlayArea.grid_pitch_px()` | method | The ACTUAL applied panel-to-panel pitch: one block plus the rounded container separation and its gutters — what the camera step must match. |
+| `PlayArea.board_separation_px()` | method | The DERIVED buffer less the measured label gutters — one `HBox` separation cannot vary per pair, so the widest pair wins. |
+| `PlayArea.BOARD_SEPARATION` | const | |
+| `PlayArea._apply_grid_buffer()` | method | Applies the separation to the live board. |
+| `Wall._size_game_picture()` | method | The single seam where the game picture's `design_size` is set; called from `load_layout()`, so `_build_pictures()`, `_repack_wall()` and `_on_window_resized()` all pass through it. |
+| `Wall.GAME_PICTURE_ID` | const | |
+| `WallPicture.clamped_render_size(size)` | method | Pure: clamps to `game_picture_max_render_px`. ⚠ **Assert against this and against what `build()`/`focus()` WROTE — never a read-back of `SubViewport.size`, which reports the oversized value while the framebuffer is already destroyed.** |
+| `WallPicture._apply_design_render_size()` | method | Called from `build()` and `focus()`; engages `size_2d_override` only when the clamp bites. |
+
+## 13. The focused zoom (`S31b`)
+
+⚠ **The scale lives on the SCROLL CONTAINER, not its content** — a `Container` rewrites its
+children's scale on every sort (measured: `TopLevelVBox` was back at 1 the next frame). Its rect is
+divided by the same factor so the window keeps its pixels.
+
+| Name | Kind | Notes |
+|---|---|---|
+| `PlayArea.board_zoom` | `float` | The live board scale. |
+| `PlayArea.OVERVIEW_BOARD_ZOOM` | const | The overview's scale. |
+| `PlayArea.focused_board_zoom(gi)` | method | Derived, not a knob: the factor that makes a grid as tall as the board window. |
+| `PlayArea._zoom_board_to(z)` | method | |
+| `PlayArea._apply_board_zoom_rect(strip_h)` | method | |
+| `PlayArea._board_window_local()` / `_board_content_origin()` / `_board_local_rect(c)` | method | Zoom-aware geometry. ⚠ Every site that added a measured GLOBAL position to a LOCAL size had to become zoom-aware; the suite's `_window_x` / `_cut_off_px` mixed the two and now read the engine's global transform. |
+| `PlayArea._board_strip_h` | `float` | |
+| `Tests/Visual/grid_clip_flight_shot.gd` / `.tscn` | instrument | A card IN FLIGHT between the Entrance and a grid, inside the real picture: a burst of consecutive frames, plus a top-row stack and a jump. The Entrance sits outside the board's clipped scroll container and the grids inside it, so a placement crosses that edge and only a moving frame shows it. Not registered in `all_tests.tscn`. |
+| `Tests/Visual/grid_zoom_shot.gd` / `.tscn` | instrument | ⚠ **The only shot that renders inside the REAL picture** (`game_picture_design_size`), rather than `grid_layer_shot`'s bare 1152x648 window. Shoots both modes. Not registered in `all_tests.tscn`. |

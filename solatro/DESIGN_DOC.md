@@ -1,11 +1,21 @@
 # SOLATRO — Organized Design Document
 
+**This is the GRID version.** The board is one to three grids, 5×5 by default, side by side.
+Cards arrive in the Entrance, the player places one per action, and a placement scores every line
+it completes on the spot. **There is no Submit, no act count, no upper/lower tableau and no
+end-of-show payout.** The pre-grid document, which describes all of those as live, is
+`archive/DESIGN_DOC.md`; read it only to resolve a citation that predates the grid.
+
 Compiled from the raw idea-dump notes ("gam draf 17"), cross-referenced against
 the implementation (`solatro/`, see `ARCHITECTURE_REVIEW.md`) and the map addon
 (`worldgen/addons/worldgen/`). The source notes are chronological (oldest → newest) with
 superseded ideas never deleted; this document preserves that history as **mini-timelines**
-per topic, always ending with the **LATEST** state. Everything in the original notes is
-represented somewhere in this doc, including abandoned ideas (§22).
+per topic, always ending with the **LATEST** state.
+
+⚠ **Where this document and `ARCHITECTURE_REVIEW.md` disagree about what the code does, the
+architecture reference wins** — this one is the design record, not the build record. Where it
+disagrees with `design/poker-patience/DESIGN.md` about the grid's *rules*, that design wins: it
+is the owner's answered questionnaire.
 
 **Status legend** used throughout:
 
@@ -64,30 +74,62 @@ Symphony*, Neon Nightlife (Disconauts).
 1. **v1 — Deck-click drops:** Playfield where every click of the deck drops new cards
    down; a limited count of rounds/clicks; **score slots on the right** score whatever you
    place on them and double as free spaces between deck clicks. Incoming cards could be
-   **mulliganed** (click + discard button) and **rearranged** before dropping. Everything
-   else lifted from Balatro (jokers, consumables). ❌ superseded by v2.
-2. **v2 — Whole-board submit (LATEST, ✅ implemented):** No special submit slot. You
-   continuously draw through the deck like real solitaire, building the board; pressing
-   **Submit** evaluates the *entire board state*. Submit scores everything and clears the
-   board, with upper-zone (Entrance) cards dropping down to seed the next board state
-   without being wiped. Match ends when the deck runs out or the required score is reached.
-   Cards enter play by dropping on their own from the input row — they cannot be dragged
-   down manually.
-3. **Refinements:** 3 submits per match as a nod to a 3-act performance ✅ implemented
-   (`Game.MAX_SUBMITS`; after the 3rd act the goal check wins → fame → map, or loses →
-   run over → menu); each act (or only the final act) could carry an increasing score
-   multiplier 💭.
-4. **Undo is always live** ✅: pressing Undo DURING a resolving act cancels it
-   (the resolution fast-forwards and the pre-act board restores — no act consumed, nothing
-   committed), and pressing it AT the win/lose screen dismisses the outcome and rewinds the
-   final Submit. The outcome overlay covers only the board (card input of every mode is
-   blocked; the HUD stays live, Submit/Next disabled). Consequence: **fame banks at
-   Continue** (`exit_show` → `RunManager.record_win`), not at the outcome screen — the win
-   stays undoable until committed, and resuming at the win screen can't double-bank.
+   **mulliganed** (click + discard button) and **rearranged** before dropping. ❌ superseded.
+2. **v2 — Whole-board submit:** no submit slot; you drew through the deck building a
+   two-zone tableau, and **Submit** evaluated the entire board, scored it and cleared it.
+   Three submits per match, as a nod to a three-act performance. ❌ **RETIRED WHOLESALE.**
+   Submit, the act count, `MAX_SUBMITS` and the `row_total × col_total × combo` act payout
+   are all gone, and a suite gate fails any product file that mentions them.
+3. **v3 — Poker patience on a grid (LATEST, ✅ implemented):** the board is **one to three
+   grids, 5×5 by default**, laid out side by side and centred in the picture. Cards wait in
+   the **Entrance**, a row attached above whichever grid it is currently committed to. Each
+   action the player takes one card from the Entrance and places it **into a cell**, on top of
+   whatever that cell already holds. **Every placement scores the lines it completes, on the
+   spot.** The show runs until the player presses **End**; there is nothing that ends it for
+   them and no budget to spend.
 
-**Implementation state:** `Game`/`GameData` with draw deck, discard, upper zone (Entrance)
-and lower zone (Ring); `TypeInput.on_next` drops upper stacks into the Ring and refills
-from the deck; `SkillScorerCascadeLower` performs the whole-board evaluation. ✅
+**What "a line" is** (✅, full rules in `design/poker-patience/DESIGN.md`):
+
+| Kind | Definition |
+|---|---|
+| Row | every cell of one row of one grid holds a card at the same height |
+| Column | every cell of one column of one grid holds a card at the same height |
+| Diagonal | a corner-to-corner run, flat or climbing through height, full length, no wrapping |
+| Height | the vertical stack in one cell |
+
+- Lines **never cross a grid boundary** and never wrap. ✅
+- A horizontal line at height *h* needs a card **at** *h* in every cell — a taller stack still
+  has one, so it counts. ✅
+- A stack scores at every **multiple of 5** and pays the **whole** stack: five pays five, ten
+  pays all ten (the bottom five again, not netted off), fifteen pays all fifteen. **Heights
+  6–9 pay nothing.** ✅
+- When one placement completes several lines they score **rows, then columns, then diagonals,
+  then height** — deterministic, because the crash-resume replay depends on it. ✅
+- **There is no line-scored memory and no within-pass guard.** Every completion scores, every
+  time; an effect that removes and replaces a card in a complete line re-scores it every
+  cycle, and that is a legitimate archetype, not an exploit. ✅
+
+**How many grids** (✅): `ceil(deck size at game start / 52)`, floored at 1 and capped at 3,
+evaluated **once** at the start of the show. So 0–52 cards give one grid, 53–104 two, 105+
+three. Both the divisor and the cap are knobs. ⚠ A real run goes 20 → 40 cards over thirteen
+nodes, so **a second grid never unlocks in practice today** — that is the substance of the open
+`gaps/GAP-041.md`, not a stale note.
+
+**A card that cannot be placed is discarded** ✅ — the Entrance commits to one grid on its first
+placement, and the commitment lifts only on undo or when no legal placement remains in that
+grid.
+
+**Undo is always live** ✅: pressing Undo DURING a resolving placement cancels it (the
+resolution fast-forwards and the pre-action board restores — nothing committed), and pressing
+it AT the win/lose screen dismisses the outcome and rewinds the End. The outcome overlay covers
+only the board; the HUD stays live. Consequence: **fame banks at Continue** (`exit_show` →
+`RunManager.record_win`), not at the outcome screen — the win stays undoable until committed,
+and resuming at the win screen can't double-bank.
+
+**Implementation state:** `Game`/`GameData` with draw deck, discard, the Entrance (still backed
+by the old `upper_zone` array) and `grids`; `SkillGridAllotment` sizes the grid count to the
+deck and adds the `SkillGridCreator` cards that build them; `SkillLineDetector` answers every
+board mutation and scores what completed. ✅
 
 Different starting decks influence both your card pool **and the rules you play under**
 (see Rule Deck, §8); the very early note "combine and pick up decks" 💭 was never developed
@@ -95,51 +137,75 @@ further.
 
 ---
 
+
 ## 3. Board & Zones
 
-- 5-column board — width chosen deliberately so a full row is a 5-card poker hand. ✅
-- Two zones. Original names upper/lower play zones → **LATEST circus names: the "Grand
-  Entrance" (upper, where drawn cards wait) and "The Ring" (lower, where you build)**. 📋
-  (code still says upper/lower).
-- Column count is **not hardcoded**: rule cards (`SkillAdderInputUpper/Lower`, `ZoneAdder`)
-  each add one input/board column at game creation, so effects can add/remove columns and
-  all logic must respect "not guaranteed 5 columns". ✅ (The note resolved its own
-  immutability worry: the immutable rule is "zones exist"; the *count* is 5 separate
-  +1-column rule cards.)
+- **The board is grids, not zones.** One to three of them, side by side, **each carrying its
+  own width and height** — 5×5 is the default and **nothing hard-codes 5**. ✅ Width five is
+  still chosen so a full row is a five-card poker hand.
+- **Each cell holds a STACK**, not a single card. Height is the third axis, and it is the old
+  column depth re-read: `y` (row) counts downward while `h` (height) counts upward. ✅
+- **The Entrance** (upper, where drawn cards wait) is a row **attached above one grid**, not a
+  zone of its own — row `-1` of whichever grid it is committed to, moving with the
+  commitment. ✅ Its width is five because five `SkillAdderInputUpper` rule cards say so; there
+  is deliberately **no Entrance width property**. ✅
+- **"The Ring"** now names the grid the player is acting on, not a lower zone. The lower zone
+  still exists in `GameData` but no shipped rules card fills it. 📋 (code still says
+  `upper_zone`/`lower_zone`).
+- **Layout is centred, and the gap follows from the count** ✅: one grid sits dead centre of the
+  picture; with two, the exact centre is the buffer between them; with three, the middle grid
+  sits exactly where a single grid would.
+- **A column ordinate is continuous across grids** ✅ — stepping five columns left from the
+  first column of grid 1 lands on the last column of grid 0. Movement runs over an unbounded
+  lattice that pretends a grid exists wherever a card is heading; whether a cell really exists
+  there is asked separately, on landing.
+- **The board has exactly two view modes** ✅: OVERVIEW shows every grid for orientation,
+  FOCUSED shows the one grid being played on. There is no intermediate zoom to sit at. The
+  game picture is several screens wide and the wall camera pans over it (`PICTURE_WALL.md`).
+- Grid count is **not hardcoded**: rule cards add and remove whole grids the way `ZoneAdder`
+  adds a column, so all logic must respect "not guaranteed three grids, not guaranteed 5×5". ✅
 - Duplicate rule cards use their **rank as identifier** (zone adder #1 has rank 1, #5 has
   rank 5, etc.). 📋
 - **Null cards** that take up space; highlighted when selected so hovering over null space
   reads clearly. 💭
-- UI details: when holding a stack over a zone, the zone's control should **expand**,
-  shifting stacked cards down to show the insertion point; controls are narrower than the
-  card art so clicks can pass through to the board for dragging. 💭
-- Board state is an array (early architecture note). ✅ (`GameData` arrays; a card's
-  location is a `Vector3i`.)
+- **An empty cell is a card.** Each cell carries a `TypeGridCell` zone card, which is what an
+  empty cell presents as a drop target — the same trick the old zone headers used. ✅
+- UI details: controls are narrower than the card art so clicks can pass through to the board;
+  a covered card's pip row stays visible, which is why the pips sit at the **bottom** of the
+  card. ✅
 
 ---
 
-## 4. Stacking & Movement Rules
+
+## 4. Placement & Movement Rules
 
 **Timeline:**
-1. Early: you can pick up a stack from anywhere, but an **illegal stack can only be placed
-   on the submission spot**. ❌ (submission spot itself was removed in loop v2).
-2. Later: **only legal stacks can be picked up** — "moving stacks becomes more difficult
-   with time". ✅ LATEST.
-3. Legal stack definition (for now): **ascending OR descending runs; cannot stack same
-   suit**. ✅ (`SkillGrabberOgLower` / `SkillPlacerOgLower`).
+1. Early: you could pick up a stack from anywhere, but an **illegal stack could only be placed
+   on the submission spot**. ❌ (the spot went with loop v2).
+2. Tableau era: **only legal stacks can be picked up** — ascending or descending runs, no
+   repeated suits. ❌ as the DEFAULT: `SkillGrabberOgLower` and `SkillPlacerOgLower` still
+   exist and still work, but they are **not in the shipped rules deck** and they only
+   understand the legacy zones.
+3. **LATEST (✅): placement, not stacking.** One card from the Entrance into one cell, per
+   action. There is no legality run to satisfy — **any card may go on any cell** — because the
+   interesting decision moved from "can this go here" to "which line am I building". Dragging a
+   stack around the board is not the verb any more.
 
-**Modifier-driven legality (LATEST architecture, ✅):** stacking legality is decided by a
-resolver pass, not hardcoded — all cards' allow/deny effects are gathered into a
-whitelist + blacklist (blacklist wins over whitelist). Implemented as rule cards answering
-`on_can_grab_stack` / `on_can_place_stack`, with `PipComparator` handling rank/suit
-comparisons (every comparison first polls mods before numeric fallback).
+**Modifier-driven legality survives as the extension point** (✅): `on_can_grab_stack` /
+`on_can_place_stack` are still the hooks, gathered into a whitelist + blacklist (blacklist wins),
+with `PipComparator` handling every rank/suit comparison. Nothing in the shipped deck answers
+them, so a card that wants to restrict placement has a working seam to do it through. 📋
 
-Related sketches: card ability "any card can be placed on this card" 💭 (explicit TODO:
-stacking rules must be modifiable by abilities — the resolver enables this); **cards that
-can resist being moved** 💭; elemental card types with custom movement (always on top /
-bottom of a stack) 💭 → partially realized as Heavy/Light types (§14).
+⚠ **A move that only drops cards DOWN scores nothing**, and the mover says so explicitly — it
+is never inferred by comparing heights. ✅ Compaction is a settle, not a play.
+
+Related sketches: card ability "any card can be placed on this card" 💭 (now the default, so the
+interesting version is its inverse — a card that REFUSES neighbours); **cards that can resist
+being moved** 💭; elemental card types with custom movement (always on top / bottom of a
+stack) 💭 → partially realized as Heavy/Light types (§14).
 
 ---
+
 
 ## 5. Scoring
 
@@ -150,47 +216,64 @@ all cards are trying to do."
 1. **v1 — Cribbage-style:** face cards all count 10; 2 points per 15-sum, 2 per 31-sum,
    2 pair, 6 triple, 12 quad, 3–7 points for runs of 3–7. ❌ — "15s too hard to see;
    should be an ability, not default." (Survives as a possible ability/pip idea.)
-2. **v2 — Dual-axis (LATEST core, ✅):** base scoring is **vertical runs** (with a minimum
-   size) per column plus **horizontal poker hands** per row. Evaluation order: top-down,
-   one row at a time — poker hands first, with runs calculated simultaneously per column
-   as each row resolves. Results return the list of scored cards, which then run through
-   the card-effect loop; scored cards are elevated/rise up.
-   - Refined once more to: **all row scoring first**, then all 5 lanes (columns) scored
-	 simultaneously at that row.
-   - Aggregation idea: **all vertical scores are multiplied with all horizontal scores**
-	 at the end (row total × column total). 📋
-   - Score displays distinguish axes: `-2-` for row points, `|1|` for column points. 📋
-   - "Only the first scored poker hand actually scores, ignoring later poker hands" —
-	 ✅ (`SkillEvalPokerBest` picks the best/first result).
-   - Open TODO from notes: check whether scoring should also scan the draw deck and
-	 discard pile 💭; "every 5 rows make row red / increase points by layer" 💭 → later
-	 matured into Performance Rings (below).
-3. **v3 — Combo/damage recontextualization (partially ✅):** the combo half
-   SHIPPED as the settled aggregation: **act payout = R × C × combo**, where
-   `combo = 1 + 0.1·U` and U = distinct combo classes scored this act (meld classes via
-   `Scoring.class_key` — archetype+size+copies, rank/suit-blind — plus first-activation
-   mod effects; lone high cards excluded; resets each act). Full math in
-   ARCHITECTURE_REVIEW §3a; δ duplicate-class lever ships off (1.0). The
-   damage/antagonist reframing below remains unbuilt 📋. Original idea: points
-   reframed as *damage against an antagonist* (Slay-the-Spire/TCG enemy-health framing).
-   Row and column scorers become a **combo system**: combo increments by 1 for each
-   *unique effect triggered*; flat points come from card effects ("cards are ammo"),
-   with row-combo and col-combo multiplied into the flat points. Rewards triggering many
-   effects in a deliberate order. A separate early note — a **uniqueness multiplier** that
-   grows with every unique effect triggered — is the same idea in embryo.
+2. **v2 — Dual-axis on a tableau:** vertical runs per column plus horizontal poker hands per
+   row, aggregated as row total × column total at the end of an act. ❌ **RETIRED.** The axes
+   survive; the act and the end-of-act multiply do not.
+3. **v3 — The grid economy (LATEST, ✅ implemented).** Owner's words: *"each grid gets its own
+   row × col × diag = grid score. HUD shows total grid score from each grid added together as
+   left number, multiplied by the combo number on the right. HUD always shows most updated
+   scores."*
+
+```
+per grid:     a ROW bucket, a COL bucket, and one SPECIAL bucket
+grid score  = the PRODUCT of every bucket worth more than 0
+            = 0 when none of them is
+board total = every grid score, summed
+combo       = 1 + 1.0 per first-of-its-class + 0.5 per repeat      (both tunable)
+displayed   = board total × combo                                  (two numbers, live)
+```
+
+- ⚠ **A bucket that has not scored ADDS 0; it never multiplies by 0.** Owner's worked example,
+  verbatim: *"row + col + diag = 0 + 0 + 0. Row gets 10 score. it is now 10 + 0 + 0 = 10. Col
+  gets 5 score. It is now 10 \* 5 + 0 = 50. Diag gets 2 score. It is now 10 \* 5 \* 2 = 100."*
+- ⚠ **The test is the VALUE, never touched-ness.** Owner: *"if score is 0 do not multiply
+  regardless of if 0 is somehow a returned actual score from something."*
+- **One special bucket per grid, and it is shared.** Owner: *"All diagonal type scores go to a
+  single label to the right of the grid... future special meld scores will also go to this
+  bucket, regardless of if its diagonal or not, simply because having a unique label for every
+  special meld would be impossible to place on screen and make sense. in data it is also one
+  bucket."* Height scores fold in there too.
+- ⚠ **The combo multiplies at DISPLAY time, not at banking time.** Owner: *"no. total always
+  shows current combined grid score times current combo."* So a line scored on the first
+  placement is worth exactly what the same line is worth on the last. There is no banking
+  moment and no final pass.
+- **The combo never resets** for the whole show. A first-of-its-class adds a full step, a
+  repeat adds a half one, and **melds and card effects contribute on exactly the same terms** —
+  only whether the class has been seen before decides which step applies. ✅
+- **A row bucket is per row AND per height** ✅: a grid with five rows of two-high stacks shows
+  ten row scores. A raised level is not a separate container, just another height.
+- **On grid removal**, owner verbatim: *"If a grid gets removed, then the score labels within
+  the grid are removed as well. However, accumulated score is not lost."* ✅
+- "Only the first scored poker hand actually scores, ignoring later poker hands" — ✅
+  (`SkillEvalPokerBest` picks the best result).
+- Score displays distinguish axes: row labels down one side, column labels along another, the
+  special label opposite the rows, and a height label above each stack. ✅
 4. **Circus framing (LATEST theme):** scoring = exciting the audience; cheering scales
    with score; **overscoring pays out tips**; required score = fame the show must earn.
 
-**Performance Rings** 📋: score zones by board depth — First Ring = first 5×5 rows at 1×,
-rows 6–10 = 2×, rows 11–15 = 3×, and so on; enables effects keyed to reaching outer rings.
+**Performance Rings** 💭: the old "score zones by board depth" idea — First Ring at 1×, deeper
+rings at 2×, 3× — was written for an unbounded tableau. On a bounded grid its natural
+translation is **height**: a raised row is already its own bucket, so a multiplier per height
+level is the version that fits. Not built.
 
 **Trigger order (card effects):** field effects first → deck top-down (cards about to be
-drawn first; actual order invisible to player) → board left-to-right, top-to-bottom
-(including the input row at top) → discard pile top-down (recent discards first). 📋
+drawn first; actual order invisible to player) → board left-to-right, top-to-bottom, grid 0
+before grid 1, bottom of each stack first → discard pile top-down. ✅ the board walk is exactly
+this; the deck and discard halves are 📋.
 
 **Big numbers:** planned from the start ("big numbers are funner") with an infinite number
-class — ✅ `BigNumber` exists. Yu-Gi-Oh logic: never single digits; bigger numbers are
-always cooler — rebalance base values upward accordingly. 📋
+class — ✅ `BigNumber` exists, and the product economy makes it earn its keep: a third bucket
+does not add to a score, it multiplies it.
 
 **Avalanche** (card idea filed here): after scoring, all cards on board "attack the
 scoreboard," reducing the goal score by the number of cards. An early prototype of
@@ -198,14 +281,18 @@ alternative goal-manipulation effects. 💭
 
 ---
 
+
 ## 6. Card Anatomy & Pips
 
 **Immutable rules (the engine contract, ✅ all implemented):**
 - A card has: **suit, rank** (the pips), a **stamp slot**, a **skill slot**, and a
   **card type**.
 - Cards can have 1 parent and 1 child card — a stack.
-- There exists a board with 2 zones, a draw deck, a discard deck, and a rule-set deck.
-- On game creation the rule-set deck is parsed to decide board layout.
+- There exists a board of one or more **grids**, an Entrance, a draw deck, a discard deck,
+  and a rule-set deck.
+- On game creation the rule-set deck is parsed to decide board layout — that is literally how
+  the grids come to exist (`SkillGridAllotment` sizes the count, `SkillGridCreator` builds
+  each one).
 - Scoring UI itself is *not* card-implemented (an "alt win con by manipulating the UI"
   was considered and shelved — only acceptable if the manipulation is
   duplicate-or-remove, which has no good design yet ❌).
@@ -218,7 +305,9 @@ equipment — shoes, costume) 💭, connecting to the Costume Designer class (§
 - A **pip resolver/comparator class** (`PipComparator`) determines all interactions
   between pips; every rank/suit comparison funnels through it; mods get asked first
   (`on_compare_ranks/suits`) with numeric fallback.
-- Each pip gets its own class for visuals (`PipSuitStandard`, `PipRankNumeral` ✅).
+- Each pip gets its own class for visuals — one per suit (`PipSuitHoop`, `PipSuitKnife`,
+  `PipSuitBall`, `PipSuitFire`, `PipSuitFirework`) under the abstract `PipSuit`, plus
+  `PipRankNumeral` for ranks. ✅
 - Design Q&A from the notes, resolved: *can pips have abilities outside the resolver?* →
   Yes, for new scoring methods: each pip class can register static scoring methods as
   defaults for that pip. Pip effects are permanently active (unlike skills).
@@ -257,7 +346,8 @@ overrides. Ordinary cards' skills fire.
 - Cards with skills idly move and **peek over** the card blocking them; blocked active
   cards shift the row below so at least their upper art half shows. 💭
 - **Literal spotlight** beams on triggering cards instead of generic glow; possibly dim
-  the whole screen during submit. 💭
+  the whole screen while a placement resolves. ✅ the beam exists: `GameData.forced_spotlight`
+  lights a whole scored line at once, and every `on_spotlight` in it fires in board order.
 - Eye stamp (trigger-while-hidden) shows a **miniature of the skill art** inside the stamp. 💭
 - QOL "show all active abilities" button: a half-open-eye toggle that pushes stacks apart
   so every spotlit card is fully visible (disabled while holding a stack) — or simpler,
@@ -299,8 +389,9 @@ rules deck. Names considered: **The Universal / Fundamental / Rule Deck**.
   descriptions (§19, §14).
 - A deck variant where the **rule deck is empty and all rules live in the main deck**
   (rules get drawn and played like cards!). 💭
-- Per-scenario rule decks: **game rules determine what Next and Submit do**; different
-  scenarios swap rule decks; edits are permanent for the run. Requires the game class to
+- Per-scenario rule decks: **game rules determine what Next does, what completes a line and
+  what a completed line pays**; different scenarios swap rule decks; edits are permanent for
+  the run. Requires the game class to
   be very flexible. 📋
 - **Level rules** deliberation: replace the rule deck with a per-level deck? Resolved NO —
   score goals etc. live outside the rule deck, and making the rule deck build the whole UI
@@ -322,13 +413,14 @@ The theme pivot arrives mid-notes and becomes the LATEST identity: 📋
 
 | Mechanical term | Circus term (LATEST) |
 |---|---|
-| Upper zone | **Grand Entrance** |
-| Lower zone / play area | **The Ring** |
+| The Entrance row | **Grand Entrance** |
+| A grid | **The Ring** (one show can have up to three) |
+| A cell's stack | **The Tower** 💭 |
 | Cards | **Performers** |
 | Skills | **Feats** |
 | Cards without feats | **Prop cards** |
 | Scoring | **Exciting the audience** (cheering audio scales with score) |
-| ~~Overscore bonus~~ | ~~**Tips**~~ (retired 2026-07 — overscore removed, ARCHITECTURE_REVIEW §3b) |
+| ~~Overscore bonus~~ | ~~**Tips**~~ — retired with overscore itself (ARCHITECTURE_REVIEW §3b) |
 | Player | **The Ringmaster** |
 | Game laws / rules | **Conventions** (maybe) |
 | Active state | **Spotlight** |
@@ -406,8 +498,8 @@ ARCHITECTURE_REVIEW §4; the full plan/spec is in git history):**
 
 ## 11. Classes, Groups & Leader Cards
 
-**Leader/Champion cards 📋:** start the game already on the board in a free slot (or in
-the Entrance) and **don't leave on submit**. Different starting decks ship different
+**Leader/Champion cards 📋:** start the game already on the board in a free cell (or in
+the Entrance) and **are never swept back into the deck at the end of the show**. Different starting decks ship different
 leaders to incentivize different builds. Cards belong to **groups/classes**, and leaders
 boost their group.
 
@@ -473,7 +565,7 @@ it the first card to appear next match — same need, older answer. ❌ (superse
 
 ## 13. Special Decks & Variants
 
-- **Magic deck:** each suit is an element; cast spells by submitting elemental
+- **Magic deck:** each suit is an element; cast spells by playing elemental
   combinations. 💭 (pre-theme; elements later echo in Earth/Air/Water/Fire materials)
 - **Survivor deck:** suits are food, water, sword, etc. 💭 (pre-theme)
 - **Double Everything deck:** ranks doubled (doubling deck size), double initial slots,
@@ -498,8 +590,8 @@ in the notes (proxy for design recency).
 | Echoing Trigger | combo | ALL triggers repeat once (once per card per scoring pass) | — | ✅ | Implemented |
 | Hungry Hippo | Animal Trainer | Consumes cards dropped on it, adds their rank to its own, cap 13 total; returns them at game end | — | 🔨 | Implemented but gutted (`on_card_dropped_on` commented out); "clicking on cards modified by abilities" was its TODO |
 | Sin of Gluttony | Animal Trainer | Hippo "on crack": no value cap, can be fed from anywhere including decks, **permanently** consumes | Rare+ | 📋 | Mid; explicit hippo upgrade — power-sort rarity example |
-| Frankenstein | Magician | On submit, merges with the card above and below into a 3-card merged stack that stays in the zone after scoring | — | 📋 | Early |
-| Sliced Bread | scoring | On submission, if a same-suit card is later down the stack, gain a point per card in between | — | 📋 | Early |
+| Frankenstein | Magician | On scoring, merges with the cards below and above it in its cell into one merged card that stays in the stack | — | 📋 | Early; **restated for the grid** — "above and below" now means height, not a tableau column |
+| Sliced Bread | scoring | When a line it is in scores, if a same-suit card sits further along that line, gain a point per card in between | — | 📋 | Early; **restated for the grid** — the run is along the scored LINE, in any of the four kinds |
 | Gold card | Producer, token | Money-token card; heavy — always sinks to the bottom of the deck | Common | 📋 | Early; ties into cards-as-currency (§16) |
 | Exchange Voucher | utility | Usable from the deck; swap it with any card on screen | — | 📋 | Mid; origin of "all buttons are cards" |
 | Eye of God | god-cycle | See all decks (incl. rule deck) and true descriptions | Legendary? | 📋 | Mid; also a prestige unlock as "true vision" |
@@ -686,7 +778,7 @@ they're maximally flexible. 📋
   cards per discard); the game (or a joker) starts you at 1 discard/turn. Enables
   gambling for a better entrance hand and a direct route to feed the discard pile.
 - **1 free undo per turn**, not carrying over, baked in by default. 📋 (undo system ✅
-  exists via state snapshots.)
+  exists via state snapshots; it currently has a 25-action cap, not a per-turn allowance.)
 - **+1 reroll per game** effect; "repeated actions will not have the same results." 💭
 - Cards **cannot retire** (be sold/removed?) until scored or their ability has activated —
   more likely: until an ability activation; no condition if no ability. 💭
@@ -819,7 +911,7 @@ losing); an optimized deck plays itself. Explorations:
 - Goofy travel animations (spin/bounce across screen) for ability cards; cards slot into
   place like folders into a cabinet; smoother = more satisfying; **the cards are alive**.
 - Crunchy sounds (Inscryption act 2 benchmark); cards slightly attracted to the cursor;
-  party effects; literal spotlights + screen dim on submit (§7).
+  party effects; literal spotlights + screen dim while a placement resolves (§7).
 - Card-pack opening slot machine (§18). Rarity borders/shines/holo (§18).
 - Choose-card screen Star-Wars scroll (§15).
 
@@ -869,6 +961,12 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | 3D hover-heavy card motion | Late | Static stylized + SFX direction chosen |
 | 15s as default scoring | Early | See cribbage row |
 | Mana bar | Late | Mana *cards* / any-card-as-resource instead |
+| **Whole-board Submit** | Mid | Superseded by the grid: a placement scores what it completes, immediately |
+| **Three acts per show (`MAX_SUBMITS`)** | Mid | Went with Submit; a show now ends when the player presses End |
+| **Act payout `row × col × combo`** | Mid | Superseded by the per-grid bucket product, applied live |
+| **The upper/lower two-zone tableau** | Mid | Superseded by grids of stacked cells; the Entrance is a row of one grid |
+| **`score_additive` and `duplicate_class_scale`** | Late | Levers on an economy that no longer exists |
+| **The whole patience family** | Late | Retired with the tableau |
 
 ---
 
@@ -892,17 +990,28 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | Hidden-trigger stamp; deck triggers surfacing on the deck slot | 🔨 `StampRevealing`/`StampGlobal` exist; deck-slot visuals 📋 |
 | Only first poker hand scores | ✅ |
 | "Any card can be placed on this card" ability; Hippo card; elemental movement types | 🔨 resolver supports it; Hippo gutted; elementals 💭 |
-| Every 5 rows red / increase points by layer | 💭 → matured into Performance Rings (§5) |
+| Every 5 rows red / increase points by layer | 💭 → now reads as a per-HEIGHT multiplier (§5) |
 | Check scoring in deck and discard | 💭 |
 | Add all cards to map | 🔨 map offers exist |
 
 ### 25.2 Where the dream and the build currently disagree
 - Spotlight default ("active while unblocked"): ✅ implemented (with Revealing/Global
   overrides), so ordinary card skills fire.
-- Rule-deck-driven layout, input-as-cards, resolver-based legality, whole-board cascade
-  scoring, BigNumber, undo, deck/choice viewers, booster templates, the worldgen FTL map
-  + run persistence, suit projectiles (props), combo scoring + goal curve: ✅ all real.
+- Rule-deck-driven layout (now literally: the rules deck builds the grids), input-as-cards,
+  resolver-based legality as a seam, **per-placement line scoring across rows, columns,
+  diagonals and height**, the per-grid bucket product, the live combo, BigNumber, undo,
+  deck/choice viewers, booster templates, the worldgen FTL map + run persistence, suit
+  projectiles (props), the goal curve: ✅ all real.
+- ⚠ **The goal curve is reachable but its growth term has the wrong sign** for most of a run:
+  a show's score peaks about three nodes in and then falls, because the board holds 25 cells
+  for the whole run and booster cards thin out the collisions that make melds. `gaps/GAP-041.md`
+  is OPEN on it.
 - Deterministic RNG streams (§6/§23) not yet implemented on the game side (map/props are
   deterministic; in-match RNG streams for seed sharing are not).
-- Card-pack mulligan flow, shop, economy, meta progression, leaders, acts, circus
+- Card-pack mulligan flow, shop, economy, meta progression, leaders, circus
   renames, rarity tiers: not started.
+- The **effect review** is the live pipeline for everything §14 catalogues: 1,409 owner
+  questions, one per candidate effect, exporting to a single ruling sheet. ⚠ It was mined from
+  the PRE-GRID versions of these documents, so a share of its questions still speak in acts and
+  Submits and must be re-mined against this one. ⚠ **It is a separate work stream and it lives
+  on `main`**, not on this branch — its own handoff there carries the state.

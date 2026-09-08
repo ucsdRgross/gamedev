@@ -211,12 +211,33 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 	get: return _gesture_log
 
 @export_group("Honesty")
-## ⚠ READ-ONLY, and EMPTY when the tool is RUN — F6 hosts a real `Wall`, so every knob reaches the
-## same code the game runs it through. In the Inspector preview there is no `Wall` (it is not
-## `@tool`), so the four knobs that need one are listed here rather than silently doing nothing.
+## ⚠ READ-ONLY. The knobs this preview cannot exercise right now, or "" when it drives them all.
+##
+## ⚠ **THE LIST IS CHECKED, NOT DECLARED.** It used to return `""` for any run that had a `Wall`,
+## which made it a claim about the code rather than a reading of it -- and it stayed empty while
+## the board knobs it had never covered were being ignored by the hosted `GameView`. Now the two
+## things that can actually be wrong are asked: whether there is a `Wall` for the knobs that need
+## one, and whether the screens the tool hosts really resolve to THIS panel's `preview_settings`.
 @export var knobs_this_preview_does_not_drive : String = "":
 	set(_v): pass
-	get: return "" if is_instance_valid(_wall) else ", ".join(EDITOR_INERT_KNOBS)
+	get: return ", ".join(undriven_knobs())
+
+## Every knob this preview cannot currently drive. Empty is the goal.
+func undriven_knobs() -> Array[String]:
+	var out : Array[String] = []
+	if not is_instance_valid(_wall):
+		out.append_array(EDITOR_INERT_KNOBS)
+	# The board's own knobs reach a hosted `GameView` only through `PlayArea.settings()`, which
+	# resolves the SAME override this tool sets. If that ever stops being true, every board knob on
+	# the panel is inert and nothing else here would say so.
+	if preview_settings and PlayArea.settings() != preview_settings:
+		out.append_array(BOARD_KNOBS)
+	return out
+
+## The board-side knobs the panel edits. They are not `wall_*`, they reach the hosted `GameView`
+## by a different route, and nothing else in this file would notice that route breaking.
+const BOARD_KNOBS : Array[String] = ["board_edge_pad_rows", "hud_width_fraction",
+		"grid_align_rows_globally", "card_scale", "card_separation_scale"]
 
 @export_group("Save")
 ## BUTTON. Writes `layout` to `LAYOUT_PATH` — the resource the game loads, not a copy.

@@ -60,31 +60,25 @@ func _ready() -> void:
 		view.play_area.flush_rebuild()
 		await get_tree().process_frame
 		var deep := false
-		for zx : int in 2:
-			for rz : int in 4:
-				if view.play_area._row_covers_anything(zx, rz): deep = true
+		for rz : int in 4:
+			if view.play_area._row_covers_anything(_entrance(rz)): deep = true
 		if deep: break
 	await get_tree().process_frame
 	var pa := view.play_area
 
-	# ⚠ **TARGET A ROW THAT ACTUALLY COVERS SOMETHING — otherwise the reveal correctly does nothing
-	# and the shot proves nothing.** The first version took row 0 of whichever zone and hardcoded zone
-	# 0 in its readout, so on a board whose stacks sit in the OTHER zone it reported `extra=0` and
-	# looked broken. Pick the zone/row with a card underneath, which is the only case the feature is
-	# for.
-	var zone_x := -1
+	# ⚠ **TARGET A DEPTH THAT ACTUALLY COVERS SOMETHING — otherwise the reveal correctly does nothing
+	# and the shot proves nothing.** Pick the layer with a card underneath, which is the only case
+	# the feature is for.
 	var row_z := -1
-	for zx : int in 2:
-		for rz : int in 4:
-			if pa._row_covers_anything(zx, rz):
-				zone_x = zx
-				row_z = rz
-				break
-		if zone_x >= 0: break
+	for rz : int in 4:
+		if pa._row_covers_anything(_entrance(rz)):
+			row_z = rz
+			break
+	var state := view.game.state
 	var row : Array[CardData] = []
 	for data : CardData in pa.data_card.keys():
-		var v := pa.coord_of_data(data)
-		if v.x == zone_x and v.z == row_z: row.append(data)
+		var v : BoardCoord = state.grid_position_of(data)
+		if v.is_entrance() and v.h == row_z: row.append(data)
 	# ⚠ **THE PAIR MUST BE IN THE SAME COLUMN.** The first version took any card at `row_z + 1` in the
 	# zone, so it measured the distance between two cards in DIFFERENT columns — a number that says
 	# nothing about covering and never returned to its starting value. The reveal separates a card from
@@ -92,20 +86,19 @@ func _ready() -> void:
 	var buried : CardData = null
 	var coverer : CardData = null
 	for data : CardData in pa.data_card.keys():
-		var v := pa.coord_of_data(data)
-		if v.x != zone_x or v.z != row_z: continue
+		var v : BoardCoord = state.grid_position_of(data)
+		if not v.is_entrance() or v.h != row_z: continue
 		for other : CardData in pa.data_card.keys():
-			var ov := pa.coord_of_data(other)
-			if ov.x == zone_x and ov.y == v.y and ov.z == row_z + 1:
+			var ov : BoardCoord = state.grid_position_of(other)
+			if ov.is_entrance() and ov.x == v.x and ov.h == row_z + 1:
 				coverer = data
 				buried = other
 				break
 		if buried: break
-	print("[reveal_shot] revealing zone=%d row=%d (%d cards); buried below = %s"
-			% [zone_x, row_z, row.size(), str(buried != null)])
+	print("[reveal_shot] revealing entrance row=%d (%d cards); buried below = %s"
+			% [row_z, row.size(), str(buried != null)])
 	print("[reveal_shot] board cards = %d" % pa.data_card.size())
 
-	_zx = maxi(zone_x, 0)
 	_rz = maxi(row_z, 0)
 	# How much of the buried card is showing — the claim the whole step exists for.
 	_buried = pa.data_card.get(buried) if buried else null
@@ -223,8 +216,12 @@ func _tick() -> float:
 	await get_tree().process_frame
 	return get_process_delta_time()
 
-var _zx : int = 0
 var _rz : int = 0
+
+## The reveal only has geometry for the Entrance (`PlayArea._reveal_geometry_exists`), so every
+## coordinate this shot builds is an Entrance one at depth `h`.
+func _entrance(h: int) -> BoardCoord:
+	return BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, h)
 ## The covered card and the one covering it — the pair whose separation IS the reveal.
 var _buried : CardVisual = null
 var _coverer : CardVisual = null
@@ -248,4 +245,4 @@ func _shot(name: String, pa: PlayArea) -> void:
 		if is_instance_valid(b) and is_instance_valid(c):
 			gap = c.global_position.y - b.global_position.y
 	print("[reveal_shot] %-24s open=%.2f extra=%.1fpx gap=%.1fpx backdrop=(%.3f,%.3f,%.3f)"
-			% [name, _progress(pa), pa.row_open_extra(_zx, _rz), gap, bg.r, bg.g, bg.b])
+			% [name, _progress(pa), pa.row_open_extra(_entrance(_rz)), gap, bg.r, bg.g, bg.b])

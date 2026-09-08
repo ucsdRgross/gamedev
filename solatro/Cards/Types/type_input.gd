@@ -5,35 +5,37 @@ func get_str() -> String: return TRANSLATION.find('INPUT_ZONE_CARD')
 func get_description() -> String: return TRANSLATION.find('INPUT_ZONE_CARD_DESCRIPTION')
 func get_frame() -> int: return 2
 
-## Engine zone-header machinery (§15a): the input row's on_next fires every act — never a
-## combo class (would be a constant U baseline). Not in rules1, but same opt-out reasoning.
+## Engine zone-header machinery (§15a): the input row's refill fires whenever the Entrance is
+## due one — never a combo class (would be a constant U baseline). Not in rules1 itself, but
+## the same opt-out reasoning as the rules cards that are.
 func combo_key(_hook: StringName = &"") -> String: return ""
+
+## Any card held in this header's Entrance slot can be picked up, REGARDLESS OF WHAT IS ON
+## TOP OF IT -- the Entrance holds a stack, and a buried card there is still the player's to
+## take. Deliberately not symmetric with the place rule below, which does require the target
+## to be topmost: dropping ONTO the Entrance is stacking, and picking up out of it is not.
+## Grabs that one card and nothing above it.
+func on_can_grab_stack(target: CardData) -> Array[CardData]:
+	if not target or not api or not api.is_live(): return []
+	var col : int = api.upper_zone_type().find(data)
+	if col == -1 or col >= api.upper_zone().size(): return []
+	if not api.upper_zone()[col].datas.has(target): return []
+	return [target] as Array[CardData]
 
 func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if target != data: return []
-	if not game: return []
-	if game.is_data_topmost(target): return stack
+	if not api or not api.is_live(): return []
+	if api.is_data_topmost(target): return stack
 	return []
 
-func on_next() -> void:
-	await drop_card()
-	await draw_card()
-
-func drop_card() -> void:
-	if not game: return
-	var game_state := game.state
-	var col : int = game_state.upper_zone_type.find(data)
-	#no-op unless a matching lower column exists (upper col i is assumed paired with lower col i)
-	if col > -1 and col < game_state.upper_zone.size() and col < game_state.lower_zone.size() \
-			and game_state.upper_zone[col].datas.size() > 0:
-		var upper_cards := game_state.upper_zone[col].datas
-		await game.move_data_to_coord(upper_cards[0], Vector3i(1,col,-1), -1)
-
-func draw_card() -> void:
-	if not game: return
-	var game_state := game.state
-	var col : int = game_state.upper_zone_type.find(data)
-	if col > -1 and col < game_state.upper_zone.size():
-		var drawn_card := game.draw_card()
-		if drawn_card:
-			Board.place_card(game_state, drawn_card, 0, col)
+## Answers a refill event by filling this header's own slot, if it is empty. The DECISION to
+## refill is not made here -- it is a property of the whole Entrance and is taken once, before
+## this broadcast. Left to right falls out of the order these headers are dispatched in.
+func on_refill() -> void:
+	if not api or not api.is_live(): return
+	var col : int = api.upper_zone_type().find(data)
+	if col == -1 or col >= api.upper_zone().size(): return
+	if api.upper_zone()[col].datas.size() > 0: return
+	var drawn_card := api.draw_card()
+	if drawn_card:
+		api.place_card(drawn_card, 0, col)

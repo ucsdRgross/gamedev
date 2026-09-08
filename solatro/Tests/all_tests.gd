@@ -23,7 +23,15 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
 ## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
 ## exactly once before the first suite writes a line. @export values are applied before _enter_tree.
+##
+## ⚠ **`SettingsManager.isolated` IS SET HERE TOO, NOT IN `_ready()`.** `_ready()` fires bottom-up
+## (every child suite's `_ready` runs first), so a suite whose own `backup_real_settings()`/
+## `use_own_settings()` call was not the very first line of its `_ready` had a real window, before
+## this ran, in which a knob write reached the player's live `user://settings.tres`. `_enter_tree`
+## fires parent-first — before ANY child suite exists — so setting it here closes that window
+## completely instead of only covering suites that remember to isolate before their first write.
 func _enter_tree() -> void:
+	SettingsManager.isolated = true
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 	TestLog.speed_base_delay = speed_base_delay
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())

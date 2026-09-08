@@ -41,6 +41,8 @@ func _ready() -> void:
 	await _test_card_re_anchors_when_the_window_changes()
 	behavior_section("THE MAP'S HOVER STILL WORKS AFTER MIGRATION (J7)")
 	_test_map_hover_still_produces_info_entry()
+	behavior_section("INFO MODE FITS THE WINDOW-ASPECT VIEW, NOT THE WHOLE WIDE PICTURE (TP-119)")
+	_test_info_mode_fits_the_framed_view_not_the_whole_wide_picture()
 	finish()
 
 # ------------------------------------------------------------------ fixtures
@@ -389,3 +391,64 @@ func _test_card_re_anchors_when_the_window_changes() -> void:
 
 	card.queue_free()
 	viewport.queue_free()
+
+
+# ==============================================================================
+# TP-119 (H21, Q178=a) — INFO MODE FITS THE WINDOW-ASPECT VIEW.
+#
+# Owner's answer, verbatim: *"info mode fits the WINDOW-ASPECT VIEW of the picture rather than the
+# whole picture — the same sub-rect the focused pose shows"*, with the note that the old behaviour
+# *"would make Info on the game screen useless"*.
+#
+# The game picture is several window-widths wide and the focused camera never showed all of it, so
+# fitting the whole thing pulled the camera back until the board was unreadable — exactly when the
+# player has asked to READ something about it.
+#
+# ⚠ **TWO PICTURES, AND THE SECOND ONE IS THE CONTROL.** A picture already at the window's aspect
+# must be UNCHANGED by this: the framed view and the whole picture are then the same rect, and a
+# check that only looked at the wide one could not tell a correct fix from one that simply zoomed
+# everything in.
+# ==============================================================================
+func _test_info_mode_fits_the_framed_view_not_the_whole_wide_picture() -> void:
+	var settings := SettingsManager.settings
+	var window := Vector2(1152.0, 648.0)
+	var card_h := 160.0
+
+	# WIDE: three grid positions across, the shipped game picture's shape.
+	var wide_size := Vector2(3656.0, 685.0)
+	var wide := PictureRect.new(&"wide", wide_size * 0.5, wide_size, Vector4.ZERO)
+	var state := WallPicture.info_zoom_state(wide, window, settings, card_h)
+	var zoom : float = state["zoom"]
+
+	# What fitting the WHOLE picture would have given -- the behaviour being replaced.
+	var reserve := maxf(card_h - settings.wall_info_card_overlap, 0.0)
+	var free_height := maxf(window.y - reserve, 1.0)
+	var whole_zoom := minf(window.x / wide_size.x, free_height / wide_size.y)
+	check(zoom > whole_zoom * 1.5,
+			"a wide picture's info zoom is far larger than fitting the whole picture would give -- "
+			+ "the board stays readable while the card describes it (TP-119)",
+			"info %.4f vs whole-picture %.4f" % [zoom, whole_zoom])
+
+	# ...and it is exactly the fit of the sub-rect the FOCUSED pose frames.
+	var framed := window / WallPicture.focused_scale(wide_size, window,
+			settings.wall_overfill_margin)
+	var expected := minf(window.x / framed.x, free_height / framed.y)
+	check(is_equal_approx(zoom, expected),
+			"...and it is exactly the fit of the sub-rect the focused pose shows, not some other "
+			+ "larger number (TP-119)", "%.6f vs %.6f" % [zoom, expected])
+
+	# Nothing of that framed view is cropped: it clears the card AND the window.
+	var seen := window / maxf(zoom, 0.0001)
+	check(seen.x >= framed.x - 1.0 and seen.y >= framed.y + reserve / maxf(zoom, 0.0001) - 1.0,
+			"...and the framed view still clears both the window and the card, which is what Info "
+			+ "mode is for (TP-119)",
+			"sees %s of a framed %s, reserve %.1f" % [seen, framed, reserve])
+
+	# THE CONTROL: a picture already at the window's aspect is untouched by this.
+	var square_size := Vector2(1152.0, 648.0) * 2.0
+	var square := PictureRect.new(&"square", square_size * 0.5, square_size, Vector4.ZERO)
+	var square_state := WallPicture.info_zoom_state(square, window, settings, card_h)
+	var square_whole := minf(window.x / square_size.x, free_height / square_size.y)
+	check(is_equal_approx(square_state["zoom"] as float, square_whole),
+			"a picture already at the window's aspect is UNCHANGED -- its framed view IS the whole "
+			+ "picture (TP-119)", "%.6f vs %.6f" % [square_state["zoom"], square_whole])

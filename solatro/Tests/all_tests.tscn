@@ -10,7 +10,6 @@
 [ext_resource type="PackedScene" uid="uid://dy0b7aei7mtwe" path="res://Tests/Engine/test_score.tscn" id="6_aoeg8"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_act_score.tscn" id="7_actsc"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_combo.tscn" id="24_combo"]
-[ext_resource type="PackedScene" path="res://Tests/Engine/test_patience.tscn" id="25_patnc"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_run_manager.tscn" id="8_runmg"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_roles.tscn" id="9_maprl"]
 [ext_resource type="PackedScene" path="res://Tests/Map/test_map_traversal.tscn" id="10_maptr"]
@@ -40,6 +39,13 @@
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_transition.tscn" id="37_wtrans"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_input.tscn" id="38_winput"]
 [ext_resource type="PackedScene" path="res://Tests/Wall/test_wall_info.tscn" id="39_winfo"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_board.tscn" id="40_gboard"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_line_detect.tscn" id="41_ldetc"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_economy.tscn" id="42_gecon"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_grid_layout.tscn" id="44_glayout"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_settings_range.tscn" id="45_setrng"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_grid_view.tscn" id="46_gview"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -63,7 +69,6 @@ speed_base_delay = 0.1
 
 [node name="TestCombo" parent="." instance=ExtResource("24_combo")]
 
-[node name="TestPatience" parent="." instance=ExtResource("25_patnc")]
 
 [node name="TestPalette" parent="." instance=ExtResource("28_palet")]
 
@@ -120,5 +125,19 @@ speed_base_delay = 0.1
 [node name="TestWallInput" parent="." instance=ExtResource("38_winput")]
 
 [node name="TestWallInfo" parent="." instance=ExtResource("39_winfo")]
+
+[node name="TestGridBoard" parent="." instance=ExtResource("40_gboard")]
+
+[node name="TestLineDetect" parent="." instance=ExtResource("41_ldetc")]
+
+[node name="TestGridEconomy" parent="." instance=ExtResource("42_gecon")]
+
+[node name="TestGridCards" parent="." instance=ExtResource("43_gcard")]
+
+[node name="TestGridLayout" parent="." instance=ExtResource("44_glayout")]
+
+[node name="TestGridView" parent="." instance=ExtResource("46_gview")]
+
+[node name="TestSettingsRange" parent="." instance=ExtResource("45_setrng")]
 
 [node name="TestWallPause" parent="." instance=ExtResource("36_wpause")]

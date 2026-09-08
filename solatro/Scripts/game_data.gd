@@ -40,26 +40,23 @@ var revision : int = 0:
 		if row_total == value: return
 		row_total = value
 		state_changed.emit()
-## Acts used this show. Lives ON the board state so every undo/history snapshot carries it:
-## undoing across a Submit rewinds the act count together with the board (it used to be a
-## Game-level counter that undo never touched — owner bug report).
-@export_storage var submits_used : int = 0
+## The player has ended this show and the outcome is up. Lives ON the board state so undo
+## rewinds it with the board and a resume comes back into the outcome rather than a live board
+## — the same reason the act count used to live here.
+@export_storage var show_ended : bool = false
+## Which grid the Entrance is committed to; -1 = uncommitted. Once set, an Entrance placement
+## into any other grid is refused. `@export_storage` so undo rewinds the commitment with the
+## board -- the only way it lifts besides no legal placement remaining in the committed grid.
+@export_storage var committed_grid : int = -1
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
-## submits_used lives here.
+## show_ended lives here.
 @export_storage var combo_classes : Array[String] = []
-## PATIENCE — "the audience won't watch you shuffle the board forever": idle card
-## moves tick this down; a move that triggers a qualifying card modifier holds it. At 0 the game
-## auto-presses Next, which resets it to settings.patience_max. Lives ON the board state (like
-## submits_used) so undo/history snapshots rewind it with the board.
-## NOTE (owner ruling A2): the patience mutators deliberately do NOT bump `revision`.
-## Patience only ever moves together with a real board change, so the change-detector that keys
-## Game.save_state() stays the single signal; a snapshot where ONLY patience differs cannot exist.
-## 0 = never seeded (a bare fixture, or a save written before patience existed): the first move
-## seeds it from settings. Every committed board otherwise carries at least 1 — see the auto-Next
-## rule in Game._spend_patience_for_move.
-@export_storage var patience : int = 0
+## How many registrations landed on a class ALREADY seen. Kept alongside the distinct set
+## because the two are weighted differently: a first-of-its-class and a repeat each add their
+## own step. Stored here, not on Game, so undo rewinds it with the board.
+@export_storage var combo_repeats : int = 0
 ## SPOTLIGHT — the cards the scoring beam is on RIGHT NOW. Effective spotlight is
 ## `is_spotlit()` OR a key in here (design §2), and that one line is the whole mechanical change.
 ## ⚠ Deliberately NOT `@export_storage`: it is per-act state, so undo rewinds it by simply not
@@ -70,55 +67,38 @@ var revision : int = 0:
 ## `CardModifier.is_spotlit()`. A Dictionary, not an Array, because the read is per-card and hot.
 var forced_spotlight : Dictionary[CardData, bool] = {}
 
-## combo_key set of modifiers the audience has already seen this round: a re-trigger of one of
-## these no longer holds patience (settings.patience_track_uniques). Cleared on Next, or after a
-## Submit when settings.patience_reset_uniques_on_act.
-@export_storage var patience_seen_mods : Array[String] = []
-
-## Spend one patience (a move the audience found boring). Floors at 0 — 0 is the auto-Next trip.
-func spend_patience() -> void:
-	patience = maxi(patience - 1, 0)
-
-## Refill patience for a new round. `max_val` is settings.patience_max (floored at 1 there).
-func reset_patience(max_val: int) -> void:
-	patience = maxi(max_val, 1)
-
-## Record a modifier's combo_key as "seen" this round (it stops holding patience from now on).
-func mark_seen(key: String) -> void:
-	if key.is_empty() or patience_seen_mods.has(key): return
-	patience_seen_mods.append(key)
-
-## Forget every seen modifier — a fresh audience (Next, or Submit per the tunable).
-func clear_seen() -> void:
-	patience_seen_mods.clear()
-
 #const COMBO_STEP := 0.1 # moved to PlayerSettings.combo_step (all knobs in one place)
 
 ## Current act multiplier: 1.0 + combo_step per distinct class scored this act (§15a).
+## The live combo multiplier: every first-of-its-class adds one step, every repeat adds a
+## smaller one. Melds and effects contribute on exactly the same terms -- only whether the
+## class has been seen before decides which step applies.
 func combo_mult() -> float:
-	return 1.0 + SettingsManager.settings.combo_step * combo_classes.size()
+	var s := SettingsManager.settings
+	var mult := 1.0 + s.combo_unique_step * combo_classes.size() 			+ s.combo_repeat_step * combo_repeats
+	# A cap of 0 means no cap at all, which is how it ships.
+	if s.combo_cap > 0.0: mult = minf(mult, s.combo_cap)
+	return mult
 
 ## One act's payout (DESIGN_DOC §2 + SCORING_MATH_PLAN §15a): the act's accumulated row and
-## column totals combine (R×C shipped; R+C when settings.score_additive — TEST variant,
-## goals must be re-fit) and multiply with the combo multiplier into mult_score, which is
-## added to total_score; the totals and combo set reset for the next act.
+## column totals combine (R x C) and multiply with the combo multiplier into mult_score,
+## which is added to total_score; the totals and combo set reset for the next act.
 ## Note: under R×C an act with no scored columns (or rows) pays 0 — both sides must score.
 func apply_act_score() -> void:
 	# §15a: round ONCE per act payout — combo applies to the combined R/C total, not per line.
-	var base : int = (row_total + col_total) if SettingsManager.settings.score_additive \
-			else (row_total * col_total)
+	var base : int = row_total * col_total
 	mult_score = int(base * combo_mult())
 	total_score += mult_score
 	row_total = 0
 	col_total = 0
 	combo_classes.clear()   # U resets every act, alongside the gutters below
 	# Clear the per-row/col score gutters too, so the NEXT act starts from zero. Without this
-	# the BigNumber accumulators (scores_row_*/scores_col) keep growing and the next act's
-	# plus_equals stacks onto the previous act's values. The UI gutters resync from these
-	# empty arrays via PlayArea.update_score_controls (see Game._perform_submit).
+	# the BigNumber accumulators (scores_row_*/scores_col_legacy) keep growing and the next
+	# act's plus_equals stacks onto the previous act's values. The UI gutters resync from
+	# these empty arrays via PlayArea.update_score_controls.
 	scores_row_upper.clear()
 	scores_row_lower.clear()
-	scores_col.clear()
+	scores_col_legacy.clear()
 
 ## Move every lower-zone card to the discard pile — the performed cards of an act. The
 ## upper (Entrance) zone is intentionally left intact (DESIGN_DOC §2). Bumps revision so
@@ -131,15 +111,66 @@ func discard_lower_board() -> void:
 		col.datas.clear()
 	revision += 1
 
+## The show's score right now: the whole board's total times the combo multiplier. There is no
+## banking moment and no act payout -- a scored line lands in its bucket the instant it
+## completes, so this is derived on demand and is always current. It is what the goal is
+## measured against and what fame banks.
+func live_total() -> int:
+	return int(board_total() * combo_mult())
+
 ## The fame requirement for this show has been reached.
 func has_met_goal() -> bool:
-	return total_score >= goal
+	return live_total() >= goal
 
+## The grid list, left to right. Each grid carries its own size and cells (§1.3 of the
+## poker-patience plan: nothing hard-codes 5x5).
+@export_storage var grids : Array[GridData] = []
 @export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
-@export_storage var upper_zone_type : Array[CardData]
-@export_storage var upper_zone : Array[ArrayCardData]
+## THE ENTRANCE, as its own grid-shaped ZONE. Owner: *"entrance being similar to grid is the idea.
+## same as previous lower zone vs upper zone distinction determining behavior, but each zone
+## contains its own grid like structure."* So a zone is cells-with-stacks exactly like the board's
+## grids are, and which zone a card is in decides BEHAVIOUR -- the Entrance stages, the grids score.
+## Ships one row of slots; a second row is what a 2x3 Entrance would use, and a slot's stack depth
+## stays the HEIGHT axis either way.
+@export_storage var entrance : GridData = null
+
+## The Entrance zone, built on first use and with its WIDTH DERIVED on the way out.
+##
+## Lazy so a state restored from a save written before the zone existed answers instead of
+## dereferencing null.
+##
+## ⚠ **THE WIDTH IS A CACHE OF `cells.size()`, REFRESHED HERE, NOT A SECOND SOURCE OF TRUTH.**
+## Zone slots are added and removed by appending to the cell array THROUGH A REFERENCE -- both
+## `Board.add_column` and the ZoneAdder-shaped path the fuzz exercises do exactly that -- so a
+## stored width drifts the moment anything skips whatever function was supposed to update it.
+## Deriving it at the ONE accessor every reader passes through means it cannot drift at all, which
+## is why there is no invariant checking it: there is nothing left to disagree.
+func entrance_zone() -> GridData:
+	if not entrance:
+		entrance = GridData.new()
+		entrance.grid_height = 1
+	var want := entrance.cells.size() / maxi(entrance.grid_height, 1)
+	if entrance.grid_width != want:
+		entrance.grid_width = want
+	return entrance
+
+## VIEWS over the Entrance zone -- `upper_zone` and `upper_zone_type` are no longer storage, so
+## there is ONE representation of the Entrance and nothing to keep in step with it.
+## ⚠ Every existing caller keeps working because a GDScript Array is a REFERENCE:
+## `upper_zone[c].datas.append(card)` mutates the zone itself, not a copy.
+var upper_zone_type : Array[CardData]:
+	get:
+		return entrance_zone().cell_types
+	set(value):
+		entrance_zone().cell_types = value
+
+var upper_zone : Array[ArrayCardData]:
+	get:
+		return entrance_zone().cells
+	set(value):
+		entrance_zone().cells = value
 @export_storage var lower_zone_type : Array[CardData]
 @export_storage var lower_zone : Array[ArrayCardData]
 # Runtime score accumulators. NOT serialized (BigNumber is RefCounted, invisible to
@@ -147,7 +178,7 @@ func has_met_goal() -> bool:
 # pack_scores()/unpack_scores(). BigNumber only exists at runtime.
 var scores_row_upper : Array[BigNumber]
 var scores_row_lower : Array[BigNumber]
-var scores_col : Array[BigNumber]
+var scores_col_legacy : Array[BigNumber]
 # Serializable score form: each BigNumber array is flattened into two PARALLEL typed arrays
 # (mantissa float + exponent int) instead of an Array[Array] of [m,e] pairs. Typed packed
 # arrays are contiguous and avoid per-pair Variant/Array allocation, so they serialize and
@@ -160,6 +191,50 @@ var scores_col : Array[BigNumber]
 @export_storage var packed_col_mant : PackedFloat64Array
 @export_storage var packed_col_exp : PackedInt64Array
 
+## Per-grid economy buckets (§1.6/§1.7 of the poker-patience plan): each grid gets exactly
+## three buckets that multiply into its grid_score -- row, col and special (every diagonal and
+## every future non-directional meld shares the one special bucket).
+##
+## ⚠ **A ROW BUCKET IS PER ROW *AND* PER HEIGHT** (GAP-015, owner: *"scores row and scores col are
+## per row col and per height of those rows and cols ... so row could display 10 scores if 5 rows
+## each with 2 height cards at 0 and 1"*). Keyed `Vector3i(grid, index, height)` — the same
+## coordinate-keyed shape `scores_cell` uses, and for the same reason its own comment gives: a
+## grid's shape can change under an effect, and a dictionary survives a grid that grows, shrinks or
+## turns ragged where a width-by-height array would not. There is no separate "raised" container;
+## a raised level is simply another height key.
+##
+## `_row_term`/`_col_term` still sum a grid's entries for the three-bucket product — a per-grid
+## bucket is just the sum of that grid's per-(index, height) entries.
+## Runtime-only, same reason as the legacy score arrays above: BigNumber is RefCounted and
+## invisible to ResourceSaver.
+var scores_row : Dictionary[Vector3i, BigNumber] = {}
+var scores_col : Dictionary[Vector3i, BigNumber] = {}
+var score_special : Array[BigNumber] = []
+## One bucket PER CELL, for the vertical stack scored in it -- the number behind the height
+## score label that sits above each stack. Keyed by cell coordinate rather than shaped as a
+## 2-D array because a grid's shape can change under effects: a dictionary survives a grid
+## that grows, shrinks or turns ragged, where a width-by-height array would not.
+## Key is Vector3i(grid, x, y); the stack's own height is not part of the key, because every
+## payout of one stack accumulates into that stack's single bucket.
+var scores_cell : Dictionary[Vector3i, BigNumber] = {}
+# Serializable form of the grid economy buckets. The flat ones mirror packed_col_mant/exp
+# above. The raised (2-D) ones flatten grid-major, height-minor into one parallel mant/exp
+# pair plus a per-grid length so unpack_scores() can rebuild each grid's inner array exactly.
+@export_storage var packed_grid_row_keys : PackedVector3Array
+@export_storage var packed_grid_row_mant : PackedFloat64Array
+@export_storage var packed_grid_row_exp : PackedInt64Array
+@export_storage var packed_grid_col_keys : PackedVector3Array
+@export_storage var packed_grid_col_mant : PackedFloat64Array
+@export_storage var packed_grid_col_exp : PackedInt64Array
+@export_storage var packed_grid_special_mant : PackedFloat64Array
+@export_storage var packed_grid_special_exp : PackedInt64Array
+# The per-cell buckets flatten into three PARALLEL arrays: the cell coordinates and the
+# mantissa/exponent of each. A dictionary has no inherent order, so the key array is what
+# carries the association across a save -- position i in all three is one cell's bucket.
+@export_storage var packed_cell_keys : PackedVector3Array
+@export_storage var packed_cell_mant : PackedFloat64Array
+@export_storage var packed_cell_exp : PackedInt64Array
+
 func duplicate_state() -> GameData:
 	#duplicate_deep remaps cross-references (modifier .data backrefs, ZoneAdder.card_data,
 	#etc.) so each historical state is completely separate from the others
@@ -167,11 +242,18 @@ func duplicate_state() -> GameData:
 	#BigNumber is RefCounted, invisible to duplicate_deep -> manual copy required
 	copy.scores_row_upper = duplicate_big_number_array(scores_row_upper)
 	copy.scores_row_lower = duplicate_big_number_array(scores_row_lower)
-	copy.scores_col = duplicate_big_number_array(scores_col)
+	copy.scores_col_legacy = duplicate_big_number_array(scores_col_legacy)
+	#the grid economy buckets are the same RefCounted trap -- manual copy too
+	copy.scores_row = duplicate_big_number_dict(scores_row)
+	copy.scores_col = duplicate_big_number_dict(scores_col)
+	copy.score_special = duplicate_big_number_array(score_special)
+	copy.scores_cell = duplicate_big_number_dict(scores_cell)
 	#the position index must never travel with a copy (its keys are THIS state's card
 	#instances); the copy lazily rebuilds its own on first lookup
 	copy._pos_index = {}
 	copy._pos_index_revision = -1
+	copy._grid_pos_index = {}
+	copy._card_at_index = {}
 	#the forced spotlight is per-ACT and never travels with a copy: a snapshot restored by undo,
 	#act-cancel or resume must come back with no beam on it (Q18=a). duplicate_deep already
 	#skips a non-exported var; stated here for the same reason the index above is.
@@ -194,18 +276,88 @@ func duplicate_state() -> GameData:
 var _pos_index : Dictionary[CardData, Vector3i] = {}
 var _pos_index_revision : int = -1   # -1 = invalid (revision is never negative)
 
+# The legacy zone board and the grid board coexist for now, and there is no fixed mapping from
+# a legacy (zone, col, row) position onto BoardCoord. So the grid-side index is a SEPARATE
+# forward index, keyed the same way (rebuild-on-revision-change) as the legacy one above, plus
+# its own reverse lookup.
+var _grid_pos_index : Dictionary[CardData, BoardCoord] = {}
+# card_at()'s reverse index. Keyed on a value-type Vector4i(grid,x,y,h) rather than a
+# BoardCoord instance, since BoardCoord is RefCounted and hashes by identity, not value.
+var _card_at_index : Dictionary[Vector4i, CardData] = {}
+
 ## O(1) board position of a card; Vector3i.MIN when not on the board.
 func position_of(card: CardData) -> Vector3i:
-	if _pos_index_revision != revision:
-		_pos_index = _scan_positions()
-		_pos_index_revision = revision
+	_ensure_pos_index()
 	return _pos_index.get(card, Vector3i.MIN)
 
-## Force the next position_of to rebuild (for lookups mid-mutation, before the bump).
+## Does this coordinate name a REAL cell of a real grid? The landing question: movement runs
+## over an unbounded lattice that pretends a grid exists wherever a card is heading, so a step
+## can arrive anywhere. This is what a placement asks on arrival -- false means there is nothing
+## to land on, and the card is discarded. False for a virtual grid index, for an x or y outside
+## the grid's own bounds, and for a hole in a ragged grid.
+func has_cell(coord: BoardCoord) -> bool:
+	if coord.grid < 0 or coord.grid >= grids.size():
+		return false
+	var grid : GridData = grids[coord.grid]
+	if not grid:
+		return false
+	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
+		return false
+	var index := grid.cell_index(coord.x, coord.y)
+	return index < grid.cells.size() and grid.cells[index] != null
+
+## Where a cell's ZONE card sits, or null when the card is not one. The cell zone cards are
+## what an EMPTY cell presents as a drop target, so this is how a placement aimed at one is
+## turned back into the coordinate it means. `h` is always 0: a zone card names the cell, not
+## a height in its stack.
+func cell_type_coord(card: CardData) -> BoardCoord:
+	if not card: return BoardCoord.NOWHERE
+	for gi : int in grids.size():
+		var grid : GridData = grids[gi]
+		if not grid: continue
+		var index := grid.cell_types.find(card)
+		if index == -1: continue
+		return BoardCoord.new(gi, index % grid.grid_width, index / grid.grid_width, 0)
+	return BoardCoord.NOWHERE
+
+## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
+## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a
+## grid position P (i.e. `_grid_pos_index[C] == P`), `card_at(P) == C`; and for every non-null
+## `card_at(P)`, that card's grid position is exactly P. Neither dictionary is a copy of the
+## other — they are built together and diverge only if some path bumps `revision` without
+## finishing the mutation that keeps them in step. `validate()`'s I4 check compares both against
+## an independent rescan to catch that.
+func card_at(coord: BoardCoord) -> CardData:
+	_ensure_pos_index()
+	return _card_at_index.get(Vector4i(coord.grid, coord.x, coord.y, coord.h), null)
+
+## Where a card ACTUALLY sits on the grid board, or NOWHERE when it is not on one. The forward
+## half of the pair `card_at` reads backwards. Callers that need the coordinate a mutation
+## LANDED on must ask this rather than reusing the coordinate they requested: a placement lands
+## on top of whatever is already in the cell, so a requested height and the real one differ as
+## soon as a stack is more than one card deep.
+func grid_position_of(card: CardData) -> BoardCoord:
+	_ensure_pos_index()
+	return _grid_pos_index.get(card, BoardCoord.NOWHERE)
+
+## Rebuilds every position index (legacy Vector3i, grid-side BoardCoord, and its reverse) once
+## per revision change, mirroring the bump-after-consistency rule the legacy index already rode.
+func _ensure_pos_index() -> void:
+	if _pos_index_revision == revision:
+		return
+	_pos_index = _scan_positions()
+	_grid_pos_index = _scan_grid_positions()
+	_card_at_index = {}
+	for card : CardData in _grid_pos_index:
+		var coord : BoardCoord = _grid_pos_index[card]
+		_card_at_index[Vector4i(coord.grid, coord.x, coord.y, coord.h)] = card
+	_pos_index_revision = revision
+
+## Force the next position_of/card_at to rebuild (for lookups mid-mutation, before the bump).
 func invalidate_pos_index() -> void:
 	_pos_index_revision = -1
 
-## Full rescan of every board position. Write order is REVERSE lookup precedence
+## Full rescan of every legacy zone board position. Write order is REVERSE lookup precedence
 ## (upper types > lower types > upper cards > lower cards — later writes win), so a
 ## duplicate-card state (I1 violation) resolves like the old linear locate did.
 func _scan_positions() -> Dictionary[CardData, Vector3i]:
@@ -224,6 +376,55 @@ func _scan_positions() -> Dictionary[CardData, Vector3i]:
 		if upper_zone_type[c]: out[upper_zone_type[c]] = Vector3i(0, c, -1)
 	return out
 
+## Full rescan of every grid cell PLUS the Entrance (still backed by `upper_zone`). The
+## grid-side result stays out of the legacy Vector3i index -- the LOWER zone genuinely has no
+## grid coordinate yet -- so this is a sibling scan, not a shared return type. Cell zone cards
+## are not positioned by this index -- only cards in play, at a height. Write order: grid 0
+## before grid 1 before grid 2, row-major within a grid, bottom of stack first, THEN the
+## Entrance columns left to right, bottom of stack first -- a card duplicated across two spots
+## resolves to the later one, the same later-write-wins precedence the legacy scan uses.
+func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
+	var out : Dictionary[CardData, BoardCoord] = {}
+	for gi in grids.size():
+		var grid : GridData = grids[gi]
+		if not grid: continue
+		for ci in grid.cells.size():
+			var cell : ArrayCardData = grid.cells[ci]
+			if not cell: continue
+			var col := ci % grid.grid_width
+			var row := ci / grid.grid_width
+			for h in cell.datas.size():
+				if cell.datas[h]:
+					out[cell.datas[h]] = BoardCoord.new(gi, col, row, h)
+	# The Entrance "belongs to the board, not to any one grid" -- every call site addresses it
+	# as grid 0's row -1 (PropLayer, the UI tests), so that is its attachment here too.
+	for c in upper_zone.size():
+		if not upper_zone[c]: continue
+		for h in upper_zone[c].datas.size():
+			if upper_zone[c].datas[h]:
+				out[upper_zone[c].datas[h]] = BoardCoord.new(0, c, BoardCoord.ENTRANCE_ROW, h)
+	return out
+
+## The board walk for `CardDataIterator` (run_all_mods, spotlight sweep, etc.): `draw_deck`
+## first, then every board collection, cell zone cards near the end. Each grid's cells wrap
+## in `GridCellWalk` so the grid is walked row-major with a full bottom-to-top stack per
+## cell and no early stop -- a grid is sparse by nature.
+func get_card_collections() -> Array:
+	var out : Array = [
+		draw_deck,
+		upper_zone,
+		lower_zone,
+	]
+	for grid : GridData in grids:
+		if grid: out.append(GridCellWalk.new(grid.cells))
+	out.append(discard_deck)
+	out.append(upper_zone_type)
+	out.append(lower_zone_type)
+	for grid : GridData in grids:
+		if grid: out.append(grid.cell_types)
+	out.append(rules_deck)
+	return out
+
 func all_card_datas() -> Array[CardData]:
 	var all : Array[CardData] = []
 	all.append_array(draw_deck)
@@ -233,6 +434,12 @@ func all_card_datas() -> Array[CardData]:
 	all.append_array(lower_zone_type)
 	for col in upper_zone: all.append_array(col.datas)
 	for col in lower_zone: all.append_array(col.datas)
+	for grid : GridData in grids:
+		if not grid: continue
+		all.append_array(grid.cell_types)
+		for cell : ArrayCardData in grid.cells:
+			if not cell: continue
+			all.append_array(cell.datas)
 	return all
 
 ## Invariant checker (ARCHITECTURE_REVIEW.md §5, I1-I5). Returns a list of
@@ -247,6 +454,22 @@ func validate() -> Array[String]:
 	if lower_zone.size() != lower_zone_type.size():
 		violations.append("I2: lower_zone %d cols vs lower_zone_type %d" \
 				% [lower_zone.size(), lower_zone_type.size()])
+	#I2: every grid's cells and cell_types stay in lockstep with its OWN width * height
+	#(G7: 25 cell zone cards per grid, at the default 5x5 -- nothing hard-codes 5)
+	for gi in grids.size():
+		var grid_check : GridData = grids[gi]
+		if not grid_check:
+			violations.append("I3: grids index %d is null" % gi)
+			continue
+		var expected_cells := grid_check.grid_width * grid_check.grid_height
+		if grid_check.cells.size() != expected_cells:
+			violations.append("I2: grid %d cells %d entries vs %d expected (%dx%d)" \
+					% [gi, grid_check.cells.size(), expected_cells,
+					grid_check.grid_width, grid_check.grid_height])
+		if grid_check.cell_types.size() != expected_cells:
+			violations.append("I2: grid %d cell_types %d entries vs %d expected (%dx%d)" \
+					% [gi, grid_check.cell_types.size(), expected_cells,
+					grid_check.grid_width, grid_check.grid_height])
 	#I3: no null columns or null cards anywhere
 	for zone_name : String in ["upper_zone", "lower_zone"]:
 		var zone : Array[ArrayCardData] = get(zone_name)
@@ -263,6 +486,44 @@ func validate() -> Array[String]:
 		for i in deck.size():
 			if not deck[i]:
 				violations.append("I3: %s index %d is null" % [deck_name, i])
+	#I3: ALIASING -- the same GridData under two indexes, or the same cell array reachable from
+	#two cells. Neither shows up as a size or null violation: an aliased board looks entirely
+	#consistent until a placement into one grid appears in the other. Checked BEFORE the
+	#duplicate-card scan, which would otherwise report every card the shared object holds as
+	#"in two places" and bury the single fact that explains all of them.
+	var seen_grid_objects : Dictionary = {}
+	var seen_cell_objects : Dictionary = {}
+	for gi in grids.size():
+		var grid_alias_check : GridData = grids[gi]
+		if not grid_alias_check: continue
+		if seen_grid_objects.has(grid_alias_check):
+			violations.append("I3: grid %d is the same GridData as grid %d" \
+					% [gi, seen_grid_objects[grid_alias_check]])
+			continue #its cells are the same objects too; one report, not width*height of them
+		seen_grid_objects[grid_alias_check] = gi
+		for ci in grid_alias_check.cells.size():
+			var cell_alias_check : ArrayCardData = grid_alias_check.cells[ci]
+			if not cell_alias_check: continue
+			if seen_cell_objects.has(cell_alias_check):
+				var first : Array = seen_cell_objects[cell_alias_check]
+				violations.append("I3: grid %d cell %d is the same ArrayCardData as grid %d cell %d" \
+						% [gi, ci, first[0], first[1]])
+			else:
+				seen_cell_objects[cell_alias_check] = [gi, ci]
+	#I3: no null grid cells / cell zone cards
+	for gi in grids.size():
+		var grid_null_check : GridData = grids[gi]
+		if not grid_null_check: continue
+		for ci in grid_null_check.cells.size():
+			if not grid_null_check.cells[ci]:
+				violations.append("I3: grid %d cell %d is null" % [gi, ci])
+				continue
+			for r in grid_null_check.cells[ci].datas.size():
+				if not grid_null_check.cells[ci].datas[r]:
+					violations.append("I3: grid %d cell %d row %d is null" % [gi, ci, r])
+		for ci in grid_null_check.cell_types.size():
+			if not grid_null_check.cell_types[ci]:
+				violations.append("I3: grid %d cell_types %d is null" % [gi, ci])
 	#I1: every card lives in exactly one collection (no duplicates by identity).
 	#Walks the named containers (not all_card_datas) so the message can say WHERE the
 	#card also lives instead of a bare true.
@@ -286,6 +547,29 @@ func validate() -> Array[String]:
 					violations.append("I1: card in two places: %s (%s, also %s)" \
 							% [card, here, seen[card]])
 				seen[card] = here
+	for gi in grids.size():
+		var grid_dup_check : GridData = grids[gi]
+		if not grid_dup_check: continue
+		for ci in grid_dup_check.cell_types.size():
+			var type_card := grid_dup_check.cell_types[ci]
+			if not type_card: continue
+			var type_here := "grid %d cell_types (%d,%d)" \
+					% [gi, ci % grid_dup_check.grid_width, ci / grid_dup_check.grid_width]
+			if seen.has(type_card):
+				violations.append("I1: card in two places: %s (%s, also %s)" \
+						% [type_card, type_here, seen[type_card]])
+			seen[type_card] = type_here
+		for ci in grid_dup_check.cells.size():
+			var cell_col : ArrayCardData = grid_dup_check.cells[ci]
+			if not cell_col: continue
+			var cell_here := "grid %d cell (%d,%d)" \
+					% [gi, ci % grid_dup_check.grid_width, ci / grid_dup_check.grid_width]
+			for card : CardData in cell_col.datas:
+				if not card: continue
+				if seen.has(card):
+					violations.append("I1: card in two places: %s (%s, also %s)" \
+							% [card, cell_here, seen[card]])
+				seen[card] = cell_here
 	#I5: stage matches location
 	var expected_stage : Dictionary[CardData, CardData.Stage] = {}
 	for card in draw_deck: expected_stage[card] = CardData.Stage.DRAW
@@ -297,6 +581,12 @@ func validate() -> Array[String]:
 		for c in zone:
 			if not c: continue
 			for card in c.datas: expected_stage[card] = CardData.Stage.PLAY
+	for grid_stage_check : GridData in grids:
+		if not grid_stage_check: continue
+		for card in grid_stage_check.cell_types: expected_stage[card] = CardData.Stage.ZONE
+		for cell : ArrayCardData in grid_stage_check.cells:
+			if not cell: continue
+			for card in cell.datas: expected_stage[card] = CardData.Stage.PLAY
 	for card : CardData in expected_stage:
 		if not card: continue
 		if card.stage != expected_stage[card]:
@@ -315,10 +605,31 @@ func validate() -> Array[String]:
 			if not rescan.has(card):
 				violations.append("I4: stale index entry %s for off-board %s" \
 						% [_pos_index[card], card])
+		#I4, grid side: the grid forward index agrees with an independent rescan, and the
+		#reverse index (card_at) names exactly the same card at exactly the same coordinate
+		#the forward index has for it -- the invariant stated at card_at()'s definition.
+		var grid_rescan := _scan_grid_positions()
+		for card in grid_rescan:
+			var expected : BoardCoord = grid_rescan[card]
+			var got : BoardCoord = _grid_pos_index.get(card, null)
+			if not got or got.grid != expected.grid or got.x != expected.x \
+					or got.y != expected.y or got.h != expected.h:
+				violations.append("I4: grid index says %s for %s, rescan says (%d,%d,%d,%d)" \
+						% [got, card, expected.grid, expected.x, expected.y, expected.h])
+		for card in _grid_pos_index:
+			if not grid_rescan.has(card):
+				violations.append("I4: stale grid index entry for off-board %s" % card)
+		for card in _grid_pos_index:
+			var coord : BoardCoord = _grid_pos_index[card]
+			var key := Vector4i(coord.grid, coord.x, coord.y, coord.h)
+			if _card_at_index.get(key, null) != card:
+				violations.append(
+						"I4: card_at reverse index disagrees with forward index for %s at %s" \
+						% [card, key])
 	#score arrays sized to the board
-	if scores_col and upper_zone and scores_col.size() < min(upper_zone.size(), lower_zone.size()):
-		violations.append("scores_col %d entries < %d paired columns" \
-				% [scores_col.size(), min(upper_zone.size(), lower_zone.size())])
+	if scores_col_legacy and upper_zone and scores_col_legacy.size() < min(upper_zone.size(), lower_zone.size()):
+		violations.append("scores_col_legacy %d entries < %d paired columns" \
+				% [scores_col_legacy.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
 
 ## Capture the runtime BigNumber scores into the serializable packed_* arrays (BigNumber is
@@ -331,14 +642,47 @@ func pack_scores() -> void:
 	packed_row_upper_exp = _exponents(scores_row_upper)
 	packed_row_lower_mant = _mantissas(scores_row_lower)
 	packed_row_lower_exp = _exponents(scores_row_lower)
-	packed_col_mant = _mantissas(scores_col)
-	packed_col_exp = _exponents(scores_col)
+	packed_col_mant = _mantissas(scores_col_legacy)
+	packed_col_exp = _exponents(scores_col_legacy)
+	# The grid economy buckets (§1.7): flat buckets pack exactly like the legacy ones above;
+	# the raised 2-D buckets flatten grid-major/height-minor with a per-grid length column so
+	# unpack_scores() can rebuild each grid's inner array at its own size.
+	var row_packed := _pack_keyed(scores_row)
+	packed_grid_row_keys = row_packed[0]
+	packed_grid_row_mant = row_packed[1]
+	packed_grid_row_exp = row_packed[2]
+	var col_packed := _pack_keyed(scores_col)
+	packed_grid_col_keys = col_packed[0]
+	packed_grid_col_mant = col_packed[1]
+	packed_grid_col_exp = col_packed[2]
+	packed_grid_special_mant = _mantissas(score_special)
+	packed_grid_special_exp = _exponents(score_special)
+	var cell_keys := PackedVector3Array()
+	var cell_mant := PackedFloat64Array()
+	var cell_exp := PackedInt64Array()
+	for key : Vector3i in scores_cell:
+		cell_keys.append(Vector3(key))
+		cell_mant.append(scores_cell[key].mantissa)
+		cell_exp.append(scores_cell[key].exponent)
+	packed_cell_keys = cell_keys
+	packed_cell_mant = cell_mant
+	packed_cell_exp = cell_exp
 
 ## Rebuild the runtime BigNumber scores from the packed_* arrays (after a load).
 func unpack_scores() -> void:
 	scores_row_upper = _unpack(packed_row_upper_mant, packed_row_upper_exp)
 	scores_row_lower = _unpack(packed_row_lower_mant, packed_row_lower_exp)
-	scores_col = _unpack(packed_col_mant, packed_col_exp)
+	scores_col_legacy = _unpack(packed_col_mant, packed_col_exp)
+	scores_row = _unpack_keyed(packed_grid_row_keys, packed_grid_row_mant, packed_grid_row_exp)
+	scores_col = _unpack_keyed(packed_grid_col_keys, packed_grid_col_mant, packed_grid_col_exp)
+	score_special = _unpack(packed_grid_special_mant, packed_grid_special_exp)
+	var cells : Dictionary[Vector3i, BigNumber] = {}
+	for i in packed_cell_keys.size():
+		var bn := BigNumber.new()
+		bn.mantissa = packed_cell_mant[i]
+		bn.exponent = packed_cell_exp[i]
+		cells[Vector3i(packed_cell_keys[i])] = bn
+	scores_cell = cells
 
 # CardModifier.data backrefs are WeakRefs (no RefCounted cycle — dropped card graphs
 # just die; the old per-drop-site unlink discipline is gone). These helpers remain for
@@ -377,7 +721,11 @@ func to_saveable() -> GameData:
 	copy.pack_scores()
 	copy.scores_row_upper.clear()
 	copy.scores_row_lower.clear()
+	copy.scores_col_legacy.clear()
+	copy.scores_row.clear()
 	copy.scores_col.clear()
+	copy.score_special.clear()
+	copy.scores_cell.clear()
 	copy.unlink_modifier_backrefs()
 	return copy
 
@@ -412,6 +760,241 @@ func _unpack(mant:PackedFloat64Array, exp:PackedInt64Array) -> Array[BigNumber]:
 		bn.mantissa = mant[i]
 		bn.exponent = exp[i]
 		out[i] = bn
+	return out
+
+## Deep copy of a 2-D BigNumber array, per grid. BigNumber is RefCounted and invisible to
+## duplicate_deep, so every level has to be rebuilt by hand or the copy shares its scores with
+## the state it came from -- and undo would then rewind the board but not the score.
+## A BigNumber at ZERO. `BigNumber.new()` alone is ONE, so a bucket seeded with it would
+## start every grid a point ahead and, worse, read as "has scored" to the product rule.
+func _zero_big_number() -> BigNumber:
+	var bn := BigNumber.new()
+	bn.mantissa = 0
+	return bn
+
+## One grid's score: its row, column and special TERMS multiplied together, counting only the
+## terms that actually scored.
+##
+## ⚠ A term that has not scored ADDS 0 — it never multiplies by 0. Owner's worked example:
+## row + col + special = 0 + 0 + 0; row banks 10 and it is 10; col banks 5 and it is 10 * 5;
+## special banks 2 and it is 10 * 5 * 2 = 100.
+##
+## ⚠ THE TEST IS THE VALUE, NEVER TOUCHED-NESS. A term worth 0 is excluded from the product
+## even when a line genuinely completed and scored 0.
+##
+## Storage is granular so every label has its own number; scoring aggregates:
+##   row     = the height-0 row bucket    + every raised row bucket
+##   col     = the height-0 column bucket + every raised column bucket
+##   special = the diagonal bucket        + every CELL bucket in this grid
+func grid_score(grid: int) -> float:
+	var terms : Array[float] = [_row_term(grid), _col_term(grid), _special_term(grid)]
+	var product := 0.0
+	for term : float in terms:
+		if term <= 0.0: continue
+		product = term if product == 0.0 else product * term
+	return product
+
+## The whole board's score: the sum of every grid's own score.
+func board_total() -> float:
+	var total := 0.0
+	for i in grids.size():
+		total += grid_score(i)
+	return total
+
+## Height-0 row bucket plus every raised row bucket for this grid.
+func _row_term(grid: int) -> float:
+	return _sum_grid_buckets(scores_row, grid)
+
+## Height-0 column bucket plus every raised column bucket for this grid.
+func _col_term(grid: int) -> float:
+	return _sum_grid_buckets(scores_col, grid)
+
+## The diagonal bucket plus every cell bucket in this grid — the vertical stacks fold in here
+## rather than forming a factor of their own.
+func _special_term(grid: int) -> float:
+	var total : float = score_special[grid].to_float() if grid < score_special.size() else 0.0
+	for key : Vector3i in scores_cell:
+		if key.x == grid: total += scores_cell[key].to_float()
+	return total
+
+## Every entry this grid owns, summed — the three-bucket economy's term for it. A per-grid bucket
+## is exactly the sum of that grid's per-(index, height) entries, so re-keying the storage changed
+## nothing about `grid_score`.
+func _sum_grid_buckets(bucket: Dictionary[Vector3i, BigNumber], grid: int) -> float:
+	var total := 0.0
+	for key : Vector3i in bucket:
+		if key.x == grid: total += bucket[key].to_float()
+	return total
+
+## The grid the Entrance banks into: the grid it is committed to, or grid 0 while nothing is
+## committed yet.
+## ⚠ NOT the same as an Entrance card's `BoardCoord.grid`, which `_scan_grid_positions` still
+## writes as 0 for every call site that addresses the Entrance as grid 0's row -1 (`PropLayer`,
+## the UI tests). Banking needs the REAL grid, because a bucket is keyed on it.
+func entrance_grid() -> int:
+	return committed_grid if committed_grid >= 0 else 0
+
+## The row index the Entrance banks into: one past the grid's own last row, so a 5-tall grid banks
+## it at row 5 -- the owner's *"its own row bucket as if grid is 5x6"*. Per grid, because a grid
+## carries its own height.
+## ⚠ This is a BANKING index, not a board coordinate. An Entrance card's `y` stays
+## `BoardCoord.ENTRANCE_ROW`; nothing about placement or geometry moves.
+## ⚠ **ONE-ROW ENTRANCE, WHICH IS ALL THAT SHIPS — AND `h` IS HEIGHT, NOT A SECOND ROW.** Owner:
+## *"should be row. height is gained from stacking cards in one slot"*. So a slot's stack depth is
+## the HEIGHT axis, exactly as it is in a grid cell, and the Entrance's rows are a SEPARATE axis it
+## does not have yet. A 2x3 Entrance means 2 slots wide by 3 ROWS, each slot still stacking for
+## height. When those rows exist this becomes `grid_height + entrance_row`; the `height` half of the
+## key is already right and does not move.
+## ⚠ **THE GUARD IS NOT DEAD, AND IT IS NOT A SPECULATIVE ONE.** Making it an `assert` (hard rule 6)
+## fired 12 times in a full run: fixtures that score an ENTRANCE card on a board with no grids at
+## all. Those are silently banking into a grid that does not exist, and `board_total()` walks
+## `grids`, so the score is lost. Two of them were fixed; the third cannot take a grid without
+## widening the board it exists to measure. Until a boardless state is either impossible or
+## legitimate, this returns a row index rather than crashing the suite -- see the handoff's
+## "THE ASSERT IN FIX 2 FOUND WHAT STATIC ANALYSIS MISSED".
+func entrance_row_index(grid: int) -> int:
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return 0
+	return grids[grid].grid_height
+
+## Adds to one ROW or COLUMN's bucket at one HEIGHT, creating it at zero on first use.
+## `bucket` is `scores_row` or `scores_col`; `index` is which row/column, `height` its level.
+func bank_line_score(bucket: Dictionary[Vector3i, BigNumber], grid: int, index: int,
+		height: int, amount: int) -> void:
+	var key := Vector3i(grid, index, height)
+	if not bucket.has(key):
+		bucket[key] = _zero_big_number()
+	bucket[key].plus_equals(amount)
+
+## One row or column's banked score at one height, 0 when it has never scored — what a score
+## label displays.
+func line_score(bucket: Dictionary[Vector3i, BigNumber], grid: int, index: int,
+		height: int) -> float:
+	var key := Vector3i(grid, index, height)
+	return bucket[key].to_float() if bucket.has(key) else 0.0
+
+## The deepest height any entry of `bucket` reaches in this grid, +1 — how many label rows a
+## gutter needs. Zero when the grid has never scored.
+func line_score_levels(bucket: Dictionary[Vector3i, BigNumber], grid: int) -> int:
+	var deepest := -1
+	for key : Vector3i in bucket:
+		if key.x == grid: deepest = maxi(deepest, key.z)
+	return deepest + 1
+
+## Does a banked ROW belong to the zone stacked past the grid rather than to the grid itself?
+## Rows run `0 .. grid_height-1` for the grid and continue from `grid_height` into the next zone,
+## which is the whole of what *"as if grid is 5x6"* means.
+func banked_row_is_entrance(grid: int, row: int) -> bool:
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return false
+	return row >= grids[grid].grid_height
+
+## The stack standing in a banked cell address, in whichever ZONE owns that row.
+## ⚠ Callers drawing a bucket come through here instead of reaching into `grids` — that reach is
+## what made an Entrance score render nothing, because its row is not a grid row.
+func stack_at_banked_cell(grid: int, x: int, row: int) -> ArrayCardData:
+	if banked_row_is_entrance(grid, row):
+		var ez := entrance_zone()
+		var local := row - grids[grid].grid_height
+		var i := local * maxi(ez.grid_width, 1) + x
+		return ez.cells[i] if i >= 0 and i < ez.cells.size() else null
+	if grid < 0 or grid >= grids.size() or not grids[grid]: return null
+	var g : GridData = grids[grid]
+	if x < 0 or x >= g.grid_width or row < 0 or row >= g.grid_height: return null
+	return g.cells[g.cell_index(x, row)]
+
+## The board coordinate a banked cell address names. THE ONE PLACE the banking row and the board
+## coordinate meet: banking counts the Entrance's rows past the grid's own, while a board
+## coordinate still addresses an Entrance card at `BoardCoord.ENTRANCE_ROW`.
+func coord_for_banked_cell(grid: int, x: int, row: int, h: int) -> BoardCoord:
+	if banked_row_is_entrance(grid, row):
+		return BoardCoord.new(grid, x, BoardCoord.ENTRANCE_ROW, h)
+	return BoardCoord.new(grid, x, row, h)
+
+## Adds to one CELL's bucket, creating it at zero on first use. Buckets are created lazily
+## because a cell only gets one once it has scored, and a grid can change shape under an
+## effect -- a missing bucket reads as "has not scored", never as an error.
+func bank_cell_score(grid: int, cell: Vector2i, amount: int) -> void:
+	var key := Vector3i(grid, cell.x, cell.y)
+	if not scores_cell.has(key):
+		scores_cell[key] = _zero_big_number()
+	scores_cell[key].plus_equals(amount)
+
+## One cell's banked vertical score, 0 when that cell has never scored.
+func cell_score(grid: int, cell: Vector2i) -> float:
+	var key := Vector3i(grid, cell.x, cell.y)
+	return scores_cell[key].to_float() if scores_cell.has(key) else 0.0
+
+## Grows a per-grid bucket array to `n` entries, seeding new ones at zero. Buckets are created
+## lazily because a grid can be added mid-show, and a missing bucket must read as "has not
+## scored" rather than as an error.
+func resize_grid_bucket(bucket: Array[BigNumber], n: int) -> void:
+	if bucket.size() < n: bucket.resize(n)
+	for i in bucket.size():
+		# A resize leaves NULL holes, and a caller may have grown the array itself, so fill
+		# every empty slot rather than only the ones this call appended.
+		if not bucket[i]: bucket[i] = _zero_big_number()
+
+## Follows `committed_grid` across a grid removal. `grids.pop_at` renumbers every later grid, so
+## an index held anywhere else has to move with it -- exactly the re-indexing `_drop_grid` does for
+## the buckets. Removing the COMMITTED grid lifts the commitment outright: there is nothing left to
+## be committed to, and the only other reset sits PAST the guard that would otherwise refuse every
+## placement for the rest of the show.
+func rebase_commitment(removed: int) -> void:
+	if committed_grid == removed: committed_grid = -1
+	elif committed_grid > removed: committed_grid -= 1
+
+## Drops grid `index`'s score buckets and re-indexes every later grid down by one, keeping every
+## bucket aligned with `grids` after a grid is removed. `total_score` is untouched -- a removed
+## grid's LABELS go, its already-banked contribution does not.
+func remove_grid_score_data(index: int) -> void:
+	if index >= 0 and index < score_special.size(): score_special.remove_at(index)
+	scores_row = _drop_grid(scores_row, index)
+	scores_col = _drop_grid(scores_col, index)
+	scores_cell = _drop_grid(scores_cell, index)
+
+## Drops every entry belonging to grid `index` and shifts later grids down one, keeping a
+## coordinate-keyed bucket aligned with `grids` after a removal.
+func _drop_grid(bucket: Dictionary[Vector3i, BigNumber],
+		index: int) -> Dictionary[Vector3i, BigNumber]:
+	var kept : Dictionary[Vector3i, BigNumber] = {}
+	for key : Vector3i in bucket:
+		if key.x == index: continue
+		var out_key := key
+		if key.x > index: out_key = Vector3i(key.x - 1, key.y, key.z)
+		kept[out_key] = bucket[key]
+	return kept
+
+## The parallel-array form of a coordinate-keyed bucket: keys, mantissas, exponents. Position i
+## in all three is one entry — a dictionary has no inherent order, so the key array carries the
+## association across a save.
+func _pack_keyed(bucket: Dictionary[Vector3i, BigNumber]) -> Array:
+	var keys := PackedVector3Array()
+	var mant := PackedFloat64Array()
+	var exp := PackedInt64Array()
+	for key : Vector3i in bucket:
+		keys.append(Vector3(key))
+		mant.append(bucket[key].mantissa)
+		exp.append(bucket[key].exponent)
+	return [keys, mant, exp]
+
+func _unpack_keyed(keys: PackedVector3Array, mant: PackedFloat64Array,
+		exp: PackedInt64Array) -> Dictionary[Vector3i, BigNumber]:
+	var out : Dictionary[Vector3i, BigNumber] = {}
+	for i in keys.size():
+		var bn := BigNumber.new()
+		bn.mantissa = mant[i]
+		bn.exponent = exp[i]
+		out[Vector3i(keys[i])] = bn
+	return out
+
+## Deep copy of a coordinate-keyed BigNumber dictionary -- the same RefCounted trap as the
+## arrays: duplicate_deep cannot see a BigNumber, so every value is rebuilt by hand.
+func duplicate_big_number_dict(d:Dictionary[Vector3i, BigNumber]) -> Dictionary[Vector3i, BigNumber]:
+	var out : Dictionary[Vector3i, BigNumber] = {}
+	for key : Vector3i in d:
+		var bn := BigNumber.new()
+		bn.mantissa = d[key].mantissa
+		bn.exponent = d[key].exponent
+		out[key] = bn
 	return out
 
 func duplicate_big_number_array(a:Array[BigNumber]) -> Array[BigNumber]:

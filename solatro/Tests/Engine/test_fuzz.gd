@@ -76,11 +76,50 @@ func make_state() -> GameData:
 		else:
 			s.lower_zone_type = types
 			s.lower_zone = cols
+	# ⚠ **THE WALK RUNS ON A BOARD THAT HAS GRIDS.** Every invariant this file asserts after every
+	# action — validate(), the card census, the position index, duplicate_state's remap — used to be
+	# checked on a board with no grid on it at all, so none of them covered the board the game
+	# actually plays on. Two grids of DIFFERENT shapes, because a single square one hides any
+	# width/height confusion.
+	var grids : Array[GridData] = []
+	for dims : Vector2i in [Vector2i(2, 3), Vector2i(3, 2)]:
+		var grid := GridData.new()
+		grid.grid_width = dims.x
+		grid.grid_height = dims.y
+		grid.build_cells()
+		for ci in grid.cells.size():
+			for _r in _rng.randi_range(0, 2):
+				grid.cells[ci].datas.append(TestFactories.m_card(_rng.randi_range(1, 9),
+						TestFactories.uc()))
+		grids.append(grid)
+	s.grids = grids
 	for i in 6:
 		var d := TestFactories.m_card(i + 1, TestFactories.uc())
 		d.stage = CardData.Stage.DRAW
 		s.draw_deck.append(d)
 	return s
+
+## Every card sitting in a grid cell (NOT the cell type cards, which are never moved).
+func grid_cards(s: GameData) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for grid : GridData in s.grids:
+		for cell : ArrayCardData in grid.cells:
+			out.append_array(cell.datas)
+	return out
+
+func random_grid_card(s: GameData) -> CardData:
+	var pool := grid_cards(s)
+	return pool[_rng.randi_range(0, pool.size() - 1)] if pool.size() > 0 else null
+
+## A random EXISTING cell coordinate. Never fabricated out of range: out-of-bounds rejection is
+## `test_board`'s claim, and a fuzz that mostly generates rejected placements stops exercising the
+## invariants it exists to check.
+func random_cell(s: GameData) -> BoardCoord:
+	if s.grids.is_empty(): return BoardCoord.NOWHERE
+	var gi := _rng.randi_range(0, s.grids.size() - 1)
+	var grid : GridData = s.grids[gi]
+	return BoardCoord.new(gi, _rng.randi_range(0, grid.grid_width - 1),
+			_rng.randi_range(0, grid.grid_height - 1), 0)
 
 func zone(s: GameData, x: int) -> Array[ArrayCardData]:
 	return s.upper_zone if x == 0 else s.lower_zone
@@ -107,6 +146,15 @@ func board_hash(s: GameData) -> String:
 			for card in c.datas: ids.append(card.get_instance_id())
 			z.append(ids)
 		parts.append(z)
+	# ⚠ Grids belong in the hash or "a rejected move left the board bit-identical" is a claim about
+	# only half the board.
+	for grid : GridData in s.grids:
+		var g := [grid.grid_width, grid.grid_height]
+		for cell : ArrayCardData in grid.cells:
+			var ids := []
+			for card in cell.datas: ids.append(card.get_instance_id())
+			g.append(ids)
+		parts.append(g)
 	return str(parts)
 
 func random_board_card(s: GameData) -> CardData:
@@ -233,6 +281,35 @@ func run_random_walk() -> void:
 						card.stage = CardData.Stage.DISCARD
 					if orphans: s.revision += 1
 					note("%d: remove_column x%d idx%d (%d orphans)" % [i, x, idx, orphans.size()])
+			4: #place onto a grid cell, from the draw deck or off a zone column
+				var coord := random_cell(s)
+				if not coord.is_nowhere():
+					var card : CardData = null
+					if s.draw_deck.size() > 0 and _rng.randf() < 0.5:
+						card = s.draw_deck.pop_back()
+					else:
+						card = random_board_card(s)
+					# ⚠ `place_in_cell` lifts a card out of a ZONE COLUMN but not out of a DECK —
+					# appending a deck card without erasing it leaves it in two collections, which
+					# is exactly the I1 duplicate the next validate() would report.
+					if card and s.draw_deck.has(card): s.draw_deck.erase(card)
+					if card and Board.place_in_cell(s, card, coord):
+						note("%d: place %s -> %s" % [i, card, coord.pack()])
+					elif card:
+						# refused (already on a grid): put a deck card back rather than losing it
+						if card.stage == CardData.Stage.DRAW: s.draw_deck.append(card)
+			5: #move a grid card to another cell, or take it off the board entirely
+				var card := random_grid_card(s)
+				if card:
+					if _rng.randf() < 0.5:
+						var coord := random_cell(s)
+						if not coord.is_nowhere():
+							var res := Board.move_to_cell(s, card, coord, false)
+							note("%d: move_to_cell %s -> %s = %s" % [i, card, coord.pack(), res.ok])
+					elif Board.remove_from_cell(s, card):
+						s.discard_deck.append(card)
+						card.stage = CardData.Stage.DISCARD
+						note("%d: remove_from_cell %s" % [i, card])
 			_: #move (the main event)
 				var moving := random_moving(s)
 				if not moving: continue

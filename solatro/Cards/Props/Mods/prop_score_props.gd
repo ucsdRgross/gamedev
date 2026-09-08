@@ -8,12 +8,14 @@ var points : int
 func _init(p := 1) -> void:
 	points = p
 
+## An Entrance card banks into the Entrance's OWN row bucket, a grid card into its row's; both register their combo class here.
 func on_pass_card(_prop: PropData, g: Game, card: CardData) -> void:
 	if not card.skill:
-		var v := g.find_data_vec3(card)
-		if v == Vector3i.MIN: return
-		g.register_combo(combo_key())   # §15a: prop score effects self-register at their seam
-		g.add_line_score(true, g.row_gutter(v), v.z, points)
+		var v := g.state.grid_position_of(card)
+		if v.is_nowhere(): return
+		g.register_combo(combo_key())
+		g.add_line_score(ScoringSection.of_line_for(g.state, v, ScoringSection.LineKind.ROW),
+				points)
 
 func reaction_for(_prop: PropData, card: CardData) -> int:
 	return PropData.Reaction.SPIN if card.skill else PropData.Reaction.NONE

@@ -29,6 +29,19 @@ prints `ALL N SUITES: M CHECKS PASSED` with whole tests silently missing — and
   total drifts run to run (the fuzz suites emit a data-dependent number), so only a per-SECTION
   count can detect this.
 
+⚠ **THE SUITE COUNT IS THE LOAD-FAILURE DETECTOR, SO A DOC THAT HARDCODES IT DISABLES THE
+DETECTOR.** A parse error in one suite drops that suite silently while every other suite finishes and
+the banner still reads PASSED — the count is the only signal. It was found stale in four documents at
+three different values at once, every one of them lower than the truth, so any of them would have
+read a real load failure as normal. **State the derivation beside the number, never the number
+alone:** `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`. Do not "fix" this
+by deleting the number — a detector you cannot compare against detects nothing.
+
+⚠ **A banner reading `N FAILED (0 behavior, 0 implementation)` is NOT an assertion failure.** Zero
+of each means no `check()` failed; the count is the engine-error gate. Read the errors log and the
+newest engine log's backtrace, not the check list. That count is also not deterministic — measured
+across identical code it went 17, then 1, then 1 — so **diff the per-suite banners, not the number.**
+
 ## Launching it
 
 - Launch so you WAIT: PowerShell `Start-Process <console exe> -RedirectStandardOutput <file>
@@ -45,9 +58,15 @@ prints `ALL N SUITES: M CHECKS PASSED` with whole tests silently missing — and
   background batch.
   ⚠ **The converse trap:** do not then explain away a real intermittent failure as concurrency. The
   persistence suite's flakes reproduce under strictly sequential runs too.
-- **Check no editor has the project open** — list Godot processes and inspect `MainWindowTitle`. A
-  run alongside the open editor hangs indefinitely. See [[godot-editor-disk-sync]] for the rule on
-  what you may and may not shut down. If the editor is open, write the code and ask the owner to run.
+- **Check no editor has the project open** — list Godot processes and inspect `MainWindowTitle`.
+  See [[godot-editor-disk-sync]] for the rule on what you may and may not shut down. If the editor is
+  open, write the code and ask the owner — it is their session and their unsaved work.
+  ⚠ **"It hangs indefinitely" is too strong, measured once:** a single windowed SNAPSHOT scene
+  (`standalone_view_shot`) run at the owner's explicit instruction while their editor sat open on the
+  very scene it loads completed normally, wrote its PNG, exited 0, and rewrote no tracked file. One
+  observation, on one box, for a short self-quitting scene — it does NOT license running the full
+  suite alongside an editor, and asking still comes first. Recorded so the rule is not defended with
+  a symptom that may not appear.
 
 ## Reading the result
 
@@ -113,5 +132,26 @@ of reality.
 - The SmoothScroll addon force-rewrites any Control entering its subtree to `MOUSE_FILTER_PASS`.
   Display-only Controls under the play-area scroll content must pre-claim
   `set_meta("_smooth_scroll_default_mouse_filter_set", true)` before `add_child`.
+
+## ⚠ A GREEN RUN IS A SAMPLE, NOT A PROPERTY OF THE BRANCH
+
+Measured: a branch reported `ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and **2 of
+16 runs of that identical code came back with a behaviour failure.** "The suite is green" was true of
+a run and false of the branch, and every number quoted from a single run inherited that.
+
+⚠ **QUOTE THE DENOMINATOR, NOT A RATE.** The same document carried three different failure rates in
+one night — each computed off whatever sample existed at that moment, each stated with confidence.
+Say `2 failures in 16 runs`, never "about one in four". A rate without its denominator is how a
+four-run sample becomes a claim.
+
+⚠ **AND THE CHECK TOTAL IS NOT AN ASSERTION COUNT.** In that suite `test_fuzz.gd` holds ONE `check()`
+and increments the pass counter by hand per iteration, so the headline number drifts by tens between
+identical runs (3956..3995 observed). **Gate on: the suite COUNT, an EMPTY errors log, and an
+unchanged failure SET** — never on the total.
+
+⚠ **AN INTERMITTENT FAULT DESTROYS ITS OWN EVIDENCE**, because the reflex after a red or hung run is
+to run it again and the harness reopens its logs with truncate. Preserve the log directory BEFORE
+re-running. Solatro's wrapper now does it automatically on a stall or a failure
+(`run_tests.py --stall-timeout`); elsewhere, copy it by hand.
 
 See [[godot-editor-disk-sync]] and [[architecture-map]].

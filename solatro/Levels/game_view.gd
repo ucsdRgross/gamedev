@@ -8,7 +8,7 @@ class_name GameView
 ##   Game -> view reactive : game.state.state_changed / board_changed, game.processing_changed /
 ##                           submit_label_changed / show_resolved  (signals, no await)
 ##   Game -> view paced    : game calls `if view: await view.<m>()` for animation/visual sync
-##   View -> Game commands : game.submit() / next() / undo() / try_grab() / try_place()
+##   View -> Game commands : game.end_show() / next() / undo() / try_grab() / try_place()
 ## Remove this view and the Game still runs a full show headless (every paced call is `if view:`).
 
 ## Forwarded from the held Game so Main can bind the view directly (symmetric with the old
@@ -18,6 +18,12 @@ signal run_lost
 ## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card. The board has
 ## no business knowing whether Info mode wants it shown — see `Main._on_screen_info_hovered()`.
 signal info_requested(entry: InfoEntry)
+## Relayed from `PlayArea` so `Main` can step its wall camera -- the board lives inside this view's
+## own `SubViewport` and has no reach to the camera outside it.
+signal overview_pan_requested(grid_index: int)
+## Relayed from `PlayArea` so `Main` can bounce its wall camera off the board's OVERVIEW edge --
+## same reach problem as `overview_pan_requested` above.
+signal overview_bounce_requested(step: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
 const CONTINUE_FONT_SIZE := 40
@@ -25,10 +31,10 @@ const CONTINUE_OFFSET_Y := 220.0
 
 var game : Game = null
 
+@onready var play_container: Control = %PlayContainer
 @onready var play_area: PlayArea = %PlayArea
 @onready var submit_button: Button = %Submit
 @onready var undo_button: Button = %Undo
-@onready var next_button: Button = %Next
 @onready var deck_ui: Control = %Deck
 @onready var discard_ui: Control = %Discard
 @onready var rules_ui: Control = %Rules
@@ -36,18 +42,50 @@ var game : Game = null
 @onready var lose_screen: Label = %LoseScreen
 @onready var goal_label: Label = %Goal/Label
 @onready var total_label: Label = %Total/Label
+## ⚠ The `MultScore` label and its `Col` / `x` / `Row` children are the RETIRED act payout's
+## display (`mult_score`, `col_total`, `row_total`). Nothing in the grid economy writes any of
+## them, so they are emptied at startup and never written again -- the show's score is exactly
+## two numbers, `total_label` and `combo_label`. `Combo` is a CHILD of `MultScore`, which is why
+## the parent is emptied rather than hidden.
 @onready var mult_label: Label = %MultScore
 @onready var col_label: Label = %MultScore/Col
 @onready var row_label: Label = %MultScore/Row
+@onready var mult_x_label: Label = %MultScore/x
 @onready var combo_label: Label = %MultScore/Combo
-@onready var patience_label: Label = %Patience
 ## The spotlight's light layer, and the node that feeds it. ⚠ The DIRECTOR is created here rather
 ## than placed in the scene because it must bind AFTER `game` exists — it connects to
 ## `CardEnvironment.spotlight_cued`, and the environment is `game` itself.
 @onready var light_layer: LightLayer = %LightLayer
 var spotlight_director : SpotlightDirector = null
 
+## The furniture: the Deck, the Goal/Total/MultScore score column, the skill text and the
+## End/Discard/Rules buttons -- everything the owner ruling has follow the board's pan rather
+## than sit at a fixed spot on the wide picture. The furniture is authored against grid 0's
+## resting position; `PlayArea.pan_grid` is the ONE writer of which grid the view rests on.
+@onready var _furniture : Array[Control] = [deck_ui, discard_ui, rules_ui, submit_button,
+		undo_button, %Goal, %Total, %MultScore, %Preview]
+## Each control's authored x -- fixed forever, read once off the scene.
+var _furniture_authored_x : Array[float] = []
+## `Main`'s ONE wall camera and a live getter for the game picture's rect centre-x -- `Main` is the
+## only writer of both; this view only ever reads them, never computes where the camera should be.
+## Null/invalid until `bind_wall_camera()` runs, which `Main.enter_game()` does right after
+## instantiating this view.
+var _wall_camera : Camera2D = null
+var _wall_rect_centre_x : Callable = Callable()
+
 func _ready() -> void:
+	# The retired act payout's four labels, emptied once. They are authored with placeholder text
+	# in the scene, and with nothing writing them the player would otherwise read a frozen
+	# "0 0 x 0" beside the live total for the whole show.
+	# ⚠ **%MultScore IS A FURNITURE CONTROL, AND `_hud_authored_width()` READS ITS LIVE MINIMUM
+	# SIZE** -- which for a Label depends on its TEXT. Emptying it therefore feeds the board's
+	# centring. It is safe only because it was never the widest: Rules is authored at x 302 and
+	# %MultScore at 202 plus one digit, so the max is unchanged. Re-check that before emptying or
+	# re-texting any other furniture label.
+	mult_label.text = ""
+	col_label.text = ""
+	row_label.text = ""
+	mult_x_label.text = ""
 	# Create the logic node and inject ourselves BEFORE adding it to the tree, so its _enter_tree
 	# (CardEnvironment.CURRENT) and _ready (resume/fresh deal) run with the view fully bound.
 	game = Game.new()
@@ -57,7 +95,6 @@ func _ready() -> void:
 	game.show_resolved.connect(_on_show_resolved)
 	game.show_unresolved.connect(_on_show_unresolved)
 	game.combo_changed.connect(_on_combo_changed)
-	game.patience_changed.connect(_on_patience_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
 	# THE SPOTLIGHT WIRE. Bound after `game` is built (it IS the CardEnvironment the cue comes
@@ -83,11 +120,18 @@ func _ready() -> void:
 	_bind_state(null, game.state)  # the initial default state bypasses the setter -> bind by hand
 
 	# Input wiring (all lives in the view now).
-	submit_button.pressed.connect(func() -> void: await game.submit())
-	next_button.pressed.connect(func() -> void: await game.next())
+	# ⚠ THIS BUTTON ENDS THE SHOW; it carries the End label. A show is one continuous
+	# performance now -- there is no act to submit and nothing resolves one on its own, so
+	# end_show() is the only thing that can finish it. Bound to the retired submit act, the
+	# button reads End and does nothing a player can see, and the show cannot be ended at all.
+	submit_button.pressed.connect(func() -> void: game.end_show())
 	undo_button.pressed.connect(_on_undo_pressed)
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
+	play_area.overview_pan_requested.connect(
+			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
+	play_area.overview_bounce_requested.connect(
+			func(step: int) -> void: overview_bounce_requested.emit(step))
 	(deck_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
 	(discard_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
 	(rules_ui.get_node(^"Button") as Button).pressed.connect(func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
@@ -97,6 +141,7 @@ func _ready() -> void:
 	# _refresh_hud early-returns while _ready runs (node not ready yet); refresh once we are, so
 	# a fresh goal / resumed score shows immediately.
 	_refresh_hud.call_deferred()
+	_capture_furniture_authored_x()
 
 ## Debug prop stepping (owner tool): a toggle that holds every finished prop tick
 ## open (PropLayer.manual_step — the whole run_props loop pauses at its SYNC await), and a
@@ -151,15 +196,12 @@ func _refresh_hud() -> void:
 	if not is_node_ready() or not game: return
 	var state := game.state
 	goal_label.text = str(state.goal)
-	total_label.text = str(state.total_score)
-	mult_label.text = str(state.mult_score)
-	col_label.text = str(state.col_total)
-	row_label.text = str(state.row_total)
+	# The show's score is DERIVED (every grid's total, times the combo) and always current --
+	# there is no act payout and no banking moment, so there is no stored total to show.
+	total_label.text = str(state.live_total())
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
 	combo_label.visible = combo > 1.0   # owner ruling 2026-07-17: hidden at x1.0
-	patience_label.text = TRANSLATION.find('GAME_PATIENCE') \
-			% [state.patience, maxi(SettingsManager.settings.patience_max, 1)]
 
 ## A NEW combo class registered this act (§15a): refresh + pulse the combo label.
 ## combo_classes.append() doesn't emit state_changed — this signal is the live path;
@@ -177,28 +219,107 @@ func _on_combo_changed(_count: int) -> void:
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE * 1.15, delay * .3)
 	_combo_tween.tween_property(combo_label, "scale", Vector2.ONE, delay * .2)
 
-## Patience moved (spent on an idle move, or refilled by a new round): refresh + pulse the
-## counter, same shape as the combo label's feedback.
-var _patience_tween : Tween = null
-
-func _on_patience_changed(_current: int, _max_value: int) -> void:
-	_refresh_hud()
-	if not is_node_ready(): return
-	var delay := game.get_delay()
-	if _patience_tween and _patience_tween.is_running():
-		_patience_tween.custom_step(INF)
-	patience_label.pivot_offset = patience_label.size / 2.0
-	_patience_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	_patience_tween.tween_property(patience_label, "scale", Vector2.ONE * 1.15, delay * .3)
-	_patience_tween.tween_property(patience_label, "scale", Vector2.ONE, delay * .2)
-
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
 
+## Reads each furniture control's authored x straight off the scene. Runs once; the scene's own
+## offsets never change afterwards.
+func _capture_furniture_authored_x() -> void:
+	_furniture_authored_x.clear()
+	_furniture_authored_y.clear()
+	for control : Control in _furniture:
+		_furniture_authored_x.append(control.position.x)
+		_furniture_authored_y.append(control.position.y)
+	_publish_hud_reserve()
+
+## Each control's authored y, captured with its x. ⚠ Needed because the HUD now SCALES: `_process`
+## rewrites x every frame, but y is written once per picture size and would otherwise compound.
+var _furniture_authored_y : Array[float] = []
+
+## How much the HUD is drawn larger than it was authored: the picture's width over the reference
+## viewport's. `SceneRoot` fills the picture, so without this the furniture keeps its authored size
+## on a canvas a third wider again and reads as a small cluster in one corner.
+##
+## ⚠ **ONLY THE HUD SCALES** (owner ruling). The board is NOT scaled with it: the board lays out in
+## PICTURE pixels and `game_picture_design_size()` IS its own span, so scaling it too would render a
+## 1495-wide board inside a 1495-wide picture at 1940 px.
+## ⚠ **THE WINDOW'S SHAPE NEVER REACHES THIS.** The picture is a fixed aspect, so the HUD's canvas is
+## the same shape whatever the screen is (owner: *"hud does not matter for picture, it is not
+## technically part of it... window proportions shouldnt affect hud layout for portrait vs landscape
+## view"*). There is no portrait case for the HUD to answer.
+func hud_scale() -> float:
+	var authored := _hud_authored_width()
+	if authored <= 0.0: return 1.0
+	var design := float(PlayArea.game_picture_design_size(SettingsManager.settings).x)
+	return SettingsManager.settings.hud_width_fraction * design / authored
+
+## Hands the board the width the HUD's rectangle takes on the left, so the grid centres in what is
+## LEFT of the screen rather than on the screen (owner: *"center of screen for stuff like grid
+## should be center of remaining space not taken by the hud"*).
+##
+## ⚠ **THE AUTHORED x, NEVER THE LIVE ONE.** `_process()` slides every furniture control by the
+## board's pan, so a reserve read off `position` would breathe in and out with every pan and drag
+## the board with it. The authored offsets are the HUD's real footprint and they never move.
+func _publish_hud_reserve() -> void:
+	if not is_instance_valid(play_area): return
+	var k := hud_scale()
+	for i : int in _furniture.size():
+		var control : Control = _furniture[i]
+		if not is_instance_valid(control): continue
+		control.scale = Vector2.ONE * k
+		control.position.y = _furniture_authored_y[i] * k
+	play_area.board_inset_left = _hud_authored_width() * k
+
+## The furniture's own width at its AUTHORED offsets, before any scaling.
+## ⚠ **AUTHORED, NEVER LIVE:** `_process()` slides every control by the board's pan, so a width read
+## off `position` would breathe in and out with each pan and drag the board with it.
+func _hud_authored_width() -> float:
+	var right := 0.0
+	for i : int in _furniture.size():
+		var control : Control = _furniture[i]
+		if not is_instance_valid(control): continue
+		right = maxf(right, _furniture_authored_x[i] + control.get_combined_minimum_size().x)
+	return right
+
+## Wires `Main`'s ONE wall camera and a getter for the game picture's rect centre-x, so OVERVIEW
+## furniture can track the camera's CURRENT position every frame instead of the `pan_grid` index
+## it was set from -- the camera's own tween runs on a separate clock, so following the index
+## desyncs for the length of every pan. Called once, right after `Main` instantiates this view.
+func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
+	_wall_camera = camera
+	_wall_rect_centre_x = rect_centre_x
+
+## Slides every furniture control from its authored (grid-0) x. FOCUSED: `pan_grid` grid positions
+## -- the scroller pans there, the camera never moves, and `pan_grid` updates synchronously with
+## it, so there is nothing to desync. OVERVIEW: the wall camera's LIVE position, read fresh every
+## frame and never latched -- `pan_grid` there only names the camera's TARGET grid, while
+## `Main._on_overview_pan_requested()`/`_on_overview_bounce_requested()` tween the camera there on
+## their own clock, so a pan or a bounce must be read off the camera itself to stay in sync.
+## ⚠ Physics interpolation forces `Camera2D` onto the physics tick, so its rendered position on an
+## idle frame differs from the raw `.position` this reads -- the furniture holds the board through a
+## pan but still shivers against it. ⚠ `get_global_transform_interpolated()` DOES NOT EXIST in Godot
+## 4.7.2 (checked against `ClassDB.class_get_method_list`); calling it stops this script compiling,
+## which cascades into `card_data.gd`/`pip_suit.gd` and makes the map unable to enter a game.
+func _process(_delta: float) -> void:
+	if not is_instance_valid(play_area) or _furniture_authored_x.size() != _furniture.size():
+		return
+	var pitch := PlayArea.grid_position_size_px(SettingsManager.settings).x
+	var shift : float = play_area.pan_grid * pitch
+	if play_area.view_mode == PlayArea.ViewMode.OVERVIEW and is_instance_valid(_wall_camera) \
+			and _wall_rect_centre_x.is_valid():
+		shift = pitch * play_area.resting_grid() \
+				+ (_wall_camera.position.x \
+						- (_wall_rect_centre_x.call() as float))
+	for i : int in _furniture.size():
+		var control : Control = _furniture[i]
+		# ⚠ The authored x is scaled; the PAN is not. The pan is already a picture-pixel quantity
+		# (`grid_position_size_px`), while the authored offsets are in the reference viewport's.
+		if is_instance_valid(control):
+			control.position.x = _furniture_authored_x[i] * hud_scale() + shift
+
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
-	next_button.disabled = busy
 	# Undo stays ENABLED while busy: pressing it mid-act cancels the act (Game.undo requests
 	# the cancel; the act restores the pre-act board), and at the win/lose screen it rewinds
 	# the final Submit. Game ignores the press in the states where undo can't act.
@@ -243,11 +364,15 @@ func _on_show_unresolved() -> void:
 # ==============================================================================
 # GAME -> VIEW PACED (injected view; Game calls `if view: await view.<m>()`)
 # ==============================================================================
-## Drop any live grab before the Game mutates the board underneath it (the auto-Next that
-## patience-0 folds into try_place). The player's selection can't survive a round change, and a
-## rebuild mid-grab is exactly what stranded held-card visual state before (see PlayArea._bind_slot).
+## Drop any live grab before the Game mutates the board underneath it. The player's selection
+## can't survive a round change, and a rebuild mid-grab is exactly what stranded held-card visual
+## state before (see PlayArea._bind_slot).
 func release_grab() -> void:
 	play_area.ungrab_cards()
+
+## Wait for a just-placed card to finish travelling to its cell.
+func await_card_settled(card: CardData) -> void:
+	await play_area.await_card_settled(card)
 
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
@@ -283,7 +408,7 @@ func load_board_visuals() -> void:
 	play_area.update_score_controls()
 	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
 			% [game.state.scores_row_upper.size(), game.state.scores_row_lower.size(),
-					game.state.scores_col.size()])
+					game.state.scores_col_legacy.size()])
 
 ## Jump the scored cards; returns after the animation settles.
 func animate_meld(result: Scoring.Result) -> void:
@@ -300,6 +425,13 @@ func reset_meld(result: Scoring.Result) -> void:
 ## Animate one gutter label to its new accumulated score.
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
+
+## The grid board's equivalent: pop the row, column, special or height label a grid line just
+## banked into. The grid buckets are keyed dictionaries rather than the legacy zone arrays, so
+## they cannot go through `update_line_score` -- but a score the player cannot see arrive is the
+## same defect either way.
+func pop_grid_line_score(section: ScoringSection) -> void:
+	play_area.pop_grid_score_label(section)
 
 ## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion
 ## (data is one step ahead of the view — SUIT_PROPS_PLAN §1.3). Delegates to the PropLayer,

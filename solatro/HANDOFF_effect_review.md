@@ -4,13 +4,25 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
+⚠ **THE CORPUS WAS MINED FROM THE PRE-GRID DESIGN DOCUMENTS, AND THEY HAVE NOW BEEN REPLACED.**
+That is the one thing to read before touching anything here. `solatro/DESIGN_DOC.md`,
+`DESIGN_RECOMMENDATIONS.md` and `DESIGN_REFERENCES.md` described the two-zone tableau — acts, act
+payouts, Submit, patience — when this corpus was mined out of them, and **228 of the 1,409
+questions (16.2%) use vocabulary that names nothing in the game**. Q0011 cites *"DESIGN_DOC.md
+section 2"* by name, and that section is now a different section. **7 of the 28 already-answered
+questions are affected.** The grid versions of those three documents landed on the
+**`poker-patience` branch** (Phase 10, S41), with the pre-grid originals kept in `solatro/archive/`
+so this corpus's provenance and `DROPPED.csv`'s fold targets still resolve. **See S12 below —
+re-mining against the new versions is the next build task, and it is not cosmetic.**
+
 **State:** the questionnaire is **built, live and answerable** — 1,409 questions, 0 parser errors,
-0 warnings. The owner has answered **none** yet; `answers.json` does not exist. Every source is
+0 warnings. The owner has answered **28** of them so far; the rest are open. Every source is
 mined and folded in: nine repo documents, two reference wikis, and thirty-six external games
 registered in `build/SOURCES.md`. Every repo
 source has been line-audited for content the mining pass missed. **Every taxonomy class outside
 family N and the deliberately-excluded feel-only family W now carries at least four effects.**
-**All build tasks are done — the only pending task is the owner answering (S9).**
+**Every build task from the original plan is done; the re-mine (S12) is a NEW one, opened by the
+design documents being replaced.**
 
 **Entry docs:** `solatro/START_HERE.md` · `solatro/design/effect-review/DESIGN.md` ·
 `designloop/README.md` (the questionnaire tool) · `.claude/skills/flowchart-design/SKILL.md` §5
@@ -146,6 +158,31 @@ the next render silently discards the edit.
   evidence: '232 effects added, G0252-G0483. 1,409 questions, 0 errors, 0 warnings, 0 dag-audit defects. Every class outside family N and feel-only W is at 4 or more; the minimum was 1. Family Q 24 -> 63, X 18 -> 35, V 29 -> 45, T 32 -> 45.'
   notes: 'Three of the four declined categories were overturned - Netrunner/Magic/Hearthstone, Peglin/Dicey Dungeons/Astrea, and the Slay the Spire family. Each was declined on the games COMBAT loop; the material that passes the stopping rule comes from the layers around it. Family N stays declined by owner ruling. SOURCES.md carries the re-test in full.'
 
+- id: S12
+  description: >
+    Re-mine the corpus against the GRID versions of DESIGN_DOC.md,
+    DESIGN_RECOMMENDATIONS.md and DESIGN_REFERENCES.md, which replaced the pre-grid ones this
+    corpus was mined from. 228 questions use acts, act payouts, Submit or patience; none of those
+    exist. 7 of the 28 answered questions are affected.
+  files_touched: [solatro/design/effect-review/build/corpus.tsv, solatro/design/effect-review/build/decisions, solatro/design/effect-review/build/generated]
+  verification_command: 'npm --prefix designloop run check -- solatro/effect-review'
+  verification_kind: manual
+  status: pending
+  evidence: ''
+  notes: >
+    BLOCKED ON A MERGE, not on work: the grid documents live on the `poker-patience` branch and
+    this stream lives on `main`. Merge that branch first, or the re-mine will read the archived
+    pre-grid text and change nothing.
+    Two decisions the owner has to make before this runs, because they change the deliverable:
+    (1) an affected question that has ALREADY been answered -- re-ask it, or carry the ruling
+    across if the mechanic survives the translation intact? (2) a question whose mechanic WAS an
+    act or a Submit and has no grid analogue -- drop it to DROPPED.csv, or restate it as the
+    nearest grid mechanic and let the owner reject it there?
+    The rules from the opening prompt still bind: never hand-edit DESIGN.md, re-render with
+    build/render.py, keep the check at 0 errors and 0 warnings, generate nothing for family N.
+    build/GAME_BRIEF.md is already rewritten for the grid economy -- it is the brief any mining
+    pass must be given, and it is the model for what the restated questions should sound like.
+
 - id: S9
   description: Owner answers the questionnaire; export the final CSV.
   files_touched: [solatro/design/effect-review/EFFECTS.csv]
@@ -203,7 +240,13 @@ No game code, no tests, no vendored addon touched.
 
 ## Next up
 
-**S9 — the owner answers.** It is the only task left. Nothing blocks it, no further mining is
+**S12 — re-mine the corpus against the grid documents**, then **S9 — the owner answers.**
+
+⚠ S12 comes first for the 228 affected questions and can run alongside answering for the rest:
+an owner ruling given against a question that describes a mechanic the game does not have is a
+ruling that has to be thrown away, and 7 have already been given.
+
+**S9 — the owner answers.** It is the only other task left. Nothing blocks it, no further mining is
 required, and the build side is finished: every class outside family N and feel-only W offers at
 least four choices, so no class forces a decision the owner has no alternatives within.
 
@@ -215,6 +258,12 @@ Per-family totals at 1,409 questions:
 If more depth is ever wanted, the honest remaining thin spots are `W` (2, excluded on purpose) and
 the classes still in single figures inside otherwise-large families — but the taxonomy no longer has
 a hole, and further generation would be padding rather than coverage.
+
+## Provenance
+
+**IMPLEMENTED-BY (the Phase 10 documentation rewrite this stream now depends on): Claude Opus 5**
+— `solatro/design/poker-patience/PLAN.md` §2 Phase 10, steps S40, S41 and S44, on the
+`poker-patience` branch.
 
 ## Opening prompt for the next agent
 

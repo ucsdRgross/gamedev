@@ -10,6 +10,24 @@ metadata:
 
 Keep lines of code low by REMOVING old unused code outright (no dormant paths), while ADDING `##` doc comments that explain each method's intended purpose. Plans should include a references/sources section for easy handoff.
 
+⚠⚠ **COMMENTS ARE A CODE SMELL.** Owner rule, verbatim: *"comments dont exist inline of methods,
+and only explains why the methods exists and nothing else. no historical stuff or what method does
+since that can be read through the code."* Three rules follow, and `doc_check` errors on all three:
+
+1. **No comment may have whitespace before it** — a plain `#` sits at column 0, above the method.
+2. **No comment may share a line with code.**
+3. **A `#` block is at most 3 lines; a `##` doc comment is at most 1.** `##` is the label Godot
+   renders beside an exported knob in the Inspector, so it lives wherever its knob does — indented
+   or not — and pays for that freedom with the tighter cap.
+
+If an inline comment feels necessary, that is a signal the code needs a name (extract the step into
+a well-named helper), not a signal it needs prose.
+
+⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT, including comments you did not write.** The repo carries a
+large legacy backlog and this is how it drains — whole-file on touch, never a repo-wide sweep. The
+rules are errors on changed files and a summary on a full run, so the report stays short enough to
+be read.
+
 ⚠ **A doc comment is a rule, not a story. Go straight to the point.** Same content, fewer words — every time. Cut in particular:
 - **The narrative of how a bug was found** ("the first build did X, and that was wrong twice over"). Keep the rule it produced and the number it measured; drop the plot.
 - **Facts that change nothing for the reader** — who reported it, what the old behaviour was, which session it landed in. Git has that.
@@ -18,6 +36,20 @@ Keep lines of code low by REMOVING old unused code outright (no dormant paths), 
 - **Design-process ids** (`Q183=a`, `GAP-017=c`, `S34`, `PLAN.md §1.8`) — they name a document the
   reader cannot see. State the rule the answer produced. Full rule, and why the traceability
   instinct produces this: [[design-ids-stay-out-of-code]].
+
+⚠ **REUSE BEFORE YOU WRITE. Owner, verbatim:** *"reducing duplicate code as much as possible
+and no reinventing existing setups, or using existing engine methods when available."*
+
+Search for an existing helper before adding one, and prefer an engine method over a hand-rolled
+one. Measured cost of not doing it: a bucket-growing helper was added to `GameData` that
+duplicated `Game.resize_score_zone`, and `mantissa = 0` ended up stated in two files — the
+existing one was also stricter, so collapsing them fixed a latent weakness as well.
+
+⚠ **This rule was reaching nobody.** It lives here and in `/simplify`, but the `/plan-run` brief
+template carries lines about tunable literals, design ids and registry names and NOT this one —
+so implementer briefs never said it. **Put it in the brief.** The same shape of failure produced
+26 card files reaching past a documented-but-unenforced boundary; where a rule matters, enforce
+it with a gate rather than restating it.
 
 **Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
 

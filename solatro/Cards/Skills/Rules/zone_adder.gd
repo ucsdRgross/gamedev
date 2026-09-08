@@ -19,18 +19,18 @@ func get_zone() -> Array[ArrayCardData]
 func get_zone_type() -> Array[CardData]
 
 func on_spotlight() -> void:
-	if not game: return
+	if not api or not api.is_live(): return
 	if not card_data:
 		card_data = card_data_to_add()
-	Board.add_column(game.state, get_zone(), get_zone_type(), card_data)
+	api.add_column(get_zone(), get_zone_type(), card_data)
 
 func on_unspotlight() -> void:
-	if not game: return
+	if not api or not api.is_live(): return
 	var index := get_zone_type().find(card_data)
 	if index == -1:
 		card_data = null
 		return
-	for d : CardData in Board.remove_column(game.state, get_zone(), get_zone_type(), index):
-		await game.discard_data(d)
+	for d : CardData in api.remove_column(get_zone(), get_zone_type(), index):
+		await api.discard_data(d)
 	card_data = null
 		

@@ -107,6 +107,10 @@ func _reachable_set() -> Dictionary[CardData, bool]:
 		_add_cards(seen, game.state.all_card_datas())
 		for snap : GameData in game.save_history:
 			_add_cards(seen, snap.all_card_datas())
+		# The debug rewind's own snapshots are full board duplicates and a real owner. Without
+		# them the first commit of every show reports a whole board as leaked.
+		for snap : GameData in game.debug_snapshots():
+			_add_cards(seen, snap.all_card_datas())
 		if game.deck:
 			_add_cards(seen, game.deck.get_deck())
 			_add_cards(seen, game.deck.get_rules())

@@ -35,6 +35,18 @@ func _update_font_size() -> void:
 
 	add_theme_font_size_override("font_size", _current_font_size)
 
+## The size this label WOULD choose for its own rect and text right now. Pure in the applied
+## font: the box comes from `custom_minimum_size`, so asking does not depend on the answer.
+func best_font_size() -> int:
+	return _calculate_best_font_size()
+
+## Force one size on this label, overriding the autosize; -1 hands it back. Used where a GROUP of
+## labels has to read as one set rather than each fitting its own box.
+func force_font_size(px: int) -> void:
+	if font_size_override == px: return
+	font_size_override = px
+	_update_font_size()
+
 func _calculate_best_font_size() -> int:
 	var available_width := size.x * font_size_width_percent
 	var available_height := size.y

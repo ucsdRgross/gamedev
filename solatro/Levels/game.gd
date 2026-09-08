@@ -24,8 +24,6 @@ signal show_resolved(won: bool, score: int, goal: int)
 signal show_unresolved
 ## A NEW combo class registered this act (§15a U grew — view pop + label refresh).
 signal combo_changed(count: int)
-## Patience moved (spent, refilled, or restored by a state swap) — the view refreshes its counter.
-signal patience_changed(current: int, max_value: int)
 
 #placeholder
 @export var deck : Deck = Deck.new()
@@ -46,7 +44,6 @@ var state : GameData = GameData.new():
 		#UI/HUD no longer lives here (S1 gone): just announce the swap so the view rebinds
 		#the new state's signals and drops the old one's (N9 handled in GameView._bind_state).
 		state_bound.emit(value)
-		_emit_patience()
 
 ## THE change detector: the `state.revision` the last committed snapshot carried.
 ## `state.revision != _last_saved_revision` ⇔ the board actually changed since that commit, which
@@ -78,14 +75,10 @@ var processing : bool = false:
 		processing = value
 		processing_changed.emit(value)
 
-## A show is exactly this many submits ("acts", DESIGN_DOC §2); the goal check runs
-## after the last one.
-const MAX_SUBMITS := 3
-## Acts used this show — FORWARDS to state.submits_used (GameData) so undo/save snapshots
-## rewind it with the board. Callers keep the old Game-level API.
-var submits_used : int:
-	get: return state.submits_used
-	set(value): state.submits_used = value
+# A show is one continuous performance: it runs until the player ends it, so there is no act
+# count and no ceiling on acts. `end_show()` is the only thing that resolves one.
+## The show resolved as a win. Set by `_resolve_game`, read by `exit_show` to decide between
+## banking fame and ending the run.
 var _won : bool = false
 ## The show finished and the win/lose screen is up. Undo in this state dismisses the outcome
 ## and rewinds the final Submit (show_unresolved). Reset by that undo; a fresh _resolve_game
@@ -95,7 +88,7 @@ var _resolved : bool = false
 ## fast-forwards (get_delay -> 0, score_line/run_props short-circuit) and the performing
 ## function restores the pre-act board instead of committing. Reset by _begin_act / restore.
 var act_cancelled : bool = false
-## True only across the cancellable span of _perform_submit/_perform_next — undo() may only
+## True only across the cancellable span of _perform_next — undo() may only
 ## request a cancel while the act can still unwind.
 var _act_cancellable : bool = false
 
@@ -108,21 +101,89 @@ var _act_cancellable : bool = false
 # (get_delay only compresses while `processing`); animations enforce the pacing by always
 # deriving their durations from get_delay (never a fixed wall-clock length). All knobs live in
 # PlayerSettings (compress_* / act_event_cap) — no ms values anywhere.
+## THE seam card effects run through. Every modifier reaches this rather than the game
+## itself, so a change to Game's own shape is absorbed here instead of breaking every card.
+## One per game, lazily built because a bare Game.new() in a test is still a valid host.
+var effect_api : CardEffectApi:
+	get:
+		if _effect_api == null: _effect_api = CardEffectApi.new(self)
+		return _effect_api
+var _effect_api : CardEffectApi = null
+
 var act_calls : int = 0
 var act_overrun : bool = false
+
+## Activations that were a REPEAT of one already seen in this meld — the only thing the runaway cap
+## counts. `act_calls` still counts EVERY activation, because the compression ramp is about how much
+## has happened, not about whether it was new.
+var act_repeats : int = 0
+## The same count taken over the WHOLE act and never reset by a meld boundary.
+##
+## ⚠ **WITHOUT THIS THE GUARD DOES NOT EXIST.** A per-meld budget is reset by `score_line()`, and a
+## runaway whose whole nature is re-scoring re-enters `score_line()` — so it resets its own budget
+## every lap and spins forever. Caught by the detector runaway test blowing the stack, not by
+## reasoning. The per-meld counter bounds work INSIDE one meld; this one bounds re-entry ACROSS
+## them, and either tripping is an overrun.
+var act_run_repeats : int = 0
+## The (activation identity -> seen) set the repeat test is made against. Cleared per MELD.
+var _act_seen : Dictionary[String, bool] = {}
+## The same set over the whole act. Cleared only by `_begin_act()`.
+var _run_seen : Dictionary[String, bool] = {}
 
 ## Reset the activation counter (compression ramp + event cap) at the start of a board action.
 func _begin_act() -> void:
 	act_calls = 0
 	act_overrun = false
 	act_cancelled = false
+	act_run_repeats = 0
+	_run_seen.clear()
+	_begin_meld()
 
-## Count one unit of processing (per mod invoked, per prop slot entry); advances the compression
-## ramp and trips the runaway cap.
-func note_processing(weight := 1) -> void:
+## ⚠ **THE CAP IS PER MELD, NOT PER PLACEMENT** (owner). One placement can complete a row, a column
+## and both diagonals at once; charging all four against one budget made a legal board action look
+## like a runaway, and the act aborted part-way through the second meld with its props frozen and
+## its scoring unfinished. Each meld is bounded work and gets its own budget.
+func _begin_meld() -> void:
+	act_repeats = 0
+	_act_seen.clear()
+
+## Count one unit of processing (per mod invoked, per prop slot entry). Always advances the
+## compression ramp; charges the runaway cap **only when this activation is a REPEAT**.
+##
+## ⚠ **ONLY A REPEAT CAN RUN AWAY** (owner: *"cap should also only raise for repeated triggers and
+## actions, not unique ones"*). A unique activation is bounded by the board — finite cards, finite
+## hooks, finite lines — so however large a legal cascade gets, it terminates. A runaway is by
+## definition the same thing firing again. Counting every activation made the guard trip on SIZE
+## rather than on recursion: measured, one placement completing four lines on a real board spent
+## 125 activations of which only 44 were repeats.
+##
+## ⚠ `key` identifies the activation. An EMPTY key always counts — an activation that cannot be
+## identified cannot be shown to be unique, and the guard must not be talked out of firing by a
+## caller that simply declined to name itself.
+func note_processing(weight := 1, key := "") -> void:
 	act_calls += weight
-	if act_calls > SettingsManager.settings.act_event_cap:
-		act_overrun = true
+	var first_in_meld := not key.is_empty() and not _act_seen.has(key)
+	var first_in_act := not key.is_empty() and not _run_seen.has(key)
+	if not key.is_empty():
+		_act_seen[key] = true
+		_run_seen[key] = true
+	if not first_in_meld:
+		act_repeats += weight
+	if not first_in_act:
+		act_run_repeats += weight
+	var cap : int = SettingsManager.settings.act_event_cap
+	if act_overrun or (act_repeats <= cap and act_run_repeats <= cap): return
+	act_overrun = true
+	# ⚠ **SAY WHY, ONCE, THE MOMENT IT TRIPS.** An overrun aborts the act silently: scoring stops
+	# part-way, props stop spawning and the board unlocks, with nothing anywhere saying a guard did
+	# it. Whoever meets that next needs the counter that tripped, the budget it was measured
+	# against, and the activation that pushed it over -- guessing from the symptom cost this
+	# project a session.
+	var which := "per-meld" if act_repeats > cap else "whole-act"
+	var detail := "%s repeats over cap: meld=%d act=%d cap=%d, total activations=%d, last=%s" 			% [which, act_repeats, act_run_repeats, cap, act_calls,
+			key if not key.is_empty() else "<unkeyed>"]
+	EventLog.event(EventLog.CH_ACT, "act_overrun", detail)
+	push_warning("Solatro act runaway guard tripped — %s" % detail)
 
 ## Per-step pacing delay. Normal play returns the base delay untouched; only while a locked
 ## action is resolving does it shrink toward 0 with the number of activations processed (read
@@ -143,7 +204,11 @@ func get_delay() -> float:
 ## Add a combo class key to this act's U set (SCORING_MATH_PLAN §15a). Returns true when
 ## it was new. Empty keys never register (opt-out hook for engine mods).
 func register_combo(key: String) -> bool:
-	if key.is_empty() or state.combo_classes.has(key):
+	if key.is_empty(): return false
+	if state.combo_classes.has(key):
+		# A repeat still counts toward the combo, at its own smaller step.
+		state.combo_repeats += 1
+		combo_changed.emit(state.combo_classes.size())
 		return false
 	state.combo_classes.append(key)
 	combo_changed.emit(state.combo_classes.size())
@@ -151,10 +216,8 @@ func register_combo(key: String) -> bool:
 
 ## Hook override (CardEnvironment): a mod handler actually ran — feed the act combo with
 ## the mod's identity key (§15a mod-activation U). Only while an act is resolving
-## (_act_cancellable brackets exactly the on_run_scorer/on_next resolution window);
-## engine mods return "" from combo_key and never register. ALSO the patience feed: every
-## dispatch path notifies (feeds_combo=false outside run_all_mods), which is how a placement's
-## legality query can hold the counter.
+## (_act_cancellable brackets exactly the on_next resolution window);
+## engine mods return "" from combo_key and never register.
 func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
 	# ⚠ EVERY dispatch path funnels through here (run_all_mods, return_first_*, run_card_mods — see
 	# the doc comment on CardEnvironment._note_mod_fired), which makes this the ONE place that sees
@@ -167,80 +230,18 @@ func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := tru
 				% [function, owner_card.log_str() if owner_card else "<no card>"])
 	if feeds_combo and _act_cancellable:
 		register_combo(mod.combo_key(function))
-	_note_patience_trigger(mod, function)
-
-# ==============================================================================
-# PATIENCE — idle-move pressure. The counter lives on GameData (undo rewinds it);
-# Game owns the accounting scope, the spend point, and the auto-Next trip.
-# ==============================================================================
-## True only across ONE try_place resolution: patience only ever reacts to card moves (owner
-## ruling: "patience doesn't matter during a submit"), so Submit/Next dispatch is invisible here.
-var _patience_active : bool = false
-## A qualifying (approved stage, not-yet-seen) modifier fired during this move — it was
-## interesting, so the move costs no patience.
-var _patience_fired_hold : bool = false
-## combo_keys to commit to the seen-set if this move actually lands.
-var _patience_pending_seen : Array[String] = []
-
-## Feed the patience accounting from a mod invocation (every dispatch path calls this via
-## _note_mod_fired). Only counts inside a move, from an approved stage, for a hook that isn't
-## opted out, and — with uniques tracked — only the FIRST time that modifier triggers this round.
-func _note_patience_trigger(mod: CardModifier, function: StringName) -> void:
-	if not _patience_active: return
-	var s := SettingsManager.settings
-	if function in s.patience_disabled_hooks: return
-	var card : CardData = mod.data
-	if card == null or not _stage_influences_patience(card.stage): return
-	var key := mod.combo_key(function)
-	if key.is_empty(): return   # engine mods opt out of combo AND patience the same way
-	if s.patience_track_uniques:
-		if state.patience_seen_mods.has(key) or _patience_pending_seen.has(key):
-			return              # the audience has seen this one — it no longer holds patience
-		_patience_pending_seen.append(key)
-	_patience_fired_hold = true
-
-## Does a trigger on a card at this stage hold the countdown? (per-stage settings toggles)
-func _stage_influences_patience(stage: CardData.Stage) -> bool:
-	var s := SettingsManager.settings
-	match stage:
-		CardData.Stage.PLAY: return s.patience_influence_play
-		CardData.Stage.ZONE: return s.patience_influence_zone
-		CardData.Stage.DRAW: return s.patience_influence_draw
-		CardData.Stage.DISCARD: return s.patience_influence_discard
-		CardData.Stage.RULES: return s.patience_influence_rules
-	return false
-
-## Announce the current counter to the view (HUD label + pulse).
-func _emit_patience() -> void:
-	patience_changed.emit(state.patience if state else 0,
-			maxi(SettingsManager.settings.patience_max, 1))
-
-## Owner ruling A1: raising patience_max mid-round also grants the live counter that much
-## (lowering it never takes any away).
-func _on_patience_max_increased(delta: int) -> void:
-	state.patience += delta
-	_emit_patience()
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
 func _revision_key() -> Array:
 	return [state.get_instance_id(), state.revision]
 
 func get_card_collections() -> Array:
-	return [
-		state.draw_deck,
-		state.upper_zone,
-		state.lower_zone,
-		state.discard_deck,
-		state.upper_zone_type,
-		state.lower_zone_type,
-		state.rules_deck
-	]
+	return state.get_card_collections()
 
 func get_rules_collections() -> Array[CardData]:
 	return state.rules_deck
 
 func _ready() -> void:
-	SettingsManager.settings.patience_max_increased.connect(_on_patience_max_increased)
 	if not Main.save_info.game_history.is_empty():
 		_resume_show()
 	else:
@@ -251,18 +252,28 @@ func _ready() -> void:
 func _start_fresh_show() -> void:
 	# The map node being played sets the fame requirement (RunManager.goal_for).
 	state.goal = maxi(Main.save_info.pending_goal, 1)
-	submits_used = 0
 	_update_submit_label()
 	add_deck()
-	await run_all_mods(&"on_game_start")
+	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
+	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
+	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
+	#    card at all. This sweep is also what has the zone adders build the Entrance.
 	skill_spotlight_check()
+	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
+	#    dealt and adds that many creator cards.
+	await run_all_mods(&"on_game_start")
+	# 3. Sweep again for the cards step 2 added: a creator builds its grid in on_spotlight, and
+	#    it did not exist when the first sweep walked the rules deck. Idempotent -- a sweep only
+	#    fires on a transition, so nothing already spotlit fires twice.
+	skill_spotlight_check()
+	# 4. Only now do the Entrance slots and the grids both exist, which is what a refill needs:
+	#    somewhere to put a card, and a board to judge a legal placement against.
+	await refill_entrance_if_due()
 	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
 	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
 	# setup_gui found no game and skipped the score gutters — including the row buffer control
 	# that keeps the play area from shifting when scores first appear. Headless: no-op.
 	if view: view.rebuild()
-	state.reset_patience(SettingsManager.settings.patience_max)
-	_emit_patience()
 	save_state()          # seed the history with the opening board
 	RunManager.save_run() # write it once synchronously so a save exists immediately
 
@@ -282,10 +293,9 @@ func _resume_show() -> void:
 		_debug_history = save_history.duplicate()
 		_debug_redo.clear()
 	state = _runtime_state(save_history[-1])
-	# AFTER the state swap (submits_used now lives on GameData — assigning before would write
+	# AFTER the state swap (the resolved flag lives on GameData — assigning before would write
 	# into the state being replaced). The run save stays authoritative: snapshots from before
 	# the field existed default to 0 and this rescues them.
-	submits_used = Main.save_info.game_submits
 	_update_submit_label()
 	state.revision += 1  # force the play area to rebuild from the restored board
 	# ...and baseline AFTER that bump: the restored board is committed, and the cosmetic bump
@@ -307,9 +317,9 @@ func _resume_after_visuals() -> void:
 	# headless: no view means no visuals to sync — the state is already restored, so skip
 	# straight to the outcome/replay/handoff decision below.
 	if view: await view.load_board_visuals()
-	print("[resume] board fully loaded: goal=%d total_score=%d submits_used=%d pending_action=%s"
-			% [state.goal, state.total_score, submits_used, Main.save_info.pending_action])
-	if submits_used >= MAX_SUBMITS:
+	print("[resume] board fully loaded: goal=%d total_score=%d resolved=%s pending_action=%s"
+			% [state.goal, state.total_score, state.show_ended, Main.save_info.pending_action])
+	if state.show_ended:
 		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
 	elif Main.save_info.pending_action != &"":
 		await _replay_pending_action(Main.save_info.pending_action)
@@ -324,8 +334,24 @@ func _resume_after_visuals() -> void:
 func _replay_pending_action(action: StringName) -> void:
 	print("[resume] replaying interrupted action: %s" % action)
 	match action:
-		&"on_run_scorer": await _perform_submit()
 		&"on_next": await _perform_next()
+		&"on_placement": await _replay_pending_placement()
+
+## Re-run the placement a quit interrupted. The restored board is the pre-placement one, so
+## the card named by the saved slot is back in the Entrance and the deck is back in its
+## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
+## board, scoring and refill included. A slot that no longer holds anything means the marker
+## outlived the board it described; the board is already correct, so there is nothing to do.
+## Takes the slot's TOPMOST card, which is the one a player can pick up (`is_data_topmost`);
+## it matters only once the Entrance holds stacks rather than one card per slot.
+func _replay_pending_placement() -> void:
+	var slot : int = RunManager.run.pending_placement_slot
+	if slot < 0 or slot >= state.upper_zone.size(): return
+	var held : Array[CardData] = state.upper_zone[slot].datas
+	if held.is_empty(): return
+	var c : Vector4i = RunManager.run.pending_placement_coord
+	var card : CardData = held.back()
+	await place_card_in_grid(card, BoardCoord.new(c.x, c.y, c.z, c.w))
 
 # Rebuild a live runtime GameData from a saveable history snapshot (independent copy with
 # modifier backrefs relinked and BigNumber scores rebuilt).
@@ -343,8 +369,6 @@ func try_grab(data: CardData) -> Array[CardData]:
 
 ## Command (view-called): try to place `stack` onto `target`. Performs the moves + save_state()
 ## on success and returns whether anything was placed. Guarded so a locked board rejects.
-## Also THE patience spend point: a move that changed the board either holds the counter (a
-## qualifying modifier triggered) or costs one, and hitting 0 auto-presses Next.
 func try_place(stack: Array[CardData], target: CardData) -> bool:
 	# ⚠ THE `input` CHANNEL IS WHAT MAKES A PLAYTEST LOG REPRODUCIBLE. Everything else in the log is
 	# consequence; these five lines are CAUSE. Without them a recording says what the game did but
@@ -352,46 +376,26 @@ func try_place(stack: Array[CardData], target: CardData) -> bool:
 	EventLog.event(EventLog.CH_INPUT, "try_place",
 			"stack=%d onto=%s" % [stack.size(), target.log_str() if target else "<null>"])
 	if processing: return false
-	_patience_active = true
-	_patience_fired_hold = false
-	_patience_pending_seen.clear()
 	var stacked := await return_first_data_array_result(&"on_can_place_stack", stack, target)
 	if stacked:
+		# A GRID CELL is not a card on a column, so it does not go through the legacy move
+		# engine: `place_card_in_grid` is what lifts the card out of the Entrance, fires the
+		# mutation broadcast the scorer listens to, refills, and commits its own undo step.
+		# The target is the cell's ZONE card, which is what an empty cell presents.
+		var cell := state.cell_type_coord(target)
+		if not cell.is_nowhere():
+			for moving_data in stacked:
+				await place_card_in_grid(moving_data, cell)
+			return true
 		var onto_data := target
 		for moving_data in stacked:
 			move_data_ontop_data(moving_data, onto_data, 1, false)
 			onto_data = moving_data
-		_patience_active = false
 		# A legal-but-OK_NOOP placement (dropped back where it started) moved no card, so the
-		# revision never budged: it costs no patience and commits no snapshot (Task 1).
+		# revision never budged: nothing to commit (Task 1).
 		if state.revision != _last_saved_revision:
-			await _spend_patience_for_move()
-	else:
-		_patience_active = false   # illegal placement: discard the accounting, spend nothing
+			save_state()
 	return not stacked.is_empty()
-
-## Commit one board move's patience accounting, then commit the board. A move that ran out of
-## patience folds into an immediate Next and commits ONCE, as a single undo step: undoing lands
-## on the board BEFORE the move, with patience intact (owner ruling A5 — patience 0 is never a
-## playable board, so undo can't buy an extra action).
-func _spend_patience_for_move() -> void:
-	# A committed board always carries at least 1 patience (0 auto-Nexts immediately), so <= 0
-	# here means a state that never seeded it — a bare fixture, or a save from before patience
-	# existed. Seed it from settings and let this move spend against a full round.
-	if state.patience <= 0:
-		state.reset_patience(SettingsManager.settings.patience_max)
-	if _patience_fired_hold:
-		for key : String in _patience_pending_seen:
-			state.mark_seen(key)
-	else:
-		state.spend_patience()
-	_emit_patience()
-	if state.patience <= 0:
-		# the round is ending under the player's hand — let the view drop the grab first
-		if view: view.release_grab()
-		await next()   # resets patience and commits the whole move+Next in one snapshot
-	else:
-		save_state()
 
 func add_deck() -> void:
 	var saved_rules := Main.save_info.rule_datas
@@ -436,36 +440,22 @@ func next() -> void:
 		return
 	await _perform_next()
 
-## Resolve a Next action: input-zone stacks drop + decks refill (on_next mods), then commit.
-## The board is locked (processing) across the async span and the action is persisted as
-## pending first, so a quit mid-resolution replays it verbatim on resume.
+## Resolve a Next action: run the on_next mods, then refill the Entrance if it is due one,
+## then commit. ⚠ Nothing in the shipped rules deck implements on_next any more -- the
+## Entrance refills from board state, and a placement asks for that itself -- so what is left
+## here is the refill and the commit. The board is locked (processing) across the async span
+## and the action is persisted as pending first, so a quit mid-resolution replays it on resume.
 func _perform_next() -> void:
 	processing = true
 	_begin_act()
 	_begin_action(&"on_next")
 	_act_cancellable = true
 	await run_all_mods(&"on_next")
+	await refill_entrance_if_due()
 	_act_cancellable = false
 	if act_cancelled:
 		_restore_pre_act_board("cancelled next")
 		return
-	# A new round = a fresh audience: refill patience (and forget the seen mods unless the
-	# tunable defers that to the next Submit).
-	var patience_before := state.patience
-	var seen_before := state.patience_seen_mods.size()
-	state.reset_patience(SettingsManager.settings.patience_max)
-	if not SettingsManager.settings.patience_reset_uniques_on_act:
-		state.clear_seen()
-	# The mutators deliberately don't bump revision (owner ruling A2): patience always rides a
-	# real board change. A Next on a board where NOTHING moved is the one exception — bump here
-	# so the refill still commits instead of being skipped by save_state's change detector.
-	# BOTH halves count: a round where every move was interesting leaves patience already full,
-	# so the seen-set clear would be the only change — without it that clear was dropped and a
-	# resume brought the stale "already seen" mods back (fix 2026-07-20).
-	if (patience_before != state.patience or seen_before != state.patience_seen_mods.size()) \
-			and state.revision == _last_saved_revision:
-		state.revision += 1
-	_emit_patience()
 	save_state()
 	processing = false
 	
@@ -491,10 +481,10 @@ func save_state() -> void:
 	if RunManager.run != null:
 		RunManager.run.game_history = save_history
 		RunManager.run.game_history_trimmed = history_trimmed
-		RunManager.run.game_submits = submits_used
 		# An action fully committed: nothing is mid-resolution anymore, so drop any replay
 		# marker (see _begin_action). Card moves land here too, harmlessly clearing it.
 		RunManager.run.pending_action = &""
+		RunManager.run.pending_placement_slot = -1
 		RunManager.request_save()
 	_last_saved_revision = state.revision
 
@@ -508,14 +498,32 @@ func _begin_action(action: StringName) -> void:
 	if RunManager.run != null:
 		RunManager.run.pending_action = action
 		RunManager.run.game_history = save_history
-		RunManager.run.game_submits = submits_used
 		RunManager.request_save()
+
+## The same marker for a placement, which needs two more things than a button press does:
+## which Entrance slot the card came from and where it was aimed.
+## The card is named by its SLOT, never by the object -- the pre-placement board a replay
+## starts from is a restored snapshot carrying its OWN copies of every card, so no reference
+## to the original survives. A placement whose card is not in the Entrance (an effect placing
+## one, a test driving the engine directly) is not a player action and records nothing: there
+## is no slot to replay it from, and a replay is exactly what the marker is for.
+func _begin_placement(slot: int, coord: BoardCoord) -> void:
+	if slot < 0 or RunManager.run == null: return
+	RunManager.run.pending_placement_slot = slot
+	RunManager.run.pending_placement_coord = Vector4i(coord.grid, coord.x, coord.y, coord.h)
+	_begin_action(&"on_placement")
+
+## Which Entrance slot holds `card`, or -1 if it is not held in one.
+func entrance_slot_of(card: CardData) -> int:
+	for col : int in state.upper_zone.size():
+		if state.upper_zone[col].datas.has(card): return col
+	return -1
 
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
 ## (selection state lives there); Game owns the history rewind. Three states:
 ##   - win/lose screen up (_resolved): dismiss the outcome, then rewind the final Submit.
 ##   - an act is resolving (_act_cancellable): request a cancel — the act fast-forwards and
-##     restores the pre-act board itself (_perform_submit/_perform_next).
+##     restores the pre-act board itself (_perform_next).
 ##   - otherwise locked (resume load / replay tail): ignored.
 func undo() -> void:
 	EventLog.event(EventLog.CH_INPUT, "undo", "resolved=%s" % str(_resolved))
@@ -537,14 +545,12 @@ func undo() -> void:
 		#we need to duplicate here to prevent changing history if we undo to same state in the future
 		state = _runtime_state(prev_game_data)
 		_last_saved_revision = state.revision  # the restored board IS history's top: committed
-		# The restored snapshot carries its own submits_used — refresh the Submit button label
 		# so an undo across a Submit shows the act back (state swap bypasses the setter).
 		_update_submit_label()
 		# History shrank — persist so the reverted state (not the mistake) is what a quit
 		# resumes to. Undo is the sanctioned rewind; closing the game is not.
 		if RunManager.run != null:
 			RunManager.run.game_history = save_history
-			RunManager.run.game_submits = submits_used
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
@@ -572,6 +578,19 @@ var _debug_history : Array[GameData] = []
 ## by any fresh commit: once the player acts, the future they undid away no longer exists, and
 ## replaying a stale one would restore a board that never followed from the current one.
 var _debug_redo : Array[GameData] = []
+
+## Both debug histories as one list, for `LeakSentinel`'s reachability walk.
+##
+## ⚠ **A LEGITIMATE OWNER THE SENTINEL COULD NOT SEE READS AS A WHOLE LEAKED BOARD.** Every entry
+## here is a full `to_saveable()` duplicate, so the first commit of a show puts an entire board —
+## deck, cell zone cards, Entrance slots, rules cards — alive and unreachable from anything the
+## sentinel scanned. Measured: 90 cards, sustained across every check, 100% of them held here.
+## Empty in release builds, where neither array is ever written.
+func debug_snapshots() -> Array[GameData]:
+	var out : Array[GameData] = []
+	out.append_array(_debug_history)
+	out.append_array(_debug_redo)
+	return out
 
 func _debug_commit() -> void:
 	if not OS.is_debug_build(): return
@@ -618,7 +637,6 @@ func _restore_pre_act_board(context: String) -> void:
 	if RunManager.run != null:
 		RunManager.run.pending_action = &""   # nothing is mid-resolution anymore
 		RunManager.run.game_history = save_history
-		RunManager.run.game_submits = submits_used
 		RunManager.request_save()
 	if view:
 		view.abort_props()   # the simulation stopped mid-run; free its stranded visuals
@@ -657,6 +675,150 @@ func move_stack(moving:CardData, count:int, dest:Board.Anchor, trigger_mods: boo
 			await run_all_mods(&"on_card_dropped_on", result.onto, result.stack)
 		await run_all_mods(&"on_stack_cards", result.stack)
 	debug_validate("move %s -> %s" % [moving, dest])
+
+# ==============================================================================
+# Grid board mutations: Board.* mutates (or rejects), Game fires the mutation
+# broadcast afterwards, board already consistent. Mirrors move_stack's split above.
+# ==============================================================================
+
+## Fires the mutation broadcast for one grid mutation, board LOCKED for the whole pass.
+## `is_compaction` is never re-derived here -- it is exactly what the mover/caller decided.
+func _broadcast_board_mutation(coord: BoardCoord, is_compaction: bool) -> void:
+	var was_processing := processing
+	processing = true
+	await run_all_mods(&"on_board_mutated", coord, is_compaction)
+	processing = was_processing
+
+## Places a card not yet on the grid board into `coord`, then runs the mutation pass.
+## An arrival is never a compaction (`is_compaction` is always false here) and additionally
+## fires on_card_placed, after on_board_mutated, since the placement has already committed.
+## Refills the Entrance if it is due one. ⚠ THE TRIGGER IS EVALUATED ONCE, HERE, for the whole
+## row -- not per header. A header that asked the question itself would find the Entrance no
+## longer empty the moment the leftmost one drew, and every slot after the first would stay
+## empty. The headers still do the drawing, one each, so leftmost-first falls out of dispatch
+## order exactly as before.
+func refill_entrance_if_due() -> void:
+	if _entrance_is_empty() or await _no_held_card_has_a_legal_placement():
+		await run_all_mods(&"on_refill")
+
+## No slot holds a card.
+func _entrance_is_empty() -> bool:
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.size() > 0: return false
+	return true
+
+## Every held Entrance card has been asked, through the same legality dispatch a real
+## placement uses, and none of them can go anywhere on any grid.
+func _no_held_card_has_a_legal_placement() -> bool:
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.is_empty(): continue
+		var held : Array[CardData] = [column.datas.back()]
+		for grid : GridData in state.grids:
+			for i : int in grid.cells.size():
+				var target : CardData = grid.cells[i].datas.back() 						if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+				if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
+					return false
+	return true
+
+## The Entrance's commit: the first placement locks `state.committed_grid` to that grid, and
+## a placement aimed at any other grid while committed is refused outright (no state change).
+## The commitment lifts again once no legal placement remains anywhere in the committed grid.
+func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
+	if state.committed_grid != -1 and coord.grid != state.committed_grid:
+		return
+	# A PLAYER's placement is the grid game's board action -- the thing a Submit used to be --
+	# and it opens a fresh activation budget. Without that reset `act_calls` climbs across the
+	# whole show: get_delay() collapses to 0 so every animation snaps, and act_overrun trips
+	# the runaway guard, which then suppresses the very scoring the placement just caused.
+	# ⚠ GUARDED ON `processing`, AND THE GUARD IS LOAD-BEARING. An effect that places a card
+	# mid-cascade reaches here too, and resetting the counter there would hand the cascade an
+	# unlimited budget every time it placed something -- which is precisely the unbounded
+	# re-scan the act-level runaway guard is the only bound on. Nested placements must spend
+	# the SAME budget as the act that caused them.
+	# Read the slot BEFORE the placement: place_in_cell LIFTS the card out of the Entrance, so
+	# afterwards there is no slot left to record.
+	var from_slot := entrance_slot_of(card) if not processing else -1
+	if not processing:
+		_begin_act()
+	if not Board.place_in_cell(state, card, coord):
+		return
+	if not processing:
+		# Persist WHAT is about to happen before it happens, so a quit mid-cascade resumes by
+		# replaying it from the committed pre-placement board rather than letting the player
+		# keep the score and dodge the placement. Only a card held in the Entrance can be
+		# replayed: the slot is the identity that survives the save (see _begin_placement).
+		# ⚠ AFTER the placement is known to have SUCCEEDED, and still before every await below.
+		# Written any earlier, a REFUSED placement would leave a marker nothing ever clears --
+		# save_state is never reached on that path -- and the next resume would replay a
+		# placement the player never made.
+		_begin_placement(from_slot, coord)
+	if state.committed_grid == -1:
+		state.committed_grid = coord.grid
+	# Broadcast where the card LANDED, not where it was asked to go: a placement stacks on
+	# top of whatever is already in the cell, so the requested height is not the real one.
+	var landed := state.grid_position_of(card)
+	# ⚠ **THE CARD IS PUT DOWN BEFORE ANYTHING SCORES.** The data placement commits instantly, but
+	# the card the player was holding is still stuck to the cursor -- `ungrab_cards()` used to run
+	# only after this whole coroutine returned -- and then still in flight to its cell. A scoring
+	# pass started here therefore played its meld and popped its labels around a card the player
+	# was visibly still carrying. Only a PLAYER's placement waits: a card placed by an effect
+	# mid-cascade belongs to that act's own timing and must not add a beat to it.
+	if not processing and view:
+		view.release_grab()
+		await view.await_card_settled(card)
+	await _broadcast_board_mutation(landed, false)
+	await run_all_mods(&"on_card_placed", landed)
+	await refill_entrance_if_due()
+	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
+		state.committed_grid = -1
+	# THE PLACEMENT IS THE UNDO STEP -- one snapshot each, never a batch of five, exactly as
+	# try_place commits a player's drop. Taken LAST on purpose: the scores a placement caused
+	# live on `state`, so a snapshot taken any earlier would rewind the board without rewinding
+	# what it scored. A placement that moved nothing never got here (the guards above return),
+	# and save_state() skips an unmoved `revision` anyway, so putting a held card back still
+	# costs nothing. ⚠ Same `processing` guard as the act reset above: a placement made by an
+	# effect mid-cascade is part of the act that caused it, not an undo step of its own.
+	if not processing:
+		save_state()
+
+## Same legality question TypeInput._no_legal_move_remains asks (every held Entrance card
+## against every grid, via the same on_can_place_stack dispatch try_place uses), narrowed to
+## the cells of ONE grid -- whether the committed grid still has anywhere for a held card to go.
+func _no_legal_placement_remains_in_grid(grid_index: int) -> bool:
+	if grid_index < 0 or grid_index >= state.grids.size(): return true
+	var grid : GridData = state.grids[grid_index]
+	if not grid: return true
+	for column : ArrayCardData in state.upper_zone:
+		if column.datas.is_empty(): continue
+		var held : Array[CardData] = [column.datas.back()]
+		for i : int in grid.cells.size():
+			var target : CardData = grid.cells[i].datas.back() \
+					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+			if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
+				return false
+	return true
+
+## Moves a card already on the grid board to `coord`, then runs the mutation pass.
+## `is_compaction` travels straight from the caller through GridMoveResult to the
+## broadcast -- never inferred from before/after heights.
+func move_card_in_grid(card: CardData, coord: BoardCoord, is_compaction: bool) -> void:
+	var result := Board.move_to_cell(state, card, coord, is_compaction)
+	if not result.ok:
+		return
+	# The landed coordinate, for the same reason a placement broadcasts one: a move stacks
+	# on top of the destination cell, so the requested height is not the real one.
+	await _broadcast_board_mutation(state.grid_position_of(card), result.is_compaction)
+
+## Removes a card from the grid board (compacting the cards above it) then runs the
+## mutation pass. A removal is not itself a compaction move, so is_compaction is false --
+## the cards it compacted moved as a side effect of the array shift, not a mover's own move.
+func remove_card_from_grid(card: CardData) -> void:
+	var coord := Board.locate_in_cell(state, card)
+	if coord.is_nowhere():
+		return
+	if not Board.remove_from_cell(state, card):
+		return
+	await _broadcast_board_mutation(coord, false)
 
 ## Debug-build invariant sweep (ARCHITECTURE_REVIEW.md §5). Report-only.
 func debug_validate(context: String) -> void:
@@ -710,54 +872,23 @@ func draw_card() -> CardData:
 		return data
 	return null
 
-## Command (view-called): perform a Submit act.
-func submit() -> void:
-	EventLog.event(EventLog.CH_INPUT, "submit", "blocked=%s" % str(processing))
-	if processing:
-		return
-	await _perform_submit()
-
-## Resolve a Submit act: run the scorer, bank the row×col payout, clear the lower board, then
-## continue or resolve the show. Locked (processing) across the async scoring and persisted as
-## pending first, so a quit mid-scoring replays from the pre-submit board on resume (the player
-## can't rewind a Submit by killing the app).
-func _perform_submit() -> void:
-	processing = true
-	_begin_act()
-	_begin_action(&"on_run_scorer")
-	_act_cancellable = true
-	await run_all_mods(&"on_run_scorer")
-	# D22/D23: the last section has scored, so the beams go out. Inside the cancellable span on
-	# purpose — an on_unspotlight handler is part of the act and registers combos like any other.
-	# Skipped when the act is being unwound: that path throws the whole state away anyway, and
-	# the restored snapshot brings its own (pre-act) spotlight flags with it.
-	if not act_cancelled:
-		await _release_spotlight()
-	_act_cancellable = false
-	if act_cancelled:
-		# The restored snapshot fixes the MODEL, but the view is not derived from state: the
-		# empty section is the only thing that closes revealed rows and retires beams (QR2=d).
-		# No sweep — the doomed state's hooks must not fire.
-		spotlight_section_changed.emit([] as Array[CardData])
-		_restore_pre_act_board("cancelled submit")
-		return
-	state.apply_act_score()
-	if SettingsManager.settings.patience_reset_uniques_on_act:
-		state.clear_seen()
-	# apply_act_score cleared the gutters — resync the labels (headless: no gutters to sync)
-	if view: view.sync_scores()
-	state.discard_lower_board()
-	submits_used += 1  # bump BEFORE save_state so the persisted act count matches the board
-	_update_submit_label()
-	save_state()
-	if submits_used >= MAX_SUBMITS:
-		_resolve_game()
-		return  # processing stays true: the show is over, no more input
-	processing = false
-
 func _update_submit_label() -> void:
-	submit_label_changed.emit("Submit (%d act%s left)" \
-			% [MAX_SUBMITS - submits_used, "" if MAX_SUBMITS - submits_used == 1 else "s"])
+	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))
+
+## The player ends the performance. A show runs until this is called; there is no act count
+## and nothing resolves one on its own. Marks the state resolved BEFORE saving, so a quit at
+## the outcome screen resumes into the outcome rather than back into a live board.
+func end_show() -> void:
+	if state.show_ended: return
+	state.show_ended = true
+	# Ending is an undoable action but NOT a board mutation, and save_state() only commits
+	# when `revision` moved -- without a bump the End would leave no snapshot and undo would
+	# have nothing to rewind to. The state is fully consistent here, so the bump is safe.
+	state.revision += 1
+	save_state()
+	# The show is over: input stays locked until Continue or an undo dismisses the outcome.
+	processing = true
+	_resolve_game()
 
 ## All acts performed: win if the fame requirement was reached. The view shows the win/lose
 ## screen + Continue button and calls exit_show(). Fame is NOT banked here — the outcome
@@ -766,13 +897,13 @@ func _update_submit_label() -> void:
 func _resolve_game() -> void:
 	_won = state.has_met_goal()
 	_resolved = true
-	show_resolved.emit(_won, state.total_score, state.goal)
+	show_resolved.emit(_won, state.live_total(), state.goal)
 
 # Leave the show (view-called from Continue): won games bank the FULL score as fame and
 # hand back to the map, lost games end the run.
 func exit_show() -> void:
 	if _won:
-		RunManager.record_win(state.total_score, state.goal)
+		RunManager.record_win(state.live_total(), state.goal)
 		return_to_map()
 	else:
 		run_lost.emit()
@@ -794,6 +925,13 @@ func return_to_map() -> void:
 		for col in zone:
 			state.draw_deck.append_array(col.datas)
 			col.datas.clear()
+	# The grids hold the played cards, so the sweep has to reach them too or a show returns
+	# fewer cards to the run deck than it took -- the cell ZONE cards stay, they belong to the
+	# grid's own lifetime the way a column header belongs to its column.
+	for grid : GridData in state.grids:
+		for cell : ArrayCardData in grid.cells:
+			state.draw_deck.append_array(cell.datas)
+			cell.datas.clear()
 	state.draw_deck.append_array(state.discard_deck)
 	state.discard_deck.clear()
 	for data in state.draw_deck:
@@ -804,33 +942,27 @@ func return_to_map() -> void:
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
-	Main.save_info.game_submits = 0
 	game_ended.emit()
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
-	if score_zone.size() < size: score_zone.resize(size)
-	for i in score_zone.size():
-		if not score_zone[i]: 
-			score_zone[i] = BigNumber.new()
-			score_zone[i].mantissa = 0
+	state.resize_grid_bucket(score_zone, size)
 
-## Score one row or column (E7: unifies the old score_row/score_col). Data mutation (row/col
-## total, BigNumber gutter accumulation) always runs; the visuals are paced through the view and
-## simply skipped when headless. `zone` is only read for rows (upper vs lower gutter) — pass the
-## upper/lower zone array; it is ignored for columns.
-func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : int) -> void:
+## Score one line, built by the caller into a `ScoringSection` (E7: unifies the old
+## score_row/score_col). Data mutation (row/col total, BigNumber gutter accumulation) always
+## runs; the visuals are paced through the view and simply skipped when headless. `score_line`
+## NEVER branches on `section.kind` or `line_key` — which bucket a section banks into comes
+## from the section, read only by `add_line_score`.
+func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	# a cancelled act discards its whole state — skip the remaining lines outright
 	if act_cancelled: return
-	# D3 (spotlight S5): building the SECTION is this call's first act. Everything
-	# spotlight-related consumes the section; nothing below reads is_row/index except
-	# add_line_score, which always did. ⚠ Rows and columns are the only shapes today and
-	# NOTHING here may assume that stays true (Q260=a, Q266=a).
-	var section := ScoringSection.of_line(zone, is_row, index)
+	# ⚠ Each meld gets its OWN runaway budget: completing four lines at once is a legal board
+	# action, not a runaway, and it must not be charged against one placement's single budget.
+	_begin_meld()
 	# The act's own spine in the visual log — every light, dim and popup below is read AGAINST this
 	# line, and without it a log of the presentation layer has no idea which line it is presenting.
 	if EventLog.is_on(EventLog.CH_ACT):
 		EventLog.event(EventLog.CH_ACT, "score_line",
-				"%s index=%d cards=%d" % ["row" if is_row else "col", index, section.cards.size()])
+				"%s cards=%d" % [section.origin, section.cards.size()])
 	# An EMPTY section means the caller is not scoring a board line at all (a synthetic
 	# Result handed straight to score_line — the unit fixtures do exactly this). There is no
 	# section to light and nothing to re-evaluate, so the old path runs unchanged. A section
@@ -846,23 +978,13 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 		var rescored : Array[Scoring.Result] = await Scoring.PokerHands.score(section.cards)
 		result = rescored[0] if rescored else null
 		if result == null: return
-	var score_zone : Array[BigNumber]
-	if is_row:
-		score_zone = state.scores_row_upper if zone == state.upper_zone else state.scores_row_lower
-	else:
-		score_zone = state.scores_col
 	var key := Scoring.class_key(result)
 	var counts_for_combo := not result.types.has(Scoring.MELD_TYPE.HIGH_CARD)  # beats a lone high card
 	var amount := result.score
-	# δ fallback (§15a, ships 1.0 = off): duplicate-CLASS melds score ×δ at accumulation.
-	# Decided BEFORE the class registers, so the FIRST meld of a class always pays full.
-	var delta : float = SettingsManager.settings.duplicate_class_scale
-	if counts_for_combo and delta < 1.0 and state.combo_classes.has(key):
-		amount = int(amount * delta)
 	if view: await view.animate_meld(result)
 	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
 	# animates the label. Must run headless too (feeds the packed save).
-	add_line_score(is_row, score_zone, index, amount)
+	add_line_score(section, amount)
 	if counts_for_combo:
 		register_combo(key)
 	if view: await view.show_meld_score(result)
@@ -883,6 +1005,9 @@ func score_line(result : Scoring.Result, is_row : bool, zone : Array, index : in
 ## Headless is identical and waits on nothing (`Q19`=a): there is no view call in here at all.
 func _spotlight_section(section: ScoringSection) -> void:
 	while true:
+		# ⚠ **DELIBERATELY UNKEYED, SO IT ALWAYS COUNTS.** This is the guard on a chain whose
+		# handlers invoke no other mod: it would otherwise spin forever without ever charging the
+		# cap. An unkeyed activation cannot be shown to be unique, which is exactly right here.
 		note_processing()
 		# D10 — the forced spotlight TRAVELS (`Q16`=c, design D20). It is never torn down
 		# between sections, which is what lets a light move rather than strobe; what moves is
@@ -943,8 +1068,33 @@ func _release_spotlight() -> void:
 	await skill_spotlight_check()
 
 ## Bank `amount` into a row/col gutter + the matching act total; animate the label when a view
-## exists. THE single write path for line scores — melds and prop effects both call it.
-func add_line_score(is_row: bool, score_zone: Array[BigNumber], index: int, amount: int) -> void:
+## exists. THE single write path for line scores — melds and prop effects both call it. The
+## legacy row-upper-vs-lower gutter split is read from `section.zone`; which bucket a section
+## banks into beyond that is a later step's job (§1.6), not this one's.
+func add_line_score(section: ScoringSection, amount: int) -> void:
+	# A grid line banks into its GRID's buckets, not the legacy zone gutters.
+	if section.grid >= 0:
+		_add_grid_line_score(section, amount)
+		# ⚠ **THE LABEL IS POPPED HERE OR NOWHERE.** The legacy path animates through
+		# `update_line_score`; the grid path used to bank into its buckets and say nothing, so a
+		# grid score only ever appeared on some later rebuild, with no pop and no timing of its own.
+		if view: view.pop_grid_line_score(section)
+		# The buckets are BigNumbers written in place, so nothing else announces this. Without
+		# the emit, the score a player is shown only catches up the next time some UNRELATED
+		# scalar happens to move -- and the show's whole score is derived from these buckets.
+		# Not a `revision` bump: banking a score is not a board mutation, and a bump would
+		# rebuild the play area in the middle of the cascade.
+		state.state_changed.emit()
+		return
+	if section.index < 0:
+		return
+	var is_row := section.kind == ScoringSection.LineKind.ROW
+	var score_zone : Array[BigNumber]
+	if is_row:
+		score_zone = state.scores_row_upper if section.zone == state.upper_zone else state.scores_row_lower
+	else:
+		score_zone = state.scores_col_legacy
+	var index := section.index
 	resize_score_zone(score_zone, index + 1)
 	if is_row:
 		state.row_total += amount   # feeds this act's row x col payout (apply_act_score)
@@ -953,10 +1103,31 @@ func add_line_score(is_row: bool, score_zone: Array[BigNumber], index: int, amou
 	var new_score := score_zone[index].plus_equals(amount)
 	if view: view.update_line_score(score_zone, index, new_score)
 
-## The row gutter (upper vs lower) a slot coord banks into — prop effects that know only a
-## Vector3i use this instead of the zone-array identity check score_line does.
-func row_gutter(v: Vector3i) -> Array[BigNumber]:
-	return state.scores_row_upper if v.x == 0 else state.scores_row_lower
+## Banks one grid line into its grid's bucket. Each grid keeps three buckets that combine
+## into its own score: row, col, and ONE special bucket that every diagonal and every future
+## non-directional meld shares. A row or column at height 0 banks into the flat per-grid
+## bucket; a raised one banks into that grid's bucket for its own height.
+##
+## A vertical stack banks into its own CELL's bucket, keyed by coordinate so a grid that
+## changes shape under an effect keeps its scores.
+func _add_grid_line_score(section: ScoringSection, amount: int) -> void:
+	var g := section.grid
+	match section.kind:
+		ScoringSection.LineKind.DIAG:
+			state.resize_grid_bucket(state.score_special, g + 1)
+			state.score_special[g].plus_equals(amount)
+		ScoringSection.LineKind.ROW, ScoringSection.LineKind.COL:
+			# ⚠ **WHICH row or column, and at WHAT height** (GAP-015). Banking by grid alone threw
+			# `section.index` away, and a per-row score label then had no number to show.
+			var bucket : Dictionary[Vector3i, BigNumber] = state.scores_row 					if section.kind == ScoringSection.LineKind.ROW else state.scores_col
+			state.bank_line_score(bucket, g, section.index, section.height, amount)
+		ScoringSection.LineKind.HEIGHT_V:
+			# A vertical stack banks into its OWN CELL's bucket -- the number behind the
+			# height score label above that stack. One bucket per cell, keyed by coordinate
+			# so a grid that changes shape under an effect keeps its scores.
+			state.bank_cell_score(g, section.cell, amount)
+		_:
+			pass
 
 ## Suit-effect phase for one scored meld (SUIT_PROPS_PLAN §1.5). Gather every meld card's suit
 ## spawners, run the ONE shared prop simulation, then fire the on_score / on_after_score
@@ -990,12 +1161,23 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 	var live_props : Array[PropData] = []
 	var owner_of : Dictionary = {}   # prop -> its spawner (to release the live slot on finish)
 	var tick := 0
+	# ⚠ **AN OVERRUN STOPS SPAWNING; IT DOES NOT ABANDON WHAT IS ALREADY IN FLIGHT** (owner:
+	# *"props should at least finish their animation/actions before stopping midway"*). Breaking out
+	# of the loop left live props frozen on screen with their `on_finish` never run and their
+	# spawner slots never released, and they stayed there until the next placement. Draining is
+	# still bounded: nothing new is emitted, every live prop is counting down, and `MAX_TICKS` is
+	# the hard stop either way.
+	var draining := false
 	while not live_props.is_empty() or spawners.any(func(s: PropSpawner) -> bool: return s.remaining > 0):
-		if act_overrun or act_cancelled or tick >= MAX_TICKS:
+		if tick >= MAX_TICKS:
 			break
+		if act_overrun or act_cancelled:
+			if live_props.is_empty(): break
+			draining = true
 		# SPAWN — each due spawner emits up to batch_size, throttled by max_live
 		var spawned : Array[PropData] = []
 		for sp in spawners:
+			if draining: break
 			if not sp.due(tick): continue
 			var emit_count := mini(sp.batch_size, mini(sp.remaining, sp.max_live - sp.live))
 			for i in emit_count:
@@ -1027,8 +1209,10 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 		if view: tick_done = view.begin_prop_tick(live_props, spawned, movers, relocated)
 		# EVENTS — new-slot props ONLY, in emission order; hooks stay await-light
 		for p in movers:
-			note_processing()               # per SLOT ENTRY: feeds the runaway cap
-			var card := find_vec3_data(p.at)
+			# ⚠ **A PROP SLOT ENTRY IS NOT AN ACTIVATION** (owner). Props are bounded by their own
+			# routes and by `MAX_TICKS`, which is the loop's real stop; charging them to the act's
+			# cap only made a board with many props look like a runaway.
+			var card := state.card_at(p.at)
 			if card:                        # slot may have emptied mid-flight
 				p.pass_negated = false
 				await run_card_mods(card, &"on_prop_passing", p)   # 1: intercept/dodge
@@ -1056,56 +1240,89 @@ func run_props(spawners: Array[PropSpawner]) -> void:
 # ==============================================================================
 
 ## Replay-stable 50/50 pick for a hoop/knife row side. Hashes only resume-persisted inputs
-## (direction affects hook order, so it is data, not RNG).
-func entity_side_for_row(v: Vector3i) -> bool:
+## (direction affects hook order, so it is data, not RNG). Excludes the column (coord.x) so a
+## whole row agrees on one side; a real grid row is identified by (grid, y, h) -- the same
+## triple LineGeometry rows are keyed on -- so the Entrance (y == ENTRANCE_ROW, fixed per
+## column) and a genuine grid row both hash to one value per row.
+func entity_side_for_row(coord: BoardCoord) -> bool:
 	# history_trimmed + size = total actions ever committed — invariant under the undo cap
-	return hash([submits_used, history_trimmed + save_history.size(), v.x, v.z]) & 1 == 0
+	return hash([history_trimmed + save_history.size(), coord.grid, coord.y, coord.h]) & 1 == 0
 
-## Every slot in v's row (fixed zone x + row z, across columns y), left-to-right or reversed.
-func row_slot_path(v: Vector3i, left_to_right: bool) -> Array[Vector3i]:
-	var zone := get_zone_from_vec3(v)
-	var out : Array[Vector3i] = []
-	for col in zone.size():
-		out.append(Vector3i(v.x, col, v.z))
+## Every slot in coord's row, left-to-right or reversed, NEVER crossing a grid boundary: a prop
+## travels one grid and stops at its edge. The Entrance's row is every `upper_zone` column at
+## coord's height; a real grid's row reuses `LineGeometry.row_cells`, which is already
+## within-one-grid and already left-to-right.
+func row_slot_path(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	if coord.is_entrance():
+		for col in state.upper_zone.size():
+			out.append(BoardCoord.new(coord.grid, col, BoardCoord.ENTRANCE_ROW, coord.h))
+	else:
+		if coord.grid < 0 or coord.grid >= state.grids.size(): return out
+		var grid : GridData = state.grids[coord.grid]
+		if not grid: return out
+		var line := LineGeometry.row_cells(grid, coord.y, coord.h)
+		for c : Vector3i in line.cells:
+			out.append(BoardCoord.new(coord.grid, c.x, c.y, c.z))
 	if not left_to_right:
 		out.reverse()
 	return out
 
 ## The remaining slots of coord's row PAST coord in the given direction (exclusive of coord) —
-## for mid-flight re-routes (Strongman pushes a prop along a parallel row).
-func row_slot_path_from(coord: Vector3i, left_to_right: bool) -> Array[Vector3i]:
+## for mid-flight re-routes (Strongman pushes a prop along a parallel row). `find` on a
+## RefCounted is identity, never equality — key the search on `pack()`.
+func row_slot_path_from(coord: BoardCoord, left_to_right: bool) -> Array[BoardCoord]:
 	var full := row_slot_path(coord, left_to_right)
-	var idx := full.find(coord)
+	var idx := -1
+	for i in full.size():
+		if full[i].pack() == coord.pack():
+			idx = i
+			break
 	if idx == -1:
 		return full
 	return full.slice(idx + 1)
 
-## The slots above v in its column (rows past v toward the far edge). May be EMPTY (v is the
-## topmost card) — a firework then banks its column score immediately.
-func column_rise_path(v: Vector3i) -> Array[Vector3i]:
-	var out : Array[Vector3i] = []
-	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
-	for z in range(v.z + 1, col.datas.size()):
-		out.append(Vector3i(v.x, v.y, z))
+## The ArrayCardData a coordinate's card stack lives in: the Entrance's own `upper_zone`
+## column, or a real grid cell -- the one place a route builder needs to know which.
+func _stack_at_coord(coord: BoardCoord) -> ArrayCardData:
+	if coord.is_entrance():
+		if coord.x < 0 or coord.x >= state.upper_zone.size(): return null
+		return state.upper_zone[coord.x]
+	if coord.grid < 0 or coord.grid >= state.grids.size(): return null
+	var grid : GridData = state.grids[coord.grid]
+	if not grid: return null
+	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
+		return null
+	return grid.cells[grid.cell_index(coord.x, coord.y)]
+
+## The slots above coord in its own cell's stack (rows past coord toward the far edge). May be
+## EMPTY (coord is the topmost card) — a firework then banks its column score immediately.
+func column_rise_path(coord: BoardCoord) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	var stack := _stack_at_coord(coord)
+	if not stack: return out
+	for h in range(coord.h + 1, stack.datas.size()):
+		out.append(BoardCoord.new(coord.grid, coord.x, coord.y, h))
 	return out
 
-## Mancala TARGETS for ballistic Ball/Fire: walk below v.z wrapping to the column top,
+## Mancala TARGETS for ballistic Ball/Fire: walk below coord.h wrapping to the stack top,
 ## collecting `count` eligible cards' coords (each may repeat). Bounded at (count+1) laps so a
-## no-eligible-target column terminates. PURE — computed once at spawn.
-func mancala_targets(v: Vector3i, count: int, eligible: Callable) -> Array[Vector3i]:
-	var out : Array[Vector3i] = []
-	var col : ArrayCardData = get_zone_from_vec3(v)[v.y]
-	var n := col.datas.size()
+## no-eligible-target stack terminates. PURE — computed once at spawn.
+func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	var stack := _stack_at_coord(coord)
+	if not stack: return out
+	var n := stack.datas.size()
 	if n == 0 or count <= 0:
 		return out
-	var pos := v.z
+	var pos := coord.h
 	var steps := 0
 	var max_steps := (count + 1) * n
 	while out.size() < count and steps < max_steps:
 		pos = (pos + 1) % n
 		steps += 1
-		var coord := Vector3i(v.x, v.y, pos)
-		var card := find_vec3_data(coord)
+		var c := BoardCoord.new(coord.grid, coord.x, coord.y, pos)
+		var card := state.card_at(c)
 		if card and eligible.call(card):
-			out.append(coord)
+			out.append(c)
 	return out

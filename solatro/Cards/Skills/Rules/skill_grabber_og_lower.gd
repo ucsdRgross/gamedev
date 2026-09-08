@@ -11,10 +11,10 @@ func get_frame() -> int: return 5
 func combo_key(_hook: StringName = &"") -> String: return ""
 
 func on_can_grab_stack(target : CardData) -> Array[CardData]:
-	if not game: return []
-	var vec3 := game.find_data_vec3(target)
+	if not api or not api.is_live(): return []
+	var vec3 := api.find_data_vec3(target)
 	if vec3 == Vector3i.MIN or vec3.x == 0: return []
-	var zone := game.get_zone_from_vec3(vec3)
+	var zone := api.get_zone_from_vec3(vec3)
 	var stack: Array[CardData] = zone[vec3.y].datas.slice(vec3.z)
 	for i in stack.size() - 1:
 		#S21: the STACK sameness hooks, not the ordering ones (QR3=c, Q62=a, Q83=a, Q97).

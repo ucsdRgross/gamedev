@@ -45,14 +45,30 @@ gone by the time you know you wanted it.
 
 ## Doc hygiene backlog (code comments — measured, not yet triaged)
 
-- ⬜ **`doc_check.py` scans code comments; the standing count over 230 source files is 138 dated ·
-  101 blocks over 16 lines · 78 history · 13 restated · 0 line refs.** Zero errors — every reference
-  resolves. ⚠ **A BACKLOG, not a regression**: the rules postdate the comments. Work it
-  opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
-  ⚠ **`dated` will not go to zero and should not**: 43 of them are measurements, where the date is
-  part of the fact, and the checker cannot tell those from bookkeeping.
+- ⬜ **`doc_check.py` scans code comments. Standing count over 304 source files: 5664 indented ·
+  2144 long doc · 739 long block · 599 trailing · 362 design id · 130 dated · 91 history ·
+  52 restated · 4 line refs.** Zero errors — every reference resolves.
+  ⚠ **A BACKLOG, not a regression**, and the numbers grew mostly because THE CHECKER GOT STRICTER,
+  not because the code got worse: `long block` went from "over 16 lines" to "over 3", and
+  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments. Work
+  it opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
+  ⚠ **`dated` will not go to zero and should not**: many are measurements, where the date is part
+  of the fact, and the checker cannot tell those from bookkeeping.
+  ⚠ **`design id` is the one that matters most** — 362 citations of design documents the code's
+  reader cannot open. It is a standing breach of the no-design-ids-in-code rule
+  (ARCHITECTURE_REVIEW §8), inherited from earlier work streams.
 
 ## Waiting on the owner
+
+- ⚠ **`GAP-042` — a prop scoring a card in the ENTRANCE banks into a dead bucket.**
+  `PropScoreProps`/`PropScoreTalents` use the legacy `ScoringSection.of_line` for an Entrance
+  card, which leaves `grid == -1`, so `add_line_score` takes the legacy path into
+  `scores_row_upper`/`row_total` — neither of which `live_total()` reads. The combo still bumps.
+  **LATENT: no shipped content can put a prop on the Entrance row** (props spawn only from a
+  scored meld, which is always a grid line), but `row_slot_path` has an explicit Entrance branch
+  and the first effect that re-routes a prop there fires it. Three options in
+  `design/poker-patience/gaps/GAP-042.md`; it is an owner call about whether the Entrance
+  participates in the economy at all.
 
 - ⬜ **Playtest the picture wall** — `HANDOFF_picture_wall.md` S40. Nothing else on that stream can
   be judged until someone drives it; two adversarial reviews traced journeys, neither played it.
@@ -79,7 +95,7 @@ gone by the time you know you wanted it.
   expressible. What is left is the two things a test cannot answer:
   - **Balance.** `Tests/Engine/scoring_cost.tscn` now prints the impact: a rank-merging rule
     multiplies a scored LINE by **x2.0 (5 cards) → x3.5 (8) → x6.0 (13) → x5.1 (30)**, and every
-    line of a submit gets it. Extra rank values alone are **x1.0** — they move positions, not
+    line one placement completes gets it. Extra rank values alone are **x1.0** — they move positions, not
     score. Whether x5 per line is too strong is the same kind of call as everything under
     "Scoring / balance" below, which the sim explicitly cannot make.
   - **One UX judgement, `DEFERRED.md` R2.** A split meld shows three matching cards and counts
@@ -176,7 +192,7 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
   (E1, written): a scored line costs 9.5 ms on 30 cards unmodded, 16.2 ms with a rank-merging rule,
   31.9 ms with merging plus extra rank values. ⚠ `Game.score_line` runs per row AND column and
   `skill_eval_poker_best` scores both again from inside scoring, so a wide board with a merging
-  rules card is HUNDREDS of ms per submit. Numbers in PERFORMANCE.md §4d. Q57(a) scoped E3 out —
+  rules card is HUNDREDS of ms for a placement that completes several lines at once. Numbers in PERFORMANCE.md §4d. Q57(a) scoped E3 out —
   reopening it is an owner call, but it is no longer an argument from arithmetic.
 - ⬜ **Three fuzz invariants remain scoped rather than absolute** (3's held-cards set, 8's position
   model, 1's declared multi-key exception). Each is documented with why; each is also a place a real
@@ -191,7 +207,7 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 ## Props / UI (owner has NOT re-verified)
 
 - Description-panel scroll-lock, knife row behavior, hoop visibility, ballistic poof,
-  undo-across-submit feel, held-loop spin, formation system + editor end-to-end (no formation
+  undo-across-a-placement feel, held-loop spin, formation system + editor end-to-end (no formation
   `.tres` authored yet).
 - Firework in-run acquisition beyond deck12 (owner decision). Per-pip tooltip granularity.
 - Win/lose screen font (226px) clips long "Fame +N" text. `game.tscn` grabs no initial focus, so
@@ -215,43 +231,20 @@ Contract: ARCHITECTURE_REVIEW §4i. Open follow-ups, all deferred by the owner r
 - **`suit_pips.png` has a few off-palette pixels** (e.g. `#ec0037`, 27 from entry 2). Authored art,
   not a plumbing bug; `tools/palette_conformance.py` finds them.
 
-## Patience & rerolls (owner playtest pending)
+## Booster rerolls (owner playtest pending)
 
-Full behavior and the settings list: ARCHITECTURE_REVIEW §4e.
+Full behavior and the settings list: ARCHITECTURE_REVIEW §4f.
 
-- Tune `patience_max` (ships 3) and the per-stage `patience_influence_*` flags (ships PLAY only);
-  decide whether the legality query `on_can_place_stack` should count at all — if not, add it to
-  `patience_disabled_hooks` and re-tune what "interesting move" means.
-- ⚠ `patience_max` ships **3**, but the original spec asked for **1** — confirm which is intended
-  before drawing playtest conclusions (3 = three idle moves per round).
-- Rule cards that raise `patience_max` / grant patience: the grant path exists
-  (`patience_max_increased`), no content uses it yet.
-- Booster rerolls (§4f): pool ships at 5 (`booster_reroll_pool`); reroll-count modifiers (the
-  `luck()`-style content hook) not written yet.
-- Watch existing suites for auto-Next fallout: any test that makes 3+ boring moves in one round now
-  advances the round mid-test.
-- Comparator hooks reach patience, and **plan step S21 changed WHICH ones**. During the placement
-  legality query:
-  - `on_compare_ranks` still fires (`return_first_compare_mod_result`) — the placer asks
-    `compare_ranks` for run adjacency, which is a scalar and was deliberately left alone (Q55=a);
-  - `on_compare_suits` **no longer fires there at all** — the suit question now goes through
-    `stack_suits_same`, i.e. the STACK hooks;
-  - the four `on_stack_*` hooks fire instead, through `return_first_true_pair_result`, which calls
-    `_note_mod_fired` exactly as the old path did.
+- Pool ships at 5 (`booster_reroll_pool`); reroll-count modifiers (the `luck()`-style content hook)
+  are not written yet.
 
-  So ANY board card with one of those modifiers still holds the counter (once per round under
-  uniques) — but the decision this item is asking for now concerns a different set of hooks than it
-  used to. Decide whether that is the intended "interesting move" bar or whether some of them
-  belong in `patience_disabled_hooks`. ⚠ Note the two situations differ: a MELD rule fires during
-  scoring, a STACK rule during the legality query, and only the second is a "move".
-- `Game._on_patience_max_increased` edits `state.patience` with no commit — a mid-round grant is
-  lost on quit and reverted by undo. Fine for a settings knob; revisit when a rule CARD grants
-  patience (that grant should ride a committed action).
-- `Game._ready` connects to `SettingsManager.settings.patience_max_increased` without the N9
-  reconnect idiom, so the connection binds the settings resource that exists at show start. Only
-  matters if `SettingsManager.settings` is ever reassigned at runtime (its setter supports it).
-- Two gaps documented in ARCHITECTURE_REVIEW: the auto-Next pending-action replay caveat (§1.5) and
-  the seen-set-only commit gap in `_perform_next` (§4e).
+⚠ **PATIENCE IS RETIRED AND ITS BACKLOG IS GONE WITH IT.** The whole family went with the tableau
+(`design/poker-patience/PLAN.md` §1.6): no `patience_max`, no `patience_influence_*`, no
+`patience_disabled_hooks`, no `patience_max_increased`, no `state.patience`. `test_grid_economy.gd`'s
+TP-60 grep gate asserts zero readers of every one of those spellings in any `.gd` or `.tscn`, so
+they cannot come back by accident. The open questions that used to live here — what counts as an
+"interesting move", which comparator hooks should feed it — died with the mechanic; do not revive
+them from git history without an owner ruling that patience is back.
 
 ## Card size + outline — landed, one thing open
 
@@ -277,6 +270,9 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
+- ⬜ **Focused suite testing** — a suite filter, timing instrumentation and a headless logic tier, so
+  a one-line change stops costing a full windowed run. Plan, task list, and the doc/memory/skill
+  updates it forces: `FOCUSED_TESTING_PLAN.md`. Delete this line and that file when it lands.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
@@ -335,6 +331,29 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
   of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
   rule. Left as waste on a hover-enter path, deliberately.
+- **The Entrance renders through the LEGACY zone renderer, and switching it is the last piece.** Banking, the zone shape and the
+  HEIGHT labels are all landed; what is left is its ROW label and multi-row cells, and both come
+  free once it binds to `_create_grid_panel` / `_bind_grid_panel` -- which already take a panel and
+  a `GridData` and never touch `state.grids`. Three things to add: label stacks
+  for the Entrance's rows, height labels for the Entrance -- which stay ABOVE their stack like every
+  other, the owner having reversed an earlier call, so the arithmetic is unchanged and only the
+  separation band's BUDGET grows (column scores on top, Entrance height scores directly beneath) --
+  and a cell lookup in `_sync_cell_score_labels` that is ZONE-GENERIC rather than grid-only.
+  ⚠ Owner: *"no special cases"* -- no Entrance branch anywhere; the general form resolves a cell
+  through whichever zone owns it, which is why the Entrance was made a `GridData` in the first
+  place. What is still missing is an accessor handing back every zone rather than just `grids`. ⚠ A multi-row Entrance (the owner named 2x3) is SETTLED as real rows, with a slot's
+  stack depth staying the HEIGHT axis -- which confirms the shipped banking rather than changing
+  it. But `upper_zone` is a flat array of slots with nowhere to put a second row, so giving the
+  Entrance rows is a STRUCTURAL change (it becomes cell-shaped like GridData), not a label one. ⚠ Row/col label COUNTS and the
+  per-height stacks are ALREADY derived from the grid's own dimensions and buckets, so an 8x7 grid
+  needs no work there; do not rebuild them.
+- **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
+  GAP-038 pass.** `%MultScore` and its `Col`/`x`/`Row` children showed a frozen "0 x 0" because
+  nothing in the grid economy writes `mult_score`/`col_total`/`row_total`; `GameView._ready` now
+  blanks them. ⚠ **Deleting the nodes is the deeper fix and it is NOT free**: `%MultScore` is in
+  `_furniture`, and `_hud_authored_width()` maxes over that list to publish
+  `PlayArea.board_inset_left`, so removing it can shrink the HUD reserve and re-centre every grid.
+  That is HUD geometry, which is parked on `GAP-038`. Do it with that pass, not before.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither
@@ -410,3 +429,8 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   run is not reliably attributable to the change that produced it (`HANDOFF_picture_wall.md` S44).
 - **PIXELS' mask-vs-art bound has never been ruled on** (0 mask-without-art, 3773 art-without-mask at
   rest). Its own comment forbids raising it to go green, so it stands as written (S41).
+- **The comment backlog drains whole-file on touch, and is not a sweep.** A full `doc_check` run
+  reports ~5.9k indented comments, ~2.1k over-long `##` docs, ~750 over-long `#` blocks and ~630
+  trailing ones. The rules are ERRORS on any file a session edits, so the count falls as files are
+  touched for other reasons. Do NOT open a branch to fix them all: the churn would be repo-wide,
+  unreviewable, and would collide with every stream in flight.

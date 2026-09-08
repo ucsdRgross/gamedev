@@ -200,6 +200,56 @@ func _ready() -> void:
 		_report_growth(session_baseline_census, session_after_census)
 
 	implementation_section("LEAK SENTINEL")
+	# ⚠ **AN OWNER THE SENTINEL CANNOT SEE READS AS A WHOLE LEAKED BOARD**, and that is a defect in
+	# the SENTINEL, not in the game. `Game._debug_history` holds full `to_saveable()` duplicates in
+	# debug builds; before `debug_snapshots()` was scanned, the first commit of a show put 90 cards
+	# alive and unreachable, SUSTAINED across every check — the exact shape of the owner-reported
+	# leak (25 cell zone cards, 5 Entrance slots, the deck and rules around them).
+	#
+	# ⚠ **THE FIXTURE MUST COMMIT ONE.** `_debug_commit()` only fires on a real placement, so a
+	# fixture that stands a game up and looks at it can never see this. The session cycles above are
+	# exactly that kind of fixture from the sentinel's point of view: they drop the whole run doc
+	# each time, so the holder is released before any count could be taken.
+	var dbg_run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
+	Main.save_info = dbg_run
+	dbg_run.pending_goal = 1_000_000_000
+	dbg_run.pending_node_id = 2
+	seed(20260903)
+	var dbg_view : GameView = GAME_VIEW_SCENE.instantiate()
+	add_child(dbg_view)
+	await _settle()
+	var dbg_game := dbg_view.game
+	await TestGridFixtures.place_row_from_deck(dbg_game, 0, 0, 1)
+	await _settle()
+	check_impl(dbg_game.debug_snapshots().size() > 0,
+			"precondition: a real placement committed a debug rewind snapshot",
+			"%d snapshots" % dbg_game.debug_snapshots().size())
+	# ⚠ **ASSERT THE PROPERTY, NOT THE TOTAL.** Every suite in this run abandons cards on
+	# purpose, so the sentinel's absolute count is other suites' garbage plus ours -- it passes this
+	# suite alone and fails by 143 in the full run. What must hold is narrower and interference-
+	# proof: no card a debug snapshot HOLDS may read as unreachable.
+	var reachable := LeakSentinel._reachable_set()
+	var snapshot_cards : Dictionary[CardData, bool] = {}
+	for snap : GameData in dbg_game.debug_snapshots():
+		for c : CardData in snap.all_card_datas():
+			snapshot_cards[c] = true
+	var missed := 0
+	for c : CardData in snapshot_cards:
+		if not reachable.has(c): missed += 1
+	check_impl(snapshot_cards.size() > 0,
+			"precondition: those snapshots actually hold cards",
+			"%d cards" % snapshot_cards.size())
+	check_impl(missed == 0,
+			"a debug rewind snapshot is an OWNER, not a leak — the sentinel walks debug_snapshots()",
+			"%d of %d snapshot-held cards read as unreachable" % [missed, snapshot_cards.size()])
+	dbg_view.queue_free()
+	await _settle()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	Main.save_info = RunState.new()
+	await _settle()
+
 	# The sentinel is quiet under the test runner (TestLog._started), so drive tick()
 	# directly: cards held alive but unreachable from any legitimate owner must raise the
 	# unreachable count, and enough over-slack ticks must fire the report (which resets
@@ -469,9 +519,10 @@ func _session_cycle() -> void:
 	await _settle()
 
 	_mark_phase("3 map + booster")
-	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a Submit with real
-	# scoring (props spawn + finish inside the awaited resolution), UNDO across the Submit
-	# (the quiescent Game.undo() drops the popped snapshot), redo, quit-mid-show -> resume, win.
+	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a real placement pass with
+	# real scoring (props spawn + finish inside the awaited resolution -- see the placement fill
+	# below), UNDO across it (the quiescent Game.undo() drops the popped snapshot), redo,
+	# quit-mid-show -> resume, win.
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	seed(424242)
@@ -480,24 +531,15 @@ func _session_cycle() -> void:
 	await _settle()
 	var g := view.game
 	await g.next()
-	await g.next()
-	# grab/place through the real command seam (mirrors GameView._on_data_selected)
-	var src := _topmost_lower(g, 0)
-	var dst := _topmost_lower(g, 1)
-	if src and dst and src != dst:
-		var stack : Array[CardData] = await g.try_grab(src)
-		if stack:
-			view.play_area.grab_cards(stack)
-			await g.try_place(stack, dst)
-			view.play_area.ungrab_cards()
-	# draw happened inside the Nexts; discard one board card through the real path
-	var to_discard := _topmost_lower(g, 0)
-	if to_discard:
-		await g.discard_data(to_discard)
-	await g.submit()
+	# Fill row 0 through the real placement path: the fifth card completes the row, the
+	# detector scores it, and the scoring cascade allocates the prop visuals and beams that
+	# are the whole point of a leak canary. This is also what makes the show winnable below.
+	var placed : Array[CardData] = await TestGridFixtures.place_row_from_deck(g, 0, 0, 5)
+	# Discard one of the placed cards through the real path.
+	if placed:
+		await g.discard_data(placed[0])
 	g.undo()
 	await _settle()
-	await g.submit()
 
 	# Quit-mid-show -> resume: the abandoned show's board drops with the view.
 	RunManager._shutdown_saver()
@@ -519,8 +561,10 @@ func _session_cycle() -> void:
 
 	var won : Array[bool] = []
 	g2.show_resolved.connect(func(w: bool, _score: int, _goal: int) -> void: won.append(w))
-	while g2.submits_used < Game.MAX_SUBMITS:
-		await g2.submit()
+	# The resumed board is whatever the quit committed; score a line on it so the goal of 1 is
+	# met through the real path rather than by assuming the pre-quit score survived.
+	await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
+	g2.end_show()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
 	g2.exit_show()   # win path: return_to_map banks the deck into the run doc
 	await _settle()
@@ -528,9 +572,10 @@ func _session_cycle() -> void:
 	await _settle()
 	CardEnvironment.CURRENT = null
 
-	_mark_phase("4 show + submit + undo + resume + win")
-	# --- 5. The loss path: an unreachable goal, three empty submits, exit_show ends the
-	# run (the whole doomed board drops with the view).
+	_mark_phase("4 show + placement + undo + resume + win")
+	# --- 5. The loss path: an unreachable goal, three repeated Nexts (the grid game's
+	# repeatable, allocating act -- see place_card_in_grid's "the thing a Submit used to be"),
+	# exit_show ends the run (the whole doomed board drops with the view).
 	loaded.pending_goal = 1000000000
 	loaded.pending_node_id = 1
 	seed(31337)
@@ -538,9 +583,9 @@ func _session_cycle() -> void:
 	add_child(view3)
 	await _settle()
 	var g3 := view3.game
-	await g3.submit()
-	await g3.submit()
-	await g3.submit()
+	await g3.next()
+	await g3.next()
+	await g3.next()
 	g3.exit_show()
 	await _settle()
 	view3.queue_free()

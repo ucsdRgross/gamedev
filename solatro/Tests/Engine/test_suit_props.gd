@@ -61,6 +61,13 @@ func row_game(cards: Array[CardData]) -> Game:
 		cols.append(TestFactories.col([c] as Array[CardData]))
 	s.upper_zone_type = types
 	s.upper_zone = cols
+	# ⚠ THE FIXTURE NEEDS A REAL GRID even though every card here sits in the ENTRANCE. An
+	# Entrance score banks into its attached grid's own row bucket, and `board_total()` walks
+	# `grids` -- with none, the bucket exists and the SCORE THE PLAYER SEES stays 0, which is
+	# exactly the failure these tests are here to catch.
+	var grid := GridData.new()
+	grid.build_cells()
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()
 	CardEnvironment.CURRENT = g
@@ -75,6 +82,12 @@ func col_game(cards: Array[CardData]) -> Game:
 	var h := CardData.new(); h.stage = CardData.Stage.ZONE
 	s.upper_zone_type = [h] as Array[CardData]
 	s.upper_zone = [TestFactories.col(cards)]
+	# ⚠ THE FIXTURE NEEDS A REAL GRID, for the same reason `entrance_game` does: these cards sit in
+	# the ENTRANCE, and an Entrance score banks into its attached grid's bucket. With no grid there
+	# is no bucket to bank into and `entrance_row_index` has no live grid to answer about.
+	var grid := GridData.new()
+	grid.build_cells()
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()
 	CardEnvironment.CURRENT = g
@@ -103,8 +116,14 @@ func test_hoop_scores_talents() -> void:
 	var hoop := suit_card(3, PipSuitHoop.new())
 	var g := row_game([hoop, talent(5), talent(5), plain(5)] as Array[CardData])
 	await g.run_props(hoop.suit.spawn_props())
-	check(g.state.row_total == 6,
-			"3 hoops x 2 talents x 1 point = 6 into the row gutter", str(g.state.row_total))
+	# ⚠ ASSERT THE SCORE THE PLAYER SEES, NEVER `row_total`. That field is the retired act
+	# payout's accumulator and `live_total()` does not read it, so a version of this check
+	# written against it passed for the whole time the Entrance banked into nothing.
+	check(g.state.board_total() == 6.0,
+			"3 hoops x 2 talents x 1 point = 6, and it reaches the board total",
+			"board_total=%f row_total=%d" % [g.state.board_total(), g.state.row_total])
+	check(g.state.live_total() > 0,
+			"...so the goal check can see it", "live_total=%d" % g.state.live_total())
 	done(g)
 
 func test_knife_scores_props() -> void:
@@ -113,8 +132,9 @@ func test_knife_scores_props() -> void:
 	var knife := suit_card(3, PipSuitKnife.new())
 	var g := row_game([knife, talent(5), plain(5), plain(5)] as Array[CardData])
 	await g.run_props(knife.suit.spawn_props())
-	check(g.state.row_total == 9,
-			"3 knives x 3 plain cards (incl. self) x 1 point = 9", str(g.state.row_total))
+	check(g.state.board_total() == 9.0,
+			"3 knives x 3 plain cards (incl. self) x 1 point = 9, into the board total",
+			"board_total=%f row_total=%d" % [g.state.board_total(), g.state.row_total])
 	done(g)
 
 func test_talented_suit_suppressed() -> void:
@@ -182,6 +202,14 @@ func test_juggling_pays_on_score() -> void:
 	card.add_status(CardModifierStatus.stacked(StatusJuggling, 3))
 	var g := col_game([card] as Array[CardData])
 	await g.run_all_mods(&"on_score", card)
-	check(g.state.col_total == 3, "Juggling pays its stacks into the column when scored",
-			str(g.state.col_total))
+	# ⚠ **THIS ASSERTED `col_total`, AND IT PASSED BECAUSE THE POINTS WERE BEING LOST.** `col_total`
+	# is the RETIRED act payout's total; `live_total()` does not read it, so a score that reached
+	# only there reached nothing the player ever sees. The check now asks the bucket the shown score
+	# is actually derived from -- a test calibrated to a defect passes because the defect exists.
+	check(g.state.line_score(g.state.scores_col, 0, 0, 0) == 3.0,
+			"Juggling pays its stacks into the column bucket the shown score is derived from",
+			"got %f" % g.state.line_score(g.state.scores_col, 0, 0, 0))
+	check(g.state.board_total() > 0.0,
+			"...so the board's own score actually moves, which col_total never made it do",
+			"board_total %f" % g.state.board_total())
 	done(g)

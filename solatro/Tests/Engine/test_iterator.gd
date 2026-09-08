@@ -20,6 +20,7 @@ func _ready() -> void:
 	run_shape_tests()
 	run_mixed_tests()
 	run_reuse_and_mutation_tests()
+	run_grid_tests()
 	env.queue_free()
 	finish()
 
@@ -168,3 +169,82 @@ func run_reuse_and_mutation_tests() -> void:
 	check(visited == expected,
 			"B10 pin: live mutation skips removed upcoming card, visits the rest",
 			"visited %s" % [visited])
+
+
+# ==============================================================================
+# SECTION 4: GRID WALK (PLAN.md §1.10) -- TP-15..TP-17
+# ==============================================================================
+
+## Independent oracle for a grid's cell array: `GridData.cells` is already stored row-major
+## (`cell_index`), and each cell's stack is already stored bottom to top (append order) --
+## so a flat read of the raw storage IS the row-major/bottom-to-top order, no computation
+## borrowed from CardDataIterator.
+func _grid_cells_flat(grid: GridData) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for cell : ArrayCardData in grid.cells:
+		out.append_array(cell.datas)
+	return out
+
+func run_grid_tests() -> void:
+	implementation_section("SECTION 4: GRID WALK")
+	run_tp15_grid_order_test()
+	run_tp16_grid_stack_order_test()
+	run_tp17_sparse_grid_test()
+
+## TP-15: draw_deck first, then the board, row-major within a grid. FIX-MIXED-H.
+func run_tp15_grid_order_test() -> void:
+	var state := TestGridFixtures.build_fix_mixed_h()
+	var draw := cards(2)
+	state.draw_deck = draw
+	env.card_collections = state.get_card_collections()
+
+	var expected : Array[CardData] = []
+	expected.append_array(draw)
+	for grid : GridData in state.grids:
+		expected.append_array(_grid_cells_flat(grid))
+	for grid : GridData in state.grids:
+		expected.append_array(grid.cell_types)
+
+	var got := iterate()
+	check(got == expected,
+			"TP-15: draw_deck first, then the board, row-major within a grid",
+			"got %d cards / want %d" % [got.size(), expected.size()])
+
+## TP-16: within a cell the walk is bottom to top. FIX-STACK-5.
+func run_tp16_grid_stack_order_test() -> void:
+	var state := TestGridFixtures.build_fix_stack_5()
+	env.card_collections = state.get_card_collections()
+
+	var grid : GridData = state.grids[0]
+	var expected : Array[CardData] = []
+	expected.append_array(_grid_cells_flat(grid))
+	expected.append_array(grid.cell_types)
+
+	var got := iterate()
+	check(got == expected,
+			"TP-16: within a cell the walk is bottom to top",
+			"got %d cards %s / want %d %s" % [got.size(), got, expected.size(), expected])
+
+## TP-17 -- THE PHASE-1 GATE: a sparse grid, cards only in row 3, is walked completely. Built
+## from FIX-GRID-1 (one empty 5x5 grid) with row 3 stocked HERE, independently of any fixture
+## helper, so the expected sequence owes nothing to production code.
+func run_tp17_sparse_grid_test() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var grid : GridData = state.grids[0]
+	var row3 : Array[CardData] = []
+	for x in grid.grid_width:
+		var idx := grid.cell_index(x, 3)
+		var card := TestFactories.m_card(1, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		grid.cells[idx].datas.append(card)
+		row3.append(card)
+	env.card_collections = state.get_card_collections()
+
+	var expected : Array[CardData] = []
+	expected.append_array(row3)
+	expected.append_array(grid.cell_types)
+
+	var got := iterate()
+	check(got == expected,
+			"TP-17: a sparse grid (cards only in row 3) is walked completely",
+			"got %d cards %s / want %d %s" % [got.size(), got, expected.size(), expected])

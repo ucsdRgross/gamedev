@@ -5,6 +5,18 @@ handoff and audit this project has run, so future work does not re-learn the sam
 re-clutter the repo with plan files. **Keep it current:** when a feature lands or a ruling
 changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the temporary plan doc.
 
+## What the game is, in five lines
+
+A circus-themed solitaire deckbuilder. The board is **one to three grids, 5×5 by default**, side
+by side; each cell holds a **stack**. Cards wait in the **Entrance**, a row attached above the
+grid it is committed to, and the player places one card per action into a cell. **Every placement
+scores the rows, columns, diagonals and height runs it completes, immediately.** A show ends when
+the player presses End; the run is a tour across a generated world map.
+
+⚠ **There is no Submit, no act count, no upper/lower tableau and no end-of-show payout.** Those
+were the previous board and they are gone — a suite gate fails any product file that names them.
+Docs describing them live in `archive/` and are not maintained.
+
 ## Read-first map
 
 | Doc | What it is |
@@ -18,8 +30,14 @@ changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the tempor
 | [LAYERING.md](LAYERING.md) | Board draw order (all-structural, no `z_index`). |
 | [HEADLESS_TESTING.md](HEADLESS_TESTING.md) | Test-environment traps. **Read before debugging a "hanging" test.** |
 | [todo.md](todo.md) | Open backlog — the single place open items live. |
-| [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (the owner's ideas). |
-| [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / reference quarry. |
+| [DESIGN_DOC.md](DESIGN_DOC.md) | The organized game-design record (the owner's ideas), **grid version**. |
+| [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / reference quarry, **grid versions**. |
+| `archive/` | The **pre-grid** versions of those three, kept because the effect-review corpus was mined from them and its drop ledger points back into them. ⚠ Not maintained, not scanned by `doc_check.py`, and describing a board that no longer exists — read one only to resolve a citation that predates the grid. `archive/README.md` says which is which. |
+| `design/poker-patience/DESIGN.md` | **The authority on the grid's rules**, cited by question id. `PLAN.md` §1 carries the normative contracts (the coordinate, the line kinds, the economy). |
+| `curated effects post grid.csv` | **The design idea index.** One row per idea from `gam draft.txt`, `pokerpatience.txt`, the two design companions and `DESIGN_DOC.md`, restated for the grid. Every row declares `scope` (`grid-local` or `global`), `axis`, `needs_height` and `needs_grids`; `source` cites the line it came from and `status` says whether it is carried, revived, superseded, vetoed or implemented. `curated effects pre grid.csv` is the archived predecessor. |
+| `blinds.csv` | Level modifiers — one row per blind effect, each with a hazard or an objective **and a payoff for playing into it**. A level draws one; a boss level draws two. `weight` 2 means it counts as two. |
+| `accepted-ideas.csv` | What the owner has actually marked, mined from the catalog's `seen?` column and the two idea CSVs, plus unmarked proposals. `evidence` quotes the acceptance signal; most rows are `proposed` because no signal exists in their source. |
+| `CARD_CATALOG.csv` | The card spreadsheet, now carrying the same four axis columns plus `status` (superseded / remapped rows are marked with a reason, never deleted). |
 
 ## Hard project rules (non-negotiable)
 
@@ -45,9 +63,15 @@ changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the tempor
    wall-clock literals.
 5. **Commented-out code:** TODO comment if unimplemented, delete if implemented elsewhere.
    `##` purpose comments on every new method.
-6. **Board mutations** go through `Board.*` / Game deck functions and bump `GameData.revision`
-   AFTER consistency (ARCHITECTURE_REVIEW §2 — a miss gives stuck UI, stale caches, stale
-   positions). Per-act/per-show state that undo must rewind lives on **GameData**, never on Game.
+6. **Board mutations** go through `Board.*` (the legacy zones and the Entrance),
+   `Game.place_card_in_grid`/`move_card_in_grid`/`remove_card_from_grid` (the grids), or Game's
+   deck functions — and bump `GameData.revision` AFTER consistency (ARCHITECTURE_REVIEW §2 — a
+   miss gives stuck UI, stale caches, stale positions, and now also a lost undo entry).
+   Per-show state that undo must rewind lives on **GameData**, never on Game.
+   ⚠ **Banking a score is NOT a board mutation** — it emits `state_changed`; a `revision` bump
+   there rebuilds the play area mid-cascade.
+   ⚠ **`BoardCoord` is a `RefCounted`, so `==` is IDENTITY.** Use `equals()`, `pack()` for keys,
+   `is_nowhere()` for the sentinel. A suite gate fails `== BoardCoord.NOWHERE`.
 7. **After every deep copy of cards, relink backrefs** — `duplicate_deep` does not remap WeakRefs
    (ARCHITECTURE_REVIEW §6).
 8. **Tests:** TestSuite pattern; never `Decks/deck.gd` in tests (use TestDecks — frozen replay
@@ -79,12 +103,18 @@ Every successful plan in this repo followed the same shape; repeat it:
    per item); implement only the YES items. Record rulings verbatim — they become §8 material.
 4. **Ask the grill questions early.** Ambiguities (identity rules, opt-in vs opt-out, UI
    placement) resolve fastest as a numbered question list with recommended defaults.
-5. **Implement in order, full suite after each step.** New per-act state → GameData. New strings →
+5. **Implement in order, full suite after each step.** New per-show state → GameData. New strings →
    localization CSV. New knobs → player_settings. New tests follow ARCHITECTURE_REVIEW §7.
 6. **Owner verification script:** end with a short numbered in-game checklist the owner can run.
 7. **Docs pass (mandatory):** update ARCHITECTURE_REVIEW.md (current state + new landmines and
    rulings), todo.md (close items, add follow-ups), DESIGN_DOC.md if the design settled, and this
-   file if the workflow or rules changed.
+   file if the workflow or rules changed. Then run `py ../.claude/tools/doc_check.py` — it proves
+   every reference still resolves and catches a design id that leaked into a comment.
+
+⚠ **For anything grid-shaped, `design/poker-patience/DESIGN.md` has probably already answered
+it.** It is the owner's answered questionnaire, 314 answers deep, and `PLAN.md` §1 quotes the
+normative ones verbatim. Read it before proposing behaviour; an owner ruling you re-litigate is
+the most expensive kind of rework here.
 
 ## Doc hygiene
 
@@ -112,6 +142,11 @@ Code comments still cite plan docs that no longer exist. Their content lives her
 | FORMATION_LAYERING_HANDOFF | ARCHITECTURE_REVIEW §4c + LAYERING.md |
 | AUDIT_PROPOSALS_HANDOFF, EFFICIENCY_AUDIT_TRACKER | ARCHITECTURE_REVIEW §2/§8 + todo.md |
 | LEAK_PREVENTION_HANDOFF, PRODUCTION_LEAK_CANARY_HANDOFF | ARCHITECTURE_REVIEW §6 |
+| `DESIGN_DOC.md §2` in anything mined before the grid | `archive/DESIGN_DOC.md` §2 — the section number moved content, so a pre-grid citation resolves in the archive, not in the live file |
+
+⚠ **A code comment saying "act" almost always means a board ACTION, not the retired Submit.**
+`_begin_act`, `act_calls`, `act_event_cap` and `act_cancelled` all bracket one placement's
+resolution. ARCHITECTURE_REVIEW §3a says so at the site that enforces it.
 
 ## Coding best practices
 
@@ -141,8 +176,10 @@ must sit in the SAME folder as the main exe, which it launches by name.
   The raw form is `Godot --path solatro res://Tests/all_tests.tscn` — **WINDOWED, no `--headless`**
   (the PIXELS suite asserts on rendered pixels; headless it fails loudly instead of skipping —
   HEADLESS_TESTING.md §0). Logs:
-  `%APPDATA%\Godot\app_userdata\Solatro\test_output_all.log`. Run it yourself whenever the owner's
-  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (31) and the
+  `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` — ⚠ **CHECK ITS MTIME, and
+  note the `logs\test\` segment**: a file of that name also sits directly under `Solatro\`, is months
+  stale, and greps clean while the banner reports failures. Run it yourself whenever the owner's
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (45) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`

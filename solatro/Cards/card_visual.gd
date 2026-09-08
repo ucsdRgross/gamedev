@@ -29,11 +29,20 @@ const ART_OUTLINE := CardOutline.WIDTH
 const CARD_SIZE := CARD_ART_SIZE + Vector2.ONE * ART_OUTLINE * 2.0
 ## The strip of a covered card that stays visible in a stack, in art units.
 ##
-## ⚠ **14 -> 16 came with the outline, and it is a BOARD-LAYOUT change, not just a card change** (owner:
-## *"pip added 2 pixels, need 2 unit clearance to account for animations"*). The arithmetic lands
-## exactly: the outlined pip row now ends 14 units below the card's top edge (4 of margin + a 10-unit
-## outlined pip), and 14 + 2 of clearance for the idle rig = 16. Every stacked card therefore sits 2
-## units further down and a tall column grows ~14 %.
+## Stacks grow UPWARD, so the strip that stays visible is the card's BOTTOM band, and what has to
+## fit inside it is that card's pip row. Derived from where the pips actually sit in
+## `card_visual.tscn` -- the Rank/Suit polygons are centred at y = 18 with a +/-5 extent, so the
+## pips span [13, 23] and the card's bottom edge is at 27:
+##
+##     4 (margin below the pips) + 10 (the outlined pip) = 14
+##     14 + 2 (clearance for the idle rig)               = 16
+##
+## ⚠ **IT IS A BOARD-LAYOUT NUMBER, NOT JUST A CARD ONE** -- it is the board's row pitch, so
+## moving it moves every stacked card and every prop anchored to a slot. The 2 is the only part
+## that is a choice rather than a measurement (owner: *"pip added 2 pixels, need 2 unit clearance
+## to account for animations"*); everything else follows from the art, and
+## `test_outline.test_card_separation_derives_from_the_pip_row` re-derives it from the scene so
+## an art pass that moves the pips cannot silently leave the pitch behind.
 const CARD_SEPARATION : int = 16
 ## How far anim_jump lifts a card, in UNSCALED units. Shared, not a literal inside the animation:
 ## props a card jumps INTO (the hoop) ride at exactly this height so the two CENTRES coincide —
@@ -63,6 +72,11 @@ const RIG_ANIM : StringName = &"new_animation_2"
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
 @export var current_context: DisplayContext = DisplayContext.PLAY_AREA
 var control_anchor: Control = null
+## Which EDGE of `control_anchor` the card hangs from. A grid cell's stack grows UPWARD and every
+## card in a row shares a BOTTOM edge, so a covered card shows its bottom strip -- which is where
+## the pips are. The Entrance still fans DOWNWARD from its control tops. PlayArea sets this per
+## card when it binds the slot.
+var bottom_anchored := false
 
 var card_size : Vector2
 var card_separation: int
@@ -642,11 +656,24 @@ func _game_view() -> GameView:
 	var game := CardEnvironment.get_current_game()
 	return game.view if game else null
 
+## Where this card's centre sits on its anchor control. Hanging from the control's BOTTOM edge is
+## the whole of the shared-bottom-edge rule: a thin strip control then shows the card's bottom
+## while the rest of it rises over the card beneath.
+## ⚠ **A CONTROL-LOCAL LENGTH IS NOT A GLOBAL ONE.** `global_position` carries every scale above
+## the control -- the board's zoom lives on the scroll container -- while `size` and `card_size`
+## never do. Adding them raw put a collapsed cell frame 27 px above its own control instead of
+## 27 * board_zoom, and a full-card frame the same distance the other way: measured, a 69.74 px
+## spread across ONE row's zone cards at board_zoom 2.29, and exactly 0 at 1.0, which is why it
+## stayed invisible while the board only ever rested unzoomed.
+func _control_scale(control:Control) -> Vector2:
+	return control.get_global_transform().get_scale()
+
 func get_card_control_center(control:Control) -> Vector2:
-	return control.global_position + Vector2(control.size.x/2, card_size.y / 2)
+	var y := (control.size.y - card_size.y / 2) if bottom_anchored else (card_size.y / 2)
+	return control.global_position + Vector2(control.size.x / 2, y) * _control_scale(control)
 
 func get_control_center(control:Control) -> Vector2:
-	return control.global_position + control.size/2
+	return control.global_position + control.size / 2.0 * _control_scale(control)
 
 func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)
@@ -758,6 +785,32 @@ func anim_jump() -> float:
 	move_tween.tween_property(offset, "scale", Vector2.ONE * 1.15,
 			delay * s.card_jump_pulse_fraction)
 	move_tween.tween_property(offset, "scale", Vector2.ONE,
+			delay * s.card_jump_settle_fraction)
+	return delay * s.card_jump_raise_fraction
+
+## The SPRING: a card riding a jump that happened BENEATH it (`Q310`=a — *"jumping will cause cards
+## stacked above to jump up as well like a spring as if jumping card has all above cards on its
+## shoulder"*). Mirrors `anim_jump`'s vertical motion on the same phase fractions, so the stack
+## moves as ONE RIGID BODY with the card that jumped, and deliberately omits the SCALE PULSE: the
+## pulse belongs to the card the effect is happening to, and pulsing the whole stack reads as five
+## cards being hit rather than one card lifting the others.
+##
+## ⚠ It rides `offset`, which lives INSIDE the card root and is invisible to the containers — so a
+## springing stack OVERLAPS the rows above it and the board does not re-flow (`Q312`=a). That is
+## the one place the "rows never overlap" rule is deliberately broken, and it is broken here rather
+## than discovered somewhere else.
+func anim_spring_lift() -> float:
+	if not offset: return 0.0
+	reset_tween(move_tween)
+	var delay := CardEnvironment.CURRENT.get_delay()
+	var s := SettingsManager.settings
+	move_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	move_tween.tween_callback(func()->void: floating = false)
+	move_tween.tween_property(offset, "position:y", -CARD_JUMP_RISE,
+			delay * s.card_jump_raise_fraction)
+	# Held for exactly as long as the jumping card holds its pose, then down together.
+	move_tween.tween_interval(delay * s.card_jump_pulse_fraction)
+	move_tween.tween_property(offset, "position:y", 0.0,
 			delay * s.card_jump_settle_fraction)
 	return delay * s.card_jump_raise_fraction
 

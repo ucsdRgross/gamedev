@@ -1,0 +1,614 @@
+extends TestSuite
+# res://Tests/Engine/test_grid_board.gd
+# Phase 1 of the poker-patience board: the four-component coordinate and its arithmetic,
+# the grid storage on GameData, the position indexes, and the Board grid mutations
+# (TP-01..TP-14). Line geometry and scoring live in test_line_detect.gd.
+
+func suite_name() -> String:
+	return "GRID BOARD"
+
+func _ready() -> void:
+	TestLog.line("============ GRID BOARD TEST PASS ============")
+	check_all_tests_registered()
+	run_round_trip_test()
+	run_continuous_x_test()
+	run_entrance_test()
+	run_off_board_test()
+	run_value_semantics_test()
+	run_grid_storage_test()
+	run_grid_duplicate_test()
+	run_grid_zone_cards_test()
+	run_position_index_test()
+	run_reverse_index_test()
+	run_place_in_cell_test()
+	run_stack_anchor_test()
+	run_remove_compaction_test()
+	run_compaction_single_bump_test()
+	run_compaction_flag_test()
+	run_has_cell_test()
+	run_validate_catches_grid_aliasing_test()
+	run_removal_carries_the_commitment_test()
+	finish()
+
+# ==============================================================================
+# A grid removal renumbers, and the COMMITMENT has to move with it
+# ==============================================================================
+## `grids.pop_at` shifts every later grid down one. `remove_grid_score_data` re-indexes the score
+## buckets for exactly that reason; `committed_grid` was left naming the old numbering, and
+## `Game.place_card_in_grid` refuses every placement whose grid is not the committed one -- with
+## its only reset sitting past that same guard, so nothing could ever clear it again.
+func run_removal_carries_the_commitment_test() -> void:
+	behavior_section("A REMOVAL CARRIES THE COMMITMENT")
+	var state := GameData.new()
+	var grids : Array[GridData] = []
+	for _i in 3:
+		var g := GridData.new()
+		g.build_cells()
+		grids.append(g)
+	state.grids = grids
+
+	# Committed BELOW the removal: untouched, because its own index did not move.
+	state.committed_grid = 0
+	Board.remove_grid(state, 2)
+	check(state.committed_grid == 0,
+			"removing a grid ABOVE the committed one leaves the commitment alone",
+			"got %d" % state.committed_grid)
+
+	# Committed ABOVE the removal: the grid is still there, one index lower, and so is the
+	# commitment -- it must still name the SAME grid, not the one that slid into its place.
+	var state2 := GameData.new()
+	var grids2 : Array[GridData] = []
+	for _i in 3:
+		var g := GridData.new()
+		g.build_cells()
+		grids2.append(g)
+	state2.grids = grids2
+	var committed_to : GridData = grids2[2]
+	state2.committed_grid = 2
+	Board.remove_grid(state2, 0)
+	check(state2.committed_grid == 1,
+			"removing a grid BELOW the committed one shifts the commitment down with it",
+			"got %d" % state2.committed_grid)
+	# `find`, never `grids[committed_grid]`: a WRONG commitment is out of range, and indexing it
+	# would abort this function and take every check below it down silently.
+	check(state2.grids.find(committed_to) == state2.committed_grid,
+			"...and it still names the SAME grid, not the one that slid into its old index",
+			"grid sits at %d, commitment says %d"
+			% [state2.grids.find(committed_to), state2.committed_grid])
+
+	# Committing to a grid that is then removed: the commitment LIFTS. Left dangling it would
+	# name an index no grid has, and every later placement would be refused for the whole show.
+	var state3 := GameData.new()
+	var grids3 : Array[GridData] = []
+	for _i in 2:
+		var g := GridData.new()
+		g.build_cells()
+		grids3.append(g)
+	state3.grids = grids3
+	state3.committed_grid = 1
+	Board.remove_grid(state3, 1)
+	check(state3.committed_grid == -1,
+			"removing the COMMITTED grid lifts the commitment -- there is nothing to commit to",
+			"got %d" % state3.committed_grid)
+	check(state3.committed_grid < state3.grids.size(),
+			"...so the commitment never names an index the board does not have",
+			"committed %d, %d grids" % [state3.committed_grid, state3.grids.size()])
+
+
+# ==============================================================================
+# TP-01 -- a coordinate round-trips grid/x/y/h
+# ==============================================================================
+func run_round_trip_test() -> void:
+	behavior_section("ROUND TRIP")
+	var c := BoardCoord.new(1, 3, 2, 4)
+	check(c.grid == 1 and c.x == 3 and c.y == 2 and c.h == 4,
+			"BoardCoord.new(1,3,2,4) round-trips",
+			"got grid=%d x=%d y=%d h=%d" % [c.grid, c.x, c.y, c.h])
+
+# ==============================================================================
+# TP-02 -- x is continuous: 5 columns left of (grid 1, x 0) is (grid 0, x 4)
+# FIX-GRID-3: three 5-wide grids.
+# ==============================================================================
+func run_continuous_x_test() -> void:
+	behavior_section("CONTINUOUS X")
+	var widths : Array[int] = [5, 5, 5]
+	var c := BoardCoord.new(1, 0, 2, 0)
+	# one column left of (grid 1, x 0) crosses the boundary into (grid 0, x 4) -- the
+	# worked example the source note gives verbatim.
+	var stepped := c.step(-1, 0, widths)
+	check(stepped.grid == 0 and stepped.x == 4,
+			"one column left of (grid 1, x 0) is (grid 0, x 4)",
+			"got grid=%d x=%d" % [stepped.grid, stepped.x])
+	check(stepped.y == c.y and stepped.h == c.h,
+			"step leaves y and h unchanged when dy is 0",
+			"got y=%d h=%d" % [stepped.y, stepped.h])
+
+	# lower-level: crossing the OTHER way, and by more than one grid's width
+	var forward := BoardCoord.new(0, 3, 0, 0).step(4, 0, widths)
+	check(forward.grid == 1 and forward.x == 2,
+			"4 columns right of (grid 0, x 3) is (grid 1, x 2)",
+			"got grid=%d x=%d" % [forward.grid, forward.x])
+
+	var far := BoardCoord.new(0, 0, 0, 0).step(12, 0, widths)
+	check(far.grid == 2 and far.x == 2,
+			"step crosses more than one grid boundary in one call",
+			"got grid=%d x=%d" % [far.grid, far.x])
+
+	# a full grid-width step (5, matching FIX-GRID-3's width) lands on the SAME local x
+	# one grid over -- the general shape of the source note's example.
+	var full_width := BoardCoord.new(1, 0, 2, 0).step(-5, 0, widths)
+	check(full_width.grid == 0 and full_width.x == 0,
+			"a full grid-width step left keeps the same local x, one grid over",
+			"got grid=%d x=%d" % [full_width.grid, full_width.x])
+
+	# TP-02's literal fixture: 5 columns left of (grid 1, x 0)
+	var tp02 := BoardCoord.new(1, 0, 2, 0).step(-5, 0, widths)
+	check(tp02.grid == 0 and tp02.x == 0,
+			"TP-02's fixture: 5 columns left of (grid 1, x 0) is (grid 0, x 0)",
+			"got grid=%d x=%d" % [tp02.grid, tp02.x])
+
+	# two-axis step: dx and dy together
+	var diag := BoardCoord.new(0, 3, 2, 0).step(3, 4, widths)
+	check(diag.grid == 1 and diag.x == 1 and diag.y == 6,
+			"a two-axis step moves x across a grid boundary and y at the same time",
+			"got grid=%d x=%d y=%d" % [diag.grid, diag.x, diag.y])
+
+	# a step across grids of DIFFERENT widths proves nothing hard-codes 5
+	var uneven : Array[int] = [5, 6, 5]
+	var uneven_step := BoardCoord.new(0, 4, 0, 0).step(2, 0, uneven)
+	check(uneven_step.grid == 1 and uneven_step.x == 1,
+			"a step across grids of different widths lands using each grid's own width",
+			"got grid=%d x=%d" % [uneven_step.grid, uneven_step.x])
+	var uneven_step2 := BoardCoord.new(1, 5, 0, 0).step(1, 0, uneven)
+	check(uneven_step2.grid == 2 and uneven_step2.x == 0,
+			"stepping off the end of the wider middle grid lands at the start of the next",
+			"got grid=%d x=%d" % [uneven_step2.grid, uneven_step2.x])
+
+# ==============================================================================
+# TP-03 -- the Entrance is y == -1 of its attached grid, and the attachment moves on
+# commit. FIX-GRID-3.
+# ==============================================================================
+func run_entrance_test() -> void:
+	behavior_section("ENTRANCE")
+	var attached_grid := 1
+	var entrance := BoardCoord.new(attached_grid, 2, BoardCoord.ENTRANCE_ROW, 0)
+	check(entrance.is_entrance(), "y == ENTRANCE_ROW reads as the Entrance")
+	check(entrance.grid == attached_grid,
+			"the Entrance carries the grid it is currently attached to")
+
+	var on_board := BoardCoord.new(attached_grid, 2, 0, 0)
+	check(not on_board.is_entrance(), "row 0 of a grid is not the Entrance")
+
+	# the attachment moves with the commit: re-attaching is a NEW coordinate with the
+	# new grid index, still y == ENTRANCE_ROW
+	var committed_grid := 2
+	var moved := BoardCoord.new(committed_grid, entrance.x, entrance.y, entrance.h)
+	check(moved.is_entrance() and moved.grid == committed_grid,
+			"committing to another grid moves the Entrance's attachment")
+
+# ==============================================================================
+# TP-04 -- off-board reads as the four-component MIN analogue, never (0,0,0,0)
+# ==============================================================================
+# ==============================================================================
+# VALUE SEMANTICS. `BoardCoord` is a RefCounted and GDScript has no operator overloading, so `==`
+# compares OBJECTS. Every one of these checks is a way that fact silently breaks code which looks
+# obviously correct, and each pins the affordance that replaces it.
+# ==============================================================================
+func run_value_semantics_test() -> void:
+	behavior_section("BOARDCOORD VALUE SEMANTICS")
+	var a := BoardCoord.new(1, 2, 3, 4)
+	var b := BoardCoord.new(1, 2, 3, 4)
+	var c := BoardCoord.new(1, 2, 3, 5)
+
+	# The trap itself, asserted so nobody "fixes" equals() by reaching for ==.
+	check(not (a == b), "two coordinates naming the same cell are NOT ==, because == is identity")
+	check(a.equals(b), "...and equals() says they are the same cell")
+	check(not a.equals(c), "...while a different height is a different cell")
+	check(not a.equals(null), "equals(null) is false, not a crash")
+
+	check(a.pack() == b.pack(), "pack() is a VALUE, so two equal coords give equal keys")
+	check(a.pack() != c.pack(), "...and unequal coords do not collide")
+	var d : Dictionary[Vector4i, int] = {}
+	d[a.pack()] = 7
+	var found : int = d.get(b.pack(), -1)
+	check(found == 7,
+			"a dictionary keyed on pack() finds the entry through a DIFFERENT instance",
+			str(found))
+	var round_trip := BoardCoord.unpack(a.pack())
+	check(round_trip.equals(a), "unpack(pack()) round-trips")
+
+	# ⚠ The sentinel is the sharpest edge: NOWHERE is a shared instance, so identity works for
+	# anything returning that instance and fails for a coordinate REBUILT with the same values.
+	var rebuilt := BoardCoord.new(BoardCoord.NOWHERE.grid, BoardCoord.NOWHERE.x,
+			BoardCoord.NOWHERE.y, BoardCoord.NOWHERE.h)
+	# Through a variable on purpose: written out, this line is exactly what the sentinel gate
+	# forbids, and a gate with an opt-out marker is a gate with a bypass.
+	var shared := BoardCoord.NOWHERE
+	check(not (rebuilt == shared),
+			"a REBUILT sentinel is not == NOWHERE -- the exact bug the sentinel gate forbids")
+	check(rebuilt.is_nowhere(), "...but is_nowhere() recognises it")
+	check(BoardCoord.NOWHERE.is_nowhere(), "...and recognises the shared instance too")
+	check(not a.is_nowhere(), "a real coordinate is not nowhere")
+
+	# The two functions that used to answer `null` now answer NOWHERE, so callers have one
+	# convention instead of two.
+	var state := TestGridFixtures.build_fix_grid_1()
+	var stray := TestFactories.m_card(3, TestFactories.uc())
+	check(state.cell_type_coord(stray).is_nowhere(),
+			"cell_type_coord answers NOWHERE for a card that is not a cell type")
+	check(Board.locate_in_cell(state, stray).is_nowhere(),
+			"locate_in_cell answers NOWHERE for a card that is on no grid")
+
+func run_off_board_test() -> void:
+	behavior_section("OFF BOARD")
+	var nowhere := BoardCoord.NOWHERE
+	check(nowhere.grid != 0 or nowhere.x != 0 or nowhere.y != 0 or nowhere.h != 0,
+			"NOWHERE is not (0,0,0,0)",
+			"got grid=%d x=%d y=%d h=%d" % [nowhere.grid, nowhere.x, nowhere.y, nowhere.h])
+	check(nowhere.grid == Vector3i.MIN.x and nowhere.x == Vector3i.MIN.x
+			and nowhere.y == Vector3i.MIN.x and nowhere.h == Vector3i.MIN.x,
+			"NOWHERE is the four-component MIN analogue",
+			"got grid=%d x=%d y=%d h=%d" % [nowhere.grid, nowhere.x, nowhere.y, nowhere.h])
+
+	# step walking off either edge of the board NEVER clamps and NEVER returns NOWHERE: it
+	# lands on the virtual continuation, stepping at the width of the nearest real edge grid.
+	var widths : Array[int] = [5, 5, 5]
+	var off_left := BoardCoord.new(0, 0, 0, 0).step(-11, 0, widths)
+	check(off_left.grid == -3 and off_left.x == 4,
+			"stepping 11 past the left edge of grid 0 lands on virtual grid -3, x 4",
+			"got grid=%d x=%d" % [off_left.grid, off_left.x])
+
+	var off_right := BoardCoord.new(2, 4, 0, 0).step(11, 0, widths)
+	check(off_right.grid == 5 and off_right.x == 0,
+			"stepping 11 past the right edge of the last grid lands on virtual grid 5, x 0",
+			"got grid=%d x=%d" % [off_right.grid, off_right.x])
+
+	# a y step past the bottom of a grid lands virtually too (no y clamp)
+	var off_bottom := BoardCoord.new(0, 0, 0, 0).step(0, -3, widths)
+	check(off_bottom.grid == 0 and off_bottom.x == 0 and off_bottom.y == -3,
+			"a y step below row 0 is not clamped either",
+			"got grid=%d x=%d y=%d" % [off_bottom.grid, off_bottom.x, off_bottom.y])
+
+# ==============================================================================
+# TP-05 -- a 3-grid board's validate() returns empty at mixed heights. FIX-MIXED-H.
+# ==============================================================================
+func run_grid_storage_test() -> void:
+	behavior_section("GRID STORAGE")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	check(state.grids.size() == 3, "FIX-MIXED-H carries 3 grids",
+			"got %d" % state.grids.size())
+	var g0 : GridData = state.grids[0]
+	check(g0.cells[g0.cell_index(0, 1)].datas.size() == 6,
+			"grid 0 row 1 is at height 6",
+			"got %d" % g0.cells[g0.cell_index(0, 1)].datas.size())
+	var g1 : GridData = state.grids[1]
+	check(g1.cells[g1.cell_index(0, 1)].datas.size() == 1,
+			"grid 1 row 1 is at height 1",
+			"got %d" % g1.cells[g1.cell_index(0, 1)].datas.size())
+	var g2 : GridData = state.grids[2]
+	check(g2.cells[g2.cell_index(0, 1)].datas.size() == 0,
+			"grid 2 row 1 is empty",
+			"got %d" % g2.cells[g2.cell_index(0, 1)].datas.size())
+	var violations := state.validate()
+	check(violations.is_empty(),
+			"validate() returns empty on FIX-MIXED-H",
+			"got %s" % [violations])
+
+# ==============================================================================
+# TP-06 -- a card in two cells is reported by validate() with BOTH locations. FIX-GRID-1.
+# ==============================================================================
+func run_grid_duplicate_test() -> void:
+	behavior_section("GRID DUPLICATE")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var g0 : GridData = state.grids[0]
+	var dupe := TestFactories.m_card(1, TestFactories.uc())
+	dupe.stage = CardData.Stage.PLAY
+	g0.cells[g0.cell_index(0, 0)].datas.append(dupe)
+	g0.cells[g0.cell_index(1, 2)].datas.append(dupe)
+	var violations := state.validate()
+	var hit := ""
+	for v : String in violations:
+		if v.begins_with("I1:") and v.contains(str(dupe)):
+			hit = v
+			break
+	check(not hit.is_empty(), "validate() reports the duplicate card", "got %s" % [violations])
+	check(hit.contains("(0,0)") and hit.contains("(1,2)"),
+			"the report names BOTH cell locations",
+			"got: %s" % hit)
+
+# ==============================================================================
+# TP-07 -- 25 cell zone cards exist per grid and appear in all_card_datas(). FIX-GRID-3.
+# ==============================================================================
+func run_grid_zone_cards_test() -> void:
+	behavior_section("GRID ZONE CARDS")
+	var state := TestGridFixtures.build_fix_grid_3()
+	for gi in state.grids.size():
+		var grid : GridData = state.grids[gi]
+		check(grid.cell_types.size() == 25,
+				"grid %d carries 25 cell zone cards" % gi,
+				"got %d" % grid.cell_types.size())
+		var bad_cells : Array[int] = []
+		for ci in grid.cell_types.size():
+			if not (grid.cell_types[ci].type is TypeGridCell):
+				bad_cells.append(ci)
+		check(bad_cells.is_empty(),
+				"grid %d cell zone cards are all TypeGridCell" % gi,
+				"got non-TypeGridCell at cells %s" % [bad_cells])
+	var all := state.all_card_datas()
+	var g0 : GridData = state.grids[0]
+	check(all.has(g0.cell_types[0]),
+			"grid 0's cell zone card appears in all_card_datas()")
+	var g2 : GridData = state.grids[2]
+	check(all.has(g2.cell_types[24]),
+			"grid 2's last cell zone card appears in all_card_datas()")
+	var violations := state.validate()
+	check(violations.is_empty(),
+			"validate() returns empty on FIX-GRID-3",
+			"got %s" % [violations])
+
+# ==============================================================================
+# TP-08 -- position_of()/card_at() are O(1) and rebuild only when revision moved.
+# FIX-MIXED-H. Legacy position_of() has no legacy-zone cards to read on this fixture (only
+# grids are stocked), so the caching contract is exercised through card_at() -- the S3
+# grid-side index shares the SAME revision-gated rebuild as the legacy one.
+# ==============================================================================
+func run_position_index_test() -> void:
+	behavior_section("POSITION INDEX")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	var g1 : GridData = state.grids[1]
+	var known_card : CardData = g1.cells[g1.cell_index(0, 1)].datas[0]
+	var coord := BoardCoord.new(1, 0, 1, 0)
+	check(state.card_at(coord) == known_card,
+			"card_at() finds the known card at grid 1 row 1 height 0",
+			"got %s" % state.card_at(coord))
+
+	# mutate a cell directly WITHOUT bumping revision -- the index must NOT reflect this
+	# until revision moves, proving the rebuild is gated on revision, not on every call.
+	var intruder := TestFactories.m_card(1, TestFactories.uc())
+	intruder.stage = CardData.Stage.PLAY
+	var g2 : GridData = state.grids[2]
+	g2.cells[g2.cell_index(0, 1)].datas.append(intruder)
+	var g2_coord := BoardCoord.new(2, 0, 1, 0)
+	check(state.card_at(g2_coord) == null,
+			"card_at() still reads the pre-mutation index before revision moves",
+			"got %s" % state.card_at(g2_coord))
+
+	state.revision += 1
+	check(state.card_at(g2_coord) == intruder,
+			"card_at() rebuilds once revision moves and finds the new card",
+			"got %s" % state.card_at(g2_coord))
+
+# ==============================================================================
+# TP-09 -- the reverse index (card_at) agrees with the grid-side forward index after every
+# mutation kind: a place, a move and a removal. FIX-MIXED-H. S4's mutation API does not
+# exist yet, so the fixture is driven directly, bumping revision after each mutation the
+# same way Board.* does today.
+# ==============================================================================
+func run_reverse_index_test() -> void:
+	behavior_section("REVERSE INDEX")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	var g0 : GridData = state.grids[0]
+
+	# PLACE: a new card into an empty cell.
+	var placed := TestFactories.m_card(1, TestFactories.uc())
+	placed.stage = CardData.Stage.PLAY
+	g0.cells[g0.cell_index(2, 3)].datas.append(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 2, 3, 0)) == placed,
+			"after a place, card_at() finds the new card at its cell",
+			"got %s" % state.card_at(BoardCoord.new(0, 2, 3, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a place",
+			"got %s" % [state.validate()])
+
+	# MOVE: relocate the same card to a different cell.
+	g0.cells[g0.cell_index(2, 3)].datas.erase(placed)
+	g0.cells[g0.cell_index(4, 4)].datas.append(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 2, 3, 0)) == null,
+			"after a move, the old cell reads empty",
+			"got %s" % state.card_at(BoardCoord.new(0, 2, 3, 0)))
+	check(state.card_at(BoardCoord.new(0, 4, 4, 0)) == placed,
+			"after a move, the new cell reads the moved card",
+			"got %s" % state.card_at(BoardCoord.new(0, 4, 4, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a move",
+			"got %s" % [state.validate()])
+
+	# REMOVE: take the card off the board entirely.
+	g0.cells[g0.cell_index(4, 4)].datas.erase(placed)
+	state.revision += 1
+	check(state.card_at(BoardCoord.new(0, 4, 4, 0)) == null,
+			"after a removal, the cell reads empty",
+			"got %s" % state.card_at(BoardCoord.new(0, 4, 4, 0)))
+	check(state.validate().is_empty(),
+			"validate() reports no I4 violation after a removal",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-10 -- place_in_cell into an empty cell bumps revision exactly once. FIX-GRID-1.
+# ==============================================================================
+func run_place_in_cell_test() -> void:
+	behavior_section("PLACE IN CELL")
+	var state := TestGridFixtures.build_fix_grid_1()
+	var before := state.revision
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var ok := Board.place_in_cell(state, card, BoardCoord.new(0, 0, 0, 0))
+	check(ok, "place_in_cell into an empty cell succeeds")
+	check(state.revision == before + 1,
+			"place_in_cell bumps revision exactly once",
+			"got %d, expected %d" % [state.revision, before + 1])
+	check(state.card_at(BoardCoord.new(0, 0, 0, 0)) == card,
+			"the placed card is found at (0,0,0)")
+	check(state.validate().is_empty(),
+			"validate() returns empty after the placement",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-11 -- stacking uses Anchor.ON_TOP and lands at h+1. FIX-STACK-5 (cell (0,0) already
+# holds 4 cards).
+# ==============================================================================
+func run_stack_anchor_test() -> void:
+	behavior_section("STACK ANCHOR")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var card := TestFactories.m_card(1, TestFactories.uc())
+	var ok := Board.place_in_cell(state, card, BoardCoord.new(0, 0, 0, 0))
+	check(ok, "the 5th card stacks onto cell (0,0)")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 4)) == card,
+			"it lands at h=4 -- ON_TOP of the existing 4 cards (h+1)",
+			"got %s" % state.card_at(BoardCoord.new(0, 0, 0, 4)))
+	check(state.validate().is_empty(),
+			"validate() returns empty after stacking",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-12 -- removing from mid-stack compacts the cards above down. FIX-STACK-5.
+# ==============================================================================
+func run_remove_compaction_test() -> void:
+	behavior_section("REMOVE COMPACTION")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var mid_card : CardData = cell.datas[1]     #h=1 of 4 (h=0..3)
+	var top_card : CardData = cell.datas[3]     #was h=3, must land at h=2
+	var ok := Board.remove_from_cell(state, mid_card)
+	check(ok, "remove_from_cell removes the mid-stack card")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 1)) != mid_card,
+			"the removed card no longer occupies its old height")
+	check(state.card_at(BoardCoord.new(0, 0, 0, 2)) == top_card,
+			"the card above it compacts down by one height",
+			"got %s" % state.card_at(BoardCoord.new(0, 0, 0, 2)))
+	check(cell.datas.size() == 3, "the stack is now 3 tall", "got %d" % cell.datas.size())
+	check(state.validate().is_empty(),
+			"validate() returns empty after the compaction",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-13 -- a compaction bumps revision ONCE for the whole compaction. FIX-STACK-10 (9
+# cards; removing the bottom one compacts 8 cards down in one mutation).
+# ==============================================================================
+func run_compaction_single_bump_test() -> void:
+	behavior_section("COMPACTION SINGLE BUMP")
+	var state := TestGridFixtures.build_fix_stack_10()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var bottom_card : CardData = cell.datas[0]
+	var before := state.revision
+	var ok := Board.remove_from_cell(state, bottom_card)
+	check(ok, "remove_from_cell removes the bottom card of a 9-tall stack")
+	check(state.revision == before + 1,
+			"one revision bump covers the whole 8-card compaction, not one per card",
+			"got %d, expected %d" % [state.revision, before + 1])
+	check(cell.datas.size() == 8, "the stack is now 8 tall", "got %d" % cell.datas.size())
+	check(state.validate().is_empty(),
+			"validate() returns empty after the compaction",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# TP-14 -- a compaction move carries the compaction flag; a placement does not.
+# is_compaction is set BY THE CALLER, never inferred from before/after heights.
+# FIX-STACK-5.
+# ==============================================================================
+func run_compaction_flag_test() -> void:
+	behavior_section("COMPACTION FLAG")
+	var state := TestGridFixtures.build_fix_stack_5()
+	var grid : GridData = state.grids[0]
+	var cell : ArrayCardData = grid.cells[grid.cell_index(0, 0)]
+	var card : CardData = cell.datas[0]
+
+	var compaction_res := Board.move_to_cell(state, card, BoardCoord.new(0, 1, 0, 0), true)
+	check(compaction_res.ok, "move_to_cell moves a card already on the grid board")
+	check(compaction_res.is_compaction,
+			"a caller-declared compaction move carries is_compaction == true")
+
+	var plain_res := Board.move_to_cell(state, card, BoardCoord.new(0, 2, 0, 0), false)
+	check(plain_res.ok, "a second move_to_cell call also succeeds")
+	check(not plain_res.is_compaction,
+			"a caller-declared non-compaction move carries is_compaction == false")
+
+	var new_card := TestFactories.m_card(1, TestFactories.uc())
+	var place_ok := Board.place_in_cell(state, new_card, BoardCoord.new(0, 3, 0, 0))
+	check(place_ok, "place_in_cell succeeds for a fresh card")
+	check(state.validate().is_empty(),
+			"validate() returns empty after the moves and the placement",
+			"got %s" % [state.validate()])
+
+# ==============================================================================
+# has_cell -- the landing question a step's result asks separately from moving.
+# ==============================================================================
+func run_has_cell_test() -> void:
+	behavior_section("HAS CELL")
+	var state := TestGridFixtures.build_fix_grid_1()
+	check(state.has_cell(BoardCoord.new(0, 2, 2, 0)),
+			"has_cell is true for a real cell of a real grid")
+
+	check(not state.has_cell(BoardCoord.new(-1, 4, 0, 0)),
+			"has_cell is false for a virtual off-edge grid index")
+	check(not state.has_cell(BoardCoord.new(0, 5, 0, 0)),
+			"has_cell is false for an x outside the grid's own bounds")
+	check(not state.has_cell(BoardCoord.new(0, 0, -1, 0)),
+			"has_cell is false for a y outside the grid's own bounds")
+
+	# a ragged/hole grid: cells is shorter than grid_width * grid_height, representing
+	# missing cells at the tail of the row-major array.
+	var ragged : GridData = state.grids[0]
+	ragged.cells.resize(ragged.cells.size() - 1)
+	var hole_index := ragged.cell_index(4, 4)
+	check(hole_index >= ragged.cells.size(),
+			"the hole sits at the truncated tail of the row-major cell array")
+	check(not state.has_cell(BoardCoord.new(0, 4, 4, 0)),
+			"has_cell is false for a coordinate inside a real grid's block with no cell there")
+
+# ==============================================================================
+# TP-127 -- validate() catches a grid invariant violation. The SIZE and NULL and duplicate
+# invariants are already covered above; what is not is ALIASING -- the same object reachable
+# from two places at once.
+#
+# WARNING: THIS IS THE FAILURE MODE THE GRID MODEL ACTUALLY HAS. Every grid is built and
+# owned by a SkillGridCreator card that holds a reference to it, and every snapshot is a deep
+# copy; an aliased GridData or an aliased cell array therefore reads as perfectly consistent
+# on inspection -- the sizes match, nothing is null, no card is listed twice -- right up until
+# a placement into one grid silently appears in the other. Sizes and nulls cannot see it.
+# ==============================================================================
+
+## True when some violation mentions every one of `needles`.
+func _reports(violations: Array[String], needles: Array[String]) -> bool:
+	for v : String in violations:
+		var all_present := true
+		for needle : String in needles:
+			if not v.contains(needle):
+				all_present = false
+				break
+		if all_present: return true
+	return false
+
+func run_validate_catches_grid_aliasing_test() -> void:
+	behavior_section("VALIDATE CATCHES GRID ALIASING")
+	var state := TestGridFixtures.build_fix_mixed_h()
+	check(state.validate().is_empty(), "precondition: the fixture starts clean",
+			"; ".join(state.validate().slice(0, 2)))
+
+	# One GridData listed twice: two grids that are the same grid.
+	state.grids[2] = state.grids[0]
+	var aliased_grid := state.validate()
+	check(_reports(aliased_grid, ["grid 2", "same GridData"]),
+			"the same GridData listed under two indexes is reported, naming the later index",
+			"; ".join(aliased_grid.slice(0, 3)))
+
+	# One cell array shared by two cells: a card placed in either lands in both.
+	state = TestGridFixtures.build_fix_mixed_h()
+	state.grids[0].cells[7] = state.grids[0].cells[3]
+	var aliased_cell := state.validate()
+	check(_reports(aliased_cell, ["same ArrayCardData"]),
+			"a cell array reachable from two cells is reported",
+			"; ".join(aliased_cell.slice(0, 3)))
+	check(_reports(aliased_cell, ["cell 3", "cell 7"]),
+			"...and the report names BOTH cells, not just the one it noticed second",
+			"; ".join(aliased_cell.slice(0, 3)))
+
+	# A clean board stays clean: a check that fires on the fixture it walks 75 cells of would
+	# make every real board report a violation forever.
+	state = TestGridFixtures.build_fix_mixed_h()
+	check(state.validate().is_empty(),
+			"a legitimate multi-grid board reports nothing",
+			"; ".join(state.validate().slice(0, 3)))

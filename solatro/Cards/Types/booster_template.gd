@@ -32,7 +32,7 @@ func on_map_picked(parent: Node) -> ChoiceViewer:
 ## pick and silently do nothing). Returns the pool (the getter's array, post-edit).
 func _gather(getter: Callable, hook: StringName) -> Array:
 	var pool : Array = getter.call()
-	if env: await env.run_all_mods(hook, pool)
+	if api: await api.run_all_mods(hook, pool)
 	return pool
 
 ## Generate one pack card. Rank + suit are always rolled; stamp/skill/type are luck-gated

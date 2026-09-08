@@ -25,7 +25,56 @@ func _ready() -> void:
 	test_validate_clean_board()
 	test_validate_reports_injected_violations()
 	test_pack_unpack_edge_values()
+	behavior_section("THE ENTRANCE IS A GRID-SHAPED ZONE")
+	test_entrance_is_the_only_storage()
+	test_entrance_width_derives_from_its_cells()
+	test_entrance_survives_a_save_roundtrip()
 	finish()
+
+## The Entrance is a zone with a grid-like structure, and `upper_zone` is a VIEW of it -- not a
+## second array that has to be kept in step.
+func test_entrance_is_the_only_storage() -> void:
+	var s := make_state()
+	check(is_same(s.upper_zone, s.entrance_zone().cells),
+			"upper_zone IS the Entrance zone's cell array, not a copy of it")
+	check(is_same(s.upper_zone_type, s.entrance_zone().cell_types),
+			"upper_zone_type IS the Entrance zone's cell_types")
+	# A write through the old name has to land in the zone, or 265 existing call sites would be
+	# mutating something the zone never sees.
+	var before : int = s.entrance_zone().cells[0].datas.size()
+	s.upper_zone[0].datas.append(CardData.new())
+	check(s.entrance_zone().cells[0].datas.size() == before + 1,
+			"a write through upper_zone lands in the zone itself",
+			"%d -> %d" % [before, s.entrance_zone().cells[0].datas.size()])
+
+## The zone's declared width is DERIVED, so a slot added by appending through a reference -- which
+## is what both `Board.add_column` and the ZoneAdder-shaped path do -- cannot leave it stale.
+func test_entrance_width_derives_from_its_cells() -> void:
+	var s := make_state()
+	var slots : int = s.upper_zone.size()
+	check(s.entrance_zone().grid_width == slots,
+			"the zone's width matches its slot count to begin with",
+			"width %d, slots %d" % [s.entrance_zone().grid_width, slots])
+	# Append DIRECTLY, the way the fuzz's ZoneAdder-style action does -- no resync call anywhere.
+	s.upper_zone.append(ArrayCardData.new())
+	s.upper_zone_type.append(CardData.new())
+	check(s.entrance_zone().grid_width == slots + 1,
+			"...and it re-derives after a raw append, with nothing having called a resync",
+			"width %d, wanted %d" % [s.entrance_zone().grid_width, slots + 1])
+
+## The zone is what persists now; `upper_zone` is not stored at all.
+func test_entrance_survives_a_save_roundtrip() -> void:
+	var s := make_state()
+	var slots : int = s.upper_zone.size()
+	var restored := s.to_saveable().duplicate_state()
+	restored.restore_runtime()
+	check(restored.upper_zone.size() == slots,
+			"the Entrance's slots survive to_saveable + duplicate_state",
+			"%d of %d" % [restored.upper_zone.size(), slots])
+	check(is_same(restored.upper_zone, restored.entrance_zone().cells),
+			"...and the restored copy's upper_zone is still a view of its OWN zone")
+	check(not is_same(restored.entrance_zone(), s.entrance_zone()),
+			"...which is a different zone object from the original's")
 
 func _bn(m: float, e: int) -> BigNumber:
 	var bn := BigNumber.new()
@@ -43,23 +92,35 @@ func make_state() -> GameData:
 	var plain := TestFactories.m_card(5, TestFactories.uc())
 	plain.stage = CardData.Stage.PLAY
 	var up_h := TestFactories.m_card(1, TestFactories.uc()); up_h.stage = CardData.Stage.ZONE
-	var lo_h := TestFactories.m_card(2, TestFactories.uc()); lo_h.stage = CardData.Stage.ZONE
 	s.upper_zone_type = [up_h] as Array[CardData]
 	s.upper_zone = [TestFactories.col([plain] as Array[CardData])]
-	s.lower_zone_type = [lo_h] as Array[CardData]
-	s.lower_zone = [TestFactories.col([modded] as Array[CardData])]
+	# ⚠ THE MODIFIER-CARRYING CARD SITS ON A GRID CELL, not the legacy lower zone. Every claim in
+	# this file about backrefs, aliasing and validation is a claim about a card ON THE BOARD, and
+	# the board is the grid now; the Entrance above keeps its own coverage because it is still live.
+	var grid := GridData.new()
+	grid.grid_width = 1
+	grid.grid_height = 1
+	grid.build_cells()
+	grid.cells[grid.cell_index(0, 0)].datas = [modded] as Array[CardData]
+	s.grids = [grid] as Array[GridData]
 	s.scores_row_upper = [_bn(4.2, 3)] as Array[BigNumber]
 	s.scores_row_lower = [_bn(1.0, 0), _bn(9.99, 7)] as Array[BigNumber]
-	s.scores_col = [_bn(2.5, 12)] as Array[BigNumber]
+	s.scores_col_legacy = [_bn(2.5, 12)] as Array[BigNumber]
 	s.goal = 314
 	s.total_score = 271
 	return s
+
+## The modifier-carrying card `make_state` plants, read back out of `st`'s grid cell — the lookup
+## every backref and aliasing claim below needs.
+func board_card(st: GameData) -> CardData:
+	var grid : GridData = st.grids[0]
+	return grid.cells[grid.cell_index(0, 0)].datas[0]
 
 func test_saveable_roundtrip_preserves_gutters() -> void:
 	var s := make_state()
 	var saveable := s.to_saveable()
 	# saveable form drops the RefCounted BigNumber arrays and keeps only packed primitives
-	check(saveable.scores_col.is_empty() and saveable.scores_row_lower.is_empty(),
+	check(saveable.scores_col_legacy.is_empty() and saveable.scores_row_lower.is_empty(),
 			"to_saveable() clears the runtime BigNumber arrays")
 	check(saveable.packed_col_mant.size() == 1 and saveable.packed_col_exp[0] == 12,
 			"to_saveable() packs the col gutter (mantissa+exponent)",
@@ -67,11 +128,11 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 	# rebuild a live runtime state the way Game._runtime_state does
 	var restored := saveable.duplicate_state()
 	restored.restore_runtime()
-	check(restored.scores_col.size() == 1
-			and is_equal_approx(restored.scores_col[0].mantissa, 2.5)
-			and restored.scores_col[0].exponent == 12,
+	check(restored.scores_col_legacy.size() == 1
+			and is_equal_approx(restored.scores_col_legacy[0].mantissa, 2.5)
+			and restored.scores_col_legacy[0].exponent == 12,
 			"restore_runtime() rebuilds the col gutter exactly",
-			"m=%f e=%d" % [restored.scores_col[0].mantissa, restored.scores_col[0].exponent])
+			"m=%f e=%d" % [restored.scores_col_legacy[0].mantissa, restored.scores_col_legacy[0].exponent])
 	check(restored.scores_row_lower.size() == 2
 			and restored.scores_row_lower[1].exponent == 7,
 			"restore_runtime() rebuilds a multi-entry row gutter")
@@ -80,17 +141,17 @@ func test_saveable_roundtrip_preserves_gutters() -> void:
 
 func test_saveable_unlinks_backrefs_restore_relinks() -> void:
 	var s := make_state()
-	var modded := s.lower_zone[0].datas[0]
+	var modded := board_card(s)
 	check(modded.skill.data == modded, "precondition: modifier backref points at its card")
 	var saveable := s.to_saveable()
 	# the saveable copy is a SEPARATE resource; its cards' backrefs are unlinked for ResourceSaver
-	var saved_card := saveable.lower_zone[0].datas[0]
+	var saved_card := board_card(saveable)
 	check(saved_card.skill.data == null,
 			"to_saveable() unlinks modifier .data backrefs (saves carry no backref)")
 	check(modded.skill.data == modded, "the ORIGINAL state's backref is left intact")
 	var restored := saveable.duplicate_state()
 	restored.restore_runtime()
-	var r_card := restored.lower_zone[0].datas[0]
+	var r_card := board_card(restored)
 	check(r_card.skill and r_card.skill.data == r_card,
 			"restore_runtime() relinks each backref to the restored card")
 
@@ -105,12 +166,12 @@ func test_duplicate_state_aliasing() -> void:
 		if orig.has(c): shared = true
 	check(not shared, "duplicate_state() shares no CardData instances")
 	# BigNumbers copied by value, distinct instances (RefCounted -> manual copy)
-	check(copy.scores_col[0] != s.scores_col[0]
-			and copy.scores_col[0].exponent == 12,
+	check(copy.scores_col_legacy[0] != s.scores_col_legacy[0]
+			and copy.scores_col_legacy[0].exponent == 12,
 			"duplicate_state() copies BigNumber gutters by value, distinct instances")
 	# mutating the copy's gutter does not touch the original
-	copy.scores_col[0].exponent = 99
-	check(s.scores_col[0].exponent == 12, "copy and original gutters are independent")
+	copy.scores_col_legacy[0].exponent = 99
+	check(s.scores_col_legacy[0].exponent == 12, "copy and original gutters are independent")
 
 func test_validate_clean_board() -> void:
 	var s := make_state()
@@ -125,7 +186,7 @@ func test_validate_reports_injected_violations() -> void:
 			"validate() reports an I2 zone/type size mismatch")
 	# I1: the same card instance living in two collections
 	var s2 := make_state()
-	var dupe := s2.lower_zone[0].datas[0]
+	var dupe := board_card(s2)
 	s2.draw_deck.append(dupe)
 	check(s2.validate().any(func(x: String) -> bool: return x.begins_with("I1")),
 			"validate() reports an I1 duplicate-card violation")
@@ -135,15 +196,15 @@ func test_pack_unpack_edge_values() -> void:
 	# BigNumber's OWN stored mantissa/exponent (it may normalize on assignment) and require the
 	# packed round-trip to reproduce exactly those stored values.
 	var s := GameData.new()
-	s.scores_col = [] as Array[BigNumber]
+	s.scores_col_legacy = [] as Array[BigNumber]
 	s.scores_row_upper = [_bn(3.14, 300)] as Array[BigNumber]
 	var want_mant := s.scores_row_upper[0].mantissa
 	var want_exp := s.scores_row_upper[0].exponent
 	s.pack_scores()
-	s.scores_col = [_bn(0, 0)] as Array[BigNumber]  # clobber to prove unpack overwrites
+	s.scores_col_legacy = [_bn(0, 0)] as Array[BigNumber]  # clobber to prove unpack overwrites
 	s.scores_row_upper = [] as Array[BigNumber]
 	s.unpack_scores()
-	check(s.scores_col.is_empty(), "unpack of an empty gutter yields an empty array")
+	check(s.scores_col_legacy.is_empty(), "unpack of an empty gutter yields an empty array")
 	check(s.scores_row_upper.size() == 1
 			and s.scores_row_upper[0].exponent == want_exp
 			and is_equal_approx(s.scores_row_upper[0].mantissa, want_mant),

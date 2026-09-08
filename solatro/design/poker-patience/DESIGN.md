@@ -1094,10 +1094,8 @@ to say where it lives and what it starts at.
 |---|---|---|---|
 | `grid_cards_per_unlock` | 25 | Deck cards required per additional grid | `QR2`=(a) |
 | `grid_max_count` | 4 | Cap on grids however large the deck | `QR2`=(a), `Q7` |
-| `grid_buffer_px` | 220 | Board-space gap between two grids | `QR2`=(a), `Q13` |
 | `grid_pan_duration` | 0.35 s | How long a one-grid pan takes | `QR2`=(a), `Q152` |
 | `grid_pan_curve` | ease-out | The pan's easing | `QR2`=(a) |
-| `grid_overview_margin` | 0.06 | Fraction of margin around the all-grids view | `QR2`=(a) |
 | `grid_swipe_threshold_mm` | 8 | Finger travel before a drag counts as a pan | `QR2`=(a), `Q190` |
 | `stack_offset_px` | = `card_separation_play_custom` | Visible strip of a covered card in a stack | `QR1`≠(c), `Q71` |
 | `stack_soft_cap` | 20 | Height past which a `push_error` fires | `QR1`≠(c), `Q70` |
@@ -1546,7 +1544,7 @@ flowchart TD
   H2["height = the board's natural height or the aspect minimum, whichever is larger"]
   H3["render target CLAMPED; size_2d_override keeps the layout at full size"]
   H4["the show OPENS zoomed out, on the all-grids view"]
-  H22["picture frame holds 3 grid positions; the camera steps between them"]
+  H22["picture frame holds 3 grids; the camera rests on one and steps between them"]
   H5["all-grids view shows as many grids as fit at a readable zoom, and pans"]
   H6["all-grids is orientation: clicking a grid zooms in on it"]
   H7["Back zooms out a level; Forward returns to the previous view"]
@@ -1599,9 +1597,14 @@ flowchart TD
 > left and right will shift current view of 3 grids left or right if there are more than 3 grids off
 > edge of picture frame."*
 
-The **wall camera** steps between the three grid positions the picture frame holds. The **one scroll
-container** handles everything else — tall stacks, and revealing more of a single oversized grid.
-They never contend, because they move different things.
+The **wall camera** rests on one grid and steps between the three the picture holds; zooming out is
+what shows all three at once. The **one scroll container** handles everything else — tall stacks, and
+revealing more of a single oversized grid. They never contend, because they move different things.
+
+⚠ **The picture is 3 GRIDS wide, not 3 grid positions.** The gap between two grids and the gap at the
+picture's edge are ONE number, and it is DERIVED rather than stored:
+`PlayArea.isolating_grid_buffer_px()` solves in closed form for the buffer at which a FOCUSED grid
+isolates its neighbours.
 
 ⚠ **`H24` is the case the current cap hides.** `Q7` caps grids at 3 today, so "more than 3 grids"
 is unreachable in the shipped game — but the design carries it, and `game_picture_max_render_px`

@@ -44,12 +44,17 @@ func _ready() -> void:
 	# ---- the real burning card, built the way the game itself builds one -------------------------
 	var g := Game.new()
 	var s := GameData.new()
-	var head := TestFactories.m_card(1, TestFactories.uc())
-	head.stage = CardData.Stage.ZONE
 	var card := TestFactories.m_card(7, TestFactories.uc())
 	card.stage = CardData.Stage.PLAY
-	s.upper_zone_type = [head] as Array[CardData]
-	s.upper_zone = [TestFactories.col([card] as Array[CardData])] as Array[ArrayCardData]
+	# On a GRID cell, which is what the board is now — the same shape `make_board_game` builds in
+	# `Tests/UI/test_visual_layers.gd`. The spike is about `FxAttachment`'s own clock, but the card
+	# has to hang off the board the game actually renders or the fixture is measuring a dead path.
+	var grid := GridData.new()
+	grid.grid_width = 1
+	grid.grid_height = 1
+	grid.build_cells()
+	grid.cells[grid.cell_index(0, 0)].datas.append(card)
+	s.grids = [grid] as Array[GridData]
 	g.state = s
 	g._begin_act()
 	CardEnvironment.CURRENT = g

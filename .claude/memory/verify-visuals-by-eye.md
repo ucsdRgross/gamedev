@@ -29,6 +29,12 @@ MOVED** — `sections=4/4 show_flips=14 max_dim=0.75 max_open=1.00` — and flag
 nothing over its whole loop. `Tools/spotlight_tool.tscn -- --verify` is this repo's example, and it
 found a real thrown error on its first run. See [[seam-checks-not-rereading]] for the general form.
 
+⚠ **AN INSTRUMENT CAN GO STALE AND KEEP PRODUCING CONFIDENT PICTURES.** Measured: a by-eye shot
+rendered the screen in a fixed window size, then the product's render target was resized around it —
+the shot kept working, kept being read, and its framing had quietly stopped describing anything the
+player would see. **Before trusting an image, ask what surface it rendered into and whether that is
+still the product's.** When it is not, the image is answering a question nobody asked.
+
 **How to apply:** run the `/fx-verify` skill (`.claude/skills/fx-verify/`) — render
 `Tests/Visual/fx_snapshot.tscn` or `prop_art_snapshot.tscn` WINDOWED, read the PNG, and report
 the silhouette/edges/artifacts in words. Quote measured before/after numbers for any perf claim

@@ -6,15 +6,7 @@
 #
 # Exit 0 = allow, exit 2 = block and show stderr to Claude.
 
-$raw = [Console]::In.ReadToEnd()
-if (-not $raw) { exit 0 }
-
-try { $payload = $raw | ConvertFrom-Json } catch { exit 0 }
-
-$cmd = ''
-if ($payload.tool_input) {
-    if ($payload.tool_input.command) { $cmd = [string]$payload.tool_input.command }
-}
+. "$PSScriptRoot\_hook_input.ps1"
 if (-not $cmd) { exit 0 }
 
 $killVerb = $cmd -match '(?i)\b(taskkill|Stop-Process|pkill|killall)\b'

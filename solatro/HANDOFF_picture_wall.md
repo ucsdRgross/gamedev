@@ -145,8 +145,9 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
 
 - id: S44
   description: >
-    Understand why the full suite intermittently HANGS at 30 of 39 suites with no
-    banner, in clusters.
+    Understand why the full suite intermittently HANGS partway through with no banner, in
+    clusters. Observed at 30 of 39 suites, when the suite count was 39; it is 45 now, so the
+    "30" is the observation, not a threshold to look for.
   files_touched: [solatro/Tests/Support/test_base.gd]
   verification_command: '<godot> --path solatro res://Tests/all_tests.tscn'
   verification_kind: suite

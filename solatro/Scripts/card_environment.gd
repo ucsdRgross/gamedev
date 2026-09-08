@@ -65,16 +65,16 @@ func get_delay() -> float:
 
 ## Elapsed-processing accounting hook: Game overrides this to feed the runaway event cap
 ## (one call per mod invoked + per prop slot entry). No-op in base environments (map, tests).
-func note_processing(_weight := 1) -> void:
+func note_processing(_weight := 1, _key := "") -> void:
 	pass
 
 ## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
-## combo (SCORING_MATH_PLAN §15a mod-activation U) and the patience counter. No-op in base
-## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods)
-## since 2026-07-20 — patience needs the placement legality query (on_can_place_stack) to count.
-## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class
-## (§15a), so the newly-notifying paths (comparators, legality queries, the prop tick's per-card
-## hooks) inform patience ONLY.
+## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base
+## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods),
+## which is what makes it the one place that sees the whole mod firing order for the event log.
+## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class,
+## so the other paths (comparators, legality queries, the prop tick's per-card hooks) are
+## LOGGED but never scored.
 func _note_mod_fired(_mod: CardModifier, _function: StringName,
 		_feeds_combo := true) -> void:
 	pass
@@ -108,14 +108,14 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 			for mod : CardModifier in mods:
 				if mod and mod.has_method(function):
 					triggered = true
-					note_processing()
+					note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 					await Callable(mod, function).callv(params)
 					_note_mod_fired(mod, function)
 					await skill_spotlight_check()
 			var skill : CardModifierSkill = data.skill
 			if skill and skill.has_method(function) and skill.spotlit:
 				triggered = true
-				note_processing()
+				note_processing(1, "%d:%s" % [skill.get_instance_id(), function])
 				await Callable(skill, function).callv(params)
 				_note_mod_fired(skill, function)
 				await skill_spotlight_check()
@@ -229,7 +229,7 @@ func has_card_data(data: CardData) -> bool:
 	return false
 
 ## ONE pass of the two-pass sameness question (PLAN §1.2): the FIRST true answers and STOPS the
-## pass (Q84=a), so later rules are never asked and do not feed the patience counter.
+## pass, so later rules are never asked.
 ## ⚠ Raw dispatch — callers go through `PipComparator.ask_pass`, which memoises for the hand.
 func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> bool:
 	for mod : CardModifier in active_implementers(hook):
@@ -286,14 +286,16 @@ func skill_spotlight_check() -> void:
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
 	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
 	mods.append_array(card.statuses)
+	# ⚠ **THIS PATH DOES NOT CHARGE THE RUNAWAY CAP** (owner: *"it shouldnt trigger on checks, but
+	# only when effect actually triggers"*). `run_card_mods` is the comparator, legality-query and
+	# prop-per-card path -- the same one that already passes `feeds_combo = false` because it must
+	# not score either. Asking a card a question is not an effect firing.
 	for mod : CardModifier in mods:
 		if mod and mod.has_method(function):
-			note_processing()
 			await Callable(mod, function).callv(params)
 			_note_mod_fired(mod, function, false)
 	var skill : CardModifierSkill = card.skill
 	if skill and skill.spotlit and skill.has_method(function):
-		note_processing()
 		await Callable(skill, function).callv(params)
 		_note_mod_fired(skill, function, false)
 

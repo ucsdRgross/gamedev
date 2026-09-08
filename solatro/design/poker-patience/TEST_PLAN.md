@@ -202,6 +202,15 @@ watch it fail.
 | id | Test | Fixture | Proves | Gates | Kind |
 |---|---|---|---|---|---|
 | TP-80 | `CARD_SEPARATION` derives from the measured bottom-edge pip offset | — | E4 | S20 | G |
+| TP-80b | A dealt board builds one `%GridPanel` per grid, each with `grid_width × grid_height` cell controls | `FIX-GRID-3` | J2, J7 | S20b | G |
+| TP-80c | A card placed on a grid has a control, a `CardVisual` and a position | `FIX-GRID-1` | J8, J9 | S20b | G |
+| TP-80d | `slot_center_global(BoardCoord)` is pure math — no control-rect reads, and it answers for an EMPTY cell | `FIX-MIXED-H` | M1, M2 | S20b | G |
+| TP-80e | A card on no board reports `BoardCoord.NOWHERE`, and no `Vector3i` board position survives | `FIX-DECK-52` | M3, M4 | S20b | G |
+| TP-80f | A scored grid line spawns props again, and a prop's route stays inside ONE grid | `FIX-ROW-FLUSH` | M5, M6, M7 | S20b | G |
+| TP-80g | Every grid's bottom edge sits on the same floor | `FIX-GRID-3` | J6 | S20b | G |
+| TP-80h | `upper_zone`/`lower_zone` have no readers: the fields are gone and the Entrance is `entrance` | — | P1, P2 | S20b | G |
+| TP-80i | `Game.submit`, `_perform_submit` and the Next button have no readers | — | P3 | S20c | G |
+| TP-80j | `end_show()` is the only path that resolves a show | `FIX-GRID-1` | P4 | S20c | G |
 | TP-81 | A stack grows upward: card `h+1` has a smaller `y` than card `h` | `FIX-STACK-5` | E7 | S21 | G |
 | TP-82 | Every cell in a row shares a **bottom** edge | `FIX-MIXED-H` | E10 | S21 | G |
 | TP-83 | A tall stack pushes the rows **above** it up | `FIX-MIXED-H` | E11, Q307 | S21 | G |
@@ -226,14 +235,18 @@ watch it fail.
 | TP-102 | The board edge bounces | `FIX-GRID-3` | H10, Q151 | S27 | G |
 | TP-103 | The clamp collapses to centre on an axis that already fits | `FIX-GRID-1` | H12, Q159 | S27 | G |
 | TP-104 | **One scroll container only** — no second scroller on the board | `FIX-FULL-15` | H13, Q160 | S28 | G |
-| TP-105 | The camera steps between the 3 grid positions the frame holds | `FIX-GRID-3` | H22 | S28 | G |
+| TP-105 | The camera steps between the 3 grid positions the frame holds | `FIX-GRID-3` | H22 | S31 | G |
 | TP-106 | With more than 3 grids, panning shifts **which 3** are in frame | — | H24 | S28 | G |
 | TP-107 | Arrow keys cross a grid boundary and the camera follows | `FIX-GRID-3` | H14, Q161 | S29 | G |
 | TP-108 | In the overview, arrows select a **grid** and Enter focuses it | `FIX-GRID-3` | H15, Q162 | S29 | G |
 | TP-109 | **A swipe fires once** — an emulated mouse event does not double it | — | H16, Q189 | S29 | G |
 | TP-110 | A drag starting on a card places; on empty board it pans | `FIX-GRID-1` | H17, Q192 | S29 | G |
 | TP-111 | Removing the focused grid refocuses the nearest survivor, preferring left | `FIX-GRID-3` | G17, Q318 | S30 | G |
-| TP-112 | The remaining grids re-centre, animated | `FIX-GRID-3` | G18, Q321 | S30 | G |
+| TP-112 | The remaining grids re-centre, animated | 5 grids | G18, Q321 | S30 | G |
+| TP-138 | The board RESTS positioned on the grid the view is on — not at raw scroll 0 | 5 grids | `GAP-017` | S30 | G |
+| TP-139 | The focused grid is as tall as its window — the zoom is wired to the mode change | 3 grids | `GAP-017` part 3 | S31b | G |
+| TP-140 | Focusing takes the other grids out of the window | 3 grids | `GAP-017` part 3 | S31b | G |
+| TP-141 | A non-focused grid **paints** nothing outside the board window — rendered, not positioned | 3 grids | `GAP-017` part 3 | S31b | G |
 | TP-113 | `design_size` fits exactly 3 grids | — | H1, Q166 | S31 | G |
 | TP-114 | **`SubViewport.size` never exceeds `game_picture_max_render_px`** | `FIX-FULL-15` | H3, Q169 | S31 | G |
 | TP-115 | `resting_state()` returns the saved-pan pose, not the picture centre | — | H18, Q171 | S32 | G |
