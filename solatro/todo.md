@@ -6,9 +6,14 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 
 ## Known intermittent test failures (not owned by any current work stream)
 
-⚠ **All four need the failing run's own `godot.log`, and a batch must COPY it per run.**
-`run_tests.py` discards the suite's stdout by design and prints only the banner, so the evidence is
-gone by the time you know you wanted it.
+✅ **THE LOG-COPYING THIS SECTION ASKED FOR IS NOW AUTOMATIC.** `run_tests.py` copies the whole log
+directory aside — to `<user data>/Solatro/logs-stalled-<stamp>` or `logs-failed-<stamp>` — before it
+kills a stalled run or reports a failing one. `--stall-timeout` (default 600 s) also watches the test
+log's SIZE as a heartbeat and NAMES the suite that started without finishing, instead of letting one
+silent suite eat the whole budget and report `NO SUITE BANNER` for all 45.
+⚠ **SO THE RULE IS NOW: DO NOT RE-RUN BEFORE READING THE PRESERVED LOGS.** The evidence survives one
+occurrence, not two — the next run still truncates the LIVE log, and a preserved directory is only
+written when a run stalls or fails.
 
 - ⬜ **The suite intermittently HANGS — a third mode, distinct from the segfault and the leak.**
   Killed at the timeout with **no banner**, so it never reached its own verdict. ⚠ A hang is not a
@@ -22,6 +27,16 @@ gone by the time you know you wanted it.
   ⚠ **So a hung run is NOT reliably attributable to the change that produced it.** Re-run before
   bisecting; each attempt costs ~7 minutes. (The one-fix-at-a-time working agreement used to say a
   hang IS the change's fault outright; it now carries this exception.)
+  ⚠ **SEEN AGAIN IN THE 45-SUITE ERA, AND IT PREDATES THE GRID BRANCH** — so this is not
+  poker-patience's. One occurrence in 13 full runs: `GRID VIEW` printed its banner and then emitted
+  ZERO checks for 27 minutes until the global timeout. Six runs aimed straight at reproducing it
+  produced none. **What the evidence narrowed it to, and it is stranger than the concurrency theory
+  above:** `TestLog.line` flushes EVERY line, so the log is write-through and its last line is the
+  last line reached. The next statement after that banner is another `TestLog.line` that never
+  appeared — so the stall sits between two consecutive log writes, in a window with no loop, no
+  await and no branch, while the process burned a full core. ⚠ Two confident explanations were
+  written down and both were WRONG: `GRID VIEW` has no concurrent siblings (every suite it excludes
+  waits for IT), and every wait on its path is bounded. Do not re-derive either.
 - ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
   normally. Still unattributed — likely the exit-time leak's family, objects surviving into
   `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
@@ -151,6 +166,43 @@ the full record, including what only the owner can decide, is FX_HANDOFF §0.
   ALPHA=4.2. The owner is not worried (tunables cover it); arbitrate before recalibrating.
 - Rarity tiers (luck currently only gates non-null stamp/skill/type rolls).
 
+## Scoring — LIVE defects, found by the poker-patience close, none fixed
+
+⚠ **ALL FOUR ARE SCORE LOSS OR SCORE SHORTFALL IN SHIPPED CONTENT, AND A GREEN SUITE DOES NOT SEE
+ANY OF THEM.** `live_total() = board_total() * combo_mult()`, and `board_total()` sums `grid_score(i)`
+over `state.grids`, reading ONLY `scores_row`, `scores_col`, `scores_cell` and `score_special`.
+**Anything reaching `scores_row_upper`, `scores_row_lower`, `scores_col_legacy`, `row_total`,
+`col_total` or `mult_score` is lost.** Grep those six names before adding any scoring path.
+
+- ⬜ **`PropBankColScore` loses EVERY Firework column score.** `Cards/Props/Mods/prop_bank_col_score.gd:16-19`
+  hand-builds a bare `ScoringSection.new()` and never sets `grid`, so it is always `-1` and
+  `add_line_score` always takes the legacy branch. `PipSuitFirework` is shipped (deck12), so this
+  fires in a real show; `register_combo` runs first, so the multiplier moves and the points do not.
+  ⚠ **The fix is not a one-liner:** build the section from a coordinate, but `on_finish` fires when
+  `p.route.is_empty()` and a firework that starts with an EMPTY rise route never entered a slot, so
+  `p.at` is still `NOWHERE` — which is exactly the case `test_firework_banks_column` covers. Decide
+  what an empty-route firework banks into (probably `prop.source`'s grid position).
+  ⚠ That test asserts `col_total == 3`, so it **passes because the defect exists** — re-point it at
+  `line_score(scores_col, ...)` as part of the fix or it will keep certifying the loss.
+- ⬜ **No effect activation feeds the combo on a placement** — the grid game's only scoring action —
+  contradicting `DESIGN.md` D11 (`Q323`=b). `game.gd:231` gates `register_combo` on
+  `_act_cancellable`, written only inside `_perform_next`. See `gaps/GAP-043.md`: the design is
+  ANSWERED (combo never resets, unbounded by design); what remains is which condition replaces it.
+  **Not a bare delete** (setup would register) and **not `processing`** (that is the input lock —
+  overloading it repeats the mistake that caused this). An explicit act-open flag set in
+  `_begin_act()` is the honest fix; finding the clear sites is the work.
+- ⬜ **`SkillExtraPoint` awards nothing, in 19 deck slots.** Description reads *"Gain 1 Extra Point
+  Per Score"*; `add_points()` has no caller, its only call site commented out one line above. Even
+  rewired it disagrees with the card (`add_total_score(10)`), and `total_score` has no other live
+  writer. Pre-existing — dead on `main` before the branch too. `skill_hungry_hippo.eat_card()` is the
+  same shape; between them they are the only consumers of `CardEffectApi.add_total_score`.
+- ⬜ **`GameData.apply_act_score()` is dead production code its own tests keep alive.** Zero
+  production callers; every caller is a test (`test_act_score.gd` ×7, `test_combo.gd` ×4,
+  `test_game_headless.gd` ×1, whose comment already says *"there is no button that"* fires it).
+  Deleting it removes a suite and part of another, so it is an owner call, not a cleanup.
+  ⚠ The three `row_total`/`col_total` checks in `test_game_headless.gd` are DIFFERENT and should
+  stay — they cover `add_line_score`'s legacy branch, which is still reachable and still defective.
+
 ## Scoring engine test gaps
 
 - ⚠ **SE4 IS NOT A TEST GAP AND SHOULD NOT SIT UNDER THIS HEADING.** "single-walk `_scan_wrap`" is a
@@ -160,6 +212,28 @@ the full record, including what only the owner can decide, is FX_HANDOFF §0.
   this is measurable rather than speculative — but measure before optimising: the wrap scan is one
   term inside a call that costs 9.1 ms on 30 cards, and E3 (the repeated profile rebuild) and E6
   (the ~2x identity-path regression) are both larger.
+- ⬜ **`LINE DETECT` cannot see the defect class this repo has hit four times.**
+  `Tests/Engine/test_line_detect.gd` (1201 lines) asserts through a `RecordingGame` that captures the
+  `amount` ARGUMENT to `add_line_score`. Verified: the file contains ZERO references to `live_total`,
+  `board_total`, `grid_score`, `scores_row`, `scores_col`, `scores_cell` or `section.grid`. Every
+  assertion is taken BEFORE `add_line_score` branches on `section.grid`, so a regression routing
+  every grid section to the legacy bucket leaves the whole suite green while the score goes to zero.
+  ⚠ The comments justifying this (*"which bucket a section banks into is a later step"*) are STALE.
+  **Fix: one check on the DESTINATION per scoring test**, not on the argument.
+- ⬜ **`combo_repeat_step` has ZERO references in the entire `Tests/` tree** — a shipped knob
+  defaulting to 0.5 that multiplies the player's score. That is `TP-58`. `TP-59` (D11) has neither
+  an implementation nor a test.
+- ⬜ **`COMBO` leaks a `Game` and leaves the global pointing at it.** `test_combo.gd`'s
+  `test_register_combo` does `Game.new()` + `CardEnvironment.CURRENT = g` and never frees or nulls —
+  the file has ZERO `free()` and ZERO `CURRENT = null` — and it is the LAST test in the suite.
+  `Game extends Node`, so that is a leaked Node plus global state left for whatever runs next.
+- ⬜ **Two more production functions whose only callers are tests**: `GameData.discard_lower_board()`,
+  and `Game.move_card_in_grid` / `remove_card_from_grid` — the latter pair unreachable from shipped
+  content (no `CardEffectApi` wrapper, and the modifier boundary gate forbids naming `Game.`), yet
+  three test-plan rows drive them.
+- ⬜ **Only `Tests/Engine/` has ever had a test-quality review**, and eleven files in it got only a
+  mechanical sweep. `Tests/UI`, `Interaction`, `Wall`, `Visual`, `Map`, `E2E` and `Support` have had
+  none. The checklist is `.claude/memory/tests-that-prove-nothing.md`.
 - ⬜ SD5 test-file section renumbering — cosmetic only, and `test_scoring.gd`'s own header already
   says the section numbers are historical and `_ready` order is the real one. Churn on a 1200-line
   file for no behavioural gain; left deliberately.
@@ -331,6 +405,33 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
   of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
   rule. Left as waste on a hover-enter path, deliberately.
+- ⬜ **Camera/view findings — PARKED BY THE OWNER as todo, and NONE of them is verified.**
+  ⚠ **The suite structurally cannot see any of these**: the layout suites are pinned to the OVERVIEW,
+  and no `Tests/Visual/` harness drives props at all, so nothing renders a prop over a card at a
+  non-1.0 `board_zoom`. **Building that harness is the first task, not the fix.**
+  - `main.gd` / `wall_transition.gd` — the game picture's resting pose is `panned_state`, but
+    `WallTransition` still interpolates between bare rect centres and `_on_info_toggled` still aims
+    at unpanned poses, so the trailing `_settle_camera()` cuts a full grid pitch. The `else` branch
+    of `_focus_picture` was fixed for exactly this and says so; the picture-to-picture branch — the
+    route `map → game` actually takes — was not.
+  - `wall_picture.gd:235` — `focus()` used to force `size_2d_override = Vector2i.ZERO`; the
+    replacement engages a non-identity override on a FOCUSED picture whenever the render clamp
+    bites, displacing every click inside the show.
+  - Four zoom-awareness sites, all correct at zoom 1.0 and claimed wrong in FOCUSED mode:
+    `play_area.gd:1399` `_card_control_at`, `play_area.gd:2919` `_position_focus_info`,
+    `prop_layer.gd:193` `_body_over_any_card`, `card_visual.gd:696`'s held-card grab offset.
+    ⚠ `/fx-verify` MEASURED the hoop's jump alignment and it is scale-aware and correct
+    (jumped-card centre == ring centre exactly at `card_scale` 2.5 and 4.0, rest offset exactly
+    proportional), so `card_scale` is NOT the axis in question — `board_zoom` is.
+- ⬜ **`anim_spring_lift` / `anim_jump` descent mismatch** — confirmed by reading the tween chains,
+  unverified by render. `anim_jump` tweens `offset.position:y` to `-CARD_JUMP_RISE` and NEVER
+  returns it (only the SCALE pulses back); the card comes down separately via `anim_reset()` when
+  the prop's HOLD ends. `anim_spring_lift` rises, holds, then returns y to 0 itself. **So the riders
+  descend while the jumped card is still held up** — `Q310`=a (*"as if jumping card has all above
+  cards on its shoulder"*) holds for the lift and breaks for the rest of the hold, and
+  `_update_reactions` re-lifts the riders per arriving prop while the jumped card just stays up.
+  ⚠ The function's own doc comment claims the opposite (*"then down together"*, *"as ONE RIGID
+  BODY"*). It has a DURATION, so a still frame cannot settle it — run it and report what MOVED.
 - **The Entrance renders through the LEGACY zone renderer, and switching it is the last piece.** Banking, the zone shape and the
   HEIGHT labels are all landed; what is left is its ROW label and multi-row cells, and both come
   free once it binds to `_create_grid_panel` / `_bind_grid_panel` -- which already take a panel and

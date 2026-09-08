@@ -170,9 +170,11 @@ the next render silently discards the edit.
   status: pending
   evidence: ''
   notes: >
-    BLOCKED ON A MERGE, not on work: the grid documents live on the `poker-patience` branch and
-    this stream lives on `main`. Merge that branch first, or the re-mine will read the archived
-    pre-grid text and change nothing.
+    ✅ UNBLOCKED. The `poker-patience` branch was merged into `main` (merge commit `ced07dbc`), so
+    the GRID versions of DESIGN_DOC.md, DESIGN_RECOMMENDATIONS.md and DESIGN_REFERENCES.md are now
+    the ones on disk and the re-mine will read them. The pre-grid originals are under
+    `solatro/archive/`. This was the last thing standing in front of S12; the work itself has not
+    started.
     Two decisions the owner has to make before this runs, because they change the deliverable:
     (1) an affected question that has ALREADY been answered -- re-ask it, or carry the ruling
     across if the mechanic survives the translation intact? (2) a question whose mechanic WAS an

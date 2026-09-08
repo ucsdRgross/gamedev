@@ -758,12 +758,31 @@ record, not run scaffolding, and `START_HERE.md` points at them as such.
 
 ## Gaps
 
-**Open and genuinely undecided:** `GAP-018` (`grid_swipe_threshold_mm`'s default dead against its own
-clamp), `GAP-028`'s `H24` half, `GAP-030` (settings isolation — ruled (b) staged, not yet built),
-`GAP-037` (an Entrance column deeper than the render target; owner deferred, *"no limit for now"*),
-`GAP-038` (the HUD-scales-with-the-picture ruling contradicts the board's own units — the whole
-HUD-and-offset pass is parked on it), `GAP-039` (isolation, exactly-three and no-clipping are
-mutually unsatisfiable — **the clipping IS the slack**).
+⚠ **`status: resolved` ON A GAP FILE MEANS DECIDED, NOT DELIVERED.** An earlier version of this list
+called `GAP-018`, `GAP-028` and `GAP-030` *"open and genuinely undecided"* while all three files read
+`resolved` — the summary had drifted from the files, which are authoritative. Read the file, not this
+paragraph, and note which of the two things it is telling you.
+
+**Undecided — an owner ruling is missing:**
+- `GAP-039` — isolation, exactly-three and no-clipping are mutually unsatisfiable; **the clipping IS
+  the slack**.
+- `GAP-041` — the goal curve's growth term has the wrong sign for most of a run.
+
+**Decided, NOT built — the work is what remains:**
+- `GAP-030` — ruled (b), *stop `use_own_settings()` mutating a global*. **Still mutating it:**
+  `Tests/Support/test_base.gd:231` is `SettingsManager.settings = PlayerSettings.new()`. It owns two
+  of this document's standing suite failures, so the ruling is banked and the fix is not.
+- `GAP-038` — answered (d); the whole HUD-and-offset pass is parked on it.
+- `GAP-042` — the display half: the Entrance's row label and multi-row cells.
+- `GAP-043` — combo is unbounded by design and never resets; what is left is which condition
+  replaces `_act_cancellable` at `game.gd:231`.
+- `GAP-028`'s `H24` half — ruled (c), the board scrolls within a 3-position picture.
+
+**Decided and built — nothing owed:** `GAP-018` (the CLAMP was the bug;
+`PlayArea._swipe_threshold_px` now clamps between the configurable min and max).
+
+**Deferred by the owner:** `GAP-037` — an Entrance column deeper than the render target,
+*"no limit for now"*.
 
 ⚠ **A gap is a DECISION THE DESIGN DOES NOT COVER — not a bug.** If exactly one choice is defensible
 it is a defect: fix it, and let the commit be the record. **Do not file a gap for a solved bug or for
