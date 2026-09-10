@@ -1,0 +1,9 @@
+{
+  "slug": "sidebar",
+  "title": "The description sidebar, the HUD container, and the input simplification",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "created": "2026-09-08T00:00:00Z",
+  "rounds": 1,
+  "confirmed_version": null
+}

@@ -501,6 +501,24 @@ Not everything uncovered is a blocker; stopping for each one is as bad as decidi
 | **GAP** | uncovered **and** any of: two defensible choices differ in observable behaviour; the choice is expensive to reverse (data/save format, a public seam, art direction); it is a class the project reserves for the owner (balance, look, scope) | park that thread, file a gap, keep working on unaffected threads, tell the owner |
 | **CONTRADICTION** | the design says two incompatible things, or says something the code makes impossible | always a gap, highest priority — the design is wrong, not merely incomplete |
 | **RESTATEMENT** | two documents disagree, but both are *summarising the same answer* | ⚠ **NOT a gap — go read the answer.** Resolve it against `answers.json`, fix the losing summary, and log it. Escalating this costs the owner a round to be told what they already said. `npm run check -- <slug> answer <ID>` prints the source note and every restatement of it, side by side. |
+| **BUG** | the design and the plan both say what should happen, and **the code does not do it** | ⚠ **NOT a gap — FIX IT.** A defect is not a decision. Fix it, note it in the handoff, carry on. |
+
+⚠⚠ **THE DOMINANT FAILURE IS OVER-FILING, NOT UNDER-FILING, AND IT IS EXPENSIVE.** Measured on one
+`/plan-run`: **~50 gaps in a single implementation run**, and a large share of them were BUGS — the
+implementer found something broken, that the design already said should work, and asked the owner
+whether to fix it. Every one of those spent an owner round to be told "yes, fix the bug".
+
+**Before filing anything, answer these three in order. Two of them end the gap.**
+
+1. **Does the design already say what should happen here?** If yes and the code disagrees, it is a
+   **BUG**. Fix it. The only question a bug raises is *how* to fix it, and that is yours.
+2. **Would any defensible choice here be invisible in the finished product?** Naming, ordering,
+   file layout, which of two equivalent structures — that is **ASSUME**. Do it, log one line.
+3. **Would the owner recognise this as a decision they would want?** Balance, look, scope, a
+   save format, a public seam. Only then is it a **GAP**.
+
+**A gap is a request for an owner RULING, not for permission.** If you are filing because you want
+to be told it is fine to proceed, you have already decided — write the assumption instead.
 
 ### The gap report is a draft question
 
@@ -587,6 +605,14 @@ If you are executing this and you reach a decision the design does not cover:
    go read that answer — the conflict is a documentation bug to fix against the source, not a
    decision to escalate. Quote the note in the gap and say why it does not settle the question; if
    you cannot, it was never a gap.
+5. ⚠⚠ **THE CODE BEING BROKEN IS NOT A GAP — FIX IT.** If the design says what should happen and the
+   code does not do it, that is a BUG, and the only open question is *how* to fix it, which is
+   yours. Filing it spends an owner round to be told "yes, fix the bug". Measured: one run filed
+   ~50 gaps and a large share were this. **Before filing anything, ask in order:** does the design
+   already answer it (→ fix the code); would any defensible choice be invisible in the product
+   (→ assume it, log one line); would the owner recognise this as a decision they want (→ only now,
+   a gap). A gap asks for a RULING, never for permission — if you are filing to be told it is fine
+   to proceed, write the assumption instead.
 
 File gaps at `<gaps dir>/GAP-NNN.md` using the template in `<design doc>` §gap-protocol. Write the
 options in the questionnaire grammar; they become the next round's questions unchanged.
@@ -904,6 +930,78 @@ gap widths, texture floors, target sizes. Every one was a knob, five already wer
 became one. **The list should have been empty**, and the tool step should have said *every* knob is
 exposed live, which it did not.
 
+#### ⚠ THE GAP REHEARSAL — predict the gaps, then delete them. MANDATORY before handoff.
+
+**Measured: one `/plan-run` produced ~50 gaps.** That is not a design that met an unusually rough
+patch; it is a design that shipped its unfinished decisions to an implementer and let them be
+rediscovered one owner-round at a time. The triage table above stops the *wrong* ones being filed.
+This step stops the *right* ones existing.
+
+**Sit down with `PLAN.md` and write the gap list yourself, before anyone runs it.** Go step by step
+and ask, of each: *what will an implementer hit here that no document answers?* Aim for volume —
+20, 40, however many — because the cost of predicting one is a sentence and the cost of missing one
+is a round trip. Then resolve every entry into exactly one of:
+
+| Prediction | What you do with it, NOW |
+|---|---|
+| the design does answer it, the plan just does not repeat it | put the answer in the plan, citing the node |
+| nobody has decided it, and it is invisible in the product | **pre-authorise it**: write it into the plan as a named assumption with the choice already made, so the implementer does it instead of asking |
+| nobody has decided it, and the owner would want to | ⚠ **it is a QUESTION, and the questionnaire is still open** — ask it in the next round; do not let it become a gap later |
+| it depends on something only running code can tell you | a Phase 0 spike with its outcome pre-bound: *if X, do A; if not X, do B* |
+
+**The output is a section in `PLAN.md` — "Decisions already made, so you do not have to"** — listing
+every pre-authorised choice. That section is what an implementer reads instead of filing.
+
+⚠⚠ **THIS STEP HAS ITS OWN FAILURE MODE, AND IT IS THE ONE TO WATCH FOR.** Pre-authorising is fast
+by design — a row, a sentence, move on — and that speed is exactly wrong for a STRUCTURAL choice.
+Measured on `sidebar`, one turn after this step was written: the row *"`HudContainer` is
+instantiated inside `wall.tscn`'s `%Overlay`"* looked like a tidy pre-authorisation and was in fact
+the load-bearing architecture decision of the whole plan. The thing it replaced lived inside a
+`SubViewport` two levels away, so that one line silently required nine controls to move between
+scenes, every `@onready` in the host to break, six signal connections to cross an object-lifetime
+boundary, and a teardown that did not exist. In a table cell it got none of §1's scrutiny.
+
+**So: a rehearsal row that decides WHERE SOMETHING LIVES, WHAT OWNS IT, or WHAT IT OUTLIVES is not
+a pre-authorisation — it is a contract. Promote it into §1 and work it out there.** The tell is that
+you cannot write the row without using the word "in", "under" or "on".
+
+Two rules that make this real rather than a gesture:
+
+- **A prediction you cannot resolve into one of those four rows is a question you have not asked.**
+  Going back for another round is cheap now and expensive later; a design confirmed with known holes
+  in it is not confirmed.
+- **State the expected gap count in the handoff, and treat overshoot as a defect in THIS step.** If
+  a run files gaps you did not predict, the rehearsal missed a category — write that category into
+  §5's checklist here, in the same session.
+
+#### ⚠ A ONE-LINE STRUCTURAL ASSERTION IS NOT A DECISION — AND A PLAN WITH NO FILE MAP IS HALF A PLAN
+
+Two failures of the same shape, both caught by the owner reading a finished plan and saying *"it
+looks very high level with no substeps talking about files or code"*. They were right.
+
+**1. The plan must carry a NODE TREE / MODULE LAYOUT section, and it must be worked out.** The
+`sidebar` plan's §2 said, in one row of a table: *"`HudContainer` is instantiated inside
+`wall.tscn`'s `%Overlay`."* One line, and it was the load-bearing decision in the whole document —
+because the HUD it replaced lived **inside a `SubViewport`** two levels away, so that line silently
+required: nine controls moved between scenes, every `@onready` in the host broken, six signal
+connections re-pointed across an object-lifetime boundary, and a teardown that did not exist. None
+of that was written down. An implementer would have discovered it in the first hour and either
+filed a gap or invented an answer.
+
+**The test:** for every NEW thing, can you say *where it hangs in the tree, who owns it, what it
+outlives, and what breaks when it moves*? If not, you have named a component, not specified one.
+
+**2. The plan must carry a FILE MAP: one row per step, every file that step touches.** §8b's "grep
+for the paths" only ever checked paths the plan HAPPENED to name. Naming them is the point. Pin
+function names (durable) with line numbers beside them (a starting point, and say so). A step whose
+file list you cannot write is a step you have not thought through — that is the real finding, and it
+is cheaper to have now than mid-run.
+
+⚠ **Discovery is not the same as decision, and only one is a defect.** An implementer finding
+`_furniture` in `game_view.gd` with a grep is fine — do not pad the plan with what a grep answers.
+The defect is an implementer having to CHOOSE: which parent, which lifetime, which of two seams,
+what happens to the thing being replaced.
+
 #### And three more things that buy back implementer thinking-time
 
 1. **Resolve every `UNVERIFIED` fact before handoff, or make it a Phase 0 spike with a decision rule
@@ -921,6 +1019,10 @@ exposed live, which it did not.
 
 1. Every file the plan names is either specified in it or created by a step in it.
 2. Every path the plan references exists, or a step creates it. **Grep for the paths.**
+2a. ⚠ **The plan carries a FILE MAP — one row per step, the files it touches — and a NODE TREE /
+    MODULE LAYOUT section for everything new** (§8a′). Item 2 only checks paths you happened to
+    name; these are what make you name them. A step whose file list you cannot write is a step you
+    have not thought through.
 3. Every step cites design node IDs (the gap protocol's traceability requirement).
 4. At least one acceptance gate per phase is objective and self-checking.
 5. The propagation block is at the head, with real paths filled in.
@@ -937,6 +1039,10 @@ exposed live, which it did not.
    planned test, and every planned test cites a node and a step.
 10. **No `UNVERIFIED` fact reaches the implementer undecided** — each is either settled before
     handoff or is a Phase 0 spike whose outcome is pre-bound to an action.
+10a. ⚠ **THE GAP REHEARSAL RAN, and `PLAN.md` carries its "Decisions already made, so you do not
+    have to" section.** Every prediction landed in one of the four rows; none is still sitting in
+    your head. State the expected gap count in the handoff message — a run that files gaps you never
+    predicted is a defect in the rehearsal, not bad luck.
 11. **The anti-scope list is present**, and the step order names what is parallel.
 12. ⚠ **Read the plan back asking one question only: "where would I have to THINK?"** Every place an
     implementer would have to choose a name, a number, a file, a test, an order, or a shape is a
@@ -974,10 +1080,31 @@ preview rather than one blind pass.
 
 ### 8d. The copy-paste prompt — always the last thing in the message
 
-Fenced, self-contained, ready to paste into a fresh session with no editing. Template:
+Fenced, self-contained, ready to paste into a fresh session with no editing.
+
+⚠ **THE PROMPT IS FOR AN ORCHESTRATOR, NOT AN IMPLEMENTER.** It opens `/plan-run`, which owns the
+worktree, the reversed commit policy and the step briefs; the pasted session never edits code
+itself. Three lines carry that and they are not optional — a prompt that omits them gets a session
+editing `main` in place, which is the one thing this repo's hard rules forbid outright:
+
+- **`/plan-run` by name**, so the overseer loads the skill instead of improvising a run;
+- **a NEW worktree and branch**, because commits are that run's only rollback points;
+- **ONE implementer subagent at a time.** A hook enforces it, and the reason is that these
+  subagents run the Godot suite, which is a one-process rule — two at once race for the same
+  `user://settings.tres`, the same `godot.log` and the same window, so a failure stops being
+  attributable to either.
+
+Template:
 
 ```
-Implement <plan path>, Phases <n>-<m> only (steps S1-S10). Stop at S10.
+Run /plan-run on <plan path>, Phases <n>-<m> only (steps S1-S10). Stop at S10.
+
+Set up a NEW worktree and branch for this run - do not work in the main checkout. Commit
+one verified step at a time with evidence in the message; those commits are the run's only
+rollback points.
+
+Dispatch ONE implementer subagent at a time and wait for its report before dispatching the
+next. A hook enforces this; it is not a preference.
 
 Read <plan path> first; it is self-contained. <design path> is the authority on behaviour -
 where they disagree the design wins and the plan is wrong.

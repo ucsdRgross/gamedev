@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dwah2uqt8o4mr"
+
+[deps]
+
+files=["res://design/effect-review/DROPPED.name.translation", "res://design/effect-review/DROPPED.reason.translation", "res://design/effect-review/DROPPED.folded.translation", "res://design/effect-review/DROPPED.origin.translation", "res://design/effect-review/DROPPED.source.translation", "res://design/effect-review/DROPPED.original.translation"]
+
+source_file="res://design/effect-review/DROPPED.csv"
+dest_files=["res://design/effect-review/DROPPED.name.translation", "res://design/effect-review/DROPPED.reason.translation", "res://design/effect-review/DROPPED.folded.translation", "res://design/effect-review/DROPPED.origin.translation", "res://design/effect-review/DROPPED.source.translation", "res://design/effect-review/DROPPED.original.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

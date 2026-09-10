@@ -3,7 +3,7 @@
 //   npm --prefix designloop run watch -- solatro/spotlight
 //
 // The agent session parks on this. It blocks — no polling loop in the transcript, no "check back
-// in five minutes" — and returns the moment `status.owner.json` changes, printing what happened
+// in five minutes" — and returns the moment the owner's turn ENDS, printing what happened
 // and setting the agent half to `working` so the UI can see it was picked up.
 //
 // ⚠ This is the one mechanism with no precedent in this repo (DESIGN §2, chart E). It is therefore
@@ -29,13 +29,39 @@ async function ownerStatus(dir) {
   return { ...DEFAULT_OWNER_STATUS, ...(await readJson(join(dir, 'status.owner.json'))) };
 }
 
-/** True when two owner statuses describe a different situation. */
-function changed(a, b) {
-  return a.state !== b.state || a.reason !== b.reason || a.round !== b.round;
+/**
+ * Is this the owner's turn ENDING?
+ *
+ * The owner half only ever holds two states — `server.mjs` writes `answering` and `done` and
+ * nothing else — so `done` is the whole signal. Waking on any CHANGE instead meant the agent was
+ * woken when the owner OPENED a round, and then told "the owner's turn ended" about a turn that had
+ * just started, with `claim()` marking the agent working on a round nobody had answered yet.
+ */
+function turnEnded(status) {
+  return status.state === 'done';
 }
 
 /**
- * Block until the owner's half of the status changes, and return the new one.
+ * Has the agent already acted on the turn this owner status describes?
+ *
+ * The owner's half STAYS `done` after a round ends, so "already done when the watch started" is two
+ * situations wearing one state: a turn nobody has read yet, and the turn the agent just finished
+ * reading before publishing the next round. Only the second must keep waiting.
+ *
+ * The agent's own half is the discriminator, and it needs no new field: `ready` means the agent has
+ * handed the turn back, so a `ready` written AFTER the owner stopped is the agent saying "your turn
+ * again" about a round it has already consumed. Waking on that returns the same finished round for
+ * ever — and `claim()` then overwrites the handoff that was just published with `working`, which
+ * takes the owner's screen off the round it was being offered.
+ */
+async function alreadyConsumed(dir, owner) {
+  const agent = await readJson(join(dir, 'status.agent.json'));
+  if (!agent || agent.state !== 'ready' || !agent.at || !owner.at) return false;
+  return agent.at > owner.at;
+}
+
+/**
+ * Block until the owner's TURN ENDS, and return the status that ended it.
  *
  * `fs.watch` is the fast path and a 250 ms poll is the backstop — file watching is the least
  * portable thing in Node, and a watch that silently stops firing would strand an agent for as long
@@ -43,7 +69,6 @@ function changed(a, b) {
  */
 export function watchOwner(dir, { pollMs = 250, timeoutMs = 0, signal = null } = {}) {
   return new Promise((resolvePromise, reject) => {
-    let baseline = null;
     let done = false;
     let watcher = null;
     let timer = null;
@@ -66,13 +91,13 @@ export function watchOwner(dir, { pollMs = 250, timeoutMs = 0, signal = null } =
         // forever on one is the worst failure this tool could have, so it is the loud one.
         if (!(await stat(dir)).isDirectory()) throw new Error(`${dir} is not a directory`);
         const current = await ownerStatus(dir);
-        if (baseline === null) {
-          baseline = current;
-          // Already done when the watch started: the owner finished before the agent parked.
-          if (current.state === 'done') finish(current);
-          return;
-        }
-        if (changed(baseline, current)) finish(current);
+        // ONE RULE for the first look and every one after it. A turn that had already ended before
+        // the agent parked still counts — that is the owner finishing while the agent was still
+        // authoring, and stranding it there would be the worst failure this tool could have. What
+        // does NOT count is a turn the agent has already handed back.
+        if (!turnEnded(current)) return;
+        if (await alreadyConsumed(dir, current)) return;
+        finish(current);
       } catch (err) {
         finish(null, err);
       }

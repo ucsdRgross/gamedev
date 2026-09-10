@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://unls58q26ywf"
+
+[deps]
+
+files=["res://design/effect-review/EFFECTS.name.translation", "res://design/effect-review/EFFECTS.status.translation", "res://design/effect-review/EFFECTS.slot.translation", "res://design/effect-review/EFFECTS.class.translation", "res://design/effect-review/EFFECTS.family.translation", "res://design/effect-review/EFFECTS.class.translation", "res://design/effect-review/EFFECTS.one.translation", "res://design/effect-review/EFFECTS.provenance.translation", "res://design/effect-review/EFFECTS.option.translation", "res://design/effect-review/EFFECTS.option.translation", "res://design/effect-review/EFFECTS.option.translation"]
+
+source_file="res://design/effect-review/EFFECTS.csv"
+dest_files=["res://design/effect-review/EFFECTS.name.translation", "res://design/effect-review/EFFECTS.status.translation", "res://design/effect-review/EFFECTS.slot.translation", "res://design/effect-review/EFFECTS.class.translation", "res://design/effect-review/EFFECTS.family.translation", "res://design/effect-review/EFFECTS.class.translation", "res://design/effect-review/EFFECTS.one.translation", "res://design/effect-review/EFFECTS.provenance.translation", "res://design/effect-review/EFFECTS.option.translation", "res://design/effect-review/EFFECTS.option.translation", "res://design/effect-review/EFFECTS.option.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

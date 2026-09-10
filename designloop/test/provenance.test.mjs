@@ -35,6 +35,30 @@ test('sharesPhrase finds a carried-over run of words, not a paraphrase', () => {
   assert.ok(!sharesPhrase('forced_spotlight stays set for the whole act', Q16_NOTE));
 });
 
+test('a note shorter than one gram is matched by containment, not by n-grams', () => {
+  // Measured on solatro/sidebar Q245: the owner's whole answer was four words, so no 5-gram could
+  // ever be built from it and the note could never be reported as quoted or promoted, however
+  // exactly it had been pasted into an option.
+  const SHORT = 'knob defaulting to 5';
+  assert.ok(sharesPhrase('a knob defaulting to 5 face-down cards', SHORT),
+    'an option that contains the whole short note is quoting it');
+  assert.ok(sharesPhrase('the cap is a knob defaulting to 5', SHORT),
+    'the note at the end of the line still counts');
+  assert.ok(!sharesPhrase('a knob defaulting to three', SHORT),
+    'a near miss is still a miss');
+  assert.ok(!sharesPhrase('defaulting to 5', SHORT),
+    'part of the note is not the note');
+  // The run is still compared word by word, punctuation attached: `knob,` is not `knob`. That
+  // crudeness is the module's stated design and this fallback does not change it.
+  assert.ok(!sharesPhrase('a knob, defaulting to 5', SHORT),
+    'punctuation inside the run breaks it, exactly as it does for a long note');
+});
+
+test('the short-note fallback is one-directional — a short OPTION does not match a long note', () => {
+  assert.ok(!sharesPhrase('yes', Q16_NOTE),
+    'a one-word option sitting inside a long note is not that option carrying the note');
+});
+
 test('sharesPhrase needs a real run, not one shared word', () => {
   assert.ok(!sharesPhrase('whole', Q16_NOTE));
   assert.ok(!sharesPhrase('the act is whole and the cards are scored', Q16_NOTE));

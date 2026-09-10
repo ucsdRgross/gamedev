@@ -235,6 +235,21 @@ async function main() {
     const docs = [{ name: design?.doc || 'DESIGN.md', text: markdown }];
     if (planText) docs.push({ name: 'PLAN.md', text: planText });
 
+    // ⚠ THE GAP REHEARSAL'S OUTPUT — the section that says which decisions the implementer does NOT
+    // have to make. Measured: one run filed ~50 gaps, a large share of them either bugs the design
+    // already answered or choices invisible in the product that nobody needed to be asked about.
+    // A plan with no such section ships those choices one owner-round at a time.
+    //
+    // Reported, never blocked, like every line here: an empty rehearsal is possible on a small
+    // plan, and only the author can say whether this one is really it.
+    if (planText) {
+      const rehearsed = /^#+ .*decisions already made/im.test(planText);
+      process.stdout.write(`  rehearsal   ${rehearsed ? 'present' : 'MISSING'} — PLAN.md's pre-authorised decisions\n`);
+      if (!rehearsed) {
+        process.stdout.write('  REHEARSE PLAN.md has no "Decisions already made" section — predict the gaps and pre-answer them\n');
+      }
+    }
+
     if (answers) {
       // 1. ANSWERED IN PROSE. Not a defect in itself — it is how the owner corrects a premise, and
       // it is where the best answers come from. The defect is leaving it there, with no letter for

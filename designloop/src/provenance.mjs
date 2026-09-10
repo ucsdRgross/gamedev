@@ -128,12 +128,38 @@ export function softAnswers(answers = {}, questions = []) {
  * answers "did someone carry the owner's actual wording across", not "do these mean the same".
  */
 export function sharesPhrase(a, b, words = 5) {
-  return sharesWords(normalise(a).split(' ').filter(Boolean),
-    normalise(b).split(' ').filter(Boolean), words);
+  return sharesWords(phraseWords(a), phraseWords(b), words);
 }
 
-/** The gram test over pre-split word arrays, so a caller scanning many pairs splits each side once. */
+/**
+ * Split for the run test: normalised, and with QUOTATION MARKS trimmed off each word's edges.
+ *
+ * The tool's own instruction to authors is "paste the note", and the natural way to paste one is
+ * inside quotes — at which point `"knob` and `5"` are not `knob` and `5`, so the run breaks at both
+ * ends of every verbatim quotation. A long note survives that on its interior grams; a short one
+ * does not survive it at all. Only quotes are trimmed: the rest of the punctuation stays attached,
+ * which keeps this test as crude as it says it is.
+ *
+ * `normalise` itself is left alone deliberately — it folds smart quotes to straight ones and is
+ * used for display, where the quotes belong.
+ */
+function phraseWords(text) {
+  return normalise(text).split(' ').map((w) => w.replace(/^["']+|["']+$/g, '')).filter(Boolean);
+}
+
+/**
+ * The gram test over pre-split word arrays, so a caller scanning many pairs splits each side once.
+ *
+ * `right` is always the owner's NOTE — both callers pass it that way — and a note shorter than one
+ * gram cannot produce a single n-gram, so a four-word answer was unmatchable however exactly it had
+ * been pasted. Such a note falls back to whole-note containment instead. The fallback is
+ * one-directional on purpose: a SHORT option quoted inside a long note is not that option carrying
+ * the note, so a short `left` still fails.
+ */
 function sharesWords(left, right, words = 5) {
+  if (right.length && right.length < words) {
+    return ` ${left.join(' ')} `.includes(` ${right.join(' ')} `);
+  }
   if (left.length < words || right.length < words) return false;
   const grams = new Set();
   for (let i = 0; i + words <= right.length; i++) grams.add(right.slice(i, i + words).join(' '));
@@ -164,11 +190,11 @@ export function quoteAudit(answers = {}, questions = [], docs = []) {
   const prepared = docs.map((doc) => ({
     doc,
     cites: citationLines(doc.text),
-    words: normalise(doc.text).split(' ').filter(Boolean),
+    words: phraseWords(doc.text),
   }));
   for (const entry of soft) {
     const own = new RegExp(`^-\\s+\\*\\*${entry.id}\\*\\*`);
-    const noteWords = normalise(entry.note).split(' ').filter(Boolean);
+    const noteWords = phraseWords(entry.note);
     for (const p of prepared) {
       const lines = p.cites
         .filter((c) => c.ids.includes(entry.id) && !own.test(c.text))

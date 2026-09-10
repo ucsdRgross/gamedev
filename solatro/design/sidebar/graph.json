@@ -1,0 +1,2864 @@
+{
+  "doc_hash": "sha256:374a2914daf3ce2a8c94889316203ba52f99ea2d9f4ae8f5c1217108e5f3ebea",
+  "charts": [
+    {
+      "id": "A",
+      "name": "A",
+      "title": "the description path as it exists today",
+      "line": 805,
+      "nodes": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "title": "what opens, changes and closes the description",
+      "line": 832,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15",
+        "B16"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "title": "the ONE container, and what is inside it",
+      "line": 871,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+        "C13"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "D",
+      "title": "the container's geometry",
+      "line": 903,
+      "nodes": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D10",
+        "D11",
+        "D12",
+        "D13",
+        "D14"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "E",
+      "title": "one click, end to end",
+      "line": 955,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "F",
+      "title": "the tap gesture",
+      "line": 993,
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "G",
+      "title": "arming an Entrance card, and placing it",
+      "line": 1016,
+      "nodes": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7",
+        "G8",
+        "G9",
+        "G10",
+        "G11",
+        "G12",
+        "G13"
+      ]
+    },
+    {
+      "id": "H",
+      "name": "H",
+      "title": "the Entrance stocks",
+      "line": 1048,
+      "nodes": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9",
+        "H10",
+        "H11",
+        "H12",
+        "H13",
+        "H14",
+        "H15"
+      ]
+    },
+    {
+      "id": "I",
+      "name": "I",
+      "title": "the refill, and the flip",
+      "line": 1084,
+      "nodes": [
+        "I1",
+        "I2",
+        "I3",
+        "I4",
+        "I5",
+        "I6",
+        "I7",
+        "I8",
+        "I9",
+        "I10",
+        "I11",
+        "I12",
+        "I13"
+      ]
+    },
+    {
+      "id": "J",
+      "name": "J",
+      "title": "ending a show",
+      "line": 1115,
+      "nodes": [
+        "J1",
+        "J2",
+        "J3",
+        "J4",
+        "J5",
+        "J6",
+        "J7",
+        "J8",
+        "J9",
+        "J10",
+        "J11",
+        "J12"
+      ]
+    },
+    {
+      "id": "K",
+      "name": "K",
+      "title": "the map",
+      "line": 1145,
+      "nodes": [
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5",
+        "K6",
+        "K7",
+        "K8",
+        "K9",
+        "K10",
+        "K11",
+        "K12"
+      ]
+    },
+    {
+      "id": "L",
+      "name": "L",
+      "title": "everything this design deletes",
+      "line": 1174,
+      "nodes": [
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5",
+        "L6",
+        "L7",
+        "L8",
+        "L9",
+        "L10",
+        "L11",
+        "L12",
+        "L13"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "PlayArea.on_control_focus_entered — mouse hover grabs focus, so focus is the ONE hover signal for mouse, keyboard and pad",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 807
+    },
+    "A2": {
+      "chart": "A",
+      "label": "PlayArea._popups_allowed",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 808
+    },
+    "A3": {
+      "chart": "A",
+      "label": "PlayArea._show_focus_info — a 260 px panel pinned beside the card, re-pinned every frame",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 809
+    },
+    "A4": {
+      "chart": "A",
+      "label": "PlayArea._on_gui_input — left click on the focused card",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 810
+    },
+    "A5": {
+      "chart": "A",
+      "label": "PlayArea._info_mode true, so info_requested carries card_info instead of data_selected — the click performs NO game action",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 811
+    },
+    "A6": {
+      "chart": "A",
+      "label": "GameView relays info_requested",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 812
+    },
+    "A7": {
+      "chart": "A",
+      "label": "Main._on_screen_info_hovered",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 813
+    },
+    "A8": {
+      "chart": "A",
+      "label": "InfoCard.show_entry — the ONE notecard, anchored to the bottom of the WINDOW",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 814
+    },
+    "A9": {
+      "chart": "A",
+      "label": "Main._on_info_toggled — the camera animates to WallPicture.info_zoom_state",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 815
+    },
+    "A10": {
+      "chart": "A",
+      "label": "Map._on_node_hovered — MapHoverPanel.get_info, published and nothing else",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 816
+    },
+    "A11": {
+      "chart": "A",
+      "label": "GameView._on_data_selected — Game.try_grab then PlayArea.grab_cards",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 817
+    },
+    "B1": {
+      "chart": "B",
+      "label": "NEW — a highlight arrives: mouse hover, or keyboard and pad selection. Same rule for both",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 834
+    },
+    "B2": {
+      "chart": "B",
+      "label": "NEW — the container swaps its contents to the description, instantly, no animation — chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 835
+    },
+    "B3": {
+      "chart": "B",
+      "label": "NEW — an ARMED card alone does not open it. Arming is not highlighting",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 836
+    },
+    "B4": {
+      "chart": "B",
+      "label": "NEW — pointer leaves everything with nothing locked: the description STAYS, showing the last entry, so it never blinks in and out",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 837
+    },
+    "B5": {
+      "chart": "B",
+      "label": "NEW — a click on a card LOCKS the description to it, and the same click still performs its game action — chart E",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 838
+    },
+    "B6": {
+      "chart": "B",
+      "label": "NEW — locked, and the pointer moves to another card",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 839
+    },
+    "B7": {
+      "chart": "B",
+      "label": "NEW — the description follows the hover, and returns to the locked card once the pointer leaves everything",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 840
+    },
+    "B8": {
+      "chart": "B",
+      "label": "NEW — locking a second card replaces the first. Only one lock exists",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 841
+    },
+    "B9": {
+      "chart": "B",
+      "label": "NEW — a dismissal arrives",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 842
+    },
+    "B10": {
+      "chart": "B",
+      "label": "NEW — dismissing REVERTS the container to the HUD. Nothing is hidden, because the container is always on screen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 843
+    },
+    "B11": {
+      "chart": "B",
+      "label": "NEW — the held card's cursor leaves the bounds of the cell it came from",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 844
+    },
+    "B12": {
+      "chart": "B",
+      "label": "NEW — the card is placed: the interaction is finished, so the description closes",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 845
+    },
+    "B13": {
+      "chart": "B",
+      "label": "NEW — a board rebuild keeps the same CardData's description, whichever control now represents it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 846
+    },
+    "B14": {
+      "chart": "B",
+      "label": "NEW — the win or lose screen leaves the description open, so a card can still be read beside the result",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 847
+    },
+    "B15": {
+      "chart": "B",
+      "label": "NEW — leaving the screen closes it, and each screen REMEMBERS its own last description",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 848
+    },
+    "B16": {
+      "chart": "B",
+      "label": "NEW — coming back re-shows that description immediately, exactly as it was left",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 849
+    },
+    "C1": {
+      "chart": "C",
+      "label": "NEW — one real PanelContainer with a flat background and no border. Art later; the container is what makes art possible",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 873
+    },
+    "C2": {
+      "chart": "C",
+      "label": "NEW — DEFAULT CONTENTS: the HUD",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 874
+    },
+    "C3": {
+      "chart": "C",
+      "label": "NEW — inside the HUD, top to bottom: the numbers first, then the piles as one ROW across the width, then the actions",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 875
+    },
+    "C4": {
+      "chart": "C",
+      "label": "NEW — members: Deck, Discard, Rules, Goal, Total, Combo, Undo, End. %MultScore and %Preview are DELETED in the same pass — chart L",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 876
+    },
+    "C5": {
+      "chart": "C",
+      "label": "NEW — a highlight arrives, so the contents swap to the description — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 877
+    },
+    "C6": {
+      "chart": "C",
+      "label": "NEW — while the description shows, the HUD's controls are off screen. Accepted",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 878
+    },
+    "C7": {
+      "chart": "C",
+      "label": "NEW — a LOCKED description is forced back to the HUD by cancel",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 879
+    },
+    "C8": {
+      "chart": "C",
+      "label": "NEW — the panel eats clicks in its whole rect, which today's scattered controls do not",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 880
+    },
+    "C9": {
+      "chart": "C",
+      "label": "NEW — no hud_scale. The container lays out to its own rect, so the scale mechanism and both authored-offset caches go",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 881
+    },
+    "C10": {
+      "chart": "C",
+      "label": "NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, which is what makes the geometry identical on both screens — chart K",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 882
+    },
+    "C11": {
+      "chart": "C",
+      "label": "The debug bar and the prop-step controls stay OUTSIDE it, top-right, unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 883
+    },
+    "C12": {
+      "chart": "C",
+      "label": "GameView win or lose overlay still covers ONLY the play area, so the container stays live",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 884
+    },
+    "C13": {
+      "chart": "C",
+      "label": "NEW — the exit X in the container's top-right means GO BACK TO THE HUD, at the touch-target minimum",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 885
+    },
+    "D1": {
+      "chart": "D",
+      "label": "NEW — ONE knob: the container's width as a fraction of the WINDOW. hud_width_fraction is retired",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 905
+    },
+    "D2": {
+      "chart": "D",
+      "label": "NEW — would the play area LEFT OVER be taller than it is wide",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 906
+    },
+    "D3": {
+      "chart": "D",
+      "label": "NEW — the container is on the LEFT, full window height",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 907
+    },
+    "D4": {
+      "chart": "D",
+      "label": "NEW — the container moves to the TOP, where the HUD also is, so the main playing window stays as square as possible",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 908
+    },
+    "D5": {
+      "chart": "D",
+      "label": "NEW — at the top the same fraction is read as a HEIGHT",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 909
+    },
+    "D6": {
+      "chart": "D",
+      "label": "NEW — is the window wide enough that the fraction exceeds the maximum",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 910
+    },
+    "D7": {
+      "chart": "D",
+      "label": "NEW — clamped, and the clamp is measured INWARD: the container sits flush against the inner edge of its band, so it stays near the middle and the empty space is on its far side",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 911
+    },
+    "D8": {
+      "chart": "D",
+      "label": "NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 912
+    },
+    "D9": {
+      "chart": "D",
+      "label": "NEW — a matching TOP inset exists for the case where the container moved up",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 913
+    },
+    "D10": {
+      "chart": "D",
+      "label": "NEW — the board centres in what is left, never on the screen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 914
+    },
+    "D11": {
+      "chart": "D",
+      "label": "The MAP uses the window fraction directly: it has no picture and needs no conversion",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 915
+    },
+    "D12": {
+      "chart": "D",
+      "label": "NEW — the overlay's Back, Forward and Wall buttons draw ON TOP of the container and stay pressable",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 916
+    },
+    "D13": {
+      "chart": "D",
+      "label": "InfoCard._reposition_to_window — the same re-anchor on resize, keeping its content",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 917
+    },
+    "D14": {
+      "chart": "D",
+      "label": "NEW — the container does NOT pan with the board. GameView._process's furniture slide and PlayArea.pan_window_left_x are both deleted — chart L",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 918
+    },
+    "E1": {
+      "chart": "E",
+      "label": "NEW — what is under the click",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 957
+    },
+    "E2": {
+      "chart": "E",
+      "label": "NEW — an ENTRANCE card: re-arms it AND locks its description, in one click",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 958
+    },
+    "E3": {
+      "chart": "E",
+      "label": "NEW — a CELL, and is a card armed",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 959
+    },
+    "E4": {
+      "chart": "E",
+      "label": "NEW — armed: the card is placed immediately, one click, no confirm — and on touch too, because it is undoable and hesitation is worse",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 960
+    },
+    "E5": {
+      "chart": "E",
+      "label": "NEW — is the cell occupied",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 961
+    },
+    "E6": {
+      "chart": "E",
+      "label": "NEW — occupied: the card STACKS, and the legal-cell highlight already showed that it would",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 962
+    },
+    "E7": {
+      "chart": "E",
+      "label": "NEW — nothing armed: the click opens that cell's description if it holds a card",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 963
+    },
+    "E8": {
+      "chart": "E",
+      "label": "NEW — a BOARD card: it is grabbed, but only after the armed card has been cancelled first, because otherwise the click would try to place onto it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 964
+    },
+    "E9": {
+      "chart": "E",
+      "label": "NEW — if the board card is not stackable, picking it up is the only remaining action, so the grab is allowed straight away",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 965
+    },
+    "E10": {
+      "chart": "E",
+      "label": "NEW — while a board card is held, the Entrance DISARMS until it is put down",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 966
+    },
+    "E11": {
+      "chart": "E",
+      "label": "NEW — the grab is the primary feedback: the card lifts and follows the cursor, and the description updates quietly behind it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 967
+    },
+    "E12": {
+      "chart": "E",
+      "label": "NEW — cancel is pressed",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 968
+    },
+    "E13": {
+      "chart": "E",
+      "label": "NEW — the HELD CARD is released first",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 969
+    },
+    "E14": {
+      "chart": "E",
+      "label": "NEW — a second press then dismisses the description — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 970
+    },
+    "E15": {
+      "chart": "E",
+      "label": "NEW — Escape does MORE than cancel: it cancels everything the second button would AND shows the menu or wall immediately",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 971
+    },
+    "E16": {
+      "chart": "E",
+      "label": "NEW — on a touchscreen the FIRST tap behaves as a hover, so nothing commits on it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 972
+    },
+    "F1": {
+      "chart": "F",
+      "label": "Godot delivers an ORDINARY click first: Windows sends WM_LBUTTONDBLCLK in place of the second press, so by the time a tap is recognised the card is already grabbed",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 995
+    },
+    "F2": {
+      "chart": "F",
+      "label": "NEW — the tap UNDOES that first click's grab",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 996
+    },
+    "F3": {
+      "chart": "F",
+      "label": "NEW — a tap arriving after a PLACEMENT is refused outright. A placement can never be rewound by a double-click",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 997
+    },
+    "F4": {
+      "chart": "F",
+      "label": "NEW — on touch the project detects the double-tap itself, from two screen presses within a time window and a distance window, because Godot never sets double_tap on a Windows touchscreen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 998
+    },
+    "F5": {
+      "chart": "F",
+      "label": "NEW — on keyboard and pad, BOTH: a double-press of the normal button, and a separate bindable action of its own",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 999
+    },
+    "F6": {
+      "chart": "F",
+      "label": "NEW — a double-click on an ENTRANCE card taps it, and the arm still stands",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1000
+    },
+    "F7": {
+      "chart": "F",
+      "label": "NEW — an empty cell's zone card taps too, because zone cards carry modifiers",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1001
+    },
+    "F8": {
+      "chart": "F",
+      "label": "NEW — a tapped signal is emitted. Nothing in the game listens in v1 except one dummy effect built for testing",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1002
+    },
+    "F9": {
+      "chart": "F",
+      "label": "NEW — the second mouse button is cancel-only. It no longer taps, which is what DESIGN_DOC section 12 originally planned — chart E",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1003
+    },
+    "G1": {
+      "chart": "G",
+      "label": "NEW — the LEFTMOST card present in the Entrance arms automatically, matching the refill's own left-to-right order",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1018
+    },
+    "G2": {
+      "chart": "G",
+      "label": "NEW — armed means MARKED IN ITS SLOT. It lifts only once the pointer is over the board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1019
+    },
+    "G3": {
+      "chart": "G",
+      "label": "NEW — GLOW means selected. LIFT means currently picked up, which warns that the next click on a highlighted space will put the lifted card down",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1020
+    },
+    "G4": {
+      "chart": "G",
+      "label": "NEW — the selection glow sits wherever the selector is, showing the current selection as normal",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1021
+    },
+    "G5": {
+      "chart": "G",
+      "label": "NEW — arming does NOT open the armed card's description. Only a real highlight does — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1022
+    },
+    "G6": {
+      "chart": "G",
+      "label": "NEW — every legal cell is highlighted, and because a card is armed for the whole show, that highlight is on for the whole show",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1023
+    },
+    "G7": {
+      "chart": "G",
+      "label": "Game.place_card_in_grid — the placement commits the Entrance to its grid, exactly as today. Arming commits nothing",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1024
+    },
+    "G8": {
+      "chart": "G",
+      "label": "NEW — after a placement, the new leftmost present card arms",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1025
+    },
+    "G9": {
+      "chart": "G",
+      "label": "NEW — after a refill, the new leftmost card arms — chart I",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1026
+    },
+    "G10": {
+      "chart": "G",
+      "label": "NEW — cancel DISARMS, and clicks on cells then do nothing until something is armed again",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1027
+    },
+    "G11": {
+      "chart": "G",
+      "label": "NEW — the arm is view-only. Undo restores the board and the arm is re-derived as leftmost present",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1028
+    },
+    "G12": {
+      "chart": "G",
+      "label": "NEW — keyboard and pad: the arm replaces the old select-an-Entrance-card step, and the arrows go straight to aiming a cell cursor",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1029
+    },
+    "G13": {
+      "chart": "G",
+      "label": "NEW — every slot's stock empty: nothing arms, and clicks on cells do nothing — chart H",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1030
+    },
+    "H1": {
+      "chart": "H",
+      "label": "NEW — each Entrance slot owns its OWN ordered stock. The single draw deck is replaced by them",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1050
+    },
+    "H2": {
+      "chart": "H",
+      "label": "Game.shuffle_deck — the one shuffle the game already does, unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1051
+    },
+    "H3": {
+      "chart": "H",
+      "label": "NEW — the shuffled deck is DEALT round-robin, left to right, so earlier slots take the extras when the count does not divide",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1052
+    },
+    "H4": {
+      "chart": "H",
+      "label": "NEW — this happens at show start, and again whenever the SET of slots changes",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1053
+    },
+    "H5": {
+      "chart": "H",
+      "label": "NEW — no new RNG anywhere, so the resume-replay ruling holds exactly as it does today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1054
+    },
+    "H6": {
+      "chart": "H",
+      "label": "NEW — the slot set changed",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 1055
+    },
+    "H7": {
+      "chart": "H",
+      "label": "NEW — a slot was REMOVED: its cards go from ITS BOTTOM, round-robin, to the BOTTOMS of the remaining slots, left to right",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1056
+    },
+    "H8": {
+      "chart": "H",
+      "label": "NEW — a slot was ADDED: the bottom card of each existing slot in turn, round-robin, until the new slot has its even share",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1057
+    },
+    "H9": {
+      "chart": "H",
+      "label": "NEW — TOPS NEVER MOVE. What is about to be drawn is stable, so a peek effect stays honest",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1058
+    },
+    "H10": {
+      "chart": "H",
+      "label": "NEW — the rebalance is silent. It is bookkeeping under face-down cards and nothing visible moves",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1059
+    },
+    "H11": {
+      "chart": "H",
+      "label": "NEW — a slot whose stock exhausts stays empty. Exhaustion never triggers a rebalance",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1060
+    },
+    "H12": {
+      "chart": "H",
+      "label": "NEW — no caller adds or removes a slot yet. This is machinery built for a future card effect, deliberately with no caller today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1061
+    },
+    "H13": {
+      "chart": "H",
+      "label": "NEW — stocks are part of the board: on_append and every board walk reach their cards exactly as they reach the draw deck today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1062
+    },
+    "H14": {
+      "chart": "H",
+      "label": "NEW — an in-flight save written before this change is DISCARDED, not migrated",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1063
+    },
+    "H15": {
+      "chart": "H",
+      "label": "Game.return_to_map — the discard is still swept back only when the show ends",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1064
+    },
+    "I1": {
+      "chart": "I",
+      "label": "Game.refill_entrance_if_due — the trigger is unchanged: the Entrance is empty, OR no held card has a legal placement",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1086
+    },
+    "I2": {
+      "chart": "I",
+      "label": "TypeInput.on_refill — each header still fills its own slot if that slot is empty, left to right by dispatch order",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1087
+    },
+    "I3": {
+      "chart": "I",
+      "label": "NEW — the card comes off the top of THAT SLOT'S OWN STOCK — chart H",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1088
+    },
+    "I4": {
+      "chart": "I",
+      "label": "NEW — every slot holding a face-down card FLIPS IT UP IN PLACE, staggered left to right to match the draw order",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1089
+    },
+    "I5": {
+      "chart": "I",
+      "label": "NEW — the stagger is a knob, as a fraction of get_delay per slot, never a wall-clock literal",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1090
+    },
+    "I6": {
+      "chart": "I",
+      "label": "NEW — slots still holding a face-up card do NOTHING. Only empty slots flip",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1091
+    },
+    "I7": {
+      "chart": "I",
+      "label": "NEW — there is no fly-in from the Deck control any more",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1092
+    },
+    "I8": {
+      "chart": "I",
+      "label": "NEW — a capped stack of face-down cards is drawn, so depth reads at a glance. The cap is a knob defaulting to 5",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1093
+    },
+    "I9": {
+      "chart": "I",
+      "label": "NEW — a slot with nothing left shows an empty slot frame, which is what the Entrance already shows",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1094
+    },
+    "I10": {
+      "chart": "I",
+      "label": "NEW — hovering a face-down stock describes the SLOT, not a card: how many remain in this stock — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1095
+    },
+    "I11": {
+      "chart": "I",
+      "label": "NEW — a bonus reveal simply DEEPENS that slot's face-up stack, since the Entrance already holds a stack per slot",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1096
+    },
+    "I12": {
+      "chart": "I",
+      "label": "NEW — the Deck button shows the union of every stock as ONE list, sorted by suit and rank so no ordering leaks",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1097
+    },
+    "I13": {
+      "chart": "I",
+      "label": "The Discard viewer is unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1098
+    },
+    "J1": {
+      "chart": "J",
+      "label": "Game.place_card_in_grid — a placement resolves: every line scored, every prop tick finished",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1117
+    },
+    "J2": {
+      "chart": "J",
+      "label": "GameData.has_met_goal — the check fires once the WHOLE placement has settled, never mid-cascade",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1118
+    },
+    "J3": {
+      "chart": "J",
+      "label": "NEW — the Goal label changes state the moment the total passes it, so the ending is announced rather than sprung",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1119
+    },
+    "J4": {
+      "chart": "J",
+      "label": "NEW — a short pause, so the final score lands visibly",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1120
+    },
+    "J5": {
+      "chart": "J",
+      "label": "Game.end_show — the same flag, the same save, the same resolve the End button drives today",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1121
+    },
+    "J6": {
+      "chart": "J",
+      "label": "NEW — there is no declining. Reaching the goal ends the show, full stop",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1122
+    },
+    "J7": {
+      "chart": "J",
+      "label": "Game.exit_show — Continue still banks the fame, so the outcome stays undoable",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1123
+    },
+    "J8": {
+      "chart": "J",
+      "label": "NEW — the End button SURVIVES, for a show that can no longer be won",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1124
+    },
+    "J9": {
+      "chart": "J",
+      "label": "NEW — End is REVEALED when either the deck is empty, or no more action is possible on the board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1125
+    },
+    "J10": {
+      "chart": "J",
+      "label": "A full board still does NOT end a show: cards may remain in the Entrance and effects may free cells",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1126
+    },
+    "J11": {
+      "chart": "J",
+      "label": "Game.undo — rewinds an automatic end exactly as it rewinds a manual one, back to the live board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1127
+    },
+    "J12": {
+      "chart": "J",
+      "label": "Resume lands on the outcome screen, because show_ended is saved before the resolve",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1128
+    },
+    "K1": {
+      "chart": "K",
+      "label": "WorldMapController.node_hovered — unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1147
+    },
+    "K2": {
+      "chart": "K",
+      "label": "NEW — a small popup appears with the node's NAME ONLY, directly above the node, centred, and it stays put",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1148
+    },
+    "K3": {
+      "chart": "K",
+      "label": "NEW — the same hover ALSO fills the sidebar with everything else — chart B",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1149
+    },
+    "K4": {
+      "chart": "K",
+      "label": "Map._on_node_entered — a click still ENTERS the node, exactly as today. Travelling never costs a second click",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1150
+    },
+    "K5": {
+      "chart": "K",
+      "label": "NEW — on a touchscreen the first tap is the same as a hover, so it describes rather than travels",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1151
+    },
+    "K6": {
+      "chart": "K",
+      "label": "NEW — after the pointer leaves, the sidebar keeps the last node's description, the same persistence the board has",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1152
+    },
+    "K7": {
+      "chart": "K",
+      "label": "MapHoverPanel.get_info — the entry is now ALWAYS used, so the old build-and-throw-away waste is gone",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1153
+    },
+    "K8": {
+      "chart": "K",
+      "label": "NEW — a booster's preview cards are a flowing grid that wraps to the sidebar's width and scrolls with the rest",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1154
+    },
+    "K9": {
+      "chart": "K",
+      "label": "NEW — hovering one of those preview cards switches the sidebar to that CARD, with a way back to the pack",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1155
+    },
+    "K10": {
+      "chart": "K",
+      "label": "NEW — keyboard and pad: a node cursor, and whatever is selected is described. Same rule as the board",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1156
+    },
+    "K11": {
+      "chart": "K",
+      "label": "NEW — no small popup on the board. It is a map affordance, for nodes that are just dots",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1157
+    },
+    "K12": {
+      "chart": "K",
+      "label": "NEW — the sidebar is on the same side as the game's, always — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1158
+    },
+    "L1": {
+      "chart": "L",
+      "label": "wall_info_mode, the wall_info InputMap action, and the overlay's magnifying-glass Info toggle",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1176
+    },
+    "L2": {
+      "chart": "L",
+      "label": "WallPicture.info_zoom_state and WallTransition's info branch — the zoom-out goes with them",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1177
+    },
+    "L3": {
+      "chart": "L",
+      "label": "wall_info_card_width, wall_info_card_max_height, wall_info_card_overlap, wall_info_zoom_scale",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1178
+    },
+    "L4": {
+      "chart": "L",
+      "label": "Main's per-picture info memory: _info_by_picture, _info_entry_by_picture, _info_entry_owner, _restore_info_mode_for",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1179
+    },
+    "L5": {
+      "chart": "L",
+      "label": "Tools/wall_editor.tscn's Info panel becomes a SIDEBAR preview panel: width, side, opacity and the exit X, live against a real hosted screen",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1180
+    },
+    "L6": {
+      "chart": "L",
+      "label": "Tests/Wall/test_wall_info and Tests/Visual/wall_info_snapshot are REPLACED by sidebar equivalents, so coverage does not drop",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1181
+    },
+    "L7": {
+      "chart": "L",
+      "label": "PlayArea._focus_info, _show_focus_info, _position_focus_info and the wall_screen_popups knob",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1182
+    },
+    "L8": {
+      "chart": "L",
+      "label": "GameView._process's furniture pan, its two authored-offset caches, hud_scale, and PlayArea.pan_window_left_x",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1183
+    },
+    "L9": {
+      "chart": "L",
+      "label": "%MultScore with its Col, x and Row children, and %Preview",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1184
+    },
+    "L10": {
+      "chart": "L",
+      "label": "hud_width_fraction, replaced by the container's own window fraction — chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1185
+    },
+    "L11": {
+      "chart": "L",
+      "label": "The deck, discard and rules viewers' own description panels, which publish to the sidebar instead",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1186
+    },
+    "L12": {
+      "chart": "L",
+      "label": "GameData.draw_deck as the single deck, replaced by per-slot stocks — chart H",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1187
+    },
+    "L13": {
+      "chart": "L",
+      "label": "UI/deck_builder.gd is REPAIRED, not deleted: new classes, dead code removed, the tool itself kept",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 1188
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 818
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "not in Info mode AND wall_screen_popups",
+      "chart": "A",
+      "line": 819
+    },
+    {
+      "key": "A2->A8",
+      "from": "A2",
+      "to": "A8",
+      "label": "in Info mode: this panel always yields",
+      "chart": "A",
+      "line": 820
+    },
+    {
+      "key": "A4->A5",
+      "from": "A4",
+      "to": "A5",
+      "label": "",
+      "chart": "A",
+      "line": 821
+    },
+    {
+      "key": "A4->A11",
+      "from": "A4",
+      "to": "A11",
+      "label": "not in Info mode",
+      "chart": "A",
+      "line": 822
+    },
+    {
+      "key": "A5->A6",
+      "from": "A5",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 823
+    },
+    {
+      "key": "A6->A7",
+      "from": "A6",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 824
+    },
+    {
+      "key": "A7->A8",
+      "from": "A7",
+      "to": "A8",
+      "label": "",
+      "chart": "A",
+      "line": 825
+    },
+    {
+      "key": "A9->A8",
+      "from": "A9",
+      "to": "A8",
+      "label": "",
+      "chart": "A",
+      "line": 826
+    },
+    {
+      "key": "A10->A7",
+      "from": "A10",
+      "to": "A7",
+      "label": "",
+      "chart": "A",
+      "line": 827
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 850
+    },
+    {
+      "key": "B3->B2",
+      "from": "B3",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 851
+    },
+    {
+      "key": "B2->B4",
+      "from": "B2",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 852
+    },
+    {
+      "key": "B2->B5",
+      "from": "B2",
+      "to": "B5",
+      "label": "",
+      "chart": "B",
+      "line": 853
+    },
+    {
+      "key": "B5->B6",
+      "from": "B5",
+      "to": "B6",
+      "label": "",
+      "chart": "B",
+      "line": 854
+    },
+    {
+      "key": "B6->B7",
+      "from": "B6",
+      "to": "B7",
+      "label": "yes",
+      "chart": "B",
+      "line": 855
+    },
+    {
+      "key": "B6->B8",
+      "from": "B6",
+      "to": "B8",
+      "label": "a click, not a hover",
+      "chart": "B",
+      "line": 856
+    },
+    {
+      "key": "B7->B9",
+      "from": "B7",
+      "to": "B9",
+      "label": "",
+      "chart": "B",
+      "line": 857
+    },
+    {
+      "key": "B9->B10#1",
+      "from": "B9",
+      "to": "B10",
+      "label": "the exit X",
+      "chart": "B",
+      "line": 858
+    },
+    {
+      "key": "B9->B10#2",
+      "from": "B9",
+      "to": "B10",
+      "label": "cancel",
+      "chart": "B",
+      "line": 859
+    },
+    {
+      "key": "B9->B11",
+      "from": "B9",
+      "to": "B11",
+      "label": "the card leaves its cell",
+      "chart": "B",
+      "line": 860
+    },
+    {
+      "key": "B9->B10#3",
+      "from": "B9",
+      "to": "B10",
+      "label": "a click on bare board",
+      "chart": "B",
+      "line": 861
+    },
+    {
+      "key": "B11->B10",
+      "from": "B11",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 862
+    },
+    {
+      "key": "B12->B10",
+      "from": "B12",
+      "to": "B10",
+      "label": "",
+      "chart": "B",
+      "line": 863
+    },
+    {
+      "key": "B13->B9",
+      "from": "B13",
+      "to": "B9",
+      "label": "",
+      "chart": "B",
+      "line": 864
+    },
+    {
+      "key": "B14->B9",
+      "from": "B14",
+      "to": "B9",
+      "label": "",
+      "chart": "B",
+      "line": 865
+    },
+    {
+      "key": "B15->B16",
+      "from": "B15",
+      "to": "B16",
+      "label": "",
+      "chart": "B",
+      "line": 866
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 886
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "",
+      "chart": "C",
+      "line": 887
+    },
+    {
+      "key": "C3->C4",
+      "from": "C3",
+      "to": "C4",
+      "label": "",
+      "chart": "C",
+      "line": 888
+    },
+    {
+      "key": "C2->C5",
+      "from": "C2",
+      "to": "C5",
+      "label": "",
+      "chart": "C",
+      "line": 889
+    },
+    {
+      "key": "C5->C6",
+      "from": "C5",
+      "to": "C6",
+      "label": "",
+      "chart": "C",
+      "line": 890
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 891
+    },
+    {
+      "key": "C7->C2",
+      "from": "C7",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 892
+    },
+    {
+      "key": "C13->C2",
+      "from": "C13",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 893
+    },
+    {
+      "key": "C1->C8",
+      "from": "C1",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 894
+    },
+    {
+      "key": "C1->C9",
+      "from": "C1",
+      "to": "C9",
+      "label": "",
+      "chart": "C",
+      "line": 895
+    },
+    {
+      "key": "C1->C10",
+      "from": "C1",
+      "to": "C10",
+      "label": "",
+      "chart": "C",
+      "line": 896
+    },
+    {
+      "key": "C1->C11",
+      "from": "C1",
+      "to": "C11",
+      "label": "",
+      "chart": "C",
+      "line": 897
+    },
+    {
+      "key": "C1->C12",
+      "from": "C1",
+      "to": "C12",
+      "label": "",
+      "chart": "C",
+      "line": 898
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 919
+    },
+    {
+      "key": "D2->D3",
+      "from": "D2",
+      "to": "D3",
+      "label": "no",
+      "chart": "D",
+      "line": 920
+    },
+    {
+      "key": "D2->D4",
+      "from": "D2",
+      "to": "D4",
+      "label": "yes",
+      "chart": "D",
+      "line": 921
+    },
+    {
+      "key": "D4->D5",
+      "from": "D4",
+      "to": "D5",
+      "label": "",
+      "chart": "D",
+      "line": 922
+    },
+    {
+      "key": "D3->D6",
+      "from": "D3",
+      "to": "D6",
+      "label": "",
+      "chart": "D",
+      "line": 923
+    },
+    {
+      "key": "D5->D6",
+      "from": "D5",
+      "to": "D6",
+      "label": "",
+      "chart": "D",
+      "line": 924
+    },
+    {
+      "key": "D6->D7",
+      "from": "D6",
+      "to": "D7",
+      "label": "yes",
+      "chart": "D",
+      "line": 925
+    },
+    {
+      "key": "D6->D8",
+      "from": "D6",
+      "to": "D8",
+      "label": "no",
+      "chart": "D",
+      "line": 926
+    },
+    {
+      "key": "D7->D8",
+      "from": "D7",
+      "to": "D8",
+      "label": "",
+      "chart": "D",
+      "line": 927
+    },
+    {
+      "key": "D8->D9",
+      "from": "D8",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 928
+    },
+    {
+      "key": "D9->D10",
+      "from": "D9",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 929
+    },
+    {
+      "key": "D1->D11",
+      "from": "D1",
+      "to": "D11",
+      "label": "",
+      "chart": "D",
+      "line": 930
+    },
+    {
+      "key": "D3->D12",
+      "from": "D3",
+      "to": "D12",
+      "label": "",
+      "chart": "D",
+      "line": 931
+    },
+    {
+      "key": "D1->D13",
+      "from": "D1",
+      "to": "D13",
+      "label": "",
+      "chart": "D",
+      "line": 932
+    },
+    {
+      "key": "D1->D14",
+      "from": "D1",
+      "to": "D14",
+      "label": "",
+      "chart": "D",
+      "line": 933
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "",
+      "chart": "E",
+      "line": 973
+    },
+    {
+      "key": "E1->E3",
+      "from": "E1",
+      "to": "E3",
+      "label": "",
+      "chart": "E",
+      "line": 974
+    },
+    {
+      "key": "E1->E8",
+      "from": "E1",
+      "to": "E8",
+      "label": "",
+      "chart": "E",
+      "line": 975
+    },
+    {
+      "key": "E3->E4",
+      "from": "E3",
+      "to": "E4",
+      "label": "yes",
+      "chart": "E",
+      "line": 976
+    },
+    {
+      "key": "E4->E5",
+      "from": "E4",
+      "to": "E5",
+      "label": "",
+      "chart": "E",
+      "line": 977
+    },
+    {
+      "key": "E5->E6",
+      "from": "E5",
+      "to": "E6",
+      "label": "yes",
+      "chart": "E",
+      "line": 978
+    },
+    {
+      "key": "E3->E7",
+      "from": "E3",
+      "to": "E7",
+      "label": "no",
+      "chart": "E",
+      "line": 979
+    },
+    {
+      "key": "E8->E9",
+      "from": "E8",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 980
+    },
+    {
+      "key": "E9->E10",
+      "from": "E9",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 981
+    },
+    {
+      "key": "E10->E11",
+      "from": "E10",
+      "to": "E11",
+      "label": "",
+      "chart": "E",
+      "line": 982
+    },
+    {
+      "key": "E2->E12",
+      "from": "E2",
+      "to": "E12",
+      "label": "",
+      "chart": "E",
+      "line": 983
+    },
+    {
+      "key": "E11->E12",
+      "from": "E11",
+      "to": "E12",
+      "label": "",
+      "chart": "E",
+      "line": 984
+    },
+    {
+      "key": "E12->E13",
+      "from": "E12",
+      "to": "E13",
+      "label": "",
+      "chart": "E",
+      "line": 985
+    },
+    {
+      "key": "E13->E14",
+      "from": "E13",
+      "to": "E14",
+      "label": "",
+      "chart": "E",
+      "line": 986
+    },
+    {
+      "key": "E15->E13",
+      "from": "E15",
+      "to": "E13",
+      "label": "",
+      "chart": "E",
+      "line": 987
+    },
+    {
+      "key": "E16->E1",
+      "from": "E16",
+      "to": "E1",
+      "label": "",
+      "chart": "E",
+      "line": 988
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 1004
+    },
+    {
+      "key": "F2->F8",
+      "from": "F2",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1005
+    },
+    {
+      "key": "F1->F3",
+      "from": "F1",
+      "to": "F3",
+      "label": "",
+      "chart": "F",
+      "line": 1006
+    },
+    {
+      "key": "F4->F8",
+      "from": "F4",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1007
+    },
+    {
+      "key": "F5->F8",
+      "from": "F5",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1008
+    },
+    {
+      "key": "F6->F8",
+      "from": "F6",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1009
+    },
+    {
+      "key": "F7->F8",
+      "from": "F7",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1010
+    },
+    {
+      "key": "F9->F8",
+      "from": "F9",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 1011
+    },
+    {
+      "key": "G1->G2",
+      "from": "G1",
+      "to": "G2",
+      "label": "",
+      "chart": "G",
+      "line": 1031
+    },
+    {
+      "key": "G2->G3",
+      "from": "G2",
+      "to": "G3",
+      "label": "",
+      "chart": "G",
+      "line": 1032
+    },
+    {
+      "key": "G3->G4",
+      "from": "G3",
+      "to": "G4",
+      "label": "",
+      "chart": "G",
+      "line": 1033
+    },
+    {
+      "key": "G1->G5",
+      "from": "G1",
+      "to": "G5",
+      "label": "",
+      "chart": "G",
+      "line": 1034
+    },
+    {
+      "key": "G1->G6",
+      "from": "G1",
+      "to": "G6",
+      "label": "",
+      "chart": "G",
+      "line": 1035
+    },
+    {
+      "key": "G2->G7",
+      "from": "G2",
+      "to": "G7",
+      "label": "",
+      "chart": "G",
+      "line": 1036
+    },
+    {
+      "key": "G7->G8",
+      "from": "G7",
+      "to": "G8",
+      "label": "",
+      "chart": "G",
+      "line": 1037
+    },
+    {
+      "key": "G9->G1",
+      "from": "G9",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1038
+    },
+    {
+      "key": "G8->G1",
+      "from": "G8",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1039
+    },
+    {
+      "key": "G10->G1",
+      "from": "G10",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1040
+    },
+    {
+      "key": "G11->G1",
+      "from": "G11",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1041
+    },
+    {
+      "key": "G1->G12",
+      "from": "G1",
+      "to": "G12",
+      "label": "",
+      "chart": "G",
+      "line": 1042
+    },
+    {
+      "key": "G13->G1",
+      "from": "G13",
+      "to": "G1",
+      "label": "",
+      "chart": "G",
+      "line": 1043
+    },
+    {
+      "key": "H1->H2",
+      "from": "H1",
+      "to": "H2",
+      "label": "",
+      "chart": "H",
+      "line": 1065
+    },
+    {
+      "key": "H2->H3",
+      "from": "H2",
+      "to": "H3",
+      "label": "",
+      "chart": "H",
+      "line": 1066
+    },
+    {
+      "key": "H3->H4",
+      "from": "H3",
+      "to": "H4",
+      "label": "",
+      "chart": "H",
+      "line": 1067
+    },
+    {
+      "key": "H4->H5",
+      "from": "H4",
+      "to": "H5",
+      "label": "",
+      "chart": "H",
+      "line": 1068
+    },
+    {
+      "key": "H4->H6",
+      "from": "H4",
+      "to": "H6",
+      "label": "",
+      "chart": "H",
+      "line": 1069
+    },
+    {
+      "key": "H6->H7",
+      "from": "H6",
+      "to": "H7",
+      "label": "removed",
+      "chart": "H",
+      "line": 1070
+    },
+    {
+      "key": "H6->H8",
+      "from": "H6",
+      "to": "H8",
+      "label": "added",
+      "chart": "H",
+      "line": 1071
+    },
+    {
+      "key": "H7->H9",
+      "from": "H7",
+      "to": "H9",
+      "label": "",
+      "chart": "H",
+      "line": 1072
+    },
+    {
+      "key": "H8->H9",
+      "from": "H8",
+      "to": "H9",
+      "label": "",
+      "chart": "H",
+      "line": 1073
+    },
+    {
+      "key": "H9->H10",
+      "from": "H9",
+      "to": "H10",
+      "label": "",
+      "chart": "H",
+      "line": 1074
+    },
+    {
+      "key": "H1->H11",
+      "from": "H1",
+      "to": "H11",
+      "label": "",
+      "chart": "H",
+      "line": 1075
+    },
+    {
+      "key": "H6->H12",
+      "from": "H6",
+      "to": "H12",
+      "label": "",
+      "chart": "H",
+      "line": 1076
+    },
+    {
+      "key": "H1->H13",
+      "from": "H1",
+      "to": "H13",
+      "label": "",
+      "chart": "H",
+      "line": 1077
+    },
+    {
+      "key": "H1->H14",
+      "from": "H1",
+      "to": "H14",
+      "label": "",
+      "chart": "H",
+      "line": 1078
+    },
+    {
+      "key": "H1->H15",
+      "from": "H1",
+      "to": "H15",
+      "label": "",
+      "chart": "H",
+      "line": 1079
+    },
+    {
+      "key": "I1->I2",
+      "from": "I1",
+      "to": "I2",
+      "label": "",
+      "chart": "I",
+      "line": 1099
+    },
+    {
+      "key": "I2->I3",
+      "from": "I2",
+      "to": "I3",
+      "label": "",
+      "chart": "I",
+      "line": 1100
+    },
+    {
+      "key": "I3->I4",
+      "from": "I3",
+      "to": "I4",
+      "label": "",
+      "chart": "I",
+      "line": 1101
+    },
+    {
+      "key": "I4->I5",
+      "from": "I4",
+      "to": "I5",
+      "label": "",
+      "chart": "I",
+      "line": 1102
+    },
+    {
+      "key": "I4->I6",
+      "from": "I4",
+      "to": "I6",
+      "label": "",
+      "chart": "I",
+      "line": 1103
+    },
+    {
+      "key": "I4->I7",
+      "from": "I4",
+      "to": "I7",
+      "label": "",
+      "chart": "I",
+      "line": 1104
+    },
+    {
+      "key": "I3->I8",
+      "from": "I3",
+      "to": "I8",
+      "label": "",
+      "chart": "I",
+      "line": 1105
+    },
+    {
+      "key": "I8->I9",
+      "from": "I8",
+      "to": "I9",
+      "label": "",
+      "chart": "I",
+      "line": 1106
+    },
+    {
+      "key": "I8->I10",
+      "from": "I8",
+      "to": "I10",
+      "label": "",
+      "chart": "I",
+      "line": 1107
+    },
+    {
+      "key": "I3->I11",
+      "from": "I3",
+      "to": "I11",
+      "label": "",
+      "chart": "I",
+      "line": 1108
+    },
+    {
+      "key": "I1->I12",
+      "from": "I1",
+      "to": "I12",
+      "label": "",
+      "chart": "I",
+      "line": 1109
+    },
+    {
+      "key": "I1->I13",
+      "from": "I1",
+      "to": "I13",
+      "label": "",
+      "chart": "I",
+      "line": 1110
+    },
+    {
+      "key": "J1->J2",
+      "from": "J1",
+      "to": "J2",
+      "label": "",
+      "chart": "J",
+      "line": 1129
+    },
+    {
+      "key": "J2->J3",
+      "from": "J2",
+      "to": "J3",
+      "label": "goal met",
+      "chart": "J",
+      "line": 1130
+    },
+    {
+      "key": "J3->J4",
+      "from": "J3",
+      "to": "J4",
+      "label": "",
+      "chart": "J",
+      "line": 1131
+    },
+    {
+      "key": "J4->J5",
+      "from": "J4",
+      "to": "J5",
+      "label": "",
+      "chart": "J",
+      "line": 1132
+    },
+    {
+      "key": "J5->J7",
+      "from": "J5",
+      "to": "J7",
+      "label": "",
+      "chart": "J",
+      "line": 1133
+    },
+    {
+      "key": "J2->J9",
+      "from": "J2",
+      "to": "J9",
+      "label": "goal not met",
+      "chart": "J",
+      "line": 1134
+    },
+    {
+      "key": "J6->J5",
+      "from": "J6",
+      "to": "J5",
+      "label": "",
+      "chart": "J",
+      "line": 1135
+    },
+    {
+      "key": "J8->J9",
+      "from": "J8",
+      "to": "J9",
+      "label": "",
+      "chart": "J",
+      "line": 1136
+    },
+    {
+      "key": "J9->J5",
+      "from": "J9",
+      "to": "J5",
+      "label": "",
+      "chart": "J",
+      "line": 1137
+    },
+    {
+      "key": "J10->J9",
+      "from": "J10",
+      "to": "J9",
+      "label": "",
+      "chart": "J",
+      "line": 1138
+    },
+    {
+      "key": "J5->J11",
+      "from": "J5",
+      "to": "J11",
+      "label": "",
+      "chart": "J",
+      "line": 1139
+    },
+    {
+      "key": "J5->J12",
+      "from": "J5",
+      "to": "J12",
+      "label": "",
+      "chart": "J",
+      "line": 1140
+    },
+    {
+      "key": "K1->K2",
+      "from": "K1",
+      "to": "K2",
+      "label": "",
+      "chart": "K",
+      "line": 1159
+    },
+    {
+      "key": "K1->K3",
+      "from": "K1",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 1160
+    },
+    {
+      "key": "K3->K6",
+      "from": "K3",
+      "to": "K6",
+      "label": "",
+      "chart": "K",
+      "line": 1161
+    },
+    {
+      "key": "K1->K4",
+      "from": "K1",
+      "to": "K4",
+      "label": "",
+      "chart": "K",
+      "line": 1162
+    },
+    {
+      "key": "K5->K3",
+      "from": "K5",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 1163
+    },
+    {
+      "key": "K3->K7",
+      "from": "K3",
+      "to": "K7",
+      "label": "",
+      "chart": "K",
+      "line": 1164
+    },
+    {
+      "key": "K7->K8",
+      "from": "K7",
+      "to": "K8",
+      "label": "",
+      "chart": "K",
+      "line": 1165
+    },
+    {
+      "key": "K8->K9",
+      "from": "K8",
+      "to": "K9",
+      "label": "",
+      "chart": "K",
+      "line": 1166
+    },
+    {
+      "key": "K10->K3",
+      "from": "K10",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 1167
+    },
+    {
+      "key": "K11->K2",
+      "from": "K11",
+      "to": "K2",
+      "label": "",
+      "chart": "K",
+      "line": 1168
+    },
+    {
+      "key": "K12->K3",
+      "from": "K12",
+      "to": "K3",
+      "label": "",
+      "chart": "K",
+      "line": 1169
+    },
+    {
+      "key": "L1->L2",
+      "from": "L1",
+      "to": "L2",
+      "label": "",
+      "chart": "L",
+      "line": 1189
+    },
+    {
+      "key": "L2->L3",
+      "from": "L2",
+      "to": "L3",
+      "label": "",
+      "chart": "L",
+      "line": 1190
+    },
+    {
+      "key": "L3->L4",
+      "from": "L3",
+      "to": "L4",
+      "label": "",
+      "chart": "L",
+      "line": 1191
+    },
+    {
+      "key": "L1->L5",
+      "from": "L1",
+      "to": "L5",
+      "label": "",
+      "chart": "L",
+      "line": 1192
+    },
+    {
+      "key": "L1->L6",
+      "from": "L1",
+      "to": "L6",
+      "label": "",
+      "chart": "L",
+      "line": 1193
+    },
+    {
+      "key": "L7->L11",
+      "from": "L7",
+      "to": "L11",
+      "label": "",
+      "chart": "L",
+      "line": 1194
+    },
+    {
+      "key": "L8->L10",
+      "from": "L8",
+      "to": "L10",
+      "label": "",
+      "chart": "L",
+      "line": 1195
+    },
+    {
+      "key": "L9->L8",
+      "from": "L9",
+      "to": "L8",
+      "label": "",
+      "chart": "L",
+      "line": 1196
+    },
+    {
+      "key": "L12->L13",
+      "from": "L12",
+      "to": "L13",
+      "label": "",
+      "chart": "L",
+      "line": 1197
+    }
+  ],
+  "links": [
+    {
+      "key": "B2~>C",
+      "from": "B2",
+      "fromChart": "B",
+      "toChart": "C",
+      "ref": "C",
+      "line": 835
+    },
+    {
+      "key": "B5~>E",
+      "from": "B5",
+      "fromChart": "B",
+      "toChart": "E",
+      "ref": "E",
+      "line": 838
+    },
+    {
+      "key": "C4~>L",
+      "from": "C4",
+      "fromChart": "C",
+      "toChart": "L",
+      "ref": "L",
+      "line": 876
+    },
+    {
+      "key": "C5~>B",
+      "from": "C5",
+      "fromChart": "C",
+      "toChart": "B",
+      "ref": "B",
+      "line": 877
+    },
+    {
+      "key": "C10~>K",
+      "from": "C10",
+      "fromChart": "C",
+      "toChart": "K",
+      "ref": "K",
+      "line": 882
+    },
+    {
+      "key": "D14~>L",
+      "from": "D14",
+      "fromChart": "D",
+      "toChart": "L",
+      "ref": "L",
+      "line": 918
+    },
+    {
+      "key": "E14~>B",
+      "from": "E14",
+      "fromChart": "E",
+      "toChart": "B",
+      "ref": "B",
+      "line": 970
+    },
+    {
+      "key": "F9~>E",
+      "from": "F9",
+      "fromChart": "F",
+      "toChart": "E",
+      "ref": "E",
+      "line": 1003
+    },
+    {
+      "key": "G5~>B",
+      "from": "G5",
+      "fromChart": "G",
+      "toChart": "B",
+      "ref": "B",
+      "line": 1022
+    },
+    {
+      "key": "G9~>I",
+      "from": "G9",
+      "fromChart": "G",
+      "toChart": "I",
+      "ref": "I",
+      "line": 1026
+    },
+    {
+      "key": "G13~>H",
+      "from": "G13",
+      "fromChart": "G",
+      "toChart": "H",
+      "ref": "H",
+      "line": 1030
+    },
+    {
+      "key": "I3~>H",
+      "from": "I3",
+      "fromChart": "I",
+      "toChart": "H",
+      "ref": "H",
+      "line": 1088
+    },
+    {
+      "key": "I10~>B",
+      "from": "I10",
+      "fromChart": "I",
+      "toChart": "B",
+      "ref": "B",
+      "line": 1095
+    },
+    {
+      "key": "K3~>B",
+      "from": "K3",
+      "fromChart": "K",
+      "toChart": "B",
+      "ref": "B",
+      "line": 1149
+    },
+    {
+      "key": "K12~>D",
+      "from": "K12",
+      "fromChart": "K",
+      "toChart": "D",
+      "ref": "D",
+      "line": 1158
+    },
+    {
+      "key": "L10~>D",
+      "from": "L10",
+      "fromChart": "L",
+      "toChart": "D",
+      "ref": "D",
+      "line": 1185
+    },
+    {
+      "key": "L12~>H",
+      "from": "L12",
+      "fromChart": "L",
+      "toChart": "H",
+      "ref": "H",
+      "line": 1187
+    }
+  ]
+}

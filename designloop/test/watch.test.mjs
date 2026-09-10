@@ -67,6 +67,77 @@ test('a round that ended before the agent parked returns at once', async () => {
   }
 });
 
+test('the owner OPENING a round is not the owner finishing one', async () => {
+  const dir = await design();
+  try {
+    // The agent handed round 5 over; the owner opens it. `answering` is not a turn ending, and
+    // waking here reported "the owner's turn ended" about a turn that had just started.
+    await writeJsonAtomic(join(dir, 'status.owner.json'), {
+      state: 'done', reason: 'complete', round: 4, at: '2026-08-01T00:00:00Z',
+    });
+    await writeJsonAtomic(join(dir, 'status.agent.json'), {
+      state: 'ready', mode: 'questions', round: 5, at: '2026-08-01T00:05:00Z',
+    });
+    const parked = watchOwner(dir, { timeoutMs: 600 });
+    await writeJsonAtomic(join(dir, 'status.owner.json'), {
+      state: 'answering', reason: null, round: 5, at: '2026-08-01T00:06:00Z',
+    });
+    assert.equal(await parked, null, 'starting to answer must not wake the agent');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a finished round the agent already handed back is NOT a fresh wake', async () => {
+  const dir = await design();
+  try {
+    await writeJsonAtomic(join(dir, 'status.owner.json'), {
+      state: 'done', reason: 'complete', round: 3, at: '2026-08-01T00:00:00Z',
+    });
+    // The agent read that round and published the next one. The owner's half still says `done`.
+    await writeJsonAtomic(join(dir, 'status.agent.json'), {
+      state: 'ready', mode: 'review', round: 4, at: '2026-08-01T00:05:00Z',
+    });
+    const status = await watchOwner(dir, { timeoutMs: 400 });
+    assert.equal(status, null, 'a consumed round must not wake the agent again');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('a finished round the agent has NOT handed back still returns at once', async () => {
+  const dir = await design();
+  try {
+    await writeJsonAtomic(join(dir, 'status.owner.json'), {
+      state: 'done', reason: 'complete', round: 3, at: '2026-08-01T00:05:00Z',
+    });
+    // The agent is still working on the PREVIOUS round: it has not seen this one.
+    await writeJsonAtomic(join(dir, 'status.agent.json'), {
+      state: 'ready', mode: 'questions', round: 3, at: '2026-08-01T00:00:00Z',
+    });
+    const status = await watchOwner(dir, { timeoutMs: 2000 });
+    assert.equal(status?.state, 'done', 'an unread turn must still not strand the agent');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('an agent that is WORKING has not handed the turn back, so a done round wakes it', async () => {
+  const dir = await design();
+  try {
+    await writeJsonAtomic(join(dir, 'status.owner.json'), {
+      state: 'done', reason: 'complete', round: 3, at: '2026-08-01T00:00:00Z',
+    });
+    await writeJsonAtomic(join(dir, 'status.agent.json'), {
+      state: 'working', mode: 'questions', round: 3, at: '2026-08-01T00:05:00Z',
+    });
+    const status = await watchOwner(dir, { timeoutMs: 2000 });
+    assert.equal(status?.state, 'done', 'only a `ready` handoff means the turn was consumed');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('an owner who stops halfway is not a timeout — the watch just waits (Q23=a)', async () => {
   const dir = await design();
   try {
