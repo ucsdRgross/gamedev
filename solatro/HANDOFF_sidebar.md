@@ -38,6 +38,17 @@ code. Overseer (opus) writes no source.
 - **Gate for every step:** suite count ≥ 45 (rising as suites are added), zero failures, no
   exit-time error lines beyond the two above.
 
+## Owner rulings made during this run
+- `plan-implementer` maxTurns 50 → 150 (edited on main and on this branch).
+- Legacy comment debt is DEFERRED to its own pass: a step keeps every comment it writes or edits
+  compliant and leaves old comments in touched files alone. `doc_check --changed` findings on those
+  lines are expected. Counts when this run started touching them: play_area.gd 638, game.gd 352,
+  test_visual_layers.gd 293, test_grid_view.gd 252, test_ui_props.gd 241, card_visual.gd 205,
+  test_grid_layout.gd 197, main.gd 181, wall_editor.gd 115, wall_picture.gd 97,
+  wall_editor_soak.gd 67, wall_transition.gd 53, test_interaction.gd 51, player_settings.gd 47,
+  wall_input.gd 31, map.gd 12, wall_overlay.gd 11, choice_viewer.gd 11, deck_builder.gd 10,
+  card_effect_api.gd 9, deck_viewer.gd 4, cards_viewer.gd 3, type_input.gd 3.
+
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
   there. S3 builds §1.1 as written; gate checked at TEST_PLAN 3.1's fixtures.
@@ -52,8 +63,8 @@ code. Overseer (opus) writes no source.
 - id: S2
   description: move the HUD controls into HudContainer; delete %MultScore (+3 children) and %Preview
   status: in_progress
-  evidence: 'S2a 2b88ea90: ALL 46 SUITES 3981 PASSED [23 placeholders]; pre-change board_inset_left 394.0, _hud_authored_width 402.0, board centre (scroll_container.position.x + size.x/2) 733.808. S2b 07aa305f: ALL 46 SUITES 3979 PASSED [22 placeholders], godot.log 0 SCRIPT ERROR'
-  notes: 'S2c pending: wiring tests (a) mount+members (b) button reaches live GameView (c) teardown (d) reachable, TEST_PLAN 3.4, main_boot_snapshot PNG for the overseer to LOOK at. 3.4 premise likely false: inset was authored*hud_scale = 0.25*1576 whatever the furniture, so the centre may not move - assert measured truth, log it'
+  evidence: 'S2c 3123530c: ALL 46 SUITES 4034 PASSED, TestSidebar 57 checks, red-then-green per test. S2a 2b88ea90: ALL 46 SUITES 3981 PASSED [23 placeholders]; pre-change board_inset_left 394.0, _hud_authored_width 402.0, board centre (scroll_container.position.x + size.x/2) 733.808. S2b 07aa305f: ALL 46 SUITES 3979 PASSED [22 placeholders], godot.log 0 SCRIPT ERROR'
+  notes: 'S2d pending - the by-eye gate FAILED: Goal/Total caption and value labels overlap ("GOoal:", "T0otal:"), Combo not visible, the number rows sit under the overlay Back/Forward/Wall buttons. S2d fixes the GameHud layout and builds Tests/Visual/sidebar_snapshot early (S11 names it) so the game screen can be seen'
 - id: S3
   description: geometry per PLAN 1.1; add board_inset_top; delete pan_window_left_x
   status: pending
@@ -63,6 +74,7 @@ code. Overseer (opus) writes no source.
   description: the map gets the same container (Fame, Lap, Luck, Deck)
   status: pending
   evidence: ''
+  notes: 'ALSO OWED HERE (seen by eye in main_boot_snapshot boot.png after S2c): the start menu shows the GAME HUD in the container and the container covers the menu Options button. Q22=(b) "the surface exists everywhere and is simply empty there"; Q21=(b) no sidebar in the wall overview; owner Q27 note "center of screen for picture is center of remaining space not taken by sidebar" - the menu picture must centre beside the container. Main picks the HudStack child per focused screen'
 - id: S5
   description: route PlayArea.info_requested into HudContainer; description content
   status: pending
