@@ -8,11 +8,6 @@
 [sub_resource type="LabelSettings" id="LabelSettings_xc73h"]
 font_size = 41
 
-[sub_resource type="LabelSettings" id="LabelSettings_voryx"]
-line_spacing = -3.0
-font_size = 12
-shadow_color = Color(0, 0, 0, 1)
-
 [node name="GameView" type="Control" unique_id=1768635018]
 layout_mode = 3
 anchors_preset = 15
@@ -95,26 +90,6 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.08, 0.03, 0.03, 0.92)
 
-[node name="Submit" type="Button" parent="SceneRoot" unique_id=1304615994]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 221.0
-offset_top = 393.0
-offset_right = 335.0
-offset_bottom = 424.0
-text = "Submit
-"
-
-[node name="Undo" type="Button" parent="SceneRoot" unique_id=1536477476]
-unique_name_in_owner = true
-layout_mode = 1
-offset_left = 168.0
-offset_top = 18.0
-offset_right = 388.0
-offset_bottom = 78.0
-text = "Undo
-"
-
 [node name="Reroll" type="Button" parent="SceneRoot" unique_id=1219511678]
 visible = false
 layout_mode = 0
@@ -166,95 +141,6 @@ offset_bottom = 60.0
 text = "0"
 label_settings = SubResource("LabelSettings_xc73h")
 
-[node name="MultScore" type="Label" parent="SceneRoot" unique_id=964219693]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 202.0
-offset_top = 231.0
-offset_right = 334.0
-offset_bottom = 288.0
-text = "0"
-label_settings = SubResource("LabelSettings_xc73h")
-horizontal_alignment = 1
-
-[node name="Col" type="Label" parent="SceneRoot/MultScore" unique_id=379225549]
-layout_mode = 0
-offset_left = -77.0
-offset_top = 64.0
-offset_right = 44.0
-offset_bottom = 125.0
-text = "0"
-label_settings = SubResource("LabelSettings_xc73h")
-horizontal_alignment = 2
-
-[node name="x" type="Label" parent="SceneRoot/MultScore" unique_id=1911383157]
-layout_mode = 0
-offset_left = 3.0
-offset_top = 62.0
-offset_right = 124.0
-offset_bottom = 123.0
-text = "x"
-label_settings = SubResource("LabelSettings_xc73h")
-horizontal_alignment = 1
-
-[node name="Row" type="Label" parent="SceneRoot/MultScore" unique_id=1333752682]
-layout_mode = 0
-offset_left = 83.0
-offset_top = 64.0
-offset_right = 204.0
-offset_bottom = 125.0
-text = "0"
-label_settings = SubResource("LabelSettings_xc73h")
-
-[node name="Combo" type="Label" parent="SceneRoot/MultScore" unique_id=1333752683]
-visible = false
-layout_mode = 0
-offset_left = -77.0
-offset_top = 128.0
-offset_right = 204.0
-offset_bottom = 189.0
-text = "COMBO x1.0"
-label_settings = SubResource("LabelSettings_xc73h")
-horizontal_alignment = 1
-
-[node name="Total" type="Label" parent="SceneRoot" unique_id=949581822]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 167.0
-offset_top = 144.0
-offset_right = 289.0
-offset_bottom = 205.0
-text = "Total: "
-label_settings = SubResource("LabelSettings_xc73h")
-
-[node name="Label" type="Label" parent="SceneRoot/Total" unique_id=646998641]
-layout_mode = 0
-offset_left = 131.0
-offset_top = 2.0
-offset_right = 243.0
-offset_bottom = 63.0
-text = " 0"
-label_settings = SubResource("LabelSettings_xc73h")
-
-[node name="Goal" type="Label" parent="SceneRoot" unique_id=1411231296]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 164.0
-offset_top = 80.0
-offset_right = 276.0
-offset_bottom = 141.0
-text = "Goal: "
-label_settings = SubResource("LabelSettings_xc73h")
-
-[node name="Label" type="Label" parent="SceneRoot/Goal" unique_id=998221257]
-layout_mode = 0
-offset_left = 140.0
-offset_top = 2.0
-offset_right = 258.0
-offset_bottom = 63.0
-text = "100"
-label_settings = SubResource("LabelSettings_xc73h")
-
 [node name="Turns" type="Label" parent="SceneRoot" unique_id=1557220371]
 visible = false
 layout_mode = 0
@@ -293,86 +179,6 @@ offset_bottom = 62.0
 text = "5
 "
 label_settings = SubResource("LabelSettings_xc73h")
-
-[node name="Preview" type="Control" parent="SceneRoot" unique_id=1233425980]
-unique_name_in_owner = true
-anchors_preset = 0
-offset_left = 65.0
-offset_top = 391.0
-offset_right = 65.0
-offset_bottom = 391.0
-scale = Vector2(1.25, 1.25)
-mouse_filter = 2
-
-[node name="Label" type="Label" parent="SceneRoot/Preview" unique_id=499140308]
-layout_mode = 0
-offset_left = -43.0
-offset_top = 22.0
-offset_right = 82.0
-offset_bottom = 227.0
-text = "Skill Text
-Skill Text"
-label_settings = SubResource("LabelSettings_voryx")
-autowrap_mode = 3
-
-[node name="Deck" type="Control" parent="SceneRoot" unique_id=1376436768]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
-anchors_preset = 0
-offset_left = 34.0
-offset_top = 28.0
-offset_right = 134.0
-offset_bottom = 128.0
-mouse_filter = 2
-
-[node name="Button" type="Button" parent="SceneRoot/Deck" unique_id=1384352180]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Deck"
-
-[node name="Discard" type="Control" parent="SceneRoot" unique_id=717666025]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
-anchors_preset = 0
-offset_left = 191.0
-offset_top = 486.0
-offset_right = 291.0
-offset_bottom = 586.0
-mouse_filter = 2
-
-[node name="Button" type="Button" parent="SceneRoot/Discard" unique_id=2077643948]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Discard
-"
-
-[node name="Rules" type="Control" parent="SceneRoot" unique_id=1763278671]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
-anchors_preset = 0
-offset_left = 302.0
-offset_top = 485.0
-offset_right = 402.0
-offset_bottom = 585.0
-mouse_filter = 2
-
-[node name="Button" type="Button" parent="SceneRoot/Rules" unique_id=732054802]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Rules
-"
 
 [node name="Background" type="TextureRect" parent="SceneRoot" unique_id=1013700482]
 visible = false

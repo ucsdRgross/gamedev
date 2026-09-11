@@ -1,26 +1,7 @@
 extends Node2D
 # res://Tests/Visual/focused_pose_probe.gd
-# ==============================================================================
-# THE FOCUSED-POSE INSTRUMENT (not part of the suite). Boots the REAL res://Levels/main.tscn and
-# enters a show through `Main.enter_game()` -- the one path the product uses -- so the camera pose,
-# the picture rect, the grid count and the board's zoom are all whatever production produces, never
-# a hand-assembled approximation.
-#
-# `wall_game_squash_probe` builds its own wall, its own WallPicture and its own camera pose, and
-# forces THREE grids; the product's default deck yields ONE. Same nominal "focused" state, a
-# different framing -- which is why a by-eye gate taken through it certified a pose the player
-# never sees.
-#
-# It REPORTS both stacked scales in one coordinate system: `focused_board_zoom()` fits the board's
-# content into the play area, then the wall camera fits the PICTURE into the WINDOW, and a zoom
-# that fits an 841 px picture still clips once the camera crops it. Every rect below is printed in
-# the picture's own DESIGN units so the two layers can be compared without arithmetic.
-#
-# Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
-#     OUT_PATH=<path> <console exe> --path solatro res://Tests/Visual/focused_pose_probe.tscn
-# Knobs, both optional: WINDOW=<w>x<h> (default 1152x648), GRIDS=<n> (default: whatever the deck
-# gives, which is the product's own answer).
-# ==============================================================================
+# THE FOCUSED-POSE INSTRUMENT (not part of the suite): boots the REAL main.tscn, enters a show
+# through `Main.enter_game()`, and reports pose/rect/grid-count/zoom in the picture's own DESIGN units.
 
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const FALLBACK_OUT_PATH := "user://focused_pose_probe/focused.png"
@@ -80,8 +61,7 @@ func _ready() -> void:
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
 
-## The wall's own `game` picture, found by the id the wall packs it under rather than by tree
-## position -- `Main` keeps `_pictures` private and this probe must not fork its bookkeeping.
+## The wall's own `game` picture, found by id -- `Main` keeps `_pictures` private.
 func _game_picture(main: Main) -> WallPicture:
 	var wall : Node = main.get_node(^"Wall")
 	for child : Node in wall.get_node(^"%Pictures").get_children():
@@ -89,8 +69,7 @@ func _game_picture(main: Main) -> WallPicture:
 		if wp and wp.rect and wp.rect.id == Wall.GAME_PICTURE_ID: return wp
 	return null
 
-## Waits until the board's scale and the resting grid's cell block both stop moving, the
-## `_settle_layout` pattern -- never a frame count, which certifies a mid-move pose.
+## Waits until the board's scale and cell block stop moving -- never a bare frame count.
 func _settle(pa: PlayArea) -> void:
 	var last := Vector2.INF
 	var waited := 0.0
@@ -106,26 +85,17 @@ func _cells_of(pa: PlayArea, gi: int) -> Control:
 	if gi < 0 or gi >= pa.grid_container.get_child_count(): return null
 	return pa._cells_root(pa.grid_container.get_child(gi) as Control)
 
-## The inverse of the screen mapping, for the camera's visible rect: a world point back into the
-## screen's own layout units.
-##
-## ⚠ **THE ONE PIECE OF ARITHMETIC THIS PROBE OWNS, AND IT IS EXACT.** `%Screen` is a centred
-## sprite of the SubViewport's texture scaled by `rect.size / viewport.size`, and the viewport's
-## CANVAS is `design_size` whether or not the render clamp bit. Composing those two collapses the
-## render target out entirely: a point `p` in the screen's own layout units draws at
-## `rect.centre + (p / design - 0.5) * rect.size`. So the render clamp cannot move a rect this
-## probe reports, and the report stays comparable across clamped and unclamped runs.
-## A control's rect AS DRAWN, in the screen's layout units.
-##
-## ⚠ **`size` IS NOT THE RENDERED SIZE HERE.** The focused zoom is a scale on the SCROLL
-## CONTAINER, so a cell block inside it keeps its authored 216x286 while drawing 2.29x that.
-## `global_position` already carries the scale, so a rect built from position and size is right
-## in one corner and wrong in the other -- which reads as a block that fits when it does not.
-func _rendered_rect(c: Control) -> Rect2:
-	return c.get_global_transform() * Rect2(Vector2.ZERO, c.size)
-
+# The inverse of the screen mapping: a world point back into the screen's own layout units. Exact
+# because `%Screen` is a centred sprite of the SubViewport's texture at `rect.size / viewport.size`
+# scale over a `design_size` canvas, so the render clamp cannot move a rect this probe reports.
 func _world_to_design(p: Vector2, rect: PictureRect, design: Vector2) -> Vector2:
 	return ((p - rect.centre) / rect.size + Vector2(0.5, 0.5)) * design
+
+# A control's rect AS DRAWN. `size` alone is NOT the rendered size here: the focused zoom scales
+# the SCROLL CONTAINER, so a cell block inside it keeps its authored size while drawing larger --
+# `global_position` already carries the scale, so a rect built from position and size is wrong.
+func _rendered_rect(c: Control) -> Rect2:
+	return c.get_global_transform() * Rect2(Vector2.ZERO, c.size)
 
 func _report(main: Main, wp: WallPicture, view: GameView, pa: PlayArea, tag: String) -> void:
 	var camera : Camera2D = main.get_node(^"Wall").get_node(^"%Camera2D") as Camera2D
@@ -156,12 +126,13 @@ func _report(main: Main, wp: WallPicture, view: GameView, pa: PlayArea, tag: Str
 	var strip := _rendered_rect(pa.entrance_strip)
 	print("[POSE][%s] ENTRANCE STRIP, design units: %s" % [tag, strip])
 	_verdict(tag, "the Entrance strip", strip, visible_design)
-	for control : Control in view._furniture:
+	var hud_controls : Array[Control] = [view.deck_ui, view.discard_ui, view.rules_ui,
+			view.submit_button, view.undo_button]
+	for control : Control in hud_controls:
 		if is_instance_valid(control):
 			print("[POSE][%s] HUD %s design units: %s" % [tag, control.name, _rendered_rect(control)])
 
-## Names the clipped EDGE and by how much, never a bare in/out -- "the top row is cut" and "the
-## Entrance is barely in frame" are different defects and a boolean cannot tell them apart.
+## Names the clipped EDGE and by how much -- a boolean can't distinguish which edge is cut.
 func _verdict(tag: String, what: String, r: Rect2, visible: Rect2) -> void:
 	var cut_left := visible.position.x - r.position.x
 	var cut_top := visible.position.y - r.position.y

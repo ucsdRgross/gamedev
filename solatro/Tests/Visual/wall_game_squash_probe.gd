@@ -1,26 +1,7 @@
 extends Node2D
 # res://Tests/Visual/wall_game_squash_probe.gd
-# ==============================================================================
-# THROWAWAY MEASUREMENT PROBE (not part of the suite). Stands up the REAL res://UI/Wall/wall.tscn
-# plus ONE real WallPicture built exactly the way wall.gd/main.gd build the "game" picture -- the
-# entry itself comes straight out of Wall.load_layout(), the single seam that sizes AND flags it,
-# so this probe cannot drift from what production actually ships -- a real GameView attached as
-# the live screen (main.gd's attach_screen path) -- then focuses it
-# (WallPicture.focus(), the same call main.gd's _focus_picture uses) and screenshots what the
-# WallPicture's own Sprite2D actually shows, so the picture's own rescale (`_rescale_screen`) is
-# IN THE SHOT, unlike grid_zoom_shot / grid_layer_shot, which both instantiate GameView directly
-# and are structurally blind to it.
-#
-# WARNING: THIS PROBE'S "FOCUSED" FRAME IS NOT THE PRODUCT'S. It hand-builds the camera pose and
-# forces THREE grids where the default deck yields ONE, and it shows all five rows with the
-# Entrance below where the running game cuts the top row. Use it for the wall-composite and
-# magnification measurements it was written for; take FRAMING evidence from
-# res://Tests/Visual/focused_pose_probe.tscn, which boots main.tscn and enters through
-# Main.enter_game().
-#
-# Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
-#     OUT_PATH=<path> <console exe> --path solatro res://Tests/Visual/wall_game_squash_probe.tscn
-# ==============================================================================
+# THROWAWAY MEASUREMENT PROBE (not part of the suite): stands up a REAL wall.tscn/WallPicture/GameView the way main.gd does, so `_rescale_screen` is in the shot.
+# WARNING: hand-builds the camera pose and forces THREE grids where the default deck yields ONE -- take FRAMING evidence from `focused_pose_probe` instead.
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
@@ -44,9 +25,7 @@ func _ready() -> void:
 	var wall : Wall = WALL_SCENE.instantiate()
 	add_child(wall)
 
-	# ⚠ Pulled straight from Wall.load_layout() -- the real "game" PictureEntry, with whatever
-	# design_size and keep_aspect production actually sets, rather than a hand-copied duplicate
-	# that can silently fall out of sync with the seam.
+	## Pulled straight from Wall.load_layout() -- the real "game" PictureEntry, never a hand-copied duplicate that can fall out of sync with the seam.
 	var loaded_layout := Wall.load_layout()
 	var entry : PictureEntry = null
 	for e : PictureEntry in loaded_layout.pictures:
@@ -71,7 +50,7 @@ func _ready() -> void:
 	var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 	pictures_root.add_child(wp)
 
-	# Real GameView, real deck, real deal -- same fixture shape as the other probes/shots.
+	## Real GameView, real deck, real deal -- same fixture shape as the other probes/shots.
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1_000_000_000
@@ -89,16 +68,14 @@ func _ready() -> void:
 		Board.add_grid(g.state, GridData.new())
 	while g.state.grids.size() > GRID_COUNT:
 		Board.remove_grid(g.state, g.state.grids.size() - 1)
-	# Diagnostic-only: trace the pan values frame by frame BEFORE flush_rebuild forces
-	# anything synchronously, so the report can see how pan_grid and pan_window_left_x settle.
+	## Diagnostic-only: trace the pan values frame by frame BEFORE flush_rebuild forces anything synchronously.
 	for trace_i : int in 6:
 		_log_pan_state(view, pa, "trace pre-flush frame %d" % trace_i)
 		await get_tree().process_frame
 	pa.flush_rebuild()
 	await get_tree().process_frame
 	_log_pan_state(view, pa, "after first flush_rebuild")
-	# Real deal via the engine's own path (REUSE, not reinvented placement arithmetic) -- two
-	# Nexts, the same fixture shape test_interaction.gd's _setup_view() uses.
+	## Real deal via the engine's own path: two Nexts, the same fixture shape _setup_view() uses.
 	await g.next()
 	await g.next()
 	pa.flush_rebuild()
@@ -107,7 +84,8 @@ func _ready() -> void:
 	pa.open_zoomed_out()
 	_log_pan_state(view, pa, "immediately after open_zoomed_out")
 
-	wp.focus()   # main.gd's own _focus_picture path -- forces UPDATE_ALWAYS + full-res render.
+	## main.gd's own _focus_picture path -- forces UPDATE_ALWAYS + full-res render.
+	wp.focus()
 
 	var camera : Camera2D = wall.get_node(^"%Camera2D")
 	var state := WallPicture.resting_state(rects[0], Vector2(window_size), SettingsManager.settings)
@@ -119,17 +97,7 @@ func _ready() -> void:
 	print("[wall_game_squash_probe] wall_transition_delay in force = %s"
 			% [SettingsManager.settings.wall_transition_delay])
 
-	# ============================================================================================
-	# GAP-024 MAGNIFICATION MEASUREMENT (throwaway, one-shot):
-	#  1) Focus grid 1 of a 3-grid board -- the real focused-zoom path (board_zoom pipeline).
-	#  2) Log board_zoom, the render-target size and the texture-px -> screen-px ratio that chain
-	#     produces TODAY.
-	#  3) Screenshot TODAY's focused framing.
-	#  4) Reset to OVERVIEW (board_zoom back to 1, whole board unclipped in the SAME fixed-size
-	#     render target) and additionally zoom the CAMERA by the measured board_zoom, to approximate
-	#     what GAP-024=(a) would show: the camera magnifying a texture that was never re-rendered at
-	#     the larger scale. Screenshot that for a by-eye comparison.
-	# ============================================================================================
+	## GAP-024 MAGNIFICATION MEASUREMENT (throwaway, one-shot): focus grid 1, log board_zoom and the texture-to-screen ratio, screenshot it, then simulate a camera-only zoom of the SAME factor over the unclipped overview for a by-eye comparison.
 	var screen_node : Sprite2D = wp.get_node(^"%Screen")
 	var out_path_pre := _resolve_out_path()
 	var out_dir_pre := out_path_pre.get_base_dir()
@@ -157,10 +125,7 @@ func _ready() -> void:
 	today_img.save_png(today_path)
 	print("[GAP-024] wrote=%s" % ProjectSettings.globalize_path(today_path))
 
-	# Simulate (a): overview content (board_zoom back to 1.0, whole board unclipped, re-rendered
-	# into the SAME fixed render target), camera zoomed in further by the SAME factor board_zoom
-	# was giving the content, camera position left as-is (approx -- grid 1 is the middle grid, and
-	# the camera is already centred on the picture).
+	## Simulate (a): overview content re-rendered into the SAME render target, camera zoomed in further by the SAME factor board_zoom was giving it, position left as-is (grid 1 is centred already).
 	pa.open_zoomed_out()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -175,20 +140,14 @@ func _ready() -> void:
 	sim_img.save_png(sim_path)
 	print("[GAP-024] wrote=%s" % ProjectSettings.globalize_path(sim_path))
 
-	# Restore to the normal focused framing for the rest of the probe (unchanged downstream logic).
+	## Restore to the normal focused framing for the rest of the probe.
 	pa.focus_grid(1)
 	camera.zoom = state["zoom"] * Vector2.ONE
 	camera.position = state["position"]
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	# ============================================================================================
-	# SAMPLING: log the screen sprite scale, rect size, camera zoom/position and viewport render
-	# size every frame for SAMPLE_FRAMES frames, with NO input, then wait for it to go still (the
-	# `_settle_layout` pattern used elsewhere) so the report can say whether the values ever stop
-	# changing and what they settle to -- rather than assuming a single post-focus shot is already
-	# steady state.
-	# ============================================================================================
+	## SAMPLING: log the screen sprite, camera and viewport every frame with NO input, then wait for stillness, so the report never assumes a single post-focus shot is already steady state.
 	var screen : Sprite2D = wp.get_node(^"%Screen")
 	const SAMPLE_FRAMES := 120
 	const SHOT_FRAMES := [1, 5, 15, 30, 60, 120]
@@ -213,9 +172,7 @@ func _ready() -> void:
 			print("[wall_game_squash_probe] wrote=%s" % ProjectSettings.globalize_path(shot_path))
 		last_scale = screen.scale
 
-	# Settle-until-still wait, same pattern as `_settle_layout()` (grid_layer_shot.gd /
-	# test_interaction.gd): keep waiting frames until the screen sprite's scale stops changing, up
-	# to a 2s cap, so the report can say definitively whether it ever moves after the sampled window.
+	## Settle-until-still wait, same pattern as `_settle_layout()`: keep waiting up to a 2s cap so the report can say definitively whether the scale still moves after the sampled window.
 	var waited := 0.0
 	var still_moving := false
 	while waited < 2.0:
@@ -246,25 +203,16 @@ func _ready() -> void:
 func viewport_size(wp: WallPicture) -> Vector2i:
 	return wp.viewport.size
 
-## Dumps pan_grid, pan_window_left_x(), the furniture shift and two furniture controls'
-## authored/local/global x against the three grids' own cell-block global x, so the report can
-## tell whether (i) pan_grid is stuck at 0 or (ii) it rests correctly and the offset arithmetic
-## that slides the furniture is wrong.
+## Dumps pan_grid, pan_window_left_x(), the Deck/End HUD positions and the grids' own cell-block global x, so the report can tell whether pan_grid is stuck or the pan arithmetic is wrong.
 func _log_pan_state(view: GameView, pa: PlayArea, tag: String) -> void:
 	var pan_left_x := pa.pan_window_left_x()
 	var shift := pa.pan_grid * PlayArea.grid_position_size_px(SettingsManager.settings).x
 	print("[wall_game_squash_probe] PAN[%s] pan_grid=%d grid_children=%d pan_window_left_x=%.3f shift=%.3f grid_container.global_position.x=%.3f"
 			% [tag, pa.pan_grid, pa.grid_container.get_child_count(), pan_left_x, shift, pa.grid_container.global_position.x])
-	var deck_idx := view._furniture.find(view.deck_ui)
-	var end_idx := view._furniture.find(view.submit_button)
-	if deck_idx >= 0:
-		var deck_authored : float = view._furniture_authored_x[deck_idx]
-		print("[wall_game_squash_probe] PAN[%s] deck authored_x=%.3f position.x=%.3f global_position.x=%.3f"
-				% [tag, deck_authored, view.deck_ui.position.x, view.deck_ui.global_position.x])
-	if end_idx >= 0:
-		var end_authored : float = view._furniture_authored_x[end_idx]
-		print("[wall_game_squash_probe] PAN[%s] submit(End) authored_x=%.3f position.x=%.3f global_position.x=%.3f"
-				% [tag, end_authored, view.submit_button.position.x, view.submit_button.global_position.x])
+	print("[wall_game_squash_probe] PAN[%s] deck position.x=%.3f global_position.x=%.3f"
+			% [tag, view.deck_ui.position.x, view.deck_ui.global_position.x])
+	print("[wall_game_squash_probe] PAN[%s] submit(End) position.x=%.3f global_position.x=%.3f"
+			% [tag, view.submit_button.position.x, view.submit_button.global_position.x])
 	for gi : int in pa.grid_container.get_child_count():
 		var panel : Control = pa.grid_container.get_child(gi) as Control
 		var cells : Control = pa._cells_root(panel)

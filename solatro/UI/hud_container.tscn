@@ -13,6 +13,109 @@ script = ExtResource("1_hud")
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="GameHud" type="VBoxContainer" parent="HudStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Numbers" type="VBoxContainer" parent="HudStack/GameHud"]
+layout_mode = 2
+
+[node name="Goal" type="Label" parent="HudStack/GameHud/Numbers"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Goal: "
+
+[node name="Label" type="Label" parent="HudStack/GameHud/Numbers/Goal"]
+layout_mode = 2
+text = "100"
+
+[node name="Total" type="Label" parent="HudStack/GameHud/Numbers"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Total: "
+
+[node name="Label" type="Label" parent="HudStack/GameHud/Numbers/Total"]
+layout_mode = 2
+text = " 0"
+
+[node name="Combo" type="Label" parent="HudStack/GameHud/Numbers"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Piles" type="HBoxContainer" parent="HudStack/GameHud"]
+layout_mode = 2
+
+[node name="Deck" type="Control" parent="HudStack/GameHud/Piles"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Deck"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Deck"
+
+[node name="Discard" type="Control" parent="HudStack/GameHud/Piles"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Discard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Discard
+"
+
+[node name="Rules" type="Control" parent="HudStack/GameHud/Piles"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Rules"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Rules
+"
+
+[node name="Actions" type="HBoxContainer" parent="HudStack/GameHud"]
+layout_mode = 2
+
+[node name="Undo" type="Button" parent="HudStack/GameHud/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Undo
+"
+
+[node name="Submit" type="Button" parent="HudStack/GameHud/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Submit
+"
+
 [node name="DescriptionPanel" parent="." instance=ExtResource("2_desc")]
 unique_name_in_owner = true
 layout_mode = 2
