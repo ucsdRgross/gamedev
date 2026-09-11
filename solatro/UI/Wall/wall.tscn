@@ -39,10 +39,6 @@ unique_name_in_owner = true
 
 [node name="HudContainer" parent="Overlay" index="0" instance=ExtResource("4_hud")]
 unique_name_in_owner = true
-anchors_preset = 4
-anchor_bottom = 1.0
-offset_right = 320.0
-grow_vertical = 2
 
 [node name="MusicA" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true

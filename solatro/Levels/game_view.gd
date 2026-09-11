@@ -109,6 +109,7 @@ func _bind_hud_container() -> void:
 	goal_label = hud_container.goal_label
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
+	_connect_container(hud_container.container_rect_changed, _publish_board_inset)
 
 ## The container OUTLIVES a per-show `GameView`, so connections must be dropped when it goes.
 var _container_connections : Array[Array] = []
@@ -201,10 +202,18 @@ func _on_combo_changed(_count: int) -> void:
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
 
-## The interim geometry bridge until the container-driven inset replaces it -- the furniture-scaled formula this replaces always reduced to exactly this number algebraically.
+## Converts the HUD container's rect (window px) to `board_inset_left`/`board_inset_top` (picture px).
 func _publish_board_inset() -> void:
-	var design := float(PlayArea.game_picture_design_size(SettingsManager.settings).x)
-	play_area.board_inset_left = SettingsManager.settings.hud_width_fraction * design
+	var window := hud_container.get_viewport().get_visible_rect().size
+	var rect := hud_container.container_rect()
+	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
+	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	if HudContainer.container_is_top(window, SettingsManager.settings):
+		play_area.board_inset_top = rect.size.y / picture_scale
+		play_area.board_inset_left = 0.0
+	else:
+		play_area.board_inset_left = rect.size.x / picture_scale
+		play_area.board_inset_top = 0.0
 
 ## Wires `Main`'s ONE wall camera and a rect-centre-x getter. Called once, right after `Main` instantiates this view.
 func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:

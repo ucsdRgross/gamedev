@@ -222,7 +222,7 @@ func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var wp : WallPicture = main._pictures[&"game"]
-	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.hud_width_fraction
+	var left := wp.rect.centre.x - wp.rect.size.x * 0.5 			+ wp.rect.size.x * SettingsManager.settings.container_size_fraction
 	return visible.intersection(Rect2(Vector2(left, visible.position.y),
 			Vector2(maxf(visible.end.x - left, 1.0), visible.size.y)))
 
@@ -891,6 +891,12 @@ func _check_renderer() -> bool:
 			"DisplayServer is '%s' — re-run all_tests.tscn WITHOUT --headless" % display)
 	return live
 
+# A standalone fixture has no `Main`, so `GameView` builds its OWN opaque `HudContainer` as a
+# child of this same picture viewport -- an artifact of the fixture, since the real one lives
+# outside every picture, and left visible it sits over the reserved band the paint probes sample.
+func _hide_fixtures_own_hud_container(view: GameView) -> void:
+	view.hud_container.visible = false
+
 func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	behavior_section("A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE WINDOW")
 	if not _check_renderer(): return
@@ -900,6 +906,7 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	add_child(vp)
 	var view := await _stand_up_grids(3, vp)
 	var pa := view.play_area
+	_hide_fixtures_own_hud_container(view)
 	await _settle_layout(view)
 
 	# THE INSTRUMENT CHECK, taken where a grid is SUPPOSED to paint: in the overview, hiding a grid

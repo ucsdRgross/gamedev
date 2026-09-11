@@ -42,18 +42,24 @@ var board_inset_left : float = 0.0:
 		if is_equal_approx(board_inset_left, value): return
 		board_inset_left = maxf(value, 0.0)
 		if not is_instance_valid(scroll_container): return
-		# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED.** `GameView` reads the HUD's
-		# authored offsets at the END of its own `_ready()`, by which time the deal has built the
-		# board and `open_show_view()` has already fitted a focused grid against an inset of zero.
-		# Re-fitting here is what makes the arriving reserve reach the zoom; without it the board
-		# keeps the width it chose when it thought it had the whole screen.
-		# ⚠ **THE RECT FIRST, UNCONDITIONALLY.** `_zoom_board_to()` early-returns when the zoom is
-		# unchanged, and a reserve that arrives without moving the zoom is exactly that case — the
-		# scroller would keep the offsets it took when it thought it had the whole screen, and the
-		# board would centre on the SCREEN rather than on what the HUD leaves.
-		_apply_entrance_strip_height()
-		if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
-			focus_grid(focused_grid)
+		_re_fit_after_inset_change()
+
+## The same reserve as `board_inset_left`, but off the TOP: the HUD container's TOP-band case
+## shifts the board down by this many picture px instead of right.
+var board_inset_top : float = 0.0:
+	set(value):
+		if is_equal_approx(board_inset_top, value): return
+		board_inset_top = maxf(value, 0.0)
+		if not is_instance_valid(scroll_container): return
+		_re_fit_after_inset_change()
+
+# ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a focused grid already
+# fitted to an inset of zero, so re-fitting here (unconditionally, before any zoom check) is what
+# makes the arriving reserve reach the zoom instead of leaving the board centred on the screen.
+func _re_fit_after_inset_change() -> void:
+	_apply_entrance_strip_height()
+	if view_mode == ViewMode.FOCUSED and focused_grid != NO_GRID:
+		focus_grid(focused_grid)
 
 ## The view mode changed. Carries the mode and the grid it focuses (`NO_GRID` in the overview).
 signal view_mode_changed(mode: ViewMode, grid: int)
@@ -85,7 +91,7 @@ var separation : int = BOARD_SEPARATION:
 ## POINT.** `Tools/wall_editor.tscn` hosts a real `GameView` on its game picture, and the one
 ## override it sets is `WallPicture.editor_settings` -- so a board that went straight to
 ## `SettingsManager` ignored every knob the tool's own panel edits, and `board_edge_pad_rows` or
-## `hud_width_fraction` tuned there changed nothing on the board being previewed.
+## `container_size_fraction` tuned there changed nothing on the board being previewed.
 ## In the shipped game nothing sets that override and this resolves to `SettingsManager.settings`.
 static func settings() -> PlayerSettings:
 	return WallPicture.settings()
@@ -237,7 +243,7 @@ static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 ##
 ## ⚠ **THE BOARD'S OWN AREA IS THE VIEW ISOLATION IS MEASURED IN, NOT THE CAMERA'S WHOLE RECT**
 ## (owner: *"the center should be on halfway through the 0.75 section... pretend 0.75 area is the
-## entire camera view, so its truly centered"*). The HUD takes `hud_width_fraction` off the left, so
+## entire camera view, so its truly centered"*). The HUD takes `container_size_fraction` off the left, so
 ## the board's own view is the remaining share and a neighbour is out of view once it clears THAT.
 ##
 ## ⚠ **THIS IS WHY THE CONDITION IS SYMMETRIC AGAIN.** The board centres in its own area, so both
@@ -254,7 +260,7 @@ static func focused_content_height_px(settings_res: PlayerSettings) -> float:
 ## nothing off the width, so the horizontal divisor is 1 and the share comes off the HEIGHT instead
 ## -- and then neither side is nearer the screen's edge. Whoever moves the HUD moves this with it.
 static func board_view_divisor(settings_res: PlayerSettings) -> float:
-	return 1.0 / maxf(1.0 - settings_res.hud_width_fraction, 0.0001)
+	return 1.0 / maxf(1.0 - settings_res.container_size_fraction, 0.0001)
 
 ## The buffer between two grid panels, DERIVED so a FOCUSED grid isolates its neighbours: at the
 ## isolation check's own scale, the neighbour panel's near edge must clear the OVERVIEW picture's
@@ -686,16 +692,6 @@ func _apply_entrance_zoom_rect() -> void:
 func _entrance_strip_full_height() -> float:
 	return maxf(entrance_strip_height_px(PlayArea.settings(), board_zoom), _entrance_row_height())
 
-## The picture x the board's current pan puts under the LEFT edge of the grid the view is
-## centred on -- the same value the Entrance aligns to (`_sync_entrance_x`'s `columns_x`).
-## Exposed so anything OUTSIDE the scroll (the rest of the HUD) can ride the identical pan
-## rather than a second, independent measure of where the view currently rests. The board's
-## scroll window spans the whole picture, so this is a LIVE layout position -- the grid
-## positions sit side by side in the wide picture rather than one scrolling past a narrow window.
-func pan_window_left_x() -> float:
-	var cells := _view_grid_cells()
-	return cells.global_position.x if cells else grid_container.global_position.x
-
 ## The cell block of the grid the view is centred on, or null when the board has no grids.
 func _view_grid_cells() -> Control:
 	if not is_instance_valid(grid_container): return null
@@ -734,11 +730,11 @@ func _apply_board_zoom_rect(strip_h: float) -> void:
 	var local := _board_window_local()
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	scroll_container.scale = Vector2.ONE * board_zoom
-	scroll_container.offset_top = pad
+	scroll_container.offset_top = pad + board_inset_top
 	var inset := hud_reserve_px()
 	scroll_container.offset_left = inset
 	scroll_container.offset_right = inset + local.x - size.x
-	scroll_container.offset_bottom = pad + local.y - size.y
+	scroll_container.offset_bottom = pad + board_inset_top + local.y - size.y
 
 ## The strip the board's window is currently giving up to the Entrance, kept so the window can be
 ## recomputed without waiting for a layout pass.
@@ -753,7 +749,7 @@ var _board_strip_h := 0.0
 func _board_window_local() -> Vector2:
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
 	return Vector2(maxf(size.x - hud_reserve_px(), 0.0),
-			maxf(size.y - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+			maxf(size.y - _board_strip_h - 2.0 * pad - board_inset_top, 0.0)) / maxf(board_zoom, 0.0001)
 
 ## `board_inset_left`, capped so the board is never starved of the room for a grid.
 ##

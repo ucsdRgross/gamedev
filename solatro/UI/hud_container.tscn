@@ -62,7 +62,7 @@ layout_mode = 2
 
 [node name="Deck" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -74,11 +74,12 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+clip_text = true
 text = "Deck"
 
 [node name="Discard" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -90,12 +91,13 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+clip_text = true
 text = "Discard
 "
 
 [node name="Rules" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -107,6 +109,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+clip_text = true
 text = "Rules
 "
 
@@ -116,12 +119,16 @@ layout_mode = 2
 [node name="Undo" type="Button" parent="HudStack/GameHudMargin/GameHud/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+clip_text = true
 text = "Undo
 "
 
 [node name="Submit" type="Button" parent="HudStack/GameHudMargin/GameHud/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
+clip_text = true
 text = "Submit
 "
 

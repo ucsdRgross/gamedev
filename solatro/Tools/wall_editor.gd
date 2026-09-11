@@ -236,8 +236,8 @@ func undriven_knobs() -> Array[String]:
 
 ## The board-side knobs the panel edits. They are not `wall_*`, they reach the hosted `GameView`
 ## by a different route, and nothing else in this file would notice that route breaking.
-const BOARD_KNOBS : Array[String] = ["board_edge_pad_rows", "hud_width_fraction",
-		"grid_align_rows_globally", "card_scale", "card_separation_scale"]
+const BOARD_KNOBS : Array[String] = ["board_edge_pad_rows", "container_size_fraction",
+		"container_size_max_px", "grid_align_rows_globally", "card_scale", "card_separation_scale"]
 
 @export_group("Save")
 ## BUTTON. Writes `layout` to `LAYOUT_PATH` — the resource the game loads, not a copy.

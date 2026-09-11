@@ -203,11 +203,14 @@ func _ready() -> void:
 func viewport_size(wp: WallPicture) -> Vector2i:
 	return wp.viewport.size
 
-## Dumps pan_grid, pan_window_left_x(), the Deck/End HUD positions and the grids' own cell-block global x, so the report can tell whether pan_grid is stuck or the pan arithmetic is wrong.
+## Dumps pan_grid, the panned grid's cell-block global x and the Deck/End HUD positions.
 func _log_pan_state(view: GameView, pa: PlayArea, tag: String) -> void:
-	var pan_left_x := pa.pan_window_left_x()
+	var last := pa.grid_container.get_child_count() - 1
+	var panned_panel := pa.grid_container.get_child(clampi(pa.pan_grid, 0, last)) as Control
+	var panned_cells := pa._cells_root(panned_panel) if panned_panel else null
+	var pan_left_x := panned_cells.global_position.x if panned_cells else pa.grid_container.global_position.x
 	var shift := pa.pan_grid * PlayArea.grid_position_size_px(SettingsManager.settings).x
-	print("[wall_game_squash_probe] PAN[%s] pan_grid=%d grid_children=%d pan_window_left_x=%.3f shift=%.3f grid_container.global_position.x=%.3f"
+	print("[wall_game_squash_probe] PAN[%s] pan_grid=%d grid_children=%d pan_left_x=%.3f shift=%.3f grid_container.global_position.x=%.3f"
 			% [tag, pa.pan_grid, pa.grid_container.get_child_count(), pan_left_x, shift, pa.grid_container.global_position.x])
 	print("[wall_game_squash_probe] PAN[%s] deck position.x=%.3f global_position.x=%.3f"
 			% [tag, view.deck_ui.position.x, view.deck_ui.global_position.x])

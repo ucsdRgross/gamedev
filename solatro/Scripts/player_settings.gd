@@ -653,18 +653,16 @@ var wall_info_mode : bool = false
 		entrance_visible_rows = maxf(value, 0.5)
 		settings_changed.emit()
 
-## The clear band above the board and below the Entrance, in CARD ROWS, so the focused view does
-## not hug the screen edge. **0 turns it off**, which is what a phone-sized screen wants: on a
-## short screen the band costs more of the board than the breathing room is worth.
-## The share of the board's width the HUD column occupies. The furniture is SCALED to fit it, so
-## this is what the HUD costs the board however wide the picture gets.
-##
-## The split is exactly what it reads as: the HUD gets this share of the width and the board gets
-## the rest. Nothing sizes anything else -- the picture's own width is derived from the board alone
-## (`isolating_grid_buffer_px`), and the HUD is then scaled to its share of whatever that came to.
-@export var hud_width_fraction : float = 0.25:
+## Share of the window's near axis (width on the side, height on top) the HUD container claims.
+@export var container_size_fraction : float = 0.25:
 	set(value):
-		hud_width_fraction = clampf(value, 0.0, 0.9)
+		container_size_fraction = clampf(value, 0.0, 0.9)
+		settings_changed.emit()
+
+## Pixel cap on the HUD container's size once the fraction above would grow past it.
+@export var container_size_max_px : float = 640.0:
+	set(value):
+		container_size_max_px = maxf(value, 0.0)
 		settings_changed.emit()
 
 @export var board_edge_pad_rows : float = 1.0:

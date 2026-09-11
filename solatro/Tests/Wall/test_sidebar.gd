@@ -34,7 +34,14 @@ func _ready() -> void:
 	await test_pressing_end_reaches_the_live_game_views_handler()
 	await test_a_second_shows_view_receives_the_press_after_the_first_tears_down()
 	await test_the_game_views_hud_container_is_scoped_to_its_own_wall()
+	behavior_section("THE CONTAINER'S GEOMETRY")
+	await test_game_hud_members_stay_inside_the_container_at_a_side_window()
+	test_the_inset_is_394_at_the_pictures_own_aspect()
+	test_an_ultrawide_window_clamps_and_narrows()
+	test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
+	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
+	await test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -289,6 +296,60 @@ func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 				"%s starts below the overlay button band" % member_name, str(control.get_global_rect()))
 	viewport.free()
 
+# A same-aspect window reports the project's own base resolution as its logical size under
+# `canvas_items`/`expand` stretch -- what a real 1280x720 (16:9) window gives every Control,
+# never the raw window pixels. Reading it here keeps the fixture honest about that difference.
+func _project_base_window() -> Vector2:
+	var w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 1152)
+	var h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 648)
+	return Vector2(w, h)
+
+# Q76=b: the container's contents are laid out to fit whatever it is set to, so no member may
+# reach past its own container's rect at a real 1280x720 window.
+func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(_project_base_window())
+	add_child(viewport)
+	var wall : Wall = WALL_SCENE.instantiate()
+	viewport.add_child(wall)
+	get_tree().paused = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
+	var game_hud : Control = container.get_node(^"%GameHud")
+	container.combo_label.visible = true
+	await get_tree().process_frame
+	check(game_hud.get_combined_minimum_size().x <= container.size.x,
+			"the HUD's minimum width never exceeds the container",
+			"%.1f vs container %.1f" % [game_hud.get_combined_minimum_size().x, container.size.x])
+	var container_rect := Rect2(container.global_position, container.size)
+	var names : Array[StringName] = []
+	_collect_unique_names(game_hud, container, names)
+	for member_name : StringName in names:
+		var control : Control = container.get_node(NodePath("%" + member_name)) as Control
+		check(container_rect.encloses(control.get_global_rect()),
+				"%s's rect sits inside the container" % member_name,
+				"%s vs container %s" % [control.get_global_rect(), container_rect])
+	_check_button_labels_fit_their_own_minimum(container)
+	viewport.free()
+
+# A Button's own TEXT overflows its rect silently (no layout error) once its assigned size is
+# squeezed below what the label needs, so this checks each button's OWN minimum, not its
+# wrapping Control's.
+func _check_button_labels_fit_their_own_minimum(container : HudContainer) -> void:
+	var buttons : Dictionary = {
+		"Deck": container.deck_ui.get_node(^"Button") as Button,
+		"Discard": container.discard_ui.get_node(^"Button") as Button,
+		"Rules": container.rules_ui.get_node(^"Button") as Button,
+		"Undo": container.undo_button,
+		"Submit": container.submit_button,
+	}
+	for ctx : String in buttons:
+		var button : Button = buttons[ctx]
+		check(button.get_minimum_size().x <= button.size.x + 0.5,
+				"%s's own label fits the space it was given" % ctx,
+				"needs %.1f, has %.1f" % [button.get_minimum_size().x, button.size.x])
+
 # ------------------------------------------------------------------ the wiring crosses from a
 # per-show GameView to a container node that OUTLIVES it
 
@@ -398,6 +459,50 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 	Main.save_info = prev_save_info
 	other_wall.free()
 
+# ------------------------------------------------------------------ the container's geometry
+
+# Converts `rect_for_window`'s window-px container width to picture px through the focused
+# picture's own live scale -- the same conversion `GameView._publish_board_inset()` uses.
+func _inset_px(rect: Rect2, window: Vector2, settings_res: PlayerSettings) -> float:
+	var design := Vector2(PlayArea.game_picture_design_size(settings_res))
+	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	return rect.size.x / picture_scale
+
+## At the picture's own aspect the window cancels -- the inset is 394 px at any 16:9 window size.
+func test_the_inset_is_394_at_the_pictures_own_aspect() -> void:
+	var settings := PlayerSettings.new()
+	for window : Vector2 in [Vector2(1280.0, 720.0), Vector2(1920.0, 1080.0), Vector2(2560.0, 1440.0)]:
+		var rect := HudContainer.rect_for_window(window, settings)
+		var inset := _inset_px(rect, window, settings)
+		check(absf(inset - 394.0) <= 0.5,
+				"the inset is 394 px at %s" % window, "%.3f" % inset)
+
+## An ultrawide window clamps the container, flush against the band's inner edge, empty space outboard.
+func test_an_ultrawide_window_clamps_and_narrows() -> void:
+	var settings := PlayerSettings.new()
+	var window := Vector2(3840.0, 1080.0)
+	var rect := HudContainer.rect_for_window(window, settings)
+	var inset := _inset_px(rect, window, settings)
+	check(absf(inset - 262.7) <= 0.5,
+			"an ultrawide window clamps and narrows the inset", "%.3f" % inset)
+	var inner_edge := settings.container_size_fraction * window.x
+	check(is_equal_approx(rect.position.x + rect.size.x, inner_edge),
+			"the container's right edge is flush against the band's inner edge")
+	check(rect.position.x > 0.0,
+			"the empty space from the clamp sits outboard of the container")
+
+## The container moves to the top band once the leftover play area would be taller than wide.
+func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide() -> void:
+	var settings := PlayerSettings.new()
+	var window := Vector2(600.0, 1000.0)
+	check(HudContainer.container_is_top(window, settings),
+			"a portrait window puts the container on the top band")
+	var rect := HudContainer.rect_for_window(window, settings)
+	check(is_equal_approx(rect.size.x, window.x),
+			"the top container spans the window's full width", "%.3f vs %.3f" % [rect.size.x, window.x])
+	check(rect.size.y > 0.0 and rect.size.y < window.y,
+			"the top container's height is the fractional/clamped container_px", "%.3f" % rect.size.y)
+
 # ------------------------------------------------------------------ the board's centre after S2
 
 func _settle_scroll_x(pa: PlayArea) -> void:
@@ -409,7 +514,7 @@ func _settle_scroll_x(pa: PlayArea) -> void:
 		if is_equal_approx(pa.scroll_container.position.x, last): return
 		last = pa.scroll_container.position.x
 
-# `board_inset_left` was always `hud_width_fraction * design`, independent of which furniture was
+# `board_inset_left` was always `container_size_fraction * design`, independent of which furniture was
 # widest, so deleting the retired controls does NOT re-centre the board. A real `Main`/
 # `enter_game()` matches Part A's own measurement context: fixed design resolution, not the window.
 func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement() -> void:
@@ -445,3 +550,118 @@ func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement(
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
+
+# ------------------------------------------------------------------ the geometry's own wiring
+
+## A real resize (private `SubViewport`) moves the container and re-publishes `board_inset_left`.
+func test_a_real_resize_moves_the_container_and_republishes_the_inset() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await main.enter_game()
+	var game_wp : WallPicture = main._pictures[&"game"]
+	var view := game_wp.screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+
+	viewport.size = Vector2i(1920, 1080)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var window := Vector2(viewport.size)
+	var expected_rect := HudContainer.rect_for_window(window, PlayArea.settings())
+	check(Rect2(container.position, container.size).is_equal_approx(expected_rect),
+			"the container's own rect follows a real resize",
+			"%s vs %s" % [Rect2(container.position, container.size), expected_rect])
+	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
+	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	check(absf(view.play_area.board_inset_left - expected_rect.size.x / picture_scale) <= 0.5,
+			"board_inset_left is re-published for the new size")
+
+	await _check_board_inset_left_on_ultrawide_resize(viewport, view, design)
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# An aspect off 16:9 is what tells `min` and `max` apart in `picture_scale`, unlike the earlier
+# 1920x1080 resize, which shares the picture's own aspect where the two agree.
+func _check_board_inset_left_on_ultrawide_resize(viewport : SubViewport, view : GameView, design : Vector2) -> void:
+	viewport.size = Vector2i(3840, 1080)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var ultrawide := Vector2(viewport.size)
+	var ultrawide_rect := HudContainer.rect_for_window(ultrawide, PlayArea.settings())
+	var ultrawide_scale := maxf(ultrawide.x / design.x, ultrawide.y / design.y)
+	check(absf(view.play_area.board_inset_left - ultrawide_rect.size.x / ultrawide_scale) <= 0.5,
+			"board_inset_left uses the covering picture_scale off an ultrawide resize",
+			"%.3f vs %.3f" % [view.play_area.board_inset_left, ultrawide_rect.size.x / ultrawide_scale])
+
+## A control's rect as drawn -- carries every scale above it, since `global_position` alone drops the board's zoom.
+func _sidebar_screen_rect(c: Control) -> Rect2:
+	var t := c.get_global_transform()
+	return Rect2(t.origin, t.get_scale() * c.size)
+
+## The Entrance is board content and stays put relative to the grid, whatever the container's own width does at a different window size.
+func test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await main.enter_game()
+	var game_wp : WallPicture = main._pictures[&"game"]
+	var view := game_wp.screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	var pa := view.play_area
+	await _settle_scroll_x(pa)
+	check(view.game.state.grids.size() > 0,
+			"a fresh show deals at least one grid for the Entrance to sit beside")
+
+	var grid_a := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
+	var strip_a := _sidebar_screen_rect(pa.upper_zone_right)
+	var offset_a := strip_a.position.x - grid_a.position.x
+
+	viewport.size = Vector2i(1920, 1080)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _settle_scroll_x(pa)
+
+	var grid_b := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
+	var strip_b := _sidebar_screen_rect(pa.upper_zone_right)
+	var offset_b := strip_b.position.x - grid_b.position.x
+
+	check(absf(offset_a - offset_b) <= 1.0,
+			"the Entrance sits at the same offset from the grid at both window sizes",
+			"%.2f at 1280x720 vs %.2f at 1920x1080" % [offset_a, offset_b])
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
