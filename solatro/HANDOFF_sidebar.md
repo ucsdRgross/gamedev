@@ -2,8 +2,10 @@
 
 **Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
 per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
-**State:** S1 and S2 done (S2 took parts a–d). S3 next; its GameView deletions already landed in
-S2b. Single-suite runs: `run_suite_scene.ps1` pattern — launch the NON-console exe, wait for the
+**State:** S1–S3 done. S4 next. Implementers now append evidence to a scratch file as they go,
+because a turn-cap stop loses the final report (it happened on most S2/S3 dispatches). A throwaway
+detached worktree of unmodified main (`../gamedev-baseline`, a28c79aa) exists for by-eye
+before/after captures — local only; `git worktree remove` it at the close. Single-suite runs: `run_suite_scene.ps1` pattern — launch the NON-console exe, wait for the
 suite banner in test_output_all.log, end `$p.Id` (the console exe is a wrapper; ending it orphans
 the game window).
 **Entry docs:** solatro/design/sidebar/PLAN.md (self-contained), DESIGN.md (authority on behaviour),
@@ -53,6 +55,9 @@ code. Overseer (opus) writes no source.
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
   there. S3 builds §1.1 as written; gate checked at TEST_PLAN 3.1's fixtures.
+- GAP-002 (open, CONTRADICTION, parked thread) — §1.1's inset ignores the covering picture's crop, so
+  on windows narrower than 1576:887 (portrait top case, 16:10, 4:3) the board's region reaches under
+  the container. Main already cropped the board off-screen on portrait windows.
 
 ## Tasks
 ```yaml
@@ -68,9 +73,9 @@ code. Overseer (opus) writes no source.
   notes: 'Tests/Visual/sidebar_snapshot built here (ahead of S11) - boots Main, enters the game, writes user://sidebar_snapshot/game_hud.png; run with the NON-console exe and wait for exit'
 - id: S3
   description: geometry per PLAN 1.1; add board_inset_top; delete pan_window_left_x
-  status: pending
-  evidence: ''
-  notes: 'GameView half of the delete list already went in S2b (hud_scale, _publish_hud_reserve, _hud_authored_width, furniture caches, _process). wall.tscn holds an authored 320 px placeholder rect for HudContainer (ASSUMPTIONS.md) that S3 replaces'
+  status: done
+  evidence: '03e85767: ALL 46 SUITES 4076 PASSED [22]; SIDEBAR 109. 3.1 394+-0.5 at 1280/1920/2560 wide, 3.2 262.7 at 3840x1080 flush inner, 3.3 top case; red-then-green logged per check (clamp, max->min [only 3.2 catches it - min==max at 16:9], top branch, resize hook, HUD overflow). grep of removed names: nothing. By eye 1280x720: 320 px container, HUD inside, board beside it'
+  notes: 'Top case (600x1000) board spills under the band - GAP-002, parked. The Entrance/grid offset check cannot fail for the neutralisations tried (test-surface review at close). The Entrance x in any still is MID-DEAL-ANIMATION (measured -165..-30 px vs grid across captures; layout rule is identical to main) - sidebar_snapshot must wait for the deal to settle; fold into S5 which extends it'
 - id: S4
   description: the map gets the same container (Fame, Lap, Luck, Deck)
   status: pending
@@ -138,7 +143,7 @@ code. Overseer (opus) writes no source.
 None yet beyond the baseline failure set above.
 
 ## Next up
-1. S3. 2. S4. 3. S5.
+1. S4. 2. S5. 3. S6.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
