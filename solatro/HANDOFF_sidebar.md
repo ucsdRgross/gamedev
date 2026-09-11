@@ -5,7 +5,7 @@ per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
 **State:** S1–S3 done. S4 next. Implementers now append evidence to a scratch file as they go,
 because a turn-cap stop loses the final report (it happened on most S2/S3 dispatches). A throwaway
 detached worktree of unmodified main (`../gamedev-baseline`, a28c79aa) exists for by-eye
-before/after captures — local only; `git worktree remove` it at the close. Single-suite runs: `run_suite_scene.ps1` pattern — launch the NON-console exe, wait for the
+before/after captures — local only; `git worktree remove` it at the close. Single-suite runs: launch the NON-console exe, wait for the
 suite banner in test_output_all.log, end `$p.Id` (the console exe is a wrapper; ending it orphans
 the game window).
 **Entry docs:** solatro/design/sidebar/PLAN.md (self-contained), DESIGN.md (authority on behaviour),
