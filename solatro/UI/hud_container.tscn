@@ -13,8 +13,7 @@ script = ExtResource("1_hud")
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="GameHud" type="VBoxContainer" parent="HudStack"]
-unique_name_in_owner = true
+[node name="GameHudMargin" type="MarginContainer" parent="HudStack"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,43 +21,53 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Numbers" type="VBoxContainer" parent="HudStack/GameHud"]
+[node name="GameHud" type="VBoxContainer" parent="HudStack/GameHudMargin"]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Goal" type="Label" parent="HudStack/GameHud/Numbers"]
+[node name="Numbers" type="VBoxContainer" parent="HudStack/GameHudMargin/GameHud"]
+layout_mode = 2
+
+[node name="Goal" type="HBoxContainer" parent="HudStack/GameHudMargin/GameHud/Numbers"]
 unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="HudStack/GameHudMargin/GameHud/Numbers/Goal"]
 layout_mode = 2
 text = "Goal: "
 
-[node name="Label" type="Label" parent="HudStack/GameHud/Numbers/Goal"]
+[node name="Label" type="Label" parent="HudStack/GameHudMargin/GameHud/Numbers/Goal"]
 layout_mode = 2
 text = "100"
 
-[node name="Total" type="Label" parent="HudStack/GameHud/Numbers"]
+[node name="Total" type="HBoxContainer" parent="HudStack/GameHudMargin/GameHud/Numbers"]
 unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Caption" type="Label" parent="HudStack/GameHudMargin/GameHud/Numbers/Total"]
 layout_mode = 2
 text = "Total: "
 
-[node name="Label" type="Label" parent="HudStack/GameHud/Numbers/Total"]
+[node name="Label" type="Label" parent="HudStack/GameHudMargin/GameHud/Numbers/Total"]
 layout_mode = 2
 text = " 0"
 
-[node name="Combo" type="Label" parent="HudStack/GameHud/Numbers"]
+[node name="Combo" type="Label" parent="HudStack/GameHudMargin/GameHud/Numbers"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 
-[node name="Piles" type="HBoxContainer" parent="HudStack/GameHud"]
+[node name="Piles" type="HBoxContainer" parent="HudStack/GameHudMargin/GameHud"]
 layout_mode = 2
 
-[node name="Deck" type="Control" parent="HudStack/GameHud/Piles"]
+[node name="Deck" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Deck"]
+[node name="Button" type="Button" parent="HudStack/GameHudMargin/GameHud/Piles/Deck"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -67,14 +76,14 @@ grow_horizontal = 2
 grow_vertical = 2
 text = "Deck"
 
-[node name="Discard" type="Control" parent="HudStack/GameHud/Piles"]
+[node name="Discard" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Discard"]
+[node name="Button" type="Button" parent="HudStack/GameHudMargin/GameHud/Piles/Discard"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -84,14 +93,14 @@ grow_vertical = 2
 text = "Discard
 "
 
-[node name="Rules" type="Control" parent="HudStack/GameHud/Piles"]
+[node name="Rules" type="Control" parent="HudStack/GameHudMargin/GameHud/Piles"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="HudStack/GameHud/Piles/Rules"]
+[node name="Button" type="Button" parent="HudStack/GameHudMargin/GameHud/Piles/Rules"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -101,16 +110,16 @@ grow_vertical = 2
 text = "Rules
 "
 
-[node name="Actions" type="HBoxContainer" parent="HudStack/GameHud"]
+[node name="Actions" type="HBoxContainer" parent="HudStack/GameHudMargin/GameHud"]
 layout_mode = 2
 
-[node name="Undo" type="Button" parent="HudStack/GameHud/Actions"]
+[node name="Undo" type="Button" parent="HudStack/GameHudMargin/GameHud/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Undo
 "
 
-[node name="Submit" type="Button" parent="HudStack/GameHud/Actions"]
+[node name="Submit" type="Button" parent="HudStack/GameHudMargin/GameHud/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Submit

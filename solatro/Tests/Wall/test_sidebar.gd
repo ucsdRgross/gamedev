@@ -29,6 +29,8 @@ func _ready() -> void:
 	test_no_retired_furniture_nodes_remain()
 	test_overlay_buttons_draw_above_the_hud_container()
 	await test_every_hud_member_is_visible_and_reachable()
+	await test_number_captions_and_values_do_not_overlap()
+	await test_game_hud_members_start_below_the_overlay_button_band()
 	await test_pressing_end_reaches_the_live_game_views_handler()
 	await test_a_second_shows_view_receives_the_press_after_the_first_tears_down()
 	await test_the_game_views_hud_container_is_scoped_to_its_own_wall()
@@ -231,6 +233,60 @@ func test_every_hud_member_is_visible_and_reachable() -> void:
 	for ctx : String in readable:
 		_assert_visible_and_sized(readable[ctx] as Control, viewport.size, ctx)
 
+	viewport.free()
+
+# S2d: the caption and value halves of each number sat on top of each other before `Goal`/`Total`
+# became `HBoxContainer`s, so a bare rect-intersection check proves the fix without re-reading
+# pixels. A real `SubViewport` frame settles the containers' layout before the rects are read.
+func test_number_captions_and_values_do_not_overlap() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var wall : Wall = WALL_SCENE.instantiate()
+	viewport.add_child(wall)
+	get_tree().paused = false
+	await get_tree().process_frame
+	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
+	container.combo_label.visible = true
+	await get_tree().process_frame
+	var labels : Array[Control] = [
+		container.goal_label.get_parent().get_node(^"Caption") as Control,
+		container.goal_label,
+		container.total_label.get_parent().get_node(^"Caption") as Control,
+		container.total_label,
+		container.combo_label,
+	]
+	for label : Control in labels:
+		check(label.size.x > 0.0 and label.size.y > 0.0,
+				"%s has non-zero size" % label.name, str(label.size))
+	for i : int in labels.size():
+		for j : int in range(i + 1, labels.size()):
+			check(not labels[i].get_global_rect().intersects(labels[j].get_global_rect()),
+					"%s and %s do not overlap" % [labels[i].get_parent().name, labels[j].get_parent().name])
+	viewport.free()
+
+# S2d/Q46: the HUD's CONTENT must start below the overlay's Back/Forward/Wall row -- the panel
+# itself may still draw under it (draw order is `test_overlay_buttons_draw_above_the_hud_container`).
+func test_game_hud_members_start_below_the_overlay_button_band() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var wall : Wall = WALL_SCENE.instantiate()
+	viewport.add_child(wall)
+	get_tree().paused = false
+	await get_tree().process_frame
+	var overlay : WallOverlay = wall.get_node(^"%Overlay")
+	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
+	var game_hud : Control = container.get_node(^"%GameHud")
+	container.combo_label.visible = true
+	await get_tree().process_frame
+	var band_bottom := overlay.button_band_bottom()
+	var names : Array[StringName] = []
+	_collect_unique_names(game_hud, container, names)
+	for member_name : StringName in names:
+		var control : Control = container.get_node(NodePath("%" + member_name)) as Control
+		check(control.get_global_rect().position.y >= band_bottom,
+				"%s starts below the overlay button band" % member_name, str(control.get_global_rect()))
 	viewport.free()
 
 # ------------------------------------------------------------------ the wiring crosses from a

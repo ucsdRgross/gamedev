@@ -84,6 +84,12 @@ func refresh(stack: FocusStack, picture_count: int = 2, in_wall_view: bool = fal
 func toggle_info() -> void:
 	_info_button.button_pressed = not _info_button.button_pressed
 
+## The grown row's bottom edge, read off the buttons themselves rather than re-typed elsewhere.
+func button_band_bottom() -> float:
+	return maxf(_back_button.position.y + _back_button.size.y,
+			maxf(_forward_button.position.y + _forward_button.size.y,
+					_wall_button.position.y + _wall_button.size.y))
+
 ## The Info button's magnifying glass. Built procedurally, the same idiom as
 ## `WallPicture.shared_frame_texture()`: the project's font is a bitmap face with no magnifier
 ## glyph, and a one-icon PNG is a dependency this does not need.
