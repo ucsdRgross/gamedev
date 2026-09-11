@@ -34,8 +34,8 @@ func _ready() -> void:
 	# row that never grew. Measured: TP-85 failed 10 runs in 11 that way, reporting
 	# "CURRENT is mine false, CURRENT depth -1" while its own board sat two cards deep.
 	# See TestSuite.await_siblings_except and its DEADLOCK RULE.
-	await await_siblings_except(["GRID VIEW", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
-			"WALL PAUSE"])
+	await await_siblings_except(["GRID VIEW", "SIDEBAR", "SETTINGS RANGE", "E2E RUN",
+			"LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ GRID LAYOUT TEST PASS ============")
 	backup_real_settings()
 	use_own_settings()   # geometry checks must not depend on the player's tuning

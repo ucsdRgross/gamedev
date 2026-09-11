@@ -768,6 +768,8 @@ func enter_game() -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	if not game_wp.screen_root:
 		var new_view : GameView = GAME_VIEW.instantiate()
+		## Hand-carried before the view enters the tree, so it binds this wall's own container.
+		new_view.hud_container = wall.get_node(^"%HudContainer") as HudContainer
 		new_view.game_ended.connect(game_ended)
 		new_view.run_lost.connect(_on_run_lost)
 		new_view.info_requested.connect(_on_screen_info_hovered)

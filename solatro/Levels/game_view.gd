@@ -30,7 +30,10 @@ var game : Game = null
 @onready var light_layer: LightLayer = %LightLayer
 var spotlight_director : SpotlightDirector = null
 
-## The HUD controls, reached off the one shared `HudContainer` in `_bind_hud_container()`, under the same names the scene used to own directly.
+## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance instead.
+var hud_container : HudContainer = null
+
+## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
 var submit_button : Button = null
 var undo_button : Button = null
 var deck_ui : Control = null
@@ -92,22 +95,20 @@ func _ready() -> void:
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
-## Reaches the one `HudContainer` every screen shares, through its group; a standalone fixture builds no wall, so it finds none and gets a private instance instead.
 const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
 
 func _bind_hud_container() -> void:
-	var container := get_tree().get_first_node_in_group(HudContainer.GROUP) as HudContainer
-	if container == null:
-		container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
-		add_child(container)
-	submit_button = container.submit_button
-	undo_button = container.undo_button
-	deck_ui = container.deck_ui
-	discard_ui = container.discard_ui
-	rules_ui = container.rules_ui
-	goal_label = container.goal_label
-	total_label = container.total_label
-	combo_label = container.combo_label
+	if hud_container == null:
+		hud_container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
+		add_child(hud_container)
+	submit_button = hud_container.submit_button
+	undo_button = hud_container.undo_button
+	deck_ui = hud_container.deck_ui
+	discard_ui = hud_container.discard_ui
+	rules_ui = hud_container.rules_ui
+	goal_label = hud_container.goal_label
+	total_label = hud_container.total_label
+	combo_label = hud_container.combo_label
 
 ## The container OUTLIVES a per-show `GameView`, so connections must be dropped when it goes.
 var _container_connections : Array[Array] = []

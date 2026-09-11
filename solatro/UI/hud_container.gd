@@ -2,11 +2,6 @@ class_name HudContainer
 extends PanelContainer
 ## The one container on the wall overlay: shows the HUD or the description, never both.
 
-# The one instance every screen shares, found through this group rather than a hand-carried ref.
-# `wall.tscn` authors membership on its OWN instance declaratively (scene-file `groups=`) -- a
-# `GameView`'s private fallback instance must stay OUT of it, or a concurrent `GameView` steals it.
-const GROUP := &"hud_container"
-
 @onready var _hud_stack : Control = %HudStack
 @onready var _description_panel : DescriptionPanel = %DescriptionPanel
 

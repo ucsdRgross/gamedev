@@ -29,7 +29,8 @@ func suite_name() -> String:
 func _ready() -> void:
 	# This suite hosts a real GameView and writes the shared `CardEnvironment.CURRENT`, so it waits
 	# for every sibling that hosts one too. See TestSuite's DEADLOCK RULE and its ordering chain.
-	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["SIDEBAR", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"WALL PAUSE"])
 	TestLog.line("============ GRID VIEW TEST PASS ============")
 	check_all_tests_registered()
 	await run_the_show_opens_zoomed_out_test()
