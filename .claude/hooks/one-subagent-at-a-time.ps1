@@ -4,8 +4,8 @@
 # for the same user:// settings file, the same godot.log and the same window. A parallel fan-out
 # also makes a failure unattributable, which is the same reason fixes land one at a time.
 #
-# Paired with release-subagent-lock.ps1 on SubagentStop. A stale lock older than the timeout below
-# is ignored, so a killed session cannot wedge the repo shut.
+# Paired with release-subagent-lock.ps1 on SubagentStop and on PostToolUse for Agent. A stale lock
+# older than the timeout below is ignored, so a killed session cannot wedge the repo shut.
 #
 # Exit 0 = allow, exit 2 = block and show stderr to Claude.
 
