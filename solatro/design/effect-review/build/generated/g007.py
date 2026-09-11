@@ -15,7 +15,7 @@ ROWS = [
 ("G0145","The Second Step","E1","skill","Moves twice, but never back.",
  "Cue: move this card twice in one action, and it may not return to the cell it started in",
  "Cue: move this card twice in one action with no restriction on where it ends",
- "Cue: move this card any number of times in one action, so long as each cell is one it has not occupied this act",
+ "Cue: move this card any number of times in one action, so long as each cell is one it has not occupied this placement",
  "c"),
 
 ("G0146","The Vigil","H4","skill","Your last move dictates what others may do.",

@@ -1,0 +1,1470 @@
+qid	cls	verdict	note
+Q0152	C1	OK	names all four live line kinds
+Q0153	C1	OK	self-overturned for consistency with Q0331/Q0362 - a RULE card proposing that a scored line empties is a legal override, not an assumption that the board clears itself
+Q0154	C1	ALREADY	FIXED - option (a) reworded as the keep-the-default choice; (b) and (c) are real additions
+Q0155	C1	OK	a diagonal is only a line at FULL length today, so sub-length diagonals genuinely add
+Q0156	C2	OK	new geometry, no live equivalent
+Q0157	C2	STALE	new geometry | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0158	C2	OK	multi-meld membership is a known deferred space; ScoringSection's own TODO names this card
+Q0159	C2	DUPLICATE	RETIRED IN PLACE - same space as Q0155
+Q0160	C3	OK	modifies a real live behaviour - there is no line-scored memory, so disturbance already re-scores
+Q0161	C3	OK	self-overturned - as a rule card it composes with stack compaction: remove a scored line and the cards stacked above drop, which can complete lines at the lower height
+Q0162	C3	ALREADY	FIXED - option (c) reworded as the keep-the-default choice
+Q0163	C3	OK	swapping a placed card for an Entrance card is a real new power
+Q0164	C4	OK	movement between cells exists (move_card_in_grid)
+Q0165	C4	DUPLICATE	RETIRED IN PLACE - superseded by the board plan; asked as Y13 (The Ranked Floor, as a mark)
+Q0166	C4	OK	self-overturned - a reserve holds cards YOU put there and is never fed by the deck, which is exactly how it differs from the Entrance
+Q0167	C4	OK	self-overturned - Sawdust marks a cell dynamically, mid-show, when a card leaves; the board plan is dealt at show start. Different space
+Q0168	C4	OK	a SHAPE requirement is genuinely not a mark, which is a card requirement
+Q0169	C4	OK	a moving card leaving a trail; distinct from a dealt plan
+Q0170	C4	DUPLICATE	RETIRED IN PLACE - this IS the board plan
+Q0171	C4	DUPLICATE	RETIRED IN PLACE - a mark; asked as Y13 (Dress Code, as a mark)
+Q0172	C4	OK	creating a cell is a legal board change
+Q0173	C5	RESCOPE	RETIRED IN PLACE - a map idea that replaces the grid and Entrance; its board form is Q0174, its hidden-board form Y11
+Q0174	C5	OK	fits C5 as re-scoped - what a level puts in a cell instead of your plan
+Q0175	C5	OK	a junk type filling a cell
+Q0176	C5	OK	an off-grid cell is a legal board change
+Q0177	C6	OK	a grid's shape may change under an effect; GameData is keyed to survive it
+Q0178	C6	OK	legal as an effect, though Q0078 keeps ragged grids to tests in the board-plan scope
+Q0179	C6	OK	splitting and merging columns
+Q0180	C6	RESCOPE	FIXED - the floors are now the grid's stack heights
+Q0181	C6	DUPLICATE	RETIRED IN PLACE - the Entrance itself
+Q0182	C6	OK	uneven line lengths
+Q0183	C7	OK	height already pushes rows apart; this is the cross-grid setting for it
+Q0184	C7	OK	lines never cross a grid boundary today, so a rule card that lets them is a real override
+Q0185	C7	OK	the column axis of Q0184's space, distinct enough to keep
+Q0186	C7	DUPLICATE	RETIRED IN PLACE - same space as Q0184
+Q0187	C8	OK	closing a grid
+Q0188	C8	OK	grid_max_count ships at 3, so a fourth is a real override - the note should say it raises the cap
+Q0189	C8	OK	merging grids
+Q0190	C8	STALE	FIXED - twenty-five cards per grid is now fifty-two in all three options
+Q0191	C9	OK	overrides the committed-grid rule, which is what a rule card is for
+Q0192	C9	ALREADY	FIXED - the Entrance now stays committed for the WHOLE SHOW rather than lifting, which is a real change to the commit rule
+Q0193	C9	STALE	relaxing the commit rule is a real change | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0194	C9	OK	cross-grid effect triggering
+Q0195	C10	OK	adjacency rank buff
+Q0196	C10	OK	reachable through forced_spotlight, the same surface the scoring beam uses
+Q0197	C10	OK	
+Q0198	C10	OK	
+Q0199	C10	OK	
+Q0200	C10	OK	
+Q0201	C10	OK	
+Q0202	C10	OK	multi-meld membership; ScoringSection's TODO names this card. Distinct reach from Q0158
+Q0203	C10	OK	
+Q0204	C10	OK	
+Q0205	C10	OK	the plus-and-minus variant of Q0195's space; thin but distinct
+Q0206	C11	OK	a card occupies ONE cell in the data model, so a footprint is a real architectural addition - worth saying so on the line
+Q0207	C11	OK	a rule card replacing lines with regions is legal design space
+Q0208	C11	DUPLICATE	RETIRED IN PLACE - same space as Q0206
+Q0209	C11	OK	
+Q0210	C12	STALE	FIXED - "a line of exactly three cards" is now "a three of a kind"
+Q0211	C12	RESCOPE	FIXED - rows 6-15 re-expressed as stack heights in (a) and (b)
+Q0212	C12	OK	adding a grid column is supported
+Q0213	C12	OK	stack-relative counting
+Q0214	C13	OK	column heights; height is live
+Q0215	C13	OK	row position semantics
+Q0216	C13	OK	
+Q0217	C13	OK	
+Q0218	C13	OK	
+Q0219	C13	OK	
+Q0220	C13	OK	the tops of five columns is expressible as a collector, which ScoringSection is built for
+Q0221	C13	OK	column-height formation
+Q0222	C13	OK	
+Q0223	C14	OK	a turn is a placement
+Q0224	C14	STALE	FIXED - the first card of THIS SHOW; (c) now per Entrance refill
+Q0225	C14	OK	
+Q0226	C14	OK	
+Q0227	C15	OK	
+Q0228	C15	OK	adjacency across a grid seam; distinct from Q0184's line-crossing
+Q0229	C15	OK	
+Q0230	C15	OK	lines never wrap today, so a rule card that wraps them is a real override
+Q0231	C15	OK	
+Q0232	D1	STALE	FIXED - "five apart" on a 5-wide line; max separation is four. Now "at opposite ends of the line"
+Q0233	D1	OK	
+Q0235	D1	OK	
+Q0236	D1	OK	
+Q0237	D1	OK	
+Q0238	D1	OK	
+Q0239	D1	OK	
+Q0240	D1	OK	
+Q0241	D1	OK	
+Q0242	D1	OK	
+Q0243	D1	OK	
+Q0244	D2	OK	
+Q0245	D2	OK	
+Q0246	D2	OK	
+Q0247	D2	OK	
+Q0248	D3	OK	
+Q0249	D3	OK	
+Q0250	D3	OK	
+Q0251	D3	OK	subagent UNSURE, adjudicated OK - the no-line-scored-memory rule binds the LINE DETECTOR, not a skill's own once-per-show flag, which is ordinary state
+Q0252	D3	OK	
+Q0253	D3	OK	
+Q0254	D4	OK	
+Q0255	D4	ALREADY	FIXED - option (a) restated the shipped default. Reworded to say so, which turns it into a legitimate keep-the-default choice against (b) and (c)
+Q0256	D4	OK	
+Q0257	D4	OK	
+Q0258	D5	OK	
+Q0259	D5	OK	
+Q0260	D5	OK	
+Q0261	D5	OK	
+Q0262	D5	OK	
+Q0263	D5	OK	
+Q0264	D5	OK	
+Q0265	D6	OK	
+Q0266	D6	OK	
+Q0267	D6	OK	
+Q0268	D6	OK	
+Q0269	D6	OK	
+Q0270	D6	OK	
+Q0271	D6	OK	
+Q0272	D6	OK	
+Q0273	D6	OK	
+Q0274	D6	OK	
+Q0275	D6	OK	
+Q0276	D6	OK	
+Q0277	D6	OK	
+Q0278	D6	OK	
+Q0279	D6	OK	
+Q0280	D7	OK	
+Q0281	D7	OK	
+Q0282	D7	OK	
+Q0283	D7	OK	
+Q0284	D7	OK	
+Q0285	D7	OK	
+Q0286	D7	OK	
+Q0287	D7	OK	
+Q0288	D7	OK	
+Q0289	D7	OK	
+Q0290	D7	OK	
+Q0291	D8	OK	
+Q0292	D8	STALE	FIXED at the ROOT CAUSE - "On submit" survived in batches/tagged01.tsv's mechanic_grid, a source file the sweep never patched. render.py prefers that column over corpus.tsv, so 32 questions kept retired wording while corpus.tsv read clean. retire.py now covers it; 38 further rewrites applied
+Q0293	D8	OK	
+Q0294	D8	OK	
+Q0295	D9	OK	
+Q0296	D9	OK	
+Q0297	D9	OK	
+Q0298	D9	OK	
+Q0299	D9	OK	
+Q0300	D9	OK	
+Q0301	D10	RESCOPE	FIXED - "the height cap is lowered" had no baseline; stacks are unbounded today. Now "stack height is capped for this show, where it is normally unbounded"
+Q0302	D10	RESCOPE	FIXED - same; now raises or removes a cap a LEVEL imposed, rather than a nonexistent default one
+Q0303	D10	OK	
+Q0304	D10	OK	
+Q0305	E1	OK	
+Q0306	E1	OK	
+Q0307	E1	OK	
+Q0308	E1	OK	
+Q0309	E1	OK	
+Q0310	E1	OK	
+Q0311	E1	OK	
+Q0312	E1	OK	
+Q0313	E1	OK	
+Q0314	E1	OK	
+Q0315	E2	OK	
+Q0316	E2	OK	
+Q0317	E2	OK	
+Q0318	E2	OK	
+Q0319	E2	OK	
+Q0320	E2	OK	
+Q0321	E2	OK	
+Q0322	E2	OK	
+Q0323	E2	OK	
+Q0324	E3	OK	subagent CONTRADICTS, overturned - the no-wrap rule governs LINES; this is a movement effect shifting a row, which may wrap
+Q0325	E3	OK	
+Q0326	E3	OK	
+Q0327	E3	OK	
+Q0328	E3	OK	
+Q0329	E3	OK	
+Q0330	E3	OK	
+Q0331	E4	OK	subagent ALREADY, overturned - the shipped compaction is VERTICAL, within a cell's stack. Horizontal gap-closing along a line is new, and this rule card proposes it explicitly
+Q0332	E4	OK	
+Q0333	E4	OK	
+Q0334	E4	OK	
+Q0335	E5	OK	
+Q0336	E5	OK	
+Q0337	E5	OK	
+Q0338	E5	OK	
+Q0339	E5	OK	
+Q0340	E5	OK	
+Q0341	E5	OK	
+Q0342	E5	OK	
+Q0343	E5	OK	
+Q0344	E5	OK	
+Q0345	E5	OK	
+Q0346	E5	OK	
+Q0347	E6	OK	
+Q0348	E6	OK	
+Q0349	E6	OK	
+Q0350	E6	OK	
+Q0351	E7	OK	
+Q0352	E7	OK	
+Q0353	E7	OK	
+Q0354	E7	OK	
+Q0355	E7	ALREADY	FIXED - option (a) restated the shipped default that a placed card cannot be moved. Reworded to say so, making it a keep-the-default choice
+Q0356	E7	OK	
+Q0357	E7	OK	
+Q0358	E8	OK	
+Q0359	E8	OK	
+Q0360	E8	RESCOPE	FIXED - "on the way to their columns"; an Entrance card goes to any cell, not to a column of its own. Now "the cells they are placed in"
+Q0361	E8	OK	subagent CONTRADICTS, overturned - Fire and Knife ARE suits (PipSuitFire, PipSuitKnife), not only props
+Q0362	E8	OK	subagent CONTRADICTS, overturned - a grid's shape may change under an effect, and this is a rule card proposing it
+Q0363	E8	OK	
+Q0364	E8	OK	
+Q0365	E8	OK	
+Q0366	E9	OK	
+Q0367	E9	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0368	E9	OK	
+Q0369	E9	OK	
+Q0370	E10	OK	
+Q0371	E10	OK	
+Q0372	E10	DUPLICATE	RETIRED IN PLACE - same space as Q0370
+Q0373	E10	OK	
+Q0374	F1	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0377	F1	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0378	F1	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0380	F1	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0382	F1	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0387	F3	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0389	F3	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0390	F3	STALE	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0391	F4	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0392	F4	STALE	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0393	F4	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0394	F4	STALE	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0400	F5	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0417	F9	OK	subagent RESCOPE, overturned - the union of the five stocks IS the deck (one shuffle dealt round-robin), so deck-order language still resolves
+Q0401	F5	OK	subagent RESCOPE, overturned - the Entrance's width is not fixed; add_column/remove_column exist and the sidebar design allows an effect to change it
+Q0405	F6	OK	subagent RESCOPE, overturned - the Entrance's width is not fixed; add_column/remove_column exist and the sidebar design allows an effect to change it
+Q0407	F6	STALE	subagent RESCOPE, overturned - the Entrance's width is not fixed; add_column/remove_column exist and the sidebar design allows an effect to change it | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0381	F1	OK	
+Q0383	F2	OK	
+Q0384	F2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0385	F2	OK	
+Q0386	F2	OK	
+Q0388	F3	OK	
+Q0395	F5	OK	
+Q0396	F5	OK	subagent CONTRADICTS, overturned - an Entrance slot holds a STACK, not one card, so dealing the deck into it is extreme but expressible
+Q0397	F5	OK	
+Q0398	F5	OK	
+Q0399	F5	STALE	FIXED - "a column of 4 or more cards scores"; a vertical stack scores only at multiples of FIVE. Now "a stack of five or more"
+Q0402	F5	OK	
+Q0403	F5	OK	
+Q0404	F6	OK	
+Q0406	F6	OK	
+Q0408	F7	OK	
+Q0409	F7	OK	
+Q0410	F7	OK	
+Q0411	F7	OK	
+Q0412	F8	OK	
+Q0413	F8	OK	
+Q0414	F8	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0415	F8	OK	
+Q0416	F9	OK	
+Q0418	F9	OK	
+Q0419	F9	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0420	F10	OK	
+Q0421	F10	OK	
+Q0422	F10	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0423	F10	OK	
+Q0424	F11	OK	
+Q0425	F11	OK	
+Q0426	F11	OK	
+Q0427	F11	OK	
+Q0428	F12	OK	
+Q0429	F12	OK	
+Q0430	F12	OK	
+Q0431	F12	OK	
+Q0001	A1	OK	
+Q0002	A1	OK	
+Q0003	A1	OK	
+Q0004	A1	OK	
+Q0005	A1	OK	
+Q0006	A2	OK	
+Q0007	A2	OK	
+Q0008	A2	OK	
+Q0009	A2	OK	
+Q0010	A2	OK	
+Q0012	A3	OK	
+Q0013	A3	OK	
+Q0014	A3	OK	
+Q0015	A3	OK	
+Q0016	A3	OK	
+Q0017	A3	OK	
+Q0018	A3	OK	
+Q0019	A3	OK	
+Q0020	A4	OK	
+Q0021	A4	OK	
+Q0022	A4	OK	
+Q0023	A4	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0024	A5	OK	
+Q0025	A5	OK	
+Q0026	A5	OK	
+Q0027	A5	OK	
+Q0028	A5	OK	
+Q0029	A5	OK	
+Q0030	A5	OK	
+Q0031	A5	OK	
+Q0032	A5	OK	
+Q0033	A5	OK	
+Q0034	A5	RESCOPE	FIXED - carried variants written for a different card (points for staying unplayed). Rewritten around the Groundhog's own mechanic, replaying the previous placement
+Q0035	A6	OK	
+Q0036	A6	OK	
+Q0037	A6	OK	
+Q0038	A6	OK	
+Q0039	A7	OK	
+Q0040	A7	OK	
+Q0041	A7	OK	
+Q0042	A7	OK	
+Q0043	A7	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0044	A7	OK	
+Q0045	A7	STALE	FIXED - found checking answered questions: "not part of any scoring hand this placement" is true of most cards on most placements, the X5 scoreless shift. Now per Entrance refill, which is closer to the per-act option that was answered
+Q0046	A7	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0048	A7	OK	
+Q0049	A8	OK	
+Q0050	A8	OK	
+Q0051	A8	OK	
+Q0052	A8	OK	
+Q0053	A9	OK	
+Q0054	A9	ALREADY	FIXED - "pays out immediately rather than at show end"; scoring is already immediate and there is no show-end pass. Re-expressed as gold for a big meld
+Q0055	A9	OK	
+Q0056	A9	STALE	FIXED - "that many acts from now" survived the sweep. Now placements | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0057	A9	OK	
+Q0058	A9	OK	
+Q0059	A10	OK	
+Q0060	A10	OK	
+Q0061	A10	OK	
+Q0062	A10	OK	
+Q0063	A11	OK	
+Q0064	A11	OK	
+Q0065	A11	OK	
+Q0066	A11	OK	
+Q0067	A12	OK	
+Q0068	A12	OK	
+Q0069	A12	STALE	FIXED - rewrite damage: every column scoring a meld in ONE placement is impossible, one card sits in one column. Now "this show", and the show's combo
+Q0070	A12	OK	
+Q0071	A12	OK	
+Q0072	A12	OK	
+Q0073	A12	OK	
+Q0074	A12	OK	
+Q0075	A12	OK	
+Q0076	A12	OK	
+Q0077	A12	OK	
+Q0078	A13	OK	
+Q0079	A13	OK	
+Q0080	A13	OK	
+Q0081	A13	OK	
+Q0082	A14	OK	
+Q0083	A14	OK	
+Q0084	A14	OK	
+Q0085	A14	OK	
+Q0086	A14	OK	
+Q0087	B1	OK	
+Q0088	B1	OK	
+Q0089	B1	OK	
+Q0090	B1	OK	
+Q0091	B1	OK	subagent RESCOPE, overturned - "a new hand" is a meld TYPE recognised when a line completes, so it is evaluated on lines
+Q0092	B1	OK	subagent DUPLICATE of Q0088, overturned - Badugi forbids any shared suit; Cluster forbids pairs, flushes AND straights. Different constraints
+Q0093	B1	OK	
+Q0094	B1	OK	
+Q0095	B1	OK	
+Q0096	B1	OK	
+Q0097	B1	OK	
+Q0098	B1	RESCOPE	FIXED - an empty line is never evaluated, because the line detector only fires on a mutated cell. Now triggers at show end
+Q0099	B1	OK	
+Q0100	B1	OK	
+Q0101	B1	OK	
+Q0102	B1	OK	
+Q0103	B1	OK	
+Q0104	B1	OK	
+Q0106	B1	OK	
+Q0107	B1	OK	
+Q0108	B2	OK	
+Q0109	B2	OK	
+Q0110	B2	OK	
+Q0111	B2	OK	
+Q0112	B2	OK	
+Q0113	B3	OK	
+Q0114	B3	OK	
+Q0115	B3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0116	B3	OK	
+Q0117	B4	OK	
+Q0118	B4	OK	
+Q0119	B4	OK	
+Q0120	B4	OK	
+Q0121	B4	OK	
+Q0122	B4	OK	
+Q0123	B5	OK	
+Q0124	B5	OK	
+Q0125	B5	OK	
+Q0126	B5	OK	
+Q0127	B5	OK	
+Q0128	B6	OK	
+Q0129	B6	OK	
+Q0130	B6	OK	
+Q0131	B6	OK	
+Q0132	B7	OK	
+Q0133	B7	OK	subagent ALREADY, overturned - "only the best hand on a line scores, further hands ignored" is a line-scored MEMORY rule; the default re-scores every time
+Q0134	B7	OK	
+Q0135	B7	OK	subagent DUPLICATE of Q0132, overturned - The Contrary adds descending-runs-count-as-ascending, and it is a card rather than a rule
+Q0136	B8	OK	
+Q0137	B8	OK	
+Q0138	B8	OK	
+Q0139	B8	OK	
+Q0140	B8	STALE	FIXED - "every row of a grid in one placement" is impossible. Now "one show"; the three-full-lines options stay, since one placement CAN complete a row, a column and a diagonal
+Q0141	B8	OK	
+Q0142	B8	OK	
+Q0143	B9	OK	
+Q0144	B9	OK	
+Q0145	B9	OK	
+Q0146	B9	OK	
+Q0147	B9	OK	
+Q0148	B10	STALE	FIXED - a line is always five cells, so "a line of three or fewer" never happens. "Playing short" re-expressed as a sparse grid
+Q0150	B10	STALE	FIXED - "six times at thirteen" is the old thirteen-deep tableau column
+Q0151	B10	OK	subagent CONTRADICTS, overturned - a rule card changing line length is an override, not a contradiction; option (b) even ties it to a widened grid
+Q0105	B1	DUPLICATE	RETIRED IN PLACE - same space as Q0093 (cribbage running total)
+Q0149	B10	STALE	RETIRED IN PLACE - selecting cards to score is Balatro hand-play; long lines are asked by Q0151 and Q0184
+Q0432	G1	OK	
+Q0433	G1	OK	
+Q0434	G1	OK	
+Q0435	G1	OK	
+Q0436	G1	OK	
+Q0437	G2	OK	
+Q0438	G2	OK	
+Q0439	G2	OK	
+Q0440	G2	OK	
+Q0441	G3	OK	
+Q0442	G3	STALE	FIXED - rewrite damage: "if the first placement of a show is a single card" is vacuous, every placement is one card. DNA keeps a restrictive condition: the opening card completes no line
+Q0443	G3	OK	
+Q0444	G3	OK	
+Q0445	G3	OK	
+Q0446	G3	OK	
+Q0447	G3	OK	
+Q0448	G3	OK	
+Q0449	G3	OK	
+Q0450	G3	OK	
+Q0451	G3	OK	
+Q0452	G3	OK	
+Q0453	G4	OK	subagent CONTRADICTS, overturned - destroying cards is a deliberate effect; the brief only forbids ASSUMING the board clears by itself. Brief reworded
+Q0454	G4	OK	
+Q0455	G4	OK	
+Q0456	G4	OK	
+Q0457	G4	OK	
+Q0458	G4	OK	
+Q0459	G4	OK	
+Q0460	G4	OK	
+Q0461	G4	OK	
+Q0462	G5	OK	
+Q0463	G5	OK	
+Q0464	G5	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0465	G5	OK	
+Q0466	G5	OK	
+Q0467	G5	OK	
+Q0468	G5	OK	
+Q0469	G5	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0470	G5	OK	
+Q0471	G5	OK	
+Q0472	G5	OK	
+Q0473	G5	OK	
+Q0474	G5	OK	
+Q0475	G5	OK	
+Q0476	G5	OK	
+Q0477	G5	OK	
+Q0478	G6	OK	
+Q0479	G6	OK	
+Q0480	G6	OK	
+Q0481	G6	OK	
+Q0482	G6	OK	
+Q0483	G6	OK	
+Q0484	G6	OK	
+Q0485	G6	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0486	G6	OK	
+Q0487	G6	OK	
+Q0488	G6	OK	
+Q0489	G7	OK	
+Q0490	G7	OK	
+Q0491	G7	OK	
+Q0492	G7	OK	
+Q0493	G7	OK	
+Q0494	G8	OK	
+Q0495	G8	OK	
+Q0496	G8	OK	
+Q0497	G8	OK	
+Q0498	G8	OK	
+Q0499	G8	OK	
+Q0500	G9	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0501	G9	OK	
+Q0502	G9	OK	
+Q0503	G9	OK	
+Q0504	G9	OK	
+Q0505	G9	OK	
+Q0506	G10	OK	
+Q0507	G10	OK	
+Q0508	G10	OK	
+Q0509	G10	OK	
+Q0510	G10	OK	
+Q0511	G10	OK	
+Q0512	G10	OK	
+Q0513	G10	OK	
+Q0514	G11	OK	
+Q0515	G11	OK	
+Q0516	G11	OK	subagent UNSURE, adjudicated OK - a card can sit face down on the grid (CardData.flipped; The Sealed Envelope places one)
+Q0517	G11	OK	
+Q0518	G11	OK	
+Q0519	G11	OK	
+Q0520	G11	OK	
+Q0521	G11	OK	
+Q0522	G11	OK	
+Q0523	G11	OK	
+Q0524	G11	OK	
+Q0525	G11	OK	
+Q0526	H1	OK	subagent MISMATCH, overturned - the three options are mechanism VARIANTS of copying a spotlit skill, which is what this questionnaire asks for
+Q0527	H1	OK	
+Q0528	H1	OK	
+Q0529	H1	OK	
+Q0530	H1	OK	
+Q0531	H1	OK	
+Q0532	H2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0533	H2	OK	subagent UNSURE, adjudicated OK - (c) is a legitimate reading of behind/ahead as row/column
+Q0534	H2	OK	
+Q0535	H2	OK	
+Q0536	H2	OK	
+Q0537	H2	OK	
+Q0538	H2	OK	
+Q0539	H3	OK	
+Q0540	H3	OK	
+Q0541	H3	OK	
+Q0542	H3	OK	
+Q0543	H4	OK	
+Q0544	H4	OK	
+Q0545	H4	OK	
+Q0546	H4	OK	
+Q0547	H4	OK	
+Q0548	H5	OK	
+Q0549	H5	OK	
+Q0550	H5	OK	
+Q0551	H5	OK	
+Q0552	H5	OK	
+Q0553	H6	OK	
+Q0554	H6	OK	
+Q0555	H6	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0556	H6	OK	
+Q0557	H6	OK	
+Q0558	H6	OK	
+Q0559	H6	OK	
+Q0560	H6	OK	
+Q0561	H7	OK	
+Q0562	H7	OK	
+Q0563	H7	OK	
+Q0564	H7	OK	subagent ALREADY, overturned - the combo weights distinct triggers into the MULTIPLIER; this pays POINTS per distinct effect, a separate payout
+Q0565	H8	OK	
+Q0566	H8	OK	
+Q0567	H8	OK	
+Q0568	H8	OK	
+Q0569	H8	OK	
+Q0570	H8	OK	
+Q0571	H8	OK	
+Q0572	H8	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0573	H9	OK	
+Q0574	H9	OK	
+Q0575	H9	OK	
+Q0576	H9	OK	
+Q0577	H9	OK	subagent UNSURE, adjudicated OK - (c) is a mechanism variant where the extracted rule keeps applying locally
+Q0578	H9	OK	
+Q0579	H10	OK	
+Q0580	H10	OK	
+Q0581	H10	OK	
+Q0582	H10	OK	
+Q0583	H10	OK	
+Q0584	H10	OK	
+Q0585	I1	OK	
+Q0586	I1	OK	
+Q0587	I1	OK	
+Q0588	I1	OK	
+Q0589	I2	OK	
+Q0590	I2	OK	
+Q0591	I2	OK	
+Q0592	I2	OK	
+Q0593	I2	OK	
+Q0594	I2	OK	
+Q0595	I3	OK	
+Q0596	I3	OK	
+Q0597	I3	OK	
+Q0598	I3	OK	
+Q0599	I3	OK	
+Q0600	I4	OK	
+Q0601	I4	OK	
+Q0602	I4	OK	
+Q0603	I4	OK	
+Q0604	I4	OK	
+Q0605	I4	OK	
+Q0606	I4	OK	
+Q0607	I4	OK	
+Q0608	I4	OK	
+Q0609	I4	OK	
+Q0610	I4	OK	
+Q0611	I4	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0612	I4	OK	
+Q0613	I4	OK	
+Q0614	I4	OK	
+Q0615	I4	OK	
+Q0616	I4	OK	
+Q0617	I4	OK	
+Q0618	I4	OK	
+Q0619	I4	OK	
+Q0620	I4	OK	
+Q0621	I4	OK	
+Q0622	I5	OK	
+Q0623	I5	OK	
+Q0624	I5	OK	
+Q0625	I5	OK	
+Q0626	I5	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0627	I5	OK	
+Q0628	I5	OK	
+Q0629	I5	OK	
+Q0630	I6	OK	
+Q0631	I6	OK	
+Q0632	I6	OK	
+Q0633	I6	OK	
+Q0634	I7	OK	
+Q0635	I7	OK	
+Q0636	I7	OK	
+Q0637	I7	OK	
+Q0638	I8	OK	
+Q0639	I8	OK	
+Q0640	I8	OK	
+Q0641	I8	OK	
+Q0642	I9	OK	
+Q0643	I9	OK	
+Q0644	I9	OK	
+Q0645	I9	OK	
+Q0646	I10	OK	
+Q0647	I10	OK	
+Q0648	I10	OK	
+Q0649	I10	OK	
+Q0650	I11	OK	
+Q0651	I11	OK	
+Q0652	I11	OK	
+Q0653	I11	OK	
+Q0654	I11	OK	
+Q0655	I12	RESCOPE	FIXED - subagent flagged DUPLICATE of Q0658; the collision was only Ascetic's option (b), which had drifted into Iron Body's first-hit-each-show space. (b) rewritten back to Ascetic's positional immunity instead of retiring a distinct card
+Q0656	I12	OK	
+Q0657	I12	OK	
+Q0658	I12	OK	
+Q0659	I12	OK	
+Q0660	I12	OK	
+Q0661	I12	OK	
+Q0662	I12	OK	
+Q0663	I12	OK	
+Q0664	I12	OK	
+Q0665	I12	OK	
+Q0666	I12	OK	
+Q0667	J1	OK	
+Q0668	J1	OK	
+Q0669	J1	OK	
+Q0670	J1	OK	
+Q0671	J1	OK	
+Q0672	J2	OK	
+Q0673	J2	OK	
+Q0674	J2	OK	
+Q0675	J2	OK	
+Q0676	J2	STALE	FIXED - rewrite damage: "after the first each placement" is vacuous, one card per placement. Now "after the first five of each show"
+Q0677	J3	OK	
+Q0678	J3	OK	
+Q0679	J3	OK	
+Q0680	J3	OK	
+Q0681	J4	OK	
+Q0682	J4	OK	
+Q0683	J4	OK	
+Q0684	J4	OK	
+Q0685	J4	OK	
+Q0686	J4	OK	
+Q0687	J4	OK	
+Q0688	J4	OK	
+Q0689	J5	OK	
+Q0690	J5	OK	
+Q0691	J5	OK	
+Q0692	J5	OK	
+Q0693	J6	OK	
+Q0694	J6	OK	
+Q0695	J6	OK	
+Q0696	J6	OK	
+Q0697	J7	OK	
+Q0698	J7	OK	
+Q0699	J7	OK	
+Q0700	J7	OK	
+Q0701	J8	OK	
+Q0702	J8	OK	
+Q0703	J8	OK	
+Q0704	J8	OK	
+Q0705	J8	OK	
+Q0706	J8	OK	
+Q0707	J8	OK	
+Q0708	J8	OK	
+Q0709	J8	OK	
+Q0710	J9	OK	
+Q0711	J9	OK	
+Q0712	J9	OK	
+Q0713	J9	OK	
+Q0714	K1	STALE	FIXED, then CORRECTED by the owner - discards are real: effects discard cards from the board into a pile that persists to the next show. Re-expressed on discard events, not on undos
+Q0715	K1	STALE	FIXED - "the next player must discard" in a solitaire game. Re-expressed on refills forced by having no legal placement
+Q0716	K1	STALE	FIXED, then CORRECTED - re-expressed on discard events (restraint = no card discarded from the board)
+Q0717	K1	STALE	FIXED, then CORRECTED - loses mult per card discarded from the board
+Q0718	K1	OK	
+Q0719	K1	OK	subagent STALE, overturned - The Mulligan GRANTS a discard action rather than assuming a budget exists, which is legal
+Q0720	K2	OK	
+Q0721	K2	OK	
+Q0722	K2	OK	
+Q0723	K2	OK	
+Q0724	K2	OK	
+Q0725	K2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0726	K3	OK	
+Q0727	K3	OK	
+Q0728	K3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0729	K3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0730	K4	STALE	FIXED, then CORRECTED - extra cards traded against discards: none allowed, or discarded cards destroyed instead of kept
+Q0731	K4	STALE	FIXED - "2 placements instead of 3" was the three-Submit show, and my own earlier rewrite made it nonsense ("scores 2 lines before its goal is checked"). Now the show ends after a fixed number of placements
+Q0732	K4	OK	
+Q0733	K4	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0734	K5	OK	
+Q0735	K5	OK	
+Q0736	K5	OK	
+Q0737	K5	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0738	K6	OK	
+Q0739	K6	OK	
+Q0740	K6	STALE	FIXED - rewrite damage, "drops each placement rather than each placement". Now per Entrance refill
+Q0741	K6	STALE	FIXED - rewrite damage, "per placement rather than per placement". Now per Entrance refill | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0742	K6	OK	
+Q0743	K6	OK	
+Q0744	K7	OK	
+Q0745	K7	OK	
+Q0746	K7	OK	
+Q0747	K7	OK	
+Q0748	K7	OK	
+Q0749	K7	OK	
+Q0750	K7	OK	
+Q0751	K8	OK	
+Q0752	K8	OK	
+Q0753	K8	OK	
+Q0754	K8	OK	
+Q0755	K8	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0756	K8	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0757	K8	STALE	FIXED - "the combo resets between them"; the combo never resets. (b) now pays the deferred columns at half value | BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0758	K8	OK	
+Q0759	K9	OK	
+Q0760	K9	OK	
+Q0761	K9	STALE	FIXED, then CORRECTED - the unused ACTS measured how early you stopped; now the refills left in the deck, not undos
+Q0762	K9	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0763	K10	OK	
+Q0764	K10	OK	
+Q0765	K10	OK	
+Q0766	K10	STALE	FIXED - rewrite damage, "one card per placement" means every card. Now per Entrance refill, fixed across all eight occurrences in the corpus
+Q0767	K11	OK	
+Q0768	K11	OK	
+Q0769	K11	OK	
+Q0770	K11	OK	
+Q0771	K11	OK	
+Q0772	L1	OK	
+Q0773	L1	OK	
+Q0774	L1	OK	
+Q0775	L1	OK	
+Q0776	L1	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0777	L1	OK	
+Q0778	L1	OK	
+Q0779	L1	OK	
+Q0780	L1	OK	
+Q0781	L1	OK	
+Q0782	L2	OK	
+Q0783	L2	OK	
+Q0784	L2	OK	
+Q0785	L2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0786	L2	OK	
+Q0787	L3	OK	
+Q0788	L3	OK	
+Q0789	L3	OK	
+Q0790	L3	OK	
+Q0791	L4	OK	
+Q0792	L4	OK	
+Q0793	L4	OK	
+Q0794	L4	OK	
+Q0795	L5	OK	
+Q0796	L5	OK	
+Q0797	L5	OK	
+Q0798	L5	OK	
+Q0799	L5	OK	
+Q0800	L5	OK	
+Q0801	L5	OK	
+Q0802	L6	OK	
+Q0803	L6	OK	
+Q0804	L6	RESCOPE	FIXED - "past the amount you needed" had no per-line target; re-expressed against the show goal, the only target that exists
+Q0805	L6	OK	
+Q0806	L6	OK	
+Q0807	L6	OK	
+Q0808	L6	OK	
+Q0809	L7	OK	
+Q0810	L7	OK	
+Q0811	L7	OK	
+Q0812	L7	OK	
+Q0813	L8	OK	
+Q0814	L8	OK	
+Q0815	L8	OK	
+Q0816	L8	OK	
+Q0817	L9	OK	
+Q0818	L9	OK	
+Q0819	L9	OK	
+Q0820	L9	OK	
+Q0821	L9	OK	
+Q0822	L9	OK	
+Q0823	L9	OK	
+Q0824	L9	OK	
+Q0825	L9	OK	
+Q0826	L9	OK	
+Q0827	L9	OK	
+Q0828	L10	OK	
+Q0829	L10	OK	
+Q0830	L10	OK	
+Q0831	L10	OK	
+Q0832	L10	OK	
+Q0833	L10	OK	
+Q0834	L11	OK	
+Q0835	L11	OK	
+Q0836	L11	OK	
+Q0837	L11	OK	
+Q0838	L11	OK	
+Q0839	M1	OK	
+Q0840	M1	OK	
+Q0841	M1	OK	
+Q0842	M1	OK	
+Q0843	M1	OK	
+Q0844	M1	OK	
+Q0845	M1	OK	
+Q0846	M1	OK	
+Q0847	M1	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0848	M1	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0849	M1	OK	
+Q0850	M2	OK	
+Q0851	M2	OK	
+Q0852	M2	OK	
+Q0853	M2	OK	
+Q0854	M2	OK	
+Q0855	M2	OK	
+Q0856	M2	OK	
+Q0857	M3	OK	
+Q0858	M3	OK	
+Q0859	M3	OK	
+Q0860	M3	OK	
+Q0861	M3	OK	
+Q0862	M4	OK	
+Q0863	M4	STALE	FIXED - my spot-check, missed by the auditor: naming a cell before every single-card placement was per ACT. Now per Entrance refill
+Q0864	M4	OK	
+Q0865	M4	OK	
+Q0866	M5	RESCOPE	FIXED - uses "mark" for a targeting tag, which now collides with the board plan. Renamed to "tag" in the options
+Q0867	M5	OK	
+Q0868	M5	OK	
+Q0869	M5	RESCOPE	FIXED - same "mark" collision; now "tag"
+Q0870	M6	OK	
+Q0871	M6	OK	
+Q0872	M6	OK	
+Q0873	M6	OK	
+Q0874	M6	OK	
+Q0875	M6	OK	
+Q0876	M6	OK	
+Q0877	M6	OK	
+Q0878	M6	OK	
+Q0879	M6	OK	
+Q0880	M7	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0881	M7	OK	
+Q0882	M7	OK	
+Q0883	M7	OK	
+Q0884	M7	STALE	FIXED - "costs one placement"; a placement is not a currency. Now costs an Entrance card
+Q0885	M8	OK	
+Q0886	M8	OK	
+Q0887	M8	OK	
+Q0888	M8	OK	
+Q0889	O1	OK	
+Q0890	O1	OK	
+Q0891	O1	OK	
+Q0892	O1	OK	
+Q0893	O1	OK	
+Q0894	O2	OK	
+Q0895	O2	OK	
+Q0896	O2	OK	
+Q0897	O2	OK	
+Q0898	O2	OK	
+Q0899	O2	OK	
+Q0900	O3	OK	
+Q0901	O3	OK	
+Q0902	O3	OK	lines do not "clear"; (a) reworded to "complete without scoring"
+Q0903	O3	STALE	FIXED - my spot-check: "holds and pays when a placement finishes resolving" is a no-op, lines already resolve inside the placement. Now holds to the next Entrance refill
+Q0904	O3	OK	
+Q0905	O3	OK	
+Q0906	O4	OK	
+Q0907	O4	OK	
+Q0908	O4	OK	
+Q0909	O4	OK	
+Q0910	O4	OK	
+Q0911	O4	OK	
+Q0912	O4	OK	
+Q0913	O4	OK	
+Q0914	O4	OK	
+Q0915	O4	OK	
+Q0916	O4	OK	
+Q0917	O4	OK	
+Q0918	O4	OK	
+Q0919	O4	OK	
+Q0920	O4	OK	
+Q0921	O4	OK	
+Q0922	O4	OK	
+Q0923	O4	OK	
+Q0924	O5	OK	
+Q0925	O5	STALE	FIXED - "Next refreshes the entrance"; there is no Next button, the Entrance refills itself. Now each refill deals twice
+Q0927	O5	ALREADY	FIXED - option (b) "a third button that undoes the last placement"; Undo already exists. (b) now re-deals an Entrance slot, and both options name the real buttons
+Q0928	O6	OK	
+Q0929	O6	OK	
+Q0930	O6	OK	
+Q0931	O6	OK	
+Q0932	O6	OK	
+Q0933	O7	OK	
+Q0934	O7	OK	
+Q0935	O7	OK	
+Q0936	O7	OK	
+Q0937	O8	OK	
+Q0938	O8	OK	
+Q0939	O8	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0940	O8	OK	
+Q0941	P1	OK	
+Q0942	P1	OK	
+Q0943	P1	OK	
+Q0944	P1	OK	
+Q0945	P2	OK	
+Q0946	P2	OK	
+Q0947	P2	OK	
+Q0948	P2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q0949	P2	OK	
+Q0950	P2	OK	
+Q0951	P2	OK	
+Q0952	P2	STALE	FIXED - "stays on the board after submission"; there is no Submit and the board is never cleared mid-show. What the leader now outlives is the show: it starts each show already placed
+Q0953	P2	OK	
+Q0954	P2	OK	
+Q0955	P2	OK	
+Q0956	P2	OK	
+Q0957	P2	OK	
+Q0958	P2	OK	
+Q0959	P2	OK	
+Q0960	P3	OK	
+Q0961	P3	OK	
+Q0962	P3	OK	
+Q0963	P3	OK	
+Q0964	P4	OK	
+Q0965	P4	OK	
+Q0966	P4	OK	
+Q0967	P4	OK	
+Q0968	P5	OK	
+Q0969	P5	OK	
+Q0970	P5	OK	
+Q0971	P5	OK	
+Q0972	P5	OK	
+Q0973	P5	OK	
+Q0974	P5	OK	
+Q0975	P6	OK	
+Q0976	P6	OK	
+Q0977	P6	OK	
+Q0978	P6	OK	
+Q0979	P6	OK	
+Q0980	P6	OK	
+Q0981	P6	OK	
+Q0982	P6	OK	
+Q0983	P6	OK	
+Q0984	P6	OK	
+Q0985	P6	OK	
+Q0986	P6	OK	
+Q0987	P6	OK	
+Q0988	P6	OK	
+Q0989	P6	OK	
+Q0990	P7	OK	
+Q0991	P7	OK	
+Q0992	P7	OK	
+Q0993	P7	OK	
+Q0994	P7	OK	
+Q0995	P7	OK	
+Q0996	P7	OK	
+Q0998	P7	OK	
+Q0999	P8	OK	
+Q1000	P8	OK	
+Q1001	P8	OK	
+Q1002	P8	OK	
+Q1003	P9	OK	
+Q1004	P9	OK	
+Q1005	P9	RESCOPE	FIXED - "mark one empty cell" collides with the board plan; all three options now "claim"
+Q1006	P9	STALE	FIXED - my spot-check: one card per placement cannot be one of EACH class. Now per Entrance refill
+Q1007	P10	OK	
+Q1008	P10	OK	
+Q1009	P10	OK	
+Q1010	P10	OK	
+Q1011	P10	OK	
+Q1012	P10	OK	
+Q1013	P10	OK	
+Q1014	P10	OK	
+Q1015	P10	OK	
+Q1016	P10	OK	
+Q1017	P10	OK	
+Q1018	Q1	OK	
+Q1019	Q1	OK	
+Q1020	Q1	OK	
+Q1021	Q1	OK	
+Q1022	Q1	OK	
+Q1023	Q1	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1024	Q1	OK	
+Q1025	Q1	OK	
+Q1026	Q2	OK	
+Q1027	Q2	OK	
+Q1028	Q2	OK	
+Q1029	Q2	OK	
+Q1030	Q2	OK	
+Q1031	Q2	OK	
+Q1032	Q2	OK	
+Q1033	Q2	OK	
+Q1034	Q2	OK	
+Q1035	Q2	OK	
+Q1036	Q3	OK	
+Q1037	Q3	OK	
+Q1038	Q3	OK	
+Q1039	Q3	OK	
+Q1040	Q3	OK	
+Q1041	Q3	OK	
+Q1042	Q3	OK	
+Q1043	Q3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1044	Q3	OK	
+Q1045	Q4	OK	
+Q1046	Q4	OK	
+Q1047	Q4	OK	
+Q1048	Q4	OK	
+Q1049	Q4	OK	
+Q1050	Q4	OK	
+Q1051	Q4	OK	
+Q1052	Q4	OK	
+Q1053	Q5	OK	
+Q1054	Q5	STALE	FIXED - my own rewrite garbled it to "until the a placement finishes resolving"
+Q1055	Q5	OK	
+Q1056	Q5	OK	
+Q1057	Q5	OK	
+Q1058	Q5	OK	
+Q1059	Q5	OK	
+Q1060	Q5	OK	
+Q1061	Q6	OK	
+Q1062	Q6	OK	
+Q1063	Q6	OK	
+Q1064	Q6	OK	
+Q1065	Q6	OK	
+Q1066	Q6	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1067	Q6	OK	
+Q1068	Q6	OK	
+Q1069	Q7	OK	
+Q1070	Q7	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1071	Q7	OK	
+Q1072	Q7	OK	
+Q1073	Q7	OK	
+Q1074	Q7	OK	
+Q1075	Q8	OK	
+Q1076	Q8	OK	
+Q1077	Q8	OK	
+Q1078	Q8	OK	
+Q1079	Q8	OK	
+Q1080	Q8	OK	
+Q0997	P7	DUPLICATE	RETIRED IN PLACE - same space as Q0941 (two/four/six class tiers)
+Q1081	R1	OK	
+Q1082	R1	OK	
+Q1083	R1	OK	
+Q1084	R1	OK	
+Q1085	R1	OK	
+Q1086	R1	OK	
+Q1087	R1	OK	
+Q1088	R2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1089	R2	OK	
+Q1090	R2	OK	
+Q1091	R2	OK	
+Q1092	R3	OK	
+Q1093	R3	OK	
+Q1094	R3	OK	
+Q1095	R3	OK	
+Q1096	R4	STALE	FIXED - "whatever you play or discard"; there is no discard action. The forced card is now the next one placed
+Q1097	R4	OK	
+Q1098	R4	STALE	FIXED - rewrite damage, "the first card of each placement". Now per Entrance refill
+Q1099	R4	OK	
+Q1100	R4	STALE	FIXED - "every placement must place exactly five cards"; a placement is one card, and placing all five of a refill is already the default. Re-expressed as sharper demands on the refill
+Q1101	R5	STALE	FIXED - a harder hand named every single card cannot be met; per Entrance refill. A surviving "act" in (c) removed
+Q1102	R5	STALE	FIXED - a hand cannot be scored before the second single-card placement. Now per Entrance refill
+Q1103	R5	STALE	FIXED - my spot-check: a sum banked before the show's SECOND single-card placement is impossible. Now per Entrance refill
+Q1104	R5	STALE	FIXED - a named hand gating each single card; per Entrance refill
+Q1105	R6	OK	
+Q1106	R6	OK	
+Q1107	R6	CONTRADICTS	RETIRED IN PLACE - my spot-check: proposes overscore, which a standing owner ruling retired (punishing overperformance breeds sandbagging)
+Q1108	R6	OK	
+Q1109	R6	OK	
+Q1110	R6	OK	
+Q1111	R6	RESCOPE	FIXED - "multiplier for every hand"; the per-line mult that exists now is the board plan's bonus mult, so (a) names that
+Q1112	R6	OK	
+Q1113	R6	OK	
+Q1114	R6	OK	
+Q1115	R7	OK	
+Q1116	R7	OK	
+Q1117	R7	OK	
+Q1118	R7	OK	
+Q1119	R7	OK	
+Q1120	R7	OK	
+Q1121	R7	OK	
+Q1122	R7	OK	
+Q1123	R8	OK	
+Q1124	R8	OK	
+Q1125	R8	OK	
+Q1126	R8	OK	
+Q1127	R8	OK	
+Q1128	R8	OK	
+Q1129	R8	OK	
+Q1130	R9	OK	
+Q1131	R9	OK	
+Q1132	R9	OK	
+Q1133	R9	OK	
+Q1134	S1	OK	
+Q1135	S1	OK	
+Q1136	S1	OK	
+Q1137	S1	OK	
+Q1138	S2	OK	
+Q1139	S2	OK	
+Q1140	S2	OK	
+Q1141	S2	OK	
+Q1142	S2	OK	
+Q1143	S2	OK	
+Q1144	S2	OK	
+Q1145	S2	OK	
+Q1146	S2	OK	
+Q1147	S2	OK	
+Q1148	S2	OK	
+Q1149	S3	OK	
+Q1150	S3	OK	
+Q1151	S3	OK	
+Q1152	S3	OK	
+Q1153	S3	OK	
+Q1154	S3	OK	
+Q1155	S3	OK	
+Q1156	S4	OK	
+Q1157	S4	OK	
+Q1158	S4	OK	
+Q1159	S4	OK	
+Q1160	S4	STALE	FIXED - "one placement instead of three" was the three-act show
+Q1161	S4	OK	
+Q1162	S4	OK	
+Q1163	S4	OK	
+Q1164	S4	OK	
+Q1165	S4	OK	
+Q1166	S4	OK	
+Q1167	S4	OK	
+Q1168	S4	OK	
+Q1169	S4	OK	
+Q1170	S4	OK	
+Q1171	S4	OK	
+Q1172	S5	OK	
+Q1173	S5	OK	
+Q1174	S5	OK	
+Q1175	S5	OK	
+Q1176	S5	OK	
+Q1177	S5	OK	
+Q1178	S5	OK	
+Q1179	S5	OK	
+Q1180	S5	OK	
+Q1181	S5	OK	
+Q1182	S5	OK	
+Q1183	S5	OK	
+Q1184	S5	OK	
+Q1185	S5	OK	
+Q1186	S5	OK	
+Q1187	S5	OK	
+Q1188	S5	OK	
+Q1189	S5	OK	
+Q1190	S5	OK	
+Q1191	S5	OK	
+Q1192	S5	OK	
+Q1193	S5	OK	
+Q1194	S5	OK	
+Q1195	S5	OK	
+Q1196	S5	OK	
+Q1197	S5	OK	
+Q1198	S6	OK	
+Q1199	S6	ALREADY	FIXED - "deals its whole Entrance at once instead of five at a time" restates the default; Fantasyland's point is seeing MORE cards, so ten
+Q1200	S6	OK	
+Q1201	S6	OK	
+Q1202	S6	OK	
+Q1203	S6	OK	
+Q1204	S6	OK	
+Q1205	S6	OK	
+Q1206	S6	OK	
+Q1207	S6	OK	
+Q1208	S6	OK	
+Q1209	S6	OK	
+Q1210	S6	OK	
+Q1211	S6	OK	
+Q1212	S7	OK	
+Q1213	S7	OK	
+Q1214	S7	OK	
+Q1215	S7	OK	
+Q1216	S8	OK	
+Q1217	S8	OK	
+Q1218	S8	OK	
+Q1219	S8	OK	
+Q1220	S8	OK	
+Q1221	S8	OK	
+Q1222	S9	OK	
+Q1223	S9	OK	
+Q1224	S9	OK	
+Q1225	S9	STALE	FIXED - a per-placement target does not exist; the only target is the show's. Now carries into the next show
+Q1226	T1	OK	
+Q1227	T1	OK	
+Q1228	T1	OK	
+Q1229	T1	OK	
+Q1230	T1	OK	
+Q1231	T1	OK	
+Q1232	T2	OK	
+Q1233	T2	OK	
+Q1234	T2	OK	
+Q1235	T2	OK	
+Q1236	T2	OK	
+Q1237	T2	OK	
+Q1238	T2	OK	
+Q1239	T3	OK	
+Q1240	T3	OK	
+Q1241	T3	OK	
+Q1242	T3	OK	
+Q1243	T3	OK	
+Q1244	T3	OK	
+Q1245	T3	OK	
+Q1246	T3	OK	
+Q1247	T4	OK	
+Q1248	T4	OK	
+Q1249	T4	OK	
+Q1250	T4	OK	
+Q1251	T4	OK	
+Q1252	T4	OK	
+Q1253	T4	OK	
+Q1254	T5	OK	
+Q1255	T5	OK	
+Q1256	T5	OK	
+Q1257	T5	OK	
+Q1258	T5	OK	
+Q1259	T5	OK	
+Q1260	T5	OK	
+Q1261	T5	OK	
+Q1262	T5	OK	
+Q1263	T6	OK	
+Q1264	T6	OK	
+Q1265	T6	OK	
+Q1266	T6	OK	
+Q1267	T6	OK	
+Q1268	T6	OK	
+Q1269	T6	OK	
+Q1270	T6	OK	
+Q1271	U1	OK	
+Q1272	U1	OK	
+Q1273	U1	OK	
+Q1274	U1	OK	subagent UNSURE, adjudicated OK - an event MINIGAME defines its own rules; a hand inside a self-contained encounter is not a claim about the board
+Q1275	U1	OK	
+Q1276	U1	OK	
+Q1277	U1	OK	
+Q1278	U1	STALE	FIXED - a "one-card mini-placement" is vacuous; the mini-act was a miniature show. Now a miniature five-cell line
+Q1279	U2	OK	
+Q1280	U2	OK	
+Q1281	U2	OK	
+Q1282	U2	OK	
+Q1283	U2	OK	
+Q1284	U2	OK	
+Q1285	U2	OK	
+Q1286	U2	OK	
+Q1287	U2	OK	
+Q1288	U2	OK	
+Q1289	U2	OK	
+Q1290	U2	OK	
+Q1291	U2	OK	
+Q1292	U3	OK	
+Q1293	U3	OK	
+Q1294	U3	OK	
+Q1295	U3	OK	
+Q1296	U3	OK	
+Q1297	U3	OK	
+Q1298	U3	OK	
+Q1299	U4	OK	
+Q1300	U4	OK	
+Q1301	U4	OK	
+Q1302	U4	STALE	FIXED - my spot-check: the blurb "Each placement is unlocked by the last" was the act structure; the options are ordered objectives
+Q1303	U5	OK	
+Q1304	U5	OK	
+Q1305	U5	OK	
+Q1306	U5	OK	
+Q1307	U5	OK	
+Q1308	U5	OK	
+Q1309	U5	OK	
+Q1310	U5	OK	
+Q1311	U6	OK	
+Q1312	U6	OK	
+Q1313	U6	OK	
+Q1314	U6	OK	
+Q1315	U6	OK	
+Q1316	U7	OK	
+Q1317	U7	OK	
+Q1318	U7	OK	
+Q1319	U7	OK	
+Q1320	U8	OK	
+Q1321	U8	OK	
+Q1322	U8	OK	
+Q1323	U8	OK	
+Q1324	U9	OK	
+Q1325	U9	OK	
+Q1326	U9	OK	
+Q1327	U9	OK	
+Q1408	W1	OK	
+Q1409	W2	OK	
+Q1328	V1	OK	
+Q1329	V1	OK	
+Q1330	V1	OK	
+Q1331	V1	OK	
+Q1332	V1	OK	
+Q1333	V1	OK	
+Q1334	V1	OK	
+Q1335	V2	OK	
+Q1336	V2	OK	
+Q1337	V2	OK	
+Q1338	V2	OK	
+Q1339	V2	OK	
+Q1340	V2	OK	
+Q1341	V3	OK	
+Q1343	V3	OK	
+Q1344	V3	OK	
+Q1345	V3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1346	V3	OK	
+Q1347	V3	OK	
+Q1348	V3	OK	
+Q1349	V4	OK	
+Q1350	V4	OK	
+Q1351	V4	OK	
+Q1352	V4	OK	
+Q1353	V4	OK	
+Q1354	V4	OK	
+Q1355	V5	OK	
+Q1356	V5	OK	
+Q1357	V5	OK	
+Q1358	V5	OK	
+Q1359	V6	OK	
+Q1360	V6	OK	
+Q1361	V6	OK	
+Q1362	V6	OK	
+Q1363	V6	OK	
+Q1364	V6	OK	
+Q1365	V6	OK	
+Q1366	V7	OK	
+Q1367	V7	OK	
+Q1368	V7	OK	
+Q1369	V7	OK	
+Q1370	V7	OK	
+Q1371	V7	OK	
+Q1372	V7	OK	
+Q1373	X1	OK	
+Q1374	X1	OK	
+Q1375	X1	OK	
+Q1376	X1	OK	
+Q1377	X1	OK	
+Q1378	X1	OK	
+Q1379	X1	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1380	X2	OK	
+Q1381	X2	OK	
+Q1382	X2	OK	
+Q1383	X2	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1384	X2	OK	
+Q1385	X2	OK	
+Q1386	X2	OK	
+Q1387	X3	STALE	BUDGET FIXED - "once per act" had become "once per placement", 7-13x its written frequency; now per Entrance refill, which keeps the old cadence
+Q1388	X3	OK	
+Q1389	X3	OK	
+Q1390	X3	OK	
+Q1391	X3	OK	
+Q1392	X3	OK	
+Q1393	X3	OK	
+Q1394	X4	OK	
+Q1395	X4	OK	
+Q1396	X4	OK	
+Q1397	X4	RESCOPE	FIXED - every empty cell is reachable by default, so "made unreachable" needed a meaning. Now the engine's own: no held Entrance card has a legal placement there at a refill
+Q1398	X4	OK	
+Q1399	X4	OK	
+Q1400	X4	OK	
+Q1401	X4	OK	
+Q1402	X5	STALE	FIXED - my spot-check, and a whole-class defect: a scoreless PLACEMENT is the normal case, so every X5 effect fired nearly every card. X5 rewritten onto the scoreless REFILL
+Q1403	X5	STALE	FIXED - "the placement limit" does not exist; and the X5 refill rewrite
+Q1404	X5	STALE	FIXED - X5 refill rewrite
+Q1405	X5	STALE	FIXED - X5 refill rewrite; (c) no longer "loses a placement", which is not a currency
+Q1406	X5	STALE	FIXED - X5 refill rewrite
+Q1407	X5	STALE	FIXED - X5 refill rewrite
+Q1342	V3	DUPLICATE	RETIRED IN PLACE - same space as Q1328 (every card counts as one of two ranks)
+Q1410	Y1	OK	
+Q1411	Y1	OK	
+Q1412	Y1	OK	
+Q1413	Y1	OK	
+Q1414	Y1	OK	
+Q1415	Y1	OK	
+Q1416	Y1	OK	
+Q1417	Y1	OK	
+Q1418	Y2	OK	
+Q1419	Y2	OK	
+Q1420	Y2	OK	
+Q1421	Y2	OK	
+Q1422	Y2	ALREADY	FIXED - (a) restated the board plan: a TALENT match already fires the skill's stronger form. (a) now extends it to a match on any property
+Q1423	Y2	OK	
+Q1424	Y2	OK	
+Q1425	Y2	OK	
+Q1427	Y3	OK	
+Q1428	Y3	OK	
+Q1429	Y3	OK	
+Q1430	Y3	OK	
+Q1431	Y3	OK	
+Q1432	Y4	OK	
+Q1433	Y4	OK	
+Q1434	Y4	OK	
+Q1435	Y4	OK	
+Q1436	Y4	OK	
+Q1437	Y4	OK	
+Q1438	Y5	OK	
+Q1439	Y5	ALREADY	FIXED - (b) restated board-plan Q15=b, every card in a cell is already compared. Replaced with matching the cell above
+Q1440	Y5	OK	
+Q1441	Y5	OK	
+Q1442	Y6	OK	
+Q1443	Y6	CONTRADICTS	FIXED - assumed unmarked cells exist by default; the deal marks every cell. Now keys on cells whose mark an effect destroyed or withheld
+Q1444	Y6	OK	
+Q1445	Y6	OK	
+Q1446	Y7	OK	
+Q1447	Y7	OK	
+Q1448	Y7	OK	
+Q1449	Y7	OK	
+Q1450	Y8	OK	
+Q1451	Y8	OK	
+Q1452	Y8	OK	
+Q1453	Y8	OK	
+Q1454	Y8	OK	
+Q1455	Y9	OK	
+Q1456	Y9	OK	
+Q1457	Y9	OK	
+Q1458	Y9	OK	
+Q1459	Y10	OK	
+Q1460	Y10	OK	
+Q1461	Y10	OK	
+Q1462	Y10	OK	
+Q1463	Y11	OK	
+Q1464	Y11	OK	
+Q1465	Y11	OK	
+Q1466	Y11	OK	
+Q1467	Y12	OK	
+Q1468	Y12	OK	
+Q1469	Y12	OK	
+Q1470	Y12	OK	
+Q1471	Y13	OK	
+Q1472	Y13	OK	
+Q1473	Y13	OK	
+Q1474	Y13	OK	
+Q1475	Y13	OK	
+Q1476	Y13	OK	
+Q1426	Y3	DUPLICATE	RETIRED IN PLACE - same space as Q1461 (goal set from the plan's score); a goal belongs to the level

@@ -11,7 +11,7 @@ ROWS = [
  "a"),
 
 ("G0133","The Negative","A8","status","Props under it subtract score and add combo. (line 821)",
- "A card at negative rank spawns props that subtract score instead of adding it, and each one still raises the act's combo",
+ "A card at negative rank spawns props that subtract score instead of adding it, and each one still raises the show's combo",
  "A card at negative rank spawns props that subtract score, and they raise the combo by double",
  "A card at negative rank subtracts score itself and raises the combo, but its props behave normally",
  "a"),
@@ -29,9 +29,9 @@ ROWS = [
  "c"),
 
 ("G0136","The Witch's Gold","G11","skill","Tokens that pay out by detonating. (line 901)",
- "Spawns gold tokens that explode at the end of the act, paying out and destroying whatever cell they sat in",
- "Spawns gold tokens that explode at the end of the act, paying out and damaging their neighbours",
- "Spawns gold tokens that explode at act end unless you have spent them first, so holding them is the gamble",
+ "Spawns gold tokens that explode at the end of the placement, paying out and destroying whatever cell they sat in",
+ "Spawns gold tokens that explode at the end of the placement, paying out and damaging their neighbours",
+ "Spawns gold tokens that explode when a placement finishes resolving unless you have spent them first, so holding them is the gamble",
  "c"),
 
 ("G0137","The Dead List","G10","rule","Destroyed cards get a zone of their own. (lines 905, 995)",
@@ -43,7 +43,7 @@ ROWS = [
 ("G0138","Sleight of Hand","E9","skill","The card does not land where you put it. (line 937)",
  "Cards you place have a chance to land in a different cell than the one you chose, and you are shown where after the fact",
  "Cards you place always land one cell off in a direction this card names, so the offset is learnable",
- "Cards you place land where you chose, but this card silently swaps two already-placed cards each act",
+ "Cards you place land where you chose, but this card silently swaps two already-placed cards each placement",
  "b"),
 
 ("G0139","The Tire Trick","D4","skill","Hidden in the stack, gone when it is taken apart. (line 975)",

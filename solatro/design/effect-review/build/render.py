@@ -10,6 +10,7 @@ from collections import Counter, defaultdict, OrderedDict
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from taxonomy_data import FAMILIES
+from retired_questions import RETIRED
 
 DEST = os.path.join(os.path.dirname(HERE), "DESIGN.md")
 
@@ -167,6 +168,7 @@ def clean(s):
 out = [io.open(os.path.join(HERE, "header.md"), encoding="utf-8").read()]
 cur_fam = cur_cls = None
 n = 0
+retired_n = 0
 for r in ordered:
     if r["fam"] != cur_fam:
         cur_fam = r["fam"]; cur_cls = None
@@ -176,6 +178,13 @@ for r in ordered:
         out.append("\n### %s - %s\n" % (cur_cls or "?", r["cls_name"]))
     n += 1
     qid = "Q%04d" % n
+    # ⚠ A RETIRED QUESTION STILL RENDERS, so the id it holds cannot move. Numbering is
+    # positional, and deleting a row would repoint every recorded answer after it at a
+    # different effect. See retired_questions.py.
+    if r["eid"] in RETIRED:
+        out.append("- **%s** — *%s*" % (qid, clean(RETIRED[r["eid"]])))
+        retired_n += 1
+        continue
     prov = (clean(r["src"]) or "generated") if r["origin"] == "generated" else "`%s`" % label_src(clean(r["src"]))
     head = "**%s** — %s, %s, from %s. %s" % (
         clean(r["name"]), r["slot"], r["cls"] or "unclassified", prov, clean(r["mech"]))
@@ -187,6 +196,6 @@ for r in ordered:
 out.append("\n" + io.open(os.path.join(HERE, "footer.md"), encoding="utf-8").read())
 
 io.open(DEST, "w", encoding="utf-8").write("\n".join(out) + "\n")
-print("wrote %s - %d questions" % (DEST, n))
+print("wrote %s - %d questions (%d retired in place)" % (DEST, n, retired_n))
 print("families present:", " ".join(sorted({r["fam"] for r in ordered})))
 print("classes present: %d" % len({r["cls"] for r in ordered}))

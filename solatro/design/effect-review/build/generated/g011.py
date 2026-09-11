@@ -26,9 +26,9 @@ ROWS = [
  "a"),
 
 ("G0202","Fantasyland","S6","rule","A strong result changes how the next show is dealt.",
- "Rule: a strong enough hand in a named line means the next show deals its whole Entrance at once instead of five at a time",
+ "Rule: a strong enough hand in a named line means the next show deals ten cards into the Entrance instead of five",
  "Rule: a strong enough hand in a named line means the next show starts with a card already placed where you want it",
- "Rule: a strong enough hand means the next show deals the whole Entrance at once, and staying in it requires repeating the feat",
+ "Rule: a strong enough hand means the next show deals ten cards into the Entrance, and staying in it requires repeating the feat",
  "c"),
 
 ("G0203","Uneven Rows","C6","rule","The lines are not the same length.",
@@ -57,13 +57,13 @@ ROWS = [
 
 ("G0207","Deuces Wild","B5","rule","One rank is designated wild for the show.",
  "Rule: one rank named at show start is wild in every meld",
- "Rule: one rank is wild, and it changes each act",
+ "Rule: one rank is wild, and it changes each placement",
  "Rule: one rank is wild, and any line using a wild pays three quarters",
  "c"),
 
 ("G0208","The Bring-In","R4","rule","The first placement is forced.",
  "Rule: the first card of each show must be placed in a cell the show names, not one you choose",
- "Rule: the first card of each act must be placed in a named cell",
+ "Rule: the first card of each Entrance refill must be placed in a named cell",
  "Rule: the first card of each show is placed for you, and you are shown where before you see the card",
  "c"),
 
@@ -76,6 +76,6 @@ ROWS = [
 ("G0210","The Showdown Order","H8","rule","Lines resolve strongest first.",
  "Rule: completed lines resolve in order of the strength of the hand they made, strongest first",
  "Rule: completed lines resolve weakest first, so the strongest benefits from everything the others triggered",
- "Rule: completed lines resolve in an order you choose each act",
+ "Rule: completed lines resolve in an order you choose each placement",
  "b"),
 ]

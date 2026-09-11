@@ -4,8 +4,58 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,177 questions.** There is no branching: every question is independent, so the count you see is
+**1,454 live questions, plus 22 retired in place.** There is no branching: every question is
+independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
+
+## ⚠ What changed since this document was first written
+
+**The board this corpus was mined against is gone, and every question has now been re-read against
+the one that exists.** Two passes, then a new family.
+
+**1. A vocabulary sweep, at the source.** The mined effects proposed mechanics keyed to a three-act
+show, a Submit button, an upper/lower tableau and Balatro's ante ladder. Those phrases were
+re-expressed on this mapping:
+
+| was | is now | why |
+|---|---|---|
+| a trigger "each act" | **each placement** | one Submit was one scoring pass; one placement is one |
+| a budget "once per act" / "one card per act" | **once per Entrance refill** | an act was a third of a show and held many cards; a refill is five cards and four to eight a show, so it keeps the written cadence where "per placement" made the effect 7-13x stronger |
+| a scoreless act | a **scoreless refill** | a single placement completes no line most of the time, so "a scoreless placement" fired almost every card |
+| a round / a blind / an ante | a **show** / a **level** / a **lap** | Balatro's structure mapped onto the map's |
+| a discard budget | **discard events** | effects discard cards from the board into a pile that persists to the next show; there is no per-round budget to spend |
+| the tableau, the upper/lower zone | the **grid**, the **Entrance** | the pre-grid board |
+
+**2. An architecture review of every question, because a word list cannot tell whether an effect
+still fits.** Each family was audited against `build/GAME_BRIEF.md`, every flag was adjudicated,
+and the fixes went back into the sources. The verdicts, one per question with its reason, are in
+`build/_verdicts.tsv`.
+
+```
+OK 1332 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
+```
+
+What it found that the sweep structurally could not: effects assuming a board deeper than five rows,
+three-card lines, the wrong grid-unlock number, options that grant what the game already does by
+default, a card carrying another card's options, four effects that already WERE the board plan, one
+effect proposing a mechanic a standing owner ruling retired (overscore), and a blurb source file the
+sweep never read.
+
+**3. Twenty-two questions are RETIRED IN PLACE** — their premise was retired architecture, a
+duplicate, or superseded by the board plan. They still render, as a one-line italic note, **because
+the question id is positional**: deleting a row would renumber every question after it and repoint
+every recorded answer at a different effect.
+
+⚠ **Your recorded answers:** two are on questions now retired (`Q0011`, `Q0047`), and every other
+lettered answer still means what you chose — the few whose text moved moved back toward the per-act
+wording you answered, not away from it.
+
+**4. Family Y is new — 66 live effects across thirteen classes** for the board plan's marks: the
+card side (Y1-Y6), the level side (Y7-Y12), and Y13, which asks whether six shipped cell-shaped
+blinds should fold into the mark mechanic. `design/board-plan/DESIGN.md` is the authority on the rules
+they assume.
+
+---
 
 ## 0. How to review this document
 

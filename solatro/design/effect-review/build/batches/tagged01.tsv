@@ -17,11 +17,11 @@ E0015	KEEP		E5	rule	A token rotates one column per turn; if that column scores w
 E0016	KEEP		L9	skill	Banks fame each show for an unearned stunt; if ever exposed by an inspection effect, loses double everything banked.	
 E0017	KEEP		G8	skill	Cue: remove a card from the game for 2 shows; it returns upgraded one rarity, with a seeded chance it does not return.	
 E0018	KEEP		I12	type	The first debuff or status applied to this card each show is discarded.	
-E0019	KEEP		H8	rule	On Submit, scores all rows first, then all columns simultaneously per row band.	
+E0019	KEEP		H8	rule	When a line scores, scores all rows first, then all columns simultaneously per row band.	
 E0020	KEEP		I4	skill	If the show is won with cards still in the deck, every remaining deck card gains +1 rank permanently.	
 E0021	KEEP		R6	consumable	Consumable: the next town's fame requirement drops 15%.	
 E0022	KEEP		V6	skill	Counts as a copy of its highest orthogonally-adjacent neighbor's rank; with no neighbors, its rank is 1.	
-E0023	KEEP		F6	skill	On Entrance refresh, adds one extra card into this card's column, plus one more per Clown-class card scored last submit.	
+E0023	KEEP		F6	skill	On Entrance refresh, adds one extra card into this card's column, plus one more per Clown-class card scored last placement.	
 E0024	KEEP		E2	skill	Cue: swaps positions with the single card covering it.	
 E0025	DROP	ALREADY_A_RULE				
 E0026	KEEP		J5	skill	While in the deck, doubles the odds of Rare cards appearing in packs and shops.	
@@ -33,14 +33,14 @@ E0031	KEEP		L5	consumable	Consumable, once per run: when a show is lost, it is i
 E0032	KEEP		E5	skill	Every Entrance refresh, alternates between two adjacent columns, granting bonus points to the top card of the column it leaves.	
 E0033	KEEP		I12	type	This card cannot be discarded from the grid by any effect.	
 E0034	KEEP		A5	stamp	All of this card's effects trigger twice, once per scoring pass.	
-E0035	KEEP		A13	skill	The last meld scored each act gets a bonus multiplier.	
-E0036	KEEP		H7	skill	When an act scores 5 or more distinct combo classes and every meld that act raised the combo, triples the act's payout.	
+E0035	KEEP		A13	skill	The last meld scored each placement gets a bonus multiplier.	
+E0036	KEEP		H7	skill	When a placement scores 5 or more distinct combo classes and every meld that placement raised the combo, triples the placement's payout.	
 E0037	KEEP		D5	type	Whenever this card's stack changes, it automatically sinks to the bottom of that stack, carrying its stamp with it.	
 E0038	KEEP		A5	skill	All triggers on the grid repeat once, per card, per scoring pass.	
 E0039	KEEP		D7	skill	Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever.	
 E0040	KEEP		Q2	suit	When this card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap.	
 E0041	DROP	RESKIN:E0026				
-E0042	KEEP		C13	skill	When the grid's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the act.	
+E0042	KEEP		C13	skill	When the grid's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement.	
 E0043	DROP	DUPLICATE:E0058				
 E0044	KEEP		A1	skill	Gain extra flat points on score (+10).	
 E0045	KEEP		M1	skill	Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including fakes.	
@@ -57,7 +57,7 @@ E0055	KEEP		F5	skill	Cue, once per show: deploy the entire Entrance onto the gri
 E0056	KEEP		A12	skill	When scored, counts as five rank-1 cards for combo-counting purposes (not points).	
 E0057	KEEP		H9	skill	While spotlit, choose one rule card in the hidden rules deck whose effect is ignored.	
 E0058	KEEP		E2	skill	Cue: this card switches locations with any card on screen (grid, Entrance, or decks).	
-E0059	KEEP		D8	skill	On submit, merges with the cards directly above and below it into one 3-card stack of summed rank that stays in the zone after scoring.	
+E0059	KEEP		D8	skill	When a line scores, merges with the cards directly above and below it into one 3-card stack of summed rank that stays in the zone after scoring.	
 E0060	KEEP		K2	rule	Grants one free undo per turn that does not carry over.	
 E0061	KEEP		G3	consumable	Consumable: choose any card in your deck and create a full copy of it in the Entrance for this show, which becomes permanent in the deck afterward.	
 E0062	KEEP		D6	stamp	This card does not block the Spotlight of cards beneath it; they stay active as if uncovered.	
@@ -66,10 +66,10 @@ E0064	KEEP		D6	stamp	This card's modifiers are active from anywhere: grid, Entra
 E0065	KEEP		J1	suit	This suit's cards count as currency at full trade value in shops; when one scores, it mints a Heavy Gold token card to the deck bottom.	
 E0066	KEEP		G11	skill	Money token: full trade value at shops, always sinks to the deck bottom, and scores 0 in melds.	
 E0067	KEEP		K9	consumable	Consumable, once per run: skips one town's requirement entirely for an instant win with full rewards.	E0127
-E0068	KEEP		A12	skill	If all columns scored a meld this act, doubles the act's combo multiplier.	
+E0068	KEEP		A12	skill	If every column has scored a meld this show, doubles the show's combo multiplier.	
 E0069	KEEP		M2	skill	Cue, once per show: hide an entire column so it cannot be seen, targeted, scored, or touched for one turn; it then returns with bonus points on every card.	
 E0070	KEEP		P6	stamp	This card counts as a Clown-class card in addition to its own class.	
-E0071	KEEP		A9	skill	Each act this card would score, it instead hops one column away and banks the points; when it has no legal hop left, it scores everything banked at once.	
+E0071	KEEP		A9	skill	Each placement this card would score, it instead hops one column away and banks the points; when it has no legal hop left, it scores everything banked at once.	
 E0072	KEEP		V3	stamp	This card has rank N and a half, letting it stack legally between rank N and N+1 in runs, but it never participates in poker melds.	
 E0073	KEEP		G1	rule	Boss: duplicates the grid's reflection with fake copies of your cards interleaved into rows; they score 0.	
 E0074	KEEP		V6	skill	When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show.	
@@ -77,7 +77,7 @@ E0075	KEEP		E2	skill	Cue: move any card to any grid location ignoring legality, 
 E0076	KEEP		V4	suit	This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props.	
 E0077	KEEP		F1	type	After any shuffle or return to deck, this card sinks to the deck bottom.	
 E0078	KEEP		F1	type	After any shuffle or return to deck, this card rises to the top and is always the first card drawn on refresh.	
-E0079	KEEP		R9	rule	Boss: each submit, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.	
+E0079	KEEP		R9	rule	Boss: each placement, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column.	
 E0080	KEEP		G5	skill	On scoring, swaps this card's stamp with any stamp held in reserve.	
 E0081	DROP	NO_MECHANIC				
 E0082	DROP	ALREADY_A_RULE				
@@ -90,7 +90,7 @@ E0088	KEEP		S9	consumable	Consumable: doubles the next show's fame requirement, 
 E0089	KEEP		O4	rule	One per column: on Entrance refresh, drops its upper-zone stack into the paired grid column, then draws a card from the deck to refill.	
 E0090	KEEP		I12	stamp	Immune to the first destruction or debuff that targets this card each show.	
 E0091	KEEP		G5	skill	Once per turn, freely swaps the ranks of any two adjacent cards without spending a cue.	E0152
-E0092	KEEP		K4	rule	Elite hazard: the show is shortened to 2 submits instead of 3, with the goal unchanged.	
+E0092	KEEP		K4	rule	Elite hazard: the show is cut short, with the goal unchanged.	
 E0093	DROP	RESKIN:E0048				
 E0094	KEEP		D1	skill	Heavy: no cards may be placed on this card, but it can be placed on anything; scores bonus points per card beneath it when scored.	
 E0095	KEEP		P10	skill	Bound pair: each gains bonus multiplier while they are in opposite zones (one in the Entrance, one on the grid).	
@@ -103,7 +103,7 @@ E0101	KEEP		O6	rule	While this rule card is in the hidden rules deck, its effect
 E0102	KEEP		F5	skill	On Entrance refresh, all Animal-class cards in the Entrance rearrange into ascending rank order before dropping.	
 E0103	KEEP		D6	type	While this card sits in the Entrance its skill is active globally; on the grid it has no effect.	
 E0104	KEEP		I12	stamp	The first time this card would be destroyed or debuffed, prevent it and mint 2 Gold tokens instead.	
-E0105	KEEP		A7	rule	Town rule: the first submit each show scores 0 fame.	
+E0105	KEEP		A7	rule	Town rule: the show's first placement scores 0 fame.	
 E0106	KEEP		F8	skill	Grants +1 reroll per shop visit; after it activates, repeated actions for the rest of the show never repeat identical results.	
 E0107	KEEP		D7	skill	Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently.	E0087
 E0108	KEEP		F3	skill	The next card to be drawn is always visible above the deck slot while this card is anywhere in play.	
@@ -115,7 +115,7 @@ E0113	KEEP		I12	skill	Cue, once per show: every card on the grid removes one deb
 E0114	KEEP		F2	skill	Cue: swap this card with any card in the deck (seen or unseen), taking its board position.	
 E0115	KEEP		G4	skill	Cue: place one grid card inside the can, safe and out of play; cue again on a later turn to retrieve it to the Entrance.	
 E0116	KEEP		C10	skill	While spotlit, the topmost covered card in each adjacent column is also treated as spotlit.	
-E0117	KEEP		C10	skill	Each act, gains points for every orthogonally adjacent card debuffed or destroyed.	
+E0117	KEEP		C10	skill	Each placement, gains points for every orthogonally adjacent card debuffed or destroyed.	
 E0118	KEEP		J2	rule	Town rule: every stack pickup this show costs 1 discard from the deck top.	
 E0119	KEEP		G6	skill	On game start, this card becomes a random skill for the rest of the run, deterministic per seed.	
 E0120	KEEP		C5	type	Junk material inserted by hazards: occupies a slot, scores nothing, and melds nothing.	
@@ -133,8 +133,8 @@ E0131	KEEP		S4	skill	Gains bonus multiplier on odd-numbered shows of the tour; h
 E0132	KEEP		P3	skill	When a Flames card and a Concessions card score in the same row, gain bonus points and refill 1 card into the Entrance.	
 E0133	KEEP		D3	skill	When scored, this card and the 4 cards directly above it in its column stack are also evaluated as a poker hand, once.	
 E0134	DROP	ALREADY_A_RULE				
-E0135	KEEP		F5	skill	Whenever a column of 4 or more cards scores, refill 1 card into the Entrance.	
-E0136	KEEP		A12	skill	While spotlit, each time a placed card's rank is higher than the last card placed, gain +1 combo for the act.	
+E0135	KEEP		F5	skill	Whenever a stack of five or more cards scores, refill 1 card into the Entrance.	
+E0136	KEEP		A12	skill	While spotlit, each time a placed card's rank is higher than the last card placed, gain +1 combo for the placement.	
 E0137	KEEP		L5	skill	Once: on failing a town, keep touring as if it were won; if still unspent by the final town, converts to an automatic win there.	
 E0138	KEEP		F9	skill	Every Entrance refresh, automatically plays the top card of the deck into this card's column.	
 E0139	KEEP		L4	rule	Map-edge hazard: traveling this route costs one card, permanently removed from the deck.	
@@ -146,15 +146,15 @@ E0144	DROP	NO_MECHANIC
 E0145	KEEP		D1	type	Cards placed onto this card cannot be picked up again, but score +1 bonus per level deeper than they stand.	
 E0146	KEEP		C4	type	When this card is discarded from the grid, its slot keeps a marker that gives the next card placed there bonus points on its first score.	
 E0147	KEEP		G7	skill	Cue: split a target card into two same-suit cards of half rank (one rounded up, one down); this card exhausts for the show.	
-E0148	KEEP		A3	skill	When scored, its column pays 3x this act but is locked (no placement or grabs) for the next 2 turns.	
+E0148	KEEP		A3	skill	When scored, its column pays 3x this placement but is locked (no placement or grabs) for the next 2 turns.	
 E0149	KEEP		F1	type	After every shuffle, this card is placed exactly at the deck's midpoint and enters play alone.	
 E0150	KEEP		I4	stamp	This card counts as one rarity higher for all effects and bonuses, but not for pack or shop pool rolls.	
 E0151	KEEP		D7	skill	Consumes cards from anywhere (grid, Entrance, or decks, via cue), with no cap, permanently gaining rank.	E0107
 E0152	KEEP		G5	skill	Cue: swap the ranks of this card and one adjacent card.	
 E0153	KEEP		C12	skill	On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them.	
 E0154	KEEP		L1	consumable	Consumable: gives +3 rank to one card this show, with a seeded 1-in-4 chance of doing nothing.	
-E0155	KEEP		K7	rule	At show start, grants one free move (grab and place one stack) before the first Entrance refresh, without spending an act.	
-E0156	KEEP		A12	stamp	The first time this card is part of any scored meld each act, it adds +1 to the act's combo.	
+E0155	KEEP		K7	rule	At show start, grants one free move (grab and place one stack) before the first Entrance refresh, without spending a placement.	
+E0156	KEEP		A12	stamp	The first time this card is part of any scored meld each placement, it adds +1 to the show's combo.	
 E0157	KEEP		C10	skill	When scored, gains +1 point per card diagonally adjacent to it.	
 E0158	KEEP		G2	consumable	Consumable: creates an intangible ghost copy of an owned card that plays for one show at half score, then disappears.	
 E0159	KEEP		E7	type	Once placed on the grid this card cannot be grabbed again, and it scores a bonus for remaining unmoved.	
@@ -167,11 +167,11 @@ E0165	KEEP		A6	skill	At payout, before row x column multiplication, shift up to 
 E0166	KEEP		D2	skill	This card can be grabbed even while covered; the cards above cascade down one slot.	
 E0167	KEEP		A3	skill	Cue before a show: spend N Gold tokens to multiply that show's fame payout by 1 + N/10.	
 E0168	KEEP		S1	consumable	Consumable: reveals all fog-of-war nodes within 2 edges of the player's position, including contents.	
-E0169	KEEP		A5	skill	Once per submit, re-scores the topmost meld, but is destroyed permanently if her column ever fails to score.	
+E0169	KEEP		A5	skill	Once per placement, re-scores the topmost meld, but is destroyed permanently if her column ever fails to score.	
 E0170	KEEP		I10	skill	Cue: transmute all statuses of one class on a target card into another class, count preserved.	
 E0171	KEEP		F1	skill	Always rises to the top of the deck after any shuffle or discard, and scores bonus points if drawn the same show it was discarded.	
 E0172	KEEP		H9	skill	Attach any owned stamp to a rule card in the hidden rules deck.	
-E0173	KEEP		H4	rule	Boss: each submit, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.	
+E0173	KEEP		H4	rule	Boss: each placement, disables one of your beneficial rule cards for the rest of the show, in an order it chooses.	
 E0174	KEEP		H1	skill	Blank skill; each show it permanently learns the first effect it observes firing, up to three learned effects.	
 E0175	KEEP		G3	stamp	This card copies another deck card's name, class, and identity for all checks until it has scored 3 times, at which point it is unmasked.	
 E0176	KEEP		V1	skill	Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa.	
@@ -186,20 +186,20 @@ E0184	KEEP		H5	skill	Passes a buff down its row card-to-card without triggering,
 E0185	KEEP		L6	skill	When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead.	
 E0186	KEEP		C4	skill	Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there.	
 E0187	KEEP		G11	skill	Cue: create two rank-1 paper-token cards of any suit that drift down one chosen column, one row per Entrance refresh.	
-E0188	KEEP		A12	skill	Gains +1 combo for every different class that scored this act.	
+E0188	KEEP		A12	skill	Gains +1 combo for every different class that scored this placement.	
 E0189	KEEP		H4	skill	Once per run, negate a disaster event or boss effect and gain fame equal to its severity instead.	
 E0190	KEEP		G11	skill	Whenever a full 5-card row meld scores, mints one Ticket Stub to the deck.	
 E0191	KEEP		H6	skill	Fireworks-suit cards may score directly from the Entrance without entering the grid.	
 E0192	KEEP		P6	skill	Registered as a Dancer but functions as an Escape Artist; town bans on Escape Artist-type acts still let it perform.	
 E0193	KEEP		F2	skill	Cue, once per show: search the deck for any card and put it into the Entrance.	
 E0194	KEEP		D9	skill	Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead.	
-E0195	KEEP		K6	skill	If 4 or more cards are placed onto the grid on the first turn of a show, gain bonus multiplier on the first act's payout.	
+E0195	KEEP		K6	skill	If 4 or more cards are placed onto the grid on the first turn of a show, gain bonus multiplier on the show's first placement's payout.	
 E0196	KEEP		J7	skill	When scored, grants a small bonus fame in every town.	
 E0197	KEEP		J8	consumable	Consumable: raises this show's fame floor to 60% of goal, but costs 1 Gold at every subsequent show forever.	
 E0198	KEEP		R6	skill	Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame.	
 E0199	KEEP		A5	skill	May be placed half-off the grid past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it.	
 E0200	KEEP		F10	skill	Cue: discard this card mid-show for a bonus larger than scoring it would have paid.	
-E0201	KEEP		H6	skill	All on-refresh effects are held each turn and fire together at Submit instead, in a chosen order.	
+E0201	KEEP		H6	skill	All on-refresh effects are held each turn and fire together when the placement scores instead, in a chosen order.	
 E0202	KEEP		G11	skill	Once per turn, produce a rank-1 token card of any suit into the Entrance.	
 E0203	KEEP		I11	skill	Each Entrance refresh, every status on this card's neighbors copies one card further outward, with merge-by-class capping the counts.	
 E0204	KEEP		D9	skill	May share one grid slot with another card; both cards count in melds.	
@@ -209,7 +209,7 @@ E0207	KEEP		F4	consumable	Consumable, once per run: replaces the remaining deck 
 E0208	KEEP		G3	skill	On show start, copies the stamp of one adjacent card for the duration of the show.	
 E0209	KEEP		H9	skill	All your cards may hold 2 stamps.	
 E0210	KEEP		C10	skill	While spotlit, this card counts as a member of both its own column's and the adjacent column's melds.	
-E0211	KEEP		H7	skill	After each act, the effect that triggered most is silenced for the next act; any effect that triggered exactly once scores a bonus.	
+E0211	KEEP		H7	skill	After each placement, the effect that triggered most is silenced for the next placement; any effect that triggered exactly once scores a bonus.	
 E0212	KEEP		E1	skill	Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead.	
 E0213	KEEP		H2	skill	Cue: manually fire one adjacent card's trigger hook exactly as if the game had triggered it, including combo credit and stamps.	
 E0214	KEEP		H8	skill	While in play, the player chooses the trigger order of all card effects each scoring pass.	
@@ -219,7 +219,7 @@ E0217	KEEP		M1	consumable	Consumable, 3 uses: reveals every fake card in play (y
 E0218	KEEP		H5	skill	Assign a 'star' card at show start; the first destruction or debuff aimed at the star hits this card instead.	
 E0219	KEEP		H6	skill	Choose a card: its on-score effects also fire when it is discarded.	
 E0220	KEEP		E2	skill	When a run of 4+ scores while this card is in it, that run can be relocated as a unit anywhere on the grid once, next turn.	
-E0221	KEEP		A12	skill	Rewrites one card's combo identity so each of its triggers registers a fresh combo key every time this act, instead of only on first activation.	
+E0221	KEEP		A12	skill	Rewrites one card's combo identity so each of its triggers registers a fresh combo key every time this placement, instead of only on first activation.	
 E0222	KEEP		A5	skill	Cue, once per show: re-triggers any formation bonus already scored this run, paying it again without needing the cards.	
 E0223	KEEP		H1	skill	Event-forged unique card created for this save file, assembled from the two effects scored most this run.	
 E0224	KEEP		E9	skill	During an Entrance refresh, once armed by cue, intercepts one falling card as it drops and redirects it to any column.	
@@ -230,32 +230,32 @@ E0228	KEEP		P3	skill	Gamble-tagged cards cost 1 less to acquire and their destru
 E0229	DROP	NOT_APPLICABLE				
 E0230	KEEP		F10	skill	When discarded, reveals part of the world map's fog of war.	
 E0231	KEEP		K2	skill	Free undo becomes 2 per turn, and all debuffs on your cards expire one show sooner.	E0060
-E0232	KEEP		A12	skill	At act end, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next act.	
+E0232	KEEP		A12	skill	When a placement finishes resolving, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next placement.	
 E0233	KEEP		I4	skill	Scores bonus points per card destroyed or lost this run.	
 E0234	KEEP		R7	rule	Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot.	
-E0235	KEEP		A5	skill	After all scoring resolves, each meld that raised the act's combo pays again at 25%.	
+E0235	KEEP		A5	skill	After all scoring resolves, each meld that raised the show's combo pays again at 25%.	
 E0236	KEEP		B1	skill	This card also melds with any adjacent neighbors whose ranks sum to 15 with it.	
 E0237	KEEP		I10	skill	Cue: apply Burning to every card in this card's entire row; this card becomes Exhausted.	
 E0238	DROP	RESKIN:E0076				
 E0239	DROP	DUPLICATE:E0048				
 E0240	KEEP		B4	rank	This card has an enormous rank that counts as two Aces in melds; if any inspection effect examines it, it is destroyed and the show's fame payout is voided.	
-E0241	KEEP		A12	rule	Hidden rule: when a row's score plus its column's score totals exactly 42, the act's combo gains +3.	
-E0242	KEEP		K8	skill	Once per act, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
+E0241	KEEP		A12	rule	Hidden rule: when a row's score plus its column's score totals exactly 42, the show's combo gains +3.	
+E0242	KEEP		K8	skill	Once per Entrance refill, during scoring resolution, pauses the show to allow one grab/place before resolution continues.	
 E0243	KEEP		I4	skill	Cards dropped on this card are not consumed but returned to the column below it; each one permanently adds +1 to this card's score bonus.	
 E0244	KEEP		G5	skill	Each show start, writes a temporary skill (a copy of an effect that fired last show) onto one blank/prop card; it fades at show end.	
-E0245	KEEP		K9	rule	Town hazard: any submit scoring under 25% of goal ends the show immediately.	
+E0245	KEEP		K9	rule	Town hazard: any placement scoring under 25% of goal ends the show immediately.	
 E0246	KEEP		F5	skill	At show start, discards the bottom card of the deck, then refills 1 card into the Entrance.	
 E0247	KEEP		T1	skill	Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start.	
-E0248	KEEP		A5	skill	Cue, once per show: replay the previous act's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
+E0248	KEEP		A5	skill	Cue, once per show: replay the previous placement's entire effect sequence against the current board, same effects and order, targets resolved fresh.	
 E0249	KEEP		G2	consumable	Consumable: a random Legendary card joins the deck for exactly 3 shows then departs, kept permanently if a hidden condition is met during its stay.	
 E0250	KEEP		D9	rank	This card has half rank (rounded down) and half size: two copies occupy one grid slot together and meld as one combined card.	
 E0251	KEEP		E7	skill	Cue at show start: lock this card's movement for the show (cannot be grabbed) in exchange for scoring double all show.	
 E0252	KEEP		E3	consumable	Consumable: flips the order of one entire stack, bottom becomes top.	
-E0253	KEEP		A10	skill	At show end, cue to convert the act's unused combo above the payout into Gold tokens instead of losing it.	
+E0253	KEEP		A10	skill	At show end, cue to convert the placement's unused combo above the payout into Gold tokens instead of losing it.	
 E0254	KEEP		B4	rank	Aces are renamed and count as either rank 1 or rank 14 in runs, whichever is more favorable, decided at evaluation time.	
 E0255	KEEP		E4	skill	Cue: drop this card from the top of its column to the bottom, scoring bonus points per row fallen.	
 E0256	KEEP		I7	skill	Stores one card outside the game across shows; cue once per run to insert it into any stack at any moment, but a town search loses it.	
-E0257	KEEP		R2	rule	Town hazard: after each submit, the lowest-ranked grid card is discarded unless it scored that act.	
+E0257	KEEP		R2	rule	Town hazard: after each placement, the lowest-ranked grid card is discarded unless it scored that placement.	
 E0258	KEEP		A9	skill	Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero.	
 E0259	KEEP		H9	stamp	This card may hold unlimited stamps, but can never hold a skill.	
 E0260	KEEP		G3	skill	Choose a deck card at acquisition: this card scores 150% of that card's base points, but only while the original is not on the board.	

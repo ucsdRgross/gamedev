@@ -63,6 +63,6 @@ ROWS = [
 ("G0165","The Running Count","B1","rule","Score by a running total, cribbage style.",
  "Rule: placements build a running total, and hitting named totals exactly scores along the way",
  "Rule: placements build a running total per line rather than per show",
- "Rule: placements build a running total, and going over resets it to zero and costs an act",
+ "Rule: placements build a running total, and going over resets it to zero and costs a placement",
  "a"),
 ]

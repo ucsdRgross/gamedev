@@ -1,0 +1,6 @@
+{
+  "state": "ready",
+  "mode": "review",
+  "round": 4,
+  "summary": "The handoff is written: PLAN.md, TEST_PLAN.md and NAMES.md. The readiness audit is clean - 17 steps, 0 bad citations, 0 uncited, 0 unclaimed answers, 10 normative blocks with 0 unauthorised, 0 unquoted paraphrases, 0 chart nodes stale, doc_check 0 errors. Two shipped rules retire on the way and both are gated by tests: a talented card no longer suppresses its own suit effect, and a suit effect now fires only on a matched suit mark. ScoreModel is explicitly NOT restructured and TP-33 proves it by pinning the existing hand leaderboard byte-identical. Phases 1-4 are pure logic with hard gates and go in one run; phase 5 is visual and gets its own run at higher effort; phase 6 refits the goal curve and closes GAP-041 in poker-patience with a new design version there."
+}

@@ -75,6 +75,15 @@ written when a run stalls or fails.
 
 ## Waiting on the owner
 
+- ⬜ **Run `design/board-plan/`** — confirmed and handed off (`PLAN.md`, `TEST_PLAN.md`, `NAMES.md`,
+  and the `/plan-run` prompt in its handover). **Runs after `design/sidebar/`**, whose per-slot stocks
+  it deals from. It retires two shipped rules when it lands (a talented card no longer suppresses its
+  own suit effect; rank now pays into a meld) and its phase 6 refits the goal curve, which is the
+  design's answer to `GAP-041`.
+- ⬜ **Keep answering `design/effect-review/`** — every question was re-read against the live board
+  and the confirmed designs; `build/_verdicts.tsv` has one verdict per question and `build/REVIEW.md`
+  says how to change the build without renumbering recorded answers.
+
 - ⚠ **`GAP-042` — a prop scoring a card in the ENTRANCE banks into a dead bucket.**
   `PropScoreProps`/`PropScoreTalents` use the legacy `ScoringSection.of_line` for an Entrance
   card, which leaves `grid == -1`, so `add_line_score` takes the legacy path into

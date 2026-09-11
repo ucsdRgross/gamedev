@@ -1,0 +1,8 @@
+{
+  "slug": "board-plan",
+  "title": "The board plan — the deck deals the grid its own target",
+  "projects": ["solatro"],
+  "doc": "DESIGN.md",
+  "rounds": 4,
+  "confirmed_version": null
+}

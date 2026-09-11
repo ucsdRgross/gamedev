@@ -11,8 +11,17 @@ A circus-themed poker-solitaire deckbuilder in Godot. Read this before judging a
   cell of a grid. The first placement **commits the grid**, and no other grid accepts a card until
   the committed one has no legal placement left. The Entrance refills only when every slot is
   empty, so the player commits all five before seeing the next five.
-- A **completed line of 5 scores immediately** as a poker hand. Lines are: the 5 rows, the
-  5 columns, and the 2 long diagonals.
+- A **completed line of 5 scores immediately** as a poker hand. There are **four line KINDS**
+  (`ScoringSection.LineKind`), and an effect that says "row or column" is describing a quarter of
+  them: **ROW**, **COL**, **DIAG** and **HEIGHT_V**.
+  ⚠ **DIAG is a family of TEN directions, not two long diagonals** (`LineGeometry._DIAG_DIRECTIONS`):
+  the 2 flat corner-to-corner runs, 4 runs that climb one horizontal axis plus height, and 4
+  corner-to-corner 3-D climbs. A climb never descends.
+  ⚠ **Lines never cross a grid boundary and never wrap.** Evaluation order for one placement is
+  ROW, COL, DIAG, HEIGHT_V, and it is deterministic because the resume-replay contract depends on it.
+  ⚠ **There is no line-scored memory.** A complete line scores EVERY time anything touches it, so an
+  effect that removes and replaces a card in a complete line re-scores it every cycle. That is a
+  legitimate archetype; the only bound is the runaway guard, which charges only REPEAT activations.
 - A placed card **cannot normally be moved or stacked on**. Both are reserved for effects.
 
 ## The coordinate is four-dimensional
@@ -23,6 +32,21 @@ a cell push the rows below down to make room. Five aligned at the same height is
 scores. A **vertical stack scores only at a multiple of 5 cards** and pays the WHOLE stack each
 time — heights 6–9 pay nothing, and the bottom five being paid again at 10 is intended. Removing
 a card drops the stack above it. Removing and re-adding a card re-triggers its line.
+
+## The player's buttons
+
+**End** (ends the show) and **Undo**, plus the Deck, Discard and Rules viewers. There is **no
+Submit and no Next button** - the Entrance refills on its own. An effect that says "press Next" is
+stale; one that ADDS a button is legal design space.
+
+## Discards
+
+**Discarding is a real board mechanic.** A card effect removes cards from the board into the
+**discard pile**, either as its target or as a side effect. The discard pile is where cards go that
+are not deleted from the deck outright, and it **persists to the next show**. What does NOT exist is a
+player discard ACTION or a Balatro-style per-round discard BUDGET. So an effect keyed to discard
+events, the discard pile, or cards leaving the board is live design space; only one that assumes a
+discard budget the player spends is stale.
 
 ## Scoring
 
@@ -68,13 +92,50 @@ If an idea cannot be expressed in one of those slots, it does not belong in this
 
 ## Live hooks an effect can fire on
 
-`on_score` · `on_score_row` / `on_score_col` · `on_after_score` · `on_line_complete` (new) ·
-`on_place` (new) · `on_next` (entrance refresh) · `on_spotlight` / `on_unspotlight` ·
+`on_score` · `on_score_row` / `on_score_col` · `on_after_score` · `on_board_mutated` (the grid
+mutation broadcast the line detector answers) · `on_card_placed` (fires AFTER the line detector has
+already scored, so a bonus that must be inside the meld's own number cannot come from here) ·
+`on_next` (entrance refresh) · `on_refill` · `on_spotlight` / `on_unspotlight` ·
 `on_stage_changed` (deck/play/discard/rules/zone) · `on_card_dropped_on` ·
 `on_trigger` / `on_mod_triggered` (any effect anywhere fires) · `can_grab` / `can_place` ·
 `stack_*_allow` / `_deny` · `meld_*_allow` / `_deny` / `_group` / `_wrap_bounds` ·
 `on_compare_ranks` / `on_compare_suits` · prop lifecycle (`on_spawned`, `on_pass_card`,
 `on_dropped_by`, `on_finish`, `on_lap_completed`) · `on_game_end` · `on_map_picked`
+
+## ⚠ The board plan — CONFIRMED DESIGN, not yet built
+
+`design/board-plan/` is confirmed and handed off. Judge an effect against it, and say when an idea
+only works on the pre-plan board.
+
+- At show start the **deck deals every cell a MARK**: an unplayable grey copy of one of your own
+  cards, drawn evenly across the five Entrance stocks, no card marked twice while any is unmarked.
+- Placing a card that agrees with its mark on **rank, suit, talent or hat** pays per agreeing
+  property, independently and additively. A rank match pays FLAT points; a talent or hat match pays
+  a MULT. **Bonus mults SUM and a sum of 0 never multiplies.**
+- ⚠⚠ **A SUIT EFFECT NOW FIRES ONLY WHEN ITS SUIT MARK IS MATCHED.** This retires the old rule that
+  a talented card suppresses its own suit effect. Any effect whose premise is "when this card scores,
+  its suit does X" is now conditional, and an effect that grants or bypasses that condition is
+  valuable rather than redundant.
+- A mark is **never a card**: it completes no line, scores nothing, is never spotlit, and blocks
+  nothing.
+- A level or blind **may grant marks of cards outside your deck** (that is the hazard/blessing seam).
+
+## ⚠ The Entrance is five per-slot STOCKS — confirmed design, not yet built
+
+`design/sidebar/` §17 is answered and runs FIRST. The deck is split evenly across the five slots by
+one shuffle dealt round-robin; each slot draws its own stock top-down and flips a face-down card up
+in place. "The deck is empty" means every slot's stock is empty. **So the player partly controls
+draw order** by choosing which slot to play from — an effect that keys on draw order has something
+real to key on now.
+
+⚠ **The union of the stocks IS the deck** — it is ONE shuffle dealt round-robin, so "the top of
+the deck", "the bottom of the deck" and "reorder the deck" all still mean something. A
+deck-order effect is NOT stale just because the deck is dealt into five piles; it is stale only if
+it needs a single DRAW POINTER, which is the thing that became five.
+
+⚠ **The Entrance's WIDTH is not fixed.** `add_column` / `remove_column` exist and the sidebar
+design explicitly allows a future effect to widen or narrow it, so an effect that changes the
+Entrance from five slots is legal design space, not a contradiction.
 
 ## Spotlight
 
@@ -103,10 +164,22 @@ equipment), Producer (token and money cards).
 - It is expressible in one sentence of pure mechanics — trigger, action, number.
 - It composes with the +1-per-trigger combo rather than just inflating one number.
 
+## Standing owner rulings an effect may not contradict
+
+- **Overscore is retired.** Punishing overperformance breeds sandbagging. An effect that raises
+  future goals because you scored well is against a ruling, not merely unbalanced. Scale
+  REWARDS, never goals. (A goal that rises with something else - gold held, time taken - is fine.)
+
 ## What makes an effect BAD here
 
 - It is a pure numeric reskin of another effect (`+3 Mult if Hearts` vs `+3 Mult if Spades`).
-- It depends on a hand of cards the player holds, on discards-per-round, or on blinds/antes —
-  none of those exist in this game.
+- It depends on a **hand of cards the player holds**, on a **per-round discard budget**, on an **ante
+  ladder**, on a **Submit button**, on an **act structure**, or on an **upper/lower tableau** — none
+  of those exist. A **blind** does exist, as a level modifier a level draws (`blinds.csv`); the ante
+  ladder that selected them does not.
+- It ASSUMES the board clears by itself — nothing clears the grid mid-show by default.
+  An effect that DELIBERATELY destroys or discards cards is fine; one whose premise is
+  "after the line clears" or "the scored cards are removed" is stale.
+- It restates something the grid already does, or something the board plan already does.
 - It is art direction, sound, UI polish, or engineering work rather than a mechanic.
 - It is a restatement of a rule the game already has.

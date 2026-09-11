@@ -1,0 +1,961 @@
+{
+  "slug": "board-plan",
+  "doc_hash": "sha256:c876731537a57650d61ee97634b0549d52893a22de0ef3b0a3e026b8be477909",
+  "updated": "2026-09-10T09:55:50Z",
+  "answers": {
+    "QR1": {
+      "state": "chosen",
+      "option": "e",
+      "note": "Told in chat: \"If deck does not have enough cards to fill up grid, choose again from existing decks, such that board may have multiple ghost copies of 1 card.\"",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:18:11Z"
+    },
+    "Q1": {
+      "state": "chosen",
+      "option": "b",
+      "note": "Follows from QR1=(e): a 20-card deck deals again from the top, so five cards hold two cells.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:18:14Z"
+    },
+    "Q93": {
+      "state": "chosen",
+      "option": "b",
+      "note": "Told in chat: \"having it be evenly distributed across entrance will feel more fair, since it increases breadth and prevents edge cases such as all ghost cards coming from one slot. lets go with that over choosing across whole deck.\"",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:18:17Z"
+    },
+    "Q99": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Told in chat: \"this does mean that grid cells must be randomly chosen for next random ghost card to prevent a round robin situation where copies always end up in the same position on the grid.\"",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:18:20Z"
+    },
+    "QR2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:51:25Z"
+    },
+    "QR3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T01:52:03Z"
+    },
+    "Q33": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:17:03Z"
+    },
+    "Q34": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:17:50Z"
+    },
+    "Q35": {
+      "state": "chosen",
+      "option": null,
+      "note": "flat mult bonus always, even for effects that have upgraded form.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:20:10Z"
+    },
+    "Q36": {
+      "state": "chosen",
+      "option": null,
+      "note": "flat mult bonus same as talent.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:21:32Z"
+    },
+    "Q37": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:21:39Z"
+    },
+    "QR4": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:21:56Z"
+    },
+    "Q46": {
+      "state": "chosen",
+      "option": null,
+      "note": "both hooks for now, but mark is a bad name for this.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:23:22Z"
+    },
+    "Q47": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:29:35Z"
+    },
+    "Q48": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:33:54Z"
+    },
+    "Q49": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T02:59:03Z"
+    },
+    "Q50": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:01:33Z"
+    },
+    "Q51": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:01:50Z"
+    },
+    "Q52": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:02:42Z"
+    },
+    "Q53": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:02:57Z"
+    },
+    "Q54": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:03:17Z"
+    },
+    "QR5": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:03:43Z"
+    },
+    "QR6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:04:11Z"
+    },
+    "QR7": {
+      "state": "chosen",
+      "option": null,
+      "note": "the composition\nmark\nhitting the mark\n(didnt know hitting the mark was official term, so am okay with mark terminology now)",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:09:52Z"
+    },
+    "Q2": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:10:13Z"
+    },
+    "Q3": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:21:30Z"
+    },
+    "Q4": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:22:11Z"
+    },
+    "Q5": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:22:18Z"
+    },
+    "Q6": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:22:33Z"
+    },
+    "Q8": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:22:51Z"
+    },
+    "Q96": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:23:24Z"
+    },
+    "Q100": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:23:51Z"
+    },
+    "Q101": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:24:07Z"
+    },
+    "Q102": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:24:27Z"
+    },
+    "Q9": {
+      "state": "chosen",
+      "option": null,
+      "note": "across all existing grids at once after grid sizes are known. each grid gets its marks from the same stock. such that 2 5x5 grids use 50 different cards from the same stock, such that 50 out of 52 cards of the deck appear marked on the 2 different grids with no reused cards for marking.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:27:06Z"
+    },
+    "Q10": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:27:33Z"
+    },
+    "Q11": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:27:48Z"
+    },
+    "Q12": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T03:28:11Z"
+    },
+    "Q13": {
+      "state": "chosen",
+      "option": "b",
+      "note": "depends on the board",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:11:15Z"
+    },
+    "Q14": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:15:20Z"
+    },
+    "Q15": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:27:00Z"
+    },
+    "Q16": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:28:00Z"
+    },
+    "Q17": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:28:12Z"
+    },
+    "Q18": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:28:28Z"
+    },
+    "Q19": {
+      "state": "chosen",
+      "option": null,
+      "note": "yes on inspection, also needs to include mode to view board by layers, such that the mark cards making up grid is viewable even when everything is covered.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:29:21Z"
+    },
+    "Q20": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:29:34Z"
+    },
+    "Q41": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:34:41Z"
+    },
+    "Q21": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:35:39Z"
+    },
+    "Q22": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:38:45Z"
+    },
+    "Q23": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:41:07Z"
+    },
+    "Q24": {
+      "state": "chosen",
+      "option": null,
+      "note": "meld score should be a base. flush double can only multiply base value and should not have any insight to bonuses. \ntake base meld score, then add additional rank bonuses, with any mult done after all flat bonuses have been added. all mult can be added together basically.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:48:34Z"
+    },
+    "Q25": {
+      "state": "chosen",
+      "option": null,
+      "note": "only cards part of a meld can score their meld bonuses.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:50:31Z"
+    },
+    "Q26": {
+      "state": "chosen",
+      "option": null,
+      "note": "its value rounded up, if it doesnt have a value convertable to int, a flat amount like 10.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:54:11Z"
+    },
+    "Q27": {
+      "state": "chosen",
+      "option": null,
+      "note": "ace can be worth 10",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T04:55:00Z"
+    },
+    "Q28": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T05:05:57Z"
+    },
+    "Q30": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T05:07:07Z"
+    },
+    "Q87": {
+      "state": "chosen",
+      "option": null,
+      "note": "the suit pip effect itself is suppressed unless on top of a matching suit mark. if it matches, effect triggers normally.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T05:07:46Z"
+    },
+    "Q42": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T05:12:33Z"
+    },
+    "Q44": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T05:13:30Z"
+    },
+    "Q45": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:29:45Z"
+    },
+    "Q55": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:29:52Z"
+    },
+    "Q56": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:31:59Z"
+    },
+    "Q57": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:38:45Z"
+    },
+    "Q58": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:51:22Z"
+    },
+    "Q59": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:51:58Z"
+    },
+    "Q60": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:52:11Z"
+    },
+    "Q61": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:52:30Z"
+    },
+    "Q62": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:52:35Z"
+    },
+    "Q63": {
+      "state": "chosen",
+      "option": "d",
+      "note": "needs to be faded out like a ghostly outline, gray version. therefore does not have to fit palette exactly",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:53:58Z"
+    },
+    "Q64": {
+      "state": "chosen",
+      "option": null,
+      "note": "activated art gets special outline, pips get their outline replaced with a different version to indicate activated",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:54:59Z"
+    },
+    "Q65": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:55:13Z"
+    },
+    "Q66": {
+      "state": "chosen",
+      "option": "a",
+      "note": "effects that would apply get highlighted in selection",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:55:50Z"
+    },
+    "Q67": {
+      "state": "chosen",
+      "option": null,
+      "note": "each art in card has an outline already, selection takes over the outline to show which ones match",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:56:23Z"
+    },
+    "Q68": {
+      "state": "chosen",
+      "option": null,
+      "note": "each partial art has its own outline that highlights",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:57:56Z"
+    },
+    "Q69": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T06:59:03Z"
+    },
+    "Q70": {
+      "state": "chosen",
+      "option": null,
+      "note": "no idea what you mean by fate. matching properties gets highlighted and thats it",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:47:29Z"
+    },
+    "Q71": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:47:57Z"
+    },
+    "Q72": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:48:24Z"
+    },
+    "Q73": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:48:36Z"
+    },
+    "Q74": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:48:52Z"
+    },
+    "Q75": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Follows from your Q103=(a), which says so on the option line: with suit effects firing only on a matched suit mark, the plan is a scoring DRIVER, not a garnish. Your Q103 note: 'by default, different effects/marks being hit shouldnt be some sort of blocker for other marks being hit. your insistence that hitting talent mark unlocks suit mark makes zero sense to me. hitting talent mark triggers effects based on talent, and hitting suit mark triggers effects based on the suit.'",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:29:12Z"
+    },
+    "Q76": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:52:09Z"
+    },
+    "Q77": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:53:39Z"
+    },
+    "Q78": {
+      "state": "chosen",
+      "option": null,
+      "note": "sure you can add tests that test non square grids, like adding 1 extra cell at every 5x5 edge one by one at random locations. new cells should randomly choose new mark from deck that hasnt been used as a mark yet, evenly distributed across stocks too.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T08:59:18Z"
+    },
+    "Q79": {
+      "state": "chosen",
+      "option": null,
+      "note": "out of scope, already in the sidebar design plan which will run first",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T09:00:49Z"
+    },
+    "Q80": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T09:00:59Z"
+    },
+    "Q81": {
+      "state": "chosen",
+      "option": null,
+      "note": "a possible future card that saves what you actually played that game on the board as new plan",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T09:01:51Z"
+    },
+    "Q82": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-10T09:01:56Z"
+    },
+    "Q103": {
+      "state": "chosen",
+      "option": "a",
+      "note": "by default, different effects/marks being hit shouldnt be some sort of blocker for other marks being hit. your insistence that hitting talent mark unlocks suit mark makes zero sense to me. hitting talent mark triggers effects based on talent, and hitting suit mark triggers effects based on the suit.",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:16:21Z"
+    },
+    "Q104": {
+      "state": "chosen",
+      "option": "d",
+      "note": "flush x2 is part of the poker scoring system. scoring a meld should return the score of that hand only, with no knowledge that it used multiplication internally to arrive at that score, since returned score should be a flat amount with no hint to how score was arrived at. meld score should therefore be ((hand score) + (bonus scores)) x (bonus mults) The fact that this is being discussed at all implies an abstraction leak. this is same for other melds.",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-09-10T09:40:47Z"
+    },
+    "Q105": {
+      "state": "chosen",
+      "option": "b",
+      "note": "Restored after Q104 gained option (d): the gate was widened to a|b|d so this answer was never thrown away.",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-09-10T09:40:50Z"
+    },
+    "Q106": {
+      "state": "chosen",
+      "option": "a",
+      "note": "Restored after Q104 gained option (d): the gate was widened to a|b|d so this answer was never thrown away.",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-09-10T09:40:52Z"
+    },
+    "Q107": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:20:02Z"
+    },
+    "Q108": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:21:11Z"
+    },
+    "Q109": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:21:27Z"
+    },
+    "Q110": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:21:47Z"
+    },
+    "Q111": {
+      "state": "chosen",
+      "option": null,
+      "note": "mark is fine, i found out after i made that comment that mark is official terminology for stage choreography since thats what they call marks on the floor\non_mark_hit would be fine",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:22:58Z"
+    },
+    "Q112": {
+      "state": "chosen",
+      "option": null,
+      "note": "all four. should be same size as a normal card.",
+      "override": true,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:26:01Z"
+    },
+    "Q113": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:26:52Z"
+    },
+    "Q115": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:27:11Z"
+    },
+    "Q116": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:27:23Z"
+    },
+    "Q117": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 2,
+      "at": "2026-09-10T09:27:32Z"
+    },
+    "Q118": {
+      "state": "chosen",
+      "option": null,
+      "note": "no. flush x2 is part of the poker scoring system. scoring a meld should return the score of that hand only, with no knowledge that it used multiplication internally to arrive at that score, since returned score should be a flat amount with no hint to how score was arrived at. meld score should therefore be ((hand score) + (bonus scores)) x (bonus mults) The fact that this is being discussed at all implies an abstraction leak.",
+      "override": true,
+      "active": true,
+      "round": 3,
+      "at": "2026-09-10T09:37:47Z"
+    },
+    "Q120": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 3,
+      "at": "2026-09-10T09:43:56Z"
+    },
+    "Q121": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 4,
+      "at": "2026-09-10T09:52:01Z"
+    },
+    "Q122": {
+      "state": "chosen",
+      "option": null,
+      "note": "ideally two x2 should be a x4. +2 to mult, do not multiply 0 ever similar to current overall scoring system.",
+      "override": true,
+      "active": true,
+      "round": 4,
+      "at": "2026-09-10T09:55:50Z"
+    }
+  }
+}

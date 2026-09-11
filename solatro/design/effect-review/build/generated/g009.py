@@ -27,7 +27,7 @@ ROWS = [
 ("G0169","Transmutation Solitaire","G6","rule","Cards become other cards by rule.",
  "Rule: two cards of the same rank placed adjacent transmute into one card of the next rank up",
  "Rule: two cards of the same suit placed adjacent transmute into one card of a different suit",
- "Rule: any two adjacent cards may be transmuted into one whose rank is their sum, at the cost of an act",
+ "Rule: any two adjacent cards may be transmuted into one whose rank is their sum, at the cost of a placement",
  "a"),
 
 ("G0170","Tear Solitaire","G7","skill","A card can be torn in two.",
@@ -56,8 +56,8 @@ ROWS = [
 
 ("G0174","Murder Mystery Solitaire","M4","rule","Deduce the fact the board is hiding.",
  "Rule: one hidden fact about the deck is deducible from what you have seen; naming it correctly pays enormously and naming it wrongly costs the show",
- "Rule: one hidden fact is deducible; naming it correctly pays, and a wrong guess costs only an act",
- "Rule: one hidden fact is deducible, and each act reveals one further clue whether you want it or not",
+ "Rule: one hidden fact is deducible; naming it correctly pays, and a wrong guess costs only a placement",
+ "Rule: one hidden fact is deducible, and each placement reveals one further clue whether you want it or not",
  "b"),
 
 ("G0175","Tap Solitaire","I1","rule","Tapping is the only verb.",

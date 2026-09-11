@@ -420,6 +420,21 @@ Per the grammar above. Additional rules:
   want the common path genuinely shorter, the roots have to be framed so that the *expected* answer
   prunes, which usually means asking "is X in v1?" rather than "do you want X?".
 
+- ⚠ **NEVER ASK HOW A FUNCTION'S INSIDES COMPOSE WITH WHAT CONSUMES ITS RESULT.** If a component
+  returns one number, that number is opaque downstream, and a question about where its internal
+  multiplier "sits" relative to a bonus is an abstraction leak, not a design question. Measured on
+  `board-plan`: two questions asked where the flush double and copy escalation sit once bonus mults
+  were summed, and the owner's answer was that *"the fact that this is being discussed at all implies
+  an abstraction leak"* — both retired, and a wrong answer to either would have restructured every
+  score in the game. Ask what the RESULT composes with, never what produced it.
+- ⚠ **A QUESTION MAY NOT USE A WORD THE AUTHOR COINED.** Rule 4 fails quietly here: a term that
+  reads naturally to you after an hour of research ("a card's fated cell") is unanswerable to someone
+  who never saw your notes. Owner, on `board-plan`: *"no idea what you mean by fate."* Say it in the
+  game's own words, or define it on the line.
+- ⚠ **WHEN YOU CALL TWO OPTIONS EQUIVALENT, MEASURE THE TAIL, NOT ONLY THE MEAN.** Two ways of
+  drawing the plan were identical on average and the note said so; the owner chose the other one
+  for fairness, and only the tail measurement (one deal in ten starving a lane) showed why. A
+  recommendation argued from the mean hides exactly the edge case a player remembers.
 - ⚠ **ASK WHAT MUST STAY TRUE *BETWEEN* ELEMENTS, NOT ONLY WHAT EACH ELEMENT DOES.** A questionnaire
   naturally enumerates things; the misses cluster in the RELATIONSHIPS between them. For every pair
   that shares a screen, ask: **what scales together, what aligns to what, which way does each grow,

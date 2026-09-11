@@ -1,0 +1,1609 @@
+{
+  "doc_hash": "sha256:4a2e3a3bd9e0823c5ec0ea8cb43b1069cc0d4670e1b1ba8e4aa4c332659ee276",
+  "charts": [
+    {
+      "id": "A",
+      "name": "A",
+      "title": "dealing the plan",
+      "line": 716,
+      "nodes": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "B",
+      "title": "a placement, and what a match pays",
+      "line": 758,
+      "nodes": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15",
+        "B16",
+        "B17",
+        "B18",
+        "B19",
+        "B20",
+        "B21"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "C",
+      "title": "how a line's number is built now",
+      "line": 808,
+      "nodes": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+        "C9",
+        "C10",
+        "C11",
+        "C12"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "D",
+      "title": "marks that act, the content API",
+      "line": 837,
+      "nodes": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9",
+        "D10",
+        "D11",
+        "D12",
+        "D13"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "E",
+      "title": "marks against the rest of the engine",
+      "line": 869,
+      "nodes": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6",
+        "E7",
+        "E8",
+        "E9",
+        "E10",
+        "E11"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "F",
+      "title": "seeing it",
+      "line": 896,
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14",
+        "F15",
+        "F16"
+      ]
+    }
+  ],
+  "nodes": {
+    "A1": {
+      "chart": "A",
+      "label": "Game._start_fresh_show: deck dealt into the five Entrance stocks, allotment sizes the grids, creator cards build them",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 718
+    },
+    "A2": {
+      "chart": "A",
+      "label": "every grid now exists and its size is known",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 719
+    },
+    "A3": {
+      "chart": "A",
+      "label": "NEW: ONE board wide deal, every grid at once, after grid sizes are known",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 720
+    },
+    "A4": {
+      "chart": "A",
+      "label": "NEW: draw evenly from each of the five stocks, the same number of marks from every lane",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 721
+    },
+    "A5": {
+      "chart": "A",
+      "label": "NEW: cells are walked in ONE shuffled order, shuffled once for the whole deal",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 722
+    },
+    "A6": {
+      "chart": "A",
+      "label": "any card left that has not been used as a mark?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 723
+    },
+    "A7": {
+      "chart": "A",
+      "label": "NEW: take an unused card, no card is marked twice while unused cards remain",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 724
+    },
+    "A8": {
+      "chart": "A",
+      "label": "NEW: start another pass over the deck, repeats allowed, no cap on how many cells one card holds",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 725
+    },
+    "A9": {
+      "chart": "A",
+      "label": "NEW: two copies of one card may share a row, column or diagonal, freely",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 726
+    },
+    "A10": {
+      "chart": "A",
+      "label": "NEW: every printed slot is copied onto the cell zone card, rank suit talent hat, statuses are NOT copied",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 727
+    },
+    "A11": {
+      "chart": "A",
+      "label": "NEW: a mark names PRINTED properties only, never a specific card object",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 728
+    },
+    "A12": {
+      "chart": "A",
+      "label": "NEW: seeded from its own RandomNumberGenerator keyed to the map node, dealt once and STORED",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 729
+    },
+    "A13": {
+      "chart": "A",
+      "label": "NEW: revealed cell by cell, slot machine feel, on the show's opening",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 730
+    },
+    "A14": {
+      "chart": "A",
+      "label": "NEW: the plan never looks at the deck again, cards minted later are unplanned and the discard is invisible to it",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 731
+    },
+    "A15": {
+      "chart": "A",
+      "label": "NEW: a grid unlocked mid show deals its own marks, still avoiding cards already used anywhere",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 732
+    },
+    "A16": {
+      "chart": "A",
+      "label": "NEW: a stock rebalance does not touch a plan already dealt",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 733
+    },
+    "A17": {
+      "chart": "A",
+      "label": "NEW: a cell added to a ragged grid takes an unused mark, evenly across stocks, repeating when none are left",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 734
+    },
+    "A18": {
+      "chart": "A",
+      "label": "the board opens with a plan and no cards on it - chart F",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 735
+    },
+    "B1": {
+      "chart": "B",
+      "label": "Game.place_card_in_grid: the card lands, the LANDING coordinate is read back with grid_position_of",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 760
+    },
+    "B2": {
+      "chart": "B",
+      "label": "NEW: a match is a LIVE property of the board, re-derived whenever anything asks, not frozen at placement",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 761
+    },
+    "B3": {
+      "chart": "B",
+      "label": "NEW: every card in the cell is compared to the mark, not only the one at height 0",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 762
+    },
+    "B4": {
+      "chart": "B",
+      "label": "NEW: a card an EFFECT put in the cell matches identically to one the player placed",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 763
+    },
+    "B5": {
+      "chart": "B",
+      "label": "which printed properties agree with the mark?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 764
+    },
+    "B6": {
+      "chart": "B",
+      "label": "NEW: rank, suit, talent and hat are compared INDEPENDENTLY and each pays on its own",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 765
+    },
+    "B7": {
+      "chart": "B",
+      "label": "NEW: a talent or hat match needs the SAME skill or the SAME stamp, not merely both being present",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 766
+    },
+    "B8": {
+      "chart": "B",
+      "label": "NEW: there is NO extra bonus for matching everything, no whole line bonus and no whole board bonus",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 767
+    },
+    "B9": {
+      "chart": "B",
+      "label": "NEW: a card matching nothing leaves the mark intact underneath it, unrealized and still matchable later",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 768
+    },
+    "B10": {
+      "chart": "B",
+      "label": "NEW: a mark pays again every time a matching card lands on it, with no once per show limit",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 769
+    },
+    "B11": {
+      "chart": "B",
+      "label": "is this card part of a meld that is scoring?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 770
+    },
+    "B12": {
+      "chart": "B",
+      "label": "NEW: no meld, no bonus - nothing is held back and paid later",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 771
+    },
+    "B13": {
+      "chart": "B",
+      "label": "NEW: RANK match pays FLAT points equal to the printed rank, rounded up, Ace worth 10, a rank with no integer value pays a flat 10",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 772
+    },
+    "B14": {
+      "chart": "B",
+      "label": "NEW: the rank bonus pays once per LINE the card scores in, exactly as its suit effect fires per meld membership",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 773
+    },
+    "B15": {
+      "chart": "B",
+      "label": "NEW: SUIT match fires that card's suit effect - and WITHOUT a suit match it does not fire at all",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 774
+    },
+    "B16": {
+      "chart": "B",
+      "label": "NEW: TALENT match pays a flat MULT and fires the level 2 form of the skill",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 775
+    },
+    "B17": {
+      "chart": "B",
+      "label": "NEW: HAT match pays a flat MULT, the same shape as a talent match",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 776
+    },
+    "B18": {
+      "chart": "B",
+      "label": "NEW: each property's mult is its own tunable, both starting at 1",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 777
+    },
+    "B19": {
+      "chart": "B",
+      "label": "NEW: a match registers NO combo class, so it never touches the combo multiplier",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 778
+    },
+    "B20": {
+      "chart": "B",
+      "label": "NEW: content may loosen the match test through its own hook family, separate from the meld and stack families",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 779
+    },
+    "B21": {
+      "chart": "B",
+      "label": "the numbers compose - chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 780
+    },
+    "C1": {
+      "chart": "C",
+      "label": "SkillLineDetector finds a complete line and calls Game.score_line, which re-evaluates the hand after the spotlight cascade",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 810
+    },
+    "C2": {
+      "chart": "C",
+      "label": "Scoring.ScoreModel: the base meld score",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 811
+    },
+    "C3": {
+      "chart": "C",
+      "label": "OPEN Q118 Q119: the structural multipliers, full flush and copy escalation, sit either in a base stage or in the summed stage",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [
+        "Q118",
+        "Q119"
+      ],
+      "line": 812
+    },
+    "C4": {
+      "chart": "C",
+      "label": "NEW: add every FLAT bonus - the rank match of each matching card in the line",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 813
+    },
+    "C5": {
+      "chart": "C",
+      "label": "NEW: multiply by the SUMMED match mults, talent and hat, applied after every flat bonus",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 814
+    },
+    "C6": {
+      "chart": "C",
+      "label": "NEW: a mark carrying a x2 multiplies the WHOLE line, every single time a line through its cell scores",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 815
+    },
+    "C7": {
+      "chart": "C",
+      "label": "Game.add_line_score then _add_grid_line_score: banks into the grid's row, col, special or cell bucket",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 816
+    },
+    "C8": {
+      "chart": "C",
+      "label": "grid_score stays the PRODUCT of every bucket worth more than zero, unchanged",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 817
+    },
+    "C9": {
+      "chart": "C",
+      "label": "combo is applied at DISPLAY time over the board total, and a match never feeds it",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 818
+    },
+    "C10": {
+      "chart": "C",
+      "label": "NEW: ScoreModel is restructured game wide - every hand in the game composes base then flat then summed mult, not only a matched one",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 819
+    },
+    "C11": {
+      "chart": "C",
+      "label": "NEW: there is no line scored memory, so a complete line re-scores every time anything touches it, and the runaway guard is the only bound",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 820
+    },
+    "C12": {
+      "chart": "C",
+      "label": "a mark's own effect may fire here - chart D",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 821
+    },
+    "D1": {
+      "chart": "D",
+      "label": "NEW: a mark's behaviour is the COPIED CARD'S OWN skill and stamp, re-read in mark mode - the plan's behaviour is your deck's behaviour",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 839
+    },
+    "D2": {
+      "chart": "D",
+      "label": "a card lands on a marked cell",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 840
+    },
+    "D3": {
+      "chart": "D",
+      "label": "NEW: on_mark_hit fires when the landing card MATCHES",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 841
+    },
+    "D4": {
+      "chart": "D",
+      "label": "NEW: a sibling hook fires for ANY cover, matching or not, so a x2 mark multiplies whatever is put on it",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 842
+    },
+    "D5": {
+      "chart": "D",
+      "label": "NEW: on_mark_hit dispatches to BOTH the mark's modifiers and the PLACED card's, so an effect can require its own mark",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 843
+    },
+    "D6": {
+      "chart": "D",
+      "label": "NEW: exactly TWO levels ever - normal, and the realized form",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 844
+    },
+    "D7": {
+      "chart": "D",
+      "label": "NEW: the effect keeps firing for as long as a card sits on the mark, every time a line through the cell scores",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 845
+    },
+    "D8": {
+      "chart": "D",
+      "label": "NEW: a mark firing IS a combo class, like any other content effect",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 846
+    },
+    "D9": {
+      "chart": "D",
+      "label": "NEW: a mark firing counts as processing, advancing the compression ramp and charging the runaway cap when it repeats",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 847
+    },
+    "D10": {
+      "chart": "D",
+      "label": "NEW: a level or blind may grant marks of cards that are not in the deck",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 848
+    },
+    "D11": {
+      "chart": "D",
+      "label": "NEW: effects may reroll one cell, swap two marks, or re-deal a line",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 849
+    },
+    "D12": {
+      "chart": "D",
+      "label": "NEW: a mark NEVER spawns suit props of its own accord",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 850
+    },
+    "D13": {
+      "chart": "D",
+      "label": "the numbers this produces - chart C",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 851
+    },
+    "E1": {
+      "chart": "E",
+      "label": "NEW: a mark IS the cell's existing zone card wearing a face - stage stays ZONE, no new container anywhere",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 871
+    },
+    "E2": {
+      "chart": "E",
+      "label": "NEW: a mark is NEVER spotlit, whatever is or is not on top of it, so its copied modifiers answer only the mark hooks",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 872
+    },
+    "E3": {
+      "chart": "E",
+      "label": "NEW: a mark blocks nothing - it is transparent to the spotlight rule entirely",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 873
+    },
+    "E4": {
+      "chart": "E",
+      "label": "NEW: a mark is never in a scoring section, so the scoring beam never reaches it",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 874
+    },
+    "E5": {
+      "chart": "E",
+      "label": "NEW: a mark completes no line and scores nothing - a board of nothing but marks is worth zero",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 875
+    },
+    "E6": {
+      "chart": "E",
+      "label": "NEW invariant in GameData.validate: every marked cell's zone card prints a rank or a suit, and no cell holds a mark of a card outside the deck",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 876
+    },
+    "E7": {
+      "chart": "E",
+      "label": "undo restores the mark AND un-banks what the match paid, because place_card_in_grid snapshots after the scores it caused",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 877
+    },
+    "E8": {
+      "chart": "E",
+      "label": "the Entrance carries no marks - it stays a staging row",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 878
+    },
+    "E9": {
+      "chart": "E",
+      "label": "RETIRED: a talented card suppressing its own suit effect. A suit effect now fires exactly when its suit mark is matched, talent or no talent",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 879
+    },
+    "E10": {
+      "chart": "E",
+      "label": "RETIRED: rank and suit contributing nothing to a meld's score. Rank now pays flat on a match",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 880
+    },
+    "E11": {
+      "chart": "E",
+      "label": "walks that already cover cell_types get marks for free: all_card_datas, get_card_collections, duplicate_state, pack_scores, LeakSentinel",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 881
+    },
+    "F1": {
+      "chart": "F",
+      "label": "NEW: an empty cell draws its mark at FULL CARD SIZE inside the existing empty cell frame, faded and grey like a ghostly outline, and it need not sit exactly in the palette",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 898
+    },
+    "F2": {
+      "chart": "F",
+      "label": "NEW: all four printed properties are drawn, rank suit talent hat",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 899
+    },
+    "F3": {
+      "chart": "F",
+      "label": "is the cell covered?",
+      "shape": "decision",
+      "new": false,
+      "decidedBy": [],
+      "line": 900
+    },
+    "F4": {
+      "chart": "F",
+      "label": "NEW: the mark is available on INSPECTION of the cell",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 901
+    },
+    "F5": {
+      "chart": "F",
+      "label": "NEW: the LAYER VIEW - a two state toggle, the played board or the marks, with no notion of stack depth",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 902
+    },
+    "F6": {
+      "chart": "F",
+      "label": "NEW: the layer view is a VIEWER - input is locked to looking and leaving it returns to play",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 903
+    },
+    "F7": {
+      "chart": "F",
+      "label": "NEW: it works both on a focused grid and in the zoomed out overview",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 904
+    },
+    "F8": {
+      "chart": "F",
+      "label": "NEW: opened by a held shoulder button AND by a HUD control that mouse, keyboard and controller all reach",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 905
+    },
+    "F9": {
+      "chart": "F",
+      "label": "NEW: holding a card highlights every cell it would match",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 906
+    },
+    "F10": {
+      "chart": "F",
+      "label": "NEW: the highlight rides the outline each element of a card ALREADY has - selection takes that outline over",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 907
+    },
+    "F11": {
+      "chart": "F",
+      "label": "NEW: each matching ELEMENT lights its own outline, so how much matches is read off which parts are lit",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 908
+    },
+    "F12": {
+      "chart": "F",
+      "label": "NEW: on landing, the realized art takes a special outline and the pips swap to an activated outline - no popup, no card level alert",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 909
+    },
+    "F13": {
+      "chart": "F",
+      "label": "NEW: a card that matches nothing says NOTHING - silence is the feedback",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 910
+    },
+    "F14": {
+      "chart": "F",
+      "label": "NEW: no HUD progress count, no destination shown on an Entrance card, and the deck viewer is unchanged",
+      "shape": "box",
+      "new": true,
+      "decidedBy": [],
+      "line": 911
+    },
+    "F15": {
+      "chart": "F",
+      "label": "colour alone is acceptable for these states",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 912
+    },
+    "F16": {
+      "chart": "F",
+      "label": "no tutorial - placing a card and seeing what it pays is the whole lesson",
+      "shape": "box",
+      "new": false,
+      "decidedBy": [],
+      "line": 913
+    }
+  },
+  "edges": [
+    {
+      "key": "A1->A2",
+      "from": "A1",
+      "to": "A2",
+      "label": "",
+      "chart": "A",
+      "line": 736
+    },
+    {
+      "key": "A2->A3",
+      "from": "A2",
+      "to": "A3",
+      "label": "",
+      "chart": "A",
+      "line": 737
+    },
+    {
+      "key": "A3->A4",
+      "from": "A3",
+      "to": "A4",
+      "label": "",
+      "chart": "A",
+      "line": 738
+    },
+    {
+      "key": "A4->A5",
+      "from": "A4",
+      "to": "A5",
+      "label": "",
+      "chart": "A",
+      "line": 739
+    },
+    {
+      "key": "A5->A6",
+      "from": "A5",
+      "to": "A6",
+      "label": "",
+      "chart": "A",
+      "line": 740
+    },
+    {
+      "key": "A6->A7",
+      "from": "A6",
+      "to": "A7",
+      "label": "yes",
+      "chart": "A",
+      "line": 741
+    },
+    {
+      "key": "A6->A8",
+      "from": "A6",
+      "to": "A8",
+      "label": "no",
+      "chart": "A",
+      "line": 742
+    },
+    {
+      "key": "A7->A10",
+      "from": "A7",
+      "to": "A10",
+      "label": "",
+      "chart": "A",
+      "line": 743
+    },
+    {
+      "key": "A8->A9",
+      "from": "A8",
+      "to": "A9",
+      "label": "",
+      "chart": "A",
+      "line": 744
+    },
+    {
+      "key": "A9->A10",
+      "from": "A9",
+      "to": "A10",
+      "label": "",
+      "chart": "A",
+      "line": 745
+    },
+    {
+      "key": "A10->A11",
+      "from": "A10",
+      "to": "A11",
+      "label": "",
+      "chart": "A",
+      "line": 746
+    },
+    {
+      "key": "A11->A12",
+      "from": "A11",
+      "to": "A12",
+      "label": "",
+      "chart": "A",
+      "line": 747
+    },
+    {
+      "key": "A12->A13",
+      "from": "A12",
+      "to": "A13",
+      "label": "",
+      "chart": "A",
+      "line": 748
+    },
+    {
+      "key": "A13->A18",
+      "from": "A13",
+      "to": "A18",
+      "label": "",
+      "chart": "A",
+      "line": 749
+    },
+    {
+      "key": "A3->A14",
+      "from": "A3",
+      "to": "A14",
+      "label": "",
+      "chart": "A",
+      "line": 750
+    },
+    {
+      "key": "A14->A15",
+      "from": "A14",
+      "to": "A15",
+      "label": "",
+      "chart": "A",
+      "line": 751
+    },
+    {
+      "key": "A15->A16",
+      "from": "A15",
+      "to": "A16",
+      "label": "",
+      "chart": "A",
+      "line": 752
+    },
+    {
+      "key": "A16->A17",
+      "from": "A16",
+      "to": "A17",
+      "label": "",
+      "chart": "A",
+      "line": 753
+    },
+    {
+      "key": "B1->B2",
+      "from": "B1",
+      "to": "B2",
+      "label": "",
+      "chart": "B",
+      "line": 781
+    },
+    {
+      "key": "B2->B3",
+      "from": "B2",
+      "to": "B3",
+      "label": "",
+      "chart": "B",
+      "line": 782
+    },
+    {
+      "key": "B3->B4",
+      "from": "B3",
+      "to": "B4",
+      "label": "",
+      "chart": "B",
+      "line": 783
+    },
+    {
+      "key": "B4->B5",
+      "from": "B4",
+      "to": "B5",
+      "label": "",
+      "chart": "B",
+      "line": 784
+    },
+    {
+      "key": "B5->B6",
+      "from": "B5",
+      "to": "B6",
+      "label": "",
+      "chart": "B",
+      "line": 785
+    },
+    {
+      "key": "B6->B7",
+      "from": "B6",
+      "to": "B7",
+      "label": "",
+      "chart": "B",
+      "line": 786
+    },
+    {
+      "key": "B7->B8",
+      "from": "B7",
+      "to": "B8",
+      "label": "",
+      "chart": "B",
+      "line": 787
+    },
+    {
+      "key": "B5->B9",
+      "from": "B5",
+      "to": "B9",
+      "label": "none",
+      "chart": "B",
+      "line": 788
+    },
+    {
+      "key": "B5->B10",
+      "from": "B5",
+      "to": "B10",
+      "label": "some",
+      "chart": "B",
+      "line": 789
+    },
+    {
+      "key": "B10->B11",
+      "from": "B10",
+      "to": "B11",
+      "label": "",
+      "chart": "B",
+      "line": 790
+    },
+    {
+      "key": "B11->B12",
+      "from": "B11",
+      "to": "B12",
+      "label": "no",
+      "chart": "B",
+      "line": 791
+    },
+    {
+      "key": "B11->B13",
+      "from": "B11",
+      "to": "B13",
+      "label": "yes",
+      "chart": "B",
+      "line": 792
+    },
+    {
+      "key": "B13->B14",
+      "from": "B13",
+      "to": "B14",
+      "label": "",
+      "chart": "B",
+      "line": 793
+    },
+    {
+      "key": "B14->B15",
+      "from": "B14",
+      "to": "B15",
+      "label": "",
+      "chart": "B",
+      "line": 794
+    },
+    {
+      "key": "B15->B16",
+      "from": "B15",
+      "to": "B16",
+      "label": "",
+      "chart": "B",
+      "line": 795
+    },
+    {
+      "key": "B16->B17",
+      "from": "B16",
+      "to": "B17",
+      "label": "",
+      "chart": "B",
+      "line": 796
+    },
+    {
+      "key": "B17->B18",
+      "from": "B17",
+      "to": "B18",
+      "label": "",
+      "chart": "B",
+      "line": 797
+    },
+    {
+      "key": "B18->B19",
+      "from": "B18",
+      "to": "B19",
+      "label": "",
+      "chart": "B",
+      "line": 798
+    },
+    {
+      "key": "B19->B21",
+      "from": "B19",
+      "to": "B21",
+      "label": "",
+      "chart": "B",
+      "line": 799
+    },
+    {
+      "key": "B6->B20",
+      "from": "B6",
+      "to": "B20",
+      "label": "",
+      "chart": "B",
+      "line": 800
+    },
+    {
+      "key": "C1->C2",
+      "from": "C1",
+      "to": "C2",
+      "label": "",
+      "chart": "C",
+      "line": 822
+    },
+    {
+      "key": "C2->C3",
+      "from": "C2",
+      "to": "C3",
+      "label": "",
+      "chart": "C",
+      "line": 823
+    },
+    {
+      "key": "C3->C4",
+      "from": "C3",
+      "to": "C4",
+      "label": "",
+      "chart": "C",
+      "line": 824
+    },
+    {
+      "key": "C4->C5",
+      "from": "C4",
+      "to": "C5",
+      "label": "",
+      "chart": "C",
+      "line": 825
+    },
+    {
+      "key": "C5->C6",
+      "from": "C5",
+      "to": "C6",
+      "label": "",
+      "chart": "C",
+      "line": 826
+    },
+    {
+      "key": "C6->C7",
+      "from": "C6",
+      "to": "C7",
+      "label": "",
+      "chart": "C",
+      "line": 827
+    },
+    {
+      "key": "C7->C8",
+      "from": "C7",
+      "to": "C8",
+      "label": "",
+      "chart": "C",
+      "line": 828
+    },
+    {
+      "key": "C8->C9",
+      "from": "C8",
+      "to": "C9",
+      "label": "",
+      "chart": "C",
+      "line": 829
+    },
+    {
+      "key": "C2->C10",
+      "from": "C2",
+      "to": "C10",
+      "label": "",
+      "chart": "C",
+      "line": 830
+    },
+    {
+      "key": "C6->C11",
+      "from": "C6",
+      "to": "C11",
+      "label": "",
+      "chart": "C",
+      "line": 831
+    },
+    {
+      "key": "C11->C12",
+      "from": "C11",
+      "to": "C12",
+      "label": "",
+      "chart": "C",
+      "line": 832
+    },
+    {
+      "key": "D1->D2",
+      "from": "D1",
+      "to": "D2",
+      "label": "",
+      "chart": "D",
+      "line": 852
+    },
+    {
+      "key": "D2->D3",
+      "from": "D2",
+      "to": "D3",
+      "label": "matches",
+      "chart": "D",
+      "line": 853
+    },
+    {
+      "key": "D2->D4",
+      "from": "D2",
+      "to": "D4",
+      "label": "does not match",
+      "chart": "D",
+      "line": 854
+    },
+    {
+      "key": "D3->D5",
+      "from": "D3",
+      "to": "D5",
+      "label": "",
+      "chart": "D",
+      "line": 855
+    },
+    {
+      "key": "D5->D6",
+      "from": "D5",
+      "to": "D6",
+      "label": "",
+      "chart": "D",
+      "line": 856
+    },
+    {
+      "key": "D4->D7",
+      "from": "D4",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 857
+    },
+    {
+      "key": "D6->D7",
+      "from": "D6",
+      "to": "D7",
+      "label": "",
+      "chart": "D",
+      "line": 858
+    },
+    {
+      "key": "D7->D8",
+      "from": "D7",
+      "to": "D8",
+      "label": "",
+      "chart": "D",
+      "line": 859
+    },
+    {
+      "key": "D8->D9",
+      "from": "D8",
+      "to": "D9",
+      "label": "",
+      "chart": "D",
+      "line": 860
+    },
+    {
+      "key": "D9->D13",
+      "from": "D9",
+      "to": "D13",
+      "label": "",
+      "chart": "D",
+      "line": 861
+    },
+    {
+      "key": "D1->D10",
+      "from": "D1",
+      "to": "D10",
+      "label": "",
+      "chart": "D",
+      "line": 862
+    },
+    {
+      "key": "D10->D11",
+      "from": "D10",
+      "to": "D11",
+      "label": "",
+      "chart": "D",
+      "line": 863
+    },
+    {
+      "key": "D11->D12",
+      "from": "D11",
+      "to": "D12",
+      "label": "",
+      "chart": "D",
+      "line": 864
+    },
+    {
+      "key": "E1->E2",
+      "from": "E1",
+      "to": "E2",
+      "label": "",
+      "chart": "E",
+      "line": 882
+    },
+    {
+      "key": "E2->E3",
+      "from": "E2",
+      "to": "E3",
+      "label": "",
+      "chart": "E",
+      "line": 883
+    },
+    {
+      "key": "E3->E4",
+      "from": "E3",
+      "to": "E4",
+      "label": "",
+      "chart": "E",
+      "line": 884
+    },
+    {
+      "key": "E4->E5",
+      "from": "E4",
+      "to": "E5",
+      "label": "",
+      "chart": "E",
+      "line": 885
+    },
+    {
+      "key": "E1->E6",
+      "from": "E1",
+      "to": "E6",
+      "label": "",
+      "chart": "E",
+      "line": 886
+    },
+    {
+      "key": "E6->E7",
+      "from": "E6",
+      "to": "E7",
+      "label": "",
+      "chart": "E",
+      "line": 887
+    },
+    {
+      "key": "E7->E8",
+      "from": "E7",
+      "to": "E8",
+      "label": "",
+      "chart": "E",
+      "line": 888
+    },
+    {
+      "key": "E1->E11",
+      "from": "E1",
+      "to": "E11",
+      "label": "",
+      "chart": "E",
+      "line": 889
+    },
+    {
+      "key": "E5->E9",
+      "from": "E5",
+      "to": "E9",
+      "label": "",
+      "chart": "E",
+      "line": 890
+    },
+    {
+      "key": "E9->E10",
+      "from": "E9",
+      "to": "E10",
+      "label": "",
+      "chart": "E",
+      "line": 891
+    },
+    {
+      "key": "F1->F2",
+      "from": "F1",
+      "to": "F2",
+      "label": "",
+      "chart": "F",
+      "line": 914
+    },
+    {
+      "key": "F2->F3",
+      "from": "F2",
+      "to": "F3",
+      "label": "",
+      "chart": "F",
+      "line": 915
+    },
+    {
+      "key": "F3->F4",
+      "from": "F3",
+      "to": "F4",
+      "label": "yes",
+      "chart": "F",
+      "line": 916
+    },
+    {
+      "key": "F4->F5",
+      "from": "F4",
+      "to": "F5",
+      "label": "",
+      "chart": "F",
+      "line": 917
+    },
+    {
+      "key": "F5->F6",
+      "from": "F5",
+      "to": "F6",
+      "label": "",
+      "chart": "F",
+      "line": 918
+    },
+    {
+      "key": "F6->F7",
+      "from": "F6",
+      "to": "F7",
+      "label": "",
+      "chart": "F",
+      "line": 919
+    },
+    {
+      "key": "F7->F8",
+      "from": "F7",
+      "to": "F8",
+      "label": "",
+      "chart": "F",
+      "line": 920
+    },
+    {
+      "key": "F3->F9",
+      "from": "F3",
+      "to": "F9",
+      "label": "no",
+      "chart": "F",
+      "line": 921
+    },
+    {
+      "key": "F9->F10",
+      "from": "F9",
+      "to": "F10",
+      "label": "",
+      "chart": "F",
+      "line": 922
+    },
+    {
+      "key": "F10->F11",
+      "from": "F10",
+      "to": "F11",
+      "label": "",
+      "chart": "F",
+      "line": 923
+    },
+    {
+      "key": "F11->F12",
+      "from": "F11",
+      "to": "F12",
+      "label": "",
+      "chart": "F",
+      "line": 924
+    },
+    {
+      "key": "F12->F13",
+      "from": "F12",
+      "to": "F13",
+      "label": "",
+      "chart": "F",
+      "line": 925
+    },
+    {
+      "key": "F13->F14",
+      "from": "F13",
+      "to": "F14",
+      "label": "",
+      "chart": "F",
+      "line": 926
+    },
+    {
+      "key": "F14->F15",
+      "from": "F14",
+      "to": "F15",
+      "label": "",
+      "chart": "F",
+      "line": 927
+    },
+    {
+      "key": "F15->F16",
+      "from": "F15",
+      "to": "F16",
+      "label": "",
+      "chart": "F",
+      "line": 928
+    }
+  ],
+  "links": [
+    {
+      "key": "A18~>F",
+      "from": "A18",
+      "fromChart": "A",
+      "toChart": "F",
+      "ref": "F",
+      "line": 735
+    },
+    {
+      "key": "B21~>C",
+      "from": "B21",
+      "fromChart": "B",
+      "toChart": "C",
+      "ref": "C",
+      "line": 780
+    },
+    {
+      "key": "C12~>D",
+      "from": "C12",
+      "fromChart": "C",
+      "toChart": "D",
+      "ref": "D",
+      "line": 821
+    },
+    {
+      "key": "D13~>C",
+      "from": "D13",
+      "fromChart": "D",
+      "toChart": "C",
+      "ref": "C",
+      "line": 851
+    }
+  ]
+}

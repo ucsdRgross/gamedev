@@ -40,13 +40,13 @@ ROWS = [
 ("G0228","Everything Face Up","M1","rule","Nothing is hidden; the difficulty is the puzzle.",
  "Rule: the whole deck is visible from the start, so the show is pure planning with no unknowns",
  "Rule: the whole deck is visible but its order is not, so you know what is coming but not when",
- "Rule: the whole deck is visible for the first act only, then hidden again",
+ "Rule: the whole deck is visible for the show's first placement only, then hidden again",
  "c"),
 
 ("G0229","The Redeal","F8","rule","Gather what is left and lay it out again.",
  "Rule: when no legal move remains, you may gather the unplayed cards, shuffle and lay them out again, a limited number of times",
  "Rule: when no legal move remains you may redeal without shuffling, preserving the order",
- "Rule: you may redeal at any time, not only when stuck, but each redeal costs an act",
+ "Rule: you may redeal at any time, not only when stuck, but each redeal costs an Entrance card, discarded",
  "c"),
 
 # --- mahjong ------------------------------------------------------------------

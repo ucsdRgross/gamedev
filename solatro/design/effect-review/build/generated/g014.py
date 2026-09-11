@@ -12,9 +12,9 @@ ROWS = [
  "Rule: a card may only be placed adjacent to one already down, and cells it closes off are scored as if empty at show end",
  "a"),
 ("G0238","The Dead End","X4","rule","Cutting the board off has a cost.",
- "Rule: any cell made unreachable by your own placements is destroyed and counts against the show",
- "Rule: any cell made unreachable is destroyed, but pays a small consolation",
- "Rule: any cell made unreachable is sealed rather than destroyed, and sealing enough cells triggers a bonus",
+ "Rule: any empty cell that no Entrance card can legally be placed in when the Entrance refills is destroyed and counts against the show",
+ "Rule: any empty cell no Entrance card can legally reach at a refill is destroyed, but pays a small consolation",
+ "Rule: any empty cell no Entrance card can legally reach at a refill is sealed rather than destroyed, and sealing enough cells triggers a bonus",
  "a"),
 
 # --- Inscryption --------------------------------------------------------------
@@ -32,7 +32,7 @@ ROWS = [
 # --- Loop Hero ----------------------------------------------------------------
 ("G0241","Place Your Own Threats","R2","rule","The hazards are cards you chose to put down.",
  "Rule: you place the hazard cards yourself; each one raises the show's difficulty and its reward together",
- "Rule: you place hazard cards yourself, and may remove one per act at a cost",
+ "Rule: you place hazard cards yourself, and may remove one per Entrance refill at a cost",
  "Rule: you place hazard cards yourself, and adjacent hazards combine into worse ones that pay more",
  "c"),
 ("G0242","Terrain Combinations","C10","rule","Two placed hazards make a third thing.",
@@ -43,14 +43,14 @@ ROWS = [
 
 # --- Monster Train ------------------------------------------------------------
 ("G0243","The Floors","C6","rule","The grid is stacked into levels that resolve in order.",
- "Rule: a grid is divided into floors that resolve bottom to top, and a threat that survives one floor rises to the next",
- "Rule: a grid is divided into floors that resolve bottom to top, and a threat stopped on a floor is destroyed there",
- "Rule: a grid is divided into floors, and you choose the order they resolve in each act",
+ "Rule: a grid's stack heights act as floors that resolve bottom to top, and a threat that survives one floor rises to the next",
+ "Rule: a grid's stack heights act as floors that resolve bottom to top, and a threat stopped on a floor is destroyed there",
+ "Rule: a grid's stack heights act as floors, and you choose the order they resolve in each show",
  "a"),
 ("G0244","The Last Line","U2","rule","One cell must never be reached.",
  "Alternate loss: a named cell must never be occupied by a hazard; if it is, the show ends immediately",
- "Alternate loss: a named cell must never be occupied by a hazard, and defending it successfully pays a bonus each act",
- "Alternate loss: a named cell must never be reached, and its location moves each act",
+ "Alternate loss: a named cell must never be occupied by a hazard, and defending it successfully pays a bonus each placement",
+ "Alternate loss: a named cell must never be reached, and its location moves each placement",
  "b"),
 
 # --- Baba Is You --------------------------------------------------------------
@@ -69,7 +69,7 @@ ROWS = [
 ("G0247","The Shadow","D6","rule","Tall cards suppress what stands behind them.",
  "Rule: a card casts a shadow across cells behind it proportional to its height, and shadowed cards score nothing",
  "Rule: a card casts a shadow proportional to its height, and shadowed cards score half",
- "Rule: a card casts a shadow proportional to its height, and the direction the shadow falls rotates each act",
+ "Rule: a card casts a shadow proportional to its height, and the direction the shadow falls rotates each placement",
  "c"),
 
 # --- 2048 / Threes ------------------------------------------------------------

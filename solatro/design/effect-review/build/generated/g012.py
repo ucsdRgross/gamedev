@@ -52,7 +52,7 @@ ROWS = [
 ("G0218","Front And Back","C13","rule","The row a card sits in decides what it does.",
  "Rule: cards in the grid's front rows take hazards first and cards in the back rows score more, so placement is a risk trade",
  "Rule: cards in the front rows take hazards first; back rows are otherwise identical",
- "Rule: front rows take hazards first and score less; the boundary between front and back moves each act",
+ "Rule: front rows take hazards first and score less; the boundary between front and back moves each placement",
  "a"),
 
 # --- Super Auto Pets ---------------------------------------------------------

@@ -13,9 +13,9 @@ ROWS = [
 ("G0411","The Emit Order","Q1","suit","The last prop out is the heaviest.",
  "In a volley from this suit, each prop is a step stronger than the one before it",
  "In a volley from this suit, the first prop is the strongest and each after it is weaker",
- "In a volley from this suit every prop is equal, but the volley is one larger for each earlier volley this act",
+ "In a volley from this suit every prop is equal, but the volley is one larger for each earlier volley this placement",
  "a"),
-("G0412","The Staggered Train","Q1","stamp","A volley strung out over the act.",
+("G0412","The Staggered Train","Q1","stamp","A volley strung out over the placement.",
  "Props this card spawns emit one per tick rather than all at once, so the volley trails across the board",
  "Props this card spawns emit one per tick, and each one that is still travelling when the next emits adds one to the combo",
  "Props this card spawns emit all at once, but each is held back a tick longer than the last before it starts moving",
@@ -36,7 +36,7 @@ ROWS = [
 # --- Q3 prop-on-card -------------------------------------------------------------
 ("G0415","The Juggling Ball","Q3","suit","A prop that leaves the card unsettled.",
  "A prop from this suit applies Juggling to every card it crosses; a juggling card scores twice but may be knocked off its cell",
- "A prop from this suit applies Juggling to the first card it crosses only, and that card scores twice for the act",
+ "A prop from this suit applies Juggling to the first card it crosses only, and that card scores twice for the placement",
  "A prop from this suit applies Juggling to every card it crosses, and each juggling card adds one to the combo",
  "c"),
 ("G0416","The Hoop Encore","Q3","stamp","A prop that makes talents fire again.",
@@ -78,17 +78,17 @@ ROWS = [
  "Rule: a prop keeps travelling after its spawner leaves, but at half strength",
  "Rule: a prop whose spawner leaves the board finishes its current path and then stops where it is, becoming a fixed hazard",
  "a"),
-("G0423","The Prop Between Acts","Q5","rule","The board is not cleared of props at act end.",
- "Rule: props still travelling at act end carry into the next act with their paths intact",
- "Rule: props still travelling at act end are frozen where they are and resume at the start of the next act",
- "Rule: props still travelling at act end are cashed in for flat score equal to the path they had left",
+("G0423","The Prop Between Acts","Q5","rule","The board is not cleared of props when a placement finishes resolving.",
+ "Rule: props still travelling when a placement finishes resolving carry into the next placement with their paths intact",
+ "Rule: props still travelling when a placement finishes resolving are frozen where they are and resume at the start of the next placement",
+ "Rule: props still travelling when a placement finishes resolving are cashed in for flat score equal to the path they had left",
  "b"),
 
 # --- Q6 redirection --------------------------------------------------------------
 ("G0424","The Dodge","Q6","stamp","A card the prop passes over without touching.",
- "This card negates the effect of the first prop to cross it each act, and the prop continues on",
+ "This card negates the effect of the first prop to cross it each placement, and the prop continues on",
  "This card negates the effect of every prop that crosses it, and scores a step for each one dodged",
- "This card negates the first prop each act and steals its effect, firing it on a card of your choice",
+ "This card negates the first prop each placement and steals its effect, firing it on a card of your choice",
  "b"),
 ("G0425","The Magnet","Q6","skill","Props bend toward it.",
  "Every prop on this grid alters its path to pass through this card at some point",
@@ -109,7 +109,7 @@ ROWS = [
  "b"),
 ("G0428","The Ferry","Q7","suit","A card that carries props over the gap.",
  "A prop that finishes on a card of this suit is relaunched from the same coordinate in the neighbouring grid",
- "A prop that finishes on a card of this suit is relaunched from the neighbouring grid at full strength, once per act",
+ "A prop that finishes on a card of this suit is relaunched from the neighbouring grid at full strength, once per Entrance refill",
  "A prop that finishes on a card of this suit is relaunched from the grid holding the fewest cards",
  "a"),
 
@@ -209,9 +209,9 @@ ROWS = [
 
 # --- T1 carry score forward ------------------------------------------------------
 ("G0445","The Banked Act","T1","consumable","Set score aside instead of taking it.",
- "Consumable: bank one act payout instead of scoring it; it pays out in the next show at one and a half times",
- "Consumable: bank one act payout; it pays out whenever you choose, growing a step each show it waits",
- "Consumable: bank one act payout; it pays out at run end at triple, and is lost if the run ends badly",
+ "Consumable: bank one placement payout instead of scoring it; it pays out in the next show at one and a half times",
+ "Consumable: bank one placement payout; it pays out whenever you choose, growing a step each show it waits",
+ "Consumable: bank one placement payout; it pays out at run end at triple, and is lost if the run ends badly",
  "b"),
 ("G0446","The Open Ledger","T1","stamp","One line that never resets.",
  "The line this card sits in keeps its running total between shows rather than resetting",
@@ -223,7 +223,7 @@ ROWS = [
 ("G0447","The Press Book","T2","skill","A card that keeps a record of the run.",
  "This card records each distinct hand type scored anywhere this run, and scores a step per record",
  "This card records each distinct hand type scored this run, and once it holds five it may spend them all for one enormous payout",
- "This card records the single best act of the run and re-fires that act's highest-scoring effect once per show",
+ "This card records the single best act of the run and re-fires that placement's highest-scoring effect once per show",
  "b"),
 
 # --- T3 unlocks as effects -------------------------------------------------------
@@ -270,9 +270,9 @@ ROWS = [
  "c"),
 
 # --- O3 scoring defaults ---------------------------------------------------------
-("G0455","The Best Hand Only","O3","rule","One hand per act, not twelve.",
- "Rule: only the single highest-scoring line each act pays; the rest complete and clear without scoring",
- "Rule: only the highest-scoring line each act pays, at five times its normal rate",
+("G0455","The Best Hand Only","O3","rule","One hand per placement, not twelve.",
+ "Rule: only the single highest-scoring line each placement pays; the others complete without scoring",
+ "Rule: only the highest-scoring line each placement pays, at five times its normal rate",
  "Rule: only the highest-scoring line pays, and every other completed line adds one to the combo instead",
  "c"),
 ("G0456","The Simultaneous Resolution","O3","rule","Lines that complete together are one hand.",
@@ -281,9 +281,9 @@ ROWS = [
  "Rule: lines completed by the same placement resolve separately, and each one after the first pays an extra step",
  "b"),
 ("G0457","The Deferred Line","O3","rule","Lines wait for the curtain.",
- "Rule: a completed line does not score immediately; it holds and pays at act end, so effects can still change it",
- "Rule: a completed line holds and pays at act end, and pays an extra step for every act it was left standing",
- "Rule: a completed line holds until you press Submit, and every held line pays at once",
+ "Rule: a completed line does not score immediately; it holds and pays at the next Entrance refill, so effects can still change it",
+ "Rule: a completed line holds and pays at the next Entrance refill, and pays an extra step for every placement it was left standing",
+ "Rule: a completed line holds until you press End, and every held line pays at once",
  "a"),
 
 # --- O6 rule visibility ----------------------------------------------------------
@@ -303,7 +303,7 @@ ROWS = [
 # --- O8 venue rules --------------------------------------------------------------
 ("G0460","The Town Ordinance","O8","rule","Where you play sets a standing restriction.",
  "Rule: each town imposes one restriction for every show played there, announced before you arrive",
- "Rule: each town imposes one restriction announced only after the first act",
+ "Rule: each town imposes one restriction announced only after the show's first placement",
  "Rule: each town offers a choice of two restrictions, the harder one paying more",
  "c"),
 ]

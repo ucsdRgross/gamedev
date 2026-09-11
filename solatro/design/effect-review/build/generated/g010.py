@@ -31,7 +31,7 @@ ROWS = [
 # --- Luck be a Landlord: symbol-to-symbol synergy ----------------------------
 ("G0183","The Consumer","P3","skill","Eats a specific neighbour and grows on it.",
  "Consumes an adjacent card of one named class permanently, gaining its rank",
- "Consumes an adjacent card of one named class each act, gaining its rank each time",
+ "Consumes an adjacent card of one named class each placement, gaining its rank each time",
  "Consumes an adjacent card of a class that changes each show, gaining double its rank",
  "b"),
 ("G0184","The Ripening","G9","skill","Turns into something else over time.",
@@ -80,7 +80,7 @@ ROWS = [
  "c"),
 ("G0192","The Hopper","Q5","skill","A cell that banks the props fed to it.",
  "Props that reach this card are stored rather than resolved; the store pays out when the card scores",
- "Props that reach this card are stored and pay out at the end of each act",
+ "Props that reach this card are stored and pay out at the end of each placement",
  "Props stored here pay out when the card scores, and the payout grows with how many kinds it has collected",
  "c"),
 ("G0193","The Cloverleaf","P7","rule","Four of a kind together upgrade each other.",

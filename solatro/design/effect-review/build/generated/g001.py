@@ -6,7 +6,7 @@ ROWS = [
 
 # --- C1 which lines score ----------------------------------------------------
 ("G0001","The Long Diagonal","C1","rule","Turns a diagonal into a scoring line.",
- "The two long diagonals of each grid score as lines, alongside the rows and columns",
+ "The two long diagonals score as lines, alongside the rows and columns, which is already the default - this option keeps it",
  "The two long diagonals score, and any card sitting on both of them counts twice",
  "Every diagonal of four cards or more scores, not only the two long ones",
  "a"),
@@ -18,14 +18,14 @@ ROWS = [
 ("G0003","Line Ledger","C1","rule","Turns line types on and off.",
  "At show start, choose two of rows, columns, diagonals and height columns; only those score",
  "At show start, one line type is disabled at random and everything else scores double",
- "Each act, one line type is enabled that was not before, so the board opens up over the show",
+ "Each placement, one line type is enabled that was not before, so the board opens up over the show",
  "c"),
 
 # --- C3 re-score on disturbance ---------------------------------------------
 ("G0004","The Reprise","C3","skill","Re-fires a line by disturbing it.",
  "Cue: lift and replace one card in a completed line to score that line again",
  "Cue: lift and replace one card to re-score its line, at half value each subsequent time",
- "Any card removed and replaced re-scores its line, with no cue needed and no limit",
+ "Any card removed and replaced re-scores its line, with no cue needed and no limit, which is already the default - this option keeps it",
  "b"),
 ("G0005","Stage Fright","C3","rule","Disturbance costs instead of pays.",
  "Rule: disturbing a completed line re-scores it, but the re-score subtracts rather than adds",
@@ -57,7 +57,7 @@ ROWS = [
 
 # --- D4 compaction ------------------------------------------------------------
 ("G0010","Dead Weight","D4","rule","What happens to the pile above.",
- "Rule: removing a card drops everything above it down one level",
+ "Rule: removing a card drops everything above it down one level, which is what already happens - this option keeps the default",
  "Rule: removing a card leaves a gap in the stack that only another card can fill",
  "Rule: removing a card drops everything above it, and each card that falls scores its rank",
  "c"),
@@ -79,14 +79,14 @@ ROWS = [
  "Rule: there is no height cap, but every level above the fifth costs one patience to place",
  "b"),
 ("G0014","Low Ceiling","D10","rule","A venue that will not take a tall act.",
- "Boss: the height cap is lowered for this show",
- "Boss: the height cap is lowered by one each act",
- "Boss: the height cap is lowered, and any stack already taller is cut down to it",
+ "Boss: stack height is capped for this show, where it is normally unbounded",
+ "Boss: stack height is capped, and the cap falls by one each placement",
+ "Boss: stack height is capped and any stack already taller is cut down to it",
  "b"),
 ("G0015","The Cherry Picker","D10","skill","Raises the ceiling.",
- "Raises the height cap by three while it is on the board",
- "Raises the height cap by one for each level this card itself sits above the floor",
- "Removes the height cap entirely, and scores a bonus per level of the tallest stack",
+ "While on the board, this card exempts its own stack from any height cap a level imposes",
+ "Raises any imposed height cap by one for each level this card sits above the floor",
+ "Removes any imposed height cap, and scores a bonus per level of the tallest stack",
  "c"),
 
 # --- I6 one-shot / exhaust ----------------------------------------------------
@@ -127,7 +127,7 @@ ROWS = [
 ("G0022","The Mentalist","M4","skill","Calls it before it happens.",
  "At show start, name a hand type; scoring it pays a large bonus, and failing to costs nothing",
  "At show start, name a hand type; scoring it pays a large bonus, and failing to costs fame",
- "At show start, name a hand type and an act; scoring it in exactly that act pays an enormous bonus",
+ "At show start, name a hand type and a placement; scoring it in exactly that placement pays an enormous bonus",
  "c"),
 ("G0023","The Sealed Envelope","M4","consumable","A prediction opened later.",
  "Consumable: write down a prediction now, opened at show end; a correct one pays several times over",
@@ -135,9 +135,9 @@ ROWS = [
  "Consumable: write a prediction that is opened three shows later, paying more the longer it waited",
  "c"),
 ("G0024","Second Sight","M4","skill","Predicts the board, not the hand.",
- "At each act's start, name a cell; if a card scores there this act, gain a bonus",
- "At each act's start, name a cell; if a card scores there, gain a bonus, and if none does, lose one",
- "At each act's start, name a cell and a rank; matching both pays enormously and matching one pays a little",
+ "At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus",
+ "At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus, and if none does, lose one",
+ "At each Entrance refill, name a cell and a rank; matching both before the next refill pays enormously and matching one pays a little",
  "c"),
 
 # --- O2 change stacking defaults ---------------------------------------------
@@ -165,7 +165,7 @@ ROWS = [
  "c"),
 ("G0029","The Revised Bill","O3","skill","Swaps the scoring rule mid-show.",
  "Cue: swap the scoring rule for the rest of the show from a slate of three",
- "Cue: swap the scoring rule for one act only, from a slate of three",
+ "Cue: swap the scoring rule for one placement only, from a slate of three",
  "Cue: swap the scoring rule, and every line already scored this show re-scores under the new one",
  "c"),
 ("G0030","Double Billing","O3","rule","Two scoring rules, both paid.",
@@ -194,7 +194,7 @@ ROWS = [
 # --- O8 venue rules -----------------------------------------------------------
 ("G0034","The Standing Contract","O8","rule","The town's rules are cards you can see.",
  "Rule: a town's hazards arrive as visible rule cards you may read before committing to the show",
- "Rule: a town's hazards arrive as face-down rule cards, revealed one per act",
+ "Rule: a town's hazards arrive as face-down rule cards, revealed one per Entrance refill",
  "Rule: a town's hazards arrive as visible rule cards, and you may veto one for a fame cost",
  "c"),
 ("G0035","Rider Clause","O8","skill","Adds your own clause to the venue.",

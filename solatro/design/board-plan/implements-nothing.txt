@@ -1,0 +1,7 @@
+# Answered questions with nothing to build. Triaged, not ignored.
+Q78   # ragged grids stay in TESTS only - TEST_PLAN TP-06/TP-15 carry it; no product step
+Q79   # out of scope: the sidebar design owns the Entrance and runs first (anti-scope list)
+Q80   # out of scope: shop and booster UI
+Q81   # out of scope: a plan-saving card, recorded for later (anti-scope list)
+Q82   # out of scope: nothing is retired for room
+Q77   # out of scope: level-granted hazard boards are a later feature on the same seam

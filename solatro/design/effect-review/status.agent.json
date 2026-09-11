@@ -1,0 +1,6 @@
+{
+  "state": "ready",
+  "mode": "questions",
+  "round": 1,
+  "summary": "Every question has now been re-read against the game as it actually is, not just scanned for retired words. 1454 live questions each carry a verdict with its reason in build/_verdicts.tsv: OK 1332, STALE 98, RESCOPE 15, DUPLICATE 12, ALREADY 10, CONTRADICTS 2 - and each non-OK one was fixed at the source or retired in place. 22 questions are retired in place (their ids cannot move). The biggest correction: 'once per act' had become 'once per placement', 7-13x its written strength, and a scoreless placement is the normal case; both now read per Entrance refill. Your recorded answers: Q0011 and Q0047 are on retired questions; every other lettered answer still means what you chose. Family Y, the board plan's marks, is 66 live effects."
+}
