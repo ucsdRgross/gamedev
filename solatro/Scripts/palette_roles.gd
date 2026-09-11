@@ -1,29 +1,21 @@
 @tool
 class_name PaletteRoles
 extends Resource
-## The RESOURCE OF POINTERS (owner T21): semantic ROLE -> palette index. One named field per thing
-## in the game that has a colour, so reassigning a colour is editing ONE entry in ONE place, and a
-## palette swap is survivable.
-##
-## Roles are named for MEANING (`status_flame`, `suit_hoop`), never for colour (`orange`) — a role
-## called `orange` is a literal wearing a costume, and it is what stops surviving the moment the
-## palette changes.
-##
-## Named @export ints rather than a Dictionary (owner ruling): autocomplete-visible, compile-checked,
-## and inspector-editable. Two @tool conveniences make the ints readable while editing:
-##   * _validate_property() turns each role into a DROPDOWN listing the live palette's entries with
-##     their hex values, so the number is chosen with the colour in view;
-##   * _get_property_list() appends a read-only Color swatch per role.
-## Both read PaletteDB.PALETTE at inspector time, so neither can go stale against the image.
-##
-## Reached through PaletteDB. See ARCHITECTURE_REVIEW §4i; the deferred surfaces (map, UI chrome)
-## are listed in todo.md and warn every test run until their art exists.
+## The RESOURCE OF POINTERS: semantic ROLE -> palette index, one field per coloured thing.
+
+# Roles are named for MEANING (`status_flame`, `suit_hoop`), never for colour (`orange`) — a role
+# called `orange` is a literal wearing a costume, and stops surviving the moment the palette
+# changes.
+
+# Named @export ints rather than a Dictionary (owner ruling): autocomplete-visible, compile-
+# checked, inspector-editable. `_validate_property()` turns each into a dropdown of the live
+# palette's own colours; `_get_property_list()` adds a read-only swatch per role.
+
+# Reached through PaletteDB. The deferred surfaces (map, UI chrome) are listed in todo.md and warn
+# every test run until their art exists.
 
 @export_group("Suits")
-## Rank pip + card art on each suit's cards, via Shaders/outline.gdshader's PALETTE fill mode (which
-## absorbed the old standalone color_picker.gdshader — a Polygon2D has one material, and these two
-## elements need both the recolour and the rim). NOT the suit pip itself:
-## suit_pips.png is authored in the palette and draws its own colours (ARCHITECTURE_REVIEW §4h).
+## Rank pip + card art via the outline shader's PALETTE fill mode (not the suit pip, which is drawn).
 @export_range(0, 255, 1) var suit_hoop : int = 30
 @export_range(0, 255, 1) var suit_knife : int = 11
 @export_range(0, 255, 1) var suit_ball : int = 8
@@ -39,40 +31,31 @@ extends Resource
 ## The juggled ball's specular dot. Its BODY tones are an ordered ramp, not a role — see PaletteRamp.
 @export_range(0, 255, 1) var ball_gloss : int = 31
 
-# ⚠ **`art_outline` AND `alert_glare` LIVED HERE AND WERE MOVED, NOT COPIED**. They are the
-# card outline's ink and its glare band, and keeping them here split ONE effect's tuning across two
-# resources: judging an ink on `tools/outline_atlas.tscn` meant editing a different file from the one
-# holding the rim's width, tempo and buffer. They now live in `OutlineStyle`
-# (`Shaders/Styles/outline_default.tres`) with the rest of that effect.
-#
-# ⚠ **THAT IS NOT A BREACH OF §4i, AND THE PRECEDENT IS `PaletteRamp`.** The rule is *no raw `Color`
-# literals; every colour is a palette POINTER with exactly ONE home* — not *every pointer lives in this
-# file*. `ramp_fire.tres` has always held its own `Array[int]` of indices out here. This file keeps the
-# single semantic colours of THINGS (a suit, a status); an effect's own index set belongs with the
-# effect. They are still indices, so a palette swap still moves them.
-#
-# ⚠ Do not "restore" them here. Two homes for one pointer is worse than either home alone.
+@export_group("UI Chrome")
+## The sidebar container's flat panel background (`HudContainer`).
+@export_range(0, 255, 1) var hud_background : int = 17
 
-## Every role, in inspector order. The one list the previews, the range test and any future iteration
-## read — adding a role means adding its @export above and its name here.
+# `art_outline` and `alert_glare` lived here and were MOVED, not copied, to `OutlineStyle`
+# (`Shaders/Styles/outline_default.tres`) — they are one effect's ink and glare band, and splitting
+# an effect's tuning across two resources is worse than splitting semantic colours across two homes.
+
+# The rule stays *no raw Color literal; every colour is a palette POINTER with exactly one home* —
+# not *every pointer lives in this file*. `ramp_fire.tres` has always kept its own index array
+# alongside this one. Do not "restore" the moved fields here.
+
+## Every role, in inspector order — adding one means adding its @export above and its name here.
 const ROLE_NAMES : Array[StringName] = [
 	&"suit_hoop", &"suit_knife", &"suit_ball", &"suit_fire", &"suit_firework",
 	&"status_flame", &"status_ball",
 	&"ball_gloss",
+	&"hud_background",
 ]
 
-## This role's palette index. Named access (`roles.suit_hoop`) is the normal path; this is for the
-## tests and the previews, which iterate ROLE_NAMES.
+## This role's palette index. `roles.suit_hoop` is the normal path; this is for iterating ROLE_NAMES.
 func index_of(role : StringName) -> int:
 	return get(role)
 
-## This role's colour, resolved against the LIVE palette.
-##
-## ⚠ THERE IS NO `palette` FIELD HERE, and there was one — an `@export` filled in by roles.tres and
-## described as "editor preview only" while being what this function actually read. The preview and the
-## game could therefore disagree, and only a test standing between them said otherwise (see
-## PaletteRamp.colors, which had the same field with no test at all). Reading `PaletteDB.PALETTE`
-## directly makes them the same fact rather than two facts pinned together.
+## This role's colour, resolved against the LIVE palette — never cached, so a swap moves it for free.
 func color_of(role : StringName) -> Color:
 	var pal := PaletteDB.PALETTE
 	if not pal: return Color.MAGENTA
@@ -80,9 +63,7 @@ func color_of(role : StringName) -> Color:
 
 # --- Editor conveniences (all @tool-only; none of this runs in a build) ----------------------------
 
-## Turn every role int into a dropdown of the live palette's entries, so the index is picked with the
-## colour named beside it. Rebuilt from the image each time the inspector asks, so swapping the
-## palette re-labels every role with no code change.
+## Turns each role int into a dropdown of the live palette's own entries, so it is picked by colour.
 func _validate_property(property : Dictionary) -> void:
 	if not Engine.is_editor_hint(): return
 	if property.name not in ROLE_NAMES: return
@@ -95,8 +76,7 @@ func _validate_property(property : Dictionary) -> void:
 	property.hint = PROPERTY_HINT_ENUM
 	property.hint_string = ",".join(parts)
 
-## Append a read-only Color swatch per role, so the chosen entry is visible at a glance rather than
-## only as a number.
+## Appends a read-only Color swatch per role, so the chosen entry is visible without decoding a number.
 func _get_property_list() -> Array[Dictionary]:
 	var out : Array[Dictionary] = []
 	if not Engine.is_editor_hint(): return out

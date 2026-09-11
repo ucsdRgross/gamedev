@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" path="res://UI/description_panel.tscn" id="2_desc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
-bg_color = Color(0.098, 0.098, 0.137, 1)
 
 [node name="HudContainer" type="PanelContainer"]
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")

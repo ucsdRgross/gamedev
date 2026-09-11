@@ -6,6 +6,7 @@ extends PanelContainer
 @onready var _description_panel : DescriptionPanel = %DescriptionPanel
 
 func _ready() -> void:
+	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
 	show_hud()
 
 func show_hud() -> void:
