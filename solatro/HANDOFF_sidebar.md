@@ -2,9 +2,10 @@
 
 **Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
 per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
-**State:** S1 done. S2 split in three dispatches: S2a (palette + pre-change measurements) and S2b
-(controls moved, container mounted) committed and green; S2c (wiring tests, TEST_PLAN 3.4, the
-snapshot) is next. S3's GameView deletions already landed in S2b.
+**State:** S1 and S2 done (S2 took parts a–d). S3 next; its GameView deletions already landed in
+S2b. Single-suite runs: `run_suite_scene.ps1` pattern — launch the NON-console exe, wait for the
+suite banner in test_output_all.log, end `$p.Id` (the console exe is a wrapper; ending it orphans
+the game window).
 **Entry docs:** solatro/design/sidebar/PLAN.md (self-contained), DESIGN.md (authority on behaviour),
 TEST_PLAN.md (every test that must exist), NAMES.md (every identifier), solatro/START_HERE.md
 **IMPLEMENTED-BY:** `plan-implementer` subagent — `sonnet` at `effort: low` (its frontmatter), all
@@ -62,9 +63,9 @@ code. Overseer (opus) writes no source.
   notes: 'container bg is a hardcoded colour (+1 PALETTE placeholder, 23->24) - S2 routes it through the palette'
 - id: S2
   description: move the HUD controls into HudContainer; delete %MultScore (+3 children) and %Preview
-  status: in_progress
-  evidence: 'S2c 3123530c: ALL 46 SUITES 4034 PASSED, TestSidebar 57 checks, red-then-green per test. S2a 2b88ea90: ALL 46 SUITES 3981 PASSED [23 placeholders]; pre-change board_inset_left 394.0, _hud_authored_width 402.0, board centre (scroll_container.position.x + size.x/2) 733.808. S2b 07aa305f: ALL 46 SUITES 3979 PASSED [22 placeholders], godot.log 0 SCRIPT ERROR'
-  notes: 'S2d pending - the by-eye gate FAILED: Goal/Total caption and value labels overlap ("GOoal:", "T0otal:"), Combo not visible, the number rows sit under the overlay Back/Forward/Wall buttons. S2d fixes the GameHud layout and builds Tests/Visual/sidebar_snapshot early (S11 names it) so the game screen can be seen'
+  status: done
+  evidence: 'S2d d53f8261: ALL 46 SUITES 4069 PASSED [22], SIDEBAR 80; overseer LOOKED at user://sidebar_snapshot/game_hud.png - Goal/Total legible below the overlay buttons, piles row, Undo/End, board centred beside the container. S2c 3123530c: ALL 46 SUITES 4034 PASSED, TestSidebar 57 checks, red-then-green per test. S2a 2b88ea90: ALL 46 SUITES 3981 PASSED [23 placeholders]; pre-change board_inset_left 394.0, _hud_authored_width 402.0, board centre (scroll_container.position.x + size.x/2) 733.808. S2b 07aa305f: ALL 46 SUITES 3979 PASSED [22 placeholders], godot.log 0 SCRIPT ERROR'
+  notes: 'Tests/Visual/sidebar_snapshot built here (ahead of S11) - boots Main, enters the game, writes user://sidebar_snapshot/game_hud.png; run with the NON-console exe and wait for exit'
 - id: S3
   description: geometry per PLAN 1.1; add board_inset_top; delete pan_window_left_x
   status: pending
@@ -137,7 +138,7 @@ code. Overseer (opus) writes no source.
 None yet beyond the baseline failure set above.
 
 ## Next up
-1. S2c. 2. S3. 3. S4.
+1. S3. 2. S4. 3. S5.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
