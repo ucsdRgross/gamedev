@@ -21,15 +21,15 @@ code. Overseer (opus) writes no source.
 - The main checkout shares `app_userdata/Solatro` with this worktree — never run the suite from both.
 
 ## Baseline (main @ a28c79aa, unmodified, this box)
-- `py solatro/Tools/run_tests.py` (GODOT_BIN = the box's console exe), windowed, ~409 s.
-- Banner: `ALL 45 SUITES: 3980 passed, 3 FAILED (3 behavior, 0 implementation) [23 placeholder warnings]`
-- Failure SET (pre-existing, not this run's): GRID VIEW ×3, all `grid_pan_right` real key press
-  (`pan_grid 1`, `moved 0.000 vs pitch 448.000`, `pan_grid 1 of 3`).
-- Exit-time (wrapper): `Pages in use exist at exit in PagedAllocator: N16WorkerThreadPool5GroupE`,
-  `15 resources still in use at exit`. Wrapper exit code 5.
+- `py solatro/Tools/run_tests.py` (GODOT_BIN = the box's console exe), windowed, ~400 s.
+- Banner: `ALL 45 SUITES: 4002 CHECKS PASSED [23 placeholder warnings]`
+- Exit-time (wrapper, pre-existing): `Pages in use exist at exit in PagedAllocator:
+  N16WorkerThreadPool5GroupE`, `15 resources still in use at exit`. Wrapper exit code 2.
+- ⚠ An owner editor open on the MAIN checkout (shared `app_userdata`) made GRID VIEW's three
+  `grid_pan_right` real-key-press checks fail. Check for editor processes before every run.
 - Suite count derivation: `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn` = 45.
-- **Gate for every step:** suite count ≥ 45 (rising as suites are added), failure set ⊆ baseline set,
-  no new exit-time error lines.
+- **Gate for every step:** suite count ≥ 45 (rising as suites are added), zero failures, no
+  exit-time error lines beyond the two above.
 
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
@@ -39,8 +39,9 @@ code. Overseer (opus) writes no source.
 ```yaml
 - id: S1
   description: HudContainer + DescriptionPanel empty shells, show_hud/show_description swap
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'full suite ALL 46 SUITES: 3997 CHECKS PASSED (log mtime 17:48, overseer-read); SIDEBAR: ALL 9 CHECKS PASSED == 9 check( calls; no lock_to/GameHud/MapHud yet; extends PanelContainer + StyleBoxFlat'
+  notes: 'container bg is a hardcoded colour (+1 PALETTE placeholder, 23->24) - S2 routes it through the palette'
 - id: S2
   description: move the HUD controls into HudContainer; delete %MultScore (+3 children) and %Preview
   status: pending

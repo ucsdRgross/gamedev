@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://UI/hud_container.gd" id="1_hud"]
+[ext_resource type="PackedScene" path="res://UI/description_panel.tscn" id="2_desc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.098, 0.098, 0.137, 1)
+
+[node name="HudContainer" type="PanelContainer"]
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+script = ExtResource("1_hud")
+
+[node name="HudStack" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DescriptionPanel" parent="." instance=ExtResource("2_desc")]
+unique_name_in_owner = true
+layout_mode = 2

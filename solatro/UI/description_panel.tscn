@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UI/description_panel.gd" id="1_desc"]
+
+[node name="DescriptionPanel" type="Control"]
+script = ExtResource("1_desc")
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+horizontal_scroll_mode = 0
