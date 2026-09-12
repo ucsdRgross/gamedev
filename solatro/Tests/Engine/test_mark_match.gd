@@ -26,6 +26,15 @@ func _ready() -> void:
 	behavior_section("WHAT A MATCH PAYS")
 	test_the_rank_term_reads_the_rank_and_its_knobs()
 	test_the_mult_terms_sum_their_shares()
+	behavior_section("WHAT A LINE BANKS")
+	await test_a_rank_match_is_added_to_the_line()
+	await test_a_line_with_no_mult_is_never_multiplied_to_nothing()
+	await test_mark_effects_sum_into_one_multiplier()
+	await test_a_cover_is_announced_and_a_match_adds_its_own_hook()
+	await test_a_flush_keeps_its_own_score()
+	await test_a_match_outside_the_meld_pays_nothing()
+	await test_a_card_pays_into_every_line_it_completes()
+	await test_a_match_registers_no_combo_class()
 	behavior_section("CONTENT MAY LOOSEN THE MATCH")
 	await test_a_leniency_rule_loosens_the_match()
 	behavior_section("A MARK IS NEVER SPOTLIT")
@@ -110,6 +119,115 @@ func spotlit_ids(state: GameData, mark: CardData) -> Array[int]:
 			if mod and mod.is_spotlit(): out.append(mod.get_instance_id())
 	out.sort()
 	return out
+
+
+#The REAL scorer in the rules deck: every row below is scored by a placement completing a line,
+#which is the path the shipped game takes -- the composition is never called directly.
+func detector_game(state: GameData) -> Game:
+	var detector := SkillLineDetector.new()
+	detector.spotlit = true
+	var rules := CardData.new().with_skill(detector)
+	rules.stage = CardData.Stage.RULES
+	state.rules_deck = [rules] as Array[CardData]
+	var g := Game.new()
+	g.state = state
+	CardEnvironment.CURRENT = g
+	return g
+
+## A card of `rank` in a suit nothing else in the run shares, so no row flushes by accident.
+func row_card(rank: int) -> CardData:
+	return TestFactories.m_card(float(rank), TestFactories.uc())
+
+## Five cards whose best meld is the PAIR of 7s -- the two cards a mark under cell 0 or 1 can pay.
+func pair_row() -> Array[CardData]:
+	return [row_card(7), row_card(7), row_card(3), row_card(9), row_card(11)] as Array[CardData]
+
+## Five cards whose best meld is the three 7s, leaving cells 3 and 4 outside it.
+func triple_row() -> Array[CardData]:
+	return [row_card(7), row_card(7), row_card(7), row_card(11), row_card(3)] as Array[CardData]
+
+## Five cards of ONE suit, the 9 first so a mark under cell 0 pays a meld card of the flush.
+func flush_row() -> Array[CardData]:
+	var suit := TestFactories.uc()
+	var out : Array[CardData] = []
+	for rank : int in [9, 2, 4, 6, 8] as Array[int]:
+		out.append(TestFactories.m_card(float(rank), suit))
+	return out
+
+## The same five ranks in five different suits -- the flush row's control.
+func unsuited_row() -> Array[CardData]:
+	var out : Array[CardData] = []
+	for rank : int in [9, 2, 4, 6, 8] as Array[int]:
+		out.append(row_card(rank))
+	return out
+
+#Grid 0's row 0, marked cell by cell, then filled left to right with the LAST card placed through
+#the game -- that placement is what completes the row and scores it. The game is handed back alive,
+#so a row reads the bucket it banked into rather than a number the test worked out for itself.
+func scored_row(cards: Array[CardData], marks: Dictionary[int, CardData]) -> Game:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	for x : int in marks:
+		mark_cell(g.state, x, 0, marks[x])
+	for x : int in cards.size() - 1:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[cards.size() - 1], cell(cards.size() - 1, 0))
+	return g
+
+## What grid 0's row 0 banked: the BigNumber the player's own score is built from.
+func row_banked(g: Game) -> float:
+	return g.state.line_score(g.state.scores_row, 0, 0, 0)
+
+## A mark whose effect is worth twice the line, spelled as the `+2` the sum of shares expects.
+func mult_mark() -> CardData:
+	return row_card(2).with_stamp(LineMultStamp.new())
+
+#Row 0, column 0 and the main diagonal each one card short at the corner, every card of one rank so
+#all three melds hold every card of their line. Returns what the row, the column and the diagonal
+#banked, in that order.
+func banked_corner_lines(marks: Dictionary[int, CardData]) -> Array[float]:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	for x : int in marks:
+		mark_cell(g.state, x, 0, marks[x])
+	for i : int in 5:
+		for spot : Vector2i in [Vector2i(i, 0), Vector2i(0, i), Vector2i(i, i)] as Array[Vector2i]:
+			if spot == Vector2i.ZERO or g.state.card_at(cell(spot.x, spot.y)): continue
+			place_in_cell(g.state, spot.x, spot.y, row_card(7))
+	await g.place_card_in_grid(row_card(7), cell(0, 0))
+	var diagonal : float = g.state.score_special[0].to_float() \
+			if not g.state.score_special.is_empty() else 0.0
+	var banked : Array[float] = [row_banked(g), g.state.line_score(g.state.scores_col, 0, 0, 0),
+			diagonal]
+	free_game(g)
+	return banked
+
+
+#Counts the two mark hooks and remembers the level each arrived with. EVERY cover is announced and a
+#match adds its own hook on top, so the two counts are the only thing telling the cases apart.
+class MarkHookRecorder extends CardModifierStamp:
+	var covers : int = 0
+	var hits : int = 0
+	var cover_level : int = -1
+	var hit_level : int = -1
+	func get_str() -> String: return "MarkHookRecorder"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, level: int) -> void:
+		covers += 1
+		cover_level = level
+	func on_mark_hit(_card: CardData, _coord: BoardCoord, _matched: int, level: int) -> void:
+		hits += 1
+		hit_level = level
+
+
+#A mark worth twice the line it sits in. The share reaches the line through the api's own seam,
+#which is the only way a mark effect has of multiplying one, and it is a STAMP because a mark is
+#never spotlit -- the skill slot would be gated where a stamp is always asked.
+class LineMultStamp extends CardModifierStamp:
+	func get_str() -> String: return "LineMultStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
+		api.add_line_mult(2.0)
 
 
 #Repaints its own card's suit the way an effect would -- through the card's own setter, which
@@ -380,6 +498,173 @@ func test_the_mult_terms_sum_their_shares() -> void:
 	check(MarkMatch.mult_bonus(card, RANK_AND_SUIT) == 0.0,
 			"a rank or suit match contributes no multiplier at all")
 	restore_settings_snapshot(snapshot)
+
+
+# ==============================================================================
+# TP-30, TP-31, TP-32 -- (hand + flats) x the summed mults
+# ==============================================================================
+
+#TP-30: the rank bonus is ADDED to the hand the line scored, and the hand it is added to is measured
+#from the same row with nothing marked -- the number the model produces is never written down here.
+func test_a_rank_match_is_added_to_the_line() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(), {0: row_card(7)} as Dictionary[int, CardData])
+	check(row_banked(bare) > 0.0,
+			"TP-30 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare) + 7.0,
+			"TP-30: a 7 of the meld on a mark printing 7 banks the hand plus 7",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-31: nothing in this row contributes a mult, so the summed mult is 0 -- and a 0 is SKIPPED rather
+#than multiplied by, exactly as a bucket worth 0 is left out of the grid product.
+func test_a_line_with_no_mult_is_never_multiplied_to_nothing() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(),
+			{0: row_card(7), 1: row_card(7)} as Dictionary[int, CardData])
+	check(row_banked(bare) > 0.0,
+			"TP-31 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare) + 14.0,
+			"TP-31: both flat bonuses are banked and the zero mult multiplies nothing",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	check(row_banked(marked) > 0.0,
+			"TP-31: a line with no mult bonus does not bank nothing",
+			"banked %f" % row_banked(marked))
+	free_game(bare)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-32: the shares SUM and the sum IS the multiplier, so one mark worth twice gives x2 and two give
+#x4. Three of them separate the sum from `1 + the sum` (which would give x7) and from a product of
+#the shares (x8).
+func test_mark_effects_sum_into_one_multiplier() -> void:
+	var bare := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var one := await scored_row(triple_row(), {0: mult_mark()} as Dictionary[int, CardData])
+	var two := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark()} as Dictionary[int, CardData])
+	var three := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark(), 2: mult_mark()} as Dictionary[int, CardData])
+	var hand := row_banked(bare)
+	check(hand > 0.0, "TP-32 precondition: the unmarked row banked its hand at all",
+			"banked %f" % hand)
+	check(row_banked(one) == hand * 2.0,
+			"TP-32: one mark worth twice multiplies the whole line by 2",
+			"%f against a hand of %f" % [row_banked(one), hand])
+	check(row_banked(two) == hand * 4.0,
+			"TP-32: two of them make x4 -- the shares are summed, not added to a 1",
+			"%f against a hand of %f" % [row_banked(two), hand])
+	check(row_banked(three) == hand * 6.0,
+			"TP-32: and three make x6, where a product of the shares would make x8",
+			"%f against a hand of %f" % [row_banked(three), hand])
+	for g : Game in [bare, one, two, three] as Array[Game]:
+		free_game(g)
+
+#Every landing on a marked cell is a COVER, matching or not, so a x2 mark multiplies whatever is put
+#on it; a match adds `on_mark_hit` on top rather than replacing the cover. The levels say which is
+#which: the cover is the normal form, the match the realized one.
+func test_a_cover_is_announced_and_a_match_adds_its_own_hook() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new()),
+			1: row_card(2).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var matching := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var plain := g.state.cell_type_at(cell(1, 0)).stamp as MarkHookRecorder
+	check(matching.covers == 1 and matching.hits == 1,
+			"TP-32: a card that MATCHED its mark fires both hooks, the cover as well as the hit",
+			"%d covers, %d hits" % [matching.covers, matching.hits])
+	check(plain.covers == 1 and plain.hits == 0,
+			"TP-32: a card that matched nothing fires the cover hook alone",
+			"%d covers, %d hits" % [plain.covers, plain.hits])
+	check(matching.cover_level == 0 and matching.hit_level == 1,
+			"TP-32: the cover arrives at level 0 and the match at level 1, the realized form",
+			"cover %d, hit %d" % [matching.cover_level, matching.hit_level])
+	free_game(g)
+
+
+# ==============================================================================
+# TP-34, TP-36, TP-37 -- which cards pay, and into what
+# ==============================================================================
+
+#TP-34: the flush's double happens inside the hand's own number and knows nothing about a bonus, so
+#a rank match is simply added to it. The control row proves the five cards really did flush.
+func test_a_flush_keeps_its_own_score() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var suited := await scored_row(flush_row(), {} as Dictionary[int, CardData])
+	var unsuited := await scored_row(unsuited_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(flush_row(), {0: row_card(9)} as Dictionary[int, CardData])
+	check(row_banked(suited) > row_banked(unsuited),
+			"TP-34 precondition: the five suited cards score as a flush and the same ranks unsuited do not",
+			"%f against %f" % [row_banked(suited), row_banked(unsuited)])
+	check(row_banked(marked) == row_banked(suited) + 9.0,
+			"TP-34: the rank bonus is added to the flush's own score, never multiplied by its double",
+			"%f against %f" % [row_banked(marked), row_banked(suited)])
+	free_game(suited)
+	free_game(unsuited)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-36: only a card the hand actually used pays. The marked card here matches its mark on rank and
+#sits in the line, but the best meld is the three 7s, so the line banks exactly what it banked bare.
+func test_a_match_outside_the_meld_pays_nothing() -> void:
+	var bare := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(triple_row(), {3: row_card(11)} as Dictionary[int, CardData])
+	var outsider := marked.state.card_at(cell(3, 0))
+	var outsider_match : int = await MarkMatch.matches_at(marked.state, outsider, cell(3, 0))
+	check(outsider_match != 0,
+			"TP-36 precondition: the card outside the meld DOES match the mark under it",
+			"got %d" % outsider_match)
+	check(row_banked(bare) > 0.0, "TP-36 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare),
+			"TP-36: a matching card the meld left out pays nothing at all",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
+
+#TP-37: the bonus is computed inside each line's own number, so a card completing three lines at once
+#pays into all three -- the same way its suit effect fires once per meld it belongs to.
+func test_a_card_pays_into_every_line_it_completes() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await banked_corner_lines({} as Dictionary[int, CardData])
+	var marked := await banked_corner_lines({0: row_card(7)} as Dictionary[int, CardData])
+	for i : int in 3:
+		check(bare[i] > 0.0, "TP-37 precondition: line %d banked its hand at all" % i,
+				"banked %f" % bare[i])
+		check(marked[i] == bare[i] + 7.0,
+				"TP-37: the corner's rank bonus is banked into line %d as well" % i,
+				"%f against %f" % [marked[i], bare[i]])
+	restore_settings_snapshot(snapshot)
+
+
+# ==============================================================================
+# TP-38 -- a match is not a combo class
+# ==============================================================================
+
+#TP-38: matching pays points and touches the combo not at all, so the classes the act has seen are
+#the same set with the mark there and gone -- the hand's own class and nothing else.
+func test_a_match_registers_no_combo_class() -> void:
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(), {0: row_card(7)} as Dictionary[int, CardData])
+	check(not bare.state.combo_classes.is_empty(),
+			"TP-38 precondition: scoring the row registered the hand's own combo class",
+			"got %s" % str(bare.state.combo_classes))
+	check(marked.state.combo_classes == bare.state.combo_classes,
+			"TP-38: a match registers no class of its own",
+			"%s against %s" % [str(marked.state.combo_classes), str(bare.state.combo_classes)])
+	check(row_banked(marked) > row_banked(bare),
+			"TP-38 precondition: the match did pay, so the comparison is about a line that matched",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
 
 
 # ==============================================================================

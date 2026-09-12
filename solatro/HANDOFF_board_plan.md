@@ -53,7 +53,7 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   FOCUS: pressing it again turned Info mode back OFF`. Fails 2 of 2 full runs; passes 1 of 1 run
   alone (`--filter WallFocus`, 130/130). Tally so far: 3 failures in 5 full runs, and every failing
   run had the other session's Godot up — window-focus interference is the likeliest cause; not
-  fixed here. (Tally: 4 failures in 7 overseer full runs; 0 in the implementers' 6.) Unmodified `main` had no failure (sidebar's
+  fixed here. (Tally: WALL FOCUS 4 failures in 12 overseer full runs; a GRID VIEW pan-right real-key-press check failed 1 in 12, same shape, passed on immediate re-run with no code change.) Unmodified `main` had no failure (sidebar's
   baseline).
 - Exit-time: wrapper exit 3; `[exit-time] note: WARNING: 135 ObjectDB instances were leaked at
   exit` (pre-existing).
@@ -127,12 +127,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'The five knobs landed here because flat_bonus/mult_bonus need them (S14 keeps only plan_reveal_fraction). PipComparator.modifier_script made public; CountingEnvironment moved to Tests/Support. A rank with no int value is value = NAN (is_finite); 2.5 built with PipRankNumeral.with_value. ARCHITECTURE_REVIEW §1.4 hook roster needs the on_mark_* entry at S16.'
 - id: S6
   description: (hand + flats) x M in score_line; TP-30..38; SECTION 8 leaderboard byte-identical.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Levels/game.gd, solatro/Scripts/card_effect_api.gd, solatro/Scripts/card_environment.gd, solatro/Scripts/game_data.gd, solatro/Scripts/mark_match.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/E2E/test_e2e_run.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red runs (MARK MATCH of 72): flats dropped 7 FAILED (TP-30/31/34/37/38); M==0 multiplies unconditionally 19 FAILED (TP-31 banks 0); 1+sum 3 FAILED (TP-32: 18/30/42 vs 12/24/36); product 1 FAILED; gathered from section.cards 1 FAILED (TP-36); combo class registered 1 FAILED (TP-38); exclusive cover dispatch 2 FAILED of 75 (both-hooks and level checks). Overseer full runs: ALL 47 SUITES: 4115 passed, 1 FAILED (GRID VIEW pan-right real-key-press, interference-shaped) then ALL 47 SUITES: 4115 CHECKS PASSED, errors log empty; MARK MATCH 75/75; SCORING 261/261, LEADERBOARD 104 rows; SECTION 8 byte-identical to baseline (TP-33); scoring.gd identical to main (git diff main -- scoring.gd empty).'
+  notes: 'Composition is Game._compose_line_score, one call from score_line. Mark hooks dispatched at score time through CardEnvironment.run_mark_mods (the never-spotlit gate lifted for the mark''s own copied modifiers); on_mark_covered fires on EVERY cover (Q46=(d)/Q51=(a) words), on_mark_hit additionally on a match, levels 0/1. add_line_mult is the mark-effect mult seam (NAMES.md, assumption). int() truncation of line*M; is_zero_approx skip. E2E parity fixture pins world_seed (the deal follows it). TP-30 fixture re-derived to a pair of sevens (a 7 outside the meld pays nothing by TP-36).'
 - id: S7
   description: suit effect fires iff SUIT matched; talent suppression retired; TP-40..43.
   files_touched: []

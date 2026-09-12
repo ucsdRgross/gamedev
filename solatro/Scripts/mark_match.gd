@@ -11,14 +11,17 @@ const MARK_RANKS_ALLOW : StringName = &"on_mark_ranks_allow"
 const MARK_SUITS_DENY : StringName = &"on_mark_suits_deny"
 const MARK_SUITS_ALLOW : StringName = &"on_mark_suits_allow"
 
+#The two hooks a mark's own copied modifiers answer, spelled here for the same reason as the
+#leniency family above: a retyped name disables the effect and nothing reports it.
+const MARK_HIT : StringName = &"on_mark_hit"
+const MARK_COVERED : StringName = &"on_mark_covered"
+
 #Derived on EVERY call and cached NOWHERE: a modifier changing a card's suit emits `data_changed`
 #rather than bumping `revision`, so a remembered verdict would answer stale. Any card in the cell
 #may be asked, not just the one at height 0, and each property is answered on its own.
 static func matches_at(state: GameData, card: CardData, coord: BoardCoord) -> int:
-	if not state.has_cell(coord): return 0
-	var grid : GridData = state.grids[coord.grid]
-	var mark : CardData = grid.cell_types[grid.cell_index(coord.x, coord.y)]
-	if not BoardPlan.is_marked(mark): return 0
+	var mark := state.cell_type_at(coord)
+	if not mark or not BoardPlan.is_marked(mark): return 0
 	var matched := 0
 	if await PipComparator.pair_is_same(card.rank, mark.rank,
 			MARK_RANKS_DENY, MARK_RANKS_ALLOW, false):

@@ -322,6 +322,12 @@ func cell_type_coord(card: CardData) -> BoardCoord:
 		return BoardCoord.new(gi, index % grid.grid_width, index / grid.grid_width, 0)
 	return BoardCoord.NOWHERE
 
+## The cell's own ZONE card at a coordinate, marked or bare -- null when no cell is there.
+func cell_type_at(coord: BoardCoord) -> CardData:
+	if not has_cell(coord): return null
+	var grid : GridData = grids[coord.grid]
+	return grid.cell_types[grid.cell_index(coord.x, coord.y)]
+
 ## The card occupying a grid cell coordinate, null when the coordinate is empty or off-board.
 ## INVARIANT tying this reverse index to the grid-side forward index: for every card C with a
 ## grid position P (i.e. `_grid_pos_index[C] == P`), `card_at(P) == C`; and for every non-null

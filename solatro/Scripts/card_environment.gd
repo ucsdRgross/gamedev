@@ -284,20 +284,23 @@ func skill_spotlight_check() -> void:
 ## stays suit-free. Used by the prop tick loop's 3-phase pass (on_prop_passing/passed).
 ## Cost: O(mods on this card). Statuses are appended as a copy (safe if one self-removes).
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
+	await _run_own_mods(card, function, params, card.skill != null and card.skill.spotlit)
+
+## Run `function` on a MARK's own copied modifiers, its copied skill among them.
+func run_mark_mods(mark: CardData, function: StringName, ...params: Array) -> void:
+	await _run_own_mods(mark, function, params, true)
+
+#⚠ THIS PATH DOES NOT CHARGE THE RUNAWAY CAP (owner: "it shouldnt trigger on checks, but only when
+#effect actually triggers") -- asking a card a question is not an effect firing. A mark carries its
+#skill in regardless, because a mark is never spotlit and the gate would silence all it answers.
+func _run_own_mods(card: CardData, function: StringName, params: Array, with_skill: bool) -> void:
 	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
 	mods.append_array(card.statuses)
-	# ⚠ **THIS PATH DOES NOT CHARGE THE RUNAWAY CAP** (owner: *"it shouldnt trigger on checks, but
-	# only when effect actually triggers"*). `run_card_mods` is the comparator, legality-query and
-	# prop-per-card path -- the same one that already passes `feeds_combo = false` because it must
-	# not score either. Asking a card a question is not an effect firing.
+	if with_skill and card.skill: mods.append(card.skill)
 	for mod : CardModifier in mods:
 		if mod and mod.has_method(function):
 			await Callable(mod, function).callv(params)
 			_note_mod_fired(mod, function, false)
-	var skill : CardModifierSkill = card.skill
-	if skill and skill.spotlit and skill.has_method(function):
-		await Callable(skill, function).callv(params)
-		_note_mod_fired(skill, function, false)
 
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
 	#loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod)

@@ -259,6 +259,14 @@ func add_line_score(section: ScoringSection, amount: int) -> void:
 	if not is_live(): return
 	_game.add_line_score(section, amount)
 
+#The shares SUM and the sum IS the multiplier, so a mark worth "twice" adds 2 and two make four.
+#Valid only while a line composes: a caller anywhere else is a bug, which is what the assert says.
+## A mark effect's share of the mult the line being composed is multiplied by.
+func add_line_mult(amount: float) -> void:
+	assert(is_live() and not is_nan(_game.line_mult_bonus),
+			"add_line_mult while no line is being composed")
+	_game.line_mult_bonus += amount
+
 ## Register a combo class. Returns true when it was new.
 func register_combo(key: String) -> bool:
 	return _game.register_combo(key) if is_live() else false

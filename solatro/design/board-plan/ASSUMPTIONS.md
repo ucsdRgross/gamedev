@@ -98,3 +98,32 @@ gap under `gaps/`.
   it. Q52=(b) makes the mark hooks fire on every line score through the cell, so `score_line`
   dispatches `on_mark_hit` / `on_mark_covered` for each meld card on a marked cell; the landing-time
   dispatch from `place_card_in_grid` is S9's.
+- S6 / Q104, Q122: the composition is ONE named function, `Game._compose_line_score(result)`, called
+  from `score_line` where `result.score` used to be read; no document names it. The float product is
+  truncated with `int()`, the same narrowing `ScoreModel` uses for its own float multipliers, and the
+  `M == 0` skip is `is_zero_approx`.
+- S6 / Q46, Q51: EVERY cover fires `on_mark_covered` at level 0, matching or not, and a match fires
+  `on_mark_hit` ADDITIONALLY at level 1 -- owner ruling, from Q46's option (d) keeping (a)'s "fires
+  for ANY card landing on the cell, matching or not" and Q51=(a)'s "the x2 mark multiplies whatever is
+  put on it". DESIGN §27's exclusive branch is a drawing simplification, and PLAN §1.7's own comment
+  already says "matching or not".
+- S6 / Q49, Q111: the two mark hooks are dispatched through a new `CardEnvironment.run_mark_mods`,
+  which is `run_card_mods` with the SKILL gate lifted -- a mark is never spotlit, so the existing
+  per-card dispatch would silence the copied skill that IS the mark's behaviour. Both spellings are
+  `run_card_mods`'s own body, now `_run_own_mods`, so there is one dispatch loop and not two.
+- S6 / Q49: the hook spellings are `MarkMatch.MARK_HIT` / `MARK_COVERED`, named after the leniency
+  family's own constants, because NAMES.md forbids retyping a duck-typed name at a call site.
+- S6 / Q25: a coordinate's cell type is read through a new `GameData.cell_type_at(coord)`, the
+  inverse of `cell_type_coord`; `MarkMatch.matches_at` now calls it too, so the composition and the
+  match test cannot disagree about which card a cell's mark is.
+- S6 / Q122: `Game.line_mult_bonus` is NAN except while a line composes, which is what
+  `add_line_mult`'s assert reads -- the precondition lives in the value it is about rather than in a
+  second flag.
+- S6 / TEST_PLAN TP-30: the row's fixture re-derived. A pair of 5s melds TWO cards, so a 7 elsewhere
+  in the row is outside `result.meld` and pays nothing by TP-36's own rule -- the row that pays
+  `hand + 7` is a pair of SEVENS with one of them on a mark printing 7. TP-31 marks both sevens
+  (`hand + 14`) and TP-32 needs three meld cards, so it scores three sevens.
+- S6 / TEST_PLAN TP-128: `Tests/E2E/test_e2e_run.gd` pins `run.world_seed`. `RunManager.new_run`
+  randomizes it and the plan is dealt from it, so the parity fixture's two shows carried DIFFERENT
+  marks; with bonuses now banked that made the two boards score differently. Pinning it is what
+  makes them one show again.

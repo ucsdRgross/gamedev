@@ -980,7 +980,7 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 		if result == null: return
 	var key := Scoring.class_key(result)
 	var counts_for_combo := not result.types.has(Scoring.MELD_TYPE.HIGH_CARD)  # beats a lone high card
-	var amount := result.score
+	var amount := await _compose_line_score(result)
 	if view: await view.animate_meld(result)
 	# THE single line-score write path (shared with prop effects); mutates totals + gutter and
 	# animates the label. Must run headless too (feeds the packed save).
@@ -990,6 +990,33 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	if view: await view.show_meld_score(result)
 	await _run_score_effects(result)
 	if view: view.reset_meld(result)
+
+#⚠ NAN MEANS NO LINE IS COMPOSING, and `CardEffectApi.add_line_mult` asserts on it: a mark effect
+#may only add to the line it fired inside, and a sentinel keeps that precondition in the value it
+#is about rather than in a second flag that can fall out of step with it.
+var line_mult_bonus := NAN
+
+#Only a MELD card pays, and the hooks fire for every line its cell scores in: EVERY cover is
+#announced at level 0, and a MATCH adds its own hook on top at level 1, the realized form.
+## The line's number: `(hand + flat bonuses) x the SUMMED mults`, and a sum of 0 never multiplies.
+func _compose_line_score(result: Scoring.Result) -> int:
+	line_mult_bonus = 0.0
+	var flats := 0
+	for card : CardData in result.meld:
+		var coord := state.grid_position_of(card)
+		var matched : int = await MarkMatch.matches_at(state, card, coord)
+		flats += MarkMatch.flat_bonus(card, matched)
+		line_mult_bonus += MarkMatch.mult_bonus(card, matched)
+		var mark := state.cell_type_at(coord)
+		if not mark or not BoardPlan.is_marked(mark): continue
+		await run_mark_mods(mark, MarkMatch.MARK_COVERED, card, coord, 0)
+		if matched == 0: continue
+		await run_mark_mods(mark, MarkMatch.MARK_HIT, card, coord, matched, 1)
+		await run_card_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
+	var summed := line_mult_bonus
+	line_mult_bonus = NAN
+	var line := result.score + flats
+	return int(line * summed) if not is_zero_approx(summed) else line
 
 ## D10–D12b (spotlight S5–S7): force-spotlight a whole SECTION and let the board settle under it.
 ## The whole set is forced at once and ONE sweep fires every `on_spotlight` in board order

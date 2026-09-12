@@ -274,11 +274,13 @@ func run_headless_and_viewed_parity_scenario() -> void:
 			"a headless show and a viewed show end on the IDENTICAL board",
 			"viewed:\n%s\n---- headless:\n%s" % [viewed_digest, headless_digest])
 
-## Plays one whole show and returns {digest, placements, resolved}. `with_view` decides
-## whether a real GameView is attached; everything else is identical, deliberately.
+#⚠ TWO SEEDS MAKE THESE ONE SHOW: the global one fixes the deck's shuffle, and the RUN's own world
+#seed, which `new_run` randomizes, is what the board's marks are dealt from.
+## One whole show; `with_view` attaches a real GameView and everything else is identical.
 func play_whole_show(with_view: bool) -> Dictionary:
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
+	run.world_seed = 20260827
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	# The SAME seed for both runs: add_deck shuffles, so an unseeded second run would deal a
