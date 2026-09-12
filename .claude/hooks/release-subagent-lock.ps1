@@ -1,4 +1,5 @@
-# Release the lock one-subagent-at-a-time.ps1 took, on SubagentStop AND on PostToolUse for Agent.
+# Release ONE holder of the lock one-subagent-at-a-time.ps1 took, on SubagentStop AND on PostToolUse
+# for Agent (the lock holds one line per running agent, at most two).
 #
 # PostToolUse is the release that always fires: a subagent stopped at its maxTurns cap does NOT fire
 # SubagentStop (measured twice), and the lock then blocked every dispatch until the stale timeout.
@@ -11,5 +12,9 @@
 $lock = Join-Path $env:CLAUDE_PROJECT_DIR '.claude\.subagent.lock'
 $event = [Console]::In.ReadToEnd() | ConvertFrom-Json -ErrorAction SilentlyContinue
 if ($event.hook_event_name -eq 'PostToolUse' -and $event.tool_input.run_in_background -ne $false) { exit 0 }
-if (Test-Path $lock) { Remove-Item $lock -Force -ErrorAction SilentlyContinue }
+if (Test-Path $lock) {
+    $holders = @(Get-Content $lock -ErrorAction SilentlyContinue | Where-Object { $_ -ne '' })
+    if ($holders.Count -le 1) { Remove-Item $lock -Force -ErrorAction SilentlyContinue }
+    else { Set-Content -Path $lock -Value (($holders | Select-Object -Skip 1) -join "`n") -Encoding utf8 }
+}
 exit 0

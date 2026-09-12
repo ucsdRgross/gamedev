@@ -252,10 +252,10 @@ close that said "run an adversarial review" and named no tool — a run could sa
 claiming it had thought hard. Every other gate here is written to be un-talk-past-able; so is this
 one. Record each result in the handoff the way a done-when is recorded: the output, not a claim.
 
-⚠ **DISPATCH THE READING WORK TO SUBAGENTS, ONE AT A TIME.** The overseer never reads source, so
-every item that reads code is a subagent. **A hook enforces one at a time** — they run the suite,
-which is a one-process rule, and a parallel fan-out makes a failure unattributable. Dispatch, wait
-for the report, dispatch the next.
+⚠ **DISPATCH THE READING WORK TO SUBAGENTS, AT MOST TWO AT A TIME, ONE OF THEM RUNNING GODOT.**
+The overseer never reads source, so every item that reads code is a subagent. **A hook enforces the
+count**; the suite is a one-process rule, so a parallel second agent is a read-only reviewer or
+docs work, never a second suite run. Dispatch, wait for the report, dispatch the next.
 
 Run in this order. Earlier items change the diff the later ones read.
 
