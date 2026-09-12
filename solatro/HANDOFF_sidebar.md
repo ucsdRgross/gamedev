@@ -2,7 +2,11 @@
 
 **Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
 per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
-**State:** S1–S4 done. S5 next. Implementers now append evidence to a scratch file as they go,
+**State:** Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
+confirmed defects, fixed in four commits (3d858441, 1f34cf5e, ce0f918b, 784f173e). S5 next. An
+owner report that the game board sits too far right with a gap beside the sidebar is OPEN — not
+reproduced at ten window sizes (grid centre within 7 logical px of the remaining-space centre);
+awaiting the owner's screenshot and window size. Implementers now append evidence to a scratch file as they go,
 because a turn-cap stop loses the final report (it happened on most S2/S3 dispatches). A throwaway
 detached worktree of unmodified main (`../gamedev-baseline`, a28c79aa) exists for by-eye
 before/after captures — local only; `git worktree remove` it at the close. Single-suite runs: launch the NON-console exe, wait for the
@@ -55,12 +59,27 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   wall_input.gd 31, map.gd 12, wall_overlay.gd 11, choice_viewer.gd 11, deck_builder.gd 10,
   card_effect_api.gd 9, deck_viewer.gd 4, cards_viewer.gd 3, type_input.gd 3.
 
+## Phase 1 review (adversarial, Fable 5.1) — what it found and where it went
+- Top-case board zoom ignored `board_inset_top` (fixed, 3d858441); menu laid out in window px
+  inside a picture (fixed, `WallPicture.local_rect_beside`, 1f34cf5e); map camera shift in window
+  px vs world units × zoom (fixed, ce0f918b, GAP-003 filed); S4 fixtures that removed the unit
+  mismatch (rewritten); connection bookkeeping and the private-container fallback in three homes
+  (now `HudContainer.connect_for_screen/disconnect_for_screen/ensure`, 784f173e); a check that
+  could not fail (deleted). Open from it: GAP-001 note — on a clamped ultrawide the flush-inner
+  container overlaps the board region by the outboard gap (finding 10); the inset uses the
+  design's unmargined scale, ~6 window px narrower than the picture's real overfilled scale
+  (recorded in ASSUMPTIONS).
+- ⚠ The whole geometry runs in the project's LOGICAL canvas (`canvas_items` + `expand`, base
+  1152×648): every 16:9 window is the same layout scaled; only non-16:9 windows change it.
+
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
   there. S3 builds §1.1 as written; gate checked at TEST_PLAN 3.1's fixtures.
 - GAP-002 (open, CONTRADICTION, parked thread) — §1.1's inset ignores the covering picture's crop, so
-  on windows narrower than 1576:887 (portrait top case, 16:10, 4:3) the board's region reaches under
-  the container. Main already cropped the board off-screen on portrait windows.
+  on windows narrower than 1576:887 (16:10, 4:3) the board's region starts under the container
+  (measured −70 px at 1920×1200). The portrait spill was a bug, fixed (3d858441).
+- GAP-003 (open, CONTRADICTION, not parked) — D11's 'the map has no picture' is false; the code
+  converts through the picture scale and camera zoom (ruling a). Needs D11's text corrected.
 
 ## Tasks
 ```yaml
@@ -148,7 +167,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. S5. 2. S6. 3. S7.
+1. Owner's centring report (screenshot pending). 2. S5. 3. S6.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
