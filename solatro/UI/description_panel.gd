@@ -24,9 +24,29 @@ func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
 	_scroll.scroll_vertical = 0
 	visible = true
 
-## Scrolls the body by `pages` of its own visible height -- the unit the mouse wheel steps in eighths of.
+## The sub-pixel part of a scroll, carried to the next call -- the scroll position itself is whole pixels.
+var _scroll_remainder : float = 0.0
+
+# ⚠ THE REMAINDER IS WHAT MAKES A SLOW SCROLL MOVE AT ALL: a gentle stick on a short panel asks for
+# a fraction of a pixel per frame, and rounding each frame on its own would throw every one away.
 func scroll_by_pages(pages: float) -> void:
-	_scroll.scroll_vertical += roundi(pages * _scroll.size.y)
+	var exact := pages * _scroll.size.y + _scroll_remainder
+	var whole := roundi(exact)
+	_scroll_remainder = exact - whole
+	_scroll.scroll_vertical += whole
+
+## Whether the description is scrolled to its own top, where an up press has nothing left to move.
+func at_top() -> bool:
+	return _scroll.scroll_vertical == 0
+
+# A preview that changed size took the top row's height with it, so the content is re-laid after
+# it. Nothing mounted is the ordinary case: the board publishes its card size on every rect change,
+# HUD or description, and an entry showing no card of its own (the map's) re-draws nothing.
+func resize_preview(card_px: Vector2) -> void:
+	if current_entry == null: return
+	for card : ControlCard in _visual_slot.find_children("*", "ControlCard", true, false):
+		card.size_preview_to(card_px)
+	resize_to(size)
 
 ## Hands the visual back OUT without freeing it, so the screen this description belongs to can be returned to.
 func detach_entry() -> void:

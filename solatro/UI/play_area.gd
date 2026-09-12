@@ -2914,22 +2914,20 @@ func _ensure_focus_info() -> void:
 func _popups_allowed() -> bool:
 	return WallPicture.settings().wall_screen_popups
 
-# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card, so a fresh one is built per call. Its size
-# goes on the card (`preview_size`), never on a scale above it: a Container resets a child's `scale`
-# every layout pass and `CardVisual._ready()` re-runs `recalculate_size()`, undoing both shortcuts.
+# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call, and re-applies
+# `size_preview_to()` when the window moves the size a board card is drawn at. A BOX, never a
+# `FlowContainer`: a flow reports the minimum its LAST SORT measured, so a re-size reads stale.
 static func card_info(data: CardData, card_px: Vector2) -> InfoEntry:
 	var entry := InfoEntry.new()
 	var text := ControlCard.describe_card(data)
 	var split := text.split("\n", false, 1)
 	entry.title = split[0] if split.size() > 0 else ""
 	entry.body = split[1] if split.size() > 1 else ""
-	var flow := FlowContainer.new()
-	entry.visual = flow
-	var card := CardsViewer.new(flow, CardVisual.DisplayContext.PREVIEW).populate(
+	var row := HBoxContainer.new()
+	entry.visual = row
+	var card := CardsViewer.new(row, CardVisual.DisplayContext.PREVIEW).populate(
 			[data] as Array[CardData])
-	card.child.preview_size = card_px
-	card.child.recalculate_size()
-	card.set_min_size()
+	card.size_preview_to(card_px)
 	return entry
 
 func _show_focus_info(control: Control, data: CardData) -> void:

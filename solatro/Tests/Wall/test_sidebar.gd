@@ -55,6 +55,7 @@ func _ready() -> void:
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
 	await test_the_preview_is_drawn_at_the_boards_own_card_size()
+	await test_the_preview_follows_a_resize_to_the_boards_new_card_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_new_entry_frees_the_visual_it_replaces()
@@ -87,8 +88,14 @@ func _ready() -> void:
 	await test_a_short_description_hides_the_scrollbar()
 	await test_page_keys_scroll_the_description_by_a_page()
 	await test_the_scroll_stick_scrolls_the_description_and_not_the_hud()
+	await test_a_low_stick_deflection_still_scrolls_a_short_description()
 	await test_the_arrows_scroll_only_once_the_description_is_locked()
 	await test_the_exit_x_joins_navigation_only_while_locked()
+	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
+	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
+	await test_a_new_run_does_not_inherit_the_last_shows_lock()
+	await test_leaving_while_locked_keeps_the_whole_lock_alive()
+	await test_a_remembered_entry_dropped_by_a_cascade_is_freed()
 	behavior_section("S9: INFO MODE IS GONE")
 	test_no_script_names_the_retired_mode()
 	test_the_retired_action_is_unbound()
@@ -1220,40 +1227,69 @@ func _board_card_window_width(card: CardVisual) -> float:
 	var texel := float(picture.viewport.size.x) / design.x
 	return _card_drawn_width(card) * texel * sprite.get_global_transform_with_canvas().get_scale().x
 
-## Q34=b/Q33=c: the description's card is drawn at the size that same card has on the board, with the name beside it.
-func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
-	await _start_game_fixture()
+# The card the pointer genuinely landed on, and one the board has a CardVisual for -- a drawn
+# width can only be compared against a card that is really rendered. Null when the dealt board
+# offered none, which is a failed check either way.
+func _hover_a_card_with_a_visual() -> CardData:
 	var controls := await _hoverable_card_controls()
 	check(not controls.is_empty(), "the dealt board offers a card control to hover",
 			str(controls.size()))
-	if not controls.is_empty():
-		var hovered := await _hover_another_card(controls, null)
-		check(hovered != null, "the pointer landed on a board card")
-		if hovered != null and _play_area.data_card.has(_play_area.ui_data[hovered]):
-			await get_tree().process_frame
-			var board_card : CardVisual = _play_area.data_card[_play_area.ui_data[hovered]]
-			var board_px := _board_card_window_width(board_card)
-			var preview := _preview_card(_panel.current_entry.visual)
-			check(preview != null, "the description mounted a preview card")
-			if preview != null and preview.child != null:
-				var preview_px := _card_drawn_width(preview.child)
-				var preview_rect := _sidebar_screen_rect(preview)
-				check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-						"the preview is drawn at the board card's own screen width (Q34=b)",
-						"preview %.1f px vs board %.1f px at board zoom %.3f"
-						% [preview_px, board_px, _play_area.board_zoom])
-				check(absf(preview_rect.size.x - preview_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-						"...and the slot it was given is that same width, so the name clears it",
-						"slot %.1f px vs card %.1f px" % [preview_rect.size.x, preview_px])
-				var title_rect := _sidebar_screen_rect(_panel.get_node(^"%Title") as Label)
-				check(title_rect.position.x >= preview_rect.end.x - PREVIEW_WIDTH_TOLERANCE_PX,
-						"the name starts to the RIGHT of the visual (Q33=c)",
-						"name at %.1f vs visual ending %.1f"
-						% [title_rect.position.x, preview_rect.end.x])
-				check(title_rect.position.y < preview_rect.end.y
-						and title_rect.end.y > preview_rect.position.y,
-						"...and beside it, not under it (Q33=c)",
-						"name %s vs visual %s" % [title_rect, preview_rect])
+	var hovered := await _hover_another_card(controls, null)
+	check(hovered != null, "the pointer landed on a board card")
+	if hovered == null: return null
+	var data : CardData = _play_area.ui_data[hovered]
+	return data if _play_area.data_card.has(data) else null
+
+## Q34=b/Q33=c: the description's card is drawn at the size that same card has on the board, with the name beside it.
+func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
+	await _start_game_fixture()
+	var data := await _hover_a_card_with_a_visual()
+	if data != null:
+		await get_tree().process_frame
+		var board_px := _board_card_window_width(_play_area.data_card[data])
+		var preview := _preview_card(_panel.current_entry.visual)
+		check(preview != null, "the description mounted a preview card")
+		if preview != null and preview.child != null:
+			var preview_px := _card_drawn_width(preview.child)
+			var preview_rect := _sidebar_screen_rect(preview)
+			check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"the preview is drawn at the board card's own screen width (Q34=b)",
+					"preview %.1f px vs board %.1f px at board zoom %.3f"
+					% [preview_px, board_px, _play_area.board_zoom])
+			check(absf(preview_rect.size.x - preview_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"...and the slot it was given is that same width, so the name clears it",
+					"slot %.1f px vs card %.1f px" % [preview_rect.size.x, preview_px])
+			var title_rect := _sidebar_screen_rect(_panel.get_node(^"%Title") as Label)
+			check(title_rect.position.x >= preview_rect.end.x - PREVIEW_WIDTH_TOLERANCE_PX,
+					"the name starts to the RIGHT of the visual (Q33=c)",
+					"name at %.1f vs visual ending %.1f"
+					% [title_rect.position.x, preview_rect.end.x])
+			check(title_rect.position.y < preview_rect.end.y
+					and title_rect.end.y > preview_rect.position.y,
+					"...and beside it, not under it (Q33=c)",
+					"name %s vs visual %s" % [title_rect, preview_rect])
+	await _end_game_fixture()
+
+## Q34=b through a resize: the preview is re-drawn at the board's NEW card size, not the one it was published at.
+func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
+	await _start_game_fixture()
+	var data := await _hover_a_card_with_a_visual()
+	if data != null:
+		_booted_viewport.size = Vector2i(1920, 1080)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_play_area.flush_rebuild()
+		await get_tree().process_frame
+		var board_px := _board_card_window_width(_play_area.data_card[data])
+		var preview := _preview_card(_panel.current_entry.visual)
+		check(preview != null and preview.child != null,
+				"the description still holds its preview after the resize")
+		if preview != null and preview.child != null:
+			var preview_px := _card_drawn_width(preview.child)
+			check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"the preview is re-drawn at the board card's width at the new window (Q34=b)",
+					"preview %.1f px vs board %.1f px at board zoom %.3f"
+					% [preview_px, board_px, _play_area.board_zoom])
 	await _end_game_fixture()
 
 ## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.
@@ -1493,14 +1529,13 @@ func test_a_board_rebuild_keeps_the_same_cards_description() -> void:
 		var data : CardData = _play_area.ui_data[entrance[0]]
 		await _click_card(entrance[0])
 		var title : Label = _panel.get_node(^"%Title")
-		var before := _play_area.locked_data
 		_play_area.queue_rebuild()
 		await get_tree().process_frame
 		_play_area.flush_rebuild()
 		await get_tree().process_frame
 		check(_container.is_locked() and _play_area.locked_data == data,
 				"the lock survives a board rebuild")
-		check(_play_area.locked_data == before and title.text == _expected_text(data)[0],
+		check(title.text == _expected_text(data)[0],
 				"...and the sidebar still shows that same card's description", title.text)
 		check(_play_area.data_ui.has(data), "...the card has a control again after the rebuild")
 		check(_play_area.data_card.has(data) and _play_area.data_card[data].focused,
@@ -1721,7 +1756,7 @@ func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
 		check(_container.showing_description() and _play_area.selected_cards.is_empty(),
 				"the description is up and nothing is held before the cancel")
 
-		_main.wall._unhandled_input(_cancel_event())
+		_booted_viewport.push_input(_cancel_event())
 		await get_tree().process_frame
 		check(hud_stack.visible and not _panel.visible,
 				"cancel with nothing held reverts the container to the HUD (B9, B10)")
@@ -1730,7 +1765,7 @@ func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
 		check(not went_back[0],
 				"...and that cancel is SPENT on the dismissal, never reaching the wall's own Back")
 
-		_main.wall._unhandled_input(_cancel_event())
+		_booted_viewport.push_input(_cancel_event())
 		await get_tree().process_frame
 		check(went_back[0],
 				"a cancel with NOTHING showing falls through to the wall's Back, exactly as before")
@@ -2159,6 +2194,35 @@ func test_the_scroll_stick_scrolls_the_description_and_not_the_hud() -> void:
 	_push_scroll_stick(get_viewport(), 0.0)
 	container.queue_free()
 
+## How tall the scroll is made for the slow-scroll check: a fraction of a pixel a frame at any frame rate this suite runs at, which is where a per-frame rounding loses the scroll entirely.
+const SHORT_PANEL_PX := 40.0
+
+## A deflection clear of the stick's own deadzone but nowhere near full.
+const LOW_STICK_DEFLECTION := 0.25
+
+## Frames the low deflection is held for -- long enough that whole pixels of scroll have accumulated.
+const LOW_STICK_FRAMES := 30
+
+## Q42=a: a gentle push on the stick still scrolls a short description, rather than rounding away to nothing every frame.
+func test_a_low_stick_deflection_still_scrolls_a_short_description() -> void:
+	var container := _build_container()
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll := _panel_scroll(panel)
+	container.show_description(_long_entry())
+	container.size = Vector2(container.size.x, SHORT_PANEL_PX)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(scroll.size.y <= SHORT_PANEL_PX,
+			"the description is short enough that one frame of a gentle push is under a pixel",
+			str(scroll.size.y))
+	_push_scroll_stick(get_viewport(), LOW_STICK_DEFLECTION)
+	for frame : int in LOW_STICK_FRAMES: await get_tree().process_frame
+	check(scroll.scroll_vertical > 0,
+			"a low stick deflection still scrolls a short description (Q42=a)",
+			"%d px after %d frames" % [scroll.scroll_vertical, LOW_STICK_FRAMES])
+	_push_scroll_stick(get_viewport(), 0.0)
+	container.queue_free()
+
 ## Q43=b: the arrows are the sidebar's only once it is LOCKED; unlocked they stay the board's own.
 func test_the_arrows_scroll_only_once_the_description_is_locked() -> void:
 	await _start_game_fixture()
@@ -2212,9 +2276,11 @@ func test_the_exit_x_joins_navigation_only_while_locked() -> void:
 		await get_tree().process_frame
 		check(_exit_button().focus_mode == Control.FOCUS_ALL,
 				"...and locking puts it in (Q68=b, C16)", str(_exit_button().focus_mode))
-		_exit_button().grab_focus()
+		_push_key(_booted_viewport, KEY_UP, true)
 		await get_tree().process_frame
-		check(_exit_button().has_focus(), "...where navigation can land on it")
+		check(_exit_button().has_focus(),
+				"...and navigation off the top of the locked description lands on it (Q68=b)",
+				str(_booted_viewport.gui_get_focus_owner()))
 		_push_key(_booted_viewport, KEY_ENTER, true)
 		_push_key(_booted_viewport, KEY_ENTER, false)
 		await get_tree().process_frame
@@ -2222,6 +2288,101 @@ func test_the_exit_x_joins_navigation_only_while_locked() -> void:
 				"...and accept on it dismisses the description (C16)")
 		check(not _container.is_locked(), "...taking the lock with it")
 	await _end_game_fixture()
+
+# ------------------------------------------------ A SCREEN'S STATE BELONGS TO ITS OWN CONTENT
+
+# The product's own way into the NEXT show: `Main` builds a whole new `GameView`, so the fixture's
+# cached board nodes are re-read off the one that is live now. A hand-back leaves `Main` mid-move
+# and a move in flight refuses the next one outright, so that move is waited out first.
+func _restart_the_show() -> void:
+	var waited := 0.0
+	while _main._move_in_flight and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await _main.enter_game()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	_play_area = view.play_area
+	_game_viewport = _main._pictures[&"game"].viewport
+
+## A show hands back with its cascade flag still up, so the NEXT show must not inherit it: its first hover opens a description.
+func test_a_finished_show_leaves_no_cascade_flag_for_the_next_one() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	game.end_show()
+	check(game.processing, "the ended show is still flagged busy as it hands back")
+	await game.return_to_map()
+	await _restart_the_show()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the next show dealt a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		check(_container.showing_description(),
+				"the next show's first hover opens a description: B19 died with the last show")
+		check(not _container.is_locked(), "...and nothing is locked in it yet")
+	await _end_game_fixture()
+
+## A new run replaces the show, so the container must not re-open the last show's locked description over a fresh board.
+func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		check(_container.is_locked(), "the show is left with a locked description")
+		await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+		await _restart_the_show()
+		check(_hud_is_up(), "the new show opens on the HUD, not the last show's description")
+		check(not _container.is_locked(), "...and with nothing locked (PLAN 5 step 1)")
+		check(_play_area.locked_data == null, "...and no card marked on the fresh board")
+	await _end_game_fixture()
+
+## B15/B16: leaving a screen is not a dismissal -- the lock comes back exactly as it was left, marking and all.
+func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		var locked : CardData = _play_area.locked_data
+		check(locked != null and _container.is_locked(), "the game screen is left locked")
+		await _main._focus_picture(&"map")
+		await _main._focus_picture(&"game")
+		await get_tree().process_frame
+		check(_container.is_locked(), "the lock is alive again on return (B15, B16)")
+		check(_play_area.locked_data == locked,
+				"...and the board wears that card's marking again (Q58=c)",
+				str(_play_area.locked_data))
+		check(locked != null and _play_area.data_card.has(locked)
+				and _play_area.data_card[locked].focused,
+				"...on whichever visual represents it now")
+		check(_exit_button().focus_mode == Control.FOCUS_ALL,
+				"...and the exit X is navigable again (Q68=b)", str(_exit_button().focus_mode))
+	await _end_game_fixture()
+
+## A description held back by a cascade is still that screen's own memory, and the next one to show frees it rather than orphaning it.
+func test_a_remembered_entry_dropped_by_a_cascade_is_freed() -> void:
+	var container := _build_container()
+	container.set_active_screen(&"game")
+	var read := InfoEntry.new()
+	read.visual = Control.new()
+	container.show_description(read)
+	container.set_processing(true)
+	container.set_active_screen(&"")
+	container.set_active_screen(&"game")
+	check(not container.showing_description(), "a screen mid-cascade is returned to on the HUD")
+	check(is_instance_valid(read.visual) and read.visual.get_parent() == null,
+			"...with the description it was left on detached, not freed")
+	container.set_processing(false)
+	container.show_description(InfoEntry.new())
+	await get_tree().process_frame
+	check(not is_instance_valid(read.visual),
+			"the next description frees the one it replaces, mounted or detached")
+	container.queue_free()
 
 # Split so this suite never itself contains the retired name, which the deletion gate greps for.
 const RETIRED_MODE_TOKEN := "wall_" + "info"

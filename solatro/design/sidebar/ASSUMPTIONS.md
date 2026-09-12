@@ -237,3 +237,38 @@
   `test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle` -- there are three now.
 - S9: `TestWallTransition.test_a_requested_move_keeps_the_settings_it_started_with` survives by
   flipping `wall_reduced_motion`, the only branch `sample_at()` still has.
+- P2 review: a screen's container state belongs to the CONTENT that published it, not to the screen
+  id `Main` reuses show after show. New names NAMES.md does not list: `HudContainer.release_screen(
+  screen)` (called from `GameView._exit_tree()` right after `disconnect_for_screen()`, so the revert
+  to the HUD it performs reaches no dying listener), `_release_shown_entry()`, `_swap_to_hud()`,
+  `_release_remembered_entry()`, and the `screen` parameter on `_release_locked_entry()`.
+  `PROCESSING_SCREEN` is renamed `GAME_SCREEN`: one const for the game screen's own focus id, read
+  both by the cascade rule and by the view that releases that screen's state.
+- P2 review corrects the S6 line "`show_hud()` emits `description_dismissed` on every revert, a
+  screen change included": a SCREEN CHANGE IS NOT A DISMISSAL. `set_active_screen()` swaps to the
+  HUD through `_swap_to_hud()`, which neither clears the lock nor announces one, so the screen being
+  left keeps its lock AND its board keeps the locked card's marking -- which is what makes B15/B16's
+  "exactly as you left it" true of the marking too, with no restore channel to invent. `show_hud()`
+  is still the one place a real dismissal clears and announces.
+- P2 review, measured: `release_screen()` frees the entry the panel is SHOWING itself rather than
+  leaving it to the dictionaries. On a whole-tree teardown `HudContainer._exit_tree()` runs before
+  `GameView._exit_tree()` and clears both dictionaries, so a visual detached after that point is in
+  no dictionary and no tree -- 24 orphaned previews across the suite, 1057 leaked ObjectDB instances.
+- P2 review: the description's preview follows the window. `GameView._publish_board_inset()` ends by
+  pushing `play_area.board_card_window_px()` through `HudContainer.resize_preview()` ->
+  `DescriptionPanel.resize_preview()`, which re-draws the mounted card and re-lays the content its
+  height feeds. The MOUNTED entry only: a screen's stashed entry is re-drawn when the board next
+  publishes into it. New names: `HudContainer.resize_preview()`, `DescriptionPanel.resize_preview()`,
+  `ControlCard.size_preview_to()` (the three lines `PlayArea.card_info()` used to spell out).
+- P2 review, measured: `card_info()` builds its preview in an `HBoxContainer`, never a
+  `FlowContainer`. A flow reports the minimum size its last `_resort()` cached, so a re-sized card
+  left `resize_to()` computing the content height from the size the card used to be (123 px carried
+  against 162 px fresh). A box computes its minimum on demand.
+- P2 review: Q68=b's "navigation reaches the X directly" is `ui_up` at the top of a LOCKED
+  description, which moves the focus onto `%ExitX` instead of scrolling (`DescriptionPanel.at_top()`,
+  `HudContainer._navigates_to_exit()`). It is the press that has nothing left to scroll and leaves
+  the content upward, it reaches the X on pad and keyboard alike, and accept on it is the engine's
+  own `BaseButton` behaviour. The S8 line "`Q68=b` is `%ExitX.focus_mode`" was the flag only.
+- P2 review, measured: `DescriptionPanel.scroll_by_pages()` carries the sub-pixel remainder between
+  calls. `roundi()` on each frame alone threw away every frame of a gentle stick on a short panel --
+  0.25 deflection on a 40 px panel is 0.17 px a frame, and the scroll never moved at all.

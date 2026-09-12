@@ -152,21 +152,27 @@ func set_active_screen(screen: StringName) -> void:
 		_description_panel.detach_entry()
 		_active_screen = screen
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
-		if remembered == null or _screen_is_processing(): show_hud()
+		if remembered == null or _screen_is_processing(): _swap_to_hud()
 		else: show_description(remembered)
 	visible = screen != &""
 	if not visible: return
-	_game_hud.visible = screen == &"game"
+	_game_hud.visible = screen == GAME_SCREEN
 	_map_hud.visible = screen == &"map"
 
 func show_hud() -> void:
+	_swap_to_hud()
+	clear_lock()
+	description_dismissed.emit()
+
+# ⚠ A SCREEN CHANGE IS NOT A DISMISSAL: the screen being left keeps its lock, and its board keeps
+# the marking on the locked card, so coming back finds what was being read exactly as it was. Every
+# other route to the HUD is `show_hud()`, the one place the lock is cleared and the drop announced.
+func _swap_to_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
 	_exit_button.visible = false
-	clear_lock()
 	_aim_scroll_stick(0.0)
 	_refresh_exit_focus()
-	description_dismissed.emit()
 
 # The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
 # visual OUT rather than freeing it -- the same detach the per-screen memory is returned through.
@@ -175,6 +181,7 @@ func show_description(entry: InfoEntry) -> void:
 	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	if locked and locked != entry and _description_panel.current_entry == locked:
 		_description_panel.detach_entry()
+	_release_remembered_entry(_active_screen, entry)
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
 	_exit_button.visible = true
@@ -194,14 +201,14 @@ var _locked_entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 ## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
 func lock_to(entry: InfoEntry, target: CardData) -> void:
 	if _drops_publication(entry): return
-	_release_locked_entry()
+	_release_locked_entry(_active_screen)
 	_lock_by_screen[_active_screen] = target
 	_locked_entry_by_screen[_active_screen] = entry
 	show_description(entry)
 
 func clear_lock() -> void:
 	_lock_by_screen.erase(_active_screen)
-	_release_locked_entry()
+	_release_locked_entry(_active_screen)
 
 func is_locked() -> bool:
 	return _lock_by_screen.has(_active_screen)
@@ -215,20 +222,50 @@ func return_to_lock() -> void:
 
 # A LOCK LEAVING IS THE LAST MOMENT ANYTHING CAN FREE ITS VISUAL: a displaced entry is out of the
 # panel and, once the next lock replaces it, in no dictionary either.
-func _release_locked_entry() -> void:
-	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+func _release_locked_entry(screen: StringName) -> void:
+	var locked : InfoEntry = _locked_entry_by_screen.get(screen)
 	if locked: _free_detached_visual(locked)
-	_locked_entry_by_screen.erase(_active_screen)
+	_locked_entry_by_screen.erase(screen)
 
-## The one screen whose cascade the rule below covers: the map has none worth watching, so its container never swaps on one.
-const PROCESSING_SCREEN : StringName = &"game"
+# ONE OWNER FOR A REPLACED MEMORY: a remembered entry that is neither mounted, nor holding this
+# screen's lock, nor the one about to show is in no dictionary and no tree once it is overwritten,
+# and nothing else would ever collect the preview it carries.
+func _release_remembered_entry(screen: StringName, keeping: InfoEntry) -> void:
+	var remembered : InfoEntry = _entry_by_screen.get(screen)
+	if remembered and remembered != keeping \
+			and remembered != _locked_entry_by_screen.get(screen):
+		_free_detached_visual(remembered)
+	_entry_by_screen.erase(screen)
+
+# ⚠ A SCREEN'S CONTAINER STATE BELONGS TO THE CONTENT THAT PUBLISHED IT, NOT TO THE SCREEN ID:
+# `Main` reuses one id for every show, so a show that is torn down has to hand back its memory,
+# its lock and its cascade flag or the next one inherits them.
+func release_screen(screen: StringName) -> void:
+	if screen == _active_screen:
+		_release_shown_entry()
+		_swap_to_hud()
+	_release_remembered_entry(screen, null)
+	_release_locked_entry(screen)
+	_lock_by_screen.erase(screen)
+	if _processing_screen == screen: _processing_screen = &""
+
+# ⚠ FREED HERE AND NOT LEFT TO THE DICTIONARIES: on a whole-tree teardown this container's own
+# `_exit_tree()` has already run and cleared them, so a visual taken out of the panel afterwards
+# would be in no dictionary and no tree -- measured, 24 orphaned previews across the suite.
+func _release_shown_entry() -> void:
+	var shown : InfoEntry = _description_panel.current_entry
+	_description_panel.detach_entry()
+	if shown: _free_detached_visual(shown)
+
+## The game screen's own focus id: the one screen with a cascade to watch, and the one whose content is replaced show by show.
+const GAME_SCREEN : StringName = &"game"
 
 ## Which screen is mid-cascade, or `&""` while none is.
 var _processing_screen : StringName = &""
 
 ## Relayed by `GameView` from `Game.processing`: true reverts to the HUD and drops the lock for good, and once it ends the HUD holds until the next publication.
 func set_processing(busy: bool) -> void:
-	_processing_screen = PROCESSING_SCREEN if busy else &""
+	_processing_screen = GAME_SCREEN if busy else &""
 	if _screen_is_processing(): show_hud()
 
 ## Whether the screen now showing is the one mid-cascade -- any other screen's container behaves as it always does.
@@ -252,10 +289,20 @@ func _input(event: InputEvent) -> void:
 	if stick and stick.is_action(&"sidebar_scroll"):
 		_aim_scroll_stick(stick.axis_value)
 		return
+	if _navigates_to_exit(event):
+		_exit_button.grab_focus()
+		get_viewport().set_input_as_handled()
+		return
 	var pages := _key_scroll_pages(event)
 	if is_zero_approx(pages): return
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()
+
+# ⚠ THE BOARD'S CELLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
+# crosses one, so the sidebar carries navigation onto the X itself: up, off the top of a locked
+# description, is the press that has nothing left to scroll and leaves its content upward.
+func _navigates_to_exit(event: InputEvent) -> bool:
+	return is_locked() and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
 
 # PAGE KEYS WHENEVER THE DESCRIPTION SHOWS, ARROWS ONLY ONCE IT IS LOCKED: an unlocked sidebar
 # leaves up and down to the board's own selection, which is what the player is still driving.
@@ -285,6 +332,10 @@ func _process(delta: float) -> void:
 # exit X is the way out of it. Unlocked, nothing here is in anyone's focus chain.
 func _refresh_exit_focus() -> void:
 	_exit_button.focus_mode = Control.FOCUS_ALL if is_locked() else Control.FOCUS_NONE
+
+## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
+func resize_preview(card_px: Vector2) -> void:
+	_description_panel.resize_preview(card_px)
 
 ## The room the description has: the container minus the overlay's button band, which both contents start below.
 func _description_size() -> Vector2:

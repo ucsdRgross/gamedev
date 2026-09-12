@@ -123,8 +123,11 @@ func _on_description_dismiss_requested() -> void:
 	hud_container.show_hud()
 	get_viewport().set_input_as_handled()
 
+# ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW, and it is released AFTER the connections are
+# dropped: the revert to the HUD it performs is this view's own doing, not a dismissal to relay.
 func _exit_tree() -> void:
 	hud_container.disconnect_for_screen()
+	hud_container.release_screen(HudContainer.GAME_SCREEN)
 
 ## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
 func _add_prop_debug_controls() -> void:
@@ -204,8 +207,8 @@ func _on_board_changed() -> void:
 	play_area.queue_rebuild()
 
 # ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
-# divides the container's rect by the unmargined ratio; `picture_to_window_scale` describes DRAWN
-# PIXELS, so it is the camera's own resting zoom -- what a preview beside the board has to match.
+# divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting
+# zoom, which the preview must match -- re-drawn last, once the inset has settled the board's zoom.
 func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
@@ -219,6 +222,7 @@ func _publish_board_inset() -> void:
 	else:
 		play_area.board_inset_left = rect.size.x / picture_scale
 		play_area.board_inset_top = 0.0
+	hud_container.resize_preview(play_area.board_card_window_px())
 
 ## Wires `Main`'s ONE wall camera and a rect-centre-x getter. Called once, right after `Main` instantiates this view.
 func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
