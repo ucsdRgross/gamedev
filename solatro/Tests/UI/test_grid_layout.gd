@@ -113,6 +113,10 @@ func _tear_down(view: GameView) -> void:
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
 
+# ⚠ A REPEATED READING IS NOT A STOPPED BOARD WHILE A PAN IS EASING: the slot arithmetic is
+# republished once per PHYSICS tick and this polls per process frame, so two reads inside one tick
+# repeat. Measured: it returned mid-pan, and the label then sat 12.9 px off its own slot.
+
 ## ⚠ **WAIT FOR THE GEOMETRY TO STOP MOVING, NOT FOR A FIXED NUMBER OF FRAMES.** A container sorts
 ## its children on a later frame than the rebuild that changed them, and the panel origin the
 ## arithmetic reads is published by that sort — so a single `process_frame` measures a board that
@@ -130,9 +134,14 @@ func _settle_layout(view: GameView) -> void:
 	var last := INF
 	var waited := 0.0
 	while waited < 2.0:
+		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		CardEnvironment.CURRENT = view.game
+		var smooth := pa.scroll_container as SmoothScrollContainer
+		if pa._recentre_waiting or (smooth and smooth.is_scrolling):
+			last = INF
+			continue
 		var now := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y
 		if is_equal_approx(now, last): return
 		last = now
@@ -196,8 +205,7 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	behavior_section("A PANEL PER GRID AND A SLOT PER CELL")
 	var view := await _stand_up()
 	var pa := view.play_area
-	pa.flush_rebuild()
-	await get_tree().process_frame
+	await _settle_layout(view)
 	var grids : Array[GridData] = view.game.state.grids
 
 	check(grids.size() > 0, "precondition: the show built at least one grid",

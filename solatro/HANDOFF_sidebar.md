@@ -2,7 +2,10 @@
 
 **Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
 per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
-**State:** Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
+**State:** `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
+`py solatro/Tools/run_tests.py --filter <Node> | --logic`) is merged at 587f2d60; the full run is
+~200 s and a single suite ~30 s. Open: GRID LAYOUT fails 2 of 4 runs on the merged branch
+(rotating check; 0 of ~15 before the merge) — being diagnosed before S5. Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
 confirmed defects, fixed in four commits (3d858441, 1f34cf5e, ce0f918b, 784f173e). S5 next. An
 owner report that the game board sits too far right with a gap beside the sidebar is OPEN — not
 reproduced at ten window sizes (grid centre within 7 logical px of the remaining-space centre);
@@ -71,6 +74,56 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   (recorded in ASSUMPTIONS).
 - ⚠ The whole geometry runs in the project's LOGICAL canvas (`canvas_items` + `expand`, base
   1152×648): every 16:9 window is the same layout scaled; only non-16:9 windows change it.
+
+## Phase 2–5 audits (plan-auditor, read-only) — defects the briefs must carry
+- §3a line numbers: play_area.gd −4 everywhere; game_view.gd rewritten in S2/S3 — the relay is
+  `:86`, `_on_processing_changed` `:208`, `_on_data_selected` `:323` (S15's `:462-498` is past EOF).
+- S5: `info_requested` fires only on CLICK and only in Info mode (`play_area.gd:1440-1450`,
+  `:1476-1481`, gate `_info_mode()`); hover goes `mouse_entered → grab_focus →
+  on_control_focus_entered` (`:2782-2813`) into the in-board popup. S5 must emit on focus and
+  keep click semantics; no hover-EXIT publication exists (S6 needs one — an invisible mechanism
+  choice, log it); `Main._on_screen_info_hovered` (`main.gd:685`) is gated on `wall_info_mode`
+  and also receives the map's `info_hovered`. `DescriptionPanel` is a 4-line shell;
+  `show_description(entry)` discards its argument. `InfoCard._resize_to_content` measures
+  against knobs S9 deletes — size off `container_rect()`. Per-screen memory (1.14) lives only in
+  Info-mode code S9 deletes — the container must own it.
+- S6: exit X sized by `WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
+  PlayArea.settings())` today (S13 repoints; four call sites, not three). TEST_PLAN 1.7's fourth
+  dismissal and 1.8 need `following` → moved to S14 (plan defect, not dropped). Bare-board click
+  has no branch in `_on_gui_input`; per-cell geometry is `_grid_slot_center_global` /
+  `_card_control_at`, not `_publish_cell_rects`.
+- S7: `game.gd` needs no edit (`processing_changed` exists, `game_view.gd:55` listens).
+- S9: `wall.gd:290-293` holds the only `wall_info` reader (missing from the map);
+  `player_settings.gd:522-566` interleaves two SURVIVING knobs; `main.gd` Info surface is ~20
+  sites incl. `_info_card_height()` (6 callers) and `_on_picture_hovered`; `WallTransition`'s
+  Info removal is a signature change (`card_height_px`); `test_wall_input.gd:60,1029,1111` and
+  `test_wall_focus.gd` assert Info mode and go red loudly.
+- S10: `hide_focus_info()` (`play_area.gd:3042`) is the only caller that stops `_process()`,
+  guarded by `_row_open`/`_layer_grown` (measured regression at `:3044-3049`); `card_info()`
+  SURVIVES inside the cited range.
+- S11: `sidebar_snapshot` exists (six PNGs; no description capture yet — 9.2 needs one); the
+  wall editor has NO Info panel node — its Inspector `preview_info_mode` + borrowed InfoCard go;
+  suite count lands at 45 after deleting test_wall_info (46 today) — TEST_PLAN says ≥ 45.
+- S12: only ChoiceViewer has a panel (`%CardInfo`); DeckViewer has none and Rules is DeckViewer
+  on `rules_deck`; viewers live inside a picture's SubViewport → the inset goes through
+  `WallPicture.local_rect_beside()`; `deck_builder.tscn` is broken too (missing ext_resource).
+- S13: `test_wall_input.gd:947-964,1246-1285` and `test_grid_view.gd:1538-1562` assert the
+  clamp/mm knobs and must change in the same commit.
+- S14: no LIFT quantity exists (held offset is cursor-relative, `card_visual.gd:700-704`) →
+  GAP candidate; `prop_layer.gd:277` reads `held`; emulated mouse motion from touch (device −1).
+- S15: no auto-arm exists; `grab_cards` has one production caller (`game_view.gd:336`).
+  TEST_PLAN 6.3's spy has no seam — assert effects instead.
+- S16: `game_view.gd:327-329` ungrabs on a click on the held card (contradicts 5.5); a release
+  over the container cannot reach PlayArea (root-viewport STOP control vs SubViewport) → GAP
+  candidate; 5.6 needs a test rules card (no shipped rule grabs a grid card).
+- S17: `card_effect_api.gd` has no subscription surface; the tap reaches effects via
+  `Game.run_all_mods(&"on_card_tapped")` with a test-local CardModifierType (precedent
+  `test_board.gd:313`).
+- S18: Escape is read in `wall.gd:270-273` → `Main._on_back_pressed` (`main.gd:716`): one step
+  back on the FocusStack, wall view when empty — there is no 'menu' destination;
+  `ungrab_cards()` also hides the description (`play_area.gd:1530`), collapsing the two steps.
+- Wall-view picture hover (`Wall.picture_hovered` → `WallPicture.get_info()`) has no destination
+  after S9 — Q21=(b) says no sidebar in the overview → it is deleted with Info mode (assumption).
 
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
