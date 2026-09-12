@@ -164,14 +164,21 @@ func show_hud() -> void:
 	_description_panel.visible = false
 	_exit_button.visible = false
 	clear_lock()
+	_aim_scroll_stick(0.0)
+	_refresh_exit_focus()
 	description_dismissed.emit()
 
+# The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
+# visual OUT rather than freeing it -- the same detach the per-screen memory is returned through.
 func show_description(entry: InfoEntry) -> void:
 	if _drops_publication(entry): return
-	_detach_locked_entry(entry)
+	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	if locked and locked != entry and _description_panel.current_entry == locked:
+		_description_panel.detach_entry()
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
 	_exit_button.visible = true
+	_refresh_exit_focus()
 	_description_panel.show_entry(entry, _description_size())
 
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
@@ -206,13 +213,6 @@ func return_to_lock() -> void:
 	if _description_panel.current_entry == locked: return
 	show_description(locked)
 
-# The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
-# visual OUT rather than freeing it -- the same detach the per-screen memory is returned through.
-func _detach_locked_entry(replacement: InfoEntry) -> void:
-	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
-	if locked and locked != replacement and _description_panel.current_entry == locked:
-		_description_panel.detach_entry()
-
 # A LOCK LEAVING IS THE LAST MOMENT ANYTHING CAN FREE ITS VISUAL: a displaced entry is out of the
 # panel and, once the next lock replaces it, in no dictionary either.
 func _release_locked_entry() -> void:
@@ -242,6 +242,49 @@ func _drops_publication(entry: InfoEntry) -> bool:
 	if not _screen_is_processing(): return false
 	_free_detached_visual(entry)
 	return true
+
+# THE SIDEBAR READS ITS KEYS IN `_input`, BEFORE THE GUI PASS: the viewport's focus-neighbour
+# search consumes any arrow that finds a neighbour, and `Wall` routes only what is left into the
+# focused picture, so an arrow read any later never arrives while a board cell holds the focus.
+func _input(event: InputEvent) -> void:
+	if not showing_description(): return
+	var stick := event as InputEventJoypadMotion
+	if stick and stick.is_action(&"sidebar_scroll"):
+		_aim_scroll_stick(stick.axis_value)
+		return
+	var pages := _key_scroll_pages(event)
+	if is_zero_approx(pages): return
+	_description_panel.scroll_by_pages(pages)
+	get_viewport().set_input_as_handled()
+
+# PAGE KEYS WHENEVER THE DESCRIPTION SHOWS, ARROWS ONLY ONCE IT IS LOCKED: an unlocked sidebar
+# leaves up and down to the board's own selection, which is what the player is still driving.
+func _key_scroll_pages(event: InputEvent) -> float:
+	if event.is_action_pressed(&"ui_page_down", true): return 1.0
+	if event.is_action_pressed(&"ui_page_up", true): return -1.0
+	if not is_locked(): return 0.0
+	if event.is_action_pressed(&"ui_down", true): return DescriptionPanel.WHEEL_STEP_PAGES
+	if event.is_action_pressed(&"ui_up", true): return -DescriptionPanel.WHEEL_STEP_PAGES
+	return 0.0
+
+## The scroll stick's last reported deflection, integrated per frame while it is off centre.
+var _scroll_stick : float = 0.0
+
+# A STICK REPORTS ONLY WHEN IT MOVES, so its deflection is held and integrated per frame rather
+# than scrolled once. Inside the action's own deadzone it is at rest, which stops the scroll.
+func _aim_scroll_stick(axis_value: float) -> void:
+	var deadzone := InputMap.action_get_deadzone(&"sidebar_scroll")
+	_scroll_stick = axis_value if absf(axis_value) >= deadzone else 0.0
+	set_process(not is_zero_approx(_scroll_stick))
+
+func _process(delta: float) -> void:
+	_description_panel.scroll_by_pages(
+			_scroll_stick * delta * PlayArea.settings().sidebar_scroll_pages_per_second)
+
+# The container joins keyboard/pad navigation only while the sidebar is LOCKED, which is when the
+# exit X is the way out of it. Unlocked, nothing here is in anyone's focus chain.
+func _refresh_exit_focus() -> void:
+	_exit_button.focus_mode = Control.FOCUS_ALL if is_locked() else Control.FOCUS_NONE
 
 ## The room the description has: the container minus the overlay's button band, which both contents start below.
 func _description_size() -> Vector2:

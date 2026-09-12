@@ -8,6 +8,9 @@ extends Control
 @onready var _title_label : Label = %Title
 @onready var _body_label : Label = %Body
 
+## Godot's own mouse wheel steps an eighth of a page per notch, so a key or a stick meaning "a nudge" moves by the same step.
+const WHEEL_STEP_PAGES := 0.125
+
 ## The entry on screen, or null before the first `show_entry()`. Public so a caller can check WHICH entry shows, by identity.
 var current_entry : InfoEntry = null
 
@@ -18,7 +21,12 @@ func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
 	_body_label.text = entry.body
 	_mount_visual(entry.visual)
 	resize_to(panel_size)
+	_scroll.scroll_vertical = 0
 	visible = true
+
+## Scrolls the body by `pages` of its own visible height -- the unit the mouse wheel steps in eighths of.
+func scroll_by_pages(pages: float) -> void:
+	_scroll.scroll_vertical += roundi(pages * _scroll.size.y)
 
 ## Hands the visual back OUT without freeing it, so the screen this description belongs to can be returned to.
 func detach_entry() -> void:

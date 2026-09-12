@@ -81,6 +81,14 @@ func _ready() -> void:
 	await test_a_hover_during_processing_changes_nothing()
 	await test_the_hud_holds_after_processing_until_any_focus_event()
 	await test_the_maps_container_does_not_swap_on_the_games_processing()
+	behavior_section("S8: SCROLL AND MULTI-MODAL REACH")
+	test_the_sidebar_scroll_action_binds_the_non_navigation_stick()
+	await test_a_long_description_shows_a_scrollbar_and_rests_at_the_top()
+	await test_a_short_description_hides_the_scrollbar()
+	await test_page_keys_scroll_the_description_by_a_page()
+	await test_the_scroll_stick_scrolls_the_description_and_not_the_hud()
+	await test_the_arrows_scroll_only_once_the_description_is_locked()
+	await test_the_exit_x_joins_navigation_only_while_locked()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1990,3 +1998,224 @@ func test_the_same_entry_published_again_after_processing_still_shows() -> void:
 	check(container.showing_description(),
 			"the SAME entry published again re-shows it: nothing is swallowed (Q257=b)")
 	container.queue_free()
+
+# ------------------------------------------------------------------ S8: scroll and multi-modal reach
+
+## How many lines the scroll fixtures' body carries -- a real card's own text is three lines and fits every window this suite builds, which would leave every scroll assertion trivially true.
+const LONG_BODY_LINES := 80
+
+## Frames a pushed stick is held for before the scroll it drives is read -- the stick reports once and the container integrates it per frame.
+const STICK_HELD_FRAMES := 10
+
+func _long_entry() -> InfoEntry:
+	var entry := InfoEntry.new()
+	entry.title = "Scrolling"
+	var lines : Array[String] = []
+	for line : int in LONG_BODY_LINES:
+		lines.append("line %d of a description far longer than the container is tall" % line)
+	entry.body = "\n".join(lines)
+	return entry
+
+func _short_entry() -> InfoEntry:
+	var entry := InfoEntry.new()
+	entry.title = "Short"
+	entry.body = "One line."
+	return entry
+
+func _panel_scroll(panel: DescriptionPanel) -> ScrollContainer:
+	return panel.get_node(^"%Scroll") as ScrollContainer
+
+# The axis the InputMap actually binds, never a constant of this suite's own: Q102=a makes every
+# action rebindable, and pinning one here would turn a rebind into a failure.
+func _scroll_stick_axis() -> int:
+	if not InputMap.has_action(&"sidebar_scroll"): return -1
+	for event : InputEvent in InputMap.action_get_events(&"sidebar_scroll"):
+		var motion := event as InputEventJoypadMotion
+		if motion: return motion.axis
+	return -1
+
+func _push_scroll_stick(viewport: Viewport, axis_value: float) -> void:
+	var axis := _scroll_stick_axis()
+	if axis < 0: return
+	var motion := InputEventJoypadMotion.new()
+	motion.axis = axis as JoyAxis
+	motion.axis_value = axis_value
+	viewport.push_input(motion)
+
+func _push_key(viewport: Viewport, keycode: Key, pressed: bool) -> void:
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.physical_keycode = keycode
+	event.pressed = pressed
+	viewport.push_input(event)
+
+## Q42=a: `sidebar_scroll` is a real action, on an axis Godot's own navigation does not already steer with.
+func test_the_sidebar_scroll_action_binds_the_non_navigation_stick() -> void:
+	check(InputMap.has_action(&"sidebar_scroll"), "the InputMap registers sidebar_scroll")
+	if not InputMap.has_action(&"sidebar_scroll"): return
+	var events := InputMap.action_get_events(&"sidebar_scroll")
+	check(not events.is_empty(), "sidebar_scroll has at least one real binding",
+			"events=%d" % events.size())
+	var axes : Array[int] = []
+	var directions : Array[float] = []
+	for event : InputEvent in events:
+		var motion := event as InputEventJoypadMotion
+		check(motion != null, "every sidebar_scroll binding is a joypad axis (Q42=a)")
+		if motion == null: continue
+		if not axes.has(motion.axis): axes.append(motion.axis)
+		if not directions.has(signf(motion.axis_value)): directions.append(signf(motion.axis_value))
+	check(axes.size() == 1, "...all of them the same axis, so one stick scrolls", str(axes))
+	check(directions.size() == 2, "...bound both ways, so the stick scrolls up AND down",
+			str(directions))
+	var navigation_axes : Array[int] = []
+	for action : StringName in ([&"ui_up", &"ui_down"] as Array[StringName]):
+		for event : InputEvent in InputMap.action_get_events(action):
+			var motion := event as InputEventJoypadMotion
+			if motion and not navigation_axes.has(motion.axis):
+				navigation_axes.append(motion.axis)
+	check(not axes.is_empty() and not navigation_axes.has(axes[0]),
+			"...and it is NOT the stick ui_up/ui_down already navigate with (Q42=a)",
+			"scroll=%s navigation=%s" % [str(axes), str(navigation_axes)])
+
+## Q40=b/Q41=a: an overflowing description shows the scrollbar and opens at the top, however far the last one was scrolled.
+func test_a_long_description_shows_a_scrollbar_and_rests_at_the_top() -> void:
+	var container := _build_container()
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll := _panel_scroll(panel)
+	container.show_description(_long_entry())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(scroll.get_v_scroll_bar().visible,
+			"a description taller than the container shows the scrollbar (Q40=b)")
+	check(scroll.scroll_vertical == 0, "...and opens at the top (Q41=a)",
+			str(scroll.scroll_vertical))
+	_push_key(get_viewport(), KEY_PAGEDOWN, true)
+	await get_tree().process_frame
+	check(scroll.scroll_vertical > 0, "a page down really moved it", str(scroll.scroll_vertical))
+	container.show_description(_long_entry())
+	await get_tree().process_frame
+	check(scroll.scroll_vertical == 0, "...and the next description rests at the top again (Q41=a)",
+			str(scroll.scroll_vertical))
+	container.queue_free()
+
+## Q40=b: the other half of the rule -- content that fits carries no scrollbar at all.
+func test_a_short_description_hides_the_scrollbar() -> void:
+	var container := _build_container()
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll := _panel_scroll(panel)
+	container.show_description(_short_entry())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not scroll.get_v_scroll_bar().visible,
+			"a description that fits shows no scrollbar (Q40=b)")
+	container.queue_free()
+
+## Q43=b: Page Down and Page Up move the description a page, whenever it is what shows.
+func test_page_keys_scroll_the_description_by_a_page() -> void:
+	var container := _build_container()
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll := _panel_scroll(panel)
+	container.show_description(_long_entry())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_push_key(get_viewport(), KEY_PAGEDOWN, true)
+	await get_tree().process_frame
+	var page := scroll.size.y
+	check(absf(float(scroll.scroll_vertical) - page) <= 1.0,
+			"Page Down scrolls exactly one page of the description (Q43=b)",
+			"%d vs %.1f" % [scroll.scroll_vertical, page])
+	_push_key(get_viewport(), KEY_PAGEUP, true)
+	await get_tree().process_frame
+	check(scroll.scroll_vertical == 0, "...and Page Up brings it back",
+			str(scroll.scroll_vertical))
+	container.queue_free()
+
+## Q42=a: the stick scrolls whatever description is showing, and does nothing at all behind the HUD.
+func test_the_scroll_stick_scrolls_the_description_and_not_the_hud() -> void:
+	var container := _build_container()
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll := _panel_scroll(panel)
+	container.show_description(_long_entry())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_push_scroll_stick(get_viewport(), 1.0)
+	for frame : int in STICK_HELD_FRAMES: await get_tree().process_frame
+	var scrolled := scroll.scroll_vertical
+	check(scrolled > 0, "the stick scrolls the description while it shows (Q42=a)", str(scrolled))
+	_push_scroll_stick(get_viewport(), 0.0)
+	await get_tree().process_frame
+	var rested := scroll.scroll_vertical
+	for frame : int in STICK_HELD_FRAMES: await get_tree().process_frame
+	check(scroll.scroll_vertical == rested, "...and stops the moment it centres",
+			"%d vs %d" % [scroll.scroll_vertical, rested])
+	container.show_hud()
+	_push_scroll_stick(get_viewport(), 1.0)
+	for frame : int in STICK_HELD_FRAMES: await get_tree().process_frame
+	check(scroll.scroll_vertical == rested, "...and moves nothing while the HUD shows",
+			"%d vs %d" % [scroll.scroll_vertical, rested])
+	_push_scroll_stick(get_viewport(), 0.0)
+	container.queue_free()
+
+## Q43=b: the arrows are the sidebar's only once it is LOCKED; unlocked they stay the board's own.
+func test_the_arrows_scroll_only_once_the_description_is_locked() -> void:
+	await _start_game_fixture()
+	var scroll := _panel_scroll(_panel)
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to read",
+			str(controls.size()))
+	if not controls.is_empty():
+		controls[0].grab_focus()
+		await get_tree().process_frame
+		var focused_before := _game_viewport.gui_get_focus_owner()
+		check(focused_before == controls[0],
+				"a board card holds the key/pad focus before any arrow is pushed")
+		_container.show_description(_long_entry())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_push_key(_booted_viewport, KEY_DOWN, true)
+		var handled_unlocked := _booted_viewport.is_input_handled()
+		await get_tree().process_frame
+		check(scroll.scroll_vertical == 0,
+				"an UNLOCKED description does not take the arrow (Q43=b)",
+				str(scroll.scroll_vertical))
+		check(not handled_unlocked, "...so the board still gets it")
+		_container.lock_to(_long_entry(), _play_area.ui_data[controls[0]])
+		await get_tree().process_frame
+		await get_tree().process_frame
+		_push_key(_booted_viewport, KEY_DOWN, true)
+		var handled_locked := _booted_viewport.is_input_handled()
+		await get_tree().process_frame
+		check(scroll.scroll_vertical > 0, "a LOCKED description scrolls on the arrow (Q43=b)",
+				str(scroll.scroll_vertical))
+		check(handled_locked, "...spending the event before the board can see it")
+		check(_game_viewport.gui_get_focus_owner() == focused_before,
+				"...so the board's own selection does not move with it")
+	await _end_game_fixture()
+
+## Q68=b/C16: the exit X joins keyboard/pad navigation only while the sidebar is locked, and accept on it dismisses.
+func test_the_exit_x_joins_navigation_only_while_locked() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to read",
+			str(controls.size()))
+	if not controls.is_empty():
+		_container.show_description(_long_entry())
+		await get_tree().process_frame
+		check(_exit_button().focus_mode == Control.FOCUS_NONE,
+				"an unlocked description keeps the X out of the navigation path (Q68=b)",
+				str(_exit_button().focus_mode))
+		_container.lock_to(_long_entry(), _play_area.ui_data[controls[0]])
+		await get_tree().process_frame
+		check(_exit_button().focus_mode == Control.FOCUS_ALL,
+				"...and locking puts it in (Q68=b, C16)", str(_exit_button().focus_mode))
+		_exit_button().grab_focus()
+		await get_tree().process_frame
+		check(_exit_button().has_focus(), "...where navigation can land on it")
+		_push_key(_booted_viewport, KEY_ENTER, true)
+		_push_key(_booted_viewport, KEY_ENTER, false)
+		await get_tree().process_frame
+		check(hud_stack.visible and not _panel.visible,
+				"...and accept on it dismisses the description (C16)")
+		check(not _container.is_locked(), "...taking the lock with it")
+	await _end_game_fixture()

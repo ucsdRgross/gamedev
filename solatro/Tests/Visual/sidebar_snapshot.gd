@@ -14,12 +14,18 @@ const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
 const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
 const DESCRIPTION_PROCESSING_OUT_PATH := "user://sidebar_snapshot/description_processing.png"
+const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
 const CASCADE_PLACEMENT_ATTEMPTS := 24
 const CASCADE_WATCH_FRAMES := 180
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
+# MEASURED: no card's own text overflows the container at the shipped `container_size_fraction`
+# -- a square window's top band is 288 px and a description wraps to 97. So the scroll still
+# narrows the band through the same settings override the wall editor uses.
+const SCROLL_CASE_WINDOW_SIZE := Vector2i(500, 500)
+const SCROLL_CASE_SIZE_FRACTION := 0.1
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
 # surface, not spin on forever.
@@ -94,6 +100,23 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_OUT_PATH)
 
+	_hover_the_wordiest_board_card(main, view)
+	await get_tree().process_frame
+	var shipped_settings := WallPicture.editor_settings
+	WallPicture.editor_settings = SettingsManager.settings.duplicate() as PlayerSettings
+	WallPicture.editor_settings.container_size_fraction = SCROLL_CASE_SIZE_FRACTION
+	DisplayServer.window_set_size(SCROLL_CASE_WINDOW_SIZE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DESCRIPTION_SCROLL_OUT_PATH)
+	_report_overflow(main)
+	WallPicture.editor_settings = shipped_settings
+	DisplayServer.window_set_size(window_size)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 	await _click_an_entrance_card(main, view)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -142,6 +165,32 @@ func _hover_a_board_card(main: Main, view: GameView) -> void:
 		if not rect.encloses(control.get_global_rect()): continue
 		_push_pointer(viewport, control.get_global_rect().get_center())
 		return
+
+# The SCROLL still: the board's WORDIEST card, which is the longest description the game screen can
+# publish, READ FIRST and then squeezed -- the resize is what re-lays the description it already
+# has, so the still never depends on a second hover landing on a second control.
+func _hover_the_wordiest_board_card(main: Main, view: GameView) -> void:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var rect := Rect2(Vector2.ZERO, Vector2(viewport.size))
+	var wordiest : Control = null
+	var longest := 0
+	for control : Control in view.play_area.ui_data:
+		if not rect.encloses(control.get_global_rect()): continue
+		var words := ControlCard.describe_card(view.play_area.ui_data[control]).length()
+		if words > longest:
+			longest = words
+			wordiest = control
+	if wordiest: _push_pointer(viewport, wordiest.get_global_rect().get_center())
+
+# The scroll still is worth looking at only if the body really overflows, which the window decides:
+# printed so the by-eye pass reads a number instead of squinting at a thin scrollbar.
+func _report_overflow(main: Main) -> void:
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var scroll : ScrollContainer = panel.get_node(^"%Scroll")
+	print("SIDEBAR_SNAPSHOT window=%s scrollbar_visible=%s content=%.0f page=%.0f scroll=%d" % [
+			get_viewport().get_visible_rect().size, scroll.get_v_scroll_bar().visible,
+			scroll.get_v_scroll_bar().max_value, scroll.size.y, scroll.scroll_vertical])
 
 # The FOLLOW still: a second card READ while the first stays locked, so the shot carries the
 # hovered card's description beside the locked card's own marking. Walked until the board itself

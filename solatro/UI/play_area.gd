@@ -2788,6 +2788,9 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 			if slot: _size_stack_slot(slot)
 
+# The pointer leaving a card announces the lost highlight only when it landed on NO other card:
+# whether it did is the engine's own answer, read back through `_card_control_at`, so this never
+# disagrees with what the board thinks is under the cursor.
 func create_card_control() -> Control:
 	var new_control := Control.new()
 	new_control.add_to_group("CardVisualControl")
@@ -2805,20 +2808,15 @@ func create_card_control() -> Control:
 				moused_hovered_control = null
 				# hover-driven inspector hides with the hover (keyboard re-focus re-shows it)
 				if focused_control == new_control: hide_focus_info()
-				_publish_pointer_left_cards())
+				if _card_control_at(get_global_mouse_position()) == null: highlight_cleared.emit())
 	new_control.focus_exited.connect(_publish_focus_left_cards, CONNECT_DEFERRED)
 	return new_control
 
-# The pointer left a card: whether it landed on ANOTHER card is the engine's own answer, read back
-# through `_card_control_at`, so this never disagrees with what the board thinks is under the cursor.
-func _publish_pointer_left_cards() -> void:
-	if _card_control_at(get_global_mouse_position()) == null: highlight_cleared.emit()
-
 # DEFERRED, and it has to be: at `focus_exited` the viewport has dropped the old focus and not yet
-# taken the new one, so the owner reads null however the focus is moving; one idle call later it is
-# settled. ⚠ A board LEAVING THE TREE is that case with no viewport left to ask at all.
+# taken the new one, so the owner reads null however the focus is moving; one idle call later it
+# is settled. Every teardown frees the screen root, so a deferred call never reaches a live board.
 func _publish_focus_left_cards() -> void:
-	if not is_inside_tree(): return
+	assert(is_inside_tree())
 	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.

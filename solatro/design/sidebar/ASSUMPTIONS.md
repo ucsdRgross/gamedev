@@ -101,7 +101,7 @@
   back through `GameView._on_description_dismissed()` to clear it. The board never decides what is
   shown -- it publishes, and the view relays in both directions (B5, Q56=a, PLAN 2).
 - S6: new names NAMES.md does not list -- `PlayArea.locked_data`, `PlayArea._refresh_card_marking()`,
-  `PlayArea._publish_info()`, `GameView._lock_description_to()`, `GameView._on_description_dismissed()`,
+  `PlayArea._publish_info()`, `GameView._on_description_dismissed()`,
   `HudContainer._description_size()`, `HudContainer._place_exit_button()`, the `ExitLayer`/`%ExitX`
   nodes, and `DescriptionPanel.resize_to()` (S5's `_resize_to`, now also called on a resize).
 - S6: Q58=c's marking is `CardVisual.focused`, applied by ONE rule -- a card is marked while it holds
@@ -135,9 +135,9 @@
   that displaces the locked entry DETACHES its visual instead of freeing it (the same handoff the
   per-screen memory uses), so returning re-mounts the very node the lock was shown with; `clear_lock()`
   and `_exit_tree()` free it when it is still detached. New names NAMES.md does not list:
-  `HudContainer.return_to_lock()`, `showing_description()`, `_detach_locked_entry()`,
-  `_free_detached_visual()`, `PlayArea.highlight_cleared`, `PlayArea.description_dismiss_requested`,
-  `PlayArea._publish_pointer_left_cards()`, `PlayArea._publish_focus_left_cards()`,
+  `HudContainer.return_to_lock()`, `showing_description()`, `_free_detached_visual()`,
+  `PlayArea.highlight_cleared`, `PlayArea.description_dismiss_requested`,
+  `PlayArea._publish_focus_left_cards()`,
   `GameView._on_description_dismiss_requested()`.
 - S6b: cancel and a bare-board press both publish `description_dismiss_requested`; the VIEW decides
   whether the event is spent, because only it sees both the board's ask and the container's
@@ -178,3 +178,44 @@
   inside the Entrance is a legal move that runs no mutation pass and so cascades nothing.
   `_click_an_entrance_card()` now walks the Entrance until the board reports the grab, since only
   some of those controls are grabbable once the board has been played into.
+- S8: `sidebar_scroll` is ONE action carrying BOTH directions of `JOY_AXIS_RIGHT_Y` (+1 and -1),
+  because NAMES.md fixes exactly one name for it. Direction comes off the event's own `axis_value`
+  and the rest position off `InputMap.action_get_deadzone()`, so neither is a literal. The LEFT
+  stick is the navigation one: Godot's built-in `ui_up`/`ui_down` defaults bind the d-pad and the
+  left stick, and nothing in `project.godot` overrides them (Q42=a).
+- S8: `HudContainer` reads the scroll keys in `_input`, BEFORE the GUI pass, and marks the event
+  handled. Measured against the code: `PlayArea._on_cell_gui_input` is the only place the board can
+  hear an arrow, because the viewport's focus-neighbour search eats any arrow that finds a
+  neighbour, and `Wall._unhandled_input` routes only what is left into the focused picture. Reading
+  the arrows any later could not keep the board's own selection still while the sidebar scrolls.
+- S8: a joypad reports an axis only when it MOVES, so the stick's deflection is held in
+  `HudContainer._scroll_stick` and integrated by `_process`; a single event would scroll once and
+  stop. `show_hud()` re-centres it, which is also what makes the stick inert behind the HUD.
+- S8: new names NAMES.md does not list -- `PlayerSettings.sidebar_scroll_pages_per_second` (the
+  scroll rate NAMES 5 has no knob for), `DescriptionPanel.scroll_by_pages()` and its
+  `WHEEL_STEP_PAGES` const, `HudContainer._key_scroll_pages()`, `_aim_scroll_stick()`,
+  `_scroll_stick` and `_refresh_exit_focus()`. The unit everywhere is a PAGE of the description's
+  own visible height: Godot's `ScrollContainer` steps an eighth of one per wheel notch, so an arrow
+  moves `WHEEL_STEP_PAGES` and the stick's default 1.0 page a second is eight notches a second.
+- S8: Q68=b is `%ExitX.focus_mode` -- `FOCUS_ALL` while the sidebar is locked, `FOCUS_NONE`
+  otherwise, refreshed in `show_hud()` and `show_description()`. ⚠ Godot's focus navigation does
+  not cross viewports: the board's cells live in the picture's own `SubViewport` and the X in the
+  overlay's, so "navigation reaches the X" means the OVERLAY's own focus chain reaches it, never an
+  arrow from a board cell. Accept on it is the engine's own `BaseButton` behaviour.
+- S8: Q40=b needed no scene change -- `ScrollContainer.vertical_scroll_mode` already defaults to
+  AUTO, which is exactly "shown when there is more content than fits". `TestSidebar` asserts both
+  halves so a later edit cannot quietly change the mode.
+- S8, measured: the root viewport stretches to a 1152x648 base, so `container_rect()` is computed in
+  STRETCH pixels, not window pixels. At the shipped `container_size_fraction` NO card description
+  can overflow the container at any window -- the top case leaves at least 169 px for 97 px of text
+  and the side case at least 601 for at most 356. `Tests/Visual/sidebar_snapshot` therefore narrows
+  the band to 0.1 through `WallPicture.editor_settings` for `description_scroll.png`. The real
+  overflow arrives with S12's viewers; the rule itself is under test either way.
+- S8 hygiene (bloat review on S6): three one-call-site helpers are inlined at their callers -- the
+  lock in `GameView._on_data_selected()`, the locked-entry detach at the head of
+  `HudContainer.show_description()`, and the pointer-left publish inside the card control's own
+  `mouse_exited`. `HudContainer.clear_lock()` keeps its name: NAMES 3 lists it as a contract.
+- S8 hygiene, measured: `PlayArea._publish_focus_left_cards()`'s `is_inside_tree()` guard is an
+  `assert` now. Every production teardown frees the screen root and a deferred call on a freed
+  object is dropped, so no production caller can reach it out of the tree; the full suite (the test
+  helper that leaves a view in the tree's memory included) never fires the assert.

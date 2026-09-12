@@ -350,17 +350,12 @@ func _on_undo_pressed() -> void:
 	game.undo()
 
 # ONE CLICK, BOTH OUTCOMES: the click that grabs or places ALSO locks the description to the card
-# it landed on -- there is no inspect-only mode any more. The container decides what
-# shows; the view only relays, being what holds the card's data and the container at once.
-func _lock_description_to(data: CardData) -> void:
-	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
-	play_area.locked_data = data
-
-# A PLACEMENT FINISHES THE INTERACTION, so a landed drop takes the container back to the HUD. A
-# refused one leaves the description up: the player is still choosing where the held card goes.
+# it landed on -- there is no inspect-only mode any more. A PLACEMENT FINISHES THE INTERACTION, so
+# a landed drop takes the container back to the HUD; a refused one leaves the description up.
 func _on_data_selected(data: CardData) -> void:
 	if game.processing: return
-	_lock_description_to(data)
+	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
+	play_area.locked_data = data
 	if play_area.selected_cards:
 		var held0 := play_area.selected_cards[0]
 		if (data == held0

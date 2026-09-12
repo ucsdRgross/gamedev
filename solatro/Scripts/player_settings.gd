@@ -659,6 +659,12 @@ var wall_info_mode : bool = false
 		container_size_fraction = clampf(value, 0.0, 0.9)
 		settings_changed.emit()
 
+## How far the scroll stick moves a description at full deflection, in pages of it a second (one is eight of the mouse wheel's own notches).
+@export var sidebar_scroll_pages_per_second : float = 1.0:
+	set(value):
+		sidebar_scroll_pages_per_second = maxf(value, 0.0)
+		settings_changed.emit()
+
 ## Pixel cap on the HUD container's size once the fraction above would grow past it.
 @export var container_size_max_px : float = 640.0:
 	set(value):
