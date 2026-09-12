@@ -795,7 +795,7 @@ func _real_card(secs: float) -> CardVisual:
 		poly.hide()
 	# One frame for the seek to reach the skinned polygons, then re-read the rig into the mask — the
 	# same call `_process` makes every frame on a board card.
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 	card._track_fx_outline()
 	check(not card._rig_arms.is_empty(),
 			"the real card's star rig was found (16 Bone2D arms under Bone_Center)",
@@ -1024,8 +1024,7 @@ func _place(node: Node2D, node_scale: float) -> void:
 ## Draw the current stage and hand back its image, then clear the stage for the next shot.
 ## Two frames: one to apply what was just written, one to be sure it reached the render target.
 func _shoot() -> Image:
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(2)
 	var img := _vp.get_texture().get_image()
 	for child in _stage.get_children():
 		_stage.remove_child(child)

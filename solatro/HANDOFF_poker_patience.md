@@ -615,6 +615,16 @@ made it safe to land here after all. Verified both ways: it fired on an idling s
 with no preserved directory created. The longest legitimate silence measured in a full run is
 ~3 minutes, so 600 s has better than 3x margin. See `HEADLESS_TESTING.md`.
 
+✅ **PART OF IT IS NOW ATTRIBUTED, AND THE STALL IS GONE AS A STALL.** Four preserved stalls (three
+suites in one run, `GRID VIEW` in another) all stopped at the SAME statement: `await
+RenderingServer.frame_post_draw`. In the first of them the sibling suites went on streaming checks
+for ~34 s afterwards, so `process_frame` was still firing while `frame_post_draw` was not — **the
+main loop runs and the engine draws nothing**, which is `Main::iteration` skipping the draw when no
+window can draw. Every such await is now `TestSuite.await_drawn_frames()`, bounded, so the next
+occurrence is one named failure with `DisplayServer.window_can_draw()` in it rather than a dead run
+(`HEADLESS_TESTING.md`). **Still open: what makes the window undrawable.** It is rare — one in five
+filtered runs once, then thirteen clean.
+
 **WHAT THE NEXT SESSION SHOULD DO:** run the suite in a loop until it stalls again — the watchdog now
 names the suite and keeps the logs for you — and only then attribute it. Do not spend a session
 theorising: this document already contained two confident wrong answers, and both were reasoned

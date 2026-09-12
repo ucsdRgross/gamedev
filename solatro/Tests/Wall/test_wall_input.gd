@@ -430,7 +430,7 @@ func _test_click_routes_to_the_right_screen_coordinate_at_three_zoom_levels() ->
 		# is what made get_global_transform_with_canvas() stop returning a stale/repeated value.
 		await get_tree().process_frame
 		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
+		await await_drawn_frames(1)
 		var pressed : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
 		# Signal.connect() returns an Error code (int), not a handle -- keep the Callable itself so
 		# disconnect() below has something it actually accepts.
@@ -1063,7 +1063,7 @@ func _test_touch_events_route_to_the_same_place_a_click_does() -> void:
 	var screen : Sprite2D = wp.get_node(^"%Screen")
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 
 	var landed : Array[Vector2] = [Vector2.INF]   # boxed -- lambdas capture locals BY VALUE
 	(wp.screen_root as Control).gui_input.connect(func(e: InputEvent) -> void:

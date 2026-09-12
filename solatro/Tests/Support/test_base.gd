@@ -105,6 +105,24 @@ func await_siblings_except(exclude_names: Array[String]) -> void:
 				and not suite.finished:
 			await suite.suite_finished
 
+## Seconds a bounded wait for a DRAWN frame allows before it reports the drawing dead.
+const DRAWN_FRAME_WATCHDOG_SECS := 10.0
+
+# A bare `await RenderingServer.frame_post_draw` never returns when the engine runs its main loop
+# while drawing nothing, and the whole run then dies with no verdict for any suite. Bounded, the
+# same event costs one named failure. `Engine.get_frames_drawn()` counts what that signal marks.
+func await_drawn_frames(count: int) -> void:
+	var target := Engine.get_frames_drawn() + count
+	var waited := 0.0
+	while Engine.get_frames_drawn() < target and waited < DRAWN_FRAME_WATCHDOG_SECS:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	if Engine.get_frames_drawn() < target:
+		check(false, "the engine is still drawing, so a frame this check reads can arrive",
+				("waited %.0fs for %d drawn frame(s) and got none while the main loop kept running; "
+				+ "the window reports can_draw=%s")
+				% [DRAWN_FRAME_WATCHDOG_SECS, count, DisplayServer.window_can_draw()])
+
 func behavior_section(title: String) -> void:
 	_category = Category.BEHAVIOR
 	TestLog.line("\n--- [BEHAVIOR] %s ---" % title)

@@ -969,9 +969,9 @@ func _paint_delta(view: GameView, vp: SubViewport, gi: int, area: Rect2i) -> int
 ## One rendered frame of `vp`, read back. Two waits: the first carries the layout change into a
 ## drawn frame, the second is the frame that is read.
 func _shot(view: GameView, vp: SubViewport) -> Image:
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 	CardEnvironment.CURRENT = view.game
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(1)
 	CardEnvironment.CURRENT = view.game
 	return vp.get_texture().get_image()
 

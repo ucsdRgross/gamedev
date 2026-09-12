@@ -93,8 +93,7 @@ func _build_stage() -> void:
 	_vp.add_child(_stage)
 
 func _shoot() -> Image:
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
+	await await_drawn_frames(2)
 	var img := _vp.get_texture().get_image()
 	for child : Node in _stage.get_children():
 		_stage.remove_child(child)

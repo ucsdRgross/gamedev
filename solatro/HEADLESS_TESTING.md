@@ -81,6 +81,18 @@ to attribute it with.
 Every run reopens these logs with truncate, so the NEXT run destroys the stalled one's evidence — and
 a stall is both when that evidence matters most and when someone re-runs first.
 
+### ⚠ Never `await RenderingServer.frame_post_draw` bare — use `await_drawn_frames()`
+
+**The engine can keep running its main loop while it draws nothing**, and that signal then never
+fires again for anybody: `Main::iteration` skips the draw, and the signal with it, whenever no window
+can draw. Measured here — four suites hung inside that await while their siblings went on streaming
+checks for another ~34 s, and one hung suite costs the verdict of all 46.
+
+`TestSuite.await_drawn_frames(count)` waits on `Engine.get_frames_drawn()` instead, bounded by
+`DRAWN_FRAME_WATCHDOG_SECS`, and on timeout reports ONE named failure carrying
+`DisplayServer.window_can_draw()`. What stops the drawing is still open; `HANDOFF_poker_patience.md`
+holds what is known.
+
 **The longest LEGITIMATE silence in a full run is ~3 minutes** (the `SETTINGS RANGE` tail), so the
 600 s default leaves better than 3x margin. Do not lower it toward 300 without re-measuring.
 
