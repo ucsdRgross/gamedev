@@ -118,13 +118,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs (BOARD PLAN of 67): planner hook parked 62/4 FAILED (TP-01, TP-07); within-pass unused test removed 56/11 FAILED (TP-02, 03, 04, 09, 14, 15); RNG unseeded 65/1 (TP-07); Fisher-Yates swapped for Array.shuffle() 65/2 (TP-08, TP-07); add_grid deal removed 63/3 (TP-14, TP-04); save walker skipping cell types 64/2 (TP-17). Overseer full run: ALL 47 SUITES: 4067 CHECKS PASSED, errors log empty; BOARD PLAN 67/67; SECTION 8 identical; per-suite banners vs S3 differ only in BOARD PLAN (and BOARD FUZZ drift). grep: no global RNG call in board_plan.gd; BoardPlan.deal has exactly two call sites (planner on_game_start, CardEffectApi.add_grid); plan_seed written once.'
   notes: 'TP-01/TP-07 go through the real show start; TP-14 and half of TP-04 through the real add_grid. Re-derived by measurement (ASSUMPTIONS.md): TP-14 counts (ten identities at 3 copies, ten at 2, max 3), TP-09 measures repeat-cell spread, TP-08 has a mirror half. Pass boundaries count copies off the board (design "cycling"); identical for the opening deal. Two api accessors: board_state(), plan_seed_for_node() = hash(Vector2i(world_seed, current_node_id)) forced off 0, read from Main.save_info. Known property for the owner: the deal draws over the deck in its shuffled order, so "same node, same plan" holds while the deck order is the same (Q8 note anticipates this). TP-05/TP-06 still parked on GAP-001.'
 - id: S5
-  description: MarkMatch.matches_at, flat_bonus, mult_bonus; leniency hook comments; TP-20..27, TP-39.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  description: MarkMatch.matches_at, flat_bonus, mult_bonus; leniency hook comments; TP-20..27, TP-35, TP-39.
+  files_touched: [solatro/Scripts/mark_match.gd, solatro/Scripts/pip_comparator.gd, solatro/Scripts/player_settings.gd, solatro/Cards/card_modifier.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Engine/test_comparator.gd, solatro/Tests/Support/counting_environment.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red runs (MARK MATCH of 49): always RANK|SUIT -> 8 FAILED; script identity loosened -> 2 FAILED (TP-21, TP-22); result cached on revision -> 3 FAILED (TP-23, TP-39); routed through the MELD hooks -> 2 FAILED (TP-39 dispatch count caught the fallback); ceiling/ace dropped -> 3 FAILED (TP-35). Overseer full run: ALL 47 SUITES: 4078 CHECKS PASSED, errors log empty; MARK MATCH 49/49, COMPARATOR 154/154; SECTION 8 identical; banner diff vs S4 only MARK MATCH (+ fuzz drift). grep: enum, four MARK_* constants, four hooks as comments and zero as methods, five knobs under "Balance — board plan", no literal in the bonus functions, no production caller yet (S6/S9 own them).'
+  notes: 'The five knobs landed here because flat_bonus/mult_bonus need them (S14 keeps only plan_reveal_fraction). PipComparator.modifier_script made public; CountingEnvironment moved to Tests/Support. A rank with no int value is value = NAN (is_finite); 2.5 built with PipRankNumeral.with_value. ARCHITECTURE_REVIEW §1.4 hook roster needs the on_mark_* entry at S16.'
 - id: S6
   description: (hand + flats) x M in score_line; TP-30..38; SECTION 8 leaderboard byte-identical.
   files_touched: []

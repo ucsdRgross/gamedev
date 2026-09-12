@@ -671,3 +671,30 @@ var wall_info_mode : bool = false
 	set(value):
 		board_edge_pad_rows = maxf(value, 0.0)
 		settings_changed.emit()
+
+@export_group("Balance — board plan")
+## A rank match pays the rank the card prints times this, rounded up.
+@export var plan_rank_match_step : float = 1.0:
+	set(value):
+		plan_rank_match_step = value
+		settings_changed.emit()
+## What a rank match pays when the rank has no value a whole number can hold.
+@export var plan_rank_flat_fallback : int = 10:
+	set(value):
+		plan_rank_flat_fallback = value
+		settings_changed.emit()
+## What a rank match on an Ace pays, in place of the value it prints.
+@export var plan_ace_value : int = 10:
+	set(value):
+		plan_ace_value = value
+		settings_changed.emit()
+## A talent match's share of the line's multiplier, which is the SUM of every share -- 1 is neutral.
+@export var plan_talent_mult : float = 1.0:
+	set(value):
+		plan_talent_mult = value
+		settings_changed.emit()
+## A hat match's share of that same sum, and 1 is neutral there too.
+@export var plan_hat_mult : float = 1.0:
+	set(value):
+		plan_hat_mult = value
+		settings_changed.emit()

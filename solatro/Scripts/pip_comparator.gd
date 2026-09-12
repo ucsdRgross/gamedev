@@ -233,13 +233,13 @@ static func printed_same(a: Variant, b: Variant) -> bool:
 #holds are the same question, and two spellings of it could disagree.
 static func printed_card_same(a: CardData, b: CardData) -> bool:
 	return printed_same(a.rank, b.rank) and printed_same(a.suit, b.suit) \
-			and _modifier_script(a.skill) == _modifier_script(b.skill) \
-			and _modifier_script(a.stamp) == _modifier_script(b.stamp)
+			and modifier_script(a.skill) == modifier_script(b.skill) \
+			and modifier_script(a.stamp) == modifier_script(b.stamp)
 
-#A modifier slot compared by CLASS, never by instance: a mark carries its own COPY of the skill or
-#stamp it names, so two slots agree when their scripts are identical -- and an empty slot on both
-#sides agrees too, which falls out of null == null.
-static func _modifier_script(mod: CardModifier) -> Script:
+#The script a modifier SLOT names -- comparing one slot means comparing scripts, because a mark
+#carries its own COPY of what it prints. Two EMPTY slots agree, which falls out of null == null; a
+#match that wants both slots filled tests that itself.
+static func modifier_script(mod: CardModifier) -> Script:
 	return mod.get_script() as Script if mod else null
 
 

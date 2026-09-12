@@ -388,19 +388,6 @@ func run_end_to_end_scoring_under_mod() -> void:
 # merging is the worst case and therefore the honest one.
 # ==============================================================================
 
-## GATE 2's probe. It counts at the ENVIRONMENT, not inside a rule: claim 1 is about a board
-## with no rule on it, so there is no rule to count inside.
-class CountingEnvironment extends FakeEnvironment:
-	var dispatches : Dictionary[StringName, int] = {}
-	func _note_mod_fired(mod: CardModifier, function: StringName,
-			feeds_combo := true) -> void:
-		dispatches[function] = dispatches.get(function, 0) + 1
-		super(mod, function, feeds_combo)
-	func total() -> int:
-		var n := 0
-		for k : StringName in dispatches: n += dispatches[k]
-		return n
-
 ## A deny rule that forbids nothing. Present, asked, and never merging.
 class DenyNever extends CardModifierType:
 	var calls := 0

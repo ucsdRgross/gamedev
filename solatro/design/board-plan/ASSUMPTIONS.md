@@ -71,3 +71,23 @@ gap under `gaps/`.
 - S4 / Q78: TP-15's added 26th cell makes `cells` and `cell_types` longer than
   `grid_width * grid_height`, which I2 reports by design, so that row does not assert `validate()`
   clean -- the ragged shape stays in tests exactly as the anti-scope says.
+- S5 / Q13: the mark comparison calls `PipComparator.pair_is_same` with `memoise = false`, so no
+  verdict is remembered for the hand being scored -- "derived on every call" expressed through the
+  existing dispatch rather than a second one. The hook family is passed as arguments, which that
+  helper already takes, so nothing about the deny/allow mechanism was copied.
+- S5 / Q26: "a value not convertible to an int" is `is_finite(rank.value)`. Every `PipRank` carries a
+  float `value`, so the only rank with no integer value is one whose value is not a number; TP-35
+  builds it with `value = NAN`. `HalfStepRank` does not exist, so the 2.5 case is
+  `PipRankNumeral.with_value(2.5)`.
+- S5 / QR3, Q34, Q37: `PipComparator._modifier_script` is now public `modifier_script`, so
+  whole-card printed identity (I6 and the deal) and a single-slot talent or hat match share ONE
+  definition of two slots naming the same thing. `printed_card_same` stays their conjunction.
+- S5 / Q41: `mult_bonus`'s first parameter is spelled `_card`, because GDScript warns on an unused
+  parameter and warnings are errors here. The type and position are as NAMES.md fixes them; S6's
+  composition is what will read the card.
+- S5 / TEST_PLAN TP-25: an EFFECT's placement is `Game.place_card_in_grid` with `processing == true`
+  -- the branch that tells an effect placing mid-cascade from a player putting a card down. There is
+  no grid placement on `CardEffectApi` today, so that is the whole difference between the two paths.
+- S5 / TEST_PLAN TP-39: the dispatch count is read at the ENVIRONMENT, so a board with no
+  implementer can be counted at all. `CountingEnvironment` moved out of `test_comparator.gd` into
+  `Tests/Support/counting_environment.gd` and both suites now share the one probe.

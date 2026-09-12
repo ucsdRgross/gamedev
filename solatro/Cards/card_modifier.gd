@@ -80,6 +80,13 @@ func combo_key(_hook: StringName = &"") -> String:
 #   func on_stack_suits_deny(s1: PipSuit, s2: PipSuit) -> bool
 #   func on_stack_suits_allow(s1: PipSuit, s2: PipSuit) -> bool
 
+#A CARD AGAINST THE MARK on its cell — the same two passes, its OWN hooks, no fallback either way.
+#   func on_mark_ranks_deny(r1: PipRank, r2: PipRank) -> bool
+#   func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool
+
+#   func on_mark_suits_deny(s1: PipSuit, s2: PipSuit) -> bool
+#   func on_mark_suits_allow(s1: PipSuit, s2: PipSuit) -> bool
+
 #WHOLE-HAND grouping, stage 1.
 #   func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]
 #   func on_meld_group_suits(cards: Array[CardData], groups: Array[Array]) -> Array[Array]
