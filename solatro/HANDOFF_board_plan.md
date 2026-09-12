@@ -3,7 +3,7 @@
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
 **State:** worktree `../gamedev-boardplan` created from `main` at a28c79aa; import cache warmed
-(`--headless --import` twice, second pass clean). Baseline full suite running. GAP-001 filed before
+(`--headless --import` twice, second pass clean). Baseline recorded below. GAP-001 filed before
 S1: the deal's per-slot stocks are sidebar S19, which is outside the sidebar run in progress, so
 the deal reads `draw_deck` as its one stock and TP-05/TP-06 are parked (see the gap for the ruling
 still wanted). No step dispatched yet.
@@ -23,24 +23,43 @@ Overseer: Fable 5.1 at high effort; it writes no source.
 - ONE implementer at a time (hook-enforced; the second slot is a non-Godot reviewer only).
   Dispatch every implementer FOREGROUND (`run_in_background: false`): the lock's PostToolUse
   release only fires for foreground calls.
-- The sidebar run (`../gamedev-sidebar`) is live in parallel and shares `app_userdata/Solatro`
-  with this worktree: check for a running `Godot_v4.7*` process before EVERY suite run, and never
-  start one while another is up. A failure observed during an overlap is not evidence.
+- The sidebar run (`../gamedev-sidebar`) is live in parallel on this box and runs the suite
+  often. Godot on Windows takes its data dir from the `APPDATA` environment variable and the
+  wrapper expands the same variable, so EVERY run here sets `APPDATA` to a private directory
+  (this session: a scratch `appdata/`) — its own `settings.tres`, `run_save`, `godot.log` and test
+  logs. Measured: two runs on one shared `app_userdata` truncated each other's logs and pushed the
+  full run past the wrapper's 600 s default. Residual risk: two windowed runs can still steal
+  each other's focus, so a GRID VIEW real-key-press failure during an overlap is not evidence.
 - A stale `Godot_v4.1.2` process titled `Solatro (DEBUG)` was running when this run opened — not
   ours, never kill it.
 - Every `--import` and every suite run rewrites `solatro/design/effect-review/EFFECTS.*.translation`
   and `.csv.import`. Revert before each commit: `git checkout -- solatro/design/effect-review` then
-  `git clean -fq -- solatro/design/effect-review/*.translation`.
-- The suite: `GODOT_BIN=<console exe> py solatro/Tools/run_tests.py`, WINDOWED, from the worktree
-  root. Test logs: `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` and
-  `test_output_errors.log` — copy them aside per run; every run truncates them.
-- `main` has no `--logic` tier and no `--filter` (those live on `test-speed`/`sidebar`); every run
-  here is the full windowed one.
+  `git clean -fq -- solatro/design/effect-review/`.
+- The suite: `APPDATA=<private dir> GODOT_BIN=<console exe> py solatro/Tools/run_tests.py
+  --timeout 900`, WINDOWED, from the worktree root. Test logs under
+  `<APPDATA>\Godotpp_userdata\Solatro\logs	est\` — copy them aside per run; every run
+  truncates them.
+- `test-speed` is merged (fast-forward), so `--logic` (headless tier, inner loop) and
+  `--filter <Node>` exist here; the gate is still the full windowed run. The GRID LAYOUT
+  physics-tick settle from sidebar 6bca9197 is carried as its own commit.
 - Suite count derivation: `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`
   = 45 at the start; rises by one per suite this run adds (BOARD PLAN, MARK MATCH).
 
-## Baseline (main @ a28c79aa, unmodified, this box)
-- pending — see task S0's evidence.
+## Baseline (main @ a28c79aa + test-speed b8b8831b + the GRID LAYOUT settle, this box)
+- Full windowed run, isolated `APPDATA`, `--timeout 900`, ~4 min wall clock:
+  `ALL 45 SUITES: 4005 passed, 1 FAILED (1 behavior, 0 implementation) [23 placeholder warnings]`
+  (second run: 3974 passed, same 1 failure — the check total drifts; the failure SET does not).
+- The one failure is STANDING on this base and predates the board plan: `[FAIL][BEHAVIOR] WALL
+  FOCUS: pressing it again turned Info mode back OFF`. Fails 2 of 2 full runs; passes 1 of 1 run
+  alone (`--filter WallFocus`, 130/130) — cross-suite interference from the merged `test-speed`
+  pacing, owned by that branch, not fixed here. Unmodified `main` had no failure (sidebar's
+  baseline).
+- Exit-time: wrapper exit 3; `[exit-time] note: WARNING: 135 ObjectDB instances were leaked at
+  exit` (pre-existing).
+- SECTION 8 leaderboard captured from both baseline runs, identical: 104 rows, `SCORING: ALL 261
+  CHECKS PASSED`. The TP-33 gate diffs every later run's SECTION 8 block against it.
+- **Gate for every step:** suite count ≥ 45 (46 after BOARD PLAN, 47 after MARK MATCH), failure
+  set exactly {that WALL FOCUS check} or empty, errors log otherwise empty, no new exit-time line.
 
 ## Dispatch plan (steps regrouped so each dispatch leaves the suite green; ids unchanged)
 1. S1+S2 — `granted`, `plan_seed`, `BoardPlan.is_marked`, I6 in `validate()`, `PLAN_DECK`, suite
@@ -62,9 +81,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
   verification_kind: suite
-  status: in_progress
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'see Baseline above: 45 suites, failure set = {WALL FOCUS Info-mode toggle}, SECTION 8 identical across 2 runs'
+  notes: 'WALL FOCUS passes alone; interference from test-speed pacing, not ours'
 - id: S1
   description: TypeGridCell.granted; BoardPlan.is_marked; called from validate() and is_spotlit().
   files_touched: []
