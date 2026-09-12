@@ -1,9 +1,9 @@
 extends TestSuite
 # res://Tests/Engine/test_board_plan.gd
 
-#A mark IS the existing `cell_types[i]` card with a rank or a suit printed on it -- no second
-#array, no flag -- so these checks write those two fields directly. CATEGORY MAP: all
-#IMPLEMENTATION, like every other `validate()` claim; it is a debug invariant checker.
+#A mark IS the existing `cell_types[i]` card with a rank or a suit printed on it -- no second array
+#and no flag. CATEGORY MAP: what a mark copies is BEHAVIOR, while the predicate, the backrefs and
+#every `validate()` claim are IMPLEMENTATION pins on a debug invariant checker.
 func suite_name() -> String:
 	return "BOARD PLAN"
 
@@ -11,6 +11,10 @@ func _ready() -> void:
 	TestLog.line("============ BOARD PLAN TEST PASS ============")
 	implementation_section("THE MARK PREDICATE")
 	test_is_marked_asks_rank_or_suit()
+	behavior_section("WRITING AND CLEARING A MARK")
+	test_write_mark_copies_every_printed_slot()
+	implementation_section("A MARK'S BACKREFS POINT AT THE MARK")
+	test_write_mark_relinks_the_copied_backrefs()
 	implementation_section("I6: A DEALT MARK NAMES A CARD THE STATE HOLDS")
 	test_i6_fails_a_mark_the_deck_never_had()
 	test_i6_exempts_a_granted_mark()
@@ -25,12 +29,63 @@ func make_state() -> GameData:
 		card.stage = CardData.Stage.DRAW
 	return state
 
-## Marks grid 0's first cell by hand: `BoardPlan.write_mark` does not exist yet.
+## Marks grid 0's first cell with exactly the pips I6's fixtures need, which no deck card prints.
 func mark_first_cell(state: GameData, rank_value: float, suit: GDScript) -> CardData:
 	var mark : CardData = state.grids[0].cell_types[0]
 	mark.rank = PipRankNumeral.new().with_value(rank_value)
 	mark.suit = suit.new() as PipSuit
 	return mark
+
+## A source wearing every printed slot plus a runtime status, so one write covers each slot and the refusal to copy a status.
+func decorated_source() -> CardData:
+	return TestDecks.plan_deck()[2].with_skill(SkillExtraPoint.new()) \
+			.with_stamp(StampDoubleTrigger.new()) \
+			.with_status(StatusBurning.new())
+
+#TP-11: a mark is a faithful picture of what its card PRINTS, and a status is a runtime condition
+#rather than a print -- so it is the one thing that never crosses.
+func test_write_mark_copies_every_printed_slot() -> void:
+	var state := make_state()
+	var source := decorated_source()
+	var mark : CardData = state.grids[0].cell_types[0]
+	BoardPlan.write_mark(mark, source, true)
+	check(PipComparator.printed_same(mark.rank, source.rank),
+			"TP-11: the mark prints the source's rank")
+	check(PipComparator.printed_same(mark.suit, source.suit),
+			"TP-11: the mark prints the source's suit")
+	check(mark.skill != null and is_same(mark.skill.get_script(), source.skill.get_script()),
+			"TP-11: the mark carries the source's skill", "got %s" % mark.skill)
+	check(mark.stamp != null and is_same(mark.stamp.get_script(), source.stamp.get_script()),
+			"TP-11: the mark carries the source's stamp", "got %s" % mark.stamp)
+	check(mark.statuses.is_empty(), "TP-11: a status never crosses onto a mark",
+			"got %d" % mark.statuses.size())
+	check((mark.type as TypeGridCell).granted,
+			"TP-11: write_mark records the granted argument it was passed")
+	check(mark.rank != source.rank and mark.suit != source.suit
+			and mark.skill != source.skill and mark.stamp != source.stamp,
+			"TP-11: every copied slot is a fresh instance the source does not share")
+	source.rank.value = 9
+	check(not PipComparator.printed_same(mark.rank, source.rank),
+			"TP-11: changing the source's rank afterwards leaves the mark alone")
+	BoardPlan.clear_mark(mark)
+	check(not BoardPlan.is_marked(mark) and mark.skill == null and mark.stamp == null
+			and not (mark.type as TypeGridCell).granted,
+			"TP-11: clear_mark leaves a bare cell type behind")
+
+#TP-12: `duplicate_deep` does not carry a WeakRef backref, so without the relink every copied
+#modifier answers for no card at all and a hook reading `data` reads null.
+func test_write_mark_relinks_the_copied_backrefs() -> void:
+	var state := make_state()
+	var source := decorated_source()
+	var mark : CardData = state.grids[0].cell_types[0]
+	BoardPlan.write_mark(mark, source, false)
+	var strays : Array[String] = []
+	for mod : CardModifier in [mark.skill, mark.type, mark.stamp, mark.suit]:
+		if mod and mod.data and mod.data != mark: strays.append(mod.get_str())
+	check(strays.is_empty(), "TP-12: no modifier on the mark answers for another card",
+			"stray: %s" % ", ".join(strays))
+	check(mark.skill.data == mark and mark.suit.data == mark,
+			"TP-12: the copied skill and suit both resolve to the mark itself")
 
 ## Only `validate()`'s I6 lines -- every other invariant is another suite's claim.
 func i6_violations(state: GameData) -> Array[String]:

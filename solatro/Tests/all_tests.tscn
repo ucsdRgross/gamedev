@@ -47,6 +47,7 @@
 [ext_resource type="PackedScene" path="res://Tests/UI/test_grid_view.tscn" id="46_gview"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_board_plan.tscn" id="47_bplan"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_mark_match.tscn" id="48_mmatch"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -78,6 +79,8 @@ speed_base_delay = 0.1
 [node name="TestGameData" parent="." unique_id=871797032 instance=ExtResource("13_gdata") groups=["logic"]]
 
 [node name="TestBoardPlan" parent="." instance=ExtResource("47_bplan") groups=["logic"]]
+
+[node name="TestMarkMatch" parent="." instance=ExtResource("48_mmatch") groups=["logic"]]
 
 [node name="TestGameHeadless" parent="." unique_id=1560842712 instance=ExtResource("14_ghead") groups=["logic"]]
 

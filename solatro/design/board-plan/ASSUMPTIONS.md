@@ -15,3 +15,13 @@ gap under `gaps/`.
   cell type, a zone type or a rules card).
 - S1 / Q59: the `is_spotlit()` call site S1's done-when requires is the spotlight exclusion itself,
   so S8's code lands with S1 and S8 only confirms its tests.
+- S8 / Q59: MEASURED, and PLAN §1.8's premise is inaccurate for a GRID cell -- a grid card is not
+  naturally spotlit at all, because `_blocked_from_above` reads the legacy `position_of` index, which
+  carries no grid coordinate and so fails closed. TP-44 therefore contrasts a forced mark against a
+  forced playing card: the scoring beam is the only lever that lights a grid card, and the exclusion
+  sits ahead of it. The exclusion is still required as specified.
+- S8 / Q60: a cell's zone card can never be ABOVE another card (`_blocked_from_above` walks a
+  column's `datas`, and `cell_types` is a sibling array), so no fixture can make a mark's
+  `blocks_spotlight()` observable through the engine. TP-45 asserts it directly and keeps the
+  board-wide spotlit-set comparison as a regression guard; that half stays green when the exclusion
+  is removed.

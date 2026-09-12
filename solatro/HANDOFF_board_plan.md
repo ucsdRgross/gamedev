@@ -53,7 +53,7 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   FOCUS: pressing it again turned Info mode back OFF`. Fails 2 of 2 full runs; passes 1 of 1 run
   alone (`--filter WallFocus`, 130/130). Tally so far: 3 failures in 5 full runs, and every failing
   run had the other session's Godot up — window-focus interference is the likeliest cause; not
-  fixed here. Unmodified `main` had no failure (sidebar's
+  fixed here. (Tally: 4 failures in 6 overseer full runs; 0 in the implementers' 4.) Unmodified `main` had no failure (sidebar's
   baseline).
 - Exit-time: wrapper exit 3; `[exit-time] note: WARNING: 135 ObjectDB instances were leaked at
   exit` (pre-existing).
@@ -90,9 +90,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: [solatro/Cards/Types/type_grid_cell.gd, solatro/Scripts/board_plan.gd]
   verification_command: 'grep -c BoardPlan.is_marked solatro/Scripts/game_data.gd solatro/Cards/card_modifier.gd'
   verification_kind: suite
-  status: in_progress
-  evidence: 'validate() call site: grep -c BoardPlan.is_marked game_data.gd = 1. is_spotlit() call site lands in dispatch 2.'
-  notes: 'dispatched together with S2; the is_spotlit call site lands in dispatch 2'
+  status: done
+  evidence: 'grep -c BoardPlan.is_marked: game_data.gd = 1, card_modifier.gd = 1 (via _is_mark(), asked by is_spotlit() and blocks_spotlight()).'
+  notes: 'S1 spans dispatches 1 and 2'
 - id: S2
   description: GameData.plan_seed; invariant I6; TP-16.
   files_touched: [solatro/Scripts/game_data.gd, solatro/Tests/Support/test_decks.gd, solatro/Tests/Engine/test_board_plan.gd, solatro/Tests/Engine/test_board_plan.tscn, solatro/Tests/all_tests.tscn]
@@ -111,12 +111,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: ''
 - id: S4
   description: BoardPlan.deal() per PLAN 1.2 from the planner's on_game_start; TP-01..TP-18 minus TP-05/06.
-  files_touched: []
+  files_touched: [solatro/Scripts/board_plan.gd, solatro/Tests/Engine/test_board_plan.gd]
   verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
   verification_kind: suite
   status: pending
   evidence: ''
-  notes: 'TP-05/TP-06 parked on GAP-001; write_mark/clear_mark land in dispatch 2'
+  notes: 'TP-05/TP-06 parked on GAP-001. write_mark/clear_mark LANDED in dispatch 2 with TP-11 (red: statuses copied -> 1 FAILED; source object shared -> 2 FAILED) and TP-12 (red: relink dropped -> 1 FAILED); deal() still pending'
 - id: S5
   description: MarkMatch.matches_at, flat_bonus, mult_bonus; leniency hook comments; TP-20..27, TP-39.
   files_touched: []
@@ -143,12 +143,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: ''
 - id: S8
   description: is_spotlit/blocks_spotlight false for a mark; TP-44, TP-45.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Cards/card_modifier.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Engine/test_mark_match.tscn, solatro/Tests/all_tests.tscn]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'lands in dispatch 2, before S3'
+  status: in_progress
+  evidence: 'Implementer red runs: is_spotlit exclusion removed -> MARK MATCH 7 passed, 4 FAILED of 11 (all four TP-44 checks); blocks_spotlight forced true -> 8 passed, 3 FAILED of 11 (TP-45 direct checks). Overseer full run: ALL 47 SUITES: 4032 passed, 1 FAILED (WALL FOCUS standing line only); SPOTLIGHT 111/111, MARK MATCH 11/11, BOARD PLAN 18/18; SECTION 8 identical.'
+  notes: 'OPEN DEFECT, fixed next: the exclusion sits below the StampGlobal early return in is_spotlit(), so a mark copying a StampGlobal card would still be spotlit (deck8 and TypeBoosterBasic hand that stamp out). Q59 says never; the exclusion must be the first check, with a TP-44 case for it. Measured by the implementer: a grid card is never NATURALLY spotlit (_blocked_from_above reads position_of, which carries no grid coordinate), so TP-44 contrasts forced-spotlight pairs; see ASSUMPTIONS.md.'
 - id: S9
   description: on_mark_covered / on_mark_hit dispatched from place_card_in_grid; TP-46..51, TP-53, TP-54.
   files_touched: []
