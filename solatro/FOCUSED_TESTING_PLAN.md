@@ -85,35 +85,46 @@ func _enter_tree() -> void:
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 ```
 
-- ⬜ Implement `_suite_filter()` reading `OS.get_cmdline_user_args()`.
-- ⬜ Prune in **`_enter_tree`, not `_ready`.** Parent `_enter_tree` fires before any child enters the
+- ✅ Implement `_suite_filter()` reading `OS.get_cmdline_user_args()`.
+- ✅ Prune in **`_enter_tree`, not `_ready`.** Parent `_enter_tree` fires before any child enters the
   tree (already stated in `Tests/all_tests.gd`'s own `_enter_tree` comment); by parent `_ready` every
   child has already run.
-- ⬜ Use **`remove_child()` + `free()`, never `queue_free()` alone.** `queue_free` defers to end of
+- ✅ Use **`remove_child()` + `free()`, never `queue_free()` alone.** `queue_free` defers to end of
   frame, so the suite's `_ready` fires and the suite runs anyway.
-- ⬜ Iterate a `duplicate()` of `get_children()` — the list is mutated mid-propagation.
-- ⬜ Match case-insensitively on the NODE name (`TestWallInput`), so one pattern selects the whole
+- ✅ Iterate a `duplicate()` of `get_children()` — the list is mutated mid-propagation.
+- ✅ Match case-insensitively on the NODE name (`TestWallInput`), so one pattern selects the whole
   Wall group and two patterns select two suites. Node name, not `suite_name()`: the scene is the
   registry, and scene filename is not script name in places (`test_scoring.gd` lives in
   `Tests/Engine/test_score.tscn`).
-- ⬜ **The filtered banner must be unmistakable** (invariant 2): it names the filter, prints
+- ✅ **The filtered banner must be unmistakable** (invariant 2): it names the filter, prints
   *selected of total*, and says in words that it is NOT a green signal for the project.
-- ⬜ Verify `await_siblings_except` still terminates for every surviving subset, including a filter
-  that keeps a waiter and drops everything it waits for, and one that keeps `WALL PAUSE` alone.
+- ✅ Verify `await_siblings_except` still terminates for every surviving subset. Measured, each
+  through the wrapper: `TestBoard` alone 9 s; `Wall` (8 suites) 25 s; the whole chain
+  `TestInteraction TestUiProps TestVisualLayers TestE2ERun TestLeakCanary TestWallPause` 92 s, in
+  that order, nothing reordered; `TestE2ERun` alone (every suite it waits for pruned) 42 s;
+  `TestWallPause` alone (it waits for everyone) 22 s. No subset hung.
 
-Invocation: pass the filter as a user arg after `--` to `res://Tests/all_tests.tscn`.
+  ⚠ **`TestWallPause` ALONE passes all 81 checks and then dies in TEARDOWN** with 0xC0000005,
+  deterministically (2 runs) — the wrapper names it as an abnormal exit, not a suite failure. The
+  pruning is not the cause (`TestBoard` and `TestE2ERun` alone exit 0 through the same path); the
+  kept stdout ends inside worldgen's threaded generation, which this suite reaches seconds before
+  quitting when nothing runs before it. Undiagnosed, and the same suite is clean in the full run.
+
+Invocation: `py solatro/Tools/run_tests.py --filter <pattern>...`, which forwards the patterns as
+user args after `--` to `res://Tests/all_tests.tscn`.
 
 ### Phase 2 — teach the wrapper about filtered runs
 
-- ⬜ `Tools/run_tests.py` accepts and forwards the filter argument.
-- ⬜ It **refuses to print a clean verdict** when a filter was passed — the exit code stays the
+- ✅ `Tools/run_tests.py` accepts and forwards the filter argument.
+- ✅ It **refuses to print a clean verdict** when a filter was passed — the exit code stays the
   failure count, but the human-facing banner says FILTERED. Otherwise this becomes a machine for
   producing the exact false green the error gate exists to stop.
-- ⬜ Keep the stream gate active on filtered runs. It is the only part of the verdict a filter does
+- ✅ Keep the stream gate active on filtered runs. It is the only part of the verdict a filter does
   not invalidate.
-- ⬜ While in this file: `run_tests.py` discards the suite's stdout by design, which `todo.md` records
-  as why intermittent-failure evidence is always already gone. Consider a keep-the-log option here,
-  since a focused loop makes per-run logs cheap to keep.
+- ✅ `--keep-output` writes the run's stdout+stderr beside the log directory and prints the path.
+  They were discarded by design, which `todo.md` records as why intermittent-failure evidence is
+  always already gone — and they are the only record of the exit-time errors, since `godot.log` is
+  already closed when the engine emits them.
 
 ### Phase 3 — the two-tier loop
 

@@ -814,16 +814,9 @@ func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
 
 # ------------------------------------------------------------------ overlapping re-packs
 
-# ⚠ PINS base_delay: a re-pack lasts base_delay * wall_transition_delay, so at the run's
-# sped-up pacing the "long" leg below would end inside the wait and prove nothing.
-## K3/K4: a second `apply_layout()` must cancel the first one's animation.
-##
-## ⚠ `animate_reposition()` updates `WallPicture.rect` IMMEDIATELY and lets the tween catch up
-## visually -- that is its stated contract. So a live tween from an earlier re-pack keeps writing
-## `position`/`%Frame`/`%Screen.scale` toward targets computed from the OLD rects, while `rect`
-## already says something else. Hit-testing, `_wall_extent()` and the camera framing all read
-## `rect`, so the picture ends up permanently drawn somewhere its own rect denies. A resize landing
-## during an animated unlock re-pack is the reachable case.
+# A live tween from an earlier re-pack keeps writing `position` toward targets computed from the
+# OLD rects while `rect` already says otherwise, so a second `apply_layout()` must cancel the first.
+# ⚠ PINS base_delay = 1.0: at the run's pacing the long leg below would end inside the wait.
 func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	backup_real_settings()
 	var settings := SettingsManager.settings
