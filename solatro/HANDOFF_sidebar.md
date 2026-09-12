@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
 per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
-**State:** S1–S3 done. S4 next. Implementers now append evidence to a scratch file as they go,
+**State:** S1–S4 done. S5 next. Implementers now append evidence to a scratch file as they go,
 because a turn-cap stop loses the final report (it happened on most S2/S3 dispatches). A throwaway
 detached worktree of unmodified main (`../gamedev-baseline`, a28c79aa) exists for by-eye
 before/after captures — local only; `git worktree remove` it at the close. Single-suite runs: launch the NON-console exe, wait for the
@@ -81,9 +81,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'Top case (600x1000) board spills under the band - GAP-002, parked. The Entrance/grid offset check cannot fail for the neutralisations tried (test-surface review at close). The Entrance x in any still is MID-DEAL-ANIMATION (measured -165..-30 px vs grid across captures; layout rule is identical to main) - sidebar_snapshot must wait for the deal to settle; fold into S5 which extends it'
 - id: S4
   description: the map gets the same container (Fame, Lap, Luck, Deck)
-  status: pending
-  evidence: ''
-  notes: 'ALSO OWED HERE (seen by eye in main_boot_snapshot boot.png after S2c): the start menu shows the GAME HUD in the container and the container covers the menu Options button. Q22=(b) "the surface exists everywhere and is simply empty there"; Q21=(b) no sidebar in the wall overview; owner Q27 note "center of screen for picture is center of remaining space not taken by sidebar" - the menu picture must centre beside the container. Main picks the HudStack child per focused screen'
+  status: done
+  evidence: 'commit after 5b8f84b9: ALL 46 SUITES 4151 PASSED [22]; SIDEBAR 148; tests a-e + menu aspect/centring red-then-green (s4 evidence); by eye at 1280x720 menu centred beside the container, map start node x~800, game screen unchanged'
+  notes: 'menu and wall-overview rules landed here too (Q22=b, Q21=b). GAP-002 also applies to the map on windows narrower than 16:9 only if map content sits under the band - unmeasured'
 - id: S5
   description: route PlayArea.info_requested into HudContainer; description content
   status: pending
@@ -143,10 +143,12 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
 ```
 
 ## Open bugs
-None yet beyond the baseline failure set above.
+- GRID VIEW `one more pan-right at the board's end does not move the camera past it` failed once
+  by 0.018 px (edge 545.640 vs 545.658) in ~14 branch runs; green on the rerun. Pre-existing
+  camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. S4. 2. S5. 3. S6.
+1. S5. 2. S6. 3. S7.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
