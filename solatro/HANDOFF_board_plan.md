@@ -103,12 +103,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'I6 lives in GameData._mark_violations() (extracted so no indented block comment); _modifier_script() helper, 4 call sites; plan_deck() builds its own 20 cards.'
 - id: S3
   description: SkillBoardPlanner in rules1, localised; localisation gate clean.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Cards/Skills/Rules/skill_board_planner.gd, solatro/Decks/deck.gd, solatro/Locale/localization.csv, solatro/Locale/localization.en.translation, solatro/Tests/Support/test_decks.gd, solatro/Tests/Engine/test_board_plan.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red: planner out of both builders -> BOARD PLAN 20 passed, 3 FAILED of 23; CSV key renamed -> 22/23 (name came back as the bare key); planner out of _build_rules1 only -> E2E RUN mirror gate 34/35. Overseer full run: ALL 47 SUITES: 4030 CHECKS PASSED, errors log empty; BOARD PLAN 23/23; SECTION 8 identical. grep: class_name once, zero hooks declared, one planner in deck.gd, both CSV rows.'
+  notes: 'on_game_start order = rules_deck array order, and creators build grids inside that walk (spotlight sweep after every mod), so the planner is LAST in rules1 and a BOARD PLAN check pins it after the allotment. get_frame() 13 and the description copy are logged assumptions. Legacy comment debt in deck.gd/test_decks.gd (27 findings) left in place: draining it deletes owner-facing playtest notes, an owner call.'
 - id: S4
   description: BoardPlan.deal() per PLAN 1.2 from the planner's on_game_start; TP-01..TP-18 minus TP-05/06.
   files_touched: [solatro/Scripts/board_plan.gd, solatro/Tests/Engine/test_board_plan.gd]

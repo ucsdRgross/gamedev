@@ -15,6 +15,8 @@ func _ready() -> void:
 	test_write_mark_copies_every_printed_slot()
 	implementation_section("A MARK'S BACKREFS POINT AT THE MARK")
 	test_write_mark_relinks_the_copied_backrefs()
+	behavior_section("THE PLANNER SHIPS IN THE RULES DECK")
+	test_fresh_show_carries_one_localised_planner()
 	implementation_section("I6: A DEALT MARK NAMES A CARD THE STATE HOLDS")
 	test_i6_fails_a_mark_the_deck_never_had()
 	test_i6_exempts_a_granted_mark()
@@ -133,3 +135,51 @@ func test_i6_passes_a_mark_the_deck_prints() -> void:
 	check(i6_violations(state).is_empty(),
 			"TP-16: a dealt mark of the 3 of Hoops, which the deck holds, passes I6",
 			"I6 said: %s" % ", ".join(i6_violations(state)))
+
+## A fresh show's rules deck, built by the real `Game.add_deck` from the mirror of shipped `rules1`.
+func fresh_show_rules() -> Array[CardData]:
+	var g := Game.new()
+	CardEnvironment.CURRENT = g
+	var previous : RunState = Main.save_info
+	var run := RunState.new()
+	run.card_datas = TestDecks.plan_deck()
+	run.rule_datas = TestDecks.standard_rules()
+	Main.save_info = run
+	g.add_deck()
+	var rules : Array[CardData] = g.state.rules_deck
+	Main.save_info = previous
+	CardEnvironment.CURRENT = null
+	g.free()
+	return rules
+
+#The planner has to sit AFTER the allotment card: `on_game_start` reaches the rules deck in array
+#order, and the allotment's creators build their grids on the sweep that follows it, so an earlier
+#planner would deal onto a board with no grids at all.
+func test_fresh_show_carries_one_localised_planner() -> void:
+	var rules := fresh_show_rules()
+	var planner : CardModifier = null
+	var planner_at := -1
+	var allotment_at := -1
+	var planners := 0
+	for i : int in rules.size():
+		var skill : CardModifier = rules[i].skill
+		if skill is SkillBoardPlanner:
+			planner = skill
+			planner_at = i
+			planners += 1
+		if skill is SkillGridAllotment: allotment_at = i
+	check(planners == 1, "S3: a fresh show's rules deck holds exactly one board planner",
+			"rules: %s" % ", ".join(TestDecks.rules_skill_names(rules)))
+	check(allotment_at != -1 and planner_at > allotment_at,
+			"S3: the planner is dealt after the grid allotment card, which is the hook order",
+			"allotment at %d, planner at %d" % [allotment_at, planner_at])
+	var planner_name := TRANSLATION.find(&"BOARD_PLANNER_CARD")
+	var planner_description := TRANSLATION.find(&"BOARD_PLANNER_CARD_DESCRIPTION")
+	check(planner_name != "" and planner_name != "BOARD_PLANNER_CARD",
+			"S3: the planner's name is localised, not the bare key", "got '%s'" % planner_name)
+	check(planner_description != "" and planner_description != "BOARD_PLANNER_CARD_DESCRIPTION",
+			"S3: the planner's description is localised, not the bare key",
+			"got '%s'" % planner_description)
+	check(planner != null and planner.get_str() == planner_name
+			and planner.get_description() == planner_description,
+			"S3: the card reads both strings through the localisation table")

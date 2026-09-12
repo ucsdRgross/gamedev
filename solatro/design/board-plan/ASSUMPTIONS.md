@@ -25,3 +25,11 @@ gap under `gaps/`.
   `blocks_spotlight()` observable through the engine. TP-45 asserts it directly and keeps the
   board-wide spotlit-set comparison as a regression guard; that half stays green when the exclusion
   is removed.
+- S3 / Q9: `SkillBoardPlanner` is appended LAST in `_build_rules1()` and in `TestDecks.standard_rules()`.
+  `CardEnvironment.run_all_mods` walks `rules_deck` in array order and sweeps the spotlight after each
+  mod, so the allotment's creator cards build their grids inside that walk -- only a planner after the
+  allotment card sees every grid, which is what S4's deal needs.
+- S3 / A1: the planner card's `get_frame()` returns 13, the next unused frame on the rules-card row of
+  `Assets/skill_art.png`. Its art is Phase 5's business.
+- S3 / PLAN §0: `BOARD_PLANNER_CARD_DESCRIPTION` reads "On game start, deals a mark from the deck onto
+  every cell of every grid.", mirroring the allotment card's sentence shape.
