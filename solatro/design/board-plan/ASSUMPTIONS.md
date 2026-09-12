@@ -91,3 +91,10 @@ gap under `gaps/`.
 - S5 / TEST_PLAN TP-39: the dispatch count is read at the ENVIRONMENT, so a board with no
   implementer can be counted at all. `CountingEnvironment` moved out of `test_comparator.gd` into
   `Tests/Support/counting_environment.gd` and both suites now share the one probe.
+- S6 / Q122, chart C5: no document names how a mark effect reports its "+2" into the line's summed
+  mult, and the hooks are `-> void`. The existing content pattern is an effect calling the api, so
+  the seam is `CardEffectApi.add_line_mult(amount: float)`, valid only while `score_line` is
+  composing a line (asserted). No shipped content uses it yet, so renaming is cheap; NAMES.md carries
+  it. Q52=(b) makes the mark hooks fire on every line score through the cell, so `score_line`
+  dispatches `on_mark_hit` / `on_mark_covered` for each meld card on a marked cell; the landing-time
+  dispatch from `place_card_in_grid` is S9's.

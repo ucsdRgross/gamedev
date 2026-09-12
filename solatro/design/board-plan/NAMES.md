@@ -118,6 +118,7 @@ func mark_at(coord: BoardCoord) -> CardData          # the cell type card, or nu
 func reroll_mark(coord: BoardCoord) -> void          # QR5=c
 func grant_mark(coord: BoardCoord, source: CardData) -> void   # Q53=a; sets granted
 func swap_marks(a: BoardCoord, b: BoardCoord) -> void          # QR5=c
+func add_line_mult(amount: float) -> void   # a mark effect's share of the line's summed mult (chart C5); valid only while score_line composes. Added during execution - see ASSUMPTIONS.md
 ```
 
 ## Localisation keys
