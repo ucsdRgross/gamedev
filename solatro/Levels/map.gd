@@ -22,6 +22,10 @@ signal info_hovered(entry: InfoEntry)
 # gets. Fame/Lap/Luck/the Deck button live on its `MapHud` child, not on this scene's own `$UI`.
 var hud_container : HudContainer = null
 
+# Set by `Main` alongside `hud_container`, the same hand-over `Menu.wall_picture` gets -- lets
+# `_publish_map_inset()` convert `hud_container`'s rects into this picture's own space.
+var wall_picture : WallPicture = null
+
 var run : RunState = null
 # start_run can arrive before this scene ever entered the tree (Main pre-instantiates it);
 # the pending run is consumed by _ready.
@@ -75,15 +79,18 @@ func _exit_tree() -> void:
 		if sig.is_connected(callable):
 			sig.disconnect(callable)
 
-# The map has no picture to convert through: `container_px` is handed to the controller's camera
-# offset directly, in window px, with no `picture_scale` division.
+# The map DOES sit in a `WallPicture`, so the container's window px converts through that
+# picture's own cover scale, the same conversion `Menu._apply_container_inset()` uses -- a
+# standalone fixture with no `wall_picture` falls back to the plain window rect Menu falls back to.
 func _publish_map_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
-	if HudContainer.container_is_top(window, SettingsManager.settings):
-		controller.apply_container_inset(Vector2(0.0, rect.size.y))
-	else:
-		controller.apply_container_inset(Vector2(rect.size.x, 0.0))
+	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	var remaining := wall_picture.local_rect_beside(window, rect, top) if wall_picture \
+			else (Rect2(0.0, rect.size.y, window.x, window.y - rect.size.y) if top \
+				else Rect2(rect.size.x, 0.0, window.x - rect.size.x, window.y))
+	var screen_size := controller.camera.get_viewport_rect().size
+	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center())
 
 # Begin (or resume) a run on this map screen. Safe to call before the scene is in the
 # tree — the map generates/reloads once _ready has run.

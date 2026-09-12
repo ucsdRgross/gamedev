@@ -137,7 +137,9 @@ func _build_pictures() -> void:
 		if rect.id == &"start_menu":
 			live_screen = menu_scene
 			menu_scene.wall_picture = wp
-		elif rect.id == &"map": live_screen = map_scene
+		elif rect.id == &"map":
+			live_screen = map_scene
+			map_scene.wall_picture = wp
 		wp.build(rect, by_id[rect.id], viewports, live_screen)
 		_pictures[rect.id] = wp
 	# ⚠ Needed for `_placement_order`, which `apply_layout()` alone records and which `wall_jump_N`

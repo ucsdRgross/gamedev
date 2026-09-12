@@ -39,14 +39,17 @@ var _dragging : bool = false
 # Keyboard/controller selection: index into _sorted_next(), -1 = nothing selected.
 var _kb_index : int = -1
 
-var container_inset : Vector2 = Vector2.ZERO
+var _container_shift : Vector2 = Vector2.ZERO
 
-# `Map._publish_map_inset()`'s window-px `container_px`, unconverted (D11) but HALVED: content
-# centres in the space LEFT OVER beside the container, and `Camera2D.offset` shifts the whole
-# view, so only half the band's width recentres the look point there.
-func apply_container_inset(inset: Vector2) -> void:
-	container_inset = inset
-	camera.offset = -inset / 2.0
+# `Map._publish_map_inset()`'s shift, in the map picture's own local space: screen centre to the
+# space left over beside the container. `Camera2D.offset` is a world offset Godot multiplies by
+# `zoom` before it reaches the screen, so it is re-derived on every zoom change too.
+func apply_container_shift(shift: Vector2) -> void:
+	_container_shift = shift
+	_apply_camera_offset()
+
+func _apply_camera_offset() -> void:
+	camera.offset = _container_shift / camera.zoom
 
 # Whether the graph has populated (`map_ready` already emitted) -- lets a caller that started a run
 # fire-and-forget, like the snapshot tool, tell a fresh generation from an already-finished one
@@ -304,6 +307,7 @@ func _kb_cycle(dir: int) -> void:
 func _zoom_at(factor: float) -> void:
 	var z := clampf(camera.zoom.x * factor, ZOOM_MIN, ZOOM_MAX)
 	camera.zoom = Vector2(z, z)
+	_apply_camera_offset()
 
 # World-space radius test against all markers (camera zoom is baked into the global
 # mouse position, so no per-zoom math is needed).

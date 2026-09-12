@@ -818,37 +818,72 @@ func _await_camera_transform_settled() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-# (d) The map's token (the camera follows it) renders at the centre of the space LEFT OVER beside
-# `container_rect()`, never the window's own centre -- half `container_px`, unconverted (D11). A
-# dedicated `SubViewport` hosts container and map alone, so the map's own `Camera2D` is current.
+# (d) The map's token (the camera follows it) renders at the centre of the space left over beside
+# `container_rect()`, converted through the map's own `WallPicture` cover scale and `Camera2D`
+# zoom, never window px unconverted. Boots the real `Main`: a side window, a top window, a zoom.
 func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate() as HudContainer
-	viewport.add_child(container)
-	var map := MAP_SCENE.instantiate() as Map
-	map.hud_container = container
-	viewport.add_child(map)
-	get_tree().paused = false
-	await get_tree().process_frame
-	var window := container.get_viewport().get_visible_rect().size
-	var rect := container.container_rect()
-	check(not HudContainer.container_is_top(window, PlayArea.settings()),
-			"sanity: the default test window puts the container on the side")
-	check(is_equal_approx(map.controller.container_inset.x, rect.size.x),
-			"the map's own inset equals the container's window-px width, no picture conversion")
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	for size : Vector2i in ([Vector2i(1280, 720), Vector2i(600, 1000)] as Array[Vector2i]):
+		var booted := await _boot_main_at(size)
+		var viewport : SubViewport = booted[0]
+		var main : Main = booted[1]
+		await _focus_map(main, run)
+		_check_map_token_centred(main, str(size))
+		await _free_booted_main(viewport, main)
+
+	var zoom_booted := await _boot_main_at(Vector2i(1280, 720))
+	var zoom_viewport : SubViewport = zoom_booted[0]
+	var zoom_main : Main = zoom_booted[1]
+	await _focus_map(zoom_main, run)
+	for _i in range(5):
+		zoom_main.wall._unhandled_input(_wheel_event())
 	await _await_camera_transform_settled()
-	var token_screen := viewport.get_canvas_transform() * map.controller.token.position
-	var remaining_centre_x := rect.end.x + (window.x - rect.end.x) / 2.0
-	check(absf(token_screen.x - remaining_centre_x) <= 2.0,
-			"the token renders at the centre of the space left over beside the container",
-			"%.3f vs %.3f" % [token_screen.x, remaining_centre_x])
-	check(absf(token_screen.y - window.y / 2.0) <= 2.0,
-			"the token's y stays at the window's own centre in the side case",
-			"%.3f vs %.3f" % [token_screen.y, window.y / 2.0])
-	map.free()
-	viewport.free()
+	check(zoom_main.map_scene.controller.camera.zoom.x > 1.9,
+			"5 real wheel-up notches zoom the map to ~2x",
+			"%.3f" % zoom_main.map_scene.controller.camera.zoom.x)
+	_check_map_token_centred(zoom_main, "1280x720 after zooming to ~2x")
+	await _free_booted_main(zoom_viewport, zoom_main)
+
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# Focuses the map with `run`, waiting for both its generation and the settled camera transform
+# `Camera2D` needs before its offset/zoom read back correctly.
+func _focus_map(main: Main, run: RunState) -> void:
+	main.map_scene.start_run(run)
+	await main._focus_picture(&"map")
+	if not main.map_scene.controller.is_generated():
+		await main.map_scene.controller.map_ready
+	await _await_camera_transform_settled()
+
+# The map's token renders at the centre of the space left over beside the container, measured in
+# the map's OWN `WallPicture` local space -- `local_rect_beside()` converts the container's window
+# px into that same space, the one owned conversion, so both sides of the check share it.
+func _check_map_token_centred(main: Main, label: String) -> void:
+	var wp : WallPicture = main._pictures[&"map"]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var window : Vector2 = container.get_viewport().get_visible_rect().size
+	var rect := container.container_rect()
+	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	var expected := wp.local_rect_beside(window, rect, top).get_center()
+	var token_local : Vector2 = wp.viewport.get_canvas_transform() \
+			* main.map_scene.controller.token.position
+	check(token_local.distance_to(expected) <= 2.0,
+			"the map's token centres in the space left over beside the container at %s" % label,
+			"%s vs %s" % [token_local, expected])
+
+func _wheel_event() -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_WHEEL_UP
+	event.pressed = true
+	return event
 
 const _MENU_BUTTON_NAMES : Array[StringName] = [
 	&"Profile", &"Play", &"Options", &"Quit", &"Collection", &"Language",

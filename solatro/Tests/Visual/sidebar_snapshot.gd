@@ -7,6 +7,7 @@ const MAIN_SCENE := preload("res://Levels/main.tscn")
 const FALLBACK_OUT_PATH := "user://sidebar_snapshot/game_hud.png"
 const TOP_CASE_OUT_PATH := "user://sidebar_snapshot/game_hud_top.png"
 const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
+const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
@@ -49,6 +50,15 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MAP_HUD_OUT_PATH)
+
+	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	_capture(MAP_HUD_TOP_OUT_PATH)
+	DisplayServer.window_set_size(window_size)
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 	await main.enter_game()
 	var view := (main._pictures[&"game"].screen_root as GameView)

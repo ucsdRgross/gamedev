@@ -13,10 +13,12 @@
 - `HudContainer.set_active_screen(screen: StringName)` is a new method NAMES.md does not list: it
   takes `Main`'s own focus id (`&"game"`, `&"map"`, `&"start_menu"`, `&""`) rather than inventing a
   second enum, since that id is already the one thing every call site has in hand (C13, Q83).
-- D11/`Q247`=a's "no conversion" is read literally for the map: `WorldMapController.container_inset`
-  is handed `container_px` in window px with no `picture_scale` division, but Camera2D.offset shifts
-  the whole view rather than reserving a margin, so it is applied at half that value to land the
-  look point on the centre of the space actually left over beside the container.
+- GAP-003 corrects D11/`Q247`=a: the map DOES sit in a picture, so `Map._publish_map_inset()`
+  converts the container's window px through `WallPicture.local_rect_beside()`, the same conversion
+  `Menu` uses, into the shift from screen centre to the space left over beside the container.
+  `Camera2D.offset` is a world offset the engine multiplies by `zoom` before it reaches the screen
+  (`Camera2D::get_camera_transform()`), so `WorldMapController` divides the shift by its own zoom
+  and re-applies it on every zoom change, not only when the container moves.
 - The menu's own inset (Q22=b, Q27) scales and centres the WHOLE menu (title and buttons alike) in
   the space beside `container_rect()`, uniformly (one factor on both axes, never distorting a
   glyph) and only once its own authored content bounds -- title, buttons and the run row union'd,
