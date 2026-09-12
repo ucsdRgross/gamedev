@@ -14,7 +14,8 @@ self-terminates; exit code = failure count. Binary path: [[machine-profiles]].
 Headless is wrong because the PIXELS suite renders into a SubViewport and asserts on the image, and
 a dummy renderer cannot compile a shader. That suite FAILS rather than skipping — **a test that
 cannot run under the current renderer must fail, because a skipped check reads like a passing one.**
-Headless is still right for `--import` and quick parse checks.
+Headless is still right for `--import`, for quick parse checks, and for solatro's LOGIC TIER
+below.
 
 ## ⚠ A green banner is not proof the tests ran
 
@@ -49,8 +50,16 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
   two overlapping runs truncate each other's log so it looks hung. Always bound it with a timeout
   that KILLS.
 - **Never pass `--quit-after <ms>`** to force-quit a scene: it keeps the process alive for the full
-  duration regardless of when tests finish, which is what makes runs look hung. Individual suite
-  `.tscn`s do not self-quit — run `all_tests.tscn`, not a lone suite.
+  duration regardless of when tests finish, which is what makes runs look hung.
+- **Run ONE suite through the real runner, never its own scene:** `py solatro/Tools/run_tests.py
+  --filter <NodeName>` (case-insensitive substrings of the node names in `all_tests.tscn`; several
+  patterns are allowed). A lone suite scene never self-quits — `quit()` lives in `all_tests.gd` —
+  and it also skips the engine-error gate and truncates the full run's log. The filter keeps all
+  three.
+- **Two tiers.** Inner loop: `run_tests.py --logic`, the `logic` group in `all_tests.tscn`, headless,
+  32 suites in ~65 s, no GPU and no window. Gate: the full windowed run, ~190 s. ⚠ A tiered or
+  filtered run prints `FILTERED n of 45` and no clean verdict, so it is never the gate. Which suites
+  are out of the tier and why: `solatro/HEADLESS_TESTING.md` §0.
 - **One run at a time.** ⚠ Overlapping runs **FABRICATE FAILURES in unrelated suites** — they share
   `user://logs/godot.log`, the output logs and `user://run_save/run.tres`. Measured: whole runs
   printing `NO SUITE BANNER`, which vanished on serialising. **A failure observed while two runs

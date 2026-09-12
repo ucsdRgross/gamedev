@@ -3,9 +3,16 @@
     py solatro/Tools/run_tests.py                       # GODOT_BIN from the environment
     py solatro/Tools/run_tests.py --godot <path to the _console exe>
     py solatro/Tools/run_tests.py --scene res://Tools/spotlight_tool.tscn -- --verify
+    py solatro/Tools/run_tests.py --filter WallPause --keep-output   # one suite, output kept
+    py solatro/Tools/run_tests.py --logic               # the headless logic tier, the inner loop
 
 Exit code = the suite's own failure count PLUS the exit-time errors found here (capped at 125, the
 same cap `all_tests.gd` uses). 0 means both gates are clean.
+
+⚠ **A FILTERED RUN IS A DEBUGGING AID, NEVER A VERDICT**, and `--logic` is one. `--filter` forwards
+node-name substrings to `all_tests.gd`, which prunes every suite that does not match — so the suite
+count, the detector for a suite that failed to parse and load, is void for that run. This script
+therefore refuses to print a clean verdict under either; the exit code still counts real failures.
 
 WHY THIS EXISTS. `all_tests.gd::_scan_engine_errors` runs inside `_ready`, before
 `get_tree().quit()`, so everything the engine prints while tearing itself down lands after the gate
@@ -57,7 +64,8 @@ POLL_SECONDS = 5
 
 # The suite's grand-total line, reported for context only. ⚠ It is NOT the discriminator: it lands on
 # stderr when the run fails and stdout when it passes, which is what broke the first build.
-BANNER = re.compile(r"={4,}\s*ALL \d+ SUITES:")
+# A filtered run deliberately writes a DIFFERENT banner, so that a subset can never read as "ALL".
+BANNER = re.compile(r"={4,}\s*(?:ALL \d+ SUITES|FILTERED \d+ of \d+ SUITES[^:]*):")
 
 
 def read_allowlist(path):
@@ -148,6 +156,19 @@ def preserve_logs(tag):
         return "NOT PRESERVED (%s)" % problem
 
 
+def keep_streams(text):
+    """Write the run's stdout+stderr beside the log directory, and return the path.
+
+    The streams are the only record of the exit-time errors -- godot.log is already closed when the
+    engine emits them -- and by default they die with the temporary file this script reads them from.
+    """
+    path = os.path.join(os.path.dirname(LOG_DIR),
+                        "run-output-%s.log" % time.strftime("%Y%m%d-%H%M%S"))
+    with open(path, "w", encoding="utf-8", errors="replace") as handle:
+        handle.write(text)
+    return path
+
+
 def wait_or_stall(process, total_timeout, stall_timeout, log_path):
     """Wait for the run, watching the test log's growth. Returns "ok", "timeout" or "stall".
 
@@ -195,6 +216,18 @@ def main():
     parser.add_argument("--stall-timeout", type=int, default=600,
                         help="kill once the test log has been SILENT this long, naming the suite "
                              "that went quiet (default 600; 0 disables)")
+    parser.add_argument("--filter", nargs="+", default=[], metavar="PATTERN",
+                        help="run only the suites whose NODE name contains one of these (case "
+                             "insensitive, e.g. Wall TestBoard). A DEBUGGING AID: the suite-count "
+                             "load detector is void, so no filtered run prints a clean verdict")
+    parser.add_argument("--logic", action="store_true",
+                        help="run the LOGIC tier HEADLESS: the renderer-independent suites, tagged "
+                             "with the `logic` group in all_tests.tscn. The inner loop between "
+                             "gates, and as filtered as any other subset — never a verdict")
+    parser.add_argument("--keep-output", action="store_true",
+                        help="keep this run's stdout+stderr at a printed path. They are discarded "
+                             "by default, which is why an intermittent failure's evidence is "
+                             "already gone by the time anyone looks for it")
     parser.add_argument("passthrough", nargs="*",
                         help="args for the scene itself, after a bare --")
     args = parser.parse_args()
@@ -205,11 +238,16 @@ def main():
 
     allowlist = read_allowlist(ALL_TESTS_GD)
 
-    # ⚠ WINDOWED, never --headless: the PIXELS suite renders through a real renderer and a dummy one
-    # cannot compile a shader. See .claude/memory/running-godot-scenes.md.
-    command = [args.godot, "--path", PROJECT, args.scene]
-    if args.passthrough:
-        command += ["--"] + args.passthrough
+    if args.logic:
+        args.filter = list(args.filter) + ["@logic"]
+
+    # ⚠ WINDOWED, never --headless — except the logic tier, which holds no renderer-dependent suite
+    # (PIXELS cannot compile a shader on a dummy one). See .claude/memory/running-godot-scenes.md.
+    command = [args.godot] + (["--headless"] if args.logic else []) + \
+              ["--path", PROJECT, args.scene]
+    user_args = list(args.passthrough) + list(args.filter)
+    if user_args:
+        command += ["--"] + user_args
 
     with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
          tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
@@ -267,10 +305,19 @@ def main():
     if not stalled and (suite_failures or crashed):
         print("[exit-time] this run FAILED; logs preserved at: %s" % preserve_logs("failed"))
 
+    if args.keep_output:
+        print("[exit-time] this run's stdout+stderr: %s" % keep_streams(streams))
+
     banner_line = next((line for line in streams.splitlines() if BANNER.search(line)), None)
     saw_banner = banner_line is not None
     print(banner_line.strip() if saw_banner else
           "======== NO SUITE BANNER — the run did not reach its own verdict ========")
+
+    if args.filter:
+        print("[exit-time] FILTERED RUN — only suites matching %s ran. A subset is a debugging "
+              "aid: the suite count cannot detect a suite that failed to load, so nothing here is "
+              "a verdict about the project. Verify with the full unfiltered run."
+              % " ".join(args.filter))
 
     for line in warnings:
         print("[exit-time] note: %s" % line)
@@ -308,6 +355,9 @@ def main():
         print("Each line is in the process streams but NOT in godot.log, which is the only thing "
               "`all_tests.gd::_scan_engine_errors` reads — so the in-run gate could not have seen "
               "them however it was written. Only this wrapper can.")
+    elif args.filter:
+        print("[exit-time] no unseen engine errors in the suites that ran — and that is NOT a "
+              "clean verdict, because this run was filtered.")
     else:
         print("[exit-time] clean — every engine error this run was already visible to the in-run gate")
 

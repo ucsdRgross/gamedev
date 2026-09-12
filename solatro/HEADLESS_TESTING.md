@@ -33,6 +33,35 @@ STDERR (the engine splits teardown errors across both) and reports any error lin
 `godot.log`**, which is by definition one the in-run gate could not have seen. Its allowlist is
 PARSED OUT of `all_tests.gd` rather than restated, so the two gates cannot drift apart.
 
+### The two-tier loop — headless logic tier inside, full windowed run at the gate
+
+```bash
+py solatro/Tools/run_tests.py --logic     # inner loop: 32 renderer-independent suites, ~65 s
+py solatro/Tools/run_tests.py             # the gate: all 45, windowed, ~190 s
+```
+
+The tier is a `logic` GROUP on the suite nodes in `Tests/all_tests.tscn`, not a list in the runner —
+the scene is the registry, so putting a suite in the tier is one scene edit. `--logic` forwards the
+pattern `@logic` to it; any other `--filter PATTERN` is a case-insensitive substring of a suite's
+NODE name (`--filter Wall TestBoard`). Only `--logic` runs headless.
+
+⚠ **NEITHER THE TIER NOR A FILTER IS A VERDICT.** A subset voids the suite-count detector (§0a), so
+the banner reads `FILTERED n of 45 SUITES` and the wrapper refuses a clean verdict. The full
+unfiltered windowed run is the only green.
+
+Deliberately out of the tier, each measured headless:
+
+- `TestPixels` — renders real effects, and a dummy renderer cannot compile a shader, so it FAILS
+  rather than skips (owner ruling, below).
+- `TestWallInput` — hangs in HELD-STICK REPEAT: the dummy DisplayServer delivers no held input. It
+  takes LEAK CANARY and WALL PAUSE with it, since both await every sibling.
+- `TestLeakCanary` — its OBJECT_COUNT baseline does not return headless (+24 non-node objects,
+  identical figures on two runs). Green windowed.
+
+⚠ **A GREEN TIER RUN EXITS 2, NOT 0**, and so does a green FULL run: both end with the same two
+standing exit-time lines, `PagedAllocator ... WorkerThreadPool` and `15 resources still in use`,
+which the wrapper counts. Judge by the banner plus the error lines it names, never by `exit == 0`.
+
 ### ⚠ It also NAMES a stalled suite, and preserves that run's logs
 
 `--stall-timeout` (default 600 s, `0` disables) watches the test log's SIZE as a heartbeat —
@@ -68,9 +97,8 @@ over skipping them, even if that means all tests never run headless anymore"*, b
 pixel check looks exactly like a passing one in a log. Four real render bugs survived a green suite
 that way.
 
-Headless is still fine (and faster) for `--import`, for compile/parse checks, and when you only
-care about the renderer-independent suites — expect exit code 1 from PIXELS and read the rest of
-the log normally.
+Headless is still fine (and faster) for `--import`, for compile/parse checks, and for the
+renderer-independent suites — which is what `--logic` runs, PIXELS excluded.
 
 **Launch gotchas:**
 
@@ -121,6 +149,17 @@ count is the stable number — the check total drifts run to run**, so only the 
 this. A `Variant` typing error in one suite drops the count by one while the run still reads as a
 pass. ⚠ **Re-derive the expected count, never trust a doc for it:**
 `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`.
+
+⚠ **A FILTERED RUN VOIDS THAT DETECTOR BY CONSTRUCTION** — it removes suites on purpose, so the
+count proves nothing about the ones it dropped. That is why `--filter` / `--logic` print
+`FILTERED n of 45` at both ends of the log and the wrapper prints no clean verdict.
+
+⚠ **BOUNDING ALSO COVERS A SOLO SUITE SCENE**, which never exits at all: `finish()` only emits
+`suite_finished`, and `get_tree().quit()` lives in `all_tests.gd`. A lone suite also has NO
+engine-error gate and TRUNCATES `test_output_all.log` as it starts. From a shell use `--filter
+<NodeName>` instead — it keeps the quit, the exit code, the gate and the log discipline. The solo
+scene is an editor-side convenience; if the last run's transcript still matters, copy the log
+directory before pressing play.
 
 **There is no working pre-flight parse check.** Both obvious candidates are useless here:
 

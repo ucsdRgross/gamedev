@@ -1564,6 +1564,16 @@ which is definitionally what the in-run gate could not see, and parses the allow
 `all_tests.gd` rather than restating it.
 
 
+⚠ **A FOCUSED RUN IS A DEBUGGING AID, NEVER A VERDICT.** `run_tests.py --filter <NodeName>...`
+prunes every suite matching no pattern, in `all_tests.gd::_enter_tree` — removal only, never a
+reorder, because suite order is a dependency graph. `--logic` runs the `logic` GROUP declared on the
+suite nodes in `all_tests.tscn`, HEADLESS: 32 suites in ~65 s against ~190 s for the full windowed
+run. The tier is a group rather than a list in the runner so the scene stays the registry it already
+is. Both forms print `FILTERED n of 45` at both ends and the wrapper refuses a clean verdict — the
+suite count is the load-failure detector and a subset voids it. `--keep-output` keeps that run's
+stdout+stderr, the only record of the exit-time errors. Runbook, and which suites are deliberately
+out of the tier: **HEADLESS_TESTING.md §0**.
+
 Conventions (formerly UNIT_TESTS_PLAN):
 - Every suite extends `Tests/Support/test_base.gd` (`SolatroTest`); non-freezing
   `check(ok, ctx, detail)`, never `assert()`; each suite ends with `finish()`.
@@ -1621,9 +1631,24 @@ Conventions (formerly UNIT_TESTS_PLAN):
   - A suite must **never `await` a FRAME while it owns `CardEnvironment.CURRENT`** — the runner
     starts the next suite and CURRENT becomes someone else's, silently invalidating every later
     check. Suspend on a coroutine instead.
-- Test speed: `all_tests.gd @export speed_base_delay` → `TestLog.speed_base_delay`;
-  deliberately-slow sampling tests keep their own absolute delays (they need real
-  frames).
+- Test speed: `all_tests.gd @export speed_base_delay` → `TestLog.speed_base_delay`, pushed into
+  `SettingsManager.settings.base_delay` by `TestSuite.apply_test_speed()` for EVERY suite — from
+  `_enter_tree`, and again from `use_own_settings()`, `restore_real_settings()` and `finish()`,
+  because each of those hands the suite a different settings object that would otherwise run at the
+  shipped pacing. E2E RUN paid 214 s of one run for exactly that. Deliberately-slow sampling tests
+  set their own absolute delays (they need real frames) and call `apply_test_speed()` when done.
+- ⚠ **THE RUN'S LENGTH IS A SERIALIZED CHAIN, not the sum of the suites** — they run concurrently,
+  so `all_tests.gd::_print_finish_order` ranks every suite by FINISH time and the last finisher is
+  what you wait on. The chain is INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW
+  → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE; everything else sits in a flat 42–55 s
+  plateau of startup plus per-frame awaits, PIXELS included — it is not a cost.
+- **Open for the owner:** GRID VIEW and GRID LAYOUT still pay `grid_pan_duration` (0.35 s,
+  `player_settings.gd`), the one animation knob independent of `base_delay`, so the test pacing does
+  not reach it. Not a bug — lowering it for tests is a ruling nobody has made.
+- ⚠ **`TestWallPause` ALONE passes all 81 checks and then dies in TEARDOWN** with 0xC0000005,
+  deterministically; the wrapper reports it as an abnormal exit, not a suite failure. The pruning is
+  not the cause (other suites alone exit 0 through the same path) and the suite is clean in the full
+  run. Undiagnosed — do not read it as a filter defect.
 - Interaction suite: every event goes through `Input.parse_input_event` — window
   coordinates, not canvas (`to_window()` helper; headless window is (0,0)).
 - Leak attribution: `Tests/Support/leak_probe.tscn -- <suite.tscn>` runs one suite and

@@ -20,6 +20,10 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## suite's _ready). Tests that sample mid-flight motion keep their own slower absolute delays.
 @export_range(0.001, 1.0, 0.001) var speed_base_delay : float = 0.01
 
+var _run_start_msec := 0
+var _filter : PackedStringArray = []
+var _total_suites := 0
+
 ## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
 ## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
 ## exactly once before the first suite writes a line. @export values are applied before _enter_tree.
@@ -31,10 +35,55 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## fires parent-first — before ANY child suite exists — so setting it here closes that window
 ## completely instead of only covering suites that remember to isolate before their first write.
 func _enter_tree() -> void:
+	_run_start_msec = Time.get_ticks_msec()
 	SettingsManager.isolated = true
+	_total_suites = get_child_count()
+	_filter = _suite_filter()
+	_prune_to_filter()
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 	TestLog.speed_base_delay = speed_base_delay
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())
+	if not _filter.is_empty():
+		TestLog.line("======== %s ========" % _filter_scope(get_child_count()))
+		_print_filter_warning()
+
+# The selection, passed to the scene after `--`: `@logic` for the tier group, anything else a
+# case-insensitive substring of the NODE name (a scene's filename is not always its script's name —
+# test_scoring.gd lives in test_score.tscn). Empty = every suite, the only run that can be green.
+func _suite_filter() -> PackedStringArray:
+	return OS.get_cmdline_user_args()
+
+# ⚠ Prunes in _enter_tree, which fires parent-first, and frees IMMEDIATELY: by _ready every child
+# has already run, and queue_free() defers past the child's own _ready so the suite runs anyway.
+# The list is duplicated because we mutate it mid-propagation. Removal only — never a reorder.
+func _prune_to_filter() -> void:
+	if _filter.is_empty(): return
+	for child : Node in get_children().duplicate():
+		if _matches_filter(child): continue
+		remove_child(child)
+		child.free()
+
+# A tier is a GROUP on the suite node, so the scene stays the registry it already is everywhere
+# else: a list of tier members in this script would drift the moment a suite is added. Groups are
+# set at instantiation, so they are readable here, before any child has entered the tree.
+func _matches_filter(suite: Node) -> bool:
+	for pattern : String in _filter:
+		if pattern.begins_with("@"):
+			if suite.is_in_group(pattern.substr(1)): return true
+		elif String(suite.name).to_lower().contains(pattern.to_lower()): return true
+	return false
+
+# Selected-of-total, named in the opening line and again in the grand total, so a filtered run's
+# transcript never contains the sentence "ALL N SUITES: ... CHECKS PASSED" at either end.
+func _filter_scope(kept: int) -> String:
+	return "FILTERED %d of %d SUITES [%s]" % [kept, _total_suites, " ".join(_filter)]
+
+# ⚠ A filtered run must be unable to LOOK green: the suite count is the load-failure detector and
+# a filter voids it. Printed at both ends of the log, because neither end is read alone.
+func _print_filter_warning() -> void:
+	TestLog.line("⚠ FILTERED RUN — NOT A GREEN SIGNAL FOR THE PROJECT. The unmatched suites never "
+			+ "ran, so the suite count cannot detect a suite that failed to load, and nothing here "
+			+ "says the project is green. Only the full unfiltered run is a verdict.")
 
 func _ready() -> void:
 	var suites: Array[TestSuite] = []
@@ -61,17 +110,34 @@ func _ready() -> void:
 	# Placeholder warnings are reported but never affect the verdict or the exit code — they mark
 	# surfaces still carrying hardcoded values, not breakage (TestSuite.warn).
 	var warn_tag := "" if warned == 0 else (" [%d placeholder warnings]" % warned)
+	var scope := "ALL %d SUITES" % suites.size()
+	if not _filter.is_empty():
+		scope = _filter_scope(suites.size())
 	if failed == 0:
-		TestLog.line("======== ALL %d SUITES: %d CHECKS PASSED%s ========"
-				% [suites.size(), passed, warn_tag])
+		TestLog.line("======== %s: %d CHECKS PASSED%s ========" % [scope, passed, warn_tag])
 	else:
-		TestLog.line("======== ALL %d SUITES: %d passed, %d FAILED (%d behavior, %d implementation)%s ========"
-				% [suites.size(), passed, failed, failed_behavior, failed_impl, warn_tag], true)
+		TestLog.line("======== %s: %d passed, %d FAILED (%d behavior, %d implementation)%s ========"
+				% [scope, passed, failed, failed_behavior, failed_impl, warn_tag], true)
+	if not _filter.is_empty():
+		_print_filter_warning()
+	_print_finish_order(suites)
 	TestLog.line("full logs: %s" % TestLog.paths())
 	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
 	# the play window unless close_when_done is turned off for live inspection).
 	if DisplayServer.get_name() == "headless" or close_when_done:
 		get_tree().quit(mini(failed, 125))
+
+# Every suite ranked by WHEN IT FINISHED, latest first — the run's length is the last finisher,
+# not the sum of the durations, because suites run concurrently and overlap.
+func _print_finish_order(suites: Array[TestSuite]) -> void:
+	var ranked : Array[TestSuite] = suites.duplicate()
+	ranked.sort_custom(func(a: TestSuite, b: TestSuite) -> bool:
+			return a.finish_msec > b.finish_msec)
+	TestLog.line("---- suites by finish time (seconds since run start), slowest tail first ----")
+	for suite : TestSuite in ranked:
+		TestLog.line("  finished %7.2fs   took %6.2fs   %s" % [
+				float(suite.finish_msec - _run_start_msec) / 1000.0,
+				float(suite.elapsed_msec) / 1000.0, suite.suite_name()])
 
 ## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
 ## GREENS THROUGH** (owner: *"suite should fail on unexpected errors in error stream so

@@ -37,8 +37,6 @@ func _ready() -> void:
 			"SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
 	backup_real_settings()
-	var prev_delay := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("SLOT GEOMETRY")
 	await test_slot_geometry()
 	await test_a_board_wider_than_the_window_stays_reachable()
@@ -60,7 +58,6 @@ func _ready() -> void:
 	behavior_section("FULL VIEW SUBMIT (REAL GAMEVIEW SEAM)")
 	await test_game_view_scoring_pass_with_props()
 	await test_all_kinds_live_in_game_view()
-	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	finish()
 

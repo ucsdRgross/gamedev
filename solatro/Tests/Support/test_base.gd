@@ -30,10 +30,30 @@ var _fail_impl := 0
 var _warn := 0
 var _category := Category.BEHAVIOR
 var finished := false
+# Suites run CONCURRENTLY, so their durations overlap and do not sum to the run length: what a run
+# actually waits on is the LAST finish timestamp. all_tests.gd ranks its tail by finish_msec and
+# prints elapsed_msec beside it.
+var elapsed_msec := 0
+var finish_msec := 0
+var _enter_msec := 0
 
 ## Suite tag printed in every FAIL line and the summary banner, e.g. "BOARD".
 func suite_name() -> String:
 	return "TEST"
+
+# Stamps the suite's start, isolates the settings file (a suite scene run ALONE has no all_tests
+# above it, and the pacing write would reach the player's settings.tres) and puts EVERY suite on
+# the run's pacing. ⚠ A suite with its own _enter_tree must call super() or it loses all three.
+func _enter_tree() -> void:
+	_enter_msec = Time.get_ticks_msec()
+	SettingsManager.isolated = true
+	apply_test_speed()
+
+# The run's animation pacing (TestLog.speed_base_delay), applied to the live settings so no
+# get_delay()-derived animation can run at the shipped 1 s. Call it again after deliberately
+# slowing down to sample mid-flight motion — concurrent siblings share this object.
+func apply_test_speed() -> void:
+	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 
 # ==============================================================================
 # SUITE ORDERING — READ THIS BEFORE ADDING A SUITE THAT WAITS ON OTHERS.
@@ -229,6 +249,7 @@ func backup_real_settings() -> void:
 func use_own_settings() -> PlayerSettings:
 	SettingsManager.isolated = true
 	SettingsManager.settings = PlayerSettings.new()
+	apply_test_speed()
 	return SettingsManager.settings
 
 func restore_real_settings() -> void:
@@ -236,6 +257,7 @@ func restore_real_settings() -> void:
 	# ⚠ Deliberately does NOT clear `SettingsManager.isolated`: `all_tests` sets it for the whole
 	# run, and a suite finishing must not re-open the player's file to the suites after it.
 	SettingsManager.reload_from_disk()
+	apply_test_speed()
 
 # Drop whatever the suite wrote and move this suite's parked real file back over it.
 func _move_settings_backup_home() -> void:
@@ -329,13 +351,17 @@ func check_all_tests_registered() -> void:
 ## Print the suite banner + per-category failure split, then signal the aggregate runner
 ## (all_tests.gd) that this suite is done.
 func finish() -> void:
+	apply_test_speed()
+	finish_msec = Time.get_ticks_msec()
+	elapsed_msec = finish_msec - _enter_msec
 	var total := _pass + _fail
 	var warned := "" if _warn == 0 else (" [%d placeholder warnings]" % _warn)
+	var took := " [%.2fs]" % (float(elapsed_msec) / 1000.0)
 	if _fail == 0:
-		TestLog.line("============ %s: ALL %d CHECKS PASSED%s ============"
-				% [suite_name(), total, warned])
+		TestLog.line("============ %s: ALL %d CHECKS PASSED%s ============%s"
+				% [suite_name(), total, warned, took])
 	else:
-		TestLog.line("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d%s ============"
-				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total, warned], true)
+		TestLog.line("============ %s: %d passed, %d FAILED (behavior %d, implementation %d) of %d%s ============%s"
+				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total, warned, took], true)
 	finished = true
 	suite_finished.emit()

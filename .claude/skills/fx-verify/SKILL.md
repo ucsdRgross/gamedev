@@ -76,6 +76,8 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
    a dummy renderer): `<binary> --path solatro res://Tests/all_tests.tscn`, windowed, ~60 s,
    self-quits with the failure count. Read only failures: an empty `test_output_errors.log` plus
    the final banner means green. LEAK CANARY's stderr push_error lines are deliberate.
+   ⚠ **Never verify visual work through the logic tier** (`run_tests.py --logic`): it is headless,
+   and PIXELS is deliberately not in it — a green tier run is silent about every pixel.
 
 4. **Measure cost if the change could affect performance.**
    `Tests/Visual/fx_cost.tscn` reports per-effect GPU cost. Quote before/after numbers measured
