@@ -132,6 +132,32 @@ clip_text = true
 text = "Submit
 "
 
+[node name="MapHud" type="VBoxContainer" parent="HudStack/GameHudMargin"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="FameLabel" type="Label" parent="HudStack/GameHudMargin/MapHud"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fame: 0"
+
+[node name="LapLabel" type="Label" parent="HudStack/GameHudMargin/MapHud"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Lap: 1"
+
+[node name="LuckLabel" type="Label" parent="HudStack/GameHudMargin/MapHud"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Luck: 0%"
+
+[node name="MapDeckButton" type="Button" parent="HudStack/GameHudMargin/MapHud"]
+unique_name_in_owner = true
+layout_mode = 2
+clip_text = true
+text = "Deck"
+
 [node name="DescriptionPanel" parent="." instance=ExtResource("2_desc")]
 unique_name_in_owner = true
 layout_mode = 2

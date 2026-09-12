@@ -7,6 +7,8 @@ const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const MAIN_SCENE := preload("res://Levels/main.tscn")
+const MAP_SCENE := preload("res://Levels/map.tscn")
+const MENU_SCENE := preload("res://Levels/menu.tscn")
 
 # Measured on the pre-deletion tree (Part A, `%MultScore`/`%Preview` still mounted). The inset
 # formula never depended on either retired control, so this is expected to stay unchanged.
@@ -42,6 +44,14 @@ func _ready() -> void:
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes()
+	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
+	test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
+	await test_focus_change_drives_which_hud_stack_child_shows()
+	await test_map_deck_button_reaches_the_live_maps_handler_then_disconnects()
+	await test_maps_camera_offset_moves_beside_the_container_not_under_it()
+	await test_menus_buttons_lie_outside_the_container_and_inside_the_window()
+	await test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect()
+	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -659,6 +669,249 @@ func test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_size
 	await get_tree().process_frame
 	viewport.queue_free()
 	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# ------------------------------------------------------------------ S4: the map's own container
+
+# (a) `MapHud` holds exactly Fame, Lap, Luck, Deck, and none of them remain on `map.tscn`'s own
+# `$UI` -- the second check reads the packed scene structurally, so it needs no `_ready()`.
+func test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them() -> void:
+	var wall := _build_wall()
+	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
+	var map_hud : Control = container.get_node(^"%MapHud")
+	var names : Array[StringName] = []
+	_collect_unique_names(map_hud, container, names)
+	var expected : Array[StringName] = [&"FameLabel", &"LapLabel", &"LuckLabel", &"MapDeckButton"]
+	names.sort()
+	expected.sort()
+	check(names == expected, "MapHud holds exactly Fame, Lap, Luck, Deck (C13)", str(names))
+	var map := MAP_SCENE.instantiate()
+	for target : StringName in ([&"FameLabel", &"LapLabel", &"LuckLabel", &"DeckButton"] as Array[StringName]):
+		check(not _has_named_descendant(map, target),
+				"no %%%s node remains under map.tscn's own $UI" % target)
+	map.free()
+	wall.free()
+
+## (b) The real focus change drives which `HudStack` child shows, for all four screens.
+func test_focus_change_drives_which_hud_stack_child_shows() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var main : Main = MAIN_SCENE.instantiate()
+	add_child(main)
+	get_tree().paused = false
+	await get_tree().process_frame
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var game_hud : Control = container.get_node(^"%GameHud")
+	var map_hud : Control = container.get_node(^"%MapHud")
+
+	check(container.visible, "start menu: the container itself is visible (Q22=b)")
+	check(not game_hud.visible and not map_hud.visible,
+			"start menu: neither GameHud nor MapHud shows")
+
+	main.map_scene.start_run(run)
+	await main._focus_picture(&"map")
+	check(container.visible, "map: the container is visible")
+	check(map_hud.visible and not game_hud.visible, "map: MapHud shows, GameHud hidden")
+
+	await main.enter_game()
+	check(container.visible, "game: the container is visible")
+	check(game_hud.visible and not map_hud.visible, "game: GameHud shows, MapHud hidden")
+	CardEnvironment.CURRENT = (main._pictures[&"game"].screen_root as GameView).game
+
+	await main._go_to_wall_view()
+	check(not container.visible, "wall overview: no container at all (Q21=b)")
+
+	main.queue_free()
+	await get_tree().process_frame
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# (c) The container's Deck button reaches the live map's own handler, and the connection is gone
+# once the map leaves the tree -- `remove_child` first, so free-time auto-disconnect cannot mask it.
+func test_map_deck_button_reaches_the_live_maps_handler_then_disconnects() -> void:
+	var wall := _build_wall()
+	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
+	var map := MAP_SCENE.instantiate() as Map
+	map.hud_container = container
+	add_child(map)
+	await get_tree().process_frame
+	check(container.map_deck_button.pressed.is_connected(map._on_deck_clicked),
+			"the container's Deck button reaches the live map's own handler")
+	var connections : Array[Array] = map._container_connections.duplicate()
+	_leave_tree_without_freeing(map)
+	for pair : Array in connections:
+		var sig : Signal = pair[0] as Signal
+		var callable : Callable = pair[1] as Callable
+		check(not sig.is_connected(callable),
+				"the map's container connection is gone once it leaves the tree")
+	map.free()
+	wall.free()
+
+# Camera2D recomputes its own cached canvas transform on the idle frames AFTER `offset` is
+# assigned, never the same one -- two extra frames is what it measures as settled here.
+func _await_camera_transform_settled() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+# (d) The map's token (the camera follows it) renders at the centre of the space LEFT OVER beside
+# `container_rect()`, never the window's own centre -- half `container_px`, unconverted (D11). A
+# dedicated `SubViewport` hosts container and map alone, so the map's own `Camera2D` is current.
+func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate() as HudContainer
+	viewport.add_child(container)
+	var map := MAP_SCENE.instantiate() as Map
+	map.hud_container = container
+	viewport.add_child(map)
+	get_tree().paused = false
+	await get_tree().process_frame
+	var window := container.get_viewport().get_visible_rect().size
+	var rect := container.container_rect()
+	check(not HudContainer.container_is_top(window, PlayArea.settings()),
+			"sanity: the default test window puts the container on the side")
+	check(is_equal_approx(map.controller.container_inset.x, rect.size.x),
+			"the map's own inset equals the container's window-px width, no picture conversion")
+	await _await_camera_transform_settled()
+	var token_screen := viewport.get_canvas_transform() * map.controller.token.position
+	var remaining_centre_x := rect.end.x + (window.x - rect.end.x) / 2.0
+	check(absf(token_screen.x - remaining_centre_x) <= 2.0,
+			"the token renders at the centre of the space left over beside the container",
+			"%.3f vs %.3f" % [token_screen.x, remaining_centre_x])
+	check(absf(token_screen.y - window.y / 2.0) <= 2.0,
+			"the token's y stays at the window's own centre in the side case",
+			"%.3f vs %.3f" % [token_screen.y, window.y / 2.0])
+	map.free()
+	viewport.free()
+
+# (e) The start menu's buttons lie outside the reserved container band and inside the window.
+# Measured at the project's own base resolution (1152x648, 16:9 like the 1280x720 target) --
+# Menu's own picture renders at that fixed design size, the space its rects are comparable in.
+func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(_project_base_window())
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var band := Rect2(Vector2.ZERO, container.container_rect().size)
+	var window_rect := Rect2(Vector2.ZERO, container.get_viewport().get_visible_rect().size)
+	var main_menu : Menu = main.menu_scene
+	var buttons : Array[Button] = [
+		main_menu.get_node(^"Main/Profile") as Button,
+		main_menu.get_node(^"Main/Play") as Button,
+		main_menu.get_node(^"Main/Options") as Button,
+		main_menu.get_node(^"Main/Quit") as Button,
+		main_menu.get_node(^"Main/Collection") as Button,
+		main_menu.get_node(^"Main/Language") as Button,
+	]
+	for button : Button in buttons:
+		var button_rect := button.get_global_rect()
+		check(not button_rect.intersects(band),
+				"%s lies outside the reserved container band" % button.name, str(button_rect))
+		check(window_rect.encloses(button_rect),
+				"%s lies inside the window" % button.name, str(button_rect))
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+const _MENU_BUTTON_NAMES : Array[StringName] = [
+	&"Profile", &"Play", &"Options", &"Quit", &"Collection", &"Language",
+]
+
+# Any inset scale is UNIFORM (one factor on both axes): a button never stretches or squashes
+# relative to its own authored shape, so its lettering is never condensed.
+func test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var main_menu : Menu = main.menu_scene
+	var authored_menu : Menu = MENU_SCENE.instantiate()
+	for button_name : StringName in _MENU_BUTTON_NAMES:
+		var live := main_menu.get_node(NodePath("Main/%s" % button_name)) as Button
+		var authored := authored_menu.get_node(NodePath("Main/%s" % button_name)) as Button
+		var authored_aspect := authored.size.aspect()
+		var live_aspect := live.get_global_rect().size.aspect()
+		check(is_equal_approx(live_aspect, authored_aspect) \
+					or absf(live_aspect - authored_aspect) <= 0.01 * authored_aspect,
+				"%s keeps its authored aspect (uniform scale)" % button_name,
+				"authored %.4f live %.4f" % [authored_aspect, live_aspect])
+	authored_menu.free()
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# Q27: the picture is centred in the space beside the container, not merely inset from one edge --
+# the title moves with the rest of the menu instead of staying pinned to the window's own centre.
+func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var window := container.get_viewport().get_visible_rect().size
+	var band := container.container_rect()
+	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	var remaining_centre_x := window.x / 2.0 if top else (band.size.x + window.x) / 2.0
+	var main_menu : Menu = main.menu_scene
+	var title : Label = main_menu.get_node(^"Label")
+	var first_button := main_menu.get_node(NodePath("Main/%s" % _MENU_BUTTON_NAMES[0])) as Button
+	var button_row := first_button.get_global_rect()
+	for button_name : StringName in _MENU_BUTTON_NAMES:
+		var button := main_menu.get_node(NodePath("Main/%s" % button_name)) as Button
+		button_row = button_row.merge(button.get_global_rect())
+	check(absf(title.get_global_rect().get_center().x - remaining_centre_x) <= 2.0,
+			"the title's centre x sits at the remaining space's centre x",
+			"title x %.2f expected %.2f" % [title.get_global_rect().get_center().x, remaining_centre_x])
+	check(absf(button_row.get_center().x - remaining_centre_x) <= 2.0,
+			"the button row's centre x sits at the remaining space's centre x",
+			"row x %.2f expected %.2f" % [button_row.get_center().x, remaining_centre_x])
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())

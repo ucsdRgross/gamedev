@@ -39,6 +39,21 @@ var _dragging : bool = false
 # Keyboard/controller selection: index into _sorted_next(), -1 = nothing selected.
 var _kb_index : int = -1
 
+var container_inset : Vector2 = Vector2.ZERO
+
+# `Map._publish_map_inset()`'s window-px `container_px`, unconverted (D11) but HALVED: content
+# centres in the space LEFT OVER beside the container, and `Camera2D.offset` shifts the whole
+# view, so only half the band's width recentres the look point there.
+func apply_container_inset(inset: Vector2) -> void:
+	container_inset = inset
+	camera.offset = -inset / 2.0
+
+# Whether the graph has populated (`map_ready` already emitted) -- lets a caller that started a run
+# fire-and-forget, like the snapshot tool, tell a fresh generation from an already-finished one
+# without racing `map_ready` itself.
+func is_generated() -> bool:
+	return _accepting_input
+
 ## Build (or rebind) the WorldMap2D for this run: reload the bake when one exists, else
 ## generate from the pinned seed and bake exactly once (graph_export is only valid right
 ## after a generation this session — never re-bake after a reload).
@@ -321,9 +336,9 @@ func _try_click() -> void:
 	if n != null and n in next_nodes_of(_current):
 		move_to(n)
 
-## Travel to a directly reachable node: walk the routed edge curve (reversed point order
-## on odd laps), record the history entry in forward-edge orientation, then re-derive
-## visuals and announce the arrival so Map can resolve the node's role.
+# Travel to a directly reachable node: walk the routed edge curve (reversed point order
+# on odd laps), record the history entry in forward-edge orientation, then re-derive
+# visuals and announce the arrival so Map can resolve the node's role.
 func move_to(next: WorldGraphNode) -> void:
 	_moving = true
 	var pts: PackedVector2Array

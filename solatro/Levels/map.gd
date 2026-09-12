@@ -17,9 +17,10 @@ signal enter_game
 ## `MapHoverPanel`'s SCENE is no longer instantiated on the map; the class stays as `get_info()`'s
 ## home.
 signal info_hovered(entry: InfoEntry)
-@onready var fame_label: Label = %FameLabel
-@onready var lap_label: Label = %LapLabel
-@onready var luck_label: Label = %LuckLabel
+
+# Set by `Main` before this screen's picture is built, the same hand-over `GameView.hud_container`
+# gets. Fame/Lap/Luck/the Deck button live on its `MapHud` child, not on this scene's own `$UI`.
+var hud_container : HudContainer = null
 
 var run : RunState = null
 # start_run can arrive before this scene ever entered the tree (Main pre-instantiates it);
@@ -36,6 +37,7 @@ func get_rules_collections() -> Array[CardData]:
 	return Main.save_info.rule_datas
 
 func _ready() -> void:
+	_bind_hud_container()
 	controller.node_entered.connect(_on_node_entered)
 	controller.node_hovered.connect(_on_node_hovered)
 	# Deliberately NO node_unhovered connection: the card keeps showing its last entry across
@@ -46,8 +48,45 @@ func _ready() -> void:
 		_pending_run = null
 		start_run(pending)
 
-## Begin (or resume) a run on this map screen. Safe to call before the scene is in the
-## tree — the map generates/reloads once _ready has run.
+const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
+
+# Same hand-over shape as `GameView._bind_hud_container()`: a standalone fixture with no `Main`
+# gets its own private container instead of a null one.
+func _bind_hud_container() -> void:
+	if hud_container == null:
+		hud_container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
+		add_child(hud_container)
+	_connect_container(hud_container.map_deck_button.pressed, _on_deck_clicked)
+	_connect_container(hud_container.container_rect_changed, _publish_map_inset)
+	_publish_map_inset()
+
+# The container OUTLIVES this screen in the real game, but a test may `remove_child` a standalone
+# `Map` -- same teardown shape as `GameView._exit_tree()`.
+var _container_connections : Array[Array] = []
+
+func _connect_container(sig: Signal, callable: Callable) -> void:
+	sig.connect(callable)
+	_container_connections.append([sig, callable])
+
+func _exit_tree() -> void:
+	for pair : Array in _container_connections:
+		var sig : Signal = pair[0] as Signal
+		var callable : Callable = pair[1] as Callable
+		if sig.is_connected(callable):
+			sig.disconnect(callable)
+
+# The map has no picture to convert through: `container_px` is handed to the controller's camera
+# offset directly, in window px, with no `picture_scale` division.
+func _publish_map_inset() -> void:
+	var window := hud_container.get_viewport().get_visible_rect().size
+	var rect := hud_container.container_rect()
+	if HudContainer.container_is_top(window, SettingsManager.settings):
+		controller.apply_container_inset(Vector2(0.0, rect.size.y))
+	else:
+		controller.apply_container_inset(Vector2(rect.size.x, 0.0))
+
+# Begin (or resume) a run on this map screen. Safe to call before the scene is in the
+# tree — the map generates/reloads once _ready has run.
 func start_run(new_run: RunState) -> void:
 	run = new_run
 	if not is_node_ready():
@@ -135,9 +174,9 @@ func _on_node_hovered(node: WorldGraphNode) -> void:
 
 func _update_hud() -> void:
 	if run == null: return
-	fame_label.text = "Fame: %d" % run.fame
-	lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
-	luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
+	hud_container.fame_label.text = "Fame: %d" % run.fame
+	hud_container.lap_label.text = "Lap: %d %s" % [run.lap + 1, "◀" if run.is_reversed() else "▶"]
+	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
 	DeckViewer.show_deck(self, Main.save_info.card_datas)

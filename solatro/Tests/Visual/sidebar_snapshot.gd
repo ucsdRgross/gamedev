@@ -6,8 +6,13 @@ extends Node2D
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const FALLBACK_OUT_PATH := "user://sidebar_snapshot/game_hud.png"
 const TOP_CASE_OUT_PATH := "user://sidebar_snapshot/game_hud_top.png"
+const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
+const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
 const SAVE_TAG := "sidebar_snapshot"
+# Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
+# surface, not spin on forever.
+const DEAL_SETTLE_TIMEOUT_SEC := 5.0
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -20,14 +25,24 @@ func _ready() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	_capture(MENU_OUT_PATH)
 
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
+	main.map_scene.start_run(run)
+	await main._focus_picture(&"map")
+	await _await_map_generated(main.map_scene.controller)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	_capture(MAP_HUD_OUT_PATH)
+
 	await main.enter_game()
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var view := (main._pictures[&"game"].screen_root as GameView)
+	CardEnvironment.CURRENT = view.game
+	await _await_deal_settled(view)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 
@@ -45,6 +60,31 @@ func _ready() -> void:
 	RunManager.clear_save()
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
+
+# Waits for every Entrance card's own move tween to stop running -- the deal's spawn animation --
+# so the still is never caught mid-flight. Bounded, not a fixed sleep: it returns the instant the
+# board is actually settled.
+func _await_deal_settled(view: GameView) -> void:
+	var waited := 0.0
+	while waited < DEAL_SETTLE_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if _deal_is_settled(view.play_area): return
+
+# The deal spawns its `CardVisual`s deferred, one frame behind `enter_game()`'s own await, so
+# "no tween running yet" is a false settle until at least one card has actually arrived.
+func _deal_is_settled(pa: PlayArea) -> bool:
+	if pa.data_card.is_empty() or not pa.visuals_ready(): return false
+	for visual : CardVisual in pa.data_card.values():
+		if visual.move_tween and visual.move_tween.is_running():
+			return false
+	return true
+
+# The map area shows only its loading text until generation finishes -- wait for that state
+# rather than a fixed sleep, so the still is never caught mid-generation.
+func _await_map_generated(controller: WorldMapController) -> void:
+	if controller.is_generated(): return
+	await controller.map_ready
 
 func _capture(out_path: String) -> void:
 	var img := get_viewport().get_texture().get_image()

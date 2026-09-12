@@ -66,6 +66,10 @@ func _ready() -> void:
 
 	wall = WALL_SCENE.instantiate()
 	add_child(wall)
+	# Hand-carried before either screen's own `_ready()` runs, the same seam `enter_game()` uses
+	# for `GameView` -- both session-long screens bind to THIS wall's one container.
+	map_scene.hud_container = wall.get_node(^"%HudContainer") as HudContainer
+	menu_scene.hud_container = wall.get_node(^"%HudContainer") as HudContainer
 	_window_size = get_viewport().get_visible_rect().size
 	_build_pictures()
 
@@ -96,6 +100,7 @@ func _ready() -> void:
 	camera.zoom = Vector2.ONE * WallPicture.focused_scale(start_rect.size, _window_size,
 			SettingsManager.settings.wall_overfill_margin)
 	_current_focus = &"start_menu"
+	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(&"start_menu")
 	# No ceremony, matching the camera above: start_menu's music begins immediately at full
 	# volume, with nothing to fade FROM.
 	wall.start_music(_entries[&"start_menu"])
@@ -510,6 +515,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
+	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(id)
 	_moving_to = &""
 	_restore_info_mode_for(id)
 	# Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
@@ -599,6 +605,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		source_wp.unfocus(_footprint(_rects[_current_focus]))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
+	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(&"")
 	# Wall view is not a picture, so it has no info mode of its own — the flag goes off, and each
 	# picture's own state is restored when it is entered again.
 	_restore_info_mode_for(&"")

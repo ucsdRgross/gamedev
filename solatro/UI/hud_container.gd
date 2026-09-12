@@ -5,6 +5,8 @@ extends PanelContainer
 @onready var _hud_stack : Control = %HudStack
 @onready var _description_panel : DescriptionPanel = %DescriptionPanel
 @onready var _game_hud_margin : MarginContainer = %HudStack/GameHudMargin
+@onready var _game_hud : Control = %GameHud
+@onready var _map_hud : Control = %MapHud
 @onready var _piles : HBoxContainer = %GameHud/Piles
 
 @onready var submit_button : Button = %Submit
@@ -15,6 +17,11 @@ extends PanelContainer
 @onready var goal_label : Label = %Goal/Label
 @onready var total_label : Label = %Total/Label
 @onready var combo_label : Label = %Combo
+
+@onready var fame_label : Label = %FameLabel
+@onready var lap_label : Label = %LapLabel
+@onready var luck_label : Label = %LuckLabel
+@onready var map_deck_button : Button = %MapDeckButton
 
 ## The container's own rect changed (start or resize); `GameView` re-publishes the board insets off it.
 signal container_rect_changed
@@ -80,6 +87,15 @@ static func rect_for_window(window: Vector2, settings_res: PlayerSettings) -> Re
 ## The fraction of `reference`, capped at the pixel ceiling.
 static func _container_px(reference: float, settings_res: PlayerSettings) -> float:
 	return minf(settings_res.container_size_fraction * reference, settings_res.container_size_max_px)
+
+# Which screen's HUD content shows inside the stack, keyed by `Main`'s own focus id (`&"game"`,
+# `&"map"`, `&"start_menu"`, or `&""` for wall view). The container itself hides entirely at wall
+# view; the menu shows it with neither child visible.
+func set_active_screen(screen: StringName) -> void:
+	visible = screen != &""
+	if not visible: return
+	_game_hud.visible = screen == &"game"
+	_map_hud.visible = screen == &"map"
 
 func show_hud() -> void:
 	_hud_stack.visible = true
