@@ -84,6 +84,8 @@ func _ready() -> void:
 			func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(_relay_info_requested)
+	play_area.highlight_cleared.connect(hud_container.return_to_lock)
+	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
 	play_area.overview_pan_requested.connect(
 			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
 	play_area.overview_bounce_requested.connect(
@@ -112,6 +114,14 @@ func _bind_hud_container() -> void:
 # relays the click that starts it. The container owns the lock itself; nothing else may clear it.
 func _on_description_dismissed() -> void:
 	play_area.locked_data = null
+
+# The board publishes the ASK and the container owns whether there is anything to dismiss; the view
+# is what sees both. A cancel that dismisses nothing is left alone, so the wall's own Back still
+# gets it, and one that does is spent on the dismissal.
+func _on_description_dismiss_requested() -> void:
+	if not hud_container.showing_description(): return
+	hud_container.show_hud()
+	get_viewport().set_input_as_handled()
 
 func _exit_tree() -> void:
 	hud_container.disconnect_for_screen()
@@ -345,6 +355,8 @@ func _lock_description_to(data: CardData) -> void:
 	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
 	play_area.locked_data = data
 
+# A PLACEMENT FINISHES THE INTERACTION, so a landed drop takes the container back to the HUD. A
+# refused one leaves the description up: the player is still choosing where the held card goes.
 func _on_data_selected(data: CardData) -> void:
 	if game.processing: return
 	_lock_description_to(data)
@@ -357,6 +369,7 @@ func _on_data_selected(data: CardData) -> void:
 			var placed := await game.try_place(play_area.selected_cards, data)
 			if placed:
 				play_area.ungrab_cards()
+				hud_container.show_hud()
 	else:
 		var grabbed := await game.try_grab(data)
 		play_area.grab_cards(grabbed)

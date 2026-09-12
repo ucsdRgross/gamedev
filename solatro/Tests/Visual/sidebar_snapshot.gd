@@ -12,6 +12,7 @@ const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
+const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
@@ -92,6 +93,12 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_LOCKED_OUT_PATH)
 
+	await _hover_another_entrance_card(main, view)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DESCRIPTION_FOLLOW_OUT_PATH)
+
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -127,19 +134,23 @@ func _hover_a_board_card(main: Main, view: GameView) -> void:
 		_push_pointer(viewport, control.get_global_rect().get_center())
 		return
 
+# The FOLLOW still: a second card READ while the first stays locked, so the shot carries the
+# hovered card's description beside the locked card's own marking. Walked until the board itself
+# reports the pointer landed -- a control's centre is not always hit-testable, since cards overlap.
+func _hover_another_entrance_card(main: Main, view: GameView) -> void:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	for control : Control in _entrance_controls(view, viewport):
+		if view.play_area.ui_data[control] == view.play_area.locked_data: continue
+		_push_pointer(viewport, control.get_global_rect().get_center())
+		await get_tree().process_frame
+		if view.play_area.moused_hovered_control == control: return
+
 # The LOCKED still: a real click on a card on the Entrance's own layer, which is where a click also
 # GRABS, so the shot carries the exit X, the lifted and marked card and its description at once. The
 # pointer stays on it, so the held card is caught in place rather than flown off after the cursor.
 func _click_an_entrance_card(main: Main, view: GameView) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
-	var rect := Rect2(Vector2.ZERO, Vector2(viewport.size))
-	for control : Control in view.play_area.ui_data:
-		if control.focus_mode == Control.FOCUS_NONE: continue
-		if not rect.encloses(control.get_global_rect()): continue
-		var data : CardData = view.play_area.ui_data[control]
-		if not view.play_area.data_card.has(data): continue
-		if view.play_area.data_card[data].get_parent() != view.play_area.entrance_card_layer:
-			continue
+	for control : Control in _entrance_controls(view, viewport):
 		var at := control.get_global_rect().get_center()
 		_push_pointer(viewport, at)
 		await get_tree().process_frame
@@ -151,6 +162,22 @@ func _click_an_entrance_card(main: Main, view: GameView) -> void:
 		await get_tree().process_frame
 		await get_tree().process_frame
 		return
+
+# The Entrance row's own controls: selectable, whole inside the picture's viewport (the space
+# their rects are measured in), and backed by a visual on the Entrance layer. That row is where a
+# click grabs, and it reads legibly in a still.
+func _entrance_controls(view: GameView, viewport: SubViewport) -> Array[Control]:
+	var rect := Rect2(Vector2.ZERO, Vector2(viewport.size))
+	var out : Array[Control] = []
+	for control : Control in view.play_area.ui_data:
+		if control.focus_mode == Control.FOCUS_NONE: continue
+		if not rect.encloses(control.get_global_rect()): continue
+		var data : CardData = view.play_area.ui_data[control]
+		if not view.play_area.data_card.has(data): continue
+		if view.play_area.data_card[data].get_parent() != view.play_area.entrance_card_layer:
+			continue
+		out.append(control)
+	return out
 
 func _push_pointer(viewport: SubViewport, at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()

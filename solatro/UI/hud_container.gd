@@ -144,12 +144,9 @@ var _entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 ## Which screen's description is on the panel now -- the key a new one is remembered under.
 var _active_screen : StringName = &""
 
-# Which screen's HUD content shows inside the stack, keyed by `Main`'s own focus id (`&"game"`,
-# `&"map"`, `&"start_menu"`, or `&""` for wall view). The container itself hides entirely at wall
-# view; the menu shows it with neither child visible.
-#
-# Leaving a screen keeps that screen's own description: the visual is DETACHED rather than freed,
-# so the entry is still whole when the player comes back, and arriving re-shows it immediately.
+# Keyed by `Main`'s own focus id: `&"game"`, `&"map"`, `&"start_menu"` (shown, neither HUD up) and
+# `&""` for wall view (hidden). Leaving a screen DETACHES its description rather than freeing it,
+# so coming back re-shows exactly what was being read.
 func set_active_screen(screen: StringName) -> void:
 	if screen != _active_screen:
 		_description_panel.detach_entry()
@@ -170,24 +167,56 @@ func show_hud() -> void:
 	description_dismissed.emit()
 
 func show_description(entry: InfoEntry) -> void:
+	_detach_locked_entry(entry)
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
 	_exit_button.visible = true
 	_description_panel.show_entry(entry, _description_size())
 
+## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
+func showing_description() -> bool:
+	return _description_panel.visible
+
 ## The card each screen's description is LOCKED to -- a lock survives leaving and returning, exactly as the remembered entry does.
 var _lock_by_screen : Dictionary[StringName, CardData] = {}
 
+## The entry that lock is showing, so losing the highlight can come back to the locked card itself.
+var _locked_entry_by_screen : Dictionary[StringName, InfoEntry] = {}
+
 ## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
 func lock_to(entry: InfoEntry, target: CardData) -> void:
+	_release_locked_entry()
 	_lock_by_screen[_active_screen] = target
+	_locked_entry_by_screen[_active_screen] = entry
 	show_description(entry)
 
 func clear_lock() -> void:
 	_lock_by_screen.erase(_active_screen)
+	_release_locked_entry()
 
 func is_locked() -> bool:
 	return _lock_by_screen.has(_active_screen)
+
+## Nothing is highlighted any more: a locked description returns to its own card, an unlocked one keeps the entry it has.
+func return_to_lock() -> void:
+	if not is_locked(): return
+	var locked : InfoEntry = _locked_entry_by_screen[_active_screen]
+	if _description_panel.current_entry == locked: return
+	show_description(locked)
+
+# The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
+# visual OUT rather than freeing it -- the same detach the per-screen memory is returned through.
+func _detach_locked_entry(replacement: InfoEntry) -> void:
+	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	if locked and locked != replacement and _description_panel.current_entry == locked:
+		_description_panel.detach_entry()
+
+# A LOCK LEAVING IS THE LAST MOMENT ANYTHING CAN FREE ITS VISUAL: a displaced entry is out of the
+# panel and, once the next lock replaces it, in no dictionary either.
+func _release_locked_entry() -> void:
+	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
+	if locked: _free_detached_visual(locked)
+	_locked_entry_by_screen.erase(_active_screen)
 
 ## The room the description has: the container minus the overlay's button band, which both contents start below.
 func _description_size() -> Vector2:
@@ -197,7 +226,15 @@ func _description_size() -> Vector2:
 # the panel's own child and goes with the tree, so only the detached ones are freed here.
 func _exit_tree() -> void:
 	for screen : StringName in _entry_by_screen:
-		var visual : Node = _entry_by_screen[screen].visual
-		if visual and visual.get_parent() == null:
-			visual.queue_free()
+		_free_detached_visual(_entry_by_screen[screen])
+	for screen : StringName in _locked_entry_by_screen:
+		_free_detached_visual(_locked_entry_by_screen[screen])
 	_entry_by_screen.clear()
+	_locked_entry_by_screen.clear()
+
+# One entry can be both a screen's remembered one and its locked one, so a visual already on its
+# way out is left alone rather than queued a second time.
+func _free_detached_visual(entry: InfoEntry) -> void:
+	var visual : Node = entry.visual
+	if visual and visual.get_parent() == null and not visual.is_queued_for_deletion():
+		visual.queue_free()

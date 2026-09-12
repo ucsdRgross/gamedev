@@ -124,3 +124,26 @@
 - S6 hygiene: the no-listener guard stays in `PlayArea` as `_publish_info()`, the ONE publish site
   for the highlight and for both Info-mode click emits -- smaller than teaching four bare
   `play_area.tscn` fixtures to connect a freeing sink, and it keeps the ownership rule in one place.
+- S6b: "the pointer left every card" is a new `PlayArea` signal, `highlight_cleared`, NAMES.md does
+  not list it. Two triggers, one signal: the per-control `mouse_exited` publishes only when
+  `_card_control_at()` finds no card under the pointer (card to card is silent -- the card being
+  entered publishes its own description), and `focus_exited` publishes through a DEFERRED connection
+  because at `focus_exited` the viewport has dropped the old focus and not yet taken the new one, so
+  the owner reads null however the focus is moving. Focus onto an overlay HUD control counts: Godot
+  clears focus across every viewport sharing one base window.
+- S6b: the container answers it with `return_to_lock()` and keeps `_locked_entry_by_screen`. A hover
+  that displaces the locked entry DETACHES its visual instead of freeing it (the same handoff the
+  per-screen memory uses), so returning re-mounts the very node the lock was shown with; `clear_lock()`
+  and `_exit_tree()` free it when it is still detached. New names NAMES.md does not list:
+  `HudContainer.return_to_lock()`, `showing_description()`, `_detach_locked_entry()`,
+  `_free_detached_visual()`, `PlayArea.highlight_cleared`, `PlayArea.description_dismiss_requested`,
+  `PlayArea._publish_pointer_left_cards()`, `PlayArea._publish_focus_left_cards()`,
+  `GameView._on_description_dismiss_requested()`.
+- S6b: cancel and a bare-board press both publish `description_dismiss_requested`; the VIEW decides
+  whether the event is spent, because only it sees both the board's ask and the container's
+  `showing_description()`. A cancel with nothing showing is left alone, so `Wall.back_requested`
+  still fires -- `Wall._unhandled_input` gives the focused picture first refusal by reading that
+  viewport's own `is_input_handled()`, so consuming inside the board is what suppresses Back.
+- S6b: `Tests/Visual/sidebar_snapshot` gained `description_follow.png`. Its hover walks Entrance
+  candidates until `moused_hovered_control` reports the landing -- a control's own centre is not
+  always hit-testable, and the first version silently re-shot the locked card instead.

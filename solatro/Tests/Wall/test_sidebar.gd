@@ -66,6 +66,14 @@ func _ready() -> void:
 	await test_the_exit_x_reverts_to_the_hud()
 	await test_the_exit_x_is_a_touch_target_below_the_button_band()
 	await test_a_resize_relays_the_description_to_the_new_width()
+	behavior_section("S6: FOLLOW, RETURN AND DISMISS")
+	await test_the_description_follows_the_hover_while_locked()
+	await test_leaving_everything_returns_to_the_locked_card()
+	await test_focus_leaving_the_board_returns_to_the_locked_card()
+	await test_cancel_reverts_to_the_hud_and_only_then_is_spent()
+	await test_a_press_on_bare_board_reverts_to_the_hud()
+	await test_placing_a_card_closes_the_description()
+	await test_replacing_a_displaced_lock_frees_its_visual()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1562,3 +1570,232 @@ func test_a_resize_relays_the_description_to_the_new_width() -> void:
 				"...and the height it scrolls to is the new width's, not the old one's",
 				"%.1f carried vs %.1f fresh" % [carried, content.custom_minimum_size.y])
 	await _end_game_fixture()
+
+# ------------------------------------------------------------------ S6: follow, return, dismiss
+
+## The keyboard Back the wall reads, built the way `test_wall_input` builds it.
+func _cancel_event() -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = &"ui_cancel"
+	event.pressed = true
+	return event
+
+# Clicks an Entrance card and leaves NOTHING held, so a later cancel cannot be spent on the ungrab
+# instead of on the description.
+func _lock_without_holding(control: Control) -> void:
+	await _click_card(control)
+	_play_area.ungrab_cards()
+	await get_tree().process_frame
+
+## 1.4/B7/Q60=c: a locked description FOLLOWS the hover onto another card, and the lock stays where it was.
+func test_the_description_follows_the_hover_while_locked() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var locked : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		var title : Label = _panel.get_node(^"%Title")
+		check(_container.is_locked() and _play_area.locked_data == locked,
+				"the click locked the description to the card it landed on")
+		var controls := await _hoverable_card_controls()
+		var elsewhere := await _hover_another_card(controls, _play_area.moused_hovered_control)
+		check(elsewhere != null, "the pointer landed on a second card")
+		if elsewhere != null:
+			var hovered : CardData = _play_area.ui_data[elsewhere]
+			check(hovered != locked, "...a different card from the locked one")
+			check(title.text == _expected_text(hovered)[0],
+					"the description FOLLOWS the hover while locked (B7, Q60=c)", title.text)
+			check(_container.is_locked() and _play_area.locked_data == locked,
+					"...and the lock is still on the first card (B8)")
+			check(_play_area.data_card[locked].focused,
+					"...which keeps its marking behind the hover (Q58=c)")
+	await _end_game_fixture()
+
+## 1.5/B7/B4: the pointer leaving everything returns to the LOCKED card, and with no lock keeps the last entry.
+func test_leaving_everything_returns_to_the_locked_card() -> void:
+	await _start_game_fixture()
+	var slot : Control = _panel.get_node(^"%VisualSlot")
+	var title : Label = _panel.get_node(^"%Title")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var locked : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		var locked_visual : Node = _panel.current_entry.visual
+		var controls := await _hoverable_card_controls()
+		var elsewhere := await _hover_another_card(controls, _play_area.moused_hovered_control)
+		check(elsewhere != null, "the pointer landed on a second card")
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(title.text == _expected_text(locked)[0],
+				"the pointer leaving every card returns to the LOCKED card (B7, Q60=c)", title.text)
+		var back : InfoEntry = _panel.current_entry
+		check(is_instance_valid(locked_visual) and back != null and back.visual == locked_visual
+				and locked_visual.get_parent() == slot,
+				"...the very visual the lock was shown with, handed back rather than freed")
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(title.text == _expected_text(locked)[0],
+				"...and leaving the board entirely keeps it there", title.text)
+
+		_container.show_hud()
+		var first := await _hover_another_card(controls, null)
+		var second := await _hover_another_card(controls, first)
+		check(second != null, "two cards can be read in turn with nothing locked")
+		if second != null:
+			_hover(_bare_board_point(controls))
+			await get_tree().process_frame
+			await get_tree().process_frame
+			check(not _container.is_locked(), "nothing is locked once the container went back")
+			check(title.text == _expected_text(_play_area.ui_data[second])[0],
+					"...so leaving everything STAYS on the last card read (B4)", title.text)
+	await _end_game_fixture()
+
+## B7 for the pad: the board focus landing on a HUD control leaves no card highlighted, so the locked card comes back.
+func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var locked : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		var elsewhere := _another_card_control(await _hoverable_card_controls(), locked)
+		check(elsewhere != null, "a second card can take the board focus")
+		if elsewhere != null:
+			elsewhere.grab_focus()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var moved : CardData = _play_area.ui_data[elsewhere]
+			check(title.text == _expected_text(moved)[0],
+					"the pad's own highlight moved the description with it (B1)", title.text)
+			_container.submit_button.grab_focus()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			check(_play_area.get_viewport().gui_get_focus_owner() == null,
+					"the board has no focused control left once the HUD took the focus",
+					str(_play_area.get_viewport().gui_get_focus_owner()))
+			check(title.text == _expected_text(locked)[0],
+					"...so the description returns to the locked card (B7, Q60=c)", title.text)
+	await _end_game_fixture()
+
+## 1.7/B9/B10/Q64=a: cancel with nothing held reverts to the HUD and is spent doing it; with nothing showing it still reaches the wall's Back.
+func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		var went_back : Array[bool] = [false]
+		_main.wall.back_requested.connect(func() -> void: went_back[0] = true)
+		check(_container.showing_description() and _play_area.selected_cards.is_empty(),
+				"the description is up and nothing is held before the cancel")
+
+		_main.wall._unhandled_input(_cancel_event())
+		await get_tree().process_frame
+		check(hud_stack.visible and not _panel.visible,
+				"cancel with nothing held reverts the container to the HUD (B9, B10)")
+		check(not _container.is_locked(), "...and the lock is gone with it")
+		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+		check(not went_back[0],
+				"...and that cancel is SPENT on the dismissal, never reaching the wall's own Back")
+
+		_main.wall._unhandled_input(_cancel_event())
+		await get_tree().process_frame
+		check(went_back[0],
+				"a cancel with NOTHING showing falls through to the wall's Back, exactly as before")
+	await _end_game_fixture()
+
+## 1.7/B9/B10: a real press on bare board reverts the container to the HUD.
+func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		var read := await _hover_another_card(controls, null)
+		check(read != null, "the pointer read a card first")
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		check(_container.showing_description(), "the description is up before the press")
+		var bare := _bare_board_point(controls)
+		_hover(bare)
+		await get_tree().process_frame
+		await _click(bare, _game_viewport)
+		check(hud_stack.visible and not _panel.visible,
+				"a press on bare board reverts the container to the HUD (B9, B10)")
+		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+	await _end_game_fixture()
+
+# A landing for `held` the board itself accepts or refuses, asked through the SAME
+# `on_can_place_stack` dispatch `try_place` uses, so no placement rule is spelled out here.
+func _placement_target(controls: Array[Control], held: Array[CardData], legal: bool) -> Control:
+	var game := CardEnvironment.get_current_game()
+	for control : Control in controls:
+		if not _is_selectable(control): continue
+		var data : CardData = _play_area.ui_data[control]
+		if data in held: continue
+		var accepted : Array[CardData] = await game.return_first_data_array_result(
+				&"on_can_place_stack", held, data)
+		if accepted.is_empty() != legal: return control
+	return null
+
+## B12/Q63=a: placing the held card finishes the interaction, so the description closes -- a refused place leaves it up.
+func test_placing_a_card_closes_the_description() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a grabbable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		var held : Array[CardData] = _play_area.selected_cards.duplicate()
+		check(not held.is_empty(), "the click grabbed a card to place", str(held.size()))
+		if not held.is_empty():
+			var controls := await _hoverable_card_controls()
+			var refused := await _placement_target(controls, held, false)
+			check(refused != null, "the board offers a cell this card may NOT land on")
+			if refused != null:
+				await _click_card(refused)
+				check(_panel.visible and not hud_stack.visible,
+						"a refused place leaves the description up: the choice is not finished")
+				check(not _play_area.selected_cards.is_empty(), "...and the card is still held")
+			var legal := await _placement_target(await _hoverable_card_controls(), held, true)
+			check(legal != null, "the board offers a cell this card MAY land on")
+			if legal != null:
+				await _click_card(legal)
+				await get_tree().process_frame
+				check(_play_area.selected_cards.is_empty(), "the card was placed",
+						str(_play_area.selected_cards.size()))
+				check(hud_stack.visible and not _panel.visible,
+						"placing the card closes the description (B12, Q63=a)")
+				check(not _container.is_locked(), "...and the lock goes with it")
+	await _end_game_fixture()
+
+## A leak is no check failure, so the one path that can orphan a visual -- a lock replaced while a hover holds the panel -- is checked here.
+func test_replacing_a_displaced_lock_frees_its_visual() -> void:
+	var container := _build_container()
+	var locked := InfoEntry.new()
+	locked.visual = Control.new()
+	container.lock_to(locked, CardData.new())
+	container.show_description(InfoEntry.new())
+	check(is_instance_valid(locked.visual) and locked.visual.get_parent() == null,
+			"a hover takes the locked visual OUT of the panel rather than freeing it")
+	container.lock_to(InfoEntry.new(), CardData.new())
+	await get_tree().process_frame
+	check(not is_instance_valid(locked.visual),
+			"...and the NEXT lock frees the displaced one, which nothing holds any more")
+	container.queue_free()

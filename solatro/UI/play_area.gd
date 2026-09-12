@@ -4,6 +4,14 @@ class_name PlayArea
 signal data_selected(data : CardData)
 ## A card is highlighted, or clicked while Info mode is on: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
+
+# NO CARD IS HIGHLIGHTED ANY MORE: the pointer left every card, or the board focus moved off them.
+# Card to card is SILENT -- the card being entered publishes its own description, and a clear
+# between the two would flick a locked card's description back in for a frame.
+signal highlight_cleared
+
+## The player asked to close the description: cancel with nothing held, or a press on bare board.
+signal description_dismiss_requested
 ## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
 ## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
 ## a deferred emit queued after those adds (FIFO) fires only once they've entered the tree.
@@ -1454,6 +1462,8 @@ func _on_gui_input(event: InputEvent) -> void:
 					_publish_info(ui_data[focused_control])
 				elif not _consume_as_focus_click(focused_control):
 					data_selected.emit(ui_data[focused_control])
+			elif _card_control_at(get_global_mouse_position()) == null:
+				description_dismiss_requested.emit()
 
 ## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
 ## card control consumes nothing), then fall through the focus-navigation pass to unhandled
@@ -1491,6 +1501,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		else:
 			hide_focus_info() # nothing held: just dismiss the inspector, leave the event be
+			description_dismiss_requested.emit()
 
 # since clicks outside of play area can happen
 ##
@@ -2793,8 +2804,22 @@ func create_card_control() -> Control:
 			if moused_hovered_control == new_control:
 				moused_hovered_control = null
 				# hover-driven inspector hides with the hover (keyboard re-focus re-shows it)
-				if focused_control == new_control: hide_focus_info())
+				if focused_control == new_control: hide_focus_info()
+				_publish_pointer_left_cards())
+	new_control.focus_exited.connect(_publish_focus_left_cards, CONNECT_DEFERRED)
 	return new_control
+
+# The pointer left a card: whether it landed on ANOTHER card is the engine's own answer, read back
+# through `_card_control_at`, so this never disagrees with what the board thinks is under the cursor.
+func _publish_pointer_left_cards() -> void:
+	if _card_control_at(get_global_mouse_position()) == null: highlight_cleared.emit()
+
+# DEFERRED, and it has to be: at `focus_exited` the viewport has dropped the old focus and not yet
+# taken the new one, so the owner reads null however the focus is moving; one idle call later it is
+# settled. ⚠ A board LEAVING THE TREE is that case with no viewport left to ask at all.
+func _publish_focus_left_cards() -> void:
+	if not is_inside_tree(): return
+	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
 # ⚠ The entry carries a LIVE preview card, so an emit nothing listens to orphans one node per

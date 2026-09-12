@@ -1,7 +1,8 @@
 # HANDOFF — sidebar (PLAN.md Phases 1–5, S1–S18)
 
-**Goal:** land `solatro/design/sidebar/PLAN.md` steps S1–S18 on branch `sidebar`, one verified step
-per commit, stopping at S18. Phases 6–9 (S19–S24) are NOT in this run.
+**Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
+on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
+widened to every phase; do not stop at S18).
 **State:** `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
 `py solatro/Tools/run_tests.py --filter <Node> | --logic`) is merged at 587f2d60; the full run is
 ~200 s and a single suite ~30 s. Open: GRID LAYOUT fails 2 of 4 runs on the merged branch
@@ -158,12 +159,13 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'menu and wall-overview rules landed here too (Q22=b, Q21=b). GAP-002 also applies to the map on windows narrower than 16:9 only if map content sits under the band - unmeasured'
 - id: S5
   description: route PlayArea.info_requested into HudContainer; description content
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '16f107a5 + 7904d1c7: ALL 46 SUITES 4180 PASSED; 1.2/1.3/1.14 red 17 -> green; by eye description.png: name beside a board-sized preview, body below'
 - id: S6
   description: lock, follow, the four dismissals, exit X
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'S6a e9e1754f + S6b: ALL 46 SUITES 4282 PASSED [22], SIDEBAR 303, exit profile = the two standing lines + 135 ObjectDB; red-then-green per test logged; by eye description_locked.png (X, lifted locked card) and description_follow.png (hovered card shown, locked card marked)'
+  notes: 'the fourth dismissal (card leaves its cell while following) and TEST_PLAN 1.8 are owed by S14 (need following). S6b shipped a production leak (a displaced lock orphaned its visual) caught by the leak probe and fixed with a regression check'
 - id: S7
   description: the processing rule
   status: pending
@@ -220,7 +222,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. Owner's centring report (screenshot pending). 2. S5. 3. S6.
+1. S7. 2. S8. 3. S9 (Phase 3).
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
