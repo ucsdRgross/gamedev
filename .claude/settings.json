@@ -29,6 +29,17 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR\\.claude\\hooks\\release-subagent-lock.ps1\""
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

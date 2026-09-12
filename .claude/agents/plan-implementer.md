@@ -2,9 +2,8 @@
 name: plan-implementer
 description: Executes one step of an already-written implementation plan under an overseer. Makes code changes, writes the tests the test plan names, runs the suite, and reports in a fixed schema. Never designs, never renames, never decides. Use when a plan, test plan and name registry already exist and the work is purely execution.
 tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
-model: sonnet
-effort: low
-maxTurns: 50
+model: opus
+maxTurns: 150
 color: green
 permissionMode: auto
 ---
@@ -16,6 +15,8 @@ permissionMode: auto
      the blast radius of a bad command is one `git reset --hard`.
      ⚠ Hooks still fire regardless of permission mode — `.claude/hooks/block-process-kill.ps1`
      continues to block killing a process by image name or wildcard.
+     maxTurns: 150 — measured, 50 ended two Solatro steps mid-edit with no report, and a turn-cap
+     stop does not fire SubagentStop, so it also left the one-subagent lock held.
 
      Fields deliberately NOT set, so nobody "fixes" them later:
      memory:        the docs recommend `project` as a default, and it is wrong HERE. Persistent

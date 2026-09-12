@@ -80,11 +80,13 @@ most of them test-to-test setup. Only about eight touch production code.
    and ask first. **On any other branch, committing is fine and needs no permission**: one verified
    step per commit, evidence in the message. ⚠ `/plan-run` goes further on a worktree branch and
    makes commits MANDATORY for the overseer, because they are that run's only rollback points.
-2. **ONE SUBAGENT AT A TIME.** A hook enforces it (`.claude/hooks/one-subagent-at-a-time.ps1`,
-   released on `SubagentStop`). Subagents here run the Godot suite, which is a one-process rule:
-   two at once race for the same `user://settings.tres`, the same `godot.log` and the same window,
-   and a failure stops being attributable to either. Dispatch, wait for the report, dispatch the
-   next. A lock older than 90 minutes is ignored, so a killed session cannot wedge the repo shut.
+2. **AT MOST TWO SUBAGENTS AT A TIME, AND ONLY ONE OF THEM RUNS GODOT.** A hook enforces the
+   count (`.claude/hooks/one-subagent-at-a-time.ps1`, released on `SubagentStop` and on
+   `PostToolUse` for a foreground `Agent` call); the overseer enforces the Godot half. The suite
+   is a one-process rule: two runs race for the same `user://settings.tres`, the same `godot.log`
+   and the same window — every worktree shares them — and a failure stops being attributable to
+   either. The second slot is for an agent that runs no Godot (a reviewer, an auditor, docs work).
+   A lock older than 90 minutes is ignored, so a killed session cannot wedge the repo shut.
 3. **Never kill a process by image name or wildcard.** A hook blocks it
    (`.claude/hooks/block-process-kill.ps1`) because a blanket filter twice closed the owner's editor
    with unsaved work. An explicit verified `-Id <pid>` passes.
