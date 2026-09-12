@@ -111,12 +111,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'on_game_start order = rules_deck array order, and creators build grids inside that walk (spotlight sweep after every mod), so the planner is LAST in rules1 and a BOARD PLAN check pins it after the allotment. get_frame() 13 and the description copy are logged assumptions. Legacy comment debt in deck.gd/test_decks.gd (27 findings) left in place: draining it deletes owner-facing playtest notes, an owner call.'
 - id: S4
   description: BoardPlan.deal() per PLAN 1.2 from the planner's on_game_start; TP-01..TP-18 minus TP-05/06.
-  files_touched: [solatro/Scripts/board_plan.gd, solatro/Tests/Engine/test_board_plan.gd]
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Scripts/board_plan.gd, solatro/Cards/Skills/Rules/skill_board_planner.gd, solatro/Scripts/card_effect_api.gd, solatro/Scripts/pip_comparator.gd, solatro/Scripts/game_data.gd, solatro/Tests/Engine/test_board_plan.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'TP-05/TP-06 parked on GAP-001. write_mark/clear_mark LANDED in dispatch 2 with TP-11 (red: statuses copied -> 1 FAILED; source object shared -> 2 FAILED) and TP-12 (red: relink dropped -> 1 FAILED); deal() still pending'
+  status: done
+  evidence: 'Implementer red runs (BOARD PLAN of 67): planner hook parked 62/4 FAILED (TP-01, TP-07); within-pass unused test removed 56/11 FAILED (TP-02, 03, 04, 09, 14, 15); RNG unseeded 65/1 (TP-07); Fisher-Yates swapped for Array.shuffle() 65/2 (TP-08, TP-07); add_grid deal removed 63/3 (TP-14, TP-04); save walker skipping cell types 64/2 (TP-17). Overseer full run: ALL 47 SUITES: 4067 CHECKS PASSED, errors log empty; BOARD PLAN 67/67; SECTION 8 identical; per-suite banners vs S3 differ only in BOARD PLAN (and BOARD FUZZ drift). grep: no global RNG call in board_plan.gd; BoardPlan.deal has exactly two call sites (planner on_game_start, CardEffectApi.add_grid); plan_seed written once.'
+  notes: 'TP-01/TP-07 go through the real show start; TP-14 and half of TP-04 through the real add_grid. Re-derived by measurement (ASSUMPTIONS.md): TP-14 counts (ten identities at 3 copies, ten at 2, max 3), TP-09 measures repeat-cell spread, TP-08 has a mirror half. Pass boundaries count copies off the board (design "cycling"); identical for the opening deal. Two api accessors: board_state(), plan_seed_for_node() = hash(Vector2i(world_seed, current_node_id)) forced off 0, read from Main.save_info. Known property for the owner: the deal draws over the deck in its shuffled order, so "same node, same plan" holds while the deck order is the same (Q8 note anticipates this). TP-05/TP-06 still parked on GAP-001.'
 - id: S5
   description: MarkMatch.matches_at, flat_bonus, mult_bonus; leniency hook comments; TP-20..27, TP-39.
   files_touched: []

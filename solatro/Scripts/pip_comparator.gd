@@ -228,6 +228,20 @@ static func printed_same(a: Variant, b: Variant) -> bool:
 		return is_equal_approx(float(ra.value), float(rb.value))
 	return false
 
+#Whole-card printed identity: the four slots a mark copies, so two cards printing the same thing
+#are one mark. The deal's "unused" set and the board invariant that a mark names a card the deck
+#holds are the same question, and two spellings of it could disagree.
+static func printed_card_same(a: CardData, b: CardData) -> bool:
+	return printed_same(a.rank, b.rank) and printed_same(a.suit, b.suit) \
+			and _modifier_script(a.skill) == _modifier_script(b.skill) \
+			and _modifier_script(a.stamp) == _modifier_script(b.stamp)
+
+#A modifier slot compared by CLASS, never by instance: a mark carries its own COPY of the skill or
+#stamp it names, so two slots agree when their scripts are identical -- and an empty slot on both
+#sides agrees too, which falls out of null == null.
+static func _modifier_script(mod: CardModifier) -> Script:
+	return mod.get_script() as Script if mod else null
+
 
 # ==============================================================================
 # THE PASS MEMO — a rule's answer is fixed for the HAND (owner ruling, gaps/GAP-003.md)

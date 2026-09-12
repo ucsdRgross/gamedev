@@ -21,15 +21,45 @@ func _ready() -> void:
 	test_i6_fails_a_mark_the_deck_never_had()
 	test_i6_exempts_a_granted_mark()
 	test_i6_passes_a_mark_the_deck_prints()
+	behavior_section("THE DEAL, THROUGH A REAL SHOW START")
+	await test_a_fresh_show_marks_every_cell()
+	await test_the_same_node_deals_the_same_board()
+	behavior_section("THE DEAL'S CARD BUDGET")
+	test_twenty_cards_over_twenty_five_cells()
+	test_nothing_repeats_while_a_card_is_unused()
+	test_two_grids_draw_fifty_distinct_cards()
+	behavior_section("THE DEAL READS ITS OWN GENERATOR ONLY")
+	test_the_global_generator_cannot_move_the_deal()
+	test_the_cell_walk_is_shuffled()
+	test_two_copies_may_share_a_row()
+	behavior_section("A BOARD THAT GROWS AFTER THE DEAL")
+	test_a_grid_added_mid_show_deals_its_own_marks()
+	test_a_cell_added_to_a_grid_takes_a_mark()
+	test_a_card_minted_after_the_deal_gets_no_mark()
+	behavior_section("A PLAN SURVIVES A SAVE, AND A PLAN-LESS SAVE STILL PLAYS")
+	test_a_dealt_plan_survives_a_round_trip()
+	await test_a_plan_less_save_resumes_and_plays()
 	finish()
 
 ## A 5x5 board with the plan deck in draw -- the state every check below starts from.
 func make_state() -> GameData:
-	var state := TestGridFixtures.build_fix_grid_1()
-	state.draw_deck = TestDecks.plan_deck()
+	return plan_state(TestDecks.plan_deck(), 1)
+
+## A board of `grid_count` empty 5x5 grids with `deck` in draw; the fixtures ship 1 and 3.
+func plan_state(deck: Array[CardData], grid_count: int) -> GameData:
+	var state := TestGridFixtures.build_fix_grid_3()
+	state.grids.resize(grid_count)
+	state.draw_deck = deck
 	for card : CardData in state.draw_deck:
 		card.stage = CardData.Stage.DRAW
 	return state
+
+## The deal on its own, seeded: the rows that exercise the algorithm rather than the wiring.
+func deal_onto(state: GameData, plan_seed: int) -> void:
+	state.plan_seed = plan_seed
+	var rng := RandomNumberGenerator.new()
+	rng.seed = plan_seed
+	BoardPlan.deal(state, rng)
 
 ## Marks grid 0's first cell with exactly the pips I6's fixtures need, which no deck card prints.
 func mark_first_cell(state: GameData, rank_value: float, suit: GDScript) -> CardData:
@@ -183,3 +213,412 @@ func test_fresh_show_carries_one_localised_planner() -> void:
 	check(planner != null and planner.get_str() == planner_name
 			and planner.get_description() == planner_description,
 			"S3: the card reads both strings through the localisation table")
+
+const ROUND_TRIP_PATH := "user://board_plan_round_trip_test.tres"
+const PLAN_LESS_PATH := "user://board_plan_plan_less_test.tres"
+
+## The run document the app was holding, put back by `free_show`.
+var _real_run : RunState = Main.save_info
+
+## The run document the plan's seed comes from: one world seed, so only the node id varies.
+func run_doc(node_id: int) -> RunState:
+	var run := RunState.new()
+	run.world_seed = 4242
+	run.current_node_id = node_id
+	return run
+
+#A real show start: the standard rules mirror walks `on_game_start` the way the game does, so the
+#planner's own hook is what deals -- the allotment's creators build their grid on the sweep that
+#follows the allotment, and the Entrance is left unfilled, which is where the deal belongs.
+func start_show(deck: Array[CardData], node_id: int) -> Game:
+	var g := Game.new()
+	var state := GameData.new()
+	state.draw_deck = deck
+	for card : CardData in state.draw_deck:
+		card.stage = CardData.Stage.DRAW
+	var rules := TestDecks.standard_rules()
+	for card : CardData in rules:
+		card.stage = CardData.Stage.RULES
+	state.rules_deck = rules
+	g.state = state
+	CardEnvironment.CURRENT = g
+	Main.save_info = run_doc(node_id)
+	await g.skill_spotlight_check()
+	await g.run_all_mods(&"on_game_start")
+	return g
+
+#The same board the game builds, minus the planner: five Entrance adders and one empty grid, which
+#is what a save written before this feature holds.
+func plan_less_show(deck: Array[CardData]) -> Game:
+	var g := Game.new()
+	var state := plan_state(deck, 1)
+	var rules : Array[CardData] = []
+	for _i : int in 5:
+		var card := CardData.new().with_skill(SkillAdderInputUpper.new())
+		card.stage = CardData.Stage.RULES
+		rules.append(card)
+	state.rules_deck = rules
+	g.state = state
+	CardEnvironment.CURRENT = g
+	await g.skill_spotlight_check()
+	return g
+
+## Undoes a show: both the environment and the run document are process-wide.
+func free_show(g: Game) -> void:
+	CardEnvironment.CURRENT = null
+	Main.save_info = _real_run
+	g.free()
+
+## Every mark on the board, in grid order then row-major.
+func marks_of(state: GameData) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for grid : GridData in state.grids:
+		for type_card : CardData in grid.cell_types:
+			if BoardPlan.is_marked(type_card): out.append(type_card)
+	return out
+
+## One mark's printed identity as text: the four slots a mark copies, and "-" for a bare cell.
+func mark_print(type_card: CardData) -> String:
+	if not BoardPlan.is_marked(type_card): return "-"
+	var skill : CardModifier = type_card.skill
+	var stamp : CardModifier = type_card.stamp
+	return "%s|%s|%s|%s" % [type_card.rank.get_str() if type_card.rank else "",
+			type_card.suit.get_str() if type_card.suit else "",
+			skill.get_str() if skill else "", stamp.get_str() if stamp else ""]
+
+## One grid's plan as a comparable string, cell by cell in row-major order.
+func grid_signature(state: GameData, index: int) -> String:
+	var parts : Array[String] = []
+	for type_card : CardData in state.grids[index].cell_types:
+		parts.append(mark_print(type_card))
+	return " ".join(parts)
+
+## The whole board's plan as one comparable string.
+func plan_signature(state: GameData) -> String:
+	var parts : Array[String] = []
+	for i : int in state.grids.size():
+		parts.append(grid_signature(state, i))
+	return " / ".join(parts)
+
+## How many marks name each printed identity, largest count first.
+func copy_histogram(state: GameData) -> Array[int]:
+	var seen : Array[CardData] = []
+	var counts : Array[int] = []
+	for mark : CardData in marks_of(state):
+		var at := -1
+		for i : int in seen.size():
+			if PipComparator.printed_card_same(seen[i], mark): at = i
+		if at == -1:
+			seen.append(mark)
+			counts.append(1)
+		else:
+			counts[at] += 1
+	counts.sort()
+	counts.reverse()
+	return counts
+
+## Grid 0's cells whose mark another cell also carries, by row-major index.
+func repeated_cells(state: GameData) -> Array[int]:
+	var out : Array[int] = []
+	var types : Array[CardData] = state.grids[0].cell_types
+	for i : int in types.size():
+		for j : int in types.size():
+			if i != j and PipComparator.printed_card_same(types[i], types[j]):
+				out.append(i)
+				break
+	return out
+
+## True when one row of grid 0 carries the same printed identity twice.
+func row_holds_a_repeat(state: GameData) -> bool:
+	var grid : GridData = state.grids[0]
+	for y : int in grid.grid_height:
+		for x : int in grid.grid_width:
+			for other : int in range(x + 1, grid.grid_width):
+				if PipComparator.printed_card_same(grid.cell_types[grid.cell_index(x, y)],
+						grid.cell_types[grid.cell_index(other, y)]):
+					return true
+	return false
+
+## Every cell type's `granted` flag in board order -- a dealt mark's is false.
+func granted_flags(state: GameData) -> Array[bool]:
+	var out : Array[bool] = []
+	for grid : GridData in state.grids:
+		for type_card : CardData in grid.cell_types:
+			out.append((type_card.type as TypeGridCell).granted)
+	return out
+
+## Every modifier on a mark that answers for some other card -- the WeakRef trap, named.
+func stray_backrefs(state: GameData) -> Array[String]:
+	var out : Array[String] = []
+	for mark : CardData in marks_of(state):
+		for mod : CardModifier in [mark.suit, mark.skill, mark.stamp, mark.type]:
+			if mod and mod.data != mark: out.append(mod.get_str())
+	return out
+
+#TP-01: the wiring is the claim. The planner's hook fires inside the game's own game-start walk,
+#after the creators built the grid and before the Entrance takes a card out of the deck.
+func test_a_fresh_show_marks_every_cell() -> void:
+	var g := await start_show(TestDecks.plan_deck(), 7)
+	check(g.state.grids.size() == 1, "TP-01: the 20-card plan deck allots one grid",
+			"got %d grids" % g.state.grids.size())
+	check(g.state.plan_seed != 0, "TP-01: the planner stored the seed it dealt from",
+			"got %d" % g.state.plan_seed)
+	check(marks_of(g.state).size() == 25,
+			"TP-01: the show start left no cell of the 5x5 grid bare",
+			"marked %d of 25" % marks_of(g.state).size())
+	check(not granted_flags(g.state).has(true),
+			"TP-01: a dealt mark is not a granted one")
+	check(g.state.validate().is_empty(), "TP-01: the dealt board breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-07: the seed is the run's own plus the node being played, so the show a player re-enters is the
+#show they left, and the node next door is a different board.
+func test_the_same_node_deals_the_same_board() -> void:
+	var first := await start_show(TestDecks.plan_deck(), 7)
+	var dealt := plan_signature(first.state)
+	var dealt_seed := first.state.plan_seed
+	free_show(first)
+	var again := await start_show(TestDecks.plan_deck(), 7)
+	check(again.state.plan_seed == dealt_seed, "TP-07: the same node seeds the same plan",
+			"%d vs %d" % [again.state.plan_seed, dealt_seed])
+	check(plan_signature(again.state) == dealt,
+			"TP-07: two shows started on one node deal the same board, cell for cell",
+			plan_signature(again.state))
+	free_show(again)
+	var elsewhere := await start_show(TestDecks.plan_deck(), 8)
+	check(elsewhere.state.plan_seed != dealt_seed, "TP-07: another node seeds another plan",
+			"%d vs %d" % [elsewhere.state.plan_seed, dealt_seed])
+	check(plan_signature(elsewhere.state) != dealt,
+			"TP-07: ...and deals a different board")
+	free_show(elsewhere)
+
+#TP-02: the deck runs out before the board does, so the deal keeps going round it -- and the second
+#pass starts only once every card has been marked.
+func test_twenty_cards_over_twenty_five_cells() -> void:
+	var state := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(state, 101)
+	var hist := copy_histogram(state)
+	check(hist.size() == 20, "TP-02: all 20 cards of the deck are marked somewhere",
+			"got %d distinct" % hist.size())
+	check(hist.count(1) == 15 and hist.count(2) == 5,
+			"TP-02: 15 cards are marked once and 5 twice over 25 cells", str(hist))
+	check(hist[0] == 2, "TP-02: no card is marked three times", str(hist))
+
+#TP-03: with cards to spare there is no reason to repeat one, and the deal never does.
+func test_nothing_repeats_while_a_card_is_unused() -> void:
+	var state := plan_state(TestDecks.deck_standard_52().slice(0, 30), 1)
+	deal_onto(state, 202)
+	var hist := copy_histogram(state)
+	check(hist.size() == 25 and hist[0] == 1,
+			"TP-03: 25 cells of a 30-card deck take 25 distinct cards and repeat nothing", str(hist))
+
+#TP-04: the promise is the whole BOARD's, not each grid's -- two grids share one stock and neither
+#re-uses what the other took.
+func test_two_grids_draw_fifty_distinct_cards() -> void:
+	var state := plan_state(TestDecks.deck_standard_52(), 2)
+	deal_onto(state, 303)
+	var hist := copy_histogram(state)
+	check(marks_of(state).size() == 50, "TP-04: both grids are fully marked",
+			"marked %d of 50" % marks_of(state).size())
+	check(hist.size() == 50 and hist[0] == 1,
+			"TP-04: 50 cells across two grids draw 50 distinct cards of the 52", str(hist))
+
+#TP-08: `Array.shuffle()` and every other global-generator call would make the deal move with the
+#global state instead of with the plan seed. Moving that state under one seed catches a global call
+#anywhere on the path; holding it still under two seeds catches a deal that ignores its own seed.
+func test_the_global_generator_cannot_move_the_deal() -> void:
+	seed(12345)
+	var first := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(first, 111)
+	seed(98765)
+	var mirrored := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(mirrored, 111)
+	check(plan_signature(mirrored) == plan_signature(first),
+			"TP-08: one plan seed deals one board however far the global generator has moved",
+			plan_signature(mirrored))
+	seed(12345)
+	var second := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(second, 222)
+	check(plan_signature(first) != plan_signature(second),
+			"TP-08: with the global generator in one state, two plan seeds still deal two boards",
+			plan_signature(first))
+	randomize()
+
+#TP-09: an unshuffled walk would run out of unused cards at the same cells every time -- the last
+#five in row-major order -- so those would carry a repeat in every deal. A shuffled walk spreads the
+#repeats over all 25 cells, which puts each near 40% and none near the 100% a fixed walk gives.
+func test_the_cell_walk_is_shuffled() -> void:
+	var deals := 200
+	var hits : Array[int] = []
+	hits.resize(25)
+	hits.fill(0)
+	for s : int in deals:
+		var state := plan_state(TestDecks.plan_deck(), 1)
+		deal_onto(state, s + 1)
+		for index : int in repeated_cells(state):
+			hits[index] += 1
+	var worst : int = hits.max()
+	check(worst < deals * 0.6,
+			"TP-09: no cell carries a repeated mark in more than 60% of 200 seeded deals",
+			"worst cell took %d of %d deals: %s" % [worst, deals, str(hits)])
+
+#TP-10: a lucky deal is a good one to aim at, so two copies of a card sharing a row is allowed --
+#nothing rejects it and nothing re-rolls it.
+func test_two_copies_may_share_a_row() -> void:
+	var found := 0
+	for s : int in 200:
+		var state := plan_state(TestDecks.plan_deck(), 1)
+		deal_onto(state, s + 1)
+		if row_holds_a_repeat(state):
+			found = s + 1
+			break
+	check(found != 0,
+			"TP-10: a repeat is free to share a row -- one turned up within 200 seeded deals",
+			"none in 200 deals")
+
+#TP-04, TP-14: a grid arriving after the deal deals its own cells and continues the cycle the whole
+#board is already in. With cards to spare it takes only unused ones; with none it takes another copy
+#of the cards carrying fewest, so the copy counts stay within one of each other.
+func test_a_grid_added_mid_show_deals_its_own_marks() -> void:
+	var state := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(state, 505)
+	var first_grid := grid_signature(state, 0)
+	var g := Game.new()
+	g.state = state
+	CardEnvironment.CURRENT = g
+	g.effect_api.add_grid(GridData.new())
+	check(state.grids.size() == 2 and marks_of(state).size() == 50,
+			"TP-14: the grid added through the effect api came up fully marked",
+			"%d grids, %d marks" % [state.grids.size(), marks_of(state).size()])
+	check(grid_signature(state, 0) == first_grid,
+			"TP-14: the first grid's marks are untouched -- a dealt cell is never re-dealt")
+	var hist := copy_histogram(state)
+	check(hist.size() == 20 and hist[-1] >= 2,
+			"TP-14: the deck was cycled before anything repeated -- every card is marked twice over",
+			str(hist))
+	check(hist[0] == 3 and hist.count(3) == 10 and hist.count(2) == 10,
+			"TP-14: 50 marks over 20 cards is two full passes plus ten cells of a third -- ten cards"
+			+ " at three copies, ten at two, and nothing higher", str(hist))
+	CardEnvironment.CURRENT = null
+	g.free()
+
+	var wide := plan_state(TestDecks.deck_standard_52(), 1)
+	deal_onto(wide, 606)
+	var g2 := Game.new()
+	g2.state = wide
+	CardEnvironment.CURRENT = g2
+	g2.effect_api.add_grid(GridData.new())
+	var wide_hist := copy_histogram(wide)
+	check(wide_hist.size() == 50 and wide_hist[0] == 1,
+			"TP-04: with 52 cards the added grid takes 25 cards no mark had used yet", str(wide_hist))
+	CardEnvironment.CURRENT = null
+	g2.free()
+
+#TP-15: a cell added past the grid's own block is dealt like any other unmarked cell, and with every
+#card already used its mark is a repeat.
+func test_a_cell_added_to_a_grid_takes_a_mark() -> void:
+	var state := plan_state(TestDecks.deck_standard_52().slice(0, 25), 1)
+	deal_onto(state, 707)
+	check(copy_histogram(state)[0] == 1,
+			"TP-15: precondition: 25 cards fill 25 cells with no repeat", str(copy_histogram(state)))
+	var grid : GridData = state.grids[0]
+	grid.cells.append(ArrayCardData.new())
+	var extra := CardData.new().with_type(TypeGridCell.new())
+	extra.stage = CardData.Stage.ZONE
+	grid.cell_types.append(extra)
+	deal_onto(state, 707)
+	check(BoardPlan.is_marked(extra), "TP-15: the added 26th cell takes a mark of its own")
+	var hist := copy_histogram(state)
+	check(hist.size() == 25 and hist[0] == 2 and hist.count(2) == 1,
+			"TP-15: every card was used, so the 26th cell repeats exactly one of them", str(hist))
+
+#TP-13: the plan is dealt from the deck as it stood and never looks again, so a card minted later is
+#unplanned and moving one to the discard changes nothing.
+func test_a_card_minted_after_the_deal_gets_no_mark() -> void:
+	var state := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(state, 404)
+	var dealt := plan_signature(state)
+	var minted := CardData.new()
+	minted.rank = PipRankNumeral.new().with_value(9)
+	minted.with_suit(PipSuitHoop.new())
+	minted.stage = CardData.Stage.DRAW
+	state.draw_deck.append(minted)
+	var named := false
+	for mark : CardData in marks_of(state):
+		if PipComparator.printed_card_same(mark, minted): named = true
+	check(plan_signature(state) == dealt, "TP-13: minting a card mid-show changes no mark")
+	check(not named, "TP-13: ...and nothing on the board names the new card")
+	var spent : CardData = state.draw_deck[0]
+	state.draw_deck.erase(spent)
+	spent.stage = CardData.Stage.DISCARD
+	state.discard_deck.append(spent)
+	check(plan_signature(state) == dealt,
+			"TP-13: discarding a marked card's source leaves its mark exactly where it was")
+	check(state.validate().is_empty(),
+			"TP-13: a discarded source still counts as a card the state holds",
+			", ".join(state.validate()))
+
+#TP-17: the deal result IS what persists, so every copy path has to carry the marks -- including
+#each copied modifier's backref, which a deep copy does not remap and a save does not carry.
+func test_a_dealt_plan_survives_a_round_trip() -> void:
+	var state := plan_state(TestDecks.plan_deck(), 1)
+	deal_onto(state, 808)
+	var dealt := plan_signature(state)
+	var copy := state.duplicate_state()
+	check(plan_signature(copy) == dealt, "TP-17: duplicate_state carries every mark",
+			plan_signature(copy))
+	check(stray_backrefs(copy).is_empty(),
+			"TP-17: ...and the copy's marks answer for the copy's own cells",
+			", ".join(stray_backrefs(copy)))
+	state.pack_scores()
+	state.unpack_scores()
+	check(plan_signature(state) == dealt,
+			"TP-17: packing and unpacking the scores leaves the plan alone")
+	var err := ResourceSaver.save(state.to_saveable(), ROUND_TRIP_PATH)
+	check_impl(err == OK, "TP-17: the dealt board wrote to disk", "err=%d" % err)
+	if err != OK: return
+	var loaded : GameData = ResourceLoader.load(ROUND_TRIP_PATH, "", ResourceLoader.CACHE_MODE_IGNORE)
+	loaded.restore_runtime()
+	check(plan_signature(loaded) == dealt,
+			"TP-17: a save round-trip restores the plan cell for cell", plan_signature(loaded))
+	check(granted_flags(loaded) == granted_flags(state) and not granted_flags(loaded).has(true),
+			"TP-17: ...and each cell comes back dealt rather than granted", str(granted_flags(loaded)))
+	check(stray_backrefs(loaded).is_empty(),
+			"TP-17: ...and every restored mark's modifiers point at the restored cell",
+			", ".join(stray_backrefs(loaded)))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(ROUND_TRIP_PATH))
+
+#TP-18: a run in flight was saved before this feature existed, so its cells are bare and its plan
+#seed is 0. Nothing re-deals such a board -- the planner fires at game start, which a resume never
+#reaches -- and it plays exactly as it did before.
+func test_a_plan_less_save_resumes_and_plays() -> void:
+	var g := await plan_less_show(TestDecks.plan_deck())
+	check(marks_of(g.state).is_empty() and g.state.plan_seed == 0,
+			"TP-18: precondition: a board built with no planner carries no plan",
+			"%d marks, seed %d" % [marks_of(g.state).size(), g.state.plan_seed])
+	var err := ResourceSaver.save(g.state.to_saveable(), PLAN_LESS_PATH)
+	check_impl(err == OK, "TP-18: the plan-less board wrote to disk", "err=%d" % err)
+	free_show(g)
+	if err != OK: return
+	var loaded : GameData = ResourceLoader.load(PLAN_LESS_PATH, "", ResourceLoader.CACHE_MODE_IGNORE)
+	loaded.restore_runtime()
+	var resumed := Game.new()
+	resumed.state = loaded
+	CardEnvironment.CURRENT = resumed
+	check(marks_of(loaded).is_empty() and loaded.plan_seed == 0,
+			"TP-18: the restored board comes up with no mark anywhere",
+			"%d marks" % marks_of(loaded).size())
+	check(loaded.validate().is_empty(), "TP-18: ...and a plan-less board is a consistent one",
+			", ".join(loaded.validate()))
+	await resumed.refill_entrance_if_due()
+	var held : CardData = loaded.upper_zone[0].datas[0]
+	var target := BoardCoord.new(0, 0, 0, 0)
+	await resumed.place_card_in_grid(held, target)
+	check(loaded.card_at(target) == held,
+			"TP-18: the board accepted a placement onto a plan-less cell",
+			"cell holds %s" % loaded.card_at(target))
+	check(marks_of(loaded).is_empty(), "TP-18: ...and nothing dealt a plan behind the placement")
+	CardEnvironment.CURRENT = null
+	resumed.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PLAN_LESS_PATH))

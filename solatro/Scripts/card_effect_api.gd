@@ -85,6 +85,15 @@ func card_at(coord: BoardCoord) -> CardData:
 func has_cell(coord: BoardCoord) -> bool:
 	return _game.state.has_cell(coord) if is_live() else false
 
+## The whole board, for the board-wide statics that take a `GameData` rather than a slice of one.
+func board_state() -> GameData:
+	return _game.state if is_live() else null
+
+## The seed this show's plan is dealt from -- the run's own seed and the node played, never 0.
+func plan_seed_for_node() -> int:
+	var material := hash(Vector2i(Main.save_info.world_seed, Main.save_info.current_node_id))
+	return material if material != 0 else 1
+
 # ==============================================================================
 # BOARD QUERIES — geometry and legality, all pure reads
 # ==============================================================================
@@ -194,10 +203,16 @@ func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_column(_game.state, zone_cols, zone_types, index)
 
-## Append one grid to the board.
+#A grid arriving after the plan was dealt deals its own marks from the deck as it stands now; at
+#game start the creators run BEFORE the planner, whose deal is the opening plan's single writer.
+## Append one grid to the board, dealing its marks when the show already has a plan.
 func add_grid(grid: GridData) -> void:
 	if not is_live(): return
 	Board.add_grid(_game.state, grid)
+	if _game.state.plan_seed == 0: return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _game.state.plan_seed
+	BoardPlan.deal(_game.state, rng)
 
 ## Remove a grid; returns its orphaned cards for the caller to discard.
 func remove_grid(index: int) -> Array[CardData]:

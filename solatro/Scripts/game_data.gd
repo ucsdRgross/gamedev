@@ -656,22 +656,13 @@ func _mark_violations() -> Array[String]:
 			var printed := false
 			for card : CardData in printers:
 				if not card: continue
-				if PipComparator.printed_same(mark.rank, card.rank) \
-						and PipComparator.printed_same(mark.suit, card.suit) \
-						and _modifier_script(mark.skill) == _modifier_script(card.skill) \
-						and _modifier_script(mark.stamp) == _modifier_script(card.stamp):
+				if PipComparator.printed_card_same(mark, card):
 					printed = true
 					break
 			if not printed:
 				out.append("I6: grid %d cell_types (%d,%d) marks %s, which no card the state holds prints" \
 						% [gi, ci % grid.grid_width, ci / grid.grid_width, mark])
 	return out
-
-#A modifier slot compared by CLASS, never by instance: a mark carries its own COPY of the skill or
-#stamp it names, so two slots agree when their scripts are identical -- and an empty slot on both
-#sides agrees too, which falls out of null == null.
-static func _modifier_script(mod: CardModifier) -> Script:
-	return mod.get_script() as Script if mod else null
 
 ## Capture the runtime BigNumber scores into the serializable packed_* arrays (BigNumber is
 ## RefCounted — invisible to ResourceSaver, same reason duplicate_state copies them by hand).
