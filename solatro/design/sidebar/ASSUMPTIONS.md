@@ -23,6 +23,12 @@
   not the window's empty margin around them -- would not otherwise fit there.
 - `Menu.hud_container` falls back to a private instance when null, the same shape `GameView`/`Map`
   already use -- `Tools/wall_editor.gd`'s preview hosts a real `menu.tscn` with no `Main` in the tree.
+- The menu's inset conversion (review finding 2) reuses `GameView`'s own UNMARGINED `picture_scale`
+  shape rather than the live camera transform: `Menu._apply_container_inset()` runs mid-`WallPicture.
+  build()`, before `Main` positions the focused camera, so a transform read off the screen sprite at
+  that point is still the unfocused identity. `WallPicture.local_rect_beside()` is the one owned
+  conversion (window px beside `container_rect()` -> this picture's own space), called by `Menu` and
+  by the SIDEBAR suite's own menu geometry tests.
 - `board_inset_left`/`board_inset_top` divide by the UNMARGINED `picture_scale` (`max(window/1576,
   window/887)`), not `WallPicture.focused_scale()` (which adds `wall_overfill_margin` when the two
   axis ratios differ). Measured at 1280x720 (side case, container 320 window px wide):

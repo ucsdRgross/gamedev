@@ -309,6 +309,20 @@ func update_wall_view_size(footprint_px: Vector2) -> void:
 	viewport.size_2d_override_stretch = true
 	_rescale_screen()
 
+# The space LEFT beside `rect` (the shared `HudContainer`'s rect, against this viewport's own
+# `window` size) once both convert into THIS picture's own space -- the unmargined `picture_scale`
+# shape `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.
+func local_rect_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
+	var design := Vector2(_design_size)
+	var scale := maxf(window.x / design.x, window.y / design.y)
+	var local_window := Rect2((design - window / scale) / 2.0, window / scale)
+	var inset := (rect.size.y if top else rect.size.x) / scale
+	if top:
+		return Rect2(local_window.position.x, local_window.position.y + inset,
+				local_window.size.x, local_window.size.y - inset)
+	return Rect2(local_window.position.x + inset, local_window.position.y,
+			local_window.size.x - inset, local_window.size.y)
+
 ## Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`.
 ## ⚠ Both sprites' texture IS the SubViewport render target, so what they draw is
 ## `viewport.size * scale` — the render-target resolution, NEVER `_design_size`. Since

@@ -18,6 +18,11 @@ signal continue_requested
 # private container instead, the same fallback `GameView`/`Map` use.
 var hud_container : HudContainer = null
 
+# Set by `Main` alongside `hud_container`, before `build()` parents this screen into its
+# SubViewport -- lets `_apply_container_inset()` convert `hud_container`'s rects into this picture's
+# own space. Null only for `Tools/wall_editor.gd`'s preview, whose fallback `hud_container` already lives there.
+var wall_picture : WallPicture = null
+
 const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
 
 # Each content node's own place on the design canvas, captured once before any inset scale --
@@ -56,17 +61,21 @@ func _content_bounds() -> Rect2:
 # `container_rect()`. Any scale is UNIFORM and only shrinks -- never distorts a glyph or a button --
 # so it only kicks in once the design content would not otherwise fit beside the container.
 func _apply_container_inset() -> void:
-	var rect := hud_container.container_rect()
-	var window := hud_container.get_viewport().get_visible_rect().size
-	var top := HudContainer.container_is_top(window, SettingsManager.settings)
-	_fit_beside_container(rect.size.y if top else rect.size.x, window, top)
+	var window_screen := hud_container.get_viewport().get_visible_rect().size
+	var rect_screen := hud_container.container_rect()
+	var top := HudContainer.container_is_top(window_screen, SettingsManager.settings)
+	var remaining := wall_picture.local_rect_beside(window_screen, rect_screen, top) if wall_picture \
+			else (Rect2(0.0, rect_screen.size.y, window_screen.x, window_screen.y - rect_screen.size.y) \
+				if top else Rect2(rect_screen.size.x, 0.0,
+					window_screen.x - rect_screen.size.x, window_screen.y))
+	_fit_beside_container(remaining)
 
-func _fit_beside_container(inset: float, window: Vector2, top: bool) -> void:
-	var remaining := Vector2(window.x, maxf(window.y - inset, 1.0)) if top \
-			else Vector2(maxf(window.x - inset, 1.0), window.y)
-	var factor := minf(1.0, minf(remaining.x / _design_rect.size.x, remaining.y / _design_rect.size.y))
-	var offset := Vector2(0.0, inset) if top else Vector2(inset, 0.0)
-	var translation := offset + (remaining - _design_rect.size * factor) / 2.0 \
+# Centres `_design_rect` inside `remaining` (already in this menu's own picture space), shrinking
+# -- never distorting -- only if it would not otherwise fit.
+func _fit_beside_container(remaining: Rect2) -> void:
+	var factor := minf(1.0, minf(remaining.size.x / _design_rect.size.x,
+			remaining.size.y / _design_rect.size.y))
+	var translation := remaining.position + (remaining.size - _design_rect.size * factor) / 2.0 \
 			- _design_rect.position * factor
 	for content : Control in [_title, _main_control, play_row]:
 		content.scale = Vector2.ONE * factor

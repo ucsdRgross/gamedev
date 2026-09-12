@@ -850,51 +850,75 @@ func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
 	map.free()
 	viewport.free()
 
-# (e) The start menu's buttons lie outside the reserved container band and inside the window.
-# Measured at the project's own base resolution (1152x648, 16:9 like the 1280x720 target) --
-# Menu's own picture renders at that fixed design size, the space its rects are comparable in.
-func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> void:
-	backup_real_save(suite_tag())
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
+const _MENU_BUTTON_NAMES : Array[StringName] = [
+	&"Profile", &"Play", &"Options", &"Quit", &"Collection", &"Language",
+]
+
+# Both a portrait (top-case) and an ultrawide (side-case) window, plus the project's own 16:9
+# target where the menu's picture and the window coincide 1:1 (`picture_scale` 1.0, no crop).
+const _MENU_TEST_WINDOW_SIZES : Array[Vector2i] = [
+	Vector2i(600, 1000), Vector2i(1920, 1200), Vector2i(1280, 720),
+]
+
+func _menu_buttons(main_menu: Menu) -> Array[Button]:
+	var buttons : Array[Button] = []
+	for button_name : StringName in _MENU_BUTTON_NAMES:
+		buttons.append(main_menu.get_node(NodePath("Main/%s" % button_name)) as Button)
+	return buttons
+
+# Boots a real `Main` inside a `SubViewport` sized to `size`; returns `[viewport, main]` so the
+# caller can free both once its own checks are done.
+func _boot_main_at(size: Vector2i) -> Array:
 	var viewport := SubViewport.new()
-	viewport.size = Vector2i(_project_base_window())
+	viewport.size = size
 	add_child(viewport)
 	var main : Main = MAIN_SCENE.instantiate()
 	viewport.add_child(main)
 	get_tree().paused = false
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var container : HudContainer = main.wall.get_node(^"%HudContainer")
-	var band := Rect2(Vector2.ZERO, container.container_rect().size)
-	var window_rect := Rect2(Vector2.ZERO, container.get_viewport().get_visible_rect().size)
-	var main_menu : Menu = main.menu_scene
-	var buttons : Array[Button] = [
-		main_menu.get_node(^"Main/Profile") as Button,
-		main_menu.get_node(^"Main/Play") as Button,
-		main_menu.get_node(^"Main/Options") as Button,
-		main_menu.get_node(^"Main/Quit") as Button,
-		main_menu.get_node(^"Main/Collection") as Button,
-		main_menu.get_node(^"Main/Language") as Button,
-	]
-	for button : Button in buttons:
-		var button_rect := button.get_global_rect()
-		check(not button_rect.intersects(band),
-				"%s lies outside the reserved container band" % button.name, str(button_rect))
-		check(window_rect.encloses(button_rect),
-				"%s lies inside the window" % button.name, str(button_rect))
+	return [viewport, main]
+
+func _free_booted_main(viewport: SubViewport, main: Main) -> void:
 	main.queue_free()
 	await get_tree().process_frame
 	viewport.queue_free()
+
+# (e) The start menu's buttons lie outside the reserved container band and inside the window, at
+# every window shape -- compared in ONE space (this menu's own picture space) via the single owned
+# conversion, `WallPicture.local_rect_beside()`, rather than mixing picture px with window px.
+func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	for size : Vector2i in _MENU_TEST_WINDOW_SIZES:
+		var booted := await _boot_main_at(size)
+		var viewport : SubViewport = booted[0]
+		var main : Main = booted[1]
+		var wp : WallPicture = main._pictures[&"start_menu"]
+		var container : HudContainer = main.wall.get_node(^"%HudContainer")
+		var window : Vector2 = container.get_viewport().get_visible_rect().size
+		var band_screen : Rect2 = container.container_rect()
+		var top := HudContainer.container_is_top(window, SettingsManager.settings)
+		var window_local := wp.local_rect_beside(window, Rect2(), top)
+		var remaining := wp.local_rect_beside(window, band_screen, top)
+		var band_local := Rect2(window_local.position.x, window_local.position.y,
+					window_local.size.x, window_local.size.y - remaining.size.y) if top \
+				else Rect2(window_local.position.x, window_local.position.y,
+					window_local.size.x - remaining.size.x, window_local.size.y)
+		for button : Button in _menu_buttons(main.menu_scene):
+			var button_rect := button.get_global_rect()
+			check(not button_rect.intersects(band_local),
+					"%s lies outside the reserved container band at %s" % [button.name, size],
+					str(button_rect))
+			check(window_local.encloses(button_rect),
+					"%s lies inside the window at %s" % [button.name, size], str(button_rect))
+		await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
-
-const _MENU_BUTTON_NAMES : Array[StringName] = [
-	&"Profile", &"Play", &"Options", &"Quit", &"Collection", &"Language",
-]
 
 # Any inset scale is UNIFORM (one factor on both axes): a button never stretches or squashes
 # relative to its own authored shape, so its lettering is never condensed.
@@ -932,40 +956,35 @@ func test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect() -> voi
 	Main.save_info = prev_save_info
 
 # Q27: the picture is centred in the space beside the container, not merely inset from one edge --
-# the title moves with the rest of the menu instead of staying pinned to the window's own centre.
+# the title moves with the rest of the menu. The container narrows one axis (x on the side case, y
+# on the top case); that is the only axis its centring is testable on, so that is the one checked.
 func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var container : HudContainer = main.wall.get_node(^"%HudContainer")
-	var window := container.get_viewport().get_visible_rect().size
-	var band := container.container_rect()
-	var top := HudContainer.container_is_top(window, SettingsManager.settings)
-	var remaining_centre_x := window.x / 2.0 if top else (band.size.x + window.x) / 2.0
-	var main_menu : Menu = main.menu_scene
-	var title : Label = main_menu.get_node(^"Label")
-	var first_button := main_menu.get_node(NodePath("Main/%s" % _MENU_BUTTON_NAMES[0])) as Button
-	var button_row := first_button.get_global_rect()
-	for button_name : StringName in _MENU_BUTTON_NAMES:
-		var button := main_menu.get_node(NodePath("Main/%s" % button_name)) as Button
-		button_row = button_row.merge(button.get_global_rect())
-	check(absf(title.get_global_rect().get_center().x - remaining_centre_x) <= 2.0,
-			"the title's centre x sits at the remaining space's centre x",
-			"title x %.2f expected %.2f" % [title.get_global_rect().get_center().x, remaining_centre_x])
-	check(absf(button_row.get_center().x - remaining_centre_x) <= 2.0,
-			"the button row's centre x sits at the remaining space's centre x",
-			"row x %.2f expected %.2f" % [button_row.get_center().x, remaining_centre_x])
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
+	for size : Vector2i in _MENU_TEST_WINDOW_SIZES:
+		var booted := await _boot_main_at(size)
+		var viewport : SubViewport = booted[0]
+		var main : Main = booted[1]
+		var wp : WallPicture = main._pictures[&"start_menu"]
+		var container : HudContainer = main.wall.get_node(^"%HudContainer")
+		var window : Vector2 = container.get_viewport().get_visible_rect().size
+		var band : Rect2 = container.container_rect()
+		var top := HudContainer.container_is_top(window, SettingsManager.settings)
+		var remaining := wp.local_rect_beside(window, band, top)
+		var remaining_centre := remaining.get_center()
+		var main_menu : Menu = main.menu_scene
+		var title : Label = main_menu.get_node(^"Label")
+		var buttons := _menu_buttons(main_menu)
+		var content := title.get_global_rect()
+		for button : Button in buttons: content = content.merge(button.get_global_rect())
+		var content_centre := content.get_center()
+		var axis := content_centre.y if top else content_centre.x
+		var expected := remaining_centre.y if top else remaining_centre.x
+		check(absf(axis - expected) <= 2.0,
+				"the menu's content centres on the remaining space at %s" % size,
+				"%.2f vs %.2f" % [axis, expected])
+		await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())

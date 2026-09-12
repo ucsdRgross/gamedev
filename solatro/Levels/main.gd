@@ -134,7 +134,9 @@ func _build_pictures() -> void:
 		var wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 		pictures_root.add_child(wp)
 		var live_screen : Node = null
-		if rect.id == &"start_menu": live_screen = menu_scene
+		if rect.id == &"start_menu":
+			live_screen = menu_scene
+			menu_scene.wall_picture = wp
 		elif rect.id == &"map": live_screen = map_scene
 		wp.build(rect, by_id[rect.id], viewports, live_screen)
 		_pictures[rect.id] = wp

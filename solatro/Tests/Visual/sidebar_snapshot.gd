@@ -8,6 +8,7 @@ const FALLBACK_OUT_PATH := "user://sidebar_snapshot/game_hud.png"
 const TOP_CASE_OUT_PATH := "user://sidebar_snapshot/game_hud_top.png"
 const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
+const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
@@ -20,13 +21,23 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	TestSuite.backup_real_save(SAVE_TAG)
-	DisplayServer.window_set_size(_resolve_window_size())
+	var window_size := _resolve_window_size()
+	DisplayServer.window_set_size(window_size)
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MENU_OUT_PATH)
+
+	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	_capture(MENU_TOP_OUT_PATH)
+	DisplayServer.window_set_size(window_size)
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
