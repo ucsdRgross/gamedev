@@ -51,7 +51,7 @@ mark (didnt know hitting the mark was official term, so am okay with mark termin
 
 | Name | File | What |
 |---|---|---|
-| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()` and nothing else |
+| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()`, `write_mark()`, `clear_mark()`, `is_marked()` and nothing else |
 | `MarkMatch` | `Scripts/mark_match.gd` | static; owns `matches_at()` and the property enum |
 | `SkillBoardPlanner` | `Cards/Skills/Rules/skill_board_planner.gd` | the rules-deck card whose `on_game_start` calls `BoardPlan.deal()` |
 | `TestBoardPlan` | `Tests/Engine/test_board_plan.gd` | suite name `BOARD PLAN` |

@@ -357,7 +357,7 @@ drift.
 
 | Step | Files |
 |---|---|
-| S1 | `Cards/Types/type_grid_cell.gd` (add `granted`), `Scripts/grid_data.gd` (mark predicate helper) |
+| S1 | `Cards/Types/type_grid_cell.gd` (add `granted`), `Scripts/board_plan.gd` (new — `is_marked`, the predicate; `deal()` joins it at S4) |
 | S2 | `Scripts/game_data.gd` (`plan_seed`, `validate()` I6 at `:448`), `Cards/Skills/Rules/skill_board_planner.gd` (new) |
 | S3 | `Decks/deck.gd` `_build_rules1()` (add the planner card), `Locale/localization.csv` |
 | S4 | `Scripts/board_plan.gd` (new — the deal), `Scripts/card_effect_api.gd` (the accessors it needs) |
