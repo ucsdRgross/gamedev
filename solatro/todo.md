@@ -37,6 +37,9 @@ written when a run stalls or fails.
   await and no branch, while the process burned a full core. ⚠ Two confident explanations were
   written down and both were WRONG: `GRID VIEW` has no concurrent siblings (every suite it excludes
   waits for IT), and every wait on its path is bounded. Do not re-derive either.
+  **Untried, and now cheap:** subsets cost seconds since `run_tests.py --filter`, so the hang is
+  bisectable BY SUBSET for the first time — the suites above pass alone, so ask which COMBINATION
+  reproduces it.
 - ⬜ **Godot intermittently SEGFAULTS during final teardown**, after the banner and log paths print
   normally. Still unattributed — likely the exit-time leak's family, objects surviving into
   `cleanup()`. ✅ `run_tests.py` no longer misreports it: an exit status outside 0..125 is not a
@@ -353,9 +356,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 
 ## Testing / infrastructure
 
-- ⬜ **Focused suite testing** — a suite filter, timing instrumentation and a headless logic tier, so
-  a one-line change stops costing a full windowed run. Plan, task list, and the doc/memory/skill
-  updates it forces: `FOCUSED_TESTING_PLAN.md`. Delete this line and that file when it lands.
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.

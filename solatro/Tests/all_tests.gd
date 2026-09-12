@@ -47,9 +47,9 @@ func _enter_tree() -> void:
 		TestLog.line("======== %s ========" % _filter_scope(get_child_count()))
 		_print_filter_warning()
 
-# Case-insensitive substrings of the suite's NODE name, passed to the scene after `--`: the scene
-# is the registry, and a scene's filename is not always its script's name (test_scoring.gd lives
-# in test_score.tscn). Empty = the whole suite, which is the only run that can be green.
+# The selection, passed to the scene after `--`: `@logic` for the tier group, anything else a
+# case-insensitive substring of the NODE name (a scene's filename is not always its script's name —
+# test_scoring.gd lives in test_score.tscn). Empty = every suite, the only run that can be green.
 func _suite_filter() -> PackedStringArray:
 	return OS.get_cmdline_user_args()
 
@@ -59,12 +59,19 @@ func _suite_filter() -> PackedStringArray:
 func _prune_to_filter() -> void:
 	if _filter.is_empty(): return
 	for child : Node in get_children().duplicate():
-		var keep := false
-		for pattern : String in _filter:
-			if String(child.name).to_lower().contains(pattern.to_lower()): keep = true
-		if not keep:
-			remove_child(child)
-			child.free()
+		if _matches_filter(child): continue
+		remove_child(child)
+		child.free()
+
+# A tier is a GROUP on the suite node, so the scene stays the registry it already is everywhere
+# else: a list of tier members in this script would drift the moment a suite is added. Groups are
+# set at instantiation, so they are readable here, before any child has entered the tree.
+func _matches_filter(suite: Node) -> bool:
+	for pattern : String in _filter:
+		if pattern.begins_with("@"):
+			if suite.is_in_group(pattern.substr(1)): return true
+		elif String(suite.name).to_lower().contains(pattern.to_lower()): return true
+	return false
 
 # Selected-of-total, named in the opening line and again in the grand total, so a filtered run's
 # transcript never contains the sentence "ALL N SUITES: ... CHECKS PASSED" at either end.

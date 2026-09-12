@@ -92,6 +92,12 @@ Each layer caught things the one above it missed.
 4. **Red-then-green proof** — caught a real defect *every single time*.
 5. **An adversarial reviewer tracing what a player actually does** — highest yield of the whole run.
 
+**Between gates, run the inner loop, not the gate.** On solatro that is
+`py solatro/Tools/run_tests.py --logic` — the renderer-independent tier, headless, ~65 s against
+~190 s windowed. It is a debugging aid and says so in its own banner (`FILTERED n of 45`, no clean
+verdict): a step is still only done on a FULL windowed run, and an implementer reporting `done` has
+run one. `--filter <NodeName>` narrows further while you are chasing one suite.
+
 **Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
 after the work is already "complete".
 

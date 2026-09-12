@@ -4,14 +4,15 @@
     py solatro/Tools/run_tests.py --godot <path to the _console exe>
     py solatro/Tools/run_tests.py --scene res://Tools/spotlight_tool.tscn -- --verify
     py solatro/Tools/run_tests.py --filter WallPause --keep-output   # one suite, output kept
+    py solatro/Tools/run_tests.py --logic               # the headless logic tier, the inner loop
 
 Exit code = the suite's own failure count PLUS the exit-time errors found here (capped at 125, the
 same cap `all_tests.gd` uses). 0 means both gates are clean.
 
-⚠ **A FILTERED RUN IS A DEBUGGING AID, NEVER A VERDICT.** `--filter` forwards node-name substrings
-to `all_tests.gd`, which prunes every suite that does not match — so the suite count, the detector
-for a suite that failed to parse and load, is void for that run. This script therefore refuses to
-print a clean verdict under a filter; the exit code still counts real failures.
+⚠ **A FILTERED RUN IS A DEBUGGING AID, NEVER A VERDICT**, and `--logic` is one. `--filter` forwards
+node-name substrings to `all_tests.gd`, which prunes every suite that does not match — so the suite
+count, the detector for a suite that failed to parse and load, is void for that run. This script
+therefore refuses to print a clean verdict under either; the exit code still counts real failures.
 
 WHY THIS EXISTS. `all_tests.gd::_scan_engine_errors` runs inside `_ready`, before
 `get_tree().quit()`, so everything the engine prints while tearing itself down lands after the gate
@@ -219,6 +220,10 @@ def main():
                         help="run only the suites whose NODE name contains one of these (case "
                              "insensitive, e.g. Wall TestBoard). A DEBUGGING AID: the suite-count "
                              "load detector is void, so no filtered run prints a clean verdict")
+    parser.add_argument("--logic", action="store_true",
+                        help="run the LOGIC tier HEADLESS: the renderer-independent suites, tagged "
+                             "with the `logic` group in all_tests.tscn. The inner loop between "
+                             "gates, and as filtered as any other subset — never a verdict")
     parser.add_argument("--keep-output", action="store_true",
                         help="keep this run's stdout+stderr at a printed path. They are discarded "
                              "by default, which is why an intermittent failure's evidence is "
@@ -233,9 +238,13 @@ def main():
 
     allowlist = read_allowlist(ALL_TESTS_GD)
 
-    # ⚠ WINDOWED, never --headless: the PIXELS suite renders through a real renderer and a dummy one
-    # cannot compile a shader. See .claude/memory/running-godot-scenes.md.
-    command = [args.godot, "--path", PROJECT, args.scene]
+    if args.logic:
+        args.filter = list(args.filter) + ["@logic"]
+
+    # ⚠ WINDOWED, never --headless — except the logic tier, which holds no renderer-dependent suite
+    # (PIXELS cannot compile a shader on a dummy one). See .claude/memory/running-godot-scenes.md.
+    command = [args.godot] + (["--headless"] if args.logic else []) + \
+              ["--path", PROJECT, args.scene]
     user_args = list(args.passthrough) + list(args.filter)
     if user_args:
         command += ["--"] + user_args
