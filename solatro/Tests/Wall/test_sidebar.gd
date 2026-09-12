@@ -72,6 +72,7 @@ func _ready() -> void:
 	await test_leaving_everything_returns_to_the_locked_card()
 	await test_focus_leaving_the_board_returns_to_the_locked_card()
 	await test_cancel_reverts_to_the_hud_and_only_then_is_spent()
+	await test_cancel_with_a_held_card_releases_it_and_keeps_the_description()
 	await test_a_press_on_bare_board_reverts_to_the_hud()
 	await test_placing_a_card_closes_the_description()
 	await test_replacing_a_displaced_lock_frees_its_visual()
@@ -99,6 +100,8 @@ func _ready() -> void:
 	behavior_section("S9: INFO MODE IS GONE")
 	test_no_script_names_the_retired_mode()
 	test_the_retired_action_is_unbound()
+	behavior_section("S10: THE IN-BOARD POPUP IS GONE")
+	test_no_script_names_the_retired_in_board_popup()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1771,6 +1774,28 @@ func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
 				"a cancel with NOTHING showing falls through to the wall's Back, exactly as before")
 	await _end_game_fixture()
 
+## A cancel with a card HELD is spent on the release alone: the description stays up, the ungrab having no say over it any more.
+func test_cancel_with_a_held_card_releases_it_and_keeps_the_description() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		check(not _play_area.selected_cards.is_empty(),
+				"the click left the card held", str(_play_area.selected_cards.size()))
+		check(_container.showing_description(), "...with its description up")
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		_booted_viewport.push_input(_cancel_event())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_play_area.selected_cards.is_empty(), "the cancel released the held card",
+				str(_play_area.selected_cards.size()))
+		check(_container.showing_description() and dismissals.is_empty(),
+				"...and the description it was reading is still up", str(dismissals.size()))
+	await _end_game_fixture()
+
 ## 1.7/B9/B10: a real press on bare board reverts the container to the HUD.
 func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 	await _start_game_fixture()
@@ -2401,3 +2426,16 @@ func test_no_script_names_the_retired_mode() -> void:
 func test_the_retired_action_is_unbound() -> void:
 	check(not InputMap.has_action(StringName(RETIRED_MODE_TOKEN)),
 			"the retired mode's input action is gone from the InputMap (8.1)")
+
+# Split so this suite never itself contains the retired names, which the deletion gate greps for.
+const RETIRED_POPUP_TOKENS : Array[String] = ["_focus" + "_info", "wall_screen" + "_popups"]
+
+## The in-board popup and the setting that gated it are deleted, so no script may still name either.
+func test_no_script_names_the_retired_in_board_popup() -> void:
+	var offenders : Array[String] = []
+	for path : String in gd_scripts_under("res://"):
+		var text := FileAccess.get_file_as_string(path)
+		for token : String in RETIRED_POPUP_TOKENS:
+			if text.contains(token): offenders.append("%s names %s" % [path, token])
+	check(offenders.is_empty(), "no script outside addons/ names the in-board popup (8.2)",
+			"\n".join(offenders))

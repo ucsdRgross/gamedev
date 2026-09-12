@@ -517,13 +517,7 @@ func _ready() -> void:
 	# no grids built yet it is the all-grids view, which the first rebuild that has one revisits.
 	open_show_view()
 	_show_view_opened = grid_container.get_child_count() > 0
-	set_process(false)  # _process only pins the focus inspector — enabled while it is visible
-	# X-SLAVING RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off like `_process`
-	# above): a board scroll can happen at any time regardless of whether the focus inspector or
-	# a reveal is live, and a ScrollContainer's `scroll_horizontal` can be written directly
-	# (tests, and any future scroll-to code) without reliably firing its scrollbar's
-	# `value_changed` — the same "recompute live, never trust a signal alone" rule every other
-	# per-frame board anchor in this file already follows (`slot_center_global`'s callers).
+	set_process(false)
 	set_physics_process(true)
 
 func setup_gui() -> void:
@@ -576,6 +570,9 @@ func setup_gui() -> void:
 		resized.connect(_apply_entrance_strip_height)
 	_sync_entrance_x()
 
+# RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off the way `_process` is): a board
+# scroll can happen at any time, and a ScrollContainer's `scroll_horizontal` can be written
+# directly without reliably firing `value_changed` -- recompute live, never trust a signal alone.
 func _physics_process(_delta: float) -> void:
 	_apply_grid_buffer()
 	_follow_board_growth()
@@ -1496,7 +1493,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			ungrab_cards()
 			get_viewport().set_input_as_handled()
 		else:
-			hide_focus_info() # nothing held: just dismiss the inspector, leave the event be
 			description_dismiss_requested.emit()
 
 # since clicks outside of play area can happen
@@ -1540,7 +1536,6 @@ func grab_cards(datas:Array[CardData]) -> void:
 
 func ungrab_cards() -> void:
 	flush_rebuild() #reads data_card / data_ui
-	hide_focus_info() #ui_cancel/right-click also dismisses the focus inspector
 	for data in selected_cards:
 		if data in data_card: 
 			var card_visual := data_card[data]
@@ -1959,7 +1954,6 @@ func set_separation() -> void:
 
 func set_card_zones() -> void:
 	_rebuild_queued = false #this rebuild satisfies any queued request
-	hide_focus_info() #the control it anchored to may be about to move or free
 	var game := CardEnvironment.get_current_game()
 	if not game: return
 	ui_data.clear()
@@ -2802,8 +2796,6 @@ func create_card_control() -> Control:
 	new_control.mouse_exited.connect(func()->void:
 			if moused_hovered_control == new_control:
 				moused_hovered_control = null
-				# hover-driven inspector hides with the hover (keyboard re-focus re-shows it)
-				if focused_control == new_control: hide_focus_info()
 				if _card_control_at(get_global_mouse_position()) == null: highlight_cleared.emit())
 	new_control.focus_exited.connect(_publish_focus_left_cards, CONNECT_DEFERRED)
 	return new_control
@@ -2848,13 +2840,6 @@ func on_control_focus_entered(control:Control) -> void:
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
 	_refresh_card_marking()
-	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
-	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
-	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
-	if ui_data.has(control) and _popups_allowed():
-		_show_focus_info(control, ui_data[control])
-	else:
-		hide_focus_info()
 	if ui_data.has(control): _publish_info(ui_data[control])
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
@@ -2867,52 +2852,6 @@ func on_control_focus_entered(control:Control) -> void:
 	# runs immediately below and which is the ONE place a stack's controls are sized.
 	focused_control = control
 	set_card_zones_visuals()
-
-# ==============================================================================
-# FOCUS CARD INSPECTOR — THE card-text surface for every input mode
-# ([[solatro-multimodal-input]]): mouse hover grabs focus, so focus covers mouse, keyboard,
-# and controller alike. Deliberately NOT Control.tooltip_text — the native tooltip is a
-# popup Window that sat under the cursor and blocked board clicks; this panel is pure
-# display (MOUSE_FILTER_IGNORE everywhere, focus NONE) and can never touch input. Text =
-# localized ControlCard.describe_card. A PERMANENT child of the OverlayLayer (a Node2D in the
-# scroll content, so scroll carries it), re-pinned beside its anchor control every frame
-# (_position_focus_info) so container relayouts can't strand it — it was briefly reparented
-# under the focused control for that, which is unnecessary now that the whole board (cards
-# included) rides one scroll transform. Mouse-exit / ui_cancel / ungrab / rebuild dismisses it.
-# ==============================================================================
-const FOCUS_INFO_WIDTH := 260.0
-const FOCUS_INFO_GAP := 4.0
-
-var _focus_info : PanelContainer = null
-var _focus_info_label : Label = null
-var _focus_info_anchor : Control = null   ## the board control the panel is pinned beside
-
-func _ensure_focus_info() -> void:
-	if _focus_info and is_instance_valid(_focus_info): return
-	_focus_info = PanelContainer.new()
-	_focus_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_focus_info.focus_mode = Control.FOCUS_NONE
-	# No z_index: OverlayLayer is the last sibling of TopLevelVBox, so its children draw above
-	# every card and prop by tree order (the structural layering scheme — see LAYERING.md).
-	_focus_info_label = Label.new()
-	_focus_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_focus_info_label.custom_minimum_size = Vector2(FOCUS_INFO_WIDTH, 0)
-	_focus_info.add_child(_focus_info_label)
-	# CRITICAL: SmoothScrollContainer force-rewrites every Control added under it to
-	# MOUSE_FILTER_PASS (smooth_scroll_container.gd _on_node_added) — which turned this panel
-	# into a mouse hit-target hovering over cards and BLOCKED board clicks. It skips nodes
-	# already carrying its meta marker, so claim the marker BEFORE entering the tree.
-	_focus_info.set_meta("_smooth_scroll_default_mouse_filter_set", true)
-	_focus_info_label.set_meta("_smooth_scroll_default_mouse_filter_set", true)
-	overlay_layer.add_child(_focus_info)
-	_focus_info.hide()
-
-## Show `data`'s description beside the focused control (right of it; flips left at the
-## edge). Placement is re-pinned every frame while visible (_process) so focus-driven
-## container relayouts — which move the anchor a frame later — never strand the panel.
-## Read through `WallPicture.settings()` so a tool previewing the board sees its own knobs.
-func _popups_allowed() -> bool:
-	return WallPicture.settings().wall_screen_popups
 
 # ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card built per call, and re-applies
 # `size_preview_to()` when the window moves the size a board card is drawn at. A BOX, never a
@@ -2929,34 +2868,6 @@ static func card_info(data: CardData, card_px: Vector2) -> InfoEntry:
 			[data] as Array[CardData])
 	card.size_preview_to(card_px)
 	return entry
-
-func _show_focus_info(control: Control, data: CardData) -> void:
-	_ensure_focus_info()
-	_focus_info_anchor = control
-	_focus_info_label.text = ControlCard.describe_card(data)
-	_focus_info.show()
-	_focus_info.reset_size()
-	_position_focus_info()
-	set_process(true)  # keep the panel pinned to its anchor while visible
-
-## Pin the panel beside its anchor control; flip left / lift up when it would leave the area.
-## Global placement is safe every frame: the panel and the anchor both live in the scroll
-## content, so their globals move in lockstep under scrolling.
-func _position_focus_info() -> void:
-	if not _focus_info or not is_instance_valid(_focus_info) or not _focus_info.visible:
-		return
-	if not is_instance_valid(_focus_info_anchor) or not _focus_info_anchor.is_inside_tree():
-		hide_focus_info()   # the control it anchored to was freed by a rebuild
-		return
-	var area := get_global_rect()
-	var at := _focus_info_anchor.global_position \
-			+ Vector2(_focus_info_anchor.size.x + FOCUS_INFO_GAP, 0.0)
-	if at.x + _focus_info.size.x > area.end.x:
-		at.x = _focus_info_anchor.global_position.x - _focus_info.size.x - FOCUS_INFO_GAP
-	var overflow_y := at.y + _focus_info.size.y - area.end.y
-	if overflow_y > 0.0:
-		at.y -= overflow_y
-	_focus_info.global_position = at
 
 ## **S16 — OPEN THE ROWS THESE CARDS SIT IN.** Called with the section being scored, or empty to close
 ## everything again. The set REPLACES: a row that has left the set eases shut rather than being
@@ -3066,29 +2977,11 @@ func _ease_layer_arrivals(delta: float) -> bool:
 	for key : Vector2i in done: _layer_grown.erase(key)
 	return not _layer_grown.is_empty()
 
-## The board itself has no per-frame work (rebuilds are signal-driven, see queue_rebuild);
-## this hook keeps the visible focus inspector pinned to its live anchor, and drives S16's reveal.
+# The board itself has no per-frame work -- rebuilds are signal-driven, see `queue_rebuild`.
+# ⚠ ONLY THE EASING STOPS PROCESSING, and only once it reports both the row openings and the
+# depth-layer growth idle: stopping early froze a row at 54 against a container already at 74.
 func _process(delta: float) -> void:
-	_position_focus_info()
-	var revealing := _ease_row_openings(delta)
-	# ⚠ Both consumers have to be idle before processing stops, or whichever finishes first switches
-	# the other one off mid-animation.
-	if not revealing and _focus_info_anchor == null: set_process(false)
-
-func hide_focus_info() -> void:
-	_focus_info_anchor = null
-	# ⚠ ONLY IF THE REVEAL IS ALSO IDLE. This used to be an unconditional `set_process(false)`, which
-	# with S16 would freeze a row mid-open the moment the focus panel closed.
-	# ⚠ **AND ONLY IF NO DEPTH LAYER IS STILL ARRIVING.** `_process` drives both easings; checking
-	# the reveal alone froze a growing row at whatever fraction it had reached, leaving the row
-	# arithmetic permanently short of the height its container had already taken. Measured: a row
-	# stuck at 54 against a container at 74, with a growth entry that never cleared.
-	if _row_open.is_empty() and _layer_grown.is_empty():
-		set_process(false)  # nothing to pin while hidden
-	if not _focus_info or not is_instance_valid(_focus_info):
-		_focus_info = null
-		return
-	_focus_info.hide()
+	if not _ease_row_openings(delta): set_process(false)
 
 func update_score_controls() -> void:
 	var game := CardEnvironment.get_current_game()

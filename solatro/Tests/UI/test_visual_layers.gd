@@ -431,7 +431,7 @@ func test_fx_inside_its_host() -> void:
 	check(vis.fx.visible, "and flipping back restores them")
 	await cleanup(g, pa)
 
-## The OverlayLayer (focus inspector) renders above every card and prop.
+## The OverlayLayer renders above every card and prop, driven by the score-name popup that lives on it.
 func test_overlay_above_everything() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -442,22 +442,19 @@ func test_overlay_above_everything() -> void:
 	p.at = BoardCoord.new(0, 1, 0, 0)
 	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
 	await run_tick(pl, [p], [p], [p], [])
-	var control : Control = pa.data_ui.get(cell_card(g, 0, 0))
-	control.grab_focus()
+	var popup := TextPopup.new_popup("Flush 12", pa.global_position)
+	pa.overlay_layer.add_child(popup)
 	await get_tree().process_frame
-	check(pa._focus_info != null and pa._focus_info.visible, "the focus inspector is shown")
-	var order := dump_draw_order("overlay (focus panel) over board + prop", pa)
-	var panel_rank := draw_rank(order, pa._focus_info)
-	var ok := panel_rank >= 0
+	var order := dump_draw_order("overlay (score popup) over board + prop", pa)
+	var popup_rank := draw_rank(order, popup)
+	var ok := popup_rank >= 0
 	var prop_vis : PropVisual = pl._visuals.get(p)
-	if prop_vis and draw_rank(order, prop_vis) > panel_rank: ok = false
+	if prop_vis and draw_rank(order, prop_vis) > popup_rank: ok = false
 	for i in 3:
 		var cv : CardVisual = pa.data_card.get(cell_card(g, i, 0))
-		if cv and draw_rank(order, cv) > panel_rank: ok = false
-	check(ok, "the focus inspector renders above every prop and card (OverlayLayer last sibling)")
-	check_impl(pa._focus_info.get_parent() == pa.overlay_layer,
-			"the focus panel lives on OverlayLayer")
-	pa.hide_focus_info()
+		if cv and draw_rank(order, cv) > popup_rank: ok = false
+	check(ok, "the overlay renders above every prop and card (OverlayLayer last sibling)")
+	popup.queue_free()
 	await cleanup(g, pa)
 
 ## Entrance-backed — see `make_stack_game`. The grid form of this claim is

@@ -54,7 +54,6 @@ func _ready() -> void:
 	await test_reactions_drive_card_pose()
 	behavior_section("STATUS + CARD TEXT SURFACES")
 	await test_status_and_description_surface()
-	await test_focus_inspector_all_input_modes()
 	behavior_section("FULL VIEW SUBMIT (REAL GAMEVIEW SEAM)")
 	await test_game_view_scoring_pass_with_props()
 	await test_all_kinds_live_in_game_view()
@@ -993,46 +992,6 @@ func test_status_and_description_surface() -> void:
 	check(text.contains(card.suit.get_str()), "the card description names the suit", text)
 	await cleanup(g, pa)
 
-func test_focus_inspector_all_input_modes() -> void:
-	var g := make_board_game(2)
-	var pa := make_play_area()
-	await settle(pa)
-	var card := g.state.upper_zone[0].datas[0]
-	var control : Control = pa.data_ui.get(card)
-	control.grab_focus()   # keyboard/controller path
-	check(pa._focus_info != null and pa._focus_info.visible,
-			"keyboard/controller focus pops the card inspector panel")
-	check(pa._focus_info_label.text == ControlCard.describe_card(card),
-			"the inspector shows the focused card's full description")
-	# descriptions must NEVER interact with input: pure-display panel, no tooltip Window
-	check(pa._focus_info.mouse_filter == Control.MOUSE_FILTER_IGNORE
-			and pa._focus_info.focus_mode == Control.FOCUS_NONE,
-			"the inspector ignores the mouse and can never take focus (no click blocking)")
-	check(pa._focus_info.get_parent() == pa.overlay_layer,
-			"the inspector stays a permanent child of the overlay layer (scroll content) — never of a card control")
-	# the per-frame pin places it beside the anchor control (right of it, or flipped left)
-	await get_tree().process_frame
-	var panel_x := pa._focus_info.global_position.x
-	var right_x : float = control.global_position.x + control.size.x + pa.FOCUS_INFO_GAP
-	var left_x : float = control.global_position.x - pa._focus_info.size.x - pa.FOCUS_INFO_GAP
-	check(is_equal_approx(panel_x, right_x) or is_equal_approx(panel_x, left_x),
-			"the inspector is pinned beside its anchor control every frame",
-			"panel x %.1f vs %.1f / %.1f" % [panel_x, right_x, left_x])
-	check(control.tooltip_text.is_empty(),
-			"board controls carry NO native tooltip (its popup window blocked clicks)")
-	# the mouse path shows the same panel (hover grabs focus), and hides on hover exit
-	pa.moused_hovered_control = control
-	pa.on_control_focus_entered(control)
-	check(pa._focus_info.visible, "mouse-hover focus pops the same inspector")
-	pa.moused_hovered_control = null
-	pa.hide_focus_info()   # what the control's mouse_exited handler does
-	check(not pa._focus_info.visible, "leaving the hover hides it")
-	pa.on_control_focus_entered(control)
-	check(pa._focus_info.visible, "re-focusing pops it again")
-	pa.ungrab_cards()   # the ui_cancel path
-	check(not pa._focus_info.visible, "ui_cancel/ungrab dismisses the inspector")
-	await cleanup(g, pa)
-
 # ==============================================================================
 # FULL VIEW SCORING PASS — a real GameView (real game_view.begin_prop_tick seam), real
 # starter deck (every card suited -> scored melds spawn props), driven like E2E's
@@ -1073,9 +1032,6 @@ func test_game_view_scoring_pass_with_props() -> void:
 			break
 	check(focusable != null, "the dealt board has a focusable card control")
 	if focusable: focusable.grab_focus()
-	check(pa._focus_info != null and pa._focus_info.visible
-			and not pa._focus_info_label.text.is_empty(),
-			"focusing a dealt board card pops its inspector text in the real view")
 	# fire the submit WITHOUT awaiting it, then poll EVERY FRAME: watchdog + prop high-water
 	# mark + the live-seam guards (owner reports 2026-07-13): every hoop/knife must hold its
 	# anchor row's y through the REAL submit — score labels re-lay the board every banked pass,

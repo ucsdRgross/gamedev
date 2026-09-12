@@ -225,8 +225,8 @@
 - S9: the wall editor grows no sidebar preview toggle. It hosts the real `wall.tscn`, which already
   carries `HudContainer`, so `_listen_for_info()` publishes a hosted screen's entry straight to that
   container instead of to a tool-owned card.
-- S9: `WallOverlay`'s `WALL_INFO` localisation row is left in `Locale/localization.csv` unused --
-  removing a row is not this step's call and nothing reads it.
+- S10: `WallOverlay`'s `WALL_INFO` localisation row is deleted from `Locale/localization.csv` --
+  Info mode was its only reader.
 - S9: `_pose_tween`/`_kill_pose_tween()` in the wall editor go with the info animation, which was
   their only writer; the tool's camera poses are snaps again, as they were before Info mode.
 - S9: `PlayArea._info_mode()` is deleted (no callers left). `_popups_allowed()` survives for S10
@@ -272,3 +272,13 @@
 - P2 review, measured: `DescriptionPanel.scroll_by_pages()` carries the sub-pixel remainder between
   calls. `roundi()` on each frame alone threw away every frame of a gentle stick on a short panel --
   0.25 deflection on a 40 px panel is 0.17 px a frame, and the scroll never moved at all.
+- S10: `TestUIProps.test_focus_inspector_all_input_modes` is deleted whole with its subject. Its one
+  unrelated assertion -- board controls carry no `tooltip_text`, the native tooltip window having
+  blocked clicks -- goes with it; no surviving test owns that claim.
+- S10: `TestVisualLayers.test_overlay_above_everything` keeps its claim and changes vehicle. The
+  deleted panel was its occupant of `OverlayLayer`; the score-name `TextPopup` is the other
+  production occupant and needs no scoring pass to exist.
+- S10: `_process()` is stopped by `_ease_row_openings()`'s own return, which already reports the row
+  openings AND the depth-layer growth. The measured rule (a row stuck at 54 against a container at
+  74) moves onto `_process` with it.
+

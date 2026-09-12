@@ -150,14 +150,9 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
-## Routes through `get_info()` rather than `MapHoverPanel.show_for_node()`, and only PUBLISHES the
-## entry: the card anchors itself to the WINDOW's bottom, not the node's screen position, so there
-## is no placement to compute here, and the map has no business deciding whether Info mode wants
-## it shown.
+# ONLY PUBLISHES the entry, never places it: the card anchors itself to the WINDOW's bottom rather
+# than to the hovered node's screen position, so the map has no placement to compute.
 func _on_node_hovered(node: WorldGraphNode) -> void:
-	# Published regardless: `Main` decides whether Info mode wants it, and the map has no business
-	# knowing. `wall_screen_popups` governs the map's own panel, which no longer exists as a live
-	# scene — so there is nothing to suppress here today. See `PlayArea._popups_allowed()`.
 	info_hovered.emit(MapHoverPanel.get_info(node, run, controller.lap_target()))
 
 func _update_hud() -> void:

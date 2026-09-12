@@ -58,7 +58,6 @@ func _ready() -> void:
 	behavior_section("CARD SELECTION, EVERY INPUT MODE")
 	await test_mouse_click_selects_card()
 	await test_mouse_right_click_ungrabs()
-	await test_wall_screen_popups_gates_the_in_screen_description()
 	await test_keyboard_select_and_cancel()
 	await test_controller_select_and_cancel()
 	await test_controller_focus_navigation()
@@ -264,28 +263,6 @@ func test_mouse_click_selects_card() -> void:
 	await mouse_click(center_of(control))
 	check(selections.size() >= 1 and selections[0] == pa.ui_data[control],
 			"a mouse click over a card emits its selection", str(selections.size()))
-	pa.ungrab_cards()
-
-## `wall_screen_popups` decides whether a screen's OWN description panel exists at all.
-func test_wall_screen_popups_gates_the_in_screen_description() -> void:
-	var control := a_card_control()
-	check(control != null, "a dealt board offers a focusable card control")
-	if not control: return
-	var was_popups : bool = SettingsManager.settings.wall_screen_popups
-
-	SettingsManager.settings.wall_screen_popups = true
-	pa.on_control_focus_entered(control)
-	await get_tree().process_frame
-	check(pa._focus_info != null and pa._focus_info.visible,
-			"popups ON: the board's own description shows")
-
-	SettingsManager.settings.wall_screen_popups = false
-	pa.on_control_focus_entered(control)
-	await get_tree().process_frame
-	check(pa._focus_info == null or not pa._focus_info.visible,
-			"popups OFF: no description anywhere")
-
-	SettingsManager.settings.wall_screen_popups = was_popups
 	pa.ungrab_cards()
 
 ## The touchscreen half of "every input mode". The Next button used to be this file's only

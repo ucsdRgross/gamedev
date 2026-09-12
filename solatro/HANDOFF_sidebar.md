@@ -99,9 +99,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   sites incl. `_info_card_height()` (6 callers) and `_on_picture_hovered`; `WallTransition`'s
   Info removal is a signature change (`card_height_px`); `test_wall_input.gd:60,1029,1111` and
   `test_wall_focus.gd` assert Info mode and go red loudly.
-- S10: `hide_focus_info()` (`play_area.gd:3042`) is the only caller that stops `_process()`,
-  guarded by `_row_open`/`_layer_grown` (measured regression at `:3044-3049`); `card_info()`
-  SURVIVES inside the cited range.
+- S10: landed. `_process()` is stopped by `_ease_row_openings()`'s own return, which reports the
+  row openings and the depth-layer growth together; `PlayArea.card_info()` survives as the
+  sidebar's publish shape.
 - S11: `sidebar_snapshot` exists (six PNGs; no description capture yet — 9.2 needs one); the
   wall editor has NO Info panel node — its Inspector `preview_info_mode` + borrowed InfoCard go;
   suite count lands at 45 after deleting test_wall_info (46 today) — TEST_PLAN says ≥ 45.

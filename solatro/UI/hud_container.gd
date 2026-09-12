@@ -175,9 +175,12 @@ func _swap_to_hud() -> void:
 	_refresh_exit_focus()
 
 # The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
-# visual OUT rather than freeing it -- the same detach the per-screen memory is returned through.
+# visual OUT rather than freeing it. A publication arriving mid-cascade is dropped instead, and it
+# owns the live preview the board built for it, which nothing else would collect.
 func show_description(entry: InfoEntry) -> void:
-	if _drops_publication(entry): return
+	if _screen_is_processing():
+		_free_detached_visual(entry)
+		return
 	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	if locked and locked != entry and _description_panel.current_entry == locked:
 		_description_panel.detach_entry()
@@ -200,7 +203,6 @@ var _locked_entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 
 ## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
 func lock_to(entry: InfoEntry, target: CardData) -> void:
-	if _drops_publication(entry): return
 	_release_locked_entry(_active_screen)
 	_lock_by_screen[_active_screen] = target
 	_locked_entry_by_screen[_active_screen] = entry
@@ -272,17 +274,9 @@ func set_processing(busy: bool) -> void:
 func _screen_is_processing() -> bool:
 	return _processing_screen != &"" and _processing_screen == _active_screen
 
-# The HUD is what a cascade is watched in, its own numbers being what animates, so a publication
-# arriving mid-cascade is dropped rather than shown. A dropped entry still owns the live preview
-# the board built for it, which nothing else will collect.
-func _drops_publication(entry: InfoEntry) -> bool:
-	if not _screen_is_processing(): return false
-	_free_detached_visual(entry)
-	return true
-
 # THE SIDEBAR READS ITS KEYS IN `_input`, BEFORE THE GUI PASS: the viewport's focus-neighbour
-# search consumes any arrow that finds a neighbour, and `Wall` routes only what is left into the
-# focused picture, so an arrow read any later never arrives while a board cell holds the focus.
+# search consumes any arrow that finds a neighbour, so an arrow read any later never arrives while
+# a board cell holds the focus. Page keys scroll whenever the description shows, arrows once locked.
 func _input(event: InputEvent) -> void:
 	if not showing_description(): return
 	var stick := event as InputEventJoypadMotion
@@ -293,7 +287,12 @@ func _input(event: InputEvent) -> void:
 		_exit_button.grab_focus()
 		get_viewport().set_input_as_handled()
 		return
-	var pages := _key_scroll_pages(event)
+	var pages := 0.0
+	if event.is_action_pressed(&"ui_page_down", true): pages = 1.0
+	elif event.is_action_pressed(&"ui_page_up", true): pages = -1.0
+	elif not is_locked(): return
+	elif event.is_action_pressed(&"ui_down", true): pages = DescriptionPanel.WHEEL_STEP_PAGES
+	elif event.is_action_pressed(&"ui_up", true): pages = -DescriptionPanel.WHEEL_STEP_PAGES
 	if is_zero_approx(pages): return
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()

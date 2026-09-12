@@ -253,7 +253,6 @@ func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
 			else TRANSLATION.find('GAME_LOSE')
 	screen.show()
-	play_area.hide_focus_info()
 	play_area.disable_board_focus()
 	_continue_button = Button.new()
 	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')

@@ -514,18 +514,6 @@ enum SeparationMode {
 	set(value):
 		wall_shadow_opacity = value
 		settings_changed.emit()
-## Whether a screen's own description popup shows while Info mode is OFF.
-##
-## true  — the popup behaves as it always has when Info mode is off, and MIGRATES to the info card
-##         when Info mode is on. One description, two places to read it depending on the mode.
-## false — there is no popup at all; a description is only ever visible in Info mode.
-##
-## Either way the popup NEVER shows while Info mode is on: one card describes one thing, and two
-## panels describing the same card is what having a single info card replaced.
-@export var wall_screen_popups : bool = true:
-	set(value):
-		wall_screen_popups = value
-		settings_changed.emit()
 ## Multiplier on the transition clock for the one-off opening reveal, so it runs slower and
 ## longer than an ordinary wall move.
 @export var wall_reveal_delay_scale : float = 1.8:
