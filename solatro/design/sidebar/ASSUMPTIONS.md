@@ -23,3 +23,9 @@
   not the window's empty margin around them -- would not otherwise fit there.
 - `Menu.hud_container` falls back to a private instance when null, the same shape `GameView`/`Map`
   already use -- `Tools/wall_editor.gd`'s preview hosts a real `menu.tscn` with no `Main` in the tree.
+- `board_inset_left`/`board_inset_top` divide by the UNMARGINED `picture_scale` (`max(window/1576,
+  window/887)`), not `WallPicture.focused_scale()` (which adds `wall_overfill_margin` when the two
+  axis ratios differ). Measured at 1280x720 (side case, container 320 window px wide):
+  `picture_scale` 0.812183 gives `board_inset_left` 394.0 picture px (the gate); the live camera's
+  `focused_scale` 0.828427 puts the rendered board edge 6.4 window px right of the container's own
+  edge -- a gap, never an overlap, so the 394/262.7 gates stay on `picture_scale`.

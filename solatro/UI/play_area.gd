@@ -1026,8 +1026,8 @@ func focused_board_zoom(gi: int) -> float:
 	var base_strip := entrance_strip_height_px(PlayArea.settings(), 1.0)
 	var pad := board_edge_pad_px(PlayArea.settings())
 	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
-	var tall := size.y / (block_h + _panel_gutter_h(gi) + base_strip + 2.0 * pad
-			+ _scroller_frame_h())
+	var tall := maxf(size.y - board_inset_top, 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
+			+ 2.0 * pad + _scroller_frame_h())
 	var wide := _panel_width(gi)
 	return tall if wide <= 0.0 else minf(tall, maxf(size.x - hud_reserve_px(), 1.0) / wide)
 

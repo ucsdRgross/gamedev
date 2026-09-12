@@ -44,6 +44,7 @@ func _ready() -> void:
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes()
+	await test_a_top_case_resize_fits_the_board_under_the_band()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
 	test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
 	await test_focus_change_drives_which_hud_stack_child_shows()
@@ -620,6 +621,59 @@ func _check_board_inset_left_on_ultrawide_resize(viewport : SubViewport, view : 
 	check(absf(view.play_area.board_inset_left - ultrawide_rect.size.x / ultrawide_scale) <= 0.5,
 			"board_inset_left uses the covering picture_scale off an ultrawide resize",
 			"%.3f vs %.3f" % [view.play_area.board_inset_left, ultrawide_rect.size.x / ultrawide_scale])
+
+# The top case fits the board to the height LEFT UNDER the band, the same way the side case fits
+# it to the width left beside the container -- a board sized off the whole height spills up under
+# the band instead.
+func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(600, 1000)
+	add_child(viewport)
+	var main : Main = MAIN_SCENE.instantiate()
+	viewport.add_child(main)
+	get_tree().paused = false
+	await main.enter_game()
+	var game_wp : WallPicture = main._pictures[&"game"]
+	var view := game_wp.screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	var pa := view.play_area
+	await _settle_scroll_x(pa)
+
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var window := Vector2(viewport.size)
+	check(HudContainer.container_is_top(window, PlayArea.settings()),
+			"sanity: this window puts the container on the top band")
+	var band := container.container_rect()
+	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
+	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	check(is_equal_approx(pa.board_inset_top, band.size.y / picture_scale),
+			"board_inset_top equals the band's height converted to picture px",
+			"%.3f vs %.3f" % [pa.board_inset_top, band.size.y / picture_scale])
+	check(is_equal_approx(pa.board_inset_left, 0.0),
+			"board_inset_left stays zero in the top case")
+
+	var grid_rect := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
+	check(grid_rect.position.y >= band.end.y,
+			"the grid's top edge sits below the band", "%s vs band bottom %.3f" % [grid_rect, band.end.y])
+	var strip_rect := _sidebar_screen_rect(pa.upper_zone_right)
+	check(strip_rect.position.y >= band.end.y,
+			"the Entrance strip's top edge sits below the band",
+			"%s vs band bottom %.3f" % [strip_rect, band.end.y])
+
+	main.queue_free()
+	await get_tree().process_frame
+	viewport.queue_free()
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
 
 ## A control's rect as drawn -- carries every scale above it, since `global_position` alone drops the board's zoom.
 func _sidebar_screen_rect(c: Control) -> Rect2:
