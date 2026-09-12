@@ -152,7 +152,7 @@ func set_active_screen(screen: StringName) -> void:
 		_description_panel.detach_entry()
 		_active_screen = screen
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
-		if remembered == null: show_hud()
+		if remembered == null or _screen_is_processing(): show_hud()
 		else: show_description(remembered)
 	visible = screen != &""
 	if not visible: return
@@ -167,6 +167,7 @@ func show_hud() -> void:
 	description_dismissed.emit()
 
 func show_description(entry: InfoEntry) -> void:
+	if _drops_publication(entry): return
 	_detach_locked_entry(entry)
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
@@ -185,6 +186,7 @@ var _locked_entry_by_screen : Dictionary[StringName, InfoEntry] = {}
 
 ## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
 func lock_to(entry: InfoEntry, target: CardData) -> void:
+	if _drops_publication(entry): return
 	_release_locked_entry()
 	_lock_by_screen[_active_screen] = target
 	_locked_entry_by_screen[_active_screen] = entry
@@ -217,6 +219,29 @@ func _release_locked_entry() -> void:
 	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	if locked: _free_detached_visual(locked)
 	_locked_entry_by_screen.erase(_active_screen)
+
+## The one screen whose cascade the rule below covers: the map has none worth watching, so its container never swaps on one.
+const PROCESSING_SCREEN : StringName = &"game"
+
+## Which screen is mid-cascade, or `&""` while none is.
+var _processing_screen : StringName = &""
+
+## Relayed by `GameView` from `Game.processing`: true reverts to the HUD and drops the lock for good, and once it ends the HUD holds until the next publication.
+func set_processing(busy: bool) -> void:
+	_processing_screen = PROCESSING_SCREEN if busy else &""
+	if _screen_is_processing(): show_hud()
+
+## Whether the screen now showing is the one mid-cascade -- any other screen's container behaves as it always does.
+func _screen_is_processing() -> bool:
+	return _processing_screen != &"" and _processing_screen == _active_screen
+
+# The HUD is what a cascade is watched in, its own numbers being what animates, so a publication
+# arriving mid-cascade is dropped rather than shown. A dropped entry still owns the live preview
+# the board built for it, which nothing else will collect.
+func _drops_publication(entry: InfoEntry) -> bool:
+	if not _screen_is_processing(): return false
+	_free_detached_visual(entry)
+	return true
 
 ## The room the description has: the container minus the overlay's button band, which both contents start below.
 func _description_size() -> Vector2:

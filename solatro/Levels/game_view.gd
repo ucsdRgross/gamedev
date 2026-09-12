@@ -236,6 +236,7 @@ func _relay_info_requested(entry: InfoEntry) -> void:
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
 	## Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores the press where it can't act.
+	hud_container.set_processing(busy)
 
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text

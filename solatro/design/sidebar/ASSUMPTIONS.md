@@ -147,3 +147,34 @@
 - S6b: `Tests/Visual/sidebar_snapshot` gained `description_follow.png`. Its hover walks Entrance
   candidates until `moused_hovered_control` reports the landing -- a control's own centre is not
   always hit-testable, and the first version silently re-shot the locked card instead.
+- S7: new names NAMES.md does not list, all on `HudContainer`: `set_processing(busy)` (the method
+  `GameView._on_processing_changed()` relays `Game.processing` through), the const
+  `PROCESSING_SCREEN` = `&"game"`, `_processing_screen`, `_screen_is_processing()` and
+  `_drops_publication()`. The rule is scoped by that const rather than by whichever screen happened
+  to be active at the flip: `Main` sets the active screen at the END of `enter_game()`'s transition,
+  after `GameView._ready()` has already run, so a latched screen id would be wrong for a show that
+  starts processing during its own boot (C10, Q260b=b).
+- S7: `return_to_lock()` needs no processing guard of its own -- `show_hud()` clears the lock and
+  `lock_to()` is dropped while processing, so `is_locked()` is false throughout a cascade and the
+  method is already a no-op (B18, B19).
+- S7: a publication dropped mid-cascade is FREED, not orphaned: the entry carries a live preview the
+  board built for it, and the container is the listener that took delivery of it. Returning to a
+  screen that is mid-cascade therefore lands on the HUD rather than re-showing that screen's
+  remembered entry -- re-showing it would free a visual the memory still points at, and the HUD is
+  what the cascade is watched in anyway (B17, C8).
+- S7: the rule reaches a screen, not a container, so a standalone `GameView` fixture with the
+  private container `HudContainer.ensure()` builds (`_active_screen` is `&""`, the wall-view value)
+  is untouched by it. Every product path has `Main` setting `&"game"` first.
+- S7, measured: a placement that completes no line resolves inside ONE frame -- `_broadcast_board_mutation`
+  only holds `processing` across `run_all_mods(&"on_board_mutated")`, which animates nothing when
+  nothing scores. So `TestSidebar`'s real-cascade row asserts the HUD at the FLIP (via
+  `processing_changed`) as well as per frame, and `Tests/Visual/sidebar_snapshot` keeps placing
+  until a cascade lasts long enough to photograph -- the 5th card into one cell, which is where
+  `LineGeometry.height_line_scores` first fires.
+- S7: `sidebar_snapshot` gained `description_processing.png`. Its placements are issued through
+  `PlayArea.data_selected` (the board's own selection signal, which `GameView._on_data_selected`
+  answers) rather than a synthesised click on the cell -- the click path is already photographed by
+  the locked and follow stills -- and its targets are filtered to GRID cells, because stacking
+  inside the Entrance is a legal move that runs no mutation pass and so cascades nothing.
+  `_click_an_entrance_card()` now walks the Entrance until the board reports the grab, since only
+  some of those controls are grabbable once the board has been played into.

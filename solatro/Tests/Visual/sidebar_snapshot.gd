@@ -13,6 +13,12 @@ const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
 const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
+const DESCRIPTION_PROCESSING_OUT_PATH := "user://sidebar_snapshot/description_processing.png"
+# Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
+# photograph -- so placements repeat until one of them does, and each is watched for that many
+# drawn frames before the tool gives up on it.
+const CASCADE_PLACEMENT_ATTEMPTS := 24
+const CASCADE_WATCH_FRAMES := 180
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
@@ -99,6 +105,9 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_FOLLOW_OUT_PATH)
 
+	var shot := await _shoot_a_cascade(main, view)
+	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
+
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -145,9 +154,9 @@ func _hover_another_entrance_card(main: Main, view: GameView) -> void:
 		await get_tree().process_frame
 		if view.play_area.moused_hovered_control == control: return
 
-# The LOCKED still: a real click on a card on the Entrance's own layer, which is where a click also
-# GRABS, so the shot carries the exit X, the lifted and marked card and its description at once. The
-# pointer stays on it, so the held card is caught in place rather than flown off after the cursor.
+# The LOCKED still: a real click on an Entrance card, which is where a click also GRABS, so the shot
+# carries the exit X, the lifted and marked card and its description at once. Walked until the BOARD
+# reports the grab -- cards overlap, so a control's own centre is not always hit-testable.
 func _click_an_entrance_card(main: Main, view: GameView) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
 	for control : Control in _entrance_controls(view, viewport):
@@ -161,7 +170,7 @@ func _click_an_entrance_card(main: Main, view: GameView) -> void:
 		_push_click(viewport, at, false)
 		await get_tree().process_frame
 		await get_tree().process_frame
-		return
+		if not view.play_area.selected_cards.is_empty(): return
 
 # The Entrance row's own controls: selectable, whole inside the picture's viewport (the space
 # their rects are measured in), and backed by a visual on the Entrance layer. That row is where a
@@ -178,6 +187,47 @@ func _entrance_controls(view: GameView, viewport: SubViewport) -> Array[Control]
 			continue
 		out.append(control)
 	return out
+
+# The PROCESSING still: a REAL placement, photographed while the cascade it started is still
+# running. The placement also locks the description to the card it lands on, so what the shot
+# proves is that the HUD -- whose numbers are what the cascade animates -- takes the container back.
+func _shoot_a_cascade(main: Main, view: GameView) -> bool:
+	for attempt : int in CASCADE_PLACEMENT_ATTEMPTS:
+		if view.play_area.selected_cards.is_empty(): await _click_an_entrance_card(main, view)
+		var held : Array[CardData] = view.play_area.selected_cards.duplicate()
+		if held.is_empty(): continue
+		var target := await _legal_target(view, held)
+		if target == null: continue
+		view.play_area.data_selected.emit(target)
+		if await _capture_while_processing(view): return true
+	return false
+
+# Captured on the frame AFTER the board reports itself busy, so the still carries what was drawn
+# while the cascade ran rather than the last frame before it started. Only a placement that
+# COMPLETES A LINE scores, and only a scoring cascade lasts long enough to photograph.
+func _capture_while_processing(view: GameView) -> bool:
+	for frame : int in CASCADE_WATCH_FRAMES:
+		await RenderingServer.frame_post_draw
+		if view.game.processing:
+			await RenderingServer.frame_post_draw
+			_capture(DESCRIPTION_PROCESSING_OUT_PATH)
+			return true
+	return false
+
+# A GRID landing the board itself accepts, asked through the same `on_can_place_stack` dispatch
+# `try_place` uses, so no placement rule is spelled out in this tool. Only a grid cell runs the
+# mutation pass that scores; stacking inside the Entrance is a legal move that cascades nothing.
+func _legal_target(view: GameView, held: Array[CardData]) -> CardData:
+	var candidates : Array[CardData] = []
+	for control : Control in view.play_area.ui_data:
+		var data : CardData = view.play_area.ui_data[control]
+		if data in held: continue
+		if not view.game.state.cell_type_coord(data).is_nowhere(): candidates.append(data)
+	for data : CardData in candidates:
+		var accepted : Array[CardData] = await view.game.return_first_data_array_result(
+				&"on_can_place_stack", held, data)
+		if not accepted.is_empty(): return data
+	return null
 
 func _push_pointer(viewport: SubViewport, at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()

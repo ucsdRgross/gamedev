@@ -74,6 +74,13 @@ func _ready() -> void:
 	await test_a_press_on_bare_board_reverts_to_the_hud()
 	await test_placing_a_card_closes_the_description()
 	await test_replacing_a_displaced_lock_frees_its_visual()
+	behavior_section("S7: THE PROCESSING RULE")
+	test_the_same_entry_published_again_after_processing_still_shows()
+	await test_processing_reverts_to_the_hud_and_drops_the_lock()
+	await test_a_real_cascade_holds_the_hud_for_its_whole_length()
+	await test_a_hover_during_processing_changes_nothing()
+	await test_the_hud_holds_after_processing_until_any_focus_event()
+	await test_the_maps_container_does_not_swap_on_the_games_processing()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1753,36 +1760,41 @@ func _placement_target(controls: Array[Control], held: Array[CardData], legal: b
 		if accepted.is_empty() != legal: return control
 	return null
 
+## Clicks an Entrance card and hands back what the board grabbed -- the shared opening of every placement test.
+func _grab_a_card_to_place() -> Array[CardData]:
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a grabbable Entrance card",
+			str(entrance.size()))
+	if entrance.is_empty(): return []
+	await _click_card(entrance[0])
+	var held : Array[CardData] = _play_area.selected_cards.duplicate()
+	check(not held.is_empty(), "the click grabbed a card to place", str(held.size()))
+	return held
+
 ## B12/Q63=a: placing the held card finishes the interaction, so the description closes -- a refused place leaves it up.
 func test_placing_a_card_closes_the_description() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
-	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers a grabbable Entrance card",
-			str(entrance.size()))
-	if not entrance.is_empty():
-		await _click_card(entrance[0])
-		var held : Array[CardData] = _play_area.selected_cards.duplicate()
-		check(not held.is_empty(), "the click grabbed a card to place", str(held.size()))
-		if not held.is_empty():
-			var controls := await _hoverable_card_controls()
-			var refused := await _placement_target(controls, held, false)
-			check(refused != null, "the board offers a cell this card may NOT land on")
-			if refused != null:
-				await _click_card(refused)
-				check(_panel.visible and not hud_stack.visible,
-						"a refused place leaves the description up: the choice is not finished")
-				check(not _play_area.selected_cards.is_empty(), "...and the card is still held")
-			var legal := await _placement_target(await _hoverable_card_controls(), held, true)
-			check(legal != null, "the board offers a cell this card MAY land on")
-			if legal != null:
-				await _click_card(legal)
-				await get_tree().process_frame
-				check(_play_area.selected_cards.is_empty(), "the card was placed",
-						str(_play_area.selected_cards.size()))
-				check(hud_stack.visible and not _panel.visible,
-						"placing the card closes the description (B12, Q63=a)")
-				check(not _container.is_locked(), "...and the lock goes with it")
+	var held := await _grab_a_card_to_place()
+	if not held.is_empty():
+		var controls := await _hoverable_card_controls()
+		var refused := await _placement_target(controls, held, false)
+		check(refused != null, "the board offers a cell this card may NOT land on")
+		if refused != null:
+			await _click_card(refused)
+			check(_panel.visible and not hud_stack.visible,
+					"a refused place leaves the description up: the choice is not finished")
+			check(not _play_area.selected_cards.is_empty(), "...and the card is still held")
+		var legal := await _placement_target(await _hoverable_card_controls(), held, true)
+		check(legal != null, "the board offers a cell this card MAY land on")
+		if legal != null:
+			await _click_card(legal)
+			await get_tree().process_frame
+			check(_play_area.selected_cards.is_empty(), "the card was placed",
+					str(_play_area.selected_cards.size()))
+			check(hud_stack.visible and not _panel.visible,
+					"placing the card closes the description (B12, Q63=a)")
+			check(not _container.is_locked(), "...and the lock goes with it")
 	await _end_game_fixture()
 
 ## A leak is no check failure, so the one path that can orphan a visual -- a lock replaced while a hover holds the panel -- is checked here.
@@ -1798,4 +1810,183 @@ func test_replacing_a_displaced_lock_frees_its_visual() -> void:
 	await get_tree().process_frame
 	check(not is_instance_valid(locked.visual),
 			"...and the NEXT lock frees the displaced one, which nothing holds any more")
+	container.queue_free()
+
+
+# ------------------------------------------------------------------ S7: the processing rule
+
+## Exactly one content child ever shows, so "the HUD is what is up" is one question both ways.
+func _hud_is_up() -> bool:
+	return (_container.get_node(^"%HudStack") as Control).visible and not _panel.visible
+
+## The control the board presents `data` on NOW -- a grab rebuilds the board and its slot controls are POOLED, so one read before a rebuild can name a different card after it.
+func _control_for(data: CardData) -> Control:
+	for control : Control in _play_area.ui_data:
+		if _play_area.ui_data[control] == data: return control
+	return null
+
+# A real placement, watched two ways at once: the flip itself (a cascade shorter than a frame is
+# still a cascade) and then every frame it runs for. Returns [flips, flips with the HUD up,
+# busy frames, busy frames with the HUD up].
+func _place_and_watch_the_cascade(target: Control) -> Array[int]:
+	var game := CardEnvironment.get_current_game()
+	var counts : Array[int] = [0, 0, 0, 0]
+	var watcher := func(busy: bool) -> void:
+		if not busy: return
+		counts[0] += 1
+		if _hud_is_up(): counts[1] += 1
+	game.processing_changed.connect(watcher)
+	var at := target.get_global_rect().get_center()
+	_hover(at)
+	await get_tree().process_frame
+	_push_mouse_button(at, _game_viewport, true)
+	_push_mouse_button(at, _game_viewport, false)
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if game.processing:
+			counts[2] += 1
+			if _hud_is_up(): counts[3] += 1
+		elif counts[0] > 0:
+			break
+	game.processing_changed.disconnect(watcher)
+	return counts
+
+## 1.9/B17/B18/C8/Q255=a/Q256=a: `processing` going true reverts to the HUD whatever was showing, and the lock is gone for good.
+func test_processing_reverts_to_the_hud_and_drops_the_lock() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var dismissals : Array[bool] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(true))
+		await _lock_without_holding(entrance[0])
+		check(_container.is_locked() and not _hud_is_up(),
+				"a LOCKED description is what shows before the cascade")
+		dismissals.clear()
+		var game := CardEnvironment.get_current_game()
+		game.processing = true
+		check(_hud_is_up(), "processing reverts the container to the HUD, lock and all (B17, Q255=a)")
+		check(not _container.is_locked(), "...and the lock is gone (B18, Q256=a)")
+		check(_play_area.locked_data == null, "...so the board drops that card's marking too")
+		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+		dismissals.clear()
+		game.processing = false
+		check(_hud_is_up(), "the lock is NOT restored when processing ends (B18)")
+		check(dismissals.is_empty(), "...and nothing is announced for a HUD that was already up",
+				str(dismissals.size()))
+	await _end_game_fixture()
+
+## 1.9/C8/Q259b=b: a REAL placement -- the HUD is what the whole cascade is watched in, from the flip to the last frame.
+func test_a_real_cascade_holds_the_hud_for_its_whole_length() -> void:
+	await _start_game_fixture()
+	var held := await _grab_a_card_to_place()
+	if not held.is_empty():
+		var legal := await _placement_target(await _hoverable_card_controls(), held, true)
+		check(legal != null, "the board offers a cell this card MAY land on")
+		if legal != null:
+			var counts := await _place_and_watch_the_cascade(legal)
+			check(counts[0] >= 1, "the placement really started a cascade", str(counts[0]))
+			check(counts[1] == counts[0],
+					"the HUD was up the instant processing began (B17, C8)",
+					"%d of %d flips" % [counts[1], counts[0]])
+			check(counts[3] == counts[2],
+					"...and for every frame the cascade ran (C8, Q259b=b)",
+					"%d of %d frames" % [counts[3], counts[2]])
+			check(_hud_is_up(), "...and it is still up once the cascade has finished (B20)")
+			check(not _container.is_locked(), "...with no lock left behind (B18)")
+	await _end_game_fixture()
+
+## 1.10/B19/Q258=a: a hover DURING the cascade is ignored entirely, so a resting pointer cannot swap the HUD straight back out.
+func test_a_hover_during_processing_changes_nothing() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		var game := CardEnvironment.get_current_game()
+		game.processing = true
+		check(_hud_is_up(), "the cascade put the HUD up")
+		var elsewhere := await _hover_another_card(await _hoverable_card_controls(),
+				_play_area.moused_hovered_control)
+		check(elsewhere != null, "the pointer landed on another card mid-cascade")
+		check(_hud_is_up(), "...and the HUD is still what shows: the hover is ignored (B19, Q258=a)")
+		check(not _container.is_locked(), "...with no lock taken from it either")
+		game.processing = false
+	await _end_game_fixture()
+
+## 1.11/B20/C9/Q257=b: once the cascade ends the HUD holds until ANY focus event -- landing back on the card it was already on counts.
+func test_the_hud_holds_after_processing_until_any_focus_event() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var read : CardData = _play_area.ui_data[entrance[0]]
+		await _lock_without_holding(entrance[0])
+		var game := CardEnvironment.get_current_game()
+		game.processing = true
+		var elsewhere := await _hover_another_card(await _hoverable_card_controls(),
+				_control_for(read))
+		check(elsewhere != null and _play_area.ui_data[elsewhere] != read,
+				"the pointer landed on a DIFFERENT card mid-cascade")
+		game.processing = false
+		await get_tree().process_frame
+		check(_hud_is_up(), "processing ended and the HUD HOLDS with no focus event (B20, C9)")
+		var back := _control_for(read)
+		check(back != null, "the card that was being read before the cascade is still on the board")
+		if back != null:
+			check(_game_viewport.gui_get_focus_owner() != back,
+					"...and the board focus is elsewhere, so landing on it again is a real focus event")
+			back.grab_focus()
+			await get_tree().process_frame
+			var title : Label = _panel.get_node(^"%Title")
+			check(not _hud_is_up(),
+					"one focus event onto the SAME card opens the description again (Q257=b)")
+			check(title.text == _expected_text(read)[0], "...that card's own description", title.text)
+			var other := await _hover_another_card(await _hoverable_card_controls(), back)
+			check(other != null, "a real hover reaches a different card")
+			if other != null:
+				check(title.text == _expected_text(_play_area.ui_data[other])[0],
+						"...and the ordinary hover route is live again", title.text)
+	await _end_game_fixture()
+
+## 1.12/C10/Q260b=b: the processing rule is the GAME screen only -- the map has no cascade worth watching, so its container never swaps on one.
+func test_the_maps_container_does_not_swap_on_the_games_processing() -> void:
+	await _start_game_fixture()
+	await _main._focus_picture(&"map")
+	check((_container.get_node(^"%MapHud") as Control).visible, "the map is the focused screen")
+	var nodes := _main.map_scene.controller.map.overlay().nodes()
+	check(not nodes.is_empty(), "the generated map offers a node to hover", str(nodes.size()))
+	if not nodes.is_empty():
+		var node : WorldGraphNode = nodes[0]
+		_main.map_scene.controller.node_hovered.emit(node)
+		check(_container.showing_description(), "a map hover fills the sidebar")
+		var game := CardEnvironment.get_current_game()
+		game.processing = true
+		check(_container.showing_description(),
+				"the game's processing leaves the map's description up (C10, Q260b=b)")
+		_main.map_scene.controller.node_hovered.emit(node)
+		check(_container.showing_description(),
+				"...and the map's own publications still reach it mid-cascade")
+		game.processing = false
+	await _end_game_fixture()
+
+## B20/C9/Q257=b: nothing is de-duplicated away -- the very entry that was up when the cascade started re-shows when it is published again.
+func test_the_same_entry_published_again_after_processing_still_shows() -> void:
+	var container := _build_container()
+	container.set_active_screen(&"game")
+	var entry := InfoEntry.new()
+	container.show_description(entry)
+	check(container.showing_description(), "the entry is what shows before the cascade")
+	container.set_processing(true)
+	check(not container.showing_description(), "processing put the HUD up (B17)")
+	container.set_processing(false)
+	check(not container.showing_description(), "...and the HUD holds once processing ends (B20)")
+	container.show_description(entry)
+	check(container.showing_description(),
+			"the SAME entry published again re-shows it: nothing is swallowed (Q257=b)")
 	container.queue_free()
