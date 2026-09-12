@@ -175,8 +175,6 @@ func _ready() -> void:
 	backup_real_settings()
 	var real_run : RunState = RunManager.run
 	var real_save_info : RunState = Main.save_info
-	var prev_delay : float = SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 
 	# Warm-up session: first cycle touches lazy one-time allocations (scene caches, shader
 	# state, translation table, static registries) that must not count against the loop.
@@ -270,7 +268,6 @@ func _ready() -> void:
 			"enough over-slack checks fire the sentinel report (the push_error above is deliberate)")
 	_sentinel_leaked.clear()
 
-	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	restore_real_save(suite_tag())
 	RunManager.run = real_run

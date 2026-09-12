@@ -52,7 +52,6 @@ func _ready() -> void:
 	# in a throwaway settings.tres, so even an abort can't strand the player's real knobs
 	backup_real_settings()
 	var settings_snapshot := snapshot_settings()
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	prev_run = RunManager.run
 	prev_save_info = Main.save_info
 	await _setup_view()
@@ -503,7 +502,7 @@ func test_undo_button_cancels_live_act() -> void:
 	check(game.state.draw_deck.size() == deck_before,
 			"the cancelled act drew no card -- the pre-act board is back",
 			"%d vs %d" % [game.state.draw_deck.size(), deck_before])
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
+	apply_test_speed()
 	# abort_all frees the visuals; queue_free lands end-of-frame — wait, don't count blind
 	var cleared := await wait_until(func() -> bool: return prop_visual_count() == 0)
 	check(cleared, "no prop visual is stranded after the cancel", str(prop_visual_count()))

@@ -814,6 +814,8 @@ func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
 
 # ------------------------------------------------------------------ overlapping re-packs
 
+# ⚠ PINS base_delay: a re-pack lasts base_delay * wall_transition_delay, so at the run's
+# sped-up pacing the "long" leg below would end inside the wait and prove nothing.
 ## K3/K4: a second `apply_layout()` must cancel the first one's animation.
 ##
 ## ⚠ `animate_reposition()` updates `WallPicture.rect` IMMEDIATELY and lets the tween catch up
@@ -838,6 +840,7 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	# the second simply paints over the first and the picture ends up correct ANYWAY -- measured:
 	# an earlier version of this test passed with the kill removed. A long first and a short second
 	# is what leaves the stale tween still writing after the real one has finished.
+	settings.base_delay = 1.0
 	settings.wall_transition_delay = 2.0
 	var by_id : Dictionary[StringName, PictureRect] = {}
 	by_id[start.id] = far
@@ -863,6 +866,7 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 			"drawn=%s second=%s first=%s" % [wp.position, near.centre, far.centre])
 
 	settings.wall_transition_delay = prev_delay
+	apply_test_speed()
 	var restore : Dictionary[StringName, PictureRect] = {}
 	restore[start.id] = start
 	_wall.apply_layout(restore, false)

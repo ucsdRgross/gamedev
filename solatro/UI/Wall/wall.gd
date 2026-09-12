@@ -590,7 +590,8 @@ func apply_layout(rects: Dictionary[StringName, PictureRect], animate: bool) -> 
 			tween = create_tween()
 			tween.set_parallel(true)
 			_layout_tween = tween
-		wp.animate_reposition(tween, new_rect, WallPicture.settings().wall_transition_delay)
+		wp.animate_reposition(tween, new_rect,
+				WallTransition.total_duration(WallPicture.settings()))
 
 ## A live count of instantiated screens and an ESTIMATE of their combined texture memory. Godot
 ## has no cheap per-texture VRAM query, so this assumes RGBA8 — the format every wall SubViewport

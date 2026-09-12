@@ -42,8 +42,6 @@ func _ready() -> void:
 			"LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
 	backup_real_settings()
-	var prev_delay := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = TestLog.speed_base_delay
 	implementation_section("STRUCTURAL ORDER (no z_index anywhere)")
 	await test_fresh_deal_structure()
 	behavior_section("PROP / CARD / OVERLAY LAYERING")
@@ -68,7 +66,6 @@ func _ready() -> void:
 	await test_the_reveal_keeps_props_and_gutters_glued_G31_G32()
 	await test_lights_stay_glued_to_cards_that_move_while_lit()
 	await test_lights_track_a_scrolled_board()
-	SettingsManager.settings.base_delay = prev_delay
 	restore_real_settings()
 	finish()
 

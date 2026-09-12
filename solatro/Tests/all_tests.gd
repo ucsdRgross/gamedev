@@ -20,6 +20,8 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## suite's _ready). Tests that sample mid-flight motion keep their own slower absolute delays.
 @export_range(0.001, 1.0, 0.001) var speed_base_delay : float = 0.01
 
+var _run_start_msec := 0
+
 ## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
 ## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
 ## exactly once before the first suite writes a line. @export values are applied before _enter_tree.
@@ -31,6 +33,7 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 ## fires parent-first — before ANY child suite exists — so setting it here closes that window
 ## completely instead of only covering suites that remember to isolate before their first write.
 func _enter_tree() -> void:
+	_run_start_msec = Time.get_ticks_msec()
 	SettingsManager.isolated = true
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 	TestLog.speed_base_delay = speed_base_delay
@@ -67,11 +70,24 @@ func _ready() -> void:
 	else:
 		TestLog.line("======== ALL %d SUITES: %d passed, %d FAILED (%d behavior, %d implementation)%s ========"
 				% [suites.size(), passed, failed, failed_behavior, failed_impl, warn_tag], true)
+	_print_finish_order(suites)
 	TestLog.line("full logs: %s" % TestLog.paths())
 	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
 	# the play window unless close_when_done is turned off for live inspection).
 	if DisplayServer.get_name() == "headless" or close_when_done:
 		get_tree().quit(mini(failed, 125))
+
+# Every suite ranked by WHEN IT FINISHED, latest first — the run's length is the last finisher,
+# not the sum of the durations, because suites run concurrently and overlap.
+func _print_finish_order(suites: Array[TestSuite]) -> void:
+	var ranked : Array[TestSuite] = suites.duplicate()
+	ranked.sort_custom(func(a: TestSuite, b: TestSuite) -> bool:
+			return a.finish_msec > b.finish_msec)
+	TestLog.line("---- suites by finish time (seconds since run start), slowest tail first ----")
+	for suite : TestSuite in ranked:
+		TestLog.line("  finished %7.2fs   took %6.2fs   %s" % [
+				float(suite.finish_msec - _run_start_msec) / 1000.0,
+				float(suite.elapsed_msec) / 1000.0, suite.suite_name()])
 
 ## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
 ## GREENS THROUGH** (owner: *"suite should fail on unexpected errors in error stream so

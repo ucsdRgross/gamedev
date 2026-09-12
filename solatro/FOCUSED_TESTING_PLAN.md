@@ -45,14 +45,27 @@ Each one is currently load-bearing. Any task below that weakens one is wrong.
 
 ### Phase 0 — measure first
 
-- ⬜ Add elapsed-time capture to `TestSuite`: stamp in a base-class `_enter_tree()`, diff in
-  `finish()`, print in the suite banner.
-- ⬜ Print a sorted tail in `Tests/all_tests.gd` after the grand total: slowest N suites by **finish
-  timestamp relative to run start**, not by duration. Suites run CONCURRENTLY, so durations overlap
-  and do not sum to the run length — the last finisher is what you actually wait on.
-- ⬜ Record the measured tail in this doc before doing Phase 1. The expectation to falsify: the cost
-  is the serialized `INTERACTION -> UI PROPS -> VISUAL LAYERS -> E2E RUN -> LEAK CANARY -> WALL
-  PAUSE` chain plus the GPU-bound `PIXELS`, not an even spread.
+- ✅ Elapsed-time capture in `TestSuite`: stamped in the base-class `_enter_tree()`, diffed in
+  `finish()`, printed in the suite banner as a trailing `[N.NNs]`.
+- ✅ `Tests/all_tests.gd::_print_finish_order` prints EVERY suite after the grand total, ranked by
+  **finish timestamp relative to run start**, with its own duration beside it. Suites run
+  CONCURRENTLY, so durations overlap and do not sum to the run length — the last finisher is what
+  you actually wait on.
+- ✅ **Measured, and the expectation is CONFIRMED for the chain and FALSIFIED for `PIXELS`.** The
+  run length is the serialized chain: `INTERACTION 56.6 -> UI PROPS 69.7 -> VISUAL LAYERS 82.2 ->
+  GRID LAYOUT 121.4 -> GRID VIEW 163.5 -> SETTINGS RANGE 164.1 -> E2E RUN 378.1 -> LEAK CANARY
+  390.8 -> WALL PAUSE 411.1` (seconds from run start; whole run 420.6 s). `PIXELS` is NOT a cost —
+  it lands at 52.4 s, inside a flat 42–55 s plateau that ~13 unchained suites share. **`E2E RUN`
+  alone was 214 s of the chain**, because it never applied the test pacing.
+
+  With one speed applied to every suite (`TestSuite._enter_tree` -> `apply_test_speed()`), the same
+  run is **192.1 s**: `E2E RUN` 378.1 -> 160.0, `GRID VIEW` 163.5 -> 127.3, `GRID LAYOUT` 121.4 ->
+  91.1, `WALL PAUSE` (the last finisher) 411.1 -> 183.0. Check counts are identical suite for suite
+  except the randomly-seeded `BOARD FUZZ`.
+
+  What is left is NOT animation pacing: the 42–55 s plateau is startup plus per-frame awaits, and
+  `GRID VIEW` / `GRID LAYOUT` still pay `grid_pan_duration` (0.35 s, `player_settings.gd`), which
+  is the one animation knob independent of `base_delay` — an open decision, not a bug.
 
 ### Phase 1 — a suite filter on the real runner
 
