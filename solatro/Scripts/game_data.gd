@@ -48,6 +48,8 @@ var revision : int = 0:
 ## into any other grid is refused. `@export_storage` so undo rewinds the commitment with the
 ## board -- the only way it lifts besides no legal placement remaining in the committed grid.
 @export_storage var committed_grid : int = -1
+## Dealt once, stored, never re-derived; seeded so a re-entered show is the same show.
+@export_storage var plan_seed : int = 0
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
@@ -626,11 +628,50 @@ func validate() -> Array[String]:
 				violations.append(
 						"I4: card_at reverse index disagrees with forward index for %s at %s" \
 						% [card, key])
+	violations.append_array(_mark_violations())
 	#score arrays sized to the board
 	if scores_col_legacy and upper_zone and scores_col_legacy.size() < min(upper_zone.size(), lower_zone.size()):
 		violations.append("scores_col_legacy %d entries < %d paired columns" \
 				% [scores_col_legacy.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
+
+#I6: a mark names printed properties, never a card object, so a DEALT mark must still name a card
+#this state holds -- draw, discard and every card in play. A granted mark is exempt, because a
+#level or blind may mark a card the deck never had and `TypeGridCell.granted` records that it did.
+func _mark_violations() -> Array[String]:
+	var out : Array[String] = []
+	var printers : Array[CardData] = []
+	printers.append_array(draw_deck)
+	printers.append_array(discard_deck)
+	for card : CardData in _scan_grid_positions():
+		printers.append(card)
+	for gi in grids.size():
+		var grid : GridData = grids[gi]
+		if not grid: continue
+		for ci in grid.cell_types.size():
+			var mark : CardData = grid.cell_types[ci]
+			if not mark or not BoardPlan.is_marked(mark): continue
+			var cell_type := mark.type as TypeGridCell
+			if cell_type and cell_type.granted: continue
+			var printed := false
+			for card : CardData in printers:
+				if not card: continue
+				if PipComparator.printed_same(mark.rank, card.rank) \
+						and PipComparator.printed_same(mark.suit, card.suit) \
+						and _modifier_script(mark.skill) == _modifier_script(card.skill) \
+						and _modifier_script(mark.stamp) == _modifier_script(card.stamp):
+					printed = true
+					break
+			if not printed:
+				out.append("I6: grid %d cell_types (%d,%d) marks %s, which no card the state holds prints" \
+						% [gi, ci % grid.grid_width, ci / grid.grid_width, mark])
+	return out
+
+#A modifier slot compared by CLASS, never by instance: a mark carries its own COPY of the skill or
+#stamp it names, so two slots agree when their scripts are identical -- and an empty slot on both
+#sides agrees too, which falls out of null == null.
+static func _modifier_script(mod: CardModifier) -> Script:
+	return mod.get_script() as Script if mod else null
 
 ## Capture the runtime BigNumber scores into the serializable packed_* arrays (BigNumber is
 ## RefCounted — invisible to ResourceSaver, same reason duplicate_state copies them by hand).

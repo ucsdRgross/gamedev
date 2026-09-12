@@ -51,8 +51,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   (second run: 3974 passed, same 1 failure — the check total drifts; the failure SET does not).
 - The one failure is STANDING on this base and predates the board plan: `[FAIL][BEHAVIOR] WALL
   FOCUS: pressing it again turned Info mode back OFF`. Fails 2 of 2 full runs; passes 1 of 1 run
-  alone (`--filter WallFocus`, 130/130) — cross-suite interference from the merged `test-speed`
-  pacing, owned by that branch, not fixed here. Unmodified `main` had no failure (sidebar's
+  alone (`--filter WallFocus`, 130/130). Tally so far: 3 failures in 5 full runs, and every failing
+  run had the other session's Godot up — window-focus interference is the likeliest cause; not
+  fixed here. Unmodified `main` had no failure (sidebar's
   baseline).
 - Exit-time: wrapper exit 3; `[exit-time] note: WARNING: 135 ObjectDB instances were leaked at
   exit` (pre-existing).
@@ -86,20 +87,20 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'WALL FOCUS passes alone; interference from test-speed pacing, not ours'
 - id: S1
   description: TypeGridCell.granted; BoardPlan.is_marked; called from validate() and is_spotlit().
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Cards/Types/type_grid_cell.gd, solatro/Scripts/board_plan.gd]
+  verification_command: 'grep -c BoardPlan.is_marked solatro/Scripts/game_data.gd solatro/Cards/card_modifier.gd'
   verification_kind: suite
-  status: pending
-  evidence: ''
+  status: in_progress
+  evidence: 'validate() call site: grep -c BoardPlan.is_marked game_data.gd = 1. is_spotlit() call site lands in dispatch 2.'
   notes: 'dispatched together with S2; the is_spotlit call site lands in dispatch 2'
 - id: S2
   description: GameData.plan_seed; invariant I6; TP-16.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Scripts/game_data.gd, solatro/Tests/Support/test_decks.gd, solatro/Tests/Engine/test_board_plan.gd, solatro/Tests/Engine/test_board_plan.tscn, solatro/Tests/all_tests.tscn]
+  verification_command: 'APPDATA=<private> GODOT_BIN=<console exe> py solatro/Tools/run_tests.py --timeout 900'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red run (I6 append neutralised): BOARD PLAN 5 passed, 2 FAILED of 7, both TP-16 checks, per-check count 7 = green run. Overseer full run: ALL 46 SUITES: 4001 passed, 1 FAILED (the standing WALL FOCUS line only); BOARD PLAN: ALL 7 CHECKS PASSED; SECTION 8 identical to baseline. grep: "I6:" in game_data.gd = 1, var plan_seed = 1, var granted = 1, suite count 46.'
+  notes: 'I6 lives in GameData._mark_violations() (extracted so no indented block comment); _modifier_script() helper, 4 call sites; plan_deck() builds its own 20 cards.'
 - id: S3
   description: SkillBoardPlanner in rules1, localised; localisation gate clean.
   files_touched: []
@@ -188,4 +189,4 @@ git status --porcelain, and a full windowed suite run before trusting any done s
 
 ## References
 - `.claude/skills/plan-run/SKILL.md`, `.claude/skills/handoff/SKILL.md`
-- `solatro/HANDOFF_sidebar.md` on branch `sidebar` — the parallel run and its stock step S19
+- the sidebar run’s own handoff, on branch `sidebar` only — the parallel run and its stock step S19

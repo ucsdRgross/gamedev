@@ -4,6 +4,9 @@ extends CardModifierType
 ## the default 5x5), so an empty cell renders like the existing zone headers (highlight
 ## target, always visible).
 
+## True when a level or blind granted this mark rather than the deck dealing it.
+@export_storage var granted : bool = false
+
 func get_str() -> String: return TRANSLATION.find('GRID_CELL_CARD')
 func get_description() -> String: return TRANSLATION.find('GRID_CELL_CARD_DESCRIPTION')
 ## ⚠ THE OLD ZONE FRAME, not a new one. A cell is a zone slot and reads as one: it uses the

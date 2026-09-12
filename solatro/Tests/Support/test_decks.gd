@@ -87,6 +87,15 @@ static func deck_20() -> Array[CardData]:
 			out.append(_card(suit, rank))
 	return out
 
+## `PLAN_DECK`: 20 plain cards, four suits x ranks 1-5 — frozen apart from `deck_20` on purpose.
+static func plan_deck() -> Array[CardData]:
+	var out : Array[CardData] = []
+	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
+	for suit : GDScript in suits:
+		for rank : int in range(1, 6):
+			out.append(_card(suit, rank))
+	return out
+
 ## `FIX-DECK-53`: `deck_standard_52` plus one plain card — built FROM the 52 fixture so the
 ## boundary case cannot drift apart from it.
 static func deck_53() -> Array[CardData]:
