@@ -3,7 +3,7 @@
 **Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
-**State:** `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
+**State:** Phase 2 (S5–S8) done, awaiting its boundary review. `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
 `py solatro/Tools/run_tests.py --filter <Node> | --logic`) is merged at 587f2d60; the full run is
 ~200 s and a single suite ~30 s. Open: GRID LAYOUT fails 2 of 4 runs on the merged branch
 (rotating check; 0 of ~15 before the merge) — being diagnosed before S5. Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
@@ -125,6 +125,30 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   `ungrab_cards()` also hides the description (`play_area.gd:1530`), collapsing the two steps.
 - Wall-view picture hover (`Wall.picture_hovered` → `WallPicture.get_info()`) has no destination
   after S9 — Q21=(b) says no sidebar in the overview → it is deleted with Info mode (assumption).
+- S19–S23 (plan-auditor): S19's blast radius is ~3x §3a — add `card_effect_api.gd:57,154,177`
+  (`draw_deck()/draw_card()/return_to_draw_deck()`), `game.gd:924-941` `return_to_map()` (the run
+  deck is rebuilt there — miss it and stock cards leave the run), `skill_grid_allotment.gd:35`
+  (grid count from deck size), `skill_hungry_hippo.gd:40`, and eleven test files (notably
+  `test_iterator.gd:194-210` asserting collection ORDER and `test_persistence_fuzz.gd:196`).
+  §2's `Array[Array[CardData]]` is not an expressible GDScript type (`scoring.gd:919` writes it as
+  a comment; `card_data_array.gd` is the wrapper) and a top-level per-slot array drifts from
+  `entrance_zone().cells`, which `Board.add_column/remove_column` (`board.gd:235,243`, driven by
+  `zone_adder.gd`) mutate — the stock rides the entrance zone's per-cell data (assumption, invisible).
+  `on_append` is a shuffle-time hook (`game.gd:429-433`), not a board walk; the walk is
+  `get_card_collections()`/`all_card_datas()` (`game_data.gd:412/428`); the stage verifier is
+  `validate()` I1/I3/I5 (`:483/:531/:575`). No RunState version exists: 'discarded, not migrated'
+  needs a load-time check (assumption). `draw_card()` pops the BACK — today's 'top'. S20 has no
+  call site in its two files. S21: `CardVisual` spawns Stage.DRAW cards at `deck_ui`'s centre — now
+  a ROOT-viewport control (latent bug since S2: wrong space); flip = `data.flipped` slerped at a
+  hard-coded 6.5/s only while `floating`; `deck_viewer.gd`'s sort enums are dead — sort at the
+  caller. S22: 'fully resolved' is a code position after `refill_entrance_if_due()` and AFTER
+  `save_state()` (`game.gd:774-782`), guarded on `not processing` (re-entrancy `:733-739`);
+  `submit_button.visible` is never written — Q107=(c) owner note 'end button becomes revealed
+  when either deck empty, or no more possible action on board (no empty tiles)' means End starts
+  HIDDEN; `test_game_headless.gd:772-802` asserts a scored line does not resolve (pin its goal).
+  S23: hover→container already routed (S5); `map_hover_panel.tscn` EXISTS (leak canary preloads
+  it) — 'do not re-instantiate on the map'; `_on_node_hovered` is `map.gd:162`. 4.3's
+  `_replay_pending_placement()` dereferences `RunManager.run` unguarded — populate it.
 
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
@@ -168,12 +192,13 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'the fourth dismissal (card leaves its cell while following) and TEST_PLAN 1.8 are owed by S14 (need following). S6b shipped a production leak (a displaced lock orphaned its visual) caught by the leak probe and fixed with a regression check'
 - id: S7
   description: the processing rule
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '6d4d9b8c: ALL 46 SUITES 4336 PASSED; 1.9-1.12 red 10 -> green; SIDEBAR 342; by eye description_processing.png: HUD only mid-cascade'
 - id: S8
   description: scroll and multi-modal reach, sidebar_scroll action
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'ALL 46 SUITES 4337 PASSED (overseer run, alone); 7 new tests red -> green; SIDEBAR 372; by eye description_scroll.png'
+  notes: 'at the shipped container width no card text overflows at any window - the scrollbar is real but idle until descriptions grow (Q36=c later design)'
 - id: S9
   description: delete Info mode
   status: pending
@@ -222,7 +247,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. S7. 2. S8. 3. S9 (Phase 3).
+1. Phase 2 boundary review. 2. S9. 3. S10.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
