@@ -94,12 +94,13 @@ func combo_key(_hook: StringName = &"") -> String:
 #⚠ NO `compare_uncacheable`, and nothing needs one: a rule's answer is fixed for the hand being
 #scored, so a random rule is safe to write and has nothing to declare.
 
-#⚠ THE ORDER OF THESE CHECKS IS THE RULE. A mark is excluded, and a forced spotlight read, AFTER
-#the stage check, so a stale entry for a card that left the board cannot light it; the beam then
-#comes BEFORE the coverage rules, bypassing both Revealing and blocks_spotlight.
+#⚠ THE ORDER OF THESE CHECKS IS THE RULE. A mark is excluded FIRST, ahead of the two routes that
+#light a card from anywhere, because a copied global stamp must not light a mark. The beam is then
+#read after the stage check, so a card that left the board cannot be forced, and before coverage.
 
 ## Effective spotlight = NATURAL (this rule) OR FORCED (the scoring beam, `GameData.forced_spotlight`).
 func is_spotlit() -> bool:
+	if _is_mark(): return false
 	if CardEnvironment.CURRENT and CardEnvironment.CURRENT.is_data_in_rules(data):
 		return true
 	if data.stamp is StampGlobal:
@@ -107,7 +108,6 @@ func is_spotlit() -> bool:
 	if not api or not api.is_live(): return false
 	if data.stage != CardData.Stage.PLAY and data.stage != CardData.Stage.ZONE:
 		return false
-	if _is_mark(): return false
 	if api and api.forced_spotlight().has(data):
 		return true
 	if data.stamp is StampRevealing:

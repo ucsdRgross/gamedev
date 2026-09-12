@@ -53,7 +53,7 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   FOCUS: pressing it again turned Info mode back OFF`. Fails 2 of 2 full runs; passes 1 of 1 run
   alone (`--filter WallFocus`, 130/130). Tally so far: 3 failures in 5 full runs, and every failing
   run had the other session's Godot up — window-focus interference is the likeliest cause; not
-  fixed here. (Tally: 4 failures in 6 overseer full runs; 0 in the implementers' 4.) Unmodified `main` had no failure (sidebar's
+  fixed here. (Tally: 4 failures in 7 overseer full runs; 0 in the implementers' 6.) Unmodified `main` had no failure (sidebar's
   baseline).
 - Exit-time: wrapper exit 3; `[exit-time] note: WARNING: 135 ObjectDB instances were leaked at
   exit` (pre-existing).
@@ -146,9 +146,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: [solatro/Cards/card_modifier.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Engine/test_mark_match.tscn, solatro/Tests/all_tests.tscn]
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: in_progress
-  evidence: 'Implementer red runs: is_spotlit exclusion removed -> MARK MATCH 7 passed, 4 FAILED of 11 (all four TP-44 checks); blocks_spotlight forced true -> 8 passed, 3 FAILED of 11 (TP-45 direct checks). Overseer full run: ALL 47 SUITES: 4032 passed, 1 FAILED (WALL FOCUS standing line only); SPOTLIGHT 111/111, MARK MATCH 11/11, BOARD PLAN 18/18; SECTION 8 identical.'
-  notes: 'OPEN DEFECT, fixed next: the exclusion sits below the StampGlobal early return in is_spotlit(), so a mark copying a StampGlobal card would still be spotlit (deck8 and TypeBoosterBasic hand that stamp out). Q59 says never; the exclusion must be the first check, with a TP-44 case for it. Measured by the implementer: a grid card is never NATURALLY spotlit (_blocked_from_above reads position_of, which carries no grid coordinate), so TP-44 contrasts forced-spotlight pairs; see ASSUMPTIONS.md.'
+  status: done
+  evidence: 'Implementer red runs: is_spotlit exclusion removed -> MARK MATCH 7 passed, 4 FAILED of 11 (all four TP-44 checks); blocks_spotlight forced true -> 8 passed, 3 FAILED of 11; exclusion below the StampGlobal return -> 11 passed, 4 FAILED of 15 (the four globally-stamped-mark checks). Overseer full runs: ALL 47 SUITES: 4032 passed, 1 FAILED (WALL FOCUS standing line) at e41fe969; ALL 47 SUITES: 4002 CHECKS PASSED, errors log empty, after the fix. SPOTLIGHT 111/111 both times; SECTION 8 identical. grep: is_spotlit()'s first statement is the mark check.'
+  notes: 'Measured by the implementer: a grid card is never NATURALLY spotlit (_blocked_from_above reads position_of, which carries no grid coordinate), so TP-44 contrasts forced-spotlight pairs plus an unforced globally stamped mark; see ASSUMPTIONS.md.'
 - id: S9
   description: on_mark_covered / on_mark_hit dispatched from place_card_in_grid; TP-46..51, TP-53, TP-54.
   files_touched: []

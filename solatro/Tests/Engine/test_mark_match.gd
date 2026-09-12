@@ -88,13 +88,21 @@ func spotlit_ids(state: GameData, mark: CardData) -> Array[int]:
 #⚠ THE SCORING BEAM IS THE LEVER, BECAUSE MEASURED: a card in a grid cell is not naturally spotlit
 #at all -- the legacy position index carries no grid coordinate, so the coverage walk fails closed
 #and every grid card is dark until the beam lands on it. Both cards here are forced, one control.
+
+#⚠ A COPIED GLOBAL STAMP IS THE OTHER LEVER, and it needs no beam: a global stamp lights its card
+#from anywhere, the deck included, so a mark that copied one would answer the whole board uncovered
+#and unforced. It is left unforced here for exactly that reason.
 func test_a_mark_answers_no_broadcast() -> void:
 	var g := make_game()
 	var mark := mark_cell(g.state, 0, play_card(3, SpotlightTestSkill.make("mark")))
 	var extra_point := mark_cell(g.state, 1, play_card(4, SkillExtraPoint.new()))
+	var global_source := play_card(6, SpotlightTestSkill.make("global"))
+	global_source.with_stamp(StampGlobal.new())
+	var global_mark := mark_cell(g.state, 2, global_source)
 	var control := play_card(5, SpotlightTestSkill.make("control"))
 	place_in_cell(g.state, 2, 0, control)
 	var mark_spy := mark.skill as SpotlightTestSkill
+	var global_spy := global_mark.skill as SpotlightTestSkill
 	var control_spy := control.skill as SpotlightTestSkill
 	g.state.forced_spotlight[mark] = true
 	g.state.forced_spotlight[extra_point] = true
@@ -106,16 +114,26 @@ func test_a_mark_answers_no_broadcast() -> void:
 	check(mark_spy.spotlight_calls == 0,
 			"TP-44: the very same skill, copied onto a mark, answers nothing",
 			"got %d" % mark_spy.spotlight_calls)
+	check(global_spy.spotlight_calls == 0,
+			"TP-44: a mark that copied a global stamp answers the sweep no differently",
+			"got %d" % global_spy.spotlight_calls)
 	await g.run_all_mods(&"on_spotlight")
 	check(control_spy.spotlight_calls == 2 and mark_spy.spotlight_calls == 0,
 			"TP-44: a board-wide broadcast reaches the control and never the mark",
 			"control %d, mark %d" % [control_spy.spotlight_calls, mark_spy.spotlight_calls])
+	check(global_spy.spotlight_calls == 0,
+			"TP-44: nor does that broadcast reach the globally stamped mark",
+			"got %d" % global_spy.spotlight_calls)
 	check(control.skill.is_spotlit(),
 			"precondition: is_spotlit() is true on the control's own skill")
 	check(not extra_point.skill.is_spotlit(),
 			"TP-44: is_spotlit() is false on a mark's copied skill")
 	check(not mark.type.is_spotlit(),
 			"TP-44: and false on the marked cell's own type")
+	check(not global_mark.stamp.is_spotlit(),
+			"TP-44: is_spotlit() is false on a mark's copied global stamp")
+	check(not global_mark.skill.is_spotlit(),
+			"TP-44: a copied global stamp lights nothing else on its mark either")
 	free_game(g)
 
 
