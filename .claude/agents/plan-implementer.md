@@ -2,8 +2,7 @@
 name: plan-implementer
 description: Executes one step of an already-written implementation plan under an overseer. Makes code changes, writes the tests the test plan names, runs the suite, and reports in a fixed schema. Never designs, never renames, never decides. Use when a plan, test plan and name registry already exist and the work is purely execution.
 tools: Read, Write, Edit, Grep, Glob, Bash, PowerShell
-model: sonnet
-effort: low
+model: opus
 maxTurns: 150
 color: green
 permissionMode: auto

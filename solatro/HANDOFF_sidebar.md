@@ -10,12 +10,15 @@ suite banner in test_output_all.log, end `$p.Id` (the console exe is a wrapper; 
 the game window).
 **Entry docs:** solatro/design/sidebar/PLAN.md (self-contained), DESIGN.md (authority on behaviour),
 TEST_PLAN.md (every test that must exist), NAMES.md (every identifier), solatro/START_HERE.md
-**IMPLEMENTED-BY:** `plan-implementer` subagent — `sonnet` at `effort: low` (its frontmatter), all
-code. Overseer (opus) writes no source.
+**IMPLEMENTED-BY:** `plan-implementer` subagent. S1–S4 (through commit 5b8f84b9 and S4's
+uncommitted first pass): `sonnet` at `effort: low`. From S4's finish onward: `opus` (Opus 5) at
+default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it writes no source.
 
 ## Provenance
-- Code: `plan-implementer` (sonnet, effort low), every step so far.
-- Reviewer floor: sonnet at normal effort or higher, same generation or newer.
+- Code: `plan-implementer` — sonnet (effort low) for S1–S4's first pass; Opus 5 (default effort)
+  for everything after. Both models wrote code on this branch.
+- Reviewer floor: the highest tier present — Opus 5 at default effort or higher (`opus` or
+  `fable`), same generation or newer.
 
 ## Run rules in force
 - Worktree `../gamedev-sidebar`, branch `sidebar`. Overseer commits one verified step per commit.

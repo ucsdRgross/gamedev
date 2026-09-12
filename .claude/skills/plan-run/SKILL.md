@@ -18,6 +18,9 @@ what that shipped. Everything below aims at that failure.
 ## Setup
 
 - A **git worktree on its own branch**, never the main working tree. The owner merges when done.
+- **The overseer session runs Fable 5.1 at high effort; `plan-implementer` runs Opus 5** (its
+  frontmatter, `model: opus`, default effort). A session's model is chosen at startup, so check
+  yours before the first dispatch.
 - **The repo's no-commit rule is REVERSED for the overseer on that branch**: commit after every step
   you verified yourself, one step per commit. Commits are the only rollback points, and a long run
   will lose sessions to API limits — assume it.
@@ -121,9 +124,10 @@ the weaker author's code gained 18.1 points. **Capability is the lever; a differ
 Cross-vendor review buys decorrelated blind spots and is worth having *at or above* the floor —
 never below it.
 
-`plan-implementer` runs `sonnet` at `effort: low`, so its reviewer starts at `sonnet` normal effort.
-`plan-auditor` and `bloat-reviewer` run `opus` and clear the floor. Raising an implementer's tier
-raises the floor with it.
+`plan-implementer` runs `opus` (Opus 5) at default effort, so its reviewer starts at Opus 5 at
+default effort: `opus` or `fable`, never `sonnet` or `haiku`. `plan-auditor` and `bloat-reviewer`
+run `opus` and clear the floor; the Fable 5.1 overseer clears it too, so the close may run in a
+Fable session. Raising an implementer's tier raises the floor with it.
 
 **A review pass REPORTS; only a green suite lets it APPLY.** `/simplify` and `/code-review --fix`
 edit code, and a model correcting its own work without external feedback degrades it — the tests are
