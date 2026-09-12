@@ -166,3 +166,15 @@ mouse_filter = 2
 [node name="DescriptionPanel" parent="DescriptionMargin" instance=ExtResource("2_desc")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="ExitLayer" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ExitX" type="Button" parent="ExitLayer"]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+grow_horizontal = 0
+text = "X"

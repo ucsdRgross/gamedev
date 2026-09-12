@@ -9,6 +9,7 @@ extends PanelContainer
 @onready var _game_hud : Control = %GameHud
 @onready var _map_hud : Control = %MapHud
 @onready var _piles : HBoxContainer = %GameHud/Piles
+@onready var _exit_button : Button = %ExitX
 
 @onready var submit_button : Button = %Submit
 @onready var undo_button : Button = %Undo
@@ -26,6 +27,9 @@ extends PanelContainer
 
 ## The container's own rect changed (start or resize); `GameView` re-publishes the board insets off it.
 signal container_rect_changed
+
+## The container went back to the HUD; the board drops the locked card's marking on it.
+signal description_dismissed
 
 const SCENE := preload("res://UI/hud_container.tscn")
 
@@ -59,6 +63,9 @@ func disconnect_for_screen() -> void:
 
 func _ready() -> void:
 	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
+	_exit_button.tooltip_text = TRANSLATION.find('SIDEBAR_CLOSE')
+	_exit_button.pressed.connect(show_hud)
+	_place_exit_button()
 	show_hud()
 	var overlay := get_parent() as WallOverlay
 	if overlay:
@@ -75,6 +82,16 @@ func _position_below_overlay_buttons() -> void:
 	_band_top = overlay.button_band_bottom()
 	_game_hud_margin.add_theme_constant_override("margin_top", ceili(_band_top))
 	_description_margin.add_theme_constant_override("margin_top", ceili(_band_top))
+	_place_exit_button()
+
+# The exit X means GO BACK TO THE HUD, so it is the touch affordance for that: grown to the same
+# minimum every overlay control is grown to, in the container's top-right, and parked BELOW the
+# overlay's own button band so it never hides under one.
+func _place_exit_button() -> void:
+	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(), PlayArea.settings())
+	_exit_button.offset_left = -target
+	_exit_button.offset_top = _band_top
+	_exit_button.offset_bottom = _band_top + target
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -86,6 +103,7 @@ func _apply_container_rect() -> void:
 	position = rect.position
 	size = rect.size
 	_fit_piles_to_width(rect.size.x)
+	if _description_panel.visible: _description_panel.resize_to(_description_size())
 	container_rect_changed.emit()
 
 ## The pile row's own width comes off the container's real size, never a literal, so Deck/Discard/Rules keep sharing it evenly however narrow the container gets.
@@ -129,45 +147,57 @@ var _active_screen : StringName = &""
 # Which screen's HUD content shows inside the stack, keyed by `Main`'s own focus id (`&"game"`,
 # `&"map"`, `&"start_menu"`, or `&""` for wall view). The container itself hides entirely at wall
 # view; the menu shows it with neither child visible.
+#
+# Leaving a screen keeps that screen's own description: the visual is DETACHED rather than freed,
+# so the entry is still whole when the player comes back, and arriving re-shows it immediately.
 func set_active_screen(screen: StringName) -> void:
 	if screen != _active_screen:
-		_stash_description()
+		_description_panel.detach_entry()
 		_active_screen = screen
-		_restore_description()
+		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
+		if remembered == null: show_hud()
+		else: show_description(remembered)
 	visible = screen != &""
 	if not visible: return
 	_game_hud.visible = screen == &"game"
 	_map_hud.visible = screen == &"map"
 
-# Leaving a screen keeps that screen's own description: the visual is DETACHED rather than freed,
-# so the entry is still whole when the player comes back to it.
-func _stash_description() -> void:
-	_description_panel.detach_entry()
-	show_hud()
-
-# Arriving at a screen re-shows what it was reading, immediately and with no animation -- or the
-# HUD, when that screen has read nothing yet.
-func _restore_description() -> void:
-	var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
-	if remembered == null:
-		show_hud()
-		return
-	show_description(remembered)
-
 func show_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
+	_exit_button.visible = false
+	clear_lock()
+	description_dismissed.emit()
 
 func show_description(entry: InfoEntry) -> void:
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
-	_description_panel.show_entry(entry, container_rect().size - Vector2(0.0, _band_top))
+	_exit_button.visible = true
+	_description_panel.show_entry(entry, _description_size())
+
+## The card each screen's description is LOCKED to -- a lock survives leaving and returning, exactly as the remembered entry does.
+var _lock_by_screen : Dictionary[StringName, CardData] = {}
+
+## Pins the description to `target`: it stays the sidebar's subject until a dismissal takes the container back to the HUD.
+func lock_to(entry: InfoEntry, target: CardData) -> void:
+	_lock_by_screen[_active_screen] = target
+	show_description(entry)
+
+func clear_lock() -> void:
+	_lock_by_screen.erase(_active_screen)
+
+func is_locked() -> bool:
+	return _lock_by_screen.has(_active_screen)
+
+## The room the description has: the container minus the overlay's button band, which both contents start below.
+func _description_size() -> Vector2:
+	return container_rect().size - Vector2(0.0, _band_top)
 
 # A stashed visual is a NODE outside the tree that nothing else will collect. The MOUNTED one is
 # the panel's own child and goes with the tree, so only the detached ones are freed here.
 func _exit_tree() -> void:
 	for screen : StringName in _entry_by_screen:
 		var visual : Node = _entry_by_screen[screen].visual
-		if visual and is_instance_valid(visual) and visual.get_parent() == null:
+		if visual and visual.get_parent() == null:
 			visual.queue_free()
 	_entry_by_screen.clear()

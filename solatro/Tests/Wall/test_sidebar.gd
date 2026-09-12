@@ -58,6 +58,14 @@ func _ready() -> void:
 	await test_losing_the_highlight_keeps_the_last_entry()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_new_entry_frees_the_visual_it_replaces()
+	behavior_section("S6: THE LOCK AND THE EXIT X")
+	await test_a_click_grabs_the_card_and_locks_its_description()
+	await test_locking_a_second_card_replaces_the_first()
+	await test_the_locked_card_keeps_its_marking_while_focus_moves_on()
+	await test_a_board_rebuild_keeps_the_same_cards_description()
+	await test_the_exit_x_reverts_to_the_hud()
+	await test_the_exit_x_is_a_touch_target_below_the_button_band()
+	await test_a_resize_relays_the_description_to_the_new_width()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1085,6 +1093,10 @@ func _hover_another_card(controls: Array[Control], avoid: Control) -> Control:
 			return hovered
 	return null
 
+## Off the picture entirely: no control can be under the pointer there, whatever a re-lay-out moves.
+func _off_the_board_point() -> Vector2:
+	return Vector2(-100.0, -100.0)
+
 # Bare board: a point belonging to no card control, so the pointer leaving everything is a real
 # mouse exit rather than the test merely declining to publish.
 func _bare_board_point(controls: Array[Control]) -> Vector2:
@@ -1290,4 +1302,263 @@ func test_a_new_entry_frees_the_visual_it_replaces() -> void:
 				"%d visual(s) left in the slot" % slot.get_child_count())
 		check(_panel.current_entry != null and _panel.current_entry.visual != first,
 				"...and the panel shows the next card's own visual")
+	await _end_game_fixture()
+
+# ------------------------------------------------------------------ S6: the lock and the exit X
+
+# A real click, pushed where the hover already is: press and release at the same point, one frame
+# apart, so `_on_gui_input` sees the hovered control still focused under the button.
+func _click(at: Vector2, viewport: SubViewport) -> void:
+	_push_mouse_button(at, viewport, true)
+	await get_tree().process_frame
+	_push_mouse_button(at, viewport, false)
+	await get_tree().process_frame
+
+func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = pressed
+	event.position = at
+	event.global_position = at
+	viewport.push_input(event)
+
+# Entrance cards are the ones a click can GRAB, so Q56's "the click still performs its game action"
+# is only testable on those -- a grid card's click has no pickup to prove.
+func _entrance_card_controls() -> Array[Control]:
+	var out : Array[Control] = []
+	for control : Control in await _hoverable_card_controls():
+		if _play_area.upper_zone_right.is_ancestor_of(control) and _is_selectable(control):
+			out.append(control)
+	return out
+
+# A slot's own zone control sits in `ui_data` but is left FOCUS_NONE and zero-height once a card
+# covers it (`_size_stack_slot`), so neither a click nor a key can land on it.
+func _is_selectable(control: Control) -> bool:
+	return control.focus_mode != Control.FOCUS_NONE
+
+# Clicks a board card the way a player does -- hover first (the board selects what the pointer is
+# on), then press and release -- and waits out `try_grab`'s own await.
+func _click_card(control: Control) -> void:
+	_hover(control.get_global_rect().get_center())
+	await get_tree().process_frame
+	_hover(control.get_global_rect().get_center())
+	await get_tree().process_frame
+	await _click(control.get_global_rect().get_center(), _game_viewport)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+# WHICH CARD A CLICK LANDED ON IS THE BOARD'S OWN ANSWER: a grab rebuilds the board and the slot
+# controls are POOLED, so a mapping read either side of the click can name a different card.
+func _watch_clicks() -> Array[CardData]:
+	var clicked : Array[CardData] = []
+	_play_area.data_selected.connect(func(data: CardData) -> void: clicked.append(data))
+	return clicked
+
+# Why an input did not land: every state that decides whether the board acts on one, in the order
+# `_on_gui_input` and `grab_focus()` consult them.
+func _board_input_state(control: Control) -> String:
+	var game := CardEnvironment.get_current_game()
+	return ("processing %s, paused %s, held %d, in ui_data %s, visible %s, focus_mode %d, "
+			+ "hovered %s, focused %s, owner %s") % [
+			game.processing, get_tree().paused, _play_area.selected_cards.size(),
+			_play_area.ui_data.has(control), control.is_visible_in_tree(), control.focus_mode,
+			_play_area.moused_hovered_control == control, _play_area.focused_control == control,
+			control.get_viewport().gui_get_focus_owner()]
+
+func _exit_button() -> Button:
+	return _container.get_node(^"%ExitX") as Button
+
+## A hoverable card control whose card is not `avoid`, so the board focus can be moved off it.
+func _another_card_control(controls: Array[Control], avoid: CardData) -> Control:
+	for control : Control in controls:
+		if _play_area.ui_data[control] != avoid and _is_selectable(control): return control
+	return null
+
+## Q56=a/Q57=a/B5: one click both grabs the card and locks the sidebar to it -- there is no inspect-only mode.
+func test_a_click_grabs_the_card_and_locks_its_description() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var clicked := _watch_clicks()
+		await _click_card(entrance[0])
+		check(clicked.size() == 1, "the click reached the board's own selection",
+				str(clicked.size()))
+		check(not _play_area.selected_cards.is_empty(),
+				"the click still performs its game action: the card is grabbed (Q57=a)",
+				str(_play_area.selected_cards.size()))
+		check(_container.is_locked(), "...and the same click locks the description (B5, Q56=a)")
+		if clicked.size() == 1:
+			check(_play_area.locked_data == clicked[0], "...to the card that was clicked")
+			var title : Label = _panel.get_node(^"%Title")
+			check(title.text == _expected_text(clicked[0])[0],
+					"...and the sidebar shows that card's own name", title.text)
+	await _end_game_fixture()
+
+## 1.6/B8/Q61=a: only one lock exists, so locking a second card replaces the first.
+func test_locking_a_second_card_replaces_the_first() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(entrance.size() >= 2, "the dealt board offers two clickable Entrance cards",
+			str(entrance.size()))
+	if entrance.size() >= 2:
+		var clicked := _watch_clicks()
+		var first : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		check(_play_area.locked_data == first, "the first click locked the first card")
+		_play_area.ungrab_cards()
+		var next_control := _another_card_control(await _entrance_card_controls(), first)
+		check(next_control != null, "a second Entrance card is reachable for the next click")
+		if next_control != null:
+			await _click_card(next_control)
+			check(clicked.size() == 2, "both clicks reached the board", _board_input_state(next_control))
+			check(_container.is_locked(), "the second click leaves the sidebar locked")
+			if clicked.size() == 2:
+				check(clicked[1] != clicked[0], "the two clicks landed on different cards")
+				check(_play_area.locked_data == clicked[1],
+						"...to the SECOND card: locking a second replaces the first (B8)")
+				_hover(_bare_board_point(entrance))
+				await get_tree().process_frame
+				check(_container.is_locked() and _play_area.locked_data == clicked[1],
+						"...and leaving every card keeps that same lock")
+				var title : Label = _panel.get_node(^"%Title")
+				check(title.text == _expected_text(clicked[1])[0],
+						"...with the second card's own description showing", title.text)
+	await _end_game_fixture()
+
+## Q58=c: the locked card keeps the marking a focused card gets, even once the focus has moved on.
+func test_the_locked_card_keeps_its_marking_while_focus_moves_on() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the board offers a lockable card", str(entrance.size()))
+	if not entrance.is_empty():
+		var locked : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		var others := await _hoverable_card_controls()
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		var elsewhere := _another_card_control(others, locked)
+		check(elsewhere != null, "a second card can take the focus")
+		if elsewhere != null:
+			elsewhere.grab_focus()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var moved : CardData = _play_area.ui_data[_play_area.focused_control]
+			check(_play_area.focused_control == elsewhere,
+					"the key/pad focus landed on that second card",
+					_board_input_state(elsewhere))
+			var title : Label = _panel.get_node(^"%Title")
+			check(title.text == _expected_text(moved)[0],
+					"the description follows the new highlight (B1)", title.text)
+			check(_play_area.data_card[locked].focused,
+					"...and the LOCKED card keeps the focus marking behind it (Q58=c)")
+			check(_play_area.data_card[moved].focused,
+					"...while the newly focused card is marked as well")
+	await _end_game_fixture()
+
+## 1.13/B13/Q65=a: a board rebuild keeps the same CardData's description and its marking, whichever control now represents it.
+func test_a_board_rebuild_keeps_the_same_cards_description() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var data : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		var title : Label = _panel.get_node(^"%Title")
+		var before := _play_area.locked_data
+		_play_area.queue_rebuild()
+		await get_tree().process_frame
+		_play_area.flush_rebuild()
+		await get_tree().process_frame
+		check(_container.is_locked() and _play_area.locked_data == data,
+				"the lock survives a board rebuild")
+		check(_play_area.locked_data == before and title.text == _expected_text(data)[0],
+				"...and the sidebar still shows that same card's description", title.text)
+		check(_play_area.data_ui.has(data), "...the card has a control again after the rebuild")
+		check(_play_area.data_card.has(data) and _play_area.data_card[data].focused,
+				"...and the marking is on whichever visual now represents it (B13)")
+	await _end_game_fixture()
+
+## 1.7/C16/Q179=a/Q180=a: pressing the exit X reverts the container to the HUD and drops the lock.
+func test_the_exit_x_reverts_to_the_hud() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		var hud_stack : Control = _container.get_node(^"%HudStack")
+		check(not hud_stack.visible and _container.is_locked(),
+				"the description is up and locked before the press")
+		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
+		check(hud_stack.visible and not _panel.visible,
+				"the exit X reverts the container to the HUD (B10, Q179=a)")
+		check(not _container.is_locked(), "...and the lock is gone (B10)")
+		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+		check(_play_area.locked_data == null, "...so the board drops the locked card's marking")
+	await _end_game_fixture()
+
+## C16/Q47=a: the exit X is a full touch target in the container's top-right, below the overlay's own button band, and only while the description shows.
+func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		var button := _exit_button()
+		var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
+				PlayArea.settings())
+		check(button.is_visible_in_tree(), "the exit X shows while the description does")
+		check(button.size.x >= target - 0.5 and button.size.y >= target - 0.5,
+				"...at the same touch target every overlay control is grown to (Q47=a)",
+				"%s vs %.1f" % [button.size, target])
+		var rect := button.get_global_rect()
+		var bounds := _container.container_rect()
+		check(bounds.encloses(rect), "...inside the container's own rect",
+				"%s vs %s" % [rect, bounds])
+		var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+		check(rect.position.y >= overlay.button_band_bottom(),
+				"...below the overlay's button band, never under it (D12)",
+				"%.1f vs %.1f" % [rect.position.y, overlay.button_band_bottom()])
+		check(absf(rect.end.x - bounds.end.x) <= 1.0,
+				"...and in the top-right corner (C16)",
+				"%.1f vs %.1f" % [rect.end.x, bounds.end.x])
+		_container.show_hud()
+		await get_tree().process_frame
+		check(not button.is_visible_in_tree(),
+				"the HUD hides it again: it belongs to the description")
+	await _end_game_fixture()
+
+## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one.
+func test_a_resize_relays_the_description_to_the_new_width() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		check(_panel.visible, "the description is up before the resize")
+		_booted_viewport.size = Vector2i(1920, 1080)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var width := _container.container_rect().size.x
+		var content : VBoxContainer = _panel.get_node(^"%Content")
+		check(absf(_panel.size.x - width) <= 1.0,
+				"the panel follows the container's new width",
+				"%.1f vs %.1f" % [_panel.size.x, width])
+		check(absf(content.size.x - width) <= 1.0,
+				"...and so does the content it lays out",
+				"%.1f vs %.1f" % [content.size.x, width])
+		var carried := content.custom_minimum_size.y
+		_panel.resize_to(Vector2(width, _panel.size.y))
+		check(absf(content.custom_minimum_size.y - carried) <= 0.5,
+				"...and the height it scrolls to is the new width's, not the old one's",
+				"%.1f carried vs %.1f fresh" % [carried, content.custom_minimum_size.y])
 	await _end_game_fixture()

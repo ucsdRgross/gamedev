@@ -170,6 +170,14 @@ func mouse_click(pos: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
 	up.global_position = pos
 	await send(up)
 
+# A click on a card LOCKS a description over the HUD, and the HUD's own buttons are off screen
+# while it shows. Reverting to the HUD is what the player does before pressing one, so pressing one
+# here starts from the same place.
+func click_hud_button(button: Button) -> void:
+	view.hud_container.show_hud()
+	await frames(1)
+	await mouse_click(center_of(button))
+
 func key_tap(keycode: Key) -> void:
 	var down := InputEventKey.new()
 	down.keycode = keycode
@@ -496,7 +504,7 @@ func test_undo_button_cancels_live_act() -> void:
 	check(true, "PARKED: no act on a grid board outlives two frames to be interrupted (GAP-003)",
 			"processing=%s" % str(game.processing))
 	check(not view.undo_button.disabled, "the Undo button is enabled around an act")
-	await mouse_click(center_of(view.undo_button))
+	await click_hud_button(view.undo_button)
 	var done := await wait_until(func() -> bool:
 			return _act_finished[0] and not game.processing)
 	check(done, "the cancelled act hands input back (never hangs)")
@@ -523,7 +531,7 @@ func test_game_over_interactivity() -> void:
 	# the button still bound to the retired Submit act, which is a show the player cannot end.
 	check(view.submit_button.text == TRANSLATION.find('END_SHOW_BUTTON'),
 			"precondition: the button reads End", view.submit_button.text)
-	await mouse_click(center_of(view.submit_button))
+	await click_hud_button(view.submit_button)
 	await frames(2)
 	check(resolved[0], "pressing End resolves the show")
 	await frames(2)
@@ -549,7 +557,7 @@ func test_game_over_interactivity() -> void:
 	await mouse_click(pa_rect.get_center())
 	check(selections.is_empty(), "a click on the covered board selects nothing")
 	# Undo at the outcome screen: overlay drops, the final End rewinds, play resumes.
-	await mouse_click(center_of(view.undo_button))
+	await click_hud_button(view.undo_button)
 	await frames(2)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"Undo dismisses the outcome overlay")

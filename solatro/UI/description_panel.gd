@@ -17,15 +17,14 @@ func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
 	_title_label.text = entry.title
 	_body_label.text = entry.body
 	_mount_visual(entry.visual)
-	_resize_to(panel_size)
+	resize_to(panel_size)
 	visible = true
 
 ## Hands the visual back OUT without freeing it, so the screen this description belongs to can be returned to.
 func detach_entry() -> void:
 	if current_entry == null: return
 	var visual := current_entry.visual
-	if visual and visual.get_parent() == _visual_slot:
-		_visual_slot.remove_child(visual)
+	if visual: _visual_slot.remove_child(visual)
 	current_entry = null
 
 # ⚠ THE PANEL OWNS WHATEVER IS MOUNTED and frees it when another entry replaces it. A caller that
@@ -52,8 +51,8 @@ func _make_still(node: Node) -> void:
 
 # The panel's own height is the container's, so only the CONTENT's height is computed here, and
 # synchronously: a caller reading the panel straight after `show_entry()` must not see the layout
-# pass's leftovers from the previous entry.
-func _resize_to(panel_size: Vector2) -> void:
+# pass's leftovers from the previous entry. Called again on every resize, with the same entry up.
+func resize_to(panel_size: Vector2) -> void:
 	size = panel_size
 	_scroll.size = panel_size
 	var content_h := _top_row_height(panel_size.x) + _text_height(_body_label, panel_size.x)

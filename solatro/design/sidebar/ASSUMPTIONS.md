@@ -95,3 +95,32 @@
   parent, so exactly one may own it; Info mode is off by default and S9 deletes the branch.
 - S5: `test_wall_focus.gd`'s dropped-entry test asserted the pre-S5 rule (Info mode off => the
   visual is freed). Re-aimed at the rule that replaces it: whatever SHOWS the entry owns its visual.
+- S6: the click route is `PlayArea.data_selected` -> `GameView._on_data_selected`, which calls
+  `hud_container.lock_to(PlayArea.card_info(data, board_card_window_px()), data)` BEFORE the game
+  action and pushes `play_area.locked_data = data`; the container's `description_dismissed` comes
+  back through `GameView._on_description_dismissed()` to clear it. The board never decides what is
+  shown -- it publishes, and the view relays in both directions (B5, Q56=a, PLAN 2).
+- S6: new names NAMES.md does not list -- `PlayArea.locked_data`, `PlayArea._refresh_card_marking()`,
+  `PlayArea._publish_info()`, `GameView._lock_description_to()`, `GameView._on_description_dismissed()`,
+  `HudContainer._description_size()`, `HudContainer._place_exit_button()`, the `ExitLayer`/`%ExitX`
+  nodes, and `DescriptionPanel.resize_to()` (S5's `_resize_to`, now also called on a resize).
+- S6: Q58=c's marking is `CardVisual.focused`, applied by ONE rule -- a card is marked while it holds
+  the board focus OR while the sidebar is locked to it -- and re-applied at the end of
+  `set_card_zones_visuals()`, so a rebuild marks whichever visual now represents that card (B13).
+- S6: the exit X's FACE is the glyph `X`, not a localised word: the same shape the overlay's
+  magnifier button already uses, with the localised `SIDEBAR_CLOSE` as its tooltip (Q47=a, C16).
+- S6: the exit X hangs off a full-rect `ExitLayer` `Control` inside `hud_container.tscn`, because a
+  `PanelContainer` fits EVERY direct child to its whole rect. It is anchored to the container's own
+  right edge and offset down by `_band_top`, so the engine's layout keeps it in the corner on resize.
+- S6: `show_hud()` emits `description_dismissed` on every revert to the HUD, a screen change
+  included -- PLAN 1.2 makes it the one place the swap and the lock clear, so it is the one
+  announcement too.
+- S6, measured: `_size_stack_slot()` leaves an OCCUPIED slot's own zone control `FOCUS_NONE` and
+  zero-height while it stays in `ui_data`, so neither a click nor a key can land on it. The suite
+  filters its click/focus candidates on `focus_mode` rather than trusting `ui_data`.
+- S6, measured: the description panel's WIDTH already followed a resize through the engine's own
+  layout pass; what did not follow is the content height `resize_to()` computes, so
+  `_apply_container_rect()` re-runs it for the entry already up.
+- S6 hygiene: the no-listener guard stays in `PlayArea` as `_publish_info()`, the ONE publish site
+  for the highlight and for both Info-mode click emits -- smaller than teaching four bare
+  `play_area.tscn` fixtures to connect a freeing sink, and it keeps the ownership rule in one place.

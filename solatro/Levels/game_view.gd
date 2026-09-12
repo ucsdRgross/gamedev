@@ -106,6 +106,12 @@ func _bind_hud_container() -> void:
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
 	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_board_inset)
+	hud_container.connect_for_screen(hud_container.description_dismissed, _on_description_dismissed)
+
+# The board wears the locked card's marking, so the view relays the lock ENDING the same way it
+# relays the click that starts it. The container owns the lock itself; nothing else may clear it.
+func _on_description_dismissed() -> void:
+	play_area.locked_data = null
 
 func _exit_tree() -> void:
 	hud_container.disconnect_for_screen()
@@ -332,8 +338,16 @@ func _on_undo_pressed() -> void:
 	if play_area.selected_cards: return
 	game.undo()
 
+# ONE CLICK, BOTH OUTCOMES: the click that grabs or places ALSO locks the description to the card
+# it landed on -- there is no inspect-only mode any more. The container decides what
+# shows; the view only relays, being what holds the card's data and the container at once.
+func _lock_description_to(data: CardData) -> void:
+	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
+	play_area.locked_data = data
+
 func _on_data_selected(data: CardData) -> void:
 	if game.processing: return
+	_lock_description_to(data)
 	if play_area.selected_cards:
 		var held0 := play_area.selected_cards[0]
 		if (data == held0

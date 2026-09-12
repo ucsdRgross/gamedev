@@ -1451,7 +1451,7 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				if _info_mode():
-					info_requested.emit(card_info(ui_data[focused_control], board_card_window_px()))
+					_publish_info(ui_data[focused_control])
 				elif not _consume_as_focus_click(focused_control):
 					data_selected.emit(ui_data[focused_control])
 
@@ -1481,7 +1481,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
 			if _info_mode():
-				info_requested.emit(card_info(ui_data[focused_control], board_card_window_px()))
+				_publish_info(ui_data[focused_control])
 			elif not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
@@ -2001,6 +2001,7 @@ func set_card_zones_visuals() -> void:
 	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
 	# a stale track width from before this rebuild's grid changed size.
 	_sync_entrance_x()
+	_refresh_card_marking()
 
 func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	# ⚠ **AN ENTRANCE COLUMN *IS* A CELL SLOT** -- same constructor, so it cannot drift from one.
@@ -2795,25 +2796,39 @@ func create_card_control() -> Control:
 				if focused_control == new_control: hide_focus_info())
 	return new_control
 
-# EVERY highlight publishes its card's description -- mouse hover and key/pad selection alike,
-# because `mouse_entered` grabs focus and focus is the one signal both modes share. Losing the
-# highlight publishes NOTHING: the description keeps the last card rather than blinking out.
-func _publish_focus_description(control: Control) -> void:
-	if not ui_data.has(control): return
+# THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
+# ⚠ The entry carries a LIVE preview card, so an emit nothing listens to orphans one node per
+# call: the bare `play_area.tscn` fixtures are that case, and they get no emit at all.
+func _publish_info(data: CardData) -> void:
 	if info_requested.get_connections().is_empty(): return
-	info_requested.emit(card_info(ui_data[control], board_card_window_px()))
+	info_requested.emit(card_info(data, board_card_window_px()))
 
 var focused_visual : CardVisual
+
+## The card the sidebar is locked to, pushed in by `GameView` -- `null` while nothing is locked.
+var locked_data : CardData = null:
+	set(value):
+		locked_data = value
+		_refresh_card_marking()
+
+# A card wears the focus marking while it HOLDS the board focus or while the sidebar is LOCKED to
+# it, so what is being read stays marked after the focus moves on, and a rebuild re-applies it to
+# whichever visual now represents that same card.
+func _refresh_card_marking() -> void:
+	for data : CardData in data_card:
+		var visual : CardVisual = data_card[data]
+		visual.focused = visual == focused_visual or data == locked_data
+
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild() #reads ui_data / data_card
 	# ONE CURSOR FOR BOTH INPUT MODES: whatever moved the board focus onto a grid — mouse hover,
 	# arrows, a click — is also what the overview's Enter will focus.
 	var focus_grid_index := _grid_index_of(control)
 	if focus_grid_index != NO_GRID: selected_grid = focus_grid_index
-	if focused_visual: focused_visual.focused = false
+	focused_visual = null
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
-		focused_visual.focused = true
+	_refresh_card_marking()
 	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
 	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
 	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
@@ -2825,7 +2840,7 @@ func on_control_focus_entered(control:Control) -> void:
 		_show_focus_info(control, ui_data[control])
 	else:
 		hide_focus_info()
-	_publish_focus_description(control)
+	if ui_data.has(control): _publish_info(ui_data[control])
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
 	# controls by fixed child index on every focus -- written when child 0 was the zone header and
