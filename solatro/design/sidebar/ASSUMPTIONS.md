@@ -63,9 +63,26 @@
 - S5: per-screen memory lives on `HudContainer` as `_entry_by_screen`, with `_stash_description()`
   and `_restore_description()` hanging off the existing `set_active_screen()` -- that focus id is
   already the only key every call site has in hand (B15, B16, Q20=b).
-- S5: the description's card visual is built in `CardVisual.DisplayContext.PREVIEW`, whose size is
-  the board's own `card_size_play` (`DECK_VIEWER`, the previous context, is 2x). It is NOT scaled by
-  the live `board_zoom`: that is a view scale which changes with focus mode, not the card's size (Q34=b).
+- S5: the description's card visual is built in `CardVisual.DisplayContext.PREVIEW` and drawn at
+  `PlayArea.board_card_window_px()` -- `card_size_play` times the live `board_zoom` times
+  `picture_to_window_scale` -- because Q34=b's "the board's own card size" is the size a board card
+  is DRAWN at on screen, and the container lives in window px outside the picture (measured at
+  1280x720: 40 px flat against a board card's 57.6 px). New names NAMES.md does not list:
+  `PlayArea.picture_to_window_scale` (pushed by `GameView._publish_board_inset()`, the same seam
+  `board_inset_*` crosses the other way), `PlayArea.board_card_window_px()`, the `card_px` parameter
+  on `PlayArea.card_info()`, and `CardVisual.preview_size`.
+- S5: `picture_to_window_scale` is `WallPicture.focused_scale()`, NOT the unmargined ratio
+  `board_inset_*` divides by. Measured at 1280x720: the picture's live screen sprite draws at
+  0.828426 and `focused_scale` returns 0.828427, while the unmargined 0.812183 would miss a board
+  card's drawn width by 1.1 px. The inset reserves board SPACE; the preview matches drawn PIXELS.
+- S5: the preview's size is carried by `CardVisual.preview_size`, applied inside
+  `recalculate_size()`. Measured, by eye, after both shortcuts failed: a `Container` resets its
+  children's `scale` on every layout pass, and `CardVisual._ready()` re-runs `recalculate_size()`,
+  so a card scaled or sized from outside is back to its context's size the frame it is mounted.
+- S5: the 1.2 test's `card_size == card_size_play` check was RETIRED, not moved: it asserted the
+  size this fix corrects. `test_the_preview_is_drawn_at_the_boards_own_card_size` replaces it with
+  a stronger claim -- the preview's DRAWN width against a real board `CardVisual`'s, both measured
+  through the engine's own transforms, plus the name sitting to its right (Q33=c).
 - S5: "frozen" is `CardVisual.floating = false`, which stops the idle and snaps the card face-on --
   the one flag the rig's own animation runs off (Q35=b).
 - S5: the top row is the visual LEFT, the name right -- the notecard's own arrangement rotated for a

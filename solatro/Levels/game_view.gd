@@ -187,12 +187,16 @@ func _on_combo_changed(_count: int) -> void:
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
 
-## Converts the HUD container's rect (window px) to `board_inset_left`/`board_inset_top` (picture px).
+# ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
+# divides the container's rect by the unmargined ratio; `picture_to_window_scale` describes DRAWN
+# PIXELS, so it is the camera's own resting zoom -- what a preview beside the board has to match.
 func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
 	var picture_scale := maxf(window.x / design.x, window.y / design.y)
+	play_area.picture_to_window_scale = WallPicture.focused_scale(design, window,
+			PlayArea.settings().wall_overfill_margin)
 	if HudContainer.container_is_top(window, PlayArea.settings()):
 		play_area.board_inset_top = rect.size.y / picture_scale
 		play_area.board_inset_left = 0.0

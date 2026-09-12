@@ -552,7 +552,7 @@ func _case_info_mode_reaches_a_hosted_screen() -> void:
 	if control != null:
 		_info_card().reset()
 		pa.on_control_focus_entered(control)
-		pa.info_requested.emit(PlayArea.card_info(pa.ui_data[control]))
+		pa.info_requested.emit(PlayArea.card_info(pa.ui_data[control], pa.board_card_window_px()))
 		await _settle()
 		_check(_info_card().visible,
 				"clicking a card in a hosted screen SHOWS it on the wall's info card")

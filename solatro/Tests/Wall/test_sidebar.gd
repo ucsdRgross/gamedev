@@ -54,6 +54,7 @@ func _ready() -> void:
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
+	await test_the_preview_is_drawn_at_the_boards_own_card_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
 	await test_leaving_and_returning_restores_the_screens_own_description()
 	await test_a_new_entry_frees_the_visual_it_replaces()
@@ -1149,8 +1150,6 @@ func test_a_highlight_opens_the_description() -> void:
 			var preview := _preview_card(entry.visual)
 			check(preview != null and preview.child != null, "...and it is a real preview card")
 			if preview != null and preview.child != null:
-				check(preview.child.card_size == CardVisual.card_size_play,
-						"...at the board's own card size (Q34=b)", str(preview.child.card_size))
 				check(not preview.child.floating, "...frozen rather than idling (Q35=b)")
 				check(preview.focus_mode == Control.FOCUS_NONE
 						and preview.mouse_filter == Control.MOUSE_FILTER_IGNORE,
@@ -1162,6 +1161,61 @@ func test_a_highlight_opens_the_description() -> void:
 		if hovered != null:
 			check(title.text == _expected_text(_play_area.ui_data[hovered])[0],
 					"...and the title follows the card the pointer is on", title.text)
+	await _end_game_fixture()
+
+## How near the preview's drawn width must land on the board card's own -- a pixel of layout rounding on each side.
+const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
+
+# What a card ACTUALLY DRAWS AT, not the box it was allocated: every scale above it, times its own
+# face. The two differ -- `CardVisual._ready()` re-runs `recalculate_size()`, so a card can sit in a
+# correctly sized slot drawing at the wrong size, which is exactly the defect this test exists for.
+func _card_drawn_width(card: CardVisual) -> float:
+	return CardVisual.CARD_SIZE.x * card.get_global_transform_with_canvas().get_scale().x
+
+# A board card's width as the player SEES it: its drawn width inside the game picture's viewport,
+# times the scale the wall draws that viewport at. Read off the picture's own screen sprite, so the
+# live camera zoom is already in it rather than modelled a second time here.
+func _board_card_window_width(card: CardVisual) -> float:
+	var picture : WallPicture = _main._pictures[&"game"]
+	var sprite : Sprite2D = picture.get_node(^"%Screen")
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	var texel := float(picture.viewport.size.x) / design.x
+	return _card_drawn_width(card) * texel * sprite.get_global_transform_with_canvas().get_scale().x
+
+## Q34=b/Q33=c: the description's card is drawn at the size that same card has on the board, with the name beside it.
+func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		var hovered := await _hover_another_card(controls, null)
+		check(hovered != null, "the pointer landed on a board card")
+		if hovered != null and _play_area.data_card.has(_play_area.ui_data[hovered]):
+			await get_tree().process_frame
+			var board_card : CardVisual = _play_area.data_card[_play_area.ui_data[hovered]]
+			var board_px := _board_card_window_width(board_card)
+			var preview := _preview_card(_panel.current_entry.visual)
+			check(preview != null, "the description mounted a preview card")
+			if preview != null and preview.child != null:
+				var preview_px := _card_drawn_width(preview.child)
+				var preview_rect := _sidebar_screen_rect(preview)
+				check(absf(preview_px - board_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+						"the preview is drawn at the board card's own screen width (Q34=b)",
+						"preview %.1f px vs board %.1f px at board zoom %.3f"
+						% [preview_px, board_px, _play_area.board_zoom])
+				check(absf(preview_rect.size.x - preview_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+						"...and the slot it was given is that same width, so the name clears it",
+						"slot %.1f px vs card %.1f px" % [preview_rect.size.x, preview_px])
+				var title_rect := _sidebar_screen_rect(_panel.get_node(^"%Title") as Label)
+				check(title_rect.position.x >= preview_rect.end.x - PREVIEW_WIDTH_TOLERANCE_PX,
+						"the name starts to the RIGHT of the visual (Q33=c)",
+						"name at %.1f vs visual ending %.1f"
+						% [title_rect.position.x, preview_rect.end.x])
+				check(title_rect.position.y < preview_rect.end.y
+						and title_rect.end.y > preview_rect.position.y,
+						"...and beside it, not under it (Q33=c)",
+						"name %s vs visual %s" % [title_rect, preview_rect])
 	await _end_game_fixture()
 
 ## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.

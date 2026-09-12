@@ -52,6 +52,13 @@ var board_inset_top : float = 0.0:
 		if not is_instance_valid(scroll_container): return
 		_re_fit_after_inset_change()
 
+## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
+var picture_to_window_scale : float = 1.0
+
+## The size a board card is DRAWN at on the player's screen: this board's card size, at its live zoom, in window pixels.
+func board_card_window_px() -> Vector2:
+	return CardVisual.card_size_play * board_zoom * picture_to_window_scale
+
 # ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a focused grid already
 # fitted to an inset of zero, so re-fitting here (unconditionally, before any zoom check) is what
 # makes the arriving reserve reach the zoom instead of leaving the board centred on the screen.
@@ -1444,7 +1451,7 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				if _info_mode():
-					info_requested.emit(card_info(ui_data[focused_control]))
+					info_requested.emit(card_info(ui_data[focused_control], board_card_window_px()))
 				elif not _consume_as_focus_click(focused_control):
 					data_selected.emit(ui_data[focused_control])
 
@@ -1474,7 +1481,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
 			if _info_mode():
-				info_requested.emit(card_info(ui_data[focused_control]))
+				info_requested.emit(card_info(ui_data[focused_control], board_card_window_px()))
 			elif not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
@@ -2794,7 +2801,7 @@ func create_card_control() -> Control:
 func _publish_focus_description(control: Control) -> void:
 	if not ui_data.has(control): return
 	if info_requested.get_connections().is_empty(): return
-	info_requested.emit(card_info(ui_data[control]))
+	info_requested.emit(card_info(ui_data[control], board_card_window_px()))
 
 var focused_visual : CardVisual
 func on_control_focus_entered(control:Control) -> void:
@@ -2884,14 +2891,10 @@ func _popups_allowed() -> bool:
 	var settings := WallPicture.settings()
 	return not settings.wall_info_mode and settings.wall_screen_popups
 
-## A card's `InfoEntry` for the wall's info card. The TEXT is `ControlCard.describe_card()`, the
-## same string the in-screen inspector shows, so the two can never drift; its first line is the
-## card's name and the rest is the description. The VISUAL is a real preview card built through
-## `CardsViewer`, the same listing `MapHoverPanel` uses for booster previews.
-##
-## ⚠ The caller takes ownership of `entry.visual` — `InfoCard.show_entry()` frees it on the next
-## entry — so a fresh one is built per call rather than cached.
-static func card_info(data: CardData) -> InfoEntry:
+# ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card, so a fresh one is built per call. Its size
+# goes on the card (`preview_size`), never on a scale above it: a Container resets a child's `scale`
+# every layout pass and `CardVisual._ready()` re-runs `recalculate_size()`, undoing both shortcuts.
+static func card_info(data: CardData, card_px: Vector2) -> InfoEntry:
 	var entry := InfoEntry.new()
 	var text := ControlCard.describe_card(data)
 	var split := text.split("\n", false, 1)
@@ -2899,7 +2902,11 @@ static func card_info(data: CardData) -> InfoEntry:
 	entry.body = split[1] if split.size() > 1 else ""
 	var flow := FlowContainer.new()
 	entry.visual = flow
-	CardsViewer.new(flow, CardVisual.DisplayContext.PREVIEW).populate([data] as Array[CardData])
+	var card := CardsViewer.new(flow, CardVisual.DisplayContext.PREVIEW).populate(
+			[data] as Array[CardData])
+	card.child.preview_size = card_px
+	card.child.recalculate_size()
+	card.set_min_size()
 	return entry
 
 func _show_focus_info(control: Control, data: CardData) -> void:

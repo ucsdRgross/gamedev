@@ -608,10 +608,16 @@ func _ready() -> void:
 		basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data.flipped else 1)))
 	on_stage_changed()
 
+## The size a PREVIEW card is DRAWN at; ZERO leaves it at the context's own -- only a description's publisher knows the board's live drawn size.
+var preview_size : Vector2 = Vector2.ZERO
+
+# ⚠ RE-RUN ON `_ready()` AND ON EVERY SETTINGS CHANGE, so a caller cannot size a card once and walk
+# away. `preview_size` is applied HERE, after the context's own size, which is what makes it survive
+# both -- writing `card_size` and `scale` from outside does not.
 func recalculate_size() -> void:
 	match current_context:
 		DisplayContext.DECK_VIEWER:
-			card_size = CARD_SIZE * 2#settings().card_scale
+			card_size = CARD_SIZE * 2
 			card_separation = CARD_SEPARATION * settings().card_scale
 			card_separation_custom = card_separation * settings().card_separation_scale
 			scale = Vector2.ONE * 2
@@ -625,6 +631,9 @@ func recalculate_size() -> void:
 			card_separation = CARD_SEPARATION * settings().card_scale
 			card_separation_custom = card_separation * settings().card_separation_scale
 			scale = Vector2.ONE * settings().card_scale
+	if current_context == DisplayContext.PREVIEW and preview_size != Vector2.ZERO:
+		card_size = preview_size
+		scale = preview_size / CARD_SIZE
 
 func on_stage_changed() -> void:
 	if current_context != DisplayContext.PLAY_AREA: return
