@@ -26,6 +26,33 @@ extends PanelContainer
 ## The container's own rect changed (start or resize); `GameView` re-publishes the board insets off it.
 signal container_rect_changed
 
+const SCENE := preload("res://UI/hud_container.tscn")
+
+## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen used to repeat.
+static func ensure(existing: HudContainer, parent: Node) -> HudContainer:
+	if existing:
+		return existing
+	var container := SCENE.instantiate() as HudContainer
+	parent.add_child(container)
+	return container
+
+## Connections a screen made on this container, dropped by `disconnect_for_screen()` when that screen tears down.
+var _screen_connections : Array[Array] = []
+
+## Connects `sig` to `callable` and remembers the pair for `disconnect_for_screen()`.
+func connect_for_screen(sig: Signal, callable: Callable) -> void:
+	sig.connect(callable)
+	_screen_connections.append([sig, callable])
+
+## Drops every connection a screen made through `connect_for_screen()` -- called from that screen's own `_exit_tree()`.
+func disconnect_for_screen() -> void:
+	for pair : Array in _screen_connections:
+		var sig : Signal = pair[0] as Signal
+		var callable : Callable = pair[1] as Callable
+		if sig.is_connected(callable):
+			sig.disconnect(callable)
+	_screen_connections.clear()
+
 func _ready() -> void:
 	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
 	show_hud()

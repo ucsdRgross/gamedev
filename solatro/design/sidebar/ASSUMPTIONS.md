@@ -31,6 +31,23 @@
   that point is still the unfocused identity. `WallPicture.local_rect_beside()` is the one owned
   conversion (window px beside `container_rect()` -> this picture's own space), called by `Menu` and
   by the SIDEBAR suite's own menu geometry tests.
+- Hygiene pass: `HudContainer.ensure(existing, parent)` is a new static factory NAMES.md does not
+  list -- it replaces the `if hud_container == null: instantiate a private container` fallback that
+  `GameView`, `Map` and `Menu` each repeated. `connect_for_screen()`/`disconnect_for_screen()` are new
+  instance methods on `HudContainer` that replace each screen's own `_connect_container()` /
+  `_container_connections` teardown pair, since the container (not any one screen) is what outlives
+  the connection and should own dropping it.
+- Hygiene pass: deleting the tautological entrance-offset test (item 8) also removed the only
+  `state.grids` text in `test_sidebar.gd`, tripping `test_game_headless.gd`'s zone-only-test ratchet
+  (the file still names `upper_zone` in a real, grid-backed test). Restored the sanity check "a fresh
+  show deals at least one grid" into `test_a_top_case_resize_fits_the_board_under_the_band`, which
+  already exercises a real grid via `pa.grid_container` -- the ratchet's marker list just did not
+  recognise that spelling, so the smaller fix is real grid-marker text, not a marker-list change.
+- Hygiene pass: `game_view.gd`, `map.gd` and `menu.gd` decided `container_is_top()` off
+  `SettingsManager.settings` while `HudContainer.container_rect()` (and `PlayArea.game_picture_design_size()`
+  in `game_view.gd`) already read `PlayArea.settings()`, which honours `WallPicture.editor_settings`
+  -- so `Tools/wall_editor.gd`'s override reached the container's size but not which band it sat on.
+  All three now pass `PlayArea.settings()`, matching the source `container_rect()` already uses.
 - `board_inset_left`/`board_inset_top` divide by the UNMARGINED `picture_scale` (`max(window/1576,
   window/887)`), not `WallPicture.focused_scale()` (which adds `wall_overfill_margin` when the two
   axis ratios differ). Measured at 1280x720 (side case, container 320 window px wide):

@@ -52,32 +52,18 @@ func _ready() -> void:
 		_pending_run = null
 		start_run(pending)
 
-const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
-
 # Same hand-over shape as `GameView._bind_hud_container()`: a standalone fixture with no `Main`
 # gets its own private container instead of a null one.
 func _bind_hud_container() -> void:
-	if hud_container == null:
-		hud_container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
-		add_child(hud_container)
-	_connect_container(hud_container.map_deck_button.pressed, _on_deck_clicked)
-	_connect_container(hud_container.container_rect_changed, _publish_map_inset)
+	hud_container = HudContainer.ensure(hud_container, self)
+	hud_container.connect_for_screen(hud_container.map_deck_button.pressed, _on_deck_clicked)
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_map_inset)
 	_publish_map_inset()
 
 # The container OUTLIVES this screen in the real game, but a test may `remove_child` a standalone
 # `Map` -- same teardown shape as `GameView._exit_tree()`.
-var _container_connections : Array[Array] = []
-
-func _connect_container(sig: Signal, callable: Callable) -> void:
-	sig.connect(callable)
-	_container_connections.append([sig, callable])
-
 func _exit_tree() -> void:
-	for pair : Array in _container_connections:
-		var sig : Signal = pair[0] as Signal
-		var callable : Callable = pair[1] as Callable
-		if sig.is_connected(callable):
-			sig.disconnect(callable)
+	hud_container.disconnect_for_screen()
 
 # The map DOES sit in a `WallPicture`, so the container's window px converts through that
 # picture's own cover scale, the same conversion `Menu._apply_container_inset()` uses -- a
@@ -85,7 +71,7 @@ func _exit_tree() -> void:
 func _publish_map_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
-	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	var top := HudContainer.container_is_top(window, PlayArea.settings())
 	var remaining := wall_picture.local_rect_beside(window, rect, top) if wall_picture \
 			else (Rect2(0.0, rect.size.y, window.x, window.y - rect.size.y) if top \
 				else Rect2(rect.size.x, 0.0, window.x - rect.size.x, window.y))

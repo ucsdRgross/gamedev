@@ -23,8 +23,6 @@ var hud_container : HudContainer = null
 # own space. Null only for `Tools/wall_editor.gd`'s preview, whose fallback `hud_container` already lives there.
 var wall_picture : WallPicture = null
 
-const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
-
 # Each content node's own place on the design canvas, captured once before any inset scale --
 # `_fit_beside_container()` re-derives every node's position from these, never from the node's
 # own (already-scaled) `.position`, or a second inset would compound onto the first.
@@ -36,17 +34,20 @@ var _authored_positions : Dictionary[Control, Vector2] = {}
 var _design_rect : Rect2
 
 func _ready() -> void:
-	if hud_container == null:
-		hud_container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
-		add_child(hud_container)
+	hud_container = HudContainer.ensure(hud_container, self)
 	new_run_button.pressed.connect(_on_new_run_pressed)
 	continue_button.pressed.connect(continue_requested.emit)
 	refresh_continue()
 	for content : Control in [_title, _main_control, play_row]:
 		_authored_positions[content] = content.position
 	_design_rect = _content_bounds()
-	hud_container.container_rect_changed.connect(_apply_container_inset)
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _apply_container_inset)
 	_apply_container_inset()
+
+# The container OUTLIVES this screen in the real game, but a test may tear down a standalone
+# `Menu` -- same teardown shape as `GameView._exit_tree()`.
+func _exit_tree() -> void:
+	hud_container.disconnect_for_screen()
 
 # The union of every button under `Main`, the title and the run row -- `_main_control` itself
 # fills the whole window (its authored anchors), so its own rect cannot stand in for it.
@@ -63,7 +64,7 @@ func _content_bounds() -> Rect2:
 func _apply_container_inset() -> void:
 	var window_screen := hud_container.get_viewport().get_visible_rect().size
 	var rect_screen := hud_container.container_rect()
-	var top := HudContainer.container_is_top(window_screen, SettingsManager.settings)
+	var top := HudContainer.container_is_top(window_screen, PlayArea.settings())
 	var remaining := wall_picture.local_rect_beside(window_screen, rect_screen, top) if wall_picture \
 			else (Rect2(0.0, rect_screen.size.y, window_screen.x, window_screen.y - rect_screen.size.y) \
 				if top else Rect2(rect_screen.size.x, 0.0,

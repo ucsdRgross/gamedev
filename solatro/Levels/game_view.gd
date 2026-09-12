@@ -74,13 +74,13 @@ func _ready() -> void:
 	_bind_state(null, game.state)
 
 	## Submit carries the End label; end_show() is the only way to finish the continuous show.
-	_connect_container(submit_button.pressed, func() -> void: game.end_show())
-	_connect_container(undo_button.pressed, _on_undo_pressed)
-	_connect_container((deck_ui.get_node(^"Button") as Button).pressed,
+	hud_container.connect_for_screen(submit_button.pressed, func() -> void: game.end_show())
+	hud_container.connect_for_screen(undo_button.pressed, _on_undo_pressed)
+	hud_container.connect_for_screen((deck_ui.get_node(^"Button") as Button).pressed,
 			func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
-	_connect_container((discard_ui.get_node(^"Button") as Button).pressed,
+	hud_container.connect_for_screen((discard_ui.get_node(^"Button") as Button).pressed,
 			func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
-	_connect_container((rules_ui.get_node(^"Button") as Button).pressed,
+	hud_container.connect_for_screen((rules_ui.get_node(^"Button") as Button).pressed,
 			func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
@@ -95,12 +95,8 @@ func _ready() -> void:
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
-const HUD_CONTAINER_SCENE := preload("res://UI/hud_container.tscn")
-
 func _bind_hud_container() -> void:
-	if hud_container == null:
-		hud_container = HUD_CONTAINER_SCENE.instantiate() as HudContainer
-		add_child(hud_container)
+	hud_container = HudContainer.ensure(hud_container, self)
 	submit_button = hud_container.submit_button
 	undo_button = hud_container.undo_button
 	deck_ui = hud_container.deck_ui
@@ -109,21 +105,10 @@ func _bind_hud_container() -> void:
 	goal_label = hud_container.goal_label
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
-	_connect_container(hud_container.container_rect_changed, _publish_board_inset)
-
-## The container OUTLIVES a per-show `GameView`, so connections must be dropped when it goes.
-var _container_connections : Array[Array] = []
-
-func _connect_container(sig: Signal, callable: Callable) -> void:
-	sig.connect(callable)
-	_container_connections.append([sig, callable])
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_board_inset)
 
 func _exit_tree() -> void:
-	for pair : Array in _container_connections:
-		var sig : Signal = pair[0] as Signal
-		var callable : Callable = pair[1] as Callable
-		if sig.is_connected(callable):
-			sig.disconnect(callable)
+	hud_container.disconnect_for_screen()
 
 ## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
 func _add_prop_debug_controls() -> void:
@@ -206,9 +191,9 @@ func _on_board_changed() -> void:
 func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
-	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
 	var picture_scale := maxf(window.x / design.x, window.y / design.y)
-	if HudContainer.container_is_top(window, SettingsManager.settings):
+	if HudContainer.container_is_top(window, PlayArea.settings()):
 		play_area.board_inset_top = rect.size.y / picture_scale
 		play_area.board_inset_left = 0.0
 	else:

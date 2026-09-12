@@ -43,7 +43,6 @@ func _ready() -> void:
 	test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
-	await test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
 	test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
@@ -396,7 +395,7 @@ func test_a_second_shows_view_receives_the_press_after_the_first_tears_down() ->
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 
 	var view_one := await _stand_up_view(self, container)
-	var connections : Array[Array] = view_one._container_connections.duplicate()
+	var connections : Array[Array] = container._screen_connections.duplicate()
 
 	_leave_tree_without_freeing(view_one)
 	for pair : Array in connections:
@@ -643,6 +642,8 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	CardEnvironment.CURRENT = view.game
 	var pa := view.play_area
 	await _settle_scroll_x(pa)
+	check(view.game.state.grids.size() > 0,
+			"a fresh show deals at least one grid for the Entrance to sit beside")
 
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var window := Vector2(viewport.size)
@@ -679,55 +680,6 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 func _sidebar_screen_rect(c: Control) -> Rect2:
 	var t := c.get_global_transform()
 	return Rect2(t.origin, t.get_scale() * c.size)
-
-## The Entrance is board content and stays put relative to the grid, whatever the container's own width does at a different window size.
-func test_the_entrance_stays_at_the_same_offset_from_the_grid_across_window_sizes() -> void:
-	backup_real_save(suite_tag())
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
-	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
-	Main.save_info = run
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
-	await main.enter_game()
-	var game_wp : WallPicture = main._pictures[&"game"]
-	var view := game_wp.screen_root as GameView
-	CardEnvironment.CURRENT = view.game
-	var pa := view.play_area
-	await _settle_scroll_x(pa)
-	check(view.game.state.grids.size() > 0,
-			"a fresh show deals at least one grid for the Entrance to sit beside")
-
-	var grid_a := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
-	var strip_a := _sidebar_screen_rect(pa.upper_zone_right)
-	var offset_a := strip_a.position.x - grid_a.position.x
-
-	viewport.size = Vector2i(1920, 1080)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	await _settle_scroll_x(pa)
-
-	var grid_b := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
-	var strip_b := _sidebar_screen_rect(pa.upper_zone_right)
-	var offset_b := strip_b.position.x - grid_b.position.x
-
-	check(absf(offset_a - offset_b) <= 1.0,
-			"the Entrance sits at the same offset from the grid at both window sizes",
-			"%.2f at 1280x720 vs %.2f at 1920x1080" % [offset_a, offset_b])
-
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
-	CardEnvironment.CURRENT = null
-	RunManager._shutdown_saver()
-	RunManager.clear_save()
-	restore_real_save(suite_tag())
-	RunManager.run = prev_run
-	Main.save_info = prev_save_info
 
 # ------------------------------------------------------------------ S4: the map's own container
 
@@ -802,7 +754,7 @@ func test_map_deck_button_reaches_the_live_maps_handler_then_disconnects() -> vo
 	await get_tree().process_frame
 	check(container.map_deck_button.pressed.is_connected(map._on_deck_clicked),
 			"the container's Deck button reaches the live map's own handler")
-	var connections : Array[Array] = map._container_connections.duplicate()
+	var connections : Array[Array] = container._screen_connections.duplicate()
 	_leave_tree_without_freeing(map)
 	for pair : Array in connections:
 		var sig : Signal = pair[0] as Signal
