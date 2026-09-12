@@ -156,19 +156,6 @@ def preserve_logs(tag):
         return "NOT PRESERVED (%s)" % problem
 
 
-def keep_streams(text):
-    """Write the run's stdout+stderr beside the log directory, and return the path.
-
-    The streams are the only record of the exit-time errors -- godot.log is already closed when the
-    engine emits them -- and by default they die with the temporary file this script reads them from.
-    """
-    path = os.path.join(os.path.dirname(LOG_DIR),
-                        "run-output-%s.log" % time.strftime("%Y%m%d-%H%M%S"))
-    with open(path, "w", encoding="utf-8", errors="replace") as handle:
-        handle.write(text)
-    return path
-
-
 def wait_or_stall(process, total_timeout, stall_timeout, log_path):
     """Wait for the run, watching the test log's growth. Returns "ok", "timeout" or "stall".
 
@@ -306,7 +293,13 @@ def main():
         print("[exit-time] this run FAILED; logs preserved at: %s" % preserve_logs("failed"))
 
     if args.keep_output:
-        print("[exit-time] this run's stdout+stderr: %s" % keep_streams(streams))
+        # The streams are the only record of the exit-time errors -- godot.log is already closed
+        # when the engine emits them -- and they die with the temporary file they are read from.
+        kept_path = os.path.join(os.path.dirname(LOG_DIR),
+                                 "run-output-%s.log" % time.strftime("%Y%m%d-%H%M%S"))
+        with open(kept_path, "w", encoding="utf-8", errors="replace") as handle:
+            handle.write(streams)
+        print("[exit-time] this run's stdout+stderr: %s" % kept_path)
 
     banner_line = next((line for line in streams.splitlines() if BANNER.search(line)), None)
     saw_banner = banner_line is not None

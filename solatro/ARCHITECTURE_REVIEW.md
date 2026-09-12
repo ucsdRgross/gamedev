@@ -1638,7 +1638,7 @@ Conventions (formerly UNIT_TESTS_PLAN):
   shipped pacing. E2E RUN paid 214 s of one run for exactly that. Deliberately-slow sampling tests
   set their own absolute delays (they need real frames) and call `apply_test_speed()` when done.
 - ⚠ **THE RUN'S LENGTH IS A SERIALIZED CHAIN, not the sum of the suites** — they run concurrently,
-  so `all_tests.gd::_print_finish_order` ranks every suite by FINISH time and the last finisher is
+  so `all_tests.gd::_ready` ranks every suite by FINISH time and the last finisher is
   what you wait on. The chain is INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW
   → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE; everything else sits in a flat 42–55 s
   plateau of startup plus per-frame awaits, PIXELS included — it is not a cost.
