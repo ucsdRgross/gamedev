@@ -21,8 +21,15 @@ enum TerminalOutput { ALL, ERRORS_ONLY }
 @export_range(0.001, 1.0, 0.001) var speed_base_delay : float = 0.01
 
 var _run_start_msec := 0
+# The selection, passed to the scene after `--`: `@logic` for the tier group, anything else a
+# case-insensitive substring of the NODE name (a scene's filename is not always its script's name —
+# test_scoring.gd lives in test_score.tscn). Empty = every suite, the only run that can be green.
 var _filter : PackedStringArray = []
 var _total_suites := 0
+
+# ⚠ Pruning runs in _enter_tree and frees IMMEDIATELY: by _ready every child has already run, and
+# queue_free() defers past the child's own _ready so the suite runs anyway. The child list is
+# duplicated because it is mutated mid-propagation. Removal only — never a reorder.
 
 ## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
 ## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
@@ -38,30 +45,17 @@ func _enter_tree() -> void:
 	_run_start_msec = Time.get_ticks_msec()
 	SettingsManager.isolated = true
 	_total_suites = get_child_count()
-	_filter = _suite_filter()
-	_prune_to_filter()
+	_filter = OS.get_cmdline_user_args()
 	TestLog.begin(terminal_output == TerminalOutput.ERRORS_ONLY)
 	TestLog.speed_base_delay = speed_base_delay
 	TestLog.line("test logs (overwritten each run): %s" % TestLog.paths())
 	if not _filter.is_empty():
+		for child : Node in get_children().duplicate():
+			if _matches_filter(child): continue
+			remove_child(child)
+			child.free()
 		TestLog.line("======== %s ========" % _filter_scope(get_child_count()))
 		_print_filter_warning()
-
-# The selection, passed to the scene after `--`: `@logic` for the tier group, anything else a
-# case-insensitive substring of the NODE name (a scene's filename is not always its script's name —
-# test_scoring.gd lives in test_score.tscn). Empty = every suite, the only run that can be green.
-func _suite_filter() -> PackedStringArray:
-	return OS.get_cmdline_user_args()
-
-# ⚠ Prunes in _enter_tree, which fires parent-first, and frees IMMEDIATELY: by _ready every child
-# has already run, and queue_free() defers past the child's own _ready so the suite runs anyway.
-# The list is duplicated because we mutate it mid-propagation. Removal only — never a reorder.
-func _prune_to_filter() -> void:
-	if _filter.is_empty(): return
-	for child : Node in get_children().duplicate():
-		if _matches_filter(child): continue
-		remove_child(child)
-		child.free()
 
 # A tier is a GROUP on the suite node, so the scene stays the registry it already is everywhere
 # else: a list of tier members in this script would drift the moment a suite is added. Groups are
@@ -85,6 +79,8 @@ func _print_filter_warning() -> void:
 			+ "ran, so the suite count cannot detect a suite that failed to load, and nothing here "
 			+ "says the project is green. Only the full unfiltered run is a verdict.")
 
+# Waits for every suite to report, then prints the grand total and the finish-time ranking — a
+# run's length is its LAST FINISHER, not the sum of the durations, because suites overlap.
 func _ready() -> void:
 	var suites: Array[TestSuite] = []
 	for child in get_children():
@@ -120,16 +116,6 @@ func _ready() -> void:
 				% [scope, passed, failed, failed_behavior, failed_impl, warn_tag], true)
 	if not _filter.is_empty():
 		_print_filter_warning()
-	_print_finish_order(suites)
-	TestLog.line("full logs: %s" % TestLog.paths())
-	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
-	# the play window unless close_when_done is turned off for live inspection).
-	if DisplayServer.get_name() == "headless" or close_when_done:
-		get_tree().quit(mini(failed, 125))
-
-# Every suite ranked by WHEN IT FINISHED, latest first — the run's length is the last finisher,
-# not the sum of the durations, because suites run concurrently and overlap.
-func _print_finish_order(suites: Array[TestSuite]) -> void:
 	var ranked : Array[TestSuite] = suites.duplicate()
 	ranked.sort_custom(func(a: TestSuite, b: TestSuite) -> bool:
 			return a.finish_msec > b.finish_msec)
@@ -138,6 +124,11 @@ func _print_finish_order(suites: Array[TestSuite]) -> void:
 		TestLog.line("  finished %7.2fs   took %6.2fs   %s" % [
 				float(suite.finish_msec - _run_start_msec) / 1000.0,
 				float(suite.elapsed_msec) / 1000.0, suite.suite_name()])
+	TestLog.line("full logs: %s" % TestLog.paths())
+	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
+	# the play window unless close_when_done is turned off for live inspection).
+	if DisplayServer.get_name() == "headless" or close_when_done:
+		get_tree().quit(mini(failed, 125))
 
 ## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
 ## GREENS THROUGH** (owner: *"suite should fail on unexpected errors in error stream so
