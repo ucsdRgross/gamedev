@@ -270,11 +270,15 @@ func test_info_mode_inspects_instead_of_grabbing() -> void:
 	check(control != null, "a dealt board offers a focusable card control")
 	if not control: return
 	var entries : Array[InfoEntry] = []
-	pa.info_requested.connect(func(e: InfoEntry) -> void: entries.append(e))
+	var had_visual : Array[bool] = []
 	var was_info : bool = SettingsManager.settings.wall_info_mode
 	SettingsManager.settings.wall_info_mode = true
 	selections.clear()
 	pa.ungrab_cards()
+	await mouse_move_to(center_of(control))
+	pa.info_requested.connect(func(e: InfoEntry) -> void:
+			entries.append(e)
+			had_visual.append(e.visual != null))
 
 	await mouse_click(center_of(control))
 
@@ -286,8 +290,7 @@ func test_info_mode_inspects_instead_of_grabbing() -> void:
 	check(pa.selected_cards.is_empty(), "...so nothing is left held", str(pa.selected_cards.size()))
 	if entries.size() == 1:
 		check(not entries[0].title.is_empty(), "the entry carries the card's name", entries[0].title)
-		check(entries[0].visual != null, "...and a preview visual of the card itself")
-		if entries[0].visual: entries[0].visual.free()
+		check(had_visual[0], "...and a preview visual of the card itself")
 	check(pa._focus_info == null or not pa._focus_info.visible,
 			"the board's own in-screen inspector stays hidden -- the info card is the one system")
 

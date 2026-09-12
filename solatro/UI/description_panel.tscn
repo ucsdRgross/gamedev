@@ -6,5 +6,35 @@
 script = ExtResource("1_desc")
 
 [node name="Scroll" type="ScrollContainer" parent="."]
-layout_mode = 2
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TopRow" type="HBoxContainer" parent="Scroll/Content"]
+layout_mode = 2
+
+[node name="VisualSlot" type="HBoxContainer" parent="Scroll/Content/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Scroll/Content/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 20
+
+[node name="Body" type="Label" parent="Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3

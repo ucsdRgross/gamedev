@@ -54,3 +54,27 @@
   `picture_scale` 0.812183 gives `board_inset_left` 394.0 picture px (the gate); the live camera's
   `focused_scale` 0.828427 puts the rendered board edge 6.4 window px right of the container's own
   edge -- a gap, never an overlap, so the 394/262.7 gates stay on `picture_scale`.
+- S5: `DescriptionPanel.show_entry(entry, panel_size)` and `detach_entry()` are new methods NAMES.md
+  does not list. The panel is HANDED the container's own `container_rect()` size rather than reading
+  a width knob, because `InfoCard`'s `wall_info_card_*` knobs are S9's to delete (C5, B2).
+- S5 ownership, one rule: the PANEL owns the visual while it is mounted and frees it when another
+  entry replaces it; `HudContainer` owns each screen's remembered entry -- detached (not freed) on
+  leaving that screen, re-mounted on return, and the detached ones freed in `_exit_tree()` (Q19=c).
+- S5: per-screen memory lives on `HudContainer` as `_entry_by_screen`, with `_stash_description()`
+  and `_restore_description()` hanging off the existing `set_active_screen()` -- that focus id is
+  already the only key every call site has in hand (B15, B16, Q20=b).
+- S5: the description's card visual is built in `CardVisual.DisplayContext.PREVIEW`, whose size is
+  the board's own `card_size_play` (`DECK_VIEWER`, the previous context, is 2x). It is NOT scaled by
+  the live `board_zoom`: that is a view scale which changes with focus mode, not the card's size (Q34=b).
+- S5: "frozen" is `CardVisual.floating = false`, which stops the idle and snaps the card face-on --
+  the one flag the rig's own animation runs off (Q35=b).
+- S5: the top row is the visual LEFT, the name right -- the notecard's own arrangement rotated for a
+  tall panel, which is what `Q33`=c names. The body sits below, at the panel's full width.
+- S5: `PlayArea._publish_focus_description(control)` is a new private method: every highlight
+  publishes from `on_control_focus_entered`, so hover and key/pad share one site (B1). The click
+  emits and their Info-mode gate are untouched.
+- S5 corrects the step brief: while `wall_info_mode` is on the legacy `InfoCard` takes the entry
+  INSTEAD of the container, not as well. Both surfaces reparent `entry.visual` and a node has one
+  parent, so exactly one may own it; Info mode is off by default and S9 deletes the branch.
+- S5: `test_wall_focus.gd`'s dropped-entry test asserted the pre-S5 rule (Info mode off => the
+  visual is freed). Re-aimed at the rule that replaces it: whatever SHOWS the entry owns its visual.

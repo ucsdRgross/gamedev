@@ -83,7 +83,7 @@ func _ready() -> void:
 	hud_container.connect_for_screen((rules_ui.get_node(^"Button") as Button).pressed,
 			func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
 	play_area.data_selected.connect(_on_data_selected)
-	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
+	play_area.info_requested.connect(_relay_info_requested)
 	play_area.overview_pan_requested.connect(
 			func(grid_index: int) -> void: overview_pan_requested.emit(grid_index))
 	play_area.overview_bounce_requested.connect(
@@ -204,6 +204,14 @@ func _publish_board_inset() -> void:
 func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
 	_wall_camera = camera
 	_wall_rect_centre_x = rect_centre_x
+
+# An entry carries a LIVE preview card the board built for it, so the relay owns what it cannot
+# pass on: a standalone fixture has no `Main` listening and would orphan one preview per highlight.
+func _relay_info_requested(entry: InfoEntry) -> void:
+	if info_requested.get_connections().is_empty():
+		entry.visual.queue_free()
+		return
+	info_requested.emit(entry)
 
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy

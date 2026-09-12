@@ -67,7 +67,7 @@ func _ready() -> void:
 	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
 	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, PICTURE_WALL.md, J1, J6)")
 	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
-	await test_a_dropped_info_entry_does_not_leak_its_visual()
+	await test_a_published_info_entry_is_owned_by_whatever_shows_it()
 	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, PICTURE_WALL.md, J7, Q133=b)")
 	await test_hovering_a_picture_in_info_mode_describes_it()
 	behavior_section("ONE MOVE AT A TIME (C5, PICTURE_WALL.md, Q56=b, §1.6)")
@@ -1118,15 +1118,10 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 
 # ------------------------------------------------------------------ dropped-entry leak
 
-## An entry the wall DROPS (Info mode off) must not leave its visual behind.
-##
-## ⚠ `map.gd` builds the entry eagerly and unconditionally -- deliberately, because a screen "has no
-## business deciding whether Info mode wants it shown" -- and for a booster node `get_info()`'s
-## visual is a container holding one live preview card per card in the pack. `InfoEntry` is
-## RefCounted so the entry itself goes, but `entry.visual` is a NODE that was never added to any
-## tree: dropping the reference orphaned it in ObjectDB for the whole session. Info mode is
-## force-cleared at every launch (C3), so OFF is the NORMAL state and this was the normal path.
-func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
+# `entry.visual` is a NODE that was never added to any tree, so whoever the wall hands it to owns
+# it. Outside Info mode that is the container's description panel, which mounts it; inside Info
+# mode it is the info card. Neither may leave it orphaned in ObjectDB for the session.
+func test_a_published_info_entry_is_owned_by_whatever_shows_it() -> void:
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	get_tree().paused = false   # concurrency workaround, same as every other Main fixture here
@@ -1140,9 +1135,11 @@ func test_a_dropped_info_entry_does_not_leak_its_visual() -> void:
 	check(is_instance_valid(visual), "sanity: the visual exists before the hover")
 
 	main._on_screen_info_hovered(entry)
-	await get_tree().process_frame   # queue_free() lands at the end of the frame
-	check(not is_instance_valid(visual),
-			"the dropped entry's visual is freed, not orphaned in ObjectDB for the session")
+	await get_tree().process_frame
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	check(is_instance_valid(visual) and visual.get_parent() == panel.get_node(^"%VisualSlot"),
+			"with Info mode off the container's description panel takes the entry's visual")
 
 	# And the opposite half: an entry the wall SHOWS must keep its visual.
 	SettingsManager.settings.wall_info_mode = true

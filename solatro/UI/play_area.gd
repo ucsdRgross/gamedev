@@ -2,8 +2,7 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
-## A card was CLICKED while Info mode is on. Carries the card's own `InfoEntry` for the wall's one
-## info card; `data_selected` is deliberately NOT emitted for the same press.
+## A card is highlighted, or clicked while Info mode is on: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
 ## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
 ## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
@@ -2789,6 +2788,14 @@ func create_card_control() -> Control:
 				if focused_control == new_control: hide_focus_info())
 	return new_control
 
+# EVERY highlight publishes its card's description -- mouse hover and key/pad selection alike,
+# because `mouse_entered` grabs focus and focus is the one signal both modes share. Losing the
+# highlight publishes NOTHING: the description keeps the last card rather than blinking out.
+func _publish_focus_description(control: Control) -> void:
+	if not ui_data.has(control): return
+	if info_requested.get_connections().is_empty(): return
+	info_requested.emit(card_info(ui_data[control]))
+
 var focused_visual : CardVisual
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild() #reads ui_data / data_card
@@ -2811,6 +2818,7 @@ func on_control_focus_entered(control:Control) -> void:
 		_show_focus_info(control, ui_data[control])
 	else:
 		hide_focus_info()
+	_publish_focus_description(control)
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
 	# controls by fixed child index on every focus -- written when child 0 was the zone header and
@@ -2891,7 +2899,7 @@ static func card_info(data: CardData) -> InfoEntry:
 	entry.body = split[1] if split.size() > 1 else ""
 	var flow := FlowContainer.new()
 	entry.visual = flow
-	CardsViewer.new(flow).populate([data] as Array[CardData])
+	CardsViewer.new(flow, CardVisual.DisplayContext.PREVIEW).populate([data] as Array[CardData])
 	return entry
 
 func _show_focus_info(control: Control, data: CardData) -> void:

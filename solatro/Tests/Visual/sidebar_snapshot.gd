@@ -10,6 +10,7 @@ const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
+const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
@@ -76,6 +77,15 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(TOP_CASE_OUT_PATH)
 
+	DisplayServer.window_set_size(window_size)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_hover_a_board_card(main, view)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DESCRIPTION_OUT_PATH)
+
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -100,6 +110,19 @@ func _deal_is_settled(pa: PlayArea) -> bool:
 		if visual.move_tween and visual.move_tween.is_running():
 			return false
 	return true
+
+# The description's own still: a REAL pointer on a real board card, pushed into the game picture's
+# own SubViewport, which is the space the board's controls are laid out in.
+func _hover_a_board_card(main: Main, view: GameView) -> void:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var rect := Rect2(Vector2.ZERO, Vector2(viewport.size))
+	for control : Control in view.play_area.ui_data:
+		if not rect.encloses(control.get_global_rect()): continue
+		var motion := InputEventMouseMotion.new()
+		motion.position = control.get_global_rect().get_center()
+		motion.global_position = motion.position
+		viewport.push_input(motion)
+		return
 
 # The map area shows only its loading text until generation finishes -- wait for that state
 # rather than a fixed sleep, so the still is never caught mid-generation.

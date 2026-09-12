@@ -679,18 +679,12 @@ func _on_info_toggled(active: bool) -> void:
 	# moving -- which is this, exactly as for the other two movers.
 	_settle_after_deferred_resize()
 
-## A focused screen published something hoverable. Shown on the wall's ONE card, and ONLY while
-## Info mode is on. Ignored silently otherwise — a screen has no business checking the flag before
-## it speaks.
+# A focused screen published something hoverable, and the wall's ONE container swaps its contents
+# to that description. Info mode's own card is what takes the entry while that mode is on: both
+# surfaces REPARENT `entry.visual`, and a node has one parent, so exactly one of them may have it.
 func _on_screen_info_hovered(entry: InfoEntry) -> void:
 	if not SettingsManager.settings.wall_info_mode:
-		# ⚠ FREE THE DROPPED ENTRY'S VISUAL. Screens build entries eagerly, and for a booster node
-		# that is a container holding one live preview card per card in the pack. `InfoEntry` is
-		# RefCounted, but `entry.visual` is a NODE never added to any tree, so dropping the
-		# reference orphans it in ObjectDB for the rest of the session. Info mode is off by
-		# default, so this is the NORMAL path, once per hover-enter.
-		if entry and entry.visual and is_instance_valid(entry.visual):
-			entry.visual.queue_free()
+		(wall.get_node(^"%HudContainer") as HudContainer).show_description(entry)
 		return
 	var info_card : InfoCard = wall.get_node(^"%Overlay/InfoCard")
 	var before := info_card.size.y if info_card.visible else -1.0

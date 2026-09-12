@@ -3,6 +3,7 @@ extends PanelContainer
 ## The one container on the wall overlay: shows the HUD or the description, never both.
 
 @onready var _hud_stack : Control = %HudStack
+@onready var _description_margin : MarginContainer = %DescriptionMargin
 @onready var _description_panel : DescriptionPanel = %DescriptionPanel
 @onready var _game_hud_margin : MarginContainer = %HudStack/GameHudMargin
 @onready var _game_hud : Control = %GameHud
@@ -36,6 +37,9 @@ static func ensure(existing: HudContainer, parent: Node) -> HudContainer:
 	parent.add_child(container)
 	return container
 
+## How far the overlay's button row reaches down into the container -- BOTH contents start below it.
+var _band_top : float = 0.0
+
 ## Connections a screen made on this container, dropped by `disconnect_for_screen()` when that screen tears down.
 var _screen_connections : Array[Array] = []
 
@@ -68,7 +72,9 @@ func _ready() -> void:
 # Only mounted under a `WallOverlay` in `wall.tscn`; a standalone instance (as the tests build) never connects.
 func _position_below_overlay_buttons() -> void:
 	var overlay := get_parent() as WallOverlay
-	_game_hud_margin.add_theme_constant_override("margin_top", ceili(overlay.button_band_bottom()))
+	_band_top = overlay.button_band_bottom()
+	_game_hud_margin.add_theme_constant_override("margin_top", ceili(_band_top))
+	_description_margin.add_theme_constant_override("margin_top", ceili(_band_top))
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -115,19 +121,53 @@ static func rect_for_window(window: Vector2, settings_res: PlayerSettings) -> Re
 static func _container_px(reference: float, settings_res: PlayerSettings) -> float:
 	return minf(settings_res.container_size_fraction * reference, settings_res.container_size_max_px)
 
+## The description each screen was last showing, so coming back returns to what you were reading rather than the HUD.
+var _entry_by_screen : Dictionary[StringName, InfoEntry] = {}
+## Which screen's description is on the panel now -- the key a new one is remembered under.
+var _active_screen : StringName = &""
+
 # Which screen's HUD content shows inside the stack, keyed by `Main`'s own focus id (`&"game"`,
 # `&"map"`, `&"start_menu"`, or `&""` for wall view). The container itself hides entirely at wall
 # view; the menu shows it with neither child visible.
 func set_active_screen(screen: StringName) -> void:
+	if screen != _active_screen:
+		_stash_description()
+		_active_screen = screen
+		_restore_description()
 	visible = screen != &""
 	if not visible: return
 	_game_hud.visible = screen == &"game"
 	_map_hud.visible = screen == &"map"
+
+# Leaving a screen keeps that screen's own description: the visual is DETACHED rather than freed,
+# so the entry is still whole when the player comes back to it.
+func _stash_description() -> void:
+	_description_panel.detach_entry()
+	show_hud()
+
+# Arriving at a screen re-shows what it was reading, immediately and with no animation -- or the
+# HUD, when that screen has read nothing yet.
+func _restore_description() -> void:
+	var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
+	if remembered == null:
+		show_hud()
+		return
+	show_description(remembered)
 
 func show_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
 
 func show_description(entry: InfoEntry) -> void:
+	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
-	_description_panel.visible = true
+	_description_panel.show_entry(entry, container_rect().size - Vector2(0.0, _band_top))
+
+# A stashed visual is a NODE outside the tree that nothing else will collect. The MOUNTED one is
+# the panel's own child and goes with the tree, so only the detached ones are freed here.
+func _exit_tree() -> void:
+	for screen : StringName in _entry_by_screen:
+		var visual : Node = _entry_by_screen[screen].visual
+		if visual and is_instance_valid(visual) and visual.get_parent() == null:
+			visual.queue_free()
+	_entry_by_screen.clear()

@@ -52,6 +52,11 @@ func _ready() -> void:
 	await test_menus_buttons_lie_outside_the_container_and_inside_the_window()
 	await test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect()
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
+	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
+	await test_a_highlight_opens_the_description()
+	await test_losing_the_highlight_keeps_the_last_entry()
+	await test_leaving_and_returning_restores_the_screens_own_description()
+	await test_a_new_entry_frees_the_visual_it_replaces()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -978,3 +983,257 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
+
+# ------------------------------------------------------------------ S5: publish and show
+
+# The deal spawns its card controls a frame behind `enter_game()`, so the board is waited FOR
+# rather than slept on. Bounded: a real hang is a bug to surface, not one to spin on.
+const CARD_CONTROL_TIMEOUT_SEC := 5.0
+
+var _prev_run : RunState = null
+var _prev_save_info : RunState = null
+## The live fixture the S5 tests share, so four tests do not each re-derive the same five nodes.
+var _main : Main = null
+var _container : HudContainer = null
+var _panel : DescriptionPanel = null
+var _play_area : PlayArea = null
+var _game_viewport : SubViewport = null
+var _booted_viewport : SubViewport = null
+
+# A real `Main` on a dealt game screen: the only fixture that proves the WHOLE route -- the board's
+# focus, `GameView`'s relay, `Main`'s handler and the container's swap -- with nothing stubbed.
+func _start_game_fixture() -> void:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	_booted_viewport = booted[0]
+	_main = booted[1]
+	await _focus_map(_main, run)
+	await _main.enter_game()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	CardEnvironment.CURRENT = view.game
+	_play_area = view.play_area
+	_game_viewport = _main._pictures[&"game"].viewport
+	_container = _main.wall.get_node(^"%HudContainer")
+	_panel = _container.get_node(^"%DescriptionPanel")
+
+func _end_game_fixture() -> void:
+	await _free_booted_main(_booted_viewport, _main)
+	_booted_viewport = null
+	_main = null
+	_container = null
+	_panel = null
+	_play_area = null
+	_game_viewport = null
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = _prev_run
+	Main.save_info = _prev_save_info
+
+# Card controls the pointer can genuinely land ON: alive, on screen, wholly inside the game
+# picture's own viewport (the space a board control's global rect is measured in), and with a
+# centre no other control covers -- board cards overlap in a stack, so the two must be distinct.
+func _hoverable_card_controls() -> Array[Control]:
+	var rect := Rect2(Vector2.ZERO, Vector2(_game_viewport.size))
+	var waited := 0.0
+	var out : Array[Control] = []
+	while waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		_play_area.flush_rebuild()
+		var every : Array[Control] = []
+		for control : Control in _play_area.ui_data:
+			if is_instance_valid(control): every.append(control)
+		out.clear()
+		for control : Control in every:
+			if not control.is_visible_in_tree(): continue
+			if rect.encloses(control.get_global_rect()) and not _is_covered(control, every):
+				out.append(control)
+		if out.size() >= 2: break
+	return out
+
+func _is_covered(control: Control, others: Array[Control]) -> bool:
+	var centre := control.get_global_rect().get_center()
+	for other : Control in others:
+		if other != control and other.get_global_rect().has_point(centre): return true
+	return false
+
+# A REAL pointer, pushed into the game picture's own SubViewport where the board's controls live,
+# so the route under test is the product's own: mouse_entered grabs focus, and focus publishes.
+func _hover(at: Vector2) -> void:
+	var motion := InputEventMouseMotion.new()
+	motion.position = at
+	motion.global_position = at
+	_game_viewport.push_input(motion)
+
+# The pointer is walked across the candidates until the BOARD ITSELF reports a different card
+# under it. Which control a point hits is the engine's answer, not the test's: cards overlap in a
+# stack and the strips clip, so a rect's own centre is not always hit-testable.
+func _hover_another_card(controls: Array[Control], avoid: Control) -> Control:
+	for control : Control in controls:
+		if control == avoid: continue
+		_hover(control.get_global_rect().get_center())
+		await get_tree().process_frame
+		var hovered : Control = _play_area.moused_hovered_control
+		if hovered != null and hovered != avoid and _play_area.ui_data.has(hovered):
+			return hovered
+	return null
+
+# Bare board: a point belonging to no card control, so the pointer leaving everything is a real
+# mouse exit rather than the test merely declining to publish.
+func _bare_board_point(controls: Array[Control]) -> Vector2:
+	var board := Vector2(_game_viewport.size)
+	for step : int in 20:
+		var candidate := Vector2(board.x - 4.0, 4.0 + step * board.y / 20.0)
+		var covered := false
+		for control : Control in controls:
+			if control.get_global_rect().has_point(candidate): covered = true
+		if not covered: return candidate
+	return Vector2(board.x - 4.0, 4.0)
+
+# The text the board publishes for a card, split the way `PlayArea.card_info()` splits it: the
+# first line is the card's name, the rest is its description.
+func _expected_text(data: CardData) -> PackedStringArray:
+	return ControlCard.describe_card(data).split("\n", false, 1)
+
+func _preview_card(node: Node) -> ControlCard:
+	var card := node as ControlCard
+	if card: return card
+	for child : Node in node.get_children():
+		var found := _preview_card(child)
+		if found: return found
+	return null
+
+## 1.2/B1/B2: a highlight -- key/pad focus or a real mouse hover -- swaps the container to that card's description.
+func test_a_highlight_opens_the_description() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var title : Label = _panel.get_node(^"%Title")
+	var body : Label = _panel.get_node(^"%Body")
+	var slot : Control = _panel.get_node(^"%VisualSlot")
+
+	var spelled := InfoEntry.new()
+	spelled.title = "A"
+	spelled.body = "B"
+	_container.show_description(spelled)
+	check(_panel.visible and not hud_stack.visible,
+			"the description replaces the HUD, never both and never neither (B2)")
+	check(title.text == "A", "...and the title reads the entry's name", title.text)
+	check(body.text == "B", "...and the body reads its description", body.text)
+
+	var controls := await _hoverable_card_controls()
+	check(controls.size() >= 2, "the dealt board offers two reachable card controls",
+			str(controls.size()))
+	if controls.size() >= 2:
+		_container.show_hud()
+		controls[0].grab_focus()
+		await get_tree().process_frame
+		check(_panel.visible and not hud_stack.visible,
+				"key/pad selection onto a card opens the description (B1)")
+		check(title.text == _expected_text(_play_area.ui_data[controls[0]])[0],
+				"...and the title reads that card's own name", title.text)
+		check(not body.text.is_empty(), "...and the body carries its description", body.text)
+		var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+		check(title.get_global_rect().position.y >= overlay.button_band_bottom(),
+				"the name starts below the overlay's own button row, as the HUD does (Q46)",
+				"%.1f vs %.1f" % [title.get_global_rect().position.y, overlay.button_band_bottom()])
+		var entry : InfoEntry = _panel.current_entry
+		check(entry != null and entry.visual != null and entry.visual.get_parent() == slot,
+				"the card's own visual is mounted in the panel (Q33=c)")
+		if entry != null and entry.visual != null:
+			var preview := _preview_card(entry.visual)
+			check(preview != null and preview.child != null, "...and it is a real preview card")
+			if preview != null and preview.child != null:
+				check(preview.child.card_size == CardVisual.card_size_play,
+						"...at the board's own card size (Q34=b)", str(preview.child.card_size))
+				check(not preview.child.floating, "...frozen rather than idling (Q35=b)")
+				check(preview.focus_mode == Control.FOCUS_NONE
+						and preview.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+						"...and inert: it takes no pad focus and swallows no click")
+		var hovered := await _hover_another_card(controls, controls[0])
+		check(hovered != null, "the pointer can land on a card other than the pad's own")
+		check(_panel.visible and not hud_stack.visible,
+				"a real mouse hover opens it by the same rule as the pad (B1)")
+		if hovered != null:
+			check(title.text == _expected_text(_play_area.ui_data[hovered])[0],
+					"...and the title follows the card the pointer is on", title.text)
+	await _end_game_fixture()
+
+## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.
+func test_losing_the_highlight_keeps_the_last_entry() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var title : Label = _panel.get_node(^"%Title")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		var shown : InfoEntry = _panel.current_entry
+		check(shown != null, "hovering a card opened the description")
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_panel.visible and not hud_stack.visible,
+				"the description STAYS when the pointer leaves every card (B4)")
+		check(shown != null and _panel.current_entry == shown,
+				"...still the very same entry, by identity (Q32=a)")
+		check(title.text == _expected_text(_play_area.ui_data[controls[0]])[0],
+				"...still reading the card the pointer left", title.text)
+	await _end_game_fixture()
+
+## 1.14/B15/B16/Q19=c/Q20=b: each screen remembers its own last description and gets it back on return.
+func test_leaving_and_returning_restores_the_screens_own_description() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var slot : Control = _panel.get_node(^"%VisualSlot")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		var shown : InfoEntry = _panel.current_entry
+		check(shown != null, "the game screen has a description to remember")
+
+		await _main._focus_picture(&"map")
+		check(hud_stack.visible and not _panel.visible,
+				"the map has read nothing of its own, so it shows its own HUD (B15)")
+
+		await _main._focus_picture(&"game")
+		check(_panel.visible and not hud_stack.visible,
+				"coming back re-shows the game's description immediately (B16, Q20=b)")
+		check(shown != null and _panel.current_entry == shown,
+				"...and it is the very entry that screen was left on (Q19=c)")
+		check(shown != null and shown.visual != null and shown.visual.get_parent() == slot,
+				"...with its own visual back in the panel")
+	await _end_game_fixture()
+
+## The panel OWNS the mounted visual: the next entry frees the last, so reading along a row of cards leaks no preview.
+func test_a_new_entry_frees_the_visual_it_replaces() -> void:
+	await _start_game_fixture()
+	var slot : Control = _panel.get_node(^"%VisualSlot")
+	var controls := await _hoverable_card_controls()
+	check(controls.size() >= 2, "the dealt board offers two reachable card controls",
+			str(controls.size()))
+	if controls.size() >= 2:
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		var shown_on : Control = _play_area.moused_hovered_control
+		var first : Node = _panel.current_entry.visual if _panel.current_entry else null
+		check(first != null, "the first hover mounted a visual")
+		var hovered := await _hover_another_card(controls, shown_on)
+		await get_tree().process_frame
+		check(hovered != null, "the pointer moved onto a different card")
+		check(not is_instance_valid(first),
+				"the replaced entry's visual is freed, not orphaned",
+				"%d visual(s) left in the slot" % slot.get_child_count())
+		check(_panel.current_entry != null and _panel.current_entry.visual != first,
+				"...and the panel shows the next card's own visual")
+	await _end_game_fixture()

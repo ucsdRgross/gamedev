@@ -158,6 +158,11 @@ layout_mode = 2
 clip_text = true
 text = "Deck"
 
-[node name="DescriptionPanel" parent="." instance=ExtResource("2_desc")]
+[node name="DescriptionMargin" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DescriptionPanel" parent="DescriptionMargin" instance=ExtResource("2_desc")]
 unique_name_in_owner = true
 layout_mode = 2
