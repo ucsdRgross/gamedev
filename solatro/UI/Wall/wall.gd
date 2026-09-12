@@ -123,21 +123,6 @@ signal back_requested
 ## `FocusStack`, so only it can say whether there is anything ahead.
 signal forward_requested
 
-## Info was toggled from the KEYBOARD. Carries no state: `WallOverlay`'s toggle button is the one
-## source of truth for whether Info is on, so `Main` flips THAT and lets the existing `info_toggled`
-## chain run rather than writing `wall_info_mode` from a second place and leaving the button
-## reading un-pressed.
-signal info_toggle_requested
-
-## The pointer moved onto a DIFFERENT picture in wall view, or off every picture (`&""`). Fired on
-## CHANGE only, never per motion event. `Wall` deliberately does not call `get_info()` itself: only
-## `Main` knows whether Info mode wants an entry, and building one per motion event when it does not
-## would allocate a preview node per frame and leak it.
-signal picture_hovered(picture_id: StringName)
-
-## The picture the pointer was last over in wall view, so `picture_hovered` fires on change only.
-var _hovered_id : StringName = &""
-
 ## ⚠ Emitted BY `Main`, not by this class: `Wall` does not orchestrate focus or transitions, so
 ## only `Main` knows the exact moment each of these occurs.
 signal focus_changed(picture_id: StringName)
@@ -243,14 +228,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				pan_by((event as InputEventMouseMotion).relative)
 				return
-			# Hover tracking. NOT marked handled: hovering is an observation, and consuming every
-			# motion event would starve anything else reading them.
-			var motion := event as InputEventMouseMotion
-			var over : StringName = _picture_at(
-					get_viewport().canvas_transform.affine_inverse() * motion.position)
-			if over != _hovered_id:
-				_hovered_id = over
-				picture_hovered.emit(over)
 	# Pinch reaches here only if the focused screen did not consume the touch first, like every
 	# other wall-level action. Pinch-OUT mirrors ui_accept (wall view only, commits the current
 	# selection); pinch-IN goes to wall view, which is why it emits `wall_view_entered` while
@@ -286,10 +263,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"wall_forward"):
 		get_viewport().set_input_as_handled()
 		forward_requested.emit()
-		return
-	if event.is_action_pressed(&"wall_info"):
-		get_viewport().set_input_as_handled()
-		info_toggle_requested.emit()
 		return
 	for n : int in range(1, 10):
 		if event.is_action_pressed(StringName("wall_jump_%d" % n)):

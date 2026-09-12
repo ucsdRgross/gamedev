@@ -20,8 +20,7 @@ extends Node2D
 ## two instances, two sets of numbers, and the preview stops being evidence about anything.
 static var editor_settings : PlayerSettings = null
 
-## Which `PlayerSettings` the wall reads. The ONE place that answers it: `Wall`, `InfoCard` and
-## `WallInput`'s callers all come through here rather than re-deriving the rule.
+## The ONE place that answers which `PlayerSettings` the wall reads; nothing re-derives the rule.
 static func settings() -> PlayerSettings:
 	if editor_settings: return editor_settings
 	return FxAttachment.settings()
@@ -436,17 +435,9 @@ static func focused_scale(native_size: Vector2, window_size: Vector2,
 		return fill
 	return fill * overfill_margin
 
-## Where the camera RESTS on `rect` — the info pose while Info mode is on, the ordinary focused
-## pose otherwise. Same `{"position", "zoom"}` shape as `info_zoom_state()`.
-##
-## ⚠ **EVERY MOVE MUST AIM HERE, not at the focused pose.** A move computed against
-## `focused_scale()` while Info mode is on lands at the ordinary pose and is then CUT to the info
-## pose by the settle — the camera zooms into the screen and snaps back out, as if Info mode were
-## not on until the instant it arrived. The destination of a move IS its resting pose.
-static func resting_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		card_height_px: float = -1.0) -> Dictionary:
-	if settings.wall_info_mode:
-		return info_zoom_state(rect, window_size, settings, card_height_px)
+## ⚠ EVERY MOVE MUST AIM HERE: a move's destination IS its resting pose, or the settle cuts it.
+static func resting_state(rect: PictureRect, window_size: Vector2,
+		settings: PlayerSettings) -> Dictionary:
 	return {"position": rect.centre,
 			"zoom": focused_scale(rect.size, window_size, settings.wall_overfill_margin)}
 
@@ -455,8 +446,8 @@ static func resting_state(rect: PictureRect, window_size: Vector2, settings: Pla
 ## continuously; `grid_state()` below is just this evaluated at one of its discrete target values,
 ## so a drag and a grid step never feel like two different mechanisms.
 static func panned_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		offset_x: float, card_height_px: float = -1.0) -> Dictionary:
-	var state := resting_state(rect, window_size, settings, card_height_px)
+		offset_x: float) -> Dictionary:
+	var state := resting_state(rect, window_size, settings)
 	var rest_position : Vector2 = state["position"]
 	state["position"] = Vector2(rest_position.x + offset_x, rest_position.y)
 	return state
@@ -469,9 +460,8 @@ static func panned_state(rect: PictureRect, window_size: Vector2, settings: Play
 ## pure function of its own inputs rather than reaching into `PlayArea`'s live view-mode state to
 ## rediscover them.
 static func grid_state(rect: PictureRect, window_size: Vector2, settings: PlayerSettings,
-		grid_index: int, resting_grid: int, pitch: float, card_height_px: float = -1.0) -> Dictionary:
-	return panned_state(rect, window_size, settings, pitch * float(grid_index - resting_grid),
-			card_height_px)
+		grid_index: int, resting_grid: int, pitch: float) -> Dictionary:
+	return panned_state(rect, window_size, settings, pitch * float(grid_index - resting_grid))
 
 ## `pan_x` re-expressed as the nearest whole grid step on a board of `grid_count` grids resting on
 ## `resting_grid`, clamped into that board.
@@ -487,71 +477,6 @@ static func snap_pan_to_grid(pan_x: float, pitch: float, resting_grid: int,
 		return 0.0
 	var index := clampi(resting_grid + int(roundf(pan_x / pitch)), 0, grid_count - 1)
 	return pitch * float(index - resting_grid)
-
-## Camera position/zoom for a picture in Info mode, as `{"position": Vector2, "zoom": float}`.
-##
-## ⚠ **THE POINT IS THAT NOTHING IS COVERED.** Info mode exists to read a screen while a card
-## describes it, so neither the window edge nor the card may hide any of it. Two things follow:
-##  * **Zoom out, never pan.** Panning down to reveal the bottom frame drags the top of the visible
-##    rect with it and crops the top of the screen — content lost behind the window edge.
-##  * **Zoom out far enough to clear the CARD too**, not just the window. The card is reserved out
-##    of the window before the picture is fitted, so the whole screen lands ABOVE it.
-##
-## `wall_info_card_overlap` is the one part the card may cover — it keeps the card reading as
-## something in FRONT of the picture rather than a band beside it.
-##
-## ⚠ **`card_height_px` IS THE CARD'S LIVE HEIGHT, and passing it matters.** Reserving
-## `wall_info_card_max_height` instead reserves the WORST case on every entry — a two-line caption
-## then pulls the camera back as far as the longest description would, which reads as being thrown
-## out to the wall. Callers that have a card on screen pass its real height; the cap is only the
-## fallback for callers that have no card, such as the transition's own info branch.
-static func info_zoom_state(rect: PictureRect, window_size: Vector2,
-		settings: PlayerSettings, card_height_px: float = -1.0) -> Dictionary:
-	# Reserve the card out of the window first: its real height, less the overlap it is allowed.
-	# The picture is then fitted into what is LEFT.
-	var card_height := card_height_px if card_height_px >= 0.0 \
-			else settings.wall_info_card_max_height
-	var reserve := maxf(card_height - settings.wall_info_card_overlap, 0.0)
-	var free_height := maxf(window_size.y - reserve, 1.0)
-	# ⚠ **WHAT IS FITTED IS THE SUB-RECT THE FOCUSED POSE SHOWS, NOT THE WHOLE PICTURE.** A picture
-	# several window-widths wide is one the focused camera never showed whole either, so fitting all
-	# of it would pull the camera back until the screen the card is describing is unreadable — which
-	# is the opposite of what Info mode is for. On a picture already at the window's aspect the two
-	# are the same rect and nothing moves.
-	var framed := window_size / maxf(
-			focused_scale(rect.size, window_size, settings.wall_overfill_margin), 0.0001)
-	# "Fit", the MIN of the two axis ratios — against `focused_scale()`'s "fill" MAX, which is what
-	# crops. Nothing of the framed view is cropped at or below this.
-	var zoom := minf(window_size.x / framed.x, free_height / framed.y)
-	# The picture now sits in the TOP `free_height` of the window, so its centre must appear above
-	# the window's centre by half the reserve. The camera therefore sits BELOW the picture's centre
-	# by that same distance in wall units.
-	var delta := reserve / (2.0 * maxf(zoom, 0.0001))
-	return {"position": rect.centre + Vector2(0.0, delta), "zoom": zoom}
-
-## This picture's info-mode entry. Strings are resolved HERE, not stored on the entry —
-## `InfoEntry` is "already localised by the caller" — under the same `<THING>` /
-## `<THING>_DESCRIPTION` key pair `localization.csv` uses for every card.
-##
-## The visual is a `TextureRect` on this picture's own live `ViewportTexture`: a real copy of the
-## thing hovered, not a stand-in. `InfoCard.show_entry()` takes ownership and frees it on the next
-## entry, which is why a fresh one is built per call rather than cached.
-func get_info() -> InfoEntry:
-	var entry := InfoEntry.new()
-	var key := String(rect.id).to_upper()
-	entry.title = TRANSLATION.find(StringName("WALL_PICTURE_" + key))
-	entry.body = TRANSLATION.find(StringName("WALL_PICTURE_" + key + "_DESCRIPTION"))
-	if viewport:
-		var preview := TextureRect.new()
-		preview.texture = viewport.get_texture()
-		preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		preview.custom_minimum_size = _INFO_PREVIEW_SIZE
-		entry.visual = preview
-	return entry
-
-## The on-card size of `get_info()`'s preview — internal card layout, not a player-tunable knob.
-const _INFO_PREVIEW_SIZE := Vector2(160.0, 90.0)
 
 ## Frees this picture AND its SubViewport (which build() parented elsewhere, so a plain
 ## queue_free() on this node would leak it).

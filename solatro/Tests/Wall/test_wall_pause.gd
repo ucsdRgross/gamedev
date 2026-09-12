@@ -39,18 +39,14 @@ func _ready() -> void:
 	test_shell_stays_always()
 	test_exactly_one_screen_live()
 	test_wall_view_leaves_zero_live()
-	test_info_mode_does_not_pause_focused_screen()
 	behavior_section("PACING VS A BARE TIMER UNDER PAUSE")
 	await test_pacing_wait_freezes_with_its_own_screen()
 	await test_bare_create_timer_ticks_while_paused()
 	behavior_section("A REAL MOVE COMPLETES UNDER THE REAL PAUSE (U8, C5)")
 	await test_real_wall_moves_complete_under_the_paused_tree()
 	await test_a_second_back_during_a_move_does_not_eat_a_history_entry()
-	await test_info_toggled_mid_transition_does_not_hijack_the_camera()
-	await test_double_info_press_inside_one_animation_still_rests_correctly()
 	await test_a_picture_entered_from_the_keyboard_does_not_stay_lifted()
 	await test_continue_after_a_mid_show_quit_still_reveals_wall_view()
-	await test_the_info_zoom_reads_its_own_duration_scale()
 	await test_the_opening_reveal_reads_wall_reveal_delay_scale()
 	finish()
 
@@ -155,17 +151,6 @@ func test_wall_view_leaves_zero_live() -> void:
 		wp.unfocus(Vector2(200, 120))
 	check(_always_screen_count() == 0, "wall view leaves zero screen roots ALWAYS",
 			str(_always_screen_count()))
-
-## U7 (D9, Q138=a): info mode does not pause the focused screen. Info mode itself is S26-S29, out
-## of scope here, so there is no real "enter info mode" call to make -- this pins the invariant at
-## the level that exists now: the pause rule keys off focus()/unfocus() alone (the wall's
-## TRANSITION machinery, not yet built, is the only intended caller), never off zoom. A regression
-## guard for the day info mode's zoom-only code path lands: it must not call unfocus().
-func test_info_mode_does_not_pause_focused_screen() -> void:
-	var target := _pictures[0]
-	_focus_only(target)
-	check(target.screen_root.process_mode == Node.PROCESS_MODE_ALWAYS,
-			"the focused screen's root is still ALWAYS with nothing info-mode-shaped touching it")
 
 # ------------------------------------------------------------------ U5, U6
 
@@ -487,92 +472,6 @@ func _time_opening_reveal(main: Main, scale: float) -> int:
 		await get_tree().process_frame
 	return Time.get_ticks_msec() - started
 
-## The info zoom runs on `wall_info_zoom_scale`, not on the plain transition clock.
-##
-## ⚠ ASSERTED BY COMPARING TWO MEASURED DURATIONS, not by "is it still running after N frames".
-## That weaker form passes with the knob ignored, because the UNSCALED clock is already longer than
-## any small frame count -- the fixture would be chosen so the implementation passes either way.
-## A ratio between a large scale and a tiny one cannot be produced by a constant duration.
-func test_the_info_zoom_reads_its_own_duration_scale() -> void:
-	backup_real_settings()
-	var snap := snapshot_settings()
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	# NO unpause.
-	SettingsManager.settings.wall_reduced_motion = false
-	_pin_transition_clock()
-	await _drive_move(func() -> void: await main._focus_picture(&"map"))
-
-	var slow_ms := await _time_info_toggle(main, true, 4.0)
-	var fast_ms := await _time_info_toggle(main, false, 0.05)
-	check(slow_ms > fast_ms * 4.0,
-			"the info zoom's LENGTH tracks wall_info_zoom_scale, not a fixed clock",
-			"scale 4.0 took %d ms, scale 0.05 took %d ms" % [slow_ms, fast_ms])
-
-	main.queue_free()
-	restore_settings_snapshot(snap)
-	restore_real_settings()
-
-## Runs one info toggle at `scale` and returns how many milliseconds it took to complete.
-func _time_info_toggle(main: Main, active: bool, scale: float) -> int:
-	SettingsManager.settings.wall_info_zoom_scale = scale
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
-	var started := Time.get_ticks_msec()
-	_drive(func() -> void: await main._on_info_toggled(active), done)
-	while not done[0] and Time.get_ticks_msec() - started < 20000:
-		await get_tree().process_frame
-	return Time.get_ticks_msec() - started
-
-## C5/Q56=b: the Info toggle is a camera move like any other, so it does not fight a live one.
-##
-## ⚠ It used to await `_animate_camera()` without checking or setting `_move_in_flight`, so a toggle
-## mid-transition ran a second tween on the shared camera and won: the destination ended focused
-## with the camera on the SOURCE picture's info pose, ~99% off-screen, input unlocked.
-func test_info_toggled_mid_transition_does_not_hijack_the_camera() -> void:
-	backup_real_settings()
-	var snap := snapshot_settings()
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	# NO unpause.
-	SettingsManager.settings.wall_reduced_motion = false
-	_pin_transition_clock()
-
-	# Start a real move, then toggle Info while it is genuinely in flight.
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
-	_drive(func() -> void: await main._focus_picture(&"map"), done)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	check(main._move_in_flight, "sanity: the move really is in flight when Info is toggled")
-	await main._on_info_toggled(true)
-	var started := Time.get_ticks_msec()
-	while not done[0] and Time.get_ticks_msec() - started < 8000:
-		await get_tree().process_frame
-
-	check(done[0], "the interrupted move still completes")
-	check(main._current_focus == &"map", "...and lands on its own destination",
-			str(main._current_focus))
-	check(SettingsManager.settings.wall_info_mode,
-			"...and the mode the player chose is honoured, not silently dropped")
-	# THE POINT: the camera must be posed for the DESTINATION, in the mode now active -- never for
-	# the picture the move started from.
-	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
-	var want := WallPicture.info_zoom_state(main._rects[&"map"], main._window_size,
-			SettingsManager.settings)
-	var want_pos : Vector2 = want["position"]
-	var source := WallPicture.info_zoom_state(main._rects[&"start_menu"], main._window_size,
-			SettingsManager.settings)
-	var source_pos : Vector2 = source["position"]
-	check(want_pos.distance_to(source_pos) > 1.0,
-			"sanity: the two pictures' info poses actually differ, so this can fail",
-			"dest=%s source=%s" % [want_pos, source_pos])
-	check(camera.position.distance_to(want_pos) < 1.0,
-			"the camera rests on the DESTINATION's info pose, not the source's",
-			"camera=%s dest=%s source=%s" % [camera.position, want_pos, source_pos])
-
-	main.queue_free()
-	restore_settings_snapshot(snap)
-	restore_real_settings()
-
 ## H3/Q27/S37 on the KEYBOARD/CONTROLLER path: a picture selected in wall view and then entered
 ## does not stay lifted.
 ##
@@ -610,55 +509,6 @@ func test_a_picture_entered_from_the_keyboard_does_not_stay_lifted() -> void:
 	check(wp.position.is_equal_approx(wp.rect.centre),
 			"the entered picture sits ON its rect, not lifted off it -- no frame at the bottom edge",
 			"pos=%s centre=%s lift=%s" % [wp.position, wp.rect.centre, lift])
-
-	main.queue_free()
-	restore_settings_snapshot(snap)
-	restore_real_settings()
-
-## H3/Q27/S37: two Info presses inside ONE info animation still come to rest correctly posed.
-##
-## ⚠ The second press flips `wall_info_mode` and is then refused by the one-move guard, so the tween
-## already in flight keeps travelling to the pose for the mode the player just abandoned. With no
-## settle at the end, the camera stayed at the INFO pose while the mode read OFF and the button read
-## un-pressed -- a band of frame and bare wall along the bottom of the window, until the player
-## resized, navigated, or pressed Info twice more.
-func test_double_info_press_inside_one_animation_still_rests_correctly() -> void:
-	backup_real_settings()
-	var snap := snapshot_settings()
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	# NO unpause.
-	SettingsManager.settings.wall_reduced_motion = false
-	_pin_transition_clock()
-	await _drive_move(func() -> void: await main._focus_picture(&"map"))
-	check(main._current_focus == &"map", "sanity: focused on a real picture, Info off",
-			str(main._current_focus))
-
-	# Press Info, then press it AGAIN while the first animation is still running.
-	var done : Array[bool] = [false]   # boxed -- lambdas capture locals BY VALUE
-	_drive(func() -> void: await main._on_info_toggled(true), done)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	check(main._move_in_flight, "sanity: the first toggle really is animating when the second lands")
-	await main._on_info_toggled(false)
-	check(not SettingsManager.settings.wall_info_mode,
-			"sanity: the second press did change the mode back to OFF")
-	var started := Time.get_ticks_msec()
-	while not done[0] and Time.get_ticks_msec() - started < 8000:
-		await get_tree().process_frame
-	check(done[0], "the first toggle's animation completes")
-
-	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
-	var rect : PictureRect = main._rects[&"map"]
-	var focused_pos := rect.centre
-	var info := WallPicture.info_zoom_state(rect, main._window_size, SettingsManager.settings)
-	var info_pos : Vector2 = info["position"]
-	check(focused_pos.distance_to(info_pos) > 1.0,
-			"sanity: the two poses actually differ, so this can fail",
-			"focused=%s info=%s" % [focused_pos, info_pos])
-	check(camera.position.distance_to(focused_pos) < 1.0,
-			"the camera rests at the ORDINARY focused pose, matching Info now being off",
-			"camera=%s focused=%s info=%s" % [camera.position, focused_pos, info_pos])
 
 	main.queue_free()
 	restore_settings_snapshot(snap)

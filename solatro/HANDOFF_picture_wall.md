@@ -166,8 +166,8 @@ solatro/design/picture-wall/ (DESIGN, PLAN, TEST_PLAN, NAMES, ASSUMPTIONS, gaps/
     so it scrolled content it had room for, and the body was measured at full card width instead
     of the narrower text column); and setting info mode outside the button left the button
     reading un-pressed.
-  files_touched: [solatro/Tools/wall_editor.gd, solatro/UI/Wall/info_card.gd,
-    solatro/UI/Wall/wall_overlay.gd, solatro/Tests/Visual/wall_editor_soak.gd]
+  files_touched: [solatro/Tools/wall_editor.gd, solatro/UI/Wall/wall_overlay.gd,
+    solatro/Tests/Visual/wall_editor_soak.gd]
   verification_command: '<godot> --path solatro res://Tests/Visual/wall_editor_soak.tscn'
   verification_kind: snapshot
   status: done

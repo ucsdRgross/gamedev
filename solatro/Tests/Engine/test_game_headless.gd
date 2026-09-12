@@ -848,7 +848,7 @@ func test_retired_act_has_no_readers() -> void:
 	var scanned := 0
 	var offenders : Array[String] = []
 	for dir : String in PRODUCT_DIRS:
-		for path : String in _gd_scripts_under(dir):
+		for path : String in gd_scripts_under(dir):
 			var f := FileAccess.open(path, FileAccess.READ)
 			if not f: continue
 			scanned += 1
@@ -894,7 +894,7 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 	var scanned := 0
 	var offenders : Array[String] = []
 	for dir : String in PRODUCT_DIRS + ["res://Tests"]:
-		for path : String in _gd_scripts_under(dir):
+		for path : String in gd_scripts_under(dir):
 			# The type itself defines the sentinel and compares its components.
 			if path.ends_with("board_coord.gd"): continue
 			var f := FileAccess.open(path, FileAccess.READ)
@@ -972,7 +972,7 @@ const GRID_MARKERS : Array[String] = [
 func test_zone_only_tests_do_not_multiply() -> void:
 	var scanned := 0
 	var zone_only : Array[String] = []
-	for path : String in _gd_scripts_under("res://Tests"):
+	for path : String in gd_scripts_under("res://Tests"):
 		var f := FileAccess.open(path, FileAccess.READ)
 		if not f: continue
 		var text := f.get_as_text()
@@ -1003,20 +1003,3 @@ func test_zone_only_tests_do_not_multiply() -> void:
 			"now covers a grid, strike it from ZONE_ONLY_TESTS:
 " + "
 ".join(ported))
-
-## Every .gd under `dir`, recursively. Skips addons/, which is vendored and not ours.
-func _gd_scripts_under(dir: String) -> Array[String]:
-	var out : Array[String] = []
-	var d := DirAccess.open(dir)
-	if not d: return out
-	d.list_dir_begin()
-	var name := d.get_next()
-	while name != "":
-		var full := dir.path_join(name)
-		if d.current_is_dir():
-			if name != "addons": out.append_array(_gd_scripts_under(full))
-		elif name.ends_with(".gd"):
-			out.append(full)
-		name = d.get_next()
-	d.list_dir_end()
-	return out

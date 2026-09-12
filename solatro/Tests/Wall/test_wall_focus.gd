@@ -39,8 +39,6 @@ func _ready() -> void:
 	behavior_section("OVERLAY (S35): BACK/FORWARD VISIBLY DISABLE")
 	test_back_visibly_disabled_at_bottom_of_stack()
 	test_forward_visibly_disabled_with_nothing_ahead()
-	behavior_section("INFO MODE IS SESSION STATE, NOT A SAVED SETTING (C3, J1/Q135)")
-	test_toggling_info_mode_does_not_write_the_settings_file()
 	behavior_section("BACK'S BUTTON AGREES WITH BACK'S KEY IN WALL VIEW (GAP-020=a)")
 	test_back_button_is_enabled_in_wall_view_whenever_the_key_works()
 	behavior_section("THE OVERLAY NEVER TAKES KEYBOARD FOCUS")
@@ -51,25 +49,16 @@ func _ready() -> void:
 	await test_unlock_reaction_leaves_the_real_focus_stack_valid()
 	behavior_section("LOST-RUN BEHAVIOUR (S32, L12, Q157)")
 	test_lost_run_leaves_map_and_game_pictures_unchanged()
-	behavior_section("INFO CARD MOUNTED ON THE WALL (A1, PICTURE_WALL.md)")
-	test_info_card_is_mounted_on_the_wall()
-	behavior_section("INFO TOGGLE WIRING (A2, PICTURE_WALL.md)")
-	await test_info_toggle_sets_flag_and_moves_camera_and_resets_card()
 	behavior_section("FOCUS/TRANSITION SIGNALS (A4, PICTURE_WALL.md, NAMES.md)")
 	await test_focus_and_transition_signals_fire_during_real_navigation()
-	behavior_section("INFO MODE DOES NOT SURVIVE A QUIT (C3, PICTURE_WALL.md, J1)")
-	test_info_mode_does_not_survive_a_relaunch()
 	behavior_section("RESIZE REACHES THE WALL (M1, PICTURE_WALL.md, S17, T11 wiring)")
 	await test_a_real_resize_reaches_the_wall()
 	behavior_section("KEYBOARD BACK RETRACES (M2, PICTURE_WALL.md, Q65=a, I5)")
 	await test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view()
 	behavior_section("THE wall_* ACTIONS REACH MAIN (M3, PICTURE_WALL.md, I6, I7)")
-	await test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
-	behavior_section("ONE INFO CARD, GATED BY INFO MODE (M7, PICTURE_WALL.md, J1, J6)")
-	test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode()
+	await test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle()
+	behavior_section("A PUBLISHED ENTRY'S VISUAL IS OWNED BY WHAT SHOWS IT (M7, PICTURE_WALL.md)")
 	await test_a_published_info_entry_is_owned_by_whatever_shows_it()
-	behavior_section("PICTURES DESCRIBE THEMSELVES (M8, PICTURE_WALL.md, J7, Q133=b)")
-	await test_hovering_a_picture_in_info_mode_describes_it()
 	behavior_section("ONE MOVE AT A TIME (C5, PICTURE_WALL.md, Q56=b, §1.6)")
 	await test_a_second_destination_mid_move_is_ignored()
 	behavior_section("INPUT IS INERT MID-MOVE, AND UNLOCKS EARLY (C5/S16, I12/Q96=a, C13/Q58)")
@@ -426,93 +415,6 @@ func test_lost_run_leaves_map_and_game_pictures_unchanged() -> void:
 	restore_real_save(suite_tag())
 	main.queue_free()
 
-# ------------------------------------------------------------------ A1 (PICTURE_WALL.md)
-
-## A1 (PICTURE_WALL.md): `InfoCard` was mounted only on the map -- `wall.tscn`/`wall.gd` referenced
-## it ZERO times, so info mode on the wall displayed nothing even though J1-J6 passed against a
-## standalone card built directly by that suite. Structural proof it is genuinely part of the wall
-## scene now: read through the REAL `Wall` scene's own `%Overlay` node, by the exact path
-## `Main._on_info_toggled()` uses below.
-func test_info_card_is_mounted_on_the_wall() -> void:
-	var wall : Wall = preload("res://UI/Wall/wall.tscn").instantiate()
-	add_child(wall)
-	get_tree().paused = false
-	var info_card : Node = wall.get_node(^"%Overlay/InfoCard")
-	check(info_card != null and info_card is InfoCard,
-			"a real InfoCard instance is mounted inside the wall's own %Overlay",
-			str(info_card))
-	wall.queue_free()
-
-# ------------------------------------------------------------------ A2 (PICTURE_WALL.md)
-
-## Waits until the wall camera's position AND zoom stop changing, so a check right after a move
-## reads the LANDED pose rather than a race against the tween's own last frame.
-func _settle_wall_camera(camera: Camera2D) -> void:
-	var last_pos := Vector2.INF
-	var last_zoom := Vector2.INF
-	var waited := 0.0
-	while waited < 3.0:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-		if camera.position.is_equal_approx(last_pos) and camera.zoom.is_equal_approx(last_zoom):
-			return
-		last_pos = camera.position
-		last_zoom = camera.zoom
-
-func _probe_info_entry() -> InfoEntry:
-	var e := InfoEntry.new()
-	e.title = "probe"
-	e.body = "probe"
-	return e
-
-## A2 (PICTURE_WALL.md, J2/Q128, J6/Q131): the Info button previously had no consumer anywhere --
-## pressing it changed nothing. Drives `Main._on_info_toggled()` DIRECTLY (the exact method
-## `overlay.info_toggled` is wired to in `Main._ready()`) against a REAL `Main`, REAL focused
-## picture, and asserts THREE separate consequences, none of which the old (nonexistent) wiring
-## produced: (1) the shared `wall_info_mode` flag actually flips; (2) the camera actually MOVES to
-## the info zoom -- a measurably different framing than the ordinary at-rest one, not merely "a
-## tween ran"; (3) toggling back off resets `%InfoCard` (J6) and returns the camera to rest.
-## `backup_real_settings()`/`restore_real_settings()` (`test_wall_render.gd`'s S39 gate test
-## already established this exact pattern) park the real `user://settings.tres`, since
-## `wall_info_mode` saves on every change.
-func test_info_toggle_sets_flag_and_moves_camera_and_resets_card() -> void:
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false
-
-	var settings := SettingsManager.settings
-	var prev_mode := settings.wall_info_mode
-	var camera : Camera2D = main.wall.get_node(^"%Camera2D")
-	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
-	var rest_position := camera.position
-	var rest_zoom := camera.zoom
-
-	await main._on_info_toggled(true)
-	await _settle_wall_camera(camera)
-	check(settings.wall_info_mode, "wall_info_mode is true after toggling Info on")
-	check(not camera.position.is_equal_approx(rest_position)
-			or not camera.zoom.is_equal_approx(rest_zoom),
-			"the camera actually moved to the info zoom -- a different framing than at rest",
-			"rest pos=%s zoom=%s -- info pos=%s zoom=%s"
-					% [rest_position, rest_zoom, camera.position, camera.zoom])
-
-	info_card.show_entry(_probe_info_entry())
-	check(info_card.visible, "sanity: the card can be shown while info mode is on")
-
-	await main._on_info_toggled(false)
-	await _settle_wall_camera(camera)
-	check(not settings.wall_info_mode, "wall_info_mode is false after toggling Info off")
-	check(not info_card.visible,
-			"leaving info mode resets %InfoCard to hidden (J6) -- proven able to fail: it was "
-			+ "genuinely visible just above")
-	check(camera.position.is_equal_approx(rest_position) and camera.zoom.is_equal_approx(rest_zoom),
-			"the camera returns to the ordinary at-rest framing",
-			"got pos=%s zoom=%s want pos=%s zoom=%s"
-					% [camera.position, camera.zoom, rest_position, rest_zoom])
-
-	settings.wall_info_mode = prev_mode
-	main.queue_free()
-
 # ------------------------------------------------------------------ A4 (PICTURE_WALL.md, NAMES.md)
 
 ## A4 (PICTURE_WALL.md, NAMES.md): three of NAMES.md's five `Wall` signals -- `focus_changed`,
@@ -550,32 +452,6 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 			str(started_events))
 	check(landed_events == ([&"map"] as Array[StringName]),
 			"transition_landed fired once, for the real destination id", str(landed_events))
-
-	main.queue_free()
-
-# ------------------------------------------------------------------ C3 (PICTURE_WALL.md)
-
-## C3 (PICTURE_WALL.md, J1, PLAN.md §4 anti-scope item 9): info mode must NOT survive a
-## quit. `wall_info_mode` stays a REAL `PlayerSettings` field (`WallTransition.sample_at()`'s
-## existing S18/J10 read keeps working unchanged, no signature/shape change there), which means
-## LEAVING it true would persist to `user://settings.tres` on the very write that set it -- a real
-## relaunch's `SettingsManager._init()` loads that file straight back, exactly like a real "info
-## mode survived a quit" bug. Simulates that: sets the flag true (standing in for "a previous
-## session's own save already has this"), then builds a REAL `Main` -- the exact object whose
-## `_ready()` must now reset it -- and asserts it reads false immediately after `_ready()` runs.
-## `backup_real_settings()`/`restore_real_settings()` park the real file, since this genuinely
-## writes it (twice: the simulated "previous session" write, and Main's own reset write).
-func test_info_mode_does_not_survive_a_relaunch() -> void:
-	var settings := SettingsManager.settings
-	settings.wall_info_mode = true   # stands in for a previous session's own persisted value
-
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false
-
-	check(not settings.wall_info_mode,
-			"a fresh Main resets wall_info_mode to false on startup, even if a previous session "
-			+ "left it true -- info mode never survives a relaunch (C3)")
 
 	main.queue_free()
 
@@ -737,7 +613,7 @@ func test_escape_retraces_the_focus_stack_instead_of_going_to_wall_view() -> voi
 ##
 ## ⚠ One `Main`, tiny `wall_transition_delay`, bounded frame waits -- see
 ## `test_a_real_resize_reaches_the_wall()` above for why all three matter here.
-func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
+func test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() -> void:
 	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
 	SettingsManager.settings.wall_transition_delay = 0.001
 
@@ -760,26 +636,6 @@ func test_the_four_wall_actions_drive_a_real_navigate_back_forward_wall_cycle() 
 			"wall_forward (R1/RB) went forward again, to the picture just left -- the controller "
 			+ "had no Forward at all", str(main._current_focus))
 
-	var settings := SettingsManager.settings
-	var overlay : WallOverlay = main.wall.get_node(^"%Overlay")
-	var info_button : Button = overlay.get_node(^"%InfoButton")
-	# ⚠ `and not _move_in_flight`: the toggle sets the MODE immediately and then animates the camera
-	# (C5/Q56=b -- the Info toggle is a move and holds the one-move flag while it runs). Settling on
-	# the flag alone returned mid-move, and the very next action here was then correctly REFUSED,
-	# which surfaced in this test as `wall_overview` doing nothing. The wall being at rest is part
-	# of what "the toggle finished" means.
-	await _feed_wall_action(main, &"wall_info",
-			func() -> bool: return settings.wall_info_mode and not main._move_in_flight)
-	check(settings.wall_info_mode, "wall_info (I) turned Info mode ON -- the key had no reader")
-	check(info_button.button_pressed,
-			"and the overlay's own toggle READS pressed -- the key drives the button, so the two "
-			+ "can never disagree (C3's own failure mode)")
-
-	await _feed_wall_action(main, &"wall_info",
-			func() -> bool: return not settings.wall_info_mode and not main._move_in_flight)
-	check(not settings.wall_info_mode, "pressing it again turned Info mode back OFF")
-	check(not info_button.button_pressed, "...and released the button with it")
-
 	await _feed_wall_action(main, &"wall_overview", func() -> bool: return main._current_focus == &"")
 	check(main._current_focus == &"",
 			"wall_overview (Tab / Select-View) left the picture for wall view -- Tab had no reader",
@@ -800,122 +656,6 @@ func _feed_wall_action(main: Main, action: StringName, settled: Callable) -> voi
 	for _i : int in range(60):
 		if settled.call(): return
 		await get_tree().process_frame
-
-# ------------------------------------------------------------------ M7 (PICTURE_WALL.md)
-
-## M7 (PICTURE_WALL.md, J1/J6, Q134=c): the map mounted an `InfoCard` of its OWN inside its
-## SubViewport, so `_on_info_toggled()` -- which resets the WALL overlay's card -- was resetting a
-## different instance. The map's card could never be dismissed and showed on hover whether or not
-## Info mode was on. There is one card now, on the wall, and Info mode gates it.
-##
-## Three claims, all on a REAL `Main` with its real `map_scene` wired by `_ready()`:
-##   1. with Info OFF, a real hover shows NOTHING (the half that was the defect);
-##   2. with Info ON, that same hover reaches the WALL's card, by entry identity;
-##   3. `map_scene` no longer owns a second card at all.
-## Claim 3 is what stops 1 and 2 from being satisfied by a second card nobody looked at.
-func test_a_screen_hover_reaches_the_walls_one_card_only_in_info_mode() -> void:
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
-	get_tree().paused = false
-
-	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
-	check(main.map_scene.find_child("InfoCard", true, false) == null,
-			"the map no longer mounts an InfoCard of its own -- one card, on the wall (J1)")
-	check(not info_card.visible, "sanity: the wall's card starts hidden (J5)")
-
-	SettingsManager.settings.wall_info_mode = false
-	main.map_scene.info_hovered.emit(_probe_info_entry())
-	check(not info_card.visible,
-			"with Info mode OFF a screen hover shows NOTHING -- the map's own card used to appear "
-			+ "unbidden and could never be dismissed")
-
-	SettingsManager.settings.wall_info_mode = true
-	var entry := _probe_info_entry()
-	main.map_scene.info_hovered.emit(entry)
-	check(info_card.visible, "with Info mode ON the same hover reaches the WALL's card")
-	check(info_card.current_entry == entry,
-			"...and it is THAT entry showing, checked by identity, not merely some card being "
-			+ "visible (J2's own trap)")
-
-	info_card.reset()
-	SettingsManager.settings.wall_info_mode = false
-	main.queue_free()
-
-# ------------------------------------------------------------------ M8 (PICTURE_WALL.md)
-
-## M8 (PICTURE_WALL.md, J7/Q132=a, Q133=b): NO `WallPicture` implemented `get_info()`, so
-## Info mode on the wall itself described nothing however many pictures were hovered -- the wall
-## half of J7 was never built, only the map half (S29).
-##
-## Drives a REAL mouse move over a REAL picture through `Wall._unhandled_input()`, on a real `Main`,
-## and checks the wall's ONE card by ENTRY IDENTITY. Goes red if `Main._ready()`'s
-## `wall.picture_hovered` connection or `WallPicture.get_info()` is removed.
-##
-## The hovered point is addressed through the viewport's own `canvas_transform` -- the exact inverse
-## of what `_unhandled_input()` applies -- and `_picture_at()` is asserted non-empty there first, so
-## a fixture that drifted onto bare wall would fail loudly instead of quietly proving nothing.
-##
-## ⚠ It must be in WALL VIEW first. I9/Q103=a: "the wall never listens while a screen is
-## focused", and a cold launch opens FOCUSED on start_menu -- written without the trip to wall view,
-## this test failed exactly there, which is the contract working rather than a fixture problem.
-func test_hovering_a_picture_in_info_mode_describes_it() -> void:
-	var real_transition_delay : float = SettingsManager.settings.wall_transition_delay
-	SettingsManager.settings.wall_transition_delay = 0.001
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	# Wall._ready() paused the whole tree globally -- undone immediately, same reason F12 documents.
-	get_tree().paused = false
-	await main._go_to_wall_view()
-	check(main._current_focus == &"",
-			"fixture: really in wall view -- the wall is deaf to hover while a screen is focused "
-			+ "(I9/Q103=a)", str(main._current_focus))
-
-	var info_card : InfoCard = main.wall.get_node(^"%Overlay/InfoCard")
-	var target : PictureRect = main._rects[&"map"]
-	check(main.wall._picture_at(target.centre) == &"map",
-			"fixture: the point being hovered really is inside the map picture",
-			str(main.wall._picture_at(target.centre)))
-
-	var entry := main._pictures[&"map"].get_info()
-	check(entry.title != "" and entry.title != "WALL_PICTURE_MAP",
-			"WallPicture.get_info() resolves a REAL localised title, not a raw key",
-			entry.title)
-	check(entry.body != "" and entry.body != "WALL_PICTURE_MAP_DESCRIPTION",
-			"...and a real localised body", entry.body)
-	check(entry.visual != null,
-			"Q130: it carries a visual copy of the hovered picture, not description text alone")
-	entry.visual.free()   # this probe entry never reaches a card, so nothing else will free it
-
-	SettingsManager.settings.wall_info_mode = false
-	_hover_wall_at(main, target.centre)
-	check(not info_card.visible,
-			"with Info mode OFF, hovering a picture describes nothing")
-
-	SettingsManager.settings.wall_info_mode = true
-	_hover_wall_at(main, target.centre)
-	check(info_card.visible, "with Info mode ON, hovering a picture shows the card")
-	check(info_card.current_entry != null
-			and info_card.current_entry.title == TRANSLATION.find(&"WALL_PICTURE_MAP"),
-			"...showing THAT picture's own entry, matched by its resolved title",
-			str(info_card.current_entry.title) if info_card.current_entry else "<null>")
-
-	info_card.reset()
-	SettingsManager.settings.wall_info_mode = false
-	main.queue_free()
-	SettingsManager.settings.wall_transition_delay = real_transition_delay
-
-## Moves the pointer to a WALL-space point through the real `Wall._unhandled_input()` path. The
-## wall-space point is converted with the viewport's own `canvas_transform`, the exact inverse of
-## the transform the handler applies, so the event lands where the caller says it does. Hover fires
-## on CHANGE, so it is nudged off every picture first.
-func _hover_wall_at(main: Main, wall_pos: Vector2) -> void:
-	var away := InputEventMouseMotion.new()
-	away.position = Vector2(-100000.0, -100000.0)
-	main.wall._unhandled_input(away)
-	var motion := InputEventMouseMotion.new()
-	motion.position = main.wall.get_viewport().canvas_transform * wall_pos
-	main.wall._unhandled_input(motion)
 
 # ------------------------------------------------------------------ C5 (PICTURE_WALL.md)
 
@@ -1054,7 +794,7 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 ## I9/Q103=a/Q115=a: the WALL owns arrow selection and `ui_accept`, read in its own
 ## `_unhandled_input`. A `Control` that holds GUI focus consumes `ui_up/down/left/right` (focus
 ## neighbour navigation) and `ui_accept` (press the focused button) BEFORE `_unhandled_input` ever
-## runs -- so with Godot's default `FOCUS_ALL` on these four Buttons, clicking any one of them with
+## runs -- so with Godot's default `FOCUS_ALL` on these Buttons, clicking any one of them with
 ## the mouse silently killed wall-view arrow selection and Enter-to-enter for the rest of the
 ## session. The overlay's controls are mouse/touch affordances; every one of them also has its own
 ## `wall_*` InputMap action for the keyboard, so none of them needs focus.
@@ -1064,9 +804,8 @@ func test_input_is_inert_during_a_move_and_unlocks_before_the_tween_ends() -> vo
 func test_overlay_buttons_cannot_take_focus() -> void:
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
-	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton",
-			&"%InfoButton"]
-	check(names.size() == 4, "sanity: all four overlay controls are covered", str(names.size()))
+	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton"]
+	check(names.size() == 3, "sanity: all three overlay controls are covered", str(names.size()))
 	for path : StringName in names:
 		var button : Button = overlay.get_node(NodePath(path))
 		# `disabled` alone would refuse focus, so clear it first: this must hold for a button the
@@ -1119,18 +858,17 @@ func test_back_button_is_enabled_in_wall_view_whenever_the_key_works() -> void:
 # ------------------------------------------------------------------ dropped-entry leak
 
 # `entry.visual` is a NODE that was never added to any tree, so whoever the wall hands it to owns
-# it. Outside Info mode that is the container's description panel, which mounts it; inside Info
-# mode it is the info card. Neither may leave it orphaned in ObjectDB for the session.
+# it: the container's description panel, which mounts it. It may not be left orphaned in ObjectDB
+# for the session.
 func test_a_published_info_entry_is_owned_by_whatever_shows_it() -> void:
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	get_tree().paused = false   # concurrency workaround, same as every other Main fixture here
-	SettingsManager.settings.wall_info_mode = false
 
 	var visual := Node2D.new()
 	var entry := InfoEntry.new()
-	entry.title = "Dropped"
-	entry.body = "Info mode is off, so nothing shows this."
+	entry.title = "Published"
+	entry.body = "The container is what shows this."
 	entry.visual = visual
 	check(is_instance_valid(visual), "sanity: the visual exists before the hover")
 
@@ -1139,56 +877,5 @@ func test_a_published_info_entry_is_owned_by_whatever_shows_it() -> void:
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
 	check(is_instance_valid(visual) and visual.get_parent() == panel.get_node(^"%VisualSlot"),
-			"with Info mode off the container's description panel takes the entry's visual")
-
-	# And the opposite half: an entry the wall SHOWS must keep its visual.
-	SettingsManager.settings.wall_info_mode = true
-	var kept := Node2D.new()
-	var shown := InfoEntry.new()
-	shown.title = "Shown"
-	shown.body = "Info mode is on."
-	shown.visual = kept
-	main._on_screen_info_hovered(shown)
-	await get_tree().process_frame
-	check(is_instance_valid(kept),
-			"...while an entry that IS shown keeps its visual -- the free is not unconditional")
-
-	SettingsManager.settings.wall_info_mode = false
+			"the container's description panel takes the entry's visual")
 	main.queue_free()
-
-# ------------------------------------------------------------------ C3 (not persisted)
-
-## C3 / J1 / Q135 / PLAN.md §4 anti-scope 9: info mode does not survive a quit. It is now session
-## state -- not `@export`ed and not emitting -- so that holds BY CONSTRUCTION rather than by the
-## startup clear.
-##
-## ⚠ Every other setter on `PlayerSettings` emits `settings_changed`, and `SettingsManager` SAVES on
-## that, so toggling Info used to write the whole of `user://settings.tres` (and wake the four
-## listeners that recompute card sizes and FX styling, none of which read it). Asserted by deleting
-## the file and watching whether a toggle recreates it -- and then flipping a REAL saved knob to
-## prove the file would have appeared if anything had asked for it, so this cannot pass by the save
-## path being broken outright.
-func test_toggling_info_mode_does_not_write_the_settings_file() -> void:
-	# ⚠ **COUNT THE SIGNAL, DO NOT WATCH THE FILE.** Suites now run on their own PlayerSettings with
-	# `SettingsManager.isolated` set, so NOTHING writes `user://settings.tres` — a file probe would
-	# report "no write" for every knob alike and this test would pass while proving nothing. The
-	# claim was always about `wall_info_mode` not emitting `settings_changed` in the first place,
-	# and that is what the save hangs off, so the signal is the instrument the claim deserves.
-	var fires : Array[int] = [0]
-	var counter := func() -> void: fires[0] += 1
-	SettingsManager.settings_changed.connect(counter)
-
-	SettingsManager.settings.wall_info_mode = true
-	check(fires[0] == 0, "toggling Info mode did NOT ask the settings to save", "%d fires" % fires[0])
-	SettingsManager.settings.wall_info_mode = false
-	check(fires[0] == 0, "...nor did toggling it back", "%d fires" % fires[0])
-
-	# A genuinely saved knob, to prove the save path is alive and this test can fail.
-	var prev : int = SettingsManager.settings.wall_view_min_texture_px
-	SettingsManager.settings.wall_view_min_texture_px = prev + 1
-	check(fires[0] > 0,
-			"sanity: a REAL setting still asks to save, so the checks above are not vacuous",
-			"%d fires" % fires[0])
-	SettingsManager.settings.wall_view_min_texture_px = prev
-
-	SettingsManager.settings_changed.disconnect(counter)

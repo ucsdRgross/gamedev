@@ -64,11 +64,9 @@ func apply_test_speed() -> void:
 #
 # ⚠️ THE OTHER SIDE OF THAT RULE, AND THE ONE THAT ACTUALLY BIT: waiting protects the suite that
 # NEEDS the state. Nothing protects it from a suite that needs nothing and MUTATES it in passing.
-# Constructing production objects has production side effects — building a `Main` clears the shared
-# `wall_info_mode` (C3, its own startup rule), and that failed WALL FOCUS, mid-await on that flag,
-# from inside WALL RENDER, which was only building a Main to test an unrelated debug gate. It
-# failed 2 runs in 3 and named a suite the change never touched. So: if your fixture constructs
-# something real, ask what it writes on the way up, and preserve/restore anything shared.
+# Constructing production objects has production side effects, and one suite's fixture failed
+# another suite mid-await, 2 runs in 3, in a suite the change never touched. So: if your fixture
+# constructs something real, ask what it writes on the way up, and preserve/restore anything shared.
 #
 # ⚠️ THE DEADLOCK RULE: waiting is a directed dependency. If suite A waits for suite B, then B
 # must NOT wait for A — directly OR transitively — or BOTH hang forever and the whole run never
@@ -296,8 +294,7 @@ func _move_settings_backup_home() -> void:
 ## in-flight knobs. "" (everything) is only safe for a suite that waits for its siblings.
 ## ⚠ ONLY CAPTURES `@export`ed KNOBS. The filter below needs `PROPERTY_USAGE_STORAGE`, which a plain
 ## `var` does not carry — so de-exporting a knob silently drops it out of every snapshot/restore in
-## the suite, and it then leaks across tests with nothing to say so. `wall_info_mode` is deliberately
-## a plain `var` (session state, not persisted) and is restored by hand where it matters.
+## the suite, and it then leaks across tests with nothing to say so.
 func snapshot_settings(prefix: String = "") -> Dictionary:
 	var out : Dictionary = {}
 	var s := SettingsManager.settings
@@ -383,3 +380,20 @@ func finish() -> void:
 				% [suite_name(), _pass, _fail, _fail_behavior, _fail_impl, total, warned, took], true)
 	finished = true
 	suite_finished.emit()
+
+## Every .gd under `dir`, recursively. Skips addons/, which is vendored and not ours.
+func gd_scripts_under(dir: String) -> Array[String]:
+	var out : Array[String] = []
+	var d := DirAccess.open(dir)
+	if not d: return out
+	d.list_dir_begin()
+	var entry := d.get_next()
+	while entry != "":
+		var full := dir.path_join(entry)
+		if d.current_is_dir():
+			if entry != "addons": out.append_array(gd_scripts_under(full))
+		elif entry.ends_with(".gd"):
+			out.append(full)
+		entry = d.get_next()
+	d.list_dir_end()
+	return out

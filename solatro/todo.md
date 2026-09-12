@@ -402,18 +402,6 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will bite you, and
 [HANDOFF_picture_wall.md](HANDOFF_picture_wall.md) for where the stream stands.
 
-- **`sample_at()`'s INFO branch holds the SOURCE's info zoom for the whole transition**, so the
-  approach to a differently-sized destination is framed on the picture being LEFT. `J10`/`Q137`
-  ("the camera never leaves the info zoom") is what asks for one fixed value, and `_settle_camera()`
-  now cuts to the destination's own info pose on landing — so the resting state is right and what
-  remains is a single cut at the end, exactly the shape GAP-019=(c) chose deliberately for reduced
-  motion. Left as-is unless the cut reads badly in playtest.
-- **The map still BUILDS a full preview-card `InfoEntry` on every booster hover with Info mode off**,
-  and `Main` frees it immediately. The leak is gone; the waste is not. Fixing that properly means
-  either the map learning about Info mode (which `map.gd`'s own comment forbids — "the map has no
-  business deciding whether Info mode wants it shown") or `info_hovered` carrying the NODE instead
-  of a built entry, which is a `NAMES.md` signal-signature change and so a gap by that doc's own
-  rule. Left as waste on a hover-enter path, deliberately.
 - ⬜ **Camera/view findings — PARKED BY THE OWNER as todo, and NONE of them is verified.**
   ⚠ **The suite structurally cannot see any of these**: the layout suites are pinned to the OVERVIEW,
   and no `Tests/Visual/` harness drives props at all, so nothing renders a prop over a card at a
@@ -496,38 +484,13 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   calls it "the Deck Maker dev tool". Unrelated to the wall — it surfaced while verifying the wall
   editor in editor mode. Delete both files, or repoint the preloads; not touched because removing a
   dev tool is an owner call.
-- 🔴 **The info card lays its text out before the zoom-out finishes**, so the text is sized against
-  the pre-move framing rather than what you end up looking at. Cause is an ordering choice I made
-  deliberately: `_apply_info_mode()` shows the card FIRST so the camera's reserve can use the
-  card's live height, which means the card pops to full size while the camera is still travelling.
-  Fix paths: (a) split MEASUREMENT from DISPLAY — measure the entry's height with the card still
-  hidden, reserve against that, and reveal it as the tween lands; (b) tween the card in over the
-  same clock as the zoom so the two arrive together; (c) re-run `_resize_to_content()` on the
-  camera's `finished`. (a) is the honest one — the reserve needs the height, not the visibility.
-- 🔴 **Card descriptions are unreachable in the deck / discard / rules viewers.** `Q134`=c and chart
-  J8 say every tooltip migrates to the info card; only `PlayArea` and the map were done.
-  `DeckViewer`/`ChoiceViewer` still draw their own (`choice_viewer.gd` sets
-  `card_info.text = ControlCard.describe_card(card)`), and publish nothing, so Info mode shows
-  nothing there. Fix path: the same shape `PlayArea` now uses — give each viewer an
-  `info_requested(entry)` signal, gate its own panel on a `_popups_allowed()` equivalent, and route
-  it to `Main._on_screen_info_hovered`. `CardsViewer.populate()` already takes an `on_inspect`
-  callback these viewers pass, so the hook exists; it needs pointing at `PlayArea.card_info()`.
-- 🔴 **The per-screen info card does not actually persist across a transition** (`GAP-023` round 5
-  claims it does — the mechanism landed, the behaviour did not). Suspects, in order: `Main` only
-  RESTORES a remembered entry and never shows a default, so a screen entered with Info on and
-  nothing stashed shows a blank card; `_info_entry_owner` is written from `_current_focus`, which
-  is still the SOURCE for the whole of a move, so an entry read mid-move may be stashed against the
-  wrong picture; and the tool rebuilds `wp.get_info()` on every `_apply_info_mode()`, which
-  overwrites what was remembered. Nothing drives *enter A → read a card → go to B → come back* and
-  looks at the result — write that case in `wall_editor_soak.gd` FIRST, then fix what it shows.
-- **Bind the info-card scroll stick** (`GAP-023`, answered): the stick with NO d-pad beside it,
-  since the stick+d-pad side is normal movement. Needs an InputMap action, wiring into
-  `InfoCard`'s `ScrollContainer`, and a real pad to verify. Mouse wheel already works.
-- **Possible split: popup = summary, info card = in-depth** (`GAP-023`, owner note). Both read
-  `ControlCard.describe_card()` today — one string, no drift. Splitting them means a second
-  authored description per card and is its own design question.
-- **Touch is undefined for Info mode** (`GAP-023`) — neither hover nor click is specified for a
-  finger on a card.
+- 🔴 **Card descriptions are unreachable in the deck / discard / rules viewers.** Only `PlayArea`
+  and the map publish. `DeckViewer`/`ChoiceViewer` still draw their own (`choice_viewer.gd` sets
+  `card_info.text = ControlCard.describe_card(card)`) and publish nothing. Fix path: the same shape
+  `PlayArea` now uses — give each viewer an `info_requested(entry)` signal, gate its own panel on a
+  `_popups_allowed()` equivalent, and route it to `Main._on_screen_info_hovered`.
+  `CardsViewer.populate()` already takes an `on_inspect` callback these viewers pass, so the hook
+  exists; it needs pointing at `PlayArea.card_info()`.
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
   hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
   action test, but no real stick has driven it.

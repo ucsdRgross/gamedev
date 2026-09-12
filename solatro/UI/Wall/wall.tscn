@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://UI/Wall/wall.gd" id="1_wall"]
 [ext_resource type="PackedScene" path="res://UI/Wall/wall_overlay.tscn" id="2_overlay"]
-[ext_resource type="PackedScene" path="res://UI/Wall/info_card.tscn" id="3_infocard"]
 [ext_resource type="PackedScene" path="res://UI/hud_container.tscn" id="4_hud"]
 
 [node name="Wall" type="Node2D"]
@@ -33,9 +32,6 @@ unique_name_in_owner = true
 [node name="Overlay" parent="." instance=ExtResource("2_overlay")]
 unique_name_in_owner = true
 process_mode = 3
-
-[node name="InfoCard" parent="Overlay" instance=ExtResource("3_infocard")]
-unique_name_in_owner = true
 
 [node name="HudContainer" parent="Overlay" index="0" instance=ExtResource("4_hud")]
 unique_name_in_owner = true

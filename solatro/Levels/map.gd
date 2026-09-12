@@ -10,12 +10,7 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
-## Hovering a map node PUBLISHES its `InfoEntry` and stops there. ⚠ The map must NOT mount an
-## `InfoCard` of its own: there is ONE card, on the wall's overlay, anchored to the WINDOW, and a
-## second instance is not what `Main` resets, so it could never be dismissed. `Main` decides
-## whether Info mode wants this shown.
-## `MapHoverPanel`'s SCENE is no longer instantiated on the map; the class stays as `get_info()`'s
-## home.
+## Published and nothing more: the wall's one `HudContainer` decides what is shown.
 signal info_hovered(entry: InfoEntry)
 
 # Set by `Main` before this screen's picture is built, the same hand-over `GameView.hud_container`

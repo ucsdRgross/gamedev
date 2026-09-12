@@ -219,3 +219,21 @@
   `assert` now. Every production teardown frees the screen root and a deferred call on a freed
   object is dropped, so no production caller can reach it out of the tree; the full suite (the test
   helper that leaves a view in the tree's memory included) never fires the assert.
+- S9, on Q21=(b): the wall-view picture hover goes with Info mode, so `WallPicture.get_info()` lost
+  its last caller and is deleted with `_INFO_PREVIEW_SIZE`. `MapHoverPanel.get_info()` is a
+  different method and survives.
+- S9: the wall editor grows no sidebar preview toggle. It hosts the real `wall.tscn`, which already
+  carries `HudContainer`, so `_listen_for_info()` publishes a hosted screen's entry straight to that
+  container instead of to a tool-owned card.
+- S9: `WallOverlay`'s `WALL_INFO` localisation row is left in `Locale/localization.csv` unused --
+  removing a row is not this step's call and nothing reads it.
+- S9: `_pose_tween`/`_kill_pose_tween()` in the wall editor go with the info animation, which was
+  their only writer; the tool's camera poses are snaps again, as they were before Info mode.
+- S9: `PlayArea._info_mode()` is deleted (no callers left). `_popups_allowed()` survives for S10
+  and now reads `wall_screen_popups` alone.
+- S9: `TestGameHeadless._gd_scripts_under()` is hoisted to `TestBase.gd_scripts_under()` so the 8.1
+  check reuses it rather than duplicating the walker.
+- S9: `TestWallFocus.test_the_four_wall_actions_...` is renamed
+  `test_the_wall_actions_drive_a_real_navigate_back_forward_wall_cycle` -- there are three now.
+- S9: `TestWallTransition.test_a_requested_move_keeps_the_settings_it_started_with` survives by
+  flipping `wall_reduced_motion`, the only branch `sample_at()` still has.

@@ -49,7 +49,9 @@ signal spotlight_reveal_ended()
 
 static var CURRENT : CardEnvironment = null
 
+## ⚠ `CURRENT` can hold a FREED instance — assigned by hand and freed after — so it is cleared here.
 static func get_current_game() -> Game:
+	if not is_instance_valid(CURRENT): CURRENT = null
 	if CURRENT is Game: return CURRENT
 	return null
 

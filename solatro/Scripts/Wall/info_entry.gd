@@ -8,6 +8,6 @@ extends RefCounted
 var title : String = ""
 var body : String = ""
 ## Optional visual of the hovered thing, shown beside the description. May be null.
-## Ownership: the caller that builds the entry frees this unless `InfoCard.show_entry()` takes it
-## into its own tree — see that method.
+## Ownership: the caller that builds the entry frees this unless `HudContainer.show_description()`
+## takes it into the container's own tree — see that method.
 var visual : Node = null

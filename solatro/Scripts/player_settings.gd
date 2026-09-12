@@ -439,15 +439,6 @@ enum SeparationMode {
 	set(value):
 		wall_reduced_motion = value
 		settings_changed.emit()
-## Whether info mode is on FOR THE PICTURE CURRENTLY FOCUSED. Info mode is per screen — the map
-## can be left in info mode while the board is not — so the owner of the wall keeps a flag per
-## picture and writes the focused one here on every focus change. Everything downstream reads this
-## single value, so nothing else has to know the mode is per screen.
-##
-## Session state: NOT `@export`, so it is never saved or loaded, and
-## toggling it must not emit `settings_changed` (nothing recomputes off it, and a save per toggle
-## would rewrite the whole settings file).
-var wall_info_mode : bool = false
 ## Floor on a wall-view texture's short axis, in whole px. Feeds `SubViewport.size` directly.
 @export var wall_view_min_texture_px : int = 64:
 	set(value):
@@ -518,16 +509,6 @@ var wall_info_mode : bool = false
 	set(value):
 		wall_light_offset = value
 		settings_changed.emit()
-## The info card's fixed width in screen px; the card is anchored to the window, not the wall.
-@export var wall_info_card_width : float = 480.0:
-	set(value):
-		wall_info_card_width = value
-		settings_changed.emit()
-## Height in screen px past which the info card stops growing and scrolls its text instead.
-@export var wall_info_card_max_height : float = 320.0:
-	set(value):
-		wall_info_card_max_height = value
-		settings_changed.emit()
 ## Alpha of every picture's drop shadow.
 @export var wall_shadow_opacity : float = 0.35:
 	set(value):
@@ -544,24 +525,6 @@ var wall_info_mode : bool = false
 @export var wall_screen_popups : bool = true:
 	set(value):
 		wall_screen_popups = value
-		settings_changed.emit()
-## How much of the info card is allowed to OVERLAP the bottom of the screen, in screen px. Info
-## mode zooms out until the whole screen fits in the window ABOVE the card; this is the one part
-## the card may cover, so it reads as sitting in FRONT of the picture rather than floating in a
-## band of its own. 0 leaves the screen entirely clear of the card.
-##
-## ⚠ The reserve is measured against `wall_info_card_max_height`, NOT the card's live height. The
-## card sizes itself to its content, and a camera that tracked that would re-zoom on every hover.
-@export var wall_info_card_overlap : float = 24.0:
-	set(value):
-		wall_info_card_overlap = value
-		settings_changed.emit()
-## Multiplier on the transition clock for the info-mode zoom, in and out. 1.0 makes entering info
-## mode take exactly as long as an ordinary wall move; below 1.0 it snaps in faster, which suits a
-## reveal that only shifts the camera a little way down.
-@export var wall_info_zoom_scale : float = 1.0:
-	set(value):
-		wall_info_zoom_scale = value
 		settings_changed.emit()
 ## Multiplier on the transition clock for the one-off opening reveal, so it runs slower and
 ## longer than an ordinary wall move.

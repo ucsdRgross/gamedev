@@ -745,11 +745,11 @@ func test_the_easing_knobs_are_actually_read() -> void:
 ## clock are.
 ##
 ## ⚠ `request()` used to keep the LIVE `PlayerSettings`, and `sample_at()` branches on
-## `wall_info_mode` and `wall_reduced_motion` -- which the tween callback re-reads EVERY FRAME. So
-## toggling either knob mid-move switched the camera's whole model underneath the running tween and
-## it stayed switched: at t=0.5 the ordinary branch is at wide zoom with both frames in view, the
-## info branch is at the source's focused zoom on the midpoint between them. `_settle_camera()`
-## repairs where a move ENDS, so no resting-pose test can see this -- only what the move SAMPLES can.
+## `wall_reduced_motion` -- which the tween callback re-reads EVERY FRAME. So toggling that knob
+## mid-move switched the camera's whole model underneath the running tween and it stayed switched:
+## at t=0.5 the ordinary branch is at wide zoom with both frames in view, the reduced-motion branch
+## holds the SOURCE's focused zoom. `_settle_camera()` repairs where a move ENDS, so no resting-pose
+## test can see this -- only what the move SAMPLES can.
 ##
 ## Asserted as "what this transition will sample does not change when the live settings change",
 ## which is the contract itself, rather than by watching a real camera path: the authored zoom curve
@@ -758,7 +758,6 @@ func test_the_easing_knobs_are_actually_read() -> void:
 ## failed on the honest curve).
 func test_a_requested_move_keeps_the_settings_it_started_with() -> void:
 	var live := _settings()
-	live.wall_info_mode = false
 	live.wall_reduced_motion = false
 	var total := WallTransition.total_duration(live)
 	var source := _rect(&"a", Vector2(-800, 0))
@@ -775,21 +774,21 @@ func test_a_requested_move_keeps_the_settings_it_started_with() -> void:
 	var before := WallTransition.sample_at(mid, total, source, dest, WINDOW,
 			transition._settings).camera_zoom
 	# What the OTHER branch would give, so the check below cannot pass by the two being equal.
-	var info_settings := _settings()
-	info_settings.wall_info_mode = true
-	var info_zoom := WallTransition.sample_at(mid, total, source, dest, WINDOW,
-			info_settings).camera_zoom
-	check(not is_equal_approx(before, info_zoom),
+	var still_settings := _settings()
+	still_settings.wall_reduced_motion = true
+	var still_zoom := WallTransition.sample_at(mid, total, source, dest, WINDOW,
+			still_settings).camera_zoom
+	check(not is_equal_approx(before, still_zoom),
 			"sanity: the two branches really do disagree at this instant, so a switch would show",
-			"ordinary=%.4f info=%.4f" % [before, info_zoom])
+			"ordinary=%.4f reduced=%.4f" % [before, still_zoom])
 
 	# THE FLIP, on the live resource, mid-move.
-	live.wall_info_mode = true
+	live.wall_reduced_motion = true
 	var after := WallTransition.sample_at(mid, total, source, dest, WINDOW,
 			transition._settings).camera_zoom
 	check(is_equal_approx(before, after),
-			"flipping wall_info_mode mid-move does not change what the running transition samples",
-			"before=%.4f after=%.4f" % [before, after])
+			"flipping wall_reduced_motion mid-move does not change what the running transition "
+			+ "samples", "before=%.4f after=%.4f" % [before, after])
 	check(transition._settings != live,
 			"...because the transition holds its OWN copy, not the live resource")
 

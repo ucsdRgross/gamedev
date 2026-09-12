@@ -519,19 +519,11 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 			+ "the OTHER half of the gate this test does not flip")
 
 	backup_real_settings()
-	# ⚠ CONSTRUCTING A `Main` CLEARS THE SHARED `wall_info_mode` (C3, main.gd's own startup rule),
-	# and WALL FOCUS's info-toggle test sets that same flag on the same live `PlayerSettings` and
-	# then awaits a camera move. This suite does not wait for it, so a Main built here during that
-	# await clobbered its flag and failed it -- measured, 2 runs in 3, in a suite this test does not
-	# touch. Preserved and put straight back: production really does clear it, so the fix belongs on
-	# whichever side is the interloper, and that is this one.
-	var info_mode_before : bool = SettingsManager.settings.wall_info_mode
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
 	# Main._ready() -> Wall._ready() sets get_tree().paused = true GLOBALLY -- undone immediately,
 	# same established reason every Wall/Main-building test in this suite family documents.
 	get_tree().paused = false
-	SettingsManager.settings.wall_info_mode = info_mode_before
 
 	var settings := SettingsManager.settings
 	var prev := settings.wall_debug_readout

@@ -2,7 +2,7 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
-## A card is highlighted, or clicked while Info mode is on: its `InfoEntry` for the wall's one container.
+## A card is highlighted: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
 
 # NO CARD IS HIGHLIGHTED ANY MORE: the pointer left every card, or the board focus moved off them.
@@ -1251,7 +1251,7 @@ func _grid_index_of(c: Control) -> int:
 	return NO_GRID
 
 ## In the overview, a click on a grid focuses that grid INSTEAD of acting on the card. True when
-## it consumed the press. Info mode is not placement, so it is asked first and passes through.
+## it consumed the press.
 func _consume_as_focus_click(c: Control) -> bool:
 	if view_mode != ViewMode.OVERVIEW: return false
 	var gi := _grid_index_of(c)
@@ -1458,9 +1458,7 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
-				if _info_mode():
-					_publish_info(ui_data[focused_control])
-				elif not _consume_as_focus_click(focused_control):
+				if not _consume_as_focus_click(focused_control):
 					data_selected.emit(ui_data[focused_control])
 			elif _card_control_at(get_global_mouse_position()) == null:
 				description_dismiss_requested.emit()
@@ -1490,9 +1488,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# our last-known card control; it can go stale when focus moves to other UI, and it
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
-			if _info_mode():
-				_publish_info(ui_data[focused_control])
-			elif not _consume_as_focus_click(focused_control):
+			if not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
@@ -2855,10 +2851,6 @@ func on_control_focus_entered(control:Control) -> void:
 	# Card inspector for EVERY input mode (mouse hover grabs focus too, so focus is the one
 	# unified hover signal). NOT Control.tooltip_text: the native tooltip is a popup Window
 	# that sat under the cursor and blocked clicks — this panel is pure display (IGNORE).
-	# ⚠ Two gates, and they are different questions. In Info mode this panel ALWAYS yields: the
-	# wall's card is the one description system, and two panels describing the same card is what
-	# having a single info card replaced. Outside Info mode `wall_screen_popups` decides whether a
-	# description is available at all.
 	if ui_data.has(control) and _popups_allowed():
 		_show_focus_info(control, ui_data[control])
 	else:
@@ -2918,16 +2910,9 @@ func _ensure_focus_info() -> void:
 ## Show `data`'s description beside the focused control (right of it; flips left at the
 ## edge). Placement is re-pinned every frame while visible (_process) so focus-driven
 ## container relayouts — which move the anchor a frame later — never strand the panel.
-## Whether the wall's Info mode is on. Read through `WallPicture.settings()` — the one accessor
-## that answers "which PlayerSettings" — so a tool previewing the board sees its own knobs.
-func _info_mode() -> bool:
-	return WallPicture.settings().wall_info_mode
-
-## Whether this screen's OWN description popup may show right now — never in Info mode, and outside
-## it only when `wall_screen_popups` is on.
+## Read through `WallPicture.settings()` so a tool previewing the board sees its own knobs.
 func _popups_allowed() -> bool:
-	var settings := WallPicture.settings()
-	return not settings.wall_info_mode and settings.wall_screen_popups
+	return WallPicture.settings().wall_screen_popups
 
 # ⚠ THE CALLER OWNS `entry.visual`, a LIVE preview card, so a fresh one is built per call. Its size
 # goes on the card (`preview_size`), never on a scale above it: a Container resets a child's `scale`

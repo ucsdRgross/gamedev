@@ -150,6 +150,25 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   it) — 'do not re-instantiate on the map'; `_on_node_hovered` is `map.gd:162`. 4.3's
   `_replay_pending_placement()` dereferences `RunManager.run` unguarded — populate it.
 
+## Phase 2 review (adversarial, Fable 5.1) — open until fixed
+1. CONFIRMED `hud_container.gd` per-screen state (`_entry_by_screen`, `_lock_by_screen`,
+   `_locked_entry_by_screen`, `_processing_screen`) outlives a show: a WON show leaves
+   `processing` true so the next show's whole first pick has no description; a mid-show Back then
+   New Run re-shows the previous show's entry/lock. Nothing resets on `detach_screen`/new run.
+2. CONFIRMED leaving the game while locked: `set_active_screen` sets the new screen BEFORE
+   `show_hud()`, so `clear_lock` erases the wrong screen's lock while `description_dismissed`
+   still drops the board's marking — on return the lock is half-alive (X focusable, marking gone).
+3. CONFIRMED (by reading) a remembered entry detached on a mid-cascade screen change and never
+   re-mounted is orphaned by the next publication (`_entry_by_screen` overwrite at `:178`).
+4. CONFIRMED Q68=b met in flag only: `%ExitX` is FOCUS_ALL when locked but arrows are consumed
+   for scrolling and nothing in the root viewport can navigate to it; the test asserts the flag.
+5. CONFIRMED preview size baked at publish — a resize/board zoom with a description up leaves it
+   stale (Q34=b, Q48=a).
+6. SUSPECTED stick scroll rounds to 0 px/frame at low deflection on a short panel — use a
+   fractional accumulator.
+7. Test shape: the cancel test calls `wall._unhandled_input` directly (item 13); the rebuild test
+   compares `locked_data` to a value it set itself.
+
 ## Gaps
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
   there. S3 builds §1.1 as written; gate checked at TEST_PLAN 3.1's fixtures.

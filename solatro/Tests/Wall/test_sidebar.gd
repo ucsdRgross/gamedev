@@ -89,6 +89,9 @@ func _ready() -> void:
 	await test_the_scroll_stick_scrolls_the_description_and_not_the_hud()
 	await test_the_arrows_scroll_only_once_the_description_is_locked()
 	await test_the_exit_x_joins_navigation_only_while_locked()
+	behavior_section("S9: INFO MODE IS GONE")
+	test_no_script_names_the_retired_mode()
+	test_the_retired_action_is_unbound()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -2219,3 +2222,21 @@ func test_the_exit_x_joins_navigation_only_while_locked() -> void:
 				"...and accept on it dismisses the description (C16)")
 		check(not _container.is_locked(), "...taking the lock with it")
 	await _end_game_fixture()
+
+# Split so this suite never itself contains the retired name, which the deletion gate greps for.
+const RETIRED_MODE_TOKEN := "wall_" + "info"
+
+## L1-L4: Info mode is deleted, so no script may still name it.
+func test_no_script_names_the_retired_mode() -> void:
+	var offenders : Array[String] = []
+	for path : String in gd_scripts_under("res://"):
+		var text := FileAccess.get_file_as_string(path)
+		if text.contains(RETIRED_MODE_TOKEN): offenders.append(path)
+	check(offenders.is_empty(), "no script outside addons/ names the retired Info mode (8.1)",
+			"
+".join(offenders))
+
+## L1: the toggle's input action went with the mode.
+func test_the_retired_action_is_unbound() -> void:
+	check(not InputMap.has_action(StringName(RETIRED_MODE_TOKEN)),
+			"the retired mode's input action is gone from the InputMap (8.1)")
