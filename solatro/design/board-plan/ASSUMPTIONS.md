@@ -196,3 +196,22 @@ gap under `gaps/`.
   never read by any rule); the view consumes it once at show start. Reversible and invisible.
 - S11 / TEST_PLAN TP-74: the row said "and is skippable"; answers.json has `Q69` = (a), "dealt, cell
   by cell", not (c). The row is corrected against the source; no skip is built.
+- S11 / Q63, owner ruling that SUPERSEDES the grey: *"i dont want grid marks to be monochromatic. try
+  no outline to indicate it is a mark version for now, no other visual changes."* A marked empty cell
+  therefore draws its face exactly as a played card does -- full colour, full size, all four printed
+  properties -- and the only thing that says "mark" is that it wears NO RIM. Delivered through the
+  outline shader's TYPE override layer (`TypeGridCell.outline_style()` returns the shipped style
+  duplicated with `width = 0`), so it is still the palette-and-outline mechanism pre-authorisation 15
+  requires and still never `modulate`. The `mark_ink` / `mark_rim` palette roles this step first added
+  were REMOVED with the grey: a role nothing reads is a defect.
+- S11: MEASURED bug, fixed rather than filed. `CardOutline.material_of` re-seeded `u_outline_width`
+  from the shared constant on every call, and it runs AFTER `set_rim` on every refresh (`set_alert`,
+  `set_clock`) -- so a per-type `OutlineStyle.width` override was silently overwritten by the shipped
+  width and the TYPE layer of ARCHITECTURE_REVIEW §4j could not change a rim's thickness at all. The
+  seed is gone; `set_rim` is the one writer. The shader's own default is the same value, so a polygon
+  that never reaches `set_rim` is unchanged.
+- S11 / Q69: the reveal is driven from `PlayArea.reveal_plan()`, called from `_start_fresh_show` after
+  the view rebuild and only when a view exists. The cells still to be dealt live on the PlayArea as
+  their own zone cards, `_bind_stack` derives each cell's `CardVisual.mark_drawn` from that list, and
+  the per-cell step is the existing `anim_spin` plus `Pacing.wait(plan_reveal_fraction * get_delay())`
+  -- so a rebuild landing mid-reveal still shows exactly the marks the reveal has dealt.

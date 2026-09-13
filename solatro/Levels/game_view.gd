@@ -378,6 +378,10 @@ func await_card_settled(card: CardData) -> void:
 func rebuild() -> void:
 	play_area.setup_gui()
 
+## Deal the opening plan onto the board cell by cell (show start only).
+func reveal_plan() -> void:
+	await play_area.reveal_plan()
+
 ## Repopulate the row/col score gutters from state.scores_* (after apply_act_score clears them).
 func sync_scores() -> void:
 	play_area.update_score_controls()

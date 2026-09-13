@@ -78,6 +78,13 @@ var control_anchor: Control = null
 ## card when it binds the slot.
 var bottom_anchored := false
 
+## False while the opening deal has not reached this cell yet, which is the whole of the reveal.
+var mark_drawn := true:
+	set(value):
+		if mark_drawn == value: return
+		mark_drawn = value
+		update_visual()
+
 var card_size : Vector2
 var card_separation: int
 var card_separation_custom: int
@@ -227,7 +234,16 @@ func update_visual() -> void:
 			1)
 		CardOutline.fill_texture(type)
 		type.show()
+	_hold_mark_back()
 	_push_outline_ink()
+
+# A MARK IS PRINTED ON THE CELL'S OWN ZONE CARD, so it rides the polygons a played card's rank and
+# suit ride. Held back rather than redrawn: the opening reveal deals a cell by letting its printed
+# properties appear, and the cell frame under them is never touched.
+func _hold_mark_back() -> void:
+	if mark_drawn: return
+	for poly : Polygon2D in [rank, stamp, suit, art]:
+		poly.hide()
 
 ## ONE OUTLINE INK PER CARD, resolved here and pushed to all five polygons (design D7 / §2e).
 ##

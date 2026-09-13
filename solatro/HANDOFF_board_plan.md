@@ -166,13 +166,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs (BOARD PLAN of 101): reroll drawing draw_deck[0] instead of the deal -> the fewest-copies check red; swap without relink -> the backref check red; grant with granted false -> the flag check and I6 red. Overseer full run: ALL 47 SUITES: 4193 CHECKS PASSED, errors log empty; BOARD PLAN 101/101; SECTION 8 identical; per-suite banners vs S9 differ only in BOARD PLAN. grep: four api functions with the registry signatures; BoardPlan.deal still has two call sites; Board.deal_marks shared by the late grid and the reroll; no global RNG.'
   notes: 'A content surface with NO shipped caller yet (by design). The three writers bump revision once each. QR5 follow-ups never asked: a reroll or swap MAY touch an occupied cell (logged assumption). grant_mark writes over an existing mark without a prior clear (write_mark assigns every slot).'
 - id: S11
-  description: the mark's look - grey, faded, full card size in the empty-cell frame, all four properties; palette roles mark_ink/mark_rim; the opening reveal (plan_reveal_fraction); TP-60, TP-61, TP-62, TP-70; by eye TP-71, TP-74, TP-75.
-  files_touched: []
-  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  description: the mark's look (owner ruling - a real card's colours, no rim); the reveal cell by cell in deal order (plan_reveal_fraction); description names the mark; TP-60, TP-61, TP-62, TP-70; by eye TP-71, TP-74, TP-75.
+  files_touched: [solatro/Cards/Types/type_grid_cell.gd, solatro/Cards/card_outline.gd, solatro/Cards/card_visual.gd, solatro/UI/play_area.gd, solatro/Levels/game.gd, solatro/Levels/game_view.gd, solatro/Scripts/board_plan.gd, solatro/Scripts/game_data.gd, solatro/Scripts/player_settings.gd, solatro/Locale/localization.csv, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Visual/plan_reveal_shot.gd, solatro/Tests/all_tests.tscn, solatro/Tests/Support/test_base.gd]
+  verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_reveal_shot.tscn and look'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Overseer full run: ALL 48 SUITES: 4236 passed, 1 FAILED (the standing WALL FOCUS line); PLAN VISUALS 30/30; PIXELS 43/43; PALETTE 34/34; VISUAL LAYERS 221/221; SECTION 8 identical. By eye (overseer, 4x crop): a marked empty cell draws its art, rank pip and suit pip in full colour at full size inside the dashed ring with NO rim; a real card beside it is identical plus its dark rim and cream body (a played card frame); the unmarked cell is the bare ring. Pre-S11 crop confirms marks never had a cream body (the cell type frame is a hollow ring), so the only pixel change is the rim. TP-74 reveal measured over time by the sibling probe: 25 cells ~516 ms apart, 12.1 s total, in the walk order, not row-major. TP-75: no new palette entry; the palette-swap snapshot renders no board.'
+  notes: 'Owner ruling superseded Q63 grey (PLAN 1.10). Mechanism: the outline TYPE override layer with width 0; a measured engine bug fixed on the way (CardOutline.material_of re-seeded u_outline_width after set_rim, so no per-type width override survived). The reveal lives in PlayArea.reveal_plan() via a GameView delegate; plan_reveal_order transient. ⚠ FOR THE OWNER: the 12.1 s opening (plan_reveal_fraction 0.5 x get_delay) is the knob; and whether no rim alone reads as a mark at overview zoom.'
 - id: S12
   description: the match highlight while holding a card, and the landing feedback; palette roles match_rim/match_rim_active; TP-63, TP-64, TP-65; by eye TP-72, TP-73.
   files_touched: []

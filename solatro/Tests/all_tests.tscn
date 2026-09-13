@@ -48,6 +48,7 @@
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_board_plan.tscn" id="47_bplan"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_mark_match.tscn" id="48_mmatch"]
+[ext_resource type="PackedScene" path="res://Tests/UI/test_plan_visuals.tscn" id="49_pvis"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -109,6 +110,8 @@ speed_base_delay = 0.1
 [node name="TestInteraction" parent="." unique_id=1565271951 instance=ExtResource("21_inter")]
 
 [node name="TestUiProps" parent="." unique_id=1146959532 instance=ExtResource("20_uiprops")]
+
+[node name="TestPlanVisuals" parent="." instance=ExtResource("49_pvis")]
 
 [node name="TestVisualLayers" parent="." unique_id=1829713258 instance=ExtResource("22_vislay")]
 

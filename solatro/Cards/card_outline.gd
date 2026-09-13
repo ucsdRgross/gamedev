@@ -72,7 +72,11 @@ static func material_of(poly : Polygon2D) -> ShaderMaterial:
 		# `u_frame_uv` / `u_fill_mode` write lands on all of them — last writer wins, board-wide.
 		mat.resource_local_to_scene = true
 		poly.material = mat
-	# ⚠ **SEEDED ON EVERY CALL, NOT ONLY ON CREATION.** These three used to be set once, inside the
+# ⚠ THE RIM'S WIDTH IS NOT SEEDED HERE, AND MUST NOT BE. It is `set_rim`'s, from the card's STYLE,
+# and this runs after it on every refresh (`set_alert`, `set_clock`) -- so a seed here silently
+# overwrote every per-type override with the shipped width. MEASURED on a mark's rimless style.
+
+	# ⚠ **SEEDED ON EVERY CALL, NOT ONLY ON CREATION.** These two used to be set once, inside the
 	# construction branch, with an existing outline material returned untouched. That is exactly what
 	# an editor-saved material defeats: `poly.material = mat` above is a scene mutation, so a `@tool`
 	# host persists it, and every later call then short-circuited and left whatever uniform state the
@@ -82,7 +86,6 @@ static func material_of(poly : Polygon2D) -> ShaderMaterial:
 	# recoloured nothing (ARCHITECTURE_REVIEW §4h, proved by the 16_palette_swap snapshot).
 	mat.set_shader_parameter(&"u_palette", PaletteDB.PALETTE.texture)
 	mat.set_shader_parameter(&"u_num_colors", PaletteDB.width())
-	mat.set_shader_parameter(&"u_outline_width", int(WIDTH))
 	return mat
 
 ## UV this polygon so its frame lands on the polygon's inner rect, leaving `WIDTH` units of margin for

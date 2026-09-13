@@ -38,6 +38,9 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 		for type_card : CardData in grid.cell_types:
 			if not is_marked(type_card): order.append(type_card)
 	_shuffle(order, rng)
+#The walk order is what the opening reveal deals on screen, so it is recorded as it happens rather
+#than re-derived from a board that no longer remembers which cell came first.
+	state.plan_reveal_order.clear()
 #The Entrance's per-slot stocks replace this line when the sidebar's stocks land.
 	var stocks : Array[Array] = [state.draw_deck]
 	var unused := _lowest_copies_per_stock(stocks, state)
@@ -48,6 +51,7 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 			source = _take_unused(unused, i % stocks.size(), rng)
 		if not source: return
 		write_mark(order[i], source, false)
+		state.plan_reveal_order.append(state.cell_type_coord(order[i]))
 
 #⚠ `Array.shuffle()` CANNOT BE SEEDED -- it draws on the global generator, so the deal would not
 #replay. Shuffling the cells rather than dealing row by row is what keeps a repeat from always

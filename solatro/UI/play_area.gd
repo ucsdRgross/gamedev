@@ -1685,6 +1685,41 @@ func _bind_stack(slot: Control, stack: Array[CardData], zone_card: CardData) -> 
 	for j : int in depth:
 		_bind_slot(slot.get_child(j) as Control, stack[depth - 1 - j])
 	_bind_slot(slot.get_child(depth) as Control, zone_card)
+#DERIVED HERE, NEVER CACHED ON THE SLOT: a slot is pooled and rebound to whatever cell it draws
+#next, so a rebuild that lands mid-reveal still shows exactly the marks the reveal has dealt.
+	new_data_card[zone_card].mark_drawn = zone_card not in _plan_reveal_pending
+
+# The marks the opening reveal has not dealt yet, as the cells' own zone cards. Empty at every other
+# moment in a show, so `_bind_stack` asks a list of nothing.
+var _plan_reveal_pending : Array[CardData] = []
+
+# DEAL THE PLAN ON SCREEN, cell by cell in the order the deal actually walked -- which is what makes
+# the randomness legible -- each cell taking its own share of the live delay. Consumed once: a
+# resumed show carries no order and opens with its plan already printed.
+func reveal_plan() -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var order := game.state.plan_reveal_order.duplicate()
+	game.state.plan_reveal_order.clear()
+	_plan_reveal_pending.clear()
+	for coord : BoardCoord in order:
+		var mark := game.state.cell_type_at(coord)
+		if mark: _plan_reveal_pending.append(mark)
+#Held back BEFORE the first frame they would be drawn on: the visuals this rebuild created enter the
+#tree deferred, so their own first refresh has not run yet and nothing flashes. MEASURED: a cell
+#whose slot the layout has not built yet has NO visual, and `_bind_stack` holds that one back later.
+	for mark : CardData in _plan_reveal_pending:
+		var held : CardVisual = data_card.get(mark)
+		if held: held.mark_drawn = false
+	if not visuals_ready(): await board_visuals_ready
+	while not _plan_reveal_pending.is_empty():
+		var mark : CardData = _plan_reveal_pending.pop_front()
+		var visual : CardVisual = data_card.get(mark)
+		if visual:
+			visual.mark_drawn = true
+			visual.anim_spin()
+		await Pacing.wait(self, SettingsManager.settings.plan_reveal_fraction
+				* game.get_delay()).timeout
 
 func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	# ⚠ **THE CONTAINER'S OWN `global_position` STOPS MIRRORING ITS CHILDREN THE MOMENT IT IS

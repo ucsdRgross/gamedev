@@ -8,7 +8,34 @@ extends CardModifierType
 @export_storage var granted : bool = false
 
 func get_str() -> String: return TRANSLATION.find('GRID_CELL_CARD')
-func get_description() -> String: return TRANSLATION.find('GRID_CELL_CARD_DESCRIPTION')
+
+# A covered mark is reduced to a sliver, so the cell's own description is the one place its
+# identity survives being played over.
+func get_description() -> String:
+	if not _marked(): return TRANSLATION.find('GRID_CELL_CARD_DESCRIPTION')
+	return TRANSLATION.find('GRID_CELL_CARD_MARKED_DESCRIPTION') % [
+			data.suit.get_str() if data.suit else "",
+			data.rank.get_str() if data.rank else ""]
+
+# THE WHOLE OF A MARK'S LOOK: it draws its face exactly as a played card does, and wears NO RIM --
+# owner ruling. The style is DUPLICATED rather than authored beside this file, so every other
+# outline number keeps following the shipped tuning when the atlas tool moves it.
+func outline_style() -> OutlineStyle:
+	if not _marked(): return super()
+	if not _mark_outline:
+		_mark_outline = CardOutline.STYLE.duplicate()
+		_mark_outline.width = 0
+	return _mark_outline
+
+# One rimless style for every mark on the board: it depends on nothing but the shipped style, which
+# is the same for all of them.
+static var _mark_outline : OutlineStyle
+
+# The mark predicate, asked of this cell's own card. A type whose backref was never linked has no
+# card to print anything, which is what a bare cell is.
+func _marked() -> bool:
+	return data != null and BoardPlan.is_marked(data)
+
 ## ⚠ THE OLD ZONE FRAME, not a new one. A cell is a zone slot and reads as one: it uses the
 ## same frame the board's zone/type cards have always used (`TypeInput`'s), so an empty cell
 ## looks like the empty slot it is. Owner: "use old zone frames. dont change type frames" --

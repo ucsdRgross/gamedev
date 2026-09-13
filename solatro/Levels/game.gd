@@ -268,6 +268,9 @@ func _start_fresh_show() -> void:
 	# setup_gui found no game and skipped the score gutters — including the row buffer control
 	# that keeps the play area from shifting when scores first appear. Headless: no-op.
 	if view: view.rebuild()
+# 5. And now the plan is dealt ON SCREEN, cell by cell -- after the board it draws on exists. A
+#    headless show is already dealt and has nothing to animate.
+	if view: await view.reveal_plan()
 	save_state()          # seed the history with the opening board
 	RunManager.save_run() # write it once synchronously so a save exists immediately
 

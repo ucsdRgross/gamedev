@@ -50,6 +50,9 @@ var revision : int = 0:
 @export_storage var committed_grid : int = -1
 ## Dealt once, stored, never re-derived; seeded so a re-entered show is the same show.
 @export_storage var plan_seed : int = 0
+# The cells the last deal walked, in that order, for the opening reveal to deal them again on screen.
+# TRANSIENT on purpose: a resumed show has none, so it opens with its plan already on the board.
+var plan_reveal_order : Array[BoardCoord] = []
 ## Distinct combo classes scored THIS act (SCORING_MATH_PLAN §15a U; a set — Array for
 ## serialization). Lives ON the board state so undo/act-cancel/pending-action replay reset
 ## it for free: every snapshot restore brings back the pre-act (empty) set, same reason
