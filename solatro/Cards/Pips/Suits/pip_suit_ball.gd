@@ -10,7 +10,7 @@ func get_description() -> String: return TRANSLATION.find('SUIT_BALL_DESCRIPTION
 ## Balls are ballistic: a mancala walk down the column picks `count` talent targets at spawn
 ## (pure data), and one ball per tick flies straight to each, dropping Juggling on arrival.
 func spawn_props() -> Array[PropSpawner]:
-	var v := _spawn_origin()
+	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var targets := api.mancala_targets(v, count, func(c: CardData) -> bool: return c.skill != null)

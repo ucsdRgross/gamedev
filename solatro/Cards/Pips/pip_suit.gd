@@ -32,8 +32,8 @@ const ART_TEXTURE_V_FRAMES : int = 13
 ## Each suit names its own role rather than indexing a magic array — reassigning the colour is
 ## editing that one named entry in Assets/Palette/roles.tres (T21).
 @abstract func palette_role() -> int
-## PURE factory: the spawners this suit launches when its card is scored in a meld.
-## Empty when the card is talented (data.skill) or off-board. NO mutation in here.
+#PURE factory: the spawners this suit launches when its card is scored in a meld. Empty unless the
+#card's own cell carries a mark agreeing on SUIT, and empty off-board. NO mutation in here.
 @abstract func spawn_props() -> Array[PropSpawner]
 
 func get_frame() -> int: return get_suit_index()
@@ -82,14 +82,15 @@ func fire_mult() -> int:
 
 # --- Shared spawn preamble (Phase 3) --------------------------------------------------------
 
-## The board slot this suit launches from, or NOWHERE when it spawns nothing: a talented
-## card (its skill suppresses its own suit effect — locked) or an off-board card. Reads the
-## GRID index (Entrance included), not the legacy zone one -- that is the one `_pos_index`
-## never sees a grid or Entrance card through.
+#The board slot this suit launches from, or NOWHERE when it spawns nothing: an off-board card, or one
+#whose cell's mark does not agree on SUIT -- a talent suppresses nothing, the mark's agreement is the
+#whole gate. Reads the GRID index, not the legacy zone one, which never sees a grid card.
 func _spawn_origin() -> BoardCoord:
-	if data.skill: return BoardCoord.NOWHERE
 	if not api or not api.is_live(): return BoardCoord.NOWHERE
-	return api.grid_position_of(data)
+	var coord : BoardCoord = api.grid_position_of(data)
+	var matched : int = await MarkMatch.matches_at(api.board_state(), data, coord)
+	if not (matched & MarkMatch.Property.SUIT): return BoardCoord.NOWHERE
+	return coord
 
 ## Prop count = rank × fire_mult (fire buffs count only). Non-numeral ranks count as 1.
 func _spawn_count() -> int:

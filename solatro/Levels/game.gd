@@ -1166,7 +1166,8 @@ func _run_score_effects(result: Scoring.Result) -> void:
 	var spawners : Array[PropSpawner] = []
 	for card in result.meld:
 		if card.suit:
-			spawners.append_array(card.suit.spawn_props())
+			var suit_spawners : Array[PropSpawner] = await card.suit.spawn_props()
+			spawners.append_array(suit_spawners)
 	await run_props(spawners)
 	for card in result.meld:
 		await run_all_mods(&"on_score", card)

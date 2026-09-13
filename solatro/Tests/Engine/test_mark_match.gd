@@ -35,6 +35,8 @@ func _ready() -> void:
 	await test_a_match_outside_the_meld_pays_nothing()
 	await test_a_card_pays_into_every_line_it_completes()
 	await test_a_match_registers_no_combo_class()
+	behavior_section("A MATCHED SUIT FIRES ONCE PER MELD MEMBERSHIP")
+	await test_a_matched_suit_fires_once_per_meld_membership()
 	behavior_section("CONTENT MAY LOOSEN THE MATCH")
 	await test_a_leniency_rule_loosens_the_match()
 	behavior_section("A MARK IS NEVER SPOTLIT")
@@ -138,6 +140,12 @@ func detector_game(state: GameData) -> Game:
 func row_card(rank: int) -> CardData:
 	return TestFactories.m_card(float(rank), TestFactories.uc())
 
+#A card of `rank` printing a real KNIFE -- the only suit-effect source these boards carry, because
+#the test suit every other card prints spawns nothing whatever stands under it. A knife's props score
+#each no-skill card of its row, so what it fires is visible as points in that row's own bucket.
+func knife_card(rank: int) -> CardData:
+	return play_card(rank, null).with_suit(PipSuitKnife.new())
+
 ## Five cards whose best meld is the PAIR of 7s -- the two cards a mark under cell 0 or 1 can pay.
 func pair_row() -> Array[CardData]:
 	return [row_card(7), row_card(7), row_card(3), row_card(9), row_card(11)] as Array[CardData]
@@ -197,6 +205,24 @@ func banked_corner_lines(marks: Dictionary[int, CardData]) -> Array[float]:
 			if not g.state.score_special.is_empty() else 0.0
 	var banked : Array[float] = [row_banked(g), g.state.line_score(g.state.scores_col, 0, 0, 0),
 			diagonal]
+	free_game(g)
+	return banked
+
+
+#Grid 0's row 2 and column 2 of one rank, so each meld holds every card of its line, with a knife at
+#their crossing. `complete_column` leaves the column one short when the knife should belong to ONE
+#meld, and `marked` writes the SUIT-only mark that is the whole of what lets its props fire.
+func banked_knife_cross(marked: bool, complete_column: bool) -> float:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	if marked:
+		mark_cell(g.state, 2, 2, knife_card(2))
+	for i : int in 5:
+		if i == 2: continue
+		place_in_cell(g.state, i, 2, row_card(3))
+		if complete_column or i != 4:
+			place_in_cell(g.state, 2, i, row_card(3))
+	await g.place_card_in_grid(knife_card(3), cell(2, 2))
+	var banked : float = g.state.line_score(g.state.scores_row, 0, 2, 0)
 	free_game(g)
 	return banked
 
@@ -665,6 +691,31 @@ func test_a_match_registers_no_combo_class() -> void:
 			"%f against %f" % [row_banked(marked), row_banked(bare)])
 	free_game(bare)
 	free_game(marked)
+
+
+# ==============================================================================
+# TP-43 -- a matched suit fires where suit effects fire, once per meld membership
+# ==============================================================================
+
+#TP-43: the mark decides WHETHER a suit fires, never how often. A knife in a row and a column banks
+#its props twice, once per meld it belongs to, which is exactly the unconditional firing this rule
+#replaced; with the mark gone neither firing happens and the row keeps only its hand.
+func test_a_matched_suit_fires_once_per_meld_membership() -> void:
+	var two_melds := await banked_knife_cross(true, true)
+	var one_meld := await banked_knife_cross(true, false)
+	var bare_two := await banked_knife_cross(false, true)
+	var bare_one := await banked_knife_cross(false, false)
+	var fired_twice := two_melds - bare_two
+	var fired_once := one_meld - bare_one
+	check(fired_once > 0.0,
+			"TP-43 precondition: a matched knife in one meld banks its props into its row",
+			"%f against the unmarked %f" % [one_meld, bare_one])
+	check(is_equal_approx(bare_two, bare_one),
+			"TP-43 precondition: without a match the second meld adds nothing to the row",
+			"%f against %f" % [bare_two, bare_one])
+	check(is_equal_approx(fired_twice, fired_once * 2.0),
+			"TP-43: the same knife in a row AND a column fires once per meld membership",
+			"%f against twice %f" % [fired_twice, fired_once])
 
 
 # ==============================================================================

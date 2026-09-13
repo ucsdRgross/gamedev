@@ -127,3 +127,19 @@ gap under `gaps/`.
   randomizes it and the plan is dealt from it, so the parity fixture's two shows carried DIFFERENT
   marks; with bonuses now banked that made the two boards score differently. Pinning it is what
   makes them one show again.
+- S7 / Q87, Q103: the spawn gate lives in ONE place, `PipSuit._spawn_origin`, which every suit's
+  `spawn_props()` already opens with. `MarkMatch.matches_at` is a coroutine, so `spawn_props()`
+  becomes one too and `Game._run_score_effects` awaits it -- that await is the whole of game.gd's
+  change; the rule itself is not restated there.
+- S7 / Q87, QR6: an ENTRANCE card can no longer fire a suit effect at all, because the Entrance
+  carries no marks and `has_cell` refuses its row. Nothing in the product loses a firing --
+  `ScoringSection.of_entrance_row` is not a detected line, so an Entrance card is never in a scored
+  meld -- but every suit-prop FIXTURE that stood in the Entrance moved onto marked grid cells.
+- S7 / TEST_PLAN TP-40..TP-43: TP-40, TP-41 and TP-42 live in `test_suit_props.gd`, whose hand-built
+  boards are the suit-prop instrument; TP-43 lives in `test_mark_match.gd`, which owns the real
+  placement path a second meld membership needs.
+- S7 / TEST_PLAN TP-41: the all-kinds prop fixture in `test_ui_props.gd` moved onto a marked grid,
+  and its 6-column width check went with the Entrance shape it measured: the same claim, through the
+  same helper, is asserted at 12 columns by `test_a_board_wider_than_the_window_stays_reachable`.
+- S7 / Q87: `test_suit_props.gd` leaves `test_game_headless.gd`'s `ZONE_ONLY_TESTS` list, which that
+  suite's own ratchet requires once a file covers a grid.

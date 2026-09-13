@@ -14,7 +14,7 @@ func get_description() -> String: return TRANSLATION.find('SUIT_FIREWORK_DESCRIP
 ## Fireworks rise up their column (a staggered rocket per tick) and each banks column score at
 ## the edge. The rise route may be empty (card at the top) — then it banks immediately.
 func spawn_props() -> Array[PropSpawner]:
-	var v := _spawn_origin()
+	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var route := api.column_rise_path(v)

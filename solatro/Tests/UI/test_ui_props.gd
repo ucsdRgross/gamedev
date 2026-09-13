@@ -1092,6 +1092,7 @@ func test_game_view_scoring_pass_with_props() -> void:
 	var high_water : Array[int] = [0]
 	_watch_live_props_into(high_water, pa, finished, spawned_kinds, visible_kinds, row_stray)
 	await get_tree().process_frame
+	_mark_row_from_next_draws(g, 5)
 	await TestGridFixtures.place_row_from_deck(g, 0, 0, 5)
 	finished[0] = true
 	await get_tree().process_frame
@@ -1152,6 +1153,17 @@ func _watch_live_props_into(out: Array[int], pa: PlayArea, flag: Array[bool],
 ## which kinds spawned / were ever visible inside the viewport, and collect row-hold strays —
 ## every hoop/knife must ride its anchor row's LIVE y through any mid-run relayout (score
 ## labels widening, focus resizes, rebuilds). Returns the prop-visual high-water mark.
+#⚠ THE DEALT PLAN PUTS RANDOM MARKS UNDER EVERY CELL, and a card's suit effect fires only where its
+#own cell's mark agrees on suit, so the cards this pass is about to place are copied onto the cells
+#they land on. `draw_card` pops the BACK of the deck, which is what fixes the order here.
+func _mark_row_from_next_draws(g: Game, count: int) -> void:
+	var grid : GridData = g.state.grids[0]
+	var deck : Array[CardData] = g.state.draw_deck
+	for x : int in count:
+		BoardPlan.write_mark(grid.cell_types[grid.cell_index(x, 0)],
+				deck[deck.size() - 1 - x], false)
+
+
 func _watch_live_props(pa: PlayArea, flag: Array[bool],
 		spawned_kinds: Dictionary[String, bool], visible_kinds: Dictionary[String, bool],
 		row_stray: Array[String]) -> int:
@@ -1192,6 +1204,21 @@ class ProbeSkill extends CardModifierSkill:
 	func get_str() -> String: return "Talent"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
+
+#Puts each cell list of `row` into grid 0's row `y`, bottom of its stack first.
+func _fill_grid_row(state: GameData, y: int, row: Array) -> void:
+	for x : int in row.size():
+		var cell_cards : Array[CardData] = row[x]
+		for card : CardData in cell_cards:
+			Board.place_in_cell(state, card, BoardCoord.new(0, x, y, 0))
+
+#Marks the cell `source` stands in from `source` itself, which is what lets its suit effect fire --
+#an unmarked cell, or one printing another suit, spawns nothing whatever card is standing there.
+func _mark_cell_of(state: GameData, source: CardData) -> void:
+	var coord := state.grid_position_of(source)
+	var grid : GridData = state.grids[coord.grid]
+	BoardPlan.write_mark(grid.cell_types[grid.cell_index(coord.x, coord.y)], source, false)
+
 
 func _suited(rank: int, suit: PipSuit) -> CardData:
 	var c := CardData.new().with_rank(PipRankNumeral.new().with_value(rank)).with_suit(suit)
@@ -1249,6 +1276,9 @@ func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void
 			% [label, columns, left, right, view_width, margin,
 			   "" if margin >= 0.0 else "  (SCROLLING REQUIRED — supported, not a failure)"])
 
+#The crafted board: row 0 is EMPTY, hoop3, knife2, talent, plain -- the empty edge cell is the live
+#trigger for the diagonal staging bug -- and row 1 holds the two ballistic kinds over their own
+#mancala targets. Every source stands on a mark of its OWN suit, or its effect never fires.
 func test_all_kinds_live_in_game_view() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
@@ -1268,54 +1298,29 @@ func test_all_kinds_live_in_game_view() -> void:
 	var g := view.game
 	check(g != null and g.view == view, "the all-kinds view binds its Game (seam wired)")
 	CardEnvironment.CURRENT = g
-	# Crafted upper zone (row z=0 spans every column, incl. the EMPTY edge one):
-	#   col0 EMPTY | col1 hoop3 | col2 knife2 | col3 talent
-	#   col4 [talent, ball2]   (ball at z=1 mancala-targets the talent below it)
-	#   col5 [plain,  fire2]   (fire at z=1 targets the plain below it)
-	#
-	# ⚠ **SIX COLUMNS, NOT SEVEN — THE SEVENTH WAS WIDER THAN THE GAME CAN BUILD**.
-	# The old fixture put a 7th column's card at x 1187..1237 against a 1152 px viewport, so its fire
-	# prop could never enter the view: `every spawned fire entered the visible viewport` was left
-	# FAILING ON PURPOSE and GAP-001 was opened as a game-feel decision between shrinking `card_scale`,
-	# tightening `PlayArea.separation`, and accepting off-screen props.
-	# ⚠ **NONE OF THOSE WERE NEEDED — SEVEN COLUMNS IS UNREACHABLE.** Column count grows only through
-	# the `SkillAdderInput*` rules cards, and `Decks/deck.gd::_build_rules1` — the ONLY rules set in
-	# the project — ships exactly **5 upper adders and 6 lower adders**. The widest board any run can
-	# reach is therefore 6 columns, and this fixture was asserting prop visibility on a board one
-	# column wider than the game has ever been able to produce. A fixture bug, not a layout decision.
-	# ⚠ Nothing asserted is lost by narrowing: the empty edge column, all four prop kinds and both
-	# mancala targets are still here — only the redundant second `plain` single column is gone.
 	var hoop_c := _suited(3, PipSuitHoop.new())
 	var knife_c := _suited(2, PipSuitKnife.new())
 	var ball_c := _suited(2, PipSuitBall.new())
 	var fire_c := _suited(2, PipSuitFire.new())
-	var plan : Array = [
+	var s := TestGridFixtures.build_fix_grid_1()
+	_fill_grid_row(s, 0, [
 		[] as Array[CardData],
 		[hoop_c] as Array[CardData],
 		[knife_c] as Array[CardData],
 		[_suited(5, PipSuitHoop.new()).with_skill(ProbeSkill.new())] as Array[CardData],
-		[_suited(5, PipSuitHoop.new()).with_skill(ProbeSkill.new()), ball_c] as Array[CardData],
-		[_suited(5, PipSuitHoop.new()), fire_c] as Array[CardData],
-	]
-	var s := GameData.new()
-	var types : Array[CardData] = []
-	var cols : Array[ArrayCardData] = []
-	for col_cards : Array[CardData] in plan:
-		var h := CardData.new(); h.stage = CardData.Stage.ZONE
-		types.append(h)
-		cols.append(TestFactories.col(col_cards))
-	s.upper_zone_type = types
-	s.upper_zone = cols
+		[_suited(5, PipSuitHoop.new())] as Array[CardData],
+	])
+	_fill_grid_row(s, 1, [
+		[ball_c, _suited(5, PipSuitHoop.new()).with_skill(ProbeSkill.new())] as Array[CardData],
+		[fire_c, _suited(5, PipSuitHoop.new())] as Array[CardData],
+	])
+	for source : CardData in [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]:
+		_mark_cell_of(s, source)
 	g.state = s          # state_bound rebinds the view to the crafted board
 	g._begin_act()
 	var pa := view.play_area
 	pa.set_card_zones()
 	await settle(pa)
-	# The board GAP-001 was measured on. Checked here rather than in a layout suite because this is
-	# the widest board the suite builds, and the overflow is a property of the board, not of a prop.
-	# ⚠ 6 columns IS the shipped ceiling (5 upper + 6 lower adders in the only rules set), so this is
-	# the real worst case and not an arbitrary fixture width.
-	_check_board_fits_window(pa, plan.size(), "the all-kinds board at the shipped 6-column ceiling")
 	var result := Scoring.Result.new()
 	result.meld = [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]
 	var finished : Array[bool] = [false]

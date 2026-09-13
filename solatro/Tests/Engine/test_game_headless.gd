@@ -957,7 +957,6 @@ const ZONE_ONLY_TESTS : Array[String] = [
 	# ENTRANCE-ONLY -- they name upper_zone, which IS the Entrance and is not going away yet
 	"res://Tests/Engine/test_prop_engine.gd",
 	"res://Tests/Engine/test_statuses.gd",
-	"res://Tests/Engine/test_suit_props.gd",
 ]
 
 const ZONE_MARKERS : Array[String] = ["upper_zone", "lower_zone"]

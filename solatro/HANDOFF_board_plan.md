@@ -135,12 +135,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'Composition is Game._compose_line_score, one call from score_line. Mark hooks dispatched at score time through CardEnvironment.run_mark_mods (the never-spotlit gate lifted for the mark''s own copied modifiers); on_mark_covered fires on EVERY cover (Q46=(d)/Q51=(a) words), on_mark_hit additionally on a match, levels 0/1. add_line_mult is the mark-effect mult seam (NAMES.md, assumption). int() truncation of line*M; is_zero_approx skip. E2E parity fixture pins world_seed (the deal follows it). TP-30 fixture re-derived to a pair of sevens (a 7 outside the meld pays nothing by TP-36).'
 - id: S7
   description: suit effect fires iff SUIT matched; talent suppression retired; TP-40..43.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Cards/Pips/pip_suit.gd, solatro/Cards/Pips/Suits/pip_suit_hoop.gd, solatro/Cards/Pips/Suits/pip_suit_knife.gd, solatro/Cards/Pips/Suits/pip_suit_ball.gd, solatro/Cards/Pips/Suits/pip_suit_fire.gd, solatro/Cards/Pips/Suits/pip_suit_firework.gd, solatro/Levels/game.gd, solatro/Tests/Engine/test_suit_props.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Engine/test_game_headless.gd, solatro/Tests/UI/test_ui_props.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red runs: gate forced always-true -> TP-40 red (spawners=1); talent suppression restored on top of the gate -> TP-41/TP-42 red (talented=0 control=4) with TP-40 green; fire once per placement -> TP-43 red; marks removed from fixtures -> SUIT PROPS 5 passed / 11 FAILED (every re-derived check named in the S7 report); UI PROPS 12 failures red then green after fixtures moved onto marked cells. Overseer full run: ALL 47 SUITES: 4131 CHECKS PASSED, errors log empty; SUIT PROPS 16/16, MARK MATCH 78/78, UI PROPS 133/133; SECTION 8 identical. grep: gate is one seam (PipSuit._spawn_origin), one spawn_props call site, prop_score_talents.gd unchanged.'
+  notes: 'spawn_props became a coroutine (matches_at is one); _run_score_effects only awaits it. An Entrance card can no longer fire a suit effect (no marks there; no detected line runs through the Entrance row). test_talented_suit_suppressed retired in favour of TP-40/41/42. ARCHITECTURE_REVIEW.md 4 still states the old rule: S16 rewrites it.'
 - id: S8
   description: is_spotlit/blocks_spotlight false for a mark; TP-44, TP-45.
   files_touched: [solatro/Cards/card_modifier.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Engine/test_mark_match.tscn, solatro/Tests/all_tests.tscn]
@@ -197,7 +197,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
 
 ## Open bugs
-- none yet
+- Pre-existing, found during S7, not ours: a sprung grid card (`CardVisual.anim_spring_lift`) is never reset, so it keeps `floating = false` until the next rebuild. Details in the S7 evidence file of this session; surfaces in `Cards/card_visual.gd`.
 
 ## Files touched
 - solatro/design/board-plan/gaps/GAP-001.md, ASSUMPTIONS.md (new); PLAN.md §3 S1 row and NAMES.md
