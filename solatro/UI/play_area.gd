@@ -1789,15 +1789,6 @@ func _row_heights_for(g: int) -> void:
 	_row_height_revision = rev
 	_row_height_aligned = aligned
 
-## A panel's whole height, from the DATA: every row, plus the gap the panel puts between them.
-func _grid_panel_height(g: int) -> float:
-	var rows := _grid_rows(g)
-	if rows <= 0: return 0.0
-	var total := float(separation) * float(rows - 1)
-	for r : int in rows:
-		total += _grid_row_height(g, r)
-	return total
-
 ## How many rows grid `g` has, from the DATA. Zero for a grid index nothing answers to.
 func _grid_rows(g: int) -> int:
 	var game := CardEnvironment.get_current_game()
@@ -3027,23 +3018,7 @@ func update_score(zone:Array[BigNumber], index:int, score:BigNumber) -> void:
 		label = upper_zone_left.get_child(index)
 	# scores_row_lower / scores_col_legacy: storage only, no rendering surface anymore.
 	if label: label.update_score_anim(score)
-		
-#func get_control_from_data(data : CardData) -> Control:
-	#if data in data_ui:
-		#return data_ui[data]
-	#return null
-#
-func get_data_from_control(control : Control) -> CardData:
-	flush_rebuild() #reads ui_data
-	if control in ui_data:
-		return ui_data[control]
-	return null
 
-#func get_card_from_data(data : CardData) -> CardVisual:
-	#if data in data_card:
-		#return data_card[data]
-	#return null
-	
 ## **THE SPRING.** Jump `data`, and lift every card stacked ABOVE it in its own cell by the same
 ## rise, rigidly (`Q310`=a). Returns how long the raise takes, like `anim_jump` does.
 ##

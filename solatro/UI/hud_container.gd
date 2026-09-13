@@ -317,16 +317,6 @@ func _input(event: InputEvent) -> void:
 func _navigates_to_exit(event: InputEvent) -> bool:
 	return is_locked() and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
 
-# PAGE KEYS WHENEVER THE DESCRIPTION SHOWS, ARROWS ONLY ONCE IT IS LOCKED: an unlocked sidebar
-# leaves up and down to the board's own selection, which is what the player is still driving.
-func _key_scroll_pages(event: InputEvent) -> float:
-	if event.is_action_pressed(&"ui_page_down", true): return 1.0
-	if event.is_action_pressed(&"ui_page_up", true): return -1.0
-	if not is_locked(): return 0.0
-	if event.is_action_pressed(&"ui_down", true): return DescriptionPanel.WHEEL_STEP_PAGES
-	if event.is_action_pressed(&"ui_up", true): return -DescriptionPanel.WHEEL_STEP_PAGES
-	return 0.0
-
 ## The scroll stick's last reported deflection, integrated per frame while it is off centre.
 var _scroll_stick : float = 0.0
 

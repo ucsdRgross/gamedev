@@ -49,7 +49,9 @@ signal spotlight_reveal_ended()
 
 static var CURRENT : CardEnvironment = null
 
-## ⚠ `CURRENT` can hold a FREED instance — assigned by hand and freed after — so it is cleared here.
+# ⚠ `CURRENT` OUTLIVES ITS GAME: `FxAttachment.transition_secs()` asks for the current game from a
+# card visual still finishing a transition after that game was freed, and a freed instance compares
+# EQUAL to null, so `is` errors on it instead -- measured 6 times in one suite run.
 static func get_current_game() -> Game:
 	if not is_instance_valid(CURRENT): CURRENT = null
 	if CURRENT is Game: return CURRENT

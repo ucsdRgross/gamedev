@@ -6,6 +6,9 @@ extends CanvasLayer
 
 signal deck_picked(cards: Array[CardData], rules: Array[CardData])
 
+## An Inspect opened a viewer over this picker, handed to the screen hosting it so that screen insets it beside the sidebar and relays what it publishes, exactly as it does for its own viewers.
+signal viewer_opened(viewer: DeckViewer)
+
 const DECK_PICKER := preload("res://UI/deck_picker.tscn")
 
 @onready var rows: VBoxContainer = %Rows
@@ -33,7 +36,8 @@ func _ready() -> void:
 		row.add_child(label)
 		var inspect := Button.new()
 		inspect.text = "Inspect"
-		inspect.pressed.connect(func() -> void: DeckViewer.show_deck(self, cards, inspect))
+		inspect.pressed.connect(func() -> void:
+			viewer_opened.emit(DeckViewer.show_deck(self, cards, inspect)))
 		row.add_child(inspect)
 		var pick := Button.new()
 		pick.text = "Pick"

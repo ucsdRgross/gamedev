@@ -193,7 +193,7 @@
   stop. `show_hud()` re-centres it, which is also what makes the stick inert behind the HUD.
 - S8: new names NAMES.md does not list -- `PlayerSettings.sidebar_scroll_pages_per_second` (the
   scroll rate NAMES 5 has no knob for), `DescriptionPanel.scroll_by_pages()` and its
-  `WHEEL_STEP_PAGES` const, `HudContainer._key_scroll_pages()`, `_aim_scroll_stick()`,
+  `WHEEL_STEP_PAGES` const, `HudContainer._aim_scroll_stick()`,
   `_scroll_stick` and `_refresh_exit_focus()`. The unit everywhere is a PAGE of the description's
   own visible height: Godot's `ScrollContainer` steps an eighth of one per wheel notch, so an arrow
   moves `WHEEL_STEP_PAGES` and the stick's default 1.0 page a second is eight notches a second.
@@ -365,11 +365,39 @@
   4.7 (`BaseButton` only). `CardsViewer.inspect_on_highlight(control, data)` is the one place a
   listed control's hover and focus are wired, so `ChoiceViewer._swap_card_control()`'s rerolled slot
   is remembered too.
-- S12: the deck picker's own Inspect viewer (`UI/deck_picker.gd`, inside the start menu) is
-  deliberately NOT wired to a relay. `Q143`=a makes an empty sidebar the right answer where nothing
-  publishes, and PLAN 3a's touch list does not name `menu.gd`/`deck_picker.gd`; the viewer's
-  `info_requested` simply has no listener there and `relay_to()` frees each entry it builds.
+- P3 review: THE SAME CLASS FOLLOWS THE SAME RULE. The deck picker's own Inspect viewer
+  (`UI/deck_picker.gd`, inside the start menu) is inset and relayed exactly as the game screen's is:
+  `Q22`=b keeps the container on the menu, so it is visible (empty) there and would otherwise cover
+  the viewer's first columns -- measured at 1280x720, 3 of 8 listed cards were drawn at picture
+  x 104 against the container's inner edge at 288. New names: `DeckPicker.viewer_opened(viewer)`
+  (the picker announces what an Inspect opened; the screen hosting it owns the wiring),
+  `Menu.info_requested` (the relay `Main` connects, the same one `GameView` exposes),
+  `Menu._on_viewer_opened()` / `Menu._fit_open_viewer()` (re-fitted on `container_rect_changed`
+  like the others). The viewer stays parented to the PICKER, so picking a deck frees it with the
+  picker.
+- P3 review: `ChoiceViewer`'s pack, confirm button and reroll counter share one `Layout` Control
+  (`mouse_filter` IGNORE, the dimmed backdrop stays outside it) and `fit_beside()` insets THAT, so
+  the chrome anchors to the space beside the container rather than to the picture: the confirm
+  button centres under the pack (measured 576 vs the pack's 720 at 1280x720) and the counter keeps
+  to the visible right edge (measured outside it at 600x1000). `Q141`=b's "the viewer owns its own
+  layout" is about the whole layout, not only the cards.
 - S12: `UI/deck_builder.tscn` lost its broken `Cards/card.tscn` `ext_resource`, the `Card` node it
   instanced and the dead "Skill Text" `Label` beside it. The tool's preview is now a real
   `ControlCard` built in `_ready()` over a `preview_data : CardData` the option buttons mutate --
   `CardVisual` redraws itself off `CardData.data_changed`, so nothing rebuilds it (Q166=c, L13).
+- P3 review: `CardsViewer.rehighlight(replaced, data)` -- a slot swapped out UNDER the highlight (a
+  pack Reroll) publishes the card that took the slot. The pointer never moved, so `B1`'s "a
+  highlight is what the sidebar reads" would otherwise leave it reading a card that is gone
+  (measured: the title still read the rerolled-away card until the pointer moved).
+- P3 review: the Deck Maker's `TypeOption` node and its skill "Random" item are DELETED, not wired:
+  nothing ever read `TypeOption`, and the skill randomiser was already commented out in the
+  pre-repair script, so there is no behaviour to restore -- only dead code `Q166`=c asks to remove.
+  `skills` is now index-aligned with the option's own items (item 0 is the scene's "None" -> null).
+- P3 review: three methods with no caller anywhere are deleted -- `HudContainer._key_scroll_pages()`
+  (its body was inlined into `_input()`), `PlayArea._grid_panel_height()` and
+  `PlayArea.get_data_from_control()` (with the commented-out siblings around it).
+- P3 review: `CardEnvironment.get_current_game()`'s `is_instance_valid(CURRENT)` guard KEEPS its
+  place, now with the caller named: `FxAttachment.transition_secs()` reaches it from a card visual
+  still finishing a transition after its game was freed. Replacing the guard with an assert proved
+  it: the assert never fired (a freed instance compares EQUAL to null in Godot 4.7) while
+  `CURRENT is Game` errored 6 times in one suite run.

@@ -109,6 +109,7 @@ func _ready() -> void:
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
 	await test_the_choice_viewer_publishes_into_the_sidebar()
+	await test_a_reroll_moves_the_sidebar_onto_the_replacement()
 	await test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window()
 	await test_a_resize_re_fits_the_open_choice_viewer()
 	await test_the_deck_viewers_cards_start_beside_the_container()
@@ -116,6 +117,8 @@ func _ready() -> void:
 	await test_a_resize_re_fits_the_open_viewer()
 	await test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size()
 	await test_a_board_lock_survives_opening_and_closing_a_viewer()
+	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
+	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
 	await test_the_deck_builder_tool_loads_and_stands_up()
 	test_the_choice_viewer_owns_no_inspector_panel()
 	finish()
@@ -2494,7 +2497,7 @@ func test_closing_a_viewer_returns_the_focus_to_its_own_button() -> void:
 	_container.show_hud()
 	await _open_viewer_by_accept(button)
 	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
-	await _close_open_viewer()
+	await _close_open_viewer(_game_viewport)
 	check(not is_instance_valid(DeckViewer._open), "cancel closed the viewer")
 	check(_booted_viewport.gui_get_focus_owner() == button,
 			"...and the focus is back on the button that opened it (S12.9)",
@@ -2547,6 +2550,10 @@ func _open_viewer_cards(button: Button) -> Array[ControlCard]:
 	await get_tree().process_frame
 	button.pressed.emit()
 	await get_tree().process_frame
+	return _listed_viewer_cards()
+
+# The cards the one open viewer lists, in the order it lists them.
+func _listed_viewer_cards() -> Array[ControlCard]:
 	var out : Array[ControlCard] = []
 	for child : Node in DeckViewer._open.flow_container.get_children():
 		var card := child as ControlCard
@@ -2698,11 +2705,11 @@ func _viewer_card_named_other_than(cards: Array[ControlCard], title: String) -> 
 
 # Escape, pushed into the picture the viewer lives in -- the viewer's own `_unhandled_input` close,
 # never a test-only call.
-func _close_open_viewer() -> void:
+func _close_open_viewer(viewport: Viewport) -> void:
 	var cancel := InputEventAction.new()
 	cancel.action = &"ui_cancel"
 	cancel.pressed = true
-	_game_viewport.push_input(cancel)
+	viewport.push_input(cancel)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -2728,14 +2735,77 @@ func test_a_board_lock_survives_opening_and_closing_a_viewer() -> void:
 			check(title.text == _expected_text(other.child.data)[0]
 					and title.text != locked_title,
 					"the description follows the hover inside the viewer (B7)", title.text)
-			await _close_open_viewer()
+			await _close_open_viewer(_game_viewport)
 			check(not is_instance_valid(DeckViewer._open), "escape closed the viewer")
 			check(_container.is_locked() and title.text == locked_title,
 					"...and the sidebar comes back to the card the board locked (B7)", title.text)
 	await _end_game_fixture()
 
+# The start menu's own Inspect viewer, reached the way a player reaches it: New Run opens the deck
+# picker, the first deck's Inspect button opens a viewer over the menu. Returns
+# `[viewport, main, inspect_button]`.
+func _open_the_pickers_inspect_viewer() -> Array:
+	backup_real_save(suite_tag())
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var main : Main = booted[1]
+	main.menu_scene.new_run_button.pressed.emit()
+	await get_tree().process_frame
+	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	var inspect : Button = null
+	if picker: inspect = (picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button
+	if inspect: inspect.pressed.emit()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return [booted[0], main, inspect]
+
+## The start menu is a screen like the others: the picker's viewer lists its cards beside the container, never under it.
+func test_the_start_menus_inspect_viewer_lists_beside_the_container() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	check(opened[2] != null and is_instance_valid(DeckViewer._open),
+			"New Run's picker offers an Inspect button that opens a viewer (S12.16)")
+	if is_instance_valid(DeckViewer._open):
+		check(container.visible, "sanity: the container is up (empty) on the start menu (Q143=a)")
+		_check_every_card_inside(_listed_viewer_cards(), _unbounded_below(
+					_space_beside_the_container(main._pictures[&"start_menu"], container)),
+				"every card the picker's viewer lists lies beside the container and inside the visible picture (S12.16)")
+	await _end_booted_fixture(viewport, main)
+
+## The picker's viewer publishes into the menu's own container, and closing it hands the focus back to Inspect.
+func test_the_start_menus_inspect_viewer_publishes_into_the_container() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var inspect : Button = opened[2]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var title : Label = panel.get_node(^"%Title")
+	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
+	var cards : Array[ControlCard] = []
+	if is_instance_valid(DeckViewer._open): cards = _listed_viewer_cards()
+	check(cards.size() >= 2, "the inspected deck lists cards to point at", str(cards.size()))
+	if cards.size() >= 2:
+		cards[1].grab_focus()
+		await get_tree().process_frame
+		check(container.showing_description(),
+				"a highlight in the picker's viewer opens the menu's description (S12.17, Q140=a)")
+		check(title.text == _expected_text(cards[1].child.data)[0],
+				"...and the title reads that card's own name (S12.17)", title.text)
+		await _close_open_viewer(menu_viewport)
+		check(not is_instance_valid(DeckViewer._open), "escape closed the picker's viewer")
+		check(menu_viewport.gui_get_focus_owner() == inspect,
+				"...and the focus is back on the Inspect button that opened it (S12.17)",
+				str(menu_viewport.gui_get_focus_owner()))
+	await _end_booted_fixture(viewport, main)
+
 # A real booster pack open on a live map at `size` -- the choice viewer's own fixture, since it is
-# reached through a map node rather than through a button. Returns `[viewport, main, viewer]`.
+# reached through a map node rather than through a button. ⚠ The TEMPLATE is handed back with it:
+# a real map node holds it for the whole run, and a reroll calls its generator. Returns
+# `[viewport, main, viewer, template]`.
 func _boot_map_with_a_booster(size: Vector2i) -> Array:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -2746,22 +2816,35 @@ func _boot_map_with_a_booster(size: Vector2i) -> Array:
 	var main : Main = booted[1]
 	await _focus_map(main, run)
 	var node := WorldGraphNode.new()
+	var template := TypeBoosterBasic.new()
 	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
-	node.meta[MapNodeRoles.BOOSTER_KEY] = TypeBoosterBasic.new()
+	node.meta[MapNodeRoles.BOOSTER_KEY] = template
 	await main.map_scene._open_booster(node)
 	node.free()
 	await get_tree().process_frame
-	return [booted[0], main, _open_choice_viewer(main)]
+	return [booted[0], main, _open_choice_viewer(main), template]
 
-# The teardown every map-booted fixture shares: free the boot, drop the run this test made and put
-# the owner's own save back.
-func _end_map_fixture(viewport: SubViewport, main: Main) -> void:
+# The teardown every fixture that boots a real `Main` shares: free the boot, drop the run this test
+# made and put the owner's own save back.
+func _end_booted_fixture(viewport: SubViewport, main: Main) -> void:
 	await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
+
+# A viewer owning its own layout owns the WHOLE of it: the confirm button and the reroll counter
+# are inset with the pack rather than left anchored to the picture they float over.
+func _check_chrome_inside(viewer: ChoiceViewer, remaining: Rect2, label: String) -> void:
+	var confirm := viewer.confirm_button.get_global_rect()
+	var counter := viewer.rerolls_label.get_global_rect()
+	check(remaining.encloses(confirm) and remaining.encloses(counter),
+			"%s: the confirm button and the reroll counter lie inside it too" % label,
+			"confirm %s counter %s in %s" % [confirm, counter, remaining])
+	check(absf(confirm.get_center().x - remaining.get_center().x) <= 2.0,
+			"%s: the confirm button centres under the pack, not on the picture" % label,
+			"%.1f vs %.1f" % [confirm.get_center().x, remaining.get_center().x])
 
 func _choice_viewer_cards(viewer: ChoiceViewer) -> Array[ControlCard]:
 	var cards : Array[ControlCard] = []
@@ -2793,7 +2876,55 @@ func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
 			_check_every_card_inside(cards,
 					_space_beside_the_container(main._pictures[&"map"], container),
 					"...and every pack card is drawn beside the container, inside the visible picture")
-	await _end_map_fixture(viewport, main)
+			_check_chrome_inside(viewer,
+					_space_beside_the_container(main._pictures[&"map"], container),
+					"the space beside the container holds the whole viewer (S12.11)")
+	await _end_booted_fixture(viewport, main)
+
+# The Reroll button one pack slot owns, parented to the card it belongs to -- the control a player
+# clicks, not the viewer's own list of them.
+func _reroll_button_of(card: ControlCard) -> Button:
+	for child : Node in card.get_children():
+		var button := child as Button
+		if button: return button
+	return null
+
+## A rerolled slot is a new card under the same highlight: the sidebar reads the replacement, never the card that was rerolled away.
+func test_a_reroll_moves_the_sidebar_onto_the_replacement() -> void:
+	var booted := await _boot_map_with_a_booster(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var viewer : ChoiceViewer = booted[2]
+	var template : BoosterTemplate = booted[3]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var title : Label = panel.get_node(^"%Title")
+	check(viewer != null and template != null,
+			"the booster node opened a choice viewer on the map, over a live template")
+	if viewer != null:
+		var cards := _choice_viewer_cards(viewer)
+		var reroll : Button = _reroll_button_of(cards[0]) if not cards.is_empty() else null
+		check(reroll != null and not reroll.disabled,
+				"the pack's first slot offers a Reroll to spend", str(cards.size()))
+		if reroll != null and not reroll.disabled:
+			cards[0].grab_focus()
+			await get_tree().process_frame
+			var rerolled_away : CardData = cards[0].child.data
+			check(container.showing_description()
+						and title.text == _expected_text(rerolled_away)[0],
+					"sanity: the sidebar reads the slot the highlight is on", title.text)
+			var published : InfoEntry = panel.current_entry
+			reroll.pressed.emit()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var replacement := _choice_viewer_cards(viewer)[0]
+			check(replacement.child.data != rerolled_away,
+					"the Reroll replaced the slot's card", str(replacement.child.data))
+			check(panel.current_entry != published,
+					"...and the sidebar re-publishes for the card that took the slot (B1)")
+			check(title.text == _expected_text(replacement.child.data)[0],
+					"...reading the replacement's own name, not the rerolled card's", title.text)
+	await _end_booted_fixture(viewport, main)
 
 ## The same claim at a TOP window: a pack inset only on its left and top edges centres past the visible right edge.
 func test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window() -> void:
@@ -2810,7 +2941,10 @@ func test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window() -> void:
 		_check_every_card_inside(_choice_viewer_cards(viewer),
 				_space_beside_the_container(main._pictures[&"map"], container),
 				"every pack card is drawn below the band and inside the visible picture (S12.11)")
-	await _end_map_fixture(viewport, main)
+		_check_chrome_inside(viewer,
+				_space_beside_the_container(main._pictures[&"map"], container),
+				"the space below the band holds the whole viewer (S12.11)")
+	await _end_booted_fixture(viewport, main)
 
 ## The map's own pack follows the container as well: a resize re-fits it into the space beside it.
 func test_a_resize_re_fits_the_open_choice_viewer() -> void:
@@ -2825,7 +2959,7 @@ func test_a_resize_re_fits_the_open_choice_viewer() -> void:
 		_check_every_card_inside(_choice_viewer_cards(viewer),
 				_space_beside_the_container(main._pictures[&"map"], container),
 				"a resize re-fits the open pack below the new band (S12.15)")
-	await _end_map_fixture(viewport, main)
+	await _end_booted_fixture(viewport, main)
 
 func _open_choice_viewer(main: Main) -> ChoiceViewer:
 	for child : Node in main.map_scene.ui_layer.get_children():
@@ -2841,7 +2975,7 @@ func test_the_choice_viewer_owns_no_inspector_panel() -> void:
 			"the choice viewer's own card-info panel is gone from its scene (S12.7)")
 	viewer.free()
 
-## The Deck Maker tool is REPAIRED, not deleted: its scene loads and stands up clean.
+## The Deck Maker tool is REPAIRED, not deleted: its scene loads, stands up clean and its options really edit the card it previews.
 func test_the_deck_builder_tool_loads_and_stands_up() -> void:
 	var scene : PackedScene = load("res://UI/deck_builder.tscn")
 	check(scene != null, "the deck builder scene still loads (S12.6, Q166=c)")
@@ -2849,7 +2983,35 @@ func test_the_deck_builder_tool_loads_and_stands_up() -> void:
 	add_child(tool_root)
 	await get_tree().process_frame
 	check(tool_root.is_inside_tree(), "...and instantiates into a live tree")
+	check(tool_root.find_child("TypeOption", true, false) == null,
+			"...with the unwired type selector gone from its scene (Q166=c)")
 	var preview := _preview_card(tool_root.get_node(^"HSplitContainer/Control/Preview"))
 	check(preview != null and preview.child != null,
 			"...with a real preview card built from the current classes")
+	if preview != null and preview.child != null:
+		await _check_the_rank_option_redraws_the_preview(tool_root, preview)
 	tool_root.queue_free()
+
+# A REPAIRED tool has to do something past `_ready()`: picking a rank writes it to the card the tool
+# previews AND re-draws that card, which is the whole loop the Deck Maker is. Two known ranks, since
+# the preview starts on a random one that could already be the one picked.
+func _check_the_rank_option_redraws_the_preview(tool_root: Control, preview: ControlCard) -> void:
+	var values : OptionButton = tool_root.get_node(^"HSplitContainer/Control/RankOptionValue")
+	var first := 1
+	var last := values.item_count - 1
+	values.select(first)
+	values.item_selected.emit(first)
+	await get_tree().process_frame
+	check(preview.child.data.rank.value == float(values.get_item_id(first)),
+			"picking a rank writes it to the card the tool previews (S12.6)",
+			"%s vs id %d" % [preview.child.data.rank.value, values.get_item_id(first)])
+	var drawn := preview.child.rank.uv.duplicate()
+	values.select(last)
+	values.item_selected.emit(last)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(preview.child.data.rank.value == float(values.get_item_id(last)),
+			"...and picking another writes that one instead (S12.6)",
+			"%s vs id %d" % [preview.child.data.rank.value, values.get_item_id(last)])
+	check(preview.child.rank.uv != drawn,
+			"...and the preview re-draws the pip the new rank frames (S12.6)")

@@ -10,6 +10,7 @@ const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
+const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
 const DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/description.png"
 const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked.png"
 const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
@@ -56,6 +57,13 @@ func _ready() -> void:
 	_capture(MENU_TOP_OUT_PATH)
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var picker := await _open_the_pickers_viewer(main)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MENU_INSPECT_OUT_PATH)
+	if picker: picker.free()
 	await get_tree().process_frame
 
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
@@ -373,6 +381,18 @@ func _open_a_booster_pack(main: Main) -> void:
 	var cards := _listed_cards(viewer.flex_container)
 	if not cards.is_empty(): cards[0].grab_focus()
 	await get_tree().process_frame
+
+# The MENU still with a viewer up: New Run opens the deck picker, the first deck's Inspect opens a
+# viewer over the menu. That viewer is inset beside the container like every other, so the menu's
+# own sidebar is never drawn over its listed cards. Returns the picker, to free the pair by.
+func _open_the_pickers_viewer(main: Main) -> DeckPicker:
+	main.menu_scene.new_run_button.pressed.emit()
+	await get_tree().process_frame
+	var picker : DeckPicker = main.menu_scene.find_child("DeckPicker", true, false) as DeckPicker
+	if picker == null: return null
+	((picker.rows.get_child(0) as HBoxContainer).get_child(1) as Button).pressed.emit()
+	await get_tree().process_frame
+	return picker
 
 func _open_choice_viewer(main: Main) -> ChoiceViewer:
 	for child : Node in main.map_scene.ui_layer.get_children():

@@ -41,7 +41,7 @@ const ranks : Dictionary[String, Dictionary]= {
 @onready var skill_option: OptionButton = $HSplitContainer/Control/SkillOption
 @onready var randomizer_timer: Timer = $HSplitContainer/Control/RandomizerTimer
 
-## Index-aligned with `skill_option`'s items from index 1; item 0 is "None" and picks `null`.
+## Index-aligned with `skill_option`'s items: item 0 is the scene's own "None", which picks `null`.
 var skills : Array[CardModifier] = [null]
 
 ## The card the option buttons edit -- its visual redraws itself off `CardData.data_changed`.
@@ -120,12 +120,7 @@ func _on_rank_option_value_item_selected(index: int) -> void:
 			.with_value(rank_option_value.get_item_id(index)))
 
 func _on_skill_option_item_selected(index: int) -> void:
-	if index == 0:
-		preview_data.with_skill(null)
-	elif index == 1:
-		randomizer_timer.start()
-	else:
-		preview_data.with_skill(skills[index-1])
+	preview_data.with_skill(skills[index])
 
 func _on_randomizer_timer_timeout() -> void:
 	if rank_option_value.get_selected_id() == 0:

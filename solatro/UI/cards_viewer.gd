@@ -58,6 +58,11 @@ func _publish_highlight(data: CardData) -> void:
 func republish_highlight() -> void:
 	if _highlighted: _publish_highlight(_highlighted)
 
+# A SLOT SWAPPED UNDER THE HIGHLIGHT: the pointer never moved, so what it is on now is whatever took
+# the slot -- otherwise the description reads the card that is gone until the player moves.
+func rehighlight(replaced: CardData, data: CardData) -> void:
+	if _highlighted == replaced: _publish_highlight(data)
+
 ## Remove every listed ControlCard (before repopulating, or when the viewer hides). Detaches
 ## immediately (not just queue_free) so a same-frame repopulate never shows stale cards.
 func clear() -> void:

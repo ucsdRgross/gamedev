@@ -7,6 +7,9 @@ extends Control
 signal new_run_requested(cards: Array[CardData], rules: Array[CardData])
 signal continue_requested
 
+## The card under the highlight in a viewer opened over this menu, relayed to the sidebar exactly as the game screen relays its board's.
+signal info_requested(entry: InfoEntry)
+
 @onready var play_row: HBoxContainer = $Play
 @onready var new_run_button: Button = get_node("Play/New Run") as Button
 @onready var continue_button: Button = $Play/Continue
@@ -42,6 +45,7 @@ func _ready() -> void:
 		_authored_positions[content] = content.position
 	_design_rect = _content_bounds()
 	hud_container.connect_for_screen(hud_container.container_rect_changed, _apply_container_inset)
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _fit_open_viewer)
 	_apply_container_inset()
 
 # The container OUTLIVES this screen in the real game, but a test may tear down a standalone
@@ -83,6 +87,27 @@ func _on_new_run_pressed() -> void:
 	var picker := DeckPicker.add_to_scene(self)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
+	picker.viewer_opened.connect(_on_viewer_opened)
+
+## The viewer an Inspect opened over this menu, if any -- one at a time, the same one `DeckViewer` itself keeps.
+var _deck_viewer : DeckViewer = null
+
+# THE PICKER'S VIEWER IS A SCREEN OCCUPANT LIKE THE MENU ITSELF: it lays out in the space beside the
+# sidebar and publishes into it, the same rule the game screen's and the map's viewers follow.
+func _on_viewer_opened(viewer: DeckViewer) -> void:
+	_deck_viewer = viewer
+	viewer.info_requested.connect(_relay_info_requested)
+	viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	_fit_open_viewer()
+
+func _fit_open_viewer() -> void:
+	if not is_instance_valid(_deck_viewer): return
+	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
+			hud_container.window_scale(wall_picture))
+
+# The relay owns the live preview the entry carries when no `Main` is listening.
+func _relay_info_requested(entry: InfoEntry) -> void:
+	entry.relay_to(info_requested)
 
 ## Continue is only clickable while a resumable run exists on disk.
 func refresh_continue() -> void:

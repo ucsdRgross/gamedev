@@ -6,10 +6,16 @@ widened to every phase; do not stop at S18).
 **State:** Phases 1–3 done (S1–S12 committed). The Phase 3 adversarial review (Fable 5.1,
 `review_phase3` — 5 confirmed, 6 suspected) is being fixed: fixes 1–2 landed (54317308), fix
 dispatch 2 (viewer inset geometry: four-edge fit, re-fit on `container_rect_changed`, idempotent
-margins, the viewer re-publishes its highlight so the preview keeps the viewer's size) is in the
-tree awaiting the overseer's run and commit; dispatch 3 (the start-menu Inspect viewer's inset and
-publish, hygiene: `_key_scroll_pages`, deck_builder's dead `TypeOption`/Random path, the reroll's
-stale entry, the S9 `is_instance_valid` guard, the deck_builder test) is next. Then Phase 4 (S13),
+margins, the viewer re-publishes its highlight so the preview keeps the viewer's size) landed
+(74897f3a); dispatch 3 (the start-menu Inspect viewer inset and publishing like every other
+viewer, the choice viewer's chrome inset with its pack, the reroll re-publishing for the
+replacement card, three caller-less methods deleted, deck_builder's dead node and dead path
+deleted with a test that drives a real edit, and the S9 `card_environment` guard KEPT with its
+caller named — `FxAttachment.transition_secs()` reaches it 6x per suite after the game is freed,
+which an `assert` could not show because a freed instance compares equal to null in 4.7) is in
+the tree awaiting the overseer's run and commit. Then a short re-review of the fix commits (the
+menu's "Choose a deck" panel draws OVER the inspected deck's cards in `menu_inspect.png` — is that
+layering pre-existing?), then Phase 4 (S13),
 Phase 5 (S14–S18), Phase 6 (S19–S21), Phase 7 (S22), Phase 8 (S23), the closing phase S24 — all in
 this run (owner ruling). GAP-004 (Q34's reading inside a viewer) is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
@@ -182,7 +188,37 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
 7. Test shape: the cancel test calls `wall._unhandled_input` directly (item 13); the rebuild test
    compares `locked_data` to a value it set itself.
 
+## Phase 3 review (adversarial, Fable 5.1, at S12) — 5 confirmed, 6 suspected; where each went
+1. CONFIRMED a viewer opened from a pile button never returned focus on close (`show_deck` read the
+   picture SubViewport's focus owner, always null once an overlay button holds focus) — fixed,
+   `show_deck(parent, deck, opener)`, 54317308.
+2. CONFIRMED `ChoiceViewer.fit_beside` moved only the near edges: the pack centred half off-screen
+   in the top band — fixed, four-edge fit on BOTH viewers (the deck viewer's rows overran too),
+   74897f3a.
+3. CONFIRMED opening a viewer by pad published nothing (first focus landed before the opener
+   wired the relay; ASSUMPTIONS had rationalised it as B4) — fixed, deferred first `grab_focus`,
+   54317308.
+4. CONFIRMED the start menu's Inspect viewer was neither inset nor publishing — fixed, same rule
+   as every viewer through `Menu`, fix dispatch 3.
+5. CONFIRMED a viewer was fitted once and never on resize — fixed, re-fit on
+   `container_rect_changed` after the board/map inset publish, 74897f3a.
+- SUSPECTED: preview re-drawn at the board's size on a rect change (fixed: the viewer re-publishes
+  its remembered highlight, 74897f3a); `fit_beside` adding margins (fixed: set from the authored
+  margins); the reroll's stale description (reproduced and fixed: `CardsViewer.rehighlight`, fix 3);
+  a viewer swap announcing nothing (NOT reproduced — the incoming viewer's opening publish covers
+  it; pin test kept); the S9 `card_environment` guard (caller found, guard kept — see State);
+  `settings.tres` carrying deleted keys (engine drops them silently; nothing to do).
+- Residue: `_key_scroll_pages`, `PlayArea._grid_panel_height`, `PlayArea.get_data_from_control`
+  deleted (fix 3); deck_builder's `TypeOption` and skill-Random path deleted (fix 3).
+- Observed by the overseer at fix 3: the choice viewer's "Take all"/"Rerolls" chrome was still
+  anchored to the picture — fixed in the same dispatch (one `Layout` control insets pack + chrome).
+- Plan drift it named: Q34=b's reading inside a viewer → GAP-004; L5's "opacity" exposed as
+  nothing (ASSUMPTIONS S11, defensible, for the owner to see); the deck picker's viewer → wired
+  (Q140=a + Q143=a make it the consistent reading; ASSUMPTIONS records it).
+
 ## Gaps
+- GAP-004 (open, OWNER CALL, not parked) — inside a viewer, is the description's preview drawn at
+  the board's card size (Q34=b literally) or the viewer's own (built)? One line per viewer either way.
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
   there. S3 builds §1.1 as written; gate checked at TEST_PLAN 3.1's fixtures.
 - GAP-002 (open, CONTRADICTION, parked thread) — §1.1's inset ignores the covering picture's crop, so
@@ -247,7 +283,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   description: migrate the deck/discard/rules/choice viewers to the sidebar
   status: done
   evidence: '7f6a2219: ALL 45 SUITES 4287 PASSED [21]; SIDEBAR 404 -> 432 (S12.1-S12.7, 28 checks); red: relays removed 9 FAILED, insets/close/panel/deck_builder neutralised 6 FAILED; CardInfo grep in choice_viewer.* empty; doc_check 0 of 221 on added lines; by eye viewer_description.png (deck viewer grid from ~x396 beside the 320 px sidebar, the hovered viewer card described) and choice_viewer_description.png (pack row beside the sidebar); map_hud.png start node still ~x800 after the inset refactor'
-  notes: 'ASSUMPTIONS records: preview at the VIEWER''s card size (Q34=b read as the object pointed at); viewers publish highlights only, no lock; close announces highlight_cleared; OPENING a viewer publishes nothing (first focus lands before the relay is wired) - flagged to the Phase 3 review; the deck picker''s Inspect viewer on the start menu is NOT wired (Q143=a, 3a names neither menu.gd nor deck_picker.gd); new names InfoEntry.relay_to, HudContainer.rect_beside/window_scale, WallPicture.window_scale, CardsViewer.card_window_px, DeckViewer/ChoiceViewer.fit_beside, GameView.wall_picture/_open_deck_viewer. main.gd touched beyond 3a (enter_game hands the picture to the view). A second todo.md item (deck_builder broken preloads) closed with Q166=c. Observed, untouched: HudContainer._key_scroll_pages() has no callers'
+  notes: 'ASSUMPTIONS records: preview at the VIEWER''s card size (Q34=b read as the object pointed at); viewers publish highlights only, no lock; close announces highlight_cleared; OPENING a viewer publishes nothing (first focus lands before the relay is wired) - flagged to the Phase 3 review; the deck picker''s Inspect viewer on the start menu is NOT wired (Q143=a, 3a names neither menu.gd nor deck_picker.gd); new names InfoEntry.relay_to, HudContainer.rect_beside/window_scale, WallPicture.window_scale, CardsViewer.card_window_px, DeckViewer/ChoiceViewer.fit_beside, GameView.wall_picture/_open_deck_viewer. main.gd touched beyond 3a (enter_game hands the picture to the view). A second todo.md item (deck_builder broken preloads) closed with Q166=c. Phase 3 review fixes (three dispatches, one commit each) followed - see the State line and the Phase 3 review section'
 - id: S13
   description: GestureMetrics, delete DPI and the six mm/px knobs
   status: pending

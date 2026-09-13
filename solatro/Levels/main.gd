@@ -40,6 +40,7 @@ func _ready() -> void:
 	map_scene.info_hovered.connect(_on_screen_info_hovered)
 	menu_scene.new_run_requested.connect(_on_new_run)
 	menu_scene.continue_requested.connect(_on_continue)
+	menu_scene.info_requested.connect(_on_screen_info_hovered)
 
 	wall = WALL_SCENE.instantiate()
 	add_child(wall)

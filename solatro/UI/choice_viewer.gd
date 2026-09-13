@@ -18,9 +18,12 @@ signal highlight_cleared
 
 const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 
-@onready var flex_container: FlexContainer = $FlexContainer
+@onready var flex_container: FlexContainer = $Layout/FlexContainer
 @onready var confirm_button: Button = %ConfirmButton
 @onready var rerolls_label: Label = %RerollsLeft
+
+## Everything this viewer draws over its dimmed backdrop -- the pack and the chrome around it, so fitting moves them together.
+@onready var _layout: Control = $Layout
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
 const REROLL_BUTTON_HEIGHT := 34.0
@@ -72,15 +75,15 @@ func _populate() -> void:
 	_refresh_rerolls()
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
-# so the pack lays out in the space left beside it -- ALL FOUR EDGES, since it CENTRES in them. The
-# scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
+# so its WHOLE layout -- pack and chrome -- lives in the space left beside it, on ALL FOUR EDGES.
+# The scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
 	var picture := get_viewport_rect().size
-	flex_container.offset_left = remaining.position.x
-	flex_container.offset_top = remaining.position.y
-	flex_container.offset_right = remaining.end.x - picture.x
-	flex_container.offset_bottom = remaining.end.y - picture.y
+	_layout.offset_left = remaining.position.x
+	_layout.offset_top = remaining.position.y
+	_layout.offset_right = remaining.end.x - picture.x
+	_layout.offset_bottom = remaining.end.y - picture.y
 	_cards.republish_highlight()
 
 ## One slot's Reroll button, parented to its card and hanging just below it (the flex container
@@ -117,16 +120,16 @@ func reroll(index: int) -> bool:
 func _swap_card_control(index: int, card: CardData) -> void:
 	if not is_node_ready() or index >= _cards.controls.size(): return
 	var old := _cards.controls[index]
-	var had_focus : bool = is_instance_valid(_reroll_buttons[index]) \
-			and _reroll_buttons[index].has_focus()
-	if is_instance_valid(old):
-		flex_container.remove_child(old)
-		old.queue_free()
+	var replaced : CardData = old.child.data
+	var had_focus : bool = _reroll_buttons[index].has_focus()
+	flex_container.remove_child(old)
+	old.queue_free()
 	var control := ControlCard.add_child_control_card(
 			flex_container, card, CardVisual.DisplayContext.DECK_VIEWER)
 	flex_container.move_child(control, index)
 	_cards.inspect_on_highlight(control, card)
 	_cards.controls[index] = control
+	_cards.rehighlight(replaced, card)
 	_reroll_buttons[index] = _add_reroll_button(control, index)
 	# Keyboard/controller: the pressed button was just freed — put focus back on its replacement
 	# (or on Confirm if this reroll emptied the pool and disabled every button).

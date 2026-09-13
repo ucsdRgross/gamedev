@@ -21,7 +21,16 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.6)
 
-[node name="FlexContainer" type="Container" parent="." unique_id=413004020]
+[node name="Layout" type="Control" parent="." unique_id=1216211910]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FlexContainer" type="Container" parent="Layout" unique_id=413004020]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -35,7 +44,7 @@ wrapping = true
 align_wrap = 1
 metadata/_custom_type_script = "uid://qjk2k16hh77c"
 
-[node name="ConfirmButton" type="Button" parent="." unique_id=1216211907]
+[node name="ConfirmButton" type="Button" parent="Layout" unique_id=1216211907]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 7
@@ -52,7 +61,7 @@ grow_vertical = 0
 theme_override_font_sizes/font_size = 28
 text = "Take all"
 
-[node name="RerollsLeft" type="Label" parent="." unique_id=1216211909]
+[node name="RerollsLeft" type="Label" parent="Layout" unique_id=1216211909]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
@@ -67,4 +76,4 @@ theme_override_font_sizes/font_size = 24
 text = "Rerolls: 5"
 horizontal_alignment = 2
 
-[connection signal="pressed" from="ConfirmButton" to="." method="_on_confirm_pressed"]
+[connection signal="pressed" from="Layout/ConfirmButton" to="." method="_on_confirm_pressed"]
