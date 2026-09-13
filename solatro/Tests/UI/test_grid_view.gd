@@ -1541,25 +1541,23 @@ func run_a_swipe_fires_once_test() -> void:
 			"%f px" % threshold)
 	# ⚠ A LIVE KNOB, NOT A CONSTANT: a threshold that ignores the setting entirely would still be
 	# "a real distance in px". Doubled and halved about the default, the px must follow.
-	var knob := SettingsManager.settings.grid_swipe_threshold_mm
-	SettingsManager.settings.grid_swipe_threshold_mm = knob * 2.0
+	var knob := SettingsManager.settings.card_drag_threshold
+	SettingsManager.settings.card_drag_threshold = knob * 2.0
 	var wider := pa._swipe_threshold_px()
-	SettingsManager.settings.grid_swipe_threshold_mm = knob
+	SettingsManager.settings.card_drag_threshold = knob
 	check(wider > threshold,
-			"the millimetre knob really drives the threshold — it is not a hard-coded px (TP-109)",
-			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 2.0, wider])
-	# ⚠ **THE DEFAULT MUST SIT INSIDE ITS OWN RANGE** (`GAP-018`=(b)). It was clamped to the
-	# TOUCH-TARGET bounds, whose floor is ~8.5 mm at 96 DPI -- above the knob's own 8 mm default --
-	# so turning the knob DOWN changed nothing at all and the shipped threshold was a clamp bound
-	# wearing a millimetre reading. A distance to travel is not a thing to hit: the platforms size
-	# a paging swipe at about a third of a touch target.
-	SettingsManager.settings.grid_swipe_threshold_mm = knob * 0.5
+			"the drag-threshold knob really drives the swipe — it is not a hard-coded px (TP-109)",
+			"%f -> %f px, %f -> %f px" % [knob, threshold, knob * 2.0, wider])
+	SettingsManager.settings.card_drag_threshold = knob * 0.5
 	var narrower := pa._swipe_threshold_px()
-	SettingsManager.settings.grid_swipe_threshold_mm = knob
-	check(narrower < threshold,
-			"...and turning it DOWN narrows it too, so the default is a converted millimetre "
-			+ "reading rather than a clamp bound (TP-109, GAP-018=(b))",
-			"%f mm -> %f px, %f mm -> %f px" % [knob, threshold, knob * 0.5, narrower])
+	SettingsManager.settings.card_drag_threshold = knob
+	check(is_equal_approx(narrower, threshold * 0.5),
+			"...and turning it DOWN halves it exactly, so no bound is hiding inside the threshold "
+			+ "(TP-109, GAP-018=(b))",
+			"%f -> %f px, %f -> %f px" % [knob, threshold, knob * 0.5, narrower])
+	check(is_equal_approx(threshold, pa.board_card_picture_px().x * knob),
+			"the threshold is the board card's own width times the knob (M3, M4, TP-109)",
+			"%f px vs card %f px at zoom %f" % [threshold, pa.board_card_picture_px().x, pa.board_zoom])
 	var from := _bare_point(pa)
 	check(pa._card_control_at(from) == null,
 			"instrument check: the swipe starts on BARE BOARD, over no card",

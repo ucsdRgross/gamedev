@@ -89,7 +89,8 @@ func _position_below_overlay_buttons() -> void:
 # minimum every overlay control is grown to, in the container's top-right, and parked BELOW the
 # overlay's own button band so it never hides under one.
 func _place_exit_button() -> void:
-	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(), PlayArea.settings())
+	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
+			PlayArea.settings())
 	_exit_button.offset_left = -target
 	_exit_button.offset_top = _band_top
 	_exit_button.offset_bottom = _band_top + target

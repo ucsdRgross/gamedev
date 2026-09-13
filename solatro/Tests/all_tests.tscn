@@ -46,6 +46,7 @@
 [ext_resource type="PackedScene" path="res://Tests/UI/test_settings_range.tscn" id="45_setrng"]
 [ext_resource type="PackedScene" path="res://Tests/UI/test_grid_view.tscn" id="46_gview"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
+[ext_resource type="PackedScene" path="res://Tests/Engine/test_gesture_metrics.tscn" id="48_gmetr"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -71,6 +72,8 @@ speed_base_delay = 0.1
 
 
 [node name="TestPalette" parent="." instance=ExtResource("28_palet") groups=["logic"]]
+
+[node name="TestGestureMetrics" parent="." instance=ExtResource("48_gmetr") groups=["logic"]]
 
 [node name="TestSpotlight" parent="." instance=ExtResource("29_spot") groups=["logic"]]
 

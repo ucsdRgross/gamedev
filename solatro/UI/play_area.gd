@@ -63,9 +63,13 @@ var board_inset_top : float = 0.0:
 ## How many WINDOW pixels one of this picture's own pixels is drawn at, published by `GameView` -- the same boundary `board_inset_*` crosses the other way.
 var picture_to_window_scale : float = 1.0
 
+## The size a board card occupies in THIS picture's own pixels: its card size at the live zoom.
+func board_card_picture_px() -> Vector2:
+	return CardVisual.card_size_play * board_zoom
+
 ## The size a board card is DRAWN at on the player's screen: this board's card size, at its live zoom, in window pixels.
 func board_card_window_px() -> Vector2:
-	return CardVisual.card_size_play * board_zoom * picture_to_window_scale
+	return board_card_picture_px() * picture_to_window_scale
 
 # ⚠ **THE RESERVE ARRIVES AFTER THE SHOW HAS ALREADY OPENED**, against a focused grid already
 # fitted to an inset of zero, so re-fitting here (unconditionally, before any zoom check) is what
@@ -1384,22 +1388,10 @@ var _swipe_armed := false
 ## finger lifts.
 var _swipe_fired := false
 
-## How far a finger must travel before the drag is a pan, in px: the millimetre knob converted at
-## the screen's DPI, clamped to the SWIPE's own millimetre bounds converted the same way.
-##
-## ⚠ **THE CLAMP GUARDS THE DPI READING, NOT THE GESTURE'S SIZE.** A DPI reading is unreliable on
-## multi-monitor Windows (which reports the primary screen's for all of them) and on Android, so an
-## unclamped conversion can produce any number at all -- that much stands. But the bounds used to be
-## the TOUCH-TARGET ones, and a distance to travel is not a thing to hit: their floor of 32 px is
-## ~8.5 mm at 96 DPI, which is roughly three times the paging slop Android uses for this very
-## gesture, and it sat ABOVE the knob's own default so turning the knob down did nothing.
-## Both bounds are millimetres now, so the whole clamp survives a DPI change together.
+# A swipe arms only on BARE BOARD, so nothing is under the finger: the reference is the board's
+# own card at the live zoom, in the picture space `travel` is measured in.
 func _swipe_threshold_px() -> float:
-	var s := PlayArea.settings()
-	var dpi := DisplayServer.screen_get_dpi()
-	return clampf(WallInput.mm_to_px(s.grid_swipe_threshold_mm, dpi),
-			WallInput.mm_to_px(s.grid_swipe_threshold_min_mm, dpi),
-			WallInput.mm_to_px(s.grid_swipe_threshold_max_mm, dpi))
+	return GestureMetrics.drag_threshold_px(board_card_picture_px(), PlayArea.settings())
 
 ## The bound board control under a point, or null for bare board. The zone card an EMPTY cell
 ## presents counts as a card: it is the cell's drop target, so a drag begun on it is a placement.

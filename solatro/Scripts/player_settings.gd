@@ -477,21 +477,6 @@ enum SeparationMode {
 	set(value):
 		wall_debug_readout = value
 		settings_changed.emit()
-## Touch target size in millimetres, converted through live DPI.
-@export var wall_touch_target_mm : float = 9.0:
-	set(value):
-		wall_touch_target_mm = value
-		settings_changed.emit()
-## Smallest touch target in px, whatever the DPI reading says.
-@export var wall_touch_target_min_px : float = 32.0:
-	set(value):
-		wall_touch_target_min_px = value
-		settings_changed.emit()
-## Largest touch target in px.
-@export var wall_touch_target_max_px : float = 96.0:
-	set(value):
-		wall_touch_target_max_px = value
-		settings_changed.emit()
 ## How far two fingers must change distance, in px, before the drag counts as a pinch.
 @export var wall_pinch_threshold_px : float = 24.0:
 	set(value):
@@ -561,33 +546,6 @@ enum SeparationMode {
 	set(value):
 		grid_bounce_velocity_px = maxf(value, 0.0)
 		settings_changed.emit()
-## How far a finger must travel before a one-finger drag counts as a pan, in MILLIMETRES.
-## ⚠ Millimetres, not pixels: the same physical swipe must mean the same thing on every screen.
-##
-## ⚠ **A DISTANCE TO TRAVEL IS NOT A THING TO HIT, AND THE PLATFORMS KEEP THEM APART.** This was
-## clamped to the touch-target bounds, whose floor of 32 px is ~8.5 mm at 96 DPI -- so the old 8 mm
-## default was BELOW its own floor and turning the knob down did nothing at all. Android carries
-## three separate quantities: a touch target (Material: 48 dp, about 9 mm), plain touch slop (the
-## distance a touch may wander before it is a scroll, 8 dp, about 1.5 mm) and a PAGING touch slop
-## for a swipe between pages -- which is this gesture -- defined in `ViewConfiguration` as exactly
-## twice the plain slop, about 3 mm. A swipe threshold sized like a fingertip is roughly three
-## times what the platform asks for.
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_mm : float = 3.0:
-	set(value):
-		grid_swipe_threshold_mm = maxf(value, 0.0)
-		settings_changed.emit()
-## The swipe threshold's OWN bounds, in millimetres — the guard against a wild DPI reading, which
-## is what the clamp was for. Defaults bracket the gesture rather than the fingertip: the floor is
-## plain touch slop (below which a tap's own wander would page the board) and the ceiling is a
-## touch target (above which a swipe costs more travel than a button costs width).
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_min_mm : float = 1.5:
-	set(value):
-		grid_swipe_threshold_min_mm = maxf(value, 0.0)
-		settings_changed.emit()
-@export_range(0.0, 40.0, 0.1, "or_greater") var grid_swipe_threshold_max_mm : float = 9.0:
-	set(value):
-		grid_swipe_threshold_max_mm = maxf(value, 0.0)
-		settings_changed.emit()
 ## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so
 ## a deep stack in one grid does not stretch the same row in every other. ON, row `r` takes a
 ## SHARED maximum across every grid, and the boards read as one ruled sheet.
@@ -620,6 +578,18 @@ enum SeparationMode {
 @export var container_size_max_px : float = 640.0:
 	set(value):
 		container_size_max_px = maxf(value, 0.0)
+		settings_changed.emit()
+
+## The smallest any overlay control may be, as a fraction of the window's smaller dimension.
+@export var touch_target_fraction : float = 0.06:
+	set(value):
+		touch_target_fraction = maxf(value, 0.0)
+		settings_changed.emit()
+
+## How far a press travels before it is a drag, as a fraction of the card's own on-screen width.
+@export var card_drag_threshold : float = 0.25:
+	set(value):
+		card_drag_threshold = maxf(value, 0.0)
 		settings_changed.emit()
 
 @export var board_edge_pad_rows : float = 1.0:

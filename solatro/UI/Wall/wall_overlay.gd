@@ -34,7 +34,7 @@ func _ready() -> void:
 ## deferred layout pass, so `size` is set explicitly too, and a caller reading `size` straight
 ## after `_ready()` sees the real one.
 func _apply_touch_targets() -> void:
-	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
+	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
 			WallPicture.settings())
 	var row : Array[Button] = [_back_button, _forward_button, _wall_button]
 	var gap := row[1].position.x - (row[0].position.x + row[0].size.x)

@@ -49,7 +49,7 @@ existing; if you delete one, the feature silently stops existing and its unit te
 | `Main._on_window_resized()` | `get_viewport().size_changed`, connected in `Main._ready()` | as above — nothing else listens |
 | `Wall.clamp_pan()` | `Wall.pan_by()`, from the drag branch of `_unhandled_input()` | free pan (G10) does not exist |
 | `WallPicture.update_filter()` | `Wall._process()` | the focused picture samples NEAREST through every zoom (S13 dead) |
-| `WallInput.touch_target_px()` | `WallOverlay._apply_touch_targets()` | GAP-004's mandatory clamp never runs |
+| `WallInput.touch_target_px()` | `WallOverlay._apply_touch_targets()` | every overlay control stays at whatever size the scene authored, and the touch-target size applies to nothing |
 | `Wall.back_requested` etc. | connected in `Main._ready()` | the key/button does nothing at all |
 | `WallTransition.input_unlocked` | connected to `wall.unlock_input` in `Main._focus_picture()` | input stays locked until landing, defeating C13 |
 | `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no container |
@@ -155,7 +155,7 @@ Inspector already gives arrays, undo and nested resources.
 | Transition preview | `preview_source_id`/`preview_dest_id` are seeded with the longest move on the wall; `play_transition` runs the real `WallTransition`. |
 | Focus | `preview_focus_id` focuses that picture through the real `WallPicture.focus()` and poses the camera at its resting pose — the state a player is in most of the time, and the only place a too-small `wall_overfill_margin` shows as a sliver of frame at a window edge. `&""` is wall view. `preview_selected_id` drives the real `set_selected()`, so `wall_selected_lift` is visible. `preview_wall_view_resolution` renders unfocused pictures at their wall-view footprint, as the game does. |
 | Gestures | `preview_pinch` routes real touch through the real `WallInput.PinchTracker`, so `wall_pinch_threshold_px` is tunable against actual fingers. Needs a touch device or `emulate_mouse_from_touch` off; `gesture_log` shows what the tracker saw. |
-| Overlay | The REAL overlay from the hosted `wall.tscn`. Back / Forward / Wall are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knobs are live. |
+| Overlay | The REAL overlay from the hosted `wall.tscn`. Back / Forward / Wall are **pressable** and drive real moves through a real `FocusStack`, so the overlay and a running transition contend the way they do in the game. `_apply_touch_targets()` runs, so the touch-target knob is live. |
 | Save | `save_now` writes `Assets/Wall/layout_default.tres` — the resource the game boots from. `revert_now` reloads it. `preview_settings` is NOT saved. |
 
 `save_now` / `revert_now` / `play_transition` are booleans acting as BUTTONS: they run on the rising

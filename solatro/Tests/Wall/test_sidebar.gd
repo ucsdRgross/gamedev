@@ -1595,8 +1595,8 @@ func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
 		_hover(controls[0].get_global_rect().get_center())
 		await get_tree().process_frame
 		var button := _exit_button()
-		var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(),
-				PlayArea.settings())
+		var target := GestureMetrics.touch_target_px(
+				_container.get_viewport().get_visible_rect().size, PlayArea.settings())
 		check(button.is_visible_in_tree(), "the exit X shows while the description does")
 		check(button.size.x >= target - 0.5 and button.size.y >= target - 0.5,
 				"...at the same touch target every overlay control is grown to (Q47=a)",

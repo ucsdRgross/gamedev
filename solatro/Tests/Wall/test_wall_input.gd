@@ -68,11 +68,11 @@ func _ready() -> void:
 	behavior_section("CONTROLLER (I10, S22 -- automated coverage only, see ASSUMPTIONS.md)")
 	_test_most_recent_device_wins_controller_after_mouse()
 	behavior_section("TOUCH TARGETS REACH THE REAL CONTROLS (M6, PICTURE_WALL.md, GAP-004=b)")
-	_test_every_overlay_control_meets_the_clamped_touch_target()
+	_test_every_overlay_control_meets_the_touch_target()
 	behavior_section("TOUCH (I11, I12, I13, S23)")
 	_test_pinch_is_derived_from_two_touches()
 	_test_magnify_gesture_is_never_listened_for()
-	_test_touch_target_size_is_clamped()
+	_test_touch_target_size_is_a_window_fraction()
 	behavior_section("PINCH WIRING (A3, PICTURE_WALL.md, Q119=a)")
 	_test_pinch_out_enters_the_selected_picture()
 	_test_pinch_in_returns_to_wall_view()
@@ -940,25 +940,25 @@ func _feed_pinch_in(wall: Wall) -> void:
 	drag.position = Vector2(120, 100)   # distance now 20px, delta -40, past the -24px threshold
 	wall._unhandled_input(drag)
 
-## I13 (GAP-004=b, §1.9's literal formula): the touch target size clamps to the configured
-## floor/ceiling at absurd DPI readings -- DPI 1 (absurdly low) and DPI 10000 (absurdly high).
-func _test_touch_target_size_is_clamped() -> void:
+# I13: the touch target is a fraction of the window's SMALLER dimension, and nothing clamps it.
+func _test_touch_target_size_is_a_window_fraction() -> void:
 	var settings := PlayerSettings.new()
-	check(settings.wall_touch_target_mm > 0.0 and settings.wall_touch_target_min_px > 0.0
-			and settings.wall_touch_target_max_px > settings.wall_touch_target_min_px,
-			"the settings this test clamps against are sane before asserting the clamp itself",
-			"mm=%.2f min=%.1f max=%.1f" % [settings.wall_touch_target_mm,
-					settings.wall_touch_target_min_px, settings.wall_touch_target_max_px])
+	var fraction := settings.touch_target_fraction
+	check(fraction > 0.0,
+			"the fraction this test measures against is a real one before asserting on it",
+			"fraction=%.4f" % fraction)
 
-	var low := WallInput.touch_target_px(1.0, settings)
-	check(is_equal_approx(low, settings.wall_touch_target_min_px),
-			"DPI 1 (absurdly low) clamps to the configured FLOOR",
-			"got=%.4f floor=%.1f" % [low, settings.wall_touch_target_min_px])
+	var wide := WallInput.touch_target_px(Vector2(3840.0, 1080.0), settings)
+	check(is_equal_approx(wide, 1080.0 * fraction),
+			"a wide window sizes the target off its SMALLER dimension (M7)",
+			"got=%.4f expected=%.4f" % [wide, 1080.0 * fraction])
 
-	var high := WallInput.touch_target_px(10000.0, settings)
-	check(is_equal_approx(high, settings.wall_touch_target_max_px),
-			"DPI 10000 (absurdly high) clamps to the configured CEILING",
-			"got=%.4f ceiling=%.1f" % [high, settings.wall_touch_target_max_px])
+	var small := WallInput.touch_target_px(Vector2(320.0, 240.0), settings)
+	var huge := WallInput.touch_target_px(Vector2(32000.0, 24000.0), settings)
+	check(is_equal_approx(huge, small * 100.0),
+			"NO CLAMP: a window a hundred times the size gives a target a hundred times the size, "
+			+ "so the fraction is the only bound it has (M8, Q301=a)",
+			"small=%.4f huge=%.4f" % [small, huge])
 
 # ------------------------------------------------------------------ M3 (PICTURE_WALL.md)
 
@@ -1207,37 +1207,29 @@ func _test_dragging_pans_nothing_when_the_whole_wall_already_fits() -> void:
 
 # ------------------------------------------------------------------ M6 (PICTURE_WALL.md)
 
-## M6 (PICTURE_WALL.md, GAP-004=b, I8c): `WallInput.touch_target_px()` had NO CALLER -- the
-## overlay's buttons were whatever size the scene authored (80x32), and GAP-004's clamp, which its
-## own answer calls "a contract, not a guard clause", never ran on anything. `_test_touch_target_
-## size_is_clamped()` below pins the FORMULA; this pins the fact that a real control obeys it.
-##
-## Driven through a DELIBERATELY LARGE `wall_touch_target_min_px` rather than the machine's own DPI:
-## the real reading on this box already produces a target the authored 80 px width happens to
-## exceed, so a same-DPI assertion would pass against a `_ready()` that did nothing at all. The
-## floor is raised past every authored dimension, so only a real clamp can satisfy it -- and it also
-## proves the KNOB is read, not just some constant.
-func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
+# M6: `WallInput.touch_target_px()` had NO CALLER -- the overlay's buttons were whatever size the
+# scene authored (80x32). The fraction is raised past every authored dimension, and the target is
+# read off the MODEL, so a `_ready()` that stopped delegating cannot satisfy these.
+func _test_every_overlay_control_meets_the_touch_target() -> void:
 	backup_real_settings()
 	var settings := SettingsManager.settings
-	var real_min := settings.wall_touch_target_min_px
-	var real_max := settings.wall_touch_target_max_px
-	settings.wall_touch_target_max_px = 400.0
-	settings.wall_touch_target_min_px = 120.0   # larger than every authored offset in the scene
+	var real_fraction := settings.touch_target_fraction
+	var window := get_viewport().get_visible_rect().size
+	settings.touch_target_fraction = 120.0 / minf(window.x, window.y)
 
 	var overlay : WallOverlay = WALL_OVERLAY_SCENE.instantiate()
 	add_child(overlay)
-	var target := WallInput.touch_target_px(DisplayServer.screen_get_dpi(), settings)
-	check(target >= 120.0,
-			"fixture: the raised floor really is what the clamp returns, so the assertions below "
-			+ "cannot be satisfied by the scene's own authored sizes", "target=%.1f" % target)
+	var target := GestureMetrics.touch_target_px(window, settings)
+	check(is_equal_approx(target, 120.0),
+			"fixture: the raised fraction really is what the model returns, so the assertions below "
+			+ "cannot be satisfied by the scene's own authored sizes", "target=%.4f" % target)
 
 	var names : Array[StringName] = [&"%BackButton", &"%ForwardButton", &"%WallButton"]
 	var previous_right := -INF
 	for path : StringName in names:
 		var button : Button = overlay.get_node(NodePath(path))
 		check(button.size.x >= target and button.size.y >= target,
-				"%s is at least the clamped touch target on BOTH axes" % path,
+				"%s is at least the touch target on BOTH axes" % path,
 				"size=%s target=%.1f" % [button.size, target])
 	# The three left-hand buttons grew; they must not have grown INTO each other.
 	for path : StringName in [&"%BackButton", &"%ForwardButton", &"%WallButton"]:
@@ -1249,8 +1241,7 @@ func _test_every_overlay_control_meets_the_clamped_touch_target() -> void:
 		previous_right = button.position.x + button.size.x
 
 	overlay.queue_free()
-	settings.wall_touch_target_min_px = real_min
-	settings.wall_touch_target_max_px = real_max
+	settings.touch_target_fraction = real_fraction
 	restore_real_settings()
 
 # ------------------------------------------------------------------ M9 (PICTURE_WALL.md)

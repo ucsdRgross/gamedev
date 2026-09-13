@@ -401,3 +401,6 @@
   still finishing a transition after its game was freed. Replacing the guard with an assert proved
   it: the assert never fired (a freed instance compares EQUAL to null in Godot 4.7) while
   `CURRENT is Game` errored 6 times in one suite run.
+- S13: `PlayArea.board_card_picture_px()` -- the board's card at the live zoom in the PICTURE's own
+  pixels, which is the space a swipe's `travel` is measured in. `board_card_window_px()` now
+  derives from it, and it is what the bare-board swipe passes to `GestureMetrics` (M5, `Q296`=a).
