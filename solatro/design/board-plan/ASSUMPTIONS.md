@@ -79,10 +79,16 @@ gap under `gaps/`.
 - S4 / Q78: TP-15's added 26th cell makes `cells` and `cell_types` longer than
   `grid_width * grid_height`, which I2 reports by design, so that row does not assert `validate()`
   clean -- the ragged shape stays in tests exactly as the anti-scope says.
-- S5 / Q13: the mark comparison calls `PipComparator.pair_is_same` with `memoise = false`, so no
+- S5 / Q13: the mark comparison calls `PipComparator.ask_pass` twice with `memoise = false`, so no
   verdict is remembered for the hand being scored -- "derived on every call" expressed through the
   existing dispatch rather than a second one. The hook family is passed as arguments, which that
   helper already takes, so nothing about the deny/allow mechanism was copied.
+- S5 / Q41: the two passes are asked BEFORE any presence test, which is what pre-authorisation 9's
+  "mirror `PipComparator`'s shape exactly" means: content may rescue a pip a card does not print,
+  and only the fall-through to `printed_same` needs both slots filled. `pair_is_same` cannot express
+  that -- its fall-through answers true for two absent prints -- so the mark spells the two passes
+  over `ask_pass`, the comparator's own per-pass helper, and `PipComparator` is unchanged. A rescued
+  rankless card is the no-integer-value case of Q26 and pays `plan_rank_flat_fallback`.
 - S5 / Q26: "a value not convertible to an int" is `is_finite(rank.value)`. Every `PipRank` carries a
   float `value`, so the only rank with no integer value is one whose value is not a number; TP-35
   builds it with `value = NAN`. `HalfStepRank` does not exist, so the 2.5 case is

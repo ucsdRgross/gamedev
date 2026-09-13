@@ -32,12 +32,12 @@ static func matches_at(state: GameData, card: CardData, coord: BoardCoord) -> in
 	return matched
 
 #What a RANK match pays: what the card prints, scaled and rounded UP so a fractional rank never
-#pays less than its neighbour below. ⚠ The finite test comes first because a value that is not a
-#number is not one the ace test can read either.
+#pays less than its neighbour below. A rank that is ABSENT and one whose value is not a number are
+#ONE case -- no integer value, so both pay the flat fallback and neither is one the ace test reads.
 static func flat_bonus(card: CardData, matched: int) -> int:
 	if not (matched & Property.RANK): return 0
 	var settings := SettingsManager.settings
-	if not is_finite(card.rank.value): return settings.plan_rank_flat_fallback
+	if not card.rank or not is_finite(card.rank.value): return settings.plan_rank_flat_fallback
 	if PipComparator.is_ace(card.rank): return settings.plan_ace_value
 	return ceili(card.rank.value * settings.plan_rank_match_step)
 
@@ -50,16 +50,20 @@ static func mult_bonus(_card: CardData, matched: int) -> float:
 	if matched & Property.HAT: mult += settings.plan_hat_mult
 	return mult
 
-#A printed pip agrees only when BOTH cards print one: an ABSENT print agrees with nothing, which
-#printed identity's null-equals-null would not answer -- and a RANK bit off two empty slots sends
-#`flat_bonus` to read `rank.value` on null.
+#A printed pip agrees when the mark's own leniency rules say so and OTHERWISE only when BOTH cards
+#print one -- the two passes are asked FIRST, in the comparator's order, so content may rescue a pip
+#a card does not print, while printed identity's null-equals-null agrees with nothing on its own.
 static func _pip_same(a: Variant, b: Variant, deny: StringName, allow: StringName) -> bool:
+	var a_key : Variant = PipComparator.pip_cache_key(a)
+	var b_key : Variant = PipComparator.pip_cache_key(b)
+	if await PipComparator.ask_pass(deny, a, b, a_key, b_key, false): return false
+	if await PipComparator.ask_pass(allow, a, b, a_key, b_key, false): return true
 	if not a or not b: return false
-	return await PipComparator.pair_is_same(a, b, deny, allow, false)
+	return PipComparator.printed_same(a, b)
 
 #A talent or hat agrees when BOTH slots are filled and name the same script: a mark carries its own
-#COPY of what the source printed, so the class is the identity, and the both-present half is
-#`_pip_same`'s rule again.
+#COPY of what the source printed, so the class is the identity, and the both-present half is the
+#printed rule `_pip_same` falls through to.
 static func _slot_same(a: CardModifier, b: CardModifier) -> bool:
 	if not a or not b: return false
 	return PipComparator.modifier_script(a) == PipComparator.modifier_script(b)

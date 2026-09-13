@@ -2,10 +2,10 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 33 commits on `board-plan`. Phases 1-4 (S1-S10) and S11 landed and verified, one
+**State:** 34 commits on `board-plan`. Phases 1-4 (S1-S10) and S11 landed and verified, one
 commit per step, plus three Phase 1-3 review fixes (A-C), the owner's three-grid bug fix, Phase 4
-review fixes D and E, and the reveal's pacing fix (TP-76). Tree clean. OPEN: two queued Phase 4
-review fixes (F, G under Next up), then S12 (the match highlight, under the owner's white-outline
+review fixes D, E and F, and the reveal's pacing fix (TP-76). Tree clean. OPEN: one queued Phase 4
+review fix (G under Next up), then S12 (the match highlight, under the owner's white-outline
 ruling), S13, S14, S15, S16, S17. Three gaps open for the owner: GAP-001 (stocks are sidebar S19;
 TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch parked;
 S9 partial), GAP-003 (re-deal a line unnamed). Owner rulings mid-run are in PLAN 1.10 (marks keep a
@@ -270,7 +270,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `on_can_place_stack` rides the same walk); `has_card_data` is false for a mark. Recorded, no
   producer: a copied skill arriving with `spotlit == true` would fire `on_unspotlight` once in
   `skill_spotlight_check` (needs a draw-deck card with StampGlobal and an `on_unspotlight` skill; none exists).
-- FIX (own commit): _pip_same refuses an absent pip before the deny/allow hooks are asked, which
+- FIXED (fix F, TP-78): _pip_same refuses an absent pip before the deny/allow hooks are asked, which
   closes the leniency shape pre-authorised row 9 requires (PipComparator asks the hooks first). Ask
   the hooks first; require both present only for printed_same; flat_bonus treats a null rank as the
   no-integer-value case so a leniency-rescued rankless card pays the fallback.
@@ -315,38 +315,33 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. Fix F: `MarkMatch._pip_same` refuses an absent pip BEFORE the deny/allow hooks (PLAN 4 row 9
-   says mirror `PipComparator`, which asks the hooks first). Ask the hooks first, require both
-   present only for `printed_same`; `flat_bonus` treats a null rank as the no-integer-value case so
-   a leniency-rescued rankless card pays the fallback. Test: an `on_mark_ranks_allow` test modifier
-   rescues a rankless card. One commit.
-2. Fix G: the widened combo window in `Game._note_mod_fired` ("an act is resolving OR a line is
+1. Fix G: the widened combo window in `Game._note_mod_fired` ("an act is resolving OR a line is
    composing", read off `line_mult_bonus`) also admits every broadcast inside a NESTED composition.
    Pass the mark-hook activation explicitly (the `counts_as_activation` split already exists in
    `_run_own_mods`) instead of inferring it from the accumulator. Test: a mark effect that
    re-scores a line while a board card implements `on_after_score` with a combo key registers only
    the mark's class. One commit.
-3. S12: the match highlight and landing feedback. Owner ruling (PLAN 1.10): at rest a mark has no
+2. S12: the match highlight and landing feedback. Owner ruling (PLAN 1.10): at rest a mark has no
    outline; while a card is picked up, a mark it matches takes a WHITE outline, read with Q67/Q68
    (each matching ELEMENT lights its own outline) so the white lands on the matching elements.
    `match_rim` (white) and `match_rim_active` palette roles per NAMES.md; landing feedback per Q64
    (the realized card's art takes a special outline, pips swap to an activated outline; no popup);
    a miss is silent (Q65=(a)); no Entrance destination (Q70). TP-63, TP-64, TP-65; by eye TP-72,
    TP-73 (`/fx-verify`, PNGs looked at and described). Files per PLAN 3 S12.
-4. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
+3. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
    Q117=(c) held shoulder button AND a HUD control, `ui_plan_layer` action, closes on any board
    mutation, off after a restored save). TP-66..TP-69. The sidebar branch is rebuilding the HUD in
    parallel: keep the HUD control minimal and behind `GameView`, expect a merge.
-5. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
+4. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
    else to add.
-6. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
+5. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
    GAP-041 through a NEW poker-patience design version, never an in-place edit).
 8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
     dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
-7. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+6. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
-8. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+7. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)

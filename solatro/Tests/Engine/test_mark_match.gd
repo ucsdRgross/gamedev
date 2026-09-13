@@ -10,6 +10,9 @@ func suite_name() -> String:
 ## The answer a card printing both the mark's rank and its suit gives.
 const RANK_AND_SUIT : int = MarkMatch.Property.RANK | MarkMatch.Property.SUIT
 
+## A row of grid 0 left empty, so a section built over it collects no card of its own.
+const EMPTY_ROW : int = 4
+
 func _ready() -> void:
 	TestLog.line("============ MARK MATCH TEST PASS ============")
 	behavior_section("EACH PROPERTY MATCHES ON ITS OWN")
@@ -50,6 +53,9 @@ func _ready() -> void:
 	await test_a_matched_suit_fires_once_per_meld_membership()
 	behavior_section("CONTENT MAY LOOSEN THE MATCH")
 	await test_a_leniency_rule_loosens_the_match()
+	await test_a_leniency_rule_rescues_an_absent_print()
+	await test_a_rescued_rankless_card_banks_the_flat_fallback()
+	await test_the_leniency_hooks_are_asked_before_the_prints_are_read()
 	behavior_section("A MARK IS NEVER SPOTLIT")
 	await test_a_mark_answers_no_broadcast()
 	await test_a_marks_copied_stamp_answers_no_broadcast()
@@ -253,6 +259,25 @@ func banked_knife_cross(marked: bool, complete_column: bool) -> float:
 	return banked
 
 
+#What grid 0's empty row banks for a RANKLESS card standing on a mark that prints a rank. No meld
+#ever holds a rankless card, so the line is a synthetic one handed straight to the game's own
+#`score_line` -- what it banks is read back out of that row's bucket, never worked out here.
+func banked_rankless_match(rescued: bool) -> float:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, row_card(7))
+	var rankless := row_card(7)
+	rankless.rank = null
+	if rescued: rankless.with_type(MarkRanklessAllowed.new())
+	place_in_cell(g.state, 0, 0, rankless)
+	var line := Scoring.Result.create("rankless line", [rankless] as Array[CardData], 0, 0.0,
+			[Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE])
+	await g.score_line(line, ScoringSection.of_line_at(g.state, 0,
+			ScoringSection.LineKind.ROW, EMPTY_ROW, 0))
+	var banked : float = g.state.line_score(g.state.scores_row, 0, EMPTY_ROW, 0)
+	free_game(g)
+	return banked
+
+
 #Counts the two mark hooks and remembers the level each arrived with. EVERY cover is announced and a
 #match adds its own hook on top, so the two counts are the only thing telling the cases apart.
 class MarkHookRecorder extends CardModifierStamp:
@@ -379,6 +404,24 @@ class MarkRankNeighbours extends CardModifierType:
 	func get_frame() -> int: return 0
 	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
 		return is_equal_approx(absf(float(r1.value) - float(r2.value)), 1.0)
+
+
+## Content that counts a card printing NO rank as a match for any mark that does print one.
+class MarkRanklessAllowed extends CardModifierType:
+	func get_str() -> String: return "MarkRanklessAllowed"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return r1 == null and r2 != null
+
+
+## Content that refuses every rank pair BOTH of whose prints are there, printed sameness included.
+class MarkPrintedRanksRefused extends CardModifierType:
+	func get_str() -> String: return "MarkPrintedRanksRefused"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_deny(r1: PipRank, r2: PipRank) -> bool:
+		return r1 != null and r2 != null
 
 
 # ==============================================================================
@@ -1127,6 +1170,95 @@ func test_a_leniency_rule_loosens_the_match() -> void:
 	check(allow_calls >= 1,
 			"TP-39: and it was asked through the mark family's own allow hook",
 			"counted %s" % str(env.dispatches))
+	remove_child(env)
+	env.free()
+
+
+#TP-78: the leniency passes are asked BEFORE the prints are read, so a rule may rescue a card that
+#prints no rank at all -- and with nobody implementing it the same card matches nothing, which is
+#the rule an absent print obeys on its own.
+func test_a_leniency_rule_rescues_an_absent_print() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_flat_fallback = 3
+	var fallback : int = SettingsManager.settings.plan_rank_flat_fallback
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	mark_cell(state, 0, 0, row_card(7))
+	var rankless := row_card(7)
+	rankless.rank = null
+	place_in_cell(state, 0, 0, rankless)
+	var strict := await MarkMatch.matches_at(state, rankless, cell(0, 0))
+	check(strict == 0,
+			"TP-78 control: with nothing implementing a mark hook, a card printing no rank at all "
+			+ "matches a mark that prints one in nothing",
+			"got %d" % strict)
+	env.add_cards([rankless.with_type(MarkRanklessAllowed.new())] as Array[CardData])
+	var rescued := await MarkMatch.matches_at(state, rankless, cell(0, 0))
+	check(rescued == MarkMatch.Property.RANK,
+			"TP-78: a rule that allows an absent rank makes the same pair a RANK match",
+			"got %d" % rescued)
+	var allow_calls : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(allow_calls >= 1,
+			"TP-78: and it was asked through the mark family's own allow hook",
+			"counted %s" % str(env.dispatches))
+	check(MarkMatch.flat_bonus(rankless, rescued) == fallback,
+			"TP-78: a rescued card with no rank to read pays the flat fallback, as a rank with no "
+			+ "value a whole number can hold does",
+			"got %d" % MarkMatch.flat_bonus(rankless, rescued))
+	remove_child(env)
+	env.free()
+	restore_settings_snapshot(snapshot)
+
+#TP-78: what the PLAYER is shown for a rescued rankless card -- the line the game composes and
+#banks, measured against the same line with nothing implementing the rule.
+func test_a_rescued_rankless_card_banks_the_flat_fallback() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_flat_fallback = 3
+	var fallback : float = float(SettingsManager.settings.plan_rank_flat_fallback)
+	var strict := await banked_rankless_match(false)
+	var rescued := await banked_rankless_match(true)
+	check(strict == 0.0,
+			"TP-78 control: an unrescued rankless card banks no rank bonus at all",
+			"banked %f" % strict)
+	check(rescued == strict + fallback,
+			"TP-78: the rescued card's line banks the flat fallback the knob names",
+			"banked %f against %f" % [rescued, strict])
+	restore_settings_snapshot(snapshot)
+
+#TP-78: the deny pass is asked FIRST, which is visible in two places -- it refuses a pair whose
+#prints ARE the same, and it is REACHED at all about a card that prints no rank, which a presence
+#test standing in front of the hooks would answer before anything was dispatched.
+func test_the_leniency_hooks_are_asked_before_the_prints_are_read() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	mark_cell(state, 0, 0, row_card(7))
+	mark_cell(state, 1, 0, row_card(7))
+	var printed := row_card(7)
+	place_in_cell(state, 0, 0, printed)
+	var rankless := row_card(7)
+	rankless.rank = null
+	place_in_cell(state, 1, 0, rankless)
+	var agreed := await MarkMatch.matches_at(state, printed, cell(0, 0))
+	check(agreed == MarkMatch.Property.RANK,
+			"TP-78 precondition: the two printed 7s agree with nothing implementing a mark hook",
+			"got %d" % agreed)
+	env.add_cards([CardData.new().with_type(MarkPrintedRanksRefused.new())] as Array[CardData])
+	var refused := await MarkMatch.matches_at(state, printed, cell(0, 0))
+	check(refused == 0,
+			"TP-78: a deny rule refuses a pair whose prints are the same, printed sameness beaten",
+			"got %d" % refused)
+	var before : int = env.dispatches.get(MarkMatch.MARK_RANKS_DENY, 0)
+	var unrescued := await MarkMatch.matches_at(state, rankless, cell(1, 0))
+	var after : int = env.dispatches.get(MarkMatch.MARK_RANKS_DENY, 0)
+	check(after == before + 1,
+			"TP-78: and the deny pass is asked about a card printing no rank, not answered over "
+			+ "its head",
+			"counted %d against %d" % [after, before])
+	check(unrescued == 0,
+			"TP-78: which it refuses, leaving the absent print agreeing with nothing",
+			"got %d" % unrescued)
 	remove_child(env)
 	env.free()
 

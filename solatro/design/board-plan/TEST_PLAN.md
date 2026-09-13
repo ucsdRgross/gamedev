@@ -106,6 +106,7 @@ says so and names its own variant.
 | **TP-37** | A card in a row, a column and a diagonal pays its rank bonus into **each** line | a corner cell completing three lines | `Q23`=(a) | S6 |
 | **TP-38** | A match registers no combo class | one match, `combo_classes` unchanged | `Q76`=(c) | S6 |
 | **TP-39** | A leniency rule loosens the match; with no implementer the dispatch count is **zero** | one modifier implementing `on_mark_ranks_allow` | `Q41`=(a), `ARCHITECTURE_REVIEW.md` §3c | S5 |
+| **TP-78** | **The leniency passes are asked BEFORE the prints are read.** An `on_mark_ranks_allow` rule rescues a card printing NO rank -- `matches_at` reports `RANK` and the line banks `plan_rank_flat_fallback` -- while with no implementer the same card matches nothing; a deny rule refuses a pair whose prints ARE the same and is REACHED about a rankless card | one modifier implementing `on_mark_ranks_allow`, one `on_mark_ranks_deny`, a rankless card | `Q41`=(a), `Q26` | S5 |
 
 ---
 
