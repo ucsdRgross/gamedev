@@ -2,10 +2,10 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 37 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S13 landed and verified, one
+**State:** 38 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S14 landed and verified, one
 commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S14 (the
-knobs, a grep confirmation), S15, S16, S17. Five gaps open for the owner: GAP-001 (stocks are
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S15 (the
+curve refit), S16, S17. Five gaps open for the owner: GAP-001 (stocks are
 sidebar S19; TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time
 dispatch parked; S9 partial), GAP-003 (re-deal a line unnamed), GAP-004 (the palette has no white:
 `match_rim` is built and photographed against entry 31 cream, `match_rim_active` against 6 gold; a
@@ -196,13 +196,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs, each at 98 checks: layer swap deleted -> PLAN VISUALS 96/2 (TP-67 x2); selection refusal removed -> 94/4 (TP-66 x4); both closes removed -> 96/2 (TP-69 x2); HUD toggle open-only -> 94/4 (TP-68 x4); green 98/98 then 99/99 with the localisation check. Overseer full run: ALL 48 SUITES: 4311 CHECKS PASSED, errors log empty; PLAN VISUALS 99/99; SECTION 8 identical; banners vs S12 differ only in fuzz drift and PLAN VISUALS 63 -> 99. designloop check on the worktree: 0 errors, 0 warnings. By eye (overseer, plan_layer_shot + 3x crop): focused, all 25 cells draw their marks in full colour inside the dashed frames with no played card visible, three realized cells wear gold rims on the agreeing pips only, the localised Marks button sits under Deck, the Entrance row is untouched; overview, two full grids of marks with the realized rim legible, the third grid past the right edge as in S12. Headless editor open clean. Diff removes three indented comments and adds none; no modulate write, no design id, no literal beyond 0.'
   notes: 'PARTIAL on GAP-005: every shoulder is bound (wall_back L1, wall_forward R1, grid_pan L2/R2; poker-patience Q187=(b) forbids taking the wall''s), so ui_plan_layer carries only the M key and the pad reaches the view through the HUD control (TP-68 covers it by focus + Accept). Mechanism: one flag PlayArea.plan_layer_open; the key is a peek (pressed opens, released closes), the HUD Button toggles; _select_data refuses selection while open, GameView asks _board_is_playable() before undo and end-show; queue_rebuild() and setup_gui() close it. The white border in both shots is the engine''s ScrollContainer focus panel, present in S12''s landed.png at the same pixels - pre-existing, shows in the shipped game after the first board click.'
 - id: S14
-  description: the knobs - confirm the five landed at S5 and add plan_reveal_fraction (S11).
+  description: the knobs - confirm the five landed at S5 and plan_reveal_fraction from S11 are declared once under "Balance - board plan" and read by production.
   files_touched: []
-  verification_command: 'grep -c plan_ solatro/Scripts/player_settings.gd'
+  verification_command: 'grep -c "var plan_" solatro/Scripts/player_settings.gd; grep -rl plan_<knob> solatro --include=*.gd'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'grep: each of plan_rank_match_step, plan_rank_flat_fallback, plan_ace_value, plan_talent_mult, plan_hat_mult declared once in player_settings.gd and read by Scripts/mark_match.gd; plan_reveal_fraction declared once and read by UI/play_area.gd; the group label "Balance - board plan" appears once. No code change; the S13 gate run (ALL 48 SUITES: 4311 CHECKS PASSED) is the run this tree was verified on.'
+  notes: 'Nothing to add: PLAN 1.12 lists exactly these six.'
 - id: S15
   description: the curve refit - scoring_sim.py models marks and matches; goal_g0/goal_alpha refit; GAP-041 closed by a new poker-patience design version; TP-80..82.
   files_touched: []
@@ -328,16 +328,14 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
-   else to add.
-2. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
+1. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
    GAP-041 through a NEW poker-patience design version, never an in-place edit).
 8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
     dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
-3. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+2. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
-4. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+3. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)
