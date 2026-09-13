@@ -2851,13 +2851,18 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 func _refresh_mark_matches(game_state: GameData) -> void:
 	for gi : int in game_state.grids.size():
 		var grid : GridData = game_state.grids[gi]
+#A CELL THE SHOW CANNOT PLACE INTO IS NOT ONE THE HELD CARD WOULD MATCH: the Entrance commits to one
+#grid at its first placement and `place_card_in_grid` refuses every other, so lighting them promises
+#a placement the board silently drops. Only the commitment -- height rules still change mid-show.
+		var takes_a_placement := game_state.committed_grid == -1 or gi == game_state.committed_grid
 		for ci : int in grid.cell_types.size():
 			var mark : CardData = grid.cell_types[ci]
 			if not BoardPlan.is_marked(mark): continue
 			var coord := BoardCoord.new(gi, ci % grid.grid_width, ci / grid.grid_width, 0)
 			var would_match := 0
-			for held : CardData in selected_cards:
-				would_match |= await MarkMatch.matches_at(game_state, held, coord)
+			if takes_a_placement:
+				for held : CardData in selected_cards:
+					would_match |= await MarkMatch.matches_at(game_state, held, coord)
 			var realized := 0
 			for card : CardData in grid.cells[ci].datas:
 				var matched := await MarkMatch.matches_at(game_state, card, coord)

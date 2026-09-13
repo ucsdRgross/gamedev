@@ -271,6 +271,14 @@ gap under `gaps/`.
 - S12 / Q66, TP-63: every cell `matches_at` reports non-zero for is highlighted, COVERED OR NOT. The
   data decides what agrees and the stack decides what is visible; a covered mark is a sliver, so the
   highlight on it is one too.
+- S12 / Q66, Q82=(a): a cell the show cannot place into is not one the card "would match" -- once
+  `state.committed_grid` is set, `_refresh_mark_matches` asks about the held card in THAT grid only
+  (`Game.place_card_in_grid` refuses every other silently, and `try_place` still reports success, so
+  a rim elsewhere promises a placement the board drops). Nothing else about legality enters the
+  highlight: the height rules and `on_can_place_stack` can change within a show, the commitment
+  cannot. The realized (`match_rim_active`) half still walks every grid -- the commitment lifts when
+  the committed grid runs out of legal placements, and the cards standing in an earlier one keep
+  their rims.
 - S12 / TEST_PLAN TP-63: the pick-up is driven through `Viewport.push_input` in both the mouse and
   the keyboard route, which needs a real `GameView`; the event synthesis moved out of
   `test_interaction.gd` into `Tests/Support/test_input.gd` and both suites now share the one driver.

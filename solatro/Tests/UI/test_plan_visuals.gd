@@ -39,6 +39,7 @@ func _ready() -> void:
 	behavior_section("A HELD CARD LIGHTS EVERY MARK IT WOULD AGREE WITH")
 	await setup_view()
 	await test_holding_a_card_lights_the_marks_it_agrees_with()
+	await test_a_committed_show_lights_only_the_grid_it_can_place_in()
 	await test_the_highlight_lights_elements_rather_than_tinting_the_cell()
 	await test_a_card_agreeing_with_nothing_says_nothing()
 	behavior_section("A LANDED CARD WEARS THE ACTIVATED RIM UNTIL UNDO")
@@ -449,7 +450,7 @@ func teardown_view() -> void:
 # now: an undo replaces the whole state with a duplicate, so the card this fixture held before
 # one is not a card on the board after it.
 func mark_against_a_fresh_card() -> void:
-	held_card = an_entrance_card()
+	held_card = entrance_card_besides(null)
 	await settle_on(held_card)
 	mark_three_cells()
 	await settle_on(held_card)
@@ -463,10 +464,12 @@ func rules_with_no_planner() -> Array[CardData]:
 	return out
 
 # The card this fixture picks up: one the board offers as a focus target in the Entrance, which is
-# what a pointer or a focus ring can actually reach.
-func an_entrance_card() -> CardData:
+# what a pointer or a focus ring can actually reach. `kept` is the card a caller is already holding,
+# so a placement made to commit the show is made with a card the fixture still needs in hand.
+func entrance_card_besides(kept: CardData) -> CardData:
 	for control : Control in pa.ui_data:
 		var data : CardData = pa.ui_data[control]
+		if data == kept: continue
 		if control.focus_mode != Control.FOCUS_ALL or not control.is_visible_in_tree(): continue
 		if game.state.grid_position_of(data).is_entrance(): return data
 	return null
@@ -614,6 +617,104 @@ func test_holding_a_card_lights_the_marks_it_agrees_with() -> void:
 	check(pa.selected_cards.is_empty(), "TP-63: ui_cancel drops the card")
 	var cancelled := await cells_disagreeing(null, PaletteDB.ROLES.match_rim)
 	check(cancelled.is_empty(), "TP-63: and clears the highlight with it", str(cancelled))
+
+# A SECOND GRID, appended the way a rule card appends one mid-show, carrying one mark the held card
+# agrees with. Returns that cell -- the one a committed show may no longer light.
+func add_a_second_marked_grid() -> BoardCoord:
+	game.effect_api.add_grid(GridData.new())
+	var added : GridData = game.state.grids[1]
+	for type_card : CardData in added.cell_types:
+		BoardPlan.clear_mark(type_card)
+	var coord := BoardCoord.new(1, 0, 0, 0)
+	game.effect_api.grant_mark(coord, mark_source(held_card.rank, held_card.suit))
+	pa.flush_rebuild()
+	pa.focus_grid(0)
+	return coord
+
+# THE COMMITMENT IS MADE THE WAY A PLAYER MAKES IT: another Entrance card, picked up and put down
+# through the viewport, so `held_card` is still in hand afterwards with its own marks untouched.
+# It lands on the far corner cell, which no mark and no card of this fixture is on.
+func commit_the_show_to_grid_0() -> bool:
+	var grid : GridData = game.state.grids[0]
+	var bare := BoardCoord.new(0, grid.grid_width - 1, grid.grid_height - 1, 0)
+	var other := entrance_card_besides(held_card)
+	await settle_on(other)
+	await input.click(centre_of(other))
+	await input.click(centre_of(game.state.cell_type_at(bare)))
+	var landed := await wait_for(func() -> bool:
+			return not game.processing and game.state.card_at(bare) == other)
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	return landed
+
+# ==============================================================================
+# TP-63 -- and only in the grid the show can still place into
+# ==============================================================================
+
+# The Entrance commits to one grid at its first placement and every other grid refuses silently, so
+# a rim there would promise a placement the board drops. Both halves discriminate: an uncommitted
+# board lights both grids, and the SAME card lights only the committed one afterwards.
+func test_a_committed_show_lights_only_the_grid_it_can_place_in() -> void:
+	var second_cell := add_a_second_marked_grid()
+	await settle_on(held_card)
+	check(game.state.committed_grid == -1,
+			"TP-63: precondition: nothing is placed yet, so the show is committed to no grid",
+			str(game.state.committed_grid))
+	var here := await MarkMatch.matches_at(game.state, held_card, both_cell)
+	var there := await MarkMatch.matches_at(game.state, held_card, second_cell)
+	check(here != 0 and there != 0,
+			"TP-63: precondition: one mark in each grid agrees with the card",
+			"%d and %d" % [here, there])
+	check(mark_visual(second_cell) != null,
+			"TP-63: precondition: the second grid's mark is drawn")
+
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card),
+			"TP-63: precondition: the card is held", str(pa.selected_cards.size()))
+	await time_to_light(both_cell)
+	check(rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim) == here
+			and rimmed_properties(mark_visual(second_cell), PaletteDB.ROLES.match_rim) == there,
+			"TP-63: uncommitted, the card lights its agreeing elements in BOTH grids",
+			"grid 0 drew %d of %d, grid 1 drew %d of %d" % [
+			rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim), here,
+			rimmed_properties(mark_visual(second_cell), PaletteDB.ROLES.match_rim), there])
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+	check(pa.selected_cards.is_empty(), "TP-63: precondition: the card went back down")
+
+	var committed := await commit_the_show_to_grid_0()
+	check(committed and game.state.committed_grid == 0,
+			"TP-63: precondition: a real placement committed the show to grid 0",
+			"landed %s, committed %d" % [str(committed), game.state.committed_grid])
+
+	await settle_on(held_card)
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card),
+			"TP-63: precondition: the same card is held again", str(pa.selected_cards.size()))
+	await time_to_light(both_cell)
+	check(rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim) == here,
+			"TP-63: the committed grid's mark still lights every element the card agrees with",
+			"drew %d of %d" % [
+			rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim), here])
+	var refused := mark_visual(second_cell)
+	check(rimmed_properties(refused, PaletteDB.ROLES.match_rim) == 0
+			and rimmed_properties(refused, PaletteDB.ROLES.match_rim_active) == 0,
+			"TP-63: and the grid the show can no longer place into lights nothing",
+			"agrees on %d, drew %d" % [there,
+			rimmed_properties(refused, PaletteDB.ROLES.match_rim)])
+	check(uniform_of(refused.rank, &"u_outline_width") == 0
+			and uniform_of(refused.suit, &"u_outline_width") == 0,
+			"TP-63: it draws no rim at all, which is what a mark at rest looks like",
+			"rank %d, suit %d" % [uniform_of(refused.rank, &"u_outline_width"),
+			uniform_of(refused.suit, &"u_outline_width")])
+
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+	check(pa.selected_cards.is_empty(), "TP-63: precondition: the card went back down again")
+	check(rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim) == 0
+			and rimmed_properties(refused, PaletteDB.ROLES.match_rim) == 0,
+			"TP-63: releasing the card clears the highlight in both grids",
+			"grid 0 %d, grid 1 %d" % [
+			rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim),
+			rimmed_properties(refused, PaletteDB.ROLES.match_rim)])
 
 # ==============================================================================
 # TP-64 -- the highlight is the ELEMENTS' outlines, never a tint

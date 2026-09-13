@@ -2,11 +2,11 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 40 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
+**State:** 42 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
 landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
 one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: Phase 5-6 review fixes H and I
-(one commit each, see that section), then S17. Six
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: Phase 5-6 review fix I (one
+commit, see that section), then S17. Six
 gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark hook
 timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal a
 line unnamed), GAP-004 (the palette has no white: `match_rim` is built against entry 31 cream,
@@ -297,7 +297,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 
 ## Phase 5-6 adversarial review (Opus 5, read-only, 70425565..13267a24)
 Findings and their disposition; each defect is reproduced red before it is fixed:
-- FIX H (own commit): the held-card highlight lights marks in grids the placement will refuse -
+- FIXED (fix H, TP-63 two-grid case): the held-card highlight lights marks in grids the placement will refuse -
   `_refresh_mark_matches` walks every grid while `place_card_in_grid` refuses any grid but
   `state.committed_grid` (and `try_place` still returns true, so the card drops back). Q66=(a)
   "every cell it would match": a cell the show cannot reach is not one. Rule adopted: the highlight
@@ -363,14 +363,10 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. Fix H (Phase 5-6 review): the held-card highlight walks only `state.committed_grid` once one is
-   committed - `place_card_in_grid` refuses every other grid. Red-then-green in TP-63 with two grids.
-   Same dispatch, own commit: the six stale talent-suppression comments in `Decks/deck.gd` /
-   `Tests/Support/test_decks.gd` and `DESIGN_DOC.md:475` restated as the suit rule.
-2. Fix I (Phase 5-6 review): while the layer view is open, a covered cell's focus and inspection
+1. Fix I (Phase 5-6 review): while the layer view is open, a covered cell's focus and inspection
    target its MARK (the cell type card), and the focus brighten lands on the mark's visual. TP-67
    gains an inspection check, red-then-green. One commit, full gate.
-3. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+2. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)

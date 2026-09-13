@@ -141,7 +141,7 @@ says so and names its own variant.
 | **TP-60** | An empty marked cell binds its mark into the slot control `_bind_stack` already creates — **no new node is added to the tree** | `PLAN.md` §2 | S11 |
 | **TP-61** ⚑gate | **`modulate` is not written by any mark code path.** Assert the cell control's `modulate` is unchanged while a mark is drawn | `PLAN.md` §1.10 | S11 |
 | **TP-62** | A covered mark still exists in the data and is reachable through inspection | `Q19` | S11 |
-| **TP-63** | Holding a card sets the match highlight on exactly the cells `matches_at` reports non-zero for | `Q66`=(a) | S12 |
+| **TP-63** | Holding a card sets the match highlight on exactly the cells `matches_at` reports non-zero for — in EVERY grid while the show is uncommitted, and in `committed_grid` alone once a real placement has committed one, because every other grid refuses silently | `Q66`=(a), `Q82`=(a) | S12 |
 | **TP-64** | The highlight writes the ELEMENT outlines, not a whole-card tint | `Q67`, `Q68` | S12 |
 | **TP-65** | A card matching nothing produces no popup and no alert | `Q65`=(a) | S12 |
 | **TP-66** ⚑gate | The layer view refuses input: a placement attempted while it is open changes nothing | `Q115`=(a) | S13 |
