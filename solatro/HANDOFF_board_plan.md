@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 44 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
+**State:** 46 commits on `board-plan` (HEAD is this handoff commit). Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
 landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
 one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
 fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Every plan step S1-S16 is verified (S9, S13, S15 partial on
@@ -374,6 +374,18 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
+Open a NEW session at or above Opus 5 default effort and paste:
+
+    Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
+    (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
+    at default effort. You are the reviewer, and you must be at or above that: same
+    generation or newer, same effort or higher. A weaker reviewer on stronger code is net
+    negative, not merely useless. Start by reading .claude/skills/plan-run/SKILL.md "The
+    reviewer's model floor" and then "Closing the run", and work its numbered list in order.
+    Read solatro/HANDOFF_board_plan.md first: "How this run operates" (the private-APPDATA
+    suite script, the standing interference lines), "Queued for the close", and the six open
+    gaps, which are the owner's and are not resolved by the close.
+
 1. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
