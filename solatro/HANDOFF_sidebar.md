@@ -3,7 +3,10 @@
 **Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
-**State:** Phase 2 (S5–S8) done, awaiting its boundary review. `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
+**State:** Phases 1–3 done through S11 (S1–S11 committed; Phase 1 and Phase 2 boundary reviews
+run and their findings fixed). S12 is next, then Phase 4 (S13), Phase 5 (S14–S18), Phase 6
+(S19–S21), Phase 7 (S22), Phase 8 (S23), then the closing phase S24 — all in this run (owner
+ruling). `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
 `py solatro/Tools/run_tests.py --filter <Node> | --logic`) is merged at 587f2d60; the full run is
 ~200 s and a single suite ~30 s. Open: GRID LAYOUT fails 2 of 4 runs on the merged branch
 (rotating check; 0 of ~15 before the merge) — being diagnosed before S5. Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
@@ -150,7 +153,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   it) — 'do not re-instantiate on the map'; `_on_node_hovered` is `map.gd:162`. 4.3's
   `_replay_pending_placement()` dereferences `RunManager.run` unguarded — populate it.
 
-## Phase 2 review (adversarial, Fable 5.1) — open until fixed
+## Phase 2 review (adversarial, Fable 5.1) — all seven fixed in 7fafbfb3
 1. CONFIRMED `hud_container.gd` per-screen state (`_entry_by_screen`, `_lock_by_screen`,
    `_locked_entry_by_screen`, `_processing_screen`) outlives a show: a WON show leaves
    `processing` true so the next show's whole first pick has no description; a mid-show Back then
@@ -220,16 +223,16 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'at the shipped container width no card text overflows at any window - the scrollbar is real but idle until descriptions grow (Q36=c later design)'
 - id: S9
   description: delete Info mode
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '0d323d8c: ALL 45 SUITES 4249 PASSED; wall_info grep empty; suite count 46->45 (TEST_PLAN 8.4 >= 45)'
 - id: S10
   description: delete the in-board popup
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '5ca37f5f: ALL 45 SUITES 4257 PASSED; _focus_info/wall_screen_popups grep empty; by eye no popup in description.png'
 - id: S11
   description: replace test_wall_info / wall_info_snapshot / the wall editor Info panel
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'S9 (tests) + S11 commit: ALL 45 SUITES 4264 PASSED; WALL EDITOR SOAK 83 checks 0 problems; by eye wall_editor_sidebar_locked.png'
 - id: S12
   description: migrate the deck/discard/rules/choice viewers to the sidebar
   status: pending
@@ -266,7 +269,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. Phase 2 boundary review. 2. S9. 3. S10.
+1. S12. 2. S13. 3. S14 (then S15–S18, S19–S23, S24 close).
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
 branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
