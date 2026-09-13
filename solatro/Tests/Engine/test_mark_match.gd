@@ -53,6 +53,8 @@ func _ready() -> void:
 	behavior_section("A MARK IS NEVER SPOTLIT")
 	await test_a_mark_answers_no_broadcast()
 	await test_a_marks_copied_stamp_answers_no_broadcast()
+	behavior_section("A MARK ANSWERS NO DISPATCH WALK")
+	await test_a_mark_answers_no_dispatch_walk()
 	behavior_section("A MARK BLOCKS NOTHING")
 	test_a_mark_blocks_nothing()
 	finish()
@@ -294,6 +296,25 @@ class MarkHookSkill extends CardModifierSkill:
 		covers += 1
 	func on_mark_hit(_card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
 		hits += 1
+
+
+#Answers two walks the broadcast gate never covered: the mark family's own leniency pass, asked
+#through the comparator, and the board's placement query. It counts its own placements, because the
+#environment counts a hook by NAME and every cell's own type answers that same name.
+
+#The placement rule answers for its OWN card only, the way a cell's does, so one card carrying this
+#stamp cannot answer a query aimed at another and hide whether that other was ever asked.
+class MarkWalkProbe extends CardModifierStamp:
+	var placements : int = 0
+	func get_str() -> String: return "MarkWalkProbe"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return is_equal_approx(absf(float(r1.value) - float(r2.value)), 1.0)
+	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+		if target != data: return []
+		placements += 1
+		return stack
 
 
 #Counts a BOARD-WIDE broadcast, on the slot that has no spotlight gate anywhere: a stamp is asked
@@ -1186,6 +1207,58 @@ func test_a_marks_copied_stamp_answers_no_broadcast() -> void:
 			"TP-44: and the mark carries no status for the same broadcast to reach",
 			"got %d" % mark.statuses.size())
 	free_game(g)
+
+
+# ==============================================================================
+# TP-77 -- a mark answers no board-wide dispatch walk
+# ==============================================================================
+
+#TP-77: both hooks here are asked through walks the broadcast gate never covered -- a comparator
+#pass and the placement query -- so a mark silenced in `run_all_mods` alone would still answer them.
+#The control is the SAME stamp on a real card, and it is what proves the walk still walks.
+func test_a_mark_answers_no_dispatch_walk() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	env.card_collections.append(state.grids[0].cell_types)
+	var mark := mark_cell(state, 0, 0, plan_card(PipSuitKnife, 4).with_stamp(MarkWalkProbe.new()))
+	var probe := plan_card(PipSuitKnife, 5)
+	place_in_cell(state, 0, 0, probe)
+	var mark_spy := mark.stamp as MarkWalkProbe
+	var held : Array[CardData] = [probe]
+	var strict := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(strict == MarkMatch.Property.SUIT,
+			"TP-77: a mark's own copied leniency rule does not loosen the match it sits under",
+			"got %d" % strict)
+	var asked : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(asked == 0,
+			"TP-77: the comparator dispatched it nothing at all",
+			"counted %s" % str(env.dispatches))
+	var on_mark := await env.return_first_data_array_result(&"on_can_place_stack", held, mark)
+	check(mark_spy.placements == 0 and on_mark.is_empty(),
+			"TP-77: nor does a mark's copied stamp answer the board's placement query",
+			"answered %d times, returned %d cards" % [mark_spy.placements, on_mark.size()])
+	check(not env.has_card_data(mark),
+			"TP-77: and the board does not report a mark as a card sitting on it")
+	var control := plan_card(PipSuitKnife, 4).with_stamp(MarkWalkProbe.new())
+	var control_spy := control.stamp as MarkWalkProbe
+	env.add_cards([control] as Array[CardData])
+	var lenient := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(lenient == RANK_AND_SUIT,
+			"TP-77 control: the same rule on a real card turns the same pair into a rank match",
+			"got %d" % lenient)
+	var asked_control : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(asked_control >= 1,
+			"TP-77 control: and the comparator dispatched it",
+			"counted %s" % str(env.dispatches))
+	var on_control := await env.return_first_data_array_result(&"on_can_place_stack", held, control)
+	check(control_spy.placements >= 1 and on_control == held,
+			"TP-77 control: the placement query reaches the same stamp on a real card",
+			"answered %d times, returned %d cards" % [control_spy.placements, on_control.size()])
+	check(env.has_card_data(control),
+			"TP-77 control: and the board reports that card as sitting on it")
+	remove_child(env)
+	env.free()
 
 
 # ==============================================================================

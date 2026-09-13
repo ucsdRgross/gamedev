@@ -234,3 +234,12 @@ gap under `gaps/`.
   is `anim_spin`'s only caller. No guard, no second resolution: the board that starts a reveal is
   what paces it. TP-76 takes the environment away mid-deal with a `FakeEnvironment` entering and
   leaving the tree, which is exactly what a suite running beside PLAN VISUALS does.
+- S8 / Q59: the board-wide exclusion lives in `CardEnvironment._dispatch_mods()`, the one walk
+  `run_all_mods`, `_compare_implementers` (and so `active_implementers` and every comparator helper)
+  and `return_first_data_array_result` share: a marked cell contributes its own `TypeGridCell` and
+  nothing the deal copied onto it. ⚠ THE CELL'S OWN TYPE STAYS IN THE WALK, and it is not optional:
+  `TypeGridCell.on_can_place_stack` is dispatched through it, so excluding the whole CARD would refuse
+  every placement onto a marked cell and end the show at the first legality sweep. `has_card_data()`
+  answers the membership question on its own -- a mark is a square, never a card in play -- and the
+  spotlight sweep needs no exclusion because `CardModifier.is_spotlit()` asks `BoardPlan.is_marked`
+  first. `all_card_datas()` is untouched: relinking walks it and every home of a playing card is in it.

@@ -92,38 +92,38 @@ func is_data_in_rules(data: CardData) -> bool:
 #CURRENT is only the "environment on screen" pointer used at the boundaries
 #(CardModifier.env/game accessors, PipComparator, UI) — not inside dispatch.
 
-#⚠ A MARKED CELL'S ZONE CARD CONTRIBUTES NOTHING HERE, type, stamp, statuses and skill alike: a
-#mark's copied modifiers answer the two mark hooks and nothing else, and a stamp is asked with no
-#spotlight gate at all, so gating the skill slot on `spotlit` would leave the rest answering.
+#⚠ A MARK IS A CELL WEARING A COPIED FACE, AND THE FACE IS NOT ON THE BOARD: its rank, suit, stamp
+#and skill answer the two mark hooks and nothing else, while the cell's own type goes on ruling its
+#square. THE exclusion, written once -- every board-wide walk below takes its modifiers from here.
+
+#Statuses join type and stamp as a SNAPSHOT copy, so a status removing itself mid-hook cannot
+#corrupt the walk asking it, and the skill comes last because that is the order a card is asked in.
+func _dispatch_mods(data: CardData) -> Array[CardModifier]:
+	var mods : Array[CardModifier] = [data.type]
+	if BoardPlan.is_marked(data): return mods
+	mods.append(data.stamp)
+	mods.append_array(data.statuses)
+	if data.skill: mods.append(data.skill)
+	return mods
+
+#⚠ THE P1 GATE: on a cacheable environment (Game) a hook nothing on the board implements makes the
+#walk a pure no-op scan, so it is skipped. Base envs (tests, map) carry no revision key and always
+#walk -- building the implementer list uncached would itself cost the walk it saves.
+
+#The passive on_anything tail runs only where this event actually invoked a mod (owner ruling): if
+#nothing ran, nothing could have changed.
 func run_all_mods(function: StringName, ...params:Array) -> void:
 	var triggered := false
-	# P1 gate: on a cacheable environment (Game — _revision_key non-empty) consult the SE1
-	# implementer cache first; when NOTHING on the board implements this hook the walk is a
-	# pure no-op scan, so skip it. Base envs (tests, map) return an empty key and always
-	# walk — building the list uncached would itself cost the walk being saved.
 	if _revision_key().is_empty() or not _compare_implementers(function).is_empty():
 		for data in CardDataIterator.new(self):
-			if BoardPlan.is_marked(data): continue
-			# statuses join type/stamp as a SNAPSHOT copy (append_array) so a status removing
-			# itself mid-hook can't corrupt this walk. Statuses self-scope targeted hooks.
-			var mods : Array[CardModifier] = [data.type, data.stamp]
-			mods.append_array(data.statuses)
-			for mod : CardModifier in mods:
-				if mod and mod.has_method(function):
-					triggered = true
-					note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
-					await Callable(mod, function).callv(params)
-					_note_mod_fired(mod, function)
-					await skill_spotlight_check()
-			var skill : CardModifierSkill = data.skill
-			if skill and skill.has_method(function) and skill.spotlit:
+			for mod : CardModifier in _dispatch_mods(data):
+				if not mod or not mod.has_method(function): continue
+				if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
 				triggered = true
-				note_processing(1, "%d:%s" % [skill.get_instance_id(), function])
-				await Callable(skill, function).callv(params)
-				_note_mod_fired(skill, function)
+				note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
+				await Callable(mod, function).callv(params)
+				_note_mod_fired(mod, function)
 				await skill_spotlight_check()
-	# P1 owner ruling: the passive on_anything tail only runs when this event
-	# actually invoked a mod — if nothing ran, nothing could have changed.
 	if triggered and function != &"on_anything":
 		await run_all_mods(&"on_anything")
 
@@ -152,11 +152,8 @@ func _compare_implementers(function: StringName) -> Array:
 			return _compare_cache[function]
 	var impl : Array[CardModifier] = []
 	for data in CardDataIterator.new(self):
-		var mods : Array[CardModifier] = [data.type, data.stamp]
-		mods.append_array(data.statuses)
-		for mod : CardModifier in mods:
+		for mod : CardModifier in _dispatch_mods(data):
 			if mod and mod.has_method(function): impl.append(mod)
-		if data.skill and data.skill.has_method(function): impl.append(data.skill)
 	if key:
 		_compare_cache[function] = impl
 	return impl
@@ -222,11 +219,15 @@ func collect_mod_results(hook: StringName, ...params: Array) -> Array:
 		_note_mod_fired(mod, hook, false)
 	return out
 
+#⚠ A MARK ANSWERS FALSE: a marked cell is a square wearing a copied face and never a card in play,
+#so a grouping rule cannot pull one into a meld to score it. The modifier half of the same rule is
+#`_dispatch_mods`; the meaning of "marked" is `BoardPlan`'s, so neither spells it for itself.
+
 ## Q89(b): is this CardData somewhere in this environment's collections? THE check that lets a
 ## grouping rule PULL a board card into a meld while refusing to let it INVENT one — the refusal
 ## that keeps multiplicity (QR5=a, DEFERRED D1) out of scope rather than reachable sideways.
 func has_card_data(data: CardData) -> bool:
-	if not data: return false
+	if not data or BoardPlan.is_marked(data): return false
 	for d in CardDataIterator.new(self):
 		if d == data: return true
 	return false
@@ -244,17 +245,11 @@ func return_first_true_pair_result(hook: StringName, a: Variant, b: Variant) -> 
 
 func return_first_data_array_result(function: StringName, ...params:Array) -> Array[CardData]:
 	for data in CardDataIterator.new(self):
-		var mods : Array[CardModifier] = [data.type, data.stamp]
-		mods.append_array(data.statuses)
-		for mod : CardModifier in mods:
-			if mod and mod.has_method(function):
-				var result : Array[CardData] = await Callable(mod, function).callv(params)
-				_note_mod_fired(mod, function, false)
-				if result: return result
-		var skill : CardModifierSkill = data.skill
-		if skill and skill.has_method(function) and skill.spotlit:
-			var result : Array[CardData] = await Callable(skill, function).callv(params)
-			_note_mod_fired(skill, function, false)
+		for mod : CardModifier in _dispatch_mods(data):
+			if not mod or not mod.has_method(function): continue
+			if mod is CardModifierSkill and not (mod as CardModifierSkill).spotlit: continue
+			var result : Array[CardData] = await Callable(mod, function).callv(params)
+			_note_mod_fired(mod, function, false)
 			if result: return result
 	return []
 

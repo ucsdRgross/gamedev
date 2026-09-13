@@ -119,6 +119,7 @@ says so and names its own variant.
 | **TP-43** | A matched suit fires **once per meld membership**, as suit effects do today | a card in a row and a column | pre-authorisation 7 | S7 |
 | **TP-44** ⚑gate | **A mark is never spotlit** — an uncovered mark of a card carrying a skill answers no broadcast hook | a mark of a `SkillExtraPoint` card | `Q59`=(a) | S8 |
 | **TP-45** | A mark blocks nothing; the card under it — there is none — and the spotlight rule are unaffected | one mark | `Q60`=(a) | S8 |
+| **TP-77** ⚑gate | **A mark answers no board-wide dispatch walk** — a mark whose copied stamp implements a leniency rule and a placement rule answers neither, and `has_card_data` reports it as nowhere on the board; the same stamp on a real card still answers both | a mark and a control card carrying the same stamp | `Q59`=(a) | S8 |
 | **TP-46** ⚑gate | `on_mark_hit` reaches BOTH the mark's modifiers and the placed card's | a mark and a card each implementing it | `Q47`=(a) | S9 |
 | **TP-47** ⚑gate | `on_mark_covered` fires for a NON-matching cover; `on_mark_hit` does not | one mismatch | `Q46`, `Q51`=(a) | S9 |
 | **TP-48** | `level` is 1 on a match and 0 on a plain cover, and never any other value | both cases | `Q50`=(c) | S9 |
