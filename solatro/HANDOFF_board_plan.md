@@ -2,11 +2,17 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** Phases 1–4 (S1–S10) landed and verified, one commit per step, plus three review fixes
-and one owner-reported bug fix. Three gaps open for the owner: GAP-001 (stocks are sidebar S19;
-TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch
-parked) and GAP-003 (re-deal a line unnamed). Owner ruling mid-run: marks keep a real card's
-colours and only lose their outline (PLAN §1.10). Phase 5 (S11–S13, visual, each ending in /fx-verify) is next, then S14–S17.
+**State:** 30 commits on `board-plan` (HEAD 772dad91). Phases 1-4 (S1-S10) and S11 landed and
+verified, one commit per step, plus three Phase 1-3 review fixes (A-C), the owner's three-grid bug
+fix, and Phase 4 review fix D. Tree clean. OPEN: one intermittent engine error from S11's reveal
+(see Open bugs; the next thing to fix), three queued Phase 4 review fixes (E, F, G under Next up),
+then S12 (the match highlight, under the owner's white-outline ruling), S13, S14, S15, S16, S17.
+Three gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark
+hook timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal
+a line unnamed). Owner rulings mid-run are in PLAN 1.10 (marks keep a real card's colours and only
+lose their outline; a matching mark takes a WHITE outline while a card is selected; marks keep the
+zone type art). Implementer sessions die to the Opus session limit every few hours; every cut-off
+so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -288,22 +294,86 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
 
 ## Open bugs
-- FIXED (owner report, "in tests with 3 grids i only see it filling in 1 grid"): grids added through `Board.add_grid`, the mutator every non-api path uses (the UI fixtures' `_stand_up_grids`, the visual probes), were never dealt; the mid-show deal now lives in `Board.add_grid` and `CardEffectApi.add_grid` no longer deals. Reproduced `[25, 0, 0]` red, `[25, 25, 25]` green, and by eye on `Tests/Visual/grid_layer_shot.tscn` (grid 1 bare dashed outlines before, mark art in every cell after). A real three-grid show start (deck_105) was never affected.
-- Until S11 lands, a mark renders as a full-colour card face indistinguishable from a played card: the zone card already draws under the stack. Phase 5 owns the grey treatment.
-- Pre-existing, found during S7, not ours: a sprung grid card (`CardVisual.anim_spring_lift`) is never reset, so it keeps `floating = false` until the next rebuild. Details in the S7 evidence file of this session; surfaces in `Cards/card_visual.gd`.
+- OPEN, fix first: S11's reveal, intermittent (1 in 3 full runs since S11): `SCRIPT ERROR: Invalid
+  call. Nonexistent function 'get_delay' in base 'Nil'. at: CardVisual.anim_spin
+  (res://Cards/card_visual.gd:839), from reveal_plan (res://UI/play_area.gd:1720)`, logged while
+  "EFFECTS FOLLOW THEIR HOST'S MODULATE" and the wall-editor tool's TP-120 checks ran: a PlayArea
+  hosted WITHOUT a Game reached the reveal with a non-empty pending list. Reproduce by finding the
+  no-Game host (the wall editor tool, test_fx_attachment, the placeholder-content path) whose state
+  carries a plan; fix at one seam (pacing through the accessor a hosted board already resolves, or
+  no reveal where nothing dealt); a PLAN VISUALS check red on the current code (the engine error is
+  the red); full gate.
+- Pre-existing, found during S7, not ours: a sprung grid card (`CardVisual.anim_spring_lift`) is
+  never reset, so it keeps `floating = false` until the next rebuild; surfaces in
+  `Cards/card_visual.gd`.
+- FIXED (owner report, "in tests with 3 grids i only see it filling in 1 grid"): the mid-show deal
+  lives in `Board.add_grid`; `CardEffectApi.add_grid` no longer deals.
+- For the owner's eye: the 12.1 s opening reveal (`plan_reveal_fraction` 0.5 x `get_delay`) and
+  whether "no rim" alone reads as a mark at overview zoom. `PipRankNumeral.get_str()` prints
+  "NumeralRank5.0" in the mark's description (pre-existing wart).
 
 ## Files touched
 - solatro/design/board-plan/gaps/GAP-001.md, ASSUMPTIONS.md (new); PLAN.md §3 S1 row and NAMES.md
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. Read the baseline banner; record it above; extract SECTION 8 to a scratch file.
-2. Dispatch 1 (S1+S2).
-3. Dispatch 2 (S8 + write_mark/clear_mark).
+1. Fix the reveal's null-game engine error (Open bugs, first item). One commit, full gate.
+2. Phase 4 review fix E: the mark exclusion lives only in `run_all_mods`; `_compare_implementers`,
+   `active_implementers`, `return_first_data_array_result`, `has_card_data` and
+   `skill_spotlight_check` still walk `cell_types`. Exclude a marked cell's zone card at the
+   dispatch walker once (never in `all_card_datas`, which relinking needs). Test: a mark copying a
+   modifier with a leniency / placement hook answers no comparator dispatch; `has_card_data` is
+   false for a mark. Red-then-green, full gate, one commit.
+3. Fix F: `MarkMatch._pip_same` refuses an absent pip BEFORE the deny/allow hooks (PLAN 4 row 9
+   says mirror `PipComparator`, which asks the hooks first). Ask the hooks first, require both
+   present only for `printed_same`; `flat_bonus` treats a null rank as the no-integer-value case so
+   a leniency-rescued rankless card pays the fallback. Test: an `on_mark_ranks_allow` test modifier
+   rescues a rankless card. One commit.
+4. Fix G: the widened combo window in `Game._note_mod_fired` ("an act is resolving OR a line is
+   composing", read off `line_mult_bonus`) also admits every broadcast inside a NESTED composition.
+   Pass the mark-hook activation explicitly (the `counts_as_activation` split already exists in
+   `_run_own_mods`) instead of inferring it from the accumulator. Test: a mark effect that
+   re-scores a line while a board card implements `on_after_score` with a combo key registers only
+   the mark's class. One commit.
+5. S12: the match highlight and landing feedback. Owner ruling (PLAN 1.10): at rest a mark has no
+   outline; while a card is picked up, a mark it matches takes a WHITE outline, read with Q67/Q68
+   (each matching ELEMENT lights its own outline) so the white lands on the matching elements.
+   `match_rim` (white) and `match_rim_active` palette roles per NAMES.md; landing feedback per Q64
+   (the realized card's art takes a special outline, pips swap to an activated outline; no popup);
+   a miss is silent (Q65=(a)); no Entrance destination (Q70). TP-63, TP-64, TP-65; by eye TP-72,
+   TP-73 (`/fx-verify`, PNGs looked at and described). Files per PLAN 3 S12.
+6. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
+   Q117=(c) held shoulder button AND a HUD control, `ui_plan_layer` action, closes on any board
+   mutation, off after a restored save). TP-66..TP-69. The sidebar branch is rebuilding the HUD in
+   parallel: keep the HUD control minimal and behind `GameView`, expect a merge.
+7. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
+   else to add.
+8. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
+   GAP-041 through a NEW poker-patience design version, never an in-place edit).
+9. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+   new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
+   `py .claude/tools/doc_check.py` clean).
+10. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+    (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
-Opening prompt for a cold overseer: "Resume /plan-run for solatro/design/board-plan on branch
-board-plan in ../gamedev-boardplan. Read solatro/HANDOFF_board_plan.md, then git log --oneline,
-git status --porcelain, and a full windowed suite run before trusting any done status."
+## How this run operates (read before dispatching)
+- Overseer never reads source; verifies by bounded grep, its own full suite run, the SECTION 8
+  byte-diff against a captured baseline (re-capture it from a main-only run if the scratchpad is
+  gone: SECTION 8 of SCORING is the 104-row leaderboard block), and by eye for visual steps.
+- Every dispatch is a `plan-implementer` brief quoting the step, the rulings VERBATIM, the test
+  rows, the call site, the comment and complexity rules, the run script, and the standing
+  interference lines. Implementers run the suite through a script that exports a private
+  `APPDATA` (Godot on Windows reads its data dir from it) so the parallel sidebar session's runs
+  do not collide; recreate it from "Run rules in force" if the scratchpad is gone.
+- One implementer at a time (the lock is shared with the other session through the main
+  checkout's project dir). A cut-off implementer is resumed with SendMessage; check
+  `git status --porcelain` first and tell it what the tree holds.
+- Commit after every verified step with the evidence in the message; revert the effect-review
+  import noise first (`git checkout -- solatro/design/effect-review` then
+  `git clean -fq -- solatro/design/effect-review/`).
+- The standing interference lines (WALL FOCUS Info-mode toggle; a GRID VIEW pan-right real-key
+  check) fail 1 run in about 3 when the other session's windowed Godot is up and pass alone; a run
+  whose only failure is one of them meets the gate. Any engine error is red.
 
 ## References
 - `.claude/skills/plan-run/SKILL.md`, `.claude/skills/handoff/SKILL.md`
