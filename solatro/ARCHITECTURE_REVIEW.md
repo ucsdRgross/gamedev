@@ -690,7 +690,10 @@ that by re-checking every cell of `Line.cells` against the live board.
   played cards and draws every cell's mark: `ui_plan_layer` (M) PEEKS while held, the HUD Marks
   button toggles, `_select_data` refuses selection while it is open,
   `GameView._board_is_playable()` gates undo and End, and `queue_rebuild()` / `setup_gui()` close
-  it, so one board mutation always ends it. The rims themselves are §4j.
+  it, so one board mutation always ends it. ⚠ WHAT IS LOOKED AT IS WHAT IS DRAWN: while it is open
+  a covered cell's focus and its `card_info` are its MARK, because `_size_stack_slot(slot, true)`
+  collapses the cell's cards and hands the zone card the size, the hit area and the focus — no
+  reader asks a second time. The rims themselves are §4j.
 - **Knobs**, six, declared once under `@export_group("Balance — board plan")` in
   `Scripts/player_settings.gd`: `plan_rank_match_step`, `plan_rank_flat_fallback`,
   `plan_ace_value`, `plan_talent_mult`, `plan_hat_mult`, `plan_reveal_fraction`.

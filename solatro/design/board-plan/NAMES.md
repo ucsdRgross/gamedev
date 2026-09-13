@@ -150,6 +150,7 @@ func set_match_rim(properties : int, palette_index : int) -> void   # the two ar
 func _refresh_mark_matches(game_state: GameData) -> void   # the one derivation, on every refresh
 var plan_layer_open : bool          # THE layer-view state, transient and never in GameData. Added during execution - see ASSUMPTIONS.md
 func _select_data(data: CardData) -> void   # the one emitter of data_selected, refused while the layer view is open. Added during execution
+func _size_stack_slot(slot: Control, marks_layer: bool) -> void   # `marks_layer`: the cell's cards step aside, so its mark takes the size, the hit area and the focus. Added during execution - see ASSUMPTIONS.md
 
 # Levels/game_view.gd
 @onready var plan_layer_button : Button = %PlanLayer   # the HUD control of Q117=(c). Added during execution - see ASSUMPTIONS.md

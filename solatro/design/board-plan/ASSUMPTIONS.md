@@ -307,6 +307,14 @@ gap under `gaps/`.
   wear `match_rim_active` on the agreeing elements, because the card that would have worn it is the
   one being hidden. Unmarked cells draw their bare frame; the Entrance, the hand, the HUD and the
   deck viewer are untouched.
+- S13 / Q19, owner ruling adopted in review: WHAT IS LOOKED AT IS WHAT IS DRAWN. While the layer is
+  open a covered cell's FOCUS target and its `card_info` inspection are its MARK, and the focus
+  brighten lands on the mark's visual; when it closes both are the played card again. One seam --
+  `_size_stack_slot(slot, marks_layer)` collapses the cell's cards and gives the zone card the size,
+  the hit area and `FOCUS_ALL`, so `focused_control` -> `ui_data` resolves to the mark with no
+  reader asking twice; `_cell_focus_control` asks it which child is focusable rather than assuming
+  the first. The `plan_layer_open` setter re-grabs the cell the cursor was on across the swap, so a
+  peek never leaves the board without a cursor; focus on the HUD or the Entrance is left alone.
 - S13 / pre-authorisation 17: the close lives in `PlayArea.queue_rebuild()` (the one call every
   revision bump reaches) and in `setup_gui()` (the rebuild an undo or a resume drives), in both
   cases AFTER the rebuild is under way -- a close asks for a visual refresh, and a refresh run

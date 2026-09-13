@@ -1116,7 +1116,14 @@ var plan_layer_open := false:
 	set(value):
 		if plan_layer_open == value: return
 		plan_layer_open = value
+#THE CURSOR SURVIVES THE SWAP: the control it sat on stops taking focus the moment a cell's cards
+#step aside or come back, so the CELL is read before the resize releases it and its new target
+#grabbed after. Focus anywhere but a board cell -- the HUD, the Entrance -- is left where it is.
+		var cursor_cell := _coord_of_control(get_viewport().gui_get_focus_owner())
 		set_card_zones_visuals()
+		if not cursor_cell.is_nowhere() and not cursor_cell.is_entrance():
+			var target := _cell_focus_control(cursor_cell)
+			if target: target.grab_focus()
 
 ## ⚠ **THE BOARD IS ONE LEVEL OF A STACK THAT CONTINUES PAST IT** — one grid, then every grid, then
 ## the wall. Back steps OUT one level and Forward steps back IN, and both FALL THROUGH once this
@@ -1310,8 +1317,9 @@ func _coord_of_control(c: Control) -> BoardCoord:
 	if not coord.is_nowhere(): return coord
 	return game.state.cell_type_coord(data)
 
-## The control the selection sits on for a cell: its slot's FIRST child, which is the topmost card
-## of the stack, or the cell's own zone card while it is empty. Null when no cell is built there.
+#ASKED OF THE SIZING, NEVER DECIDED AGAIN HERE: `_size_stack_slot` leaves exactly one child of a
+#slot focusable, so a second rule for "the card on show" would be a second answer to one question.
+## The control the selection sits on for a cell, or null where no cell is built.
 func _cell_focus_control(coord: BoardCoord) -> Control:
 	var game := CardEnvironment.get_current_game()
 	if not game: return null
@@ -1321,8 +1329,11 @@ func _cell_focus_control(coord: BoardCoord) -> Control:
 	if not grid: return null
 	var slot := _cell_slot(grid_container.get_child(coord.grid) as Control, grid,
 			grid.cell_index(coord.x, coord.y))
-	if not slot or slot.get_child_count() == 0: return null
-	return slot.get_child(0) as Control
+	if not slot: return null
+	for child : Node in slot.get_children():
+		var control := child as Control
+		if control.focus_mode == Control.FOCUS_ALL: return control
+	return null
 
 ## Arrow movement of the selected CELL, focused mode only. True when it consumed the press.
 ##
@@ -1683,23 +1694,20 @@ func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) ->
 	var y := floor_y - _depth_pitch_px() * board_zoom * float(h) 			- CardVisual.card_size_play.y * board_zoom * 0.5
 	return Vector2(x, y)
 
-## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED.** The slot's own zone card is the LAST child and
-## collapses once a card covers it; the newest card takes the FIRST control and shows whole; every
-## card under it shows one depth pitch — the strip a covered card reveals, which is where its pips
-## are.
-##
-## ⚠ **NO SEPARATION; EACH CARD CARRIES ITS OWN GAP.** A zero-height child still takes a separation
-## from a `VBoxContainer`, so with one the row grew the moment its FIRST card landed. A stack of one
-## is exactly one card tall.
-func _size_stack_slot(slot: Control) -> void:
+#⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its FIRST
+#card. In the `marks_layer` a cell's cards collapse instead, so its mark takes the size and focus.
+## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED, AND SO WHERE A CELL'S FOCUS LANDS.**
+func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 	slot.add_theme_constant_override("separation", 0)
-	var occupied := slot.get_child_count() > 1
+	var occupied := slot.get_child_count() > 1 and not marks_layer
 	var zone_control : Control = slot.get_child(-1)
 	zone_control.custom_minimum_size = CardVisual.card_size_play if not occupied 			else Vector2(CardVisual.card_size_play.x, 0)
 	zone_control.focus_mode = Control.FOCUS_NONE if occupied else Control.FOCUS_ALL
 	for j : int in slot.get_child_count() - 1:
-		(slot.get_child(j) as Control).custom_minimum_size = Vector2(
-				CardVisual.card_size_play.x, _depth_pitch_px())
+		var card_control : Control = slot.get_child(j)
+		card_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
+				0.0 if marks_layer else _depth_pitch_px())
+		card_control.focus_mode = Control.FOCUS_NONE if marks_layer else Control.FOCUS_ALL
 	if occupied:
 		(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
 
@@ -2232,10 +2240,10 @@ func _append_ordered_visual(out: Array[CardVisual], seen: Dictionary[CardVisual,
 
 func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas: Array[ArrayCardData]) -> void:
 	for i in type.size():
-		_size_stack_slot(hbox.get_child(i) as Control)
+		_size_stack_slot(hbox.get_child(i) as Control, false)
 
-	# ⚠ S16: the loop above resets every strip to its stacked height, so a rebuild that lands mid-act
-	# would slam an open row shut. Re-push the live openings over the top of it.
+#⚠ the loop above resets every strip to its stacked height, so a rebuild that lands mid-act would
+#slam an open row shut. Re-push the live openings over the top of it.
 	_apply_row_openings()
 
 	# 3. Focus neighborhood linking
@@ -2838,9 +2846,10 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		panel.add_theme_constant_override("separation", separation)
 		for ci : int in grid.cells.size():
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
-			if slot: _size_stack_slot(slot)
-#THE LAYER SWAP, AND THE WHOLE OF IT: the marks layer draws each cell's plan, so the cards
-#played on it step aside. Derived on every refresh and stored nowhere, like the rims beside it.
+			if slot: _size_stack_slot(slot, plan_layer_open)
+#THE LAYER SWAP, AND THE WHOLE OF IT: the marks layer draws each cell's plan, so the cards played
+#on it step aside -- out of the drawing here, out of the sizing and the focus in `_size_stack_slot`.
+#Derived on every refresh and stored nowhere, like the rims beside it.
 			for card : CardData in grid.cells[ci].datas:
 				var played : CardVisual = data_card.get(card)
 				if played: played.visible = not plan_layer_open

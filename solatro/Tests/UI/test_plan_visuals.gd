@@ -47,6 +47,7 @@ func _ready() -> void:
 	behavior_section("THE LAYER VIEW DRAWS THE MARKS AND REFUSES THE BOARD")
 	await test_the_layer_view_refuses_a_placement()
 	await test_the_layer_view_opens_focused_and_in_the_overview()
+	await test_the_layer_view_focuses_and_inspects_the_mark()
 	await test_the_layer_toggle_is_reachable_by_every_input_mode()
 	await test_the_layer_view_closes_on_a_board_mutation()
 	await teardown_view()
@@ -946,6 +947,75 @@ func test_the_layer_view_opens_focused_and_in_the_overview() -> void:
 	await input.key_release(plan_layer_key())
 	pa.focus_grid(0)
 	await settle_on(held_card)
+
+# WHAT THE BOARD IS FOCUSED ON RIGHT NOW, asked of the viewport's own focus owner: the PlayArea's
+# last-known control goes stale, so reading that back would let a focus that never moved pass.
+func focused_data() -> CardData:
+	var owner : Control = picture_vp.gui_get_focus_owner()
+	if owner not in pa.ui_data: return null
+	return pa.ui_data[owner]
+
+# ==============================================================================
+# TP-67 -- what is looked at is what is drawn
+# ==============================================================================
+
+# On a covered cell the marks layer shows the MARK, so the cursor and the info card are about the
+# mark, not the card hidden under it. Both routes a player has are driven through the viewport, and
+# closing the layer puts the focus back on the played card -- the half that discriminates.
+func test_the_layer_view_focuses_and_inspects_the_mark() -> void:
+	var covered : CardData = game.state.card_at(both_cell)
+	var mark : CardData = game.state.cell_type_at(both_cell)
+	check(covered != null and BoardPlan.is_marked(mark),
+			"TP-67: precondition: a card covers a marked cell", str(covered))
+	var neighbour : Control = pa.data_ui[game.state.cell_type_at(rank_cell)]
+	check(game.state.card_at(rank_cell) == null,
+			"TP-67: precondition: the cell an arrow starts from is bare, so it draws its own mark")
+
+	await input.key_press(plan_layer_key())
+	await settle_on(mark)
+	neighbour.grab_focus()
+	await get_tree().process_frame
+	await input.key_tap(KEY_RIGHT)
+	check(focused_data() == mark,
+			"TP-67: an arrow onto a covered cell focuses the mark it draws, not the hidden card",
+			str(focused_data()))
+
+	await input.move_to(centre_of(mark))
+	check(focused_data() == mark,
+			"TP-67: and the pointer over that cell focuses the mark too", str(focused_data()))
+	check(pa.focused_visual == pa.data_card[mark] and pa.focused_visual.visible,
+			"TP-67: the focus brighten lands on the visual that is actually on show",
+			str(pa.focused_visual))
+	check(not (pa.data_card[covered] as CardVisual).visible,
+			"TP-67: precondition: the card under it is the hidden one")
+
+	var entries : Array[InfoEntry] = []
+	var collect := func(entry: InfoEntry) -> void: entries.append(entry)
+	pa.info_requested.connect(collect)
+	var was_info : bool = SettingsManager.settings.wall_info_mode
+	SettingsManager.settings.wall_info_mode = true
+	await input.click(centre_of(mark))
+	check(entries.size() == 1,
+			"TP-67: a click in Info mode over a covered cell publishes one info entry",
+			str(entries.size()))
+	if entries.size() == 1:
+		var named := "%s\n%s" % [entries[0].title, entries[0].body]
+		check(named.contains(mark.suit.get_str()) and named.contains(mark.rank.get_str()),
+				"TP-67: and it names the MARK's own rank and suit", named)
+		check(named != ControlCard.describe_card(covered),
+				"TP-67: which is the cell's description, not the played card's", named)
+		if entries[0].visual: entries[0].visual.free()
+	SettingsManager.settings.wall_info_mode = was_info
+	pa.info_requested.disconnect(collect)
+
+	await input.key_release(plan_layer_key())
+	await get_tree().process_frame
+	check(focused_data() == covered,
+			"TP-67: closing the view hands the cell's focus back to the played card",
+			str(focused_data()))
+	check(pa.focused_visual == pa.data_card[covered] and pa.focused_visual.visible,
+			"TP-67: and the brighten follows it onto the card that is on show again",
+			str(pa.focused_visual))
 
 # ==============================================================================
 # TP-68 -- keyboard, mouse and controller all reach it

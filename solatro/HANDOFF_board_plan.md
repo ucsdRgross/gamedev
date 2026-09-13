@@ -2,11 +2,11 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 42 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
+**State:** 44 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
 landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
 one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: Phase 5-6 review fix I (one
-commit, see that section), then S17. Six
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Every plan step S1-S16 is verified (S9, S13, S15 partial on
+GAP-002 / GAP-005 / GAP-006, the owner's). OPEN: S17, the closing sequence, in a NEW session. Six
 gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark hook
 timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal a
 line unnamed), GAP-004 (the palette has no white: `match_rim` is built against entry 31 cream,
@@ -223,7 +223,7 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Full doc_check from the worktree root: 66 living docs + 318 source files checked - 0 error(s), 9 warning(s), identical to the pre-S16 tree and to main (0 errors, 9 warnings); --changed clean on all five files. No source file touched (git status). grep: the retired rule survives in ARCHITECTURE_REVIEW only as the sentence that retires it; suite counts corrected 45 -> 48 and the logic tier 32 -> 34 in START_HERE, HEADLESS_TESTING and ARCHITECTURE_REVIEW 7. One landmine row rewritten by the overseer from what material_of used to do into the rule.'
   notes: 'Not edited, scheduled with fix H: stale code comments stating the retired talent-suppression rule at Decks/deck.gd:8,116,150,219,255 and Tests/Support/test_decks.gd:18, and DESIGN_DOC.md:475 (the owner design record) which still states it. VFX.md untouched: no living doc enumerates board shot scenes, so the three plan_*_shot scenes are listed in 3e. Logic tier: BOARD PLAN and MARK MATCH are in it, PLAN VISUALS is not (windowed).'
 - id: S17
-  description: the closing sequence of /plan-run, every numbered item recorded.
+  description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
   verification_command: 'see /plan-run Closing the run'
   verification_kind: manual
@@ -302,7 +302,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `state.committed_grid` (and `try_place` still returns true, so the card drops back). Q66=(a)
   "every cell it would match": a cell the show cannot reach is not one. Rule adopted: the highlight
   walks only the committed grid once one is committed. TP-63 gains a two-grid case.
-- FIX I (own commit): in the marks layer only the CardVisual is hidden; focus and inspection on a
+- FIXED (fix I, TP-67 inspection check): in the marks layer only the CardVisual is hidden; focus and inspection on a
   covered cell still target the hidden played card (`card_info(ui_data[focused_control])`), and the
   focus brighten lands on an invisible visual. PLAN 1.10 "a covered mark is available on inspection,
   and through the layer view". Rule adopted: while the layer is open, a covered cell's focus and
@@ -337,6 +337,17 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   leniency hook family PLAN 1.4 mandates as a content surface; TP-78 is that caller until content
   ships one.
 
+## Queued for the close (S17)
+- /simplify: `MarkMatch._pip_same` computes two `pip_cache_key`s that `ask_pass` never reads under
+  `memoise = false` (bloat review).
+- /simplify: the residual 8-line dup_check pair between `plan_match_shot.gd` and `plan_layer_shot.gd`
+  (`_ready`'s four locals), and the `test_plan_visuals.gd:437` / `test_ui_props.gd:1135` GameView
+  teardown pair (a repo-wide shape at ~30 sites).
+- /fx-verify: the scoring-beam half of TP-72 is UNVERIFIED (no shot holds a beam on a realized cell).
+- Tool fidelity, not a defect: `PipSuitTest.id` is dropped by `duplicate_deep`, so the parity's
+  engine deal is not a fewest-copies deal and every dumped mark prints suit 0 (ASSUMPTIONS S15).
+- Owner rulings pending on GAP-001..006; GAP-004 and GAP-006 change a number each, GAP-005 a binding.
+
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
@@ -363,10 +374,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. Fix I (Phase 5-6 review): while the layer view is open, a covered cell's focus and inspection
-   target its MARK (the cell type card), and the focus brighten lands on the mark's visual. TP-67
-   gains an inspection check, red-then-green. One commit, full gate.
-2. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+1. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)
