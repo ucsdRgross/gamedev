@@ -91,11 +91,12 @@ func _ready() -> void:
 	await test_the_scroll_stick_scrolls_the_description_and_not_the_hud()
 	await test_a_low_stick_deflection_still_scrolls_a_short_description()
 	await test_the_arrows_scroll_only_once_the_description_is_locked()
-	await test_the_exit_x_joins_navigation_only_while_locked()
+	await test_the_exit_x_joins_navigation_whenever_a_description_shows()
 	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
 	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
 	await test_leaving_while_locked_keeps_the_whole_lock_alive()
+	await test_a_finished_show_leaves_the_maps_own_wiring_alive()
 	await test_a_remembered_entry_dropped_by_a_cascade_is_freed()
 	behavior_section("S9: INFO MODE IS GONE")
 	test_no_script_names_the_retired_mode()
@@ -104,7 +105,7 @@ func _ready() -> void:
 	test_no_script_names_the_retired_in_board_popup()
 	behavior_section("THE VIEWERS PUBLISH TOO")
 	await test_opening_a_viewer_by_pad_shows_its_first_card()
-	await test_closing_a_viewer_returns_the_focus_to_its_own_button()
+	await test_closing_a_viewer_leaves_the_focus_somewhere_visible()
 	await test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card()
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
@@ -115,10 +116,12 @@ func _ready() -> void:
 	await test_the_deck_viewers_cards_start_beside_the_container()
 	await test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window()
 	await test_a_resize_re_fits_the_open_viewer()
+	await test_a_resize_does_not_re_open_a_dismissed_description()
 	await test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size()
 	await test_a_board_lock_survives_opening_and_closing_a_viewer()
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
+	await test_the_start_menus_inspect_viewer_publishes_on_hover()
 	await test_the_deck_builder_tool_loads_and_stands_up()
 	test_the_choice_viewer_owns_no_inspector_panel()
 	finish()
@@ -464,7 +467,7 @@ func test_a_second_shows_view_receives_the_press_after_the_first_tears_down() ->
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 
 	var view_one := await _stand_up_view(self, container)
-	var connections : Array[Array] = container._screen_connections.duplicate()
+	var connections : Array = container._screen_connections[view_one].duplicate()
 
 	_leave_tree_without_freeing(view_one)
 	for pair : Array in connections:
@@ -823,7 +826,7 @@ func test_map_deck_button_reaches_the_live_maps_handler_then_disconnects() -> vo
 	await get_tree().process_frame
 	check(container.map_deck_button.pressed.is_connected(map._on_deck_clicked),
 			"the container's Deck button reaches the live map's own handler")
-	var connections : Array[Array] = container._screen_connections.duplicate()
+	var connections : Array = container._screen_connections[map].duplicate()
 	_leave_tree_without_freeing(map)
 	for pair : Array in connections:
 		var sig : Signal = pair[0] as Signal
@@ -1130,10 +1133,15 @@ func _is_covered(control: Control, others: Array[Control]) -> bool:
 # A REAL pointer, pushed into the game picture's own SubViewport where the board's controls live,
 # so the route under test is the product's own: mouse_entered grabs focus, and focus publishes.
 func _hover(at: Vector2) -> void:
+	_hover_in(_game_viewport, at)
+
+# A pointer move pushed into whichever picture hosts the control -- a viewer opened over the start
+# menu is not in the game's own viewport, which `_hover()` pushes into.
+func _hover_in(viewport: Viewport, at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = at
 	motion.global_position = at
-	_game_viewport.push_input(motion)
+	viewport.push_input(motion)
 
 # The pointer is walked across the candidates until the BOARD ITSELF reports a different card
 # under it. Which control a point hits is the engine's answer, not the test's: cards overlap in a
@@ -2303,23 +2311,28 @@ func test_the_arrows_scroll_only_once_the_description_is_locked() -> void:
 				"...so the board's own selection does not move with it")
 	await _end_game_fixture()
 
-## Q68=b/C16: the exit X joins keyboard/pad navigation only while the sidebar is locked, and accept on it dismisses.
-func test_the_exit_x_joins_navigation_only_while_locked() -> void:
+## Q68=b/C16: the exit X joins keyboard/pad navigation whenever a description shows -- a pad player can always dismiss what is shown -- and accept on it dismisses.
+func test_the_exit_x_joins_navigation_whenever_a_description_shows() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var controls := await _hoverable_card_controls()
 	check(not controls.is_empty(), "the dealt board offers a card control to read",
 			str(controls.size()))
 	if not controls.is_empty():
-		_container.show_description(_long_entry())
+		_container.show_hud()
 		await get_tree().process_frame
 		check(_exit_button().focus_mode == Control.FOCUS_NONE,
-				"an unlocked description keeps the X out of the navigation path (Q68=b)",
+				"the HUD keeps the X out of the navigation path entirely (Q68=b)",
+				str(_exit_button().focus_mode))
+		_container.show_description(_long_entry())
+		await get_tree().process_frame
+		check(_exit_button().focus_mode == Control.FOCUS_ALL,
+				"an unlocked description puts it in: a pad player can always dismiss what is shown",
 				str(_exit_button().focus_mode))
 		_container.lock_to(_long_entry(), _play_area.ui_data[controls[0]])
 		await get_tree().process_frame
 		check(_exit_button().focus_mode == Control.FOCUS_ALL,
-				"...and locking puts it in (Q68=b, C16)", str(_exit_button().focus_mode))
+				"...and locking keeps it there (Q68=b, C16)", str(_exit_button().focus_mode))
 		_push_key(_booted_viewport, KEY_UP, true)
 		await get_tree().process_frame
 		check(_exit_button().has_focus(),
@@ -2335,14 +2348,18 @@ func test_the_exit_x_joins_navigation_only_while_locked() -> void:
 
 # ------------------------------------------------ A SCREEN'S STATE BELONGS TO ITS OWN CONTENT
 
-# The product's own way into the NEXT show: `Main` builds a whole new `GameView`, so the fixture's
-# cached board nodes are re-read off the one that is live now. A hand-back leaves `Main` mid-move
-# and a move in flight refuses the next one outright, so that move is waited out first.
-func _restart_the_show() -> void:
+# A hand-back leaves `Main` mid-move and a move in flight refuses the next one outright, so a test
+# that acts on the screen the hand-back lands on waits that move out first.
+func _wait_out_the_move() -> void:
 	var waited := 0.0
 	while _main._move_in_flight and waited < CARD_CONTROL_TIMEOUT_SEC:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+
+# The product's own way into the NEXT show: `Main` builds a whole new `GameView`, so the fixture's
+# cached board nodes are re-read off the one that is live now.
+func _restart_the_show() -> void:
+	await _wait_out_the_move()
 	await _main.enter_game()
 	var view := _main._pictures[&"game"].screen_root as GameView
 	CardEnvironment.CURRENT = view.game
@@ -2406,6 +2423,31 @@ func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
 				"...on whichever visual represents it now")
 		check(_exit_button().focus_mode == Control.FOCUS_ALL,
 				"...and the exit X is navigable again (Q68=b)", str(_exit_button().focus_mode))
+	await _end_game_fixture()
+
+## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
+func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	game.end_show()
+	await game.return_to_map()
+	await _wait_out_the_move()
+	var map : Map = _main.map_scene
+	var camera : Camera2D = map.controller.camera
+	var before := camera.offset
+	await _resize_viewport(_booted_viewport, Vector2i(600, 1000))
+	var after_the_resize := camera.offset
+	map._publish_map_inset()
+	check(camera.offset != before, "sanity: this resize moves the map's own inset",
+			"%s vs %s" % [camera.offset, before])
+	check(after_the_resize == camera.offset,
+			"the resize re-inset the map by itself: the finished show dropped only its own pairs",
+			"%s vs %s" % [after_the_resize, camera.offset])
+	check(not is_instance_valid(DeckViewer._open), "sanity: no viewer is open yet")
+	_container.map_deck_button.pressed.emit()
+	await get_tree().process_frame
+	check(is_instance_valid(DeckViewer._open),
+			"...and the map's own Deck button still opens its viewer after a show")
 	await _end_game_fixture()
 
 ## A description held back by a cascade is still that screen's own memory, and the next one to show frees it rather than orphaning it.
@@ -2490,8 +2532,8 @@ func test_opening_a_viewer_by_pad_shows_its_first_card() -> void:
 					"...reading the first card's own name", title.text)
 	await _end_game_fixture()
 
-## Keyboard/controller: closing a viewer puts the focus back on the pile button that opened it.
-func test_closing_a_viewer_returns_the_focus_to_its_own_button() -> void:
+## Keyboard/controller: closing a viewer hands the focus to something the player can SEE, and accept there brings the pile buttons back.
+func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
 	await _start_game_fixture()
 	var button := _container.deck_ui.get_node(^"Button") as Button
 	_container.show_hud()
@@ -2499,8 +2541,19 @@ func test_closing_a_viewer_returns_the_focus_to_its_own_button() -> void:
 	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
 	await _close_open_viewer(_game_viewport)
 	check(not is_instance_valid(DeckViewer._open), "cancel closed the viewer")
-	check(_booted_viewport.gui_get_focus_owner() == button,
-			"...and the focus is back on the button that opened it (S12.9)",
+	var landed := _booted_viewport.gui_get_focus_owner()
+	check(landed != null and landed.is_visible_in_tree(),
+			"...and the focus lands on a control the player can see (S12.9)", str(landed))
+	check(landed == _exit_button(),
+			"...the exit X, since the open's own highlight hid the button that opened it (S12.9)",
+			str(landed))
+	_push_key(_booted_viewport, KEY_ENTER, true)
+	_push_key(_booted_viewport, KEY_ENTER, false)
+	await get_tree().process_frame
+	check(_hud_is_up(), "accept on the X dismisses, so the HUD is back (S12.9)")
+	button.grab_focus()
+	await get_tree().process_frame
+	check(button.has_focus(), "...and the Deck button can take the focus again (S12.9)",
 			str(_booted_viewport.gui_get_focus_owner()))
 	await _end_game_fixture()
 
@@ -2657,6 +2710,23 @@ func test_a_resize_re_fits_the_open_viewer() -> void:
 			"...and resizing back fits it from its authored margins, never inset twice (S12.13)")
 	await _end_game_fixture()
 
+## A dismissal is the player's own act: the container moving under an open viewer re-fits it without re-opening what the exit X put away.
+func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
+	await _start_game_fixture()
+	var listed := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	check(listed.size() >= 2, "the deck viewer lists cards to point at", str(listed.size()))
+	if listed.size() >= 2:
+		listed[1].grab_focus()
+		await get_tree().process_frame
+		check(_container.showing_description(),
+				"sanity: the viewer's own highlight opened the description")
+		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
+		check(_hud_is_up(), "sanity: the exit X put that description away (B9)")
+		await _resize_viewport(_booted_viewport, Vector2i(600, 1000))
+		check(_hud_is_up(),
+				"a resize under the open viewer leaves the dismissal standing (B9-B11)")
+	await _end_game_fixture()
+
 ## The mounted preview belongs to whoever published it: a rect change re-draws a viewer's entry at the VIEWER's own card size, not at the board's.
 func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> void:
 	await _start_game_fixture()
@@ -2677,7 +2747,7 @@ func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> voi
 					"sanity: the viewer's card width and the board's are far enough apart to tell apart",
 					"viewer %.1f vs board %.1f" % [viewer_px, board_px])
 			check(absf(_card_drawn_width(preview.child) - viewer_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
-					"the resize re-draws the entry at the VIEWER's own card size (S12.14, Q34=b)",
+					"the resize re-draws the entry at the VIEWER's own card size (S12.14, GAP-004's built reading)",
 					"preview %.1f vs viewer %.1f, board %.1f"
 					% [_card_drawn_width(preview.child), viewer_px, board_px])
 	await _end_game_fixture()
@@ -2800,6 +2870,31 @@ func test_the_start_menus_inspect_viewer_publishes_into_the_container() -> void:
 		check(menu_viewport.gui_get_focus_owner() == inspect,
 				"...and the focus is back on the Inspect button that opened it (S12.17)",
 				str(menu_viewport.gui_get_focus_owner()))
+	await _end_booted_fixture(viewport, main)
+
+## The picker's own dimmer must not eat the viewer it opened: a POINTER on a listed card publishes, exactly as the keyboard does.
+func test_the_start_menus_inspect_viewer_publishes_on_hover() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var title : Label = panel.get_node(^"%Title")
+	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
+	var cards : Array[ControlCard] = []
+	if is_instance_valid(DeckViewer._open): cards = _listed_viewer_cards()
+	check(cards.size() >= 2, "the inspected deck lists cards to point at", str(cards.size()))
+	var target := _viewer_card_named_other_than(cards, title.text)
+	check(target != null, "the inspected deck lists a card the opening focus did not already read",
+			title.text)
+	if target != null:
+		container.show_hud()
+		_hover_in(menu_viewport, target.get_global_rect().get_center())
+		await get_tree().process_frame
+		check(container.showing_description(),
+				"a pointer on the picker's viewer card opens the menu's description")
+		check(title.text == _expected_text(target.child.data)[0],
+				"...and the title reads that card's own name", title.text)
 	await _end_booted_fixture(viewport, main)
 
 # A real booster pack open on a live map at `size` -- the choice viewer's own fixture, since it is

@@ -404,3 +404,26 @@
 - S13: `PlayArea.board_card_picture_px()` -- the board's card at the live zoom in the PICTURE's own
   pixels, which is the space a swipe's `travel` is measured in. `board_card_window_px()` now
   derives from it, and it is what the bare-board swipe passes to `GestureMetrics` (M5, `Q296`=a).
+- P3 re-review: `HudContainer.connect_for_screen(screen, sig, callable)` /
+  `disconnect_for_screen(screen)` key their remembered pairs by the SCREEN that made them
+  (`Dictionary[Node, Array]`). One flat list made a finished show's `GameView._exit_tree()` drop the
+  map's Deck button and the map's and menu's insets as well (measured: the map's camera offset stayed
+  (-144, 0) where a live inset reads (0, -81), and the Deck button opened nothing).
+- P3 re-review: `DeckViewer.republish_highlight()` / `ChoiceViewer.republish_highlight()` are public,
+  and the RE-FIT no longer republishes on its own: each opener (`GameView._fit_open_viewer`,
+  `Map._fit_open_viewers`, `Menu._fit_open_viewer`) asks for it only while
+  `hud_container.showing_description()`. A dismissal is the player's act, so a window change must not
+  undo one.
+- P3 re-review (overseer, reversible): the exit X is focusable WHENEVER a description shows, not only
+  while locked -- `HudContainer._refresh_exit_focus()` reads the X's own visibility, and the new
+  `focus_exit()` is what `DeckViewer._hand_the_focus_back()` uses when the opener it would return the
+  focus to is not `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that
+  opened it, stranding a pad player). The opener's own `owner` IS its `HudContainer`, since the pile
+  buttons and the map's Deck button live in `hud_container.tscn`. `Q68`=b's `ui_up`-off-the-top rule
+  is unchanged.
+- P3 re-review: `DeckPicker._inspect()` opens its viewer at `layer + 1`, above the picker's own Dim.
+  The Dim is `MOUSE_FILTER_STOP` and covers the screen, so a viewer left at the default layer got no
+  hover and no click at all on the menu -- only the keyboard reached it. Raising the viewer (rather
+  than making the Dim ignore the mouse) keeps the picker's modal guard over the menu behind it and
+  makes the viewer's own click-to-close work everywhere; the picker's buttons are behind the open
+  viewer until it is closed, which is how the same viewer behaves on every other screen.

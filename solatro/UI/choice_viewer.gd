@@ -76,7 +76,7 @@ func _populate() -> void:
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
 # so its WHOLE layout -- pack and chrome -- lives in the space left beside it, on ALL FOUR EDGES.
-# The scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
+# The scale rides along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
 	var picture := get_viewport_rect().size
@@ -84,6 +84,9 @@ func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_layout.offset_top = remaining.position.y
 	_layout.offset_right = remaining.end.x - picture.x
 	_layout.offset_bottom = remaining.end.y - picture.y
+
+## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
+func republish_highlight() -> void:
 	_cards.republish_highlight()
 
 ## One slot's Reroll button, parented to its card and hanging just below it (the flex container

@@ -44,22 +44,26 @@ static func ensure(existing: HudContainer, parent: Node) -> HudContainer:
 ## How far the overlay's button row reaches down into the container -- BOTH contents start below it.
 var _band_top : float = 0.0
 
-## Connections a screen made on this container, dropped by `disconnect_for_screen()` when that screen tears down.
-var _screen_connections : Array[Array] = []
+# ⚠ KEYED BY THE SCREEN THAT MADE THEM, NEVER ONE FLAT LIST: this container outlives every screen
+# on the wall and they tear down one at a time, so a finished show dropping the whole list would
+# take the map's Deck button and the menu's inset with it.
+var _screen_connections : Dictionary[Node, Array] = {}
 
-## Connects `sig` to `callable` and remembers the pair for `disconnect_for_screen()`.
-func connect_for_screen(sig: Signal, callable: Callable) -> void:
+## Connects `sig` to `callable` and remembers the pair under `screen`, whose own teardown drops it.
+func connect_for_screen(screen: Node, sig: Signal, callable: Callable) -> void:
 	sig.connect(callable)
-	_screen_connections.append([sig, callable])
+	var pairs : Array = _screen_connections.get_or_add(screen, [])
+	pairs.append([sig, callable])
 
-## Drops every connection a screen made through `connect_for_screen()` -- called from that screen's own `_exit_tree()`.
-func disconnect_for_screen() -> void:
-	for pair : Array in _screen_connections:
+## Drops every connection `screen` made through `connect_for_screen()` -- called from its own `_exit_tree()`.
+func disconnect_for_screen(screen: Node) -> void:
+	var pairs : Array = _screen_connections.get(screen, [])
+	for pair : Array in pairs:
 		var sig : Signal = pair[0] as Signal
 		var callable : Callable = pair[1] as Callable
 		if sig.is_connected(callable):
 			sig.disconnect(callable)
-	_screen_connections.clear()
+	_screen_connections.erase(screen)
 
 func _ready() -> void:
 	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
@@ -332,10 +336,15 @@ func _process(delta: float) -> void:
 	_description_panel.scroll_by_pages(
 			_scroll_stick * delta * PlayArea.settings().sidebar_scroll_pages_per_second)
 
-# The container joins keyboard/pad navigation only while the sidebar is LOCKED, which is when the
-# exit X is the way out of it. Unlocked, nothing here is in anyone's focus chain.
+# ⚠ A PAD PLAYER MUST ALWAYS BE ABLE TO DISMISS WHAT IS SHOWN: the X joins keyboard/pad
+# navigation for as long as it is up, since a viewer's own opening highlight can hide the button
+# that opened it. Back on the HUD, nothing here is in anyone's focus chain.
 func _refresh_exit_focus() -> void:
-	_exit_button.focus_mode = Control.FOCUS_ALL if is_locked() else Control.FOCUS_NONE
+	_exit_button.focus_mode = Control.FOCUS_ALL if _exit_button.visible else Control.FOCUS_NONE
+
+## Puts the keyboard/pad focus on the exit X -- what a viewer hands the focus to when the description it published has hidden the button that opened it.
+func focus_exit() -> void:
+	_exit_button.grab_focus()
 
 ## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
 func resize_preview(card_px: Vector2) -> void:

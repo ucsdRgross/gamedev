@@ -77,16 +77,16 @@ func _ready() -> void:
 	_bind_state(null, game.state)
 
 	## Submit carries the End label; end_show() is the only way to finish the continuous show.
-	hud_container.connect_for_screen(submit_button.pressed, func() -> void: game.end_show())
-	hud_container.connect_for_screen(undo_button.pressed, _on_undo_pressed)
+	hud_container.connect_for_screen(self, submit_button.pressed, func() -> void: game.end_show())
+	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
-	hud_container.connect_for_screen(deck_button.pressed,
+	hud_container.connect_for_screen(self, deck_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.draw_deck, deck_button))
 	var discard_button := discard_ui.get_node(^"Button") as Button
-	hud_container.connect_for_screen(discard_button.pressed,
+	hud_container.connect_for_screen(self, discard_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))
 	var rules_button := rules_ui.get_node(^"Button") as Button
-	hud_container.connect_for_screen(rules_button.pressed,
+	hud_container.connect_for_screen(self, rules_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(_relay_info_requested)
@@ -113,9 +113,10 @@ func _bind_hud_container() -> void:
 	goal_label = hud_container.goal_label
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
-	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_board_inset)
-	hud_container.connect_for_screen(hud_container.container_rect_changed, _fit_open_viewer)
-	hud_container.connect_for_screen(hud_container.description_dismissed, _on_description_dismissed)
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_board_inset)
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
+	hud_container.connect_for_screen(self, hud_container.description_dismissed,
+			_on_description_dismissed)
 
 # The board wears the locked card's marking, so the view relays the lock ENDING the same way it
 # relays the click that starts it. The container owns the lock itself; nothing else may clear it.
@@ -133,7 +134,7 @@ func _on_description_dismiss_requested() -> void:
 # ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW, and it is released AFTER the connections are
 # dropped: the revert to the HUD it performs is this view's own doing, not a dismissal to relay.
 func _exit_tree() -> void:
-	hud_container.disconnect_for_screen()
+	hud_container.disconnect_for_screen(self)
 	hud_container.release_screen(HudContainer.GAME_SCREEN)
 
 ## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
@@ -251,13 +252,14 @@ func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
 ## The viewer open over this screen, if any -- one at a time, the same one `DeckViewer` itself keeps.
 var _deck_viewer : DeckViewer = null
 
-# A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD: the container moving under it re-fits it, and that
-# re-fit re-publishes its highlight at the size it now draws its cards at -- `_publish_board_inset()`
-# has just re-drawn the description at the BOARD's. A closed viewer leaves its reference behind.
+# A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD: the container moving under it re-fits it, and a
+# description that is UP is re-published at the size it now draws its cards at -- `_publish_board_inset()`
+# has just re-drawn it at the BOARD's. A closed viewer leaves its reference behind.
 func _fit_open_viewer() -> void:
 	if not is_instance_valid(_deck_viewer): return
 	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
 			hud_container.window_scale(wall_picture))
+	if hud_container.showing_description(): _deck_viewer.republish_highlight()
 
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy

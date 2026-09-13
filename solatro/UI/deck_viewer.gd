@@ -46,10 +46,17 @@ static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> 
 # Closing announces the lost highlight the same way the board does, so a description locked before
 # this viewer opened comes back and an unlocked sidebar keeps the last card read here.
 func _close() -> void:
-	if is_instance_valid(_return_focus):
-		_return_focus.grab_focus()
+	_hand_the_focus_back()
 	highlight_cleared.emit()
 	queue_free()
+
+# ⚠ THE OPENER CAN BE HIDDEN BY WHAT THIS VIEWER PUBLISHED: a pile button lives in the sidebar's
+# own scene, which hides its HUD stack while a description shows, so the focus goes to that
+# sidebar's exit X instead -- accept on it dismisses, and the buttons are back.
+func _hand_the_focus_back() -> void:
+	if not is_instance_valid(_return_focus): return
+	if _return_focus.is_visible_in_tree(): _return_focus.grab_focus()
+	else: (_return_focus.owner as HudContainer).focus_exit()
 
 # The initial focus is stolen from whatever button opened this viewer, so ui_accept cannot re-open
 # it and the arrows walk the cards (ControlCards are focus stops). ⚠ DEFERRED: that focus is a
@@ -66,7 +73,7 @@ func _publish_info(data: CardData) -> void:
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
 # so its cards list inside the space left beside it -- ALL FOUR EDGES, or a row runs off the far one.
-# The scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
+# The scale rides along, so a re-publish after it is drawn at the size THIS viewer now draws a card.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
 	var picture := get_viewport().get_visible_rect().size
@@ -74,6 +81,9 @@ func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_inset_margin(&"margin_top", remaining.position.y)
 	_inset_margin(&"margin_right", picture.x - remaining.end.x)
 	_inset_margin(&"margin_bottom", picture.y - remaining.end.y)
+
+## Publishes the card its highlight is on again -- asked by the opener only while a description is UP, so one the player dismissed stays dismissed across a re-fit.
+func republish_highlight() -> void:
 	_cards.republish_highlight()
 
 ## The margins the scene authored, read once before the first fit overrides them.

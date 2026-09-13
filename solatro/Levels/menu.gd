@@ -44,14 +44,15 @@ func _ready() -> void:
 	for content : Control in [_title, _main_control, play_row]:
 		_authored_positions[content] = content.position
 	_design_rect = _content_bounds()
-	hud_container.connect_for_screen(hud_container.container_rect_changed, _apply_container_inset)
-	hud_container.connect_for_screen(hud_container.container_rect_changed, _fit_open_viewer)
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
+			_apply_container_inset)
+	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
 	_apply_container_inset()
 
 # The container OUTLIVES this screen in the real game, but a test may tear down a standalone
 # `Menu` -- same teardown shape as `GameView._exit_tree()`.
 func _exit_tree() -> void:
-	hud_container.disconnect_for_screen()
+	hud_container.disconnect_for_screen(self)
 
 # The union of every button under `Main`, the title and the run row -- `_main_control` itself
 # fills the whole window (its authored anchors), so its own rect cannot stand in for it.
@@ -100,10 +101,13 @@ func _on_viewer_opened(viewer: DeckViewer) -> void:
 	viewer.highlight_cleared.connect(hud_container.return_to_lock)
 	_fit_open_viewer()
 
+# The re-fit re-publishes only a description that is UP: a dismissal is the player's own act and a
+# window change is not one.
 func _fit_open_viewer() -> void:
 	if not is_instance_valid(_deck_viewer): return
 	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
 			hud_container.window_scale(wall_picture))
+	if hud_container.showing_description(): _deck_viewer.republish_highlight()
 
 # The relay owns the live preview the entry carries when no `Main` is listening.
 func _relay_info_requested(entry: InfoEntry) -> void:

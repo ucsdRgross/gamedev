@@ -216,6 +216,28 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   nothing (ASSUMPTIONS S11, defensible, for the owner to see); the deck picker's viewer → wired
   (Q140=a + Q143=a make it the consistent reading; ASSUMPTIONS records it).
 
+## Phase 3 re-review of the fix commits (Fable 5.1, at S13) — 3 confirmed, 4 suspected
+1. CONFIRMED `HudContainer.disconnect_for_screen()` is one flat list: a GameView teardown (show
+   ends, New Run) drops the Map's and Menu's connections too — the map's Deck button dies and no
+   resize re-insets map or menu after the first show. Predates the fix range (784f173e). Fix
+   dispatch 4: key the list by owner.
+2. CONFIRMED the viewer re-fit re-publishes unconditionally, so a resize re-opens a description
+   the player dismissed with the X. Fix dispatch 4: republish only while a description is showing.
+3. CONFIRMED S12.9 asserts focus on a HIDDEN pile button (a pad close of a viewer while its
+   description is up strands the player). Overseer decision (reversible, ASSUMPTIONS): the exit X
+   is focusable whenever a description shows; a viewer's close focuses its opener if visible, else
+   the X. Fix dispatch 4.
+- SUSPECTED: the menu picker's `Dim` (layer 64, STOP) swallows hover/click over the Inspect viewer,
+  so the menu's viewer publishes by keyboard only (pre-existing layering) — fix dispatch 4
+  reproduces and fixes; two viewers up on the map republish in an order that lets a stale pack
+  highlight win (unrun); every viewer open now hides the HUD stack even for a mouse open, so a
+  mouse user cannot swap Deck→Discard without closing first — §1.2's exclusive HUD/description
+  makes this by design, but the OWNER should look; S12.14's label cites Q34=b for the built
+  viewer-size reading (GAP-004) — reworded in dispatch 4.
+- Answered: the picker panel drawing over the inspected cards in `menu_inspect.png` is
+  PRE-EXISTING on main (picker layer 64 over the viewer's layer 1; the cards measure exactly 0.4x
+  under the picker's dim).
+
 ## Gaps
 - GAP-004 (open, OWNER CALL, not parked) — inside a viewer, is the description's preview drawn at
   the board's card size (Q34=b literally) or the viewer's own (built)? One line per viewer either way.
@@ -286,8 +308,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'ASSUMPTIONS records: preview at the VIEWER''s card size (Q34=b read as the object pointed at); viewers publish highlights only, no lock; close announces highlight_cleared; OPENING a viewer publishes nothing (first focus lands before the relay is wired) - flagged to the Phase 3 review; the deck picker''s Inspect viewer on the start menu is NOT wired (Q143=a, 3a names neither menu.gd nor deck_picker.gd); new names InfoEntry.relay_to, HudContainer.rect_beside/window_scale, WallPicture.window_scale, CardsViewer.card_window_px, DeckViewer/ChoiceViewer.fit_beside, GameView.wall_picture/_open_deck_viewer. main.gd touched beyond 3a (enter_game hands the picture to the view). A second todo.md item (deck_builder broken preloads) closed with Q166=c. Phase 3 review fixes (three dispatches, one commit each) followed - see the State line and the Phase 3 review section'
 - id: S13
   description: GestureMetrics, delete DPI and the six mm/px knobs
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'bb2484db: ALL 46 SUITES 4356 PASSED [21]; suite count 45 -> 46 (TestGestureMetrics rows 2.1-2.6 + 8.3, 14 checks); hard gate grep dpi|DPI|mm_to_px empty outside archive/addons; six knob names resolve nowhere outside design docs; red: model neutralised 5 FAILED, clamp/density put back 2 FAILED, WallInput stops delegating 7 FAILED, swipe stops asking the model 3 FAILED, a knob put back 1 FAILED; doc_check 0 of 1014 on added lines'
+  notes: 'new name PlayArea.board_card_picture_px() (the swipe travel is in picture space, so board_card_window_px was the wrong space; the window helper now derives from it) - ASSUMPTIONS. Four production touch_target_px call sites, not three (the exit X). PICTURE_WALL.md wiring row kept with its new reason (Q306=a)'
 - id: S14
   description: split held from following on CardVisual
   status: pending
