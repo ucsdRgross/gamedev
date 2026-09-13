@@ -10,7 +10,6 @@ extends Control
 # Deliberately NOT in all_tests.tscn: needs a real renderer and is by-eye material.
 
 const OUT_DIR_FALLBACK := "user://reveal_shots"
-const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const SAVE_TAG := "plan_reveal_shot"
 # Long enough for 25 cells at the shipped pacing, which is what the print-out measures.
 const REVEAL_WATCHDOG := 40.0
@@ -25,18 +24,9 @@ func _ready() -> void:
 	_out_dir = OS.get_environment("OUT_DIR")
 	if _out_dir.is_empty(): _out_dir = OUT_DIR_FALLBACK
 	if _out_dir.begins_with("user://"): DirAccess.make_dir_recursive_absolute(_out_dir)
-	TestSuite.backup_real_save(SAVE_TAG)
 
-	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
-	Main.save_info = run
-	run.pending_goal = 1_000_000_000
-	run.pending_node_id = 2
-	seed(20260913)
-	var view : GameView = GAME_VIEW_SCENE.instantiate()
-	add_child(view)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	CardEnvironment.CURRENT = view.game
+	var view := await TestGameViewHost.boot_show(self, SAVE_TAG,
+			TestDecks.deck_standard_52(), TestDecks.standard_rules(), 1_000_000_000, 2, 20260913)
 	var g := view.game
 	var pa := view.play_area
 	print("[plan_reveal_shot] base_delay %.2f, plan_reveal_fraction %.2f, get_delay %.2f"

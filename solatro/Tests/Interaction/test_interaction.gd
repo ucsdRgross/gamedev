@@ -86,6 +86,7 @@ func _setup_view() -> void:
 	run.pending_node_id = 2
 	view = GAME_VIEW_SCENE.instantiate()
 	picture_vp = TestGameViewHost.host(self, view)
+	input = TestInput.driving(self, picture_vp)
 	await frames(2)
 	game = view.game
 	pa = view.play_area
@@ -124,15 +125,7 @@ func _teardown_view() -> void:
 	Main.save_info = prev_save_info
 
 # ==============================================================================
-# INPUT SYNTHESIS — everything through `picture_vp.push_input`, so the full
-# pipeline (emulation, hover, focus routing) runs like a real device.
-#
-# COORDINATES: the board is hosted inside `picture_vp`, a SubViewport sized to
-# `game_picture_design_size` (production lays it out the same way, inside the
-# wall's own SubViewport — `wall_picture.gd`). A SubViewport is not on the OS
-# input path, so `Input.parse_input_event` never reaches it; `push_input`
-# delivers directly to it instead, and its local coordinates already match
-# every rect we measure (`get_global_rect`), so no window transform is needed.
+# INPUT SYNTHESIS through `TestInput`, into `picture_vp`, whose coordinates are the ones measured here.
 # ==============================================================================
 func frames(n: int) -> void:
 	for _i : int in n:
@@ -145,52 +138,23 @@ func wait_until(pred: Callable) -> bool:
 		waited += get_process_delta_time()
 	return pred.call() as bool
 
+## The shared driver, so a click here and a click in any other suite are the same event sequence.
+var input : TestInput
+
 func send(ev: InputEvent) -> void:
-	picture_vp.push_input(ev)
-	await get_tree().process_frame
+	await input.send(ev)
 
 func mouse_move_to(pos: Vector2) -> void:
-	var mm := InputEventMouseMotion.new()
-	mm.position = pos
-	mm.global_position = pos
-	await send(mm)
+	await input.move_to(pos)
 
 func mouse_click(pos: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
-	await mouse_move_to(pos)   # hover first: selection requires the hovered control
-	var down := InputEventMouseButton.new()
-	down.button_index = button
-	down.pressed = true
-	down.position = pos
-	down.global_position = pos
-	await send(down)
-	var up := InputEventMouseButton.new()
-	up.button_index = button
-	up.pressed = false
-	up.position = pos
-	up.global_position = pos
-	await send(up)
+	await input.click(pos, button)
 
 func key_tap(keycode: Key) -> void:
-	var down := InputEventKey.new()
-	down.keycode = keycode
-	down.physical_keycode = keycode
-	down.pressed = true
-	await send(down)
-	var up := InputEventKey.new()
-	up.keycode = keycode
-	up.physical_keycode = keycode
-	up.pressed = false
-	await send(up)
+	await input.key_tap(keycode)
 
 func joy_tap(button: JoyButton) -> void:
-	var down := InputEventJoypadButton.new()
-	down.button_index = button
-	down.pressed = true
-	await send(down)
-	var up := InputEventJoypadButton.new()
-	up.button_index = button
-	up.pressed = false
-	await send(up)
+	await input.joy_tap(button)
 
 ## `Input.parse_input_event` synthesizes the companion mouse form of a touch itself
 ## (`emulate_mouse_from_touch`) before a real device's events ever reach a Viewport; pushed straight

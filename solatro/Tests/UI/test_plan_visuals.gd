@@ -16,6 +16,7 @@ extends TestSuite
 # HEAD of the serialized UI chain -- it excludes every suite after it and none waits on nothing.
 
 const PLAY_AREA_SCENE := preload("res://UI/play_area.tscn")
+const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const WATCHDOG_SECS := 15.0
 
 func suite_name() -> String:
@@ -35,6 +36,14 @@ func _ready() -> void:
 	await test_the_reveal_deals_the_marks_in_the_deals_own_order()
 	await test_a_show_with_no_view_deals_its_board_and_reveals_nothing()
 	await test_a_reveal_outlives_the_screen_that_holds_the_environment()
+	behavior_section("A HELD CARD LIGHTS EVERY MARK IT WOULD AGREE WITH")
+	await setup_view()
+	await test_holding_a_card_lights_the_marks_it_agrees_with()
+	await test_the_highlight_lights_elements_rather_than_tinting_the_cell()
+	await test_a_card_agreeing_with_nothing_says_nothing()
+	behavior_section("A LANDED CARD WEARS THE ACTIVATED RIM UNTIL UNDO")
+	await test_a_landing_that_matched_activates_the_elements_that_agreed()
+	await teardown_view()
 	finish()
 
 # ==============================================================================
@@ -377,3 +386,327 @@ func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
 	check(all_drawn, "TP-76: every mark is printed, the cells after the loss included")
 	CardEnvironment.CURRENT = g
 	await cleanup(g, pa)
+
+# ==============================================================================
+# THE HELD-CARD FIXTURE -- one real GameView, driven by synthesized device input
+# ==============================================================================
+
+# A REAL GameView, because what is claimed is what a PLAYER picking a card up sees: the pick-up has
+# to travel the platform's own route -- a viewport, an input action -- and not a call to a handler.
+var view : GameView
+var game : Game
+var pa : PlayArea
+var picture_vp : SubViewport
+var input : TestInput
+var prev_run : RunState
+var prev_save_info : RunState
+## The Entrance card this fixture picks up, and the three cells marked against it.
+var held_card : CardData
+var rank_cell : BoardCoord
+var both_cell : BoardCoord
+var miss_cell : BoardCoord
+
+func setup_view() -> void:
+	backup_real_save(suite_tag())
+	prev_run = RunManager.run
+	prev_save_info = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), rules_with_no_planner())
+	Main.save_info = run
+	run.pending_goal = 1
+	run.pending_node_id = 2
+	view = GAME_VIEW_SCENE.instantiate()
+	picture_vp = TestGameViewHost.host(self, view)
+	input = TestInput.driving(self, picture_vp)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	game = view.game
+	pa = view.play_area
+	await game.next()
+	await game.next()
+	pa.flush_rebuild()
+#⚠ ZOOM IN FIRST. A show opens on the all-grids view, where a click on a grid is orientation and
+#places nothing; a card is picked up and put down only once a grid is focused.
+	pa.focus_grid(0)
+	held_card = an_entrance_card()
+	await settle_on(held_card)
+	mark_three_cells()
+	await settle_on(held_card)
+
+func teardown_view() -> void:
+	input.queue_free()
+	picture_vp.queue_free()
+	await get_tree().process_frame
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+# THE BOARD THIS FIXTURE NEEDS IS THE ONE IT MARKS ITSELF: with the planner in the rules row every
+# cell carries a dealt mark, and what a held card agrees with is then a property of the shuffle.
+func rules_with_no_planner() -> Array[CardData]:
+	var out : Array[CardData] = []
+	for card : CardData in TestDecks.standard_rules():
+		if not (card.skill is SkillBoardPlanner): out.append(card)
+	return out
+
+# The card this fixture picks up: one the board offers as a focus target in the Entrance, which is
+# what a pointer or a focus ring can actually reach.
+func an_entrance_card() -> CardData:
+	for control : Control in pa.ui_data:
+		var data : CardData = pa.ui_data[control]
+		if control.focus_mode != Control.FOCUS_ALL or not control.is_visible_in_tree(): continue
+		if game.state.grid_position_of(data).is_entrance(): return data
+	return null
+
+# THREE MARKS AGAINST THE HELD CARD -- one agreeing on its rank alone, one on rank and suit, one on
+# nothing -- and every other cell left bare, so the highlight has a shape it can fail to have.
+func mark_three_cells() -> void:
+	rank_cell = BoardCoord.new(0, 0, 0, 0)
+	both_cell = BoardCoord.new(0, 1, 0, 0)
+	miss_cell = BoardCoord.new(0, 2, 0, 0)
+	for type_card : CardData in game.state.grids[0].cell_types:
+		BoardPlan.clear_mark(type_card)
+	game.effect_api.grant_mark(rank_cell, mark_source(held_card.rank, another_suit(held_card.suit)))
+	game.effect_api.grant_mark(both_cell, mark_source(held_card.rank, held_card.suit))
+	game.effect_api.grant_mark(miss_cell,
+			mark_source(another_rank(held_card.rank), another_suit(held_card.suit)))
+	pa.flush_rebuild()
+
+# A card that exists only to be copied onto a cell. Its pips are DUPLICATES: `with_suit` rebinds the
+# suit's backref to the card it is handed to, so a live card's own pip would lose the board.
+func mark_source(rank: PipRank, suit: PipSuit) -> CardData:
+	var source := CardData.new()
+	source.with_rank(rank.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as PipRank)
+	source.with_suit(suit.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as PipSuit)
+	return source
+
+# A suit that does NOT agree with this one, so a mark built from it can agree on rank alone.
+func another_suit(suit: PipSuit) -> PipSuit:
+	var knife := PipSuitKnife.new()
+	if not PipComparator.printed_same(suit, knife): return knife
+	return PipSuitHoop.new()
+
+# A rank that does NOT agree with this one, for the cell that has to agree with nothing.
+func another_rank(rank: PipRank) -> PipRank:
+	var two : PipRank = PipRankNumeral.new().with_value(2)
+	if not PipComparator.printed_same(rank, two): return two
+	return PipRankNumeral.new().with_value(7)
+
+# Wait until the control this fixture CLICKS stops moving: the board eases into its focused zoom,
+# and a click landing mid-ease lands where the control was rather than where it is.
+func settle_on(card: CardData) -> void:
+	var last := Vector2(INF, INF)
+	var waited := 0.0
+	while waited < WATCHDOG_SECS:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now : Vector2 = centre_of(card)
+		if now.is_equal_approx(last): return
+		last = now
+
+# Bounded by the watchdog, so a placement that never commits fails a check instead of hanging a run.
+func wait_for(predicate: Callable) -> bool:
+	var waited := 0.0
+	while not (predicate.call() as bool) and waited < WATCHDOG_SECS:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	return predicate.call() as bool
+
+func centre_of(card: CardData) -> Vector2:
+	return (pa.data_ui[card] as Control).get_global_rect().get_center()
+
+func mark_visual(coord: BoardCoord) -> CardVisual:
+	return pa.data_card[game.state.cell_type_at(coord)]
+
+# WHAT THE SHADER WAS ACTUALLY HANDED, as a `MarkMatch.Property` mask: which of a card's four
+# elements draw their rim in `palette_index`. Never a flag the refresh wrote down.
+func rimmed_properties(visual: CardVisual, palette_index: int) -> int:
+	var drawn := 0
+	if uniform_of(visual.rank, &"u_outline_index") == palette_index:
+		drawn |= MarkMatch.Property.RANK
+	if uniform_of(visual.suit, &"u_outline_index") == palette_index:
+		drawn |= MarkMatch.Property.SUIT
+	if uniform_of(visual.art, &"u_outline_index") == palette_index:
+		drawn |= MarkMatch.Property.TALENT
+	if uniform_of(visual.stamp, &"u_outline_index") == palette_index:
+		drawn |= MarkMatch.Property.HAT
+	return drawn
+
+# Every marked cell whose drawn rims disagree with what the match test says about `tested`, which is
+# the whole claim: the view asks, and the answer is the board's rather than the view's own idea.
+func cells_disagreeing(tested: CardData, palette_index: int) -> Array[String]:
+	var out : Array[String] = []
+	var grid : GridData = game.state.grids[0]
+	for ci : int in grid.cell_types.size():
+		var mark : CardData = grid.cell_types[ci]
+		if not BoardPlan.is_marked(mark): continue
+		var coord := BoardCoord.new(0, ci % grid.grid_width, ci / grid.grid_width, 0)
+		var expected := 0
+		if tested: expected = await MarkMatch.matches_at(game.state, tested, coord)
+		var drawn := rimmed_properties(mark_visual(coord), palette_index)
+		if drawn != expected:
+			out.append("(%d,%d) match %d drew %d" % [coord.x, coord.y, expected, drawn])
+	return out
+
+# The highlight has to be up in the same breath as the pick-up -- a board answering a frame later
+# would flicker under a drag. Bounded by the board's OWN step, never by a wall-clock number.
+func time_to_light(coord: BoardCoord) -> float:
+	var waited := 0.0
+	while waited < game.get_delay():
+		if rimmed_properties(mark_visual(coord), PaletteDB.ROLES.match_rim) != 0: return waited
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	return waited
+
+# ==============================================================================
+# TP-63 -- holding a card lights exactly the cells the match test reports
+# ==============================================================================
+
+# Driven through the viewport in BOTH the modes that can pick a card up, because a highlight wired
+# to one route only is a highlight half the players never see.
+func test_holding_a_card_lights_the_marks_it_agrees_with() -> void:
+	var here := await MarkMatch.matches_at(game.state, held_card, both_cell)
+	var nowhere := await MarkMatch.matches_at(game.state, held_card, miss_cell)
+	check(here != 0 and nowhere == 0,
+			"TP-63: precondition: one marked cell agrees with this card and one does not",
+			"%d and %d" % [here, nowhere])
+
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card), "TP-63: precondition: the mouse picked the card up",
+			str(pa.selected_cards.size()))
+	var took := await time_to_light(both_cell)
+	check(took < game.get_delay(),
+			"TP-63: the highlight is up within the board's own step of the pick-up",
+			"%.3f s of a %.3f s step" % [took, game.get_delay()])
+	var wrong := await cells_disagreeing(held_card, PaletteDB.ROLES.match_rim)
+	check(wrong.is_empty(),
+			"TP-63: a mouse pick-up lights exactly the cells the match test reports", str(wrong))
+
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+	check(pa.selected_cards.is_empty(), "TP-63: precondition: right-click released the card")
+	var released := await cells_disagreeing(null, PaletteDB.ROLES.match_rim)
+	check(released.is_empty(), "TP-63: releasing the card clears every highlight", str(released))
+
+	(pa.data_ui[held_card] as Control).grab_focus()
+	await get_tree().process_frame
+	await input.key_tap(KEY_ENTER)
+	check(pa.selected_cards.has(held_card),
+			"TP-63: precondition: ui_accept picked the same card up", str(pa.selected_cards.size()))
+	var keyed := await cells_disagreeing(held_card, PaletteDB.ROLES.match_rim)
+	check(keyed.is_empty(),
+			"TP-63: a keyboard pick-up lights the same cells a mouse one does", str(keyed))
+	(pa.data_ui[held_card] as Control).grab_focus()
+	await get_tree().process_frame
+	await input.key_tap(KEY_ESCAPE)
+	check(pa.selected_cards.is_empty(), "TP-63: ui_cancel drops the card")
+	var cancelled := await cells_disagreeing(null, PaletteDB.ROLES.match_rim)
+	check(cancelled.is_empty(), "TP-63: and clears the highlight with it", str(cancelled))
+
+# ==============================================================================
+# TP-64 -- the highlight is the ELEMENTS' outlines, never a tint
+# ==============================================================================
+
+# A tint would be `modulate`, which is the focus highlight and reaches every child -- so it would
+# also tint whatever is stacked on the mark. Each agreeing element takes its own rim instead.
+func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
+	var visual := mark_visual(rank_cell)
+	var control : Control = pa.data_ui[game.state.cell_type_at(rank_cell)]
+	var control_was := control.modulate
+	var visual_was := visual.modulate
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card), "TP-64: precondition: the card is held")
+	var agreed := await MarkMatch.matches_at(game.state, held_card, rank_cell)
+	check(agreed == MarkMatch.Property.RANK,
+			"TP-64: precondition: this cell's mark agrees on rank alone", str(agreed))
+
+	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim) == MarkMatch.Property.RANK,
+			"TP-64: the rank pip takes the match rim and the suit pip does not",
+			"rank ink %d, suit ink %d" % [uniform_of(visual.rank, &"u_outline_index"),
+			uniform_of(visual.suit, &"u_outline_index")])
+	check(uniform_of(visual.rank, &"u_outline_width") == CardOutline.STYLE.width
+			and uniform_of(visual.suit, &"u_outline_width") == 0,
+			"TP-64: the element that agrees takes a rim back, on a mark that draws none",
+			"rank %d, suit %d" % [uniform_of(visual.rank, &"u_outline_width"),
+			uniform_of(visual.suit, &"u_outline_width")])
+	check(uniform_of(visual.type, &"u_outline_width") == 0,
+			"TP-64: the cell frame under them stays rimless, so the mark still reads as a mark")
+	check(control.modulate == control_was and visual.modulate == visual_was,
+			"TP-64: and nothing was tinted -- modulate is what it was on the control and the visual",
+			"%s / %s" % [str(control.modulate), str(visual.modulate)])
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+
+# ==============================================================================
+# TP-65 -- a card agreeing with nothing says nothing
+# ==============================================================================
+
+# No popup, no alert, no rim: the absence is the whole feature, so it is measured as an absence --
+# the view's node count, the alert kind the shader was handed, and the rims that stayed off.
+func test_a_card_agreeing_with_nothing_says_nothing() -> void:
+	var visual := mark_visual(miss_cell)
+	var before := descendants(view)
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card), "TP-65: precondition: the card is held")
+	var agreed := await MarkMatch.matches_at(game.state, held_card, miss_cell)
+	check(agreed == 0,
+			"TP-65: precondition: this cell's mark agrees with the held card on nothing", str(agreed))
+
+	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim) == 0
+			and rimmed_properties(visual, PaletteDB.ROLES.match_rim_active) == 0,
+			"TP-65: no element of it is rimmed in either match ink")
+	check(uniform_of(visual.rank, &"u_outline_width") == 0
+			and uniform_of(visual.suit, &"u_outline_width") == 0,
+			"TP-65: it still draws no rim at all, which is what a mark at rest looks like")
+	check(uniform_of(visual.rank, &"u_alert_kind") == CardOutline.Alert.NONE
+			and uniform_of(pa.data_card[held_card].rank, &"u_alert_kind") == CardOutline.Alert.NONE,
+			"TP-65: neither the mark nor the held card declares an outline alert")
+	check(descendants(view) == before,
+			"TP-65: and holding a card over it adds no node to the view -- no popup, no label",
+			"%d before, %d held" % [before, descendants(view)])
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+
+# ==============================================================================
+# TP-83 -- the landing feedback, derived and un-derived
+# ==============================================================================
+
+# The activated rim is DERIVED on every refresh from the same match test the highlight asks, so it
+# survives a rebuild and an undo takes it away with nothing to un-persist.
+func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
+	var agreed := await MarkMatch.matches_at(game.state, held_card, both_cell)
+	check(agreed & MarkMatch.Property.RANK and agreed & MarkMatch.Property.SUIT,
+			"TP-83: precondition: the cell it lands on agrees on rank and suit", str(agreed))
+	await input.click(centre_of(held_card))
+	await input.click(centre_of(game.state.cell_type_at(both_cell)))
+	var landed := await wait_for(func() -> bool:
+			return not game.processing and game.state.card_at(both_cell) == held_card)
+	check(landed, "TP-83: precondition: the card was placed on the marked cell")
+	pa.flush_rebuild()
+	await get_tree().process_frame
+
+	var visual : CardVisual = pa.data_card[held_card]
+	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim_active) == agreed,
+			"TP-83: the landed card's agreeing elements read the activated rim",
+			"drew %d of %d" % [rimmed_properties(visual, PaletteDB.ROLES.match_rim_active), agreed])
+	check(uniform_of(visual.stamp, &"u_outline_index") == CardOutline.STYLE.outline_index
+			and uniform_of(visual.type, &"u_outline_index") == CardOutline.STYLE.outline_index,
+			"TP-83: the elements that agreed with nothing keep the card's ordinary rim",
+			"stamp %d, frame %d" % [uniform_of(visual.stamp, &"u_outline_index"),
+			uniform_of(visual.type, &"u_outline_index")])
+	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim) == 0,
+			"TP-83: and none of them is still wearing the held card's own highlight")
+
+	await game.undo()
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	check(game.state.card_at(both_cell) == null,
+			"TP-83: precondition: undo took the card back off the cell")
+#Asked of the WHOLE board rather than of that one card: an undo puts a placed card back where it was
+#drawn from, so a check aimed at the card alone would pass by looking at nothing.
+	var still_active : Array[String] = []
+	for card : CardData in pa.data_card:
+		if rimmed_properties(pa.data_card[card], PaletteDB.ROLES.match_rim_active) != 0:
+			still_active.append(str(card))
+	check(still_active.is_empty(),
+			"TP-83: after undo no element anywhere on the board reads the activated rim",
+			str(still_active))

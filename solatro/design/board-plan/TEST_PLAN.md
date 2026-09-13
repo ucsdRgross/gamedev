@@ -155,6 +155,12 @@ says so and names its own variant.
 | **TP-74** 👁 | **The opening deal reads as a slot machine**, dealt cell by cell (`Q69`=(a) is not the skippable option) | `Q69`=(a) | S11 |
 | **TP-75** 👁 | The palette-swap snapshot still passes with marks on the board | `ARCHITECTURE_REVIEW.md` §4i | S11 |
 | **TP-76** | A PlayArea hosted without a Game and holding a dealt plan reveals without an engine error, and the real game's reveal is unchanged | `Q69`=(a), pre-authorisation 5 | S11 |
+| **TP-83** | After a placement that matched, the placed card's agreeing elements read `match_rim_active` and its others do not; after `undo()` no element anywhere on the board does. Asserted on the outline shader's own uniform, never on a flag | `Q64` | S12 |
+
+**The by-eye harnesses.** `Tests/Visual/plan_reveal_shot.tscn` renders the mark and times the
+opening deal (TP-71, TP-74, TP-75); `Tests/Visual/plan_match_shot.tscn` renders the match highlight
+and the landing (TP-72, TP-73) -- `held_focused.png`, `held_overview.png` and `landed.png`, taking
+`OUT_DIR` from the environment. Both are WINDOWED and neither is in `all_tests.tscn`.
 
 ---
 

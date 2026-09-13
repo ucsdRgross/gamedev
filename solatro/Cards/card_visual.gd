@@ -257,9 +257,41 @@ func _hold_mark_back() -> void:
 ## `art_outline` role, which is the same default an unauthored type answers with.
 func _push_outline_ink() -> void:
 	var style := outline_style()
-	for poly : Polygon2D in [type, rank, stamp, suit, art]:
-		CardOutline.set_rim(poly, style, CARD_SIZE)
+	CardOutline.set_rim(type, style, CARD_SIZE)
+	CardOutline.set_rim(rank, _rim_of(MarkMatch.Property.RANK, style), CARD_SIZE)
+	CardOutline.set_rim(suit, _rim_of(MarkMatch.Property.SUIT, style), CARD_SIZE)
+	CardOutline.set_rim(art, _rim_of(MarkMatch.Property.TALENT, style), CARD_SIZE)
+	CardOutline.set_rim(stamp, _rim_of(MarkMatch.Property.HAT, style), CARD_SIZE)
 	_push_alert()
+
+#SET TOGETHER: a mask with no ink draws nothing and an ink with no mask has nothing to draw. The
+#board re-derives both on every refresh, so a rebuild restores them and an undo leaves nothing.
+## Which of this card's elements wear the match rim, and in which ink -- a MarkMatch.Property mask.
+func set_match_rim(properties : int, palette_index : int) -> void:
+	if matched_properties == properties and match_rim_index == palette_index: return
+	matched_properties = properties
+	match_rim_index = palette_index
+	update_visual()
+
+var matched_properties : int = 0
+var match_rim_index : int = -1
+
+# The rim ONE element draws: the card's own, or the match ink when that element is one of the
+# properties agreeing with its cell's mark.
+func _rim_of(property : int, style : OutlineStyle) -> OutlineStyle:
+	if not (matched_properties & property): return style
+	return _match_style(match_rim_index)
+
+# THE SHIPPED RIM IN ANOTHER INK, built once per ink: a mark's own style draws no rim at all, so an
+# element that lights has to take a width back as well as a colour.
+static func _match_style(palette_index : int) -> OutlineStyle:
+	if not _match_styles.has(palette_index):
+		var style : OutlineStyle = CardOutline.STYLE.duplicate()
+		style.outline_index = palette_index
+		_match_styles[palette_index] = style
+	return _match_styles[palette_index]
+
+static var _match_styles : Dictionary[int, OutlineStyle] = {}
 
 ## THIS CARD'S OUTLINE STYLE — its TYPE's, or the shipped default when it has no type (a placeholder, a
 ## stripped test card). The type owns it because the type is the card's face and the ink's job is to

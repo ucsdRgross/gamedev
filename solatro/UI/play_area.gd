@@ -2024,6 +2024,7 @@ func set_card_zones_visuals() -> void:
 	# lower-zone cards draw over upper.
 	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
 	update_grid_zone_visuals(game_state)
+	_refresh_mark_matches(game_state)
 	_seed_new_layers(game_state)
 	# The Entrance is row -1: its depth is part of the board's geometry, so a rebuild that changed
 	# it has to re-measure the floor. This moves the BOARD, never the strip.
@@ -2808,6 +2809,30 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		for ci : int in grid.cells.size():
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 			if slot: _size_stack_slot(slot)
+
+#DERIVED HERE AND STORED NOWHERE: the grab, the placement and the undo all end in this pass, so
+#nothing has to be un-set, and a bare cell is skipped before anything is asked of it.
+## A mark lights the elements a held card agrees with; a card on a mark lights the ones it realized.
+func _refresh_mark_matches(game_state: GameData) -> void:
+	for gi : int in game_state.grids.size():
+		var grid : GridData = game_state.grids[gi]
+		for ci : int in grid.cell_types.size():
+			var mark : CardData = grid.cell_types[ci]
+			if not BoardPlan.is_marked(mark): continue
+			var coord := BoardCoord.new(gi, ci % grid.grid_width, ci / grid.grid_width, 0)
+			var would_match := 0
+			for held : CardData in selected_cards:
+				would_match |= await MarkMatch.matches_at(game_state, held, coord)
+			_wear_match_rim(mark, would_match, PaletteDB.ROLES.match_rim)
+			for card : CardData in grid.cells[ci].datas:
+				_wear_match_rim(card, await MarkMatch.matches_at(game_state, card, coord),
+						PaletteDB.ROLES.match_rim_active)
+
+# The match test AWAITS, so the walk above can resume into a board that has been rebuilt under it
+# and a card it started with may have no visual any more.
+func _wear_match_rim(card: CardData, properties: int, palette_index: int) -> void:
+	var visual : CardVisual = data_card.get(card)
+	if visual: visual.set_match_rim(properties, palette_index)
 
 func create_card_control() -> Control:
 	var new_control := Control.new()

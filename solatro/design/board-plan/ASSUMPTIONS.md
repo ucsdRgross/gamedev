@@ -252,3 +252,32 @@ gap under `gaps/`.
   answers the membership question on its own -- a mark is a square, never a card in play -- and the
   spotlight sweep needs no exclusion because `CardModifier.is_spotlit()` asks `BoardPlan.is_marked`
   first. `all_card_datas()` is untouched: relinking walks it and every home of a playing card is in it.
+- S12 / Q66, Q67, Q68: the highlight and the landing feedback are ONE derivation,
+  `PlayArea._refresh_mark_matches`, called from `set_card_zones_visuals` -- the pass a grab, an
+  ungrab, a placement and a rebuild all end in. Each marked cell asks `MarkMatch.matches_at` about
+  the held card (the MARK's agreeing elements take `match_rim`) and about every card standing on it
+  (that CARD's agreeing elements take `match_rim_active`), and nothing is stored anywhere else, so
+  an undo has nothing to un-set. A bare cell is skipped by `BoardPlan.is_marked` before anything is
+  asked, which is what keeps an unmarked board at one predicate per cell.
+- S12 / Q68, ARCHITECTURE_REVIEW §4j: the per-element rim is the STYLE layer resolved per element
+  rather than per card -- `CardVisual._push_outline_ink` now pairs each polygon with the property it
+  draws (rank, suit, art = talent, stamp = hat) and hands `set_rim` a duplicate of the shipped style
+  in the match ink for the ones that agree. No fourth override layer, no second writer of the rim
+  uniform, and never `modulate`. The match style takes the SHIPPED width back, because a mark's own
+  style draws no rim at all and an element that lights has to have one.
+- S12 / Q66: with a STACK held, the mark lights the union of what every held card agrees with -- the
+  whole stack lands on that one cell, so any other reading would light less than what is about to
+  happen. No shipped path grabs more than one card onto a grid cell today.
+- S12 / Q66, TP-63: every cell `matches_at` reports non-zero for is highlighted, COVERED OR NOT. The
+  data decides what agrees and the stack decides what is visible; a covered mark is a sliver, so the
+  highlight on it is one too.
+- S12 / TEST_PLAN TP-63: the pick-up is driven through `Viewport.push_input` in both the mouse and
+  the keyboard route, which needs a real `GameView`; the event synthesis moved out of
+  `test_interaction.gd` into `Tests/Support/test_input.gd` and both suites now share the one driver.
+  The fixture's board carries NO dealt plan (the planner card is dropped from its rules row) and
+  grants three marks by hand, so what a held card agrees with is a property of the test rather than
+  of the shuffle.
+- S12 / GAP-004: `match_rim` = 31 `#eddcc0` and `match_rim_active` = 6 `#f8c300`. The owner's ruling
+  says WHITE and `Assets/CircusCrayon.png` has no white entry, so the choice is parked on GAP-004
+  and these two values are what S12 was built, tested and photographed against; a ruling moves one
+  number in `roles.tres` and nothing else, because every test asserts the ROLE.

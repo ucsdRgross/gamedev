@@ -57,6 +57,7 @@ mark (didnt know hitting the mark was official term, so am okay with mark termin
 | `TestBoardPlan` | `Tests/Engine/test_board_plan.gd` | suite name `BOARD PLAN` |
 | `TestMarkMatch` | `Tests/Engine/test_mark_match.gd` | suite name `MARK MATCH` |
 | `TestPlanVisuals` | `Tests/UI/test_plan_visuals.gd` | suite name `PLAN VISUALS` |
+| `TestInput` | `Tests/Support/test_input.gd` | the shared synthesized-input driver every suite pushes device events through. Added during execution - see ASSUMPTIONS.md |
 
 ## Methods and signatures
 
@@ -134,6 +135,18 @@ func add_line_mult(amount: float) -> void   # a mark effect's share of the line'
 ## InputMap action
 
 `ui_plan_layer` — held to peek, and bound for keyboard, mouse and controller alike (`Q117`=(c)).
+
+## View state
+
+```gdscript
+# Cards/card_visual.gd - added during execution, see ASSUMPTIONS.md
+var matched_properties : int          # which of this card's elements wear the match rim, a Property mask
+var match_rim_index : int             # the palette entry those elements' rims take
+func set_match_rim(properties : int, palette_index : int) -> void   # the two are set together
+
+# UI/play_area.gd
+func _refresh_mark_matches(game_state: GameData) -> void   # the one derivation, on every refresh
+```
 
 ## Palette roles
 

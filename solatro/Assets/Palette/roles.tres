@@ -12,3 +12,5 @@ suit_firework = 14
 status_flame = 30
 status_ball = 6
 ball_gloss = 31
+match_rim = 31
+match_rim_active = 6

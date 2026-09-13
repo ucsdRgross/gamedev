@@ -39,6 +39,12 @@ extends Resource
 ## The juggled ball's specular dot. Its BODY tones are an ordered ramp, not a role — see PaletteRamp.
 @export_range(0, 255, 1) var ball_gloss : int = 31
 
+@export_group("The board plan")
+## The outline an element takes while it matches the mark under a held card.
+@export_range(0, 255, 1) var match_rim : int = 31
+## The outline a matching element takes once the card has landed on that mark.
+@export_range(0, 255, 1) var match_rim_active : int = 6
+
 # ⚠ **`art_outline` AND `alert_glare` LIVED HERE AND WERE MOVED, NOT COPIED**. They are the
 # card outline's ink and its glare band, and keeping them here split ONE effect's tuning across two
 # resources: judging an ink on `tools/outline_atlas.tscn` meant editing a different file from the one
@@ -59,6 +65,7 @@ const ROLE_NAMES : Array[StringName] = [
 	&"suit_hoop", &"suit_knife", &"suit_ball", &"suit_fire", &"suit_firework",
 	&"status_flame", &"status_ball",
 	&"ball_gloss",
+	&"match_rim", &"match_rim_active",
 ]
 
 ## This role's palette index. Named access (`roles.suit_hoop`) is the normal path; this is for the

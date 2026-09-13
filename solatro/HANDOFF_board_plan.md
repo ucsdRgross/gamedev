@@ -2,17 +2,17 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 35 commits on `board-plan`. Phases 1-4 (S1-S10) and S11 landed and verified, one
-commit per step, plus three Phase 1-3 review fixes (A-C), the owner's three-grid bug fix, Phase 4
-review fixes D, E, F and G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed.
-OPEN: S12 (the match highlight, under the owner's white-outline
-ruling), S13, S14, S15, S16, S17. Three gaps open for the owner: GAP-001 (stocks are sidebar S19;
+**State:** 36 commits on `board-plan`. Phases 1-4 (S1-S10), S11 and S12 landed and verified, one
+commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S13 (the
+layer view), S14, S15, S16, S17. Four gaps open for the owner: GAP-001 (stocks are sidebar S19;
 TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch parked;
-S9 partial), GAP-003 (re-deal a line unnamed). Owner rulings mid-run are in PLAN 1.10 (marks keep a
-real card's colours and only lose their outline; a matching mark takes a WHITE outline while a card
-is selected; marks keep the zone type art). Implementer sessions die to the Opus session limit every
-few hours; every cut-off so far was resumed with SendMessage from the same transcript, never
-restarted.
+S9 partial), GAP-003 (re-deal a line unnamed), GAP-004 (the palette has no white: `match_rim` is
+built and photographed against entry 31 cream, `match_rim_active` against 6 gold; a ruling moves one
+number in `roles.tres`). Owner rulings mid-run are in PLAN 1.10 (marks keep a real card's colours
+and only lose their outline; a matching mark takes a WHITE outline while a card is selected; marks
+keep the zone type art). Implementer sessions die to the Opus session limit every few hours; every
+cut-off so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -180,13 +180,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Overseer full run: ALL 48 SUITES: 4236 passed, 1 FAILED (the standing WALL FOCUS line); PLAN VISUALS 30/30 (34/34 with TP-76, own commit); PIXELS 43/43; PALETTE 34/34; VISUAL LAYERS 221/221; SECTION 8 identical. By eye (overseer, 4x crop): a marked empty cell draws its art, rank pip and suit pip in full colour at full size inside the dashed ring with NO rim; a real card beside it is identical plus its dark rim and cream body (a played card frame); the unmarked cell is the bare ring. Pre-S11 crop confirms marks never had a cream body (the cell type frame is a hollow ring), so the only pixel change is the rim. TP-74 reveal measured over time by the sibling probe: 25 cells ~516 ms apart, 12.1 s total, in the walk order, not row-major. TP-75: no new palette entry; the palette-swap snapshot renders no board.'
   notes: 'Owner ruling superseded Q63 grey (PLAN 1.10). Mechanism: the outline TYPE override layer with width 0; a measured engine bug fixed on the way (CardOutline.material_of re-seeded u_outline_width after set_rim, so no per-type width override survived). The reveal lives in PlayArea.reveal_plan() via a GameView delegate; plan_reveal_order transient. ⚠ FOR THE OWNER: the 12.1 s opening (plan_reveal_fraction 0.5 x get_delay) is the knob; and whether no rim alone reads as a mark at overview zoom.'
 - id: S12
-  description: the match highlight while holding a card, and the landing feedback; palette roles match_rim/match_rim_active; TP-63, TP-64, TP-65; by eye TP-72, TP-73.
-  files_touched: []
-  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  description: the match highlight while holding a card, and the landing feedback; palette roles match_rim/match_rim_active; TP-63, TP-64, TP-65, TP-83; by eye TP-72, TP-73.
+  files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd, solatro/Scripts/palette_roles.gd, solatro/Assets/Palette/roles.tres, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Support/test_input.gd, solatro/Tests/Support/test_game_view_host.gd, solatro/Tests/Interaction/test_interaction.gd, solatro/Tests/Visual/plan_match_shot.gd, solatro/Tests/Visual/plan_match_shot.tscn, solatro/Tests/Visual/plan_reveal_shot.gd]
+  verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_match_shot.tscn (OUT_DIR) and look'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red A (the refresh call deleted): PLAN VISUALS 57 passed, 6 FAILED of 63 (TP-63 x3, TP-64 x2, TP-83); red B (lights RANK|SUIT regardless of matches_at): 57/6 (TP-63 x2, TP-64 x2, TP-65 x2); green 63/63, equal counts. Overseer full run: ALL 48 SUITES: 4278 CHECKS PASSED, errors log empty; PLAN VISUALS 63/63, PALETTE 36/36 (+2 roles), PIXELS 43/43, INTERACTION 52/52; SECTION 8 identical. By eye (overseer, 4x crops of plan_match_shot): held, focused - the rank-only mark rims its rank pip cream and leaves the suit pip bare, the rank+suit mark rims both pips, the non-matching mark and every cell frame stay rimless; landed - the placed 8-of-Hoops wears gold rims on its rank and suit pips, the ordinary dark rim on its art and frame, with the focus brightening on the same cell and clearly distinct from it; overview - the cream pip rims stay legible at overview zoom. UNVERIFIED: the scoring-beam half of TP-72 (no beam held in the shot). Diff adds no modulate write, no colour literal, no design id.'
+  notes: 'One derivation, PlayArea._refresh_mark_matches from set_card_zones_visuals; per-element rim through the STYLE layer (CardVisual._push_outline_ink pairs each polygon with its property), never modulate. GAP-004: no white in the palette, built against 31/6. TestInput extracted out of test_interaction.gd (shared driver); TestGameViewHost.boot_show shared by both shot scenes. Owner-visible: the covered-cell highlight is set on the data (a covered mark shows a sliver); a held STACK lights the union.'
 - id: S13
   description: the layer view - two-state toggle, viewer only, focused and overview, held shoulder button + HUD control, ui_plan_layer; TP-66..TP-69.
   files_touched: []
@@ -292,6 +292,16 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   printer filter; TP-53's digest witnesses; TP-54 through the real replay; the counts_as_activation
   split keeps every question-asking path out of the combo; NAMES.md identifiers all match.
 
+## Bloat review of the reveal fix and fixes E-G (Opus 5, read-only, 70425565..5b153b62)
+- QUEUED for the close's simplify pass: `MarkMatch._pip_same` computes two `pip_cache_key`s that
+  `ask_pass` never reads under `memoise = false`. Not a defect; one suite run is not worth it alone.
+- DISMISSED: "`anim_spin(delay)`'s parameter carries nothing the callee could not read" - TP-76
+  reproduces exactly the case the reviewer could not find (an environment leaving the tree mid-reveal
+  nulls `CardEnvironment.CURRENT`); the parameter is load-bearing and its red run proves it.
+- DISMISSED: "`flat_bonus`'s `not card.rank` has only a test caller" - the producing caller is the
+  leniency hook family PLAN 1.4 mandates as a content surface; TP-78 is that caller until content
+  ships one.
+
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
@@ -315,27 +325,20 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. S12: the match highlight and landing feedback. Owner ruling (PLAN 1.10): at rest a mark has no
-   outline; while a card is picked up, a mark it matches takes a WHITE outline, read with Q67/Q68
-   (each matching ELEMENT lights its own outline) so the white lands on the matching elements.
-   `match_rim` (white) and `match_rim_active` palette roles per NAMES.md; landing feedback per Q64
-   (the realized card's art takes a special outline, pips swap to an activated outline; no popup);
-   a miss is silent (Q65=(a)); no Entrance destination (Q70). TP-63, TP-64, TP-65; by eye TP-72,
-   TP-73 (`/fx-verify`, PNGs looked at and described). Files per PLAN 3 S12.
-2. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
+1. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
    Q117=(c) held shoulder button AND a HUD control, `ui_plan_layer` action, closes on any board
    mutation, off after a restored save). TP-66..TP-69. The sidebar branch is rebuilding the HUD in
    parallel: keep the HUD control minimal and behind `GameView`, expect a merge.
-3. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
+2. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
    else to add.
-4. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
+3. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
    GAP-041 through a NEW poker-patience design version, never an in-place edit).
 8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
     dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
-5. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+4. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
-6. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+5. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)
