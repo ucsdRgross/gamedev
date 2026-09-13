@@ -191,3 +191,8 @@ gap under `gaps/`.
   section rather than all four together, because that section header is where the bump contract is
   stated. `Scripts/board.gd` is edited although S10's file row names only `card_effect_api.gd`, for
   the shared `deal_marks` seam above.
+- S11 / Q69, pre-authorised 4: the reveal walks the shuffled deal order, which nothing stored. `deal()`
+  records the cells in walk order on a transient `GameData.plan_reveal_order` (never persisted,
+  never read by any rule); the view consumes it once at show start. Reversible and invisible.
+- S11 / TEST_PLAN TP-74: the row said "and is skippable"; answers.json has `Q69` = (a), "dealt, cell
+  by cell", not (c). The row is corrected against the source; no skip is built.

@@ -149,7 +149,7 @@ says so and names its own variant.
 | **TP-71** 👁 | **The mark reads as grey, faded and ghostly at full card size in the cell frame**, and all four properties are legible | `Q63`=(d), `Q112` | S11 |
 | **TP-72** 👁 | **A realized card's art and pips take their activated outlines**, distinguishable from the focus highlight and from the scoring beam on the same cell | `Q64` | S12 |
 | **TP-73** 👁 | **The match highlight is distinguishable at overview zoom** across three grids | `Q66`=(a), `Q116`=(b) | S12 |
-| **TP-74** 👁 | **The opening deal reads as a slot machine** and is skippable | `Q69`=(a) | S11 |
+| **TP-74** 👁 | **The opening deal reads as a slot machine**, dealt cell by cell (`Q69`=(a) is not the skippable option) | `Q69`=(a) | S11 |
 | **TP-75** 👁 | The palette-swap snapshot still passes with marks on the board | `ARCHITECTURE_REVIEW.md` §4i | S11 |
 
 ---

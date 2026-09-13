@@ -78,6 +78,7 @@ static func mult_bonus(card: CardData, matched: int) -> float    # the talent + 
 
 # Scripts/game_data.gd
 @export_storage var plan_seed : int = 0
+var plan_reveal_order : Array[BoardCoord]   # TRANSIENT, never @export_storage: the cells in the order deal() walked them, for the opening reveal only. Added during execution - see ASSUMPTIONS.md
 ```
 
 ## Hooks
