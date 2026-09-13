@@ -1,9 +1,9 @@
 class_name TestDecks
 ## FROZEN deck + rules compositions for tests. Tests must NEVER pull decks from
-## Decks/deck.gd: those are the owner's freely-changing playtest decks, and riding them
-## silently retunes every seeded observation (that's how "deck9 never spawns hoops" hid
-## inside passing suites). A test that needs a different composition adds a NEW function
-## here; existing ones are replay contracts — never edit them.
+## Decks/deck.gd: those are the owner's freely-changing playtest decks, and one retuned
+## overnight silently retunes every seeded observation riding it, with nothing going red.
+## A test that needs a different composition adds a NEW function here; existing ones are
+## replay contracts — never edit them.
 
 ## A plain paper card of `suit` at `rank` (mirror of Deck._card, frozen here on purpose).
 static func _card(suit: GDScript, rank: int) -> CardData:
