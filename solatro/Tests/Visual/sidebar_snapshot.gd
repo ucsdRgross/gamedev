@@ -21,6 +21,7 @@ const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_descrip
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
 const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
 const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
+const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -103,6 +104,8 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 
+	await _await_held_card_settled(view, view.play_area.selected_cards[0])
+	await RenderingServer.frame_post_draw
 	_capture(_resolve_out_path())
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
@@ -115,6 +118,12 @@ func _ready() -> void:
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+	await _move_the_focus_off_the_armed_card(main, view)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(ARMED_FOCUS_ELSEWHERE_OUT_PATH)
+
 	_hover_a_board_card(main, view)
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -432,6 +441,24 @@ func _arm_an_entrance_card(main: Main, view: GameView) -> CardData:
 	var data : CardData = view.play_area.ui_data[_entrance_controls(view, viewport)[0]]
 	view.play_area.grab_cards([data] as Array[CardData])
 	return data
+
+# The FOCUS-ELSEWHERE still: the ARM gives the lift and the GLOW stays with the focus, so the two
+# end up on different cards. The focus is moved the way a pad moves it, an arrow into the board's
+# own viewport, and what actually happened is printed beside the still.
+func _move_the_focus_off_the_armed_card(main: Main, view: GameView) -> void:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	_point_over_the_board(main, view)
+	await _await_held_card_settled(view, view.play_area.selected_cards[0])
+	var key := InputEventKey.new()
+	key.keycode = KEY_UP
+	key.pressed = true
+	viewport.push_input(key)
+	await get_tree().process_frame
+	var armed : CardData = view.play_area.selected_cards[0]
+	var visual : CardVisual = view.play_area.data_card[armed]
+	print("SIDEBAR_SNAPSHOT armed_focus_elsewhere focus_is_the_arm=%s held=%d glow=%s following=%s"
+			% [viewport.gui_get_focus_owner() == view.play_area.data_ui[armed], visual.held,
+					visual.focused, visual.following])
 
 # The FOLLOWING still: the pointer is put over the middle of the board, which both starts the
 # following and is where the card is then carried to.

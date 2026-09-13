@@ -265,6 +265,7 @@ func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
 	## Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores the press where it can't act.
 	hud_container.set_processing(busy)
+	if not busy: await _arm_the_entrance()
 
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text
@@ -315,6 +316,20 @@ func await_card_settled(card: CardData) -> void:
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
 	play_area.setup_gui()
+	await _arm_the_entrance()
+
+## True once the show has rested the focus on its first armed card; it never rests it again.
+var _rested_the_focus : bool = false
+
+# THE ENTRANCE IS ALWAYS ARMED: every time the board settles with nothing held, the leftmost card
+# is picked up for the player through the very pickup a click makes. A card's LIFT lives on its
+# visual, so the arm waits for the deal's visuals the way a resume does.
+func _arm_the_entrance() -> void:
+	play_area.flush_rebuild()
+	if not play_area.visuals_ready(): await play_area.board_visuals_ready
+	await play_area.arm_leftmost()
+	if _rested_the_focus or play_area.selected_cards.is_empty(): return
+	_rested_the_focus = play_area.rest_focus_on_armed()
 
 ## Repopulate the row/col score gutters from state.scores_* (after apply_act_score clears them).
 func sync_scores() -> void:
@@ -372,13 +387,14 @@ func prop_tick_pending() -> bool:
 # ==============================================================================
 
 func _on_undo_pressed() -> void:
-	## The held-cards guard is the view's job (selection state lives in PlayArea).
-	if play_area.selected_cards: return
+	## What is held is the arm, and the arm is view-only: it is dropped here and re-derived from whatever board the undo restores.
+	play_area.ungrab_cards()
 	game.undo()
+	await _arm_the_entrance()
 
-# ONE CLICK, BOTH OUTCOMES: the click that grabs or places ALSO locks the description to the card
-# it landed on -- there is no inspect-only mode any more. A PLACEMENT FINISHES THE INTERACTION, so
-# a landed drop takes the container back to the HUD; a refused one leaves the description up.
+# ONE CLICK, BOTH OUTCOMES: it locks the description to the card it landed on AND performs the
+# board action. A landed placement finishes the interaction and takes the container back to the
+# HUD; a REFUSED one leaves the description up and falls through to picking that card up instead.
 func _on_data_selected(data: CardData) -> void:
 	if game.processing: return
 	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
@@ -388,14 +404,15 @@ func _on_data_selected(data: CardData) -> void:
 		if (data == held0
 				or game.find_data_vec3(data) == game.find_data_vec3(held0) - Vector3i(0, 0, 1)):
 			play_area.ungrab_cards()
-		elif data not in play_area.selected_cards:
-			var placed := await game.try_place(play_area.selected_cards, data)
-			if placed:
-				play_area.ungrab_cards()
-				hud_container.show_hud()
-	else:
-		var grabbed := await game.try_grab(data)
-		play_area.grab_cards(grabbed)
+			return
+		if data in play_area.selected_cards: return
+		if await game.try_place(play_area.selected_cards, data):
+			play_area.ungrab_cards()
+			hud_container.show_hud()
+			await _arm_the_entrance()
+			return
+	var grabbed := await game.try_grab(data)
+	if grabbed: play_area.grab_cards(grabbed)
 
 
 # THE DEBUG BAR (owner tool, debug builds only): Record toggles an EventLog capture and writes it

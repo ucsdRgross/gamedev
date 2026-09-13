@@ -449,3 +449,51 @@
   card out of its cell and dismisses what was locked. Those fixtures now lock through the suite's
   existing `_lock_without_holding()`; the rows they implement (1.4/1.5/1.6) never asked for a held
   card.
+- S15: new names `PlayArea.rest_focus_on_armed()`, `PlayArea._focus_is_resting`,
+  `PlayArea._pointer_was_in_the_origin_cell`, `GameView._arm_the_entrance()` and
+  `GameView._rested_the_focus`. `armed_slot()` / `arm_leftmost()` are NAMES.md's.
+- S15: the show-start rest focus (`Q251`=b, G10) is placed by the VIEW after the first arm and is
+  SILENT -- `PlayArea._focus_is_resting` brackets that one `grab_focus`, and
+  `on_control_focus_entered` skips both `_publish_info` and `follow_cards` while it is set. Without
+  it the very first focus would open a description (`Q240`=a says a fresh show is the HUD) and start
+  the card following (`Q254`=d says it must not). The latch is on the REST FOCUS, never on the grab
+  path, which is what `Q252`=b forbids.
+- S15: `arm_leftmost()` leaves the board alone while `Game.processing` is true or something is
+  already held. Both callers are real: `Game._restore_pre_act_board()` rebuilds the view with
+  `processing` still true, and a second arm must not re-grab a card the player has already started
+  moving (it would reset `following`).
+- S15: `Q62`=b's cell-leave dismissal is now a CROSSING, not a position test. With a card armed at
+  all times, "the pointer is outside the held card's cell" is true on every motion, so a hover
+  opened a description and the next motion closed it -- B1/B4 were unreachable on the game screen.
+  The answer's own words are "the cursor LEAVING the bounds of the cell", and a card armed with the
+  cursor elsewhere was never inside it to leave. `grab_cards` seeds the flag from the live cursor,
+  so a CLICKED card (cursor on it) still dismisses when the pointer carries it out (1.7's fourth).
+- S15: `GameView._on_undo_pressed`'s held-cards guard is deleted. With the Entrance always armed it
+  was always true, so Undo could never fire; what is held is the arm, and the arm is view-only, so
+  undo drops it and re-derives it from the restored board (`Q117`=a).
+- S15: a REFUSED placement falls through to picking the clicked card up, which is how `Q114`=a's
+  "clicking a different Entrance card re-arms and locks that card's description -- one click, both"
+  happens: the Entrance header refuses a card as a drop target, so the click's remaining action is
+  the pickup. A card nothing can grab leaves the arm alone rather than emptying the hand.
+  `Q122`=a's board-card half belongs to S16 (PLAN lists Q122/Q123 there) and is unreachable today:
+  the only `on_can_grab_stack` implementations are `TypeInput` (the Entrance) and
+  `SkillGrabberOgLower` (the retired LOWER zone), so no board card can be picked up at all.
+- S15: `PlayArea._publish_focus_left_cards`'s `assert(is_inside_tree())` became an early return.
+  Its premise ("every teardown frees the screen root, so a deferred call never reaches a live
+  board") stopped holding the moment a show ALWAYS leaves a card focused: tearing a view down while
+  a card holds the focus queues that deferred call against a node already out of the tree.
+- S15: `TestSidebar._hoverable_card_controls()` now also drops a HELD card's control and a buried
+  FOCUS_NONE zone control. Both are the product's own answer to "can the pointer land here and
+  publish": `grab_cards` makes a held control `MOUSE_FILTER_IGNORE`, and a covered zone control
+  cannot take the focus a publish rides on. Three landed assertions moved with the feature: the
+  placement test now asserts the PLACED card is no longer held (something always is), and 6.10
+  compares the restored card by NAME, since `Game.undo()` rebuilds `GameData` and hands back new
+  `CardData` objects.
+- S15: `rest_focus_on_armed()` returns whether the focus actually landed, and the view only spends
+  its one-shot flag when it did. `Game.try_grab` is awaited inside `arm_leftmost`, so a board that
+  rebuilt across that await can hand back an armed card the control map no longer has; the show
+  then rests on the next arm instead of crashing on a missing key.
+- S15: G12 / `Q24`=a / `Q124`=a's legal-cell highlight does not exist in the code at all and was
+  never built -- a CLICK pickup shows none either -- so nothing in S15 could preserve it. Filed as
+  GAP-005 (owner call: what the mark IS), with `TEST_PLAN.md` §11's claim that every chart node is
+  covered noted as wrong for G12.

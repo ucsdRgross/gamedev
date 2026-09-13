@@ -1510,14 +1510,20 @@ func _input(event: InputEvent) -> void:
 			ungrab_cards()
 			
 # ANY mouse motion starts a held card following, including the one Godot emulates from a finger.
-# A card ALREADY following whose pointer has left the cell it came from closes the description —
+# A following card whose pointer CROSSES OUT of the cell it came from closes the description --
 # read before the latch, so the motion that starts the following never closes one by accident.
 func _on_pointer_moved(at: Vector2) -> void:
 	if selected_cards.is_empty(): return
 	var carried : CardVisual = data_card.get(selected_cards[0])
-	if carried and carried.following and not _origin_cell_rect(carried).has_point(at):
+	if not carried: return
+	var inside := _origin_cell_rect(carried).has_point(at)
+	if carried.following and _pointer_was_in_the_origin_cell and not inside:
 		description_dismiss_requested.emit()
+	_pointer_was_in_the_origin_cell = inside
 	follow_cards()
+
+## Where the pointer was last seen relative to the held card's own cell: a dismissal needs a real crossing OUT of it, and a card armed with the cursor elsewhere was never inside it to cross.
+var _pointer_was_in_the_origin_cell : bool = false
 
 # The cell a held card came from: its own control stays put — only the visual rides the cursor —
 # and a card control's parent IS its cell slot.
@@ -1555,6 +1561,9 @@ func grab_cards(datas:Array[CardData]) -> void:
 				(vis_layer as Node2D).move_child(card_visual, -1)
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var carried : CardVisual = data_card.get(selected_cards[0]) if selected_cards else null
+	_pointer_was_in_the_origin_cell = (carried != null
+			and _origin_cell_rect(carried).has_point(get_global_mouse_position()))
 
 func ungrab_cards() -> void:
 	_next_grab_follows = false
@@ -1568,6 +1577,42 @@ func ungrab_cards() -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 	set_card_zones_visuals()
+
+# The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
+# an undo that restores the board carries the arm with it.
+func armed_slot() -> int:
+	var game := CardEnvironment.get_current_game()
+	if not game: return -1
+	for slot : int in game.state.upper_zone.size():
+		if not game.state.upper_zone[slot].datas.is_empty(): return slot
+	return -1
+
+# ARMING IS A PICKUP: the same two calls, in the same order, that a player's click makes, so the
+# product keeps ONE grab path. A card already held -- the arm itself, or one the player picked up
+# -- is left alone, and a board still resolving an act is not armed until it stops.
+func arm_leftmost() -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game or game.processing or selected_cards: return
+	var slot := armed_slot()
+	if slot == -1: return
+	var top : CardData = game.state.upper_zone[slot].datas.back()
+	grab_cards(await game.try_grab(top))
+
+# The show opens with the board focus resting on the armed card, once: a key/pad player has to
+# start somewhere. It is NOT a highlight -- it publishes no description and starts no following.
+# False when a board rebuilt behind the arm has no control for it, so the next arm rests instead.
+func rest_focus_on_armed() -> bool:
+	assert(not selected_cards.is_empty())
+	flush_rebuild()
+	var control : Control = data_ui.get(selected_cards[0])
+	if not control: return false
+	_focus_is_resting = true
+	control.grab_focus()
+	_focus_is_resting = false
+	return true
+
+## True only across the show-start rest focus, which marks the armed card without announcing it.
+var _focus_is_resting : bool = false
 
 ## Game over: the outcome overlay covers the board and blocks the mouse, but keyboard/
 ## controller focus could still walk onto the covered cards — drop it, and KEEP it dropped
@@ -2817,9 +2862,9 @@ func create_card_control() -> Control:
 
 # DEFERRED, and it has to be: at `focus_exited` the viewport has dropped the old focus and not yet
 # taken the new one, so the owner reads null however the focus is moving; one idle call later it
-# is settled. Every teardown frees the screen root, so a deferred call never reaches a live board.
+# is settled. A board torn down while a card holds the focus is called after it left the tree.
 func _publish_focus_left_cards() -> void:
-	assert(is_inside_tree())
+	if not is_inside_tree(): return
 	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
@@ -2855,7 +2900,7 @@ func on_control_focus_entered(control:Control) -> void:
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
 	_refresh_card_marking()
-	if ui_data.has(control):
+	if ui_data.has(control) and not _focus_is_resting:
 		follow_cards()
 		_publish_info(ui_data[control])
 

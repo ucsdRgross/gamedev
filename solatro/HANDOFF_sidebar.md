@@ -303,8 +303,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'new name PlayArea.board_card_picture_px() (the swipe travel is in picture space, so board_card_window_px was the wrong space; the window helper now derives from it) - ASSUMPTIONS. Four production touch_target_px call sites, not three (the exit X). PICTURE_WALL.md wiring row kept with its new reason (Q306=a)'
 - id: S14
   description: split held from following on CardVisual
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '4a008669: ALL 46 SUITES 4410 PASSED [21]; SIDEBAR 89 -> 97 tests (6.4-6.9, 1.7 fourth dismissal, 1.8); red per neutralisation 8/2/3/8/3 FAILED; lift 18.3 held vs 18.2 following (non-zero, equal); doc_check 0 of 775 on added lines; by eye card_lifted.png (raised in its slot) and card_following.png (riding over the grid, same lift)'
+  notes: 'no lift quantity existed for a HELD card (a grab never called anim_jump) - the jump rise card_jump_rise_play is applied in both states, no new knob (ASSUMPTIONS). Q267=a lands behind try_grab''s await, so the click sets PlayArea._next_grab_follows and grab_cards consumes it. OWNER SHOULD SEE: Q56=a + Q62=b + Q267=a together mean a click-lock on a grabbable card is dismissed the moment the pointer leaves that card''s cell (the click also grabs, and a clicked card follows at once); four S6 tests now lock through _lock_without_holding(). New names: CardVisual.held_lift_px/cursor_ride_offset, PlayArea.follow_cards/_on_pointer_moved/_origin_cell_rect/_next_grab_follows'
 - id: S15
   description: arming through the pickup path
   status: pending

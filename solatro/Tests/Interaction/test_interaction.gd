@@ -238,6 +238,7 @@ func touch_tap(pos: Vector2) -> void:
 func a_card_control() -> Control:
 	pa.flush_rebuild()
 	for control : Control in pa.ui_data:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE: continue
 		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
 			return control
 	return null
@@ -316,23 +317,23 @@ func test_rebuild_leaves_no_dead_controls() -> void:
 	await frames(1)
 	var history_before : int = game.save_history.size()
 	# the real player path: select the card (grab), then select the target (place)
-	await view._on_data_selected(moving)
-	check(not pa.selected_cards.is_empty(), "precondition: the card is held")
+	if moving not in pa.selected_cards: await view._on_data_selected(moving)
+	check(moving in pa.selected_cards, "precondition: the card is held")
 	await view._on_data_selected(target)
 	await frames(2)
 	pa.flush_rebuild()
 	check(game.save_history.size() == history_before + 1,
 			"precondition: the move committed one step")
-	check(pa.selected_cards.is_empty(), "the grab is released across the move")
+	check(moving not in pa.selected_cards, "the grab is released across the move")
 	# The regression needs a board REBUILD, so drive one. What is being defended is the
 	# rebuild's effect on pooled controls, never whatever happened to trigger it.
 	await game.next()
 	await frames(2)
 	pa.flush_rebuild()
-	check(pa.selected_cards.is_empty(), "and stays released across the rebuild")
+	check(moving not in pa.selected_cards, "and stays released across the rebuild")
 	var dead : Array[String] = []
 	for control : Control in pa.ui_data:
-		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+		if control.mouse_filter == Control.MOUSE_FILTER_IGNORE 				and pa.ui_data[control] not in pa.selected_cards:
 			dead.append(str(pa.ui_data[control]))
 	check(dead.is_empty(), "no board card is left uninteractable after a rebuild",
 			"dead controls: %s" % [dead])

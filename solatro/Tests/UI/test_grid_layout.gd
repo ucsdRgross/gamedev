@@ -1493,7 +1493,7 @@ func run_the_card_is_put_down_before_anything_scores_test() -> void:
 			"the grab is released DURING the placement, before the mutation pass it ends with -- "
 			+ "not by the caller after the whole scoring cascade has already played",
 			"held for all %d frames of the placement" % samples)
-	check(pa.selected_cards.is_empty(),
+	check(card not in pa.selected_cards,
 			"...and it stays released", "%d held" % pa.selected_cards.size())
 	await _tear_down(view)
 
