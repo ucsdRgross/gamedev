@@ -151,6 +151,7 @@ says so and names its own variant.
 | **TP-73** 👁 | **The match highlight is distinguishable at overview zoom** across three grids | `Q66`=(a), `Q116`=(b) | S12 |
 | **TP-74** 👁 | **The opening deal reads as a slot machine**, dealt cell by cell (`Q69`=(a) is not the skippable option) | `Q69`=(a) | S11 |
 | **TP-75** 👁 | The palette-swap snapshot still passes with marks on the board | `ARCHITECTURE_REVIEW.md` §4i | S11 |
+| **TP-76** | A PlayArea hosted without a Game and holding a dealt plan reveals without an engine error, and the real game's reveal is unchanged | `Q69`=(a), pre-authorisation 5 | S11 |
 
 ---
 

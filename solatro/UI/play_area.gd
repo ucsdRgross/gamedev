@@ -1715,11 +1715,11 @@ func reveal_plan() -> void:
 	while not _plan_reveal_pending.is_empty():
 		var mark : CardData = _plan_reveal_pending.pop_front()
 		var visual : CardVisual = data_card.get(mark)
+		var delay := game.get_delay()
 		if visual:
 			visual.mark_drawn = true
-			visual.anim_spin()
-		await Pacing.wait(self, SettingsManager.settings.plan_reveal_fraction
-				* game.get_delay()).timeout
+			visual.anim_spin(delay)
+		await Pacing.wait(self, SettingsManager.settings.plan_reveal_fraction * delay).timeout
 
 func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	# ⚠ **THE CONTAINER'S OWN `global_position` STOPS MIRRORING ITS CHILDREN THE MOMENT IT IS

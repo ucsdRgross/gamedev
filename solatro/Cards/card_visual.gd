@@ -830,13 +830,12 @@ func anim_spring_lift() -> float:
 			delay * s.card_jump_settle_fraction)
 	return delay * s.card_jump_raise_fraction
 
-func anim_spin() -> float:
-	# Mirrors anim_jump (:342) but drives rotation, so it COMPOSES with a concurrent jump
-	# (offset:y vs offset:rotation are independent properties). Guard the null offset the same.
-	# A held spin loop owns the rotation — never custom_step an INFINITE tween (it won't end).
+# Rotation rather than offset:y, so a spin COMPOSES with a concurrent jump; offset is null until this
+# visual's _ready has run, and a held spin loop owns the rotation (never custom_step an INFINITE
+# tween). PACED BY ITS CALLER: the reveal awaits between cells, so the board hands in its own delay.
+func anim_spin(delay: float) -> float:
 	if not offset or _spin_holding: return 0.0
 	reset_tween(spin_tween)
-	var delay := CardEnvironment.CURRENT.get_delay()
 	spin_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	spin_tween.tween_property(offset, "rotation", TAU, delay * .6)
 	spin_tween.tween_callback(func()->void: offset.rotation = 0.0)

@@ -227,3 +227,10 @@ gap under `gaps/`.
   matches." and "marks dont have specific type for now, keep using the zone type art". PLAN §1.10
   carries both. Read with Q67/Q68 (each matching ELEMENT lights its own outline): the outline that
   lights is white, on a mark whose rest state is no outline at all.
+- S11 / Q69: MEASURED bug, one seam. `CardVisual.anim_spin` re-resolved the pacing through
+  `CardEnvironment.CURRENT`, which ANY screen entering or leaving the tree rewrites -- so the reveal,
+  which awaits between cells, woke up on a null global and threw 24 engine errors mid-deal. The
+  reveal already resolves its board once; it now hands that board's `get_delay()` to the spin, which
+  is `anim_spin`'s only caller. No guard, no second resolution: the board that starts a reveal is
+  what paces it. TP-76 takes the environment away mid-deal with a `FakeEnvironment` entering and
+  leaving the tree, which is exactly what a suite running beside PLAN VISUALS does.

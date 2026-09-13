@@ -34,6 +34,7 @@ func _ready() -> void:
 	behavior_section("THE OPENING REVEAL DEALS CELL BY CELL")
 	await test_the_reveal_deals_the_marks_in_the_deals_own_order()
 	await test_a_show_with_no_view_deals_its_board_and_reveals_nothing()
+	await test_a_reveal_outlives_the_screen_that_holds_the_environment()
 	finish()
 
 # ==============================================================================
@@ -331,3 +332,48 @@ func test_a_show_with_no_view_deals_its_board_and_reveals_nothing() -> void:
 func _start_show(g: Game, running: Array[bool]) -> void:
 	await g._start_fresh_show()
 	running[0] = false
+
+# ==============================================================================
+# TP-76 -- the reveal is paced by the board that started it
+# ==============================================================================
+
+# ANY screen entering and leaving the tree takes `CardEnvironment.CURRENT` with it, and a suite
+# running beside this one does exactly that -- so a reveal awaiting between cells wakes up on a
+# board hosted without a Game, and the cells it had left must still be dealt.
+func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
+	var g := make_grid_game()
+	var marked := mark_every_cell(g.state)
+	var order : Array[BoardCoord] = []
+	for mark : CardData in marked:
+		order.append(g.state.cell_type_coord(mark))
+	g.state.plan_reveal_order = order
+	var pa := make_play_area()
+	await settle(pa)
+
+	var running : Array[bool] = [false]
+	_reveal(pa, running)
+	var dealt : int = marked.size() - pa._plan_reveal_pending.size()
+	var passing := FakeEnvironment.new()
+	add_child(passing)
+	remove_child(passing)
+	passing.free()
+
+	check(CardEnvironment.get_current_game() == null,
+			"TP-76: precondition: the board is now hosted without a Game")
+	check(dealt > 0 and not pa._plan_reveal_pending.is_empty(),
+			"TP-76: precondition: the reveal lost it mid-deal, with cells still to come",
+			"%d dealt, %d pending" % [dealt, pa._plan_reveal_pending.size()])
+	var waited := 0.0
+	while running[0] and waited < WATCHDOG_SECS:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+
+	check(not running[0],
+			"TP-76: the reveal finishes on the board it started on, with no environment to read",
+			"waited %.1fs" % waited)
+	var all_drawn := true
+	for mark : CardData in marked:
+		if not pa.data_card[mark].mark_drawn: all_drawn = false
+	check(all_drawn, "TP-76: every mark is printed, the cells after the loss included")
+	CardEnvironment.CURRENT = g
+	await cleanup(g, pa)
