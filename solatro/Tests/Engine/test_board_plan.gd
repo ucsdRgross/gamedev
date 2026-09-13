@@ -40,6 +40,13 @@ func _ready() -> void:
 	await test_grids_appended_to_a_planned_board_are_dealt()
 	test_a_cell_added_to_a_grid_takes_a_mark()
 	test_a_card_minted_after_the_deal_gets_no_mark()
+	behavior_section("THE REROLL, GRANT AND SWAP SURFACE")
+	test_mark_at_reads_the_cells_own_card()
+	test_a_reroll_draws_from_the_deals_own_pool()
+	test_a_reroll_repeats_for_one_plan_seed()
+	test_grant_marks_a_card_the_deck_never_had()
+	test_swap_exchanges_two_marks_whole()
+	await test_a_reroll_under_a_placed_card_is_live()
 	behavior_section("A PLAN SURVIVES A SAVE, AND A PLAN-LESS SAVE STILL PLAYS")
 	test_a_dealt_plan_survives_a_round_trip()
 	await test_a_plan_less_save_resumes_and_plays()
@@ -663,6 +670,170 @@ func test_a_card_minted_after_the_deal_gets_no_mark() -> void:
 	check(state.validate().is_empty(),
 			"TP-13: a discarded source still counts as a card the state holds",
 			", ".join(state.validate()))
+
+## A dealt 5x5 board behind a live game -- what the effect api's mark surface is asked through.
+func planned_game(plan_seed: int) -> Game:
+	var state := make_state()
+	deal_onto(state, plan_seed)
+	var g := Game.new()
+	g.state = state
+	CardEnvironment.CURRENT = g
+	return g
+
+## How many marks other than the one on `skip` name what `card` prints.
+func copies_apart_from(state: GameData, card: CardData, skip: CardData) -> int:
+	var copies := 0
+	for mark : CardData in marks_of(state):
+		if mark != skip and PipComparator.printed_card_same(mark, card): copies += 1
+	return copies
+
+## The fewest copies any deck card has once `skip`'s own cell is set aside: the single-cell pool.
+func lowest_copies_apart_from(state: GameData, skip: CardData) -> int:
+	var lowest := -1
+	for card : CardData in state.draw_deck:
+		var copies := copies_apart_from(state, card, skip)
+		if lowest == -1 or copies < lowest: lowest = copies
+	return lowest
+
+#TP-52: a mark lives ON the cell's own card, so the surface hands that card over rather than a copy
+#-- an effect reading a mark and the board scoring it are looking at one object.
+func test_mark_at_reads_the_cells_own_card() -> void:
+	var g := planned_game(909)
+	check(g.effect_api.mark_at(BoardCoord.new(0, 2, 1, 0)) == g.state.grids[0].cell_types[7],
+			"TP-52: mark_at hands back the cell's own zone card")
+	check(g.effect_api.mark_at(BoardCoord.new(0, 9, 9, 0)) == null,
+			"TP-52: mark_at answers null for a coordinate that names no cell")
+	free_show(g)
+
+#TP-52: a reroll IS the deal at one cell, so what it draws obeys the deal's pool rule -- with 20
+#cards over 25 cells every card is marked already, so only the cards the board carries fewest copies
+#of are on offer. The face may come back the one it replaced; what is fixed is that the deal picked.
+func test_a_reroll_draws_from_the_deals_own_pool() -> void:
+	var g := planned_game(909)
+	var target := BoardCoord.new(0, 2, 1, 0)
+	var mark := g.effect_api.mark_at(target)
+	var before := mark_print(mark)
+	var before_rank := mark.rank
+	g.effect_api.reroll_mark(target)
+	check(BoardPlan.is_marked(mark) and marks_of(g.state).size() == 25,
+			"TP-52: the rerolled cell comes back marked and no other cell lost its mark",
+			"%d marks" % marks_of(g.state).size())
+	check(mark.rank != before_rank,
+			"TP-52: the cell was redealt rather than left alone -- its rank is a fresh copy",
+			"%s -> %s" % [before, mark_print(mark)])
+	check(copies_apart_from(g.state, mark, mark) == lowest_copies_apart_from(g.state, mark),
+			"TP-52: the reroll drew a card the board carried fewest copies of",
+			"%s -> %s: %d copies elsewhere, lowest is %d" % [before, mark_print(mark),
+			copies_apart_from(g.state, mark, mark), lowest_copies_apart_from(g.state, mark)])
+	check(not (mark.type as TypeGridCell).granted,
+			"TP-52: a rerolled mark is a dealt one, not a granted one")
+	check(g.state.validate().is_empty(), "TP-52: the rerolled board breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-52: the reroll rolls a generator seeded from the plan's own stored seed, so the cell a resumed
+#show rerolls comes back the same card. Moving the global generator between the two catches a deal
+#that reached for it instead.
+func test_a_reroll_repeats_for_one_plan_seed() -> void:
+	seed(31337)
+	var first := planned_game(909)
+	first.effect_api.reroll_mark(BoardCoord.new(0, 2, 1, 0))
+	var rerolled := plan_signature(first.state)
+	free_show(first)
+	seed(4242)
+	var again := planned_game(909)
+	again.effect_api.reroll_mark(BoardCoord.new(0, 2, 1, 0))
+	check(plan_signature(again.state) == rerolled,
+			"TP-52: one plan seed rerolls one cell to one card, wherever the global generator stands",
+			plan_signature(again.state))
+	free_show(again)
+	randomize()
+
+#TP-52: this is how a level poisons or blesses a board -- the source may print a card the deck never
+#had, and the granted flag is what the membership invariant exempts (TP-16 proves that exemption).
+func test_grant_marks_a_card_the_deck_never_had() -> void:
+	var g := planned_game(910)
+	var target := BoardCoord.new(0, 0, 0, 0)
+	var mark := g.effect_api.mark_at(target)
+	BoardPlan.write_mark(mark, decorated_source(), false)
+	var outsider := CardData.new().with_type(TypePaper.new()) \
+			.with_rank(PipRankNumeral.new().with_value(9)) \
+			.with_suit(PipSuitHoop.new())
+	g.effect_api.grant_mark(target, outsider)
+	check(mark.rank.value == 9 and is_same(mark.suit.get_script(), PipSuitHoop),
+			"TP-52: the cell prints the granted card's rank 9, which no deck card prints",
+			mark_print(mark))
+	check(mark.skill == null and mark.stamp == null,
+			"TP-52: the mark it replaced left no slot of its own behind", mark_print(mark))
+	check((mark.type as TypeGridCell).granted,
+			"TP-52: ...and the cell records the mark as granted")
+	check(g.state.validate().is_empty(),
+			"TP-52: a granted mark of a card outside the deck breaks no invariant",
+			", ".join(g.state.validate()))
+	(mark.type as TypeGridCell).granted = false
+	check(i6_violations(g.state).size() == 1,
+			"TP-52: the same mark unflagged is what I6 reports, so the flag is doing the work",
+			"I6 said: %s" % ", ".join(i6_violations(g.state)))
+	free_show(g)
+
+#TP-52: a swap moves everything a mark IS -- all four printed slots, each copied modifier's backref
+#and the granted flag -- so a board swapped twice over is the board it was.
+func test_swap_exchanges_two_marks_whole() -> void:
+	var g := planned_game(911)
+	var left := BoardCoord.new(0, 0, 0, 0)
+	var right := BoardCoord.new(0, 4, 4, 0)
+	var mark_left := g.effect_api.mark_at(left)
+	var mark_right := g.effect_api.mark_at(right)
+	BoardPlan.write_mark(mark_left, decorated_source(), true)
+	var digest := TestGridFixtures.board_digest(g.state)
+	var was_left := mark_print(mark_left)
+	var was_right := mark_print(mark_right)
+	g.effect_api.swap_marks(left, right)
+	check(mark_print(mark_left) == was_right and mark_print(mark_right) == was_left,
+			"TP-52: the two cells exchanged every printed slot",
+			"%s / %s" % [mark_print(mark_left), mark_print(mark_right)])
+	check(not (mark_left.type as TypeGridCell).granted
+			and (mark_right.type as TypeGridCell).granted,
+			"TP-52: ...and each granted flag travelled with the mark it belonged to",
+			str(granted_flags(g.state)))
+	check(stray_backrefs(g.state).is_empty(),
+			"TP-52: every copied modifier answers for the cell it now lives on",
+			", ".join(stray_backrefs(g.state)))
+	check(g.state.validate().is_empty(), "TP-52: the swapped board breaks no invariant",
+			", ".join(g.state.validate()))
+	g.effect_api.swap_marks(left, right)
+	check(TestGridFixtures.board_digest(g.state) == digest,
+			"TP-52: swapping the same two cells back restores the board it was")
+	free_show(g)
+
+#TP-52: the match is derived on every ask, so a reroll under a card already standing there changes
+#what that card matches with no cache to invalidate. The deck prints no 9, so the rank match cannot
+#survive the reroll and only the suit can still agree.
+func test_a_reroll_under_a_placed_card_is_live() -> void:
+	var g := planned_game(912)
+	var target := BoardCoord.new(0, 2, 2, 0)
+	var mark := g.effect_api.mark_at(target)
+	var standing := CardData.new().with_type(TypePaper.new()) \
+			.with_rank(PipRankNumeral.new().with_value(9)) \
+			.with_suit(PipSuitHoop.new())
+	standing.stage = CardData.Stage.PLAY
+	g.effect_api.grant_mark(target, standing)
+	Board.place_in_cell(g.state, standing, target)
+	var before : int = await MarkMatch.matches_at(g.state, standing, target)
+	check(before == (MarkMatch.Property.RANK | MarkMatch.Property.SUIT),
+			"TP-52: precondition: the card standing on the cell matches the mark under it",
+			"matched %d" % before)
+	g.effect_api.reroll_mark(target)
+	var expected : int = MarkMatch.Property.SUIT if is_same(mark.suit.get_script(), PipSuitHoop) else 0
+	var after : int = await MarkMatch.matches_at(g.state, standing, target)
+	check(after == expected and after != before,
+			"TP-52: the match re-derives from the NEW mark under the placed card",
+			"a %s standing on %s: matched %d, the new mark allows %d"
+			% [standing.log_str(), mark_print(mark), after, expected])
+	check(g.state.validate().is_empty(),
+			"TP-52: rerolling under a placed card leaves the board consistent",
+			", ".join(g.state.validate()))
+	free_show(g)
 
 #TP-17: the deal result IS what persists, so every copy path has to carry the marks -- including
 #each copied modifier's backref, which a deep copy does not remap and a save does not carry.

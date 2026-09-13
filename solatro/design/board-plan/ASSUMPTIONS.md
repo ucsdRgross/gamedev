@@ -173,3 +173,21 @@ gap under `gaps/`.
   second witness -- two copies compared with each other agree about anything neither of them carries.
 - S9 / TEST_PLAN TP-54: the replay row is built from REAL suits. `PipSuitTest` keeps its id in a plain
   var, so a row of test suits comes back from a snapshot as ONE suit and flushes.
+- S10 / QR5: a reroll or a swap MAY touch an occupied cell. The match is re-derived on the next ask
+  (Q13=b), so the card standing there reflects the new mark at once, and no shipped content calls
+  this surface yet -- the choice is invisible in the product today. What the player SEES when a mark
+  changes is Phase 5's.
+- S10 / Q108, Q109: the seeded deal has ONE home, `Board.deal_marks` (the private `_deal_late_grid`,
+  made public and renamed), called by `add_grid` and by `reroll_mark`. `reroll_mark` clears the cell
+  and deals: every other cell is marked, so the deal's own walk reaches that cell alone and takes the
+  pool and the seeded pick the opening deal would have taken -- no second copy of either rule.
+- S10 / Q53: `grant_mark` does not clear the cell first. `write_mark` assigns all four printed slots
+  and `granted` unconditionally, so a preceding `clear_mark` would be dead code; TP-52 grants over a
+  mark carrying a skill and a stamp and asserts neither survives.
+- S10: the three mutators bump `revision` once, after the write, as the api's own MUTATION section
+  contract requires (`add_rules_card` does the same) -- a mark changing mid-show has to invalidate the
+  compare-mod cache and rebuild the board.
+- S10 / PLAN §3: `mark_at` sits with the BOARD READS accessors and the three writers in the MUTATION
+  section rather than all four together, because that section header is where the bump contract is
+  stated. `Scripts/board.gd` is edited although S10's file row names only `card_effect_api.gd`, for
+  the shared `deal_marks` seam above.

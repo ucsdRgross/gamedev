@@ -2,11 +2,10 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** worktree `../gamedev-boardplan` created from `main` at a28c79aa; import cache warmed
-(`--headless --import` twice, second pass clean). Baseline recorded below. GAP-001 filed before
-S1: the deal's per-slot stocks are sidebar S19, which is outside the sidebar run in progress, so
-the deal reads `draw_deck` as its one stock and TP-05/TP-06 are parked (see the gap for the ruling
-still wanted). No step dispatched yet.
+**State:** Phases 1–4 (S1–S10) landed and verified, one commit per step, plus three review fixes
+and one owner-reported bug fix. Two gaps open for the owner: GAP-001 (stocks are sidebar S19;
+TP-05/06 parked) and GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch
+parked). Phase 5 (S11–S13, visual, each ending in /fx-verify) is next, then S14–S17.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -159,9 +158,65 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: 'Measured pre-existing bug, fixed mark-scoped: Game._note_mod_fired gated combo registration on _act_cancellable, set only inside _perform_next, so no modifier activation ever fed the combo in the grid game; the window is now "an act is resolving OR a line is composing". Composition is re-entrant (save/restore of line_mult_bonus) because TP-50 makes the nested api.score_line producible. board_digest now witnesses marks, plan_seed, combo set and total_score, so the E2E parity and save-reload rows assert them too. The placed card''s on_mark_hit moved to run_mark_mods (run_card_mods is the prop tick''s non-charging path).'
 - id: S10
   description: mark_at, reroll_mark, grant_mark, swap_marks on CardEffectApi; TP-52.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  files_touched: [solatro/Scripts/card_effect_api.gd, solatro/Scripts/board.gd, solatro/Tests/Engine/test_board_plan.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
+  status: done
+  evidence: 'Implementer red runs (BOARD PLAN of 101): reroll drawing draw_deck[0] instead of the deal -> the fewest-copies check red; swap without relink -> the backref check red; grant with granted false -> the flag check and I6 red. Overseer full run: ALL 47 SUITES: 4193 CHECKS PASSED, errors log empty; BOARD PLAN 101/101; SECTION 8 identical; per-suite banners vs S9 differ only in BOARD PLAN. grep: four api functions with the registry signatures; BoardPlan.deal still has two call sites; Board.deal_marks shared by the late grid and the reroll; no global RNG.'
+  notes: 'A content surface with NO shipped caller yet (by design). The three writers bump revision once each. QR5 follow-ups never asked: a reroll or swap MAY touch an occupied cell (logged assumption). grant_mark writes over an existing mark without a prior clear (write_mark assigns every slot).'
+- id: S11
+  description: the mark's look - grey, faded, full card size in the empty-cell frame, all four properties; palette roles mark_ink/mark_rim; the opening reveal (plan_reveal_fraction); TP-60, TP-61, TP-62, TP-70; by eye TP-71, TP-74, TP-75.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S12
+  description: the match highlight while holding a card, and the landing feedback; palette roles match_rim/match_rim_active; TP-63, TP-64, TP-65; by eye TP-72, TP-73.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S13
+  description: the layer view - two-state toggle, viewer only, focused and overview, held shoulder button + HUD control, ui_plan_layer; TP-66..TP-69.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S14
+  description: the knobs - confirm the five landed at S5 and add plan_reveal_fraction (S11).
+  files_touched: []
+  verification_command: 'grep -c plan_ solatro/Scripts/player_settings.gd'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S15
+  description: the curve refit - scoring_sim.py models marks and matches; goal_g0/goal_alpha refit; GAP-041 closed by a new poker-patience design version; TP-80..82.
+  files_touched: []
+  verification_command: 'Tools/scoring_parity.gd --parity'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S16
+  description: the docs pass - ARCHITECTURE_REVIEW 3a/3d/4 and 1.4 hook roster, START_HERE, todo; doc_check full.
+  files_touched: []
+  verification_command: 'py .claude/tools/doc_check.py'
+  verification_kind: manual
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S17
+  description: the closing sequence of /plan-run, every numbered item recorded.
+  files_touched: []
+  verification_command: 'see /plan-run Closing the run'
+  verification_kind: manual
   status: pending
   evidence: ''
   notes: ''

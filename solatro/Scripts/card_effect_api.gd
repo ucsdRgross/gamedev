@@ -94,6 +94,10 @@ func plan_seed_for_node() -> int:
 	var material := hash(Vector2i(Main.save_info.world_seed, Main.save_info.current_node_id))
 	return material if material != 0 else 1
 
+## A cell's own zone card, mark and all -- null when the coordinate names no cell.
+func mark_at(coord: BoardCoord) -> CardData:
+	return _game.state.cell_type_at(coord) if is_live() else null
+
 # ==============================================================================
 # BOARD QUERIES — geometry and legality, all pure reads
 # ==============================================================================
@@ -212,6 +216,42 @@ func add_grid(grid: GridData) -> void:
 func remove_grid(index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_grid(_game.state, index)
+
+#The deal is the ONE writer of a mark: with every other cell marked, clearing this one and dealing
+#reaches it alone and takes the pool and the seeded pick the opening deal would have taken.
+## Redraw one cell's mark from the deck. The cell must be marked.
+func reroll_mark(coord: BoardCoord) -> void:
+	if not is_live(): return
+	var mark := mark_at(coord)
+	assert(BoardPlan.is_marked(mark), "reroll_mark redraws a marked cell")
+	BoardPlan.clear_mark(mark)
+	Board.deal_marks(_game.state)
+	bump_revision()
+
+#`source` may print a card the deck never had -- that is what a level poisoning or blessing a board
+#is -- so the mark is recorded as granted and the deck-membership invariant exempts it.
+## Put a mark of `source` on a cell, dealt by a level or a blind rather than by the deck.
+func grant_mark(coord: BoardCoord, source: CardData) -> void:
+	if not is_live(): return
+	BoardPlan.write_mark(mark_at(coord), source, true)
+	bump_revision()
+
+#`write_mark` is the one definition of copying a mark, so each cell is written from a duplicate of
+#the other -- which relinks the copied modifiers -- and each granted is read before either write.
+## Exchange two cells' marks. Both cells must be marked.
+func swap_marks(a: BoardCoord, b: BoardCoord) -> void:
+	if not is_live(): return
+	var mark_a := mark_at(a)
+	var mark_b := mark_at(b)
+	assert(BoardPlan.is_marked(mark_a) and BoardPlan.is_marked(mark_b),
+			"swap_marks exchanges two marked cells")
+	var was_a : CardData = mark_a.duplicate()
+	var was_b : CardData = mark_b.duplicate()
+	var granted_a := (mark_a.type as TypeGridCell).granted
+	var granted_b := (mark_b.type as TypeGridCell).granted
+	BoardPlan.write_mark(mark_a, was_b, granted_b)
+	BoardPlan.write_mark(mark_b, was_a, granted_a)
+	bump_revision()
 
 ## The rules deck, left to right -- every persistent meta/creator card.
 func rules_deck() -> Array[CardData]:
