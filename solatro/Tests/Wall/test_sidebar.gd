@@ -109,7 +109,12 @@ func _ready() -> void:
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
 	await test_the_choice_viewer_publishes_into_the_sidebar()
+	await test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window()
+	await test_a_resize_re_fits_the_open_choice_viewer()
 	await test_the_deck_viewers_cards_start_beside_the_container()
+	await test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window()
+	await test_a_resize_re_fits_the_open_viewer()
+	await test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size()
 	await test_a_board_lock_survives_opening_and_closing_a_viewer()
 	await test_the_deck_builder_tool_loads_and_stands_up()
 	test_the_choice_viewer_owns_no_inspector_panel()
@@ -1058,13 +1063,13 @@ var _booted_viewport : SubViewport = null
 
 # A real `Main` on a dealt game screen: the only fixture that proves the WHOLE route -- the board's
 # focus, `GameView`'s relay, `Main`'s handler and the container's swap -- with nothing stubbed.
-func _start_game_fixture() -> void:
+func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var booted := await _boot_main_at(size)
 	_booted_viewport = booted[0]
 	_main = booted[1]
 	await _focus_map(_main, run)
@@ -1231,10 +1236,10 @@ const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
 func _card_drawn_width(card: CardVisual) -> float:
 	return CardVisual.CARD_SIZE.x * card.get_global_transform_with_canvas().get_scale().x
 
-# A board card's width as the player SEES it: its drawn width inside the game picture's viewport,
-# times the scale the wall draws that viewport at. Read off the picture's own screen sprite, so the
-# live camera zoom is already in it rather than modelled a second time here.
-func _board_card_window_width(card: CardVisual) -> float:
+# A card's width as the player SEES it, whether the board or a viewer over it drew the card: its
+# drawn width inside the game picture's viewport, times the scale the wall draws that viewport at.
+# Read off the picture's own screen sprite, so the live camera zoom is in it, not modelled twice.
+func _card_window_width(card: CardVisual) -> float:
 	var picture : WallPicture = _main._pictures[&"game"]
 	var sprite : Sprite2D = picture.get_node(^"%Screen")
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
@@ -1260,7 +1265,7 @@ func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
 	var data := await _hover_a_card_with_a_visual()
 	if data != null:
 		await get_tree().process_frame
-		var board_px := _board_card_window_width(_play_area.data_card[data])
+		var board_px := _card_window_width(_play_area.data_card[data])
 		var preview := _preview_card(_panel.current_entry.visual)
 		check(preview != null, "the description mounted a preview card")
 		if preview != null and preview.child != null:
@@ -1294,7 +1299,7 @@ func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
 		await get_tree().process_frame
 		_play_area.flush_rebuild()
 		await get_tree().process_frame
-		var board_px := _board_card_window_width(_play_area.data_card[data])
+		var board_px := _card_window_width(_play_area.data_card[data])
 		var preview := _preview_card(_panel.current_entry.visual)
 		check(preview != null and preview.child != null,
 				"the description still holds its preview after the resize")
@@ -2582,6 +2587,30 @@ func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
 	await _check_viewer_publishes(_container.discard_ui.get_node(^"Button") as Button, "discard")
 	await _end_game_fixture()
 
+# The space a viewer's cards belong in, in the PICTURE's own space: what `local_rect_beside()`
+# leaves once the container is reserved, at whatever window is up -- the side case's left inset and
+# the top case's band both, so a test states the claim once and the window decides which it is.
+func _space_beside_the_container(picture: WallPicture, container: HudContainer) -> Rect2:
+	var window : Vector2 = container.get_viewport().get_visible_rect().size
+	return picture.local_rect_beside(window, container.container_rect(),
+			HudContainer.container_is_top(window, SettingsManager.settings))
+
+# ⚠ A LIST THAT SCROLLS IS CLIPPED BY ITS OWN VIEWPORT, so a deck viewer row below the fold is held
+# to the horizontal span and the band's edge and never to the bottom one.
+func _unbounded_below(beside: Rect2) -> Rect2:
+	return Rect2(beside.position, Vector2(beside.size.x, INF))
+
+# The claim made about the CARDS rather than about the offsets a viewer just wrote to itself: every
+# listed card is drawn inside the space left beside the container.
+func _check_every_card_inside(cards: Array[ControlCard], bounds: Rect2, label: String) -> void:
+	var outside : Array[Rect2] = []
+	for card : ControlCard in cards:
+		if not bounds.encloses(card.get_global_rect()):
+			outside.append(card.get_global_rect())
+	check(cards.size() >= 2 and outside.is_empty(), label,
+			"%d of %d cards outside %s, e.g. %s"
+			% [outside.size(), cards.size(), bounds, outside[0] if outside else Rect2()])
+
 ## The viewer sits INSIDE the sidebar's screen: its cards start beside the container, never under it.
 func test_the_deck_viewers_cards_start_beside_the_container() -> void:
 	await _start_game_fixture()
@@ -2590,17 +2619,72 @@ func test_the_deck_viewers_cards_start_beside_the_container() -> void:
 	var window : Vector2 = _container.get_viewport().get_visible_rect().size
 	var top := HudContainer.container_is_top(window, SettingsManager.settings)
 	check(not top, "sanity: 1280x720 is the side case this inset is measured in")
-	var remaining := wp.local_rect_beside(window, _container.container_rect(), top)
+	var remaining := _space_beside_the_container(wp, _container)
 	var grid : Control = DeckViewer._open.flow_container
 	check(grid.get_global_rect().position.x >= remaining.position.x,
 			"the viewer's card grid starts at or beyond the container's inner edge (S12.4, Q141=b)",
 			"%.1f vs %.1f" % [grid.get_global_rect().position.x, remaining.position.x])
-	var leftmost := INF
-	for card : ControlCard in cards:
-		leftmost = minf(leftmost, card.get_global_rect().position.x)
-	check(cards.size() >= 2 and leftmost >= remaining.position.x,
-			"...and no listed card lies under the container",
-			"%.1f vs %.1f over %d cards" % [leftmost, remaining.position.x, cards.size()])
+	_check_every_card_inside(cards, _unbounded_below(remaining),
+			"...and every listed card lies beside the container and inside the visible picture (S12.4)")
+	await _end_game_fixture()
+
+# A REAL window change: the private `SubViewport` is resized and the tree given the frames the
+# container needs to re-apply its rect and everything that rides on it to follow.
+func _resize_viewport(viewport: SubViewport, size: Vector2i) -> void:
+	viewport.size = size
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## An open viewer follows the container the board does: the window moving under it re-fits it, and re-fitting twice lands it in the same place rather than insetting it twice.
+func test_a_resize_re_fits_the_open_viewer() -> void:
+	await _start_game_fixture()
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	check(cards.size() >= 2, "the deck viewer lists cards to point at", str(cards.size()))
+	await _resize_viewport(_booted_viewport, Vector2i(600, 1000))
+	_check_every_card_inside(cards,
+			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			"a resize re-fits the open viewer into the space left below the new band (S12.13)")
+	await _resize_viewport(_booted_viewport, Vector2i(1280, 720))
+	_check_every_card_inside(cards,
+			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			"...and resizing back fits it from its authored margins, never inset twice (S12.13)")
+	await _end_game_fixture()
+
+## The mounted preview belongs to whoever published it: a rect change re-draws a viewer's entry at the VIEWER's own card size, not at the board's.
+func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> void:
+	await _start_game_fixture()
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	check(cards.size() >= 2, "the deck viewer lists cards to point at", str(cards.size()))
+	if cards.size() >= 2:
+		cards[1].grab_focus()
+		await get_tree().process_frame
+		check(_container.showing_description(), "sanity: the viewer's highlight is what shows")
+		await _resize_viewport(_booted_viewport, Vector2i(1920, 1080))
+		var preview := _preview_card(_panel.current_entry.visual)
+		check(preview != null and preview.child != null,
+				"the description still holds its preview after the resize")
+		if preview != null and preview.child != null:
+			var viewer_px := _card_window_width(cards[1].child)
+			var board_px := _play_area.board_card_window_px().x
+			check(absf(viewer_px - board_px) > PREVIEW_WIDTH_TOLERANCE_PX,
+					"sanity: the viewer's card width and the board's are far enough apart to tell apart",
+					"viewer %.1f vs board %.1f" % [viewer_px, board_px])
+			check(absf(_card_drawn_width(preview.child) - viewer_px) <= PREVIEW_WIDTH_TOLERANCE_PX,
+					"the resize re-draws the entry at the VIEWER's own card size (S12.14, Q34=b)",
+					"preview %.1f vs viewer %.1f, board %.1f"
+					% [_card_drawn_width(preview.child), viewer_px, board_px])
+	await _end_game_fixture()
+
+## The same claim at a TOP window: the listed cards clear the band and stay inside the visible picture.
+func test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window() -> void:
+	await _start_game_fixture(Vector2i(600, 1000))
+	var window : Vector2 = _container.get_viewport().get_visible_rect().size
+	check(HudContainer.container_is_top(window, SettingsManager.settings),
+			"sanity: 600x1000 puts the container on the top band")
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	_check_every_card_inside(cards,
+			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
+			"every deck viewer card is drawn below the band and inside the visible picture (S12.12)")
 	await _end_game_fixture()
 
 # A card name is often just a rank, so "the description followed the hover" is only a real claim
@@ -2650,15 +2734,15 @@ func test_a_board_lock_survives_opening_and_closing_a_viewer() -> void:
 					"...and the sidebar comes back to the card the board locked (B7)", title.text)
 	await _end_game_fixture()
 
-## The booster choice viewer publishes into the sidebar exactly as the deck viewer does.
-func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
+# A real booster pack open on a live map at `size` -- the choice viewer's own fixture, since it is
+# reached through a map node rather than through a button. Returns `[viewport, main, viewer]`.
+func _boot_map_with_a_booster(size: Vector2i) -> Array:
 	backup_real_save(suite_tag())
-	var prev_run : RunState = RunManager.run
-	var prev_save_info : RunState = Main.save_info
+	_prev_run = RunManager.run
+	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var booted := await _boot_main_at(Vector2i(1280, 720))
-	var viewport : SubViewport = booted[0]
+	var booted := await _boot_main_at(size)
 	var main : Main = booted[1]
 	await _focus_map(main, run)
 	var node := WorldGraphNode.new()
@@ -2667,16 +2751,37 @@ func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
 	await main.map_scene._open_booster(node)
 	node.free()
 	await get_tree().process_frame
+	return [booted[0], main, _open_choice_viewer(main)]
+
+# The teardown every map-booted fixture shares: free the boot, drop the run this test made and put
+# the owner's own save back.
+func _end_map_fixture(viewport: SubViewport, main: Main) -> void:
+	await _free_booted_main(viewport, main)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = _prev_run
+	Main.save_info = _prev_save_info
+
+func _choice_viewer_cards(viewer: ChoiceViewer) -> Array[ControlCard]:
+	var cards : Array[ControlCard] = []
+	for child : Node in viewer.flex_container.get_children():
+		var card := child as ControlCard
+		if card: cards.append(card)
+	return cards
+
+## The booster choice viewer publishes into the sidebar exactly as the deck viewer does.
+func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
+	var booted := await _boot_map_with_a_booster(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var viewer : ChoiceViewer = booted[2]
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
 	var title : Label = panel.get_node(^"%Title")
-	var viewer := _open_choice_viewer(main)
 	check(viewer != null, "the booster node opened a choice viewer on the map")
 	if viewer != null:
-		var cards : Array[ControlCard] = []
-		for child : Node in viewer.flex_container.get_children():
-			var card := child as ControlCard
-			if card: cards.append(card)
+		var cards := _choice_viewer_cards(viewer)
 		check(not cards.is_empty(), "the pack generated cards to point at", str(cards.size()))
 		if not cards.is_empty():
 			cards[0].grab_focus()
@@ -2685,16 +2790,42 @@ func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
 					"a highlight in the choice viewer opens the description (S12.3, Q142=a)")
 			check(title.text == _expected_text(cards[0].child.data)[0],
 					"...and the title reads that card's own name", title.text)
-			var pack_left := viewer.flex_container.get_global_rect().position.x
-			check(pack_left >= container.rect_beside(main._pictures[&"map"]).position.x,
-					"...and the pack's cards are laid out beside the container, not under it",
-					"%.1f" % pack_left)
-	await _free_booted_main(viewport, main)
-	RunManager._shutdown_saver()
-	RunManager.clear_save()
-	restore_real_save(suite_tag())
-	RunManager.run = prev_run
-	Main.save_info = prev_save_info
+			_check_every_card_inside(cards,
+					_space_beside_the_container(main._pictures[&"map"], container),
+					"...and every pack card is drawn beside the container, inside the visible picture")
+	await _end_map_fixture(viewport, main)
+
+## The same claim at a TOP window: a pack inset only on its left and top edges centres past the visible right edge.
+func test_the_choice_viewers_pack_lies_below_the_band_at_a_top_window() -> void:
+	var booted := await _boot_map_with_a_booster(Vector2i(600, 1000))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var viewer : ChoiceViewer = booted[2]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	check(viewer != null, "the booster node opened a choice viewer on the map")
+	if viewer != null:
+		check(HudContainer.container_is_top(
+				container.get_viewport().get_visible_rect().size, SettingsManager.settings),
+				"sanity: 600x1000 puts the container on the top band")
+		_check_every_card_inside(_choice_viewer_cards(viewer),
+				_space_beside_the_container(main._pictures[&"map"], container),
+				"every pack card is drawn below the band and inside the visible picture (S12.11)")
+	await _end_map_fixture(viewport, main)
+
+## The map's own pack follows the container as well: a resize re-fits it into the space beside it.
+func test_a_resize_re_fits_the_open_choice_viewer() -> void:
+	var booted := await _boot_map_with_a_booster(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var viewer : ChoiceViewer = booted[2]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	check(viewer != null, "the booster node opened a choice viewer on the map")
+	if viewer != null:
+		await _resize_viewport(viewport, Vector2i(600, 1000))
+		_check_every_card_inside(_choice_viewer_cards(viewer),
+				_space_beside_the_container(main._pictures[&"map"], container),
+				"a resize re-fits the open pack below the new band (S12.15)")
+	await _end_map_fixture(viewport, main)
 
 func _open_choice_viewer(main: Main) -> ChoiceViewer:
 	for child : Node in main.map_scene.ui_layer.get_children():

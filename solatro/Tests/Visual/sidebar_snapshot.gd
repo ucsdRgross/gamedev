@@ -16,6 +16,7 @@ const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow
 const DESCRIPTION_PROCESSING_OUT_PATH := "user://sidebar_snapshot/description_processing.png"
 const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll.png"
 const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
+const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_description_top.png"
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
@@ -142,6 +143,17 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(VIEWER_DESCRIPTION_OUT_PATH)
+
+	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_DESCRIPTION_TOP_OUT_PATH)
+	DisplayServer.window_set_size(window_size)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 	DeckViewer._open.free()
 	await get_tree().process_frame
 

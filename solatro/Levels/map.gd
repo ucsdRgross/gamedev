@@ -53,6 +53,7 @@ func _bind_hud_container() -> void:
 	hud_container = HudContainer.ensure(hud_container, self)
 	hud_container.connect_for_screen(hud_container.map_deck_button.pressed, _on_deck_clicked)
 	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_map_inset)
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _fit_open_viewers)
 	_publish_map_inset()
 
 # The container OUTLIVES this screen in the real game, but a test may `remove_child` a standalone
@@ -101,12 +102,11 @@ func _start_show(node: WorldGraphNode) -> void:
 # later from modifiers).
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	var viewer := await booster.on_map_picked(ui_layer)
-	viewer.confirmed.connect(_on_booster_confirmed)
-	viewer.info_requested.connect(_relay_info_hovered)
-	viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	viewer.fit_beside(hud_container.rect_beside(wall_picture),
-			hud_container.window_scale(wall_picture))
+	_choice_viewer = await booster.on_map_picked(ui_layer)
+	_choice_viewer.confirmed.connect(_on_booster_confirmed)
+	_choice_viewer.info_requested.connect(_relay_info_hovered)
+	_choice_viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	_fit_open_viewers()
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
@@ -160,11 +160,24 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
-	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, hud_container.map_deck_button)
-	viewer.info_requested.connect(_relay_info_hovered)
-	viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	viewer.fit_beside(hud_container.rect_beside(wall_picture),
-			hud_container.window_scale(wall_picture))
+	_deck_viewer = DeckViewer.show_deck(self, Main.save_info.card_datas,
+			hud_container.map_deck_button)
+	_deck_viewer.info_requested.connect(_relay_info_hovered)
+	_deck_viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	_fit_open_viewers()
+
+## The viewers open over this screen: a pack arrived at and the run's deck list can both be up.
+var _deck_viewer : DeckViewer = null
+var _choice_viewer : ChoiceViewer = null
+
+# A VIEWER IS A SCREEN OCCUPANT LIKE THE MAP ITSELF: the container moving under it re-fits it, and
+# that re-fit re-publishes its highlight at the size it now draws its cards at. A taken pack and a
+# closed deck list free themselves and leave their references behind.
+func _fit_open_viewers() -> void:
+	var remaining := hud_container.rect_beside(wall_picture)
+	var scale := hud_container.window_scale(wall_picture)
+	if is_instance_valid(_deck_viewer): _deck_viewer.fit_beside(remaining, scale)
+	if is_instance_valid(_choice_viewer): _choice_viewer.fit_beside(remaining, scale)
 
 # A viewer opened over this map publishes exactly as the map's own node hover does, and the relay
 # owns the live preview the entry carries when no `Main` is listening.

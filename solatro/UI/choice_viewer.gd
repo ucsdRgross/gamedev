@@ -72,12 +72,16 @@ func _populate() -> void:
 	_refresh_rerolls()
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
-# so the pack's cards are laid out in the space left beside it. The scale rides along: the
-# description's preview is drawn at the size THIS viewer draws a card at.
+# so the pack lays out in the space left beside it -- ALL FOUR EDGES, since it CENTRES in them. The
+# scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
+	var picture := get_viewport_rect().size
 	flex_container.offset_left = remaining.position.x
 	flex_container.offset_top = remaining.position.y
+	flex_container.offset_right = remaining.end.x - picture.x
+	flex_container.offset_bottom = remaining.end.y - picture.y
+	_cards.republish_highlight()
 
 ## One slot's Reroll button, parented to its card and hanging just below it (the flex container
 ## lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
@@ -121,8 +125,7 @@ func _swap_card_control(index: int, card: CardData) -> void:
 	var control := ControlCard.add_child_control_card(
 			flex_container, card, CardVisual.DisplayContext.DECK_VIEWER)
 	flex_container.move_child(control, index)
-	control.mouse_entered.connect(_publish_info.bind(card))
-	control.focus_entered.connect(_publish_info.bind(card))
+	_cards.inspect_on_highlight(control, card)
 	_cards.controls[index] = control
 	_reroll_buttons[index] = _add_reroll_button(control, index)
 	# Keyboard/controller: the pressed button was just freed — put focus back on its replacement

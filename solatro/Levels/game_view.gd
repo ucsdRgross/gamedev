@@ -114,6 +114,7 @@ func _bind_hud_container() -> void:
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
 	hud_container.connect_for_screen(hud_container.container_rect_changed, _publish_board_inset)
+	hud_container.connect_for_screen(hud_container.container_rect_changed, _fit_open_viewer)
 	hud_container.connect_for_screen(hud_container.description_dismissed, _on_description_dismissed)
 
 # The board wears the locked card's marking, so the view relays the lock ENDING the same way it
@@ -242,10 +243,20 @@ func _relay_info_requested(entry: InfoEntry) -> void:
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
-	var viewer := DeckViewer.show_deck(self, cards, opener)
-	viewer.info_requested.connect(_relay_info_requested)
-	viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	viewer.fit_beside(hud_container.rect_beside(wall_picture),
+	_deck_viewer = DeckViewer.show_deck(self, cards, opener)
+	_deck_viewer.info_requested.connect(_relay_info_requested)
+	_deck_viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	_fit_open_viewer()
+
+## The viewer open over this screen, if any -- one at a time, the same one `DeckViewer` itself keeps.
+var _deck_viewer : DeckViewer = null
+
+# A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD: the container moving under it re-fits it, and that
+# re-fit re-publishes its highlight at the size it now draws its cards at -- `_publish_board_inset()`
+# has just re-drawn the description at the BOARD's. A closed viewer leaves its reference behind.
+func _fit_open_viewer() -> void:
+	if not is_instance_valid(_deck_viewer): return
+	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
 			hud_container.window_scale(wall_picture))
 
 func _on_processing_changed(busy: bool) -> void:

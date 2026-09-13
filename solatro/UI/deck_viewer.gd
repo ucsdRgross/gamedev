@@ -65,14 +65,28 @@ func _publish_info(data: CardData) -> void:
 	PlayArea.card_info(data, _cards.card_window_px()).relay_to(info_requested)
 
 # ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
-# so its cards start at the inner edge of the space left beside it. The scale rides along: the
-# description's preview is drawn at the size THIS viewer draws a card at.
+# so its cards list inside the space left beside it -- ALL FOUR EDGES, or a row runs off the far one.
+# The scale rides along: the description's preview is drawn at the size THIS viewer draws a card at.
 func fit_beside(remaining: Rect2, window_scale: float) -> void:
 	_cards.picture_to_window_scale = window_scale
-	margin_container.add_theme_constant_override(&"margin_left",
-			margin_container.get_theme_constant(&"margin_left") + ceili(remaining.position.x))
-	margin_container.add_theme_constant_override(&"margin_top",
-			margin_container.get_theme_constant(&"margin_top") + ceili(remaining.position.y))
+	var picture := get_viewport().get_visible_rect().size
+	_inset_margin(&"margin_left", remaining.position.x)
+	_inset_margin(&"margin_top", remaining.position.y)
+	_inset_margin(&"margin_right", picture.x - remaining.end.x)
+	_inset_margin(&"margin_bottom", picture.y - remaining.end.y)
+	_cards.republish_highlight()
+
+## The margins the scene authored, read once before the first fit overrides them.
+var _authored_margins : Dictionary[StringName, int] = {}
+
+# The click-to-close catcher keeps the picture's whole rect while its CONTENT moves in, so the inset
+# rides on the MarginContainer's authored padding. ⚠ SET FROM THAT, NEVER ADDED TO WHAT IS THERE:
+# this runs again on every window change while the viewer is open.
+func _inset_margin(margin: StringName, inset: float) -> void:
+	if not _authored_margins.has(margin):
+		_authored_margins[margin] = margin_container.get_theme_constant(margin)
+	margin_container.add_theme_constant_override(margin,
+			_authored_margins[margin] + ceili(inset))
 
 ## Keyboard/controller close: Escape/back AND Enter/accept both close (the viewer is
 ## read-only, so accept has no other meaning). Mouse click on the margin closes below.

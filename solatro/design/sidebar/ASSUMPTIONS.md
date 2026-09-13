@@ -337,11 +337,34 @@
 - S12: `HudContainer.rect_beside()` REPLACES the "convert the container's window px into this
   picture's space, or fall back to the plain window rect" expression `Menu._apply_container_inset()`
   and `Map._publish_map_inset()` each carried; the viewers are its third and fourth callers.
-- S12: `Q141`=b's "inside" is a left (or top) inset, per PLAN 1.9. `DeckViewer.fit_beside()` ADDS the
-  inset to its `MarginContainer`'s own authored margins, so the full-screen click-to-close catcher
-  still spans the picture while the cards and their tint start beside the container;
+- S12: `Q141`=b's "inside" is a left (or top) inset, per PLAN 1.9. `DeckViewer.fit_beside()` insets
+  its `MarginContainer`'s own authored margins, so the full-screen click-to-close catcher still
+  spans the picture while the cards and their tint start beside the container;
   `ChoiceViewer.fit_beside()` offsets its `FlexContainer` the same way. Measured at 1280x720: the
   grid starts at 494 picture px against the container's inner edge at 394.
+- P3 review: `fit_beside()` sets ALL FOUR edges from the remaining rect, on BOTH viewers, not only
+  the near ones -- the far offsets otherwise stay at the picture's own edge, which is outside what a
+  cropped window SHOWS. Measured at 600x1000: 3 of 5 pack cards and 22 of 47 listed cards were drawn
+  past the visible right edge at 1054 picture px. `DeckViewer` needed it too, though the finding
+  scoped the defect to `ChoiceViewer`.
+- P3 review: `DeckViewer._inset_margin()` + `_authored_margins` -- the scene's own margins are read
+  once and every fit SETS from them, since a fit now runs again on each window change and adding
+  would double the inset (measured: 47 of 47 listed cards outside the space beside the container
+  after one re-fit).
+- P3 review: A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD. `GameView._fit_open_viewer()` and
+  `Map._fit_open_viewers()` re-fit whatever viewer is open on `container_rect_changed`, the signal
+  the board re-fits on, connected AFTER `_publish_board_inset` / `_publish_map_inset` so the
+  viewer's own re-publish is what the description ends on. Each screen holds the viewer it opened
+  (`_deck_viewer`, plus `_choice_viewer` on the map, which can have both up at once).
+- P3 review: `CardsViewer.republish_highlight()` -- a re-fit publishes the list's current highlight
+  again, so the description's preview is re-drawn at the size THAT viewer now draws its cards at
+  rather than at the board's, which `GameView._publish_board_inset()` has just applied to the
+  mounted entry. Measured at 1920x1080: preview 86.4 px (the board's) against the viewer's 99.4.
+- P3 review: the highlight is REMEMBERED as it is published (`CardsViewer._publish_highlight()`,
+  `_highlighted`) rather than re-derived on demand: `Control.is_hovered()` does not exist in Godot
+  4.7 (`BaseButton` only). `CardsViewer.inspect_on_highlight(control, data)` is the one place a
+  listed control's hover and focus are wired, so `ChoiceViewer._swap_card_control()`'s rerolled slot
+  is remembered too.
 - S12: the deck picker's own Inspect viewer (`UI/deck_picker.gd`, inside the start menu) is
   deliberately NOT wired to a relay. `Q143`=a makes an empty sidebar the right answer where nothing
   publishes, and PLAN 3a's touch list does not name `menu.gd`/`deck_picker.gd`; the viewer's

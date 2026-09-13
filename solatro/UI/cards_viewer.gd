@@ -29,13 +29,34 @@ func _init(container: Node, context := CardVisual.DisplayContext.DECK_VIEWER) ->
 ## hover AND focus. Returns the first card (for initial focus), or null when empty. Call clear()
 ## first if repopulating.
 func populate(cards: Array[CardData], on_inspect := Callable()) -> ControlCard:
+	_on_inspect = on_inspect
 	for data in cards:
 		var control := ControlCard.add_child_control_card(_container, data, _context)
 		controls.append(control)
 		if on_inspect.is_valid():
-			control.mouse_entered.connect(on_inspect.bind(data))
-			control.focus_entered.connect(on_inspect.bind(data))
+			inspect_on_highlight(control, data)
 	return controls[0] if controls else null
+
+## The callback `populate()` wired, kept so a list that has been re-sized can publish through it again.
+var _on_inspect : Callable = Callable()
+
+## The listed card the highlight last reached; a viewer announces its own close, so nothing else retires it.
+var _highlighted : CardData = null
+
+## Wires one listed control's hover AND focus to the inspect callback -- also the way a control REPLACING one keeps its place in the list wired.
+func inspect_on_highlight(control: ControlCard, data: CardData) -> void:
+	control.mouse_entered.connect(_publish_highlight.bind(data))
+	control.focus_entered.connect(_publish_highlight.bind(data))
+
+# Remembered rather than only relayed: a list that has been re-sized owes the description it
+# published the same card again, drawn at the size this list now draws it at.
+func _publish_highlight(data: CardData) -> void:
+	_highlighted = data
+	_on_inspect.call(data)
+
+## Publishes the card the highlight is on again -- nothing to say while a freshly built list has not been pointed at yet.
+func republish_highlight() -> void:
+	if _highlighted: _publish_highlight(_highlighted)
 
 ## Remove every listed ControlCard (before repopulating, or when the viewer hides). Detaches
 ## immediately (not just queue_free) so a same-frame repopulate never shows stale cards.

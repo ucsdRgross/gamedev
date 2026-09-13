@@ -3,10 +3,20 @@
 **Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
-**State:** Phases 1–3 done through S11 (S1–S11 committed; Phase 1 and Phase 2 boundary reviews
-run and their findings fixed). S12 is next, then Phase 4 (S13), Phase 5 (S14–S18), Phase 6
-(S19–S21), Phase 7 (S22), Phase 8 (S23), then the closing phase S24 — all in this run (owner
-ruling). `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
+**State:** Phases 1–3 done (S1–S12 committed). The Phase 3 adversarial review (Fable 5.1,
+`review_phase3` — 5 confirmed, 6 suspected) is being fixed: fixes 1–2 landed (54317308), fix
+dispatch 2 (viewer inset geometry: four-edge fit, re-fit on `container_rect_changed`, idempotent
+margins, the viewer re-publishes its highlight so the preview keeps the viewer's size) is in the
+tree awaiting the overseer's run and commit; dispatch 3 (the start-menu Inspect viewer's inset and
+publish, hygiene: `_key_scroll_pages`, deck_builder's dead `TypeOption`/Random path, the reroll's
+stale entry, the S9 `is_instance_valid` guard, the deck_builder test) is next. Then Phase 4 (S13),
+Phase 5 (S14–S18), Phase 6 (S19–S21), Phase 7 (S22), Phase 8 (S23), the closing phase S24 — all in
+this run (owner ruling). GAP-004 (Q34's reading inside a viewer) is open, non-blocking.
+⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
+`tasklist | findstr Godot_v4.7` before every run and wait it out — a concurrent run rotates
+`godot.log` and fabricated one GRID VIEW failure this session. PID 3020 is a stale Godot 4.1.2
+window of `sidebar_snapshot.tscn` from 01:52 that the permission classifier refused to stop —
+harmless so far; the owner should close it. `test-speed` (one test pacing for every suite, a suite filter, a headless logic tier —
 `py solatro/Tools/run_tests.py --filter <Node> | --logic`) is merged at 587f2d60; the full run is
 ~200 s and a single suite ~30 s. Open: GRID LAYOUT fails 2 of 4 runs on the merged branch
 (rotating check; 0 of ~15 before the merge) — being diagnosed before S5. Phase 1 (S1–S4) done and reviewed: the adversarial pass at the phase boundary found 8
