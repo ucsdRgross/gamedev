@@ -59,6 +59,14 @@ func _ready() -> void:
 	_save("wall_editor_selection_lift.png")
 	editor.preview_selected_id = &""
 
+	editor.preview_focus_id = HudContainer.GAME_SCREEN
+	editor.preview_locked_description = true
+	await _settle()
+	_save("wall_editor_sidebar_locked.png")
+	editor.preview_locked_description = false
+	editor.preview_focus_id = &""
+	await _settle()
+
 	# §3 Phase 8 gate ("tool opens, writes the resource, and re-opens with the same layout") --
 	# a real write, then a SEPARATE fresh disk read (CACHE_MODE_IGNORE, never the same in-memory
 	# object) proving the file genuinely landed with the edited content, not merely that

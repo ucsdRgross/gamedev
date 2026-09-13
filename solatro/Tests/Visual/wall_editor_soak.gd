@@ -14,6 +14,10 @@ extends Node2D
 # ==============================================================================
 
 const WALL_EDITOR_SCENE := preload("res://Tools/wall_editor.tscn")
+const WINDOW_SIZE := Vector2i(1280, 720)
+# The container's band is DERIVED from the window, so the only way to see the top case is to be in
+# a window narrow enough for it -- the same squeeze `sidebar_snapshot` uses for its own top stills.
+const TOP_BAND_WINDOW_SIZE := Vector2i(600, 1000)
 
 var _editor : WallEditor = null
 var _problems : Array[String] = []
@@ -24,13 +28,17 @@ func _ready() -> void:
 		push_error("wall_editor_soak needs a REAL renderer. Re-run WITHOUT --headless.")
 		get_tree().quit(1)
 		return
-	DisplayServer.window_set_size(Vector2i(1280, 720))
+	DisplayServer.window_set_size(WINDOW_SIZE)
 	_editor = WALL_EDITOR_SCENE.instantiate()
 	add_child(_editor)
 	await _settle()
 
 	await _case_defaults_on_open()
 	await _case_overlay_buttons()
+	await _case_sidebar_preview_locks_a_real_card()
+	await _case_container_width_is_live()
+	await _case_the_container_side_follows_the_window()
+	await _case_the_exit_x_dismisses()
 	await _case_overlay_during_a_move()
 	await _case_extreme_aspects()
 	await _case_extreme_knobs()
@@ -108,6 +116,67 @@ func _case_overlay_buttons() -> void:
 	_check(_editor.preview_focus_id == &"", "pressing Wall returns to wall view",
 			str(_editor.preview_focus_id))
 	_shot("03_wall_view_via_button")
+
+## The sidebar preview: a REAL description off the hosted board, locked in the wall's own container.
+func _case_sidebar_preview_locks_a_real_card() -> void:
+	await _editor._move_to(HudContainer.GAME_SCREEN)
+	var container := _container()
+	_check(container.visible, "the container follows the focused picture -- up on the game screen")
+	_check(not container.showing_description(),
+			"...and shows the HUD until something is published into it")
+	_editor.preview_locked_description = true
+	await _settle()
+	_check(container.showing_description(),
+			"the sidebar preview publishes a REAL description from the hosted board")
+	_check(container.is_locked(), "...and LOCKS it, which is what a click in the game does")
+	_check(_exit_x().visible, "...so the exit X is up in the tool, not only in the game")
+	_shot("04_sidebar_locked")
+
+## The width knobs, changed exactly as the Inspector changes them: the container itself must move.
+func _case_container_width_is_live() -> void:
+	var container := _container()
+	var before := container.container_rect()
+	var original : float = _editor.preview_settings.container_size_fraction
+	_editor.preview_settings.container_size_fraction = original * 0.5
+	await _settle()
+	var narrowed := container.container_rect()
+	_check(not is_equal_approx(before.size.x, narrowed.size.x),
+			"container_size_fraction moves the container LIVE, with no window resize",
+			"%s -> %s" % [before.size, narrowed.size])
+	_check(container.size.is_equal_approx(narrowed.size),
+			"...and the CONTROL moved, not only the arithmetic",
+			"%s vs %s" % [container.size, narrowed.size])
+	_shot("04a_sidebar_narrow")
+	_editor.preview_settings.container_size_fraction = original
+	await _settle()
+	_check(container.container_rect().size.is_equal_approx(before.size),
+			"...and it comes back", "%s vs %s" % [container.container_rect().size, before.size])
+
+## The band is DERIVED from the window, so the tool reports which case it is in rather than overriding it.
+func _case_the_container_side_follows_the_window() -> void:
+	_check(_editor.container_side.begins_with("side"),
+			"a 16:9 window puts the container on the SIDE", _editor.container_side)
+	DisplayServer.window_set_size(TOP_BAND_WINDOW_SIZE)
+	await _settle()
+	_check(_editor.container_side.begins_with("top"),
+			"a narrow window moves it to the TOP band, and the readout says so",
+			_editor.container_side)
+	_shot("04b_sidebar_top_band")
+	DisplayServer.window_set_size(WINDOW_SIZE)
+	await _settle()
+
+## The exit X, pressed for real -- the one affordance that takes a locked description away.
+func _case_the_exit_x_dismisses() -> void:
+	var container := _container()
+	_press(_exit_x())
+	await _settle()
+	_check(not container.showing_description(),
+			"the exit X takes the container back to the HUD")
+	_check(not container.is_locked(), "...and drops the lock with it")
+	_check(not _exit_x().visible, "...so the X itself goes away")
+	_shot("04c_sidebar_dismissed")
+	_editor.preview_locked_description = false
+	await _editor._move_to(&"")
 
 ## The interaction the overlay exists here to expose: pressing a button WHILE a move runs.
 func _case_overlay_during_a_move() -> void:
@@ -453,6 +522,13 @@ func _all_ids() -> Array[StringName]:
 ## the overlay is that Wall's `%Overlay`, not a node this harness can name.
 func _overlay() -> WallOverlay:
 	return _editor._overlay
+
+## The hosted wall's ONE container, read off the tool for the same reason the overlay is.
+func _container() -> HudContainer:
+	return _editor._container()
+
+func _exit_x() -> Button:
+	return _container().get_node(^"%ExitX") as Button
 
 func _button(ov: WallOverlay, name: String) -> Button:
 	return ov.get_node_or_null(NodePath(name)) as Button if ov else null

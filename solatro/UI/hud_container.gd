@@ -72,6 +72,7 @@ func _ready() -> void:
 		overlay.ready.connect(_position_below_overlay_buttons, CONNECT_ONE_SHOT)
 		get_viewport().size_changed.connect(_position_below_overlay_buttons)
 	get_viewport().size_changed.connect(_apply_container_rect)
+	PlayArea.settings().settings_changed.connect(_apply_container_rect)
 	_apply_container_rect()
 
 # Waits for the OVERLAY's own `ready` signal, which fires after `WallOverlay._ready()` has grown

@@ -161,6 +161,17 @@ const EDITOR_INERT_KNOBS : Array[String] = ["wall_selection_repeat_delay", "wall
 		play_reveal = false
 		if v: _play_reveal()
 
+@export_group("Sidebar preview")
+## Publish the hosted board's FIRST card to the wall's container and LOCK it there, so the real description, its scroll and the exit X are all live in the tool.
+@export var preview_locked_description : bool = false:
+	set(v):
+		preview_locked_description = v
+		_apply_locked_description()
+## ⚠ READ-ONLY. Which band the container takes at the current window, and its size in px. The width is `container_size_fraction`/`container_size_max_px` on `preview_settings` above; both are live.
+@export var container_side : String = "":
+	set(_v): pass
+	get: return _container_side()
+
 @export_group("Gestures")
 ## Route real touch input through the REAL `WallInput.PinchTracker`, so
 ## `wall_pinch_threshold_px` is tunable against actual fingers: pinch OUT enters the selected
@@ -471,7 +482,41 @@ func _listen_for_info(screen: Node) -> void:
 
 ## Published to the hosted wall's own container, the one `Main` publishes to.
 func _on_screen_info(entry: InfoEntry) -> void:
-	(_wall.get_node(^"%HudContainer") as HudContainer).show_description(entry)
+	_container().show_description(entry)
+
+# ============================================================== Sidebar preview
+
+## The hosted wall's ONE container, or null in the Inspector preview, where there is no `Wall`.
+func _container() -> HudContainer:
+	if not is_instance_valid(_wall): return null
+	return _wall.get_node(^"%HudContainer") as HudContainer
+
+## Which band the container takes at this window, read through the production rule rather than restated -- the top-vs-side choice is derived, so there is no override to expose.
+func _container_side() -> String:
+	var window := _viewport_size()
+	var rect := HudContainer.rect_for_window(window, preview_settings)
+	var band := "top" if HudContainer.container_is_top(window, preview_settings) else "side"
+	return "%s  %.0f x %.0f px" % [band, rect.size.x, rect.size.y]
+
+# A hosted screen keeps its own fallback container, so the lock a click makes in the game is made
+# here instead -- off the board's own `card_info()`, never a stand-in entry. Turning it back off is
+# the same dismissal the exit X performs.
+func _apply_locked_description() -> void:
+	var container := _container()
+	if container == null: return
+	if not preview_locked_description:
+		container.show_hud()
+		return
+	var area := _hosted_play_area()
+	if area == null: return
+	var data : CardData = area.ui_data.values()[0]
+	container.lock_to(PlayArea.card_info(data, area.board_card_window_px()), data)
+
+## The hosted game screen's board, or null while the game picture is locked out of the pack or drawing a placeholder.
+func _hosted_play_area() -> PlayArea:
+	var wp : WallPicture = _preview_pictures.get(HudContainer.GAME_SCREEN)
+	if wp == null or wp.screen_root == null: return null
+	return (wp.screen_root as GameView).play_area
 
 ## The authored entry for `id`, or null -- what the music crossfade reads `.music` off.
 func _entry_for(id: StringName) -> PictureEntry:
@@ -541,6 +586,8 @@ func _apply_focus() -> void:
 	if _focus_stack != null and preview_focus_id != &"" and _focus_stack.current() != preview_focus_id:
 		_focus_stack.visit(preview_focus_id)
 	_refresh_overlay()
+	var container := _container()
+	if container: container.set_active_screen(preview_focus_id)
 
 ## The on-screen pixel footprint a picture gets while NOT focused, at the tool's own wall-view zoom
 ## — the same quantity `Main._footprint()` computes for the running game.

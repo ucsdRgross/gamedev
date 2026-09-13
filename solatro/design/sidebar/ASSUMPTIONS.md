@@ -282,3 +282,26 @@
   openings AND the depth-layer growth. The measured rule (a row stuck at 54 against a container at
   74) moves onto `_process` with it.
 
+- S11: `Q151`'s "opacity" is exposed as NOTHING. The design gives the container a flat opaque panel
+  (`Q27`=d, C1) and no opacity knob exists; `HudContainer._ready()` takes its `StyleBoxFlat.bg_color`
+  from the palette role `hud_background`, so the hosted wall already shows that colour live and that
+  is the whole affordance the word was asking for.
+- S11: `Q151`'s WIDTH is driven through `preview_settings.container_size_fraction` /
+  `container_size_max_px` -- the panel the tool already has -- with no duplicate export beside them.
+  What was missing was liveness, so `HudContainer._ready()` now connects
+  `PlayArea.settings().settings_changed` to `_apply_container_rect()`: both knobs move the container
+  with no window resize, in the settings screen as well as in the tool. A `preview_settings` resource
+  REPLACED wholesale leaves that connection on the resource it was made against.
+- S11: `Q151`'s SIDE is a read-only `WallEditor.container_side` readout (`"side  320 x 720 px"`),
+  computed through `HudContainer.container_is_top()` and `rect_for_window()` rather than restated.
+  No override, per §1.1 -- the soak reaches the top case by narrowing the WINDOW, the squeeze
+  `sidebar_snapshot` already uses.
+- S11: the wall editor does NOT hand its wall's container to the hosted screens. `Levels/menu.gd`
+  records the private fallback container as that tool's deliberate arrangement, so
+  `WallEditor.preview_locked_description` locks the WALL's container itself, off the hosted board's
+  first card through `PlayArea.card_info()` -- a real entry, never a stand-in.
+- S11: `WallEditor._apply_focus()` now makes the `HudContainer.set_active_screen()` hand-over `Main`
+  makes on every focus change. Without it the tool's container showed the GAME hud over the start
+  menu and stayed up in wall view, neither of which the game does.
+- S11 new names NAMES.md does not list, tool-local and following that file's own `preview_*`
+  convention: `WallEditor.preview_locked_description`, `WallEditor.container_side`.
