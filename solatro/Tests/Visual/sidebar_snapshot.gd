@@ -22,6 +22,7 @@ const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_descripti
 const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
 const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
 const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
+const DRAG_RELEASE_RETURNED_OUT_PATH := "user://sidebar_snapshot/drag_release_returned.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -36,6 +37,8 @@ const SCROLL_CASE_SIZE_FRACTION := 0.1
 const SAVE_TAG := "sidebar_snapshot"
 # Bound on `_await_deal_settled()`'s poll -- a real hang (not a settle) is a bug the tool should
 # surface, not spin on forever.
+## The picture's own top-left corner, where the board lays out no cell and no card.
+const BARE_BOARD_POINT := Vector2(24.0, 24.0)
 const DEAL_SETTLE_TIMEOUT_SEC := 5.0
 
 func _ready() -> void:
@@ -171,6 +174,13 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(CARD_FOLLOWING_OUT_PATH)
 	_report_held_lift(view, armed, "following", pointer)
+
+	await _release_off_a_cell(main, view, armed)
+	await _await_held_card_settled(view, armed)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(DRAG_RELEASE_RETURNED_OUT_PATH)
+	_report_held_lift(view, armed, "drag_release_returned")
 	view.play_area.ungrab_cards()
 	await get_tree().process_frame
 
@@ -467,6 +477,21 @@ func _point_over_the_board(main: Main, view: GameView) -> Vector2:
 	var at := Vector2(viewport.size) * 0.5
 	_push_pointer(viewport, at)
 	return at
+
+# THE FAILED DRAG's still: a real press on the armed card, carried out over the board and released
+# where there is no cell to land on -- not a placeable spot -- so the card goes back to its slot,
+# still lifted and no longer following, with the pointer left where it let go.
+func _release_off_a_cell(main: Main, view: GameView, data: CardData) -> void:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var from : Vector2 = view.play_area.data_ui[data].get_global_rect().get_center()
+	_push_pointer(viewport, from)
+	await get_tree().process_frame
+	_push_click(viewport, from, true)
+	await get_tree().process_frame
+	_push_pointer(viewport, BARE_BOARD_POINT)
+	await get_tree().process_frame
+	_push_click(viewport, BARE_BOARD_POINT, false)
+	await get_tree().process_frame
 
 # A held card EASES toward its target rather than snapping, so a still taken on the next frame
 # catches it mid-flight. The grab's own rebuild can hand the card a DIFFERENT visual, so the live

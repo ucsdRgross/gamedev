@@ -75,7 +75,8 @@ func apply_test_speed() -> void:
 #
 # The canonical linear order (each waiter excludes every suite AFTER it, plus itself):
 #     <engine/map suites: no wait>  →  INTERACTION  →  UI PROPS  →  VISUAL LAYERS  →
-#     GRID LAYOUT  →  GRID VIEW  →  SETTINGS RANGE  →  E2E RUN  →  LEAK CANARY  →  WALL PAUSE
+#     GRID LAYOUT  →  GRID VIEW  →  SIDEBAR  →  DRAG PLACE  →  SETTINGS RANGE  →  E2E RUN  →
+#     LEAK CANARY  →  WALL PAUSE
 #
 # ⚠ GRID LAYOUT joined the chain because it MEASURES THROUGH `CardEnvironment.CURRENT` and awaits
 # frames: `PlayArea._own_grid_row_height` resolves its grid from `get_current_game()`, so a sample

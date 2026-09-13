@@ -2,6 +2,10 @@ extends Control
 class_name PlayArea
 
 signal data_selected(data : CardData)
+## A gesture travelled far enough to be a drag; this is the card it started on, and whatever was held lets go.
+signal card_dragged(data: CardData)
+## The drag's release landed on this card: the same placement a click asks for.
+signal card_dropped(data: CardData)
 ## A card is highlighted: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
 
@@ -1431,6 +1435,65 @@ func _consume_as_swipe(event: InputEvent) -> bool:
 	pan_by_grids(-1 if travel > 0.0 else 1)
 	return true
 
+## Where the live gesture's press landed, in this board's own pixels.
+var _press_origin := Vector2.ZERO
+## The card the press landed on, or null on bare board -- the DATA, never the control, which slot pooling can free.
+var _press_data : CardData = null
+## The pressed card's drawn size, which is this gesture's own threshold reference.
+var _press_card_px := Vector2.ZERO
+## ONE PICKUP PER DRAG -- the swipe's own latch, in the card's half of the gesture.
+var _drag_began := false
+
+# A press only ARMS the gesture -- which card, where, and at what size -- so the release can tell a
+# click from a drag. A FINGER ARMS IT TOO: `emulate_mouse_from_touch` gives every touch its mouse
+# form, which is why one gesture model needs no reader of its own for the touch forms.
+func _arm_card_gesture(at: Vector2) -> void:
+	flush_rebuild()
+	_press_origin = at
+	_drag_began = false
+	var control := _card_control_at(at)
+	_press_data = ui_data.get(control)
+	_press_card_px = control.get_global_rect().size if control else board_card_picture_px()
+
+# How far this gesture must travel before its release places instead of its click grabbing.
+func _gesture_threshold_px() -> float:
+	return GestureMetrics.drag_threshold_px(_press_card_px, PlayArea.settings())
+
+# THE DRAG DECIDES WHICH CARD IS MOVING, so one that starts on a card the player is not already
+# holding takes that card up, and lets go of whatever was armed.
+func _take_up_the_dragged_card(at: Vector2) -> void:
+	if _drag_began or not _press_data: return
+	if _press_origin.distance_to(at) <= _gesture_threshold_px(): return
+	_drag_began = true
+	if _press_data in selected_cards: return
+	_next_grab_follows = true
+	card_dragged.emit(_press_data)
+
+# A gesture that TRAVELLED is never a click: its release places the held card, and the GUI pass
+# below never sees it. ⚠ THE PRESS IS FORGOTTEN HERE EITHER WAY -- motion once the button is up
+# is not a drag, and a remembered press turned the next hover into one.
+func _consume_as_card_release(button: InputEventMouseButton) -> bool:
+	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
+	var dragged := _press_data
+	_press_data = null
+	if _press_origin.distance_to(button.position) <= _gesture_threshold_px(): return false
+	if dragged: _release_places(button.position)
+	return true
+
+# The release places onto whatever the board offers under it, and the board answers whether that
+# is legal. Over bare board, over the container or off the window nothing is under it at all.
+func _release_places(at: Vector2) -> void:
+	var target := _card_control_at(at)
+	if target: card_dropped.emit(ui_data[target])
+	else: stop_following()
+
+## A refused release costs nothing: the card stays held and lifted, and only stops tracking the cursor.
+func stop_following() -> void:
+	for data : CardData in selected_cards:
+		if data in data_card: data_card[data].following = false
+
+# A CLICK IS DECIDED AT THE RELEASE: a press that travelled places instead, and `_input` consumes
+# that one before the GUI pass ever reaches here.
 func _on_gui_input(event: InputEvent) -> void:
 	flush_rebuild() #reads ui_data
 	# Mouse ONLY: key/joypad events never reach this root handler — Godot 4 delivers them to
@@ -1440,7 +1503,7 @@ func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		# left click
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and not mouse_event.pressed:
 			# is_instance_valid guard: a board rebuild (e.g. submit clearing the board)
 			# can free the control this still points at, and `freed in typed_dict` errors.
 			if (is_instance_valid(focused_control)
@@ -1501,14 +1564,22 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	var motion := event as InputEventMouseMotion
-	if motion: _on_pointer_moved(motion.position)
+	if motion:
+		_take_up_the_dragged_card(motion.position)
+		_on_pointer_moved(motion.position)
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
 		# right click / cancel
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
 			ungrab_cards()
-			
+			return
+		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+			_arm_card_gesture(mouse_event.position)
+			return
+		if _consume_as_card_release(mouse_event):
+			get_viewport().set_input_as_handled()
+
 # ANY mouse motion starts a held card following, including the one Godot emulates from a finger.
 # A following card whose pointer CROSSES OUT of the cell it came from closes the description --
 # read before the latch, so the motion that starts the following never closes one by accident.

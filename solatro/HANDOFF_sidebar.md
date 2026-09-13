@@ -229,6 +229,10 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   under the picker's dim).
 
 ## Gaps
+- GAP-005 (open, OWNER CALL + plan hole, not blocking) — the legal-cell highlight (Q24=a, Q124=a,
+  G12, "the drop map" of Q280=a) does not exist in the code and has no visual design; TEST_PLAN §11
+  claims G12 covered and it is not. Options a/b/c in the file; S16 builds release-to-place on
+  `try_place` legality with no visual.
 - GAP-004 (open, OWNER CALL, not parked) — inside a viewer, is the description's preview drawn at
   the board's card size (Q34=b literally) or the viewer's own (built)? One line per viewer either way.
 - GAP-001 (open, non-blocking) — a 16:9 window wider than 2560 px clamps, so "394 at any 16:9" fails
@@ -308,8 +312,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'no lift quantity existed for a HELD card (a grab never called anim_jump) - the jump rise card_jump_rise_play is applied in both states, no new knob (ASSUMPTIONS). Q267=a lands behind try_grab''s await, so the click sets PlayArea._next_grab_follows and grab_cards consumes it. OWNER SHOULD SEE: Q56=a + Q62=b + Q267=a together mean a click-lock on a grabbable card is dismissed the moment the pointer leaves that card''s cell (the click also grabs, and a clicked card follows at once); four S6 tests now lock through _lock_without_holding(). New names: CardVisual.held_lift_px/cursor_ride_offset, PlayArea.follow_cards/_on_pointer_moved/_origin_cell_rect/_next_grab_follows'
 - id: S15
   description: arming through the pickup path
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'a5449e77: ALL 46 SUITES 4452 PASSED [21]; SIDEBAR 97 -> 109 tests (6.1, 6.2, 6.3 effects + source pin, 6.10, Q251/Q116/Q118/Q114/Q115/Q119/G1); red per neutralisation 9/6/12/9 FAILED; no armed field; arm_leftmost has one production caller (GameView); doc_check 0 of 817 on added; by eye game_hud.png (leftmost card lifted+brightened at the deal, HUD up), armed_focus_elsewhere.png'
+  notes: 'GAP-005 filed (legal-cell highlight never built, no visual design - owner look call; parked = the visual only). Q123=b board-card test NOT written: nothing outside the Entrance can be picked up today (only TypeInput has on_can_grab_stack) - S16 5.6/5.7 need a test-local grabber. S14 cell-leave became a CROSSING of the origin cell (a position test dismissed on every move once a card is always armed). Undo held-cards guard deleted (always true now). _publish_focus_left_cards assert -> guard naming the teardown case. OWNER SHOULD SEE: (1) TEST_PLAN 9.4 "lifted, glowing, focus elsewhere" is unreachable after any input - a key focus or any mouse motion latches following (Q262=a), so the armed card rides the MOUSE position even when the player is on keyboard (section 1.4 targets get_global_mouse_position); (2) armed_focus_elsewhere.png shows two horizontal lines across the board area of unknown origin - handed to the Phase 5 review'
 - id: S16
   description: click versus drag, release-to-place
   status: pending

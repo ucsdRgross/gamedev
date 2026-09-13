@@ -20,7 +20,8 @@ func suite_name() -> String:
 # This suite hosts a real GameView and writes the shared `CardEnvironment.CURRENT`, so it waits
 # for every sibling that hosts one too. See TestSuite's DEADLOCK RULE and its ordering chain.
 func _ready() -> void:
-	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+	await await_siblings_except(["DRAG PLACE", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
+			"WALL PAUSE"])
 	TestLog.line("============ SIDEBAR TEST PASS ============")
 	behavior_section("CONTAINER SHOWS EXACTLY ONE CHILD")
 	test_default_state_is_the_hud()
@@ -950,20 +951,10 @@ func _menu_buttons(main_menu: Menu) -> Array[Button]:
 # Boots a real `Main` inside a `SubViewport` sized to `size`; returns `[viewport, main]` so the
 # caller can free both once its own checks are done.
 func _boot_main_at(size: Vector2i) -> Array:
-	var viewport := SubViewport.new()
-	viewport.size = size
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
-	await get_tree().process_frame
-	await get_tree().process_frame
-	return [viewport, main]
+	return await TestMainHost.boot(self, size)
 
 func _free_booted_main(viewport: SubViewport, main: Main) -> void:
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
+	await TestMainHost.free_booted(viewport, main)
 
 # (e) The start menu's buttons lie outside the reserved container band and inside the window, at
 # every window shape -- compared in ONE space (this menu's own picture space) via the single owned

@@ -39,7 +39,7 @@ func _ready() -> void:
 	# Runs after UI PROPS (shares CardEnvironment.CURRENT) and before E2E. Excludes only E2E (which
 	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["GRID LAYOUT", "GRID VIEW", "SIDEBAR", "SETTINGS RANGE",
-			"E2E RUN", "LEAK CANARY", "WALL PAUSE"])
+			"DRAG PLACE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
 	backup_real_settings()
 	implementation_section("STRUCTURAL ORDER (no z_index anywhere)")

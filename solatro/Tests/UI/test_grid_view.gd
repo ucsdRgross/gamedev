@@ -30,7 +30,7 @@ func _ready() -> void:
 	# This suite hosts a real GameView and writes the shared `CardEnvironment.CURRENT`, so it waits
 	# for every sibling that hosts one too. See TestSuite's DEADLOCK RULE and its ordering chain.
 	await await_siblings_except(["SIDEBAR", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
-			"WALL PAUSE"])
+			"DRAG PLACE", "WALL PAUSE"])
 	TestLog.line("============ GRID VIEW TEST PASS ============")
 	check_all_tests_registered()
 	await run_the_show_opens_zoomed_out_test()
@@ -260,16 +260,15 @@ func _cell_control(pa: PlayArea, gi: int) -> Control:
 	var slot : Control = row.get_child(0) as Control
 	return slot.get_child(0) as Control
 
-## A left press delivered to the board's OWN gui handler, with the hover and focus state a real
-## click carries. ⚠ Not a call to the focus method — a click that stops reaching the board must
-## fail this.
+# A left RELEASE delivered to the board's OWN gui handler, with the hover and focus state a real
+# click carries: a gesture that did not travel is a click, decided at the release. ⚠ Not a call to
+# the focus method -- a click that stops reaching the board must fail this.
 func _click(pa: PlayArea, control: Control) -> void:
 	pa.focused_control = control
 	pa.moused_hovered_control = control
-	var press := InputEventMouseButton.new()
-	press.button_index = MOUSE_BUTTON_LEFT
-	press.pressed = true
-	pa._on_gui_input(press)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	pa._on_gui_input(release)
 
 # ==============================================================================
 # TP-97 — FIX-GRID-3: the show opens zoomed out.

@@ -497,3 +497,49 @@
   never built -- a CLICK pickup shows none either -- so nothing in S15 could preserve it. Filed as
   GAP-005 (owner call: what the mark IS), with `TEST_PLAN.md` §11's claim that every chart node is
   covered noted as wrong for G12.
+- S16: new names `PlayArea.card_dragged` / `card_dropped` (signals), `PlayArea.stop_following()`,
+  and the private `_arm_card_gesture()`, `_gesture_threshold_px()`, `_take_up_the_dragged_card()`,
+  `_consume_as_card_release()`, `_release_places()`, `_press_origin` / `_press_data` /
+  `_press_card_px` / `_drag_began`; `GameView._on_card_dropped()`, `_place_held_onto()`,
+  `_pick_up()`; and `Tests/Support/test_main_host.gd` (`TestMainHost`).
+- S16: THE CLICK IS DECIDED AT THE RELEASE, not the press. `_on_gui_input`'s left-button branch
+  now fires on the release, and `_input` consumes any release that travelled past the threshold
+  before the GUI pass sees it -- so one gesture is either a click or a placement, never both.
+  `Tests/UI/test_grid_view.gd`'s `_click()` helper moved with it (it drove a press).
+- S16: the press/release reader lives in `_input`, beside the swipe, NOT in `_on_gui_input`: the
+  swipe reader's own note applies (only `_input` runs before the viewport's GUI pass), and event
+  positions there are the picture's own pixels, the space every control rect is measured in.
+- S16: a finger is read through the mouse form `emulate_mouse_from_touch` synthesises (device -1)
+  and the raw `InputEventScreenTouch` forms are left to the swipe reader, which is why that one
+  filters device -1 OUT. One gesture model, one reader.
+- S16: `Q288`=a needed NO new forwarding. A press on the board sets no `gui.mouse_focus` in the
+  ROOT viewport (the board lives in a picture's SubViewport, not a root Control), so the root GUI
+  pass does not consume the later release even over the container, and `Wall._unhandled_input` ->
+  `WallInput.route` carries it into the picture like every other board event. Measured: 5.4 goes
+  red the moment that routing stops forwarding mouse buttons, and nothing else in the suite does.
+- S16: the release forgets its press (`_press_data = null`) whichever branch it takes. Without
+  that, pointer motion long after the button came up counted as a drag and re-grabbed a card
+  (it failed `TestSidebar`'s 1.8 check, where a hover re-armed onto a different card).
+- S16: `GameView._on_data_selected`'s toggle -- a click on the held card, or on the card directly
+  beneath it, UNGRABBED -- is deleted. `Q114`=a makes a click on the held card a click like any
+  other (it locks and stays held) and putting a card back is Cancel's job, S18.
+- S16: a HELD card's own control is `MOUSE_FILTER_IGNORE`, so no tap can reach the card in hand at
+  all. The check that the toggle is gone drives the KEY accept on the focused card control, which
+  is the path a player actually has to it; a tap-based version of that check was vacuous.
+- S16: 5.1's discriminator is the LOCK, not the grab. With the threshold removed a short drag
+  still ends with the card held (the drag takes up the card it started on), so what separates a
+  click from a drag is that only the click route locks the card's description.
+- S16: the gesture's threshold reference is the PRESSED card's own drawn size, falling back to
+  `board_card_picture_px()` when the press found no card (`Q296`=a). The swipe keeps its own
+  `_swipe_threshold_px()`, which is that same fallback by definition -- two readers, one model.
+- S16: `Tests/Support/test_main_host.gd` is a NEW support file rather than a reuse, because no
+  shared fixture hosted a real `Main`: `TestGameViewHost` hosts a bare `GameView` in a SubViewport
+  with no wall and no root-level container, which cannot answer 5.4 at all. The boot itself was
+  already written inside `TestSidebar` (`_boot_main_at`), so it moved there and `TestSidebar`'s two
+  helpers now delegate -- one boot, two suites, rather than a second copy.
+- S16: the board card 5.6/5.7 need rides as a STAMP. `return_first_data_array_result` dispatches
+  `type`, `stamp` and `statuses` always but a `skill` only while `spotlit`, and a stamp leaves the
+  card's own type -- what it is drawn from -- alone. No shipped rule grabs a board card.
+- S16: `TestDragPlace` sits directly after `SIDEBAR` in `TestSuite`'s ordering chain (it hosts a
+  real `Main` and writes `CardEnvironment.CURRENT` / `Main.save_info` / the real save); the six
+  suites before it name "DRAG PLACE" in their excludes.

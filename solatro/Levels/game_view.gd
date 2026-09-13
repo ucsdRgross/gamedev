@@ -89,6 +89,8 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, rules_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button))
 	play_area.data_selected.connect(_on_data_selected)
+	play_area.card_dragged.connect(_pick_up)
+	play_area.card_dropped.connect(_on_card_dropped)
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
@@ -400,17 +402,29 @@ func _on_data_selected(data: CardData) -> void:
 	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
 	play_area.locked_data = data
 	if play_area.selected_cards:
-		var held0 := play_area.selected_cards[0]
-		if (data == held0
-				or game.find_data_vec3(data) == game.find_data_vec3(held0) - Vector3i(0, 0, 1)):
-			play_area.ungrab_cards()
-			return
 		if data in play_area.selected_cards: return
-		if await game.try_place(play_area.selected_cards, data):
-			play_area.ungrab_cards()
-			hud_container.show_hud()
-			await _arm_the_entrance()
-			return
+		if await _place_held_onto(data): return
+	await _pick_up(data)
+
+# THE DRAG'S RELEASE IS ANOTHER WAY TO REACH THE SAME PLACEMENT, and nothing downstream can tell
+# which route was taken. A release the board refuses returns the card instead, so a failed drag
+# leaves the player where they started.
+func _on_card_dropped(data: CardData) -> void:
+	if game.processing: return
+	if not await _place_held_onto(data): play_area.stop_following()
+
+# A landed placement finishes the interaction: the hand is empty, the container goes back to the
+# HUD, and the Entrance arms its next card.
+func _place_held_onto(data: CardData) -> bool:
+	if not await game.try_place(play_area.selected_cards, data): return false
+	play_area.ungrab_cards()
+	hud_container.show_hud()
+	await _arm_the_entrance()
+	return true
+
+# THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
+# the hand exactly as it was.
+func _pick_up(data: CardData) -> void:
 	var grabbed := await game.try_grab(data)
 	if grabbed: play_area.grab_cards(grabbed)
 

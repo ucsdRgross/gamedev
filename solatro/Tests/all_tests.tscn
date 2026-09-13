@@ -47,6 +47,7 @@
 [ext_resource type="PackedScene" path="res://Tests/UI/test_grid_view.tscn" id="46_gview"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_grid_cards.tscn" id="43_gcard"]
 [ext_resource type="PackedScene" path="res://Tests/Engine/test_gesture_metrics.tscn" id="48_gmetr"]
+[ext_resource type="PackedScene" path="res://Tests/Interaction/test_drag_place.tscn" id="49_dragp"]
 
 [node name="AllTests" type="Node" unique_id=243837637]
 script = ExtResource("0_root")
@@ -128,6 +129,8 @@ speed_base_delay = 0.1
 [node name="TestWallInput" parent="." instance=ExtResource("38_winput")]
 
 [node name="TestSidebar" parent="." instance=ExtResource("47_sdbar")]
+
+[node name="TestDragPlace" parent="." instance=ExtResource("49_dragp")]
 
 [node name="TestGridBoard" parent="." instance=ExtResource("40_gboard") groups=["logic"]]
 
