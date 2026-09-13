@@ -14,9 +14,7 @@ static func _card(suit: GDScript, rank: int) -> CardData:
 ## The composition every seeded run (seed 424242 / 31337 in test_ui_props + test_e2e_run)
 ## was built against — a verbatim freeze of Decks/deck.gd deck9 as of 2026-07-13 (TypeStone
 ## sampler, 32 cards; card ORDER matters — the post-seed shuffle replays it).
-## KNOWN QUIRK the seeded observations rely on: every HOOP card carries a skill, so hoops
-## never spawn props from this deck (talented cards suppress their own suit) — the 424242
-## submit spawns knives only.
+## WHAT THE SEEDED OBSERVATIONS RELY ON: the 424242 submit spawns knives only.
 static func seeded_deck() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 4:

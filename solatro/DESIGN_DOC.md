@@ -472,7 +472,9 @@ ARCHITECTURE_REVIEW §4; the full plan/spec is in git history):**
   `random_standard()` rolls only those four. **Firework is special and excluded** — never rolled
   randomly; it rises up its column and banks column score at the top.
 - **Per-meld firing.** A scored card's suit fires **once per meld membership** (row and column
-  each), by design. Talented cards (`data.skill`) suppress their own suit effect.
+  each), by design, and **only where its own cell's mark agrees on SUIT** — a talent
+  (`data.skill`) gates nothing either way. The seam is `PipSuit._spawn_origin`
+  (`ARCHITECTURE_REVIEW.md` §4).
 - **Knife kept** (not re-themed): mirrors Hoop but launches from the opposite row side and scores
   plain (prop) cards instead of talents.
 - **Fire = count buff.** Fire drops the **Burning** status, which multiplies the target card's OWN

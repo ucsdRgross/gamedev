@@ -3,9 +3,9 @@ class_name Deck
 ## Starter/test deck definitions, built by LOOPS over exact PipSuit classes (never suit
 ## indices — PipSuit.from_index was deleted because the index hid which suit came back).
 ## Every deck documents its testing + balance niche above its builder. REACTION RULE that
-## bit us: hoops JUMP talents, knives SPIN talents — a deck with NO skill
-## cards shows zero jump/spin poses, and a deck where EVERY card of a suit carries a skill
-## suppresses that suit's props entirely (talented cards skip their own suit effect).
+## bit us: hoops JUMP talents, knives SPIN talents — a deck with NO skill cards shows zero
+## jump/spin poses. A suit fires only where the card's own cell mark agrees on SUIT, so no
+## deck composition suppresses props and a talent gates nothing.
 
 ## The four standard suits in board-index order (0 hoop, 1 knife, 2 ball, 3 fire) for decks
 ## that cycle all of them. Firework is deliberately absent (special 5th suit) — deck12 is
@@ -112,8 +112,7 @@ func _build_deck3() -> Array[CardData]:
 
 ## DECK 4 — full standard 52: every suit at every rank 1-13, all plain.
 ## Tests: long runs, deck cycling, draw/discard volume, poker-hand evaluation with a real
-## distribution. Balance: THE reference deck; no skills means no jump/spin reactions and
-## maximum prop spawns (nothing suppressed).
+## distribution. Balance: THE reference deck; no skills means no jump/spin reactions.
 var deck4 : Array[CardData]:
 	get:
 		if deck4.is_empty(): deck4 = _build_deck4()
@@ -147,8 +146,7 @@ func _build_deck5() -> Array[CardData]:
 ## DECK 6 — HungryHippo swarm (16): 3 suit-cycles at ranks 1-4 plus one rank-10 of each
 ## suit, EVERY card a HungryHippo.
 ## Tests: a whole deck of one board-mutating skill (eat interactions, activation order).
-## Balance: worst-case skill density; also note every suit is fully suppressed here, so
-## this deck should show ZERO props by design.
+## Balance: worst-case skill density.
 var deck6 : Array[CardData]:
 	get:
 		if deck6.is_empty(): deck6 = _build_deck6()
@@ -215,8 +213,6 @@ func _build_deck8() -> Array[CardData]:
 ## DECK 9 — TypeStone sampler (32): 4 copies of an 8-card all-suit pattern mixing
 ## ExtraPoint, Revealing, and TypeStone.
 ## Tests: Stone-type boards with mixed modifiers (the pre-2026-07-13 playtest deck).
-## KNOWN QUIRK: every HOOP card here carries a skill, so hoops never spawn props with this
-## deck (talented cards suppress their own suit) — kept as the regression example.
 var deck9 : Array[CardData]:
 	get:
 		if deck9.is_empty(): deck9 = _build_deck9()
@@ -251,9 +247,8 @@ func _build_deck10() -> Array[CardData]:
 
 ## DECK 11 — prop + reaction showcase (24): every suit at ranks 1-4 plain, PLUS two
 ## ExtraPoint talents (ranks 2-3) per suit.
-## Tests: THE deck for prop visuals — every suit has skill-less cards (so all four kinds
-## actually spawn; nothing fully suppressed) and every row has both talents (hoops JUMP
-## them, knives SPIN them) and plain cards (knives score them). Balance: a "normal" mixed
+## Tests: THE deck for prop visuals — every row carries both talents (hoops JUMP them,
+## knives SPIN them) and plain cards (knives score them). Balance: a "normal" mixed
 ## board — ~1/3 talents — for tuning prop points against skill points.
 var deck11 : Array[CardData]:
 	get:
