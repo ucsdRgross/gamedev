@@ -280,6 +280,7 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 | it works **focused AND in the overview** | `Q116`=(b) |
 | opened by a **held shoulder button AND a HUD control** every input mode reaches | `Q117`=(c) |
 | holding a card **highlights every cell it would match** | `Q66`=(a) |
+| ⚠ **Owner rulings during execution:** *"no outline on mark when not being selected and on board, then white outline when indicating it matches current card being selected to show it matches."* — at rest a mark has no outline; while a card is selected, a mark it matches takes a WHITE outline (`match_rim` is white). And: *"marks dont have specific type for now, keep using the zone type art"* — a mark draws the grid cell's own zone frame, never a type frame of its own. | owner |
 | `Q67` verbatim: *"each art in card has an outline already, selection takes over the outline to show which ones match"* | `Q67` |
 | `Q68` verbatim: *"each partial art has its own outline that highlights"* | `Q68` |
 | on landing, `Q64` verbatim: *"activated art gets special outline, pips get their outline replaced with a different version to indicate activated"* — no popup, no card-level alert | `Q64` |

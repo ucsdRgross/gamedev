@@ -177,10 +177,17 @@ gap under `gaps/`.
   (Q13=b), so the card standing there reflects the new mark at once, and no shipped content calls
   this surface yet -- the choice is invisible in the product today. What the player SEES when a mark
   changes is Phase 5's.
-- S10 / Q108, Q109: the seeded deal has ONE home, `Board.deal_marks` (the private `_deal_late_grid`,
-  made public and renamed), called by `add_grid` and by `reroll_mark`. `reroll_mark` clears the cell
-  and deals: every other cell is marked, so the deal's own walk reaches that cell alone and takes the
-  pool and the seeded pick the opening deal would have taken -- no second copy of either rule.
+- S10 / Q108, Q109: the plan's stored seed has ONE home, `Board._plan_rng`, read by `deal_marks` (a
+  late grid) and by `redraw_mark` (one cell). Both draw through one pick, `BoardPlan._take_for_cell`:
+  an identity out of the offer, never the one the cell ALREADY prints -- a bare cell prints nothing so
+  the deal's offer stands whole, so there is no second copy of the pool rule. ⚠ The deal CONSUMES one
+  offer across a pass; rebuilding it per cell gives the same board and cost the plan suite 6x.
+- S10 / QR5, what "redraw" means: a reroll's offer EXCLUDES the face it replaces, counted while that
+  cell is still marked -- clear first and the cleared identity is the sole fewest-copies card, so on
+  the 20-card / 25-cell board a reroll returns the same face forever. The cell is cleared only once a
+  replacement is in hand, so an empty offer (an empty draw pile, a stock of one identity) leaves the
+  mark standing and writes, bumps and reveals nothing. `reroll_mark` asserts the coordinate names a
+  cell and that `plan_seed` is set; `mark_at` keeps its null answer for readers.
 - S10 / Q53: `grant_mark` does not clear the cell first. `write_mark` assigns all four printed slots
   and `granted` unconditionally, so a preceding `clear_mark` would be dead code; TP-52 grants over a
   mark carrying a skill and a stamp and asserts neither survives.
@@ -215,3 +222,8 @@ gap under `gaps/`.
   their own zone cards, `_bind_stack` derives each cell's `CardVisual.mark_drawn` from that list, and
   the per-cell step is the existing `anim_spin` plus `Pacing.wait(plan_reveal_fraction * get_delay())`
   -- so a rebuild landing mid-reveal still shows exactly the marks the reveal has dealt.
+- S11, S12 / owner rulings during execution, verbatim: "no outline on mark when not being selected and
+  on board, then white outline when indicating it matches current card being selected to show it
+  matches." and "marks dont have specific type for now, keep using the zone type art". PLAN §1.10
+  carries both. Read with Q67/Q68 (each matching ELEMENT lights its own outline): the outline that
+  lights is white, on a mark whose rest state is no outline at all.
