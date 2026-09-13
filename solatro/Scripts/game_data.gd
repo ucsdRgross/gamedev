@@ -641,16 +641,19 @@ func validate() -> Array[String]:
 				% [scores_col_legacy.size(), min(upper_zone.size(), lower_zone.size())])
 	return violations
 
-#I6: a mark names printed properties, never a card object, so a DEALT mark must still name a card
-#this state holds -- draw, discard and every card in play. A granted mark is exempt, because a
-#level or blind may mark a card the deck never had and `TypeGridCell.granted` records that it did.
+#I6: a mark names printed properties, never a card object, so a DEALT mark must still name a
+#PLAYING card this state holds -- never a cell type, a zone header or a rules card. A granted mark
+#is exempt: `TypeGridCell.granted` records a card the deck never had.
 func _mark_violations() -> Array[String]:
 	var out : Array[String] = []
+	var never_printers : Array[CardData] = []
+	never_printers.append_array(rules_deck)
+	never_printers.append_array(upper_zone_type)
+	never_printers.append_array(lower_zone_type)
 	var printers : Array[CardData] = []
-	printers.append_array(draw_deck)
-	printers.append_array(discard_deck)
-	for card : CardData in _scan_grid_positions():
-		printers.append(card)
+	printers.assign(all_card_datas().filter(func(card: CardData) -> bool:
+			return card != null and not card.type is TypeGridCell \
+					and not never_printers.has(card)))
 	for gi in grids.size():
 		var grid : GridData = grids[gi]
 		if not grid: continue
@@ -661,7 +664,6 @@ func _mark_violations() -> Array[String]:
 			if cell_type and cell_type.granted: continue
 			var printed := false
 			for card : CardData in printers:
-				if not card: continue
 				if PipComparator.printed_card_same(mark, card):
 					printed = true
 					break

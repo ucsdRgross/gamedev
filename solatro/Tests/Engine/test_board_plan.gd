@@ -21,6 +21,8 @@ func _ready() -> void:
 	test_i6_fails_a_mark_the_deck_never_had()
 	test_i6_exempts_a_granted_mark()
 	test_i6_passes_a_mark_the_deck_prints()
+	test_i6_accepts_a_printer_in_a_lower_zone_column()
+	test_i6_refuses_a_printer_that_is_a_zone_header()
 	behavior_section("THE DEAL, THROUGH A REAL SHOW START")
 	await test_a_fresh_show_marks_every_cell()
 	await test_the_same_node_deals_the_same_board()
@@ -166,6 +168,38 @@ func test_i6_passes_a_mark_the_deck_prints() -> void:
 			"TP-16: a dealt mark of the 3 of Hoops, which the deck holds, passes I6",
 			"I6 said: %s" % ", ".join(i6_violations(state)))
 
+#TP-16: the lower zone carries no grid coordinate, so a walk built from coordinates cannot reach it
+#-- and a card sitting there prints a mark's face exactly as one anywhere else on the board does.
+func test_i6_accepts_a_printer_in_a_lower_zone_column() -> void:
+	var state := make_state()
+	mark_first_cell(state, 9, PipSuitHoop)
+	var printer := CardData.new()
+	printer.rank = PipRankNumeral.new().with_value(9)
+	printer.with_suit(PipSuitHoop.new())
+	printer.stage = CardData.Stage.PLAY
+	state.lower_zone = [TestFactories.col([printer] as Array[CardData])] as Array[ArrayCardData]
+	var header := CardData.new()
+	header.stage = CardData.Stage.ZONE
+	state.lower_zone_type = [header] as Array[CardData]
+	check(i6_violations(state).is_empty(),
+			"TP-16: a mark whose only printer sits in a lower-zone column passes I6",
+			"I6 said: %s" % ", ".join(i6_violations(state)))
+
+#TP-16: a zone header is not a card the deal could ever have marked, so its print is no defence --
+#the other half of the membership test, and what keeps the walk from widening into every card held.
+func test_i6_refuses_a_printer_that_is_a_zone_header() -> void:
+	var state := make_state()
+	mark_first_cell(state, 9, PipSuitHoop)
+	var header := CardData.new()
+	header.rank = PipRankNumeral.new().with_value(9)
+	header.with_suit(PipSuitHoop.new())
+	header.stage = CardData.Stage.ZONE
+	state.lower_zone = [ArrayCardData.new()] as Array[ArrayCardData]
+	state.lower_zone_type = [header] as Array[CardData]
+	check(i6_violations(state).size() == 1,
+			"TP-16: a zone header printing the mark's face leaves the mark reported",
+			"I6 said: %s" % ", ".join(i6_violations(state)))
+
 ## A fresh show's rules deck, built by the real `Game.add_deck` from the mirror of shipped `rules1`.
 func fresh_show_rules() -> Array[CardData]:
 	var g := Game.new()
@@ -216,35 +250,30 @@ func test_fresh_show_carries_one_localised_planner() -> void:
 
 const ROUND_TRIP_PATH := "user://board_plan_round_trip_test.tres"
 const PLAN_LESS_PATH := "user://board_plan_plan_less_test.tres"
+## The global generator's seed for a show start, so two shows on one node shuffle one deck order.
+const SHUFFLE_SEED := 424242
 
 ## The run document the app was holding, put back by `free_show`.
 var _real_run : RunState = Main.save_info
 
-## The run document the plan's seed comes from: one world seed, so only the node id varies.
-func run_doc(node_id: int) -> RunState:
+## The run document the show starts from: one world seed, so only the node id varies.
+func run_doc(deck: Array[CardData], node_id: int) -> RunState:
 	var run := RunState.new()
 	run.world_seed = 4242
 	run.current_node_id = node_id
+	run.card_datas = deck
+	run.rule_datas = TestDecks.standard_rules()
 	return run
 
-#A real show start: the standard rules mirror walks `on_game_start` the way the game does, so the
-#planner's own hook is what deals -- the allotment's creators build their grid on the sweep that
-#follows the allotment, and the Entrance is left unfilled, which is where the deal belongs.
+#THE real show start, `Game._start_fresh_show()` itself: `add_deck` deals the run's deck, both
+#spotlight sweeps run and the Entrance refills. ⚠ Seeded, because the deck's order is an input to
+#the deal and `add_deck` shuffles through `Array.shuffle()`, which no generator argument reaches.
 func start_show(deck: Array[CardData], node_id: int) -> Game:
+	seed(SHUFFLE_SEED)
 	var g := Game.new()
-	var state := GameData.new()
-	state.draw_deck = deck
-	for card : CardData in state.draw_deck:
-		card.stage = CardData.Stage.DRAW
-	var rules := TestDecks.standard_rules()
-	for card : CardData in rules:
-		card.stage = CardData.Stage.RULES
-	state.rules_deck = rules
-	g.state = state
 	CardEnvironment.CURRENT = g
-	Main.save_info = run_doc(node_id)
-	await g.skill_spotlight_check()
-	await g.run_all_mods(&"on_game_start")
+	Main.save_info = run_doc(deck, node_id)
+	await g._start_fresh_show()
 	return g
 
 #The same board the game builds, minus the planner: five Entrance adders and one empty grid, which
@@ -347,6 +376,23 @@ func granted_flags(state: GameData) -> Array[bool]:
 			out.append((type_card.type as TypeGridCell).granted)
 	return out
 
+## Every card the Entrance holds, left to right, bottom of stack first.
+func entrance_cards(state: GameData) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for column : ArrayCardData in state.upper_zone:
+		out.append_array(column.datas)
+	return out
+
+## The Entrance cards whose printed face no mark on the board carries, named for the failure text.
+func unmarked_entrance_cards(state: GameData) -> Array[String]:
+	var out : Array[String] = []
+	for card : CardData in entrance_cards(state):
+		var printed := false
+		for mark : CardData in marks_of(state):
+			if PipComparator.printed_card_same(mark, card): printed = true
+		if not printed: out.append(card.log_str())
+	return out
+
 ## Every modifier on a mark that answers for some other card -- the WeakRef trap, named.
 func stray_backrefs(state: GameData) -> Array[String]:
 	var out : Array[String] = []
@@ -368,6 +414,12 @@ func test_a_fresh_show_marks_every_cell() -> void:
 			"marked %d of 25" % marks_of(g.state).size())
 	check(not granted_flags(g.state).has(true),
 			"TP-01: a dealt mark is not a granted one")
+	check(entrance_cards(g.state).size() > 0,
+			"TP-01: precondition: the show start refilled the Entrance out of the same deck",
+			"%d cards" % entrance_cards(g.state).size())
+	check(unmarked_entrance_cards(g.state).is_empty(),
+			"TP-01: the deal ran BEFORE that refill -- every card the Entrance holds is printed by a mark",
+			"unmarked: %s" % ", ".join(unmarked_entrance_cards(g.state)))
 	check(g.state.validate().is_empty(), "TP-01: the dealt board breaks no invariant",
 			", ".join(g.state.validate()))
 	free_show(g)

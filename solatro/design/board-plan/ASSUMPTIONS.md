@@ -11,8 +11,9 @@ gap under `gaps/`.
   S1 and `deal()` joins it at S4.
 - S2 / Q61, Q121: I6's "names a card printed by some card in the deck" compares every copied slot —
   rank and suit via `PipComparator.printed_same`, skill and stamp by script identity (null equals
-  null) — against every playing card the state holds (draw, discard, Entrance, grid cells; never a
-  cell type, a zone type or a rules card).
+  null) — against every playing card the state holds (draw, discard, either zone, grid cells; never
+  a cell type, a zone type or a rules card). The walk IS `all_card_datas()` filtered to those, so no
+  home of a playing card can be left out of it.
 - S1 / Q59: the `is_spotlit()` call site S1's done-when requires is the spotlight exclusion itself,
   so S8's code lands with S1 and S8 only confirms its tests.
 - S8 / Q59: MEASURED, and PLAN §1.8's premise is inaccurate for a GRID cell -- a grid card is not
@@ -36,6 +37,9 @@ gap under `gaps/`.
 - S4 / Q10: a grid added mid-show is dealt by `CardEffectApi.add_grid` itself, and only when
   `state.plan_seed != 0` -- at game start the creators call `add_grid` BEFORE the planner runs, and
   the planner's own deal has to stay the single writer of the opening plan.
+- S4 / Q10: `CardEffectApi.add_grid` builds a fresh generator seeded from `plan_seed` on every call;
+  two grids added in one show draw from identical streams against different boards, which stays
+  deterministic across resume. No product break named.
 - S4 / Q8: the planner reaches the run through two new `CardEffectApi` accessors, which PLAN §3's S4
   row provides for ("the accessors it needs"): `board_state()` for the `GameData` the deal writes
   onto, and `plan_seed_for_node()`, which is `hash(Vector2i(world_seed, current_node_id))` forced off

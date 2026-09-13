@@ -168,16 +168,16 @@ Overseer: Fable 5.1 at high effort; it writes no source.
 ```
 
 ## Phase 1-3 adversarial review (Opus 5, default effort, read-only, committed tree at 7c7ae65a)
-Findings and their disposition; each defect is reproduced red before it is fixed:
-- FIX (own commit): run_all_mods gates only the skill slot on is_spotlit(), so a mark's copied
+Findings and their disposition; each defect was reproduced red before it was fixed (fix A d9a97ce7, fix B 7cda6467, fix C the commit after it):
+- FIXED: run_all_mods gates only the skill slot on is_spotlit(), so a mark's copied
   STAMP (StampDoubleTrigger ships in five deck rows) answers on_after_score / on_trigger and
   charges note_processing. Q59 says never. TP-44 gains a stamp case.
-- FIX (own commit): matches_at lets two EMPTY rank (or suit) slots agree (printed_same on
+- FIXED: matches_at lets two EMPTY rank (or suit) slots agree (printed_same on
   null == null), so a rankless card on a suit-only mark sets RANK and flat_bonus dereferences
   rank.value. RANK/SUIT need both slots present, as TALENT/HAT already do.
-- FIX (own commit): _mark_violations hand-rolls its printer walk and omits lower_zone; reuse
+- FIXED (the reviewer's suspicion reproduced red): _mark_violations hand-rolls its printer walk and omits lower_zone; reuse
   all_card_datas() filtered to playing cards.
-- FIX (test strength, own commit): run_mark_mods's skill-slot dispatch has no failing case (both
+- FIXED (test strength): run_mark_mods's skill-slot dispatch has no failing case (both
   test doubles are stamps); BOARD PLAN's start_show replicates _start_fresh_show instead of
   using it; the blocks_spotlight note naming poker-patience PLAN 1.4 as wrong was deleted in the
   card_modifier.gd comment sweep and must come back.
