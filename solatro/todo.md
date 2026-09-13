@@ -68,8 +68,13 @@ written when a run stalls or fails.
   52 restated · 4 line refs.** Zero errors — every reference resolves.
   ⚠ **A BACKLOG, not a regression**, and the numbers grew mostly because THE CHECKER GOT STRICTER,
   not because the code got worse: `long block` went from "over 16 lines" to "over 3", and
-  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments. Work
-  it opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
+  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments.
+  **Owner ruling: two halves.** (1) Every file an agent edits leaves compliant — the whole file,
+  not only the lines it wrote (`plan-implementer` says so; `doc_check.py --changed` errors on
+  the three hard rules for touched files). (2) ⬜ **A FULL PASS OVER EVERY SOURCE FILE is
+  planned by the owner**, because files nobody edits are never swept by (1): the untouched
+  majority of the count above only drains that way. `--verbose` lists them; `dated` is the
+  category to leave alone (see below).
   ⚠ **`dated` will not go to zero and should not**: many are measurements, where the date is part
   of the fact, and the checker cannot tell those from bookkeeping.
   ⚠ **`design id` is the one that matters most** — 362 citations of design documents the code's

@@ -350,6 +350,8 @@ Findings and their disposition; each defect is reproduced red before it is fixed
    else to add.
 8. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
    GAP-041 through a NEW poker-patience design version, never an in-place edit).
+8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
+    dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
 9. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
@@ -368,6 +370,17 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 - One implementer at a time (the lock is shared with the other session through the main
   checkout's project dir). A cut-off implementer is resumed with SendMessage; check
   `git status --porcelain` first and tell it what the tree holds.
+- ⚠ OWNER RULING (reaffirmed after S11): A FILE AN IMPLEMENTER EDITS LEAVES COMPLIANT WITH THE
+  COMMENT RULES, THE WHOLE FILE. This run's briefs from S4 onward wrongly told implementers that
+  legacy findings on untouched lines were deferred (a line from an older sidebar handoff); that
+  deferral is superseded. Every brief from here on says "sweep the file"; the sidebar branch does.
+  Debt this run left in files it touched (doc_check --verbose counts): game.gd 349, play_area.gd
+  642, card_visual.gd 211, game_data.gd 108, pip_comparator.gd 59, card_environment.gd 55,
+  player_settings.gd 50, board.gd 44, card_outline.gd 33, deck.gd 26, pip_suit.gd 8,
+  card_effect_api.gd 9, test_decks.gd 7. A sweep dispatch for those files (one commit, full gate,
+  no behaviour change, reviewer floor applies because a sweep can delete a load-bearing note - it
+  did once at S8) is owed before S16. The owner plans a full pass over every untouched file
+  separately (todo.md, Doc hygiene backlog).
 - Commit after every verified step with the evidence in the message; revert the effect-review
   import noise first (`git checkout -- solatro/design/effect-review` then
   `git clean -fq -- solatro/design/effect-review/`).
