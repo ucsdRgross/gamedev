@@ -8,9 +8,9 @@ extends FakeEnvironment
 var dispatches : Dictionary[StringName, int] = {}
 
 func _note_mod_fired(mod: CardModifier, function: StringName,
-		feeds_combo := true) -> void:
+		feeds_act_combo := true, counts_as_activation := false) -> void:
 	dispatches[function] = dispatches.get(function, 0) + 1
-	super(mod, function, feeds_combo)
+	super(mod, function, feeds_act_combo, counts_as_activation)
 
 ## Every dispatch of every hook.
 func total() -> int:

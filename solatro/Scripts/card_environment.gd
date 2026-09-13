@@ -68,15 +68,11 @@ func get_delay() -> float:
 func note_processing(_weight := 1, _key := "") -> void:
 	pass
 
-## Hook: a mod handler actually ran for `function`. Game overrides to feed the act
-## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base
-## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods),
-## which is what makes it the one place that sees the whole mod firing order for the event log.
-## `feeds_combo` keeps scoring untouched: only a path where an EFFECT fired may register a combo
-## class (run_all_mods, and the mark hooks), so the question-asking paths (comparators, legality
-## queries, the prop tick's per-card hooks) are LOGGED but never scored.
+#⚠ A MOD HANDLER RAN, AND EVERY DISPATCH PATH FIRES THIS -- the one place that sees the whole mod
+#firing order for the event log. The flags keep scoring untouched: a question is LOGGED and never
+#scored, a broadcast is worth a combo class only inside an act, an activation always is.
 func _note_mod_fired(_mod: CardModifier, _function: StringName,
-		_feeds_combo := true) -> void:
+		_feeds_act_combo := true, _counts_as_activation := false) -> void:
 	pass
 
 func get_card_collections() -> Array[Variant]:
@@ -304,7 +300,7 @@ func _run_own_mods(card: CardData, function: StringName, params: Array, with_ski
 			if counts_as_activation:
 				note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 			await Callable(mod, function).callv(params)
-			_note_mod_fired(mod, function, counts_as_activation)
+			_note_mod_fired(mod, function, false, counts_as_activation)
 
 #Loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod).
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:

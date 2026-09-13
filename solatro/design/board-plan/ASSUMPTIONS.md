@@ -167,10 +167,13 @@ gap under `gaps/`.
   would then have been unbounded, which is exactly what Q57's note forbids. Dispatch is unchanged.
 - S9 / Q54: MEASURED, and it is a bug fix, not a decision: `Game._note_mod_fired` gated combo
   registration on `_act_cancellable`, which is set ONLY inside `_perform_next`. The grid game scores
-  from a PLACEMENT, so no mod activation has ever fed the combo. The window is now "an act is
-  resolving OR a line is composing", the second read off the `line_mult_bonus` sentinel that already
-  means exactly that. Gating on `processing` instead would revive mod-activation combo for every
-  content mod in every cascade -- a scoring-wide change S9 was not asked for.
+  from a PLACEMENT, so no mod activation has ever fed the combo. `_note_mod_fired` now takes the two
+  windows as separate flags: a board-wide BROADCAST (`feeds_act_combo`) still registers only while an
+  act resolves, and an ACTIVATION (`counts_as_activation`, `run_mark_mods`'s flag threaded through)
+  always registers. Reading the window off the `line_mult_bonus` sentinel instead would hand the
+  combo to every broadcast inside a NESTED composition, and gating on `processing` would revive
+  mod-activation combo for every content mod in every cascade -- neither is a change S9 was asked
+  for. TP-79 pins the exclusion.
 - S9 / TEST_PLAN TP-53, TP-54: `TestGridFixtures.board_digest` gained every cell's own mark (printed
   identity plus `granted`), `plan_seed`, `combo_classes`/`combo_repeats` and `total_score`. A digest
   without the marks cannot say that undo or a replay brought the board back. Shared, so the E2E

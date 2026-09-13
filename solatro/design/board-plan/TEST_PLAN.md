@@ -127,6 +127,7 @@ says so and names its own variant.
 | **TP-49** | A mark effect fires again on every re-score of a line through its cell | force two scorings | `Q52`=(b), `Q107`=(a) | S9 |
 | **TP-50** ⚑gate | A mark firing charges `note_processing` and is bounded by the runaway guard — a deliberately looping mark effect trips `act_overrun` and does **not** hang | a looping mark | `Q57`=(a) | S9 |
 | **TP-51** | A mark firing registers a combo class from its COPIED modifier, not from `TypeGridCell` | one firing | `Q54`=(a), pre-authorisation 16 | S9 |
+| **TP-79** | A mark effect re-scoring a line from inside its own hook registers ONLY its own class: a board card answering `on_after_score` during that nested composition scores none, while the same card's `on_next` inside a real act still does | a looping mark and one board card carrying both broadcast hooks | `Q54`=(a), `Q76`=(c) | S9 |
 | **TP-52** | `reroll_mark`, `swap_marks` and `grant_mark` each leave `validate()` clean | each API call | `QR5`=(c), `Q53`=(a) | S10 |
 | **TP-53** ⚑gate | **Undo restores the mark AND un-banks the bonus** — board and score are bit-identical to before the placement | place a matcher, undo | `Q62`=(a) | S9 |
 | **TP-54** ⚑gate | A quit mid-cascade replays the placement and reproduces the same board and score | the pending-action path | `DESIGN.md` §1k | S9 |

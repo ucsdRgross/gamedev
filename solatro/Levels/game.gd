@@ -215,14 +215,15 @@ func register_combo(key: String) -> bool:
 	return true
 
 #⚠ EVERY dispatch path funnels through here, the ONE place that sees the whole mod firing order; the
-#detail string is HOT, so it is built only behind is_on(). ⚠ TWO WINDOWS feed the combo, because the
-#grid game scores from a PLACEMENT: `_act_cancellable` brackets Next alone, a mark fires mid-compose.
-func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
+#detail string is HOT, so it is built only behind is_on(). ⚠ A BROADCAST feeds the combo only while
+#an act resolves; an ACTIVATION names itself, so a composition nested inside one widens nothing.
+func _note_mod_fired(mod: CardModifier, function: StringName, feeds_act_combo := true,
+		counts_as_activation := false) -> void:
 	if EventLog.is_on(EventLog.CH_MOD):
 		var owner_card : CardData = mod.data
 		EventLog.event(EventLog.CH_MOD, "mod_fired", "%s on %s"
 				% [function, owner_card.log_str() if owner_card else "<no card>"])
-	if feeds_combo and (_act_cancellable or not is_nan(line_mult_bonus)):
+	if counts_as_activation or (feeds_act_combo and _act_cancellable):
 		register_combo(mod.combo_key(function))
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated

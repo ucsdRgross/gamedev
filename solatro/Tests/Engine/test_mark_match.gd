@@ -46,6 +46,7 @@ func _ready() -> void:
 	await test_a_mark_firing_charges_the_cap_and_is_bounded()
 	await test_a_nested_re_score_leaves_the_outer_line_whole()
 	await test_a_mark_firing_registers_its_copied_combo_class()
+	await test_a_nested_composition_registers_only_the_mark()
 	behavior_section("UNDO AND THE PENDING-ACTION REPLAY")
 	await test_undo_restores_the_mark_and_unbanks_the_bonus()
 	await test_a_replayed_placement_reproduces_the_marked_board()
@@ -309,6 +310,23 @@ class MarkHookRecorder extends CardModifierStamp:
 		hit_matched = matched
 
 
+#ONE class key across two broadcasts a board card answers: `on_after_score` reaches it from inside a
+#nested composition and `on_next` from inside a real act. The same mod in both is what tells the two
+#windows apart -- a second key could differ for a reason that is not the window.
+class BoardBroadcastStamp extends CardModifierStamp:
+	var after_scores : int = 0
+	var nexts : int = 0
+	func get_str() -> String: return "BoardBroadcastStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	func combo_key(_hook: StringName = &"") -> String: return "BoardBroadcastClass"
+	func on_after_score() -> void:
+		after_scores += 1
+	func on_next() -> void:
+		nexts += 1
+
+
 #The two mark hooks on the SKILL slot, which `run_mark_mods` carries in although a mark is never
 #spotlit. A stamp double cannot fail when that carry-in is wrong, so the skill shape needs its own.
 class MarkHookSkill extends CardModifierSkill:
@@ -385,6 +403,8 @@ class ReScoringMarkStamp extends CardModifierStamp:
 	func get_str() -> String: return "ReScoringMarkStamp"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
+	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	func combo_key(_hook: StringName = &"") -> String: return "ReScoringMarkClass"
 	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
 		api.add_line_mult(2.0)
 	## Re-scores a ONE-CARD line in an EMPTY section, so nothing but this firing can charge the cap.
@@ -1020,6 +1040,37 @@ func test_a_mark_firing_registers_its_copied_combo_class() -> void:
 	check(not g.state.combo_classes.has(""),
 			"TP-51: ...so no empty class was registered",
 			str(g.state.combo_classes))
+	free_game(g)
+
+
+#TP-79: a mark effect re-scoring a line runs a WHOLE composition inside its own hook, and the board
+#broadcasts in there are the board's, not the act's -- only the effect that fired named a class.
+func test_a_nested_composition_registers_only_the_mark() -> void:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(ReScoringMarkStamp.new()))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	spy.once = true
+	var cards := triple_row()
+	cards[3].with_stamp(BoardBroadcastStamp.new())
+	var listener := cards[3].stamp as BoardBroadcastStamp
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires == 1 and listener.after_scores > 1,
+			"TP-79 precondition: the nested re-score happened, and the board card was broadcast to "
+			+ "inside it as well as outside it",
+			"fires=%d after_scores=%d" % [spy.fires, listener.after_scores])
+	check(not g.state.combo_classes.has(listener.combo_key()),
+			"TP-79: a board card answering a broadcast inside the nested composition scores no class",
+			"%s in %s" % [listener.combo_key(), str(g.state.combo_classes)])
+	check(g.state.combo_classes.has(spy.combo_key()),
+			"TP-79: ...while the mark whose effect fired registered its own class",
+			"%s missing from %s" % [spy.combo_key(), str(g.state.combo_classes)])
+	await g.next()
+	check(listener.nexts > 0 and g.state.combo_classes.has(listener.combo_key()),
+			"TP-79 control: the same board card firing inside a real act registers as it always did",
+			"nexts=%d classes=%s" % [listener.nexts, str(g.state.combo_classes)])
 	free_game(g)
 
 
