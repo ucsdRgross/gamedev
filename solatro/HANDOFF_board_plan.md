@@ -167,6 +167,31 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   notes: ''
 ```
 
+## Phase 1-3 adversarial review (Opus 5, default effort, read-only, committed tree at 7c7ae65a)
+Findings and their disposition; each defect is reproduced red before it is fixed:
+- FIX (own commit): run_all_mods gates only the skill slot on is_spotlit(), so a mark's copied
+  STAMP (StampDoubleTrigger ships in five deck rows) answers on_after_score / on_trigger and
+  charges note_processing. Q59 says never. TP-44 gains a stamp case.
+- FIX (own commit): matches_at lets two EMPTY rank (or suit) slots agree (printed_same on
+  null == null), so a rankless card on a suit-only mark sets RANK and flat_bonus dereferences
+  rank.value. RANK/SUIT need both slots present, as TALENT/HAT already do.
+- FIX (own commit): _mark_violations hand-rolls its printer walk and omits lower_zone; reuse
+  all_card_datas() filtered to playing cards.
+- FIX (test strength, own commit): run_mark_mods's skill-slot dispatch has no failing case (both
+  test doubles are stamps); BOARD PLAN's start_show replicates _start_fresh_show instead of
+  using it; the blocks_spotlight note naming poker-patience PLAN 1.4 as wrong was deleted in the
+  card_modifier.gd comment sweep and must come back.
+- SCHEDULED, not drift: a mark firing registering a combo class and charging note_processing
+  (Q54, Q57) are S9's TP-50/TP-51, deferred there by the S6 brief.
+- GAP-002 filed: the landing-time dispatch S9 owes collides with add_line_mult's composing-only
+  precondition; the cover/hit reading is recorded in the same gap for the owner.
+- RECORDED, no producer today: a nested api.score_line from inside a mark hook would clear the
+  outer accumulator; add_grid re-seeds from plan_seed (deterministic, logged).
+- GAP-001 gains a note: the mid-show pool shrinks with the draw pile.
+- Verified clean by the reviewer: scoring.gd byte-identical to main; unmarked boards score as
+  today; the composition is on the only banking path; no global RNG on the deal; save/resume
+  carries marks; no design ids in code; anti-scope respected.
+
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
