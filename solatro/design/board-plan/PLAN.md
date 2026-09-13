@@ -272,7 +272,7 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 
 | Rule | Node |
 |---|---|
-| an empty cell draws its mark inside the existing empty-cell frame, **grey and faded like a ghostly outline**, and need not sit exactly in the palette. `Q112` verbatim: *"all four. should be same size as a normal card."* | `Q63`=(d), `Q112` |
+| an empty cell draws its mark inside the existing empty-cell frame at full card size. ⚠ **Owner ruling during execution, superseding `Q63`'s grey:** *"i dont want grid marks to be monochromatic. try no outline to indicate it is a mark version for now, no other visual changes."* — a mark keeps a real card's colours and the ONLY visual difference is that it draws no outline. `Q112` verbatim: *"all four. should be same size as a normal card."* | `Q63`=(d) superseded, `Q112` |
 | all four printed properties are drawn, per that same `Q112` note | `Q112`, `Q4`=(b) |
 | a covered mark is available on **inspection**, and through the layer view | `Q19` |
 | the **layer view** is a **two-state toggle** — the played board, or the marks — with no notion of stack depth | `Q113`=(b) |
@@ -289,7 +289,7 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 | colour alone is acceptable for these states | `Q71`=(b) |
 | no tutorial | `Q74`=(a) |
 
-⚠ **`modulate` IS NOT AVAILABLE for the grey.** It is the focus highlight (`Cards/card_visual.gd:117`)
+⚠ **`modulate` IS NOT AVAILABLE for any mark treatment.** It is the focus highlight (`Cards/card_visual.gd:117`)
 and it propagates to direct `CanvasItem` children, so it would tint the real card stacked on the
 mark (`DESIGN.md` §1c, §1m). Use the palette and the outline shader's three override layers
 (`ARCHITECTURE_REVIEW.md` §4i, §4j).
