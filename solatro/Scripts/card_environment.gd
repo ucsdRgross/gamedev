@@ -91,8 +91,11 @@ func is_data_in_rules(data: CardData) -> bool:
 #Dispatch is INSTANCE-based: each environment runs mods over its own collections.
 #CURRENT is only the "environment on screen" pointer used at the boundaries
 #(CardModifier.env/game accessors, PipComparator, UI) — not inside dispatch.
+
+#⚠ A MARKED CELL'S ZONE CARD CONTRIBUTES NOTHING HERE, type, stamp, statuses and skill alike: a
+#mark's copied modifiers answer the two mark hooks and nothing else, and a stamp is asked with no
+#spotlight gate at all, so gating the skill slot on `spotlit` would leave the rest answering.
 func run_all_mods(function: StringName, ...params:Array) -> void:
-	#print(function)
 	var triggered := false
 	# P1 gate: on a cacheable environment (Game — _revision_key non-empty) consult the SE1
 	# implementer cache first; when NOTHING on the board implements this hook the walk is a
@@ -100,7 +103,7 @@ func run_all_mods(function: StringName, ...params:Array) -> void:
 	# walk — building the list uncached would itself cost the walk being saved.
 	if _revision_key().is_empty() or not _compare_implementers(function).is_empty():
 		for data in CardDataIterator.new(self):
-			#print(data)
+			if BoardPlan.is_marked(data): continue
 			# statuses join type/stamp as a SNAPSHOT copy (append_array) so a status removing
 			# itself mid-hook can't corrupt this walk. Statuses self-scope targeted hooks.
 			var mods : Array[CardModifier] = [data.type, data.stamp]

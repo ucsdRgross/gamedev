@@ -125,15 +125,19 @@ func is_spotlit() -> bool:
 #one Kuroko / Ghost Light modifier opting out is enough for its whole card. ⚠ `false` as the
 #default would spotlight every covered card on the board.
 
+#⚠ THE SPOTLIGHT PLAN'S §1.4 SPECIFIES THE OPPOSITE DEFAULT AND IS WRONG: it contradicts the same
+#design's own rule that a covered talent is hidden. The owner ruling that settles the polarity is
+#solatro/design/spotlight/gaps/GAP-001.md.
+
 ## Does this card HIDE the talents of whatever is stacked under it? A mark hides nothing.
 func blocks_spotlight() -> bool:
 	return not _is_mark()
 
 #⚠ A MARK IS NEVER SPOTLIT AND BLOCKS NOTHING, whatever it copied and whatever covers it: its
-#copied modifiers answer the mark hooks and nothing else, so a copied skill must never answer the
-#board's broadcasts. `is_marked` asks only for a printed pip, so the type check is what scopes it.
+#copied modifiers answer the mark hooks and nothing else. The question is the board's own, so it
+#is asked of `BoardPlan` -- a second spelling of "marked" here could disagree with the deal's.
 func _is_mark() -> bool:
-	return data.type is TypeGridCell and BoardPlan.is_marked(data)
+	return BoardPlan.is_marked(data)
 
 #⚠ DEGENERATE LOOKUPS FAIL CLOSED (blocked -> dark): `position_of` is a revision-cached index, so
 #a card read mid-mutation can miss, and failing OPEN would spotlight a card the board cannot even

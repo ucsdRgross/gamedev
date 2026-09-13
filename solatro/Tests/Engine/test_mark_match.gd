@@ -31,6 +31,7 @@ func _ready() -> void:
 	await test_a_line_with_no_mult_is_never_multiplied_to_nothing()
 	await test_mark_effects_sum_into_one_multiplier()
 	await test_a_cover_is_announced_and_a_match_adds_its_own_hook()
+	await test_a_marks_copied_skill_is_dispatched_the_mark_hooks()
 	await test_a_flush_keeps_its_own_score()
 	await test_a_match_outside_the_meld_pays_nothing()
 	await test_a_card_pays_into_every_line_it_completes()
@@ -41,6 +42,7 @@ func _ready() -> void:
 	await test_a_leniency_rule_loosens_the_match()
 	behavior_section("A MARK IS NEVER SPOTLIT")
 	await test_a_mark_answers_no_broadcast()
+	await test_a_marks_copied_stamp_answers_no_broadcast()
 	behavior_section("A MARK BLOCKS NOTHING")
 	test_a_mark_blocks_nothing()
 	finish()
@@ -245,9 +247,35 @@ class MarkHookRecorder extends CardModifierStamp:
 		hit_level = level
 
 
-#A mark worth twice the line it sits in. The share reaches the line through the api's own seam,
-#which is the only way a mark effect has of multiplying one, and it is a STAMP because a mark is
-#never spotlit -- the skill slot would be gated where a stamp is always asked.
+#The two mark hooks on the SKILL slot, which `run_mark_mods` carries in although a mark is never
+#spotlit. A stamp double cannot fail when that carry-in is wrong, so the skill shape needs its own.
+class MarkHookSkill extends CardModifierSkill:
+	var covers : int = 0
+	var hits : int = 0
+	func get_str() -> String: return "MarkHookSkill"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
+		covers += 1
+	func on_mark_hit(_card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
+		hits += 1
+
+
+#Counts a BOARD-WIDE broadcast, on the slot that has no spotlight gate anywhere: a stamp is asked
+#whatever covers its card, which is why the mark exclusion cannot live on the spotlight flag alone.
+#`on_after_score` is the hook the shipped Double Trigger stamp implements on five deck rows.
+class AfterScoreRecorder extends CardModifierStamp:
+	var after_scores : int = 0
+	func get_str() -> String: return "AfterScoreRecorder"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_after_score() -> void:
+		after_scores += 1
+
+
+#A mark worth twice the line it sits in, on a STAMP because that is the slot the shipped effects
+#use. The share reaches the line through the api's own seam, which is the only way a mark effect
+#has of multiplying one.
 class LineMultStamp extends CardModifierStamp:
 	func get_str() -> String: return "LineMultStamp"
 	func get_description() -> String: return ""
@@ -613,6 +641,20 @@ func test_a_cover_is_announced_and_a_match_adds_its_own_hook() -> void:
 			"cover %d, hit %d" % [matching.cover_level, matching.hit_level])
 	free_game(g)
 
+#A mark's copied SKILL is dispatched the mark hooks although the spotlight rule keeps it dark --
+#the one slot whose dispatch depends on a flag, so the darkness is asserted next to the hooks that
+#arrived anyway.
+func test_a_marks_copied_skill_is_dispatched_the_mark_hooks() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_skill(MarkHookSkill.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).skill as MarkHookSkill
+	check(not spy.spotlit and not spy.is_spotlit(),
+			"precondition: the mark's copied skill is dark, flag and rule alike")
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-44b: the mark hooks reach a mark's copied skill at score time regardless",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	free_game(g)
+
 
 # ==============================================================================
 # TP-34, TP-36, TP-37 -- which cards pay, and into what
@@ -806,6 +848,28 @@ func test_a_mark_answers_no_broadcast() -> void:
 			"TP-44: is_spotlit() is false on a mark's copied global stamp")
 	check(not global_mark.skill.is_spotlit(),
 			"TP-44: a copied global stamp lights nothing else on its mark either")
+	free_game(g)
+
+#⚠ THE SKILL SLOT IS NOT THE WHOLE OF IT, BECAUSE MEASURED: a stamp answers a broadcast with no
+#spotlight gate at all, so a mark that copied one answers the board's hooks once per marked cell
+#however dark it is. The control is the same stamp on a real card, in a cell carrying no mark.
+func test_a_marks_copied_stamp_answers_no_broadcast() -> void:
+	var g := make_game()
+	var mark := mark_cell(g.state, 3, 0, play_card(3, null).with_stamp(AfterScoreRecorder.new()))
+	var control := play_card(4, null).with_stamp(AfterScoreRecorder.new())
+	place_in_cell(g.state, 4, 0, control)
+	var mark_spy := mark.stamp as AfterScoreRecorder
+	var control_spy := control.stamp as AfterScoreRecorder
+	await g.run_all_mods(&"on_after_score")
+	check(control_spy.after_scores == 1,
+			"precondition: the same stamp on a played card answers the board-wide broadcast",
+			"got %d" % control_spy.after_scores)
+	check(mark_spy.after_scores == 0,
+			"TP-44: a mark's copied stamp answers no board-wide broadcast",
+			"got %d" % mark_spy.after_scores)
+	check(mark.statuses.is_empty(),
+			"TP-44: and the mark carries no status for the same broadcast to reach",
+			"got %d" % mark.statuses.size())
 	free_game(g)
 
 
