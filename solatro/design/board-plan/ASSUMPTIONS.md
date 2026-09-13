@@ -312,3 +312,29 @@ gap under `gaps/`.
   PLAN VISUALS fixture deliberately runs with no planner card, so `plan_seed` is 0 and `reroll_mark`
   asserts on it; `swap_marks` is the same kind of caller -- a mark effect bumping `revision` -- and
   needs no dealt plan.
+- S15 / Q104, Q105: the sim models a TALENT match from the card tuple's existing skill flag and
+  models NO HAT at all -- a sim card carries no stamp slot, and no deck the grid model plays prints
+  one. `M` is therefore 0 on every ladder line today and the composition reduces to `hand + flats`;
+  a non-zero `M` is exercised by the engine's own MARK MATCH suite, not by the port.
+- S15 / Q103, Q104: the sim has never modelled prop scoring and does not start now, so the suit rule
+  is invisible to it. The parity boards are therefore dealt and filled from `PipSuitTest`, which
+  spawns nothing: a standard suit fires its props the moment its cell's mark agrees on suit, and
+  that would hand the port engine points it has no way to account for.
+- S15 / Q25, Q104: `meld_positions` re-derives `Scoring.Result.meld` from the tag the port already
+  returns, which is exact at the five cards a flat board's lines hold -- a house at scale 1, a
+  scoring straight and a flush each consume the whole line, so only a set leaves cards outside it.
+  A high-card line pays its single highest card, first of equals, mirroring `HighCardHandler`.
+- S15 / Q8, Q99: the sim's deal draws on a generator of its own, seeded from the show's plan seed
+  exactly as `plan_seed` is kept apart from the shuffle. Drawing it from the placement stream would
+  shift every later choice, and the marked ladder would stop being paired with the unmarked one it
+  is read against.
+- S15 / TEST_PLAN TP-80: a parity board is filled with 25 cards drawn WITH REPLACEMENT from its
+  deck's identities, so every board completes all twelve lines and the repeats make the sets whose
+  meld leaves cards outside it. The mark deal still reads the deck itself, so a 20-card stock over
+  25 cells still exercises the fewest-copies rule.
+- S15 / Q104: the placement oracle values a placement by the COMPOSED line number, because it reads
+  the same composition the board banks -- par play therefore sees the plan and places into the cells
+  whose marks it agrees with.
+- S15 / Q120: the goal tool's `shipped` reference column was still printing the retired tableau
+  constants; it now reads two named mirrors beside the other PlayerSettings values, so the column
+  means what the game ships.

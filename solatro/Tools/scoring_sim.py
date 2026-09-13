@@ -1201,6 +1201,15 @@ COMBO_CAP = 0.0
 GOAL_N0 = 20
 BOOSTER_YIELD = 5
 NODES_PER_BOOSTER = 3
+SHIPPED_G0 = 5376.0
+SHIPPED_ALPHA = 0.26
+
+# The board plan's knobs, from the same PlayerSettings group the engine scores with. --parity
+# asserts all three against the values the engine dumps, so a knob edited there and not here is
+# a failed gate rather than a ladder silently fitted to numbers the game does not use.
+PLAN_RANK_MATCH_STEP = 1.0
+PLAN_ACE_VALUE = 10
+PLAN_TALENT_MULT = 1.0
 
 ROW, COL, DIAG, HEIGHT_V = 'ROW', 'COL', 'DIAG', 'HEIGHT_V'
 # SkillLineDetector._SCORED_KINDS, in its order: one placement completing several
@@ -1300,6 +1309,75 @@ def score_line_cached(cards):
     return hit
 
 
+# MarkMatch.Property, minus HAT: a sim card carries no stamp, and no deck this model plays
+# prints one, so a hat share of the multiplier is a number nothing on the board can pay.
+MARK_RANK, MARK_SUIT, MARK_TALENT = 1, 2, 4
+
+
+def matches_at(card, mark):
+    """MarkMatch.matches_at: which printed properties of `card` agree with the mark on its own
+    cell, as a bit mask. A sim card always prints a rank and a suit, so the both-present half of
+    the printed test is free; the skill flag stands for the talent's script identity."""
+    if mark is None:
+        return 0
+    matched = MARK_RANK if card[0] == mark[0] else 0
+    if card[1] == mark[1]:
+        matched |= MARK_SUIT
+    if card[2] and mark[2]:
+        matched |= MARK_TALENT
+    return matched
+
+
+def flat_bonus(card, matched):
+    """MarkMatch.flat_bonus: what a RANK match pays — the rank the card prints, scaled and
+    rounded UP, with an ace paying its own knob in place of the 1 it prints."""
+    if not matched & MARK_RANK:
+        return 0
+    if card[0] == 1:
+        return PLAN_ACE_VALUE
+    return math.ceil(card[0] * PLAN_RANK_MATCH_STEP)
+
+
+def mult_bonus(matched):
+    """MarkMatch.mult_bonus: the TALENT share of the line's multiplier. The shares SUM and the
+    sum IS the multiplier, so a single share of 1 changes nothing."""
+    return PLAN_TALENT_MULT if matched & MARK_TALENT else 0.0
+
+
+def meld_positions(cards, tag):
+    """Which cells of a completed line are in Scoring.Result.meld — the only cards a mark pays
+    for. Exact at the five cards a flat board's lines hold: a house at scale 1, a straight that
+    scores and a flush each consume the whole line, so only a set leaves cards outside it."""
+    if tag is None:
+        top = max(c[0] for c in cards)
+        return [next(i for i, c in enumerate(cards) if c[0] == top)]
+    arch, size, copies, key = tag
+    if arch != 'XKIND':
+        return list(range(len(cards)))
+    if copies == 1:
+        return [i for i, c in enumerate(cards) if c[0] == key]
+    out = []
+    for rank in dict.fromkeys(c[0] for c in cards):
+        idxs = [i for i, c in enumerate(cards) if c[0] == rank]
+        if len(idxs) >= size:
+            out.extend(idxs[:size])
+    return sorted(out)
+
+
+def compose_line_score(cards, marks):
+    """Game._compose_line_score: (the hand's own score + the flats its MELD cards pay) times the
+    SUMMED mults, with a sum of 0 never multiplying. Returns (score, tag) like score_line, so a
+    caller banks and classifies exactly what it did before the board carried marks."""
+    score, tag = score_line_cached([(c[0], c[1]) for c in cards])
+    flats, summed = 0, 0.0
+    for i in meld_positions(cards, tag):
+        matched = matches_at(cards[i], marks[i])
+        flats += flat_bonus(cards[i], matched)
+        summed += mult_bonus(matched)
+    line = score + flats
+    return (int(line * summed) if summed != 0.0 else line), tag
+
+
 def combo_key(tag):
     """Scoring.class_key at (archetype, copy_size, copies_count) granularity —
     see the APPROXIMATION note in this section's banner. None (a high card) never
@@ -1374,6 +1452,7 @@ class GridBoard:
         self.n, self.w, self.h = n, w, h
         self.size = w * h
         self.cells = [[None] * self.size for _ in range(n)]
+        self.marks = [[None] * self.size for _ in range(n)]
         self.lines = flat_lines(w, h)
         self.line_cells = [tuple(c[1] * w + c[0] for c in cells)
                            for _kind, cells in self.lines]
@@ -1391,6 +1470,24 @@ class GridBoard:
         self.repeats = 0
         self.committed = -1
         self.placed = 0
+
+    def deal_plan(self, deck, rng):
+        """BoardPlan.deal over the one stock a show has: ONE shuffle of every cell of every grid,
+        walked start to finish, each cell taking an identity the board has marked FEWEST times —
+        so 20 cards over 25 cells mark 20 identities once and 5 of them twice.
+
+        ⚠ `rng` IS THE DEAL'S OWN STREAM, seeded from the show's plan seed exactly as the engine
+        keeps `plan_seed` apart from the shuffle. Drawing it from the placement stream instead
+        would shift every later choice, and a marked ladder would stop being paired with the
+        unmarked one it is read against."""
+        order = [(g, ci) for g in range(self.n) for ci in range(self.size)]
+        rng.shuffle(order)
+        distinct = list(dict.fromkeys(deck))
+        pool = list(distinct)
+        for g, ci in order:
+            if not pool:
+                pool = list(distinct)
+            self.marks[g][ci] = pool.pop(rng.randrange(len(pool)))
 
     def combo_mult(self):
         """GameData.combo_mult."""
@@ -1442,9 +1539,8 @@ class GridBoard:
                 idxs = self.line_cells[li]
                 if self.filled[g][li] != len(idxs) - 1:
                     continue
-                line = [(card[0], card[1]) if i == ci else (cells[i][0], cells[i][1])
-                        for i in idxs]
-                sc, tag = score_line_cached(line)
+                line = [card if i == ci else cells[i] for i in idxs]
+                sc, tag = compose_line_score(line, [self.marks[g][i] for i in idxs])
                 out.append((kind, sc, tag))
         return out
 
@@ -1514,8 +1610,9 @@ class GridBoard:
                 idxs = self.line_cells[li]
                 if self.filled[g][li] != len(idxs):
                     continue
-                line = [(self.cells[g][i][0], self.cells[g][i][1]) for i in idxs]
-                completed.append((kind, score_line_cached(line)))
+                line = [self.cells[g][i] for i in idxs]
+                completed.append((kind, compose_line_score(line,
+                                                           [self.marks[g][i] for i in idxs])))
         for kind, (sc, tag) in completed:
             if sc > 0:
                 self.line_product[g] = (float(sc) if self.line_product[g] == 0.0
@@ -1562,10 +1659,10 @@ def choose_placement(board, held, rng, skill):
     return best
 
 
-def play_grid_show(deck, rng, skill, n_grids=None, economy=None):
-    """One show: deal five into the Entrance, place until it is empty, refill,
-    repeat until the deck runs dry or no legal placement remains. Returns the
-    displayed total at End Show.
+def play_grid_show(deck, rng, skill, plan_seed, n_grids=None, economy=None):
+    """One show: deal the plan across every cell, then five cards into the Entrance, place until
+    it is empty, refill, repeat until the deck runs dry or no legal placement remains. Returns
+    the displayed total at End Show.
 
     ⚠ TWO ENGINE RULES DECIDE THE SHAPE OF THIS LOOP, and both bind hard:
       * the Entrance refills only when EVERY slot is empty (Game._entrance_is_empty),
@@ -1576,6 +1673,7 @@ def play_grid_show(deck, rng, skill, n_grids=None, economy=None):
     econ = economy or SHIPPED()
     n = econ.grids_for(len(deck)) if n_grids is None else n_grids
     board = GridBoard(n, economy=econ)
+    board.deal_plan(deck, random.Random(plan_seed))
     held, idx = [], 0
     while True:
         if not held:
@@ -1654,7 +1752,7 @@ def grid_show_totals(size, trials, skill, seed_off=0, economy=None):
     totals, placed = [], []
     for t in range(trials):
         deck, rng = shuffled(deckf, seed_off + t)
-        total, board = play_grid_show(deck, rng, skill, economy=economy)
+        total, board = play_grid_show(deck, rng, skill, seed_off + t, economy=economy)
         totals.append(total)
         placed.append(board.placed)
     return totals, placed
@@ -1752,7 +1850,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
     print("=== GRID GOAL TABLE (q=%.2f, par skill=%.2f, %d trials/node, economy '%s') ==="
           % (q, skill, trials, econ.name))
     print("  spread mode: %s" % GRID_SPREAD_MODE)
-    print("    N  ranks  grids  cells  placed  median      goal   (shipped 130*(N/20)^4.2)")
+    print("    N  ranks  grids  cells  placed  median      goal        shipped")
     goals, raw, ks = {}, {}, list(range(nodes))
     for k in ks:
         size = nhat(k)
@@ -1765,7 +1863,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
         n_g = econ.grids_for(size)
         cells = n_g * econ.w * econ.h
         med_placed = st.median(placed)
-        shipped = 130.0 * (size / 20.0) ** 4.2
+        shipped = SHIPPED_G0 * (size / float(GOAL_N0)) ** SHIPPED_ALPHA
         print("  %3d   1-%-2d   %3d   %4d   %5.1f  %8d  %8d   %12.0f"
               % (size, grid_spread(size), n_g, cells, med_placed,
                  int(st.median(totals)), goals[k], shipped))
@@ -1781,7 +1879,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
     bg0, balpha, btight = fit_power_beatable(ks, raw)
     print("  BEATABLE:      goal(N) = %.1f * (N/%d)^%.2f  tightness %.2f of the ladder"
           % (bg0, GOAL_N0, balpha, btight))
-    print("  shipped:       goal(N) = 130.0 * (N/20)^4.20")
+    print("  shipped:       goal(N) = %.1f * (N/%d)^%.2f" % (SHIPPED_G0, GOAL_N0, SHIPPED_ALPHA))
     print("  ladder span: node 0 goal %d -> node %d goal %d  (x%.1f over the run)"
           % (goals[ks[0]], ks[-1], goals[ks[-1]], goals[ks[-1]] / float(goals[ks[0]])))
     peak = max(ks, key=lambda k: raw[k])
@@ -1793,7 +1891,8 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
             minimax_worst=round(mworst, 4), beatable_g0=round(bg0, 1),
             beatable_alpha=round(balpha, 3), tightness=round(btight, 4))
     curve = {k: max(1, int(bg0 * (nhat(k) / float(GOAL_N0)) ** balpha)) for k in ks}
-    shipped = {k: max(1, int(130.0 * (nhat(k) / float(GOAL_N0)) ** 4.2)) for k in ks}
+    shipped = {k: max(1, int(SHIPPED_G0 * (nhat(k) / float(GOAL_N0)) ** SHIPPED_ALPHA))
+               for k in ks}
     print("\n  node:   ", "".join("%8d" % k for k in ks))
     print("  ladder: ", "".join("%8d" % goals[k] for k in ks))
     print("  fitted: ", "".join("%8d" % curve[k] for k in ks))
@@ -1808,7 +1907,7 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
         for t in range(runs):
             for k in ks:
                 deck, rng = shuffled((lambda s=nhat(k): grid_deck(s)), t * 97 + k)
-                total, _b = play_grid_show(deck, rng, psk, economy=econ)
+                total, _b = play_grid_show(deck, rng, psk, t * 97 + k, economy=econ)
                 plays[k] += 1
                 if total < curve[k]:
                     break
@@ -1831,7 +1930,7 @@ def run_grid_show(size, skill, trial=0):
     each of its buckets holds, and how the displayed number is built from them.
     The instrument for checking the port by eye against a real board."""
     deck, rng = shuffled((lambda s=size: grid_deck(s)), trial)
-    total, board = play_grid_show(deck, rng, skill)
+    total, board = play_grid_show(deck, rng, skill, trial)
     print("=== ONE GRID SHOW: N=%d cards, %d grid(s), skill=%.2f, seed trial %d ==="
           % (size, board.n, skill, trial))
     ranks = "0123456789TJQK"
@@ -1878,7 +1977,11 @@ def sim_class_key(tag, cards):
 def run_parity(path):
     """Assert the Python port against `Tools/scoring_parity.gd`'s engine dump.
     Checks every five-card line's SCORE, the grid_score product rule including
-    every zero pattern, and combo_mult. Returns a non-zero count of mismatches.
+    every zero pattern, combo_mult, the plan's knobs, and every line of a set of
+    MARKED boards the engine dealt and filled through its own placement — the sim
+    scores the board it is given rather than dealing one of its own, which is the
+    only way two different generators can be compared at all. Returns a non-zero
+    count of mismatches.
 
     ⚠ THE SCORE IS THE ASSERTION. Class keys are reported as a spread, not failed
     on: combo_key is documented as the coarser (archetype, size, copies) key, so a
@@ -1931,6 +2034,51 @@ def run_parity(path):
             bad += 1
             print("  [FAIL] combo_mult(firsts=%s, repeats=%s): engine %s, sim %s"
                   % (row['firsts'], row['repeats'], row['mult'], got))
+    knobs = dump['plan_knobs']
+    for name, mirrored in (('rank_match_step', PLAN_RANK_MATCH_STEP),
+                           ('ace_value', PLAN_ACE_VALUE),
+                           ('talent_mult', PLAN_TALENT_MULT)):
+        checked += 1
+        if abs(float(knobs[name]) - float(mirrored)) > 1e-9:
+            bad += 1
+            print("  [FAIL] knob %s: engine %s, sim %s" % (name, knobs[name], mirrored))
+    marked_bad, marked_lines = bad, 0
+    for row in dump['marked_boards']:
+        board = GridBoard(1)
+        board.marks[0] = [(int(r), int(s), False, False) for r, s in row['marks']]
+        for ci, pair in enumerate(row['cells']):
+            board.cells[0][ci] = (int(pair[0]), int(pair[1]), False, False)
+        for li, (kind, cells) in enumerate(board.lines):
+            idxs = board.line_cells[li]
+            got = compose_line_score([board.cells[0][i] for i in idxs],
+                                     [board.marks[0][i] for i in idxs])[0]
+            if kind == DIAG:
+                board.special_term[0] += got
+                continue
+            index = cells[0][1] if kind == ROW else cells[0][0]
+            engine_line = (row['rows'] if kind == ROW else row['cols'])[index]
+            if kind == ROW:
+                board.row_term[0] += got
+            else:
+                board.col_term[0] += got
+            checked += 1
+            marked_lines += 1
+            if abs(got - engine_line) > 1e-6:
+                bad += 1
+                if bad - marked_bad <= 12:
+                    print("  [FAIL] spread %s seed %s %s %d: engine %s, sim %s"
+                          % (row['spread'], row['seed'], kind, index, engine_line, got))
+        checked += 2
+        if abs(board.special_term[0] - row['special']) > 1e-6:
+            bad += 1
+            print("  [FAIL] spread %s seed %s diagonals: engine %s, sim %s"
+                  % (row['spread'], row['seed'], row['special'], board.special_term[0]))
+        if abs(board.grid_score(0) - row['grid_score']) > 1e-6:
+            bad += 1
+            print("  [FAIL] spread %s seed %s grid_score: engine %s, sim %s"
+                  % (row['spread'], row['seed'], row['grid_score'], board.grid_score(0)))
+    print("  marked boards: %d boards, %d banked lines, %d mismatches"
+          % (len(dump['marked_boards']), marked_lines, bad - marked_bad))
     print("=== PARITY: %d checks, %d MISMATCHES ===" % (checked, bad))
     return bad
 
@@ -2005,7 +2153,7 @@ def run_economy_sweep(q, trials, skill, out, nodes=13, runs=200):
         for t in range(runs):
             for k in ks:
                 deck, rng = shuffled((lambda sz=nhat(k): grid_deck(sz)), t * 97 + k)
-                total, _b = play_grid_show(deck, rng, skill, economy=econ)
+                total, _b = play_grid_show(deck, rng, skill, t * 97 + k, economy=econ)
                 if total < curve[k]:
                     break
             else:

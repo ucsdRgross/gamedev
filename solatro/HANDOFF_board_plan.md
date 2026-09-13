@@ -2,17 +2,19 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 38 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S14 landed and verified, one
-commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S15 (the
-curve refit), S16, S17. Five gaps open for the owner: GAP-001 (stocks are
-sidebar S19; TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time
-dispatch parked; S9 partial), GAP-003 (re-deal a line unnamed), GAP-004 (the palette has no white:
-`match_rim` is built and photographed against entry 31 cream, `match_rim_active` against 6 gold; a
-ruling moves one number in `roles.tres`), GAP-005 (every controller shoulder is bound; the layer
-view's held-controller peek is parked, the pad reaches it through the HUD control). Owner rulings
-mid-run are in PLAN 1.10. Implementer sessions die to the Opus session limit every few hours; every
-cut-off so far was resumed with SendMessage from the same transcript, never restarted.
+**State:** 39 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S14 landed and verified, S15
+landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
+one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: S16 (the docs pass), S17. Six
+gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark hook
+timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal a
+line unnamed), GAP-004 (the palette has no white: `match_rim` is built against entry 31 cream,
+`match_rim_active` against 6 gold), GAP-005 (every controller shoulder is bound; the layer view's
+held-controller peek is parked), GAP-006 (the plan multiplies par play's score 3.3-5.1x but the
+ladder still peaks at node 3; the beatable refit returns alpha -0.32, so the constants are unwritten
+and the shipped curve is now trivial - an owner ruling on the curve). Owner rulings mid-run are in
+PLAN 1.10. Implementer sessions die to the Opus session limit every few hours; every cut-off so far
+was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -204,13 +206,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'grep: each of plan_rank_match_step, plan_rank_flat_fallback, plan_ace_value, plan_talent_mult, plan_hat_mult declared once in player_settings.gd and read by Scripts/mark_match.gd; plan_reveal_fraction declared once and read by UI/play_area.gd; the group label "Balance - board plan" appears once. No code change; the S13 gate run (ALL 48 SUITES: 4311 CHECKS PASSED) is the run this tree was verified on.'
   notes: 'Nothing to add: PLAN 1.12 lists exactly these six.'
 - id: S15
-  description: the curve refit - scoring_sim.py models marks and matches; goal_g0/goal_alpha refit; GAP-041 closed by a new poker-patience design version; TP-80..82.
-  files_touched: []
-  verification_command: 'Tools/scoring_parity.gd --parity'
+  description: the curve refit - scoring_sim.py models the deal, the match and the composition; scoring_parity.gd dumps marked boards; goal_g0/goal_alpha refit; GAP-041 closed by a poker-patience v3; TP-80..82.
+  files_touched: [solatro/Tools/scoring_sim.py, solatro/Tools/scoring_parity.gd, solatro/design/board-plan/gaps/GAP-006.md]
+  verification_command: 'Godot --path solatro res://Tools/scoring_parity.tscn (private APPDATA); py solatro/Tools/scoring_sim.py --parity <APPDATA>/Godot/app_userdata/Solatro/scoring_parity.json; py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: partial
+  evidence: 'TP-80 (overseer re-ran --parity on the implementer''s dump): PARITY: 1372 checks, 0 MISMATCHES - 1200 engine lines, 12 marked boards / 120 banked lines, 12 diagonal sums, 12 grid scores, 3 knobs; implementer red with the sim''s flats zeroed: 52 mismatches (35 banked lines, 6 diagonal sums, 9 grid scores, 2 knobs). TP-81/TP-82 MEASURED, not met: the ladder with marks (medians 44840 / 308083 / 76403 / 49550 / 36757 at N 20..40) still peaks at node 3 and ends at 0.10x; beatable fit goal(N) = 23400 * (N/20)^-0.32; win rates 13.0 / 11.8 / 8.5; constants left at 5376 / 0.26, no design version written; GAP-006 filed with the table. Overseer full run: see the S15 commit message. No Scripts/ file changed; SECTION 8 identical.'
+  notes: 'The sim mirrors the three rank knobs (PLAN_RANK_MATCH_STEP etc.) and --parity asserts them against the engine dump, so the mirror is seam-checked. Models no hat (a sim card has no stamp) and no prop scoring (never did); parity boards are dealt from PipSuitTest so no props fire. run_suite.sh --scene does not run the parity scene (the wrapper wants a suite banner): run Godot directly with the private APPDATA. Under py 3.9.7.'
 - id: S16
   description: the docs pass - ARCHITECTURE_REVIEW 3a/3d/4 and 1.4 hook roster, START_HERE, todo; doc_check full.
   files_touched: []
@@ -328,14 +330,10 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
-   GAP-041 through a NEW poker-patience design version, never an in-place edit).
-8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
-    dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
-2. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+1. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
-3. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+2. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)
