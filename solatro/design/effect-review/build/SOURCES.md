@@ -100,3 +100,104 @@ written against the prop code itself (`Cards/Props/prop_data.gd`, `prop_spawner.
 |---|---|
 | Family N material anywhere — view, camera, HUD, frame | excluded by owner ruling; the 10 classes stay in the taxonomy so the hole is visible |
 | Feel-only material for `W1` and `W2` | family W exists to be excluded deliberately rather than forgotten; its two entries are enough to make the exclusion a decision the owner takes |
+
+## Wave 5 — Solitaire Network
+
+**`SN0001`–`SN0033`, rendered as family Z.** Every game on solitairenetwork.com, read from its own
+rules page; the rules as read are the mining record `mine_solitairenetwork.tsv`, one row per game.
+The site's genre is one the corpus already covered twice (the solitaire literature and the two
+solitaire collections above), so the survival rate is low by design: what is listed as *folded*
+restates a question that already exists, named here so the fold can be checked.
+
+| Game | Outcome |
+|---|---|
+| Klondike Flip-3 | **The Flip-Three**; unlimited redeals fold into The Redeal |
+| Klondike Flip-1 | one pass through the stock is this game's default deck; nothing to add |
+| Double Klondike | the second lap of a foundation folds into rank-wrap (B4); "nothing builds on an ace" is **The Dead End** |
+| Klondike Garden, Flower Garden, Tri-Peaks Garden | an open reserve any card of which may be played IS the Entrance (F6); the unplayed-reserve bonus folds into Blue Joker |
+| Canfield, Double Canfield, Double Canfield 40 | **The Dealt Base**; the face-down reserve pile folds into face-down play (M3) |
+| Eight Off, FreeCell, Sea Towers, Squadron, Penguin | free cells fold into Free Cell reserve slots; the supermove bound is **The Supermove**; Penguin's beak is The Dealt Base (b) |
+| La Belle Lucie | the free move after the last redeal folds into the La Belle Lucie merci rule; empty fans staying empty is **The Emptied Fan** |
+| Cruel | **The Cruel Redeal** — the redeal that does not shuffle |
+| Baker's Dozen, Bristol | kings sinking to the bottom on the deal fold into the sink types (D5); Bristol's three waste piles are the Entrance stocks |
+| Box Fan, Beleaguered Castle, Fortress, Single Rail, Rank and File, Josephine, Forty Thieves, Thieves of Egypt, Australian Patience, Double Australian Patience | build-down variants of rules already asked (The Packer, Klondike empty-space king rule, The Redeal, reveal-on-move); nothing new |
+| Fortress, Shamrocks, Golf, Tri-Peaks, Black Hole, Eliminator | build up-or-down in any suit is **The Golf Rule**; Eliminator's self-seeded foundations are its option (c); Shamrocks' three-card cap folds into The Rigging Loft |
+| Four Captives | the aces buried in the reserve are **The Captives**; "only whole runs move, never the top card alone" folded into The Yukon Move |
+| Yukon, Scorpion, Simple Scorpion, Double Scorpion, Kansas | moving an unordered pile is **The Yukon Move**; in-place king-headed runs paying per card is **The Scorpion Count**; Kansas's up-and-down foundations fold into Foundations From Both Ends |
+| Spider, Spider 1-Suit, Spider 2-Suits, Spider Relaxed, Spider Easy, Spiderette, Will O' the Wisp | the build-loose-clear-strict rule folds into The Spider Rule; dealing a card onto every column is **The Spider Deal**; refusing to deal while a column is empty is **The Refill Gate**; a deck of two suits is **The Two-Suit Deck** |
+| Land of Nod | runs that cannot be split once formed is **The Glued Run** |
+| Pyramid, Pyramid 2, Pyramid 3, Baroness, Double Baroness | pairs adding to thirteen fold into the Pyramid pair-removal rule; Pyramid 3's reserves that open as free cells fold into The Unlocked Cell |
+| Fourteens | a numeric reskin of pairs adding to thirteen |
+| Nestor, Air Lock | adjacent same-rank pairs removed together is **The Air Lock**; Air Lock's last-eight-pairs bonus is its option (c) |
+| Achilles, Germaine, Germaine 2-Move | near-rank pairs are The Air Lock (b); the interior gap that must be closed is **The Forced Fill**, with 2-Move as its option (b); the row that loses its end cell is **The Shrinking Row**; the last card's rank at the end is **The Final Bow** |
+| Osmosis, Osmosis Peek | **The Osmosis Rule**; Peek's face-up reserves fold into reveal (M1) |
+| Tam O'Shanter | deal-to-every-column and gather-and-redeal, both already asked |
+| Blue Bonnet | **The Blue Bonnet** — one move per deal |
+| Royal Marriage | **The Sandwich** and **The Royal Marriage** objective |
+| Accordion | folds into the Accordion pile-combining rule |
+| Calculation | folds into Calculation Solitaire looping stacks |
+| Colorado, Sir Tommy, Strategy | place freely, score only from the top of a pile; Strategy's "nothing scores until the deck is out" is **The Strategy Rule**; the rest folds into position-in-stack rules (D5) |
+| Aces Up, Aces Up Relaxed | **The Aces Up Cull**; Relaxed's single-use reserve is **The One-Use Pocket** |
+| Gaps, Unlimited Gaps, Free Parking | fold into The Gap; Free Parking's fill-from-either-side is a leniency of it |
+| Grandfather's Clock | **The Clock Face** |
+| Bowling | **The Ten Pins** and **The Strike** |
+| Poker Square | the game itself, 5×5 with every row and column a poker hand; its four discard cells fold into The Mulligan (K1) |
+| Blackjack Square | folds into the Blackjack bust rule |
+| Cribbage Square | cribbage counting is already asked; the starter shared by every hand is **The Starter** |
+| Slide, Super Slide | **The Slider**, with Super Slide's both-axis push as option (b); the escalating set payout is **The Rising Set** |
+| Poker Slide | **The Dealt-Full Grid**; its single-use reserves are The One-Use Pocket (c) |
+| Mahjong (30 layouts, one ruleset) | the block rule folds into The Free Edge; flowers and seasons matching any of their kind fold into The Salt; timed scoring folds into K6; the hint budget is family N material |
+| Site-wide: winnable shuffles | **The Winnable Shuffle** |
+
+## Candidate sources — not yet mined
+
+Curated rule collections that could feed another wave, found by asking which game TYPES carry
+mechanics a 5×5 card grid can absorb, then checking that each site actually exists and carries
+rules per game. Ranked by the stopping rule at the top of this file against the classes that
+currently hold three questions or fewer: `B10` line-length, `C2` extra lines, `C5` prefilled
+cells, `C7` cross-grid lines, `C11` region and shape, `E10` position memory, `O5` the buttons.
+
+### First pick — a thin class, rules verified, mechanics the corpus lacks
+
+| Source | What it holds | The thin class it fills |
+|---|---|---|
+| **Bingo pattern guides** — [bingocardcreator.com/blog/bingo-patterns](https://www.bingocardcreator.com/blog/bingo-patterns/), [bingomania.com/blog/bingo-patterns-the-different-way](https://bingomania.com/blog/bingo-patterns-the-different-way) | thirty-plus named shapes on a 5×5 card with a free centre: four corners, frame, plus, X, diamond, letters, "crazy" patterns that count in any rotation, coverall | `C11` region and shape, `C2` extra lines — a catalogue of 5×5 scoring shapes beyond rows, columns and diagonals, which is exactly this board |
+| **Variant sudoku constraints** — [eev.ee/fyi/variant-sudoku](https://eev.ee/fyi/variant-sudoku/) (one page, ~45 constraints, verified), [sudokuvariants.com](https://sudokuvariants.com/), [logic-masters.de beginner's guide](https://logic-masters.de/Raetselportal/Raetsel/zeigen.php?chlang=en&id=000GOJ) | thermometers, arrows, killer cages, sandwich clues, renban, whispers, kropki dots, XV pairs, anti-knight, fortress, entropic and modular lines, region sums, fog | `C11`, `C13` parity and pattern, `C4` cell modifiers — every constraint is a line or cage rule stated in one sentence, and the board plan's marks are the natural carrier for cage and dot clues |
+| **Simon Tatham's Portable Puzzle Collection** — [chiark.greenend.org.uk/~sgtatham/puzzles](https://www.chiark.greenend.org.uk/~sgtatham/puzzles/) | 40 grid puzzles, each with a manual: Light Up, Tents, Bridges, Galaxies, Filling, Range, Slant, Same Game, Flood, Pegs, Signpost, Singles, Unruly, Magnets, Undead | `C11`, `C5` prefilled cells (clue cells), `M` information — puzzle rules are placement constraints keyed to visible clues, the shape `C5` has three questions for |
+| **Nikoli puzzle types** — [nikoli.co.jp/en/puzzles](https://www.nikoli.co.jp/en/puzzles/) (50+ types, rules on each type's own page, verified on Akari) | Akari, Slitherlink, Nurikabe, Heyawake, Masyu, Hitori, Kakuro, Shakashaka, Fillomino, Yajilin, Ripple Effect | as above, and the source Tatham's collection largely derives from |
+| **pagat.com fishing games** — [pagat.com/fishing](https://www.pagat.com/fishing/) (~40 games with full rules) | capture by matching a card, by summing to a target (Escoba, Casino builds), by taking a sequence (Tablić, Cuarenta), sweeps that clear the table, Go-Stop | family `Z5` removal and `G4` destroy — the corpus has pairs-to-thirteen and same-rank pairs; it has no capture-by-sum, no build-then-capture, and no sweep bonus |
+| **Hanafuda yaku (Koi-Koi)** — [fudawiki.org/en/hanafuda/games/koi-koi](https://fudawiki.org/en/hanafuda/games/koi-koi) (verified; other hanafuda games on the same wiki), [en.wikipedia.org/wiki/Koi-Koi](https://en.wikipedia.org/wiki/Koi-Koi) | a set-collection catalogue keyed to card CLASS rather than rank: three lights, boar-deer-butterfly, the sake cup with moon or blossom, volume yaku that grow one point per extra card | `B1` new meld types and `P` class synergy — melds defined over the game's eleven classes instead of over ranks and suits; the koi-koi double-or-nothing is already `L6` |
+| **Clubhouse Games: 51 Worldwide Classics** — [en.wikipedia.org/wiki/Clubhouse_Games:_51_Worldwide_Classics](https://en.wikipedia.org/wiki/Clubhouse_Games:_51_Worldwide_Classics) (the list; rules per game are on pagat or Wikipedia) | a curated checklist: Mancala, Dots and Boxes, Hit and Blow, Nine Men's Morris, Hex, Gomoku, Renegade, 6-Ball Puzzle, Hanafuda, Sevens, Speed | a checklist rather than a source — Nine Men's Morris (a line of three removes a piece) is `C10` adjacency with a bite, Hit and Blow is `M4` prediction, Dots and Boxes is claiming cells by closing them |
+
+### Second pick — partial overlap with what is already mined, still worth a pass
+
+| Source | What it holds | Why it is second |
+|---|---|---|
+| **Dice game rules** — [dicegamedepot.com](https://www.dicegamedepot.com/dice-games-free-rules-farkle-yahtzee-more/) (30 games, verified), [en.wikipedia.org/wiki/List_of_dice_games](https://en.wikipedia.org/wiki/List_of_dice_games) (~100 names) | Yahtzee's score-each-category-once sheet, Farkle and Pig push-your-luck, Shut the Box (cover numbers that sum to the roll), Ship-Captain-and-Crew (collect in order), Crag, Beetle | `A7` scoring gate (each hand type pays once per show) and `B9` per-run meld set are the fits; push-your-luck is family `L`, already deep |
+| **Roll-and-write / flip-and-write** — [play.nobleknight.com/roll-and-write-games-the-right-way](https://play.nobleknight.com/roll-and-write-games-the-right-way/) (nine games described); rulebooks are per game, not on one site | Welcome To (numbers entered in ascending order along a street), Cartographers (draw a flipped shape onto a map, seasonal scoring cards), Railroad Ink (connect edges), Ganz Schön Clever (the die you skip goes to others), Rolling Realms | the genre IS place-a-value-into-a-grid-under-constraints; `C5`, `C9` commitment and `B9` per-run scoring cards are the fits, but no single site carries the rules |
+| **pagat.com invented solitaires** — [pagat.com/solitaire/card.html](https://www.pagat.com/solitaire/card.html) (48 one-player games with rules, verified) | Diamond Heist (a magic square — rows and columns must sum equal), Spiralling Shape, Boardwalk, Elemental (four-card block removal), Repeat Poker, Drop Down Solitaire Poker, Bowling (Sackson) | small, curated, and already half poker-square shaped; `C13` parity and pattern gets the magic square |
+| **pagat.com domino games** — [pagat.com/domino](https://www.pagat.com/domino/), [en.wikipedia.org/wiki/List_of_domino_games](https://en.wikipedia.org/wiki/List_of_domino_games) | matching ends, All Fives (score when the layout's open ends sum to a multiple of five), Matador (ends must sum to seven), spinners that open new arms, Bergen (equal ends), Mexican Train | `B1` and threshold scoring on the OPEN ENDS of a layout rather than on completed lines — a shape nothing in the corpus has |
+| **Mancala family** — [en.wikipedia.org/wiki/List_of_mancala_games](https://en.wikipedia.org/wiki/List_of_mancala_games); rules per game in Ludii | sowing one seed per pit along a track, relay sowing, capture when the last seed lands in an occupied or empty pit, multi-lap | `E5` patterned movement and family `Q` — a sow is a prop that drops one thing per cell as it travels |
+| **Tile-matching video games** — [en.wikipedia.org/wiki/Tile-matching_video_game](https://en.wikipedia.org/wiki/Tile-matching_video_game) | swap-adjacent match-3, falling blocks, advancing blocks, chain reactions scored higher, merge, limited-move levels, hybrid battle (Puzzle Quest) | `C3` re-score on disturbance and cascades; 2048 and match-3 were mined in wave 3, so only the swap and advancing-block shapes are new |
+| **Ludii game library** — [ludii.games/library.php](https://ludii.games/library.php) (1,700+ traditional games; categories Hunt, Race, Escape, Fill, Reach, Score, Sow, Space, War, Puzzle) | peg solitaire, hunt games, fill games (cover the board), reach games, single-player puzzles across cultures | volume is huge and rules are in ludeme form; mine by category (Fill, Puzzle, Sow), not by game |
+
+### Third pick — large solitaire catalogues, low expected yield after three solitaire waves
+
+| Source | What it holds | Why it is third |
+|---|---|---|
+| **BVS Solitaire rules index** — [bvssolitaire.com/rules](https://www.bvssolitaire.com/rules/) (570 games, one rules page each, verified; also a solitaire-types page) | the broadest single-site rules index found | use the types page as the stopping-rule check first; Solitaire Network survived at 33 of 82 only because of its originals |
+| **Pretty Good Solitaire** — [goodsol.com/pgs/games.html](https://www.goodsol.com/pgs/games.html) (1,080 games listed, verified; rules live in the app's help, not on the site) | the largest catalogue, with many Goodsol originals | rules are not web-readable; the list is only useful to spot originals |
+| **PySolFC** — [pysolfc.sourceforge.io](https://pysolfc.sourceforge.io/) (1,200+ games; rules shipped in the app's docs, index verified) | hanafuda, tarock, ganjifa, matrix, mahjongg, hex-a-deck and Ishido-type tile games alongside card solitaires | the non-card decks (matrix, hex-a-deck, Ishido) are the part worth reading |
+| **Wikipedia list of patience games** — [en.wikipedia.org/wiki/List_of_patience_games](https://en.wikipedia.org/wiki/List_of_patience_games) (~300 games, with the closed / half-open / open taxonomy) | the classification itself: simple and reserved builders, packers, blockades, planners, spiders, non-builders | the taxonomy was already used in wave 3; the list is a checklist, not a source |
+| **pagat.com competitive patiences** — [pagat.com/patience](https://www.pagat.com/patience/) (13 games) | Russian Bank, Spite and Malice, Nerts, Kings Corners, Card Cricket | two-player shapes; Spite and Malice is already in the corpus |
+
+### Looked at and not usable
+
+| Source | Why |
+|---|---|
+| BoardGameGeek mechanic and family pages | refuse automated fetches; use the game rulebooks instead |
+| Wizard of Odds video-poker paytables | the tables index no longer resolves; the poker-variant family was mined in wave 3 anyway |
+| Masters of Traditional Games rules pages, GNOME Aisleriot manual | addresses did not resolve when checked |
+| puzz.link rules list | rendered by script; Tatham and Nikoli cover the same types with readable pages |
+| Solitaire Laboratory | win-rate analysis and bibliography, not rules |
+| Word games, trivia, dexterity and sports minigames | no rank, suit or grid to translate |

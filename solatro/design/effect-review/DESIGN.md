@@ -4,14 +4,14 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,454 live questions, plus 22 retired in place.** There is no branching: every question is
+**1,487 live questions, plus 22 retired in place.** There is no branching: every question is
 independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
 
 ## ⚠ What changed since this document was first written
 
 **The board this corpus was mined against is gone, and every question has now been re-read against
-the one that exists.** Two passes, then a new family.
+the one that exists.** Two passes, then two new families.
 
 **1. A vocabulary sweep, at the source.** The mined effects proposed mechanics keyed to a three-act
 show, a Submit button, an upper/lower tableau and Balatro's ante ladder. Those phrases were
@@ -32,7 +32,7 @@ and the fixes went back into the sources. The verdicts, one per question with it
 `build/_verdicts.tsv`.
 
 ```
-OK 1332 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
+OK 1365 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
 ```
 
 What it found that the sweep structurally could not: effects assuming a board deeper than five rows,
@@ -54,6 +54,13 @@ wording you answered, not away from it.
 card side (Y1-Y6), the level side (Y7-Y12), and Y13, which asks whether six shipped cell-shaped
 blinds should fold into the mark mechanic. `design/board-plan/DESIGN.md` is the authority on the rules
 they assume.
+
+**5. Family Z is new — 33 live effects across seven classes**, mined from the eighty-two solitaires
+on Solitaire Network, read game by game. Each class names the taxonomy class it would otherwise sit
+in (build legality would be D1, the deal F5, and so on); it is a separate family at the end of the
+document only because the question id is positional. The games whose rules the corpus already held —
+free cells, redeals, pairs adding to thirteen, Gaps, the 5×5 poker square itself — are listed with
+what they folded into in `build/SOURCES.md`.
 
 ---
 
@@ -138,6 +145,15 @@ catalogues, incremental games, Blue Prince, Inscryption, Loop Hero, Monster Trai
 Photosynthesis, 2048 and the match-3 line. Neither reference wiki has a board, so the grid, height,
 class-synergy and prop families got almost nothing from them; these do. **Every source considered,
 mined or deliberately skipped, is registered in `build/SOURCES.md`.**
+
+**Thirty-three more were mined from Solitaire Network** (solitairenetwork.com), whose eighty-two
+solitaires were read one rules page at a time. Most of what a classic solitaire does — foundations,
+free cells, redeals, pair removal — the corpus already held from the solitaire literature and the
+two solitaire collections above; what survived is the mechanics none of those carried: the Yukon
+move, the supermove bound, the Osmosis row rule, the Cruel unshuffled redeal, the sandwich of Royal
+Marriage, the sliding rows of Slide and Poker Slide, the shrinking rows of Germaine and Air Lock,
+Bowling's monotone frame and strike, Cribbage Square's shared starter, and the clock-face targets of
+Grandfather's Clock. They are family Z, at the end of the document.
 
 **Ten more were recovered by re-reading the braindump by hand.** The mining pass skipped that
 file's art-direction and circus-history sections wholesale, and mechanics had been written
@@ -2403,6 +2419,63 @@ the mirror of every other family in the document.
 - **Q1474** `[root]` — **The Ranked Floor, as a mark** — rule, Y13, from design/board-plan. Ships in levels.csv: scattered cells add or subtract from the rank of whatever is placed on them, shown before you commit · **(a)** Keep it bespoke: a rank-shifting cell stays its own rule · **(b)** Fold it in: the shift is the mark's own rank bonus, applied whether or not the card matches · **(c)** Fold it in as the mirror: a mark you MISS applies its rank as a penalty instead of a bonus · **(d)** reject — this effect does not enter the game · *default* (b)
 - **Q1475** `[root]` — **The Sealed Envelope, as a mark** — rule, Y13, from design/board-plan. Ships in levels.csv: one card starts face down somewhere in a grid and is revealed when a card is placed beside it · **(a)** Keep it bespoke: the envelope stays a placed card, not a mark · **(b)** Fold it in: the envelope is a face-down mark revealed by an adjacent placement · **(c)** Fold it in, and pay for it: a face-down mark pays double when matched blind · **(d)** reject — this effect does not enter the game · *default* (b)
 - **Q1476** `[root]` — **The Understudy Fills In, as a mark** — rule, Y13, from design/board-plan. Ships in levels.csv: any grid you place nothing into during a refill has a random card placed in it for you · **(a)** Keep it bespoke: the random placement stays unrelated to the plan · **(b)** Fold it in: the card placed for you is the one the plan marked for that cell · **(c)** Fold it in: the card placed for you is the plan's mark, and it counts as matched · **(d)** reject — this effect does not enter the game · *default* (b)
+
+## Family Z - Classic solitaire, re-expressed
+
+
+### Z1 - Build legality
+
+- **Q1477** `[root]` — **The Dead End** — rule, Z1, from Solitaire Network. A rank nothing may cover · **(a)** Rule: nothing may be stacked on a rank-1 card · **(b)** Rule: nothing may be stacked on a rank-1 card, and a rank-1 card pays double when its line scores · **(c)** Rule: nothing may be stacked on whichever card holds the highest rank on the board at the moment of placement · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1478** `[root]` — **The Glued Run** — rule, Z1, from Solitaire Network. Once joined, never parted · **(a)** Rule: cards joined into an ordered run cannot be separated again, except the topmost card · **(b)** Rule: cards joined into an ordered run cannot be separated again, and the run scores as one card of its top rank · **(c)** Rule: cards joined into an ordered run cannot be separated for the rest of the Entrance refill · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1479** `[root]` — **The Golf Rule** — rule, Z1, from Solitaire Network. One higher or one lower, any suit, wrapping · **(a)** Rule: a card may be stacked on a card one rank above or one rank below it, any suit, and rank 1 wraps to rank 13 · **(b)** Rule: a card may be stacked one rank above or below, any suit, and a stack pays its length the moment it can grow no further · **(c)** Rule: each column names its own base card at show start, and only cards one rank above or below its current top may join it · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1480** `[root]` — **The Supermove** — rule, Z1, from Solitaire Network. Move as many at once as you could have moved one by one · **(a)** Rule: an ordered run moves as one unit only if its length is at most the number of empty cells on its grid plus one · **(b)** Rule: an ordered run moves as one unit only if its length is at most the empty cells plus one, doubled for each empty column · **(c)** Rule: an ordered run of any length moves as one unit, and each card beyond the empty-cell count costs one gold · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1481** `[root]` — **The Yukon Move** — skill, Z1, from Solitaire Network. Move the whole pile from any card down, in order or not · **(a)** Cue: move a stack from any card down as one unit, whatever order it is in, onto a card one rank above its bottom card · **(b)** Cue: move a stack from any card down as one unit, whatever order it is in, onto any empty cell · **(c)** Cue: move a stack from any card down as one unit, and every card in it that was out of order pays a point on landing · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z2 - Reserves and the deck
+
+- **Q1482** `[root]` — **The Captives** — rule, Z2, from Solitaire Network. The cards you need most start buried · **(a)** Level: the four aces are dealt to the bottom of the Entrance stocks, and each one freed pays a bonus · **(b)** Level: the four aces are dealt to the bottom of the Entrance stocks, and no line holding an ace scores until all four are on the board · **(c)** Level: four cards named by the level are dealt to the bottom of the Entrance stocks, and freeing all four wins the show outright · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1483** `[root]` — **The One-Use Pocket** — rule, Z2, from Solitaire Network. A holding cell that works once · **(a)** Rule: one pocket beside the grid holds one card, and closes for the show once that card leaves it · **(b)** Rule: one pocket beside the grid holds one card, which may leave it only into an empty column; the pocket then closes for the show · **(c)** Rule: three pockets beside the grid each hold one card once per show, and a card leaving a pocket pays its rank · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1484** `[root]` — **The Two-Suit Deck** — rule, Z2, from Solitaire Network. A deck of only two suits, doubled · **(a)** Rule: the run's deck is built from two suits only, each present twice over · **(b)** Rule: the run's deck is built from one suit only, four times over · **(c)** Rule: the run's deck is built from two suits only, and flushes pay half while straights pay double · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z3 - The deal
+
+- **Q1485** `[root]` — **The Blue Bonnet** — rule, Z3, from Solitaire Network. One move, once per refill · **(a)** Rule: after each Entrance refill you may move one placed card to any empty cell · **(b)** Rule: after each Entrance refill you may move one placed card to an adjacent empty cell · **(c)** Rule: after each Entrance refill you may swap two placed cards · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1486** `[root]` — **The Cruel Redeal** — consumable, Z3, from Solitaire Network. Gather the board in order and lay it out again, unshuffled · **(a)** Consumable: gather every grid card in reading order and re-deal them into the grid in that order, so only what you moved changes place · **(b)** Consumable: gather every grid card in reading order and re-deal them column by column · **(c)** Consumable: gather the Entrance stocks in order and re-deal them round-robin, unshuffled · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1487** `[root]` — **The Flip-Three** — rule, Z3, from Solitaire Network. Three come up at once, and only the top may be taken · **(a)** Rule: each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath stay hidden · **(b)** Rule: each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath are visible · **(c)** Rule: the Entrance turns three cards onto a single slot, only the topmost may be taken, and the other four slots stay closed · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1488** `[root]` — **The Refill Gate** — rule, Z3, from Solitaire Network. No new cards while a column stands empty · **(a)** Level: the Entrance will not refill while any column of the committed grid is empty · **(b)** Level: the Entrance will not refill while any column is empty, and the first card into an empty column pays a bonus · **(c)** Level: the Entrance will not refill while any row or any column is empty · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1489** `[root]` — **The Spider Deal** — consumable, Z3, from Solitaire Network. One card onto every column at once · **(a)** Consumable: deal one card from the deck onto the top of every column of the grid · **(b)** Consumable: deal one card from the deck onto the top of the three leftmost columns · **(c)** Consumable: deal one card from the deck onto every column, and any line it completes scores double · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z4 - Targets
+
+- **Q1490** `[root]` — **The Clock Face** — rule, Z4, from Solitaire Network. Each column has a rank it must finish on · **(a)** Level: each column is assigned a rank at show start, and a stack in it pays only when its top card is that rank · **(b)** Level: each column is assigned a rank at show start; a stack in it may not grow past that rank, and reaching it exactly pays double · **(c)** Level: each column is assigned a rank at show start, and the assignments rotate one column to the right at every refill · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1491** `[root]` — **The Dealt Base** — rule, Z4, from Solitaire Network. The rank a straight starts from is dealt at show start · **(a)** Rule: at show start one rank is dealt as the base, and straights wrap past rank 13 back to rank 1 up to the base · **(b)** Rule: at show start one rank is dealt as the base, and only a card of the rank below it may be the first card into an empty column · **(c)** Rule: at show start one rank is dealt as the base, and a straight that starts on the base pays double · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1492** `[root]` — **The Osmosis Rule** — rule, Z4, from Solitaire Network. A rank may enter a row only if the row above already holds it · **(a)** Rule: a card may be placed in a row only if the row above already holds a card of the same rank; the top row is free · **(b)** Rule: a card may be placed in a row only if the row above already holds a card of the same rank, and the top row accepts one suit · **(c)** Rule: placement is free, but a card scores in a row only if the row above holds a card of the same rank · **(d)** reject — this effect does not enter the game · *default* (c)
+- **Q1493** `[root]` — **The Scorpion Count** — rule, Z4, from Solitaire Network. Stacks headed by a king pay per card · **(a)** Rule: a same-suit descending stack headed by a king pays one point per card each time its column changes · **(b)** Rule: a same-suit descending stack headed by a king pays one point per card, and a full thirteen is removed from the board for a bonus · **(c)** Rule: a descending stack of any suits headed by a king pays one point per card each time its column changes · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1494** `[root]` — **The Starter** — rule, Z4, from Solitaire Network. The last card of the deck belongs to every line · **(a)** Rule: the last card of the deck is never placed; it counts as a member of every line on the board at once · **(b)** Rule: the last card of the deck is never placed; it counts as a sixth card in every line, and a jack starter pays every line an extra point · **(c)** Rule: the last card of the deck is never placed; it counts as a member of every line on one grid you choose · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1495** `[root]` — **The Strategy Rule** — rule, Z4, from Solitaire Network. Nothing pays until the deck is empty · **(a)** Rule: completed lines score nothing until the deck is empty; then every complete line scores at once, doubled · **(b)** Rule: completed lines score nothing until the deck is empty; then every complete line scores at once, and each counts as a first-of-its-class for the combo · **(c)** Rule: completed lines score nothing until the deck is empty; then every complete line scores once and the show ends · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z5 - Removal
+
+- **Q1496** `[root]` — **The Aces Up Cull** — rule, Z5, from Solitaire Network. Of two spotlit cards of one suit, the lower may go · **(a)** Rule: when two spotlit cards share a suit, the lower may be discarded; aces count highest · **(b)** Rule: when two spotlit cards share a suit, the lower may be discarded and pays its rank; aces count highest · **(c)** Rule: when two spotlit cards share a suit, the lower is discarded automatically at the next refill; aces count highest · **(d)** reject — this effect does not enter the game · *default* (b)
+- **Q1497** `[root]` — **The Air Lock** — rule, Z5, from Solitaire Network. Two of a rank, side by side, come off together · **(a)** Rule: two orthogonally adjacent cards of the same rank may be removed together for twice their rank · **(b)** Rule: two orthogonally adjacent cards of the same rank, or one rank apart, may be removed together for their ranks; ace and king count as adjacent ranks · **(c)** Rule: two orthogonally adjacent cards of the same rank may be removed together, and the last eight pairs removed pay their ranks again at End · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1498** `[root]` — **The Rising Set** — rule, Z5, from Solitaire Network. Each set removed pays more than the last · **(a)** Rule: three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this show · **(b)** Rule: three cards of one rank in one row or column are removed and pay the rank times the number of sets removed so far this show · **(c)** Rule: three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this run · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1499** `[root]` — **The Sandwich** — rule, Z5, from Solitaire Network. Flanked by two of a kind, a card is taken · **(a)** Rule: a card whose two line-neighbours share a rank or a suit may be removed for points equal to its rank · **(b)** Rule: two adjacent cards whose outer neighbours share a rank or a suit may be removed together for their ranks · **(c)** Rule: a card whose two line-neighbours share a rank or a suit pays its rank every time its line is touched, and stays · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z6 - Sliding and shrinking
+
+- **Q1500** `[root]` — **The Dealt-Full Grid** — rule, Z6, from Solitaire Network. The grid starts full and every placement shoves one out · **(a)** Level: the grid is dealt full at show start; every placement enters from an edge, shoves its line one cell, and the card pushed off is discarded · **(b)** Level: the grid is dealt full at show start, and a placement replaces a card of your choice, which is discarded · **(c)** Level: the grid is dealt full at show start, with three single-use pockets beside it that hold a card each · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1501** `[root]` — **The Emptied Fan** — rule, Z6, from Solitaire Network. A cell once emptied stays empty · **(a)** Rule: a cell a card has left cannot be filled again this show · **(b)** Rule: a cell a card has left cannot be filled again this show, and each such cell pays a point at End · **(c)** Rule: a column every card has left cannot be filled again this show · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1502** `[root]` — **The Forced Fill** — rule, Z6, from Solitaire Network. A gap inside a row must be closed before you go on · **(a)** Rule: an empty cell with cards on both sides in its row must be filled by sliding an orthogonal neighbour into it before the next placement · **(b)** Rule: after each removal you may slide up to two cards one cell each into empty cells · **(c)** Rule: an empty cell inside a row is filled at once by the card to its right, and the rest of the row follows · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1503** `[root]` — **The Shrinking Row** — rule, Z6, from Solitaire Network. A cell vacated at the end of a row is gone for the show · **(a)** Rule: when the card at either end of a row leaves, that cell is removed from the grid for the rest of the show · **(b)** Rule: when the card at either end of a row leaves, that cell is removed for the show, and a row shortened to four cells scores four-card hands · **(c)** Rule: when the card at either end of a row leaves, that cell is removed for the show and the deck loses one card with it · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1504** `[root]` — **The Slider** — rule, Z6, from Solitaire Network. Place at the edge and the row shoves along · **(a)** Rule: a card placed onto a full row's edge cell shoves the row one cell; the card pushed off the far end returns to the deck if the row still holds its rank, and is discarded otherwise · **(b)** Rule: a card placed onto a full row's or column's edge cell shoves the line one cell, and the card pushed off is discarded · **(c)** Rule: a card placed onto a row's edge cell shoves the row along to its first empty cell, and nothing is ever pushed off · **(d)** reject — this effect does not enter the game · *default* (a)
+
+### Z7 - Goals and payouts
+
+- **Q1505** `[root]` — **The Final Bow** — rule, Z7, from Solitaire Network. The last card standing pays its rank · **(a)** Rule: at End, the last card placed pays its rank again · **(b)** Rule: at End, if every card of the deck has been placed, the last card placed pays its rank times the combo · **(c)** Rule: at End, the last eight cards placed each pay their rank again · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1506** `[root]` — **The Royal Marriage** — rule, Z7, from Solitaire Network. Bring the king to his queen · **(a)** Objective: end the show with the king and queen of hearts orthogonally adjacent for a bonus · **(b)** Objective: end the show with the king and queen of hearts adjacent, paid per card that was removed from between them in reading order · **(c)** Objective: two cards named by the level must end the show adjacent, and the show is won when they do, whatever the score · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1507** `[root]` — **The Strike** — rule, Z7, from Solitaire Network. A clean frame is paid the next two frames' worth again · **(a)** Rule: a line completed within one Entrance refill of the previous line also earns the score of the next two lines completed · **(b)** Rule: a line completed within one Entrance refill of the previous line also earns the score of the next line completed · **(c)** Rule: a line completed within one refill of the previous line pays ten plus the next two lines' scores, and one that takes two refills pays ten plus the next one's · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1508** `[root]` — **The Ten Pins** — rule, Z7, from Solitaire Network. A row whose ranks never fall, left to right · **(a)** A new hand: a row whose ranks never decrease from left to right scores as a hand, and ranks may repeat · **(b)** A new hand: a row whose ranks never decrease from left to right scores, paying more the fewer gaps its ranks have · **(c)** A new hand: a row whose ranks never decrease from left to right scores, a card that fits nowhere in it counts as a miss, and three misses void the row · **(d)** reject — this effect does not enter the game · *default* (a)
+- **Q1509** `[root]` — **The Winnable Shuffle** — rule, Z7, from Solitaire Network. A deal someone has already won · **(a)** Level: the deck order is one a previous run won with, and the show's payout is reduced · **(b)** Level: the deck order is one a previous run won with, shown as such, at full payout but a higher goal · **(c)** Level: the deck is a fresh order, and winning it adds that order to a pool of winnable deals later runs can draw · **(d)** reject — this effect does not enter the game · *default* (a)
 
 ---
 

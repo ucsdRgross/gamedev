@@ -4,14 +4,14 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,454 live questions, plus 22 retired in place.** There is no branching: every question is
+**1,487 live questions, plus 22 retired in place.** There is no branching: every question is
 independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
 
 ## ⚠ What changed since this document was first written
 
 **The board this corpus was mined against is gone, and every question has now been re-read against
-the one that exists.** Two passes, then a new family.
+the one that exists.** Two passes, then two new families.
 
 **1. A vocabulary sweep, at the source.** The mined effects proposed mechanics keyed to a three-act
 show, a Submit button, an upper/lower tableau and Balatro's ante ladder. Those phrases were
@@ -32,7 +32,7 @@ and the fixes went back into the sources. The verdicts, one per question with it
 `build/_verdicts.tsv`.
 
 ```
-OK 1332 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
+OK 1365 · STALE 98 · RESCOPE 15 · DUPLICATE 12 · ALREADY 10 · CONTRADICTS 2
 ```
 
 What it found that the sweep structurally could not: effects assuming a board deeper than five rows,
@@ -54,6 +54,13 @@ wording you answered, not away from it.
 card side (Y1-Y6), the level side (Y7-Y12), and Y13, which asks whether six shipped cell-shaped
 blinds should fold into the mark mechanic. `design/board-plan/DESIGN.md` is the authority on the rules
 they assume.
+
+**5. Family Z is new — 33 live effects across seven classes**, mined from the eighty-two solitaires
+on Solitaire Network, read game by game. Each class names the taxonomy class it would otherwise sit
+in (build legality would be D1, the deal F5, and so on); it is a separate family at the end of the
+document only because the question id is positional. The games whose rules the corpus already held —
+free cells, redeals, pairs adding to thirteen, Gaps, the 5×5 poker square itself — are listed with
+what they folded into in `build/SOURCES.md`.
 
 ---
 
@@ -138,6 +145,15 @@ catalogues, incremental games, Blue Prince, Inscryption, Loop Hero, Monster Trai
 Photosynthesis, 2048 and the match-3 line. Neither reference wiki has a board, so the grid, height,
 class-synergy and prop families got almost nothing from them; these do. **Every source considered,
 mined or deliberately skipped, is registered in `build/SOURCES.md`.**
+
+**Thirty-three more were mined from Solitaire Network** (solitairenetwork.com), whose eighty-two
+solitaires were read one rules page at a time. Most of what a classic solitaire does — foundations,
+free cells, redeals, pair removal — the corpus already held from the solitaire literature and the
+two solitaire collections above; what survived is the mechanics none of those carried: the Yukon
+move, the supermove bound, the Osmosis row rule, the Cruel unshuffled redeal, the sandwich of Royal
+Marriage, the sliding rows of Slide and Poker Slide, the shrinking rows of Germaine and Air Lock,
+Bowling's monotone frame and strike, Cribbage Square's shared starter, and the clock-face targets of
+Grandfather's Clock. They are family Z, at the end of the document.
 
 **Ten more were recovered by re-reading the braindump by hand.** The mining pass skipped that
 file's art-direction and circus-history sections wholesale, and mechanics had been written

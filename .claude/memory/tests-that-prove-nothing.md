@@ -62,6 +62,13 @@ proving nothing, each of which looked fine in review; later runs added two more:
     code is used; they can be the only thing using it.** Ask of any function a test exercises: who
     else calls this?
 
+15. **A FILTERED run read as a full one.** Solatro's runner prunes every suite that matches no
+    `--filter` pattern, and `--logic` runs one tier headless — so the SUITE COUNT, the only detector
+    for a suite that failed to parse and load, is deliberately void for that run. A subset that
+    passes says nothing about the suites it removed, and its transcript is the same shape as a green
+    one. Both ends of the log say `FILTERED n of 45` and the wrapper refuses a clean verdict for
+    exactly this reason; only the full unfiltered windowed run is a verdict.
+
 **The rule that catches every one: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting
 nothing.

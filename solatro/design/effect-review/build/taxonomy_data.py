@@ -392,4 +392,14 @@ FAMILIES = [
  ("Y12","The plan as objective","none","quests and boss conditions stated in terms of matching marks"),
  ("Y13","Existing blinds, re-expressed","none","six shipped cell-shaped blinds that the mark mechanic could absorb - keep bespoke, or make it a mark?"),
 ]),
+("Z", "Classic solitaire, re-expressed",
+ "The rulesets of the eighty-two solitaires on Solitaire Network, each translated onto the grid. Every class names the taxonomy class it would otherwise sit in; it is a separate family only because the question id is positional, and a family that sorts last is the one way to add questions without moving an answered one.", [
+ ("Z1","Build legality","none","stacking and moving rules the solitaires impose - would be D1, D2 or E2"),
+ ("Z2","Reserves and the deck","none","pockets, buried cards and deck composition - would be C4, F1 or F12"),
+ ("Z3","The deal","none","how and when cards arrive - would be F5, F8 or K7"),
+ ("Z4","Targets","none","foundations as per-column goals, shared cards and deferred payouts - would be A9, B1, B4 or C4"),
+ ("Z5","Removal","none","games won by taking cards off rather than putting them on - would be C10, G4 or I4"),
+ ("Z6","Sliding and shrinking","none","rows that shove and cells that close - would be C5, C6, E2 or X4"),
+ ("Z7","Goals and payouts","none","win conditions and end-of-show bonuses - would be A9, U2, X2 or T5"),
+]),
 ]
