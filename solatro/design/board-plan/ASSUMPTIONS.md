@@ -151,3 +151,25 @@ gap under `gaps/`.
   same helper, is asserted at 12 columns by `test_a_board_wider_than_the_window_stays_reachable`.
 - S7 / Q87: `test_suit_props.gd` leaves `test_game_headless.gd`'s `ZONE_ONLY_TESTS` list, which that
   suite's own ratchet requires once a file covers a grid.
+- S9 / Q54, Q57: `CardEnvironment._run_own_mods` takes a `counts_as_activation` flag, true only from
+  `run_mark_mods`. The per-card path (the prop tick) must keep charging nothing -- asking a card a
+  question is not an effect firing -- and both paths share the one dispatch loop.
+- S9 / Q47: `run_mark_mods` now takes BOTH recipients, the mark and the card that covered it, and
+  decides the skill gate itself (`BoardPlan.is_marked(card)` carries a mark's skill in; a real card
+  keeps the spotlight rule, which the scoring beam has already satisfied for a meld card). S6 sent
+  the placed card through `run_card_mods`, which cannot charge -- a looping effect living on the CARD
+  would then have been unbounded, which is exactly what Q57's note forbids. Dispatch is unchanged.
+- S9 / Q54: MEASURED, and it is a bug fix, not a decision: `Game._note_mod_fired` gated combo
+  registration on `_act_cancellable`, which is set ONLY inside `_perform_next`. The grid game scores
+  from a PLACEMENT, so no mod activation has ever fed the combo. The window is now "an act is
+  resolving OR a line is composing", the second read off the `line_mult_bonus` sentinel that already
+  means exactly that. Gating on `processing` instead would revive mod-activation combo for every
+  content mod in every cascade -- a scoring-wide change S9 was not asked for.
+- S9 / TEST_PLAN TP-53, TP-54: `TestGridFixtures.board_digest` gained every cell's own mark (printed
+  identity plus `granted`), `plan_seed`, `combo_classes`/`combo_repeats` and `total_score`. A digest
+  without the marks cannot say that undo or a replay brought the board back. Shared, so the E2E
+  parity and the save-reload rows assert them too.
+- S9 / TEST_PLAN TP-53: the expectation is the LIVE pre-placement board, with `duplicate_state()` as a
+  second witness -- two copies compared with each other agree about anything neither of them carries.
+- S9 / TEST_PLAN TP-54: the replay row is built from REAL suits. `PipSuitTest` keeps its id in a plain
+  var, so a row of test suits comes back from a snapshot as ONE suit and flushes.

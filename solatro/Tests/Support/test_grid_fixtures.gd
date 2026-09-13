@@ -194,12 +194,9 @@ static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Ar
 	return placed
 
 
-## A stable text digest of everything a show's outcome is made of: every grid cell bottom to
-## top, the Entrance, the deck and discard IN ORDER, and every score bucket. Cards are named
-## by VALUE (rank/suit), never by instance -- a restored snapshot carries its own copies, so
-## two states that are "the same board" never share a single card object.
-## Shared because more than one claim reduces to it: that a replayed action reproduces the
-## board it interrupted, and that a headless show and a viewed one end up in the same place.
+#Cards are named by VALUE, never by instance: a restored snapshot carries its own copies. A CELL'S OWN
+#MARK is part of the board too -- one back without it is a different board, whatever stands on it.
+## Everything a show's outcome is made of: every cell and its mark, the Entrance, both decks in order, every score bucket, the combo set.
 static func board_digest(state: GameData) -> String:
 	var parts : Array[String] = []
 	for gi : int in state.grids.size():
@@ -209,6 +206,9 @@ static func board_digest(state: GameData) -> String:
 			for card : CardData in grid.cells[ci].datas:
 				names.append(card.log_str())
 			parts.append("g%d.c%d=[%s]" % [gi, ci, ",".join(names)])
+			var cell_type : CardData = grid.cell_types[ci]
+			parts.append("g%d.t%d=%s granted=%s" % [gi, ci, cell_type.log_str(),
+					str((cell_type.type as TypeGridCell).granted)])
 	for col : int in state.upper_zone.size():
 		var names : Array[String] = []
 		for card : CardData in state.upper_zone[col].datas:
@@ -228,6 +228,9 @@ static func board_digest(state: GameData) -> String:
 	for key : Vector3i in cell_keys:
 		parts.append("cell%s=%f" % [key, state.scores_cell[key].to_float()])
 	parts.append("committed=%d" % state.committed_grid)
+	parts.append("plan_seed=%d" % state.plan_seed)
+	parts.append("combo=[%s]+%d" % [",".join(state.combo_classes), state.combo_repeats])
+	parts.append("banked=%d" % state.total_score)
 	parts.append("total=%d" % state.live_total())
 	return "
 ".join(parts)

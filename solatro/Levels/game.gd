@@ -214,21 +214,15 @@ func register_combo(key: String) -> bool:
 	combo_changed.emit(state.combo_classes.size())
 	return true
 
-## Hook override (CardEnvironment): a mod handler actually ran — feed the act combo with
-## the mod's identity key (§15a mod-activation U). Only while an act is resolving
-## (_act_cancellable brackets exactly the on_next resolution window);
-## engine mods return "" from combo_key and never register.
+#⚠ EVERY dispatch path funnels through here, the ONE place that sees the whole mod firing order; the
+#detail string is HOT, so it is built only behind is_on(). ⚠ TWO WINDOWS feed the combo, because the
+#grid game scores from a PLACEMENT: `_act_cancellable` brackets Next alone, a mark fires mid-compose.
 func _note_mod_fired(mod: CardModifier, function: StringName, feeds_combo := true) -> void:
-	# ⚠ EVERY dispatch path funnels through here (run_all_mods, return_first_*, run_card_mods — see
-	# the doc comment on CardEnvironment._note_mod_fired), which makes this the ONE place that sees
-	# the whole mod firing order. That order is the answer to most "why did this score that" and
-	# "why did this fire twice" questions, and it is the thing G1.7 diffs between runs.
-	# ⚠ HOT — this fires many times per act, so the detail string is built only behind is_on().
 	if EventLog.is_on(EventLog.CH_MOD):
 		var owner_card : CardData = mod.data
 		EventLog.event(EventLog.CH_MOD, "mod_fired", "%s on %s"
 				% [function, owner_card.log_str() if owner_card else "<no card>"])
-	if feeds_combo and _act_cancellable:
+	if feeds_combo and (_act_cancellable or not is_nan(line_mult_bonus)):
 		register_combo(mod.combo_key(function))
 
 #SE1: compare-mod cache stays valid while the same state object is unmutated
@@ -996,10 +990,11 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 #is about rather than in a second flag that can fall out of step with it.
 var line_mult_bonus := NAN
 
-#Only a MELD card pays, and the hooks fire for every line its cell scores in: EVERY cover is
-#announced at level 0, and a MATCH adds its own hook on top at level 1, the realized form.
-## The line's number: `(hand + flat bonuses) x the SUMMED mults`, and a sum of 0 never multiplies.
+#Only a MELD card pays, and the hooks fire for every line its cell scores in: EVERY cover is announced
+#at level 0, a MATCH adds its own hook at level 1, and the line is `(hand + flats) x the SUMMED mults`
+#with a sum of 0 never multiplying. ⚠ RE-ENTRANT: a nested score puts the accumulator back.
 func _compose_line_score(result: Scoring.Result) -> int:
+	var outer_mult_bonus := line_mult_bonus
 	line_mult_bonus = 0.0
 	var flats := 0
 	for card : CardData in result.meld:
@@ -1012,9 +1007,9 @@ func _compose_line_score(result: Scoring.Result) -> int:
 		await run_mark_mods(mark, MarkMatch.MARK_COVERED, card, coord, 0)
 		if matched == 0: continue
 		await run_mark_mods(mark, MarkMatch.MARK_HIT, card, coord, matched, 1)
-		await run_card_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
+		await run_mark_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
 	var summed := line_mult_bonus
-	line_mult_bonus = NAN
+	line_mult_bonus = outer_mult_bonus
 	var line := result.score + flats
 	return int(line * summed) if not is_zero_approx(summed) else line
 

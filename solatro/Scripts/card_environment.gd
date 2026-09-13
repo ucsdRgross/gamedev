@@ -72,9 +72,9 @@ func note_processing(_weight := 1, _key := "") -> void:
 ## combo (SCORING_MATH_PLAN §15a mod-activation U). No-op in base
 ## environments. ⚠️ Fired from EVERY dispatch path (run_all_mods, return_first_*, run_card_mods),
 ## which is what makes it the one place that sees the whole mod firing order for the event log.
-## `feeds_combo` keeps scoring untouched: only the run_all_mods path may register a combo class,
-## so the other paths (comparators, legality queries, the prop tick's per-card hooks) are
-## LOGGED but never scored.
+## `feeds_combo` keeps scoring untouched: only a path where an EFFECT fired may register a combo
+## class (run_all_mods, and the mark hooks), so the question-asking paths (comparators, legality
+## queries, the prop tick's per-card hooks) are LOGGED but never scored.
 func _note_mod_fired(_mod: CardModifier, _function: StringName,
 		_feeds_combo := true) -> void:
 	pass
@@ -287,24 +287,30 @@ func skill_spotlight_check() -> void:
 ## stays suit-free. Used by the prop tick loop's 3-phase pass (on_prop_passing/passed).
 ## Cost: O(mods on this card). Statuses are appended as a copy (safe if one self-removes).
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
-	await _run_own_mods(card, function, params, card.skill != null and card.skill.spotlit)
+	await _run_own_mods(card, function, params, card.skill != null and card.skill.spotlit, false)
 
-## Run `function` on a MARK's own copied modifiers, its copied skill among them.
-func run_mark_mods(mark: CardData, function: StringName, ...params: Array) -> void:
-	await _run_own_mods(mark, function, params, true)
+#One hook, two recipients: a MARK's copied modifiers and the card that covered it. A mark's skill is
+#carried in (never spotlit, so the gate would silence it); a real card keeps the spotlight rule.
+## Run a mark hook on one card's own modifiers — an EFFECT firing, so it counts as processing.
+func run_mark_mods(card: CardData, function: StringName, ...params: Array) -> void:
+	await _run_own_mods(card, function, params,
+			BoardPlan.is_marked(card) or (card.skill != null and card.skill.spotlit), true)
 
-#⚠ THIS PATH DOES NOT CHARGE THE RUNAWAY CAP (owner: "it shouldnt trigger on checks, but only when
-#effect actually triggers") -- asking a card a question is not an effect firing. A mark carries its
-#skill in regardless, because a mark is never spotlit and the gate would silence all it answers.
-func _run_own_mods(card: CardData, function: StringName, params: Array, with_skill: bool) -> void:
+#⚠ A QUESTION IS NOT AN EFFECT FIRING (owner: "it shouldnt trigger on checks, but only when effect
+#actually triggers"), so the per-card path charges nothing; `counts_as_activation` is what a caller
+#dispatching a real effect passes, and it charges the ramp, the runaway cap and the combo alike.
+func _run_own_mods(card: CardData, function: StringName, params: Array, with_skill: bool,
+		counts_as_activation: bool) -> void:
 	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
 	mods.append_array(card.statuses)
 	if with_skill and card.skill: mods.append(card.skill)
 	for mod : CardModifier in mods:
 		if mod and mod.has_method(function):
+			if counts_as_activation:
+				note_processing(1, "%d:%s" % [mod.get_instance_id(), function])
 			await Callable(mod, function).callv(params)
-			_note_mod_fired(mod, function, false)
+			_note_mod_fired(mod, function, counts_as_activation)
 
+#Loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod).
 func on_mod_triggered(triggered_data:CardData, triggered_mod:Callable) -> void:
-	#loose varargs: wrapping in [..] would deliver ONE Array arg to on_trigger(data, mod)
 	await run_all_mods(&"on_trigger", triggered_data, triggered_mod)

@@ -37,6 +37,15 @@ func _ready() -> void:
 	await test_a_match_outside_the_meld_pays_nothing()
 	await test_a_card_pays_into_every_line_it_completes()
 	await test_a_match_registers_no_combo_class()
+	behavior_section("A MARK'S OWN EFFECT FIRES, AND IT COUNTS")
+	await test_the_hit_reaches_the_mark_and_the_card()
+	await test_a_mark_effect_fires_on_every_re_score()
+	await test_a_mark_firing_charges_the_cap_and_is_bounded()
+	await test_a_nested_re_score_leaves_the_outer_line_whole()
+	await test_a_mark_firing_registers_its_copied_combo_class()
+	behavior_section("UNDO AND THE PENDING-ACTION REPLAY")
+	await test_undo_restores_the_mark_and_unbanks_the_bonus()
+	await test_a_replayed_placement_reproduces_the_marked_board()
 	behavior_section("A MATCHED SUIT FIRES ONCE PER MELD MEMBERSHIP")
 	await test_a_matched_suit_fires_once_per_meld_membership()
 	behavior_section("CONTENT MAY LOOSEN THE MATCH")
@@ -157,6 +166,18 @@ func pair_row() -> Array[CardData]:
 func triple_row() -> Array[CardData]:
 	return [row_card(7), row_card(7), row_card(7), row_card(11), row_card(3)] as Array[CardData]
 
+#The same row in REAL suits, no five of them alike. ⚠ `PipSuitTest` carries its identity in a plain
+#var, so a row of test suits comes back from a SNAPSHOT as one suit and flushes -- a claim about a
+#replayed board has to be made of cards whose printed identity survives the round trip.
+func triple_row_standard() -> Array[CardData]:
+	var suits : Array[PipSuit] = [PipSuitHoop.new(), PipSuitBall.new(), PipSuitFire.new(),
+			PipSuitHoop.new(), PipSuitBall.new()]
+	var ranks : Array[int] = [7, 7, 7, 11, 3]
+	var out : Array[CardData] = []
+	for i : int in ranks.size():
+		out.append(play_card(ranks[i], null).with_suit(suits[i]))
+	return out
+
 ## Five cards of ONE suit, the 9 first so a mark under cell 0 pays a meld card of the flush.
 func flush_row() -> Array[CardData]:
 	var suit := TestFactories.uc()
@@ -237,15 +258,28 @@ class MarkHookRecorder extends CardModifierStamp:
 	var hits : int = 0
 	var cover_level : int = -1
 	var hit_level : int = -1
+	## Every level either hook has ever arrived with, so a third value cannot hide behind a count.
+	var levels : Array[int] = []
+	## The card's IDENTITY, never a reference: a stamp holding the card that holds IT leaks at exit.
+	var hit_card_id : int = 0
+	var hit_coord : BoardCoord = null
+	var hit_matched : int = 0
 	func get_str() -> String: return "MarkHookRecorder"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
+	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	func combo_key(_hook: StringName = &"") -> String: return "MarkHookRecorderClass"
 	func on_mark_covered(_card: CardData, _coord: BoardCoord, level: int) -> void:
 		covers += 1
 		cover_level = level
-	func on_mark_hit(_card: CardData, _coord: BoardCoord, _matched: int, level: int) -> void:
+		levels.append(level)
+	func on_mark_hit(card: CardData, coord: BoardCoord, matched: int, level: int) -> void:
 		hits += 1
 		hit_level = level
+		levels.append(level)
+		hit_card_id = card.get_instance_id()
+		hit_coord = coord
+		hit_matched = matched
 
 
 #The two mark hooks on the SKILL slot, which `run_mark_mods` carries in although a mark is never
@@ -293,6 +327,29 @@ class SuitRepaint extends CardModifierType:
 	func get_frame() -> int: return 0
 	func repaint(suit: PipSuit) -> void:
 		data.with_suit(suit)
+
+#A mark effect that RE-SCORES the line it just fired in, through the api's own seam: with `once`
+#it is the nested composition, and without it the unbounded loop the runaway guard is the only bound
+#on. WATCHDOG is the test's own brake, so a guard that stops tripping fails a check instead of hanging.
+class ReScoringMarkStamp extends CardModifierStamp:
+	const WATCHDOG : int = 40
+	var once : bool = false
+	var fires : int = 0
+	var game_ref : Game = null
+	func get_str() -> String: return "ReScoringMarkStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
+		api.add_line_mult(2.0)
+	## Re-scores a ONE-CARD line in an EMPTY section, so nothing but this firing can charge the cap.
+	func on_mark_hit(card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
+		if game_ref.act_overrun or fires >= WATCHDOG: return
+		if once and fires > 0: return
+		fires += 1
+		await api.score_line(Scoring.Result.create("re-scored line",
+				[card] as Array[CardData], 1, 0.0,
+				[Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE]), ScoringSection.new())
+
 
 ## Content that counts a rank one step from the mark's as a match. A TYPE, so it is always asked.
 class MarkRankNeighbours extends CardModifierType:
@@ -663,14 +720,21 @@ func test_a_cover_is_announced_and_a_match_adds_its_own_hook() -> void:
 	var matching := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
 	var plain := g.state.cell_type_at(cell(1, 0)).stamp as MarkHookRecorder
 	check(matching.covers == 1 and matching.hits == 1,
-			"TP-32: a card that MATCHED its mark fires both hooks, the cover as well as the hit",
+			"TP-47: a card that MATCHED its mark fires both hooks, the cover as well as the hit",
 			"%d covers, %d hits" % [matching.covers, matching.hits])
 	check(plain.covers == 1 and plain.hits == 0,
-			"TP-32: a card that matched nothing fires the cover hook alone",
+			"TP-47: a card that matched nothing fires the cover hook alone",
 			"%d covers, %d hits" % [plain.covers, plain.hits])
 	check(matching.cover_level == 0 and matching.hit_level == 1,
-			"TP-32: the cover arrives at level 0 and the match at level 1, the realized form",
+			"TP-48: the cover arrives at level 0 and the match at level 1, the realized form",
 			"cover %d, hit %d" % [matching.cover_level, matching.hit_level])
+	var levels : Array[int] = matching.levels + plain.levels
+	var only_two := true
+	for level : int in levels:
+		if level != 0 and level != 1: only_two = false
+	check(only_two and levels.size() == 3,
+			"TP-48: every call of either hook arrived at 0 or 1, and nothing else exists",
+			"levels %s" % str(levels))
 	free_game(g)
 
 #A mark's copied SKILL is dispatched the mark hooks although the spotlight rule keeps it dark --
@@ -765,6 +829,225 @@ func test_a_match_registers_no_combo_class() -> void:
 			"%f against %f" % [row_banked(marked), row_banked(bare)])
 	free_game(bare)
 	free_game(marked)
+
+
+# ==============================================================================
+# TP-46, TP-49, TP-50, TP-51 -- a mark that ACTS, and what its firing costs
+# ==============================================================================
+
+#TP-46: one hook, two recipients -- the mark's own copied modifiers and the card that covered it.
+#Both are told the same thing, which is what lets an effect on a card require its own mark.
+func test_the_hit_reaches_the_mark_and_the_card() -> void:
+	var cards := triple_row()
+	var on_card := MarkHookRecorder.new()
+	cards[0] = cards[0].with_stamp(on_card)
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(cards, marks)
+	var on_mark := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(on_mark.hits == 1 and on_card.hits == 1,
+			"TP-46: on_mark_hit reached the mark's own modifier AND the placed card's",
+			"mark %d hits, card %d hits" % [on_mark.hits, on_card.hits])
+	check(on_mark.hit_card_id == cards[0].get_instance_id()
+			and on_card.hit_card_id == cards[0].get_instance_id(),
+			"TP-46: both were told about the same card")
+	check(on_mark.hit_coord.equals(cell(0, 0)) and on_card.hit_coord.equals(cell(0, 0)),
+			"TP-46: ...at the same coordinate",
+			"%s / %s" % [str(on_mark.hit_coord.pack()), str(on_card.hit_coord.pack())])
+	check(on_mark.hit_matched == on_card.hit_matched and on_mark.hit_matched != 0,
+			"TP-46: ...with the same matched properties",
+			"%d / %d" % [on_mark.hit_matched, on_card.hit_matched])
+	free_game(g)
+
+#TP-49: the effect is not spent by firing -- the mark under a line pays out again every time that
+#line scores, which is the whole archetype. Taking a card out of the row and putting it back is the
+#mutation that re-scores the SAME line: there is no line-scored memory anywhere to stop it.
+func test_a_mark_effect_fires_on_every_re_score() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-49 precondition: the first scoring fired each hook exactly once",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	var moved : CardData = g.state.card_at(cell(3, 0))
+	Board.remove_from_cell(g.state, moved)
+	await g.place_card_in_grid(moved, cell(3, 0))
+	check(spy.covers == 2 and spy.hits == 2,
+			"TP-49: the line through the marked cell scored again, and the mark fired again",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	free_game(g)
+
+#TP-50: a firing is an ACTIVATION -- it advances the compression ramp and charges the runaway cap
+#when it repeats, which is the only thing bounding a mark effect that re-scores its own line. The
+#small cap keeps the loop short; WHICH mechanism stops it is the claim, never the number.
+func test_a_mark_firing_charges_the_cap_and_is_bounded() -> void:
+	var bare := await scored_row(triple_row(),
+			{0: row_card(7)} as Dictionary[int, CardData])
+	var counted := await scored_row(triple_row(),
+			{0: row_card(7).with_stamp(MarkHookRecorder.new())} as Dictionary[int, CardData])
+	check(counted.act_calls == bare.act_calls + 2,
+			"TP-50: the cover and the hit each charged one unit of processing",
+			"%d against the unanswered %d" % [counted.act_calls, bare.act_calls])
+	free_game(bare)
+	free_game(counted)
+
+	var snapshot := snapshot_settings("act_")
+	SettingsManager.settings.act_event_cap = 20
+	var looping := ReScoringMarkStamp.new()
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(looping))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires > 1,
+			"TP-50 precondition: the mark effect really did re-score its own line, over and over",
+			"%d firings" % spy.fires)
+	check(g.act_overrun,
+			"TP-50: THE RUNAWAY GUARD is what stopped the re-scoring loop",
+			"fires=%d act_calls=%d cap=%d" % [spy.fires, g.act_calls,
+			SettingsManager.settings.act_event_cap])
+	check(spy.fires < ReScoringMarkStamp.WATCHDOG,
+			"TP-50: ...and it was the CAP, not the test's own watchdog",
+			"%d firings of %d" % [spy.fires, ReScoringMarkStamp.WATCHDOG])
+	free_game(g)
+	restore_settings_snapshot(snapshot)
+
+#TP-50: a mark effect may score another line from inside the composition of the one it fired in, so
+#the outer line's summed mult is saved and put back rather than cleared. ⚠ The cell carries a COPY of
+#the modifier, so every field this double is driven by is set on the copy the cell is holding.
+func test_a_nested_re_score_leaves_the_outer_line_whole() -> void:
+	var control := await scored_row(triple_row(),
+			{0: row_card(7).with_stamp(LineMultStamp.new())} as Dictionary[int, CardData])
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(ReScoringMarkStamp.new()))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	spy.once = true
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires == 1,
+			"TP-50 precondition: the nested re-score happened, exactly once",
+			"%d firings" % spy.fires)
+	check(row_banked(g) > 0.0 and is_equal_approx(row_banked(g), row_banked(control)),
+			"TP-50: the outer line banked its own summed mult after the nested composition",
+			"%f against the un-nested %f" % [row_banked(g), row_banked(control)])
+	free_game(g)
+	free_game(control)
+
+#TP-51: the COPIED modifier is what counts, never the furniture it was copied onto -- the cell type
+#names no class at all, so a mark that fires nothing changes no combo.
+func test_a_mark_firing_registers_its_copied_combo_class() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var key := spy.combo_key(MarkMatch.MARK_HIT)
+	check(not key.is_empty(),
+			"TP-51 precondition: the copied modifier names a combo class of its own", key)
+	check(g.state.combo_classes.has(key),
+			"TP-51: the mark firing registered its own modifier's class",
+			"%s missing from %s" % [key, str(g.state.combo_classes)])
+	check(TypeGridCell.new().combo_key() == "",
+			"TP-51: the cell type the mark is written onto names no class",
+			"got '%s'" % TypeGridCell.new().combo_key())
+	check(not g.state.combo_classes.has(""),
+			"TP-51: ...so no empty class was registered",
+			str(g.state.combo_classes))
+	free_game(g)
+
+
+# ==============================================================================
+# TP-53, TP-54 -- against the engine: undo, and the replay of an interrupted placement
+# ==============================================================================
+
+#TP-53: undo is free -- the mark comes back and what it paid is un-banked, because every number the
+#placement moved lives on the board state the snapshot carries. ⚠ THE LIVE BOARD IS THE EXPECTATION
+#and the snapshot only the second witness: two copies agree about anything neither of them carries.
+func test_undo_restores_the_mark_and_unbanks_the_bonus() -> void:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	g.state.plan_seed = 4242
+	mark_cell(g.state, 0, 0, row_card(7))
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	g.save_state()
+	var expected := TestGridFixtures.board_digest(g.state)
+	var before : GameData = g.state.duplicate_state()
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(row_banked(g) > 0.0,
+			"TP-53 precondition: the placement completed the row and banked a marked line",
+			"%f" % row_banked(g))
+	g.undo()
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"TP-53: undo restored the board, every mark and every banked score, field for field",
+			"after:\n%s\n---- wanted:\n%s" % [TestGridFixtures.board_digest(g.state), expected])
+	check(TestGridFixtures.board_digest(g.state) == TestGridFixtures.board_digest(before),
+			"TP-53: ...and it agrees with the snapshot taken before the placement",
+			"after:\n%s\n---- snapshot:\n%s" % [TestGridFixtures.board_digest(g.state),
+			TestGridFixtures.board_digest(before)])
+	check(g.state.total_score == before.total_score
+			and g.state.combo_classes == before.combo_classes
+			and g.state.combo_repeats == before.combo_repeats,
+			"TP-53: the banked total and the combo set came back with it",
+			"%d/%s/%d against %d/%s/%d" % [g.state.total_score, str(g.state.combo_classes),
+			g.state.combo_repeats, before.total_score, str(before.combo_classes),
+			before.combo_repeats])
+	check(g.state.validate().is_empty(),
+			"TP-53: the rewound board still satisfies every invariant",
+			"; ".join(g.state.validate().slice(0, 3)))
+	free_game(g)
+
+#TP-54: a quit mid-cascade replays the placement from the committed pre-placement board. There is no
+#RNG in the path, so the replayed board and its marked line's score are the ones it interrupted. Only
+#a card HELD in a slot is a player's placement, and only that writes the marker a replay repeats.
+func test_a_replayed_placement_reproduces_the_marked_board() -> void:
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	backup_real_save(suite_tag())
+	Main.save_info = RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7))
+	var cards := triple_row_standard()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	var adder := SkillAdderInputUpper.new()
+	adder.spotlit = true
+	var adder_card := CardData.new().with_skill(adder)
+	adder_card.stage = CardData.Stage.RULES
+	g.state.rules_deck.append(adder_card)
+	await adder.on_spotlight()
+	g.state.draw_deck = [cards[4]] as Array[CardData]
+	await g.refill_entrance_if_due()
+	check(g.state.upper_zone[0].datas.has(cards[4]),
+			"TP-54 precondition: the card that completes the row is HELD in the Entrance")
+	g.save_state()
+	var pre_placement : GameData = g.save_history[-1]
+
+	var coord := cell(4, 0)
+	await g.place_card_in_grid(cards[4], coord)
+	var expected := TestGridFixtures.board_digest(g.state)
+	check(row_banked(g) > 0.0,
+			"TP-54 precondition: the placement scored the marked row", "%f" % row_banked(g))
+
+	g.state = g._runtime_state(pre_placement)
+	g.save_history = [pre_placement] as Array[GameData]
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = coord.pack()
+	await g._replay_pending_action(&"on_placement")
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"TP-54: the replayed placement reproduced the marked board and its score",
+			"replayed:\n%s\n---- wanted:\n%s"
+			% [TestGridFixtures.board_digest(g.state), expected])
+	free_game(g)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_info
 
 
 # ==============================================================================

@@ -150,13 +150,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs: is_spotlit exclusion removed -> MARK MATCH 7 passed, 4 FAILED of 11 (all four TP-44 checks); blocks_spotlight forced true -> 8 passed, 3 FAILED of 11; exclusion below the StampGlobal return -> 11 passed, 4 FAILED of 15 (the four globally-stamped-mark checks). Overseer full runs: ALL 47 SUITES: 4032 passed, 1 FAILED (WALL FOCUS standing line) at e41fe969; ALL 47 SUITES: 4002 CHECKS PASSED, errors log empty, after the fix. SPOTLIGHT 111/111 both times; SECTION 8 identical. grep: is_spotlit()'s first statement is the mark check.'
   notes: 'Measured by the implementer: a grid card is never NATURALLY spotlit (_blocked_from_above reads position_of, which carries no grid coordinate), so TP-44 contrasts forced-spotlight pairs plus an unforced globally stamped mark; see ASSUMPTIONS.md.'
 - id: S9
-  description: on_mark_covered / on_mark_hit dispatched from place_card_in_grid; TP-46..51, TP-53, TP-54.
-  files_touched: []
-  verification_command: 'GODOT_BIN=<console exe> py solatro/Tools/run_tests.py'
+  description: on_mark_covered / on_mark_hit count as activations (combo class, note_processing); TP-46..51, TP-53, TP-54. Landing-time dispatch PARKED on GAP-002.
+  files_touched: [solatro/Scripts/card_environment.gd, solatro/Levels/game.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Support/test_grid_fixtures.gd]
+  verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red runs per row (filtered MARK MATCH, green 111): placed-card dispatch removed (TP-46), first-scoring-only (TP-49), note_processing uncharged -> loop ran to the recorder cap, no hang (TP-50), feeds_combo false (TP-51), plan_seed dropped from the undo snapshot (TP-53), RNG injected (TP-54); details in the S9 evidence file. Overseer full run: ALL 47 SUITES: 4144 CHECKS PASSED, errors log empty; MARK MATCH 111/111; COMBO 26/26; E2E RUN 35/35; exit-time leak count identical to baseline; SECTION 8 identical; per-suite banners vs the previous gate differ only in MARK MATCH. grep: no run_mark_mods/MARK_HIT in place_card_in_grid; no feeds_combo=false on the mark path.'
+  notes: 'Measured pre-existing bug, fixed mark-scoped: Game._note_mod_fired gated combo registration on _act_cancellable, set only inside _perform_next, so no modifier activation ever fed the combo in the grid game; the window is now "an act is resolving OR a line is composing". Composition is re-entrant (save/restore of line_mult_bonus) because TP-50 makes the nested api.score_line producible. board_digest now witnesses marks, plan_seed, combo set and total_score, so the E2E parity and save-reload rows assert them too. The placed card''s on_mark_hit moved to run_mark_mods (run_card_mods is the prop tick''s non-charging path).'
 - id: S10
   description: mark_at, reroll_mark, grant_mark, swap_marks on CardEffectApi; TP-52.
   files_touched: []
@@ -181,12 +181,12 @@ Findings and their disposition; each defect was reproduced red before it was fix
   test doubles are stamps); BOARD PLAN's start_show replicates _start_fresh_show instead of
   using it; the blocks_spotlight note naming poker-patience PLAN 1.4 as wrong was deleted in the
   card_modifier.gd comment sweep and must come back.
-- SCHEDULED, not drift: a mark firing registering a combo class and charging note_processing
-  (Q54, Q57) are S9's TP-50/TP-51, deferred there by the S6 brief.
+- DONE at S9: a mark firing registers a combo class and charges note_processing (TP-50, TP-51).
 - GAP-002 filed: the landing-time dispatch S9 owes collides with add_line_mult's composing-only
   precondition; the cover/hit reading is recorded in the same gap for the owner.
-- RECORDED, no producer today: a nested api.score_line from inside a mark hook would clear the
-  outer accumulator; add_grid re-seeds from plan_seed (deterministic, logged).
+- FIXED at S9 (TP-50 made it producible): a nested api.score_line from inside a mark hook cleared
+  the outer accumulator; the composition is re-entrant now. RECORDED: add_grid re-seeds from
+  plan_seed (deterministic, logged).
 - GAP-001 gains a note: the mid-show pool shrinks with the draw pile.
 - Verified clean by the reviewer: scoring.gd byte-identical to main; unmarked boards score as
   today; the composition is on the only banking path; no global RNG on the deal; save/resume
