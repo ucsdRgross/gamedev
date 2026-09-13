@@ -330,8 +330,10 @@ gap under `gaps/`.
   is read against.
 - S15 / TEST_PLAN TP-80: a parity board is filled with 25 cards drawn WITH REPLACEMENT from its
   deck's identities, so every board completes all twelve lines and the repeats make the sets whose
-  meld leaves cards outside it. The mark deal still reads the deck itself, so a 20-card stock over
-  25 cells still exercises the fewest-copies rule.
+  meld leaves cards outside it. The parity deal is NOT a fewest-copies deal, though: `PipSuitTest.id`
+  is a plain `var` that `duplicate_deep` does not carry, so every copied mark prints suit 0 and
+  `_copies_of` counts no board copies of the suit-1..3 identities. Parity is unaffected -- the sim
+  scores the marks the engine dumped -- and BOARD PLAN is where the fewest-copies rule is proven.
 - S15 / Q104: the placement oracle values a placement by the COMPOSED line number, because it reads
   the same composition the board banks -- par play therefore sees the plan and places into the cells
   whose marks it agrees with.

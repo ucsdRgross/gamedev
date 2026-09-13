@@ -10,7 +10,7 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 directory aside — to `<user data>/Solatro/logs-stalled-<stamp>` or `logs-failed-<stamp>` — before it
 kills a stalled run or reports a failing one. `--stall-timeout` (default 600 s) also watches the test
 log's SIZE as a heartbeat and NAMES the suite that started without finishing, instead of letting one
-silent suite eat the whole budget and report `NO SUITE BANNER` for all 45.
+silent suite eat the whole budget and report `NO SUITE BANNER` for all 48.
 ⚠ **SO THE RULE IS NOW: DO NOT RE-RUN BEFORE READING THE PRESERVED LOGS.** The evidence survives one
 occurrence, not two — the next run still truncates the LIVE log, and a preserved directory is only
 written when a run stalls or fails.
@@ -83,11 +83,38 @@ written when a run stalls or fails.
 
 ## Waiting on the owner
 
-- ⬜ **Run `design/board-plan/`** — confirmed and handed off (`PLAN.md`, `TEST_PLAN.md`, `NAMES.md`,
-  and the `/plan-run` prompt in its handover). **Runs after `design/sidebar/`**, whose per-slot stocks
-  it deals from. It retires two shipped rules when it lands (a talented card no longer suppresses its
-  own suit effect; rank now pays into a meld) and its phase 6 refits the goal curve, which is the
-  design's answer to `GAP-041`.
+- ⚠ **`design/board-plan/` is BUILT, on branch `board-plan`** — every cell opens with a mark, a
+  match pays into the line it scores, and a suit effect fires only where its cell's mark agrees on
+  suit (ARCHITECTURE_REVIEW §3a/§3e/§4). Six rulings are open, each with its options written out in
+  `design/board-plan/gaps/`:
+  - ⬜ **GAP-001** — the deal reads ONE stock (`draw_deck`) because the sidebar's per-slot stocks
+    have not landed; TP-05/TP-06 are parked until they do.
+  - ⬜ **GAP-002** — do the mark hooks also fire at LANDING, or only when a line through the cell
+    scores? The landing-time dispatch is not built, and a mult reported there has nothing to add to.
+  - ⬜ **GAP-003** — "re-deal a line", the third writer `QR5`=(c) promised, has no signature and is
+    unbuilt; `reroll_mark`, `grant_mark` and `swap_marks` ship.
+  - ⬜ **GAP-004** — the match rim was ruled WHITE and this palette has no white; it ships against
+    31 (cream) and 6 (gold). A ruling moves one number in `roles.tres`.
+  - ⬜ **GAP-005** — every controller shoulder is already bound, so the layer view's held peek is
+    keyboard (`M`) only; a pad reaches the view through the Marks button, not held.
+  - ⬜ **GAP-006** — the plan multiplies par play's score 3.3–5.1× but the ladder still peaks at
+    node 3, so the goal constants are unrefit and every goal is trivial meanwhile
+    (ARCHITECTURE_REVIEW §3b). This is
+    also why `design/poker-patience/gaps/GAP-041.md` did not close with it.
+  - ⬜ **For the owner's eye:** the 12.1 s opening reveal (`plan_reveal_fraction` 0.5 ×
+    `get_delay()`), and whether "no rim" alone reads as a mark at overview zoom.
+  - ⬜ The landing feedback was never photographed with a scoring beam on the same cell
+    (`design/board-plan/TEST_PLAN.md` TP-72's second half); every other visual row is verified.
+  - ⬜ **Recorded, no producer today.** A card an EFFECT moves off a marked cell keeps its last
+    `match_rim_active` rims on the pooled visual until the next rebuild, because
+    `PlayArea._refresh_mark_matches` re-derives only the cards STANDING on marked cells and
+    `Game.move_card_in_grid` has no shipped caller. A window losing focus while `M` is held may
+    leave the layer view open until the next press or board mutation — the peek closes on
+    `is_action_released`, and what the engine delivers on focus-out is unverified. The debug
+    undo/redo bar is not gated by `GameView._board_is_playable()` (debug builds only, and the
+    rebuild closes the layer anyway).
+  - 💡 Recorded for later, `Q81`, the owner's words: *"a possible future card that saves what you
+    actually played that game on the board as new plan"*. Out of scope for this design.
 - ⬜ **Keep answering `design/effect-review/`** — every question was re-read against the live board
   and the confirmed designs; `build/_verdicts.tsv` has one verdict per question and `build/REVIEW.md`
   says how to change the build without renumbering recorded answers.
@@ -303,6 +330,9 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 - Firework in-run acquisition beyond deck12 (owner decision). Per-pip tooltip granularity.
 - Win/lose screen font (226px) clips long "Fame +N" text. `game.tscn` grabs no initial focus, so
   keyboard/controller players must click first.
+- `PipRankNumeral.get_str()` prints "NumeralRank5.0" wherever a rank is described in text, which a
+  mark's description shows. A sprung grid card (`CardVisual.anim_spring_lift`) never resets
+  `floating`, so it stays false until the next rebuild.
 
 ## Universal palette (owner playtest pending)
 
@@ -362,6 +392,9 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 ## Testing / infrastructure
 
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
+- `PipSuitTest.id` is a plain `var`, so `duplicate_deep` and a save do not carry it: a row of
+  distinct test suits comes back from a snapshot as ONE suit and flushes. A fixture that must
+  survive a copy uses real suits.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
 - **PIXELS `test_the_card_mask_is_the_card_the_player_sees` WAS GREEN but PINNED, not fixed.** The

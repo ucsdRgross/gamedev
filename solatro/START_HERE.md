@@ -10,8 +10,11 @@ changes, update this file and ARCHITECTURE_REVIEW.md, and fold/delete the tempor
 A circus-themed solitaire deckbuilder. The board is **one to three grids, 5×5 by default**, side
 by side; each cell holds a **stack**. Cards wait in the **Entrance**, a row attached above the
 grid it is committed to, and the player places one card per action into a cell. **Every placement
-scores the rows, columns, diagonals and height runs it completes, immediately.** A show ends when
-the player presses End; the run is a tour across a generated world map.
+scores the rows, columns, diagonals and height runs it completes, immediately.** **The grid opens
+with a plan:** every cell is dealt a mark from the deck — a card face whose rank, suit, talent or
+hat a played card can agree with for a bonus, and whose SUIT is what lets that card's suit effect
+fire at all. A show ends when the player presses End; the run is a tour across a generated world
+map.
 
 ⚠ **There is no Submit, no act count, no upper/lower tableau and no end-of-show payout.** Those
 were the previous board and they are gone — a suite gate fails any product file that names them.
@@ -34,6 +37,7 @@ Docs describing them live in `archive/` and are not maintained.
 | [DESIGN_RECOMMENDATIONS.md](DESIGN_RECOMMENDATIONS.md) / [DESIGN_REFERENCES.md](DESIGN_REFERENCES.md) | Claude's design proposals / reference quarry, **grid versions**. |
 | `archive/` | The **pre-grid** versions of those three, kept because the effect-review corpus was mined from them and its drop ledger points back into them. ⚠ Not maintained, not scanned by `doc_check.py`, and describing a board that no longer exists — read one only to resolve a citation that predates the grid. `archive/README.md` says which is which. |
 | `design/poker-patience/DESIGN.md` | **The authority on the grid's rules**, cited by question id. `PLAN.md` §1 carries the normative contracts (the coordinate, the line kinds, the economy). |
+| `design/board-plan/DESIGN.md` | **The authority on the plan's rules**, cited by question id; `PLAN.md` §1 carries the contracts (the deal, the match, the composition, the suit rule). ARCHITECTURE_REVIEW §3e is what the engine does. |
 | `curated effects post grid.csv` | **The design idea index.** One row per idea from `gam draft.txt`, `pokerpatience.txt`, the two design companions and `DESIGN_DOC.md`, restated for the grid. Every row declares `scope` (`grid-local` or `global`), `axis`, `needs_height` and `needs_grids`; `source` cites the line it came from and `status` says whether it is carried, revived, superseded, vetoed or implemented. `curated effects pre grid.csv` is the archived predecessor. |
 | `blinds.csv` | Level modifiers — one row per blind effect, each with a hazard or an objective **and a payoff for playing into it**. A level draws one; a boss level draws two. `weight` 2 means it counts as two. |
 | `accepted-ideas.csv` | What the owner has actually marked, mined from the catalog's `seen?` column and the two idea CSVs, plus unmarked proposals. `evidence` quotes the acceptance signal; most rows are `proposed` because no signal exists in their source. |
@@ -179,10 +183,10 @@ must sit in the SAME folder as the main exe, which it launches by name.
   `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` — ⚠ **CHECK ITS MTIME, and
   note the `logs\test\` segment**: a file of that name also sits directly under `Solatro\`, is months
   stale, and greps clean while the banner reports failures. Run it yourself whenever the owner's
-  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (45) and the
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (48) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
-- **Inner loop between gates:** `py solatro/Tools/run_tests.py --logic` — the 32
+- **Inner loop between gates:** `py solatro/Tools/run_tests.py --logic` — the 34
   renderer-independent suites, headless, ~65 s. Like any `--filter` subset it is a debugging aid and
   prints no clean verdict; the full run above stays the gate. HEADLESS_TESTING.md §0.
 - ⚠ **Always bound the launch with a hard timeout that KILLS, and grep the log for `Parse Error`

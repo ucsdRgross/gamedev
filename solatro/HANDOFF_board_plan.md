@@ -2,10 +2,11 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 39 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S14 landed and verified, S15
+**State:** 40 commits on `board-plan`. Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
 landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
 one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: S16 (the docs pass), S17. Six
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. OPEN: Phase 5-6 review fixes H and I
+(one commit each, see that section), then S17. Six
 gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark hook
 timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal a
 line unnamed), GAP-004 (the palette has no white: `match_rim` is built against entry 31 cream,
@@ -214,13 +215,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'TP-80 (overseer re-ran --parity on the implementer''s dump): PARITY: 1372 checks, 0 MISMATCHES - 1200 engine lines, 12 marked boards / 120 banked lines, 12 diagonal sums, 12 grid scores, 3 knobs; implementer red with the sim''s flats zeroed: 52 mismatches (35 banked lines, 6 diagonal sums, 9 grid scores, 2 knobs). TP-81/TP-82 MEASURED, not met: the ladder with marks (medians 44840 / 308083 / 76403 / 49550 / 36757 at N 20..40) still peaks at node 3 and ends at 0.10x; beatable fit goal(N) = 23400 * (N/20)^-0.32; win rates 13.0 / 11.8 / 8.5; constants left at 5376 / 0.26, no design version written; GAP-006 filed with the table. Overseer full run: see the S15 commit message. No Scripts/ file changed; SECTION 8 identical.'
   notes: 'The sim mirrors the three rank knobs (PLAN_RANK_MATCH_STEP etc.) and --parity asserts them against the engine dump, so the mirror is seam-checked. Models no hat (a sim card has no stamp) and no prop scoring (never did); parity boards are dealt from PipSuitTest so no props fire. run_suite.sh --scene does not run the parity scene (the wrapper wants a suite banner): run Godot directly with the private APPDATA. Under py 3.9.7.'
 - id: S16
-  description: the docs pass - ARCHITECTURE_REVIEW 3a/3d/4 and 1.4 hook roster, START_HERE, todo; doc_check full.
-  files_touched: []
+  description: the docs pass - ARCHITECTURE_REVIEW 1.4 hook roster, 2c, 3a, 3b, 3d, new 3e (the board plan), 4, 4b, 4i, 4j, 7; START_HERE; todo; HEADLESS_TESTING suite counts; the full doc_check.
+  files_touched: [solatro/ARCHITECTURE_REVIEW.md, solatro/START_HERE.md, solatro/todo.md, solatro/HEADLESS_TESTING.md, solatro/design/board-plan/ASSUMPTIONS.md]
   verification_command: 'py .claude/tools/doc_check.py'
   verification_kind: manual
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Full doc_check from the worktree root: 66 living docs + 318 source files checked - 0 error(s), 9 warning(s), identical to the pre-S16 tree and to main (0 errors, 9 warnings); --changed clean on all five files. No source file touched (git status). grep: the retired rule survives in ARCHITECTURE_REVIEW only as the sentence that retires it; suite counts corrected 45 -> 48 and the logic tier 32 -> 34 in START_HERE, HEADLESS_TESTING and ARCHITECTURE_REVIEW 7. One landmine row rewritten by the overseer from what material_of used to do into the rule.'
+  notes: 'Not edited, scheduled with fix H: stale code comments stating the retired talent-suppression rule at Decks/deck.gd:8,116,150,219,255 and Tests/Support/test_decks.gd:18, and DESIGN_DOC.md:475 (the owner design record) which still states it. VFX.md untouched: no living doc enumerates board shot scenes, so the three plan_*_shot scenes are listed in 3e. Logic tier: BOARD PLAN and MARK MATCH are in it, PLAN VISUALS is not (windowed).'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded.
   files_touched: []
@@ -294,6 +295,38 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   printer filter; TP-53's digest witnesses; TP-54 through the real replay; the counts_as_activation
   split keeps every question-asking path out of the combo; NAMES.md identifiers all match.
 
+## Phase 5-6 adversarial review (Opus 5, read-only, 70425565..13267a24)
+Findings and their disposition; each defect is reproduced red before it is fixed:
+- FIX H (own commit): the held-card highlight lights marks in grids the placement will refuse -
+  `_refresh_mark_matches` walks every grid while `place_card_in_grid` refuses any grid but
+  `state.committed_grid` (and `try_place` still returns true, so the card drops back). Q66=(a)
+  "every cell it would match": a cell the show cannot reach is not one. Rule adopted: the highlight
+  walks only the committed grid once one is committed. TP-63 gains a two-grid case.
+- FIX I (own commit): in the marks layer only the CardVisual is hidden; focus and inspection on a
+  covered cell still target the hidden played card (`card_info(ui_data[focused_control])`), and the
+  focus brighten lands on an invisible visual. PLAN 1.10 "a covered mark is available on inspection,
+  and through the layer view". Rule adopted: while the layer is open, a covered cell's focus and
+  inspection target its mark. TP-67 gains an inspection check.
+- DISMISSED (no producer): `game_state.grids[gi]` read without a null guard in the highlight walk -
+  `pop_at` renumbers, nothing produces a null entry; hard rule 7 forbids the guard.
+- RECORDED in todo.md (no producer today): a card an effect moves off a marked cell keeps its last
+  activated rims until the next rebuild; the M-key peek closes only on release, so focus loss while
+  held may leave the layer open until the next press or mutation; the debug undo/redo bar is not
+  gated by `_board_is_playable()`.
+- CORRECTED (ASSUMPTIONS S15/TP-80): the parity's engine deal is not a fewest-copies deal, because
+  `PipSuitTest.id` is a plain var `duplicate_deep` drops (every dumped mark prints suit 0); the
+  0-mismatch parity is unaffected because the sim scores the marks the engine dumped. What parity
+  proves: the RANK flat from `place_card_in_grid` through `_compose_line_score` to `grid_score` on
+  12 boards x 12 lines including the Ace path; not SUIT, TALENT, HAT, any M != 0, the NAN fallback,
+  stacked cells, the mark hooks, or the sim's own deal.
+- PLAN DRIFT noted: private helpers added during execution (`CardEnvironment._dispatch_mods`,
+  `PlayArea._wear_match_rim`, `CardVisual._rim_of` / `_match_style` / `_match_styles`,
+  `TypeGridCell._marked` / `_mark_outline`) are not in NAMES.md; the public names all match.
+- Verified clean by the reviewer: fix E's single walk and every legality/prop/spotlight path; fix
+  G's eight `_note_mod_fired` call sites; fix F's uncached pass order; the reveal's remaining
+  `CURRENT` reads are on paths the reveal never calls; the S12 derivation from every route and the
+  Entrance never walked; S13's one flag, both closes, the two gated commands, nothing saved.
+
 ## Bloat review of the reveal fix and fixes E-G (Opus 5, read-only, 70425565..5b153b62)
 - QUEUED for the close's simplify pass: `MarkMatch._pip_same` computes two `pip_cache_key`s that
   `ask_pass` never reads under `memoise = false`. Not a defect; one suite run is not worth it alone.
@@ -330,10 +363,14 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
-   new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
-   `py .claude/tools/doc_check.py` clean).
-2. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+1. Fix H (Phase 5-6 review): the held-card highlight walks only `state.committed_grid` once one is
+   committed - `place_card_in_grid` refuses every other grid. Red-then-green in TP-63 with two grids.
+   Same dispatch, own commit: the six stale talent-suppression comments in `Decks/deck.gd` /
+   `Tests/Support/test_decks.gd` and `DESIGN_DOC.md:475` restated as the suit rule.
+2. Fix I (Phase 5-6 review): while the layer view is open, a covered cell's focus and inspection
+   target its MARK (the cell type card), and the focus brighten lands on the mark's visual. TP-67
+   gains an inspection check, red-then-green. One commit, full gate.
+3. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)
