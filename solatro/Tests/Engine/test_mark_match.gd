@@ -14,6 +14,7 @@ func _ready() -> void:
 	TestLog.line("============ MARK MATCH TEST PASS ============")
 	behavior_section("EACH PROPERTY MATCHES ON ITS OWN")
 	await test_each_property_is_detected_independently()
+	await test_an_absent_print_agrees_with_nothing()
 	await test_a_talent_match_needs_the_same_script()
 	await test_a_hat_match_needs_the_same_script()
 	behavior_section("THE MATCH IS A PROPERTY OF THE LIVE BOARD")
@@ -339,6 +340,37 @@ func test_each_property_is_detected_independently() -> void:
 	var off_board : int = await MarkMatch.matches_at(g.state, on_both, cell(9, 9))
 	check(off_board == 0,
 			"TP-20: nor does a coordinate that names no cell of any grid", "got %d" % off_board)
+	free_game(g)
+
+#TP-20: an absent print agrees with NOTHING, so a rankless card standing on a mark that prints a
+#suit alone is a suit match only -- printed identity answers true for two nulls, and a RANK bit set
+#from two empty slots sends `flat_bonus` to read a rank that is not there.
+func test_an_absent_print_agrees_with_nothing() -> void:
+	var g := make_game()
+	var suit_source := plan_card(PipSuitHoop, 5)
+	suit_source.rank = null
+	var rank_source := plan_card(PipSuitKnife, 4)
+	rank_source.suit = null
+	mark_cell(g.state, 0, 0, suit_source)
+	mark_cell(g.state, 1, 0, rank_source)
+	var rankless := plan_card(PipSuitHoop, 3)
+	rankless.rank = null
+	var suitless := plan_card(PipSuitKnife, 4)
+	suitless.suit = null
+	place_in_cell(g.state, 0, 0, rankless)
+	place_in_cell(g.state, 1, 0, suitless)
+	var on_suit_mark := await MarkMatch.matches_at(g.state, rankless, cell(0, 0))
+	var on_rank_mark := await MarkMatch.matches_at(g.state, suitless, cell(1, 0))
+	check(on_suit_mark == MarkMatch.Property.SUIT,
+			"TP-20: a rankless card on a mark printing a suit alone matches the SUIT and nothing else",
+			"got %d" % on_suit_mark)
+	check(on_rank_mark == MarkMatch.Property.RANK,
+			"TP-20: a suitless card on a mark printing a rank alone matches the RANK and nothing else",
+			"got %d" % on_rank_mark)
+	var rankless_pay : int = MarkMatch.flat_bonus(rankless, on_suit_mark)
+	check(rankless_pay == 0,
+			"TP-20: and the rankless card pays no rank bonus, having no rank to read",
+			"got %d" % rankless_pay)
 	free_game(g)
 
 #TP-21: a mark carries its own COPY of the skill it names, so the only identity a talent match can

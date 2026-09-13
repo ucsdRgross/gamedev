@@ -23,11 +23,9 @@ static func matches_at(state: GameData, card: CardData, coord: BoardCoord) -> in
 	var mark := state.cell_type_at(coord)
 	if not mark or not BoardPlan.is_marked(mark): return 0
 	var matched := 0
-	if await PipComparator.pair_is_same(card.rank, mark.rank,
-			MARK_RANKS_DENY, MARK_RANKS_ALLOW, false):
+	if await _pip_same(card.rank, mark.rank, MARK_RANKS_DENY, MARK_RANKS_ALLOW):
 		matched |= Property.RANK
-	if await PipComparator.pair_is_same(card.suit, mark.suit,
-			MARK_SUITS_DENY, MARK_SUITS_ALLOW, false):
+	if await _pip_same(card.suit, mark.suit, MARK_SUITS_DENY, MARK_SUITS_ALLOW):
 		matched |= Property.SUIT
 	if _slot_same(card.skill, mark.skill): matched |= Property.TALENT
 	if _slot_same(card.stamp, mark.stamp): matched |= Property.HAT
@@ -52,9 +50,16 @@ static func mult_bonus(_card: CardData, matched: int) -> float:
 	if matched & Property.HAT: mult += settings.plan_hat_mult
 	return mult
 
+#A printed pip agrees only when BOTH cards print one: an ABSENT print agrees with nothing, which
+#printed identity's null-equals-null would not answer -- and a RANK bit off two empty slots sends
+#`flat_bonus` to read `rank.value` on null.
+static func _pip_same(a: Variant, b: Variant, deny: StringName, allow: StringName) -> bool:
+	if not a or not b: return false
+	return await PipComparator.pair_is_same(a, b, deny, allow, false)
+
 #A talent or hat agrees when BOTH slots are filled and name the same script: a mark carries its own
-#COPY of what the source printed, so the class is the identity -- and two EMPTY slots agree about
-#nothing, which is why printed identity's null-equals-null is not the test here.
+#COPY of what the source printed, so the class is the identity, and the both-present half is
+#`_pip_same`'s rule again.
 static func _slot_same(a: CardModifier, b: CardModifier) -> bool:
 	if not a or not b: return false
 	return PipComparator.modifier_script(a) == PipComparator.modifier_script(b)
