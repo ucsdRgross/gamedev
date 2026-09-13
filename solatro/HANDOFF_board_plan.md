@@ -3,9 +3,10 @@
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
 **State:** Phases 1–4 (S1–S10) landed and verified, one commit per step, plus three review fixes
-and one owner-reported bug fix. Two gaps open for the owner: GAP-001 (stocks are sidebar S19;
-TP-05/06 parked) and GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch
-parked). Phase 5 (S11–S13, visual, each ending in /fx-verify) is next, then S14–S17.
+and one owner-reported bug fix. Three gaps open for the owner: GAP-001 (stocks are sidebar S19;
+TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch
+parked) and GAP-003 (re-deal a line unnamed). Owner ruling mid-run: marks keep a real card's
+colours and only lose their outline (PLAN §1.10). Phase 5 (S11–S13, visual, each ending in /fx-verify) is next, then S14–S17.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -153,8 +154,8 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: [solatro/Scripts/card_environment.gd, solatro/Levels/game.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: done
-  evidence: 'Implementer red runs per row (filtered MARK MATCH, green 111): placed-card dispatch removed (TP-46), first-scoring-only (TP-49), note_processing uncharged -> loop ran to the recorder cap, no hang (TP-50), feeds_combo false (TP-51), plan_seed dropped from the undo snapshot (TP-53), RNG injected (TP-54); details in the S9 evidence file. Overseer full run: ALL 47 SUITES: 4144 CHECKS PASSED, errors log empty; MARK MATCH 111/111; COMBO 26/26; E2E RUN 35/35; exit-time leak count identical to baseline; SECTION 8 identical; per-suite banners vs the previous gate differ only in MARK MATCH. grep: no run_mark_mods/MARK_HIT in place_card_in_grid; no feeds_combo=false on the mark path.'
+  status: partial
+  evidence: 'Score-time half DONE; landing-time dispatch PARKED on GAP-002. Implementer red runs per row (filtered MARK MATCH, green 111): placed-card dispatch removed (TP-46), first-scoring-only (TP-49), note_processing uncharged -> loop ran to the recorder cap, no hang (TP-50), feeds_combo false (TP-51), plan_seed dropped from the undo snapshot (TP-53), RNG injected (TP-54); details in the S9 evidence file. Overseer full run: ALL 47 SUITES: 4144 CHECKS PASSED, errors log empty; MARK MATCH 111/111; COMBO 26/26; E2E RUN 35/35; exit-time leak count identical to baseline; SECTION 8 identical; per-suite banners vs the previous gate differ only in MARK MATCH. grep: no run_mark_mods/MARK_HIT in place_card_in_grid; no feeds_combo=false on the mark path.'
   notes: 'Measured pre-existing bug, fixed mark-scoped: Game._note_mod_fired gated combo registration on _act_cancellable, set only inside _perform_next, so no modifier activation ever fed the combo in the grid game; the window is now "an act is resolving OR a line is composing". Composition is re-entrant (save/restore of line_mult_bonus) because TP-50 makes the nested api.score_line producible. board_digest now witnesses marks, plan_seed, combo set and total_score, so the E2E parity and save-reload rows assert them too. The placed card''s on_mark_hit moved to run_mark_mods (run_card_mods is the prop tick''s non-charging path).'
 - id: S10
   description: mark_at, reroll_mark, grant_mark, swap_marks on CardEffectApi; TP-52.
@@ -246,6 +247,41 @@ Findings and their disposition; each defect was reproduced red before it was fix
 - Verified clean by the reviewer: scoring.gd byte-identical to main; unmarked boards score as
   today; the composition is on the only banking path; no global RNG on the deal; save/resume
   carries marks; no design ids in code; anti-scope respected.
+
+## Phase 4 adversarial review (Opus 5, default effort, read-only, committed range 7c7ae65a..2a207cf3)
+Findings and their disposition; each defect is reproduced red before it is fixed:
+- FIX (own commit, the reroll surface): reroll_mark clears the cell and re-runs the deal, whose
+  fewest-copies rule then offers the very identity it just cleared (the sole lowest), so a reroll
+  returns the same face most of the time on a 20-card board; and with an empty draw pile (or a
+  plan_seed 0 board) the clear happens and nothing is dealt, deleting the mark. Rule adopted: the
+  offer excludes the identity being replaced, and the cell is cleared only once a card is in hand.
+  The three writers assert the cell exists (mark_at may return null).
+- FIX (own commit): the mark exclusion lives only in run_all_mods; the comparator dispatches,
+  active_implementers, return_first_data_array_result, has_card_data and skill_spotlight_check still
+  walk cell_types, so a mark copying a modifier with a leniency or placement hook would answer
+  board-wide and has_card_data would report a mark as on the board. Exclude marked cell cards at the
+  dispatch walker, once.
+- FIX (own commit): _pip_same refuses an absent pip before the deny/allow hooks are asked, which
+  closes the leniency shape pre-authorised row 9 requires (PipComparator asks the hooks first). Ask
+  the hooks first; require both present only for printed_same; flat_bonus treats a null rank as the
+  no-integer-value case so a leniency-rescued rankless card pays the fallback.
+- FIX (own commit): the widened combo window ("a line is composing", read off the accumulator) also
+  admits every broadcast inside a NESTED composition (a mark effect re-scoring a line), so
+  on_score / on_after_score of any board card would feed the combo there and nowhere else. Pass the
+  mark-hook activation explicitly instead of inferring it from the accumulator.
+- RECORDED, no producer today: spawn_props now awaits the comparator dispatch, so a coroutine
+  leniency hook could interleave two suits' spawner construction; add_line_mult off a composition
+  drops the mult silently in release (GAP-002 decides its lifetime).
+- GAP-003 filed: "re-deal a line" (QR5=(c)'s third capability) has no signature in NAMES.md and no
+  test row; both derived docs dropped it.
+- S9 is PARTIAL, not done: the score-time dispatch, combo class and processing charge landed; the
+  landing-time dispatch from place_card_in_grid is parked on GAP-002. The ledger says so now.
+- Verified clean by the reviewer: the suit gate (one seam, five subclasses, no talent term); the
+  re-entrant accumulator at any depth; flat_bonus/mult_bonus paths; is_spotlit/blocks_spotlight
+  after the ordering fix; write_mark/clear_mark; swap_marks' relink; Board.add_grid -> deal_marks
+  ordering (a grid added during the opening walk is dealt exactly once, by the planner); I6's
+  printer filter; TP-53's digest witnesses; TP-54 through the real replay; the counts_as_activation
+  split keeps every question-asking path out of the combo; NAMES.md identifiers all match.
 
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.

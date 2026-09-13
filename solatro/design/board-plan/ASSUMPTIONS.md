@@ -105,7 +105,7 @@ gap under `gaps/`.
   composing a line (asserted). No shipped content uses it yet, so renaming is cheap; NAMES.md carries
   it. Q52=(b) makes the mark hooks fire on every line score through the cell, so `score_line`
   dispatches `on_mark_hit` / `on_mark_covered` for each meld card on a marked cell; the landing-time
-  dispatch from `place_card_in_grid` is S9's.
+  dispatch from `place_card_in_grid` is PARKED on `gaps/GAP-002.md`, not built.
 - S6 / Q104, Q122: the composition is ONE named function, `Game._compose_line_score(result)`, called
   from `score_line` where `result.score` used to be read; no document names it. The float product is
   truncated with `int()`, the same narrowing `ScoreModel` uses for its own float multipliers, and the
