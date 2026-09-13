@@ -41,17 +41,45 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 #The walk order is what the opening reveal deals on screen, so it is recorded as it happens rather
 #than re-derived from a board that no longer remembers which cell came first.
 	state.plan_reveal_order.clear()
-#The Entrance's per-slot stocks replace this line when the sidebar's stocks land.
-	var stocks : Array[Array] = [state.draw_deck]
+	var stocks := _stocks_of(state)
 	var unused := _lowest_copies_per_stock(stocks, state)
 	for i : int in order.size():
-		var source := _take_unused(unused, i % stocks.size(), rng)
+		var source := _take_for_cell(unused, order[i], i % stocks.size(), rng)
 		if not source:
 			unused = _lowest_copies_per_stock(stocks, state)
-			source = _take_unused(unused, i % stocks.size(), rng)
+			source = _take_for_cell(unused, order[i], i % stocks.size(), rng)
 		if not source: return
 		write_mark(order[i], source, false)
 		state.plan_reveal_order.append(state.cell_type_coord(order[i]))
+
+#One cell dealt again from a pool of its own: the identity it prints is not on offer, so a redraw
+#hands back a face the cell did not have. The mark stays when the offer holds nothing else -- an
+#empty draw pile -- because the cell is cleared only once a replacement is in hand.
+static func redraw(state: GameData, type_card: CardData, rng: RandomNumberGenerator) -> bool:
+	assert(state.plan_seed != 0, "a redraw replays from the plan's own stored seed")
+	var unused := _lowest_copies_per_stock(_stocks_of(state), state)
+	var source := _take_for_cell(unused, type_card, 0, rng)
+	if not source: return false
+	clear_mark(type_card)
+	write_mark(type_card, source, false)
+	return true
+
+#The one pick the deal and a redraw share: an identity out of the offer, never the one the cell
+#ALREADY prints -- a bare cell prints nothing so the deal's offer stands whole, while a redraw's
+#cell still carries the face it replaces, which on a fewest-copies pool would win every roll.
+static func _take_for_cell(unused: Array[Array], cell: CardData, first: int,
+		rng: RandomNumberGenerator) -> CardData:
+	for stock : Array in unused:
+		for i : int in range(stock.size() - 1, -1, -1):
+			var offered : CardData = stock[i]
+			if PipComparator.printed_card_same(offered, cell): stock.remove_at(i)
+	return _take_unused(unused, first, rng)
+
+#The stocks a mark is drawn from. The Entrance's per-slot stocks replace this line when the
+#sidebar's stocks land, and the deal and a redraw must offer the same cards.
+static func _stocks_of(state: GameData) -> Array[Array]:
+	var stocks : Array[Array] = [state.draw_deck]
+	return stocks
 
 #⚠ `Array.shuffle()` CANNOT BE SEEDED -- it draws on the global generator, so the deal would not
 #replay. Shuffling the cells rather than dealing row by row is what keeps a repeat from always

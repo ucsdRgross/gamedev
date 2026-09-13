@@ -217,23 +217,25 @@ func remove_grid(index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_grid(_game.state, index)
 
-#The deal is the ONE writer of a mark: with every other cell marked, clearing this one and dealing
-#reaches it alone and takes the pool and the seeded pick the opening deal would have taken.
-## Redraw one cell's mark from the deck. The cell must be marked.
+#A redraw takes the deal's pool minus the face it replaces, so the cell comes back with a different
+#one -- and nothing is written or bumped when the pool holds nothing else, so the mark stands.
+## Redraw one cell's mark from the deck. The cell must be marked, on a board with a plan.
 func reroll_mark(coord: BoardCoord) -> void:
 	if not is_live(): return
 	var mark := mark_at(coord)
+	assert(mark != null, "reroll_mark needs a coordinate that names a cell")
 	assert(BoardPlan.is_marked(mark), "reroll_mark redraws a marked cell")
-	BoardPlan.clear_mark(mark)
-	Board.deal_marks(_game.state)
-	bump_revision()
+	assert(_game.state.plan_seed != 0, "reroll_mark redraws from the plan the show was dealt")
+	if Board.redraw_mark(_game.state, mark): bump_revision()
 
 #`source` may print a card the deck never had -- that is what a level poisoning or blessing a board
 #is -- so the mark is recorded as granted and the deck-membership invariant exempts it.
 ## Put a mark of `source` on a cell, dealt by a level or a blind rather than by the deck.
 func grant_mark(coord: BoardCoord, source: CardData) -> void:
 	if not is_live(): return
-	BoardPlan.write_mark(mark_at(coord), source, true)
+	var mark := mark_at(coord)
+	assert(mark != null, "grant_mark needs a coordinate that names a cell")
+	BoardPlan.write_mark(mark, source, true)
 	bump_revision()
 
 #`write_mark` is the one definition of copying a mark, so each cell is written from a duplicate of
@@ -243,6 +245,8 @@ func swap_marks(a: BoardCoord, b: BoardCoord) -> void:
 	if not is_live(): return
 	var mark_a := mark_at(a)
 	var mark_b := mark_at(b)
+	assert(mark_a != null and mark_b != null,
+			"swap_marks needs two coordinates that name cells")
 	assert(BoardPlan.is_marked(mark_a) and BoardPlan.is_marked(mark_b),
 			"swap_marks exchanges two marked cells")
 	var was_a : CardData = mark_a.duplicate()

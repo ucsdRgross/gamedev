@@ -43,6 +43,8 @@ func _ready() -> void:
 	behavior_section("THE REROLL, GRANT AND SWAP SURFACE")
 	test_mark_at_reads_the_cells_own_card()
 	test_a_reroll_draws_from_the_deals_own_pool()
+	test_every_cell_rerolls_to_a_new_identity()
+	test_a_reroll_with_nothing_on_offer_keeps_the_mark()
 	test_a_reroll_repeats_for_one_plan_seed()
 	test_grant_marks_a_card_the_deck_never_had()
 	test_swap_exchanges_two_marks_whole()
@@ -687,13 +689,24 @@ func copies_apart_from(state: GameData, card: CardData, skip: CardData) -> int:
 		if mark != skip and PipComparator.printed_card_same(mark, card): copies += 1
 	return copies
 
-## The fewest copies any deck card has once `skip`'s own cell is set aside: the single-cell pool.
-func lowest_copies_apart_from(state: GameData, skip: CardData) -> int:
+## The deck identities a redraw of `skip` may offer: the fewest-copied prints with `skip` still marked, less `skip`'s own.
+func redraw_offer(state: GameData, skip: CardData) -> Array[CardData]:
 	var lowest := -1
 	for card : CardData in state.draw_deck:
-		var copies := copies_apart_from(state, card, skip)
+		var copies := copies_apart_from(state, card, null)
 		if lowest == -1 or copies < lowest: lowest = copies
-	return lowest
+	var out : Array[CardData] = []
+	for card : CardData in state.draw_deck:
+		if copies_apart_from(state, card, null) == lowest \
+				and not PipComparator.printed_card_same(card, skip):
+			out.append(card)
+	return out
+
+## Does any card of `offer` print what `card` prints?
+func offer_holds(offer: Array[CardData], card: CardData) -> bool:
+	for offered : CardData in offer:
+		if PipComparator.printed_card_same(offered, card): return true
+	return false
 
 #TP-52: a mark lives ON the cell's own card, so the surface hands that card over rather than a copy
 #-- an effect reading a mark and the board scoring it are looking at one object.
@@ -705,30 +718,63 @@ func test_mark_at_reads_the_cells_own_card() -> void:
 			"TP-52: mark_at answers null for a coordinate that names no cell")
 	free_show(g)
 
-#TP-52: a reroll IS the deal at one cell, so what it draws obeys the deal's pool rule -- with 20
-#cards over 25 cells every card is marked already, so only the cards the board carries fewest copies
-#of are on offer. The face may come back the one it replaced; what is fixed is that the deal picked.
+#TP-52: a reroll IS the deal at one cell, with the identity it replaces taken OUT of the offer --
+#the fewest-copies pool counted while the cell is still marked, so what it drew is one of the cards
+#the board carries fewest copies of and is never the face it replaced.
 func test_a_reroll_draws_from_the_deals_own_pool() -> void:
 	var g := planned_game(909)
 	var target := BoardCoord.new(0, 2, 1, 0)
 	var mark := g.effect_api.mark_at(target)
 	var before := mark_print(mark)
-	var before_rank := mark.rank
+	var offer := redraw_offer(g.state, mark)
 	g.effect_api.reroll_mark(target)
 	check(BoardPlan.is_marked(mark) and marks_of(g.state).size() == 25,
 			"TP-52: the rerolled cell comes back marked and no other cell lost its mark",
 			"%d marks" % marks_of(g.state).size())
-	check(mark.rank != before_rank,
-			"TP-52: the cell was redealt rather than left alone -- its rank is a fresh copy",
+	check(mark_print(mark) != before,
+			"TP-52: the cell prints an identity other than the one the reroll replaced",
 			"%s -> %s" % [before, mark_print(mark)])
-	check(copies_apart_from(g.state, mark, mark) == lowest_copies_apart_from(g.state, mark),
-			"TP-52: the reroll drew a card the board carried fewest copies of",
-			"%s -> %s: %d copies elsewhere, lowest is %d" % [before, mark_print(mark),
-			copies_apart_from(g.state, mark, mark), lowest_copies_apart_from(g.state, mark)])
+	check(offer_holds(offer, mark),
+			"TP-52: the reroll drew one of the fewest-copies identities other than that one",
+			"%s -> %s, out of %d on offer" % [before, mark_print(mark), offer.size()])
 	check(not (mark.type as TypeGridCell).granted,
 			"TP-52: a rerolled mark is a dealt one, not a granted one")
 	check(g.state.validate().is_empty(), "TP-52: the rerolled board breaks no invariant",
 			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-52: "redraw" means the face CHANGES. With 20 cards over 25 cells the offer always holds another
+#identity, so every cell of the board rerolls to one -- the row that catches a reroll offered the
+#identity it just cleared, which on a fewest-copies pool is the one that always wins.
+func test_every_cell_rerolls_to_a_new_identity() -> void:
+	var g := planned_game(909)
+	var unchanged : Array[String] = []
+	for i : int in g.state.grids[0].cell_types.size():
+		var mark : CardData = g.state.grids[0].cell_types[i]
+		var before := mark_print(mark)
+		g.effect_api.reroll_mark(g.state.cell_type_coord(mark))
+		if mark_print(mark) == before: unchanged.append("%d %s" % [i, before])
+	check(unchanged.is_empty(),
+			"TP-52: each of the 25 cells rerolls to a printed identity other than its own",
+			"%d cells came back the same: %s" % [unchanged.size(), ", ".join(unchanged)])
+	check(marks_of(g.state).size() == 25 and g.state.validate().is_empty(),
+			"TP-52: ...and 25 rerolls leave every cell marked and no invariant broken",
+			"%d marks; %s" % [marks_of(g.state).size(), ", ".join(g.state.validate())])
+	free_show(g)
+
+#TP-52: the cell is cleared only once a replacement is in hand, so a reroll with nothing left to
+#offer -- an empty draw pile late in a show -- leaves the mark it cannot replace standing rather
+#than deleting it.
+func test_a_reroll_with_nothing_on_offer_keeps_the_mark() -> void:
+	var g := planned_game(913)
+	var target := BoardCoord.new(0, 2, 1, 0)
+	var mark := g.effect_api.mark_at(target)
+	var before := mark_print(mark)
+	g.state.draw_deck.clear()
+	g.effect_api.reroll_mark(target)
+	check(BoardPlan.is_marked(mark) and mark_print(mark) == before,
+			"TP-52: an empty draw pile leaves the cell marked with the identity it had",
+			"%s -> %s" % [before, mark_print(mark)])
 	free_show(g)
 
 #TP-52: the reroll rolls a generator seeded from the plan's own stored seed, so the cell a resumed

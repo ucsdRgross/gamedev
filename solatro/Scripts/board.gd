@@ -370,14 +370,24 @@ static func add_grid(state: GameData, grid: GridData) -> void:
 	deal_marks(state)
 	state.revision += 1
 
-#Every unmarked cell dealt from the plan's STORED seed, so a later deal replays: a grid arriving
-#mid-show -- here, ahead of the bump, because the rebuild the bump triggers must see a marked board
-#-- or an effect redrawing one cell. A board with no plan is the opening deal's to write.
+#Every unmarked cell dealt from the plan's STORED seed, so a grid arriving mid-show replays -- here,
+#ahead of the bump, because the rebuild the bump triggers must see a marked board. A board with no
+#plan is the opening deal's to write.
 static func deal_marks(state: GameData) -> void:
 	if state.plan_seed == 0: return
+	BoardPlan.deal(state, _plan_rng(state))
+
+#One cell redrawn from the same stored seed, so a resumed show rerolls that cell to the same card.
+#False when the offer held nothing else, which leaves the mark standing and nothing to bump for.
+static func redraw_mark(state: GameData, type_card: CardData) -> bool:
+	return BoardPlan.redraw(state, type_card, _plan_rng(state))
+
+#The plan's own generator: the deal and a redraw replay from the seed the state stores, never the
+#global one.
+static func _plan_rng(state: GameData) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = state.plan_seed
-	BoardPlan.deal(state, rng)
+	return rng
 
 ## Removes grid `index` and returns the orphaned in-play cards (not the cell zone type
 ## cards) for the caller to discard, mirroring remove_column's orphan contract. One bump.
