@@ -156,11 +156,16 @@ says so and names its own variant.
 | **TP-75** 👁 | The palette-swap snapshot still passes with marks on the board | `ARCHITECTURE_REVIEW.md` §4i | S11 |
 | **TP-76** | A PlayArea hosted without a Game and holding a dealt plan reveals without an engine error, and the real game's reveal is unchanged | `Q69`=(a), pre-authorisation 5 | S11 |
 | **TP-83** | After a placement that matched, the placed card's agreeing elements read `match_rim_active` and its others do not; after `undo()` no element anywhere on the board does. Asserted on the outline shader's own uniform, never on a flag | `Q64` | S12 |
+| **TP-84** 👁 | **The marks layer reads as the board's plan**: a focused grid with several cells covered draws every cell's mark instead of the cards on it, one of them realized and wearing the activated rim, and the same board at overview zoom | `Q19`, `Q116`=(b), pre-authorisation 14 | S13 |
 
 **The by-eye harnesses.** `Tests/Visual/plan_reveal_shot.tscn` renders the mark and times the
 opening deal (TP-71, TP-74, TP-75); `Tests/Visual/plan_match_shot.tscn` renders the match highlight
-and the landing (TP-72, TP-73) -- `held_focused.png`, `held_overview.png` and `landed.png`, taking
-`OUT_DIR` from the environment. Both are WINDOWED and neither is in `all_tests.tscn`.
+and the landing (TP-72, TP-73) -- `held_focused.png`, `held_overview.png` and `landed.png`;
+`Tests/Visual/plan_layer_shot.tscn` covers four cells through the real click route, opens the
+layer view through the real held action and renders `layer_focused.png` and `layer_overview.png`
+(TP-84), printing the cells drawn as marks, the realized cells rimmed and the played cards
+hidden beside each shot. All three take `OUT_DIR` from the environment, are WINDOWED, and none
+is in `all_tests.tscn`.
 
 ---
 

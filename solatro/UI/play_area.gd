@@ -509,6 +509,9 @@ func _ready() -> void:
 func setup_gui() -> void:
 	set_separation()
 	set_card_zones()
+#A REBUILT BOARD OPENS IN PLAY: the layer view is transient, never saved, and a board rebuilt
+#or restored under it is no longer the board it was opened over.
+	plan_layer_open = false
 	# THE ENTRANCE LINES UP WITH THE GRID'S COLUMNS, which is what makes it read as the row below
 	# the board rather than a separate strip that happens to be nearby. Two things were pushing it
 	# out of line: its row-score gutter, which is a leftover of the retired upper zone (row scores
@@ -1108,14 +1111,21 @@ var pan_grid : int = 0
 ## zoomed out of a focused grid — Forward then has nothing to return to.
 var _zoom_out_grid : int = NO_GRID
 
+## True while the grid cells draw their marks instead of the cards played on them.
+var plan_layer_open := false:
+	set(value):
+		if plan_layer_open == value: return
+		plan_layer_open = value
+		set_card_zones_visuals()
+
 ## ⚠ **THE BOARD IS ONE LEVEL OF A STACK THAT CONTINUES PAST IT** — one grid, then every grid, then
 ## the wall. Back steps OUT one level and Forward steps back IN, and both FALL THROUGH once this
 ## screen has no level left to give: Back in the all-grids view must reach the wall, or the wall
 ## becomes unreachable from inside a show. Panning has its own actions and never touches these.
 ## True when this screen consumed the event.
 func _consume_as_view_action(event: InputEvent) -> bool:
-	# The overview's arrow keys pick a GRID, not a cell. Read here as well as on a focused cell's
-	# own `gui_input` so the arrows still work when nothing on the board holds focus.
+#The overview's arrow keys pick a GRID, not a cell. Read here as well as on a focused cell's
+#own `gui_input` so the arrows still work when nothing on the board holds focus.
 	if _consume_as_grid_select(event):
 		return true
 	if event.is_action_pressed(&"grid_pan_left"):
@@ -1132,6 +1142,15 @@ func _consume_as_view_action(event: InputEvent) -> bool:
 	if event.is_action_pressed(&"wall_forward"):
 		if view_mode != ViewMode.OVERVIEW or _zoom_out_grid == NO_GRID: return false
 		focus_grid(_zoom_out_grid)
+		return true
+#HELD, AND THE RELEASE IS THE OTHER HALF OF THE PEEK: the marks show while the action is down
+#and the played board comes back when it is let go, so the board is never left showing a layer
+#nobody asked to stay in. The HUD control toggles this same one flag.
+	if event.is_action_pressed(&"ui_plan_layer"):
+		plan_layer_open = true
+		return true
+	if event.is_action_released(&"ui_plan_layer"):
+		plan_layer_open = false
 		return true
 	return false
 
@@ -1451,7 +1470,7 @@ func _on_gui_input(event: InputEvent) -> void:
 				if _info_mode():
 					info_requested.emit(card_info(ui_data[focused_control]))
 				elif not _consume_as_focus_click(focused_control):
-					data_selected.emit(ui_data[focused_control])
+					_select_data(ui_data[focused_control])
 
 ## Keyboard/controller accept + cancel. Key events go ONLY to the focused control (a plain
 ## card control consumes nothing), then fall through the focus-navigation pass to unhandled
@@ -1481,7 +1500,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _info_mode():
 				info_requested.emit(card_info(ui_data[focused_control]))
 			elif not _consume_as_focus_click(focused_control):
-				data_selected.emit(ui_data[focused_control])
+				_select_data(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		if selected_cards:
@@ -1509,6 +1528,13 @@ func _input(event: InputEvent) -> void:
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
 			ungrab_cards()
 			
+#THE LAYER VIEW IS A VIEWER AND INPUT IS LOCKED TO LOOKING: the one signal that grabs, places
+#or drops a card is not emitted while it is open, whichever route asked. Camera navigation and
+#inspection reach the board through other paths and stay live.
+func _select_data(data: CardData) -> void:
+	if plan_layer_open: return
+	data_selected.emit(data)
+
 func grab_cards(datas:Array[CardData]) -> void:
 	flush_rebuild() #reads data_card / data_ui
 	ungrab_cards()
@@ -1573,6 +1599,10 @@ func queue_rebuild() -> void:
 	if _rebuild_queued: return
 	_rebuild_queued = true
 	_deferred_rebuild.call_deferred()
+#A VIEWER CANNOT WATCH A BOARD THAT CHANGED UNDER IT, so every mutation closes the layer view.
+#Closed AFTER the request is queued: the refresh the close asks for then flushes into that
+#rebuild instead of drawing a tree the mutation has already made stale.
+	plan_layer_open = false
 
 func _deferred_rebuild() -> void:
 	if not _rebuild_queued: return #a direct rebuild already happened this frame
@@ -2809,6 +2839,11 @@ func update_grid_zone_visuals(game_state: GameData) -> void:
 		for ci : int in grid.cells.size():
 			var slot : VBoxContainer = _cell_slot(panel, grid, ci)
 			if slot: _size_stack_slot(slot)
+#THE LAYER SWAP, AND THE WHOLE OF IT: the marks layer draws each cell's plan, so the cards
+#played on it step aside. Derived on every refresh and stored nowhere, like the rims beside it.
+			for card : CardData in grid.cells[ci].datas:
+				var played : CardVisual = data_card.get(card)
+				if played: played.visible = not plan_layer_open
 
 #DERIVED HERE AND STORED NOWHERE: the grab, the placement and the undo all end in this pass, so
 #nothing has to be un-set, and a bare cell is skipped before anything is asked of it.
@@ -2823,10 +2858,17 @@ func _refresh_mark_matches(game_state: GameData) -> void:
 			var would_match := 0
 			for held : CardData in selected_cards:
 				would_match |= await MarkMatch.matches_at(game_state, held, coord)
-			_wear_match_rim(mark, would_match, PaletteDB.ROLES.match_rim)
+			var realized := 0
 			for card : CardData in grid.cells[ci].datas:
-				_wear_match_rim(card, await MarkMatch.matches_at(game_state, card, coord),
-						PaletteDB.ROLES.match_rim_active)
+				var matched := await MarkMatch.matches_at(game_state, card, coord)
+				realized |= matched
+				_wear_match_rim(card, matched, PaletteDB.ROLES.match_rim_active)
+#IN THE MARKS LAYER THE MARK WEARS THE REALIZED RIM ITSELF: the card that agreed with it is
+#hidden there, so a cell already played correctly still reads as one.
+			if plan_layer_open and realized != 0:
+				_wear_match_rim(mark, realized, PaletteDB.ROLES.match_rim_active)
+			else:
+				_wear_match_rim(mark, would_match, PaletteDB.ROLES.match_rim)
 
 # The match test AWAITS, so the walk above can resume into a board that has been rebuilt under it
 # and a card it started with may have no visual any more.

@@ -35,12 +35,28 @@ func click(at: Vector2, button: MouseButton = MOUSE_BUTTON_LEFT) -> void:
 
 ## A key pressed and released, routed to whatever holds focus.
 func key_tap(keycode: Key) -> void:
+	await key_press(keycode)
+	await key_release(keycode)
+
+## A key held DOWN -- the half of a tap that a held action reads on its own.
+func key_press(keycode: Key) -> void:
 	await send(_key(keycode, true))
+
+## Letting that key go, which is the other half of what a held action reads.
+func key_release(keycode: Key) -> void:
 	await send(_key(keycode, false))
 
 ## A controller button pressed and released, routed to whatever holds focus.
 func joy_tap(button: JoyButton) -> void:
+	await joy_press(button)
+	await joy_release(button)
+
+## A controller button held DOWN.
+func joy_press(button: JoyButton) -> void:
 	await send(_joy_button(button, true))
+
+## Letting that controller button go.
+func joy_release(button: JoyButton) -> void:
 	await send(_joy_button(button, false))
 
 func _mouse_button(at: Vector2, button: MouseButton, pressed: bool) -> InputEventMouseButton:

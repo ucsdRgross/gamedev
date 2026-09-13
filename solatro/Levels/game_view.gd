@@ -35,6 +35,8 @@ var game : Game = null
 @onready var play_area: PlayArea = %PlayArea
 @onready var submit_button: Button = %Submit
 @onready var undo_button: Button = %Undo
+## Opens and closes the marks layer, for the mouse, the keyboard and the controller alike.
+@onready var plan_layer_button: Button = %PlanLayer
 @onready var deck_ui: Control = %Deck
 @onready var discard_ui: Control = %Discard
 @onready var rules_ui: Control = %Rules
@@ -63,7 +65,7 @@ var spotlight_director : SpotlightDirector = null
 ## than sit at a fixed spot on the wide picture. The furniture is authored against grid 0's
 ## resting position; `PlayArea.pan_grid` is the ONE writer of which grid the view rests on.
 @onready var _furniture : Array[Control] = [deck_ui, discard_ui, rules_ui, submit_button,
-		undo_button, %Goal, %Total, %MultScore, %Preview]
+		undo_button, plan_layer_button, %Goal, %Total, %MultScore, %Preview]
 ## Each control's authored x -- fixed forever, read once off the scene.
 var _furniture_authored_x : Array[float] = []
 ## `Main`'s ONE wall camera and a live getter for the game picture's rect centre-x -- `Main` is the
@@ -124,8 +126,11 @@ func _ready() -> void:
 	# performance now -- there is no act to submit and nothing resolves one on its own, so
 	# end_show() is the only thing that can finish it. Bound to the retired submit act, the
 	# button reads End and does nothing a player can see, and the show cannot be ended at all.
-	submit_button.pressed.connect(func() -> void: game.end_show())
+	submit_button.pressed.connect(_on_submit_pressed)
 	undo_button.pressed.connect(_on_undo_pressed)
+	plan_layer_button.text = TRANSLATION.find('PLAN_LAYER_TOGGLE')
+	plan_layer_button.tooltip_text = TRANSLATION.find('PLAN_LAYER_TOGGLE_HINT')
+	plan_layer_button.pressed.connect(_on_plan_layer_pressed)
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(func(entry: InfoEntry) -> void: info_requested.emit(entry))
 	play_area.overview_pan_requested.connect(
@@ -458,10 +463,28 @@ func prop_tick_pending() -> bool:
 # ==============================================================================
 # VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)
 # ==============================================================================
+
+#THE LAYER VIEW IS A VIEWER: while the board draws its marks it is looked at and never played,
+#so every command that would mutate it is refused rather than queued.
+func _board_is_playable() -> bool:
+	return not play_area.plan_layer_open
+
+#THE ONE THING THAT FINISHES A SHOW, and not something a viewer does from inside the layer it
+#opened to look at the board.
+func _on_submit_pressed() -> void:
+	if not _board_is_playable(): return
+	game.end_show()
+
+#The held-cards guard is the view's job -- the selection state lives in PlayArea -- and a board
+#being looked at is not rewound either.
 func _on_undo_pressed() -> void:
-	# The held-cards guard is the view's job (selection state lives in PlayArea).
-	if play_area.selected_cards: return
+	if play_area.selected_cards or not _board_is_playable(): return
 	game.undo()
+
+#ONE CONTROL EVERY INPUT MODE REACHES THE SAME WAY: a focusable button answers a mouse click, a
+#keyboard accept and a controller accept without any of the three being wired on its own.
+func _on_plan_layer_pressed() -> void:
+	play_area.plan_layer_open = not play_area.plan_layer_open
 
 func _on_data_selected(data: CardData) -> void:
 	if game.processing: return

@@ -11,6 +11,8 @@ GAME_LAWS_TEXT,"Game Laws:
 ,,
 NEXT_BUTTON,>,
 ATTACK_BUTTON,O,
+PLAN_LAYER_TOGGLE,Marks,
+PLAN_LAYER_TOGGLE_HINT,"Show every cell's mark, even under the cards covering it",
 DEBUG_PROP_STEP_MODE,Prop Step,
 DEBUG_PROP_STEP_TICK,Tick +1,
 DEBUG_RECORD,Rec,start an EventLog capture (debug builds only)

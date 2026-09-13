@@ -281,3 +281,34 @@ gap under `gaps/`.
   says WHITE and `Assets/CircusCrayon.png` has no white entry, so the choice is parked on GAP-004
   and these two values are what S12 was built, tested and photographed against; a ruling moves one
   number in `roles.tres` and nothing else, because every test asserts the ROLE.
+- S13 / Q113, Q114, Q117: entering and leaving are the two shapes the answers asked for, over ONE
+  flag (`PlayArea.plan_layer_open`). The InputMap action is a PEEK -- `is_action_pressed` opens it
+  and `is_action_released` closes it, read in `_consume_as_view_action` beside Back/Forward -- while
+  the HUD control TOGGLES: press to enter, press again to leave. Either way one board mutation
+  closes it, so the two routes cannot disagree about what is on screen.
+- S13 / Q115, Q116: "input is locked to looking" is drawn at the SELECTION line. `PlayArea`'s two
+  `data_selected` emitters now go through `_select_data`, which is silent while the view is open, so
+  grabbing, placing and dropping are refused on the mouse, the keyboard and the controller at once;
+  `GameView` asks `_board_is_playable()` before undo and before end-show. Camera navigation --
+  focus, overview, pan, Back/Forward, the arrow cursor -- is untouched, which is what makes
+  `Q116`=(b) mean anything, and inspection still opens the info card.
+- S13 / Q19, pre-authorisation 14: in the marks layer each grid cell draws its mark exactly as an
+  empty marked cell draws it (full colour, no rim, the zone frame) and the cards played on it are
+  hidden -- `CardVisual.visible`, derived in `update_grid_zone_visuals` on every refresh, never
+  `modulate` and never a second renderer. A cell whose standing card realizes its mark has the MARK
+  wear `match_rim_active` on the agreeing elements, because the card that would have worn it is the
+  one being hidden. Unmarked cells draw their bare frame; the Entrance, the hand, the HUD and the
+  deck viewer are untouched.
+- S13 / pre-authorisation 17: the close lives in `PlayArea.queue_rebuild()` (the one call every
+  revision bump reaches) and in `setup_gui()` (the rebuild an undo or a resume drives), in both
+  cases AFTER the rebuild is under way -- a close asks for a visual refresh, and a refresh run
+  against a board whose data has already changed reads a stale control tree.
+- S13 / Q117, NAMES: `ui_plan_layer` is bound to the `M` key (`M` for mark; unbound before, and the
+  only owner-visible choice this step made). ⚠ THE CONTROLLER BINDING IS PARKED ON GAP-005: L1 and
+  R1 are `wall_back` / `wall_forward` (which the board itself reads as zoom out / zoom in) and the
+  L2/R2 triggers are `grid_pan_left` / `grid_pan_right`, so no shoulder is free and the poker-
+  patience ruling forbids taking one. A pad reaches the view through the HUD control today.
+- S13 / TEST_PLAN TP-69: the mutation that closes the view is `swap_marks`, not `reroll_mark`. The
+  PLAN VISUALS fixture deliberately runs with no planner card, so `plan_seed` is 0 and `reroll_mark`
+  asserts on it; `swap_marks` is the same kind of caller -- a mark effect bumping `revision` -- and
+  needs no dealt plan.

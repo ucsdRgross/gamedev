@@ -21,31 +21,13 @@ var _both_cell := BoardCoord.new(0, 2, 2, 0)
 var _miss_cell := BoardCoord.new(0, 3, 2, 0)
 
 func _ready() -> void:
-	if DisplayServer.get_name() == "headless":
-		push_error("plan_match_shot needs a REAL renderer: --headless never fires frame_post_draw.")
-		get_tree().quit(1)
-		return
-	_out_dir = OS.get_environment("OUT_DIR")
-	if _out_dir.is_empty(): _out_dir = OUT_DIR_FALLBACK
-	if _out_dir.begins_with("user://"): DirAccess.make_dir_recursive_absolute(_out_dir)
-#THE BOARD IS THE SUBJECT, so the in-screen description panel is off -- hovering a cell to put the
-#focus highlight on it would otherwise open a panel over the very cell being photographed. Isolated
-#first, so the knob is never written to the player's own settings file.
-	SettingsManager.isolated = true
-	SettingsManager.settings.wall_screen_popups = false
+	_out_dir = TestGameViewHost.shot_setup(self, OUT_DIR_FALLBACK)
+	if _out_dir.is_empty(): return
 
-	var view := await TestGameViewHost.boot_show(self, SAVE_TAG,
-			TestDecks.deck_standard_52(), TestDecks.standard_rules(), 1_000_000_000, 2, 20260913)
+	var view := await TestGameViewHost.boot_shot_board(self, SAVE_TAG, 20260913)
 	_input = TestInput.driving(self, get_viewport())
 	var g := view.game
 	var pa := view.play_area
-	await _wait_for_the_deal(pa)
-	await g.next()
-#TWO MORE GRIDS, so the overview shot is the overview a three-grid board gives. Each deals its own
-#marks from the same stock, which is what puts lit cells on more than one panel.
-	g.effect_api.add_grid(GridData.new())
-	g.effect_api.add_grid(GridData.new())
-	pa.flush_rebuild()
 	await _settle(view)
 
 	_held = _an_entrance_card(g, pa)
@@ -67,19 +49,8 @@ func _ready() -> void:
 	await _land_the_card(g, pa)
 	await _shoot(view, "landed")
 
-	CardEnvironment.CURRENT = null
-	RunManager._shutdown_saver()
-	RunManager.clear_save()
-	TestSuite.restore_real_save(SAVE_TAG)
+	TestGameViewHost.shot_teardown(SAVE_TAG)
 	get_tree().quit()
-
-# The opening deal has a duration and the board is not the board until it ends.
-func _wait_for_the_deal(pa: PlayArea) -> void:
-	var waited := 0.0
-	while waited < REVEAL_WATCHDOG and not pa._plan_reveal_pending.is_empty():
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-	print("[plan_match_shot] the opening deal finished after %.2f s" % waited)
 
 # The card this shot picks up: one the board offers as a focus target in the Entrance, which is what
 # a pointer or a focus ring can reach.

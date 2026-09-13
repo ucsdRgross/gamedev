@@ -2,16 +2,16 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 36 commits on `board-plan`. Phases 1-4 (S1-S10), S11 and S12 landed and verified, one
+**State:** 37 commits on `board-plan`. Phases 1-4 (S1-S10) and S11-S13 landed and verified, one
 commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S13 (the
-layer view), S14, S15, S16, S17. Four gaps open for the owner: GAP-001 (stocks are sidebar S19;
-TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time dispatch parked;
-S9 partial), GAP-003 (re-deal a line unnamed), GAP-004 (the palette has no white: `match_rim` is
-built and photographed against entry 31 cream, `match_rim_active` against 6 gold; a ruling moves one
-number in `roles.tres`). Owner rulings mid-run are in PLAN 1.10 (marks keep a real card's colours
-and only lose their outline; a matching mark takes a WHITE outline while a card is selected; marks
-keep the zone type art). Implementer sessions die to the Opus session limit every few hours; every
+fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Phase 4 review closed. OPEN: S14 (the
+knobs, a grep confirmation), S15, S16, S17. Five gaps open for the owner: GAP-001 (stocks are
+sidebar S19; TP-05/06 parked), GAP-002 (mark hook timing versus the mult seam; the landing-time
+dispatch parked; S9 partial), GAP-003 (re-deal a line unnamed), GAP-004 (the palette has no white:
+`match_rim` is built and photographed against entry 31 cream, `match_rim_active` against 6 gold; a
+ruling moves one number in `roles.tres`), GAP-005 (every controller shoulder is bound; the layer
+view's held-controller peek is parked, the pad reaches it through the HUD control). Owner rulings
+mid-run are in PLAN 1.10. Implementer sessions die to the Opus session limit every few hours; every
 cut-off so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
@@ -188,13 +188,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red A (the refresh call deleted): PLAN VISUALS 57 passed, 6 FAILED of 63 (TP-63 x3, TP-64 x2, TP-83); red B (lights RANK|SUIT regardless of matches_at): 57/6 (TP-63 x2, TP-64 x2, TP-65 x2); green 63/63, equal counts. Overseer full run: ALL 48 SUITES: 4278 CHECKS PASSED, errors log empty; PLAN VISUALS 63/63, PALETTE 36/36 (+2 roles), PIXELS 43/43, INTERACTION 52/52; SECTION 8 identical. By eye (overseer, 4x crops of plan_match_shot): held, focused - the rank-only mark rims its rank pip cream and leaves the suit pip bare, the rank+suit mark rims both pips, the non-matching mark and every cell frame stay rimless; landed - the placed 8-of-Hoops wears gold rims on its rank and suit pips, the ordinary dark rim on its art and frame, with the focus brightening on the same cell and clearly distinct from it; overview - the cream pip rims stay legible at overview zoom. UNVERIFIED: the scoring-beam half of TP-72 (no beam held in the shot). Diff adds no modulate write, no colour literal, no design id.'
   notes: 'One derivation, PlayArea._refresh_mark_matches from set_card_zones_visuals; per-element rim through the STYLE layer (CardVisual._push_outline_ink pairs each polygon with its property), never modulate. GAP-004: no white in the palette, built against 31/6. TestInput extracted out of test_interaction.gd (shared driver); TestGameViewHost.boot_show shared by both shot scenes. Owner-visible: the covered-cell highlight is set on the data (a covered mark shows a sliver); a held STACK lights the union.'
 - id: S13
-  description: the layer view - two-state toggle, viewer only, focused and overview, held shoulder button + HUD control, ui_plan_layer; TP-66..TP-69.
-  files_touched: []
-  verification_command: 'run_suite.sh <label>; then /fx-verify by eye'
+  description: the layer view - two-state toggle, viewer only, focused and overview, held key + HUD control, ui_plan_layer; TP-66..TP-69; by eye TP-84.
+  files_touched: [solatro/project.godot, solatro/UI/play_area.gd, solatro/Levels/game_view.gd, solatro/Levels/game_view.tscn, solatro/Locale/localization.csv, solatro/Locale/localization.en.translation, solatro/Tests/Support/test_input.gd, solatro/Tests/Support/test_game_view_host.gd, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Visual/plan_layer_shot.gd, solatro/Tests/Visual/plan_layer_shot.tscn, solatro/Tests/Visual/plan_match_shot.gd]
+  verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_layer_shot.tscn (OUT_DIR) and look'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: ''
+  status: partial
+  evidence: 'Implementer red runs, each at 98 checks: layer swap deleted -> PLAN VISUALS 96/2 (TP-67 x2); selection refusal removed -> 94/4 (TP-66 x4); both closes removed -> 96/2 (TP-69 x2); HUD toggle open-only -> 94/4 (TP-68 x4); green 98/98 then 99/99 with the localisation check. Overseer full run: ALL 48 SUITES: 4311 CHECKS PASSED, errors log empty; PLAN VISUALS 99/99; SECTION 8 identical; banners vs S12 differ only in fuzz drift and PLAN VISUALS 63 -> 99. designloop check on the worktree: 0 errors, 0 warnings. By eye (overseer, plan_layer_shot + 3x crop): focused, all 25 cells draw their marks in full colour inside the dashed frames with no played card visible, three realized cells wear gold rims on the agreeing pips only, the localised Marks button sits under Deck, the Entrance row is untouched; overview, two full grids of marks with the realized rim legible, the third grid past the right edge as in S12. Headless editor open clean. Diff removes three indented comments and adds none; no modulate write, no design id, no literal beyond 0.'
+  notes: 'PARTIAL on GAP-005: every shoulder is bound (wall_back L1, wall_forward R1, grid_pan L2/R2; poker-patience Q187=(b) forbids taking the wall''s), so ui_plan_layer carries only the M key and the pad reaches the view through the HUD control (TP-68 covers it by focus + Accept). Mechanism: one flag PlayArea.plan_layer_open; the key is a peek (pressed opens, released closes), the HUD Button toggles; _select_data refuses selection while open, GameView asks _board_is_playable() before undo and end-show; queue_rebuild() and setup_gui() close it. The white border in both shots is the engine''s ScrollContainer focus panel, present in S12''s landed.png at the same pixels - pre-existing, shows in the shipped game after the first board click.'
 - id: S14
   description: the knobs - confirm the five landed at S5 and add plan_reveal_fraction (S11).
   files_touched: []
@@ -316,6 +316,9 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `Cards/card_visual.gd`.
 - FIXED (owner report, "in tests with 3 grids i only see it filling in 1 grid"): the mid-show deal
   lives in `Board.add_grid`; `CardEffectApi.add_grid` no longer deals.
+- For the owner's eye: the board window's focus border (the engine's `ScrollContainer` focus
+  panel) shows after the first board click, in either layer - pre-existing, visible in every
+  by-eye shot that clicked the board.
 - For the owner's eye: the 12.1 s opening reveal (`plan_reveal_fraction` 0.5 x `get_delay`) and
   whether "no rim" alone reads as a mark at overview zoom. `PipRankNumeral.get_str()` prints
   "NumeralRank5.0" in the mark's description (pre-existing wart).
@@ -325,20 +328,16 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-1. S13: the layer view (Q113=(b) two states, Q115=(a) viewer, Q116=(b) focused and overview,
-   Q117=(c) held shoulder button AND a HUD control, `ui_plan_layer` action, closes on any board
-   mutation, off after a restored save). TP-66..TP-69. The sidebar branch is rebuilding the HUD in
-   parallel: keep the HUD control minimal and behind `GameView`, expect a merge.
-2. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
+1. S14: confirm the five knobs from S5 plus `plan_reveal_fraction` from S11 are all read; nothing
    else to add.
-3. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
+2. S15: the curve refit (`Tools/scoring_sim.py`, `goal_g0` / `goal_alpha`, TP-80..TP-82; close
    GAP-041 through a NEW poker-patience design version, never an in-place edit).
 8b. The comment sweep of the files this run touched (list in "Run rules in force"), one
     dispatch, no behaviour change, full gate; keep every rule and measured number, drop the story.
-4. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
+3. S16: the docs pass (ARCHITECTURE_REVIEW 3a composition, 3d, 4 the retired suppression and the
    new suit rule, 1.4 hook roster gains `on_mark_*`; START_HERE; todo; the full
    `py .claude/tools/doc_check.py` clean).
-5. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
+4. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
     (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
 
 ## How this run operates (read before dispatching)

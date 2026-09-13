@@ -43,6 +43,11 @@ func _ready() -> void:
 	await test_a_card_agreeing_with_nothing_says_nothing()
 	behavior_section("A LANDED CARD WEARS THE ACTIVATED RIM UNTIL UNDO")
 	await test_a_landing_that_matched_activates_the_elements_that_agreed()
+	behavior_section("THE LAYER VIEW DRAWS THE MARKS AND REFUSES THE BOARD")
+	await test_the_layer_view_refuses_a_placement()
+	await test_the_layer_view_opens_focused_and_in_the_overview()
+	await test_the_layer_toggle_is_reachable_by_every_input_mode()
+	await test_the_layer_view_closes_on_a_board_mutation()
 	await teardown_view()
 	finish()
 
@@ -427,10 +432,7 @@ func setup_view() -> void:
 #⚠ ZOOM IN FIRST. A show opens on the all-grids view, where a click on a grid is orientation and
 #places nothing; a card is picked up and put down only once a grid is focused.
 	pa.focus_grid(0)
-	held_card = an_entrance_card()
-	await settle_on(held_card)
-	mark_three_cells()
-	await settle_on(held_card)
+	await mark_against_a_fresh_card()
 
 func teardown_view() -> void:
 	input.queue_free()
@@ -442,6 +444,15 @@ func teardown_view() -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
+
+# THE THREE MARKS AND THE CARD THEY ARE BUILT AGAINST, re-derived from the board as it stands
+# now: an undo replaces the whole state with a duplicate, so the card this fixture held before
+# one is not a card on the board after it.
+func mark_against_a_fresh_card() -> void:
+	held_card = an_entrance_card()
+	await settle_on(held_card)
+	mark_three_cells()
+	await settle_on(held_card)
 
 # THE BOARD THIS FIXTURE NEEDS IS THE ONE IT MARKS ITSELF: with the planner in the rules row every
 # cell carries a dealt mark, and what a held card agrees with is then a property of the shuffle.
@@ -710,3 +721,211 @@ func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
 	check(still_active.is_empty(),
 			"TP-83: after undo no element anywhere on the board reads the activated rim",
 			str(still_active))
+
+# ==============================================================================
+# TP-66..TP-69 -- the layer view
+# ==============================================================================
+
+# The key the InputMap actually carries for the layer action, so a rebinding moves these rows with
+# it instead of leaving them pressing a key nothing is listening for.
+func plan_layer_key() -> Key:
+	for event : InputEvent in InputMap.action_get_events(&"ui_plan_layer"):
+		var key := event as InputEventKey
+		if key: return key.keycode
+	return KEY_NONE
+
+# WHERE A POINTER HAS TO LAND on a HUD control: the furniture is SCALED, so the middle of its
+# unscaled rect is not the middle of what is on screen.
+func centre_of_control(control: Control) -> Vector2:
+	return control.get_global_rect().position + control.size * control.scale / 2.0
+
+# Every cell of grid 0 whose drawing disagrees with the layer the board says it is in: in the marks
+# layer every marked cell draws its mark and every card played on one is out of the way; in play
+# every one of those cards is drawn again.
+func cells_not_in_layer(marks_layer: bool) -> Array[String]:
+	var out : Array[String] = []
+	var grid : GridData = game.state.grids[0]
+	for ci : int in grid.cell_types.size():
+		var mark : CardData = grid.cell_types[ci]
+		var mark_drawn : CardVisual = pa.data_card.get(mark)
+		if BoardPlan.is_marked(mark) and not (mark_drawn and mark_drawn.mark_drawn):
+			out.append("cell %d draws no mark" % ci)
+		for card : CardData in grid.cells[ci].datas:
+			var visual : CardVisual = pa.data_card.get(card)
+			if visual and visual.visible == marks_layer:
+				out.append("cell %d card %s visible %s" % [ci, str(card), str(visual.visible)])
+	return out
+
+# How many cards stand on grid 0 -- what the marks layer has to move out of the way, and a claim
+# about hiding them proves nothing until there is at least one.
+func cards_on_grid_0() -> int:
+	var total := 0
+	for cell : ArrayCardData in (game.state.grids[0] as GridData).cells:
+		total += cell.datas.size()
+	return total
+
+# ==============================================================================
+# TP-66 -- the view refuses the board, and the same click places once it is closed
+# ==============================================================================
+
+# The discriminating case is THE SAME CLICK TWICE: refused while the layer view is open, and landing
+# the card the moment it is closed. Without the second half a click that missed the cell entirely
+# would pass this row.
+func test_the_layer_view_refuses_a_placement() -> void:
+	await mark_against_a_fresh_card()
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card),
+			"TP-66: precondition: a card is held, ready to place",
+			str(pa.selected_cards.size()))
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open, "TP-66: precondition: the held key opened the layer view")
+
+	var digest := TestGridFixtures.board_digest(game.state)
+	var revision := game.state.revision
+	await input.click(centre_of(game.state.cell_type_at(both_cell)))
+	await get_tree().process_frame
+	check(TestGridFixtures.board_digest(game.state) == digest,
+			"TP-66: a placement attempted while the layer view is open changes nothing")
+	check(game.state.revision == revision,
+			"TP-66: and nothing bumped the revision",
+			"%d then %d" % [revision, game.state.revision])
+	check(pa.plan_layer_open, "TP-66: a refused input does not close the view either")
+	check(pa.selected_cards.has(held_card),
+			"TP-66: the card that could not be placed is still held")
+
+	await input.key_release(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-66: precondition: letting the key go returned to play")
+	await input.click(centre_of(game.state.cell_type_at(both_cell)))
+	var landed := await wait_for(func() -> bool:
+			return not game.processing and game.state.card_at(both_cell) == held_card)
+	check(landed,
+			"TP-66: the identical click places the card the moment the view is closed",
+			"digest moved: %s" % str(TestGridFixtures.board_digest(game.state) != digest))
+	pa.flush_rebuild()
+	await get_tree().process_frame
+
+# ==============================================================================
+# TP-67 -- the layer view works focused AND in the overview
+# ==============================================================================
+
+# Read off what the cells DRAW -- the mark on the cell's own zone card, and the cards played on it
+# out of the way -- rather than off the flag that put them there, which would pass with the whole
+# swap deleted.
+func test_the_layer_view_opens_focused_and_in_the_overview() -> void:
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED,
+			"TP-67: precondition: a grid is focused", str(pa.view_mode))
+	check(cards_on_grid_0() > 0,
+			"TP-67: precondition: a card stands on the board for the marks layer to cover",
+			str(cards_on_grid_0()))
+	var realized := await MarkMatch.matches_at(game.state, held_card, both_cell)
+	check(realized != 0,
+			"TP-67: precondition: one of those cells is realized -- its card agrees with its mark",
+			str(realized))
+
+	await input.key_press(plan_layer_key())
+	var focused_wrong := cells_not_in_layer(true)
+	check(focused_wrong.is_empty(),
+			"TP-67: focused, every marked cell draws its mark and every played card steps aside",
+			str(focused_wrong))
+	check(rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim_active) == realized,
+			"TP-67: and the realized cell's mark wears the activated rim its card would have worn",
+			str(rimmed_properties(mark_visual(both_cell), PaletteDB.ROLES.match_rim_active)))
+	await input.key_release(plan_layer_key())
+	var back := cells_not_in_layer(false)
+	check(back.is_empty(), "TP-67: letting the key go puts the played board back", str(back))
+
+	pa.open_zoomed_out()
+	await get_tree().process_frame
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open and pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"TP-67: precondition: the overview opened the same layer view", str(pa.view_mode))
+	var overview_wrong := cells_not_in_layer(true)
+	check(overview_wrong.is_empty(),
+			"TP-67: and it draws the same marks at overview zoom", str(overview_wrong))
+	await input.key_release(plan_layer_key())
+	pa.focus_grid(0)
+	await settle_on(held_card)
+
+# ==============================================================================
+# TP-68 -- keyboard, mouse and controller all reach it
+# ==============================================================================
+
+# Every route is driven through the viewport the way the platform delivers it. The HUD control is
+# ONE control, so the three input modes reach the same toggle rather than three wirings of it.
+func test_the_layer_toggle_is_reachable_by_every_input_mode() -> void:
+	check(InputMap.has_action(&"ui_plan_layer") and plan_layer_key() != KEY_NONE,
+			"TP-68: precondition: the layer action exists and carries a keyboard binding",
+			OS.get_keycode_string(plan_layer_key()))
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open, "TP-68: the held key opens the layer view")
+	await input.key_release(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-68: and letting it go closes it again")
+
+	var button := view.plan_layer_button
+	check(button.text != "PLAN_LAYER_TOGGLE" and not button.text.is_empty()
+			and button.tooltip_text != "PLAN_LAYER_TOGGLE_HINT"
+			and not button.tooltip_text.is_empty(),
+			"TP-68: its label and its hint come through the localisation table, not a literal",
+			"%s / %s" % [button.text, button.tooltip_text])
+	await input.click(centre_of_control(button))
+	check(pa.plan_layer_open, "TP-68: a mouse click on the HUD control opens it")
+	await input.click(centre_of_control(button))
+	check(not pa.plan_layer_open, "TP-68: and a second click closes it")
+
+	button.grab_focus()
+	await get_tree().process_frame
+	await input.key_tap(KEY_ENTER)
+	check(pa.plan_layer_open, "TP-68: the focused HUD control answers a keyboard accept")
+	await input.key_tap(KEY_ENTER)
+	check(not pa.plan_layer_open, "TP-68: and a second one closes it")
+
+	button.grab_focus()
+	await get_tree().process_frame
+	await input.joy_tap(JOY_BUTTON_A)
+	check(pa.plan_layer_open, "TP-68: the same control answers a controller accept")
+	await input.joy_tap(JOY_BUTTON_A)
+	check(not pa.plan_layer_open, "TP-68: and a second one closes it")
+
+	await input.click(centre_of_control(button))
+	check(pa.plan_layer_open, "TP-68: precondition: the HUD control left the view open")
+	(pa.data_ui[held_card] as Control).grab_focus()
+	await get_tree().process_frame
+	await input.key_tap(KEY_Z)
+	check(pa.plan_layer_open,
+			"TP-68: a toggled view survives an unrelated key's release -- only its own closes it")
+	await input.click(centre_of_control(button))
+	check(not pa.plan_layer_open, "TP-68: precondition: the view is closed again")
+
+# ==============================================================================
+# TP-69 -- any board mutation closes it, and no save carries it
+# ==============================================================================
+
+# The layer view is view state and lives nowhere else: a saved state has no property for it, so a
+# resumed show cannot come back looking at a layer, and a board rebuilt under an open one is no
+# longer the board it was opened over.
+func test_the_layer_view_closes_on_a_board_mutation() -> void:
+	await input.click(centre_of_control(view.plan_layer_button))
+	check(pa.plan_layer_open, "TP-69: precondition: the layer view is open with no key held")
+
+	var carried : Array[String] = []
+	for property : Dictionary in game.state.duplicate_state().get_property_list():
+		if (property["name"] as String).to_lower().contains("layer"):
+			carried.append(str(property["name"]))
+	check(carried.is_empty(),
+			"TP-69: a saved state carries no layer state at all", str(carried))
+
+	var revision := game.state.revision
+	game.effect_api.swap_marks(rank_cell, miss_cell)
+	await get_tree().process_frame
+	check(game.state.revision != revision,
+			"TP-69: precondition: a mark effect mutated the board",
+			"%d then %d" % [revision, game.state.revision])
+	check(not pa.plan_layer_open, "TP-69: a board mutation closes the layer view")
+
+	await input.click(centre_of_control(view.plan_layer_button))
+	check(pa.plan_layer_open, "TP-69: precondition: re-opened over the mutated board")
+	view.rebuild()
+	await get_tree().process_frame
+	check(not pa.plan_layer_open, "TP-69: a rebuilt board comes up in play")
+	var drawn := cells_not_in_layer(false)
+	check(drawn.is_empty(), "TP-69: with every played card drawn again", str(drawn))

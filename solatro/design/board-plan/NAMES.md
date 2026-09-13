@@ -135,6 +135,8 @@ func add_line_mult(amount: float) -> void   # a mark effect's share of the line'
 ## InputMap action
 
 `ui_plan_layer` — held to peek, and bound for keyboard, mouse and controller alike (`Q117`=(c)).
+Keyboard binding `M`; the CONTROLLER binding is parked on `gaps/GAP-005.md` — every shoulder is
+already taken. The HUD control is what a pad reaches today.
 
 ## View state
 
@@ -146,6 +148,12 @@ func set_match_rim(properties : int, palette_index : int) -> void   # the two ar
 
 # UI/play_area.gd
 func _refresh_mark_matches(game_state: GameData) -> void   # the one derivation, on every refresh
+var plan_layer_open : bool          # THE layer-view state, transient and never in GameData. Added during execution - see ASSUMPTIONS.md
+func _select_data(data: CardData) -> void   # the one emitter of data_selected, refused while the layer view is open. Added during execution
+
+# Levels/game_view.gd
+@onready var plan_layer_button : Button = %PlanLayer   # the HUD control of Q117=(c). Added during execution - see ASSUMPTIONS.md
+func _board_is_playable() -> bool    # asked by the undo and end-show commands before they act
 ```
 
 ## Palette roles
