@@ -1448,6 +1448,7 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
 				if not _consume_as_focus_click(focused_control):
+					_next_grab_follows = true
 					data_selected.emit(ui_data[focused_control])
 			elif _card_control_at(get_global_mouse_position()) == null:
 				description_dismiss_requested.emit()
@@ -1499,6 +1500,8 @@ func _input(event: InputEvent) -> void:
 	if _consume_as_swipe(event):
 		get_viewport().set_input_as_handled()
 		return
+	var motion := event as InputEventMouseMotion
+	if motion: _on_pointer_moved(motion.position)
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
@@ -1506,7 +1509,33 @@ func _input(event: InputEvent) -> void:
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
 			ungrab_cards()
 			
+# ANY mouse motion starts a held card following, including the one Godot emulates from a finger.
+# A card ALREADY following whose pointer has left the cell it came from closes the description —
+# read before the latch, so the motion that starts the following never closes one by accident.
+func _on_pointer_moved(at: Vector2) -> void:
+	if selected_cards.is_empty(): return
+	var carried : CardVisual = data_card.get(selected_cards[0])
+	if carried and carried.following and not _origin_cell_rect(carried).has_point(at):
+		description_dismiss_requested.emit()
+	follow_cards()
+
+# The cell a held card came from: its own control stays put — only the visual rides the cursor —
+# and a card control's parent IS its cell slot.
+func _origin_cell_rect(carried: CardVisual) -> Rect2:
+	return (carried.control_anchor.get_parent() as Control).get_global_rect()
+
+## Every held card now tracks the cursor — one way, until the card is placed or cancelled.
+func follow_cards() -> void:
+	for data : CardData in selected_cards:
+		if data in data_card: data_card[data].following = true
+
+# A card the player CLICKED follows at once — the mouse has moved by definition — but the pickup
+# lands behind `try_grab`'s own await, after the click has already returned. The click leaves this
+# for the grab it asked for; any other way the selection resolves drops it.
+var _next_grab_follows : bool = false
+
 func grab_cards(datas:Array[CardData]) -> void:
+	var follows_at_once := _next_grab_follows
 	flush_rebuild() #reads data_card / data_ui
 	ungrab_cards()
 	selected_cards = datas
@@ -1516,6 +1545,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 		if data in data_card:
 			var card_visual := data_card[data]
 			card_visual.held = index + 1
+			card_visual.following = follows_at_once
 			# Held cards ride ABOVE all resting cards, still below PropLayer (a later sibling of
 			# CardLayer). move_child to the end of the card's OWN layer (Entrance or grid) — no
 			# z_index (structural order, LAYERING.md). ungrab_cards -> rebuild restores row-major
@@ -1527,11 +1557,13 @@ func grab_cards(datas:Array[CardData]) -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func ungrab_cards() -> void:
+	_next_grab_follows = false
 	flush_rebuild() #reads data_card / data_ui
 	for data in selected_cards:
-		if data in data_card: 
+		if data in data_card:
 			var card_visual := data_card[data]
 			card_visual.held = 0
+			card_visual.following = false
 			var card_control := data_ui[data]
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
@@ -2823,7 +2855,9 @@ func on_control_focus_entered(control:Control) -> void:
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
 	_refresh_card_marking()
-	if ui_data.has(control): _publish_info(ui_data[control])
+	if ui_data.has(control):
+		follow_cards()
+		_publish_info(ui_data[control])
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
 	# controls by fixed child index on every focus -- written when child 0 was the zone header and

@@ -3,19 +3,9 @@
 **Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
-**State:** Phases 1–3 done (S1–S12 committed). The Phase 3 adversarial review (Fable 5.1,
-`review_phase3` — 5 confirmed, 6 suspected) is being fixed: fixes 1–2 landed (54317308), fix
-dispatch 2 (viewer inset geometry: four-edge fit, re-fit on `container_rect_changed`, idempotent
-margins, the viewer re-publishes its highlight so the preview keeps the viewer's size) landed
-(74897f3a); dispatch 3 (the start-menu Inspect viewer inset and publishing like every other
-viewer, the choice viewer's chrome inset with its pack, the reroll re-publishing for the
-replacement card, three caller-less methods deleted, deck_builder's dead node and dead path
-deleted with a test that drives a real edit, and the S9 `card_environment` guard KEPT with its
-caller named — `FxAttachment.transition_secs()` reaches it 6x per suite after the game is freed,
-which an `assert` could not show because a freed instance compares equal to null in 4.7) is in
-the tree awaiting the overseer's run and commit. Then a short re-review of the fix commits (the
-menu's "Choose a deck" panel draws OVER the inspected deck's cards in `menu_inspect.png` — is that
-layering pre-existing?), then Phase 4 (S13),
+**State:** Phases 1–4 done (S1–S13 committed; the Phase 3 adversarial review and its re-review
+are fixed in four commits, 54317308 → 17e9cc1c — see the two Phase 3 sections). Phase 5 is next:
+S14 (`following`), S15, S16, S17, S18; then Phase 6 (S19–S21),
 Phase 5 (S14–S18), Phase 6 (S19–S21), Phase 7 (S22), Phase 8 (S23), the closing phase S24 — all in
 this run (owner ruling). GAP-004 (Q34's reading inside a viewer) is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check

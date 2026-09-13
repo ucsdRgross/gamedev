@@ -123,6 +123,15 @@ func _ready() -> void:
 	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_on_hover()
 	await test_the_deck_builder_tool_loads_and_stands_up()
+	behavior_section("S14: HELD, THEN FOLLOWING")
+	await test_a_held_card_lifts_and_does_not_follow()
+	await test_any_mouse_motion_starts_the_card_following()
+	await test_a_key_focus_onto_a_card_starts_it_following()
+	await test_following_is_a_one_way_latch()
+	await test_the_lift_is_the_same_height_in_both_states()
+	await test_a_clicked_card_follows_immediately()
+	await test_a_following_card_leaving_its_cell_reverts_to_the_hud()
+	await test_a_lifted_card_that_is_not_following_keeps_the_description()
 	test_the_choice_viewer_owns_no_inspector_panel()
 	finish()
 
@@ -1503,7 +1512,7 @@ func test_locking_a_second_card_replaces_the_first() -> void:
 		var next_control := _another_card_control(await _entrance_card_controls(), first)
 		check(next_control != null, "a second Entrance card is reachable for the next click")
 		if next_control != null:
-			await _click_card(next_control)
+			await _lock_without_holding(next_control)
 			check(clicked.size() == 2, "both clicks reached the board", _board_input_state(next_control))
 			check(_container.is_locked(), "the second click leaves the sidebar locked")
 			if clicked.size() == 2:
@@ -1526,7 +1535,7 @@ func test_the_locked_card_keeps_its_marking_while_focus_moves_on() -> void:
 	check(not entrance.is_empty(), "the board offers a lockable card", str(entrance.size()))
 	if not entrance.is_empty():
 		var locked : CardData = _play_area.ui_data[entrance[0]]
-		await _click_card(entrance[0])
+		await _lock_without_holding(entrance[0])
 		var others := await _hoverable_card_controls()
 		_hover(_off_the_board_point())
 		await get_tree().process_frame
@@ -1663,8 +1672,9 @@ func _cancel_event() -> InputEventAction:
 	event.pressed = true
 	return event
 
-# Clicks an Entrance card and leaves NOTHING held, so a later cancel cannot be spent on the ungrab
-# instead of on the description.
+# Clicks an Entrance card and leaves NOTHING held: a later cancel cannot then be spent on the
+# ungrab instead of on the description, and the pointer can leave the card's cell without the held
+# card following it out and closing what was locked.
 func _lock_without_holding(control: Control) -> void:
 	await _click_card(control)
 	_play_area.ungrab_cards()
@@ -1678,12 +1688,12 @@ func test_the_description_follows_the_hover_while_locked() -> void:
 			str(entrance.size()))
 	if not entrance.is_empty():
 		var locked : CardData = _play_area.ui_data[entrance[0]]
-		await _click_card(entrance[0])
+		await _lock_without_holding(entrance[0])
 		var title : Label = _panel.get_node(^"%Title")
 		check(_container.is_locked() and _play_area.locked_data == locked,
 				"the click locked the description to the card it landed on")
 		var controls := await _hoverable_card_controls()
-		var elsewhere := await _hover_another_card(controls, _play_area.moused_hovered_control)
+		var elsewhere := await _hover_another_card(controls, _play_area.data_ui[locked])
 		check(elsewhere != null, "the pointer landed on a second card")
 		if elsewhere != null:
 			var hovered : CardData = _play_area.ui_data[elsewhere]
@@ -1706,7 +1716,7 @@ func test_leaving_everything_returns_to_the_locked_card() -> void:
 			str(entrance.size()))
 	if not entrance.is_empty():
 		var locked : CardData = _play_area.ui_data[entrance[0]]
-		await _click_card(entrance[0])
+		await _lock_without_holding(entrance[0])
 		var locked_visual : Node = _panel.current_entry.visual
 		var controls := await _hoverable_card_controls()
 		var elsewhere := await _hover_another_card(controls, _play_area.moused_hovered_control)
@@ -1748,7 +1758,7 @@ func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
 			str(entrance.size()))
 	if not entrance.is_empty():
 		var locked : CardData = _play_area.ui_data[entrance[0]]
-		await _click_card(entrance[0])
+		await _lock_without_holding(entrance[0])
 		_hover(_off_the_board_point())
 		await get_tree().process_frame
 		var elsewhere := _another_card_control(await _hoverable_card_controls(), locked)
@@ -3110,3 +3120,184 @@ func _check_the_rank_option_redraws_the_preview(tool_root: Control, preview: Con
 			"%s vs id %d" % [preview.child.data.rank.value, values.get_item_id(last)])
 	check(preview.child.rank.uv != drawn,
 			"...and the preview re-draws the pip the new rank frames (S12.6)")
+
+# ------------------------------------------------------------------ S14: HELD, THEN FOLLOWING
+
+# The state an arm produces: `grab_cards` called from somewhere that is NOT a click, so the card is
+# held and lifted with nothing having yet told it to follow.
+func _arm_without_touching(control: Control) -> CardVisual:
+	var data : CardData = _play_area.ui_data[control]
+	_play_area.grab_cards([data] as Array[CardData])
+	await get_tree().process_frame
+	return _play_area.data_card[data]
+
+# A board card EASES toward its target rather than snapping, so a position read on the next frame
+# is mid-flight. Bounded, and it returns the instant the card is actually still.
+func _await_card_settled(visual: CardVisual) -> void:
+	var last := visual.global_position
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if visual.global_position.distance_to(last) < 0.05: return
+		last = visual.global_position
+
+# How far the card is raised above what it AIMS at, the one quantity the two held states share:
+# its own slot until it follows, the cursor once it does.
+func _lift_above_aim(visual: CardVisual, aim: Vector2) -> float:
+	return aim.y - visual.global_position.y
+
+func _slot_centre_of(visual: CardVisual) -> Vector2:
+	return visual.get_card_control_center(visual.control_anchor)
+
+## 6.4/G4/G5/Q254=d: an armed card LIFTS at once and does not follow -- it rests on its own slot, raised.
+func test_a_held_card_lifts_and_does_not_follow() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var visual := await _arm_without_touching(entrance[0])
+		check(visual.held != 0, "the card is HELD by the grab (6.4)", str(visual.held))
+		check(not visual.following, "...and is NOT following the cursor (6.4, Q254=d)")
+		await _await_card_settled(visual)
+		var lift := _lift_above_aim(visual, _slot_centre_of(visual))
+		check(absf(lift - visual.held_lift_px()) < 2.0,
+				"...and rests at its slot centre raised by the lift (6.4, G4)",
+				"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+	await _end_game_fixture()
+
+## 6.5/G7/Q262=a: one mouse motion -- no threshold, no focus -- starts a held card following.
+func test_any_mouse_motion_starts_the_card_following() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var visual := await _arm_without_touching(entrance[0])
+		check(not visual.following, "the armed card starts out not following")
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		check(visual.following, "ONE mouse motion starts it following (6.5, Q262=a)")
+	await _end_game_fixture()
+
+## 6.6/G7: focus landing on a card by key or pad starts it too, with the mouse never touched.
+func test_a_key_focus_onto_a_card_starts_it_following() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(entrance.size() >= 2, "the dealt board offers two Entrance cards", str(entrance.size()))
+	if entrance.size() >= 2:
+		var visual := await _arm_without_touching(entrance[0])
+		check(not visual.following, "the armed card starts out not following")
+		entrance[1].grab_focus()
+		await get_tree().process_frame
+		check(visual.following, "a key/pad focus landing on a card starts it following (6.6, G7)")
+	await _end_game_fixture()
+
+## 6.7/G8/Q263=a: following is a ONE-WAY latch -- a key event after it started does not stop it.
+func test_following_is_a_one_way_latch() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var visual := await _arm_without_touching(entrance[0])
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		check(visual.following, "the motion started it following")
+		var key := InputEventKey.new()
+		key.keycode = KEY_RIGHT
+		key.pressed = true
+		_game_viewport.push_input(key)
+		await get_tree().process_frame
+		check(visual.following, "a key event after it started leaves it following (6.7, Q263=a)")
+		check(visual.held != 0, "...and the card is still held", str(visual.held))
+	await _end_game_fixture()
+
+## 6.8/G8/Q265=a: the lift is the SAME height in both states, so following only makes the card move.
+func test_the_lift_is_the_same_height_in_both_states() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var visual := await _arm_without_touching(entrance[0])
+		await _await_card_settled(visual)
+		var before := _lift_above_aim(visual, _slot_centre_of(visual))
+		check(before > 2.0, "the card at rest is lifted by a REAL height, not zero (6.8)",
+				"%.1f" % before)
+		var at := _bare_board_point(controls)
+		_hover(at)
+		await get_tree().process_frame
+		await _await_card_settled(visual)
+		var after := _lift_above_aim(visual, at + visual.cursor_ride_offset())
+		check(absf(after - before) < 2.0,
+				"...and it rides the cursor at exactly that same lift (6.8, Q265=a)",
+				"%.1f vs %.1f" % [after, before])
+		check(visual.following, "...while following")
+	await _end_game_fixture()
+
+## 6.9/G11/Q267=a: a card the player CLICKED follows at once -- the mouse has moved by definition.
+func test_a_clicked_card_follows_immediately() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		check(not _play_area.selected_cards.is_empty(), "the click grabbed a card",
+				str(_play_area.selected_cards.size()))
+		if not _play_area.selected_cards.is_empty():
+			var visual : CardVisual = _play_area.data_card[_play_area.selected_cards[0]]
+			check(visual.held != 0 and visual.following,
+					"a CLICKED card is following as soon as it is held (6.9, Q267=a)",
+					"held %d following %s" % [visual.held, visual.following])
+	await _end_game_fixture()
+
+## 1.7/B9/B10/Q268=a: the FOURTH dismissal -- a FOLLOWING card leaving its cell reverts to the HUD.
+func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		check(_container.showing_description() and not _play_area.selected_cards.is_empty(),
+				"the click locked a description and grabbed the card it landed on")
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		check(hud_stack.visible and not _panel.visible,
+				"a FOLLOWING card leaving its cell reverts the container to the HUD (1.7, Q268=a)")
+		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+	await _end_game_fixture()
+
+## 1.8/B11/Q268=a: a card that is NOT following dismisses nothing -- the motion that arms it closes no description.
+func test_a_lifted_card_that_is_not_following_keeps_the_description() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to read",
+			str(controls.size()))
+	if not controls.is_empty():
+		await _lock_without_holding(controls[0])
+		var entrance := await _entrance_card_controls()
+		check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+				str(entrance.size()))
+		if not entrance.is_empty():
+			var visual := await _arm_without_touching(entrance[0])
+			var dismissals : Array[int] = []
+			_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+			check(_container.showing_description() and not visual.following,
+					"a description is up and the armed card is not following")
+			_hover(_off_the_board_point())
+			await get_tree().process_frame
+			check(_container.showing_description() and dismissals.is_empty(),
+					"a card that was NOT following dismisses nothing when the pointer leaves (1.8)",
+					str(dismissals.size()))
+			check(visual.following, "...that motion armed the following instead (Q262=a)")
+	await _end_game_fixture()

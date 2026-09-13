@@ -427,3 +427,25 @@
   than making the Dim ignore the mouse) keeps the picker's modal guard over the menu behind it and
   makes the viewer's own click-to-close work everywhere; the picker's buttons are behind the open
   viewer until it is closed, which is how the same viewer behaves on every other screen.
+- S14: new names `CardVisual.held_lift_px()` and `CardVisual.cursor_ride_offset()`,
+  `PlayArea.follow_cards()`, `PlayArea._on_pointer_moved()` / `_origin_cell_rect()` and
+  `PlayArea._next_grab_follows`.
+- S14: no lift quantity existed for a held card -- a grab never called `anim_jump`, so a following
+  card rode the cursor with no raise at all. `Q265`=a wants the two states at the SAME lift, so the
+  lift is applied in BOTH: `CARD_JUMP_RISE` (through `card_jump_rise_play`, scaled by the anchor's
+  own global scale, which is what `get_card_control_center` already does) above whatever the card
+  aims at -- its slot centre until it follows, the cursor once it does. Measured 18.8 px at
+  1280x720. No new knob and no literal.
+- S14: `Q267`=a's "a clicked card follows immediately" cannot be written at the click, because the
+  pickup lands behind `Game.try_grab`'s own await, after the click handler has returned. The click
+  sets `_next_grab_follows` and `grab_cards` consumes it; `ungrab_cards` drops it, so a click that
+  placed instead of grabbing cannot make a later arm follow.
+- S14: `Q268`=a's cell-leave dismissal is read BEFORE the same motion latches `following`, so the
+  very motion that arms an untouched card never also closes a description (`1.8`). The cell is the
+  card control's PARENT (`_fit_children(slot, ...)` makes every card control a child of its cell
+  slot), so no new geometry is published.
+- S14: three landed S6 tests (1.4, 1.5, 1.6's second lock, and the `Q58`=c marking test) locked
+  with `_click_card`, which also GRABS. With `Q62`=b/B11 landing, the pointer then carries the held
+  card out of its cell and dismisses what was locked. Those fixtures now lock through the suite's
+  existing `_lock_without_holding()`; the rows they implement (1.4/1.5/1.6) never asked for a held
+  card.

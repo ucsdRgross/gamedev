@@ -19,6 +19,8 @@ const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll
 const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
 const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_description_top.png"
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
+const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
+const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -146,6 +148,22 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_FOLLOW_OUT_PATH)
+
+	var armed := _arm_an_entrance_card(main, view)
+	await _await_held_card_settled(view, armed)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CARD_LIFTED_OUT_PATH)
+	_report_held_lift(view, armed, "lifted")
+
+	var pointer := _point_over_the_board(main, view)
+	await _await_held_card_settled(view, armed)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CARD_FOLLOWING_OUT_PATH)
+	_report_held_lift(view, armed, "following", pointer)
+	view.play_area.ungrab_cards()
+	await get_tree().process_frame
 
 	await _open_the_deck_viewer(view)
 	await RenderingServer.frame_post_draw
@@ -406,3 +424,43 @@ func _listed_cards(container: Node) -> Array[ControlCard]:
 		var card := child as ControlCard
 		if card: cards.append(card)
 	return cards
+
+# The LIFTED still: a pickup from somewhere that is NOT a click, so the card is held with nothing
+# yet having told it to follow -- it rests on its own slot, raised by the lift.
+func _arm_an_entrance_card(main: Main, view: GameView) -> CardData:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var data : CardData = view.play_area.ui_data[_entrance_controls(view, viewport)[0]]
+	view.play_area.grab_cards([data] as Array[CardData])
+	return data
+
+# The FOLLOWING still: the pointer is put over the middle of the board, which both starts the
+# following and is where the card is then carried to.
+func _point_over_the_board(main: Main, view: GameView) -> Vector2:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var at := Vector2(viewport.size) * 0.5
+	_push_pointer(viewport, at)
+	return at
+
+# A held card EASES toward its target rather than snapping, so a still taken on the next frame
+# catches it mid-flight. The grab's own rebuild can hand the card a DIFFERENT visual, so the live
+# one is re-read every frame rather than held. Bounded: a card that never settles is a bug to see.
+func _await_held_card_settled(view: GameView, data: CardData) -> void:
+	var last := Vector2.INF
+	var waited := 0.0
+	while waited < DEAL_SETTLE_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var visual : CardVisual = view.play_area.data_card.get(data)
+		if not visual: continue
+		if visual.global_position.distance_to(last) < 0.05: return
+		last = visual.global_position
+
+# The by-eye question is whether the lift is the SAME height in both held states, so the number is
+# printed beside the still: how far the card sits above what it aims at, slot or cursor.
+func _report_held_lift(view: GameView, data: CardData, state: String,
+		pointer := Vector2.INF) -> void:
+	var visual : CardVisual = view.play_area.data_card[data]
+	var aim := visual.get_card_control_center(visual.control_anchor)
+	if pointer != Vector2.INF: aim = pointer + visual.cursor_ride_offset()
+	print("SIDEBAR_SNAPSHOT %s following=%s lift=%.1f expected=%.1f" % [
+			state, visual.following, aim.y - visual.global_position.y, visual.held_lift_px()])

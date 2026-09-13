@@ -326,6 +326,8 @@ var move_tween : Tween
 var tilt_tween : Tween
 var spin_tween : Tween
 var held : int = 0
+## Does this visual track the cursor — a held card is lifted either way, and only this makes it move.
+var following : bool = false
 var hover : bool = false
 
 @onready var offset: Node2D = $Offset
@@ -692,6 +694,18 @@ func _process(delta: float) -> void:
 	# pays one null check rather than five `set_shader_parameter` calls per frame.
 	if _alert: _advance_alert(delta)
 
+# How far a HELD card is raised above whatever it aims at — the cursor once it is following, its
+# own slot until then. The SAME rise a jump uses, in both states, so the only visible change when
+# following starts is that the card begins to move.
+func held_lift_px() -> float:
+	return card_jump_rise_play * _control_scale(control_anchor).y
+
+# Where a FOLLOWING card hangs under the cursor: the pointer carries the stack by the top card, so
+# each card below it hangs one separation lower.
+func cursor_ride_offset() -> Vector2:
+	return Vector2(0.0, card_size.y / 2.0 - card_separation / 2.0
+			+ (held - 1) * card_separation_custom)
+
 var rot_delta : float
 var y_delta : float
 func delta_self_moving_logic(delta:float) -> void:
@@ -707,10 +721,8 @@ func delta_self_moving_logic(delta:float) -> void:
 	if (not (move_tween and move_tween.is_running())) and control_anchor:
 		var target : Vector2 = get_card_control_center(control_anchor)
 		if held:
-			#where card orients itself relative to mouse
-			var offset : int =  card_size.y/2 - card_separation/2
-			offset += (held - 1) * card_separation_custom
-			target = get_global_mouse_position() + Vector2(0, offset)
+			if following: target = get_global_mouse_position() + cursor_ride_offset()
+			target.y -= held_lift_px()
 		target.y -= y_delta
 		var move : Vector2 = target - global_position
 		# Only PLAY_AREA cards ease toward their slot — that smooths slot-to-slot moves and the
