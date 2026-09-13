@@ -29,14 +29,18 @@ gap under `gaps/`.
 - S3 / Q9: `SkillBoardPlanner` is appended LAST in `_build_rules1()` and in `TestDecks.standard_rules()`.
   `CardEnvironment.run_all_mods` walks `rules_deck` in array order and sweeps the spotlight after each
   mod, so the allotment's creator cards build their grids inside that walk -- only a planner after the
-  allotment card sees every grid, which is what S4's deal needs.
+  allotment card sees every grid, which is what S4's deal needs. MEASURED at three grids: a 105-card
+  show opens with 75 marks, 25 on each.
 - S3 / A1: the planner card's `get_frame()` returns 13, the next unused frame on the rules-card row of
   `Assets/skill_art.png`. Its art is Phase 5's business.
 - S3 / PLAN §0: `BOARD_PLANNER_CARD_DESCRIPTION` reads "On game start, deals a mark from the deck onto
   every cell of every grid.", mirroring the allotment card's sentence shape.
-- S4 / Q10: a grid added mid-show is dealt by `CardEffectApi.add_grid` itself, and only when
-  `state.plan_seed != 0` -- at game start the creators call `add_grid` BEFORE the planner runs, and
-  the planner's own deal has to stay the single writer of the opening plan.
+- S4 / Q10: a grid added mid-show deals its own marks inside `Board.add_grid`, the one mutator every
+  appearance goes through -- the effect api, a fixture standing three grids up, a visual probe -- and
+  only when `state.plan_seed != 0`, because at game start the creators add their grids BEFORE the
+  planner runs and the planner's deal is the single writer of the opening plan. The deal sits ahead
+  of the revision bump, so the rebuild that bump triggers renders a board whose marks are already on
+  it.
 - S4 / Q10: `CardEffectApi.add_grid` builds a fresh generator seeded from `plan_seed` on every call;
   two grids added in one show draw from identical streams against different boards, which stays
   deterministic across resume. No product break named.

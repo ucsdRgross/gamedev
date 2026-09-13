@@ -367,7 +367,17 @@ static func add_grid(state: GameData, grid: GridData) -> void:
 	if grid.cells.size() != expected or grid.cell_types.size() != expected:
 		grid.build_cells()
 	state.grids.append(grid)
+	_deal_late_grid(state)
 	state.revision += 1
+
+#A grid appearing on a board that already has a plan deals its own marks from the deck as it stands
+#now -- here, ahead of the bump, because the rebuild the bump triggers must see a marked board. A
+#board with no plan yet is the opening deal's to write, and it runs after every creator has built.
+static func _deal_late_grid(state: GameData) -> void:
+	if state.plan_seed == 0: return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = state.plan_seed
+	BoardPlan.deal(state, rng)
 
 ## Removes grid `index` and returns the orphaned in-play cards (not the cell zone type
 ## cards) for the caller to discard, mirroring remove_column's orphan contract. One bump.

@@ -203,16 +203,10 @@ func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_column(_game.state, zone_cols, zone_types, index)
 
-#A grid arriving after the plan was dealt deals its own marks from the deck as it stands now; at
-#game start the creators run BEFORE the planner, whose deal is the opening plan's single writer.
-## Append one grid to the board, dealing its marks when the show already has a plan.
+## Append one grid to the board; `Board.add_grid` deals its marks when the show already has a plan.
 func add_grid(grid: GridData) -> void:
 	if not is_live(): return
 	Board.add_grid(_game.state, grid)
-	if _game.state.plan_seed == 0: return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = _game.state.plan_seed
-	BoardPlan.deal(_game.state, rng)
 
 ## Remove a grid; returns its orphaned cards for the caller to discard.
 func remove_grid(index: int) -> Array[CardData]:

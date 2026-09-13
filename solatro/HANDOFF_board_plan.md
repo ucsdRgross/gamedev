@@ -197,6 +197,8 @@ Findings and their disposition; each defect was reproduced red before it was fix
 - Stocks absent on `main` and `sidebar`: verified — `git grep -il stock` empty on both.
 
 ## Open bugs
+- FIXED (owner report, "in tests with 3 grids i only see it filling in 1 grid"): grids added through `Board.add_grid`, the mutator every non-api path uses (the UI fixtures' `_stand_up_grids`, the visual probes), were never dealt; the mid-show deal now lives in `Board.add_grid` and `CardEffectApi.add_grid` no longer deals. Reproduced `[25, 0, 0]` red, `[25, 25, 25]` green, and by eye on `Tests/Visual/grid_layer_shot.tscn` (grid 1 bare dashed outlines before, mark art in every cell after). A real three-grid show start (deck_105) was never affected.
+- Until S11 lands, a mark renders as a full-colour card face indistinguishable from a played card: the zone card already draws under the stack. Phase 5 owns the grey treatment.
 - Pre-existing, found during S7, not ours: a sprung grid card (`CardVisual.anim_spring_lift`) is never reset, so it keeps `floating = false` until the next rebuild. Details in the S7 evidence file of this session; surfaces in `Cards/card_visual.gd`.
 
 ## Files touched

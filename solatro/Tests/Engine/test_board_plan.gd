@@ -25,6 +25,7 @@ func _ready() -> void:
 	test_i6_refuses_a_printer_that_is_a_zone_header()
 	behavior_section("THE DEAL, THROUGH A REAL SHOW START")
 	await test_a_fresh_show_marks_every_cell()
+	await test_a_three_grid_show_marks_every_grid()
 	await test_the_same_node_deals_the_same_board()
 	behavior_section("THE DEAL'S CARD BUDGET")
 	test_twenty_cards_over_twenty_five_cells()
@@ -36,6 +37,7 @@ func _ready() -> void:
 	test_two_copies_may_share_a_row()
 	behavior_section("A BOARD THAT GROWS AFTER THE DEAL")
 	test_a_grid_added_mid_show_deals_its_own_marks()
+	await test_grids_appended_to_a_planned_board_are_dealt()
 	test_a_cell_added_to_a_grid_takes_a_mark()
 	test_a_card_minted_after_the_deal_gets_no_mark()
 	behavior_section("A PLAN SURVIVES A SAVE, AND A PLAN-LESS SAVE STILL PLAYS")
@@ -306,6 +308,16 @@ func marks_of(state: GameData) -> Array[CardData]:
 			if BoardPlan.is_marked(type_card): out.append(type_card)
 	return out
 
+## How many cells of each grid carry a mark: WHICH grids the deal reached, not just how many marks.
+func marks_per_grid(state: GameData) -> Array[int]:
+	var out : Array[int] = []
+	for grid : GridData in state.grids:
+		var marked := 0
+		for type_card : CardData in grid.cell_types:
+			if BoardPlan.is_marked(type_card): marked += 1
+		out.append(marked)
+	return out
+
 ## One mark's printed identity as text: the four slots a mark copies, and "-" for a bare cell.
 func mark_print(type_card: CardData) -> String:
 	if not BoardPlan.is_marked(type_card): return "-"
@@ -421,6 +433,27 @@ func test_a_fresh_show_marks_every_cell() -> void:
 			"TP-01: the deal ran BEFORE that refill -- every card the Entrance holds is printed by a mark",
 			"unmarked: %s" % ", ".join(unmarked_entrance_cards(g.state)))
 	check(g.state.validate().is_empty(), "TP-01: the dealt board breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-01, TP-04: three grids through the real show start -- the opening deal covers every grid the
+#allotment unlocked, from the ONE stock, and not just the first.
+func test_a_three_grid_show_marks_every_grid() -> void:
+	var st := SettingsManager.settings
+	check(st.grid_cards_per_unlock == 52 and st.grid_max_count >= 3,
+			"TP-04: precondition: 105 cards unlock three grids under these settings",
+			"per unlock %d, max %d" % [st.grid_cards_per_unlock, st.grid_max_count])
+	var g := await start_show(TestDecks.deck_105(), 9)
+	check(g.state.grids.size() == 3, "TP-04: the 105-card deck allots three grids",
+			"got %d grids" % g.state.grids.size())
+	check(marks_per_grid(g.state) == ([25, 25, 25] as Array[int]),
+			"TP-04: one deal left no cell of any of the three grids bare",
+			"per grid %s of 25 each" % str(marks_per_grid(g.state)))
+	var hist := copy_histogram(g.state)
+	check(hist.size() == 52 and hist[0] == 2 and hist.count(1) == 29,
+			"TP-04: the 105 cards print 52 identities, so 75 marks are one full pass plus 23 of a"
+			+ " second -- 29 identities marked once, 23 twice, nothing higher", str(hist))
+	check(g.state.validate().is_empty(), "TP-04: the three-grid board breaks no invariant",
 			", ".join(g.state.validate()))
 	free_show(g)
 
@@ -566,6 +599,26 @@ func test_a_grid_added_mid_show_deals_its_own_marks() -> void:
 			"TP-04: with 52 cards the added grid takes 25 cards no mark had used yet", str(wide_hist))
 	CardEnvironment.CURRENT = null
 	g2.free()
+
+#TP-14: `Board.add_grid` is the mutator EVERY appearance goes through -- the effect api above, a
+#fixture standing three grids up, a visual probe -- so a board that shows three grids never shows
+#marks on the first one only.
+func test_grids_appended_to_a_planned_board_are_dealt() -> void:
+	var g := await start_show(TestDecks.deck_standard_52(), 11)
+	check(g.state.grids.size() == 1 and marks_of(g.state).size() == 25,
+			"TP-14: precondition: a 52-card show opens with one fully marked grid",
+			"%d grids, %d marks" % [g.state.grids.size(), marks_of(g.state).size()])
+	var opening := grid_signature(g.state, 0)
+	Board.add_grid(g.state, GridData.new())
+	Board.add_grid(g.state, GridData.new())
+	check(marks_per_grid(g.state) == ([25, 25, 25] as Array[int]),
+			"TP-14: two grids appended through the board's own mutator came up fully marked",
+			"per grid %s of 25 each" % str(marks_per_grid(g.state)))
+	check(grid_signature(g.state, 0) == opening,
+			"TP-14: ...and the opening grid's marks are untouched")
+	check(g.state.validate().is_empty(), "TP-14: the grown board breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
 
 #TP-15: a cell added past the grid's own block is dealt like any other unmarked cell, and with every
 #card already used its mark is a repeat.
