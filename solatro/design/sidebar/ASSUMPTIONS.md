@@ -317,10 +317,15 @@
   `DeckViewer.highlight_cleared` / `ChoiceViewer.highlight_cleared` -> `HudContainer.return_to_lock()`,
   so a description locked before the viewer opened comes back (B7) and an unlocked container keeps
   the last card read inside it (B4).
-- S12: OPENING a viewer publishes nothing. `DeckViewer.update_viewer()` steals focus onto its first
-  card before the opener has wired the relay, so that first focus reaches no listener -- and that
-  is the reading B4 wants anyway: the sidebar keeps what it had until the player moves the
-  highlight himself. The first arrow or hover publishes.
+- P3 review: `DeckViewer.show_deck(parent, deck, opener)` takes the opening Control instead of
+  reading `parent.get_viewport().gui_get_focus_owner()`: the pile buttons live in the wall overlay
+  while the viewer lives inside a picture's SubViewport, and Godot clears focus across every
+  viewport of one window, so the read always found nothing to restore. Every caller passes the
+  button it was pressed from; `BoosterTemplate.view_choices()` had no caller at all and is deleted.
+- P3 review: OPENING a deck/discard/rules viewer PUBLISHES its first card, because that opening
+  focus is a highlight (B1) -- `DeckViewer.update_viewer()` defers the grab so it lands after the
+  opener has connected the relay and fitted the viewer. `ChoiceViewer` opens on its Confirm button
+  instead, so it publishes nothing until the player moves onto a card.
 - S12 new names NAMES.md does not list: `InfoEntry.relay_to(out)` (the "emit it, or free the live
   preview nothing will take delivery of" shape `GameView._relay_info_requested` spelled out, now
   shared with `Map._relay_info_hovered` and both viewers); `HudContainer.rect_beside(picture)` and

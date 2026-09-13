@@ -79,12 +79,15 @@ func _ready() -> void:
 	## Submit carries the End label; end_show() is the only way to finish the continuous show.
 	hud_container.connect_for_screen(submit_button.pressed, func() -> void: game.end_show())
 	hud_container.connect_for_screen(undo_button.pressed, _on_undo_pressed)
-	hud_container.connect_for_screen((deck_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: _open_deck_viewer(game.state.draw_deck))
-	hud_container.connect_for_screen((discard_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: _open_deck_viewer(game.state.discard_deck))
-	hud_container.connect_for_screen((rules_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: _open_deck_viewer(game.state.rules_deck))
+	var deck_button := deck_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(deck_button.pressed,
+			func() -> void: _open_deck_viewer(game.state.draw_deck, deck_button))
+	var discard_button := discard_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(discard_button.pressed,
+			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))
+	var rules_button := rules_ui.get_node(^"Button") as Button
+	hud_container.connect_for_screen(rules_button.pressed,
+			func() -> void: _open_deck_viewer(game.state.rules_deck, rules_button))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
@@ -238,8 +241,8 @@ func _relay_info_requested(entry: InfoEntry) -> void:
 # The deck, discard and rules viewers are publishers exactly like the board: they hand their
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
-func _open_deck_viewer(cards: Array[CardData]) -> void:
-	var viewer := DeckViewer.show_deck(self, cards)
+func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
+	var viewer := DeckViewer.show_deck(self, cards, opener)
 	viewer.info_requested.connect(_relay_info_requested)
 	viewer.highlight_cleared.connect(hud_container.return_to_lock)
 	viewer.fit_beside(hud_container.rect_beside(wall_picture),

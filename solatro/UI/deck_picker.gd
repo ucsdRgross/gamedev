@@ -33,7 +33,7 @@ func _ready() -> void:
 		row.add_child(label)
 		var inspect := Button.new()
 		inspect.text = "Inspect"
-		inspect.pressed.connect(func() -> void: DeckViewer.show_deck(self, cards))
+		inspect.pressed.connect(func() -> void: DeckViewer.show_deck(self, cards, inspect))
 		row.add_child(inspect)
 		var pick := Button.new()
 		pick.text = "Pick"

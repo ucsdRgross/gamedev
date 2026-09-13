@@ -77,14 +77,17 @@ func _viewer_detail() -> String:
 
 func test_deck_viewer_singleton() -> void:
 	var deck: Array[CardData] = [_card()]
-	DeckViewer.show_deck(self, deck)
-	DeckViewer.show_deck(self, deck)
-	DeckViewer.show_deck(self, deck)
+	var opener := Button.new()
+	add_child(opener)
+	DeckViewer.show_deck(self, deck, opener)
+	DeckViewer.show_deck(self, deck, opener)
+	DeckViewer.show_deck(self, deck, opener)
 	await get_tree().process_frame
 	check(_count_viewers() == 1, "repeated show_deck replaces instead of stacking",
 			_viewer_detail())
 	if is_instance_valid(DeckViewer._open):
 		DeckViewer._open.queue_free()
+	opener.queue_free()
 	await get_tree().process_frame
 
 func test_control_card_focus() -> void:

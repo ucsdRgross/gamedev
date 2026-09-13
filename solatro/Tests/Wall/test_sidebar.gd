@@ -103,6 +103,9 @@ func _ready() -> void:
 	behavior_section("S10: THE IN-BOARD POPUP IS GONE")
 	test_no_script_names_the_retired_in_board_popup()
 	behavior_section("THE VIEWERS PUBLISH TOO")
+	await test_opening_a_viewer_by_pad_shows_its_first_card()
+	await test_closing_a_viewer_returns_the_focus_to_its_own_button()
+	await test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card()
 	await test_the_deck_viewer_publishes_into_the_sidebar()
 	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
 	await test_the_choice_viewer_publishes_into_the_sidebar()
@@ -2450,8 +2453,89 @@ func test_no_script_names_the_retired_in_board_popup() -> void:
 
 # ------------------------------------------------------------------ the viewers publish too
 
-# Opens a viewer the way a player does -- focus onto the pile button, THEN the press, so the focus
-# the viewer restores on close is that button and not whatever board card happened to hold it.
+# Opens a viewer the way a PAD player does: the pile button takes the focus, then accept presses it
+# -- press AND release, because a Button fires on the release -- pushed into the viewport the
+# overlay's buttons live in.
+func _open_viewer_by_accept(button: Button) -> void:
+	button.grab_focus()
+	await get_tree().process_frame
+	_push_key(_booted_viewport, KEY_ENTER, true)
+	_push_key(_booted_viewport, KEY_ENTER, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## The pad's open IS a highlight: the viewer's own opening focus shows that card, with no further input.
+func test_opening_a_viewer_by_pad_shows_its_first_card() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	_container.show_hud()
+	await _open_viewer_by_accept(_container.deck_ui.get_node(^"Button") as Button)
+	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
+	if is_instance_valid(DeckViewer._open):
+		var first := DeckViewer._open.flow_container.get_child(0) as ControlCard
+		check(first != null and first.has_focus(),
+				"the opened viewer's first card wears the focus ring (S12.8, B1)")
+		check(_container.showing_description(),
+				"...and that opening focus alone opened the description (S12.8, B1)")
+		if first != null:
+			check(title.text == _expected_text(first.child.data)[0],
+					"...reading the first card's own name", title.text)
+	await _end_game_fixture()
+
+## Keyboard/controller: closing a viewer puts the focus back on the pile button that opened it.
+func test_closing_a_viewer_returns_the_focus_to_its_own_button() -> void:
+	await _start_game_fixture()
+	var button := _container.deck_ui.get_node(^"Button") as Button
+	_container.show_hud()
+	await _open_viewer_by_accept(button)
+	check(is_instance_valid(DeckViewer._open), "accept on the Deck button opened the viewer")
+	await _close_open_viewer()
+	check(not is_instance_valid(DeckViewer._open), "cancel closed the viewer")
+	check(_booted_viewport.gui_get_focus_owner() == button,
+			"...and the focus is back on the button that opened it (S12.9)",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _end_game_fixture()
+
+## A pile button pressed over an open viewer: the sidebar lands on the NEW viewer's own first card, with the board's lock still under it.
+func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> void:
+	await _start_game_fixture()
+	var state := (_main._pictures[&"game"].screen_root as GameView).game.state
+	check(state.draw_deck.size() >= 2, "sanity: the draw deck can seed a discard pile",
+			str(state.draw_deck.size()))
+	state.discard_deck.append(state.draw_deck[0])
+	state.discard_deck.append(state.draw_deck[1])
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a lockable card", str(entrance.size()))
+	if not entrance.is_empty():
+		var title : Label = _panel.get_node(^"%Title")
+		await _click_card(entrance[0])
+		check(_container.is_locked(), "sanity: the board click locked the sidebar")
+		var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+		var incoming := _expected_text(state.discard_deck[0])[0]
+		var read_here := _viewer_card_named_other_than(cards, incoming)
+		check(read_here != null, "the deck lists a card the discard pile's first does not name",
+				"%d listed" % cards.size())
+		if read_here != null:
+			read_here.grab_focus()
+			await get_tree().process_frame
+			var read_title := _expected_text(read_here.child.data)[0]
+			check(title.text == read_title,
+					"sanity: the deck viewer owns the sidebar before the swap", title.text)
+			var discard_button := _container.discard_ui.get_node(^"Button") as Button
+			check(not discard_button.is_visible_in_tree(),
+					"a published description hides the pile buttons, so only the press itself swaps (S12.10)")
+			discard_button.pressed.emit()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			var opened := DeckViewer._open.flow_container.get_child(0) as ControlCard
+			check(opened != null and title.text == _expected_text(opened.child.data)[0]
+					and title.text != read_title,
+					"the swap leaves the sidebar on the NEW viewer's first card (S12.10, B7)", title.text)
+			check(_container.is_locked(), "...with the board's lock still under it")
+	await _end_game_fixture()
+
+# The button's own press, not the pad's accept: these tests open a viewer from states where the
+# container is showing a description, which hides the pile buttons and so drops a pad's key focus.
 # `DeckViewer._open` is the viewer's own record of which one is up.
 func _open_viewer_cards(button: Button) -> Array[ControlCard]:
 	button.grab_focus()

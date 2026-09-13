@@ -160,7 +160,7 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
-	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas)
+	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas, hud_container.map_deck_button)
 	viewer.info_requested.connect(_relay_info_hovered)
 	viewer.highlight_cleared.connect(hud_container.return_to_lock)
 	viewer.fit_beside(hud_container.rect_beside(wall_picture),

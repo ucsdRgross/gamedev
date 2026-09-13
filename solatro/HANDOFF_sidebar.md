@@ -235,8 +235,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   evidence: 'S9 (tests) + S11 commit: ALL 45 SUITES 4264 PASSED; WALL EDITOR SOAK 83 checks 0 problems; by eye wall_editor_sidebar_locked.png'
 - id: S12
   description: migrate the deck/discard/rules/choice viewers to the sidebar
-  status: pending
-  evidence: ''
+  status: done
+  evidence: '7f6a2219: ALL 45 SUITES 4287 PASSED [21]; SIDEBAR 404 -> 432 (S12.1-S12.7, 28 checks); red: relays removed 9 FAILED, insets/close/panel/deck_builder neutralised 6 FAILED; CardInfo grep in choice_viewer.* empty; doc_check 0 of 221 on added lines; by eye viewer_description.png (deck viewer grid from ~x396 beside the 320 px sidebar, the hovered viewer card described) and choice_viewer_description.png (pack row beside the sidebar); map_hud.png start node still ~x800 after the inset refactor'
+  notes: 'ASSUMPTIONS records: preview at the VIEWER''s card size (Q34=b read as the object pointed at); viewers publish highlights only, no lock; close announces highlight_cleared; OPENING a viewer publishes nothing (first focus lands before the relay is wired) - flagged to the Phase 3 review; the deck picker''s Inspect viewer on the start menu is NOT wired (Q143=a, 3a names neither menu.gd nor deck_picker.gd); new names InfoEntry.relay_to, HudContainer.rect_beside/window_scale, WallPicture.window_scale, CardsViewer.card_window_px, DeckViewer/ChoiceViewer.fit_beside, GameView.wall_picture/_open_deck_viewer. main.gd touched beyond 3a (enter_game hands the picture to the view). A second todo.md item (deck_builder broken preloads) closed with Q166=c. Observed, untouched: HudContainer._key_scroll_pages() has no callers'
 - id: S13
   description: GestureMetrics, delete DPI and the six mm/px knobs
   status: pending

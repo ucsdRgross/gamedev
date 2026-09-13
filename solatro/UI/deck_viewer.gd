@@ -29,12 +29,15 @@ static var _open : DeckViewer = null
 # opened the viewer instead of nowhere.
 var _return_focus : Control = null
 
-static func show_deck(parent:Node, new_deck:Array[CardData]) -> DeckViewer:
+# ⚠ THE OPENER HANDS ITS OWN CONTROL IN: the pile buttons live in the wall overlay while this
+# viewer lives inside a picture's SubViewport, and focus is cleared across every viewport of one
+# window -- so reading a focus owner here would find nothing to come back to.
+static func show_deck(parent:Node, new_deck:Array[CardData], opener:Control) -> DeckViewer:
 	if is_instance_valid(_open):
 		_open.queue_free()
 	var viewer :DeckViewer= DECK_VIEWER.instantiate()
 	viewer.deck = new_deck
-	viewer._return_focus = parent.get_viewport().gui_get_focus_owner() if parent.is_inside_tree() else null
+	viewer._return_focus = opener
 	parent.add_child(viewer)
 	viewer.update_viewer()
 	_open = viewer
@@ -49,11 +52,12 @@ func _close() -> void:
 	queue_free()
 
 # The initial focus is stolen from whatever button opened this viewer, so ui_accept cannot re-open
-# it and the arrows walk the cards (ControlCards are focus stops).
+# it and the arrows walk the cards (ControlCards are focus stops). ⚠ DEFERRED: that focus is a
+# highlight, so it must publish AFTER the opener has connected and fitted this viewer, never before.
 func update_viewer() -> void:
 	_cards = CardsViewer.new(flow_container)
 	var first := _cards.populate(deck, _publish_info)
-	if first: first.grab_focus()
+	if first: first.grab_focus.call_deferred()
 
 # A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer is its own action, and the lock
 # belongs to the board.
