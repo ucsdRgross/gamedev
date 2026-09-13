@@ -1,12 +1,6 @@
 [gd_scene format=3 uid="uid://c08vq38ntcvyj"]
 
 [ext_resource type="Script" uid="uid://cjsalpcsbh3oe" path="res://UI/deck_builder.gd" id="1_q7hmp"]
-[ext_resource type="PackedScene" uid="uid://cmvmqwfqk50mf" path="res://Cards/card.tscn" id="2_y2cql"]
-
-[sub_resource type="LabelSettings" id="LabelSettings_u2vgp"]
-line_spacing = -3.0
-font_size = 12
-shadow_color = Color(0, 0, 0, 1)
 
 [node name="DeckBuilder" type="Control" unique_id=465333815]
 layout_mode = 3
@@ -106,25 +100,6 @@ offset_left = 73.0
 offset_top = 265.0
 offset_right = 73.0
 offset_bottom = 265.0
-
-[node name="Card" parent="HSplitContainer/Control/Preview" unique_id=887298102 instance=ExtResource("2_y2cql")]
-scale = Vector2(3, 3)
-can_move_anim = false
-clickable = false
-stack_limit = 0
-flipped = false
-num = 103
-
-[node name="Label" type="Label" parent="HSplitContainer/Control/Preview" unique_id=1208949033]
-layout_mode = 0
-offset_left = -53.0
-offset_top = 81.0
-offset_right = 72.0
-offset_bottom = 286.0
-text = "Skill Text
-Skill Text"
-label_settings = SubResource("LabelSettings_u2vgp")
-autowrap_mode = 3
 
 [node name="RandomizerTimer" type="Timer" parent="HSplitContainer/Control" unique_id=901663116]
 wait_time = 0.2

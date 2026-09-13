@@ -478,19 +478,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   and loads there as a placeholder. All four work when the tool is RUN (F6), which hosts the real
   `wall.tscn`. Making `Wall` `@tool` would close this, but it would also instantiate the shipped
   autoload-facing shell in the editor — not attempted.
-- **`UI/deck_builder.gd` is dead code with BROKEN preloads** — `res://Cards/card.tscn` and
-  `res://UI/card_control.tscn` do not exist, so it throws four parse errors into any editor session
-  that reloads scripts. Nothing references it but its own `deck_builder.tscn`; `player_save.gd`
-  calls it "the Deck Maker dev tool". Unrelated to the wall — it surfaced while verifying the wall
-  editor in editor mode. Delete both files, or repoint the preloads; not touched because removing a
-  dev tool is an owner call.
-- 🔴 **Card descriptions are unreachable in the deck / discard / rules viewers.** Only `PlayArea`
-  and the map publish. `DeckViewer`/`ChoiceViewer` still draw their own (`choice_viewer.gd` sets
-  `card_info.text = ControlCard.describe_card(card)`) and publish nothing. Fix path: the same shape
-  `PlayArea` now uses — give each viewer an `info_requested(entry)` signal, gate its own panel on a
-  `_popups_allowed()` equivalent, and route it to `Main._on_screen_info_hovered`.
-  `CardsViewer.populate()` already takes an `on_inspect` callback these viewers pass, so the hook
-  exists; it needs pointing at `PlayArea.card_info()`.
 - **Controller still untested by anything automated**: deadzones, analogue-stick ramps, and device
   hotplug mid-session. `wall_selection_repeat_delay`'s repeat is now real and covered by a synthetic
   action test, but no real stick has driven it.

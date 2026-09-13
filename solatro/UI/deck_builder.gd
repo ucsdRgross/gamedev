@@ -1,7 +1,7 @@
 extends Control
 
-const CARD = preload("res://Cards/card.tscn")
-const CARD_CONTROL = preload("res://UI/card_control.tscn")
+## Deck Maker (owner dev tool): builds card data by hand and saves it to a `PlayerSave` profile.
+
 const STANDARD = "Standard"
 const NUMERAL = "Numeral"
 const suits : Dictionary[String, Dictionary]= {
@@ -32,8 +32,7 @@ const ranks : Dictionary[String, Dictionary]= {
 	}
 }
 
-@onready var preview_card: Card = $HSplitContainer/Control/Preview/Card
-@onready var preview_label: Label = $HSplitContainer/Control/Preview/Label
+@onready var preview_holder: Control = $HSplitContainer/Control/Preview
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var rank_option: OptionButton = $HSplitContainer/Control/RankOption
 @onready var rank_option_value: OptionButton = $HSplitContainer/Control/RankOptionValue
@@ -41,15 +40,21 @@ const ranks : Dictionary[String, Dictionary]= {
 @onready var suit_option_value: OptionButton = $HSplitContainer/Control/SuitOptionValue
 @onready var skill_option: OptionButton = $HSplitContainer/Control/SkillOption
 @onready var randomizer_timer: Timer = $HSplitContainer/Control/RandomizerTimer
+
+## Index-aligned with `skill_option`'s items from index 1; item 0 is "None" and picks `null`.
 var skills : Array[CardModifier] = [null]
 
+## The card the option buttons edit -- its visual redraws itself off `CardData.data_changed`.
+var preview_data := CardData.new()
+
 func _ready() -> void:
+	ControlCard.add_child_control_card(preview_holder, preview_data,
+			CardVisual.DisplayContext.DECK_VIEWER)
 	add_mods()
-	for suit in suits:
+	for suit : String in suits:
 		suit_option.add_item(suit)
-	for rank in ranks:
+	for rank : String in ranks:
 		rank_option.add_item(rank)
-	preview_card.add_data(CardData.new())
 	rank_option.select(0)
 	_on_rank_option_item_selected(0)
 	rank_option_value.select(0)
@@ -59,55 +64,44 @@ func _ready() -> void:
 	suit_option_value.select(0)
 	_on_suit_option_value_item_selected(0)
 
-func new_PipRank(name:StringName) -> PipRank:
-	match name: 
+func new_PipRank(rank_name: String) -> PipRank:
+	match rank_name:
 		NUMERAL: return PipRankNumeral.new()
 	return null
 
 func add_mods() -> void:
-	var name_skill : Dictionary
-	for skill in ModsList.skills:
-		name_skill[skill.get_str()] = skill
-	var names : Array = name_skill.keys()
-	var i : int = 0
-	for n : String in names:
-		skills.append(name_skill[n])
-		skill_option.add_item(n)
+	for skill : CardModifier in ModsList.skills:
+		skills.append(skill)
+		skill_option.add_item(skill.get_str())
 
+# A copied card's modifier backrefs are WeakRefs, which `duplicate_deep()` does not remap, so the
+# copy is relinked before anything reads it.
 func _on_add_card_pressed() -> void:
-	var data : CardData = preview_card.data.duplicate_deep()
-	# modifier .data backrefs are WeakRefs — duplicate_deep does not remap them
+	var data : CardData = preview_data.duplicate_deep()
 	GameData.relink_card_backrefs(data)
 	if rank_option_value.get_selected_id() == 0:
 		data.rank.with_random()
 	if suit_option_value.get_selected_id() == 0:
 		data.with_suit(PipSuit.random_standard())
-	#if skill_option.get_selected_id() == 1:
-		#preview_card.data.with_skill(skills.pick_random() as CardModifier)
 	add_card(data)
 
 func add_card(data:CardData) -> void:
-	var card : Card = CARD.instantiate()
-	card.add_data(data)
-	card.can_move_anim = false
-	card.flipped = false
-	var control : Control = CARD_CONTROL.instantiate()
-	control.add_child(card)
-	flow_container.add_child(control)
+	ControlCard.add_child_control_card(flow_container, data,
+			CardVisual.DisplayContext.DECK_VIEWER)
 
 func _on_suit_option_item_selected(index: int) -> void:
 	suit_option_value.clear()
 	for value : String in suits[suit_option.get_item_text(index)]:
 		suit_option_value.add_item(value, suits[suit_option.get_item_text(index)][value] as int)
 
+# The suit items' ids are 1-based over `PipSuit.STANDARD`; id 0 is the random entry.
 func _on_suit_option_value_item_selected(index: int) -> void:
 	if suit_option_value.get_item_id(index) == 0:
-		preview_card.data.with_suit(PipSuit.random_standard())
+		preview_data.with_suit(PipSuit.random_standard())
 		randomizer_timer.start()
 	else:
-		# Item ids are 1-based over PipSuit.STANDARD (id 0 = random).
 		var suit_script : GDScript = PipSuit.STANDARD[suit_option_value.get_item_id(index) - 1]
-		preview_card.data.with_suit(suit_script.new() as PipSuit)
+		preview_data.with_suit(suit_script.new() as PipSuit)
 
 func _on_rank_option_item_selected(index: int) -> void:
 	rank_option_value.clear()
@@ -116,52 +110,46 @@ func _on_rank_option_item_selected(index: int) -> void:
 
 func _on_rank_option_value_item_selected(index: int) -> void:
 	if rank_option_value.get_item_id(index) == 0:
-		preview_card.data.with_rank(\
+		preview_data.with_rank(\
 			new_PipRank(rank_option.get_item_text(rank_option.get_selected_id())) \
 			.with_random())
 		randomizer_timer.start()
 	else:
-		preview_card.data.with_rank(\
+		preview_data.with_rank(\
 			new_PipRank(rank_option.get_item_text(rank_option.get_selected_id())) \
 			.with_value(rank_option_value.get_item_id(index)))
 
 func _on_skill_option_item_selected(index: int) -> void:
 	if index == 0:
-		preview_card.data.with_skill(null)
+		preview_data.with_skill(null)
 	elif index == 1:
 		randomizer_timer.start()
 	else:
-		preview_card.data.with_skill(skills[index-1])
+		preview_data.with_skill(skills[index-1])
 
 func _on_randomizer_timer_timeout() -> void:
 	if rank_option_value.get_selected_id() == 0:
-		preview_card.data.rank.with_random()
+		preview_data.rank.with_random()
 		randomizer_timer.start()
 	if suit_option_value.get_selected_id() == 0:
-		preview_card.data.with_suit(PipSuit.random_standard())
+		preview_data.with_suit(PipSuit.random_standard())
 		randomizer_timer.start()
-	#if skill_option.get_selected_id() == 1:
-		#preview_card.data.with_skill(skills.pick_random() as CardModifier)
-		#randomizer_timer.start()
 
-
+# ⚠ NEVER WRAP THE SAVE IN `assert()`: release builds strip asserts WITH their side effects, so the
+# file would silently never be written in an export.
 func _on_save_button_pressed() -> void:
 	var profile : PlayerSave = PlayerSave.new()
-	for card_control : Control in flow_container.get_children():
-		var data := (card_control.get_child(0) as Card).data
-		profile.write_card_data(data)
-	#never wrap the save in assert(): release builds strip asserts WITH their side
-	#effects, so the file would silently never be written in an export
+	for control : ControlCard in flow_container.get_children():
+		profile.write_card_data(control.child.data)
 	var err := ResourceSaver.save(profile, "user://soltaro_save.tres")
 	if err != OK:
 		push_error("Deck Maker save failed: %s" % error_string(err))
 	print(ProjectSettings.globalize_path("user://soltaro_save.tres"))
 
 func _on_load_button_pressed() -> void:
-	for child in flow_container.get_children():
+	for child : Node in flow_container.get_children():
 		child.queue_free()
 	if ResourceLoader.exists("user://soltaro_save.tres"):
-		#@warning_ignore("untyped_declaration")
 		var profile : PlayerSave = ResourceLoader.load("user://soltaro_save.tres", "PlayerSave")
 		for data : CardData in (profile as PlayerSave).read_card_data():
 			add_card(data)

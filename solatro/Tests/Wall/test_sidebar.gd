@@ -102,6 +102,14 @@ func _ready() -> void:
 	test_the_retired_action_is_unbound()
 	behavior_section("S10: THE IN-BOARD POPUP IS GONE")
 	test_no_script_names_the_retired_in_board_popup()
+	behavior_section("THE VIEWERS PUBLISH TOO")
+	await test_the_deck_viewer_publishes_into_the_sidebar()
+	await test_the_rules_and_discard_viewers_publish_into_the_sidebar()
+	await test_the_choice_viewer_publishes_into_the_sidebar()
+	await test_the_deck_viewers_cards_start_beside_the_container()
+	await test_a_board_lock_survives_opening_and_closing_a_viewer()
+	await test_the_deck_builder_tool_loads_and_stands_up()
+	test_the_choice_viewer_owns_no_inspector_panel()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -2439,3 +2447,194 @@ func test_no_script_names_the_retired_in_board_popup() -> void:
 			if text.contains(token): offenders.append("%s names %s" % [path, token])
 	check(offenders.is_empty(), "no script outside addons/ names the in-board popup (8.2)",
 			"\n".join(offenders))
+
+# ------------------------------------------------------------------ the viewers publish too
+
+# Opens a viewer the way a player does -- focus onto the pile button, THEN the press, so the focus
+# the viewer restores on close is that button and not whatever board card happened to hold it.
+# `DeckViewer._open` is the viewer's own record of which one is up.
+func _open_viewer_cards(button: Button) -> Array[ControlCard]:
+	button.grab_focus()
+	await get_tree().process_frame
+	button.pressed.emit()
+	await get_tree().process_frame
+	var out : Array[ControlCard] = []
+	for child : Node in DeckViewer._open.flow_container.get_children():
+		var card := child as ControlCard
+		if card: out.append(card)
+	return out
+
+# A viewer's own highlight has to reach the sidebar. The container is put back on the HUD FIRST, so
+# the swap is a real transition rather than a description some earlier test left up.
+func _check_viewer_publishes(button: Button, pile: String) -> void:
+	var cards := await _open_viewer_cards(button)
+	check(cards.size() >= 2, "the %s viewer lists cards to point at" % pile, str(cards.size()))
+	if cards.size() < 2: return
+	var title : Label = _panel.get_node(^"%Title")
+	_container.show_hud()
+	cards[1].grab_focus()
+	await get_tree().process_frame
+	check(_container.showing_description(),
+			"a highlight in the %s viewer opens the description (S12, Q140=a)" % pile)
+	check(title.text == _expected_text(cards[1].child.data)[0],
+			"...and the title reads that viewer card's own name", title.text)
+
+## The deck viewer publishes the card under the highlight into the wall's one sidebar.
+func test_the_deck_viewer_publishes_into_the_sidebar() -> void:
+	await _start_game_fixture()
+	await _check_viewer_publishes(_container.deck_ui.get_node(^"Button") as Button, "deck")
+	await _end_game_fixture()
+
+## The rules and discard viewers publish through their own buttons, by the same rule.
+func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
+	await _start_game_fixture()
+	await _check_viewer_publishes(_container.rules_ui.get_node(^"Button") as Button, "rules")
+	var view := _main._pictures[&"game"].screen_root as GameView
+	var state := view.game.state
+	check(state.draw_deck.size() >= 2, "sanity: the draw deck can seed a discard pile",
+			str(state.draw_deck.size()))
+	state.discard_deck.append(state.draw_deck[0])
+	state.discard_deck.append(state.draw_deck[1])
+	await _check_viewer_publishes(_container.discard_ui.get_node(^"Button") as Button, "discard")
+	await _end_game_fixture()
+
+## The viewer sits INSIDE the sidebar's screen: its cards start beside the container, never under it.
+func test_the_deck_viewers_cards_start_beside_the_container() -> void:
+	await _start_game_fixture()
+	var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	var wp : WallPicture = _main._pictures[&"game"]
+	var window : Vector2 = _container.get_viewport().get_visible_rect().size
+	var top := HudContainer.container_is_top(window, SettingsManager.settings)
+	check(not top, "sanity: 1280x720 is the side case this inset is measured in")
+	var remaining := wp.local_rect_beside(window, _container.container_rect(), top)
+	var grid : Control = DeckViewer._open.flow_container
+	check(grid.get_global_rect().position.x >= remaining.position.x,
+			"the viewer's card grid starts at or beyond the container's inner edge (S12.4, Q141=b)",
+			"%.1f vs %.1f" % [grid.get_global_rect().position.x, remaining.position.x])
+	var leftmost := INF
+	for card : ControlCard in cards:
+		leftmost = minf(leftmost, card.get_global_rect().position.x)
+	check(cards.size() >= 2 and leftmost >= remaining.position.x,
+			"...and no listed card lies under the container",
+			"%.1f vs %.1f over %d cards" % [leftmost, remaining.position.x, cards.size()])
+	await _end_game_fixture()
+
+# A card name is often just a rank, so "the description followed the hover" is only a real claim
+# about a viewer card whose name the locked one does not already share -- and about one the
+# highlight can genuinely MOVE onto, since the viewer's own opening focus already sits on its first.
+func _viewer_card_named_other_than(cards: Array[ControlCard], title: String) -> ControlCard:
+	for card : ControlCard in cards:
+		if card.has_focus(): continue
+		if _expected_text(card.child.data)[0] != title: return card
+	return null
+
+# Escape, pushed into the picture the viewer lives in -- the viewer's own `_unhandled_input` close,
+# never a test-only call.
+func _close_open_viewer() -> void:
+	var cancel := InputEventAction.new()
+	cancel.action = &"ui_cancel"
+	cancel.pressed = true
+	_game_viewport.push_input(cancel)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## A lock made on the board outlives a viewer: the hover follows inside it, and closing it comes back.
+func test_a_board_lock_survives_opening_and_closing_a_viewer() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a lockable card", str(entrance.size()))
+	if not entrance.is_empty():
+		var clicked := _watch_clicks()
+		await _click_card(entrance[0])
+		check(clicked.size() == 1 and _container.is_locked(),
+				"sanity: the board click locked the sidebar", str(clicked.size()))
+		var title : Label = _panel.get_node(^"%Title")
+		var cards := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+		var locked_title := _expected_text(clicked[0])[0] if clicked.size() == 1 else ""
+		var other := _viewer_card_named_other_than(cards, locked_title)
+		check(other != null, "the deck lists a card whose own name differs from the locked card's",
+				"%d listed" % cards.size())
+		if clicked.size() == 1 and other != null:
+			other.grab_focus()
+			await get_tree().process_frame
+			check(title.text == _expected_text(other.child.data)[0]
+					and title.text != locked_title,
+					"the description follows the hover inside the viewer (B7)", title.text)
+			await _close_open_viewer()
+			check(not is_instance_valid(DeckViewer._open), "escape closed the viewer")
+			check(_container.is_locked() and title.text == locked_title,
+					"...and the sidebar comes back to the card the board locked (B7)", title.text)
+	await _end_game_fixture()
+
+## The booster choice viewer publishes into the sidebar exactly as the deck viewer does.
+func test_the_choice_viewer_publishes_into_the_sidebar() -> void:
+	backup_real_save(suite_tag())
+	var prev_run : RunState = RunManager.run
+	var prev_save_info : RunState = Main.save_info
+	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	Main.save_info = run
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	await _focus_map(main, run)
+	var node := WorldGraphNode.new()
+	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
+	node.meta[MapNodeRoles.BOOSTER_KEY] = TypeBoosterBasic.new()
+	await main.map_scene._open_booster(node)
+	node.free()
+	await get_tree().process_frame
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var title : Label = panel.get_node(^"%Title")
+	var viewer := _open_choice_viewer(main)
+	check(viewer != null, "the booster node opened a choice viewer on the map")
+	if viewer != null:
+		var cards : Array[ControlCard] = []
+		for child : Node in viewer.flex_container.get_children():
+			var card := child as ControlCard
+			if card: cards.append(card)
+		check(not cards.is_empty(), "the pack generated cards to point at", str(cards.size()))
+		if not cards.is_empty():
+			cards[0].grab_focus()
+			await get_tree().process_frame
+			check(container.showing_description(),
+					"a highlight in the choice viewer opens the description (S12.3, Q142=a)")
+			check(title.text == _expected_text(cards[0].child.data)[0],
+					"...and the title reads that card's own name", title.text)
+			var pack_left := viewer.flex_container.get_global_rect().position.x
+			check(pack_left >= container.rect_beside(main._pictures[&"map"]).position.x,
+					"...and the pack's cards are laid out beside the container, not under it",
+					"%.1f" % pack_left)
+	await _free_booted_main(viewport, main)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_save_info
+
+func _open_choice_viewer(main: Main) -> ChoiceViewer:
+	for child : Node in main.map_scene.ui_layer.get_children():
+		var viewer := child as ChoiceViewer
+		if viewer: return viewer
+	return null
+
+## The choice viewer's own inspector panel is gone: the sidebar is the one surface.
+func test_the_choice_viewer_owns_no_inspector_panel() -> void:
+	var scene : PackedScene = load("res://UI/choice_viewer.tscn")
+	var viewer : ChoiceViewer = scene.instantiate()
+	check(viewer.find_child("CardInfo", true, false) == null,
+			"the choice viewer's own card-info panel is gone from its scene (S12.7)")
+	viewer.free()
+
+## The Deck Maker tool is REPAIRED, not deleted: its scene loads and stands up clean.
+func test_the_deck_builder_tool_loads_and_stands_up() -> void:
+	var scene : PackedScene = load("res://UI/deck_builder.tscn")
+	check(scene != null, "the deck builder scene still loads (S12.6, Q166=c)")
+	var tool_root : Control = scene.instantiate()
+	add_child(tool_root)
+	await get_tree().process_frame
+	check(tool_root.is_inside_tree(), "...and instantiates into a live tree")
+	var preview := _preview_card(tool_root.get_node(^"HSplitContainer/Control/Preview"))
+	check(preview != null and preview.child != null,
+			"...with a real preview card built from the current classes")
+	tool_root.queue_free()

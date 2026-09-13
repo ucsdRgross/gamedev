@@ -98,6 +98,19 @@ func _place_exit_button() -> void:
 func container_rect() -> Rect2:
 	return rect_for_window(get_viewport().get_visible_rect().size, PlayArea.settings())
 
+## The space left beside this container inside `picture`'s own space -- the one conversion every hosted screen insets by; a fixture with no picture falls back to the plain window rect.
+func rect_beside(picture: WallPicture) -> Rect2:
+	var window := get_viewport().get_visible_rect().size
+	var rect := container_rect()
+	var top := container_is_top(window, PlayArea.settings())
+	if picture: return picture.local_rect_beside(window, rect, top)
+	if top: return Rect2(0.0, rect.size.y, window.x, window.y - rect.size.y)
+	return Rect2(rect.size.x, 0.0, window.x - rect.size.x, window.y)
+
+## How big a window pixel is against one of `picture`'s own -- what a screen inside it converts its own card sizes through to match this container's.
+func window_scale(picture: WallPicture) -> float:
+	return picture.window_scale(get_viewport().get_visible_rect().size) if picture else 1.0
+
 ## Sets this control's own rect to `container_rect()` and tells listeners it moved.
 func _apply_container_rect() -> void:
 	var rect := container_rect()

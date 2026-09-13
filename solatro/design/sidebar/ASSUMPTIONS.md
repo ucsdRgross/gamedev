@@ -305,3 +305,43 @@
   menu and stayed up in wall view, neither of which the game does.
 - S11 new names NAMES.md does not list, tool-local and following that file's own `preview_*`
   convention: `WallEditor.preview_locked_description`, `WallEditor.container_side`.
+
+- S12: a viewer's description preview is drawn at the size THAT VIEWER draws a card at, in window
+  px -- `CardsViewer.card_window_px()` is `controls[0].child.card_size * picture_to_window_scale`.
+  Q34=b's "the board's own card size, so it reads as the same object" is about the object the
+  player is POINTING at, and inside a viewer that is the viewer's own card (L11, Q34).
+- S12: viewers publish HIGHLIGHTS only. Hover and key/pad focus call into the sidebar; a click in a
+  viewer is that viewer's own action (take, close) and never locks -- the lock is a board
+  transition (L11, B5).
+- S12: closing a viewer announces the lost highlight through the same channel the board uses --
+  `DeckViewer.highlight_cleared` / `ChoiceViewer.highlight_cleared` -> `HudContainer.return_to_lock()`,
+  so a description locked before the viewer opened comes back (B7) and an unlocked container keeps
+  the last card read inside it (B4).
+- S12: OPENING a viewer publishes nothing. `DeckViewer.update_viewer()` steals focus onto its first
+  card before the opener has wired the relay, so that first focus reaches no listener -- and that
+  is the reading B4 wants anyway: the sidebar keeps what it had until the player moves the
+  highlight himself. The first arrow or hover publishes.
+- S12 new names NAMES.md does not list: `InfoEntry.relay_to(out)` (the "emit it, or free the live
+  preview nothing will take delivery of" shape `GameView._relay_info_requested` spelled out, now
+  shared with `Map._relay_info_hovered` and both viewers); `HudContainer.rect_beside(picture)` and
+  `HudContainer.window_scale(picture)`; `WallPicture.window_scale(window)`;
+  `CardsViewer.picture_to_window_scale` / `card_window_px()`; `DeckViewer.info_requested` /
+  `highlight_cleared` / `fit_beside()` and the same three on `ChoiceViewer`;
+  `GameView.wall_picture` (set by `Main.enter_game()` beside `hud_container`) and
+  `GameView._open_deck_viewer()`.
+- S12: `HudContainer.rect_beside()` REPLACES the "convert the container's window px into this
+  picture's space, or fall back to the plain window rect" expression `Menu._apply_container_inset()`
+  and `Map._publish_map_inset()` each carried; the viewers are its third and fourth callers.
+- S12: `Q141`=b's "inside" is a left (or top) inset, per PLAN 1.9. `DeckViewer.fit_beside()` ADDS the
+  inset to its `MarginContainer`'s own authored margins, so the full-screen click-to-close catcher
+  still spans the picture while the cards and their tint start beside the container;
+  `ChoiceViewer.fit_beside()` offsets its `FlexContainer` the same way. Measured at 1280x720: the
+  grid starts at 494 picture px against the container's inner edge at 394.
+- S12: the deck picker's own Inspect viewer (`UI/deck_picker.gd`, inside the start menu) is
+  deliberately NOT wired to a relay. `Q143`=a makes an empty sidebar the right answer where nothing
+  publishes, and PLAN 3a's touch list does not name `menu.gd`/`deck_picker.gd`; the viewer's
+  `info_requested` simply has no listener there and `relay_to()` frees each entry it builds.
+- S12: `UI/deck_builder.tscn` lost its broken `Cards/card.tscn` `ext_resource`, the `Card` node it
+  instanced and the dead "Skill Text" `Label` beside it. The tool's preview is now a real
+  `ControlCard` built in `_ready()` over a `preview_data : CardData` the option buttons mutate --
+  `CardVisual` redraws itself off `CardData.data_changed`, so nothing rebuilds it (Q166=c, L13).

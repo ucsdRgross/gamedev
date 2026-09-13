@@ -14,6 +14,13 @@ var _context: CardVisual.DisplayContext
 ## The ControlCards currently listed, in order; controls[0] is the natural initial-focus target.
 var controls: Array[ControlCard] = []
 
+## How big a window pixel is against one of the picture these cards are listed in; pushed in by the screen that hosts the list.
+var picture_to_window_scale : float = 1.0
+
+## The size one of these cards has in WINDOW pixels, so a description published from this list is previewed as the very object the player is pointing at.
+func card_window_px() -> Vector2:
+	return controls[0].child.card_size * picture_to_window_scale
+
 func _init(container: Node, context := CardVisual.DisplayContext.DECK_VIEWER) -> void:
 	_container = container
 	_context = context

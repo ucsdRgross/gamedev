@@ -15,6 +15,8 @@ const DESCRIPTION_LOCKED_OUT_PATH := "user://sidebar_snapshot/description_locked
 const DESCRIPTION_FOLLOW_OUT_PATH := "user://sidebar_snapshot/description_follow.png"
 const DESCRIPTION_PROCESSING_OUT_PATH := "user://sidebar_snapshot/description_processing.png"
 const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll.png"
+const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
+const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -75,6 +77,14 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
+	await _open_a_booster_pack(main)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CHOICE_VIEWER_OUT_PATH)
+	var pack := _open_choice_viewer(main)
+	if pack: pack.free()
+	await get_tree().process_frame
+
 	await main.enter_game()
 	var view := (main._pictures[&"game"].screen_root as GameView)
 	CardEnvironment.CURRENT = view.game
@@ -127,6 +137,13 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_FOLLOW_OUT_PATH)
+
+	await _open_the_deck_viewer(view)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(VIEWER_DESCRIPTION_OUT_PATH)
+	DeckViewer._open.free()
+	await get_tree().process_frame
 
 	var shot := await _shoot_a_cascade(main, view)
 	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
@@ -316,3 +333,44 @@ func _resolve_window_size() -> Vector2i:
 	var h := OS.get_environment("WINDOW_H")
 	if w.is_empty() or h.is_empty(): return Vector2i(1280, 720)
 	return Vector2i(int(w), int(h))
+
+# The VIEWER still: the deck viewer opened through the container's own Deck button, with one of its
+# listed cards under the key/pad highlight. The description then sits BESIDE the viewer's cards,
+# which is the whole point of the inset the viewer takes.
+func _open_the_deck_viewer(view: GameView) -> void:
+	var button := view.deck_ui.get_node(^"Button") as Button
+	button.grab_focus()
+	await get_tree().process_frame
+	button.pressed.emit()
+	await get_tree().process_frame
+	var cards := _listed_cards(DeckViewer._open.flow_container)
+	if cards.size() >= 2: cards[1].grab_focus()
+	await get_tree().process_frame
+
+# The CHOICE still: a real booster node opened through the map's own handler, one pack card under
+# the highlight -- the second viewer the sidebar took over from.
+func _open_a_booster_pack(main: Main) -> void:
+	var node := WorldGraphNode.new()
+	node.meta[MapNodeRoles.ROLE_KEY] = MapNodeRoles.ROLE_BOOSTER
+	node.meta[MapNodeRoles.BOOSTER_KEY] = TypeBoosterBasic.new()
+	await main.map_scene._open_booster(node)
+	node.free()
+	await get_tree().process_frame
+	var viewer := _open_choice_viewer(main)
+	if viewer == null: return
+	var cards := _listed_cards(viewer.flex_container)
+	if not cards.is_empty(): cards[0].grab_focus()
+	await get_tree().process_frame
+
+func _open_choice_viewer(main: Main) -> ChoiceViewer:
+	for child : Node in main.map_scene.ui_layer.get_children():
+		var viewer := child as ChoiceViewer
+		if viewer: return viewer
+	return null
+
+func _listed_cards(container: Node) -> Array[ControlCard]:
+	var cards : Array[ControlCard] = []
+	for child : Node in container.get_children():
+		var card := child as ControlCard
+		if card: cards.append(card)
+	return cards

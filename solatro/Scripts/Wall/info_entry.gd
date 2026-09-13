@@ -11,3 +11,11 @@ var body : String = ""
 ## Ownership: the caller that builds the entry frees this unless `HudContainer.show_description()`
 ## takes it into the container's own tree — see that method.
 var visual : Node = null
+
+# ⚠ THE ENTRY OWNS THE LIVE PREVIEW NODE its publisher built, so a relay owns what it cannot pass
+# on: a screen with nothing listening would otherwise orphan one preview per highlight.
+func relay_to(out: Signal) -> void:
+	if not out.get_connections().is_empty():
+		out.emit(self)
+		return
+	if visual: visual.queue_free()

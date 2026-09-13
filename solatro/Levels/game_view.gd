@@ -33,6 +33,9 @@ var spotlight_director : SpotlightDirector = null
 ## Set by `Main.enter_game()` before this view enters the tree; left null, a standalone fixture builds a private instance instead.
 var hud_container : HudContainer = null
 
+## Set by `Main` alongside `hud_container`, the same hand-over `Map` and `Menu` get -- lets a viewer opened over this screen convert the container's window px into this picture's own space.
+var wall_picture : WallPicture = null
+
 ## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
 var submit_button : Button = null
 var undo_button : Button = null
@@ -77,11 +80,11 @@ func _ready() -> void:
 	hud_container.connect_for_screen(submit_button.pressed, func() -> void: game.end_show())
 	hud_container.connect_for_screen(undo_button.pressed, _on_undo_pressed)
 	hud_container.connect_for_screen((deck_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: DeckViewer.show_deck(self, game.state.draw_deck))
+			func() -> void: _open_deck_viewer(game.state.draw_deck))
 	hud_container.connect_for_screen((discard_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: DeckViewer.show_deck(self, game.state.discard_deck))
+			func() -> void: _open_deck_viewer(game.state.discard_deck))
 	hud_container.connect_for_screen((rules_ui.get_node(^"Button") as Button).pressed,
-			func() -> void: DeckViewer.show_deck(self, game.state.rules_deck))
+			func() -> void: _open_deck_viewer(game.state.rules_deck))
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
@@ -229,13 +232,18 @@ func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
 	_wall_camera = camera
 	_wall_rect_centre_x = rect_centre_x
 
-# An entry carries a LIVE preview card the board built for it, so the relay owns what it cannot
-# pass on: a standalone fixture has no `Main` listening and would orphan one preview per highlight.
 func _relay_info_requested(entry: InfoEntry) -> void:
-	if info_requested.get_connections().is_empty():
-		entry.visual.queue_free()
-		return
-	info_requested.emit(entry)
+	entry.relay_to(info_requested)
+
+# The deck, discard and rules viewers are publishers exactly like the board: they hand their
+# highlights to this view, which relays them the same way, and closing one hands the sidebar back
+# to whatever was locked behind it.
+func _open_deck_viewer(cards: Array[CardData]) -> void:
+	var viewer := DeckViewer.show_deck(self, cards)
+	viewer.info_requested.connect(_relay_info_requested)
+	viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	viewer.fit_beside(hud_container.rect_beside(wall_picture),
+			hud_container.window_scale(wall_picture))
 
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy

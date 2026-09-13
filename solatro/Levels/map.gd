@@ -60,16 +60,10 @@ func _bind_hud_container() -> void:
 func _exit_tree() -> void:
 	hud_container.disconnect_for_screen()
 
-# The map DOES sit in a `WallPicture`, so the container's window px converts through that
-# picture's own cover scale, the same conversion `Menu._apply_container_inset()` uses -- a
-# standalone fixture with no `wall_picture` falls back to the plain window rect Menu falls back to.
+# The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
+# own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`.
 func _publish_map_inset() -> void:
-	var window := hud_container.get_viewport().get_visible_rect().size
-	var rect := hud_container.container_rect()
-	var top := HudContainer.container_is_top(window, PlayArea.settings())
-	var remaining := wall_picture.local_rect_beside(window, rect, top) if wall_picture \
-			else (Rect2(0.0, rect.size.y, window.x, window.y - rect.size.y) if top \
-				else Rect2(rect.size.x, 0.0, window.x - rect.size.x, window.y))
+	var remaining := hud_container.rect_beside(wall_picture)
 	var screen_size := controller.camera.get_viewport_rect().size
 	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center())
 
@@ -109,6 +103,10 @@ func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
 	var viewer := await booster.on_map_picked(ui_layer)
 	viewer.confirmed.connect(_on_booster_confirmed)
+	viewer.info_requested.connect(_relay_info_hovered)
+	viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	viewer.fit_beside(hud_container.rect_beside(wall_picture),
+			hud_container.window_scale(wall_picture))
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
@@ -162,4 +160,13 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
-	DeckViewer.show_deck(self, Main.save_info.card_datas)
+	var viewer := DeckViewer.show_deck(self, Main.save_info.card_datas)
+	viewer.info_requested.connect(_relay_info_hovered)
+	viewer.highlight_cleared.connect(hud_container.return_to_lock)
+	viewer.fit_beside(hud_container.rect_beside(wall_picture),
+			hud_container.window_scale(wall_picture))
+
+# A viewer opened over this map publishes exactly as the map's own node hover does, and the relay
+# owns the live preview the entry carries when no `Main` is listening.
+func _relay_info_hovered(entry: InfoEntry) -> void:
+	entry.relay_to(info_hovered)

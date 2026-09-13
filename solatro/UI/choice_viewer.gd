@@ -6,16 +6,20 @@ extends Control
 ## `confirmed` signal); Data.rerolls/choose stay as plumbing for future choice modifiers.
 ## Cards populate synchronously (like DeckViewer) — the no-fly-in guarantee lives in
 ## CardVisual (non-PLAY_AREA cards track their anchor exactly), not in per-viewer timing.
-## Hovering/focusing a card explains its parts in the %CardInfo inspector label.
 
 ## Fired when the player accepts the shown cards; the viewer frees itself afterwards.
 signal confirmed(cards: Array[CardData])
+
+## The card under the pointer, handed to the screen that opened this viewer, which relays it to the sidebar exactly as it relays its own hovers.
+signal info_requested(entry: InfoEntry)
+
+## This viewer closed, so nothing of its is highlighted any more and the sidebar returns to whatever was locked behind it.
+signal highlight_cleared
 
 const CHOICE_VIEWER := preload("uid://dchj5yt177k0c")
 
 @onready var flex_container: FlexContainer = $FlexContainer
 @onready var confirm_button: Button = %ConfirmButton
-@onready var card_info: Label = %CardInfo
 @onready var rerolls_label: Label = %RerollsLeft
 
 ## Reroll button geometry, in pixels below the card it belongs to (no magic numbers in logic).
@@ -62,10 +66,18 @@ func _ready() -> void:
 
 func _populate() -> void:
 	_cards = CardsViewer.new(flex_container)
-	_cards.populate(data.current_choices, _on_card_inspected)
+	_cards.populate(data.current_choices, _publish_info)
 	for i in _cards.controls.size():
 		_reroll_buttons.append(_add_reroll_button(_cards.controls[i], i))
 	_refresh_rerolls()
+
+# ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
+# so the pack's cards are laid out in the space left beside it. The scale rides along: the
+# description's preview is drawn at the size THIS viewer draws a card at.
+func fit_beside(remaining: Rect2, window_scale: float) -> void:
+	_cards.picture_to_window_scale = window_scale
+	flex_container.offset_left = remaining.position.x
+	flex_container.offset_top = remaining.position.y
 
 ## One slot's Reroll button, parented to its card and hanging just below it (the flex container
 ## lays out the cards only). A focus stop like the card itself — keyboard/controller reach it.
@@ -109,8 +121,8 @@ func _swap_card_control(index: int, card: CardData) -> void:
 	var control := ControlCard.add_child_control_card(
 			flex_container, card, CardVisual.DisplayContext.DECK_VIEWER)
 	flex_container.move_child(control, index)
-	control.mouse_entered.connect(_on_card_inspected.bind(card))
-	control.focus_entered.connect(_on_card_inspected.bind(card))
+	control.mouse_entered.connect(_publish_info.bind(card))
+	control.focus_entered.connect(_publish_info.bind(card))
 	_cards.controls[index] = control
 	_reroll_buttons[index] = _add_reroll_button(control, index)
 	# Keyboard/controller: the pressed button was just freed — put focus back on its replacement
@@ -127,11 +139,14 @@ func _refresh_rerolls() -> void:
 		if is_instance_valid(button):
 			button.disabled = data.rerolls <= 0
 
-## Inspector: explain the hovered/focused card's parts using their own descriptions.
-func _on_card_inspected(card: CardData) -> void:
-	card_info.text = ControlCard.describe_card(card)
-	card_info.visible = not card_info.text.is_empty()
+# A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer takes the pack, and the lock
+# belongs to the board.
+func _publish_info(card: CardData) -> void:
+	PlayArea.card_info(card, _cards.card_window_px()).relay_to(info_requested)
 
+# Confirming closes this viewer, so it announces the lost highlight the same way the board does: a
+# description locked before it opened comes back.
 func _on_confirm_pressed() -> void:
 	confirmed.emit(data.current_choices)
+	highlight_cleared.emit()
 	queue_free()

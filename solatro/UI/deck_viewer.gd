@@ -3,7 +3,14 @@ extends CanvasLayer
 
 const DECK_VIEWER = preload("uid://dnvpthmsneqjl")
 
+## The card under the pointer, handed to the screen that opened this viewer, which relays it to the sidebar exactly as it relays the board's own.
+signal info_requested(entry: InfoEntry)
+
+## This viewer closed, so nothing of its is highlighted any more and the sidebar returns to whatever was locked behind it.
+signal highlight_cleared
+
 @onready var flow_container: FlowContainer = %FlowContainer
+@onready var margin_container: MarginContainer = $MarginContainer
 
 enum SORTING_TYPE {RANK,SUIT,EFFECT}
 enum SORTING_ORDER {ASCENDING,DESCENDING}
@@ -33,18 +40,35 @@ static func show_deck(parent:Node, new_deck:Array[CardData]) -> DeckViewer:
 	_open = viewer
 	return viewer
 
+# Closing announces the lost highlight the same way the board does, so a description locked before
+# this viewer opened comes back and an unlocked sidebar keeps the last card read here.
 func _close() -> void:
 	if is_instance_valid(_return_focus):
 		_return_focus.grab_focus()
+	highlight_cleared.emit()
 	queue_free()
 
+# The initial focus is stolen from whatever button opened this viewer, so ui_accept cannot re-open
+# it and the arrows walk the cards (ControlCards are focus stops).
 func update_viewer() -> void:
-	# Read-only browse: no inspector callback.
 	_cards = CardsViewer.new(flow_container)
-	var first := _cards.populate(deck)
-	# Steal focus from whatever button opened the viewer, so ui_accept can't re-open it
-	# and arrow keys walk the cards (ControlCards are focusable).
+	var first := _cards.populate(deck, _publish_info)
 	if first: first.grab_focus()
+
+# A HOVER OR A KEY/PAD FOCUS, NEVER A CLICK: a click in this viewer is its own action, and the lock
+# belongs to the board.
+func _publish_info(data: CardData) -> void:
+	PlayArea.card_info(data, _cards.card_window_px()).relay_to(info_requested)
+
+# ⚠ THIS VIEWER IS A FULL-SCREEN OVERLAY INSIDE ITS PICTURE and would otherwise cover the sidebar,
+# so its cards start at the inner edge of the space left beside it. The scale rides along: the
+# description's preview is drawn at the size THIS viewer draws a card at.
+func fit_beside(remaining: Rect2, window_scale: float) -> void:
+	_cards.picture_to_window_scale = window_scale
+	margin_container.add_theme_constant_override(&"margin_left",
+			margin_container.get_theme_constant(&"margin_left") + ceili(remaining.position.x))
+	margin_container.add_theme_constant_override(&"margin_top",
+			margin_container.get_theme_constant(&"margin_top") + ceili(remaining.position.y))
 
 ## Keyboard/controller close: Escape/back AND Enter/accept both close (the viewer is
 ## read-only, so accept has no other meaning). Mouse click on the margin closes below.

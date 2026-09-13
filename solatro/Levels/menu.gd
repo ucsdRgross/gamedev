@@ -62,14 +62,7 @@ func _content_bounds() -> Rect2:
 # `container_rect()`. Any scale is UNIFORM and only shrinks -- never distorts a glyph or a button --
 # so it only kicks in once the design content would not otherwise fit beside the container.
 func _apply_container_inset() -> void:
-	var window_screen := hud_container.get_viewport().get_visible_rect().size
-	var rect_screen := hud_container.container_rect()
-	var top := HudContainer.container_is_top(window_screen, PlayArea.settings())
-	var remaining := wall_picture.local_rect_beside(window_screen, rect_screen, top) if wall_picture \
-			else (Rect2(0.0, rect_screen.size.y, window_screen.x, window_screen.y - rect_screen.size.y) \
-				if top else Rect2(rect_screen.size.x, 0.0,
-					window_screen.x - rect_screen.size.x, window_screen.y))
-	_fit_beside_container(remaining)
+	_fit_beside_container(hud_container.rect_beside(wall_picture))
 
 # Centres `_design_rect` inside `remaining` (already in this menu's own picture space), shrinking
 # -- never distorting -- only if it would not otherwise fit.
