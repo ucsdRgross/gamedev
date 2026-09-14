@@ -11,25 +11,23 @@ func palette_role() -> int: return PaletteDB.ROLES.suit_firework
 func get_str() -> String: return TRANSLATION.find('SUIT_FIREWORK')
 func get_description() -> String: return TRANSLATION.find('SUIT_FIREWORK_DESCRIPTION')
 
-## Fireworks rise up their column (a staggered rocket per tick) and each banks column score at
-## the edge. The rise route may be empty (card at the top) — then it banks immediately.
+## A staggered rocket per tick rises the column and banks at the edge; an empty route banks at once.
 func spawn_props() -> Array[PropSpawner]:
 	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []
 	var count := _spawn_count()
 	var route := api.column_rise_path(v)
-	var col := v.x
 	var origin_card : CardData = data
 	var sp := PropSpawner.new()
 	sp.origin = v
 	sp.remaining = count
 	sp.batch_size = 1
-	sp.interval = 1   # staggered rockets
+	sp.interval = 1
 	sp.factory = func(_i: int) -> PropData:
 		var p := PropData.new()
 		p.kind = 4
 		p.route = route.duplicate()
 		p.source = origin_card
-		p.mods = [PropBankColScore.new(col, FIREWORK_POINTS)] as Array[PropModifier]
+		p.mods = [PropBankColScore.new(v, FIREWORK_POINTS)] as Array[PropModifier]
 		return p
 	return [sp] as Array[PropSpawner]

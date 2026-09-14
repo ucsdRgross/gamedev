@@ -230,16 +230,20 @@ func test_fire_buffs_count() -> void:
 			"rank 2 x fire_mult 4 = 8 hoops", str((spawners[0] as PropSpawner).remaining))
 	done(g)
 
-#A lone rank-3 firework on a Firework mark, with nothing above it, banks 3 x 1 into its column
-#gutter even though its rise route is empty.
+#A lone rank-3 firework on a Firework mark, with nothing above it, banks 3 x 1 into its column's
+#own score bucket even though its rise route is empty.
 func test_firework_banks_column() -> void:
 	var fw := suit_card(3, PipSuitFirework.new())
 	var g := col_game([fw] as Array[CardData])
 	mark_cell(g, 0, 0, PipSuitFirework.new())
 	var spawners : Array[PropSpawner] = await fw.suit.spawn_props()
 	await g.run_props(spawners)
-	check(g.state.col_total == 3,
-			"3 fireworks each bank 1 column point even with an empty rise route", str(g.state.col_total))
+	check(g.state.line_score(g.state.scores_col, 0, 0, 0) == 3.0,
+			"3 fireworks each bank 1 point into the column bucket the shown score is derived from",
+			"got %f" % g.state.line_score(g.state.scores_col, 0, 0, 0))
+	check(g.state.board_total() > 0.0,
+			"...so the board's own score actually moves, which col_total never made it do",
+			"board_total %f" % g.state.board_total())
 	done(g)
 
 #A card carrying Juggling(3) banks 3 into its column when the on_score broadcast reaches it.
