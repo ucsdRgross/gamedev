@@ -170,6 +170,9 @@ Everything below is unscheduled backlog.
 that whole backlog and its known bugs. Keeping the list here as well is exactly the two-places
 drift this repo's doc hygiene forbids.
 
+- ⬜ **Spotlight vs the embedded window's stretch-to-fit** (owner, from playtest): circles land and
+  size as if the window were unscaled. VFX.md §7 item 14 carries it.
+
 The current fire emitter is the **NOISE FIRE** (owner design): no tendrils, no comb, no ogee, no
 onion shells. Fire is a cover field sampled from the art's own mask and carved by scrolling noise,
 and every parameter ramps continuously with the stack count. Contract: ARCHITECTURE_REVIEW §4g;

@@ -566,6 +566,15 @@ Nothing here is secretly broken — each is understood, and each is either accep
 
 ---
 
+14. **⬜ OPEN — the spotlight ignores the embedded window's stretch.** Owner, from playtest: with
+   the play scene run in the editor's embedded window and "stretch to fit" sizing, the spotlight
+   circles land where the cards WOULD be without the resize, and each circle is the size a card
+   would be unscaled — the light layer computes lamp positions and radii in the unscaled layout
+   while the cards are drawn scaled up. Reproduce: run `Levels/game_view.tscn` embedded, stretch
+   the window, score a line. Seam to read first: `UI/spotlight_origins.gd` (where the lamps sit)
+   against the SubViewport's `size_2d_override` scaling (ARCHITECTURE_REVIEW §1m row 2,
+   `WallPicture.update_wall_view_size()`).
+
 ## 8. When you stop
 
 1. Full suite green, WINDOWED, with the suite count checked (§3).
