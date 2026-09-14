@@ -50,6 +50,7 @@ func _ready() -> void:
 	behavior_section("A TAP IS A SECOND PRESS PAIRED WITH THE FIRST")
 	await test_a_double_click_undoes_the_grab_the_first_click_made()
 	await test_a_tap_after_a_placement_is_refused()
+	await test_a_touch_tap_after_a_placement_is_refused()
 	await test_a_double_click_on_the_armed_card_leaves_the_arm_standing()
 	await test_a_double_click_on_an_empty_cells_zone_card_taps()
 	await test_a_finger_pairs_its_own_taps()
@@ -271,8 +272,9 @@ func _drag(from: Vector2, to: Vector2) -> void:
 	await _begin_drag(from, to)
 	await _end_drag(to)
 
-# A finger, in BOTH forms a real one arrives in: the touch itself, and the mouse form
-# `emulate_mouse_from_touch` synthesizes from it (device -1), which is the one the board reads.
+# A finger, in BOTH forms a real one arrives in, IN THE ENGINE'S OWN ORDER: `Input` dispatches the
+# mouse form `emulate_mouse_from_touch` synthesizes (device -1) from a nested parse, BEFORE the
+# touch that originated it. Pushed the other way round, a test proves the reader and not the route.
 func _touch_tap(at: Vector2) -> void:
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 0
@@ -288,10 +290,10 @@ func _touch_tap(at: Vector2) -> void:
 	var release := _mouse_button(at, false)
 	release.device = -1
 	await _push(hover, _picture_viewport)
-	await _push(touch_down, _picture_viewport)
 	await _push(press, _picture_viewport)
-	await _push(touch_up, _picture_viewport)
+	await _push(touch_down, _picture_viewport)
 	await _push(release, _picture_viewport)
+	await _push(touch_up, _picture_viewport)
 	await _frames(3)
 
 # A HELD card's own control is MOUSE_FILTER_IGNORE and the pointer passes straight through it, so
@@ -545,23 +547,56 @@ func test_a_tap_after_a_placement_is_refused() -> void:
 	await _start_fixture()
 	var spy := TapSpy.new()
 	var held := _armed_card()
-	var cell := await _legal_cell_control(held) if held else null
-	check(held != null and cell != null,
-			"the show opens with a card armed and a cell that accepts it",
-			"held %s, cell %s" % [held != null, cell != null])
+	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
 	if held and cell:
-		held.with_stamp(spy)
 		var at := _control_centre(cell)
 		await _drag(at, at)
 		var committed := _game.save_history.size()
 		check(_placed_cards().has(held), "the pair's first click placed the armed card", _hand_str())
 		await _double_click(at)
-		check(_taps.is_empty(), "the second press taps nothing (Q93a=a)", "%d tap(s)" % _taps.size())
-		check(spy.taps.is_empty(), "...so no card hears one either (Q222=b)",
-				"%d hook call(s)" % spy.taps.size())
-		check(_placed_cards().has(held) and _game.save_history.size() == committed,
-				"...and the placement stands, unrewound (Q93a=a)", _hand_str())
+		_check_the_placement_stands_untapped(spy, held, committed)
 	await _end_fixture()
+
+# Q93a=a REACHED BY A FINGER: the pair's first finger press placed the armed card, so the second is
+# refused exactly as the mouse's is — the emulated mouse form of that second press, which the
+# engine dispatches BEFORE the touch, must not move the depth the refusal reads.
+func test_a_touch_tap_after_a_placement_is_refused() -> void:
+	await _start_fixture()
+	var spy := TapSpy.new()
+	var held := _armed_card()
+	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
+	if held and cell:
+		var at := _control_centre(cell)
+		var window := PlayArea.settings().card_tap_window_ms
+		PlayArea.settings().card_tap_window_ms = PUSHED_PAIR_WINDOW_MS
+		await _touch_tap(at)
+		var committed := _game.save_history.size()
+		check(_placed_cards().has(held), "the pair's first finger press placed the armed card",
+				_hand_str())
+		await _touch_tap(at)
+		_check_the_placement_stands_untapped(spy, held, committed)
+		PlayArea.settings().card_tap_window_ms = window
+	await _end_fixture()
+
+# The board a refusal row starts from: an armed card wearing the hook spy, and a cell that accepts
+# it, so the pair's first press has a real placement to make.
+func _cell_the_arm_can_be_placed_on(held: CardData, spy: TapSpy) -> Control:
+	var cell := await _legal_cell_control(held) if held else null
+	check(held != null and cell != null,
+			"the show opens with a card armed and a cell that accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if held and cell: held.with_stamp(spy)
+	return cell
+
+# What a refusal looks like from outside, for either input: no signal, no hook, and the placement
+# the pair's first press made still standing.
+func _check_the_placement_stands_untapped(spy: TapSpy, held: CardData, committed: int) -> void:
+	check(_taps.is_empty(), "the pair's second press taps nothing (Q93a=a)",
+			"%d tap(s)" % _taps.size())
+	check(spy.taps.is_empty(), "...so no card hears one either (Q222=b)",
+			"%d hook call(s)" % spy.taps.size())
+	check(_placed_cards().has(held) and _game.save_history.size() == committed,
+			"...and the placement stands, unrewound (Q93a=a)", _hand_str())
 
 # Q94=a: double-clicking the card the Entrance armed taps it and the arm STANDS — the same slot is
 # armed, its card lifted in place, following nothing.

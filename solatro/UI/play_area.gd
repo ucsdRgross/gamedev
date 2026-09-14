@@ -1453,6 +1453,8 @@ var _tapped_this_gesture := false
 var _touch_press_at := Vector2.ZERO
 ## When the last finger press landed, in milliseconds.
 var _touch_press_msec : int = 0
+## The board's committed depth when the finger press a second one could pair with landed.
+var _touch_press_depth : int = 0
 ## When the last accept press on a board card landed, in milliseconds.
 var _accept_press_msec : int = 0
 
@@ -1486,8 +1488,8 @@ func _tapped_card_at(at: Vector2) -> CardData:
 
 # A TAP UNDOES THE PRESS THAT OPENED ITS PAIR, and only a GRAB can be undone: once that press has
 # committed a step it placed a card, and a placement is never rewound by a tap.
-func _pair_taps(data: CardData) -> bool:
-	if not data or _committed_depth() != _depth_when_pressed: return false
+func _pair_taps(data: CardData, depth_at_the_opening_press: int) -> bool:
+	if not data or _committed_depth() != depth_at_the_opening_press: return false
 	card_tapped.emit(data)
 	return true
 
@@ -1496,11 +1498,12 @@ func _pair_taps(data: CardData) -> bool:
 # finger presses can never tap twice.
 func _press_closes_a_pair(button: InputEventMouseButton) -> bool:
 	if not button.double_click or button.device == -1: return false
-	_tapped_this_gesture = _pair_taps(_tapped_card_at(button.position))
+	_tapped_this_gesture = _pair_taps(_tapped_card_at(button.position), _depth_when_pressed)
 	return true
 
 # GODOT NEVER MARKS A DOUBLE TAP ON A WINDOWS TOUCHSCREEN, so the board pairs two finger presses
-# itself: inside the tap window, and no further apart than this gesture's own drag threshold.
+# itself: inside the tap window, no further apart than this gesture's own drag threshold, and
+# against a depth of its OWN -- the mouse form Godot emulates arrives first and re-arms the gesture.
 func _consume_as_touch_tap(event: InputEvent) -> bool:
 	var touch := event as InputEventScreenTouch
 	if not touch or not touch.pressed or touch.device == -1: return false
@@ -1509,8 +1512,10 @@ func _consume_as_touch_tap(event: InputEvent) -> bool:
 			and _touch_press_at.distance_to(touch.position) <= _gesture_threshold_px())
 	_touch_press_msec = now
 	_touch_press_at = touch.position
-	if not paired: return false
-	_tapped_this_gesture = _pair_taps(_tapped_card_at(touch.position))
+	if not paired:
+		_touch_press_depth = _committed_depth()
+		return false
+	_tapped_this_gesture = _pair_taps(_tapped_card_at(touch.position), _touch_press_depth)
 	return _tapped_this_gesture
 
 # Two accept presses inside the tap window are a tap, which is how a keyboard or pad reaches one
@@ -1613,7 +1618,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
 			if _accept_press_pairs():
-				_pair_taps(ui_data[focused_control])
+				_pair_taps(ui_data[focused_control], _depth_when_pressed)
 			elif not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()

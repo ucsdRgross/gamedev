@@ -583,3 +583,12 @@
 - S18: the 1.7 cancel test lost its second-press half. Once the first Escape both dismisses and
   goes back, the wall sets `input_locked` for the transition it started, so a second press in the
   same test window is inert by design -- the case it asserted is now the first press's own.
+- Phase 5 fix 1: the touch reader owns its own opening-press depth, `PlayArea._touch_press_depth`,
+  and `_pair_taps` takes that depth as a parameter. Godot dispatches the mouse form it emulates
+  from a touch BEFORE the touch itself (source: `Input::_parse_input_event_impl` nests the
+  emulated dispatch; measured the same order here), so the closing press re-armed the gesture and
+  reset `_depth_when_pressed` before the touch could compare it -- the refusal after a placement
+  could never fire on a real touchscreen. New test row
+  `TestDragPlace.test_a_touch_tap_after_a_placement_is_refused`, sharing
+  `_cell_the_arm_can_be_placed_on()` and `_check_the_placement_stands_untapped()` with the mouse
+  row; `_touch_tap` now pushes the two forms in the engine's order.
