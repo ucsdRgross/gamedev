@@ -435,8 +435,24 @@ into main (`git merge-tree`) clean.
    in phase 8 of 8), the layer view, the reveal cascade (21 cells ~37 ms apart, 0.73 s) and GLARE /
    THROB all VERIFIED; TP-72's scoring-beam half VERIFIED (a beam over a realized cell; at phase 0
    under the shaft the gold rim is the least tellable instant — for the owner's eye).
-7. Fixes, one per full gate, each its own commit: F1 reveal commit order (TP-94), F2 batch reroll
-   (TP-88 +2 checks), F3 once per mark on a stack (TP-95) … continued below as they land.
+7. Fixes, one per full gate, each its own commit: F1 reveal commit order (TP-94); F2 batch reroll
+   as the deal over the batch (TP-88 +2 checks); F3 once per mark on a stack (TP-95); F4 the focus
+   lock survives a refresh (TP-96); F5 no would-match rim in the layer (TP-97); F6 the layer's close
+   rides the queued rebuild, toggle and peek refused while processing (TP-98); F7 the status-alert
+   clock parks under an activated rim (TP-99); F9 `_pip_same` reuses `pair_is_same`; F8 three
+   test repairs (TP-07's claim, the goal-ladder check, the reveal fixture helper); F11 the firework
+   banks into its grid bucket (a pre-existing defect the certified test hid; SECTION 8 unchanged).
+   Deferred to the owner (todo.md): the fits-window helper's stale invariant.
+   The comment sweep the run owed, as its own steps with `sweep_check.py` proving the code
+   identical: S-A game.gd 330 -> 0 and play_area.gd 636 -> 0; S-B the other production files;
+   S-C the test files (see the commits). Methods whose comments wanted a NAME rather than prose,
+   for the owner's refactor list: `Game._start_fresh_show` (seven numbered steps),
+   `place_card_in_grid` (four rule blocks), `run_props` (six labelled phases), `_spotlight_section`,
+   `undo` (three states); `PlayArea.setup_gui` (ten configuration blocks), `_create_grid_panel`,
+   `_grid_slot_center_global`, `_create_cell_slot` / `_create_label_stack` (a shared pair),
+   `_entrance_slot_center`, `_apply_row_openings`, `_order_board_cards`.
+8. /docs, 9. consolidate-memory, 10. feedback into plan-run / plan-implementer, 11. the plan
+   documents: recorded in the commits after the sweeps.
 
 ## Queued for the close (S17)
 - /docs: `todo.md`'s board-plan block still lists GAP-001..006 as open bullets; every one is resolved
@@ -509,10 +525,9 @@ S18-S26 are landed. S17: open a NEW session at or above Opus 5 default effort an
   Debt this run left in files it touched (doc_check --verbose counts): game.gd 349, play_area.gd
   642, card_visual.gd 211, game_data.gd 108, pip_comparator.gd 59, card_environment.gd 55,
   player_settings.gd 50, board.gd 44, card_outline.gd 33, deck.gd 26, pip_suit.gd 8,
-  card_effect_api.gd 9, test_decks.gd 7. A sweep dispatch for those files (one commit, full gate,
-  no behaviour change, reviewer floor applies because a sweep can delete a load-bearing note - it
-  did once at S8) is owed before S16. The owner plans a full pass over every untouched file
-  separately (todo.md, Doc hygiene backlog).
+  card_effect_api.gd 9, test_decks.gd 7. The close paid that debt in the sweep steps S-A..S-C,
+  each proved code-identical by `sweep_check.py`. The owner plans a full pass over every untouched
+  file separately (todo.md, Doc hygiene backlog).
 - Commit after every verified step with the evidence in the message; revert the effect-review
   import noise first (`git checkout -- solatro/design/effect-review` then
   `git clean -fq -- solatro/design/effect-review/`).
