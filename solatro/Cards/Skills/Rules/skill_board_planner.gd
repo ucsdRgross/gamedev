@@ -7,7 +7,7 @@ func get_str() -> String: return TRANSLATION.find('BOARD_PLANNER_CARD')
 func get_description() -> String: return TRANSLATION.find('BOARD_PLANNER_CARD_DESCRIPTION')
 func get_frame() -> int: return 13
 
-## Engine rules machinery: never a combo class, mirroring every other rules-deck card.
+## Engine rules machinery: never a combo class.
 func combo_key(_hook: StringName = &"") -> String: return ""
 
 #THE one deal. This card is last in the rules deck, so every grid the allotment's creators built

@@ -1,36 +1,41 @@
 @tool
 @abstract class_name PipSuit
 extends CardModifier
-## ⚠ `@tool`, and this is the base the owner's editor actually caught: *"Nonexistent function
-## 'set_texture' in base 'Resource'"* on a `PipSuitHoop` that IS `@tool` — because a non-tool base makes
-## the whole instance a placeholder. See `CardData`. Every concrete suit was already `@tool`.
-## A card's suit. Now a CardModifier (was Resource): reached ONLY via run_card_mods +
-## spawn_props, never through the suit-free run_all_mods iterator. Suits are NOMINAL, not
-## ordinal — there is no `value`; construct the exact suit class (PipSuitHoop.new(), ...)
-## or pick from STANDARD, never value ± 1. from_index was deleted: an index hid WHICH suit
-## a call site actually produced.
+## A card's suit: a CardModifier reached ONLY via run_card_mods and spawn_props.
 
-## CardData.suit's setter connects this (`CardData.suit`'s setter). Suits no longer mutate
-## themselves, but the seam stays for future dynamic suits.
+#⚠ IT IS `@tool`, AND A NON-TOOL BASE MAKES THE WHOLE INSTANCE A PLACEHOLDER. The owner's editor
+#caught it as *"Nonexistent function 'set_texture' in base 'Resource'"* on a PipSuitHoop that is
+#itself @tool. Every concrete suit is @tool for the same reason. See CardData.
+
+#Suits are NOMINAL, not ordinal: there is no `value`, so construct the exact suit class or pick
+#from STANDARD, never value +/- 1. There is no from_index, because an index hides WHICH suit a call
+#site actually produced.
+
+#Suits no longer mutate themselves, but the seam stays for future dynamic suits.
+
+## CardData.suit's setter connects this.
 signal data_changed
 
-## The suit pip sheet. Also drawn by the Ball and Fire PROPS (ball_visual.gd / fire_visual.gd) — the
-## props ARE their suits' pips — so both go through these constants and the frame SIZE is derived
-## from the image by CardModifier.frame_size rather than written down anywhere.
+#Also drawn by the Ball and Fire PROPS, the props BEING their suits' pips, so both go through these
+#constants and the frame SIZE is derived from the image by CardModifier.frame_size.
+
+## The suit pip sheet.
 const SUIT_TEXTURE : Texture2D = preload("res://Assets/suit_pips.png")
 const SUIT_TEXTURE_H_FRAMES : int = 8
 const SUIT_TEXTURE_V_FRAMES : int = 8
-const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")     # 13x13 frames
+#13x13 frames.
+const ART_TEXTURE : Texture2D = preload("res://Assets/suit_art.png")
 const ART_TEXTURE_H_FRAMES : int = 13
 const ART_TEXTURE_V_FRAMES : int = 13
 
 ## 0..4 — art/palette slot ONLY, never orderable.
 @abstract func get_suit_index() -> int
-## This suit's PaletteDB role, for the polygons that are RECOLOURED (rank pips and card art — both
-## drawn as single-colour silhouettes shared by every suit). The suit PIP itself is not recoloured:
-## its frames are painted in the palette already, so it draws its own colours (owner).
-## Each suit names its own role rather than indexing a magic array — reassigning the colour is
-## editing that one named entry in Assets/Palette/roles.tres (T21).
+#For the polygons that are RECOLOURED, the rank pips and card art, both drawn as single-colour
+#silhouettes shared by every suit. The suit PIP itself is not recoloured: its frames are painted in
+#the palette already, so it draws its own colours (owner).
+
+#Each suit names its own role rather than indexing a magic array, so reassigning the colour is
+#editing that one named entry in Assets/Palette/roles.tres.
 @abstract func palette_role() -> int
 #PURE factory: the spawners this suit launches when its card is scored in a meld. Empty unless the
 #card's own cell carries a mark agreeing on SUIT, and empty off-board. NO mutation in here.
@@ -38,21 +43,21 @@ const ART_TEXTURE_V_FRAMES : int = 13
 
 func get_frame() -> int: return get_suit_index()
 
-## The suit PIP draws the sheet's own colours: suit_pips.png is authored in the palette (each frame
-## already shaded with its suit's ramp), so recolouring it would flatten that shading to one flat
-## index.
-##
-## ⚠ This used to CLEAR the material (`polygon2d.material = null`), because these polygons are pooled
-## and reused across cards and a stale ShaderMaterial would otherwise survive a rebind. The pip is now
-## an outline client, so clearing it would strip the rim off whichever cards land on a recycled
-## polygon; the stale-state problem is handled by overwriting every uniform instead.
+#The suit PIP draws the sheet's own colours: suit_pips.png is authored in the palette, each frame
+#already shaded with its suit's ramp, so recolouring it would flatten that shading to one index.
+
+#⚠ IT MUST NOT CLEAR THE MATERIAL. The pip is an outline client, so clearing would strip the rim
+#off whichever cards land on a recycled polygon; these polygons are pooled across cards, and the
+#stale-state that invites is handled by overwriting every uniform instead.
 func set_texture(polygon2d:Polygon2D) -> void:
 	CardOutline.frame_polygon(
 		polygon2d, SUIT_TEXTURE, SUIT_TEXTURE_H_FRAMES, SUIT_TEXTURE_V_FRAMES, get_suit_index())
 	CardOutline.fill_texture(polygon2d)
 
-## Recolour `polygon2d` to this suit's palette entry — for the SUIT-AGNOSTIC art it shares with
-## every other suit (the rank pip and the card art), never for the suit pip itself.
+#For the SUIT-AGNOSTIC art it shares with every other suit, the rank pip and the card art, never
+#for the suit pip itself.
+
+## Recolour `polygon2d` to this suit's palette entry.
 func set_material(polygon2d:Polygon2D) -> void:
 	CardOutline.fill_palette(polygon2d, palette_role())
 
@@ -70,8 +75,8 @@ func set_art_texture(polygon2d:Polygon2D, rank:PipRank) -> void:
 static var STANDARD : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
 static func random_standard() -> PipSuit: return STANDARD[randi() % STANDARD.size()].new()
 
-## Fire-buff readers (self-inspection of the OWN card's statuses at spawn time). fire_mult
-## multiplies the suit-effect prop COUNT only (one knob; v1's double-dip was dropped).
+#Self-inspection of the OWN card's statuses at spawn time. fire_mult multiplies the suit-effect
+#prop COUNT only: one knob, no double-dip.
 func fire_stacks() -> int:
 	if not data: return 0
 	for s : CardModifierStatus in data.statuses:

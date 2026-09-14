@@ -1,55 +1,73 @@
-## One scorer invocation's worth of cards. Rows and columns are the only shapes today; a future
-## scorer may evaluate a diagonal, several rows at once, or an arbitrary set, and NOTHING that
-## consumes this may assume otherwise (design Q260=a, Q266=a).
+## One scorer invocation's worth of cards.
+
+#Rows and columns are the only shapes today; a future scorer may evaluate a diagonal, several rows
+#at once, or an arbitrary set, and NOTHING that consumes this may assume otherwise.
 class_name ScoringSection
 extends RefCounted
 
-## Every shape a scoring line can take: a row, a column, either diagonal family (flat or
-## climbing through height), or a vertical run within one cell.
+#A row, a column, either diagonal family - flat or climbing through height - or a vertical run
+#within one cell.
+
+## Every shape a scoring line can take.
 enum LineKind { ROW, COL, DIAG, HEIGHT_V }
 
-## Every card participating in the hand. THIS IS THE SPOTLIGHT SET (design Q31=d) — it is not
-## derived from geometry and it is not `result.meld`.
+#It is not derived from geometry and it is not result.meld.
+
+## Every card participating in the hand. THIS IS THE SPOTLIGHT SET.
 var cards : Array[CardData] = []
-## Opaque provenance, for logging and the tuning tool only. NEVER branched on for behaviour.
-var origin : StringName = &""          # e.g. &"row", &"col"
+#NEVER branched on for behaviour; &"row" and &"col" are the values it takes today.
+
+## Opaque provenance, for logging and the tuning tool only.
+var origin : StringName = &""
 var index : int = -1
 var zone : Array = []
-## Which shape this section is. `score_line` never branches on it — only construction and the
-## (still legacy) gutter write path may read it.
+#score_line never branches on it: only construction and the legacy gutter write path may read it.
+
+## Which shape this section is.
 var kind : LineKind = LineKind.ROW
-## Opaque key identifying this line for whatever bucket it banks into. `score_line` NEVER
-## inspects its structure — the bucket derives from it downstream, not here.
+#score_line NEVER inspects its structure: the bucket derives from it downstream, not here.
+
+## Opaque key identifying this line for whatever bucket it banks into.
 var line_key : StringName = &""
-## Which grid this line belongs to, and where in it. -1 means "not a grid line" -- a legacy
-## zone section, which banks through the old zone-indexed path instead. These exist so the
-## bucket a section banks into can be derived WITHOUT parsing `line_key`, which is opaque.
+#-1 means "not a grid line", a legacy zone section banking through the old zone-indexed path.
+#These exist so the bucket a section banks into can be derived WITHOUT parsing the opaque line_key.
+
+## Which grid this line belongs to, and where in it.
 var grid : int = -1
-## The height a ROW or COL line sits at. A grid's height-0 buckets are flat; raised levels are
-## indexed by this.
+#A grid's height-0 buckets are flat; raised levels are indexed by this.
+
+## The height a ROW or COL line sits at.
 var height : int = 0
-## The cell a HEIGHT_V line stands in, within its grid. (-1, -1) for every other kind, which
-## is not tied to a single cell.
+#(-1, -1) for every other kind, none of which is tied to a single cell.
+
+## The cell a HEIGHT_V line stands in, within its grid.
 var cell : Vector2i = Vector2i(-1, -1)
 ## Every cell the line runs through as (x, y, h) in `grid`, card or no card; empty off the grid.
 var line_cells : Array[Vector3i] = []
-## How `refresh()` re-collects — captured at construction so `origin` stays pure provenance and a
-## future non-line shape supplies its own re-derivation instead of being misread as a column.
+#Captured at construction so `origin` stays pure provenance, and so a future non-line shape
+#supplies its own re-derivation instead of being misread as a column.
+
+## How refresh() re-collects.
 var _recollect : Callable = Callable()
 
-## The section one `Game.score_line(result, section)` call evaluates, re-derived from
-## the LIVE board. ⚠ Never cache the result across a hook — `Q252`=(b) requires a re-read after
-## every one, because a handler may have added a card to the section or compacted one out of it.
-## Ragged rows are the reason for the `row < a.size()` guard: it mirrors `SkillEvalPokerBest`
-## exactly, so the section is the same card list the scorer evaluated.
-# TODO(multi-meld membership, Q54=a / comparator_buckets DEFERRED.md D4): The Courier straddles two
-# columns and The Puszta Five belongs to every one — one card scoring in SEVERAL MELDS. That is
-# "which hand is this card in", which is decided HERE and in `Game.score_line`, not by grouping.
-# ⚠ Do not conflate it with multiplicity (D1) or with a grouping rule's pull-in (Q14=d): those are
-# one meld reaching outward, this is one card belonging to several.
-## ⚠ LEGACY BRIDGE, temporary: builds a section over the pre-grid `upper_zone`/`lower_zone`
-## arrays, the only board `SkillEvalPokerBest` still reads. `of_line_at` is the grid-model
-## constructor and is what every new caller should use; this one goes with the card it serves.
+#The section one Game.score_line() call evaluates is re-derived from the LIVE board.
+
+#⚠ Never cache the result across a hook: a re-read is required after every one, because a
+#handler may have added a card to the section or compacted one out of it.
+
+#Ragged rows are the reason for the `row < a.size()` guard: it mirrors SkillEvalPokerBest exactly,
+#so the section is the same card list the scorer evaluated.
+
+#TODO(multi-meld membership): The Courier straddles two columns and The Puszta Five belongs to
+#every one - one card scoring in SEVERAL MELDS. That is "which hand is this card in", decided here
+#and in Game.score_line, not by grouping.
+
+#⚠ Do not conflate that with multiplicity or with a grouping rule's pull-in: those are one meld
+#reaching outward, this is one card belonging to several.
+
+#⚠ LEGACY BRIDGE, temporary: it builds a section over the pre-grid upper_zone and lower_zone
+#arrays, the only board SkillEvalPokerBest still reads. of_line_at is the grid-model constructor
+#and is what every new caller should use; this one goes with the card it serves.
 static func of_line(zone: Array, is_row: bool, index: int) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.origin = &"row" if is_row else &"col"
@@ -61,20 +79,22 @@ static func of_line(zone: Array, is_row: bool, index: int) -> ScoringSection:
 	section.cards = collect(zone, is_row, index)
 	return section
 
-## The grid-model constructor (replaces `of_line` for grid-backed callers). `grid` indexes
-## `state.grids`; `index` is the row's y or the column's x; `height` is the h every cell of a
-## ROW/COL must hold a card at -- a taller stack still counts. Re-derives from the LIVE board,
-## via `state.card_at`, so
-## `refresh()` sees whatever a hook did to the board since construction.
+#`grid` indexes state.grids, `index` is the row's y or the column's x, and `height` is the h every
+#cell of a ROW or COL must hold a card at - a taller stack still counts.
+
+#It re-derives from the LIVE board through state.card_at, so refresh() sees whatever a hook did to
+#the board since construction.
+
+## The grid-model constructor, for grid-backed callers.
 static func of_line_at(state: GameData, grid: int, kind: LineKind, index: int, height: int) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.kind = kind
 	section.index = index
-	# ⚠ **THE GRID AND THE HEIGHT ARE PART OF THE SECTION, NOT ONLY OF ITS COLLECTION.** They used
-	# to be consumed here and thrown away, so every section this grid-model constructor built came
-	# out reading `grid = -1` -- and a banked score then took the LEGACY zone-gutter branch, into
-	# an array the grid board does not render. The line still scored; nothing on the board showed
-	# it, and nothing popped.
+#⚠ THE GRID AND THE HEIGHT ARE PART OF THE SECTION, NOT ONLY OF ITS COLLECTION. Consumed here
+#and thrown away, every section this constructor builds reads grid = -1, and a banked score then
+#takes the LEGACY zone-gutter branch into an array the grid board does not render.
+
+#The line still scores; nothing on the board shows it, and nothing pops.
 	section.grid = grid
 	section.height = height
 	section.line_key = StringName("grid%d:%s:%d:%d" % [grid, LineKind.keys()[kind], index, height])
@@ -87,7 +107,7 @@ static func of_line_at(state: GameData, grid: int, kind: LineKind, index: int, h
 static func _collect_grid_line(state: GameData, grid: int, kind: LineKind, index: int, height: int) -> Array[CardData]:
 	return _cards_on_cells(state, grid, _line_cells_at(state, grid, kind, index, height))
 
-## The cells a ROW or COL of `state.grids[grid]` at `height` runs through, in the order it runs.
+## The cells a ROW or COL of state.grids[grid] at `height` runs through, in the order it runs.
 static func _line_cells_at(state: GameData, grid: int, kind: LineKind, index: int,
 		height: int) -> Array[Vector3i]:
 	var out : Array[Vector3i] = []
@@ -98,15 +118,17 @@ static func _line_cells_at(state: GameData, grid: int, kind: LineKind, index: in
 	elif kind == LineKind.COL: out = LineGeometry.col_cells(g, index, height).cells
 	return out
 
-## The detector-card constructor: any `LineGeometry.Line` (ROW, COL, DIAG or HEIGHT_V) becomes
-## a section keyed by its grid, kind and endpoints -- the one shape general enough for a line
-## that does not reduce to `of_line_at`'s index+height pair. Re-derives from the LIVE board.
+#Any LineGeometry.Line - ROW, COL, DIAG or HEIGHT_V - becomes a section keyed by its grid, kind
+#and endpoints: the one shape general enough for a line that does not reduce to of_line_at's index
+#and height pair. Re-derives from the LIVE board.
+
+## The detector-card constructor.
 static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Line) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.kind = line.kind
 	section.grid = grid
-	# A ROW is one row at one height, a COL one column at one height: both are fixed by any
-	# cell on the line, so the first one names them.
+#A ROW is one row at one height and a COL one column at one height, both fixed by any cell on the
+#line, so the first one names them.
 	var first : Vector3i = line.cells[0]
 	section.height = first.z
 	if line.kind == LineKind.ROW: section.index = first.y
@@ -118,9 +140,10 @@ static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Lin
 	section.cards = section._recollect.call()
 	return section
 
-## Opaque and unique per line: grid, kind and the line's own first/last cell -- two lines of the
-## same kind through different cells never collide, and the same line asked for twice keys the
-## same because `Line.cells` is rebuilt identically from the same geometry.
+#Two lines of the same kind through different cells never collide, and the same line asked for
+#twice keys the same, because Line.cells is rebuilt identically from the same geometry.
+
+## Opaque and unique per line: grid, kind and the line's own first and last cell.
 static func _key_for_geometric_line(grid: int, line: LineGeometry.Line) -> StringName:
 	var first : Vector3i = line.cells[0]
 	var last : Vector3i = line.cells[line.cells.size() - 1]
@@ -134,13 +157,14 @@ static func _cards_on_cells(state: GameData, grid: int, cells: Array[Vector3i]) 
 		if card: out.append(card)
 	return out
 
-## THE section a score attributed to the card at `coord`, shaped as `kind`, banks into -- in
-## whatever zone that card sits.
-## ⚠ **THE ZONES DIFFER IN EXACTLY ONE PLACE, AND THIS IS IT.** Callers do not branch on where a
-## card sits; they hand over a coordinate. An Entrance ROW banks into the Entrance's own bucket,
-## which sits past the grid's own last row -- an index, not a different code path. An Entrance
-## COLUMN banks into that column's SHARED bucket, the same one the grid column above it uses, so it
-## is the ordinary grid constructor keyed on the grid the Entrance is committed to.
+#⚠ THE ZONES DIFFER IN EXACTLY ONE PLACE, AND THIS IS IT. Callers do not branch on where a card
+#sits; they hand over a coordinate.
+
+#An Entrance ROW banks into the Entrance's own bucket, which sits past the grid's own last row - an
+#index, not a different code path. An Entrance COLUMN banks into that column's SHARED bucket, the
+#one the grid column above it uses, keyed on the grid the Entrance is committed to.
+
+## The section a score attributed to the card at `coord`, shaped as `kind`, banks into.
 static func of_line_for(state: GameData, coord: BoardCoord, kind: LineKind) -> ScoringSection:
 	if coord.is_entrance():
 		if kind == LineKind.ROW:
@@ -149,12 +173,14 @@ static func of_line_for(state: GameData, coord: BoardCoord, kind: LineKind) -> S
 	var index := coord.y if kind == LineKind.ROW else coord.x
 	return of_line_at(state, coord.grid, kind, index, coord.h)
 
-## A score attributed to a card sitting in the ENTRANCE, shaped as a ROW: it banks into the
-## Entrance's OWN row bucket, as if the grid were one row taller than it is. `height` is the card's
-## height within its Entrance slot's stack.
-## ⚠ This does NOT make the Entrance a detected line. Nothing completes here by default — the
-## section exists so a score that already happened lands in the right bucket instead of the legacy
-## one, which `live_total()` does not read.
+#It banks into the Entrance's OWN row bucket, as if the grid were one row taller than it is.
+#`height` is the card's height within its Entrance slot's stack.
+
+#⚠ This does NOT make the Entrance a detected line. Nothing completes here by default: the
+#section exists so a score that already happened lands in the right bucket instead of the legacy
+#one, which live_total() does not read.
+
+## A score attributed to a card sitting in the ENTRANCE, shaped as a ROW.
 static func of_entrance_row(state: GameData, height: int) -> ScoringSection:
 	var section := ScoringSection.new()
 	section.kind = LineKind.ROW
@@ -167,7 +193,7 @@ static func of_entrance_row(state: GameData, height: int) -> ScoringSection:
 	section.cards = section._recollect.call()
 	return section
 
-## Every card the Entrance holds at `height`, left to right. Read live, like every other collector.
+## Every card the Entrance holds at `height`, left to right, read live like every other collector.
 static func _collect_entrance_row(state: GameData, height: int) -> Array[CardData]:
 	var out : Array[CardData] = []
 	for col : ArrayCardData in state.upper_zone:
@@ -175,7 +201,7 @@ static func _collect_entrance_row(state: GameData, height: int) -> Array[CardDat
 			out.append(col.datas[height])
 	return out
 
-## THE card list for a row or a column of `zone`. Static and pure so a re-derive is one call.
+## THE card list for a row or a column of `zone`. Static and pure, so a re-derive is one call.
 static func collect(zone: Array, is_row: bool, index: int) -> Array[CardData]:
 	var out : Array[CardData] = []
 	if is_row:
@@ -186,8 +212,9 @@ static func collect(zone: Array, is_row: bool, index: int) -> Array[CardData]:
 		if col: out.append_array(col.datas)
 	return out
 
-## Re-read this section's cards from the board (`Q252`=b). Returns true when the set CHANGED,
-## which is what ends the activation sweep's loop.
+#Returns true when the set CHANGED, which is what ends the activation sweep's loop.
+
+## Re-read this section's cards from the board.
 func refresh() -> bool:
 	if not _recollect.is_valid(): return false
 	var fresh : Array[CardData] = _recollect.call()

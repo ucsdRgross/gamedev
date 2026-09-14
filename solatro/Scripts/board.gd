@@ -1,61 +1,40 @@
 class_name Board
-## Pure board move logic over GameData (ARCHITECTURE_REVIEW.md §5).
-##
-## ============================ MUTATION GUIDELINES =============================
-## Everything that keeps the game in sync (play-area UI, compare-mod cache, undo,
-## validate()) hangs off ONE rule:
-##
-##   RULE: never write state's card arrays (upper/lower_zone, *_zone_type,
-##   draw_deck, discard_deck, rules_deck) directly. Mutate only through:
-##     Board.move_stack / place_card / add_column / remove_column
-##     Game.draw_card / discard_data / add_deck / shuffle_deck / return_to_map
-##   These all bump state.revision, whose setter emits board_changed -> the UI
-##   rebuilds and the compare-mod cache invalidates. No bump = silent desync
-##   (stale visuals AND possibly stale comparator results).
-##
-## If a new mutation path is truly needed, it must:
-##   1. leave the state fully consistent FIRST (state.validate() returns empty --
-##      zone/type arrays in lockstep, stages matching locations, no card in two
-##      places),
-##   2. bump state.revision exactly once, AFTER the mutation (never mid-way:
-##      board_changed listeners run synchronously and will read the state),
-##   3. be exercised in a debug build, where Game.debug_validate push_warnings
-##      any broken invariant after moves/undo.
-##
-## Two non-array mutations ALSO count as board mutations and need a bump:
-##   - assigning/removing a CardModifier on an in-play card (changes which mods
-##     the comparator cache should see),
-##   - anything that changes zone column/type pairing outside add/remove_column.
-## Reads never need anything: locate / find_data_vec3 / validate are side-effect
-## free, and rejected/no-op move_stack calls do not bump.
-## ==============================================================================
-## Destinations are ANCHORS (card references / column ends), not indices, so the
-## extraction step can never invalidate the destination — the anchor is resolved
-## AFTER extraction and the whole same-column compensation math disappears.
-## No scene tree, no signals, no mod events: Game keeps Phase 4 (event firing).
-##
-## MUTATION GUIDELINES — follow these and board/UI/cache desync cannot happen:
-## 1. Only mutate cards/zones/decks through: Board.move_stack / place_card /
-##    add_column / remove_column, or Game.draw_card / discard_data / add_deck /
-##    shuffle_deck / return_to_map. Never write state arrays directly from mods/UI.
-## 2. If you MUST add a new mutation path: mutate to a fully consistent state
-##    (state.validate() returns []), THEN bump state.revision exactly once. The bump
-##    emits board_changed (queues the UI rebuild) and invalidates the compare-mod
-##    cache — bumping mid-mutation would let the UI rebuild against a broken board.
-## 3. Assigning or removing a CardModifier on an in-play card is also a mutation:
-##    bump state.revision (the compare-mod cache is keyed on it).
-## 4. PlayArea-side rule: any code reading ui_data/data_ui/data_card or the control
-##    tree must call play_area.flush_rebuild() first (stale-layout crash otherwise).
-## 5. Watch the debug output: state.validate() warnings after moves/undo mean a
-##    mutation path broke an invariant — treat as a bug, not noise.
+## Pure board move logic over GameData.
 
-#move_stack result codes
+#Destinations are ANCHORS - card references or column ends - never indices, so the extraction step
+#can never invalidate the destination: the anchor is resolved AFTER extraction, and the whole
+#same-column compensation disappears. No scene tree, no signals, no mod events.
+
+#MUTATION GUIDELINES. Never write state's card arrays directly. Mutate only through
+#Board.move_stack, place_card, add_column or remove_column, or Game.draw_card, discard_data,
+#add_deck, shuffle_deck or return_to_map.
+
+#Each of those bumps state.revision, whose setter emits board_changed, so the UI rebuilds and the
+#compare-mod cache invalidates. No bump means a silent desync: stale visuals, and possibly stale
+#comparator results.
+
+#A new mutation path must leave the state fully consistent FIRST, with validate() returning empty,
+#then bump state.revision exactly once AFTER the mutation - never mid-way, since board_changed
+#listeners run synchronously and will read the state.
+
+#Two non-array mutations also count and need a bump: assigning or removing a CardModifier on an
+#in-play card, which changes what the comparator cache should see, and anything that changes zone
+#column and type pairing outside add_column or remove_column.
+
+#Reads never need anything: locate, find_data_vec3 and validate are side-effect free, and rejected
+#or no-op move_stack calls do not bump.
+
+#PlayArea-side rule: any code reading ui_data, data_ui, data_card or the control tree must call
+#play_area.flush_rebuild() first, or it crashes on a stale layout. Watch the debug output too - a
+#validate() warning after a move or undo means a mutation path broke an invariant.
+
+#move_stack result codes. OK_NOOP is an explicit no-op: nothing moved, so fire no events.
 const OK := 0
-const OK_NOOP := 1                 #explicit no-op: nothing moved, fire no events
-const ERR_NOT_ON_BOARD := 2        #moving card is not in a zone column
-const ERR_DEST_NOT_ON_BOARD := 3   #OnTop anchor card is in no zone/header row
-const ERR_DEST_INSIDE_STACK := 4   #OnTop anchor card is part of the moving stack
-const ERR_DEST_OUT_OF_BOUNDS := 5  #ColumnEnd/Start column does not exist
+const OK_NOOP := 1
+const ERR_NOT_ON_BOARD := 2
+const ERR_DEST_NOT_ON_BOARD := 3
+const ERR_DEST_INSIDE_STACK := 4
+const ERR_DEST_OUT_OF_BOUNDS := 5
 
 const ERROR_NAMES : Array[String] = ["OK", "OK_NOOP", "ERR_NOT_ON_BOARD",
 		"ERR_DEST_NOT_ON_BOARD", "ERR_DEST_INSIDE_STACK", "ERR_DEST_OUT_OF_BOUNDS"]
@@ -65,8 +44,8 @@ class Anchor:
 	extends RefCounted
 	enum Kind { ON_TOP, COLUMN_END, COLUMN_START }
 	var kind : Kind
-	var card : CardData      #ON_TOP only
-	var x : int = -1         #column anchors only: 0 upper / 1 lower
+	var card : CardData
+	var x : int = -1
 	var col : int = -1
 
 	static func on_top(target: CardData) -> Anchor:
@@ -98,23 +77,25 @@ class Anchor:
 ## What move_stack did, for Game's Phase-4 event dispatch.
 class MoveResult:
 	extends RefCounted
-	var code : int = 0           #Board.OK etc.
+	var code : int = 0
 	var stack : Array[CardData] = []
-	var onto : CardData = null   #card the stack landed on (null for ColumnStart/empty col)
+	var onto : CardData = null
 	var src_x : int = -1
 	var dest_x : int = -1
 
 static func zone(state: GameData, x: int) -> Array[ArrayCardData]:
 	return state.upper_zone if x == 0 else state.lower_zone
 
-## Board position of a card: (x, col, row); headers get row -1; MIN if not on board.
-## O(1): reads GameData's lazy position index (§5.4), which rebuilds itself whenever
-## state.revision moved — the same invalidation key as the SE1 compare-mod cache.
+#O(1): it reads GameData's lazy position index, which rebuilds itself whenever state.revision
+#moved - the same invalidation key as the compare-mod cache.
+
+## Board position of a card as (x, col, row); headers get row -1, and MIN when not on the board.
 static func locate(state: GameData, data: CardData) -> Vector3i:
 	return state.position_of(data)
 
-## Adapter from the legacy Vector3i destination convention (z < 0 append,
-## z == 0 column start, z > 0 insert above card at z-1). Null when unmappable.
+#The legacy convention is z < 0 append, z == 0 column start, z > 0 insert above the card at z-1.
+
+## Adapter from the legacy Vector3i destination convention. Null when unmappable.
 static func anchor_from_coord(state: GameData, dest: Vector3i) -> Anchor:
 	if dest == Vector3i.MIN: return null
 	if dest.z < 0: return Anchor.column_end(dest.x, dest.y)
@@ -125,12 +106,14 @@ static func anchor_from_coord(state: GameData, dest: Vector3i) -> Anchor:
 	if below: return Anchor.on_top(below)
 	return Anchor.column_end(dest.x, dest.y)
 
-## The four-phase move (§5.2). Mutates state ONLY on OK; every error/no-op path
-## provably leaves the board untouched. count < 0 means "rest of the column".
+#It mutates state ONLY on OK: every error and no-op path provably leaves the board untouched.
+#A count below zero means "the rest of the column".
+
+## The four-phase move.
 static func move_stack(state: GameData, moving: CardData, count: int, dest: Anchor) -> MoveResult:
 	var res := MoveResult.new()
 
-	# PHASE 1 — RESOLVE (read-only)
+#PHASE 1, RESOLVE: read-only.
 	if count == 0:
 		res.code = OK_NOOP
 		return res
@@ -138,7 +121,8 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 		res.code = ERR_DEST_NOT_ON_BOARD
 		return res
 	var src := locate(state, moving)
-	if src == Vector3i.MIN or src.z < 0: #headers cannot move
+#Headers cannot move.
+	if src == Vector3i.MIN or src.z < 0:
 		res.code = ERR_NOT_ON_BOARD
 		return res
 	var src_col : ArrayCardData = zone(state, src.x)[src.y]
@@ -148,7 +132,7 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 	res.stack = src_col.datas.slice(src.z, src.z + count)
 	res.src_x = src.x
 
-	# PHASE 2 — VALIDATE (still read-only)
+#PHASE 2, VALIDATE: still read-only.
 	if dest.kind == Anchor.Kind.ON_TOP:
 		if dest.card in res.stack:
 			res.code = ERR_DEST_INSIDE_STACK
@@ -157,10 +141,12 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 		if dloc == Vector3i.MIN:
 			res.code = ERR_DEST_NOT_ON_BOARD
 			return res
-		if dloc.z < 0: #anchor is a zone header: same as inserting at column start
+#An anchor that is a zone header is the same as inserting at the column start.
+		if dloc.z < 0:
 			dest = Anchor.column_start(dloc.x, dloc.y)
 		elif dloc.x == src.x and dloc.y == src.y and dloc.z == src.z - 1:
-			res.code = OK_NOOP #dropping the stack onto the card directly beneath it
+#Dropping the stack onto the card directly beneath it.
+			res.code = OK_NOOP
 			return res
 	if dest.kind != Anchor.Kind.ON_TOP:
 		if dest.col < 0 or dest.col >= zone(state, dest.x).size():
@@ -168,25 +154,28 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 			return res
 		if dest.x == src.x and dest.col == src.y:
 			if dest.kind == Anchor.Kind.COLUMN_START and src.z == 0:
-				res.code = OK_NOOP #stack already starts the column
+#The stack already starts the column.
+				res.code = OK_NOOP
 				return res
 			if dest.kind == Anchor.Kind.COLUMN_END and src.z + count == src_col.datas.size():
-				res.code = OK_NOOP #stack already ends the column
+#The stack already ends the column.
+				res.code = OK_NOOP
 				return res
 
-	# PHASE 3 — MUTATE (extract, then resolve the anchor, then insert)
+#PHASE 3, MUTATE: extract, then resolve the anchor, then insert.
 	var src_cutoff : Array[CardData] = src_col.datas.slice(src.z + count)
 	src_col.datas.resize(src.z)
 	src_col.datas.append_array(src_cutoff)
-	#the extraction shifted rows without a revision bump (the bump comes AFTER the
-	#insert, per the guidelines) — invalidate so the post-extraction locate below
-	#rebuilds the position index from the current arrays
+#The extraction shifted rows without a revision bump, the bump coming after the insert per the
+#guidelines, so the index is invalidated here and the locate below rebuilds it from the current
+#arrays.
 	state.invalidate_pos_index()
 	var dest_col : ArrayCardData
 	var insert_row : int
 	match dest.kind:
 		Anchor.Kind.ON_TOP:
-			var dloc := locate(state, dest.card) #post-extraction: always current
+#Post-extraction, so always current.
+			var dloc := locate(state, dest.card)
 			dest_col = zone(state, dloc.x)[dloc.y]
 			insert_row = dloc.z + 1
 			res.onto = dest.card
@@ -208,59 +197,56 @@ static func move_stack(state: GameData, moving: CardData, count: int, dest: Anch
 	for c in res.stack:
 		c.stage = CardData.Stage.PLAY
 
-	# PHASE 4 (events) belongs to Game — board is consistent from here on
+#PHASE 4, events, belongs to Game: the board is consistent from here on.
 	state.revision += 1
 	res.code = OK
 	return res
 
 
-# ==============================================================================
-# Non-move mutations (§5 step 4) so mods don't write the zone arrays directly.
-# ==============================================================================
+#Non-move mutations, so mods do not write the zone arrays directly.
 
 ## Places a card that is NOT on the board (e.g. freshly drawn) at a column end.
 static func place_card(state: GameData, card: CardData, x: int, col: int) -> bool:
 	if not card: return false
 	if col < 0 or col >= zone(state, x).size(): return false
-	if locate(state, card) != Vector3i.MIN: return false #already on the board
+#Already on the board.
+	if locate(state, card) != Vector3i.MIN: return false
 	zone(state, x)[col].datas.append(card)
-	#don't re-set an already-PLAY stage: previous_stage drives the visual's spawn
-	#origin (DRAW -> fly in from the deck), and re-setting would clobber it
+#An already-PLAY stage is not re-set: previous_stage drives the visual's spawn origin, a DRAW
+#flying in from the deck, and re-setting would clobber it.
 	if card.stage != CardData.Stage.PLAY:
 		card.stage = CardData.Stage.PLAY
 	state.revision += 1
 	return true
 
-## Appends a header + empty column in lockstep (I2). ZoneAdder's add path.
+## Appends a header and an empty column in lockstep. ZoneAdder's add path.
 static func add_column(state: GameData, zone_cols: Array[ArrayCardData], zone_types: Array[CardData], header: CardData) -> void:
 	header.stage = CardData.Stage.ZONE
 	zone_types.append(header)
 	zone_cols.append(ArrayCardData.new())
 	state.revision += 1
 
-## Removes header + column in lockstep; returns the orphaned column cards so the
-## caller can discard/relocate them. ZoneAdder's remove path.
+#Returns the orphaned column cards so the caller can discard or relocate them.
+
+## Removes header and column in lockstep. ZoneAdder's remove path.
 static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone_types: Array[CardData], index: int) -> Array[CardData]:
 	if index < 0 or index >= zone_types.size() or index >= zone_cols.size():
 		return []
 	zone_types.remove_at(index)
-	#pop BEFORE the bump: board_changed listeners run synchronously inside the bump and
-	#must see types/columns already back in lockstep (the old order bumped mid-mutation)
+#Popped BEFORE the bump: board_changed listeners run synchronously inside the bump and must see
+#types and columns already back in lockstep.
 	var orphans : Array[CardData] = zone_cols.pop_at(index).datas
 	state.revision += 1
 	return orphans
 
 
-# ==============================================================================
-# Grid-board mutations: place, move, remove-with-compaction. Same MUTATION
-# GUIDELINES as above -- consistent state first, ONE revision bump after, no
-# scene tree, no signals.
-# ==============================================================================
+#Grid-board mutations: place, move, and remove with compaction. Same MUTATION GUIDELINES as
+#above - consistent state first, ONE revision bump after, no scene tree and no signals.
 
-## Result of a grid mutation: whether it happened, and whether the MOVER declared it a
-## compaction. `is_compaction` is never computed from before/after heights -- it is
-## whatever the caller passed to move_to_cell, echoed back so the board-mutation
-## broadcast can read it without re-deriving it.
+#`is_compaction` is never computed from before-and-after heights: it is whatever the caller passed
+#to move_to_cell, echoed back so the board-mutation broadcast can read it without re-deriving it.
+
+## Result of a grid mutation: whether it happened, and whether the MOVER called it a compaction.
 class GridMoveResult:
 	extends RefCounted
 	var ok : bool = false
@@ -272,8 +258,7 @@ static func _grid_at(state: GameData, grid_index: int) -> GridData:
 		return null
 	return state.grids[grid_index]
 
-## [grid_index, cell_index, height] of `card` in the grid board, or [] when the card is
-## not in any grid cell.
+## [grid_index, cell_index, height] of `card` in the grid board, or [] when it is in no cell.
 static func _locate_in_grid(state: GameData, card: CardData) -> Array[int]:
 	for gi in state.grids.size():
 		var grid : GridData = state.grids[gi]
@@ -287,9 +272,10 @@ static func _locate_in_grid(state: GameData, card: CardData) -> Array[int]:
 				return found
 	return []
 
-## Public grid-board counterpart of `locate`: the card's coordinate, or `BoardCoord.NOWHERE` when
-## it is not on any grid. Callers outside this file use this instead of `_locate_in_grid`'s raw
-## triple, and test the result with `is_nowhere()` -- never `== BoardCoord.NOWHERE`.
+#Callers outside this file use this instead of _locate_in_grid's raw triple, and test the result
+#with is_nowhere(), never with == BoardCoord.NOWHERE.
+
+## Public grid-board counterpart of locate: the card's coordinate, or BoardCoord.NOWHERE.
 static func locate_in_cell(state: GameData, card: CardData) -> BoardCoord:
 	var loc := _locate_in_grid(state, card)
 	if loc.is_empty(): return BoardCoord.NOWHERE
@@ -297,15 +283,17 @@ static func locate_in_cell(state: GameData, card: CardData) -> BoardCoord:
 	var cell_idx : int = loc[1]
 	return BoardCoord.new(loc[0], cell_idx % grid.grid_width, cell_idx / grid.grid_width, loc[2])
 
-## Places a card into a cell, at the TOP of its stack -- reuses the Anchor.ON_TOP rule
-## (insert above whatever is already there) rather than trusting `coord.h`, so a caller can
-## never hand in a height that disagrees with the stack it is landing on.
-## ⚠ IT LIFTS THE CARD OUT OF THE ZONE COLUMN IT CAME FROM, as one mutation with the append.
-## A card placed from the Entrance is in `upper_zone` until something takes it out, and there
-## is no other path that does: appending without the lift leaves it in TWO collections, which
-## validate() reports as a duplicate and which every position index then disagrees about.
-## Zone HEADERS (row -1) are never lifted -- they belong to their column.
-## Bumps revision exactly once, after the state is consistent again.
+#It reuses the Anchor.ON_TOP rule, inserting above whatever is already there, rather than trusting
+#coord.h, so a caller can never hand in a height that disagrees with the stack it lands on.
+
+#⚠ IT LIFTS THE CARD OUT OF THE ZONE COLUMN IT CAME FROM, as one mutation with the append. A card
+#placed from the Entrance stays in upper_zone until something takes it out, and there is no other
+#path that does, so appending without the lift leaves it in TWO collections.
+
+#validate() reports that as a duplicate and every position index then disagrees about it. Zone
+#HEADERS at row -1 are never lifted: they belong to their column. Bumps revision once, after.
+
+## Places a card into a cell, at the TOP of its stack.
 static func place_in_cell(state: GameData, card: CardData, coord: BoardCoord) -> bool:
 	if not card: return false
 	var grid := _grid_at(state, coord.grid)
@@ -313,28 +301,31 @@ static func place_in_cell(state: GameData, card: CardData, coord: BoardCoord) ->
 	if coord.x < 0 or coord.x >= grid.grid_width or coord.y < 0 or coord.y >= grid.grid_height:
 		return false
 	if not _locate_in_grid(state, card).is_empty():
-		return false #already on the grid board
+#Already on the grid board.
+		return false
 	var held := locate(state, card)
 	if held != Vector3i.MIN and held.z > -1:
 		zone(state, held.x)[held.y].datas.erase(card)
 	var idx := grid.cell_index(coord.x, coord.y)
 	grid.cells[idx].datas.append(card)
-	#don't re-set an already-PLAY stage: previous_stage drives the visual's spawn origin
+#An already-PLAY stage is not re-set: previous_stage drives the visual's spawn origin.
 	if card.stage != CardData.Stage.PLAY:
 		card.stage = CardData.Stage.PLAY
 	state.revision += 1
 	return true
 
-## Moves a card already on the grid board to another cell, landing at that cell's top
-## (Anchor.ON_TOP again). `is_compaction` is set BY THE CALLER -- never inferred from the
-## source/destination heights -- and is carried on the returned result. Bumps revision
-## exactly once.
+#It lands at that cell's top, Anchor.ON_TOP again. `is_compaction` is set BY THE CALLER, never
+#inferred from the source and destination heights, and is carried on the returned result. Bumps
+#revision exactly once.
+
+## Moves a card already on the grid board to another cell.
 static func move_to_cell(state: GameData, card: CardData, coord: BoardCoord, is_compaction: bool) -> GridMoveResult:
 	var res := GridMoveResult.new()
 	res.is_compaction = is_compaction
 	if not card: return res
 	var loc := _locate_in_grid(state, card)
-	if loc.is_empty(): return res #not on the grid board -- place_in_cell's job
+#Not on the grid board, which is place_in_cell's job.
+	if loc.is_empty(): return res
 	var dest_grid := _grid_at(state, coord.grid)
 	if not dest_grid: return res
 	if coord.x < 0 or coord.x >= dest_grid.grid_width \
@@ -348,9 +339,10 @@ static func move_to_cell(state: GameData, card: CardData, coord: BoardCoord, is_
 	res.ok = true
 	return res
 
-## Removes `card` from its cell. The array holding the stack IS the height axis, so
-## popping the card out already drops every card above it down by one -- no separate
-## per-card move is needed to compact. ONE revision bump for the whole compaction.
+#The array holding the stack IS the height axis, so popping the card out already drops every card
+#above it down by one and no separate per-card move is needed to compact. ONE bump for the whole.
+
+## Removes `card` from its cell.
 static func remove_from_cell(state: GameData, card: CardData) -> bool:
 	var loc := _locate_in_grid(state, card)
 	if loc.is_empty(): return false
@@ -359,8 +351,10 @@ static func remove_from_cell(state: GameData, card: CardData) -> bool:
 	state.revision += 1
 	return true
 
-## Appends one grid to the board. Ensures its cells/cell_types are built to its own size
-## BEFORE the append, mirroring add_column's header-and-column lockstep. One bump.
+#It ensures the grid's cells and cell_types are built to its own size BEFORE the append,
+#mirroring add_column's header-and-column lockstep. One bump.
+
+## Appends one grid to the board.
 static func add_grid(state: GameData, grid: GridData) -> void:
 	if not grid: return
 	var expected := grid.grid_width * grid.grid_height
@@ -370,9 +364,9 @@ static func add_grid(state: GameData, grid: GridData) -> void:
 	deal_marks(state)
 	state.revision += 1
 
-#Every unmarked cell dealt from the plan's STORED seed, so a grid arriving mid-show replays -- here,
-#ahead of the bump, because the rebuild the bump triggers must see a marked board. A board with no
-#plan is the opening deal's to write.
+#Every unmarked cell is dealt from the plan's STORED seed, so a grid arriving mid-show replays.
+#It happens here, ahead of the bump, because the rebuild the bump triggers must see a marked board.
+#A board with no plan is the opening deal's to write.
 static func deal_marks(state: GameData) -> void:
 	if state.plan_seed == 0: return
 	BoardPlan.deal(state, _plan_rng(state))
@@ -382,15 +376,17 @@ static func deal_marks(state: GameData) -> void:
 static func redraw_marks(state: GameData, cells: Array[CardData]) -> bool:
 	return BoardPlan.redraw(state, cells, _plan_rng(state))
 
-#The plan's own generator: the deal and a redraw replay from the seed the state stores, never the
-#global one.
+#The plan's own generator: the deal and a redraw replay from the seed the state stores, never from
+#the global one.
 static func _plan_rng(state: GameData) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = state.plan_seed
 	return rng
 
-## Removes grid `index` and returns the orphaned in-play cards (not the cell zone type
-## cards) for the caller to discard, mirroring remove_column's orphan contract. One bump.
+#It returns the orphaned in-play cards, not the cell zone type cards, for the caller to discard,
+#mirroring remove_column's orphan contract. One bump.
+
+## Removes grid `index`.
 static func remove_grid(state: GameData, index: int) -> Array[CardData]:
 	if index < 0 or index >= state.grids.size():
 		return []

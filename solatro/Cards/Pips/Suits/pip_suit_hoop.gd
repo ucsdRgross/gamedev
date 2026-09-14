@@ -10,8 +10,8 @@ func palette_role() -> int: return PaletteDB.ROLES.suit_hoop
 func get_str() -> String: return TRANSLATION.find('SUIT_HOOP')
 func get_description() -> String: return TRANSLATION.find('SUIT_HOOP_DESCRIPTION')
 
-## Hoops burst all at once from the card and cross the whole row (deterministic side), scoring
-## every talent they pass.
+#Hoops burst all at once from the card and cross the whole row, on a deterministic side, scoring
+#every talent they pass.
 func spawn_props() -> Array[PropSpawner]:
 	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []
@@ -22,12 +22,14 @@ func spawn_props() -> Array[PropSpawner]:
 	var sp := PropSpawner.new()
 	sp.origin = v
 	sp.remaining = count
-	sp.batch_size = count   # all at once, staged as a train
+#All at once, staged as a train.
+	sp.batch_size = count
 	sp.factory = func(_i: int) -> PropData:
 		var p := PropData.new()
 		p.kind = 0
 		p.ticks_per_slot = HOOP_TICKS_PER_SLOT
-		p.route = route.duplicate()   # each prop pops its OWN copy
+#Each prop pops its OWN copy.
+		p.route = route.duplicate()
 		p.source = origin_card
 		p.mods = [PropScoreTalents.new(HOOP_POINTS)] as Array[PropModifier]
 		p.mods.append_array(burning)

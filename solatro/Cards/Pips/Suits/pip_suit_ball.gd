@@ -7,8 +7,8 @@ func palette_role() -> int: return PaletteDB.ROLES.suit_ball
 func get_str() -> String: return TRANSLATION.find('SUIT_BALL')
 func get_description() -> String: return TRANSLATION.find('SUIT_BALL_DESCRIPTION')
 
-## Balls are ballistic: a mancala walk down the column picks `count` talent targets at spawn
-## (pure data), and one ball per tick flies straight to each, dropping Juggling on arrival.
+#Balls are ballistic: a mancala walk down the column picks `count` talent targets at spawn, as
+#pure data, and one ball per tick flies straight to each, dropping Juggling on arrival.
 func spawn_props() -> Array[PropSpawner]:
 	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []
@@ -21,7 +21,8 @@ func spawn_props() -> Array[PropSpawner]:
 	sp.origin = v
 	sp.remaining = targets.size()
 	sp.batch_size = 1
-	sp.interval = 1   # one drop lands per tick, in emission order
+#One drop lands per tick, in emission order.
+	sp.interval = 1
 	sp.factory = func(i: int) -> PropData:
 		var p := PropData.new()
 		p.kind = 2

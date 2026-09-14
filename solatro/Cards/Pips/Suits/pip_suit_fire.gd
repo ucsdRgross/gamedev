@@ -7,9 +7,9 @@ func palette_role() -> int: return PaletteDB.ROLES.suit_fire
 func get_str() -> String: return TRANSLATION.find('SUIT_FIRE')
 func get_description() -> String: return TRANSLATION.find('SUIT_FIRE_DESCRIPTION')
 
-## Fire is ballistic like Ball, but its mancala eligibility skips talents AND other Fire cards,
-## and it drops Burning (which buffs the target's own suit-effect count). The same-act cascade
-## (row Burning buffing those cards' columns later this submit) is intended.
+#Fire is ballistic like Ball, but its mancala eligibility skips talents AND other Fire cards, and
+#it drops Burning, which buffs the target's own suit-effect count. The same-act cascade, a row's
+#Burning buffing those cards' columns later this submit, is intended.
 func spawn_props() -> Array[PropSpawner]:
 	var v : BoardCoord = await _spawn_origin()
 	if v.is_nowhere(): return []

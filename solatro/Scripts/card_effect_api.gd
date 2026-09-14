@@ -1,31 +1,29 @@
 class_name CardEffectApi
 extends RefCounted
 ## THE ONE SEAM BETWEEN CARD EFFECTS AND THE GAME.
-##
-## Every card modifier implements its effect through this object and NEVER touches `Game` or
-## `GameData` directly. One instance per `Game`, created by that game and handed to modifiers
-## as `CardModifier.api`.
-##
-## ⚠ **READS GO THROUGH HERE TOO, not just writes.** The reason is resilience rather than
-## purity: when a property moves or disappears from `Game`/`GameData`, this layer still answers
-## — a wrapper returns a sensible empty value instead of every card breaking at once. That is
-## why the accessors below guard rather than assume.
-##
-## ⚠ **Effects modify the DATA layer. The visual layer is optional on top of it.** There is
-## deliberately no `view` accessor here: an effect that cannot run headless is wrong, and the
-## only code that legitimately reaches the view is the card's own visual node, which is not a
-## modifier and does not use this class.
-##
-## The surface is exactly what card effects actually use, and grows when an effect needs more —
-## nothing here is speculative.
+
+#Every card modifier implements its effect through this object and NEVER touches Game or GameData
+#directly. One instance per Game, created by that game and handed to modifiers as CardModifier.api.
+
+#⚠ READS GO THROUGH HERE TOO, not just writes. The reason is resilience rather than purity: when
+#a property moves or disappears from Game or GameData, this layer still answers with a sensible
+#empty value instead of every card breaking at once, which is why the accessors below guard.
+
+#⚠ Effects modify the DATA layer and the visual layer is optional on top of it. There is
+#deliberately no `view` accessor: an effect that cannot run headless is wrong, and the only code
+#that legitimately reaches the view is the card's own visual node, which is not a modifier.
+
+#The surface is exactly what card effects actually use, and grows when an effect needs more.
 
 var _game : Game
 
 func _init(game: Game) -> void:
 	_game = game
 
-## Is there a live game behind this layer at all? Preview contexts (deck viewers, boosters)
-## have modifiers with no game, and every accessor below must survive that.
+#Preview contexts - deck viewers, boosters - have modifiers with no game, and every accessor below
+#must survive that.
+
+## Is there a live game behind this layer at all?
 func is_live() -> bool:
 	return _game != null and _game.state != null
 
@@ -114,9 +112,9 @@ func get_zone_from_vec3(vec3: Vector3i) -> Array[ArrayCardData]:
 func is_data_topmost(data: CardData) -> bool:
 	return _game.is_data_topmost(data) if is_live() else false
 
-## The legality query behind every placement: does any modifier accept `stack` landing on
-## `target`? Same dispatch `try_place` uses, so a legality SCAN reuses it instead of a second
-## "is this legal" walk.
+#The same dispatch try_place uses, so a legality SCAN reuses it instead of a second walk.
+
+## The legality query behind every placement: does any modifier accept `stack` landing on `target`?
 func can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return await _game.return_first_data_array_result(&"on_can_place_stack", stack, target)
@@ -141,16 +139,15 @@ func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array
 func entity_side_for_row(coord: BoardCoord) -> bool:
 	return _game.entity_side_for_row(coord) if is_live() else false
 
-## The scoring section a ROW/COL prop write-back banks into at `coord`. One constructor resolves
-## which zone the card is in, so this does not branch on it.
+#One constructor resolves which zone the card is in, so this does not branch on it.
+
+## The scoring section a ROW or COL prop write-back banks into at `coord`.
 func line_section_at(coord: BoardCoord, kind: ScoringSection.LineKind) -> ScoringSection:
 	if not is_live(): return ScoringSection.new()
 	return ScoringSection.of_line_for(_game.state, coord, kind)
 
-# ==============================================================================
-# MUTATION — the write paths. Every one of these goes through Game/Board so the
-# mutation guidelines (consistent state first, one revision bump after) still hold.
-# ==============================================================================
+#MUTATION: the write paths. Every one of these goes through Game or Board, so the mutation
+#guidelines - consistent state first, one revision bump after - still hold.
 
 ## Move a card to a legacy board coordinate.
 func move_data_to_coord(moving: CardData, dest: Vector3i, cards_in_stack: int = 1,
@@ -172,8 +169,10 @@ func add_total_score(amount: int) -> void:
 	if not is_live(): return
 	_game.state.total_score += amount
 
-## Bump the board revision. ⚠ Only after the state is fully consistent again — the mutation
-## guidelines are not suspended by going through this layer.
+#⚠ Only after the state is fully consistent again: the mutation guidelines are not suspended by
+#going through this layer.
+
+## Bump the board revision.
 func bump_revision() -> void:
 	if not is_live(): return
 	_game.state.revision += 1
@@ -284,19 +283,21 @@ func _redraw_marks(marks: Array[CardData]) -> void:
 func rules_deck() -> Array[CardData]:
 	return _game.state.rules_deck if is_live() else ([] as Array[CardData])
 
-## Appends a persistent rules-deck card (a meta card creating another rules card). Rules cards
-## are always spotlit (`CardModifier.is_spotlit`), so the next spotlight sweep fires its
-## `on_spotlight` -- the caller does not call it directly.
+#Rules cards are always spotlit, so the next spotlight sweep fires its on_spotlight and the caller
+#does not call it directly.
+
+## Appends a persistent rules-deck card: a meta card creating another rules card.
 func add_rules_card(card: CardData) -> void:
 	if not is_live(): return
 	card.stage = CardData.Stage.RULES
 	_game.state.rules_deck.append(card)
 	_game.state.revision += 1
 
-## Removes a persistent rules-deck card. ⚠ The card leaves the rules deck immediately, so the
-## normal spotlight sweep can no longer see the edge to fire its `on_unspotlight` -- the caller
-## must run that itself (via `on_mod_triggered` or a direct call) BEFORE removing, while the
-## card is still spotlit.
+#⚠ The card leaves the rules deck immediately, so the normal spotlight sweep can no longer see
+#the edge to fire its on_unspotlight. The caller must run that itself BEFORE removing, while the
+#card is still spotlit.
+
+## Removes a persistent rules-deck card.
 func remove_rules_card(card: CardData) -> void:
 	if not is_live(): return
 	_game.state.rules_deck.erase(card)
@@ -354,8 +355,9 @@ func act_cancelled() -> bool:
 # PACING
 # ==============================================================================
 
-## The per-step pacing delay. Animation lengths are FRACTIONS of this, never wall-clock
-## literals — and headless it compresses to nothing, which is what keeps effects runnable
-## with no view attached.
+#Animation lengths are FRACTIONS of this, never wall-clock literals, and headless it compresses to
+#nothing, which is what keeps effects runnable with no view attached.
+
+## The per-step pacing delay.
 func get_delay() -> float:
 	return _game.get_delay() if is_live() else 0.0
