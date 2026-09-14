@@ -61,6 +61,9 @@ func _ready() -> void:
 	await test_the_layer_view_closes_on_a_board_mutation()
 	behavior_section("THE LAYER VIEW PROMISES NO PLACEMENT IT CANNOT TAKE")
 	await test_the_layer_view_draws_no_would_match_rim()
+	behavior_section("THE LAYER VIEW NEVER REBUILDS THE BOARD ON THE SPOT")
+	await test_a_mutation_closes_the_layer_and_leaves_its_rebuild_queued()
+	await test_the_layer_toggle_is_refused_while_the_board_is_busy()
 	behavior_section("THE GAME-OVER LOCK OUTLIVES A VISUALS REFRESH")
 	await test_the_game_over_lock_survives_a_visuals_refresh()
 	await teardown_view()
@@ -1518,6 +1521,61 @@ func test_the_layer_view_draws_no_would_match_rim() -> void:
 			"TP-97: and the marks it hid light again the moment it closes",
 			"%d before, %d after" % [promised, marks_rimmed_in(PaletteDB.ROLES.match_rim).size()])
 	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
+
+# ==============================================================================
+# TP-98 -- the layer closes into the queued rebuild, and never opens mid-cascade
+# ==============================================================================
+
+# A mutation queues its rebuild and closes the layer in the same breath. Were the close to draw for
+# itself it would run the whole rebuild inside the mutation's own await chain, rebinding every
+# pooled slot under a running meld animation.
+func test_a_mutation_closes_the_layer_and_leaves_its_rebuild_queued() -> void:
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open and not pa._rebuild_queued,
+			"TP-98: precondition: the layer is open over a board with no rebuild pending",
+			"open %s, queued %s" % [str(pa.plan_layer_open), str(pa._rebuild_queued)])
+
+	pa.queue_rebuild()
+	check(pa._rebuild_queued,
+			"TP-98: a mutation's rebuild is still QUEUED after the close it asks for")
+	check(not pa.plan_layer_open,
+			"TP-98: and the layer reads closed from the instant that mutation queued it")
+	var rebuilt := await wait_for(func() -> bool: return not pa._rebuild_queued)
+	check(rebuilt,
+			"TP-98: the queued rebuild runs at the end of the frame, like every other mutation's")
+
+	await input.key_release(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-98: precondition: the peek key is back up")
+	pa.flush_rebuild()
+	await get_tree().process_frame
+
+# THE SAME TWO INPUTS, OPPOSITE OUTCOMES: refused while the board is still resolving and taken the
+# moment it is idle, which is the only way to tell a gate from an input that missed its control.
+func test_the_layer_toggle_is_refused_while_the_board_is_busy() -> void:
+	check(not pa.plan_layer_open and not game.processing,
+			"TP-98: precondition: the layer is closed on an idle board",
+			"open %s, busy %s" % [str(pa.plan_layer_open), str(game.processing)])
+
+	game.processing = true
+	await input.click(centre_of_control(view.plan_layer_button))
+	check(not pa.plan_layer_open,
+			"TP-98: the HUD control opens nothing while the board is still resolving")
+	await input.key_press(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-98: and neither does the peek action")
+	await input.key_release(plan_layer_key())
+	game.processing = false
+
+	await input.click(centre_of_control(view.plan_layer_button))
+	check(pa.plan_layer_open,
+			"TP-98: the identical click opens it the moment the board is idle again")
+	await input.click(centre_of_control(view.plan_layer_button))
+	check(not pa.plan_layer_open, "TP-98: precondition: the toggle closed it again")
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open, "TP-98: and the identical peek opens it too")
+	await input.key_release(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-98: precondition: the peek closed with its key")
 
 # ==============================================================================
 # TP-96 -- the game-over lock outlives a visuals refresh

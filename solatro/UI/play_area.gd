@@ -1116,6 +1116,9 @@ var plan_layer_open := false:
 	set(value):
 		if plan_layer_open == value: return
 		plan_layer_open = value
+#A QUEUED REBUILD DRAWS THIS CLOSE ITSELF: refreshing here instead runs that whole rebuild inside
+#the mutation's own await chain, rebinding every pooled slot under a running meld animation.
+		if _rebuild_queued: return
 #THE CURSOR SURVIVES THE SWAP: the control it sat on stops taking focus the moment a cell's cards
 #step aside or come back, so the CELL is read before the resize releases it and its new target
 #grabbed after. Focus anywhere but a board cell -- the HUD, the Entrance -- is left where it is.
@@ -1154,7 +1157,12 @@ func _consume_as_view_action(event: InputEvent) -> bool:
 #and the played board comes back when it is let go, so the board is never left showing a layer
 #nobody asked to stay in. The HUD control toggles this same one flag.
 	if event.is_action_pressed(&"ui_plan_layer"):
-		plan_layer_open = true
+#NOT OPENED MID-CASCADE, the way a selection is refused there: the board is still resolving and the
+#rebuild it ends in would close this peek anyway. The release below still closes, so a peek already
+#open when the cascade began is not left behind.
+		var game := CardEnvironment.get_current_game()
+		if game and not game.processing:
+			plan_layer_open = true
 		return true
 	if event.is_action_released(&"ui_plan_layer"):
 		plan_layer_open = false
@@ -1611,8 +1619,8 @@ func queue_rebuild() -> void:
 	_rebuild_queued = true
 	_deferred_rebuild.call_deferred()
 #A VIEWER CANNOT WATCH A BOARD THAT CHANGED UNDER IT, so every mutation closes the layer view.
-#Closed AFTER the request is queued: the refresh the close asks for then flushes into that
-#rebuild instead of drawing a tree the mutation has already made stale.
+#Closed AFTER the request is queued: the close then draws nothing of its own and the rebuild above
+#draws the closed board at the end of the frame, like every other mutation's.
 	plan_layer_open = false
 
 func _deferred_rebuild() -> void:

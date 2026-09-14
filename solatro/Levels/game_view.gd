@@ -482,8 +482,10 @@ func _on_undo_pressed() -> void:
 	game.undo()
 
 #ONE CONTROL EVERY INPUT MODE REACHES THE SAME WAY: a focusable button answers a mouse click, a
-#keyboard accept and a controller accept without any of the three being wired on its own.
+#keyboard accept and a controller accept without any of the three being wired on its own. Refused
+#while the board resolves, the way a selection is: the rebuild that cascade ends in closes it.
 func _on_plan_layer_pressed() -> void:
+	if game.processing: return
 	play_area.plan_layer_open = not play_area.plan_layer_open
 
 func _on_data_selected(data: CardData) -> void:
