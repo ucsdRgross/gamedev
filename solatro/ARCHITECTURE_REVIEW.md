@@ -510,20 +510,18 @@ N̂(node)   = N0 + BOOSTER_YIELD × boosters_on_path(node)
 
 - Goals scale with **opportunities** to grow (booster nodes on the path), not purchases —
   skipping boosters leaves you under the curve; that is the pressure.
-- Fitted against the grid economy: `N0=20, G0=5376, ALPHA=0.26, BOOSTER_YIELD=5`.
-- ⚠ **ALPHA is nearly flat ON PURPOSE, and that is not a tuning preference.** Measured, a
-  show's score PEAKS three nodes in and then falls: the board holds 25 cells for the whole run
-  (`grid_cards_per_unlock` ships at 52 and a run only reaches 40 cards, so a second grid never
-  unlocks), and booster cards are rank-uniform 1–13 against a start deck of 1–5, thinning out
-  the very collisions that make melds. Deck size is the wrong driver for this curve; a larger
-  power makes late nodes unreachable rather than harder. **`gaps/GAP-041.md` is OPEN on the
-  underlying problem** — the refit makes the curve reachable, it does not fix the sign.
-- ⚠ **THE SHIPPED CONSTANTS ARE TRIVIAL RIGHT NOW AND THE REFIT IS AN OPEN OWNER RULING.**
-  Measured with the board plan dealt and matched, par play scores 3.3–5.1× what it scores
-  unmarked — but it multiplies MOST where the deck is dense, so the ladder still peaks at node 3
-  and par clears every node by 4.4–5.7× at the 25th percentile. The beatable fit returns a
-  NEGATIVE alpha, which `goal_for`'s contract and the goals-grow-with-boosters check both forbid,
-  so nothing was written. The table and the options: `design/board-plan/gaps/GAP-006.md`.
+- Fitted against the grid economy: `N0=20, G0=18720, ALPHA=0, BOOSTER_YIELD=5`.
+- ⚠ **ALPHA IS FLAT (0) AS A PLACEHOLDER, on an owner ruling, not as a tuning preference.**
+  Measured with the board plan dealt and matched, a show's score PEAKS three nodes in and then
+  falls to 0.10× of that peak: the board holds 25 cells for the whole run (`grid_cards_per_unlock`
+  ships at 52 and a run only reaches 40 cards, so a second grid never unlocks), and booster cards
+  are rank-uniform 1–13 against a start deck of 1–5, thinning out the very collisions that make
+  melds. Deck size is the wrong driver for this curve, so the beatable fit returns a NEGATIVE
+  alpha — which `goal_for`'s contract forbids. `G0` is therefore the beatable value at a flat
+  alpha (the ladder's own minimum, node 12's 25th percentile) and every node is winnable and
+  non-trivial, but the curve has no growth term. **`design/poker-patience/gaps/GAP-041.md` is
+  OPEN on the underlying problem**: growing the board with the deck, or narrowing what a booster
+  adds, is what a real curve waits on. The table: `design/board-plan/gaps/GAP-006.md`.
 - **Monotone clamp** per path in `MapNodeRoles` (a spread extension can weaken par play; the
   ladder must never descend). Boss ≥ every game goal of the lap.
 - `difficulty` is THE run-win-rate dial (±15% ≈ one persona band); future per-player

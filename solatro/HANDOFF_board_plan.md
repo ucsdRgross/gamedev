@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 47 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+**State:** 48 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
 partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
 carries its `resolution:` block and the reading taken). The rulings create six execution steps,
 S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
@@ -220,9 +220,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>; py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'A placeholder; GAP-041 stays open in poker-patience, no v3.'
+  status: done
+  evidence: 'Implementer red (filtered RUN MANAGER + MAP ROLES, 61 checks both runs): goal_alpha back to 0.26 -> 1 FAILED (the flatness property, 18720 / 21651 / 25432); goal_alpha -0.32 -> 2 FAILED (never FALL, flatness); green 61/61. Overseer full run: ALL 48 SUITES: 4351 CHECKS PASSED, errors log empty, SECTION 8 identical; banners vs fix I differ only in fuzz drift and RUN MANAGER 39 -> 40. goal_g0 18720.0 from the tool''s new FLAT line (fit_power_beatable with alpha pinned to 0 = the ladder''s own minimum, node 12''s 25th percentile); goal_alpha 0.0. No test pins a goal number; test_map_roles'' post-booster ladder check re-derived to strict only when the curve grows.'
+  notes: 'A placeholder; GAP-041 stays open in poker-patience, no v3. Known: the baker''s monotone clamp masks a falling curve on the baked ladder, so only the run-manager check can see the sign. Stale: solatro/HANDOFF_phase9_goal_curve.md still quotes 5376 / 0.26 in three places - queued for the close''s docs pass.'
 - id: S21
   description: GAP-005 - ui_plan_layer gains the X face button (button_index 2) held to peek; TP-89 through the viewport.
   files_touched: []
@@ -379,6 +379,8 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   ships one.
 
 ## Queued for the close (S17)
+- /docs: `solatro/HANDOFF_phase9_goal_curve.md` quotes the retired 5376 / 0.26 in three places; the
+  curve is now the S22 placeholder (18720 / 0).
 - /simplify: `MarkMatch._pip_same` computes two `pip_cache_key`s that `ask_pass` never reads under
   `memoise = false` (bloat review).
 - /simplify: the residual 8-line dup_check pair between `plan_match_shot.gd` and `plan_layer_shot.gd`
@@ -414,7 +416,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S22, S21, S18, S20, S19, S23.
+Work in this order, one implementer, one full gate, one commit each: S21, S18, S20, S19, S23.
 Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan

@@ -130,46 +130,44 @@ func _booster_ranks_of(overlay: WorldGraphOverlay) -> Dictionary:
 			ranks[n.depth] = true
 	return ranks
 
-## §15b ladder shape along the line, for BOTH lap parities: equal goals before the first
-## booster rank, strictly higher after each booster crossing, never descending, boss on top.
+## §15b ladder shape, both lap parities: flat before the first booster rank, never descending, higher past a crossing whenever the curve grows at all.
 func test_goal_ladder_monotone() -> void:
 	var max_depth := 10
 	for lap : int in [0, 1]:
 		var run := _run_with(lap)
 		var overlay := _populated_overlay(_line_export(max_depth))
 		MapNodeRoles.assign(overlay, run.world_seed, run)
-		# Walk game nodes in lap direction, tracking booster crossings + the previous goal.
 		var depths : Array[int] = []
 		for d : int in range(max_depth + 1):
 			depths.append((max_depth - d) if run.is_reversed() else d)
 		var prev_goal := 0
-		var crossed_booster := false        # since the previous GAME node
+		var crossed_booster := false
 		var seen_any_booster := false
 		var pre_booster_goals : Dictionary[int, bool] = {}
 		var monotone := true
 		var rises_after_booster := true
 		for depth : int in depths:
-			var n : WorldGraphNode = overlay.node(depth)  # line graph: id == depth
+			var n : WorldGraphNode = overlay.node(depth)
 			if (n.meta[MapNodeRoles.ROLE_KEY]) == MapNodeRoles.ROLE_BOOSTER:
 				crossed_booster = true
 				seen_any_booster = true
 				continue
 			var goal : int = n.meta.get(MapNodeRoles.GOAL_KEY, 0)
-			if goal <= 0: continue  # the rest-stop anchor
+			if goal <= 0: continue
 			if goal < prev_goal: monotone = false
 			if not seen_any_booster:
 				pre_booster_goals[goal] = true
 			elif crossed_booster and prev_goal > 0 and goal <= prev_goal \
 					and (n.meta[MapNodeRoles.ROLE_KEY]) == MapNodeRoles.ROLE_GAME:
-				rises_after_booster = false  # first game node past a booster must rise
+				rises_after_booster = false
 			crossed_booster = false
 			prev_goal = goal
 		check(pre_booster_goals.size() <= 1,
 				"lap %d: goals are equal before the first booster rank" % lap)
 		check(monotone, "lap %d: goals never descend along the lap (monotone clamp)" % lap)
-		check(rises_after_booster,
-				"lap %d: goals rise strictly after each booster crossing" % lap)
-		# Boss (lap-target anchor) tops every game goal.
+		var curve_rises := RunManager.goal_for(1, run.lap, false) > RunManager.goal_for(0, run.lap, false)
+		check(rises_after_booster or not curve_rises,
+				"lap %d: goals rise after each booster crossing whenever the curve does" % lap)
 		var boss : WorldGraphNode = overlay.start_node() if run.is_reversed() else overlay.end_node()
 		var boss_goal : int = boss.meta.get(MapNodeRoles.GOAL_KEY, 0)
 		var max_game := 0

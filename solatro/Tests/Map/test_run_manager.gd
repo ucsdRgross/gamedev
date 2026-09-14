@@ -67,10 +67,15 @@ func test_goal_scaling() -> void:
 	var g0 := RunManager.goal_for(0, 0, false)
 	check(g0 == int(s.goal_g0 * s.difficulty),
 			"lap 0 zero-booster goal = goal_g0 x difficulty", "g=%d" % g0)
-	check(RunManager.goal_for(1, 0, false) > RunManager.goal_for(0, 0, false)
-			and RunManager.goal_for(2, 0, false) > RunManager.goal_for(1, 0, false)
-			and RunManager.goal_for(5, 0, false) > RunManager.goal_for(2, 0, false),
-			"goal grows strictly with boosters_on_path")
+	check(RunManager.goal_for(1, 0, false) >= RunManager.goal_for(0, 0, false)
+			and RunManager.goal_for(2, 0, false) >= RunManager.goal_for(1, 0, false)
+			and RunManager.goal_for(5, 0, false) >= RunManager.goal_for(2, 0, false),
+			"TP-90: goals never FALL as boosters_on_path grows")
+	check(RunManager.goal_for(0, 0, false) == RunManager.goal_for(3, 0, false)
+			and RunManager.goal_for(3, 0, false) == RunManager.goal_for(9, 0, false),
+			"TP-90: a flat goal_alpha gives every deck size the same goal",
+			"%d / %d / %d" % [RunManager.goal_for(0, 0, false),
+					RunManager.goal_for(3, 0, false), RunManager.goal_for(9, 0, false)])
 	var lap0 := RunManager.goal_for(3, 0, false)
 	var lap1 := RunManager.goal_for(3, 1, false)
 	check(absf(float(lap1) / float(lap0) - s.lap_mult) < 0.01,
@@ -82,8 +87,6 @@ func test_goal_scaling() -> void:
 			"boss goal = boss_mult x the normal goal (within int rounding)",
 			"%d vs %d" % [boss, lap0])
 	check(RunManager.goal_for(20, 1000, true) > 0, "extreme laps stay positive (overflow cap)")
-	# difficulty is THE win-rate dial: scales every goal linearly. Shared settings resource —
-	# restore after.
 	var saved_difficulty : float = SettingsManager.settings.difficulty
 	SettingsManager.settings.difficulty = 2.0
 	check(absi(RunManager.goal_for(3, 0, false) - lap0 * 2) <= 1,

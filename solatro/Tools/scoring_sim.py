@@ -1201,8 +1201,8 @@ COMBO_CAP = 0.0
 GOAL_N0 = 20
 BOOSTER_YIELD = 5
 NODES_PER_BOOSTER = 3
-SHIPPED_G0 = 5376.0
-SHIPPED_ALPHA = 0.26
+SHIPPED_G0 = 18720.0
+SHIPPED_ALPHA = 0.0
 
 # The board plan's knobs, from the same PlayerSettings group the engine scores with. --parity
 # asserts all three against the values the engine dumps, so a knob edited there and not here is
@@ -1879,6 +1879,9 @@ def run_grid_goals(q, trials, skill, out, nodes=13, economy=None):
     bg0, balpha, btight = fit_power_beatable(ks, raw)
     print("  BEATABLE:      goal(N) = %.1f * (N/%d)^%.2f  tightness %.2f of the ladder"
           % (bg0, GOAL_N0, balpha, btight))
+    fg0, _falpha, ftight = fit_power_beatable(ks, raw, amin=0.0, amax=0.0, steps=1)
+    print("  FLAT:          goal(N) = %.1f (alpha pinned to 0)  tightness %.2f of the ladder"
+          % (fg0, ftight))
     print("  shipped:       goal(N) = %.1f * (N/%d)^%.2f" % (SHIPPED_G0, GOAL_N0, SHIPPED_ALPHA))
     print("  ladder span: node 0 goal %d -> node %d goal %d  (x%.1f over the run)"
           % (goals[ks[0]], ks[-1], goals[ks[-1]], goals[ks[-1]] / float(goals[ks[0]])))

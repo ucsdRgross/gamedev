@@ -356,3 +356,8 @@ gap under `gaps/`.
 - S15 / Q120: the goal tool's `shipped` reference column was still printing the retired tableau
   constants; it now reads two named mirrors beside the other PlayerSettings values, so the column
   means what the game ships.
+- S22 / GAP-006: `goal_g0` is 18720, derived not transcribed -- at a flat alpha the beatable fit's
+  largest legal `g0` is the ladder's own minimum, so `--grid-goals` now prints a FLAT line beside
+  BEATABLE (`fit_power_beatable` scanned with alpha pinned to 0) and that line is the number:
+  `FLAT: goal(N) = 18720.0 (alpha pinned to 0) tightness 0.47 of the ladder`, node 12's 25th
+  percentile at 800 trials. The sim's `SHIPPED_G0` / `SHIPPED_ALPHA` mirrors moved with it.
