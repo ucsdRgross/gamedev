@@ -104,6 +104,20 @@ func mark_every_cell(state: GameData) -> Array[CardData]:
 		marked.append(type_card)
 	return marked
 
+# Every cell marked, then handed back LAST-FIRST as the plan's reveal order: an order the
+# board's own row-major walk cannot produce, so a claim about the deal's order cannot pass by
+# luck. Returns the cells in the order they will reveal.
+func reveal_last_marked_first(state: GameData) -> Array[CardData]:
+	var marked := mark_every_cell(state)
+	var order : Array[BoardCoord] = []
+	for i : int in range(marked.size() - 1, -1, -1):
+		order.append(state.cell_type_coord(marked[i]))
+	state.plan_reveal_order = order
+	var expected : Array[CardData] = []
+	for coord : BoardCoord in order:
+		expected.append(state.cell_type_at(coord))
+	return expected
+
 # Every claim here reads a card's own state rather than where it sits, so the board's LAYOUT never
 # has to settle -- only its visuals have to exist.
 func settle(pa: PlayArea) -> void:
@@ -273,14 +287,7 @@ func test_a_covered_mark_is_named_by_its_cell() -> void:
 # own turn. Sampled every frame: what is asserted is the sequence, not a duration.
 func test_the_reveal_deals_the_marks_in_the_deals_own_order() -> void:
 	var g := make_grid_game()
-	var marked := mark_every_cell(g.state)
-	var order : Array[BoardCoord] = []
-	for i : int in range(marked.size() - 1, -1, -1):
-		order.append(g.state.cell_type_coord(marked[i]))
-	g.state.plan_reveal_order = order
-	var expected : Array[CardData] = []
-	for coord : BoardCoord in order:
-		expected.append(g.state.cell_type_at(coord))
+	var expected := reveal_last_marked_first(g.state)
 	var pa := make_play_area()
 	await settle(pa)
 
@@ -437,14 +444,7 @@ func test_the_reveal_cascades_over_one_tunable_duration() -> void:
 	SettingsManager.settings.base_delay = CASCADE_DELAY
 	SettingsManager.settings.plan_reveal_multiplier = CASCADE_MULTIPLIER
 	var g := make_grid_game()
-	var marked := mark_every_cell(g.state)
-	var order : Array[BoardCoord] = []
-	for i : int in range(marked.size() - 1, -1, -1):
-		order.append(g.state.cell_type_coord(marked[i]))
-	g.state.plan_reveal_order = order
-	var expected : Array[CardData] = []
-	for coord : BoardCoord in order:
-		expected.append(g.state.cell_type_at(coord))
+	var expected := reveal_last_marked_first(g.state)
 	var pa := make_play_area()
 	await settle(pa)
 

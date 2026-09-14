@@ -1,13 +1,10 @@
 extends TestSuite
 # res://Tests/Map/test_map_roles.gd
-# ==============================================================================
-# MAP NODE ROLES — deterministic seed-derived assignment over a synthetic graph.
-# Builds WorldGraphOverlay.populate() input by hand (no world generation needed),
-# so roles/goals are testable without the GPU pipeline.
-#
-# CATEGORY MAP: all BEHAVIOR — where bosses/rest stops/boosters land, the booster
-# pacing guarantee, per-lap scaling, and same-seed determinism are map design rules.
-# ==============================================================================
+# MAP NODE ROLES: seed-derived assignment over a graph built by hand, so roles and goals are
+# testable without the world generator or the GPU pipeline.
+
+# CATEGORY MAP: all BEHAVIOR -- where bosses, rest stops and boosters land, the booster pacing
+# guarantee, per-lap scaling and same-seed determinism are all map design rules.
 
 func suite_name() -> String:
 	return "MAP ROLES"
@@ -76,7 +73,6 @@ func test_booster_window_guarantee() -> void:
 	var max_depth := 10
 	var overlay := _populated_overlay(_line_export(max_depth))
 	MapNodeRoles.assign(overlay, run.world_seed, run)
-	# Reconstruct which mid-ranks became booster ranks.
 	var booster_ranks := {}
 	for n: WorldGraphNode in overlay.nodes():
 		if (n.meta[MapNodeRoles.ROLE_KEY]) == MapNodeRoles.ROLE_BOOSTER:
@@ -130,7 +126,7 @@ func _booster_ranks_of(overlay: WorldGraphOverlay) -> Dictionary:
 			ranks[n.depth] = true
 	return ranks
 
-## §15b ladder shape, both lap parities: flat before the first booster rank, never descending, higher past a crossing whenever the curve grows at all.
+## The ladder, both lap parities: flat before the first booster, never descending, and higher past a crossing exactly when the curve grows.
 func test_goal_ladder_monotone() -> void:
 	var max_depth := 10
 	for lap : int in [0, 1]:
@@ -145,7 +141,9 @@ func test_goal_ladder_monotone() -> void:
 		var seen_any_booster := false
 		var pre_booster_goals : Dictionary[int, bool] = {}
 		var monotone := true
-		var rises_after_booster := true
+		var post_booster_pairs := 0
+		var post_booster_rises := 0
+		var post_booster_drops := 0
 		for depth : int in depths:
 			var n : WorldGraphNode = overlay.node(depth)
 			if (n.meta[MapNodeRoles.ROLE_KEY]) == MapNodeRoles.ROLE_BOOSTER:
@@ -157,17 +155,25 @@ func test_goal_ladder_monotone() -> void:
 			if goal < prev_goal: monotone = false
 			if not seen_any_booster:
 				pre_booster_goals[goal] = true
-			elif crossed_booster and prev_goal > 0 and goal <= prev_goal \
+			elif crossed_booster and prev_goal > 0 \
 					and (n.meta[MapNodeRoles.ROLE_KEY]) == MapNodeRoles.ROLE_GAME:
-				rises_after_booster = false
+				post_booster_pairs += 1
+				if goal > prev_goal: post_booster_rises += 1
+				elif goal < prev_goal: post_booster_drops += 1
 			crossed_booster = false
 			prev_goal = goal
 		check(pre_booster_goals.size() <= 1,
 				"lap %d: goals are equal before the first booster rank" % lap)
 		check(monotone, "lap %d: goals never descend along the lap (monotone clamp)" % lap)
 		var curve_rises := RunManager.goal_for(1, run.lap, false) > RunManager.goal_for(0, run.lap, false)
-		check(rises_after_booster or not curve_rises,
-				"lap %d: goals rise after each booster crossing whenever the curve does" % lap)
+		check(post_booster_drops == 0,
+				"lap %d: the goal past a booster crossing is never lower than the one before it"
+				% lap, "%d of %d crossings dropped" % [post_booster_drops, post_booster_pairs])
+		check(post_booster_rises == (post_booster_pairs if curve_rises else 0),
+				"lap %d: the goal past a booster crossing rises at every crossing when the"
+				% lap + " curve rises, and at none of them when it is flat",
+				"%d of %d crossings rose, curve rises: %s"
+				% [post_booster_rises, post_booster_pairs, str(curve_rises)])
 		var boss : WorldGraphNode = overlay.start_node() if run.is_reversed() else overlay.end_node()
 		var boss_goal : int = boss.meta.get(MapNodeRoles.GOAL_KEY, 0)
 		var max_game := 0
@@ -178,8 +184,7 @@ func test_goal_ladder_monotone() -> void:
 				"boss=%d max_game=%d" % [boss_goal, max_game])
 		overlay.free()
 
-## Crafted-graph oracle: each game node's goal equals goal_for(booster ranks strictly
-## before its progress) with the monotone running max applied.
+## Crafted-graph oracle: a game node's goal is goal_for(boosters before it), monotone-clamped.
 func test_goal_ladder_matches_curve() -> void:
 	var max_depth := 10
 	var run := _run_with(0)
@@ -191,7 +196,7 @@ func test_goal_ladder_matches_curve() -> void:
 	for p : int in range(max_depth + 1):
 		var count := 0
 		for rank : int in booster_ranks.keys():
-			if rank < p: count += 1  # forward lap: rank_progress == rank
+			if rank < p: count += 1
 		running = maxi(running, RunManager.goal_for(count, run.lap, false))
 		var n : WorldGraphNode = overlay.node(p)
 		if (n.meta[MapNodeRoles.ROLE_KEY]) != MapNodeRoles.ROLE_GAME: continue

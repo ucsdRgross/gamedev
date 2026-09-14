@@ -26,7 +26,7 @@ func _ready() -> void:
 	behavior_section("THE DEAL, THROUGH A REAL SHOW START")
 	await test_a_fresh_show_marks_every_cell()
 	await test_a_three_grid_show_marks_every_grid()
-	await test_the_same_node_deals_the_same_board()
+	await test_one_seed_over_one_deck_order_deals_the_same_board()
 	behavior_section("THE DEAL'S CARD BUDGET")
 	test_twenty_cards_over_twenty_five_cells()
 	test_nothing_repeats_while_a_card_is_unused()
@@ -542,9 +542,10 @@ func test_a_three_grid_show_marks_every_grid() -> void:
 			", ".join(g.state.validate()))
 	free_show(g)
 
-#TP-07: the seed is the run's own plus the node being played, so the show a player re-enters is the
-#show they left, and the node next door is a different board.
-func test_the_same_node_deals_the_same_board() -> void:
+#TP-07: the seed is the run's own plus the node being played, so one node is one plan and the node
+#next door is another. ⚠ The draw pile's order is NOT under that seed, so a replayed node deals
+#the same board only when the deck order repeats too -- which is why the fixture seeds the shuffle.
+func test_one_seed_over_one_deck_order_deals_the_same_board() -> void:
 	var first := await start_show(TestDecks.plan_deck(), 7)
 	var dealt := plan_signature(first.state)
 	var dealt_seed := first.state.plan_seed
@@ -553,14 +554,14 @@ func test_the_same_node_deals_the_same_board() -> void:
 	check(again.state.plan_seed == dealt_seed, "TP-07: the same node seeds the same plan",
 			"%d vs %d" % [again.state.plan_seed, dealt_seed])
 	check(plan_signature(again.state) == dealt,
-			"TP-07: two shows started on one node deal the same board, cell for cell",
+			"TP-07: one plan seed over one draw-pile order deals the same board, cell for cell",
 			plan_signature(again.state))
 	free_show(again)
 	var elsewhere := await start_show(TestDecks.plan_deck(), 8)
 	check(elsewhere.state.plan_seed != dealt_seed, "TP-07: another node seeds another plan",
 			"%d vs %d" % [elsewhere.state.plan_seed, dealt_seed])
 	check(plan_signature(elsewhere.state) != dealt,
-			"TP-07: ...and deals a different board")
+			"TP-07: ...and deals a different board from the same draw-pile order")
 	free_show(elsewhere)
 
 #TP-02: the deck runs out before the board does, so the deal keeps going round it -- and the second
