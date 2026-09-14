@@ -101,6 +101,14 @@ written when a run stalls or fails.
   - ⬜ **For the owner's eye:** whether "no rim" alone reads as a mark at overview zoom; and under a
     scoring beam at phase 0 the activated gold rim is the least tellable instant (verified at the
     close, `TEST_PLAN.md` TP-72's beam half).
+  - ⬜ **`_check_board_fits_window` measures a stale invariant.** It compares Entrance coords against
+    the board's `SmoothScrollContainer`, but the Entrance is pinned OUTSIDE that scroll, so the check
+    fails on the shipped five-slot board ("board right edge 1156.6 vs scrollable right 1073.6") while
+    the board fits the 1576 px viewport with 419 px to spare; the surviving WIDE=12 row passes only
+    because the grid container is sized from the Entrance width. The board plan dropped the call on
+    the moved all-kinds fixture rather than assert it. What the pinned Entrance's reachability
+    invariant is (fits the window, or its own `EntranceHTrack`) is the owner's; then the helper
+    and both callers follow.
   - ⬜ **Touchscreen:** tapping on nothing while a card is held should cancel the hold (owner,
     from playtest); today only a real drop target or a second tap on the card releases it.
   - ⬜ **Recorded, no producer today.** A card an EFFECT moves off a marked cell keeps its last
