@@ -295,6 +295,17 @@ and it propagates to direct `CanvasItem` children, so it would tint the real car
 mark (`DESIGN.md` §1c, §1m). Use the palette and the outline shader's three override layers
 (`ARCHITECTURE_REVIEW.md` §4i, §4j).
 
+### 1.10-bis Owner rulings on the run's gaps (verbatim; the gap files carry the reading taken)
+
+| Gap | Ruling |
+|---|---|
+| GAP-001 | *"b, build the logic here for now, can merge with sidebar changes later."* — the stocks partition is built here as a read-only helper by the sidebar's own round-robin rule; TP-05/TP-06 land; the mid-show pool is the remaining stocks. |
+| GAP-002 | *"i would say instantly, effects can theoretically trigger immediately when mark is hit, with other types of effects directly checking the mark it is on top of without needing hook to figure out how its own effect is modified"* and *"checking marks during a scoring should make sense as well"* — the hooks fire at landing AND at every line score; a mark's mult is a query (`on_mark_line_mult`) the composition asks; `add_line_mult` retired. |
+| GAP-003 | *"i would consider a line to be a single row/col/diag"*, *"it should be rerolling a line ... may also need a reroll entire grid board. there shouldnt be empty cells."* — `reroll_line(section)` and `reroll_grid(grid)`, every cell. |
+| GAP-004 | *"a, gold for now but would realistically be a shader that causes color to slowly interpolate between different colors over time like a rainbow shimmer effect"*, *"i prefer blending for shimmer effect, samples would look too distracting with jumps."* — 31 / 6 stand; the activated rim shimmers, BLENDED (an exception to §4i's sample rule). |
+| GAP-005 | *"expecting an on screen button that shows the mark view so touchscreen and mouse can interact with it as well, with controller types using one of the 4 main buttons of x y a b"* — the Marks button stands; X held peeks. |
+| GAP-006 | *"a or d, we arent far to decide what actual curve should be so a placeholder is fine"* — (a): flat alpha, `goal_g0` refit, a placeholder; GAP-041 stays open. |
+
 ### 1.11 Naming
 
 *Authorised by `QR7` (⚑contract) and `Q111` (⚑contract).*

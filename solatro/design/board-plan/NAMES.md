@@ -51,7 +51,7 @@ mark (didnt know hitting the mark was official term, so am okay with mark termin
 
 | Name | File | What |
 |---|---|---|
-| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()`, `write_mark()`, `clear_mark()`, `is_marked()` and nothing else |
+| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()`, `write_mark()`, `clear_mark()`, `is_marked()` and, until the sidebar's stocks land, `stocks_of(state) -> Array[Array]` (GAP-001 (b1): `draw_deck` split round-robin by the sidebar's rule) |
 | `MarkMatch` | `Scripts/mark_match.gd` | static; owns `matches_at()` and the property enum |
 | `SkillBoardPlanner` | `Cards/Skills/Rules/skill_board_planner.gd` | the rules-deck card whose `on_game_start` calls `BoardPlan.deal()` |
 | `TestBoardPlan` | `Tests/Engine/test_board_plan.gd` | suite name `BOARD PLAN` |
@@ -91,7 +91,11 @@ plain cover.
 ```gdscript
 func on_mark_covered(card: CardData, coord: BoardCoord, level: int) -> void
 func on_mark_hit(card: CardData, coord: BoardCoord, matched: int, level: int) -> void
+func on_mark_line_mult(card: CardData, coord: BoardCoord, matched: int) -> float   # GAP-002: the mark's share of M, asked at score time; summed
 ```
+
+Both act hooks fire at LANDING (once, from `place_card_in_grid`) and on every line score through the
+cell (GAP-002). Spelling constant: `MarkMatch.MARK_LINE_MULT`.
 
 The leniency family, declared as **COMMENTS** on `CardModifier` (never as methods —
 `ARCHITECTURE_REVIEW.md` §3c), mirroring `PipComparator`'s deny/allow shape:
@@ -120,7 +124,9 @@ func mark_at(coord: BoardCoord) -> CardData          # the cell type card, or nu
 func reroll_mark(coord: BoardCoord) -> void          # QR5=c
 func grant_mark(coord: BoardCoord, source: CardData) -> void   # Q53=a; sets granted
 func swap_marks(a: BoardCoord, b: BoardCoord) -> void          # QR5=c
-func add_line_mult(amount: float) -> void   # a mark effect's share of the line's summed mult (chart C5); valid only while score_line composes. Added during execution - see ASSUMPTIONS.md
+func reroll_line(section: ScoringSection) -> void   # GAP-003: every cell of one row, column or diagonal, covered included
+func reroll_grid(grid: int) -> void                # GAP-003: every cell of one grid
+# add_line_mult was RETIRED by GAP-002: a mark's mult is the query below, asked during composition
 ```
 
 ## Localisation keys
@@ -134,7 +140,7 @@ func add_line_mult(amount: float) -> void   # a mark effect's share of the line'
 
 ## InputMap action
 
-`ui_plan_layer` — held to peek, and bound for keyboard, mouse and controller alike (`Q117`=(c)).
+`ui_plan_layer` — held to peek: the `M` key and the X face button (`button_index` 2, GAP-005); the mouse and touch reach the view through the HUD `Marks` button.
 Keyboard binding `M`; the CONTROLLER binding is parked on `gaps/GAP-005.md` — every shoulder is
 already taken. The HUD control is what a pad reaches today.
 

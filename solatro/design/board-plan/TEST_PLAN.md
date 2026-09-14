@@ -179,6 +179,20 @@ is in `all_tests.tscn`.
 
 ---
 
+## Suite `BOARD PLAN` / `MARK MATCH` / `PLAN VISUALS` — the gap rulings (S18–S23)
+
+| id | Test | Fixture | Proves | Gates |
+|---|---|---|---|---|
+| **TP-05** ⚑gate | (unparked) Each of the 5 stocks contributes exactly 5 of a 25-cell board's marks | `PLAN_DECK`, 1 grid, the partition helper | `Q93`=(b), GAP-001 (b1) | S18 |
+| **TP-06** | (unparked) 26 cells over 5 stocks: stock 0 contributes 6, stocks 1–4 contribute 5 | ragged grid | `Q93`=(b), pre-authorisation 1 | S18 |
+| **TP-85** ⚑gate | The partition is the sidebar's rule: 23 cards over 5 slots split `[5,5,5,4,4]` round-robin left to right, no RNG | `deck_standard_52().slice(23)` | sidebar PLAN §1.7, GAP-001 | S18 |
+| **TP-86** ⚑gate | `on_mark_covered` fires ONCE at landing on every cover and `on_mark_hit` additionally on a match, from the real placement path, before any line scores; a landing that completes no line still fires them | one mark, one placement | GAP-002 | S19 |
+| **TP-87** ⚑gate | A ×2 mark contributes +2 through `on_mark_line_mult` asked during composition; two make ×4; a landing dispatch adds nothing to M; `add_line_mult` no longer exists | two marked cells in one row (TP-32's fixture) | GAP-002, `Q122` | S19 |
+| **TP-88** | `reroll_line(section)` re-deals every cell of one row, column or diagonal, covered included, from the fewest-copies pool; `reroll_grid(grid)` every cell of one grid; each leaves `validate()` clean and bumps `revision` once | a covered row; a 25-cell grid | GAP-003 | S20 |
+| **TP-89** | Holding the X face button (a synthesized `InputEventJoypadButton`, index 2) opens the layer view and releasing closes it, through the viewport | the TP-68 fixture | GAP-005 | S21 |
+| **TP-90** | `goal_alpha` is 0 and `goal_g0` is the beatable flat value; the goals-grow-with-boosters check reads a flat curve as non-decreasing | `RunManager.goal_for` | GAP-006 | S22 |
+| **TP-91** 👁 | The activated rim shimmers: over one loop the rim colour of a landed card's matching elements MOVES through the ramp, blended, measured over time, not a still | `plan_match_shot` landed.png plus a movement probe | GAP-004 | S23 |
+
 ## Deliberately NOT tested, and why
 
 - **The look of the grey itself** beyond TP-71 — it is a palette role and a knob, tuned by eye

@@ -2,19 +2,12 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 46 commits on `board-plan` (HEAD is this handoff commit). Phases 1-4 (S1-S10), S11-S14 and S16 landed and verified, S15
-landed PARTIAL (the sim and the parity gate; the constants and GAP-041's closure parked on GAP-006),
-one commit per step, plus Phase 1-3 review fixes A-C, the owner's three-grid bug fix, Phase 4 review
-fixes D-G, and the reveal's pacing fix (TP-76). Tree clean. Every plan step S1-S16 is verified (S9, S13, S15 partial on
-GAP-002 / GAP-005 / GAP-006, the owner's). OPEN: S17, the closing sequence, in a NEW session. Six
-gaps open for the owner: GAP-001 (stocks are sidebar S19; TP-05/06 parked), GAP-002 (mark hook
-timing versus the mult seam; the landing-time dispatch parked; S9 partial), GAP-003 (re-deal a
-line unnamed), GAP-004 (the palette has no white: `match_rim` is built against entry 31 cream,
-`match_rim_active` against 6 gold), GAP-005 (every controller shoulder is bound; the layer view's
-held-controller peek is parked), GAP-006 (the plan multiplies par play's score 3.3-5.1x but the
-ladder still peaks at node 3; the beatable refit returns alpha -0.32, so the constants are unwritten
-and the shipped curve is now trivial - an owner ruling on the curve). Owner rulings mid-run are in
-PLAN 1.10. Implementer sessions die to the Opus session limit every few hours; every cut-off so far
+**State:** 47 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
+carries its `resolution:` block and the reading taken). The rulings create six execution steps,
+S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
+implementer, one full gate, one commit), and S17 (the close, a NEW session) comes after S23. Tree
+clean. Implementer sessions die to the Opus session limit every few hours; every cut-off so far
 was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
@@ -222,6 +215,54 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   status: done
   evidence: 'Full doc_check from the worktree root: 66 living docs + 318 source files checked - 0 error(s), 9 warning(s), identical to the pre-S16 tree and to main (0 errors, 9 warnings); --changed clean on all five files. No source file touched (git status). grep: the retired rule survives in ARCHITECTURE_REVIEW only as the sentence that retires it; suite counts corrected 45 -> 48 and the logic tier 32 -> 34 in START_HERE, HEADLESS_TESTING and ARCHITECTURE_REVIEW 7. One landmine row rewritten by the overseer from what material_of used to do into the rule.'
   notes: 'Not edited, scheduled with fix H: stale code comments stating the retired talent-suppression rule at Decks/deck.gd:8,116,150,219,255 and Tests/Support/test_decks.gd:18, and DESIGN_DOC.md:475 (the owner design record) which still states it. VFX.md untouched: no living doc enumerates board shot scenes, so the three plan_*_shot scenes are listed in 3e. Logic tier: BOARD PLAN and MARK MATCH are in it, PLAN VISUALS is not (windowed).'
+- id: S22
+  description: GAP-006 (a) - goal_alpha 0.0, goal_g0 refit to the beatable flat value by the sim; the goals-grow-with-boosters check reads a flat curve as non-decreasing; TP-90.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>; py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'A placeholder; GAP-041 stays open in poker-patience, no v3.'
+- id: S21
+  description: GAP-005 - ui_plan_layer gains the X face button (button_index 2) held to peek; TP-89 through the viewport.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S18
+  description: GAP-001 (b1) - BoardPlan.stocks_of(state) splits draw_deck round-robin by the sidebar rule (earlier slots take the extras, no RNG); deal() reads it; TP-05, TP-06 unparked, TP-85. Deleted when the sidebar stocks land.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Mid-show pool: the remaining stocks (the run reading).'
+- id: S20
+  description: GAP-003 - CardEffectApi.reroll_line(section) and reroll_grid(grid): every cell, covered included, through Board.deal_marks; TP-88.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: ''
+- id: S19
+  description: GAP-002 - the two act hooks also fire at LANDING from place_card_in_grid (the parked S9 half); a mark mult is the query on_mark_line_mult summed into M during composition; add_line_mult retired; TP-86, TP-87; TP-32/TP-50 doubles moved onto the query. S9 becomes done.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Marks acting on neighbouring cells: a content shape the query serves, recorded in todo, not built.'
+- id: S23
+  description: GAP-004 - the activated rim SHIMMERS - a new outline alert kind interpolating (blended, owner exception to 4i) through a ramp of palette entries over a fraction of get_delay(); TP-91 measured over time; /fx-verify.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>; render plan_match_shot and a movement probe'
+  verification_kind: snapshot
+  status: pending
+  evidence: ''
+  notes: 'Owner: "you can implement that if its easy" - scoped as one alert kind plus one ramp resource; if it is not, report and park.'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
@@ -346,7 +387,6 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 - /fx-verify: the scoring-beam half of TP-72 is UNVERIFIED (no shot holds a beam on a realized cell).
 - Tool fidelity, not a defect: `PipSuitTest.id` is dropped by `duplicate_deep`, so the parity's
   engine deal is not a fewest-copies deal and every dumped mark prints suit 0 (ASSUMPTIONS S15).
-- Owner rulings pending on GAP-001..006; GAP-004 and GAP-006 change a number each, GAP-005 a binding.
 
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.
@@ -374,7 +414,8 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Open a NEW session at or above Opus 5 default effort and paste:
+Work in this order, one implementer, one full gate, one commit each: S22, S21, S18, S20, S19, S23.
+Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
     (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
@@ -383,11 +424,7 @@ Open a NEW session at or above Opus 5 default effort and paste:
     negative, not merely useless. Start by reading .claude/skills/plan-run/SKILL.md "The
     reviewer's model floor" and then "Closing the run", and work its numbered list in order.
     Read solatro/HANDOFF_board_plan.md first: "How this run operates" (the private-APPDATA
-    suite script, the standing interference lines), "Queued for the close", and the six open
-    gaps, which are the owner's and are not resolved by the close.
-
-1. S17: hand to a NEW session at or above Opus 5 default effort for the closing sequence
-    (`/plan-run` "Closing the run"), with the READY FOR CLOSING block.
+    suite script, the standing interference lines) and "Queued for the close".
 
 ## How this run operates (read before dispatching)
 - Overseer never reads source; verifies by bounded grep, its own full suite run, the SECTION 8
