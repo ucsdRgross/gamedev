@@ -1,15 +1,15 @@
-# HANDOFF — sidebar (PLAN.md Phases 1–5, S1–S18)
+# HANDOFF — sidebar (PLAN.md Phases 1–9, S1–S24)
 
 **Goal:** land ALL of `solatro/design/sidebar/PLAN.md` — S1 through S23 and the closing phase S24 —
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
-**State:** Phases 1–4 done (S1–S13 committed; the Phase 3 adversarial review and its re-review
-are fixed in four commits, 54317308 → 17e9cc1c — see the two Phase 3 sections). Phase 5 is
-S14–S17 done (4a008669, a5449e77, 99644d39, bf4b2b70); **S18 (cancel) is next** — its brief is
-written (see "Next up"), then the Phase 5 boundary adversarial review (Fable, read-only, over
-`17e9cc1c..HEAD`) and its fixes one at a time; then Phase 6 (S19–S21),
-Phase 5 (S14–S18), Phase 6 (S19–S21), Phase 7 (S22), Phase 8 (S23), the closing phase S24 — all in
-this run (owner ruling). GAP-004 (Q34's reading inside a viewer) is open, non-blocking.
+**State:** Phases 1–5 done (S1–S18 committed; S18 at 8cfb5eee). The Phase 5 boundary review
+(Fable 5.1, over `17e9cc1c..8cfb5eee`) found 5 confirmed + 4 suspected — see "Phase 5 review":
+three confirmed are ruling contradictions filed as GAP-006/007/008 (owner calls, non-blocking);
+fixes 1–3 landed (1925fd9b, dcc81b8d, fix 3 after it); **next: the reproduce dispatch for the
+suspected 6/7/8**, then the bounded re-review of the fix commits, then Phase 6 (S19–S21), Phase 7
+(S22), Phase 8 (S23), the closing phase S24 — all in this run (owner ruling). Briefs S19–S23 are
+written in `solatro/design/sidebar/briefs/`. GAP-004 is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
 `tasklist | findstr Godot_v4.7` before every run and wait it out — a concurrent run rotates
 `godot.log` and fabricated one GRID VIEW failure this session. PID 3020 is a stale Godot 4.1.2
@@ -230,7 +230,52 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   PRE-EXISTING on main (picker layer 64 over the viewer's layer 1; the cards measure exactly 0.4x
   under the picker's dim).
 
+## Phase 5 review (adversarial, Fable 5.1, at S18 over 17e9cc1c..8cfb5eee) — 5 confirmed, 4 suspected
+1. CONFIRMED a pad/keyboard player's armed card follows the last pushed pointer position (PLAN
+   §1.4 literal vs Q249=d's "glow is over where selector is"; TEST_PLAN 9.4 unreachable) → GAP-006.
+2. CONFIRMED on touch a tap after a placement was never refused: Godot dispatches the emulated
+   mouse form BEFORE the touch, so the closing press re-armed the gesture and reset the depth the
+   refusal reads — fixed, `PlayArea._touch_press_depth`, 1925fd9b; the test helper `_touch_tap`
+   now pushes events in the engine's order (it was reversed, proving the reader not the route).
+3. CONFIRMED Q281=a's "no longer following" after a failed drag lasts one mouse motion (Q262=a
+   re-latches) → GAP-007.
+4. CONFIRMED a mouse click-lock on a grabbable card dies when the pointer crosses its cell edge,
+   before any placement is possible (Q56=a+Q62=b+Q267=a+Q268=a read literally; Q62's own note
+   warned of it) → GAP-008.
+5. CONFIRMED a cancel mid-drag left `_press_data` armed, so the release fired `card_dropped` with
+   an empty hand (try_place stack=0 in the EventLog) — fixed, `PlayArea._end_the_gesture()` is the
+   one clearing site, both cancel paths call it, dcc81b8d. The Escape twin was already green (the
+   wall's transition lock swallows the release); it ships as a guard.
+6. SUSPECTED the two horizontal lines in `armed_focus_elsewhere.png` are the board's
+   `ScrollContainer` focus stylebox (FOCUS_ALL by construction; an Entrance-row arrow key runs the
+   engine's neighbour search and lands there) — a pad player's first Up leaves the card controls.
+7. SUSPECTED a mouse double-click on a cell can place TWO cards when a motion event refreshes the
+   hover inside the pair (the refused pair's second release falls through to `_on_gui_input`).
+8. SUSPECTED motion over the HudContainer (MOUSE_FILTER_STOP) never reaches the picture, so a
+   following card stops at the sidebar edge (Q270=a says it keeps going; pre-existing, untested).
+9. SUSPECTED → reproduced: a click during processing left `_next_grab_follows` set and the card
+   that armed at the cascade's end followed from birth (at the cursor, lift −0.2 vs 18.8) — fixed,
+   `stop_following()` clears the pending flag and the dropped-selection path calls it, fix 3.
+- TEST SURFACE: `_touch_tap` order (fixed in fix 1); every TestDragPlace event except 5.4 bypasses
+  the root GUI pass; `_pa.armed_slot() != -1` at test_drag_place.gd cannot fail for what it names
+  (the held/lifted checks beside it carry the row); 5.6/5.7/tap-hook rows ride test-local stamps
+  (nothing shipped grabs a board card or listens to `on_card_tapped` — recorded in ASSUMPTIONS).
+- PLAN DRIFT it named: 9.4 signed off on a still showing `following=true, glow=false` (GAP-006);
+  Q280=a's "drop map" ships with none (GAP-005); Q93a=a was mouse-only (fix 1); after Escape →
+  Back → re-enter the board has no armed card until a placement, undo or processing edge (Q115=a,
+  built as ruled — owner should see).
+- Fix 3's implementer noted, unreported by the review: a refused `try_grab` inside `arm_leftmost`
+  also leaves `_next_grab_follows` set; `arm_leftmost`'s body is pinned by 6.3's source test to
+  exactly two "grab" occurrences, so the clear cannot live there. Open, low.
+
 ## Gaps
+- GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
+  by the motion a placement needs; options a/b/c in the file, recommendation (a).
+- GAP-007 (open, OWNER CALL, not blocking) — after a failed drag the card is "no longer following"
+  for exactly one mouse motion (Q262=a vs Q281=a); recommendation (a): re-latch only on a new press.
+- GAP-006 (open, OWNER CALL, not blocking) — a pad/keyboard player's armed card follows a mouse
+  position nobody is controlling (PLAN §1.4 vs Q249=d; 9.4 unreachable); recommendation (b): a
+  key/pad focus does not start following.
 - GAP-005 (open, OWNER CALL + plan hole, not blocking) — the legal-cell highlight (Q24=a, Q124=a,
   G12, "the drop map" of Q280=a) does not exist in the code and has no visual design; TEST_PLAN §11
   claims G12 covered and it is not. Options a/b/c in the file; S16 builds release-to-place on
@@ -328,9 +373,10 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   evidence: 'bf4b2b70: ALL 47 SUITES 4516 PASSED [21]; DRAG PLACE 31 -> 63 checks (S17.1-S17.8, overseer-defined rows - TEST_PLAN has none for S17/S18); red per neutralisation 8/2/3/5/4 FAILED; card_tap action, card_tapped signal, card_tap_window_ms knob, on_card_tapped dispatched only from GameView, nothing under Cards/ listens; doc_check 0 of 683 on added lines; LF verified'
   notes: 'card_tap binding: key T + joypad button 2 (X) - NAMES fixes the name only. The refusal after a placement compares the board''s committed depth at the pair''s opening press vs at the tap; the bound action is exempt (no first press). A tap eats its closing release (else the second release re-grabs). The dummy effect is a test-local STAMP recording instance ids (holding the card leaked). New: TestSuite.await_the_tap_window() - an INTERACTION check whose two accepts now pair as a tap waits it out (Q98=d working). card_effect_api.gd unchanged (no subscription surface; run_all_mods forwards any hook)'
 - id: S18
-  description: cancel — held card first, description second, Escape shows menu/wall
-  status: pending
-  evidence: ''
+  description: cancel — held card first, description second, Escape cancels everything and takes the existing Back step
+  status: done
+  evidence: '8cfb5eee: ALL 47 SUITES 4545 PASSED [21]; S18.1-S18.5 in TestSidebar, red per neutralisation 3/3/2/10 FAILED; done-when grep: same signals, only the view''s set_input_as_handled removed; doc_check 0 of 571 on added lines; LF verified; by eye cancel_first_press.png: five Entrance cards flat at equal height, the locked description (name, preview, Knife text, exit X) still up'
+  notes: 'PlayArea._cancel_one_step (second button, consumed) and _cancel_everything (ui_cancel, NOT consumed so Wall.back_requested fires on the same press). ungrab_cards never hid the description - the collapse was in the placement path. 1.7''s cancel row lost its second-press half: the first Escape starts the wall''s locked transition, so a second press is inert by design. Fix 2 later added PlayArea._end_the_gesture() so a cancel also ends the press gesture'
 ```
 
 ## Open bugs
@@ -339,23 +385,26 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. **S18 (cancel)** — brief at `solatro/design/sidebar/briefs/S18.md` (it points at the RULES
-   section of `briefs/S12.md`, which every dispatch carries). Dispatch `plan-implementer`
-   FOREGROUND with the brief path; verify yourself (greps in its done-when, doc_check on ADDED
-   lines only, a full run, LOOK at `cancel_first_press.png`); commit; record here.
-2. **Phase 5 boundary review** — `adversarial-review` (model: fable, read-only, NEVER launches
-   Godot) over `17e9cc1c..HEAD` (S14–S18). Hand it a priority order (player journeys: the
-   always-armed board with mouse / pad / touch; the click-lock dismissed on leaving the cell —
-   S14 notes; the armed card riding the MOUSE after a key focus — S15 notes; the two unexplained
-   horizontal lines in `armed_focus_elsewhere.png`; the tap/cancel ordering; tests that prove
-   nothing), tell it to report early, and to read COMMITTED content via `git show` if an
-   implementer is working concurrently. Fix confirmed findings one dispatch at a time, full run
-   between, one commit each; then a bounded re-review of the fix commits (the Phase 3 pattern).
-3. S19–S21 (Phase 6), S22 (Phase 7), S23 (Phase 8) — the "Phase 2–5 audits" section carries the
-   S19–S23 audit facts; write each brief the same way (rulings verbatim from `answers.json` +
-   DESIGN §4, exact done-when, TEST_PLAN rows — S19–S23 DO have rows: §4 and §7 — call site,
-   comment rule, complexity rule, evidence file). Then S24 per `.claude/skills/plan-run/SKILL.md`
-   "Closing the run", every numbered item.
+1. **Phase 5 suspected findings 6/7/8** — one `plan-implementer` dispatch that REPRODUCES each
+   (a test that goes red on HEAD, or an honest "did not reproduce" with what was tried) and
+   fixes only what reproduced, one fix per commit with a full run between (finding 6: print
+   `gui_get_focus_owner()` after the key in the snapshot's `_move_the_focus_off_the_armed_card`;
+   finding 7: a motion event inside the pair; finding 8: a following card with the pointer pushed
+   over the container).
+2. **Bounded re-review** of the fix commits (`8cfb5eee..HEAD`, `adversarial-review`, model fable,
+   read-only) — the Phase 3 pattern; fix confirmed findings the same way.
+3. S19–S21 (Phase 6), S22 (Phase 7), S23 (Phase 8) — briefs `briefs/S19.md`–`S23.md` are
+   written (rulings verbatim, overseer-defined rows where TEST_PLAN has only by-eye rows: charts
+   I and K). Dispatch each FOREGROUND with its brief path; verify (done-when greps, doc_check on
+   ADDED lines via the intersect script, a full run, LOOK at every PNG); commit; record here.
+   S19 raises the suite count to 48. Then S24 per `.claude/skills/plan-run/SKILL.md` "Closing the
+   run", every numbered item, results recorded here.
+- Doc defects to fold at the close: DESIGN chart node K9 contradicts Q135=a (the answer wins);
+  TEST_PLAN §11 claims every chart node is covered but charts I and K have only by-eye rows.
+- ⚠ Line endings: shell `grep -c $'\r'` is unreliable in this Git Bash (it reported every line
+  as CR on an LF file). Check with python bytes: `open(f,'rb').read().count(b'\r\n')`.
+  `git ls-files --eol` is the other honest check (`i/lf w/lf`). An implementer appending to
+  ASSUMPTIONS.md wrote CRLF lines once (fix 2) — normalise before committing.
 
 Working method that held up (keep it): the implementer appends evidence to a scratch file as it
 goes (turn-cap and API-limit stops lose the report — three dispatches this run were cut off and
