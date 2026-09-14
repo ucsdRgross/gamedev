@@ -309,18 +309,48 @@ func outline_style() -> OutlineStyle:
 ##
 ## The shader runs ONE kind at a time, so when several statuses alert together the LAST declared wins —
 ## the same "later draws on top" tie-break `_fx_requests` uses, for the same reason: the status list is
-## ordered and the order is the card's own.
+## ordered and the order is the card's own. The shimmer is the one alert no status declares: it comes
+## with the activated match rim, so it yields to any status that is alerting.
 func _push_alert() -> void:
 	var reqs := _alert_requests()
-	_alert = reqs[reqs.size() - 1] if not reqs.is_empty() else null
+	_alert = reqs[reqs.size() - 1] if not reqs.is_empty() else _shimmer_request()
 	var style := outline_style()
-	for poly : Polygon2D in [type, rank, stamp, suit, art]:
-		CardOutline.set_alert(poly, _alert, style)
+	CardOutline.set_alert(type, _card_alert(), style)
+	CardOutline.set_alert(rank, _alert_of(MarkMatch.Property.RANK), style)
+	CardOutline.set_alert(suit, _alert_of(MarkMatch.Property.SUIT), style)
+	CardOutline.set_alert(art, _alert_of(MarkMatch.Property.TALENT), style)
+	CardOutline.set_alert(stamp, _alert_of(MarkMatch.Property.HAT), style)
 	if not _alert:
 		# Park the phase at rest so a card that alerted and stopped is bit-identical to one that never
 		# did — otherwise the next alert would start wherever the last one happened to be interrupted.
 		_alert_clock = 0.0
 		_push_alert_clock()
+
+# THE ACTIVATED RIM IS THE ONE THAT MOVES: an element wearing the realized ink drifts along the
+# style's ramp, whose first entry IS that ink, so a rim at rest and a rim at phase 0 are one colour.
+func _activated(property : int) -> bool:
+	return (matched_properties & property) != 0 \
+			and match_rim_index == PaletteDB.ROLES.match_rim_active
+
+# The card's alert as its non-matching elements run it. The shimmer is per ELEMENT, so it is dropped
+# here rather than lighting the four elements that agreed with nothing.
+func _card_alert() -> CardAlert:
+	if _alert and _alert.kind == CardOutline.Alert.SHIMMER: return null
+	return _alert
+
+# The alert ONE element runs: the shimmer while it wears the activated match rim, else the card's.
+func _alert_of(property : int) -> CardAlert:
+	if _activated(property): return _SHIMMER
+	return _card_alert()
+
+# The shimmer as the card's own alert, which is what advances the phase in `_process`. Null unless
+# some element is wearing the activated rim -- a card with none pays nothing for this.
+func _shimmer_request() -> CardAlert:
+	return _SHIMMER if _activated(matched_properties) else null
+
+# ONE SHARED REQUEST FOR THE WHOLE GAME: a shimmer names no colour, tempo or thickness of its own, so
+# every activated rim is asking for exactly the same thing and a per-element copy would say nothing.
+static var _SHIMMER : CardAlert = CardAlert.shimmer()
 
 ## Every outline alert this card's statuses ask for, in status order. The alert twin of `_fx_requests`,
 ## and generic in the same way: CardVisual never names an alert.

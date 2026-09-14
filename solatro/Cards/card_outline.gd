@@ -46,7 +46,7 @@ enum Fill {TEXTURE = 0, PALETTE = 1}
 
 ## The alert modes, mirroring the shader's constants. A status names one of these; it never names a
 ## colour for GLARE, because what makes an alert an alert is that it MOVES (design D6).
-enum Alert {NONE = 0, GLARE = 1, THROB = 2}
+enum Alert {NONE = 0, GLARE = 1, THROB = 2, SHIMMER = 3}
 
 ## The material this polygon draws through, created on first use and REUSED afterwards.
 ##
@@ -192,6 +192,7 @@ static func set_alert(poly : Polygon2D, alert : CardAlert, style : OutlineStyle)
 	mat.set_shader_parameter(&"u_alert_color", alert.resolved_color(style))
 	mat.set_shader_parameter(&"u_alert_thickness", alert.resolved_thickness(style))
 	mat.set_shader_parameter(&"u_alert_buffer", alert.resolved_buffer(style))
+	mat.set_shader_parameter(&"u_shimmer_ramp", style.shimmer_texture())
 
 ## Advance this polygon's alert phase. Written every frame while an alert is live and never otherwise —
 ## a resting board must pay nothing for a feature it is not using.

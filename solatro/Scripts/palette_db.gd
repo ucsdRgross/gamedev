@@ -27,6 +27,8 @@ const ROLES : PaletteRoles = preload("res://Assets/Palette/roles.tres")
 const RAMP_FIRE : PaletteRamp = preload("res://Assets/Palette/ramp_fire.tres")
 const RAMP_BALL : PaletteRamp = preload("res://Assets/Palette/ramp_ball.tres")
 const RAMP_EMBER : PaletteRamp = preload("res://Assets/Palette/ramp_ember.tres")
+## The activated match rim's drift, and the ONE ramp that is blended rather than sampled (owner).
+const RAMP_MATCH : PaletteRamp = preload("res://Assets/Palette/ramp_match.tres")
 
 ## The colour at a palette index — normally `PaletteDB.color(PaletteDB.ROLES.status_flame)`.
 static func color(index : int) -> Color:

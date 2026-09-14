@@ -698,7 +698,8 @@ that by re-checking every cell of `Line.cells` against the live board.
   it, so one board mutation always ends it. ⚠ WHAT IS LOOKED AT IS WHAT IS DRAWN: while it is open
   a covered cell's focus and its `card_info` are its MARK, because `_size_stack_slot(slot, true)`
   collapses the cell's cards and hands the zone card the size, the hit area and the focus — no
-  reader asks a second time. The rims themselves are §4j.
+  reader asks a second time. The rims themselves are §4j, and the ACTIVATED one drifts along a ramp
+  instead of sitting still.
 - **Knobs**, six, declared once under `@export_group("Balance — board plan")` in
   `Scripts/player_settings.gd`: `plan_rank_match_step`, `plan_rank_flat_fallback`,
   `plan_ace_value`, `plan_talent_mult`, `plan_hat_mult`, `plan_reveal_fraction`.
@@ -1432,7 +1433,7 @@ reassign to different colors especially if the palette changes."*
 | `PaletteRoles` | `Scripts/palette_roles.gd` | The resource of pointers: one named `@export` int per role. |
 | `PaletteRamp` | `Scripts/palette_ramp.gd` | An ORDERED list of entries. The only way a gradient is expressed. |
 | `PaletteDB` | `Scripts/palette_db.gd` | Statics that name the live palette, roles and ramps. |
-| Data | `Assets/Palette/*.tres` | `circus_crayon`, `roles`, `ramp_fire`, `ramp_ball`, `ramp_ember`. |
+| Data | `Assets/Palette/*.tres` | `circus_crayon`, `roles`, `ramp_fire`, `ramp_ball`, `ramp_ember`, `ramp_match`. |
 
 **Rules that prevent regressions:**
 
@@ -1450,6 +1451,8 @@ reassign to different colors especially if the palette changes."*
   had **64 colours, zero of them palette entries**; the 3-band ball `mix()` put its middle tone 49
   away from any entry even though both endpoints were hand-picked. Palette-valid ENDPOINTS are not
   enough — the in-between is where the drift lives.
+  ⚠ **ONE exception, owner-ruled: the match shimmer BLENDS `ramp_match`** (§4j) — sampled steps read
+  as distracting jumps on a rim meant to glow. Every other ramp samples.
 - **A ramp is longer than any one effect needs and effects take a sliding WINDOW of it** (owner:
   *"ramp could have 10 colors, and fire ramp can focus on window of 3 and move through the ramp when
   intensity increases"*). The window slides toward the hot end as the stack level rises, so more
@@ -1470,9 +1473,9 @@ reassign to different colors especially if the palette changes."*
   migration for a palette change.
 - **The match rims are ROLES, not colours.** `match_rim` is what a mark's agreeing elements wear
   while a card is held, `match_rim_active` what a landed card's agreeing elements wear (§3e, §4j).
-  ⚠ The owner's ruling says WHITE and this palette has no white entry, so they ship as 31 (cream)
-  and 6 (gold) pending `design/board-plan/gaps/GAP-004.md`; every test asserts the ROLE, so a
-  ruling moves one number in `roles.tres` and nothing else.
+  ⚠ The owner's ruling says WHITE and this palette has no white entry, so they are 31 (cream) and
+  6 (gold); every test asserts the ROLE, so re-pointing one moves one number in `roles.tres` and
+  nothing else. The activated one additionally SHIMMERS along `ramp_match`, which opens on entry 6.
 
 **Editing roles in the inspector.** `PaletteRoles` is `@tool`: `_validate_property()` rebuilds each
 role's dropdown from the live palette (`0 #1a0319`, `1 #700031`, …) and `_get_property_list()` adds a
@@ -1507,7 +1510,8 @@ grew `38x50 -> 40x54` to make room. Design record: `design/card_size_outline/`.
 `CardModifier.update_polygon_uv_frame` (unpadded) stays for PROPS, which get no outline at all.
 
 **Tuning** is `Shaders/Styles/outline_default.tres` (`OutlineStyle`, instance `CardOutline.STYLE`):
-rim ink + width, and each alert kind's colour, tempo, thickness, side buffer. `tools/outline_atlas.tscn`
+rim ink + width, and each alert kind's colour, tempo, thickness, side buffer — the shimmer's colours
+being a whole `PaletteRamp` (`shimmer_ramp`) rather than one entry. `tools/outline_atlas.tscn`
 edits it, so tuning there moves the board. Three override layers, resolved LATE: shipped style → the
 TYPE's own (`CardModifierType.outline_style()`) → an individual `CardAlert`'s fields.
 
@@ -1519,6 +1523,14 @@ an undo has nothing to un-set. Never `modulate`, and no fourth override layer. A
 layer returns the shipped style at `width = 0`: that one number is the whole of "a mark draws as a
 real card with no rim", and the match style takes the shipped width back, because an element that
 lights has to have a rim.
+
+**THE ALERT IS PER ELEMENT TOO, and only for the SHIMMER.** The three kinds are GLARE (a band
+sweeping the card), THROB (the whole rim toggling) and SHIMMER (the rim drifting along
+`ramp_match`, BLENDED — §4i's one exception). A status declares the first two and every element of
+the card shows them; nothing declares the shimmer — `CardVisual._alert_of` gives it to exactly the
+elements wearing `match_rim_active`, and it yields to any status that is alerting, because the five
+polygons share ONE clock and one kind each. ⚠ Its phase 0 IS the flat activated ink (the ramp opens
+on that entry), so no still picture can tell a live shimmer from a dead one: assert mid-phase.
 
 ### The landmines
 

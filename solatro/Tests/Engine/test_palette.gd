@@ -103,8 +103,9 @@ func run_role_tests() -> void:
 func run_ramp_tests() -> void:
 	behavior_section("RAMPS — every colour a ramp emits is exactly a palette entry")
 	var entries := PaletteDB.PALETTE.colors()
-	var ramps : Array[PaletteRamp] = [PaletteDB.RAMP_FIRE, PaletteDB.RAMP_BALL, PaletteDB.RAMP_EMBER]
-	var names : Array[String] = ["ramp_fire", "ramp_ball", "ramp_ember"]
+	var ramps : Array[PaletteRamp] = [PaletteDB.RAMP_FIRE, PaletteDB.RAMP_BALL, PaletteDB.RAMP_EMBER,
+			PaletteDB.RAMP_MATCH]
+	var names : Array[String] = ["ramp_fire", "ramp_ball", "ramp_ember", "ramp_match"]
 	var w := PaletteDB.width()
 	for i : int in range(ramps.size()):
 		var ramp := ramps[i]
@@ -113,6 +114,12 @@ func run_ramp_tests() -> void:
 		for idx : int in ramp.indices:
 			if idx < 0 or idx >= w: in_range = false
 		check(in_range, "%s indices all inside the palette" % names[i], str(ramp.indices))
+
+# THE ANCHOR the shimmer rests on: an activated rim not yet drifting and the first entry of the ramp
+# it drifts along are the SAME colour, so the cue starts where the static rim already was.
+	check(PaletteDB.RAMP_MATCH.indices[0] == PaletteDB.ROLES.match_rim_active,
+			"TP-91: ramp_match opens on match_rim_active, the ink the activated rim wears at rest",
+			"%d vs %d" % [PaletteDB.RAMP_MATCH.indices[0], PaletteDB.ROLES.match_rim_active])
 
 	# The fire ramp built the way FxStyle builds it: every opaque pixel must BE a palette entry.
 	var tex := PaletteDB.RAMP_FIRE.window_texture(4, 16, PackedFloat32Array(), 0.18)

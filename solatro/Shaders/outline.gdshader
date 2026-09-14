@@ -70,7 +70,8 @@ uniform vec2 u_card_extent = vec2(40.0, 54.0);
 // takes a script-driven clock (`fire`, `juggle`). `u_alert_clock` is a PHASE in turns, advanced by
 // `CardVisual._process` over a fraction of `get_delay()`, so the cue scales with the cascade it
 // announces.
-uniform int u_alert_kind : hint_range(0, 2) = 0;   // 0 = none, 1 = GLARE, 2 = THROB
+// The kinds, in the order `CardOutline.Alert` names them: 0 none, 1 GLARE, 2 THROB, 3 SHIMMER.
+uniform int u_alert_kind : hint_range(0, 3) = 0;
 uniform float u_alert_clock = 0.0;
 uniform int u_alert_color : hint_range(0, 255) = 31;
 // GLARE band thickness, in CARD-SPACE art units — a card-wide quantity now, not a per-element one.
@@ -79,10 +80,14 @@ uniform float u_alert_thickness = 8.0;
 // travel AND suppresses the glare beyond that limit, so the band tapers instead of clipping. Why a
 // card's side rims blink without it: `OutlineStyle.glare_buffer`.
 uniform float u_alert_buffer = 0.0;
+// SHIMMER's colours: an N x 1 strip of palette entries, built from a `PaletteRamp` by
+// `OutlineStyle.shimmer_texture()`. The ramp resource is the only home of that list.
+uniform sampler2D u_shimmer_ramp : source_color, filter_nearest, repeat_disable;
 
 const int ALERT_NONE  = 0;
 const int ALERT_GLARE = 1;
 const int ALERT_THROB = 2;
+const int ALERT_SHIMMER = 3;
 
 /// One entry of the live palette. `+ 0.5` lands on the entry's CENTRE rather than its left edge.
 vec3 palette_rgb(int idx) {
@@ -145,6 +150,18 @@ vec3 alert_ink(vec2 card_pos) {
 		// than blended for the same reason the band is hard-edged: a continuous mix between two
 		// palette entries spends most of its time on colours that are in no palette at all.
 		ink = mix(ink, palette_rgb(u_alert_color), step(0.5, bounce(u_alert_clock)));
+	} else if (u_alert_kind == ALERT_SHIMMER) {
+// BLENDED, and the ONLY lerped ramp in this project: the owner ruled it here because sampled steps
+// read as distracting jumps on a rim meant to glow, and every other ramp samples. The bounce is
+// reversed so phase 0 rests on the ramp's FIRST entry - the ink this rim wears when it is not lit.
+		int last = textureSize(u_shimmer_ramp, 0).x - 1;
+		float t = (1.0 - bounce(u_alert_clock)) * float(last);
+		float lo = floor(t);
+		float hi = min(lo + 1.0, float(last));
+		float span = float(last + 1);
+		vec3 from = texture(u_shimmer_ramp, vec2((lo + 0.5) / span, 0.5)).rgb;
+		vec3 to = texture(u_shimmer_ramp, vec2((hi + 0.5) / span, 0.5)).rgb;
+		ink = mix(from, to, t - lo);
 	}
 	return ink;
 }

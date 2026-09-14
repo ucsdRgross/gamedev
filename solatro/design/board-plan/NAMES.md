@@ -170,7 +170,8 @@ func _board_is_playable() -> bool    # asked by the undo and end-show commands b
 `Scripts/palette_roles.gd`, named for MEANING and never for colour:
 
 `match_rim` — the outline an element takes while it matches · `match_rim_active` — the realized form
-of `Q64`. (`mark_ink` / `mark_rim` were retired by the owner's ruling recorded in PLAN §1.10: a mark keeps a
+of `Q64`, and the first entry of `ramp_match` (`Assets/Palette/ramp_match.tres`), the ramp the
+activated rim drifts along under `CardOutline.Alert.SHIMMER`. Both added during execution. (`mark_ink` / `mark_rim` were retired by the owner's ruling recorded in PLAN §1.10: a mark keeps a
 real card's colours and simply draws no outline.)
 
 ## Test ids

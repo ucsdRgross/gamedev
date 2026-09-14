@@ -1,7 +1,7 @@
 @tool
 class_name OutlineStyle
 extends Resource
-## EVERY TUNABLE OF THE CARD OUTLINE - ink, width, and both alert kinds - in one resource the GAME
+## EVERY TUNABLE OF THE CARD OUTLINE - ink, width, and every alert kind - in one resource the GAME
 ## reads. Rules and landmines: ARCHITECTURE_REVIEW §4j. Shipped instance: `CardOutline.STYLE`.
 ##
 ## ⚠ **IT EXISTS SO THE ATLAS TOOL CHANGES THE GAME.** The knobs used to be `@export`s on the tool, so
@@ -63,6 +63,29 @@ extends Resource
 ## The entry the rim pulses to. THROB exists so a notification can name a hue (*"like red"*), so unlike
 ## the glare this is a statement rather than a fallback: 2 is `#e71b40`.
 @export_range(0, 255, 1) var throb_color : int = 2
+
+@export_group("Shimmer")
+# ITS OWN KNOB, like the other two tempos: three cues with no reason to share a period. The owner
+# asked for a SLOW drift, so this is the longest of the three.
+## ONE FULL PASS along the ramp and back, as a fraction of `get_delay()`.
+@export_range(0.1, 8.0, 0.05) var shimmer_period_fraction : float = 2.0
+
+# A RAMP rather than a second colour: the owner asked for a rainbow, and an ordered list of palette
+# entries is this project's one way to say that.
+## The entries the rim drifts through, first one first.
+@export var shimmer_ramp : PaletteRamp = null:
+	set(value):
+		shimmer_ramp = value
+		_shimmer_tex = null
+
+var _shimmer_tex : ImageTexture = null
+
+## The ramp as an N x 1 strip the shader reads, cached like the ball's tones.
+func shimmer_texture() -> ImageTexture:
+	if _shimmer_tex: return _shimmer_tex
+	if not shimmer_ramp: return null
+	_shimmer_tex = shimmer_ramp.tones_texture()
+	return _shimmer_tex
 
 # --- Editor conveniences (all @tool-only; none of this runs in a build) ----------------------------
 

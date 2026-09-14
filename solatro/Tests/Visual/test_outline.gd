@@ -56,6 +56,8 @@ func _ready() -> void:
 	test_corner_bite_survives_the_dilation()
 	behavior_section("THE ALERT IS DECLARED, NOT TOGGLED")
 	test_alert_is_off_until_a_status_declares_it()
+	behavior_section("THE SHIMMER BLENDS ALONG ITS RAMP, AND MOVES")
+	await test_shimmer_blends_between_ramp_entries()
 	implementation_section("THE RULES THAT KEEP THE RIM ON THE ART")
 	test_shader_taps_in_texture_space()
 	test_the_card_scene_ships_no_baked_material()
@@ -406,6 +408,84 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 			"and parks the phase, so the next alert starts at the beginning rather than mid-bounce",
 			"%f / %f" % [vis._alert_clock, pushed_clock])
 	vis.queue_free()
+
+# ------------------------------------------------------------------ the shimmer
+
+# ⚠ THE MIDPOINTS ARE THE WHOLE TEST. This is the one ramp in the project that BLENDS rather than
+# samples (an owner ruling), and a sampled implementation agrees with a blended one at every ramp
+# ENTRY — so a check taken there passes on the behaviour the ruling replaced.
+
+# ⚠ And phase 0 is INDISTINGUISHABLE from the flat activated ink, because the ramp opens on that
+# entry: a still of a working shimmer and a still of a dead one are the same picture. The movement
+# claim is therefore asserted at a midpoint and nowhere else.
+func test_shimmer_blends_between_ramp_entries() -> void:
+	var cols := PaletteDB.RAMP_MATCH.colors()
+	var last := cols.size() - 1
+	var at_rest := await _shimmer_pixel(0.0)
+	check(_same(at_rest, PaletteDB.color(PaletteDB.ROLES.match_rim_active)),
+			"TP-91: at phase 0 the shimmering rim draws the activated ink exactly",
+			"drew %s, the role is %s" % [at_rest,
+			PaletteDB.color(PaletteDB.ROLES.match_rim_active)])
+
+	var wrong := ""
+	var still := 0
+	for i : int in last:
+# Halfway between entry i and entry i+1: the bounce covers the whole ramp in half a loop, so band i's
+# midpoint sits at (i + 0.5) / (2 * last) turns. Derived from the ramp, never typed in.
+		var phase := (float(i) + 0.5) / (2.0 * float(last))
+		var drawn := await _shimmer_pixel(phase)
+		var want := _shimmer_oracle(phase)
+		if not _same(drawn, want) and wrong.is_empty():
+			wrong = "phase %.3f drew %s, the blend of entries %d and %d is %s" \
+					% [phase, drawn, i, i + 1, want]
+		if _same(drawn, at_rest): still += 1
+	check(wrong.is_empty(),
+			"TP-91: every midpoint is the BLEND of its two ramp neighbours, not either of them",
+			wrong)
+	check(still == 0,
+			"TP-91: and every midpoint differs from the resting ink, so the rim is actually moving",
+			"%d of %d midpoints drew the resting colour" % [still, last])
+
+# The rim colour a shimmering element draws at `phase`, taken off the render target. The element is
+# built as `_check_frame_against_oracle` builds one; no match ink is set on it because the shimmer
+# ignores `u_outline_index` entirely — what it draws comes from the ramp alone.
+func _shimmer_pixel(phase : float) -> Color:
+	var sheet : Texture2D = PipRankNumeral.RANK_TEXTURE
+	var frame := CardModifier.frame_rect(sheet, PipRankNumeral.H_FRAMES, PipRankNumeral.V_FRAMES, 0)
+	var w := int(CardOutline.WIDTH)
+	var poly := Polygon2D.new()
+	var h := frame.size * 0.5 + Vector2.ONE * CardOutline.WIDTH
+	poly.polygon = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y),
+			Vector2(h.x, h.y), Vector2(-h.x, h.y)])
+	CardOutline.frame_polygon(poly, sheet, PipRankNumeral.H_FRAMES, PipRankNumeral.V_FRAMES, 0)
+	CardOutline.fill_texture(poly)
+	CardOutline.set_rim(poly, CardOutline.STYLE, CardVisual.CARD_SIZE)
+	CardOutline.set_alert(poly, CardAlert.shimmer(), CardOutline.STYLE)
+	CardOutline.set_clock(poly, phase)
+	_stage.add_child(poly)
+	var img := await _shoot()
+	var at := _first_rim_texel(sheet.get_image(), frame, w)
+	var origin := Vector2i(_stage.position) - Vector2i(h)
+	return img.get_pixel(origin.x + at.x + w, origin.y + at.y + w)
+
+# The first texel of the padded window the rim rule puts a rim on — empty here, opaque within one
+# unit. Found from the sheet rather than named, so the probe cannot drift off the rim.
+func _first_rim_texel(src : Image, frame : Rect2, w : int) -> Vector2i:
+	for fy : int in range(-w, int(frame.size.y) + w):
+		for fx : int in range(-w, int(frame.size.x) + w):
+			if _frame_alpha(src, frame, fx, fy): continue
+			if _any_neighbour(src, frame, fx, fy, w): return Vector2i(fx, fy)
+	return Vector2i(0, 0)
+
+# The colour the shimmer OUGHT to draw at `phase`, written from the rule: a triangle over the ramp,
+# reversed so phase 0 rests on the first entry, blended between the two it falls between.
+func _shimmer_oracle(phase : float) -> Color:
+	var cols := PaletteDB.RAMP_MATCH.colors()
+	var last := cols.size() - 1
+	var bounce := absf((phase - floorf(phase)) * 2.0 - 1.0)
+	var t := (1.0 - bounce) * float(last)
+	var lo := floori(t)
+	return cols[lo].lerp(cols[mini(lo + 1, last)], t - float(lo))
 
 # ------------------------------------------------------------------ the source-level rules
 

@@ -539,14 +539,19 @@ func mark_visual(coord: BoardCoord) -> CardVisual:
 # WHAT THE SHADER WAS ACTUALLY HANDED, as a `MarkMatch.Property` mask: which of a card's four
 # elements draw their rim in `palette_index`. Never a flag the refresh wrote down.
 func rimmed_properties(visual: CardVisual, palette_index: int) -> int:
+	return properties_pushing(visual, &"u_outline_index", palette_index)
+
+# Which of a card's four elements are pushing `value` for `uniform` -- THE one place this suite reads
+# a per-element uniform, so the rim's ink and the rim's alert are asked the same question.
+func properties_pushing(visual: CardVisual, uniform: StringName, value: int) -> int:
 	var drawn := 0
-	if uniform_of(visual.rank, &"u_outline_index") == palette_index:
+	if uniform_of(visual.rank, uniform) == value:
 		drawn |= MarkMatch.Property.RANK
-	if uniform_of(visual.suit, &"u_outline_index") == palette_index:
+	if uniform_of(visual.suit, uniform) == value:
 		drawn |= MarkMatch.Property.SUIT
-	if uniform_of(visual.art, &"u_outline_index") == palette_index:
+	if uniform_of(visual.art, uniform) == value:
 		drawn |= MarkMatch.Property.TALENT
-	if uniform_of(visual.stamp, &"u_outline_index") == palette_index:
+	if uniform_of(visual.stamp, uniform) == value:
 		drawn |= MarkMatch.Property.HAT
 	return drawn
 
@@ -809,6 +814,21 @@ func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
 			uniform_of(visual.type, &"u_outline_index")])
 	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim) == 0,
 			"TP-83: and none of them is still wearing the held card's own highlight")
+
+#THE SHIMMER IS WIRED PER ELEMENT, and this is the check that goes red if it stops being: at phase 0
+#a shimmering rim and a flat activated rim are the SAME colour, so no picture can tell them apart.
+	var shimmering := properties_pushing(visual, &"u_alert_kind", CardOutline.Alert.SHIMMER)
+	check(shimmering == agreed,
+			"TP-91: exactly the elements wearing the activated rim run the shimmer",
+			"drew %d of %d" % [shimmering, agreed])
+	check(uniform_of(visual.stamp, &"u_alert_kind") == CardOutline.Alert.NONE
+			and uniform_of(visual.type, &"u_alert_kind") == CardOutline.Alert.NONE,
+			"TP-91: and the elements that agreed with nothing run no alert at all",
+			"stamp %d, frame %d" % [uniform_of(visual.stamp, &"u_alert_kind"),
+			uniform_of(visual.type, &"u_alert_kind")])
+	var drifted := await wait_for(func() -> bool: return visual._alert_clock > 0.0)
+	check(drifted, "TP-91: and its phase advances on its own, so the colour is a function of TIME",
+			"clock still %f" % visual._alert_clock)
 
 	await game.undo()
 	pa.flush_rebuild()

@@ -12,6 +12,7 @@ extends Control
 const OUT_DIR_FALLBACK := "user://plan_match_shot"
 const SAVE_TAG := "plan_match_shot"
 const REVEAL_WATCHDOG := 40.0
+const SHIMMER_SAMPLES := 8
 
 var _out_dir : String
 var _input : TestInput
@@ -47,7 +48,9 @@ func _ready() -> void:
 	pa.focus_grid(0)
 	await _settle(view)
 	await _land_the_card(g, pa)
+	_park_the_shimmer(_landed_visual(view))
 	await _shoot(view, "landed")
+	await _probe_the_shimmer(view)
 
 	TestGameViewHost.shot_teardown(SAVE_TAG)
 	get_tree().quit()
@@ -133,11 +136,15 @@ func _shoot(view: GameView, tag: String) -> void:
 			% [tag, ", ".join(lit), pa.board_zoom])
 	for coord : BoardCoord in [_rank_cell, _both_cell, _miss_cell]:
 		_report_cell(pa, g, coord, tag)
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
+	var img := await _frame_image()
 	img.save_png("%s/%s.png" % [_out_dir, tag])
 	print("[plan_match_shot] wrote %s.png" % tag)
+
+# The picture the viewport is actually showing, two frames on, so nothing is caught mid-draw.
+func _frame_image() -> Image:
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	return get_viewport().get_texture().get_image()
 
 # What one cell is ACTUALLY drawing, read off the live materials: the rim ink and width of every
 # element of the mark, and of the card standing on it when there is one.
@@ -151,6 +158,85 @@ func _report_cell(pa: PlayArea, g: Game, coord: BoardCoord, tag: String) -> void
 	var played_visual : CardVisual = pa.data_card.get(played)
 	print("[plan_match_shot] %s (%d,%d) card %s: %s  modulate %s" % [tag, coord.x, coord.y,
 			str(played), _rims(played_visual), str(played_visual.modulate)])
+
+# `landed.png` IS PHASE 0, deliberately: the ramp opens on the ink the activated rim wears at rest,
+# so the first picture is the one a DEAD shimmer would also produce. The probe below is the evidence.
+func _park_the_shimmer(visual: CardVisual) -> void:
+	visual._alert_clock = 0.0
+	visual._push_alert_clock()
+
+func _landed_visual(view: GameView) -> CardVisual:
+	return view.play_area.data_card.get(view.game.state.card_at(_both_cell))
+
+# THE MOVEMENT MEASUREMENT, because a still cannot settle a pulse: one rim pixel of the landed card's
+# rank pip is read off the RENDER at evenly spaced moments of a single loop, beside a control pixel on
+# an unmatched mark's rim, which must not move at all.
+func _probe_the_shimmer(view: GameView) -> void:
+	var visual := _landed_visual(view)
+	var period : float = CardOutline.STYLE.shimmer_period_fraction * view.game.get_delay()
+#THE CONTROL IS ANOTHER CARD'S RANK PIP, not another element of this one: the pips that shimmer sit
+#inside this card's art box, so a control taken there measures them again and reads as movement.
+	var still : CardVisual = view.play_area.data_card[view.game.state.cell_type_at(_miss_cell)]
+	var control_box := _element_rect(still.rank)
+	var lit := await _a_moving_pixel(visual, period, control_box)
+	if lit.x < 0:
+		print("[plan_match_shot] shimmer: nothing in the rank pip's box moved -- nothing to measure")
+		return
+	var plain := control_box.get_center()
+
+	_park_the_shimmer(visual)
+	var lit_seen : PackedStringArray = PackedStringArray()
+	var control_seen : PackedStringArray = PackedStringArray()
+	var moments : PackedStringArray = PackedStringArray()
+	for i : int in SHIMMER_SAMPLES:
+		var img := await _frame_image()
+		var now := img.get_pixel(lit.x, lit.y).to_html(false)
+		var control := img.get_pixel(plain.x, plain.y).to_html(false)
+		moments.append("%.2f turns #%s" % [visual._alert_clock, now])
+		if not lit_seen.has(now): lit_seen.append(now)
+		if not control_seen.has(control): control_seen.append(control)
+		if i == SHIMMER_SAMPLES / 2: img.save_png("%s/landed_phase.png" % _out_dir)
+		await get_tree().create_timer(period / float(SHIMMER_SAMPLES)).timeout
+	print("[plan_match_shot] shimmer: rank-pip rim pixel %s over one %.2fs loop -- %d distinct colours: #%s"
+			% [lit, period, lit_seen.size(), ", #".join(lit_seen)])
+	print("[plan_match_shot] shimmer: control pixel %s on an unmatched mark's pip -- %d distinct: #%s"
+			% [plain, control_seen.size(), ", #".join(control_seen)])
+	print("[plan_match_shot] shimmer: moments -- %s" % ", ".join(moments))
+
+# A pixel of the rank pip that MOVES between phase 0 and a quarter of a loop later, found by DIFFING
+# two captures rather than by naming a colour: the focused card is drawn through a modulate, so what
+# reaches the render is not the palette entry the rim was pushed. `control` is measured the same way.
+func _a_moving_pixel(visual: CardVisual, period: float, control: Rect2i) -> Vector2i:
+	_park_the_shimmer(visual)
+	var at_rest := await _frame_image()
+	await get_tree().create_timer(period * 0.25).timeout
+	var later := await _frame_image()
+	var moved := _pixels_that_moved(at_rest, later, _element_rect(visual.rank))
+	print("[plan_match_shot] shimmer: over a quarter loop %d pixels of the rank pip's box moved, "
+			% moved.size() + "%d of the control box, which must not move at all"
+			% _pixels_that_moved(at_rest, later, control).size())
+	return moved[0] if not moved.is_empty() else Vector2i(-1, -1)
+
+# One element's box in VIEWPORT pixels, which is the space a captured image is read in.
+func _element_rect(poly: Polygon2D) -> Rect2i:
+	var xf := poly.get_global_transform_with_canvas()
+	var min_p : Vector2 = xf * poly.polygon[0]
+	var max_p := min_p
+	for i : int in range(1, poly.polygon.size()):
+		var p : Vector2 = xf * poly.polygon[i]
+		min_p = min_p.min(p)
+		max_p = max_p.max(p)
+	return Rect2i(Vector2i(min_p.floor()), Vector2i((max_p - min_p).ceil()))
+
+# Every pixel of `rect` whose colour differs between the two captures. THE measurement: a static rim
+# contributes none of them and a drifting one contributes its whole outline.
+func _pixels_that_moved(before: Image, after: Image, rect: Rect2i) -> Array[Vector2i]:
+	var out : Array[Vector2i] = []
+	var box := rect.intersection(Rect2i(Vector2i.ZERO, before.get_size()))
+	for y : int in range(box.position.y, box.end.y):
+		for x : int in range(box.position.x, box.end.x):
+			if before.get_pixel(x, y) != after.get_pixel(x, y): out.append(Vector2i(x, y))
+	return out
 
 func _rims(visual: CardVisual) -> String:
 	if not visual: return "no visual"

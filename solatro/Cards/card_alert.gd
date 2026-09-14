@@ -20,7 +20,7 @@ extends RefCounted
 ## The owner asked for both rather than one (*"bouncing glare between L R sides kind of like shiny
 ## effect, but bouncing gives more an alert feel... A throb effect with maybe specific colour like red
 ## as well so there are multiple notification types to choose from"*), so this is an enumerated set a
-## status picks from, not a boolean.
+## status picks from, not a boolean. `SHIMMER` drifts the rim along a ramp of entries instead.
 var kind : int = CardOutline.Alert.NONE
 
 ## The alert's palette entry, or -1 for the style's own (`glare_color` / `throb_color`).
@@ -57,6 +57,13 @@ static func throb(color := -1, period_fraction := -1.0) -> CardAlert:
 	a.period_fraction = period_fraction
 	return a
 
+# A rim drifting along the style's ramp. It names no colour at all - the ramp holds them, and its
+# FIRST entry is the ink the element already wears, so phase 0 IS the unlit rim.
+static func shimmer() -> CardAlert:
+	var a := CardAlert.new()
+	a.kind = CardOutline.Alert.SHIMMER
+	return a
+
 # --- Resolution against a card's style -------------------------------------------------------------
 
 ## This alert's palette entry on a card wearing `style`. Kind-dependent, because the two alerts have
@@ -66,11 +73,13 @@ func resolved_color(style : OutlineStyle) -> int:
 	if color >= 0: return color
 	return style.throb_color if kind == CardOutline.Alert.THROB else style.glare_color
 
-## One full cycle in fractions of `get_delay()`, from whichever of the style's two tempos this kind uses.
+## One full cycle in fractions of `get_delay()`, from whichever of the style's tempos this kind uses.
 func resolved_period(style : OutlineStyle) -> float:
 	if period_fraction >= 0.0: return period_fraction
-	return style.throb_period_fraction if kind == CardOutline.Alert.THROB else \
-			style.glare_period_fraction
+	match kind:
+		CardOutline.Alert.THROB: return style.throb_period_fraction
+		CardOutline.Alert.SHIMMER: return style.shimmer_period_fraction
+	return style.glare_period_fraction
 
 func resolved_thickness(style : OutlineStyle) -> float:
 	return style.glare_thickness if thickness < 0.0 else thickness

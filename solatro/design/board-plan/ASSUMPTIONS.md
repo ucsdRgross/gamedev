@@ -3,6 +3,12 @@
 One line each, reversible, within intent, citing the node being worked on. Anything larger is a
 gap under `gaps/`.
 
+- S23 / GAP-004: `ramp_match` is entries 6, 31, 3, 15, 12, 9 — gold first, because the activated rim
+  wears entry 6 at rest, then the palette's other bright entries (cream, peach, pink, ice, lime), so
+  the drift stays readable against a dark cell all the way round.
+- S23 / GAP-004: the shimmer's tempo is `OutlineStyle.shimmer_period_fraction` = 2.0, one full
+  there-and-back along the ramp per two `get_delay()`s — the slowest of the three alert kinds, which
+  is what "slowly interpolate" asked for. It is a knob on the shipped style, not a literal.
 - S18 / A3, Q93: `BoardPlan.stocks_of(state)` deals `state.draw_deck` round robin across the
   Entrance's slots, in the pile's own order and with no roll of its own, so the earlier slots take
   the extras; a board with no Entrance slots is one pile. The deal and a redraw both read it, and it
