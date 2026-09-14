@@ -991,23 +991,39 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	await _run_score_effects(result)
 	if view: view.reset_meld(result)
 
-#Only a MELD card pays, and the mark of every cell one stands on both acts and is ASKED for its
-#share: the line is `(hand + flats) x the SUMMED mults`, with a sum of 0 never multiplying. ⚠ The
-#accumulator is a local, so a nested score inside one of these hooks leaves the outer line whole.
+#Only a MELD card PAYS, one card at a time, while each CELL's mark is asked and acts ONCE for the
+#line however many of them stand on it: `(hand + flats) x the SUMMED mults`, a sum of 0 never
+#multiplying. ⚠ The accumulator is a local, so a nested score leaves the outer line whole.
 func _compose_line_score(result: Scoring.Result) -> int:
 	var flats := 0
 	var mults := 0.0
+	var by_cell : Dictionary[Vector3i, Dictionary] = {}
 	for card : CardData in result.meld:
 		var coord := state.grid_position_of(card)
 		var matched : int = await MarkMatch.matches_at(state, card, coord)
 		flats += MarkMatch.flat_bonus(card, matched)
 		mults += MarkMatch.mult_bonus(card, matched)
+		var key := Vector3i(coord.grid, coord.x, coord.y)
+		if not by_cell.has(key): by_cell[key] = {} as Dictionary[CardData, int]
+		by_cell[key][card] = matched
+	for key : Vector3i in by_cell:
+		var matches : Dictionary[CardData, int] = by_cell[key]
+		var coord := state.grid_position_of(_first_of(matches))
 		var mark := _mark_under(coord)
 		if not mark: continue
-		mults += await run_mark_query(mark, MarkMatch.MARK_LINE_MULT, card, coord, matched)
-		await _run_mark_hooks(mark, card, coord, matched)
+		var union := 0
+		for matched : int in matches.values():
+			union |= matched
+		mults += await run_mark_query(mark, MarkMatch.MARK_LINE_MULT, _first_of(matches), coord,
+				union)
+		await _run_mark_hooks(mark, coord, matches, union)
 	var line := result.score + flats
 	return int(line * mults) if not is_zero_approx(mults) else line
+
+#The card a batch of cards on one cell SPEAKS FOR -- the first of them the meld held, which for
+#every line but a vertical stack is the only one there is.
+func _first_of(matches: Dictionary[CardData, int]) -> CardData:
+	return matches.keys()[0]
 
 #⚠ A MARK ACTS THE MOMENT A CARD IS PLACED ON IT, so a mark that draws or reveals fires even on a
 #placement that completes no line. A card an effect MOVES in fires nothing until a line through the
@@ -1016,7 +1032,7 @@ func _run_mark_landing(card: CardData, coord: BoardCoord) -> void:
 	var mark := _mark_under(coord)
 	if not mark: return
 	var matched : int = await MarkMatch.matches_at(state, card, coord)
-	await _run_mark_hooks(mark, card, coord, matched)
+	await _run_mark_hooks(mark, coord, {card: matched} as Dictionary[CardData, int], matched)
 
 #The mark under a coordinate, or null when the cell wears none -- the one gate both the mark hooks
 #and the mult query are asked behind.
@@ -1025,12 +1041,16 @@ func _mark_under(coord: BoardCoord) -> CardData:
 	return mark if mark and BoardPlan.is_marked(mark) else null
 
 #A mark ACTS at two moments and announces itself identically at both: EVERY cover at level 0, a
-#match adding its own hook at level 1 to the mark's copied modifiers and to the card that covered it.
-func _run_mark_hooks(mark: CardData, card: CardData, coord: BoardCoord, matched: int) -> void:
-	await run_mark_mods(mark, MarkMatch.MARK_COVERED, card, coord, 0)
-	if matched == 0: return
-	await run_mark_mods(mark, MarkMatch.MARK_HIT, card, coord, matched, 1)
-	await run_mark_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
+#match adding its own hook at level 1 to the mark's copied modifiers and to each card that matched.
+#⚠ ONE CELL IS ONE BATCH -- the mark is announced once, on the UNION of what its cards matched.
+func _run_mark_hooks(mark: CardData, coord: BoardCoord, matches: Dictionary[CardData, int],
+		union: int) -> void:
+	await run_mark_mods(mark, MarkMatch.MARK_COVERED, _first_of(matches), coord, 0)
+	if union == 0: return
+	await run_mark_mods(mark, MarkMatch.MARK_HIT, _first_of(matches), coord, union, 1)
+	for card : CardData in matches:
+		if matches[card] == 0: continue
+		await run_mark_mods(card, MarkMatch.MARK_HIT, card, coord, matches[card], 1)
 
 ## D10–D12b (spotlight S5–S7): force-spotlight a whole SECTION and let the board settle under it.
 ## The whole set is forced at once and ONE sweep fires every `on_spotlight` in board order

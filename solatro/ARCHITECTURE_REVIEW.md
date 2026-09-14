@@ -472,6 +472,9 @@ line score = (hand score + Σ flat bonuses) × M      M = Σ bonus mults
   stands on while the line composes (§1.4), so an effect never has to know which moment it is in.
   The accumulator is a local of `Game._compose_line_score`: a mark hook re-scoring a line from
   inside it cannot touch the outer line's sum.
+- ⚠ **ONE CELL IS ONE BATCH.** A mark is asked, covered and hit ONCE per line however many meld
+  cards stand on it — a vertical stack is the case — on the UNION of what they matched. Each CARD
+  still pays its own flat and mult and is answered its own `on_mark_hit`.
 
 **Where a line banks** (`Game._add_grid_line_score`, the only place that decides):
 

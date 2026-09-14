@@ -35,6 +35,7 @@ func _ready() -> void:
 	await test_a_line_with_no_mult_is_never_multiplied_to_nothing()
 	await test_mark_effects_sum_into_one_multiplier()
 	await test_a_marks_mult_is_a_question_the_composition_asks()
+	await test_a_stacked_marks_share_is_asked_once_for_the_line()
 	await test_a_cover_is_announced_and_a_match_adds_its_own_hook()
 	await test_a_marks_copied_skill_is_dispatched_the_mark_hooks()
 	await test_a_flush_keeps_its_own_score()
@@ -223,6 +224,31 @@ func row_banked(g: Game) -> float:
 ## A mark whose effect is worth twice the line, spelled as the `+2` the sum of shares expects.
 func mult_mark() -> CardData:
 	return row_card(2).with_stamp(LineMultStamp.new())
+
+## A vertical run of one rank, tall enough to score, in FRESH instances -- a cell stacks each once.
+func height_stack(rank: int) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for _i : int in LineGeometry.HEIGHT_SCORE_INTERVAL:
+		out.append(row_card(rank))
+	return out
+
+#Grid 0's cell (0, 0) marked from `mark`, stacked with `cards` and scored as ONE vertical line. The
+#cards go straight onto the board instead of through a placement, so every mark hook the run fires
+#belongs to the composition and none of them to a landing.
+func scored_stack(cards: Array[CardData], mark: CardData) -> Game:
+	var g := make_game()
+	if mark: mark_cell(g.state, 0, 0, mark)
+	for card : CardData in cards:
+		place_in_cell(g.state, 0, 0, card)
+	var lines : Array = LineGeometry.lines_through(g.state.grids[0], 0, 0, cards.size() - 1)
+	for line : LineGeometry.Line in lines:
+		if line.kind == ScoringSection.LineKind.HEIGHT_V:
+			await g.score_line(null, g.effect_api.section_of_line(0, line))
+	return g
+
+## What the stack in grid 0's cell (0, 0) banked: the height score behind that cell's own label.
+func stack_banked(g: Game) -> float:
+	return g.state.cell_score(0, Vector2i(0, 0))
 
 #Row 0, column 0 and the main diagonal each one card short at the corner, every card of one rank so
 #all three melds hold every card of their line. Returns what the row, the column and the diagonal
@@ -824,6 +850,37 @@ func test_a_marks_mult_is_a_question_the_composition_asks() -> void:
 			"TP-87: ...and charged no processing either",
 			"%d against the unmarked %d" % [asked.act_calls, plain.act_calls])
 	for g : Game in [plain, asked, acting] as Array[Game]:
+		free_game(g)
+
+#TP-95: a cell's mark is asked and acts ONCE for the line, however many meld cards stand on it. A
+#whole stack covers one mark, so a share summed per card would turn x2 into x2-per-card and fire the
+#hooks once per card; each CARD still pays its own bonus and is answered its own hit.
+func test_a_stacked_marks_share_is_asked_once_for_the_line() -> void:
+	var bare := await scored_stack(height_stack(7), null)
+	var asked := await scored_stack(height_stack(7), mult_mark())
+	var hand := stack_banked(bare)
+	check(hand > 0.0, "TP-95 precondition: the unmarked stack banked its hand at all",
+			"banked %f" % hand)
+	check(stack_banked(asked) == hand * 2.0,
+			"TP-95: one mark under a stack multiplies the line by 2, not by 2 for every card on it",
+			"%f against a hand of %f" % [stack_banked(asked), hand])
+	var stack := height_stack(7)
+	for card : CardData in stack:
+		card.with_stamp(MarkHookRecorder.new())
+	var hooked := await scored_stack(stack, row_card(7).with_stamp(MarkHookRecorder.new()))
+	var spy := hooked.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-95: the mark under the stack is covered once and hit once for one line score",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	var matching := 0
+	var card_hits := 0
+	for card : CardData in stack:
+		if await MarkMatch.matches_at(hooked.state, card, cell(0, 0)) != 0: matching += 1
+		card_hits += (card.stamp as MarkHookRecorder).hits
+	check(matching == stack.size() and card_hits == matching,
+			"TP-95: every card of the stack matched, and each of them was answered its own hit",
+			"%d of %d matched, %d card hits" % [matching, stack.size(), card_hits])
+	for g : Game in [bare, asked, hooked] as Array[Game]:
 		free_game(g)
 
 #Every landing on a marked cell is a COVER, matching or not, so a x2 mark multiplies whatever is put
