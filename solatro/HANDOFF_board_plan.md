@@ -9,8 +9,7 @@ deck, S26 the board-wide shimmer phase), one implementer, one full gate and one 
 `resolution:` blocks and PLAN 1.10-bis carries every ruling verbatim. Tree clean. Last gate: ALL 48
 SUITES: 4425 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
 before S1. The owner has playtested the game view and approved the selection glow and the shimmer.
-OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort (Next up
-carries the prompt). Implementer sessions die to the Opus session limit every few hours; every
+S17, the close, is DONE (see "The close (S17)"); nothing is open on the branch. Implementer sessions die to the Opus session limit every few hours; every
 cut-off so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
@@ -295,9 +294,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'see /plan-run Closing the run'
   verification_kind: manual
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Every numbered item of the close ran and is recorded in "The close (S17)" above with its output; fixes F1-F11 and sweeps S-A..S-C are their own commits with red/green banners; final gate of the fix set ALL 48 SUITES: 4460 CHECKS PASSED (F11) and of the sweeps 4471 / 4467, errors log empty, SECTION 8 identical to the pre-S1 baseline throughout.'
+  notes: 'Closer: Fable 5.1 in a new session. Reviewers: Fable 5.1 (adversarial, test-surface, code-review finder and verifier, fx-verify); implementers: Opus 5 default effort. The plan documents and this handoff are kept, as every earlier closed run kept its own.'
 ```
 
 ## Phase 1-3 adversarial review (Opus 5, default effort, read-only, committed tree at 7c7ae65a)
@@ -454,20 +453,11 @@ into main (`git merge-tree`) clean.
 8. /docs, 9. consolidate-memory, 10. feedback into plan-run / plan-implementer, 11. the plan
    documents: recorded in the commits after the sweeps.
 
-## Queued for the close (S17)
-- /docs: `todo.md`'s board-plan block still lists GAP-001..006 as open bullets; every one is resolved
-  (PLAN 1.10-bis) and S18-S25 landed them - rewrite the block to what is open now (the touchscreen
-  cancel, the overview-zoom rim question, TP-72's beam half, the no-producer observations).
-- /docs: `solatro/HANDOFF_phase9_goal_curve.md` quotes the retired 5376 / 0.26 in three places; the
-  curve is now the S22 placeholder (18720 / 0).
-- /simplify: `MarkMatch._pip_same` computes two `pip_cache_key`s that `ask_pass` never reads under
-  `memoise = false` (bloat review).
-- /simplify: the residual 8-line dup_check pair between `plan_match_shot.gd` and `plan_layer_shot.gd`
-  (`_ready`'s four locals), and the `test_plan_visuals.gd:437` / `test_ui_props.gd:1135` GameView
-  teardown pair (a repo-wide shape at ~30 sites).
-- /fx-verify: the scoring-beam half of TP-72 is UNVERIFIED (no shot holds a beam on a realized cell).
-- Tool fidelity, not a defect: `PipSuitTest.id` is dropped by `duplicate_deep`, so the parity's
-  engine deal is not a fewest-copies deal and every dumped mark prints suit 0 (ASSUMPTIONS S15).
+## What the close queue became
+- todo.md's board-plan block lists what is open now; HANDOFF_phase9_goal_curve.md carries the flat
+  placeholder; `MarkMatch._pip_same` reuses `pair_is_same` (F9); the reveal fixture is one helper
+  (F8); the cross-file shot/teardown pairs are the repo-wide shape and stay; TP-72's beam half is
+  VERIFIED (item 6); the parity tool's `PipSuitTest.id` note stays in ASSUMPTIONS S15.
 
 ## Verified vs assumed
 - Import cache: verified — second `--import` pass printed no error line.
@@ -495,16 +485,11 @@ into main (`git merge-tree`) clean.
   `BoardPlan` row corrected to agree.
 
 ## Next up
-S18-S26 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
-
-    Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
-    (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
-    at default effort. You are the reviewer, and you must be at or above that: same
-    generation or newer, same effort or higher. A weaker reviewer on stronger code is net
-    negative, not merely useless. Start by reading .claude/skills/plan-run/SKILL.md "The
-    reviewer's model floor" and then "Closing the run", and work its numbered list in order.
-    Read solatro/HANDOFF_board_plan.md first: "How this run operates" (the private-APPDATA
-    suite script, the standing interference lines) and "Queued for the close".
+The run is CLOSED on the branch. The owner merges `board-plan` into `main` (a `git merge-tree`
+dry run against main was conflict-free at the close's start; re-check before merging). Open items
+for the owner are in `solatro/todo.md`'s board-plan block. The last sweep step (S-C part 2, the
+eight largest test files) is recorded in its own commit when it lands; if it is absent, those files
+still carry their legacy comment findings and the sweep is the next task.
 
 ## How this run operates (read before dispatching)
 - Overseer never reads source; verifies by bounded grep, its own full suite run, the SECTION 8
