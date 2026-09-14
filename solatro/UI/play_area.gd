@@ -16,7 +16,7 @@ signal info_requested(entry: InfoEntry)
 # between the two would flick a locked card's description back in for a frame.
 signal highlight_cleared
 
-## The player asked to close the description: cancel with nothing held, or a press on bare board.
+## The player asked to close the description: a cancel press, or a press on bare board.
 signal description_dismiss_requested
 ## Emitted once a rebuild's CardVisuals are all in-tree and _ready. CardVisuals add_child via
 ## call_deferred, so right after set_card_zones they're mapped in data_card but not yet ready;
@@ -1618,11 +1618,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		if selected_cards:
-			ungrab_cards()
-			get_viewport().set_input_as_handled()
-		else:
-			description_dismiss_requested.emit()
+		_cancel_everything()
 
 # since clicks outside of play area can happen
 ##
@@ -1646,9 +1642,9 @@ func _input(event: InputEvent) -> void:
 	# Mouse
 	if event is InputEventMouseButton:
 		var mouse_event : InputEventMouseButton = event
-		# right click / cancel
 		if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
-			ungrab_cards()
+			_cancel_one_step()
+			get_viewport().set_input_as_handled()
 			return
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			if not _press_closes_a_pair(mouse_event): _arm_card_gesture(mouse_event.position)
@@ -1711,6 +1707,20 @@ func grab_cards(datas:Array[CardData]) -> void:
 	var carried : CardVisual = data_card.get(selected_cards[0]) if selected_cards else null
 	_pointer_was_in_the_origin_cell = (carried != null
 			and _origin_cell_rect(carried).has_point(get_global_mouse_position()))
+
+# THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
+# it was read against survives that press, and only the next press closes the description.
+func _cancel_one_step() -> void:
+	if selected_cards:
+		ungrab_cards()
+		return
+	description_dismiss_requested.emit()
+
+# Escape does everything the second button would, in the one press, and is never consumed: the wall
+# hears it afterwards and takes its own step back out of the game screen.
+func _cancel_everything() -> void:
+	ungrab_cards()
+	description_dismiss_requested.emit()
 
 func ungrab_cards() -> void:
 	_next_grab_follows = false

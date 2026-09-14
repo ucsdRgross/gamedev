@@ -23,6 +23,7 @@ const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
 const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
 const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
 const DRAG_RELEASE_RETURNED_OUT_PATH := "user://sidebar_snapshot/drag_release_returned.png"
+const CANCEL_FIRST_PRESS_OUT_PATH := "user://sidebar_snapshot/cancel_first_press.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -183,6 +184,14 @@ func _ready() -> void:
 	_report_held_lift(view, armed, "drag_release_returned")
 	view.play_area.ungrab_cards()
 	await get_tree().process_frame
+
+	await _click_an_entrance_card(main, view)
+	var cancelled := await _cancel_the_held_card_once(main, view)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CANCEL_FIRST_PRESS_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT cancel_first_press held=%d description=%s" % [
+			view.play_area.selected_cards.size(), str(cancelled)])
 
 	await _open_the_deck_viewer(view)
 	await RenderingServer.frame_post_draw
@@ -357,6 +366,20 @@ func _push_pointer(viewport: SubViewport, at: Vector2) -> void:
 	motion.position = at
 	motion.global_position = at
 	viewport.push_input(motion)
+
+# ONE press of the cancel button on a held card: the by-eye question is whether the card goes back
+# to its slot while the description it was read against stays up, so the answer is printed too.
+func _cancel_the_held_card_once(main: Main, view: GameView) -> bool:
+	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var data : CardData = view.play_area.selected_cards[0]
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	event.position = view.play_area.data_ui[data].get_global_rect().get_center()
+	event.global_position = event.position
+	viewport.push_input(event)
+	await _await_held_card_settled(view, data)
+	return view.hud_container.showing_description()
 
 func _push_click(viewport: SubViewport, at: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()

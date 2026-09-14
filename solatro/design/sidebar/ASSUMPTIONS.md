@@ -570,3 +570,16 @@
 - S17: the dummy tap effect is a `CardModifierStamp`, not a `CardModifierType`: `run_all_mods`
   dispatches `type`, `stamp` and `statuses`, and a stamp leaves the Entrance card it rides the type
   it was drawn from (S16's finding). It is test-local; nothing under `Cards/` listens.
+- S18: new names `PlayArea._cancel_one_step()` (the second mouse button: one thing per press) and
+  `PlayArea._cancel_everything()` (`ui_cancel`: both at once), plus the test names
+  `TestSidebar._second_button_press()` and `sidebar_snapshot._cancel_the_held_card_once()` with its
+  `CANCEL_FIRST_PRESS_OUT_PATH`.
+- S18: `ungrab_cards()` never hid the description -- the collapse the audit warned about is in
+  `GameView._place_held_onto`, which belongs to a landed PLACEMENT, not to a cancel. Only the
+  ordering and the consumption changed.
+- S18: `Q100`=c is implemented by NOT consuming: `GameView._on_description_dismiss_requested` no
+  longer marks the event handled, so the wall's own Back hears the same Escape. The second mouse
+  button is consumed by the board instead, which is what keeps it cancel-only.
+- S18: the 1.7 cancel test lost its second-press half. Once the first Escape both dismisses and
+  goes back, the wall sets `input_locked` for the transition it started, so a second press in the
+  same test window is inert by design -- the case it asserted is now the first press's own.

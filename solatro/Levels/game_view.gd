@@ -127,12 +127,11 @@ func _on_description_dismissed() -> void:
 	play_area.locked_data = null
 
 # The board publishes the ASK and the container owns whether there is anything to dismiss; the view
-# is what sees both. A cancel that dismisses nothing is left alone, so the wall's own Back still
-# gets it, and one that does is spent on the dismissal.
+# is what sees both. The dismissal never spends the event -- the board consumes its own second
+# button, and Escape is left for the wall's own Back so one press both cancels and steps out.
 func _on_description_dismiss_requested() -> void:
 	if not hud_container.showing_description(): return
 	hud_container.show_hud()
-	get_viewport().set_input_as_handled()
 
 # ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW, and it is released AFTER the connections are
 # dropped: the revert to the HUD it performs is this view's own doing, not a dismissal to relay.

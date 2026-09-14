@@ -72,8 +72,8 @@ func _ready() -> void:
 	await test_the_description_follows_the_hover_while_locked()
 	await test_leaving_everything_returns_to_the_locked_card()
 	await test_focus_leaving_the_board_returns_to_the_locked_card()
-	await test_cancel_reverts_to_the_hud_and_only_then_is_spent()
-	await test_cancel_with_a_held_card_releases_it_and_keeps_the_description()
+	await test_cancel_reverts_to_the_hud_and_still_reaches_back()
+	await test_the_second_button_releases_the_held_card_then_dismisses()
 	await test_a_press_on_bare_board_reverts_to_the_hud()
 	await test_placing_a_card_closes_the_description()
 	await test_replacing_a_displaced_lock_frees_its_visual()
@@ -147,6 +147,12 @@ func _ready() -> void:
 	await test_arming_again_leaves_the_held_card_alone()
 	await test_the_disarm_leaves_nothing_armed()
 	await test_an_empty_entrance_arms_nothing()
+	behavior_section("S18: CANCEL")
+	await test_the_second_button_dismisses_a_description_with_nothing_held()
+	await test_the_second_button_with_nothing_to_cancel_does_nothing()
+	await test_escape_cancels_everything_and_steps_back_in_one_press()
+	await test_releasing_the_held_card_leaves_the_locked_description_up()
+	await test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1421,6 +1427,18 @@ func _click(at: Vector2, viewport: SubViewport) -> void:
 	_push_mouse_button(at, viewport, false)
 	await get_tree().process_frame
 
+# The cancel button a player presses: a real right press into the game picture's own viewport, so
+# the board reads it through the same handler that hears the left one.
+func _second_button_press(at: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	event.position = at
+	event.global_position = at
+	_game_viewport.push_input(event)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
 func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -1786,8 +1804,8 @@ func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
 					"...so the description returns to the locked card (B7, Q60=c)", title.text)
 	await _end_game_fixture()
 
-## 1.7/B9/B10/Q64=a: cancel with nothing held reverts to the HUD and is spent doing it; with nothing showing it still reaches the wall's Back.
-func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
+## 1.7/B9/B10/Q64=a/Q100=c: cancel with nothing held reverts to the HUD, and the SAME press reaches the wall's own Back -- the transition then locks input, so there is no second press to make.
+func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var entrance := await _entrance_card_controls()
@@ -1808,35 +1826,40 @@ func test_cancel_reverts_to_the_hud_and_only_then_is_spent() -> void:
 				"cancel with nothing held reverts the container to the HUD (B9, B10)")
 		check(not _container.is_locked(), "...and the lock is gone with it")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
-		check(not went_back[0],
-				"...and that cancel is SPENT on the dismissal, never reaching the wall's own Back")
-
-		_booted_viewport.push_input(_cancel_event())
-		await get_tree().process_frame
 		check(went_back[0],
-				"a cancel with NOTHING showing falls through to the wall's Back, exactly as before")
+				"...and that ONE press also reaches the wall's own Back, rather than a second one doing it (Q100=c)")
 	await _end_game_fixture()
 
-## A cancel with a card HELD is spent on the release alone: the description stays up, the ungrab having no say over it any more.
-func test_cancel_with_a_held_card_releases_it_and_keeps_the_description() -> void:
+## S18.1/Q99=b: the second mouse button cancels ONE thing per press -- the held card first, the description on the next press.
+func test_the_second_button_releases_the_held_card_then_dismisses() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
 	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
 			str(entrance.size()))
 	if not entrance.is_empty():
+		var at := entrance[0].get_global_rect().get_center()
 		await _click_card(entrance[0])
-		check(not _play_area.selected_cards.is_empty(),
-				"the click left the card held", str(_play_area.selected_cards.size()))
+		var held := _armed_card()
+		check(held != null, "the click left the card held", str(_play_area.selected_cards.size()))
 		check(_container.showing_description(), "...with its description up")
 		var dismissals : Array[int] = []
 		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
-		_booted_viewport.push_input(_cancel_event())
-		await get_tree().process_frame
-		await get_tree().process_frame
-		check(_play_area.selected_cards.is_empty(), "the cancel released the held card",
+		await _second_button_press(at)
+		check(_play_area.selected_cards.is_empty(),
+				"the first second-button press released the held card (S18.1, Q99=b)",
 				str(_play_area.selected_cards.size()))
+		if held != null and held in _play_area.data_card:
+			var visual : CardVisual = _play_area.data_card[held]
+			check(visual.held == 0 and not visual.following,
+					"...back in its slot, neither held nor following (S18.1)",
+					"%d / %s" % [visual.held, str(visual.following)])
 		check(_container.showing_description() and dismissals.is_empty(),
-				"...and the description it was reading is still up", str(dismissals.size()))
+				"...and the description it was reading is still up (S18.1, E20)",
+				str(dismissals.size()))
+		await _second_button_press(at)
+		check(not _container.showing_description() and dismissals.size() == 1,
+				"a second press then dismisses the description (S18.1, E21)",
+				str(dismissals.size()))
 	await _end_game_fixture()
 
 ## 1.7/B9/B10: a real press on bare board reverts the container to the HUD.
@@ -3556,4 +3579,110 @@ func test_an_empty_entrance_arms_nothing() -> void:
 		await _click_card(cells[0])
 		check(_play_area.selected_cards.is_empty(),
 				"...and a click on a cell with nothing armed picks nothing up (Q119=a)")
+	await _end_game_fixture()
+
+## S18.2/F9: the second button with nothing held closes the description, and closes nothing else.
+func test_the_second_button_dismisses_a_description_with_nothing_held() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		check(_container.showing_description() and _play_area.selected_cards.is_empty(),
+				"the description is up and nothing is held before the press")
+		await _second_button_press(entrance[0].get_global_rect().get_center())
+		check(hud_stack.visible and not _panel.visible,
+				"the second button reverts the container to the HUD (S18.2, Q99=b)")
+		check(not _container.is_locked(), "...and the lock is gone with it (S18.2)")
+	await _end_game_fixture()
+
+## S18.2/Q100=c: the second button is cancel-only -- with nothing to cancel it is not a way out of the screen.
+func test_the_second_button_with_nothing_to_cancel_does_nothing() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var controls := await _hoverable_card_controls()
+	var at := _bare_board_point(controls)
+	var went_back : Array[bool] = [false]
+	_main.wall.back_requested.connect(func() -> void: went_back[0] = true)
+	await _second_button_press(at)
+	check(_play_area.selected_cards.is_empty(),
+			"the first press released whatever the deal armed",
+			str(_play_area.selected_cards.size()))
+	await _second_button_press(at)
+	check(hud_stack.visible and not _panel.visible,
+			"with nothing held and nothing showing the second button leaves the HUD up (S18.2)")
+	check(not went_back[0],
+			"...and never reaches the wall's own Back (S18.2, F9)")
+	await _end_game_fixture()
+
+## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and steps out of the screen.
+func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		check(not _play_area.selected_cards.is_empty() and _container.showing_description(),
+				"the click left a card held with its description locked")
+		var went_back : Array[bool] = [false]
+		_main.wall.back_requested.connect(func() -> void: went_back[0] = true)
+		_booted_viewport.push_input(_cancel_event())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_play_area.selected_cards.is_empty(),
+				"one Escape released the held card (S18.3, E22)",
+				str(_play_area.selected_cards.size()))
+		check(not _container.showing_description(),
+				"...dismissed the description in the SAME press (S18.3, Q100=c)")
+		check(went_back[0], "...and still showed the menu/wall (S18.3, Q100=c)")
+	await _end_game_fixture()
+
+## S18.4/E20: releasing the held card is not a dismissal -- a locked description outlives it.
+func test_releasing_the_held_card_leaves_the_locked_description_up() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		var locked := _play_area.locked_data
+		check(_container.is_locked() and locked != null,
+				"the click locked the description to the card it held")
+		await _second_button_press(entrance[0].get_global_rect().get_center())
+		check(_play_area.selected_cards.is_empty(), "the release let the card go (S18.4)")
+		check(_container.showing_description() and _container.is_locked(),
+				"...and the lock it was read against is untouched (S18.4, E20)")
+		check(_play_area.locked_data == locked,
+				"...still on the same card (S18.4)")
+	await _end_game_fixture()
+
+## S18.5/Q115=a/Q114=a: a cancel disarms, the next click on a cell does nothing, and only a click on an Entrance card re-arms.
+func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	var armed := _armed_card()
+	check(armed != null, "the deal armed a card to cancel")
+	if armed != null:
+		var controls := await _hoverable_card_controls()
+		var cell := await _placement_target(controls, [armed] as Array[CardData], true)
+		check(cell != null, "the board offers a cell that card could have landed on")
+		await _second_button_press(_bare_board_point(controls))
+		check(_play_area.selected_cards.is_empty(),
+				"the cancel disarmed, and nothing re-armed behind it (S18.5, Q115=a)",
+				str(_play_area.selected_cards.size()))
+		if cell != null:
+			var before := game.state.revision
+			await _click_card(cell)
+			check(game.state.revision == before,
+					"...so the next click on a cell does nothing (S18.5, Q115=a)",
+					"%d vs %d" % [game.state.revision, before])
+		var entrance := await _entrance_card_controls()
+		if not entrance.is_empty():
+			var wanted : CardData = _play_area.ui_data[entrance[0]]
+			await _click_card(entrance[0])
+			check(_armed_card() == wanted,
+					"...and a click on an Entrance card re-arms onto it (S18.5, Q114=a)")
 	await _end_game_fixture()
