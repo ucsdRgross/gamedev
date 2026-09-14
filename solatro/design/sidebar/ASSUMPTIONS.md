@@ -592,3 +592,11 @@
   `TestDragPlace.test_a_touch_tap_after_a_placement_is_refused`, sharing
   `_cell_the_arm_can_be_placed_on()` and `_check_the_placement_stands_untapped()` with the mouse
   row; `_touch_tap` now pushes the two forms in the engine's order.
+- Phase 5 fix 2: a cancel ends the PRESS as well as the hold. `PlayArea._end_the_gesture()` is
+  now the one place `_press_data` is cleared -- the release calls it, and so do `_cancel_one_step`
+  and `_cancel_everything`; without it the release closing a cancelled drag ran `_release_places`
+  and emitted `card_dropped` for a hand nobody was holding. New test rows
+  `TestDragPlace.test_a_cancel_mid_drag_leaves_nothing_for_the_release` and its
+  `..._an_escape_mid_drag_...` twin, sharing `_check_a_cancelled_drag_places_nothing()` with the
+  new `_escape_press()` (root-viewport `ui_cancel`). Only the second-button row reproduced: the
+  wall's transition lock already swallowed the release after an Escape, so the twin is a guard.

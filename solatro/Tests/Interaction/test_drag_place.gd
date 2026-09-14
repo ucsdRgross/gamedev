@@ -43,6 +43,8 @@ func _ready() -> void:
 	await test_a_release_on_an_illegal_cell_returns_the_card()
 	behavior_section("RELEASES THE BOARD DOES NOT OWN")
 	await test_a_release_over_the_container_returns_the_card()
+	await test_a_cancel_mid_drag_leaves_nothing_for_the_release()
+	await test_an_escape_mid_drag_leaves_nothing_for_the_release()
 	await test_a_touch_tap_selects_and_lifts_without_placing()
 	behavior_section("THE DRAG CHOOSES WHICH CARD IS MOVING")
 	await test_a_drag_from_a_board_card_cancels_the_arm()
@@ -442,6 +444,52 @@ func test_a_release_over_the_container_returns_the_card() -> void:
 		check(_placed_cards().is_empty() and _game.save_history.size() == committed,
 				"...and nothing was placed (5.4)", _hand_str())
 	await _end_fixture()
+
+# The second mouse button mid-drag: the release that closes the cancelled gesture must reach the
+# board with nothing to place, so no drop is ever reported for a card the player let go of.
+func test_a_cancel_mid_drag_leaves_nothing_for_the_release() -> void:
+	await _check_a_cancelled_drag_places_nothing(false)
+
+# Escape mid-drag does everything the second button would, and the release closing that gesture
+# must be just as empty -- the wall is transitioning out while it arrives.
+func test_an_escape_mid_drag_leaves_nothing_for_the_release() -> void:
+	await _check_a_cancelled_drag_places_nothing(true)
+
+# A CANCEL ENDS THE PRESS AS WELL AS THE HOLD (Q99=b, Q100=c, Q281=a): the drag is cancelled in
+# flight and the button then released over a cell the board accepts, which is the one release that
+# could still place a card nobody is holding.
+func _check_a_cancelled_drag_places_nothing(by_escape: bool) -> void:
+	await _start_fixture()
+	var held := _armed_card()
+	var cell := await _legal_cell_control(held) if held else null
+	check(held != null and cell != null, "the show opens with a card armed and a cell that accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if held and cell:
+		var drops : Array[CardData] = []
+		_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
+		var committed := _game.save_history.size()
+		var at := _control_centre(cell)
+		await _begin_drag(_card_centre(held), at)
+		check(_is_following(held), "the drag is live before the cancel", _hand_str())
+		if by_escape: await _escape_press()
+		else: await _right_click(at, false)
+		await _end_drag(at)
+		check(drops.is_empty(), "the release closing a cancelled drag drops nothing (Q99=b, Q100=c)",
+				"%d drop(s)" % drops.size())
+		check(_placed_cards().is_empty() and _game.save_history.size() == committed,
+				"...so the board places nothing and commits no step (Q281=a)", _hand_str())
+		check(_pa.selected_cards.is_empty() and not _is_following(held),
+				"...and the cancelled card is in its slot, held by nothing", _hand_str())
+	await _end_fixture()
+
+# Escape reaches the board the way a player's does: through the ROOT viewport, where the wall reads
+# its own step back out of the screen from the same press.
+func _escape_press() -> void:
+	var cancel := InputEventAction.new()
+	cancel.action = &"ui_cancel"
+	cancel.pressed = true
+	await _push(cancel, _viewport)
+	await _frames(3)
 
 # 5.5 (E24, Q285=b): a touch TAP needs no threshold of its own. It selects and lifts the card it
 # lands on, places nothing — and a second tap on the card already held leaves it held.

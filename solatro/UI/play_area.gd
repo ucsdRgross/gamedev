@@ -1537,13 +1537,18 @@ func _take_up_the_dragged_card(at: Vector2) -> void:
 	_next_grab_follows = true
 	card_dragged.emit(_press_data)
 
+# ⚠ THE ONE PLACE A GESTURE ENDS -- a release, or a cancel that let the card go. Motion once no
+# press is live is not a drag, a remembered press turned the next hover into one, and a cancelled
+# drag whose press outlived it placed a hand nobody was holding.
+func _end_the_gesture() -> void:
+	_press_data = null
+
 # A gesture that TRAVELLED is never a click: its release places the held card, and the GUI pass
-# below never sees it. ⚠ THE PRESS IS FORGOTTEN HERE EITHER WAY -- motion once the button is up
-# is not a drag, and a remembered press turned the next hover into one.
+# below never sees it. The press is forgotten here whichever branch the release takes.
 func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
 	var dragged := _press_data
-	_press_data = null
+	_end_the_gesture()
 	if _tapped_this_gesture:
 		_tapped_this_gesture = false
 		return true
@@ -1716,6 +1721,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 # THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
 # it was read against survives that press, and only the next press closes the description.
 func _cancel_one_step() -> void:
+	_end_the_gesture()
 	if selected_cards:
 		ungrab_cards()
 		return
@@ -1724,6 +1730,7 @@ func _cancel_one_step() -> void:
 # Escape does everything the second button would, in the one press, and is never consumed: the wall
 # hears it afterwards and takes its own step back out of the game screen.
 func _cancel_everything() -> void:
+	_end_the_gesture()
 	ungrab_cards()
 	description_dismiss_requested.emit()
 
