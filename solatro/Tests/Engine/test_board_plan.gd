@@ -55,8 +55,10 @@ func _ready() -> void:
 	await test_a_reroll_under_a_placed_card_is_live()
 	behavior_section("A WHOLE LINE AND A WHOLE GRID REROLLED AT ONCE")
 	await test_a_covered_row_rerolls_every_cell()
+	test_a_rerolled_row_trades_faces_without_rotating()
 	test_a_diagonal_rerolls_every_cell()
 	test_one_grid_rerolls_and_the_other_stands()
+	test_a_whole_grid_rerolls_to_a_fresh_deal()
 	behavior_section("A PLAN SURVIVES A SAVE, AND A PLAN-LESS SAVE STILL PLAYS")
 	test_a_dealt_plan_survives_a_round_trip()
 	await test_a_plan_less_save_resumes_and_plays()
@@ -1035,8 +1037,8 @@ func flat_diagonal(grid: GridData) -> LineGeometry.Line:
 		if line.kind == ScoringSection.LineKind.DIAG and line.cells.back() == last: return line
 	return null
 
-#TP-88: a line reroll is the one-cell redraw run over every cell of a row -- the covered ones too,
-#because the mark under a card is part of the line -- and one board change, so it bumps once.
+#TP-88: a line reroll is the deal run over every cell of a row -- the covered ones too, because the
+#mark under a card is part of the line -- and one board change, so it bumps once.
 func test_a_covered_row_rerolls_every_cell() -> void:
 	var g := planned_game(914)
 	var standing := cover_row(g, 0)
@@ -1077,6 +1079,58 @@ func test_a_covered_row_rerolls_every_cell() -> void:
 			"standing on %s: matched %d, the new mark allows %d"
 			% [mark_print(mark), after, expected])
 	free_show(g)
+
+#TP-88: a line reroll is the deal run over the row, so the row's own faces are back on offer and a
+#board carrying every identity trades them among its cells -- but never back to the cell that gave
+#one up, and never the step-one-along a redraw per cell produced.
+func test_a_rerolled_row_trades_faces_without_rotating() -> void:
+	var g := planned_game(914)
+	var section := g.effect_api.line_section_at(BoardCoord.new(0, 0, 0, 0),
+			ScoringSection.LineKind.ROW)
+	var before := line_prints(g.state, section)
+	check(before.size() == 5 and not before.has("-"),
+			"TP-88: precondition: all five cells of the row carry a mark", str(before))
+	g.effect_api.reroll_line(section)
+	var after := line_prints(g.state, section)
+	var kept : Array[int] = []
+	for i : int in before.size():
+		if after[i] == before[i]: kept.append(i)
+	check(kept.is_empty(),
+			"TP-88: no cell of the rerolled row came back with the face it gave up",
+			"cells %s kept theirs: %s came back %s" % [str(kept), str(before), str(after)])
+	var handed_down : Array[int] = []
+	for i : int in range(1, before.size()):
+		if after[i] == before[i - 1]: handed_down.append(i)
+	check(handed_down.is_empty(),
+			"TP-88: no cell took the face the cell before it gave up, which is the chain a redraw per cell walked",
+			"cells %s wear their predecessor's old face: %s came back %s"
+			% [str(handed_down), str(before), str(after)])
+	check(g.state.validate().is_empty(), "TP-88: the rerolled row breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-88: a whole grid rerolled is that grid dealt again from the deck's own cycle -- 20 identities
+#over 25 cells, so five identities have to print twice, and still no cell comes back with the face
+#it gave up.
+func test_a_whole_grid_rerolls_to_a_fresh_deal() -> void:
+	var g := planned_game(917)
+	var before := grid_prints(g.state, 0)
+	g.effect_api.reroll_grid(0)
+	var changed := changed_cells(before, grid_prints(g.state, 0))
+	check(changed.size() == before.size(),
+			"TP-88: each of the 25 cells prints a face other than its own, out of the deck's 20 identities",
+			"%d of %d cells changed" % [changed.size(), before.size()])
+	check(marks_of(g.state).size() == 25 and g.state.validate().is_empty(),
+			"TP-88: the rerolled grid comes back fully marked and breaks no invariant",
+			"%d marks; %s" % [marks_of(g.state).size(), ", ".join(g.state.validate())])
+	free_show(g)
+
+## What each cell of `section` prints now, in the order the line runs.
+func line_prints(state: GameData, section: ScoringSection) -> Array[String]:
+	var out : Array[String] = []
+	for i : int in line_indices(state, section):
+		out.append(mark_print(state.grids[section.grid].cell_types[i]))
+	return out
 
 #TP-88: a line is a row, a column or a diagonal, and the diagonal is the one shape that does not
 #reduce to an index -- the section carries its own cells, so the same reroll walks it unchanged.

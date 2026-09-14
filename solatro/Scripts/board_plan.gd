@@ -42,35 +42,32 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 #than re-derived from a board that no longer remembers which cell came first.
 	state.plan_reveal_order.clear()
 	var stocks := stocks_of(state)
-	var unused := _lowest_copies_per_stock(stocks, state)
+	var unused := _lowest_copies_per_stock(stocks, state, [] as Array[CardData])
 	for i : int in order.size():
-		var source := _take_for_cell(unused, order[i], i % stocks.size(), rng)
+		var source := _take_unused(unused, i % stocks.size(), rng)
 		if not source:
-			unused = _lowest_copies_per_stock(stocks, state)
-			source = _take_for_cell(unused, order[i], i % stocks.size(), rng)
+			unused = _lowest_copies_per_stock(stocks, state, [] as Array[CardData])
+			source = _take_unused(unused, i % stocks.size(), rng)
 		if not source: return
 		write_mark(order[i], source, false)
 		state.plan_reveal_order.append(state.cell_type_coord(order[i]))
 
-#One cell dealt again from a pool of its own: the identity it prints is not on offer, so a redraw
-#hands back a face the cell did not have. The mark stays when the offer holds nothing else -- an
-#empty draw pile -- because the cell is cleared only once a replacement is in hand.
-static func redraw(state: GameData, type_card: CardData, rng: RandomNumberGenerator) -> bool:
+#A reroll is THE DEAL run over these cells: the ones still waiting count as bare, so what the batch
+#gives up is back on offer and the deck keeps cycling, while the cell in hand keeps its own mark
+#counted and its own face barred. It is cleared once a replacement is in hand, never before.
+static func redraw(state: GameData, cells: Array[CardData], rng: RandomNumberGenerator) -> bool:
 	assert(state.plan_seed != 0, "a redraw replays from the plan's own stored seed")
-	var unused := _lowest_copies_per_stock(stocks_of(state), state)
-	var source := _take_for_cell(unused, type_card, 0, rng)
-	if not source: return false
-	clear_mark(type_card)
-	write_mark(type_card, source, false)
-	return true
-
-#The one pick the deal and a redraw share: an identity out of the offer, never the one the cell
-#ALREADY prints -- a bare cell prints nothing so the deal's offer stands whole, while a redraw's
-#cell still carries the face it replaces, which on a fewest-copies pool would win every roll.
-static func _take_for_cell(unused: Array[Array], cell: CardData, first: int,
-		rng: RandomNumberGenerator) -> CardData:
-	_drop_print(unused, cell)
-	return _take_unused(unused, first, rng)
+	var stocks := stocks_of(state)
+	var redrawn := false
+	for i : int in cells.size():
+		var unused := _lowest_copies_per_stock(stocks, state, cells.slice(i + 1))
+		_drop_print(unused, cells[i])
+		var source := _take_unused(unused, i % stocks.size(), rng)
+		if not source: continue
+		clear_mark(cells[i])
+		write_mark(cells[i], source, false)
+		redrawn = true
+	return redrawn
 
 #An identity leaves the WHOLE offer and not just the stock it came out of: a card the board has
 #marked is no longer unused anywhere, so a print two stocks both hold cannot be marked twice while
@@ -101,14 +98,15 @@ static func _shuffle(cells: Array[CardData], rng: RandomNumberGenerator) -> void
 		cells[i] = cells[j]
 		cells[j] = swapped
 
-#The pass in progress: each stock's identities the board has marked FEWEST times. Nothing takes
-#another copy while a card has fewer, for the whole show and not per grid, so a deal onto a board
-#that already carries marks continues the cycle instead of restarting it.
-static func _lowest_copies_per_stock(stocks: Array[Array], state: GameData) -> Array[Array]:
+#The pass in progress: each stock's identities the board has marked FEWEST times, counting the
+#cells a reroll is about to give back as bare. Nothing takes another copy while a card has fewer,
+#for the whole show and not per grid, so a deal onto a marked board continues the cycle.
+static func _lowest_copies_per_stock(stocks: Array[Array], state: GameData,
+		excluding: Array[CardData]) -> Array[Array]:
 	var marks : Array[CardData] = []
 	for grid : GridData in state.grids:
 		for type_card : CardData in grid.cell_types:
-			if is_marked(type_card): marks.append(type_card)
+			if is_marked(type_card) and not excluding.has(type_card): marks.append(type_card)
 	var lowest := -1
 	for stock : Array in stocks:
 		for card : CardData in _distinct_prints(stock):

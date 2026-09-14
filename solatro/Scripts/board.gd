@@ -377,10 +377,10 @@ static func deal_marks(state: GameData) -> void:
 	if state.plan_seed == 0: return
 	BoardPlan.deal(state, _plan_rng(state))
 
-#One cell redrawn from the same stored seed, so a resumed show rerolls that cell to the same card.
-#False when the offer held nothing else, which leaves the mark standing and nothing to bump for.
-static func redraw_mark(state: GameData, type_card: CardData) -> bool:
-	return BoardPlan.redraw(state, type_card, _plan_rng(state))
+#A batch of cells redrawn from the same stored seed, so a resumed show rerolls them to the same
+#cards. False when the offer held nothing else, which leaves the marks standing and nothing to bump.
+static func redraw_marks(state: GameData, cells: Array[CardData]) -> bool:
+	return BoardPlan.redraw(state, cells, _plan_rng(state))
 
 #The plan's own generator: the deal and a redraw replay from the seed the state stores, never the
 #global one.

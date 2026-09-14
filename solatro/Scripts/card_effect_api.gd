@@ -271,16 +271,14 @@ func reroll_grid(grid: int) -> void:
 			"reroll_grid needs a grid the board has")
 	_redraw_marks(_game.state.grids[grid].cell_types)
 
-#THE write path all three rerolls share. Each cell takes the deal's pool minus the face it replaces,
-#so it comes back with a different one; nothing is written when the pool holds nothing else. ONE
-#bump after the batch -- a bump per cell rebuilds the whole board once per cell for one change.
+#THE write path all three rerolls share. The batch is the deal run over its cells, the ones still
+#waiting counted as bare, so the deck cycles instead of handing each cleared face to the next cell.
+#ONE bump after it -- a bump per cell rebuilds the whole board once per cell for one change.
 func _redraw_marks(marks: Array[CardData]) -> void:
 	assert(_game.state.plan_seed != 0, "a reroll redraws from the plan the show was dealt")
-	var redrawn := false
 	for mark : CardData in marks:
 		assert(BoardPlan.is_marked(mark), "a reroll redraws a marked cell")
-		if Board.redraw_mark(_game.state, mark): redrawn = true
-	if redrawn: bump_revision()
+	if Board.redraw_marks(_game.state, marks): bump_revision()
 
 ## The rules deck, left to right -- every persistent meta/creator card.
 func rules_deck() -> Array[CardData]:
