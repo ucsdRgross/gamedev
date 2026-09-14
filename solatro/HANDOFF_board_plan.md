@@ -405,6 +405,39 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   leniency hook family PLAN 1.4 mandates as a content surface; TP-78 is that caller until content
   ships one.
 
+## The close (S17) — each numbered item of /plan-run "Closing the run", with its output
+Closer: a NEW session, Fable 5.1 (clears the Opus 5 default-effort floor). Ground truth on entry:
+ALL 48 SUITES: 4419 CHECKS PASSED, errors log empty, SECTION 8 identical to baseline; trial merge
+into main (`git merge-tree`) clean.
+1. doc_check full: 66 living docs + 318 source files, 0 errors, 9 warnings (identical to main).
+2. adversarial-review (Fable, read-only, main...HEAD): CONFIRMED x3 (reveal window undo; reroll
+   rotation; mark query and hooks per stacked card on HEIGHT_V), SUSPECTED x4 (an unawaited
+   `_refresh_mark_matches`; a rank-and-suit-less `grant_mark` source is not `is_marked`; a late grid
+   on an empty pile opens unmarked; `is_ace` on a fractional rank), PLAN DRIFT (S13 ledger stale,
+   S26 evidence unfilled, unregistered identifiers, TP rows all resolve).
+3. /code-review high (three correctness angles in one Fable finder, cleanup angles inline, one
+   Fable verifier): 10 findings reported; 14 candidates verified — CONFIRMED: the three above, the
+   game-over focus lock undone by `_size_stack_slot`, the layer's close-on-mutation flushing a
+   rebuild synchronously and the toggle ungated on `processing`, the held-card highlight shown
+   inside the layer, and the four test findings below; PLAUSIBLE: `_alert_clock` never parked on a
+   card wearing the activated rim; REFUTED: I6 vs `remove_from_play` (no shipped caller),
+   `blocks_spotlight` on an unlinked backref, a bare cell reaching `_redraw_marks`.
+4. test-surface review (Fable, read-only): CONFIRMED x4 — TP-07 seeds the global generator the
+   shipped shuffle never seeds; `test_firework_banks_column` asserts the retired `col_total`;
+   `test_map_roles`' post-booster check is `X or true` at alpha 0; `test_all_kinds_live_in_game_view`
+   dropped its board-fits-window check. Every TP row maps to a test; no production function has only
+   test callers beyond the declared mark API.
+5. /simplify (inline): no new production duplicate on the branch (dup_check diff vs main); queued
+   for the fixes: `MarkMatch._pip_same` reuses `pair_is_same`; the 11-line reveal fixture duplicated
+   inside test_plan_visuals.gd.
+6. /fx-verify (Fable subagent, five windowed runs, private APPDATA; the closer looked at the crops):
+   the mark look, held/landed rims, the shimmer (8 colours over a loop, control pixel 1, two cells
+   in phase 8 of 8), the layer view, the reveal cascade (21 cells ~37 ms apart, 0.73 s) and GLARE /
+   THROB all VERIFIED; TP-72's scoring-beam half VERIFIED (a beam over a realized cell; at phase 0
+   under the shaft the gold rim is the least tellable instant — for the owner's eye).
+7. Fixes, one per full gate, each its own commit: F1 reveal commit order (TP-94), F2 batch reroll
+   (TP-88 +2 checks), F3 once per mark on a stack (TP-95) … continued below as they land.
+
 ## Queued for the close (S17)
 - /docs: `todo.md`'s board-plan block still lists GAP-001..006 as open bullets; every one is resolved
   (PLAN 1.10-bis) and S18-S25 landed them - rewrite the block to what is open now (the touchscreen
