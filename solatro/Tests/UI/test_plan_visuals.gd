@@ -40,6 +40,8 @@ func _ready() -> void:
 	await test_a_reveal_outlives_the_screen_that_holds_the_environment()
 	behavior_section("THE OPENING REVEAL IS A CASCADE OVER ONE TUNABLE DURATION")
 	await test_the_reveal_cascades_over_one_tunable_duration()
+	behavior_section("A CARD PUT DOWN MID-DEAL IS STILL AN UNDO STEP")
+	await test_a_placement_during_the_reveal_can_be_undone()
 	behavior_section("A HELD CARD LIGHTS EVERY MARK IT WOULD AGREE WITH")
 	await setup_view()
 	await test_holding_a_card_lights_the_marks_it_agrees_with()
@@ -515,6 +517,83 @@ func test_the_reveal_cascades_over_one_tunable_duration() -> void:
 func _is_spinning(visual: CardVisual) -> bool:
 	var spin := visual.spin_tween
 	return spin != null and spin.is_valid() and spin.is_running()
+
+# ==============================================================================
+# TP-94 -- a card put down while the plan is still dealing
+# ==============================================================================
+
+## A goal no opening placement can reach, so the show cannot resolve while the deal is running.
+const UNREACHED_GOAL := 1_000_000_000
+## The seed this show is dealt at, so the board a card lands on is the same board every run.
+const MID_DEAL_SEED := 20260913
+
+# THE BOARD IS LIVE WHILE THE DEAL DRAWS -- nothing locks input for it -- so a card can go down
+# before the last mark is printed, and that placement has to be an undo step with the opening board
+# underneath it to come back to.
+func test_a_placement_during_the_reveal_can_be_undone() -> void:
+	var tag := suite_tag() + "_mid_deal"
+	var outer_run : RunState = RunManager.run
+	var outer_save_info : RunState = Main.save_info
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_reveal_multiplier = OBSERVABLE_REVEAL_MULTIPLIER
+	var booted : GameView = await TestGameViewHost.boot_show(self, tag,
+			TestDecks.deck_standard_52(), TestDecks.standard_rules(), UNREACHED_GOAL, 2,
+			MID_DEAL_SEED)
+	var g : Game = booted.game
+	var board : PlayArea = booted.play_area
+	var dealing := await wait_for(func() -> bool:
+			return not board._plan_reveal_pending.is_empty() 					and _topmost_entrance_card(g.state) != null)
+	check(dealing, "TP-94: precondition: the Entrance is filled while cells are still to be dealt",
+			"%d cells pending" % board._plan_reveal_pending.size())
+	var coord := _first_marked_cell(g.state)
+	check(not coord.is_nowhere(), "TP-94: precondition: the deal marked a cell to land on")
+
+	var card : CardData = _topmost_entrance_card(g.state)
+	var stack : Array[CardData] = await g.try_grab(card)
+	var placed := await g.try_place(stack, g.state.cell_type_at(coord))
+	var landed := await wait_for(func() -> bool:
+			return not g.processing and g.state.card_at(coord) == card)
+	check(placed and landed,
+			"TP-94: precondition: the card went down mid-deal, through the board's own path",
+			"try_place %s, landed %s" % [str(placed), str(landed)])
+	var dealt := await wait_for(func() -> bool: return board._plan_reveal_pending.is_empty())
+	check(dealt, "TP-94: precondition: the deal finished",
+			"%d cells pending" % board._plan_reveal_pending.size())
+	await get_tree().process_frame
+
+	check(g.save_history.size() == 2,
+			"TP-94: the opening board is history's first snapshot and the placement its second",
+			"%d snapshots" % g.save_history.size())
+	await g.undo()
+	check(g.state.card_at(coord) == null,
+			"TP-94: undo hands the card back, because the opening board was committed before the deal",
+			str(g.state.card_at(coord)))
+	check(BoardPlan.is_marked(g.state.cell_type_at(coord)),
+			"TP-94: and the cell it came off still wears the mark the deal printed there")
+
+	restore_settings_snapshot(snapshot)
+	booted.queue_free()
+	await get_tree().process_frame
+	CardEnvironment.CURRENT = null
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(tag)
+	RunManager.run = outer_run
+	Main.save_info = outer_save_info
+
+# The card a player can actually pick up mid-deal: the topmost of the first filled Entrance slot.
+# Null until the opening refill has run, which is what tells this row the deal has got that far.
+func _topmost_entrance_card(state: GameData) -> CardData:
+	for column : ArrayCardData in state.upper_zone:
+		if not column.datas.is_empty(): return column.datas.back()
+	return null
+
+# A cell the deal marked, read off the board rather than marked by this row: what the undo claim is
+# about is the mark the SHOW printed. NOWHERE when the deal marked nothing, which fails a check.
+func _first_marked_cell(state: GameData) -> BoardCoord:
+	for type_card : CardData in state.grids[0].cell_types:
+		if BoardPlan.is_marked(type_card): return state.cell_type_coord(type_card)
+	return BoardCoord.NOWHERE
 
 # ==============================================================================
 # THE HELD-CARD FIXTURE -- one real GameView, driven by synthesized device input

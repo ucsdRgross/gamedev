@@ -249,31 +249,32 @@ func _start_fresh_show() -> void:
 	state.goal = maxi(Main.save_info.pending_goal, 1)
 	_update_submit_label()
 	add_deck()
-	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
-	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
-	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
-	#    card at all. This sweep is also what has the zone adders build the Entrance.
+#⚠ THE ORDER OF THE SEVEN STEPS BELOW IS LOAD-BEARING. 1. Sweep first: run_all_mods only reaches a
+#skill whose `spotlit` flag is already set and nothing sets it until a sweep runs -- so on_game_start
+#called first reaches NO rules card. The sweep also has the zone adders build the Entrance.
 	skill_spotlight_check()
-	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
-	#    dealt and adds that many creator cards.
+#2. Now the start hook lands. The allotment card sizes the grid count to the deck just dealt and
+#adds that many creator cards.
 	await run_all_mods(&"on_game_start")
-	# 3. Sweep again for the cards step 2 added: a creator builds its grid in on_spotlight, and
-	#    it did not exist when the first sweep walked the rules deck. Idempotent -- a sweep only
-	#    fires on a transition, so nothing already spotlit fires twice.
+#3. Sweep again for the cards step 2 added: a creator builds its grid in on_spotlight, and it did
+#not exist when the first sweep walked the rules deck. Idempotent -- a sweep only fires on a
+#transition, so nothing already spotlit fires twice.
 	skill_spotlight_check()
-	# 4. Only now do the Entrance slots and the grids both exist, which is what a refill needs:
-	#    somewhere to put a card, and a board to judge a legal placement against.
+#4. Only now do the Entrance slots and the grids both exist, which is what a refill needs:
+#somewhere to put a card, and a board to judge a legal placement against.
 	await refill_entrance_if_due()
-	# Build the initial board GUI now the state is dealt. Needed because PlayArea._ready runs
-	# BEFORE this Game exists (the view creates us in its _ready), so PlayArea's own startup
-	# setup_gui found no game and skipped the score gutters — including the row buffer control
-	# that keeps the play area from shifting when scores first appear. Headless: no-op.
+#5. The board GUI is built now the state is dealt: PlayArea._ready ran BEFORE this Game existed, so
+#its own setup_gui found no game and skipped the score gutters -- including the row buffer control
+#that keeps the play area from shifting when scores first appear. Headless: no-op.
 	if view: view.rebuild()
-# 5. And now the plan is dealt ON SCREEN, cell by cell -- after the board it draws on exists. A
-#    headless show is already dealt and has nothing to animate.
+#6. The opening board is committed BEFORE the deal animates: the board stays live while it draws, so
+#a card put down mid-deal needs a snapshot under it to undo to. The run is written synchronously
+#here, so a save exists immediately.
+	save_state()
+	RunManager.save_run()
+#7. And now the plan is dealt ON SCREEN, cell by cell -- after the board it draws on exists and is
+#committed. A headless show is already dealt and has nothing to animate.
 	if view: await view.reveal_plan()
-	save_state()          # seed the history with the opening board
-	RunManager.save_run() # write it once synchronously so a save exists immediately
 
 # Resume the exact board a quit interrupted: restore the saved undo history, rebuild the
 # current runtime state from its top, restore the act count and board UI, and re-sync skill
@@ -1008,9 +1009,9 @@ func _compose_line_score(result: Scoring.Result) -> int:
 	var line := result.score + flats
 	return int(line * mults) if not is_zero_approx(mults) else line
 
-#⚠ A MARK ACTS THE MOMENT A CARD LANDS ON IT, before any line through the cell can score, so an
-#effect that draws or reveals fires even on a placement that completes nothing. It acts again for
-#every line the cell scores in, announced identically from the composition.
+#⚠ A MARK ACTS THE MOMENT A CARD IS PLACED ON IT, so a mark that draws or reveals fires even on a
+#placement that completes no line. A card an effect MOVES in fires nothing until a line through the
+#cell scores, where the mark acts again, announced identically from the composition.
 func _run_mark_landing(card: CardData, coord: BoardCoord) -> void:
 	var mark := _mark_under(coord)
 	if not mark: return
