@@ -42,7 +42,11 @@ sessions produce work that does not compose.
 
 Specifically:
 
-- **Identifiers come from the name registry.** Never rename, shorten or "improve" one.
+- **Identifiers come from the name registry.** Never rename, shorten or "improve" one. A PUBLIC
+  name the step needs and the registry lacks (a method, a field, an enum value, a signal) is
+  appended to `NAMES.md` under "added during execution" in the same step and listed under
+  `DEVIATIONS`; a private helper is yours to name and needs no entry. A registry that is only
+  complete in commit messages is not a registry.
 - **Numbers come from the settings file or a resource field.** A tunable literal typed into a source
   file is a defect, not a shortcut.
 - **Tests come from the test plan.** You MAY add lower-level tests for details it could not foresee —
