@@ -399,3 +399,28 @@ gap under `gaps/`.
   replaces, and it is paced by the SHIPPED style's `shimmer_period_fraction`: one clock for the board
   can take no one card's type override. GLARE and THROB keep `_alert_clock`, which is a fact about
   one card.
+- Close F1 / Q62: the opening board is committed (`save_state()`, `RunManager.save_run()`) BEFORE
+  the reveal animates, because the board stays live while the deal draws and a card put down mid-deal
+  needs a snapshot under it to undo to. Whether input SHOULD be accepted during the reveal is not
+  decided by the design; today it is, and TP-94 pins the undo.
+- Close F2 / GAP-003: a reroll of a line or a grid is re-dealt AS ONE DEAL -- the fewest-copies offer
+  is read from the board before any cell is cleared, every face the batch gives up is excluded from
+  it, and the cells are walked with the deal's round-robin. Read as the only meaning of "rerolling a
+  line" that is not a rotation of the line's own faces: per-cell sequential redraws made each cleared
+  face the sole fewest-copies offer for the next cell. A reroll of one cell is a batch of one.
+- Close F3 / Q48 + Q52 + Q15: on a HEIGHT_V line every meld card stands on the SAME cell, so the mark
+  under it is asked ONCE per line -- its `on_mark_line_mult` share is summed once (PLAN 1.5's "+2 to
+  M" is per mark, not per stacked card) and its own `on_mark_covered` / `on_mark_hit` fire once per
+  line score (Q52: "every time a line through the cell scores"), `on_mark_hit` with the union of the
+  stacked cards' matches; each stacked card that matched still receives its own `on_mark_hit` and
+  pays its own flat (Q15=(b): every card in the cell is tested). Landing dispatch is unchanged: each
+  placed card covers once.
+- Close / TP-07: "the same node deals the same board" holds only while the draw pile's ORDER is the
+  same -- `plan_seed` is deterministic per node, but `Game.shuffle_deck` draws on the unseeded global
+  generator, so a node played twice in the shipped game gets a different plan. The check now claims
+  what it proves (same seed over the same deck order); seeding the deck shuffle is outside this plan.
+- Close / I6: `validate()`'s I6 compares a dealt mark against the cards the state still holds. No
+  shipped effect removes a card from every collection (`remove_from_play`'s only caller is the
+  disabled hippo bite), so the invariant holds in play; the debug-only spotlight probe
+  (`GameView._on_debug_cue`) leaves a `SpotlightProbe` skill on a board card and would trip it in a
+  debug build.
