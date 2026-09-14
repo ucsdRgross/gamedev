@@ -31,6 +31,10 @@ func _ready() -> void:
 	test_twenty_cards_over_twenty_five_cells()
 	test_nothing_repeats_while_a_card_is_unused()
 	test_two_grids_draw_fifty_distinct_cards()
+	behavior_section("THE STOCKS THE DEAL DRAWS FROM")
+	test_the_draw_pile_splits_across_the_slots_in_order()
+	test_every_stock_prints_five_of_twenty_five_marks()
+	test_the_twenty_sixth_cell_falls_to_the_earliest_stock()
 	behavior_section("THE DEAL READS ITS OWN GENERATOR ONLY")
 	test_the_global_generator_cannot_move_the_deal()
 	test_the_cell_walk_is_shuffled()
@@ -66,6 +70,22 @@ func plan_state(deck: Array[CardData], grid_count: int) -> GameData:
 	for card : CardData in state.draw_deck:
 		card.stage = CardData.Stage.DRAW
 	return state
+
+## The same board with `slots` Entrance slots, added through the zone's own mutator -- what the deal splits the pile across.
+func with_entrance_slots(state: GameData, slots: int) -> GameData:
+	for _slot : int in slots:
+		Board.add_column(state, state.upper_zone, state.upper_zone_type,
+				CardData.new().with_type(TypeInput.new()))
+	return state
+
+## One more cell on the end of grid 0's block, past the width the grid claims -- a ragged board.
+func append_cell(state: GameData) -> CardData:
+	var grid : GridData = state.grids[0]
+	grid.cells.append(ArrayCardData.new())
+	var extra := CardData.new().with_type(TypeGridCell.new())
+	extra.stage = CardData.Stage.ZONE
+	grid.cell_types.append(extra)
+	return extra
 
 ## The deal on its own, seeded: the rows that exercise the algorithm rather than the wiring.
 func deal_onto(state: GameData, plan_seed: int) -> void:
@@ -367,6 +387,45 @@ func copy_histogram(state: GameData) -> Array[int]:
 	counts.reverse()
 	return counts
 
+## Every stock's cards as their places in the draw pile: the whole partition, in the pile's order.
+func partition_places(state: GameData) -> Array[Array]:
+	var out : Array[Array] = []
+	for stock : Array in BoardPlan.stocks_of(state):
+		var places : Array[int] = []
+		for card : CardData in stock:
+			places.append(state.draw_deck.find(card))
+		out.append(places)
+	return out
+
+## How many cards each stock of a partition took.
+func stock_sizes(partition: Array[Array]) -> Array[int]:
+	var out : Array[int] = []
+	for places : Array in partition:
+		out.append(places.size())
+	return out
+
+## How many of the board's marks each stock printed -- these fixtures put each identity in one stock.
+func marks_per_stock(state: GameData) -> Array[int]:
+	var stocks := BoardPlan.stocks_of(state)
+	var out : Array[int] = []
+	out.resize(stocks.size())
+	for mark : CardData in marks_of(state):
+		for s : int in stocks.size():
+			if offer_holds(stocks[s], mark):
+				out[s] += 1
+				break
+	return out
+
+## The one rank each stock holds, or -1 where its own cards disagree on it.
+func rank_per_stock(state: GameData) -> Array[int]:
+	var out : Array[int] = []
+	for stock : Array in BoardPlan.stocks_of(state):
+		var ranks : Array[int] = []
+		for card : CardData in stock:
+			if not ranks.has(int(card.rank.value)): ranks.append(int(card.rank.value))
+		out.append(ranks[0] if ranks.size() == 1 else -1)
+	return out
+
 ## Grid 0's cells whose mark another cell also carries, by row-major index.
 func repeated_cells(state: GameData) -> Array[int]:
 	var out : Array[int] = []
@@ -518,6 +577,52 @@ func test_two_grids_draw_fifty_distinct_cards() -> void:
 	check(hist.size() == 50 and hist[0] == 1,
 			"TP-04: 50 cells across two grids draw 50 distinct cards of the 52", str(hist))
 
+#TP-85: the pile splits the way the Entrance fills its slots and rolls nothing of its own -- 23
+#cards over five slots in the pile's own order, the earlier slots taking the extras, and the same
+#answer however far the global generator has moved between two asks.
+func test_the_draw_pile_splits_across_the_slots_in_order() -> void:
+	var state := with_entrance_slots(plan_state(TestDecks.deck_standard_52().slice(0, 23), 1), 5)
+	var places := partition_places(state)
+	check(stock_sizes(places) == ([5, 5, 5, 4, 4] as Array[int]),
+			"TP-85: 23 cards over five slots split round-robin, the earlier slots taking the extras",
+			str(stock_sizes(places)))
+	check(places[0] == ([0, 5, 10, 15, 20] as Array[int])
+			and places[4] == ([4, 9, 14, 19] as Array[int]),
+			"TP-85: each slot's stock is every fifth card of the pile, in the pile's own order",
+			str(places))
+	seed(31337)
+	var again := partition_places(state)
+	seed(4242)
+	check(str(again) == str(places) and str(partition_places(state)) == str(places),
+			"TP-85: one pile splits the same way twice, and the global generator cannot move it",
+			str(again))
+	randomize()
+
+#TP-05: the deal is stratified and not a free-for-all -- the 20-card pile puts one rank in each of
+#the five slots, and 25 cells take four from every stock and then one more each on the next pass.
+func test_every_stock_prints_five_of_twenty_five_marks() -> void:
+	var state := with_entrance_slots(plan_state(TestDecks.plan_deck(), 1), 5)
+	check(rank_per_stock(state) == ([1, 2, 3, 4, 5] as Array[int]),
+			"TP-05: precondition: each stock is one rank in all four suits, so a mark names one stock",
+			str(rank_per_stock(state)))
+	deal_onto(state, 505)
+	check(marks_per_stock(state) == ([5, 5, 5, 5, 5] as Array[int]),
+			"TP-05: each of the five stocks printed exactly five of the 25 marks",
+			str(marks_per_stock(state)))
+
+#TP-06: 26 cells do not divide by five, so the cell left over falls to the earliest stock -- and
+#that stock, having nothing unmarked left, answers it out of the pass that follows.
+func test_the_twenty_sixth_cell_falls_to_the_earliest_stock() -> void:
+	var state := with_entrance_slots(plan_state(TestDecks.deck_standard_52().slice(0, 25), 1), 5)
+	append_cell(state)
+	deal_onto(state, 606)
+	check(marks_of(state).size() == 26,
+			"TP-06: precondition: every cell of the ragged 26-cell board is marked",
+			"marked %d of 26" % marks_of(state).size())
+	check(marks_per_stock(state) == ([6, 5, 5, 5, 5] as Array[int]),
+			"TP-06: 26 cells over five stocks give the first stock six marks and the rest five",
+			str(marks_per_stock(state)))
+
 #TP-08: `Array.shuffle()` and every other global-generator call would make the deal move with the
 #global state instead of with the plan seed. Moving that state under one seed catches a global call
 #anywhere on the path; holding it still under two seeds catches a deal that ignores its own seed.
@@ -636,11 +741,7 @@ func test_a_cell_added_to_a_grid_takes_a_mark() -> void:
 	deal_onto(state, 707)
 	check(copy_histogram(state)[0] == 1,
 			"TP-15: precondition: 25 cards fill 25 cells with no repeat", str(copy_histogram(state)))
-	var grid : GridData = state.grids[0]
-	grid.cells.append(ArrayCardData.new())
-	var extra := CardData.new().with_type(TypeGridCell.new())
-	extra.stage = CardData.Stage.ZONE
-	grid.cell_types.append(extra)
+	var extra := append_cell(state)
 	deal_onto(state, 707)
 	check(BoardPlan.is_marked(extra), "TP-15: the added 26th cell takes a mark of its own")
 	var hist := copy_histogram(state)

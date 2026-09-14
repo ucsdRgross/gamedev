@@ -669,7 +669,8 @@ that by re-checking every cell of `Line.cells` against the live board.
   first, so no card is marked again while another is marked less often and a later deal continues
   the cycle instead of restarting it. The seed is `GameData.plan_seed`,
   `hash(Vector2i(world_seed, current_node_id))` forced off 0, kept apart from the shuffle so a
-  re-entered show is the same show. One stock today, `draw_deck`
+  re-entered show is the same show. The stocks are `BoardPlan.stocks_of` — `draw_deck` dealt round
+  robin across the Entrance's slots until the slots own their own
   (`design/board-plan/gaps/GAP-001.md`).
 - **The match** — `MarkMatch.matches_at(state, card, coord)` answers the `Property` bitmask of
   what a card and its own cell's mark agree on. **Derived on every call, cached nowhere:** a

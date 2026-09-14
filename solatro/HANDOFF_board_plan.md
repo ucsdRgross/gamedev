@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 49 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+**State:** 50 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
 partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
 carries its `resolution:` block and the reading taken). The rulings create six execution steps,
 S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
@@ -236,9 +236,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Mid-show pool: the remaining stocks (the run reading).'
+  status: done
+  evidence: 'Implementer red (BOARD PLAN, 111 checks all runs): stocks_of returning one stock -> 5 FAILED (TP-85 sizes [23] and order, TP-05 identity precondition and counts [25], TP-06 [26]); a contiguous-chunk split -> 2 FAILED (TP-85 every-fifth-card order, TP-05 per-stock identities); green 111/111. Overseer full run: ALL 48 SUITES: 4349 CHECKS PASSED, errors log empty, SECTION 8 identical; banners vs S21 differ only in fuzz drift and BOARD PLAN 104 -> 111. Slot count read from the state''s Entrance zone (upper_zone.size(), floored at 1 for the engine fixtures with no Entrance); no RNG in the partition (TP-08 green); a real show''s deal changes identity for the same seed because it now offers five stocks, TP-07 determinism green.'
+  notes: 'A taken identity now leaves EVERY stock''s offer (PLAN 1.2 ''every card in every stock, still unmarked''), which the 105-card three-grid gate needed once there was more than one stock. TP-85 uses slice(0, 23): TEST_PLAN''s slice(23) is 29 cards in Godot. Deleted when the sidebar''s per-slot stocks land.'
 - id: S20
   description: GAP-003 - CardEffectApi.reroll_line(section) and reroll_grid(grid): every cell, covered included, through Board.deal_marks; TP-88.
   files_touched: []
@@ -416,7 +416,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S18, S20, S19, S23.
+Work in this order, one implementer, one full gate, one commit each: S20, S19, S23.
 Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan

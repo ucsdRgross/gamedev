@@ -3,9 +3,13 @@
 One line each, reversible, within intent, citing the node being worked on. Anything larger is a
 gap under `gaps/`.
 
-- S4 / A3, Q93: until sidebar S19 lands, `BoardPlan.deal()` reads ONE stock, `state.draw_deck` — the
-  stocks' union per DESIGN §1l-bis. The round-robin loop is written per PLAN §1.2 regardless.
-  See `gaps/GAP-001.md`.
+- S18 / A3, Q93: `BoardPlan.stocks_of(state)` deals `state.draw_deck` round robin across the
+  Entrance's slots, in the pile's own order and with no roll of its own, so the earlier slots take
+  the extras; a board with no Entrance slots is one pile. The deal and a redraw both read it, and it
+  is deleted when the slots own their own stocks. See `gaps/GAP-001.md`.
+- S18 / Q108, Q109: an identity the deal takes leaves EVERY stock's offer and not only the stock it
+  came out of, because two stocks can hold the same print — the pool is "every card in every stock,
+  still unmarked this show" per PLAN §1.2.
 - S1 / Q58, QR7: `is_marked` lives in `Scripts/board_plan.gd` as `BoardPlan.is_marked`, as NAMES.md
   fixes it; PLAN §3's S1 row said `Scripts/grid_data.gd` and was corrected. The file is created at
   S1 and `deal()` joins it at S4.
@@ -51,8 +55,8 @@ gap under `gaps/`.
   already reads for the node's goal; `RunManager.run` is null outside a run.
 - S4 / Q9, Q93: GDScript has no nested typed arrays, so the stock list is `Array[Array]` rather than
   `Array[Array[CardData]]` (the same shape `on_meld_group_ranks` uses). The round-robin and the
-  `cells / stocks` stratification are written over it exactly as PLAN §1.2 states; today it holds one
-  member, `state.draw_deck`.
+  `cells / stocks` stratification are written over it exactly as PLAN §1.2 states; it holds one
+  member per Entrance slot.
 - S4 / Q108, Q61: printed identity is compared in ONE place. The four-slot conjunction was inline in
   `GameData._mark_violations`; it is now `PipComparator.printed_card_same`, which I6 and the deal's
   unused set both call, so the invariant and the deal cannot disagree about what "the same card"

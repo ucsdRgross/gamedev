@@ -41,7 +41,7 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 #The walk order is what the opening reveal deals on screen, so it is recorded as it happens rather
 #than re-derived from a board that no longer remembers which cell came first.
 	state.plan_reveal_order.clear()
-	var stocks := _stocks_of(state)
+	var stocks := stocks_of(state)
 	var unused := _lowest_copies_per_stock(stocks, state)
 	for i : int in order.size():
 		var source := _take_for_cell(unused, order[i], i % stocks.size(), rng)
@@ -57,7 +57,7 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void:
 #empty draw pile -- because the cell is cleared only once a replacement is in hand.
 static func redraw(state: GameData, type_card: CardData, rng: RandomNumberGenerator) -> bool:
 	assert(state.plan_seed != 0, "a redraw replays from the plan's own stored seed")
-	var unused := _lowest_copies_per_stock(_stocks_of(state), state)
+	var unused := _lowest_copies_per_stock(stocks_of(state), state)
 	var source := _take_for_cell(unused, type_card, 0, rng)
 	if not source: return false
 	clear_mark(type_card)
@@ -69,16 +69,26 @@ static func redraw(state: GameData, type_card: CardData, rng: RandomNumberGenera
 #cell still carries the face it replaces, which on a fewest-copies pool would win every roll.
 static func _take_for_cell(unused: Array[Array], cell: CardData, first: int,
 		rng: RandomNumberGenerator) -> CardData:
+	_drop_print(unused, cell)
+	return _take_unused(unused, first, rng)
+
+#An identity leaves the WHOLE offer and not just the stock it came out of: a card the board has
+#marked is no longer unused anywhere, so a print two stocks both hold cannot be marked twice while
+#another print is still waiting for its first cell.
+static func _drop_print(unused: Array[Array], card: CardData) -> void:
 	for stock : Array in unused:
 		for i : int in range(stock.size() - 1, -1, -1):
 			var offered : CardData = stock[i]
-			if PipComparator.printed_card_same(offered, cell): stock.remove_at(i)
-	return _take_unused(unused, first, rng)
+			if PipComparator.printed_card_same(offered, card): stock.remove_at(i)
 
-#The stocks a mark is drawn from. The Entrance's per-slot stocks replace this line when the
-#sidebar's stocks land, and the deal and a redraw must offer the same cards.
-static func _stocks_of(state: GameData) -> Array[Array]:
-	var stocks : Array[Array] = [state.draw_deck]
+#The stocks a mark is drawn from: the draw pile dealt across the Entrance's slots the way the
+#Entrance fills them -- round robin in the pile's own ORDER, no roll of its own, so earlier slots
+#take the extras. A board with no Entrance is one pile. It stands in until the slots own their own.
+static func stocks_of(state: GameData) -> Array[Array]:
+	var slots := maxi(state.upper_zone.size(), 1)
+	var stocks : Array[Array] = []
+	for slot : int in slots:
+		stocks.append(state.draw_deck.slice(slot, state.draw_deck.size(), slots))
 	return stocks
 
 #⚠ `Array.shuffle()` CANNOT BE SEEDED -- it draws on the global generator, so the deal would not
@@ -121,7 +131,7 @@ static func _take_unused(unused: Array[Array], first: int, rng: RandomNumberGene
 		if not stock.is_empty():
 			var pick := rng.randi_range(0, stock.size() - 1)
 			var source : CardData = stock[pick]
-			stock.remove_at(pick)
+			_drop_print(unused, source)
 			return source
 	return null
 
