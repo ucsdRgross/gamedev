@@ -403,11 +403,16 @@ gap under `gaps/`.
   the reveal animates, because the board stays live while the deal draws and a card put down mid-deal
   needs a snapshot under it to undo to. Whether input SHOULD be accepted during the reveal is not
   decided by the design; today it is, and TP-94 pins the undo.
-- Close F2 / GAP-003: a reroll of a line or a grid is re-dealt AS ONE DEAL -- the fewest-copies offer
-  is read from the board before any cell is cleared, every face the batch gives up is excluded from
-  it, and the cells are walked with the deal's round-robin. Read as the only meaning of "rerolling a
-  line" that is not a rotation of the line's own faces: per-cell sequential redraws made each cleared
-  face the sole fewest-copies offer for the next cell. A reroll of one cell is a batch of one.
+- Close F2 / GAP-003: a reroll of a line or a grid is THE DEAL RUN OVER THE BATCH'S CELLS -- the
+  batch's cells are counted as unmarked for the fewest-copies tiers, each cell is barred only from
+  its OWN old face (the single-cell rule), and each take is written at once so the next cell's counts
+  see it, tiers advancing exactly as in the opening deal. Accepted consequence of the deck-cycling
+  rule: on a saturated board the batch's given-up faces sit at the lowest tier, so a row reroll
+  redistributes the row's own faces among its cells (never a cell's own, never the deterministic
+  one-step ROTATION the per-cell sequential redraw produced) and only unused identities yield fresh
+  ones; a whole-grid reroll of a one-grid show is a fresh deal of that grid. A batch-wide bar on the
+  given-up faces was tried and cannot work: a 25-cell grid from a 20-identity deck prints them all.
+  For the owner's eye: whether a row reroll should prefer faces the row did not have.
 - Close F3 / Q48 + Q52 + Q15: on a HEIGHT_V line every meld card stands on the SAME cell, so the mark
   under it is asked ONCE per line -- its `on_mark_line_mult` share is summed once (PLAN 1.5's "+2 to
   M" is per mark, not per stacked card) and its own `on_mark_covered` / `on_mark_hit` fire once per
