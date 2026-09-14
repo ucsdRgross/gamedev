@@ -1,38 +1,30 @@
 extends TestSuite
-# res://Tests/Engine/test_leak_canary.gd
-# ==============================================================================
-# MEMORY-LEAK CANARY (owner-approved 2026-07-17; reworked 2026-07-18 for the
-# weakref conversion): CardModifier.data backrefs are now WeakRefs, so the old
-# CardData<->modifier RefCounted cycle CANNOT exist — a dropped card graph just
-# dies, with no unlink discipline anywhere. This suite is the tripwire proving
-# that class of leak stays dead: build + tear down a full headless Game N times
-# WITH NO UNLINKING and assert Performance.OBJECT_COUNT returns to baseline.
-# If someone reintroduces a strong backref (or a new strong cycle), the growth
-# check fails here.
-#
-# ⚠️ Runs LAST (of the engine-object-count suites) and ALONE: OBJECT_COUNT is engine-global, so
-# any concurrent suite would make the numbers meaningless. See the SUITE ORDERING chain in
-# test_base.gd — every earlier waiter excludes "LEAK CANARY".
-#
-# ⚠️ One suite now runs AFTER this one: WALL PAUSE (S12) constructs a real Wall whose _ready()
-# pauses the tree GLOBALLY AND PERMANENTLY (never cleared — that is the behaviour it tests), so it
-# must be the true tail of the whole chain or every suite after it would freeze mid-flight. This
-# suite excludes "WALL PAUSE" below so the two do not deadlock waiting on each other.
-# ==============================================================================
+# MEMORY-LEAK CANARY (owner-approved). CardModifier.data backrefs are WeakRefs, so a
+# CardData-to-modifier RefCounted cycle CANNOT exist and a dropped card graph just dies, with no
+# unlink discipline anywhere.
 
-# CATEGORY MAP: all IMPLEMENTATION — object counts pin HOW memory behaves, not a
+# This suite is the tripwire proving that class of leak stays dead: build and tear down a full
+# headless Game N times WITH NO UNLINKING, then assert Performance.OBJECT_COUNT returns to baseline.
+# Reintroducing a strong backref, or any new strong cycle, fails the growth check here.
+
+# ⚠ Runs LAST of the engine-object-count suites and ALONE: OBJECT_COUNT is engine-global, so any
+# concurrent suite makes the numbers meaningless. Every earlier waiter in the suite ordering chain
+# in test_base.gd excludes "LEAK CANARY".
+
+# ⚠ One suite runs AFTER this one: WALL PAUSE builds a real Wall whose _ready() pauses the tree
+# GLOBALLY AND PERMANENTLY, never cleared, because that is the behaviour it tests. It has to be the
+# true tail of the chain, and this suite excludes it below so the two do not deadlock.
+
+# CATEGORY MAP: all IMPLEMENTATION, because object counts pin HOW memory behaves rather than a
 # player-visible rule.
-#
-# SECTION 2 (owner-endorsed 2026-07-17, ARCHITECTURE_REVIEW.md §6): the
-# PRODUCTION SESSION CANARY simulates a real play session end-to-end per cycle —
-# DeckPicker/DeckViewer open+close, run start, map traversal + hover panel + booster
-# pack, a real show WITH a GameView (Nexts, grab/place, discard, Submit with real
-# scoring/props, undo across the Submit), quit-mid-show -> resume, the win path
-# (exit_show -> return_to_map) AND the loss path, then clear_save — and asserts
-# OBJECT_COUNT returns to a post-warm-up baseline. This proves every PRODUCTION
-# drop site (Game.undo, return_to_map, exit_show loss, RunManager.clear_save,
-# DeckPicker close, MapHoverPanel previews) releases its card graphs — with the
-# weakref backrefs no unlink call exists anywhere in these paths.
+
+# The PRODUCTION SESSION CANARY simulates a real play session end to end per cycle: DeckPicker and
+# DeckViewer open and close, run start, map traversal with hover panel and booster pack, a real show
+# with a GameView, quit-mid-show then resume, the win path, the loss path, then clear_save.
+
+# It asserts OBJECT_COUNT returns to a post-warm-up baseline, which proves every PRODUCTION drop
+# site releases its card graphs: Game.undo, return_to_map, exit_show loss, RunManager.clear_save,
+# DeckPicker close, MapHoverPanel previews. With weakref backrefs no unlink call exists in them.
 
 func suite_name() -> String:
 	return "LEAK CANARY"
@@ -48,32 +40,23 @@ const HOVER_PANEL_SCENE := preload("res://UI/map_hover_panel.tscn")
 ## LEAK SENTINEL section fixture: cards deliberately held alive-but-unreachable.
 var _sentinel_leaked : Array[CardData] = []
 
-# ==============================================================================
-# FORENSICS FOR AN INTERMITTENT NOBODY HAS CAUGHT IN THE ACT
-#
-# ⚠ **THE PROBLEM IS NOT THAT THE FAILURE IS HARD TO UNDERSTAND — IT IS THAT IT IS HARD TO BE
-# PRESENT FOR.** Measured 2026-08-07: 3 failures in the session's first ~8 runs, then 0 in the next
-# ~30, including a deliberate 14-run hunt that never tripped once. Anything that requires a human or
-# an agent to be watching when it fires will keep costing whole sessions and keep coming back empty.
-#
-# So the design goal here is NOT "explain the leak". It is: **when it next fires — on the owner's
-# machine, in a run nobody is watching, months from now — it must leave behind, unprompted, enough
-# evidence to close the question without a reproduction.** Everything below is collected on EVERY
-# run (it is cheap and allocates no Objects, so it cannot perturb the very count being measured) and
-# printed + written to disk only when the check actually fails.
-#
-# The four things a bare "growth 2" cannot tell you, and what answers each:
-#   * WHICH CLASS grew            -> _object_census (engine monitors: node / resource / other)
-#   * WHERE IN THE SESSION        -> _mark_phase, a census after each of the 6 session phases
-#   * WHAT KIND OF THING          -> _tree_histogram, node counts by class+script, diffed
-#   * WHETHER IT IS A REAL LEAK   -> the per-cycle table: a leak grows EVERY cycle, lazy init
-#                                    grows once. Two failures both read "growth 2", and those are
-#                                    completely different bugs.
-#
-# ⚠ **Dictionaries, Arrays and Strings are Variants, not Objects**, so building these records does
-# not move OBJECT_COUNT. That is what makes always-on collection safe here; anything that allocated
-# an Object per phase would corrupt the measurement it exists to explain.
-# ==============================================================================
+# FORENSICS FOR AN INTERMITTENT NOBODY HAS CAUGHT IN THE ACT.
+
+# ⚠ THE PROBLEM IS NOT THAT THE FAILURE IS HARD TO UNDERSTAND, IT IS THAT IT IS HARD TO BE PRESENT
+# FOR. Measured: 3 failures in a session's first ~8 runs, then 0 in the next ~30, including a
+# deliberate 14-run hunt that never tripped once.
+
+# So the goal is not to explain the leak. When it next fires, on an unwatched run, it has to leave
+# behind unprompted enough evidence to close the question without a reproduction. Everything below
+# is collected on EVERY run and printed and written to disk only when the check actually fails.
+
+# The four things a bare "growth 2" cannot tell you: WHICH CLASS grew, from _object_census; WHERE IN
+# THE SESSION, from _mark_phase; WHAT KIND OF THING, from _tree_histogram diffed; and WHETHER IT IS
+# A REAL LEAK, from the per-cycle table, since a leak grows every cycle and lazy init grows once.
+
+# ⚠ Dictionaries, Arrays and Strings are Variants, not Objects, so building these records does not
+# move OBJECT_COUNT. That is what makes always-on collection safe; anything allocating an Object per
+# phase would corrupt the measurement it exists to explain.
 
 ## One census per phase per cycle: {cycle:int, label:String, census:Dictionary, tree:Dictionary}.
 var _phase_marks : Array[Dictionary] = []
@@ -88,20 +71,19 @@ func _mark_phase(label: String) -> void:
 		"tree": _tree_histogram(),
 	})
 
-## Every node currently in the tree, counted by class (plus script file where it has one).
-##
-## ⚠ **THIS IS THE INSTRUMENT `print_orphan_nodes()` COULD NOT BE.** That prints nodes with NO
-## parent; a node still parented to something retained — a viewer left in the tree, a panel never
-## freed — is not an orphan and never appears there, which is exactly why the standing "next thing
-## to try" was a dead end. A histogram sees anything in the tree regardless of who holds it.
+# Every node currently in the tree, counted by class, plus the script file where it has one.
+
+# ⚠ THIS IS THE INSTRUMENT print_orphan_nodes() CANNOT BE. That prints nodes with NO parent, and a
+# node still parented to something retained - a viewer left in the tree, a panel never freed - is
+# not an orphan. A histogram sees anything in the tree regardless of who holds it.
 func _tree_histogram() -> Dictionary:
 	var counts : Dictionary[String, int] = {}
 	var stack : Array[Node] = [get_tree().root]
 	while not stack.is_empty():
 		var node : Node = stack.pop_back()
 		var key := node.get_class()
-		# ⚠ Typed as Variant on purpose: get_script() is untyped, and warnings-as-errors rejects an
-		# inferred-from-Variant local (`var scr := ...`) as a PARSE error, not a runtime one.
+# ⚠ Typed as Variant on purpose: get_script() is untyped, and warnings-as-errors rejects an
+# inferred-from-Variant local as a PARSE error rather than a runtime one.
 		var scr : Variant = node.get_script()
 		if scr and scr is Resource and not (scr as Resource).resource_path.is_empty():
 			key += " <" + (scr as Resource).resource_path.get_file() + ">"
@@ -111,9 +93,10 @@ func _tree_histogram() -> Dictionary:
 			stack.append(child)
 	return counts
 
-## Entries of `after` that are larger than in `before`, biggest growth first, as report lines.
-## ⚠ Every Dictionary/Array read goes through a TYPED local rather than `int(...)`: subscripting an
-## untyped Dictionary yields Variant, and `int(Variant)` is a parse error under warnings-as-errors.
+# Entries of after that are larger than in before, biggest growth first, as report lines.
+
+# ⚠ Every Dictionary and Array read goes through a TYPED local rather than int(...): subscripting an
+# untyped Dictionary yields Variant, and int(Variant) is a parse error under warnings-as-errors.
 func _histogram_growth(before: Dictionary, after: Dictionary) -> Array[String]:
 	var grown : Array[Array] = []
 	for key : String in after:
@@ -134,11 +117,12 @@ func _ready() -> void:
 	TestLog.line("============ LEAK CANARY TEST PASS ============")
 	implementation_section("REFCOUNT-CYCLE CANARY")
 
-	# 0. Prove the canary CAN catch a leak: deliberately abandon a few Nodes (never
-	# freed, never in the tree). A dropped CARD no longer leaks (weakref backrefs),
-	# so a stray Node is the representative leak class the sentinel/canary watch for.
-	# (This deliberately leaks the nodes for the rest of the process — done before
-	# the baseline snapshot so it can't pollute the growth check below.)
+# Prove the canary CAN catch a leak: deliberately abandon a few Nodes, never freed and never in the
+# tree. A dropped CARD no longer leaks, because the backrefs are weak, so a stray Node is the
+# representative leak class the sentinel and the canary watch for.
+
+# These nodes stay leaked for the rest of the process, so it happens before the baseline snapshot
+# and cannot pollute the growth check below.
 	await _settle()
 	var before_leak := _object_count()
 	for i in 4:
@@ -149,14 +133,14 @@ func _ready() -> void:
 			"canary detects deliberately abandoned Nodes",
 			"before %d, after %d" % [before_leak, _object_count()])
 
-	# 1. Warm-up cycle: first build touches lazy one-time allocations (deck
-	# caches, static registries) that must not count against the loop.
+# Warm-up cycle: the initial build touches lazy one-time allocations, deck caches and static
+# registries, that must not count against the loop.
 	_clean_cycle()
 	await _settle()
 	var baseline_census := _object_census()
 	var baseline : int = baseline_census.total
 
-	# 2. N clean build/teardown cycles must return to the warm baseline.
+# N clean build and teardown cycles must return to the warm baseline.
 	for i in range(CYCLES):
 		_clean_cycle()
 	await _settle()
@@ -169,15 +153,15 @@ func _ready() -> void:
 		_report_growth(baseline_census, after_census)
 
 	implementation_section("PRODUCTION SESSION CANARY")
-	# Isolation: the cycles write run.tres + settings.tres and swap the run singletons —
-	# park the real ones and restore after (same discipline as VISUAL LAYERS / E2E).
+# Isolation: the cycles write run.tres and settings.tres and swap the run singletons, so park the
+# real ones and restore after, the same discipline as VISUAL LAYERS and E2E.
 	backup_real_save(suite_tag())
 	backup_real_settings()
 	var real_run : RunState = RunManager.run
 	var real_save_info : RunState = Main.save_info
 
-	# Warm-up session: first cycle touches lazy one-time allocations (scene caches, shader
-	# state, translation table, static registries) that must not count against the loop.
+# Warm-up session: the first cycle touches lazy one-time allocations, scene caches, shader state,
+# the translation table and static registries, that must not count against the loop.
 	_cycle_index = 0
 	await _session_cycle()
 	await _drain()
@@ -198,16 +182,16 @@ func _ready() -> void:
 		_report_growth(session_baseline_census, session_after_census)
 
 	implementation_section("LEAK SENTINEL")
-	# ⚠ **AN OWNER THE SENTINEL CANNOT SEE READS AS A WHOLE LEAKED BOARD**, and that is a defect in
-	# the SENTINEL, not in the game. `Game._debug_history` holds full `to_saveable()` duplicates in
-	# debug builds; before `debug_snapshots()` was scanned, the first commit of a show put 90 cards
-	# alive and unreachable, SUSTAINED across every check — the exact shape of the owner-reported
-	# leak (25 cell zone cards, 5 Entrance slots, the deck and rules around them).
-	#
-	# ⚠ **THE FIXTURE MUST COMMIT ONE.** `_debug_commit()` only fires on a real placement, so a
-	# fixture that stands a game up and looks at it can never see this. The session cycles above are
-	# exactly that kind of fixture from the sentinel's point of view: they drop the whole run doc
-	# each time, so the holder is released before any count could be taken.
+# ⚠ AN OWNER THE SENTINEL CANNOT SEE READS AS A WHOLE LEAKED BOARD, and that is a defect in the
+# SENTINEL, not in the game. Game._debug_history holds full to_saveable() duplicates in debug builds.
+
+# Unless debug_snapshots() is scanned, the first commit of a show puts 90 cards alive and
+# unreachable, SUSTAINED across every check - the exact shape of the owner-reported leak: 25 cell
+# zone cards, 5 Entrance slots, the deck and the rules around them.
+
+# ⚠ THE FIXTURE MUST COMMIT ONE. _debug_commit() only fires on a real placement, so a fixture that
+# stands a game up and looks at it can never see this. The session cycles above drop the whole run
+# doc each time, releasing the holder before any count could be taken.
 	var dbg_run := RunManager.new_run(TestDecks.seeded_deck(), TestDecks.standard_rules())
 	Main.save_info = dbg_run
 	dbg_run.pending_goal = 1_000_000_000
@@ -222,10 +206,9 @@ func _ready() -> void:
 	check_impl(dbg_game.debug_snapshots().size() > 0,
 			"precondition: a real placement committed a debug rewind snapshot",
 			"%d snapshots" % dbg_game.debug_snapshots().size())
-	# ⚠ **ASSERT THE PROPERTY, NOT THE TOTAL.** Every suite in this run abandons cards on
-	# purpose, so the sentinel's absolute count is other suites' garbage plus ours -- it passes this
-	# suite alone and fails by 143 in the full run. What must hold is narrower and interference-
-	# proof: no card a debug snapshot HOLDS may read as unreachable.
+# ⚠ ASSERT THE PROPERTY, NOT THE TOTAL. Every suite in this run abandons cards on purpose, so the
+# sentinel's absolute count is other suites' garbage plus ours: it passes this suite alone and fails
+# by 143 in the full run. Narrower and interference-proof: no card a snapshot HOLDS reads as lost.
 	var reachable := LeakSentinel._reachable_set()
 	var snapshot_cards : Dictionary[CardData, bool] = {}
 	for snap : GameData in dbg_game.debug_snapshots():
@@ -248,10 +231,9 @@ func _ready() -> void:
 	Main.save_info = RunState.new()
 	await _settle()
 
-	# The sentinel is quiet under the test runner (TestLog._started), so drive tick()
-	# directly: cards held alive but unreachable from any legitimate owner must raise the
-	# unreachable count, and enough over-slack ticks must fire the report (which resets
-	# the strike counter — that reset is the observable proof the report branch ran).
+# The sentinel is quiet under the test runner, so tick() is driven directly: cards held alive but
+# unreachable from any legitimate owner must raise the unreachable count, and enough over-slack
+# ticks must fire the report. That report resets the strike counter, which is the observable proof.
 	var n0 := LeakSentinel.tick()
 	for i : int in 20:
 		_sentinel_leaked.append(TestFactories.m_card(1, TestFactories.uc()))
@@ -262,8 +244,8 @@ func _ready() -> void:
 	LeakSentinel._strikes = 0
 	for i : int in SettingsManager.settings.leak_sentinel_strikes:
 		LeakSentinel.tick()
-	# exactly `strikes` over-slack ticks reach the threshold on the last one, so the report
-	# fired and reset the counter; any other end state means the report branch never ran
+# Exactly `strikes` over-slack ticks reach the threshold on the last one, so the report fired and
+# reset the counter; any other end state means the report branch never ran.
 	check_impl(LeakSentinel._strikes == 0,
 			"enough over-slack checks fire the sentinel report (the push_error above is deliberate)")
 	_sentinel_leaked.clear()
@@ -277,9 +259,9 @@ func _ready() -> void:
 func _object_count() -> int:
 	return int(Performance.get_monitor(Performance.OBJECT_COUNT))
 
-## OBJECT_COUNT split by what the engine can actually distinguish, for the failure report below.
-## Nodes and Resources are counted separately by the engine; everything else (plain RefCounted —
-## Tweens, Callables' bound objects, WeakRefs, script instances) is the remainder.
+# OBJECT_COUNT split by what the engine can actually distinguish, for the failure report below.
+# Nodes and Resources are counted separately by the engine; everything else, the plain RefCounted
+# tweens, bound objects, WeakRefs and script instances, is the remainder.
 func _object_census() -> Dictionary:
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 	var resources := int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))
@@ -290,24 +272,23 @@ func _object_census() -> Dictionary:
 		"resources": resources,
 		"other": total - nodes - resources,
 		"orphans": int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-		# ⚠ **THE PRIME SUSPECT FOR THE "other" BUCKET, AND THE ONE THING THE ENGINE MONITORS CANNOT
-		# SPLIT OUT.** A `Tween` is RefCounted (so it lands in `other`, never in nodes or resources)
-		# and it KEEPS ITSELF ALIVE while it is running — so a tween still ticking when `_drain()`
-		# gives up survives the drain and reads as a leak. That fits every observed property of this
-		# intermittent: RefCounted rather than a Node, timing-dependent, invisible in the per-phase
-		# totals (which are dominated by live objects mid-cycle) and only visible AFTER the drain.
-		# Counting them turns "growth 2, class unknown" into a yes/no.
+# ⚠ THE PRIME SUSPECT FOR THE "other" BUCKET, AND THE ONE THING THE ENGINE MONITORS CANNOT SPLIT
+# OUT. A Tween is RefCounted, so it lands in `other` and never in nodes or resources, and it KEEPS
+# ITSELF ALIVE while running, so one still ticking when _drain() gives up reads as a leak.
+
+# That fits every observed property of this intermittent: RefCounted rather than a Node,
+# timing-dependent, invisible in the per-phase totals and only visible AFTER the drain. Counting
+# them turns "growth 2, class unknown" into a yes or no.
 		"tweens": get_tree().get_processed_tweens().size(),
 	}
 
-## ⚠ **`print_orphan_nodes()` IS THE WRONG INSTRUMENT FOR THIS CHECK, AND WAS THE STANDING "NEXT
-## THING TO TRY" FOR MONTHS.** Measured 2026-08-07 on a run that FAILED with growth 2: it printed
-## exactly four strays, and all four are the DELIBERATE ones this suite abandons above to prove the
-## canary can see a leak at all. The real growth showed up in none of them — because it is not a
-## Node, so an orphan-node dump cannot contain it however many times it is run.
-##
-## So report the CENSUS instead: which of the three classes the growth actually landed in. That is
-## the fact that narrows the search, and it is one subtraction rather than a hunt.
+# ⚠ print_orphan_nodes() IS THE WRONG INSTRUMENT FOR THIS CHECK, AND WAS THE STANDING "NEXT THING
+# TO TRY" FOR MONTHS. Measured on a run that FAILED with growth 2: it printed exactly four strays,
+# all four the DELIBERATE ones this suite abandons above to prove the canary can see a leak at all.
+
+# The real growth showed up in none of them, because it is not a Node, so an orphan-node dump cannot
+# contain it however many times it is run. Report the CENSUS instead: which of the three classes the
+# growth landed in. That is the fact that narrows the search, and it is one subtraction, not a hunt.
 func _report_growth(before: Dictionary, after: Dictionary) -> void:
 	var lines : Array[String] = []
 	lines.append("growth by class — total %+d: nodes %+d, resources %+d, other %+d"
@@ -316,9 +297,9 @@ func _report_growth(before: Dictionary, after: Dictionary) -> void:
 	lines.append("orphan nodes %d -> %d. ⚠ A growth of 0 in `nodes` means print_orphan_nodes() "
 			% [before.orphans, after.orphans]
 			+ "cannot help — the leak is a Resource or a plain RefCounted.")
-	# ⚠ Typed locals, not `int(...)`: a Dictionary subscript is Variant and `int(Variant)` is a PARSE
-	# error under warnings-as-errors — which makes the whole SUITE fail to load while the run still
-	# reports "PASSED" at a suite count of 29. Cost 8 wasted runs on 2026-08-08.
+# ⚠ Typed locals, not int(...): a Dictionary subscript is Variant and int(Variant) is a PARSE error
+# under warnings-as-errors, which makes the whole SUITE fail to load while the run still reports
+# "PASSED" at a suite count of 29.
 	var tw_before : int = before.tweens
 	var tw_after : int = after.tweens
 	var tween_delta : int = tw_after - tw_before
@@ -327,11 +308,12 @@ func _report_growth(before: Dictionary, after: Dictionary) -> void:
 			+ " it keeps ITSELF alive while running — if this delta matches the `other` delta above,")
 	lines.append("  the 'leak' is simply a tween still ticking when _drain() gave up, and the fix is"
 			+ " the DRAIN (wait for tweens), not a retained reference anywhere.")
-	# IS the leak; all-zero means the suspect list is wrong and needs widening.
+# A tween delta matching the `other` delta above means the tween IS the leak; all-zero means the
+# suspect list is wrong and needs widening.
 
-	# --- WHERE IN THE SESSION, and IS IT LINEAR -------------------------------------------------
-	# One row per phase, one column per cycle. A real per-cycle leak climbs steadily along a row;
-	# a lazy one-time allocation steps once and then flattens. Both report "growth 2" without this.
+# WHERE IN THE SESSION, AND IS IT LINEAR. One row per phase, one column per cycle: a real per-cycle
+# leak climbs steadily along a row while a lazy one-time allocation steps once and then flattens.
+# Both report "growth 2" without this.
 	if not _phase_marks.is_empty():
 		var labels : Array[String] = []
 		for mark : Dictionary in _phase_marks:
@@ -349,8 +331,8 @@ func _report_growth(before: Dictionary, after: Dictionary) -> void:
 				prev = total
 			lines.append(row)
 
-		# --- WHAT KIND OF THING ------------------------------------------------------------------
-		# Same phase, first measured cycle vs last: any node class that grew is named here.
+# WHAT KIND OF THING. The same phase, first measured cycle against last: any node class that grew
+# is named here.
 		var first_of : Dictionary = {}
 		var last_of : Dictionary = {}
 		for mark : Dictionary in _phase_marks:
@@ -376,10 +358,12 @@ func _report_growth(before: Dictionary, after: Dictionary) -> void:
 		TestLog.line("  [leak forensics] " + line, true)
 	_write_forensics(lines)
 
-## ⚠ **THE CONSOLE IS NOT WHERE THIS WILL BE READ.** This fires on a rare, unwatched run — very
-## likely the owner's, months from now, in a log that scrolls or gets overwritten by the next run
-## (`test_output_*.log` are truncated every run, by design). A durable, timestamped artifact is the
-## whole point: one failure anywhere is then enough to close the question, with no reproduction.
+# ⚠ THE CONSOLE IS NOT WHERE THIS WILL BE READ. It fires on a rare, unwatched run, very likely the
+# owner's, in a log that scrolls or is overwritten by the next run, since the test output logs are
+# truncated every run by design.
+
+# A durable, timestamped artifact is the whole point: one failure anywhere is then enough to close
+# the question, with no reproduction.
 func _write_forensics(lines: Array[String]) -> void:
 	var stamp := Time.get_datetime_string_from_system().replace(":", ".")
 	var path := "user://logs/leak_forensics_%s.txt" % stamp
@@ -399,69 +383,70 @@ func _write_forensics(lines: Array[String]) -> void:
 	TestLog.line("  [leak forensics] ⚠ WRITTEN TO %s — attach this file, it is the whole finding."
 			% ProjectSettings.globalize_path(path), true)
 
-## Two idle frames so queued deletions/refcount releases settle before counting. Also
-## prunes the sentinel registry: its per-card WeakRefs are benign growth that would
-## otherwise fail the object-count checks.
+# Two idle frames so queued deletions and refcount releases settle before counting. Also prunes the
+# sentinel registry, whose per-card WeakRefs are benign growth that would otherwise fail the
+# object-count checks.
 func _settle() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	LeakSentinel.prune()
 
-## One full lifecycle with NO unlinking — the weakref backrefs mean dropping the
-## Game must release every card and modifier on their own.
+# One full lifecycle with NO unlinking: the weakref backrefs mean dropping the Game must release
+# every card and modifier on their own.
 func _clean_cycle() -> void:
 	var g := _make_game()
 	CardEnvironment.CURRENT = null
 	g.free()
 
-# ==============================================================================
-# PRODUCTION SESSION CANARY (section 2 — see the header): one full simulated play
-# session per cycle, through the real production objects and drop sites.
-# ==============================================================================
+# PRODUCTION SESSION CANARY: one full simulated play session per cycle, through the real production
+# objects and their real drop sites.
 
-## Bounded post-cycle drain before a count: every action above was awaited to completion,
-## so this only catches the last self-freeing popup/tween queue_free tails; the settle
-## frames then flush queued deletions. Identical before the baseline and the final count,
-## so any steady-state floor cancels out.
-## ⚠ **0.6 s, AND THE NUMBER IS LOAD-BEARING: IT MUST OUTLAST THE LONGEST ONE-SHOT TIMER THE GAME
-## CREATES.** `PlayArea._ready()` calls `FxAttachment.warm()`, which walks
-## `[FxFire.FIRE_SHADER, FxJuggle.JUGGLE_SHADER]` and creates a **0.5 s** `SceneTreeTimer` per shader
-## to free its warm-up quad. A `SceneTreeTimer` is **RefCounted**, so two of them pending land in the
-## census's `other` bucket — not `nodes`, not `resources` — and at 0.25 s this drain returned while
-## they were still alive. That is the whole of the canary's intermittent "growth 2": two pending
-## warm-up timers, not a leak. Every property matches — RefCounted, exactly 2, invisible to
-## `print_orphan_nodes()`, absent from the exit-time dump because they fire long before exit.
-##
-## ⚠ **DO NOT "FIX" THIS BY DRAINING REPEATEDLY.** Each `_drain()` creates a timer of its own, so a
-## retry loop allocates into the very bucket it measures — measured: growth went 2 -> 3 and the
-## failure rate doubled. One LONGER wait is correct; more waits are not.
-## ⚠ If a new one-shot timer longer than 0.6 s is ever added to a startup path, raise this to match.
+# Bounded post-cycle drain before a count. Every action above was awaited to completion, so this
+# only catches the last self-freeing popup and tween queue_free tails; the settle frames then flush
+# queued deletions. Identical before the baseline and the final count, so any floor cancels out.
+
+# ⚠ 0.6 s, AND THE NUMBER IS LOAD-BEARING: IT MUST OUTLAST THE LONGEST ONE-SHOT TIMER THE GAME
+# CREATES. PlayArea._ready() calls FxAttachment.warm(), which walks the fire and juggle shaders and
+# creates a 0.5 s SceneTreeTimer per shader to free its warm-up quad.
+
+# A SceneTreeTimer is RefCounted, so two pending ones land in the census's `other` bucket, and at
+# 0.25 s this drain returned while they were still alive. That is the whole of the canary's
+# intermittent "growth 2": two pending warm-up timers, not a leak.
+
+# Every property matches - RefCounted rather than a Node, exactly 2, invisible to
+# print_orphan_nodes(), and absent from the exit-time dump because they fire long before exit.
+
+# ⚠ DO NOT "FIX" THIS BY DRAINING REPEATEDLY. Each _drain() creates a timer of its own, so a retry
+# loop allocates into the very bucket it measures: measured, growth went 2 to 3 and the failure rate
+# doubled. One LONGER wait is correct; more waits are not.
+
+# ⚠ If a one-shot timer longer than 0.6 s is ever added to a startup path, raise this to match.
 func _drain() -> void:
 	await get_tree().create_timer(0.6).timeout
 	await _settle()
 
-## ⚠⚠ **DEAD END — DO NOT ADD A "DRAIN HARDER / RETRY THE DRAIN" REMEDY. IT IS SELF-DEFEATING, AND
-## THAT IS WHY EVERY PREVIOUS ATTEMPT FAILED.**
-##
-## Tried and reverted: retry `_drain()` until the count returns to the baseline, capped at 6 extra
-## drains. Result over 10 runs — 5 failures, and on every one of them the growth SURVIVED all six
-## extra drains. So the objects are not merely slow to release.
-##
-## ⚠ **AND THE REMEDY MAKES IT WORSE, MEASURABLY: growth went 2 -> 3 and the failure rate roughly
-## doubled.** `_drain()` calls `get_tree().create_timer()`, and a `SceneTreeTimer` **is RefCounted**,
-## so every extra drain allocates into the exact bucket (`other`) the check is measuring — and it does
-## so ASYMMETRICALLY, because the baseline drains once while the after-path drains up to seven times.
-## Any drain-based remedy inflates the number it is trying to reduce. This almost certainly explains
-## the earlier "settle until stable" attempt's failure too.
-##
-## ⚠ A remedy in this direction would first have to make the drain ALLOCATION-FREE (frames only, no
-## `create_timer`), and even then the evidence above says more draining does not release these.
+# ⚠⚠ DEAD END - DO NOT ADD A "DRAIN HARDER / RETRY THE DRAIN" REMEDY. IT IS SELF-DEFEATING, AND
+# THAT IS WHY EVERY PREVIOUS ATTEMPT FAILED.
+
+# Tried and reverted: retry _drain() until the count returns to the baseline, capped at 6 extra
+# drains. Over 10 runs that gave 5 failures, and on every one the growth SURVIVED all six extra
+# drains, so the objects are not merely slow to release.
+
+# ⚠ AND THE REMEDY MAKES IT WORSE, MEASURABLY: growth went 2 to 3 and the failure rate roughly
+# doubled. _drain() calls get_tree().create_timer(), and a SceneTreeTimer IS RefCounted, so every
+# extra drain allocates into the exact `other` bucket the check measures.
+
+# It does so ASYMMETRICALLY too, because the baseline drains once while the after-path drains up to
+# seven times. Any drain-based remedy inflates the number it is trying to reduce, which almost
+# certainly explains the "settle until stable" attempt as well.
+
+# ⚠ A remedy in this direction would first have to make the drain ALLOCATION-FREE, frames only and
+# no create_timer, and even then the evidence above says more draining does not release these.
 
 func _session_cycle() -> void:
-	# --- 1. Menus: DeckPicker open (builds every starter deck list), inspect one in a
-	# DeckViewer, close it, then Pick. No deck_picked listener on purpose: the run below
-	# starts from the FROZEN TestDecks so per-cycle allocations stay replay-stable, while
-	# the picker still exercises its full build + drop path (incl. the rules list).
+# Menus: DeckPicker open, which builds every starter deck list, inspect one in a DeckViewer, close
+# it, then Pick. No deck_picked listener on purpose: the run below starts from the FROZEN TestDecks
+# so per-cycle allocations stay replay-stable, while the picker still exercises its full path.
 	var picker := DeckPicker.add_to_scene(self)
 	await _settle()
 	var first_deck : Array[CardData] = picker._deck.get_deck_list()[0]["cards"]
@@ -473,15 +458,15 @@ func _session_cycle() -> void:
 	await _settle()
 
 	_mark_phase("1 menus (DeckPicker/DeckViewer)")
-	# --- 2. Run start (production path: new_run deep-duplicates; the sources drop here).
+# Run start on the production path: new_run deep-duplicates, and the sources drop here.
 	var cards := TestDecks.seeded_deck()
 	var rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(cards, rules)
 	Main.save_info = run
 
 	_mark_phase("2 run start (new_run)")
-	# --- 3. Map: enter (synthetic line graph, no world generation — the MAP TRAVERSAL rig
-	# pattern), traverse two nodes, hover-panel a booster node, open + confirm its pack.
+# Map: enter on a synthetic line graph with no world generation, the MAP TRAVERSAL rig pattern,
+# traverse two nodes, hover-panel a booster node, then open and confirm its pack.
 	var controller := _build_map_rig(run)
 	var overlay : WorldGraphOverlay = controller.map.overlay()
 	await controller.move_to(overlay.node(1))
@@ -500,8 +485,8 @@ func _session_cycle() -> void:
 		panel.hide_panel()
 		panel.queue_free()
 		await _settle()
-		# Booster pack: take-all ChoiceViewer; confirmed cards join the run deck (mirrors
-		# Map._open_booster / _on_booster_confirmed).
+# Booster pack: a take-all ChoiceViewer whose confirmed cards join the run deck, mirroring
+# Map._open_booster and _on_booster_confirmed.
 		var booster : BoosterTemplate = booster_node.meta[MapNodeRoles.BOOSTER_KEY]
 		var viewer : ChoiceViewer = await booster.on_map_picked(self)
 		viewer.confirmed.connect(func(taken: Array[CardData]) -> void:
@@ -516,10 +501,9 @@ func _session_cycle() -> void:
 	await _settle()
 
 	_mark_phase("3 map + booster")
-	# --- 4. A real show WITH a GameView: Nexts, grab/place, discard, a real placement pass with
-	# real scoring (props spawn + finish inside the awaited resolution -- see the placement fill
-	# below), UNDO across it (the quiescent Game.undo() drops the popped snapshot), redo,
-	# quit-mid-show -> resume, win.
+# A real show WITH a GameView: Nexts, grab and place, discard, a real placement pass with real
+# scoring, whose props spawn and finish inside the awaited resolution, UNDO across it, where the
+# quiescent Game.undo() drops the popped snapshot, redo, quit-mid-show then resume, and win.
 	run.pending_goal = 1
 	run.pending_node_id = 2
 	seed(424242)
@@ -528,17 +512,17 @@ func _session_cycle() -> void:
 	await _settle()
 	var g := view.game
 	await g.next()
-	# Fill row 0 through the real placement path: the fifth card completes the row, the
-	# detector scores it, and the scoring cascade allocates the prop visuals and beams that
-	# are the whole point of a leak canary. This is also what makes the show winnable below.
+# Fill row 0 through the real placement path: the fifth card completes the row, the detector scores
+# it, and the scoring cascade allocates the prop visuals and beams that are the whole point of a
+# leak canary. This is also what makes the show winnable below.
 	var placed : Array[CardData] = await TestGridFixtures.place_row_from_deck(g, 0, 0, 5)
-	# Discard one of the placed cards through the real path.
+# Discard one of the placed cards through the real path.
 	if placed:
 		await g.discard_data(placed[0])
 	g.undo()
 	await _settle()
 
-	# Quit-mid-show -> resume: the abandoned show's board drops with the view.
+# Quit-mid-show then resume: the abandoned show's board drops with the view.
 	RunManager._shutdown_saver()
 	RunManager.save_run()
 	view.queue_free()
@@ -551,28 +535,29 @@ func _session_cycle() -> void:
 	await _settle()
 	var g2 := view2.game
 	var waited := 0.0
-	while g2.processing and waited < WATCHDOG_SECS:  # resume holds the lock until visuals sync
+# Resume holds the lock until the visuals sync, so the watchdog bounds the wait.
+	while g2.processing and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	check_impl(not g2.processing, "the resumed show hands the board back to the player")
 
 	var won : Array[bool] = []
 	g2.show_resolved.connect(func(w: bool, _score: int, _goal: int) -> void: won.append(w))
-	# The resumed board is whatever the quit committed; score a line on it so the goal of 1 is
-	# met through the real path rather than by assuming the pre-quit score survived.
+# The resumed board is whatever the quit committed, so a line is scored on it to meet the goal of 1
+# through the real path rather than by assuming the pre-quit score survived.
 	await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
 	g2.end_show()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
-	g2.exit_show()   # win path: return_to_map banks the deck into the run doc
+# The win path: return_to_map banks the deck into the run doc.
+	g2.exit_show()
 	await _settle()
 	view2.queue_free()
 	await _settle()
 	CardEnvironment.CURRENT = null
 
 	_mark_phase("4 show + placement + undo + resume + win")
-	# --- 5. The loss path: an unreachable goal, three repeated Nexts (the grid game's
-	# repeatable, allocating act -- see place_card_in_grid's "the thing a Submit used to be"),
-	# exit_show ends the run (the whole doomed board drops with the view).
+# The loss path: an unreachable goal, three repeated Nexts, which are the grid game's repeatable
+# allocating act, then exit_show to end the run, dropping the whole doomed board with the view.
 	loaded.pending_goal = 1000000000
 	loaded.pending_node_id = 1
 	seed(31337)
@@ -590,7 +575,7 @@ func _session_cycle() -> void:
 	CardEnvironment.CURRENT = null
 
 	_mark_phase("5 loss path")
-	# --- 6. Run over: drop the save + run doc.
+# Run over: drop the save and the run doc.
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	Main.save_info = RunState.new()
@@ -604,11 +589,12 @@ func _topmost_lower(g: Game, from_col: int) -> CardData:
 			return col.datas[-1]
 	return null
 
-## MAP TRAVERSAL's rig, production-shaped: WorldMapController + camera/token (unique-named
-## for the @onready %lookups), a stub WorldMap2D that never generates, a synthetic line
-## graph populated by hand, and roles assigned via the controller's own _on_graph_populated
-## (which also parks the token on the lap origin). Expect one harmless "baked composite not
-## found" warning from the stub map.
+# MAP TRAVERSAL's rig, production-shaped: WorldMapController with a camera and token, unique-named
+# for the @onready lookups, a stub WorldMap2D that never generates, a synthetic line graph populated
+# by hand, and roles assigned via the controller's own _on_graph_populated.
+
+# That call also parks the token on the lap origin. Expect one harmless "baked composite not found"
+# warning from the stub map.
 func _build_map_rig(run: RunState) -> WorldMapController:
 	var controller := WorldMapController.new()
 	var cam := Camera2D.new()
@@ -632,9 +618,9 @@ func _build_map_rig(run: RunState) -> WorldMapController:
 	controller._on_graph_populated()
 	return controller
 
-## A straight-line graph, one node per depth 0..max_depth (MAP ROLES' shape — its booster
-## window guarantee puts at least one booster on the mid ranks). Tiny distances keep the
-## token travel tweens fast.
+# A straight-line graph, one node per depth from 0 to max_depth, in MAP ROLES' shape, whose booster
+# window guarantee puts at least one booster on the mid ranks. Tiny distances keep the token travel
+# tweens fast.
 func _line_export(max_depth: int) -> Dictionary:
 	var nodes : Array = []
 	for i : int in max_depth + 1:
@@ -652,9 +638,9 @@ func _rules_card(skill: CardModifierSkill) -> CardData:
 	skill.spotlit = true
 	return c
 
-## Same minimal-but-real headless fixture as test_game_headless.make_game():
-## rules deck with the classic skills + two zones of typed 2-card columns —
-## every modifier slot the unlink helpers cover is exercised.
+# The same minimal-but-real headless fixture as test_game_headless.make_game(): a rules deck with
+# the classic skills plus two zones of typed 2-card columns, exercising every modifier slot the
+# unlink helpers cover.
 func _make_game() -> Game:
 	var g := Game.new()
 	var s := GameData.new()

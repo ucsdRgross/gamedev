@@ -1,18 +1,14 @@
 extends TestSuite
-# res://Tests/Engine/test_game_headless.gd
-# ==============================================================================
-# Game LOGIC with view == null (Plan 2 §6.2): proves the data layer runs a full
-# show headless — commands, scoring, undo, and the processing guard — with NO UI
-# and NO crash despite every `if view:` branch being skipped.
-#
-# Like test_board.gd, the Game is a bare Game.new() never added to the tree (its
-# board logic is tree-safe); CardEnvironment.CURRENT is set by hand so rules-card
-# skills resolve `game`. The view field is left null throughout.
-# ==============================================================================
+# Game LOGIC with view == null: the data layer runs a full show headless - commands, scoring, undo
+# and the processing guard - with NO UI and NO crash, despite every `if view:` branch being skipped.
 
-# CATEGORY MAP: all BEHAVIOR — these drive the player-facing commands (grab, place,
-# undo, end) through the real Game API and assert the outcomes a player sees.
-# The single representation-level check (gutter BigNumber accumulation) is check_impl.
+# Like test_board.gd, the Game is a bare Game.new() never added to the tree, its board logic being
+# tree-safe, and CardEnvironment.CURRENT is set by hand so rules-card skills resolve `game`. The
+# view field is left null throughout.
+
+# CATEGORY MAP: all BEHAVIOR. These drive the player-facing commands - grab, place, undo, end -
+# through the real Game API and assert the outcomes a player sees. The one representation-level
+# check, gutter BigNumber accumulation, is check_impl.
 
 func suite_name() -> String:
 	return "GAME HEADLESS"
@@ -48,10 +44,12 @@ func rules_card(skill: CardModifierSkill) -> CardData:
 	skill.spotlit = true
 	return c
 
-# A minimal but real show fixture: rules cards carry the classic grabber/placer/scorer skills
-# (always spotlit because they live in rules_deck), and both zones have two paired 2-card
-# columns whose ranks ascend by 1 with distinct suits (so grab/place runs are legal and poker
-# high-card scoring pays > 0). view is deliberately left null.
+# A minimal but real show fixture: rules cards carry the classic grabber, placer and scorer skills,
+# always spotlit because they live in rules_deck, and both zones hold two paired 2-card columns
+# whose ranks ascend by 1 with distinct suits. view is deliberately left null.
+
+# Those ranks and suits are what make grab and place runs legal and poker high-card scoring pay
+# above 0.
 func make_game() -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -101,12 +99,12 @@ func test_command_guard_blocks_input() -> void:
 
 func test_try_grab_returns_stack() -> void:
 	var g := make_game()
-	# lower col 0 is [rank3, rank4] with distinct suits, ascending -> a legal grab run
+# lower col 0 is [rank3, rank4] with distinct suits, ascending, so it is a legal grab run
 	var bottom := lower(g, 0)[0]
 	var grabbed := await g.try_grab(bottom)
 	check(grabbed.size() == 2 and grabbed[0] == bottom,
 			"try_grab returns the full ascending run", str(grabbed.size()))
-	# an upper-zone card can't be grabbed by the lower-zone grabber
+# an upper-zone card cannot be grabbed by the lower-zone grabber
 	var upper_card := g.state.upper_zone[0].datas[0]
 	check((await g.try_grab(upper_card)).is_empty(),
 			"try_grab rejects an upper-zone card (grabber is lower-only)")
@@ -115,23 +113,21 @@ func test_try_grab_returns_stack() -> void:
 
 func test_try_place_moves_and_commits() -> void:
 	var g := make_game()
-	# move the top of col0 (rank4) onto... needs a topmost target one rank apart, distinct suit.
-	# col1 top is rank4 too (suit differs) -> not a legal run (rank diff 0). Instead grab the
-	# single top card of col0 and drop onto col1's bottom is illegal (covered). So test the
-	# legal case: place col0's top (rank4) onto a fresh rank3 target we append is overkill;
-	# assert the REJECTION path commits nothing, and a legal single-card place commits once.
+# The REJECTION path must commit nothing and a legal single-card place must commit once. col0's top
+# and col1's top are both rank 4, so placing one on the other is an illegal run at rank diff 0; the
+# fresh rank-5 target built below is the legal case.
 	var history_before := g.save_history.size()
-	var top0 := lower(g, 0)[1]  # rank 4
-	var top1 := lower(g, 1)[1]  # rank 4 -> same rank, placement illegal
+	var top0 := lower(g, 0)[1]
+	var top1 := lower(g, 1)[1]
 	var placed := await g.try_place([top0] as Array[CardData], top1)
 	check(not placed and g.save_history.size() == history_before,
 			"illegal place (equal ranks) rejected, nothing committed")
-	# make a legal target: a rank-5 card distinct suit on top of col1
+# make a legal target: a rank-5 card of a distinct suit on top of col1
 	var target := TestFactories.m_card(5, TestFactories.uc())
 	target.stage = CardData.Stage.PLAY
 	g.state.lower_zone[1].datas.append(target)
 	g.state.revision += 1
-	placed = await g.try_place([top0] as Array[CardData], target)  # rank4 onto rank5, diff 1
+	placed = await g.try_place([top0] as Array[CardData], target)
 	check(placed, "legal place accepted")
 	check(g.find_data_vec3(top0).x == 1 and g.find_data_vec3(top0).y == 1,
 			"placed card now lives in lower col 1", str(g.find_data_vec3(top0)))
@@ -140,9 +136,9 @@ func test_try_place_moves_and_commits() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## A placer that also accepts the card DIRECTLY BENEATH the moving card as a target — the
-## legality query says yes, but Board resolves the move to OK_NOOP (nothing moves). The shipped
-## placer can't produce this (it demands a topmost target), so the case is staged here.
+# A placer that also accepts the card DIRECTLY BENEATH the moving card as a target: the legality
+# query says yes, but Board resolves the move to OK_NOOP and nothing moves. The shipped placer
+# cannot produce this, since it demands a topmost target, so the case is staged here.
 class PlacerAcceptsOwnSpot extends CardModifierSkill:
 	func get_str() -> String: return "NoopPlacer"
 	func get_description() -> String: return ""
@@ -154,18 +150,19 @@ class PlacerAcceptsOwnSpot extends CardModifierSkill:
 		if not g: return []
 		var src := g.find_data_vec3(stack[0])
 		var dst := g.find_data_vec3(target)
-		# only the "dropped back onto its own position" case
+# only the "dropped back onto its own position" case
 		if src == Vector3i.MIN or dst != src - Vector3i(0, 0, 1): return []
 		return stack
 
-## Task 1: a legal placement that moves nothing (Board.OK_NOOP — a stack dropped
-## back onto its own spot) must NOT push an undo entry, or Undo appears to do nothing. The
-## action count entity_side_for_row hashes must not advance either: it never was an action.
+# A legal placement that moves nothing, Board.OK_NOOP for a stack dropped back onto its own spot,
+# must NOT push an undo entry, or Undo appears to do nothing. The action count must not advance
+# either: it never was an action.
 func test_noop_place_commits_nothing() -> void:
 	var g := make_game()
 	g.state.rules_deck.append(rules_card(PlacerAcceptsOwnSpot.new()))
 	g.state.revision += 1
-	g.save_state()   # the committed baseline the no-op would duplicate
+# The committed baseline the no-op would duplicate.
+	g.save_state()
 	var history_before := g.save_history.size()
 	var actions_before := g.history_trimmed + g.save_history.size()
 	var top0 := lower(g, 0)[1]
@@ -176,7 +173,7 @@ func test_noop_place_commits_nothing() -> void:
 			"a no-op placement pushes NO undo entry", str(g.save_history.size()))
 	check(g.history_trimmed + g.save_history.size() == actions_before,
 			"the committed-action count does not advance on a no-op")
-	# a REAL move right after still commits, and undo lands on the pre-move board
+# a REAL move right after still commits, and undo lands on the pre-move board
 	var target := TestFactories.m_card(5, TestFactories.uc())
 	target.stage = CardData.Stage.PLAY
 	g.state.lower_zone[1].datas.append(target)
@@ -189,20 +186,23 @@ func test_noop_place_commits_nothing() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## ⚠ **THE DEBUG HISTORY OUTLIVES THE PRODUCTION CAP, WHICH IS THE ONLY REASON IT EXISTS.**
-## `save_history` is capped (`undo_cap`, `Game.save_state`), so a player's undo eventually stops
-## reaching backwards; the owner's playtest loop is *"undo, press record, repeat the action"*, which
-## needs to reach the setup BEFORE a bug however many actions ago that was.
-##
-## This drives more commits than the cap allows and asserts the two histories diverge in exactly the
-## intended way: the production one stops growing, the debug one does not. **A test that committed
-## fewer actions than the cap would pass identically with the feature deleted.**
+# ⚠ THE DEBUG HISTORY OUTLIVES THE PRODUCTION CAP, WHICH IS THE ONLY REASON IT EXISTS.
+# save_history is capped by undo_cap in Game.save_state, so a player's undo eventually stops
+# reaching backwards.
+
+# The owner's playtest loop is "undo, press record, repeat the action", which needs to reach the
+# setup BEFORE a bug however many actions ago that was.
+
+# This drives more commits than the cap allows and asserts the two histories diverge in exactly the
+# intended way: the production one stops growing, the debug one does not. A test that committed
+# fewer actions than the cap would pass identically with the feature deleted.
 func test_debug_history_is_uncapped_and_redoable() -> void:
 	if not OS.is_debug_build():
 		check_impl(true, "debug history is debug-build only — SKIPPED in a release build")
 		return
 	var g := make_game()
-	g.undo_cap = 3   # a small cap so "more commits than the cap" stays a fast test
+# A small cap, so "more commits than the cap" stays a fast test.
+	g.undo_cap = 3
 	g.save_state()
 	var commits := 8
 	for i : int in commits:
@@ -216,14 +216,14 @@ func test_debug_history_is_uncapped_and_redoable() -> void:
 	check(g._debug_history.size() == commits + 1,
 			"the DEBUG history kept every commit", str(g._debug_history.size()))
 	var deep := g.state.lower_zone[0].datas.size()
-	# Rewind further back than the production cap could ever reach.
+# Rewind further back than the production cap could ever reach.
 	var steps := 0
 	while g.debug_undo(): steps += 1
 	check(steps > 3, "debug undo rewound PAST the production cap", "%d steps" % steps)
 	check(g.state.lower_zone[0].datas.size() < deep,
 			"...and the board really moved back",
 			"%d vs %d" % [g.state.lower_zone[0].datas.size(), deep])
-	# Redo walks forward again — the "repeat the action after undoing" half.
+# Redo walks forward again, the "repeat the action after undoing" half.
 	var forward := 0
 	while g.debug_redo(): forward += 1
 	check(forward == steps, "debug redo replays exactly as far as undo rewound",
@@ -231,8 +231,8 @@ func test_debug_history_is_uncapped_and_redoable() -> void:
 	check(g.state.lower_zone[0].datas.size() == deep,
 			"...arriving back at the state it started from",
 			"%d vs %d" % [g.state.lower_zone[0].datas.size(), deep])
-	# ⚠ A fresh commit INVALIDATES the redo future — replaying it would restore a board that never
-	# followed from this one.
+# ⚠ A fresh commit INVALIDATES the redo future - replaying it would restore a board that never
+# followed from this one.
 	g.debug_undo()
 	g.state.revision += 1
 	g.save_state()
@@ -242,9 +242,10 @@ func test_debug_history_is_uncapped_and_redoable() -> void:
 
 func test_undo_reverts_state_and_history() -> void:
 	var g := make_game()
-	g.save_state()  # seed one baseline snapshot
+# Seed one baseline snapshot.
+	g.save_state()
 	var baseline_cols := g.state.lower_zone[0].datas.size()
-	# commit a mutation: append a card and save
+# commit a mutation: append a card and save
 	var extra := TestFactories.m_card(9, TestFactories.uc())
 	extra.stage = CardData.Stage.PLAY
 	g.state.lower_zone[0].datas.append(extra)
@@ -256,21 +257,24 @@ func test_undo_reverts_state_and_history() -> void:
 	check(g.state.lower_zone[0].datas.size() == baseline_cols,
 			"undo reverts the board to the previous snapshot",
 			"%d vs %d" % [g.state.lower_zone[0].datas.size(), baseline_cols])
-	# Checklist 0.4: the undo path (duplicate_state + restore_runtime) must relink the suit
-	# self-cycle — a stale backref silently breaks suit spawns (suit.game / find_data_vec3).
+# The undo path, duplicate_state plus restore_runtime, must relink the suit self-cycle: a stale
+# backref silently breaks suit spawns through suit.game and find_data_vec3.
 	var undone := g.state.lower_zone[0].datas[0]
 	check_impl(undone.suit != null and undone.suit.data == undone,
 			"undo relinks the suit back-reference (suit.data == its card)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## Per-show state lives on GameData so history snapshots carry it: undoing must rewind it
-## together with the board (owner bug report — the old Game-level act counter survived undo,
-## permanently eating acts). The act count is retired; show_resolved is the per-show flag that
-## now has to hold this property, since a resumed show reads it to decide what to show.
+# Per-show state lives on GameData so history snapshots carry it, and undoing must rewind it
+# together with the board. A Game-level counter instead survives undo and permanently eats acts,
+# which is the owner-reported bug.
+
+# The act count is retired; show_resolved is the per-show flag that now has to hold this property,
+# since a resumed show reads it to decide what to show.
 func test_undo_rewinds_per_show_state() -> void:
 	var g := make_game()
-	g.save_state()   # baseline snapshot so undo has somewhere to go
+# Baseline snapshot so undo has somewhere to go.
+	g.save_state()
 	g.end_show()
 	check(g.state.show_ended, "precondition: ending the show marks the state resolved")
 	g.undo()
@@ -280,9 +284,9 @@ func test_undo_rewinds_per_show_state() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## Undo at the win/lose screen dismisses the outcome (show_unresolved) and rewinds the
-## End: the show comes back live, input unlocks, and nothing was banked (fame only
-## moves on Continue — exit_show — which never ran).
+# Undo at the win or lose screen dismisses the outcome through show_unresolved and rewinds the End:
+# the show comes back live, input unlocks, and nothing was banked, fame moving only on Continue,
+# which is exit_show and never ran.
 func test_undo_at_game_over_rewinds_the_end() -> void:
 	var g := make_game()
 	g.save_state()
@@ -300,7 +304,7 @@ func test_undo_at_game_over_rewinds_the_end() -> void:
 	check(g.save_history.size() == history_at_over - 1,
 			"the End's snapshot is popped")
 	check(not g.processing, "input unlocks — the show is live again")
-	# the show can re-resolve after the rewind (undo -> End again)
+# the show can re-resolve after the rewind, undo then End again
 	g.end_show()
 	check(resolved.size() == 2, "ending it again after the rewind resolves it again")
 	CardEnvironment.CURRENT = null
@@ -375,42 +379,41 @@ func test_score_line_headless_mutates_data() -> void:
 	r.score = 7
 	r.meld = [] as Array[CardData]
 	check(g.state.row_total == 0, "precondition: row_total starts at 0")
-	# ⚠ score_line RE-EVALUATES a real board line over its own section before banking
-	# (spotlight S8, Q22=b/Q23=a), so a synthetic Result handed in for a populated zone is
-	# discarded — the expected number comes from the board, not from `r`.
+# ⚠ score_line RE-EVALUATES a real board line over its own section before banking, so a synthetic
+# Result handed in for a populated zone is discarded: the expected number comes from the board, not
+# from `r`.
+
+# The call below is the row path, lower gutter, index 0.
 	var row_cards := ScoringSection.collect(g.state.lower_zone, true, 0)
 	var expected : int = (await Scoring.PokerHands.score(row_cards))[0].score
-	await g.score_line(r, ScoringSection.of_line(g.state.lower_zone, true, 0))  # row, lower gutter, index 0
+	await g.score_line(r, ScoringSection.of_line(g.state.lower_zone, true, 0))
 	check(g.state.row_total == expected,
 			"score_line banks the re-evaluated row hand headless", str(g.state.row_total))
 	check_impl(g.state.scores_row_lower.size() >= 1 and g.state.scores_row_lower[0] != null,
 			"score_line accumulates a gutter BigNumber headless (view skipped, no crash)")
-	# An EMPTY zone builds an empty section: there is nothing to light and nothing to
-	# re-evaluate, so the Result handed in is banked unchanged.
-	await g.score_line(r, ScoringSection.of_line([] as Array, false, 0))  # col path
+# An EMPTY zone builds an empty section: there is nothing to light and nothing to re-evaluate, so
+# the Result handed in is banked unchanged. The call below is the col path.
+	await g.score_line(r, ScoringSection.of_line([] as Array, false, 0))
 	check(g.state.col_total == 7, "score_line adds to col_total headless (no section)")
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-# ==============================================================================
-# COMPARATOR RULES CARDS, THROUGH A REAL GAME
-#
-# ⚠ **THIS IS `design/comparator_buckets/PLAN.md` §6, RUN.** Every other comparator test drives
-# `Scoring` under a `FakeEnvironment`. That leaves the whole feature asserted only against a
-# stand-in: `Game` is the environment with a REAL `_revision_key()`, a real `CardDataIterator`
-# over draw deck / zones / rules deck, real `spotlit` resolution, and a real `score_line` that
-# banks into the gutters. A rules card that works in the fake and not in the game would pass
-# every other suite in this repo.
-#
-# The rules cards below are SKILLS in `rules_deck`, which is how the shipped engine rules cards
-# are carried and which makes them always spotlit — so this also exercises the carrier and the
-# spotlight path the fake never touches.
-#
-# §6's six checks, mechanically: 1 and 2 are `merge_makes_a_set` + `removing_it_restores`,
-# 3 is `suit_merge_makes_a_flush`, 4 is `deny_splits_a_pair`, 5 is `merge_kills_the_straight`,
-# 6 is the unmodded baseline every one of them is paired against. What CANNOT be automated —
-# whether it FEELS right — is still the owner's, and stays in todo.md.
-# ==============================================================================
+# COMPARATOR RULES CARDS, THROUGH A REAL GAME.
+
+# ⚠ Every other comparator test drives Scoring under a FakeEnvironment, which leaves the whole
+# feature asserted against a stand-in.
+
+# Game is the environment with a REAL _revision_key(), a real CardDataIterator over draw deck, zones
+# and rules deck, real spotlit resolution and a real score_line that banks into the gutters. A rules
+# card that works in the fake and not in the game would pass every other suite in this repo.
+
+# The rules cards below are SKILLS in rules_deck, which is how the shipped engine rules cards are
+# carried and what makes them always spotlit, so this also exercises the carrier and the spotlight
+# path the fake never touches.
+
+# Six checks: a rank merge makes a set, removing it restores the earlier score, a suit merge makes a
+# flush, a deny rule splits a pair, a merge kills a straight, and an unmodded baseline each one is
+# paired against. Whether it FEELS right cannot be automated and stays the owner's, in todo.md.
 
 class RulesAllRanksSame extends CardModifierSkill:
 	func get_str() -> String: return "All Ranks Same"
@@ -434,8 +437,8 @@ class RulesDenySevens extends CardModifierSkill:
 	func on_meld_ranks_deny(r1: PipRank, r2: PipRank) -> bool:
 		return float(r1.value) == 7.0 and float(r2.value) == 7.0
 
-## A real Game whose LOWER zone is one row of `ranks`/`suits`, plus any extra rules cards.
-## One row of five columns, so the cascade scorer scores a five-card row through score_line.
+# A real Game whose LOWER zone is one row of `ranks` and `suits`, plus any extra rules cards. One
+# row of five columns, so the cascade scorer scores a five-card row through score_line.
 func comparator_game(ranks: Array[int], suits: Array[int], extra: Array[CardData]) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -467,21 +470,23 @@ func comparator_game(ranks: Array[int], suits: Array[int], extra: Array[CardData
 	CardEnvironment.CURRENT = g
 	return g
 
-## Score one act and report what the lower row banked. The REAL path: on_run_scorer -> cascade
-## scorer -> SkillEvalPokerBest -> Scoring.PokerHands.score -> Game.score_line -> gutters ->
-## GameData.apply_act_score (fires the mod pass and banks it directly; there is no button that
-## does this any more, but the mod event and the bank step are both still real architecture).
+# Score one act and report what the lower row banked, on the REAL path: on_run_scorer to the cascade
+# scorer to SkillEvalPokerBest to Scoring.PokerHands.score to Game.score_line to the gutters to
+# GameData.apply_act_score.
+
+# That last call fires the mod pass and banks it directly. No button drives it, but the mod event
+# and the bank step are both still real architecture.
 func act_score(g: Game) -> int:
 	await g.run_all_mods(&"on_run_scorer")
 	g.state.apply_act_score()
 	return g.state.total_score
 
 func test_comparator_rules_change_a_real_act() -> void:
-	# 2,4,6,8,10 in five DIFFERENT suits: no pair, no flush, no straight. High Card.
+# 2,4,6,8,10 in five DIFFERENT suits: no pair, no flush, no straight. High Card.
 	var ranks : Array[int] = [2, 4, 6, 8, 10]
 	var suits : Array[int] = [901, 902, 903, 904, 905]
 
-	# --- §6.6 the baseline: a normal board with no comparator rules card at all --------------
+# the baseline: a normal board with no comparator rules card at all
 	var plain := comparator_game(ranks, suits, [] as Array[CardData])
 	var plain_score := await act_score(plain)
 	check(plain_score > 0, "§6.6 REAL GAME: an unmodded board scores through the whole act",
@@ -489,7 +494,7 @@ func test_comparator_rules_change_a_real_act() -> void:
 	check(plain.state.validate().is_empty(), "§6.6 REAL GAME: and the board still validates")
 	free_game(plain)
 
-	# --- §6.1 a rank-merging rules card makes those five distinct ranks a SET ----------------
+# a rank-merging rules card makes those five distinct ranks a SET
 	var merged := comparator_game(ranks, suits, [rules_card(RulesAllRanksSame.new())] as Array[CardData])
 	var merged_score := await act_score(merged)
 	check(merged_score > plain_score,
@@ -498,9 +503,9 @@ func test_comparator_rules_change_a_real_act() -> void:
 			"modded %d vs plain %d" % [merged_score, plain_score])
 	free_game(merged)
 
-	# --- §6.2 remove it and the same board scores exactly as it did before -------------------
-	# ⚠ Built from the same fixture, not the same instance: this is what proves no partition or
-	# verdict outlived the card that caused it, through a REAL board revision.
+# Remove it and the same board scores exactly as it did before. ⚠ Built from the same fixture, not
+# the same instance: this is what proves no partition or verdict outlived the card that caused it,
+# through a REAL board revision.
 	var restored := comparator_game(ranks, suits, [] as Array[CardData])
 	var restored_score := await act_score(restored)
 	check(restored_score == plain_score,
@@ -508,7 +513,7 @@ func test_comparator_rules_change_a_real_act() -> void:
 			"%d vs %d" % [restored_score, plain_score])
 	free_game(restored)
 
-	# --- §6.3 a suit-merging rules card makes five distinct suits a FLUSH --------------------
+# a suit-merging rules card makes five distinct suits a FLUSH
 	var flushed := comparator_game(ranks, suits, [rules_card(RulesAllSuitsSame.new())] as Array[CardData])
 	var flushed_score := await act_score(flushed)
 	check(flushed_score > plain_score,
@@ -517,8 +522,8 @@ func test_comparator_rules_change_a_real_act() -> void:
 			"modded %d vs plain %d" % [flushed_score, plain_score])
 	free_game(flushed)
 
-	# --- §6.5 a merging card kills a straight -----------------------------------------------
-	# 3,4,5,6,7 one suit apiece IS a straight; merged into one rank class it cannot be.
+# A merging card kills a straight: 3,4,5,6,7 one suit apiece IS a straight, and merged into one rank
+# class it cannot be.
 	var run_ranks : Array[int] = [3, 4, 5, 6, 7]
 	var straight := comparator_game(run_ranks, suits, [] as Array[CardData])
 	var straight_score := await act_score(straight)
@@ -531,7 +536,7 @@ func test_comparator_rules_change_a_real_act() -> void:
 			"straight %d vs merged %d" % [straight_score, killed_score])
 	free_game(killed)
 
-	# --- §6.4 a deny rule stops two printed 7s counting as a pair ----------------------------
+# a deny rule stops two printed 7s counting as a pair
 	var pair_ranks : Array[int] = [7, 7, 2, 4, 9]
 	var paired := comparator_game(pair_ranks, suits, [] as Array[CardData])
 	var paired_score := await act_score(paired)
@@ -547,23 +552,21 @@ func test_comparator_rules_change_a_real_act() -> void:
 	free_game(split)
 
 
-# ==============================================================================
-# THE AUTHORED-CARD DOUBLES (PLAN §3 stage 1) — CAN THE ENGINE EXPRESS THEM?
-#
-# ⚠ **THAT QUESTION IS THE POINT OF THIS ROSTER, AND IT IS WORTH ANSWERING BEFORE THE CARDS ARE
-# AUTHORED, NOT AFTER.** Each double below is written straight from DESIGN §1e's catalog table —
-# nothing here is invented — and each one's job is to prove the hook surface can carry that card.
-# If The Turk cannot be written, the design is wrong NOW, and discovering that when someone tries
-# to author it is the expensive version.
-#
-# ⚠ They are also the only doubles anywhere that read REAL BOARD POSITION — the card beneath in a
-# stack, the cards in a row, whether this card is covered. `test_comparator.gd`'s
-# `BoardDependentGroup` fakes that with a flag; these read a real `Game`, which is the only way to
-# learn whether the information a rule needs is even reachable from inside a grouping hook.
-# ==============================================================================
+# THE AUTHORED-CARD DOUBLES: CAN THE ENGINE EXPRESS THEM?
 
-## Groups itself with the card BENEATH it in its own stack — "its rank is the rank of the card
-## beneath it" (DESIGN §1e). At the bottom of a column it does nothing.
+# ⚠ THAT QUESTION IS THE POINT OF THIS ROSTER, AND IT IS WORTH ANSWERING BEFORE THE CARDS ARE
+# AUTHORED, NOT AFTER. Each double below is written straight from the design's catalog table and
+# nothing here is invented; each one's job is to prove the hook surface can carry that card.
+
+# If The Turk cannot be written, the design is wrong NOW, and discovering that when someone tries to
+# author it is the expensive version.
+
+# ⚠ They are also the only doubles anywhere that read REAL BOARD POSITION: the card beneath in a
+# stack, the cards in a row, whether this card is covered. test_comparator.gd fakes that with a
+# flag; these read a real Game, the only way to learn whether that information is even reachable.
+
+# Groups itself with the card BENEATH it in its own stack - "its rank is the rank of the card
+# beneath it". At the bottom of a column it does nothing.
 class TurkCopiesBelow extends CardModifierSkill:
 	func get_str() -> String: return "The Turk"
 	func get_description() -> String: return "Rank of the card beneath it"
@@ -582,8 +585,8 @@ class TurkCopiesBelow extends CardModifierSkill:
 		out.append_array(groups)
 		return out
 
-## "Copies its highest adjacent neighbour's rank; alone, it is rank 1" — adjacency here is the
-## card directly above or below in its own column.
+# "Copies its highest adjacent neighbour's rank; alone, it is rank 1", adjacency here being the card
+# directly above or below in its own column.
 class CleverHansCopiesNeighbour extends CardModifierSkill:
 	func get_str() -> String: return "Clever Hans"
 	func get_description() -> String: return "Copies its highest neighbour"
@@ -602,15 +605,15 @@ class CleverHansCopiesNeighbour extends CardModifierSkill:
 			var n : CardData = col.datas[z]
 			if not cards.has(n) or not n.rank: continue
 			if best == null or float(n.rank.value) > float(best.rank.value): best = n
-		#alone -> it is rank 1, i.e. it joins nothing
+# alone -> it is rank 1, i.e. it joins nothing
 		if best == null or not cards.has(data): return groups
 		var pair : Array[CardData] = [data, best]
 		var out : Array[Array] = [pair]
 		out.append_array(groups)
 		return out
 
-## "While COVERED, copies the most valuable card in its row." Uncovered it does nothing at all,
-## which is what makes it the cover-state double.
+# "While COVERED, copies the most valuable card in its row." Uncovered it does nothing at all, which
+# is what makes it the cover-state double.
 class HumbugWhileCovered extends CardModifierSkill:
 	func get_str() -> String: return "Humbug"
 	func get_description() -> String: return "While covered, copies the best in its row"
@@ -630,8 +633,8 @@ class HumbugWhileCovered extends CardModifierSkill:
 		out.append_array(groups)
 		return out
 
-## "Becomes a rank present in its row, chosen deterministically." Deterministic here = the LOWEST
-## rank present, so two identical boards always agree.
+# "Becomes a rank present in its row, chosen deterministically." Deterministic here is the LOWEST
+# rank present, so two identical boards always agree.
 class WildcardJoinsRow extends CardModifierSkill:
 	func get_str() -> String: return "The Wildcard"
 	func get_description() -> String: return "Becomes a rank present in its row"
@@ -649,8 +652,8 @@ class WildcardJoinsRow extends CardModifierSkill:
 		out.append_array(groups)
 		return out
 
-## Unsourced (PLAN §3 marks it so): a STAMP-carried rule that keeps its own card out of every
-## group. The split exerciser, on a carrier the other doubles do not use.
+# Unsourced: a STAMP-carried rule that keeps its own card out of every group. The split exerciser,
+# on a carrier the other doubles do not use.
 class StampedLoner extends CardModifierStamp:
 	func get_str() -> String: return "Stamped Loner"
 	func get_description() -> String: return "Never groups with anything"
@@ -667,8 +670,8 @@ class StampedLoner extends CardModifierStamp:
 		out.append([data] as Array[CardData])
 		return out
 
-## A real Game whose lower zone is `cols` columns of stacked ranks, so a rule can read the card
-## beneath it, its row, and whether it is covered.
+# A real Game whose lower zone is `cols` columns of stacked ranks, so a rule can read the card
+# beneath it, its row, and whether it is covered.
 func stacked_game(cols: Array, extra: Array[CardData]) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -708,7 +711,7 @@ func _class_size_of(profile: Scoring.HandProfile, card: CardData) -> int:
 	return (refs[0] as Scoring.RankClass).datas.size()
 
 func test_authored_card_doubles() -> void:
-	# --- The Turk: a rule reading THE CARD BENEATH IT, from inside a grouping hook -----------
+# The Turk: a rule reading THE CARD BENEATH IT, from inside a grouping hook
 	var turk := TurkCopiesBelow.new()
 	var turk_rules : Array[CardData] = [rules_card(turk)]
 	var g := stacked_game([[4, 9]], turk_rules)
@@ -725,7 +728,7 @@ func test_authored_card_doubles() -> void:
 			"%d classes" % turked.ranks.classes.size())
 	free_game(g)
 
-	# --- Clever Hans: highest adjacent neighbour, and ALONE it stays rank 1 ------------------
+# Clever Hans: highest adjacent neighbour, and ALONE it stays rank 1
 	var hans := CleverHansCopiesNeighbour.new()
 	var hans_rules : Array[CardData] = [rules_card(hans)]
 	g = stacked_game([[2, 7, 5]], hans_rules)
@@ -748,9 +751,8 @@ func test_authored_card_doubles() -> void:
 			"%d classes" % lonely.ranks.classes.size())
 	free_game(g)
 
-	# --- Humbug: DORMANT while uncovered, live while covered ---------------------------------
-	# ⚠ The paired control is the same card in the same hand, differing ONLY in whether something
-	# sits on top of it — which is the whole claim.
+# Humbug: DORMANT while uncovered, live while covered. ⚠ The paired control is the same card in the
+# same hand, differing ONLY in whether something sits on top of it, which is the whole claim.
 	var humbug := HumbugWhileCovered.new()
 	var humbug_rules : Array[CardData] = [rules_card(humbug)]
 	g = stacked_game([[3], [11]], humbug_rules)
@@ -771,7 +773,7 @@ func test_authored_card_doubles() -> void:
 			"%d classes" % covered.ranks.classes.size())
 	free_game(g)
 
-	# --- The Wildcard: a rank present in its row, deterministically ---------------------------
+# The Wildcard: a rank present in its row, deterministically
 	var wild := WildcardJoinsRow.new()
 	var wild_rules : Array[CardData] = [rules_card(wild)]
 	g = stacked_game([[12], [5], [9]], wild_rules)
@@ -787,7 +789,7 @@ func test_authored_card_doubles() -> void:
 			"1e and it is DETERMINISTIC — 'chosen deterministically, on every board change'")
 	free_game(g)
 
-	# --- StampedLoner: the split exerciser, on a STAMP carrier --------------------------------
+# StampedLoner: the split exerciser, on a STAMP carrier
 	var loner := StampedLoner.new()
 	g = stacked_game([[8], [8], [8]], [] as Array[CardData])
 	row = [g.state.lower_zone[0].datas[0], g.state.lower_zone[1].datas[0],
@@ -807,22 +809,21 @@ func test_authored_card_doubles() -> void:
 	free_game(g)
 
 
-# ==============================================================================
-# TP-80j -- END IS THE ONLY THING THAT RESOLVES A SHOW.
-#
-# The act is retired: there is no Submit, no banking moment and no Next button. That leaves
-# exactly one way for a show to finish, and this pins it from the other side -- every OTHER
-# path the player can drive must leave the show LIVE. A scored line is the interesting one:
-# it pays points, and paying points must not be mistaken for finishing.
-#
-# Driven on a GRID board, because that is the only board the game still has.
+# END IS THE ONLY THING THAT RESOLVES A SHOW.
+
+# The act is retired: there is no Submit, no banking moment and no Next button. That leaves exactly
+# one way for a show to finish, and this pins it from the other side - every OTHER path the player
+# can drive must leave the show LIVE.
+
+# A scored line is the interesting one: it pays points, and paying points must not be mistaken for
+# finishing. Driven on a GRID board, because that is the only board the game still has.
 func test_end_show_is_the_only_resolver() -> void:
 	var g := Game.new()
 	CardEnvironment.CURRENT = g
 	g.state = TestGridFixtures.build_fix_grid_1()
-	# The detector is what scores a completed line, and the evaluator is what values it. Without
-	# both, the "a scored line does not resolve the show" leg below would assert over a line that
-	# never scored -- which is why the precondition after the placements is there.
+# The detector is what scores a completed line and the evaluator is what values it. Without both,
+# the "a scored line does not resolve the show" leg below would assert over a line that never
+# scored, which is why the precondition after the placements is there.
 	g.state.rules_deck = [
 		rules_card(SkillLineDetector.new()),
 		rules_card(SkillEvalPokerBest.new()),
@@ -834,9 +835,9 @@ func test_end_show_is_the_only_resolver() -> void:
 	check(not g.state.show_ended and resolved.is_empty(),
 			"precondition: a fresh grid show is live")
 
-	# A placement that COMPLETES AND SCORES A LINE. Points are banked; the show is not over.
-	# The cards are built here rather than drawn: this fixture carries no draw deck, and the
-	# claim under test is about RESOLUTION, not about where a card came from.
+# A placement that COMPLETES AND SCORES A LINE. Points are banked; the show is not over. The cards
+# are built here rather than drawn: this fixture carries no draw deck, and the claim under test is
+# about RESOLUTION, not about where a card came from.
 	for x : int in 5:
 		var card := TestFactories.m_card(x + 2, TestFactories.uc())
 		card.stage = CardData.Stage.PLAY
@@ -848,19 +849,19 @@ func test_end_show_is_the_only_resolver() -> void:
 			"a scored line does not resolve the show -- banking points is not finishing",
 			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
 
-	# The refill a placement asks for.
+# The refill a placement asks for.
 	await g.next()
 	check(not g.state.show_ended and resolved.is_empty(),
 			"a refill does not resolve the show",
 			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
 
-	# An undo.
+# An undo.
 	g.undo()
 	check(not g.state.show_ended and resolved.is_empty(),
 			"an undo does not resolve the show",
 			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
 
-	# ...and then the one path that does.
+# ...and then the one path that does.
 	g.end_show()
 	check(g.state.show_ended and resolved.size() == 1,
 			"End resolves the show, and nothing before it had",
@@ -869,24 +870,23 @@ func test_end_show_is_the_only_resolver() -> void:
 	free_game(g)
 
 
-# ==============================================================================
-# TP-80i -- THE RETIRED ACT HAS NO READERS.
-#
-# Game.submit, _perform_submit and the Next button are gone. This fails if any of them comes
-# back as a READER in product code, which a merge or a copied snippet can do silently -- the
-# game would compile and a second, actless way to finish a show would exist again.
-#
-# Comment lines are skipped: a comment must stay free to explain what it forbids.
-# Tests/ is exempt -- a test may still name a thing to prove it is absent.
+# THE RETIRED ACT HAS NO READERS.
 
-## Directories that are product code. Tools/ is included: it ships with the game and a caller
-## there is as real as one in Levels/.
+# Game.submit, _perform_submit and the Next button are gone. This fails if any of them comes back as
+# a READER in product code, which a merge or a copied snippet can do silently: the game would
+# compile and a second, actless way to finish a show would exist again.
+
+# Comment lines are skipped, because a comment must stay free to explain what it forbids. Tests/ is
+# exempt too, since a test may still name a thing to prove it is absent.
+
+# Directories that are product code. Tools/ is included: it ships with the game and a caller there
+# is as real as one in Levels/.
 const PRODUCT_DIRS : Array[String] = [
 	"res://Levels", "res://Scripts", "res://Cards", "res://UI", "res://Tools",
 ]
 
-## The retired act's identifiers. `next_button` is here but `next(` is NOT -- Game.next()
-## survives the button that used to call it.
+# The retired act's identifiers. `next_button` is here but `next(` is NOT, because Game.next()
+# survives the button that called it.
 const RETIRED_ACT_READERS : Array[String] = [
 	".submit(", "func submit", "_perform_submit", "next_button",
 ]
@@ -909,7 +909,7 @@ func test_retired_act_has_no_readers() -> void:
 					if line.contains(bad):
 						offenders.append("%s:%d: %s" % [path, n, line])
 						break
-	# Without this the gate passes by scanning nothing, which is the failure it is meant to catch.
+# Without this the gate passes by scanning nothing, which is the failure it is meant to catch.
 	check(scanned >= 40, "the gate actually found the product scripts to scan",
 			"only %d scripts scanned" % scanned)
 	check(offenders.is_empty(),
@@ -920,19 +920,19 @@ func test_retired_act_has_no_readers() -> void:
 
 
 
-# ==============================================================================
-# THE SENTINEL GATE. `BoardCoord.NOWHERE` is a shared instance and `==` on a RefCounted is
-# identity, so `coord == BoardCoord.NOWHERE` is TRUE for anything that returns that instance and
-# FALSE for a coordinate rebuilt with the same components. It reads correctly and it is wrong
-# half the time. `is_nowhere()` is always right.
-#
-# ⚠ This gate is the whole reason the value-semantics work is verifiable. Without it, `equals`
-# can be forgotten at a call site where `==` could not be -- which is the one respect in which
-# keeping BoardCoord a reference type is worse than making the coordinate a value.
+# THE SENTINEL GATE. BoardCoord.NOWHERE is a shared instance and `==` on a RefCounted is identity,
+# so comparing a coord against it is TRUE for anything returning that instance and FALSE for a
+# coordinate rebuilt with the same components. It reads correctly and it is wrong half the time.
 
-## Comparing against the shared sentinel by identity. `is_nowhere()` replaces both.
-## ⚠ Built by concatenation on purpose: spelled out, the gate's own constant is an offender and
-## the gate fails on itself.
+# is_nowhere() is always right.
+
+# ⚠ This gate is the whole reason the value-semantics work is verifiable. Without it, `equals` can
+# be forgotten at a call site where `==` could not be, which is the one respect in which keeping
+# BoardCoord a reference type is worse than making the coordinate a value.
+
+# Comparing against the shared sentinel by identity; is_nowhere() replaces both. ⚠ Built by
+# concatenation on purpose: spelled out, the gate's own constant is an offender and the gate fails
+# on itself.
 const SENTINEL_NAME := "BoardCoord.NOWH" + "ERE"
 static func _forbidden_sentinel_compares() -> Array[String]:
 	return ["== " + SENTINEL_NAME, "!= " + SENTINEL_NAME]
@@ -942,7 +942,7 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 	var offenders : Array[String] = []
 	for dir : String in PRODUCT_DIRS + ["res://Tests"]:
 		for path : String in _gd_scripts_under(dir):
-			# The type itself defines the sentinel and compares its components.
+# The type itself defines the sentinel and compares its components.
 			if path.ends_with("board_coord.gd"): continue
 			var f := FileAccess.open(path, FileAccess.READ)
 			if not f: continue
@@ -964,53 +964,54 @@ func test_nowhere_is_never_compared_by_identity() -> void:
 			"
 ".join(offenders))
 
-# ==============================================================================
 # THE ZONE-ONLY RATCHET.
-#
-# A test that asserts against the legacy zone renderer and never touches a grid is testing a
-# renderer the game no longer uses. Eleven such files existed when this gate was written, and one
-# of them was the LAYERING suite -- which is why a card drawing behind its own grid cell reached
-# the owner by eye instead of failing a check. Six remain, and none of them CAN port.
-#
-# This does not fix them. It RATCHETS: the set may shrink, never grow. A new zone-only test fails
-# here, and porting one fails here too until it is struck off the list below, so the list cannot
-# rot into a lie.
-#
-# The set empties when the legacy zone rendering is deleted and these files have nowhere left to
-# point -- until then, every name below is a known hole, not an oversight.
 
-## Files that assert against the legacy renderer and reference no grid.
-##
-## ⚠ THIS LIST HOLDS TWO DIFFERENT KINDS OF ENTRY, and confusing them wastes a session.
-##
-## PORTABLE -- a fixture that merely happens to sit in a zone. It can and should move onto a grid,
-## and its name is struck off when it does. ⚠ **THERE ARE NONE LEFT**; every remaining entry is one
-## of the two kinds below, so a name appearing here again means a NEW zone-only test was written.
-##
-## MACHINERY -- a test OF the legacy zone machinery itself: the Vector3i position index, dynamic
-## column add/remove, zone-array scoring sections. That machinery is still LIVE (measured:
-## find_data_vec3 has 9 product callers, get_zone_from_vec3 7, is_data_topmost 7,
-## add_column/remove_column 9), because the Entrance is still zone-shaped storage. These tests
-## CANNOT port -- a grid has no fixed-width column to add or remove -- and they MUST NOT be
-## deleted, because they cover code that still runs. They leave this list only when the machinery
-## they test does.
-##
-## Marked below. Strike a PORTABLE name off when it moves; do not add one.
+# A test that asserts against the legacy zone renderer and never touches a grid is testing a
+# renderer the game no longer uses. Eleven such files existed when this gate was written, one of
+# them the LAYERING suite, so a card drawing behind its own grid cell reached the owner by eye.
+
+# Six remain and none of them CAN port. This does not fix them, it RATCHETS: the set may shrink,
+# never grow. A new zone-only test fails here, and porting one fails here too until it is struck off
+# the list below, so the list cannot rot into a lie.
+
+# The set empties when the legacy zone rendering is deleted and these files have nowhere left to
+# point. Until then, every name below is a known hole, not an oversight.
+
+# Files that assert against the legacy renderer and reference no grid.
+
+# ⚠ THIS LIST HOLDS TWO DIFFERENT KINDS OF ENTRY, and confusing them wastes a session. PORTABLE is a
+# fixture that merely happens to sit in a zone: it can and should move onto a grid, and its name is
+# struck off when it does.
+
+# ⚠ THERE ARE NO PORTABLE ENTRIES LEFT, so a name appearing as one again means a NEW zone-only test
+# was written.
+
+# MACHINERY is a test OF the legacy zone machinery itself: the Vector3i position index, dynamic
+# column add and remove, zone-array scoring sections. That machinery is still LIVE because the
+# Entrance is still zone-shaped storage.
+
+# Measured: find_data_vec3 has 9 product callers, get_zone_from_vec3 7, is_data_topmost 7,
+# add_column and remove_column 9.
+
+# MACHINERY tests CANNOT port, a grid having no fixed-width column to add or remove, and they MUST
+# NOT be deleted, because they cover code that still runs. They leave this list only when the
+# machinery they test does. Strike a PORTABLE name off when it moves; do not add one.
 const ZONE_ONLY_TESTS : Array[String] = [
-	# MACHINERY -- these test live legacy code and leave only when it does
+# MACHINERY -- these test live legacy code and leave only when it does
 	"res://Tests/Engine/test_board.gd",
 	"res://Tests/Engine/test_mods.gd",
 	"res://Tests/Engine/test_spotlight.gd",
-	# ENTRANCE-ONLY -- they name upper_zone, which IS the Entrance and is not going away yet
+# ENTRANCE-ONLY -- they name upper_zone, which IS the Entrance and is not going away yet
 	"res://Tests/Engine/test_prop_engine.gd",
 	"res://Tests/Engine/test_statuses.gd",
 ]
 
 const ZONE_MARKERS : Array[String] = ["upper_zone", "lower_zone"]
-## ⚠ NOT `BoardCoord`. It is the coordinate type for the Entrance too, so a file that merely
-## ported its Entrance call sites would satisfy this list while gaining no grid coverage at all --
-## which is exactly the false pass this ratchet exists to prevent. These markers all require a
-## GRID to be present.
+# ⚠ NOT BoardCoord. It is the coordinate type for the Entrance too, so a file that merely ported its
+# Entrance call sites would satisfy this list while gaining no grid coverage at all, which is
+# exactly the false pass this ratchet exists to prevent.
+
+# These markers all require a GRID to be present.
 const GRID_MARKERS : Array[String] = [
 	"grids[", "state.grids", "place_card_in_grid", "TestGridFixtures",
 ]
@@ -1031,7 +1032,7 @@ func test_zone_only_tests_do_not_multiply() -> void:
 		for m : String in GRID_MARKERS:
 			if text.contains(m): names_grid = true
 		if not names_grid: zone_only.append(path)
-	# A gate that scans nothing passes while proving nothing.
+# A gate that scans nothing passes while proving nothing.
 	check(scanned >= 30, "the ratchet actually found the test scripts to scan",
 			"only %d scripts scanned" % scanned)
 	var added : Array[String] = []

@@ -1,31 +1,25 @@
 extends TestSuite
-# res://Tests/UI/test_visual_layers.gd
-# ==============================================================================
-# VISUAL LAYERS (LAYERING.md): the board's STRUCTURAL draw order. After the
-# z_index -> tree-structure migration, every board CanvasItem stays at z_index 0
-# and order is decided purely by sibling position + parent nesting:
-#   TopLevelVBox children: … CardLayer -> PropLayer -> OverlayLayer  (later = on top)
-#   CardLayer children: CardVisuals in row-major order (+ hoop back-halves interleaved)
-#   inside a card: face polygons under Visual, then the FxAttachment under Offset (last = on top)
-#
-# A reusable dumper (dump_draw_order) prints the live draw-order tree at snapshot
-# moments so a human can eyeball layout; the invariant checks assert the parts
-# that must never drift, reading the EFFECTIVE draw order (not raw z) so they
-# survive the z->structure change. The core new feature — a card passing THROUGH
-# a hoop (back arc behind the card, front arc in front, back arc still above the
-# row above) — is driven directly and checked here.
-#
-# CATEGORY MAP: BEHAVIOR — what the player sees layered correctly (prop over card,
-# hoop split, overlay on top, held card lifted, status on the face). IMPLEMENTATION
-# pins: all board CanvasItems at z_index 0, CardLayer/PropLayer/OverlayLayer sibling
-# order, the hoop halves parented into CardLayer bracketing their anchor row
-# (back before the row's first card, front after its last — see LAYERING.md).
-#
-# Ordering: shares CardEnvironment.CURRENT with UI PROPS, so it waits for every
-# sibling EXCEPT E2E (UI PROPS excludes THIS suite to break the cycle) — chain is
-# …engine -> UI PROPS -> VISUAL LAYERS -> E2E. Isolates real saves/settings like
-# UI PROPS when it drives a GameView.
-# ==============================================================================
+# VISUAL LAYERS: the board's STRUCTURAL draw order. Every board CanvasItem stays at z_index 0 and
+# order is decided purely by sibling position and parent nesting.
+
+# TopLevelVBox children run CardLayer, then PropLayer, then OverlayLayer, later being on top;
+# CardLayer children are CardVisuals in row-major order, with hoop back-halves interleaved; inside a
+# card the face polygons sit under Visual, then the FxAttachment under Offset, last being on top.
+
+# A reusable dumper prints the live draw-order tree at snapshot moments so a human can eyeball
+# layout. The invariant checks read the EFFECTIVE draw order rather than raw z, so they survive the
+# z-to-structure change.
+
+# The core feature, a card passing THROUGH a hoop - back arc behind the card, front arc in front,
+# back arc still above the row above - is driven directly and checked here.
+
+# CATEGORY MAP: BEHAVIOR is what the player sees layered correctly - prop over card, hoop split,
+# overlay on top, held card lifted, status on the face. IMPLEMENTATION pins all board CanvasItems at
+# z_index 0, the three layers' sibling order, and the hoop halves bracketing their anchor row.
+
+# Ordering: this suite shares CardEnvironment.CURRENT with UI PROPS, so it waits for every sibling
+# EXCEPT E2E, UI PROPS excluding THIS suite to break the cycle. It isolates real saves and settings
+# like UI PROPS does when it drives a GameView.
 
 const PLAY_AREA_SCENE := preload("res://UI/play_area.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
@@ -36,8 +30,8 @@ func suite_name() -> String:
 	return "VISUAL LAYERS"
 
 func _ready() -> void:
-	# Runs after UI PROPS (shares CardEnvironment.CURRENT) and before E2E. Excludes only E2E (which
-	# waits on everything). See TestSuite.await_siblings_except and its DEADLOCK RULE.
+# Runs after UI PROPS, sharing CardEnvironment.CURRENT, and before E2E. Excludes only E2E, which
+# waits on everything. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["GRID LAYOUT", "GRID VIEW", "SETTINGS RANGE", "E2E RUN",
 			"LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ VISUAL LAYERS TEST PASS ============")
@@ -69,14 +63,13 @@ func _ready() -> void:
 	restore_real_settings()
 	finish()
 
-# ==============================================================================
-# THE REUSABLE DRAW-ORDER DUMPER
-# Mirrors Godot's canvas ordering: for every CanvasItem under a root compute its
-# EFFECTIVE z (walk parents: add z_index when z_as_relative, else absolute), then
-# depth-first pre-order (parent before children, earlier siblings first) gives the
-# tie-break at equal z. Stable-sort by (effective_z, traversal index): the LAST
-# entry renders ON TOP. Returns Array[Dictionary]{node, z, order, depth, visible}.
-# ==============================================================================
+# THE REUSABLE DRAW-ORDER DUMPER, mirroring Godot's canvas ordering: for every CanvasItem under a
+# root compute its EFFECTIVE z, walking parents and adding z_index when z_as_relative and taking the
+# absolute otherwise.
+
+# Depth-first pre-order, parent before children and earlier siblings first, gives the tie-break at
+# equal z. A stable sort by effective z then traversal index puts the LAST entry on top. Returns
+# Array[Dictionary] of node, z, order, depth and visible.
 func collect_draw_order(root: Node) -> Array[Dictionary]:
 	var out : Array[Dictionary] = []
 	var counter : Array[int] = [0]
@@ -86,10 +79,9 @@ func collect_draw_order(root: Node) -> Array[Dictionary]:
 		return a["order"] < b["order"])
 	return out
 
-## Depth-first draw-order walk that STOPS at nested-scene boundaries: any descendant instanced from
-## its own .tscn (scene_file_path set) is emitted as ONE leaf and not recursed into — so a
-## CardVisual/TextPopup/PlayArea shows once, not as its hundreds of polygons/bones (output overflow).
-## The root itself is always expanded (that's the scene under inspection).
+# Depth-first draw-order walk that STOPS at nested-scene boundaries: any descendant instanced from
+# its own .tscn is emitted as ONE leaf and not recursed into, so a CardVisual, TextPopup or PlayArea
+# shows once rather than as its hundreds of polygons and bones. The root itself is always expanded.
 func _walk_draw(node: Node, parent_z: int, depth: int, out: Array[Dictionary],
 		counter: Array[int], root: Node) -> void:
 	var z := parent_z
@@ -99,15 +91,15 @@ func _walk_draw(node: Node, parent_z: int, depth: int, out: Array[Dictionary],
 		out.append({"node": node, "z": z, "order": counter[0], "depth": depth,
 				"visible": ci.is_visible_in_tree()})
 		counter[0] += 1
-	# Halt at a dedicated sub-scene (unless it's the root we were asked to expand).
+# Halt at a dedicated sub-scene, unless it is the root we were asked to expand.
 	if node != root and not node.scene_file_path.is_empty():
 		return
 	for child in node.get_children():
 		_walk_draw(child, z, depth + 1, out, counter, root)
 
-## Route the ordered list to TestLog as ONE line (top = drawn first = underneath; bottom = on top).
-## A single combined string avoids flooding the terminal with hundreds of separate print() calls
-## (output-overflow); it still lands in test_output_all.log and shows in terminal only in ALL mode.
+# Route the ordered list to TestLog as ONE line, top being drawn first and underneath and bottom
+# being on top. A single combined string avoids flooding the terminal with hundreds of separate
+# print() calls; it still lands in the run log and shows in the terminal only in ALL mode.
 func dump_draw_order(label: String, root: Node) -> Array[Dictionary]:
 	var order := collect_draw_order(root)
 	var lines : PackedStringArray = []
@@ -133,14 +125,13 @@ func all_zero_z(order: Array[Dictionary]) -> Array[Node]:
 		if (entry["z"] as int) != 0: offenders.append(entry["node"])
 	return offenders
 
-# ==============================================================================
-# FIXTURES — grid-backed (S20bPort). `cols` maps to grid X, the stack DEPTH maps to grid H
-# (`GridData.cells[x].datas`), and every fixture here uses a single grid ROW (y == 0): these
-# tests are about DRAW ORDER within one row's height, not about multiple grid rows.
-# Built directly on `GridData` (via `TestFactories.uc()` cards, mirroring `TestGridFixtures`'
-# own low-level construction) because none of `TestGridFixtures`' fixed 5x5 shapes match the
-# variable column/depth boards these layering claims need.
-# ==============================================================================
+# FIXTURES, grid-backed. `cols` maps to grid X and the stack DEPTH maps to grid H, and every fixture
+# here uses a single grid ROW: these tests are about DRAW ORDER within one row's height, not about
+# multiple grid rows.
+
+# They are built directly on GridData, mirroring TestGridFixtures' own low-level construction,
+# because none of its fixed 5x5 shapes match the variable column and depth boards these layering
+# claims need.
 func _new_grid(width: int, height: int) -> GridData:
 	var grid := GridData.new()
 	grid.grid_width = width
@@ -148,19 +139,19 @@ func _new_grid(width: int, height: int) -> GridData:
 	grid.build_cells()
 	return grid
 
-## The card at grid 0's cell (x, y == 0), height `h` of its stack — the lookup every fixture
-## below needs since `col.datas[row]` (the old Entrance idiom) has no grid equivalent.
+# The card at grid 0's cell (x, y == 0), height `h` of its stack: the lookup every fixture below
+# needs, since the old Entrance column idiom has no grid equivalent.
 func cell_card(g: Game, x: int, h: int) -> CardData:
 	var grid : GridData = g.state.grids[0]
 	return grid.cells[grid.cell_index(x, 0)].datas[h]
 
-## An Entrance coordinate at depth `h`. The reveal has geometry only for the Entrance
-## (`PlayArea._reveal_geometry_exists`), so every reveal assertion below builds one of these.
+# An Entrance coordinate at depth `h`. The reveal has geometry only for the Entrance, so every
+# reveal assertion below builds one of these.
 func _ent(h: int) -> BoardCoord:
 	return BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, h)
 
-## The zone/type card for grid 0's cell (x, y == 0) — the grid equivalent of an Entrance column
-## header.
+# The zone or type card for grid 0's cell (x, y == 0), which is the grid equivalent of an Entrance
+# column header.
 func cell_type(g: Game, x: int) -> CardData:
 	var grid : GridData = g.state.grids[0]
 	return grid.cell_types[grid.cell_index(x, 0)]
@@ -179,8 +170,8 @@ func make_board_game(cols: int) -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
-## `cols` cells in a one-row grid, each stacked `depth` deep — the grid shape the hoop split needs:
-## a height layer ABOVE (h-1) and BELOW (h+1) the one the hoop brackets, across more than one cell.
+# `cols` cells in a one-row grid, each stacked `depth` deep: the grid shape the hoop split needs, a
+# height layer ABOVE and BELOW the one the hoop brackets, across more than one cell.
 func make_stacked_grid_game(cols: int, depth: int) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -196,13 +187,13 @@ func make_stacked_grid_game(cols: int, depth: int) -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
-## ⚠ **ENTRANCE-BACKED ON PURPOSE — THIS IS THE ENTRANCE'S OWN COVERAGE, NOT A LEFTOVER.** A grid
-## anchor splits too now (`test_hoop_split_brackets_a_grid_height_layer`), but the Entrance is still
-## a live, differently-shaped half of the board: fanned columns with their own `CardLayer`. Porting
-## these fixtures to a grid would DELETE that coverage rather than add any.
-##
-## One upper column stacked `rows` deep (row 0 on top of the column visually — later rows draw
-## over earlier ones), so there is a genuine "card in the row above" for the hoop-split test.
+# ⚠ ENTRANCE-BACKED ON PURPOSE - THIS IS THE ENTRANCE'S OWN COVERAGE, NOT A LEFTOVER. A grid anchor
+# splits too now, but the Entrance is still a live, differently-shaped half of the board: fanned
+# columns with their own CardLayer.
+
+# Porting these fixtures to a grid would DELETE that coverage rather than add any. One upper column
+# stacked `rows` deep, row 0 on top of the column visually since later rows draw over earlier ones,
+# so there is a genuine "card in the row above" for the hoop-split test.
 func make_stack_game(rows: int) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -219,18 +210,18 @@ func make_stack_game(rows: int) -> Game:
 	CardEnvironment.CURRENT = g
 	return g
 
-## `cols` columns each stacked `rows` deep — the multi-column shape the single-column hoop test was
-## blind to: cross-column draw order, ring overlap against EVERY card, and mid-leg split state are
-## checked on it. Entrance-backed — see the note on `make_stack_game` above.
+# `cols` columns each stacked `rows` deep: the multi-column shape a single-column hoop test is blind
+# to, where cross-column draw order, ring overlap against EVERY card, and mid-leg split state are
+# checked. Entrance-backed, for the reason given on make_stack_game.
 func make_grid_game(cols: int, rows: int) -> Game:
 	var per_col : Array[int] = []
 	for col : int in cols:
 		per_col.append(rows)
 	return make_ragged_game(per_col)
 
-## Ragged board: one column per entry, stacked `rows_per_col[i]` deep — SHORT columns are the
-## shape whose fanned last card pokes down through later rows (the wrong-row bracket bug).
-## Entrance-backed — see the note on `make_stack_game` above.
+# Ragged board, one column per entry stacked `rows_per_col[i]` deep. SHORT columns are the shape
+# whose fanned last card pokes down through later rows, which is the wrong-row bracket bug.
+# Entrance-backed, for the reason given on make_stack_game.
 func make_ragged_game(rows_per_col: Array[int]) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -256,15 +247,13 @@ func make_play_area() -> PlayArea:
 	var pa : PlayArea = PLAY_AREA_SCENE.instantiate()
 	add_child(pa)
 	pa.size = Vector2(1152, 648)
-	# Formations add a view-only lane_offset per prop; disable them so these layering tests place
-	# props on exact slot geometry (mark every kind formation-checked with none present).
+# Formations add a view-only lane_offset per prop, so they are disabled here to place props on exact
+# slot geometry: every kind is marked formation-checked with none present.
 	for kind : int in range(PropFormationSet.KIND_NAMES.size()):
 		pa.prop_layer._formation_checked[kind] = true
-	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
-	# and one grid is what the default deck gives -- which would put every check below on a
-	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
-	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
-	# written against, and the opening view stays the product's own decision everywhere else.
+# THIS FIXTURE OWNS ITS VIEW MODE, latched to the overview. A board holding one grid opens FOCUSED,
+# which would put every check below on a zoomed board, and these checks are about draw order at the
+# overview's scale. The opening view stays the product's own decision everywhere else.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
 	return pa
@@ -275,8 +264,8 @@ func settle(pa: PlayArea) -> void:
 	while not pa.visuals_ready() and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	# Grid coord (grid 0, x 0, y 0, h 0): every fixture in this file builds a grid, and the
-	# panel's origin publishes on `resized`, so this is the geometry that actually needs settling.
+# Grid coord (grid 0, x 0, y 0, h 0): every fixture in this file builds a grid, and the panel's
+# origin publishes on `resized`, so this is the geometry that actually needs settling.
 	var last := pa.slot_center_global(BoardCoord.new(0, 0, 0, 0))
 	var stable := 0
 	while stable < 3 and waited < WATCHDOG_SECS:
@@ -289,7 +278,8 @@ func settle(pa: PlayArea) -> void:
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
 	CardEnvironment.CURRENT = null
-	await get_tree().process_frame  # let the PlayArea actually free before the Game does
+# Let the PlayArea actually free before the Game does.
+	await get_tree().process_frame
 	g.free()
 
 func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
@@ -305,12 +295,10 @@ func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 	sig.disconnect(handler)
 	return fired[0]
 
-# ==============================================================================
 # TESTS
-# ==============================================================================
 
-## Fresh board: every board CanvasItem at z 0, CardLayer/PropLayer/OverlayLayer sibling order,
-## CardVisuals row-major in CardLayer.
+# Fresh board: every board CanvasItem at z 0, the three layers in sibling order, and CardVisuals
+# row-major in CardLayer.
 func test_fresh_deal_structure() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -331,7 +319,7 @@ func test_fresh_deal_structure() -> void:
 			"TopLevelVBox order is CardLayer -> PropLayer -> OverlayLayer (later = on top)",
 			"idx %d/%d/%d" % [card_layer.get_index(), prop_layer.get_index(), overlay.get_index()])
 
-	# CardVisuals hold row-major order in CardLayer (later child = drawn on top), none with a z.
+# CardVisuals hold row-major order in CardLayer, later child drawn on top, none with a z.
 	var last_idx := -1
 	var monotone := true
 	var any_z := false
@@ -346,14 +334,15 @@ func test_fresh_deal_structure() -> void:
 	check(monotone, "CardVisuals are in ascending row-major child order in CardLayer")
 	await cleanup(g, pa)
 
-## A normal prop (knife — no back half) renders above every board card by tree order.
+# A normal prop, a knife with no back half, renders above every board card by tree order.
 func test_normal_prop_above_cards() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
 	await settle(pa)
 	var pl := pa.prop_layer
 	var p := PropData.new()
-	p.kind = 1   # knife — has_back_half() == false
+# Kind 1 is the knife, which has no back half.
+	p.kind = 1
 	p.at = BoardCoord.new(0, 1, 0, 0)
 	p.route = [BoardCoord.new(0, 2, 0, 0)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [p], [])
@@ -369,7 +358,7 @@ func test_normal_prop_above_cards() -> void:
 	check(not vis.has_back_half(), "the knife opts out of the back-half split (default)")
 	await cleanup(g, pa)
 
-## Picking up a card lifts it above every resting card in its zone (structural move_child(-1)).
+# Picking up a card lifts it above every resting card in its zone, a structural move_child(-1).
 func test_held_card_above_resting() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -390,14 +379,13 @@ func test_held_card_above_resting() -> void:
 	pa.ungrab_cards()
 	await cleanup(g, pa)
 
-# The StatusLayer's "status icons draw above the card's face" check lived here and is DELETED with
-# the layer itself (owner: statuses are represented by their FX now, and their names and
-# stack counts by the inspector text). The claim it made is not lost — `test_fx_inside_its_host`
-# below asserts exactly the same ordering for what actually represents a status today.
+# The StatusLayer's "status icons draw above the card's face" check is deleted with the layer itself
+# (owner: statuses are represented by their FX now, and their names and stack counts by the
+# inspector text). test_fx_inside_its_host asserts the same ordering for what represents one today.
 
-## Shader FX is a CHILD of its host: above the card's own face, but still inside the CardVisual
-## subtree, so a card that overlaps this one paints over the flames too (owner ruling 2). That is
-## also why CardLayer must stay strictly CardVisuals — nothing else is ever inserted into it.
+# Shader FX is a CHILD of its host: above the card's own face, but still inside the CardVisual
+# subtree, so a card that overlaps this one paints over the flames too (owner). That is also why
+# CardLayer must stay strictly CardVisuals; nothing else is ever inserted into it.
 func test_fx_inside_its_host() -> void:
 	var g := make_board_game(2)
 	var pa := make_play_area()
@@ -421,17 +409,18 @@ func test_fx_inside_its_host() -> void:
 	for entry : Dictionary in dump_draw_order("board with FX", pa):
 		var item := entry["node"] as CanvasItem
 		if item: check_impl(item.z_index == 0, "every board CanvasItem stays at z_index 0")
-	# Ruling 23: a face-down card must leak nothing, and FX draws OUTSIDE the silhouette.
-	# Checked WITHOUT awaiting a frame: delta_floating_anim rewrites basis3d every frame, which
-	# recomputes show_front from the card's actual facing — so a frame later it is legitimately
-	# front again. What matters is that the gate applies the moment the facing changes.
+# A face-down card must leak nothing, and FX draws OUTSIDE the silhouette. Checked WITHOUT awaiting
+# a frame: delta_floating_anim rewrites basis3d every frame, which recomputes show_front from the
+# card's actual facing, so a frame later it is legitimately front again.
+
+# What matters is that the gate applies the moment the facing changes.
 	vis.show_front = false
 	check(not vis.fx.visible, "a face-down card hides its effects entirely")
 	vis.show_front = true
 	check(vis.fx.visible, "and flipping back restores them")
 	await cleanup(g, pa)
 
-## The OverlayLayer (focus inspector) renders above every card and prop.
+# The OverlayLayer, the focus inspector, renders above every card and prop.
 func test_overlay_above_everything() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -460,30 +449,33 @@ func test_overlay_above_everything() -> void:
 	pa.hide_focus_info()
 	await cleanup(g, pa)
 
-## Entrance-backed — see `make_stack_game`. The grid form of this claim is
-## `test_hoop_split_brackets_a_grid_height_layer`.
-##
-## THE CORE FEATURE: a hoop's back half renders BELOW the card it occupies and ABOVE the card in
-## the row above; its FRONT half renders in front of the occupied card but BELOW the card in the row
-## BELOW — the ring brackets the occupied card so it passes through. Driven on a 3-deep stacked
-## column: row 0 above, row 1 occupied, row 2 below.
+# Entrance-backed, as make_stack_game explains. The grid form of this claim is
+# test_hoop_split_brackets_a_grid_height_layer.
+
+# THE CORE FEATURE: a hoop's back half renders BELOW the card it occupies and ABOVE the card in the
+# row above; its FRONT half renders in front of the occupied card but BELOW the card in the row
+# BELOW, so the ring brackets the occupied card and the card passes through.
+
+# Driven on a 3-deep stacked column: row 0 above, row 1 occupied, row 2 below.
 func test_hoop_back_half_interleaves() -> void:
 	var g := make_stack_game(3)
 	var pa := make_play_area()
 	await settle(pa)
 	var pl := pa.prop_layer
-	var above_card := g.state.upper_zone[0].datas[0]   # row 0 — the card in the row above
-	var occupied := g.state.upper_zone[0].datas[1]     # row 1 — the card the hoop sits on
-	var below_card := g.state.upper_zone[0].datas[2]   # row 2 — the card in the row below
+# Row 0 is the card in the row above, row 1 the card the hoop sits on, row 2 the row below.
+	var above_card := g.state.upper_zone[0].datas[0]
+	var occupied := g.state.upper_zone[0].datas[1]
+	var below_card := g.state.upper_zone[0].datas[2]
 	var p := PropData.new()
-	p.kind = 0   # hoop — has_back_half() == true
+# Kind 0 is the hoop, which has a back half.
+	p.kind = 0
 	p.at = BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)
 	p.route = [] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "hoop spawn tick completes")
 	var vis : PropVisual = pl._visuals.get(p)
 	check(vis != null and vis.has_back_half(), "the hoop opts into the front/back split")
-	# Park the hoop directly over the occupied (row-1) card and let the per-frame interleave run.
+# Park the hoop directly over the occupied row-1 card and let the per-frame interleave run.
 	if vis:
 		vis.global_position = pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 1)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 1)).z))
 	for _i in 6:
@@ -492,8 +484,8 @@ func test_hoop_back_half_interleaves() -> void:
 	var front : Node2D = vis.front_node if vis else null
 	check(back != null and is_instance_valid(back) and front != null and is_instance_valid(front),
 			"the hoop built both half nodes")
-	# S20b.3: this fixture is Entrance-backed (make_stack_game), so its halves are parented into
-	# the Entrance's OWN card layer now (GAP-010) — not the card, and not the grids' CardLayer.
+# This fixture is Entrance-backed, so its halves are parented into the Entrance's OWN card layer,
+# not the card and not the grids' CardLayer.
 	check_impl(back != null and back.get_parent() == pa.entrance_card_layer
 			and front != null and front.get_parent() == pa.entrance_card_layer,
 			"both halves are parented into the STABLE EntranceCardLayer (not the card)")
@@ -524,24 +516,27 @@ func test_hoop_back_half_interleaves() -> void:
 			"the FRONT half renders BELOW the card in the row below (not over the whole board)",
 			"front %d vs row-below %d" % [front_rank, below_rank])
 
-	# OFF-CARD (the playtest regression): move the RING over an empty region. The bracket is
-	# purely GEOMETRIC now (data occupancy bracketed cards the ring visibly wasn't over), so
-	# drive the visual itself: no card under the ring → halves hide and the PropVisual draws the
-	# whole ring — otherwise stale half ordering left the ring floating on top of the board.
-	vis.global_position = pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 9)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 9)).z))   # far past the built rows
+# OFF-CARD, the playtest regression: move the RING over an empty region. The bracket is purely
+# GEOMETRIC, data occupancy having bracketed cards the ring visibly was not over, so the visual
+# itself is driven.
+
+# With no card under the ring the halves hide and the PropVisual draws the whole ring; otherwise
+# stale half ordering leaves the ring floating on top of the board. The position below is far past
+# the built rows.
+	vis.global_position = pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 9)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 9)).z))
 	for _j in 4:
 		await get_tree().process_frame
 	check(not vis._split_active, "off a card, the hoop is NOT split (whole ring drawn by PropVisual)")
 	check(not back.visible and not front.visible,
 			"off a card, both half nodes are hidden (no stale ring floating over the board)",
 			"back.visible %s front.visible %s" % [back.visible, front.visible])
-	# Back over the occupied card → splits again (state is reversible per frame).
+# Back over the occupied card, so it splits again: the state is reversible per frame.
 	vis.global_position = pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 0, 1)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 0, 1)).z))
 	for _j in 4:
 		await get_tree().process_frame
 	check(vis._split_active and back.visible and front.visible,
 			"back over a card, the hoop splits again (both halves shown)")
-	# Despawn frees BOTH half nodes with the visual (no leak).
+# Despawn frees BOTH half nodes with the visual, with no leak.
 	p.done = true
 	p.route = [] as Array[BoardCoord]
 	await run_tick(pl, [p], [], [], [])
@@ -555,17 +550,20 @@ func test_hoop_back_half_interleaves() -> void:
 			"both half nodes are freed with the prop visual (no leak)")
 	await cleanup(g, pa)
 
-## Entrance-backed — see `make_stack_game`.
-##
-## TASK 4 (owner playtest 2026-07-15): the single-column hoop test passed while playtest layering
-## looked wrong — the blind spots were OTHER columns, MID-LEG occupancy, and separation levels.
-## On a 3x3 board (Entrance columns x depth), at several card separations, a parked hoop must: take NO formation offset and
-## sit exactly on the occupied card's visual center (TASK 3a — the ring threads the card center at
-## every separation); bracket the occupied card, staying above EVERY same-column card above and
-## below EVERY same-column card below (fanned stacks overlap more than one row at small
-## separations); geometrically overlap NO card in any other column (what makes bracketing one card
-## sufficient — catches art outgrowing the card footprint); and NOT split while its visual is
-## between two cards even though its DATA slot is occupied (the mid-leg wrong-card bracket).
+# Entrance-backed, as make_stack_game explains. A single-column hoop test can pass while playtest
+# layering looks wrong, the blind spots being OTHER columns, MID-LEG occupancy, and separation
+# levels (owner playtest).
+
+# On a 3x3 board of Entrance columns by depth, at several card separations, a parked hoop must take
+# NO formation offset and sit exactly on the occupied card's visual centre, so the ring threads the
+# card centre at every separation.
+
+# It must bracket the occupied card, staying above EVERY same-column card above and below EVERY
+# same-column card below, since fanned stacks overlap more than one row at small separations.
+
+# It must geometrically overlap NO card in any other column, which is what makes bracketing one card
+# sufficient and catches art outgrowing the card footprint, and it must NOT split while its visual
+# is between two cards even though its DATA slot is occupied.
 func test_hoop_split_multi_column() -> void:
 	var prev_sep := SettingsManager.settings.card_separation_scale
 	for sep_scale : float in [0.5, 1.0, 2.0] as Array[float]:
@@ -574,14 +572,15 @@ func test_hoop_split_multi_column() -> void:
 		var pa := make_play_area()
 		await settle(pa)
 		var pl := pa.prop_layer
-		# Inject a big-offset formation for the hoop kind: TASK 3a says hoops NEVER take one.
+# Inject a big-offset formation for the hoop kind: a hoop NEVER takes one.
 		var fdata := PropFormationData.new()
 		fdata.points = PackedVector2Array([Vector2(30.0, 40.0)])
 		var fset := PropFormationSet.new()
 		fset.formations = [fdata] as Array[PropFormationData]
 		pl._formation_sets[0] = fset
 		pl._formation_checked[0] = true
-		var occupied := g.state.upper_zone[1].datas[1]   # middle column, middle row
+# The middle column's middle row.
+		var occupied := g.state.upper_zone[1].datas[1]
 		var p := PropData.new()
 		p.kind = 0
 		p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 1)
@@ -589,15 +588,15 @@ func test_hoop_split_multi_column() -> void:
 		var ok := await run_tick(pl, [p], [p], [], [])
 		check(ok, "hoop spawn tick completes (separation %.1f)" % sep_scale)
 		var vis : PropVisual = pl._visuals.get(p)
-		# A hoop still takes no FORMATION offset — its whole lane offset is the card-jump rise, the
- # one thing it does ride (owner: the card jumps INTO the ring, so the two centres
-		# must coincide). Anything else here would be a formation leaking in.
+# A hoop still takes no FORMATION offset: its whole lane offset is the card-jump rise, the one thing
+# it does ride, because the card jumps INTO the ring and the two centres must coincide (owner).
+# Anything else here would be a formation leaking in.
 		var jump_rise := Vector2(0.0, -CardVisual.card_jump_rise_play)
 		check(vis != null and vis.lane_offset.is_equal_approx(jump_rise),
 				"a hoop's only offset is the card-jump rise, never a formation (separation %.1f)"
 				% sep_scale, str(vis.lane_offset) if vis else "no visual")
-		# ⚠ **WAIT FOR THE CARD TO STOP MOVING, NOT A FIXED SIX FRAMES.** A card tweens to its slot,
-		# and how long that takes depends on how far it has to go -- which a layout change moves.
+# ⚠ WAIT FOR THE CARD TO STOP MOVING, NOT A FIXED SIX FRAMES. A card tweens to its slot, and how
+# long that takes depends on how far it has to go, which a layout change moves.
 		var occ_vis : CardVisual = pa.data_card.get(occupied)
 		var last_pos := Vector2(INF, INF)
 		var settle_waited := 0.0
@@ -607,8 +606,8 @@ func test_hoop_split_multi_column() -> void:
 			if not occ_vis: break
 			if occ_vis.global_position.is_equal_approx(last_pos): break
 			last_pos = occ_vis.global_position
-		# The ring rides at the height a JUMPED card's centre reaches — that is the alignment the
-		# whole feature is: card centre + jump rise == ring centre.
+# The ring rides at the height a JUMPED card's centre reaches. That is the alignment the whole
+# feature is: card centre plus jump rise equals ring centre.
 		check(vis != null and occ_vis != null
 				and (vis.global_position - (occ_vis.global_position + jump_rise)).length() < 4.0,
 				"the parked hoop is centred where the card's centre lands once it jumps "
@@ -629,9 +628,9 @@ func test_hoop_split_multi_column() -> void:
 				and back_rank < occ_rank and occ_rank < front_rank,
 				"the halves bracket the occupied card (separation %.1f)" % sep_scale,
 				"back %d occ %d front %d" % [back_rank, occ_rank, front_rank])
- # ROW-WIDE consistency (owner spec): the back half renders behind EVERY card of
-		# the hoop's row and the front half in front of EVERY card of the row — not just the
-		# threaded one — so the ring can never show an arc sandwiched wrongly near a column gap.
+# ROW-WIDE consistency (owner): the back half renders behind EVERY card of the hoop's row and the
+# front half in front of EVERY card of the row, not just the threaded one, so the ring can never
+# show an arc sandwiched wrongly near a column gap.
 		for col : int in 3:
 			var row_vis : CardVisual = pa.data_card.get(g.state.upper_zone[col].datas[1])
 			var row_rank := draw_rank(order, row_vis)
@@ -639,8 +638,8 @@ func test_hoop_split_multi_column() -> void:
 					"the halves bracket the WHOLE row — column %d (separation %.1f)"
 					% [col, sep_scale],
 					"back %d card %d front %d" % [back_rank, row_rank, front_rank])
-		# Same column: back above EVERY row above, front below EVERY row below (fanned stacks
-		# overlap several rows at small separations, so adjacent-row checks are not enough).
+# Same column: back above EVERY row above, front below EVERY row below. Fanned stacks overlap
+# several rows at small separations, so adjacent-row checks are not enough.
 		for row : int in 3:
 			if row == 1: continue
 			var cvis : CardVisual = pa.data_card.get(g.state.upper_zone[1].datas[row])
@@ -653,13 +652,13 @@ func test_hoop_split_multi_column() -> void:
 				check(front_rank < r,
 						"front half renders below the same-column card in row %d (separation %.1f)"
 						% [row, sep_scale], "front %d vs card %d" % [front_rank, r])
-		# Other columns: the ring must geometrically overlap NONE of their cards — bracketing the
-		# ONE occupied card is only sufficient while this holds (the cross-column ambiguity,
-		# hypothesis 1). Ring rect = art_size around the visual's center.
-		# ⚠ `art_size` IS IN UNSCALED ART UNITS AND `d` BELOW IS IN SCREEN PIXELS. A prop node is
-		# scaled by `card_scale / AUTHORED_CARD_SCALE`, so the two are only the same number at
-		# card_scale 2.5 -- at 1.0 this read the ring 2.5x too wide and reported it overlapping
-		# both neighbouring columns when on screen it does not. Take the visual's real scale.
+# Other columns: the ring must geometrically overlap NONE of their cards. Bracketing the ONE
+# occupied card is only sufficient while this holds. The ring rect is art_size around the visual's
+# centre.
+
+# ⚠ art_size IS IN UNSCALED ART UNITS while the distance below is in SCREEN PIXELS. A prop node is
+# scaled by card_scale over AUTHORED_CARD_SCALE, so the two are only the same number at card_scale
+# 2.5; at 1.0 this reads the ring 2.5x too wide. Take the visual's real scale.
 		var ring_half := vis.art_size * 0.5 * vis.global_scale
 		var card_half := CardVisual.card_size_play * 0.5
 		var overlaps : Array[String] = []
@@ -673,10 +672,11 @@ func test_hoop_split_multi_column() -> void:
 		check(overlaps.is_empty(),
 				"the ring overlaps no card outside its own column (separation %.1f)" % sep_scale,
 				"; ".join(overlaps))
- # MID-GAP (owner: "back should always be behind"): the visual sits between two
-		# columns' cards — the column gap is narrower than the ring, so it touches BOTH. The back
-		# half must render behind EVERY card the ring touches; whatever the data slot says, the
-		# bracket follows the ring's geometry.
+# MID-GAP, and the owner's rule is that the back should always be behind: the visual sits between
+# two columns' cards, the column gap being narrower than the ring, so it touches BOTH.
+
+# The back half must render behind EVERY card the ring touches; whatever the data slot says, the
+# bracket follows the ring's geometry.
 		vis.global_position = (pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 1, 1)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 1, 1)).z))
 				+ pa.slot_center_global(BoardCoord.new(0, (Vector3i(0, 2, 1)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(0, 2, 1)).z))) * 0.5
 		for _j in 6:
@@ -695,10 +695,9 @@ func test_hoop_split_multi_column() -> void:
 				"mid-gap, the front half renders IN FRONT of both straddled cards (separation %.1f)"
 				% sep_scale,
 				"front %d left %d right %d" % [front_mid, left_rank, right_rank])
-		# ROW CHANGE (future reroute modifiers): the DATA moves the prop down a row — a real
-		# mover tick retargets the visual and re-pins its anchor slot, and the bracket follows
-		# the anchor onto the new row: back behind the new row's cards but in front of the old
-		# row's, front in front of the new row.
+# ROW CHANGE, for future reroute modifiers: the DATA moves the prop down a row, a real mover tick
+# retargets the visual and re-pins its anchor slot, and the bracket follows the anchor onto the new
+# row - back behind the new row's cards but in front of the old row's, front in front of the new.
 		p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 2)
 		ok = await run_tick(pl, [p], [], [p], [])
 		check(ok, "the row-change mover tick completes (separation %.1f)" % sep_scale)
@@ -716,15 +715,15 @@ func test_hoop_split_multi_column() -> void:
 		await cleanup(g, pa)
 	SettingsManager.settings.card_separation_scale = prev_sep
 
-## Entrance-backed — see `make_stack_game`.
-##
-## Owner report 2026-07-16: a hoop crossing a row over a SHORT COLUMN (no card in its row there)
-## was bracketed to the wrong row — back arc behind the zone header and rows above — because the
-## short column's fanned last card is a full card TALL and "contained" the ring's center. The
-## bracket row comes from the prop's ANCHOR SLOT now, and geometry (the prop's authored body
-## rect) only decides WHETHER it is over cards: crossing row 1 over a 1-card column, the ring
-## stays bracketed to row 1 — back IN FRONT of the short column's row-0 card and the headers,
-## behind only its own row's cards.
+# Entrance-backed, as make_stack_game explains.
+
+# Owner report: a hoop crossing a row over a SHORT COLUMN, with no card in its row there, was
+# bracketed to the wrong row, back arc behind the zone header and the rows above, because the short
+# column's fanned last card is a full card TALL and "contained" the ring's centre.
+
+# The bracket row comes from the prop's ANCHOR SLOT, and geometry, the prop's authored body rect,
+# only decides WHETHER it is over cards. Crossing row 1 over a 1-card column, the ring stays
+# bracketed to row 1: back IN FRONT of the short column's row-0 card and the headers.
 func test_hoop_short_column_row_hold() -> void:
 	var g := make_ragged_game([3, 1, 3] as Array[int])
 	var pa := make_play_area()
@@ -732,7 +731,8 @@ func test_hoop_short_column_row_hold() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 0
-	p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 1)   # middle column has NO card at row 1 — the empty-slot crossing
+# The middle column has NO card at row 1, which is the empty-slot crossing.
+	p.at = BoardCoord.new(0, 1, BoardCoord.ENTRANCE_ROW, 1)
 	p.route = [] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "short-column hoop spawn tick completes")
@@ -762,11 +762,10 @@ func test_hoop_short_column_row_hold() -> void:
 			"front %d row1 %d/%d" % [front_rank, left_row1, right_row1])
 	await cleanup(g, pa)
 
-# ==============================================================================
-# FULL VIEW SNAPSHOTS (real GameView)
-# ==============================================================================
+# FULL VIEW SNAPSHOTS on a real GameView.
 func test_game_view_deal_snapshot() -> void:
-	seed(424242)  # before stand-up is fine: new_run uses its own RNG, the tree work after uses this
+# Before stand-up is fine: new_run uses its own RNG and the tree work after uses this.
+	seed(424242)
 	var view : GameView = await _stand_up_view()
 	var g := view.game
 	await g.next()
@@ -776,7 +775,7 @@ func test_game_view_deal_snapshot() -> void:
 	await get_tree().process_frame
 	var order := dump_draw_order("fresh GameView deal", view)
 	var offenders := all_zero_z(order)
-	# The map/HUD is out of scope, but the PLAY AREA subtree must stay all-zero-z.
+# The map and HUD are out of scope, but the PLAY AREA subtree must stay all-zero-z.
 	var pa_order := collect_draw_order(pa)
 	var pa_offenders := all_zero_z(pa_order)
 	check(pa_offenders.is_empty(),
@@ -785,14 +784,15 @@ func test_game_view_deal_snapshot() -> void:
 	check(order.size() > 0, "the dumper walked the full GameView tree", str(order.size()))
 	await _teardown_view(view)
 
-## ⚠ **THE LIGHT LAYER'S POSITION IS A CONTRACT AND IT FAILS SILENTLY.** `DESIGN.md` v9 / GAP-004:
-## the dim exempts NOTHING — props, score popups, the focus panel, the HUD and the card glow all dim,
-## and the glow dimming (`Q77`=a) is the entire mechanism by which a glow reads only inside its
-## circle or beam (chart G13). Move the node one sibling earlier and whatever now draws after it is
-## never dimmed again: no error, no crash, and the only symptom is "that one thing stays bright"
-## during an effect nobody is looking at closely. Hence a test rather than a comment.
-##
-## It asserts the ORDER, not a pixel — a screen read is what this project does not have.
+# ⚠ THE LIGHT LAYER'S POSITION IS A CONTRACT AND IT FAILS SILENTLY. The dim exempts NOTHING: props,
+# score popups, the focus panel, the HUD and the card glow all dim, and the glow dimming is the
+# entire mechanism by which a glow reads only inside its circle or beam.
+
+# Move the node one sibling earlier and whatever now draws after it is never dimmed again: no error,
+# no crash, and the only symptom is "that one thing stays bright" during an effect nobody is looking
+# at closely. Hence a test rather than a comment.
+
+# It asserts the ORDER, not a pixel, a screen read being what this project does not have.
 func test_light_layer_is_over_everything() -> void:
 	var view : GameView = await _stand_up_view()
 	var root := view.get_node("SceneRoot")
@@ -803,22 +803,22 @@ func test_light_layer_is_over_everything() -> void:
 		check(layer.get_index() == root.get_child_count() - 1,
 				"and it is SceneRoot's LAST child, so it draws over the HUD and the board alike",
 				"index %d of %d" % [layer.get_index(), root.get_child_count()])
-		# It covers the screen; it must never swallow a click meant for a button under it.
+# It covers the screen, so it must never swallow a click meant for a button under it.
 		check(layer.mouse_filter == Control.MOUSE_FILTER_IGNORE,
 				"and it ignores the mouse, so every control beneath it stays clickable")
-		# The dim is a function of what is LIT (QR2=d) — nothing lit, no dim, and no second
-		# "stop" path that could disagree with the light set.
+# The dim is a function of what is LIT: nothing lit, no dim, and no second "stop" path that could
+# disagree with the light set.
 		check(not layer.is_lit() and is_equal_approx(layer._dim, 0.0),
 				"a board with no spotlight is not dimmed at all (QR2=d)", str(layer._dim))
 	await _teardown_view(view)
 
-## ⚠ **THE WHOLE LOOP, END TO END, AND IT IS THE ONLY TEST THAT CAN CATCH A BROKEN WIRE.** Every
-## piece of phase 2 is asserted on its own — the cue emits (S10), the allocator places lamps (S14),
-## the layer draws them (S13) — and all three can be green while nothing whatever appears on screen,
-## because the thing between them is a signal connection and a `set_lights` call. That is exactly
-## the failure "all tests pass and the feature does nothing" is made of.
-##
-## It drives the REAL `CardEnvironment` cue on a REAL dealt board, then asserts the layer came up.
+# ⚠ THE WHOLE LOOP, END TO END, AND IT IS THE ONLY TEST THAT CAN CATCH A BROKEN WIRE. Every piece is
+# asserted on its own - the cue emits, the allocator places lamps, the layer draws them - and all
+# three can be green while nothing whatever appears on screen.
+
+# The thing between them is a signal connection and a set_lights call, which is exactly what "all
+# tests pass and the feature does nothing" is made of. This drives the REAL CardEnvironment cue on a
+# REAL dealt board, then asserts the layer came up.
 func test_the_spotlight_wire_lights_the_layer() -> void:
 	var view : GameView = await _stand_up_view()
 	await view.game.next()
@@ -828,36 +828,41 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	var layer := view.light_layer
 	check(layer != null and not layer.is_lit(),
 			"nothing is lit before a cue, so the dim is down (QR2=d)")
-	# The REAL signal, with real board cards — not a hand-built light list, which would test the
-	# layer and skip the wire that is actually at issue.
+# The REAL signal, with real board cards, not a hand-built light list, which would test the layer
+# and skip the wire that is actually at issue.
 	var cards : Array[CardData] = []
 	for data : CardData in view.play_area.data_card.keys():
 		cards.append(data)
 		if cards.size() >= 3: break
 	check(cards.size() > 0, "the dealt board has cards to light", str(cards.size()))
-	# ⚠ `spotlight_section_changed`, NOT `spotlight_cued` — GAP-005. These board cards are ordinary
-	# numeral cards with no skill, which is exactly what a scored row is made of and exactly what the
-	# announcement cue would have filtered away to nothing.
+# ⚠ spotlight_section_changed, NOT spotlight_cued. These board cards are ordinary numeral cards with
+# no skill, which is exactly what a scored row is made of and exactly what the announcement cue
+# would have filtered away to nothing.
 	view.game.spotlight_section_changed.emit(cards)
 	await get_tree().process_frame
 	check(layer.is_lit(), "the SECTION signal lights the layer — the wire is connected",
 			"lit=%s" % str(layer.is_lit()))
-	# ⚠ Every beam must point DOWN at its card (Q117). Asserted here as well as in the allocator,
-	# because this is the only place the real pairing exists.
+# ⚠ Every beam must point DOWN at its card. Asserted here as well as in the allocator, because this
+# is the only place the real pairing exists.
 	var all_down := true
 	for l : LightLayer.Light in layer._lights:
 		if not SpotlightOrigins.points_down(l.origin, l.centre): all_down = false
 	check(all_down, "and every live beam points DOWN at its target (Q117)")
-	# ⚠ **`Q85`: THE CIRCLE IS CENTRED ON THE ART SQUARE, NOT ON THE CARD'S ORIGIN** (owner
-	# 2026-08-04: *"circles should be centered on the skill art, not on card center"*). The two differ
-	# by the `Art` node's authored offset, and centring on the origin put the pool high enough that
-	# *"hard to tell which card circle it is on"*. Asserted against the CARD's own answer rather than
-	# a constant, so the authored offset stays the single source.
-	# ⚠ **STATED AS "NO LIGHT SITS ON A CARD ORIGIN", NOT "EVERY LIGHT SITS ON AN ART SQUARE".** The
-	# positive form looks stronger and is flaky: `PlayArea` controls are POOLED per slot, so a
-	# `CardVisual` can be re-bound between the emit and this check and a light legitimately stops
-	# matching any current card — measured, it failed 2-of-3 that way while the code was correct.
-	# The negative form is the actual regression: under the bug EVERY centre was a card origin.
+# ⚠ THE CIRCLE IS CENTRED ON THE ART SQUARE, NOT ON THE CARD'S ORIGIN. Owner: "circles should be
+# centered on the skill art, not on card center". The two differ by the Art node's authored offset,
+# and centring on the origin put the pool high enough to be hard to tell which card it is on.
+
+# It is asserted against the CARD's own answer rather than a constant, so the authored offset stays
+# the single source.
+
+# ⚠ STATED AS "NO LIGHT SITS ON A CARD ORIGIN", NOT "EVERY LIGHT SITS ON AN ART SQUARE". The
+# positive form looks stronger and is flaky.
+
+# PlayArea controls are POOLED per slot, so a CardVisual can be re-bound between the emit and this
+# check and a light legitimately stops matching any current card - measured, it failed 2 of 3 that
+# way while the code was correct.
+
+# The negative form is the actual regression: under the bug EVERY centre was a card origin.
 	var on_origin := 0
 	var on_art := 0
 	for l : LightLayer.Light in layer._lights:
@@ -872,19 +877,19 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	check(on_art > 0,
 			"...and at least one circle is positively matched to an art square, so this can fail",
 			"%d of %d" % [on_art, layer._lights.size()])
-	# The two points must actually differ, or neither check above could ever catch the bug.
+# The two points must actually differ, or neither check above could ever catch the bug.
 	var probe : CardVisual = view.play_area.data_card.values()[0]
 	check(not probe.spotlight_center().is_equal_approx(probe.global_position),
 			"...and the art centre is a DIFFERENT point from the card origin (Art sits at y+5)",
 			"%s vs %s" % [str(probe.spotlight_center()), str(probe.global_position)])
-	# The dim RISES because something is lit, not because an act said so.
+# The dim RISES because something is lit, not because an act said so.
 	var settled := 0.0
 	while settled < 1.0 and is_equal_approx(layer._dim, 0.0):
 		settled += await _tick_seconds()
 	check(layer._dim > 0.0, "the dim rises while lights are up (QR2=d — driven by the light set)",
 			str(layer._dim))
-	# ⚠ GATE G2.4: `fx_intensity = 0` removes the LIGHTS and KEEPS a reduced dim. Q83 in the owner's
-	# words: "keeps beams glow and dim" — so the setting may not switch the effect off outright.
+# ⚠ fx_intensity = 0 removes the LIGHTS and KEEPS a reduced dim. In the owner's words it "keeps
+# beams glow and dim", so the setting may not switch the effect off outright.
 	var prev_intensity := SettingsManager.settings.fx_intensity
 	SettingsManager.settings.fx_intensity = 0.0
 	view.light_layer._push_static()
@@ -894,11 +899,12 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 			"G2.4: fx_intensity 0 takes the lights to nothing", str(brightness))
 	check(layer._dim > 0.0, "G2.4: and the DIM still stands (Q83 keeps it)", str(layer._dim))
 	SettingsManager.settings.fx_intensity = prev_intensity
-	# ⚠ **THE DIM'S OFF SWITCH** (owner: *"make sure dim can be turned off if needed by
-	# tunables, it just occured to me that dim might flash if speed is high"*). `spotlight_dim_target`
-	# = 0 must keep the LIGHTS and drop the DIM — the exact opposite split from G2.4's `fx_intensity`,
-	# which `Q83` forbids from removing the dim. Asserted because an off switch nothing tests is an
-	# off switch that quietly stops working.
+# ⚠ THE DIM'S OFF SWITCH. Owner: "make sure dim can be turned off if needed by tunables, it just
+# occured to me that dim might flash if speed is high".
+
+# spotlight_dim_target of 0 must keep the LIGHTS and drop the DIM, the exact opposite split from
+# fx_intensity, which may not remove the dim. Asserted because an off switch nothing tests is an off
+# switch that quietly stops working.
 	var prev_dim_target := SettingsManager.settings.spotlight_dim_target
 	SettingsManager.settings.spotlight_dim_target = 0.0
 	var faded := 0.0
@@ -909,18 +915,21 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	check(layer.is_lit(),
 			"...and the beams and circles are STILL lit — it is the dim that went, not the show")
 	SettingsManager.settings.spotlight_dim_target = prev_dim_target
-	# Retiring the set is what lowers the dim — there is no second stop path.
-	# ⚠ **RETIRE FADES, IT DOES NOT VANISH** (chart E3, and the brief's *"no instant movements or
-	# spawning in and out"* applies to the end of an act too). So the claim is now two-sided, and the
-	# first half is the one that would catch a regression to snapping: the lights are STILL lit on the
-	# frame after `retire()`, and they go dark shortly after.
-	# ⚠ **THE RETIRE SPAN IS WIDENED FOR THE MEASUREMENT, AND THAT IS THE FIX FOR A REAL FLAKE.** This
-	# check read `is_lit()` one frame after `retire()` and failed ~1 run in 3 with *"went dark within
-	# one frame"*. It was the INSTRUMENT, not the fade: the envelope is `delay * spotlight_retire_fraction`
-	# (~0.3 of a short delay), so a single heavy frame's `delta` can consume the whole of it, free the
-	# beam and empty the light set before this line runs — the code was right and the test could not
-	# tell. Widening the knob makes one frame unable to swallow the envelope at any frame rate, which
-	# is what lets the check measure the CLAIM (a fade is applied) instead of the frame rate.
+# Retiring the set is what lowers the dim; there is no second stop path.
+
+# ⚠ RETIRE FADES, IT DOES NOT VANISH, the brief's "no instant movements or spawning in and out"
+# applying to the end of an act too. So the claim is two-sided, and the first half is the one that
+# would catch a regression to snapping: the lights are STILL lit on the frame after retire().
+
+# ⚠ THE RETIRE SPAN IS WIDENED FOR THE MEASUREMENT, AND THAT IS THE FIX FOR A REAL FLAKE. Reading
+# is_lit() one frame after retire() failed about 1 run in 3 with "went dark within one frame".
+
+# It was the INSTRUMENT, not the fade: the envelope is delay times spotlight_retire_fraction, about
+# 0.3 of a short delay, so a single heavy frame's delta can consume the whole of it and empty the
+# light set before this line runs.
+
+# Widening the knob makes one frame unable to swallow the envelope at any frame rate, which is what
+# lets the check measure the CLAIM, that a fade is applied, instead of the frame rate.
 	var prev_retire := SettingsManager.settings.spotlight_retire_fraction
 	SettingsManager.settings.spotlight_retire_fraction = 20.0
 	view.spotlight_director.retire()
@@ -928,8 +937,8 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 	check(layer.is_lit(),
 			"retire() FADES the lights rather than snapping them off (chart E3)",
 			"went dark within one frame — the retire envelope is not being applied")
-	# ⚠ AND IT IS PARTWAY THROUGH, not merely still present: a light that never faded at all would
-	# also be `is_lit()`. This is the half that says the envelope is actually MOVING.
+# ⚠ AND IT IS PARTWAY THROUGH, not merely still present: a light that never faded at all would also
+# be is_lit(). This is the half that says the envelope is actually MOVING.
 	var mid := 0.0
 	for l : LightLayer.Light in layer._lights: mid = maxf(mid, l.intensity)
 	check(mid < 1.0, "...and the fade is partway down, so the envelope is moving, not merely present",
@@ -943,14 +952,14 @@ func test_the_spotlight_wire_lights_the_layer() -> void:
 			"still lit after %.2fs" % gone)
 	await _teardown_view(view)
 
-## **CHART E — THE TRAVEL.** The brief's requirement in one sentence: *"spotlights spawned during
-## scoring phase need to move their spotlights to next row/col after done with current set, **no
-## instant movements or spawning in and out**"*.
-##
-## ⚠ **THIS IS THE HALF OF S14 THAT DID NOT EXIST FOR THREE PHASES.** `_on_section_changed` used to
-## call `_release_all()` and rebuild the whole set, so every light died and respawned on every
-## section — the exact thing the brief forbids. Nothing caught it because a still frame of a rebuilt
-## set and a still frame of a travelled set are identical; only the frames BETWEEN them differ.
+# THE TRAVEL. The brief's requirement in one sentence:
+
+# > "spotlights spawned during scoring phase need to move their spotlights to next row/col after
+# > done with current set, no instant movements or spawning in and out"
+
+# ⚠ THIS IS THE HALF THAT DID NOT EXIST FOR THREE PHASES. _on_section_changed called _release_all()
+# and rebuilt the whole set, so every light died and respawned on every section, the exact thing the
+# brief forbids. Nothing caught it: only the frames BETWEEN the still frames differ.
 func test_the_light_travels_between_sections() -> void:
 	var view : GameView = await _stand_up_view()
 	await view.game.next()
@@ -959,7 +968,7 @@ func test_the_light_travels_between_sections() -> void:
 	var layer := view.light_layer
 	var director := view.spotlight_director
 
-	# Two DISJOINT sections, so every light must move: no card is in both.
+# Two DISJOINT sections, so every light must move: no card is in both.
 	var all : Array[CardData] = []
 	for data : CardData in view.play_area.data_card.keys(): all.append(data)
 	check(all.size() >= 4, "the dealt board has enough cards for two disjoint sections", str(all.size()))
@@ -971,7 +980,7 @@ func test_the_light_travels_between_sections() -> void:
 
 	view.game.spotlight_section_changed.emit(first)
 	await get_tree().process_frame
-	# Let the spawn envelope finish so the "did it move" measurement is not confused by a fade-in.
+# Let the spawn envelope finish, so the "did it move" measurement is not confused by a fade-in.
 	var settled := 0.0
 	while settled < 1.0:
 		settled += await _tick_seconds()
@@ -981,7 +990,7 @@ func test_the_light_travels_between_sections() -> void:
 	for l : LightLayer.Light in layer._lights: origins_before.append(l.origin)
 	check(before.size() == 2, "the first section lit two cards", str(before.size()))
 
-	# THE SECOND SECTION. Nothing here is in the first, so both lights must TRAVEL.
+# THE SECOND SECTION. Nothing here is in the first, so both lights must TRAVEL.
 	view.game.spotlight_section_changed.emit(second)
 	await get_tree().process_frame
 	var during : Array[Vector2] = []
@@ -989,8 +998,8 @@ func test_the_light_travels_between_sections() -> void:
 	check(during.size() == before.size(),
 			"the light COUNT does not change across the section — the same lamps move",
 			"%d -> %d" % [before.size(), during.size()])
-	# ⚠ THE CLAIM THAT MATTERS: one frame in, the circles are NOT yet on the new cards. A rebuild
-	# would have them there already, which is precisely the defect this test exists for.
+# ⚠ THE CLAIM THAT MATTERS: one frame in, the circles are NOT yet on the new cards. A rebuild would
+# have them there already, which is precisely the defect this test exists for.
 	var target_a := _centre_for(view, second[0])
 	var snapped := 0
 	for c : Vector2 in during:
@@ -998,15 +1007,15 @@ func test_the_light_travels_between_sections() -> void:
 	check(snapped == 0,
 			"one frame after the section changes, no circle has SNAPPED to its new card",
 			"%d light(s) teleported — the travel is not being applied" % snapped)
-	# ⚠ **E10: THE ORIGIN IS FIXED WHILE THE WIDE END TRACKS THE CIRCLE.** The lamp must not move with
-	# the light, or the whole rig reads as sliding rather than one beam pivoting.
+# ⚠ THE ORIGIN IS FIXED WHILE THE WIDE END TRACKS THE CIRCLE. The lamp must not move with the light,
+# or the whole rig reads as sliding rather than one beam pivoting.
 	var moved_origins := 0
 	for i : int in mini(origins_before.size(), layer._lights.size()):
 		if not layer._lights[i].origin.is_equal_approx(origins_before[i]): moved_origins += 1
 	check(moved_origins == 0, "E10: the ORIGINS stay put while the circles travel",
 			"%d origin(s) moved with their light" % moved_origins)
 
-	# And it ARRIVES: given time, the circles reach the new cards.
+# And it ARRIVES: given time, the circles reach the new cards.
 	var travelled := 0.0
 	var arrived := false
 	while travelled < 3.0 and not arrived:
@@ -1017,19 +1026,22 @@ func test_the_light_travels_between_sections() -> void:
 			"never reached the target in %.1fs" % travelled)
 	await _teardown_view(view)
 
-## **S15 / CHART T — THE MOMENTARY CUE DRAWS, AND IT DRAWS OUTSIDE SCORING.**
-##
-## ⚠ **THIS IS THE CASE THE DESIGN'S WORKED EXAMPLE DOES NOT COVER, WHICH IS WHY IT IS THE TEST.**
-## Every existing spotlight test drives `spotlight_section_changed` inside an act, where the per-section
-## reveal gate (`_show`, GAP-006) is raised for it. Chart T's cue fires in ORDINARY PLAY — a card
-## placed, a stack dropped by `Next` — where nothing raises that gate at all. A cue that rode it would
-## be multiplied by `_show = 0` and be perfectly invisible, and every headless assertion about the
-## light set would still pass, because the set would be right and only its intensity would be zero.
-## That is `LightLayer.Light.gated`, and this is the input that separates it from the alternative.
-##
-## ⚠ **AND IT IS A DURATION, SO A STILL FRAME IS THE WRONG INSTRUMENT.** The cue spawns, HOLDS, and
-## RETIRES ITSELF with nobody telling it to — the section beam never does that. So the assertions
-## below are about what MOVED: lit at the start, still lit through the hold, dark on its own afterwards.
+# THE MOMENTARY CUE DRAWS, AND IT DRAWS OUTSIDE SCORING.
+
+# ⚠ THIS IS THE CASE THE DESIGN'S WORKED EXAMPLE DOES NOT COVER, WHICH IS WHY IT IS THE TEST. Every
+# other spotlight test drives spotlight_section_changed inside an act, where the per-section reveal
+# gate is raised for it.
+
+# The momentary cue fires in ORDINARY PLAY - a card placed, a stack dropped by Next - where nothing
+# raises that gate at all. A cue that rode it would be multiplied by a show of 0 and be perfectly
+# invisible, and every headless assertion about the light set would still pass.
+
+# The set would be right and only its intensity would be zero. That is LightLayer.Light.gated, and
+# this is the input that separates it from the alternative.
+
+# ⚠ AND IT IS A DURATION, SO A STILL FRAME IS THE WRONG INSTRUMENT. The cue spawns, HOLDS and
+# RETIRES ITSELF with nobody telling it to, which the section beam never does. So the assertions
+# below are about what MOVED: lit at the start, still lit through the hold, dark on its own after.
 func test_the_momentary_cue_draws_outside_scoring() -> void:
 	var view : GameView = await _stand_up_view()
 	await view.game.next()
@@ -1037,7 +1049,7 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 	await get_tree().process_frame
 	var layer := view.light_layer
 	check(not layer.is_lit(), "nothing is lit before the cue")
-	# NO section signal and NO submit — the game is sitting idle, which is chart T's whole setting.
+# NO section signal and NO submit: the game is sitting idle, which is this cue's whole setting.
 	check(not view.game.processing,
 			"the game is NOT scoring, so this is Q245=(c)'s casual case", str(view.game.processing))
 	var cards : Array[CardData] = []
@@ -1060,9 +1072,9 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 	check(ungated == layer._lights.size(),
 			"...and every cue light is UNGATED — it does not ride the per-section reveal",
 			"%d of %d" % [ungated, layer._lights.size()])
-	# ⚠ THE MEASUREMENT THAT WOULD CATCH THE INVISIBLE-CUE BUG: the value the SHADER is handed. The
-	# light set being correct is not the claim; the claim is that it arrives with a non-zero intensity
-	# while `_show` is still 0, which is the one thing gating got wrong.
+# ⚠ THE MEASUREMENT THAT WOULD CATCH THE INVISIBLE-CUE BUG: the value the SHADER is handed. The
+# light set being correct is not the claim; the claim is that it arrives with a non-zero intensity
+# while the reveal gate is still 0, which is the one thing gating got wrong.
 	var settled := 0.0
 	while settled < 1.0 and layer._dim <= 0.0:
 		settled += await _tick_seconds()
@@ -1075,17 +1087,17 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 	check(is_equal_approx(layer._show, 0.0),
 			"...and `_show` really is still down, so the check above could have failed",
 			str(layer._show))
-	# T10: the dim rises with the cue's own beam, in ordinary play rather than only during a submit.
+# The dim rises with the cue's own beam, in ordinary play rather than only during a submit.
 	check(layer._dim > 0.0, "T10: the dim rises with the cue's beam outside scoring", str(layer._dim))
-	# ⚠ `Q245`=(c): SHALLOWER than a scoring dim. Asserted against the knob rather than a literal, so
-	# the two cannot disagree.
+# ⚠ SHALLOWER than a scoring dim. Asserted against the knob rather than a literal, so the two cannot
+# disagree.
 	var s := SettingsManager.settings
 	check(layer._dim <= s.spotlight_dim_target * s.spotlight_dim_casual_scale + 0.001,
 			"Q245=(c): and it is the SHALLOWER casual dim, not the scoring one",
 			"dim=%.3f cap=%.3f" % [layer._dim, s.spotlight_dim_target * s.spotlight_dim_casual_scale])
 
-	# **T6 — IT RETIRES ITSELF.** Nothing calls `retire()` here: the cue counts its own hold out and
-	# goes. This is the half no still frame can show.
+# IT RETIRES ITSELF. Nothing calls retire() here: the cue counts its own hold out and goes. This is
+# the half no still frame can show.
 	var gone := 0.0
 	while gone < 6.0 and layer.is_lit():
 		gone += await _tick_seconds()
@@ -1099,11 +1111,12 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 			"T10: ...and the dim falls with it, because the dim is a function of what is lit (QR2=d)",
 			str(layer._dim))
 
-	# ⚠ **THE OTHER READING, AND THE INPUT THAT KILLS IT.** The cue could have reused the section path,
-	# in which case its cards would become the new light SET — and `_on_section_changed` replaces, so a
-	# cue arriving mid-section would steal the scoring beam's lamps and travel them onto the cued cards.
-	# T15/T16 (`Q249`=a — nothing is blocked, a second cue may start while the first retires) says the
-	# two coexist. So: light a section, cue a DIFFERENT card, and the section must be untouched.
+# ⚠ THE OTHER READING, AND THE INPUT THAT KILLS IT. The cue could have reused the section path, in
+# which case its cards would become the new light SET, and _on_section_changed replaces, so a cue
+# arriving mid-section would steal the scoring beam's lamps and travel them onto the cued cards.
+
+# Nothing is blocked and a second cue may start while the first retires, so the two coexist. This
+# lights a section, cues a DIFFERENT card, and requires the section to be untouched.
 	var all : Array[CardData] = []
 	for data : CardData in view.play_area.data_card.keys(): all.append(data)
 	if all.size() >= 3:
@@ -1116,11 +1129,12 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 		check(layer._lights.size() == section_lights + 1,
 				"a cue mid-section ADDS a light rather than replacing the section's set",
 				"%d -> %d" % [section_lights, layer._lights.size()])
-		# ⚠ **BY CARD IDENTITY, NOT BY PIXEL POSITION.** The first draft compared the section lights'
-		# `centre` before and after and failed 1-of-2: a light's centre is re-read from its `CardVisual`
-		# every frame (`Q252`=b), so a board still settling moves it a pixel between the two samples and
-		# the comparison measures the board's animation rather than the claim. Which CARD each section
-		# beam is pointed at is the actual thing a stolen lamp would change.
+# ⚠ BY CARD IDENTITY, NOT BY PIXEL POSITION. Comparing the section lights' centre before and after
+# fails 1 of 2: a light's centre is re-read from its CardVisual every frame, so a board still
+# settling moves it a pixel between the two samples.
+
+# That comparison measures the board's animation rather than the claim. Which CARD each section beam
+# is pointed at is the actual thing a stolen lamp would change.
 		var kept := 0
 		for b : RefCounted in view.spotlight_director._beams:
 			if b.get(&"cue"): continue
@@ -1131,35 +1145,38 @@ func test_the_momentary_cue_draws_outside_scoring() -> void:
 		view.spotlight_director.retire()
 	await _teardown_view(view)
 
-## **S16 / S17 — THE ROW OPENS, AND `slot_center_global` KNOWS IT (K13, gate G3.1).**
-##
-## ⚠ **THE SECOND HALF IS THE ONE THAT MATTERS AND IS THE EASIEST TO SHIP BROKEN.** Growing a row's
-## control is visible and obvious; `slot_center_global` is *pure uniform-pitch math* that every prop
-## anchors to, so if it does not learn about the expansion, every prop below an opening row silently
-## detaches from its slot while the board still looks right. The design flagged the function by name
-## (K13) for exactly this reason.
+# THE ROW OPENS, AND slot_center_global KNOWS IT.
+
+# ⚠ THE SECOND HALF IS THE ONE THAT MATTERS AND IS THE EASIEST TO SHIP BROKEN. Growing a row's
+# control is visible and obvious; slot_center_global is pure uniform-pitch math that every prop
+# anchors to.
+
+# If it does not learn about the expansion, every prop below an opening row silently detaches from
+# its slot while the board still looks right. The design flagged the function by name for exactly
+# this reason.
 func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
 	var pa := view.play_area
 
-	# A card in row 0, and the slot one row BELOW it.
-	# ⚠ **THAT SLOT NEED NOT HOLD A CARD, AND REQUIRING ONE IS WHAT MADE THE FIRST DRAFT FAIL** ("no
-	# stacked column found" — a freshly dealt board is one row deep until a `Next` drops a stack).
-	# `slot_center_global` is documented as pure math whose *"one formula covers occupied, empty, and
-	# off-board slots alike"*, and it is precisely the EMPTY case that props rely on — a prop crossing a
-	# short column anchors to a slot with no card in it. So the empty slot is the honest fixture here,
-	# not a weaker one.
-	# ⚠ **PICK A ROW THAT ACTUALLY COVERS SOMETHING.** Taking "any card at row 0" lands on whichever
-	# zone the iteration reaches first, which on this board is often the UNSTACKED one — and then the
-	# reveal correctly does nothing and every assertion below would be about the do-nothing case. The
-	# covered row is the only one the feature is for.
+# A card in row 0, and the slot one row BELOW it. ⚠ THAT SLOT NEED NOT HOLD A CARD, AND REQUIRING
+# ONE IS WHAT MAKES A DRAFT FAIL with "no stacked column found": a freshly dealt board is one row
+# deep until a Next drops a stack.
+
+# slot_center_global is documented as pure math whose one formula covers occupied, empty and
+# off-board slots alike, and it is precisely the EMPTY case that props rely on, a prop crossing a
+# short column anchoring to a slot with no card in it. So the empty slot is the honest fixture.
+
+# ⚠ PICK A ROW THAT ACTUALLY COVERS SOMETHING. Taking "any card at row 0" lands on whichever zone
+# the iteration reaches first, which on this board is often the UNSTACKED one, and then the reveal
+# correctly does nothing and every assertion below is about the do-nothing case.
 	var target : CardData = null
 	var below := Vector3i(-1, -1, -1)
-	# ⚠ PICK THE ENTRANCE'S ROW SPECIFICALLY, not whichever zone the dictionary happens to yield
-	# first. The fixture stocks BOTH zones to the same depth on purpose, so either would satisfy
-	# the loop -- but only the Entrance has a coordinate, and a test that measures a different
-	# zone run to run is measuring whichever one it landed on, not the claim.
+# ⚠ PICK THE ENTRANCE'S ROW SPECIFICALLY, not whichever zone the dictionary happens to yield first.
+# The fixture stocks BOTH zones to the same depth on purpose, so either would satisfy the loop.
+
+# Only the Entrance has a coordinate, and a test that measures a different zone run to run is
+# measuring whichever one it landed on.
 	for data : CardData in pa.data_card.keys():
 		var v : BoardCoord = view.game.state.grid_position_of(data)
 		if not v.is_entrance() or v.h != 0 or not pa._row_covers_anything(v): continue
@@ -1177,12 +1194,12 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			str(pa.row_open_extra(_ent(0))))
 	var closed_y := pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y
 
-	# ⚠ **A FRESHLY DEALT BOARD IS ONE CARD DEEP, SO THIS ROW COVERS NOTHING AND MUST NOT OPEN.**
-	# That is the corrected rule, not a limitation of the fixture: the opening exists to lift a
-	# covering card off a buried one, and growing a strip with nothing under it only adds empty space
-	# and shoves the zone below down. The owner caught exactly that in a playtest of
-	# `reveal_shot.tscn` — *"lower zone input zone cards wiggle down and up twice ... zone cards
-	# shouldnt move like that"* — and they were right: nothing was being revealed.
+# ⚠ A FRESHLY DEALT BOARD IS ONE CARD DEEP, SO THIS ROW COVERS NOTHING AND MUST NOT OPEN. That is
+# the rule, not a limitation of the fixture: the opening exists to lift a covering card off a buried
+# one, and growing a strip with nothing under it only adds empty space and shoves the zone below.
+
+# The owner caught exactly that in a playtest - "lower zone input zone cards wiggle down and up
+# twice ... zone cards shouldnt move like that" - and nothing was being revealed.
 	var stacked := pa._row_covers_anything(_ent(0))
 	view.game.spotlight_section_changed.emit([target] as Array[CardData])
 	var opened := 0.0
@@ -1194,17 +1211,17 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 				"opened %.1f px on a board one card deep" % pa.row_open_extra(_ent(0)))
 		check(is_equal_approx(pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y, closed_y),
 				"...and nothing below it moves either")
-		# ⚠ **THE COVERED-CARD CASE — THE ONE THE FEATURE EXISTS FOR — IS NOT EXERCISED HERE.** It
-		# needs a board with a real stack (a `Next` that drops one). Until a fixture builds that, S16's
-		# headline behaviour is asserted only by the geometry test above, never end to end.
+# ⚠ THE COVERED-CARD CASE, THE ONE THE FEATURE EXISTS FOR, IS NOT EXERCISED HERE. It needs a board
+# with a real stack, from a Next that drops one. Until a fixture builds that, the headline behaviour
+# is asserted only by the geometry test above, never end to end.
 		check(true, "NOTE: the covered-card reveal is UNTESTED — this fixture is one card deep")
 		await _teardown_view(view)
 		return
 	check(pa.row_open_extra(_ent(0)) > 0.0,
 			"S16: the scored card's row OPENS, driven by the section signal",
 			"still 0 after %.2fs" % opened)
-	# ⚠ EASED, NOT SNAPPED (chart K10, `spotlight_reveal_fraction`). The owner's report that produced
-	# that knob was *"cards jump to their new spot instantly"*, so partway-open is the claim.
+# ⚠ EASED, NOT SNAPPED, which is what spotlight_reveal_fraction is for. The owner's report that
+# produced that knob was "cards jump to their new spot instantly", so partway-open is the claim.
 	check(pa.row_open_extra(_ent(0)) < pa._row_open_height(),
 			"...and it is EASING rather than snapping to its full opening",
 			"already at %.1f of %.1f" % [pa.row_open_extra(_ent(0)), pa._row_open_height()])
@@ -1213,10 +1230,11 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 	while settled < 3.0 and pa._row_open.get(pa._reveal_key(_ent(0)), 0.0) < 1.0:
 		settled += await _tick_seconds()
 	var open_y := pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y
-	# ⚠ **THE DIRECTION IS READ OFF THE BOARD, NOT NAMED HERE.** An opening displaces the slots on
-	# its far side AWAY from it -- which is downward on a stack that grows down and upward on one
-	# that grows up. Naming a direction made this a second, silent assertion about which way the
-	# Entrance stacks, in a check that is about the REVEAL.
+# ⚠ THE DIRECTION IS READ OFF THE BOARD, NOT NAMED HERE. An opening displaces the slots on its far
+# side AWAY from it, which is downward on a stack that grows down and upward on one that grows up.
+
+# Naming a direction makes this a second, silent assertion about which way the Entrance stacks, in a
+# check that is about the REVEAL.
 	var stack_dir := signf(pa.slot_center_global(_ent(1)).y - pa.slot_center_global(_ent(0)).y)
 	var displaced := open_y - closed_y
 	check(not is_equal_approx(displaced, 0.0) and signf(displaced) == stack_dir,
@@ -1225,25 +1243,26 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			"y %.1f -> %.1f (moved %.1f, stack direction %.0f; no movement means "
 			% [closed_y, open_y, displaced, stack_dir]
 			+ "slot_center_global ignored the expansion)")
-	# ⚠ **ASSERTED ON THE RESULTING ROW PITCH, NOT ON THE STRIP'S GROWTH — and that distinction caught a
-	# real bug.** The old form checked the movement against
-	# `_row_open_height() - card_separation_play_custom`, which is the STRIP's growth and quietly
-	# ignored the `separation` the VBox puts between rows. Sizing the strip to a full card therefore
-	# produced a row pitch of card + separation, and the owner saw *"an odd gap between the rows, looks
-	# like an extra few pixels of separation"*. The mode promises a TOTAL distance, so the total is what
-	# has to be measured.
+# ⚠ ASSERTED ON THE RESULTING ROW PITCH, NOT ON THE STRIP'S GROWTH, and that distinction caught a
+# real bug. Checking the movement against the row-open height minus card_separation_play_custom is
+# the STRIP's growth and quietly ignores the separation the VBox puts between rows.
+
+# Sizing the strip to a full card therefore produces a row pitch of card plus separation, and the
+# owner saw "an odd gap between the rows, looks like an extra few pixels of separation". The mode
+# promises a TOTAL distance, so the total is what has to be measured.
 	var closed_pitch := closed_y - pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
 	var open_pitch := open_y - pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y
-	# ⚠ The pitch's MAGNITUDE is the mode's promise; its sign is which way the stack grows.
+# ⚠ The pitch's MAGNITUDE is the mode's promise; its sign is which way the stack grows.
 	check(absf(absf(open_pitch) - pa._row_open_height()) < 1.0,
 			"...leaving a row pitch of EXACTLY the mode's opening (GAP-009) — no stray separation",
 			"pitch %.1f -> %.1f, mode asks for %.1f" % [closed_pitch, open_pitch, pa._row_open_height()])
-	# ⚠ **AN ALREADY-OPEN ROW MUST FOLLOW A LIVE SETTINGS CHANGE.** Every term in the opening is read
-	# live — `separation` is a getter over `card_scale`, and the card metrics are static getters over
-	# the same — and `_row_open` stores only the eased 0..1, never pixels. But "read live" is a claim
-	# about a call path (`settings_changed -> update_gui -> set_card_zones_visuals ->
-	# update_card_zone_visuals -> _apply_row_openings`), and a path is exactly the kind of thing that
-	# is true until someone adds an early-out. Changing the scale MID-REVEAL is the input that tests it.
+# ⚠ AN ALREADY-OPEN ROW MUST FOLLOW A LIVE SETTINGS CHANGE. Every term in the opening is read live,
+# `separation` being a getter over card_scale and the card metrics static getters over the same, and
+# _row_open stores only the eased 0 to 1, never pixels.
+
+# But "read live" is a claim about a call path, from settings_changed through update_gui and the
+# zone visuals to _apply_row_openings, and a path is exactly the kind of thing that is true until
+# someone adds an early-out. Changing the scale MID-REVEAL is the input that tests it.
 	var prev_scale : float = SettingsManager.settings.card_scale
 	SettingsManager.settings.card_scale = prev_scale * 1.5
 	await get_tree().process_frame
@@ -1265,20 +1284,21 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			"back to %.1f, was %.1f" % [pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y
 				- pa.slot_center_global(BoardCoord.new(0, (Vector3i(below.x, below.y, 0)).y, BoardCoord.ENTRANCE_ROW, (Vector3i(below.x, below.y, 0)).z)).y, open_pitch])
 
-	# The row ABOVE the opening must not move — an opening pushes down, it does not recentre the board.
+# The row ABOVE the opening must not move: an opening pushes down, it does not recentre.
 	check(is_equal_approx(pa._row_open_offset(_ent(0)), 0.0),
 			"and row 0 itself does not move — a row's opening grows the gap BELOW it")
 
-	# JUMP_ADJUSTED is the other half of GAP-009's answer, and it must be a DIFFERENT number.
+# JUMP_ADJUSTED is the other half of the answer, and it must be a DIFFERENT number.
 	var prev_mode : int = SettingsManager.settings.spotlight_separation_mode
 	SettingsManager.settings.spotlight_separation_mode = PlayerSettings.SeparationMode.JUMP_ADJUSTED
 	check(pa._row_open_height() < CardVisual.card_size_play.y,
 			"GAP-009: JUMP_ADJUSTED opens LESS than a full card, so a non-jumping card stays covered",
 			"%.1f vs card %.1f" % [pa._row_open_height(), CardVisual.card_size_play.y])
-	# ⚠ **`card height - separation - jump rise`** (owner). `CARD_HEIGHT` opens to a pitch
-	# of exactly one card; this mode also gives up the inter-row gap, so the shortfall is the
-	# separation PLUS the jump. Asserted from the card's own constant and the live `separation` rather
-	# than a literal, so a change to `card_scale` cannot make this drift.
+# ⚠ Card height minus separation minus jump rise (owner). CARD_HEIGHT opens to a pitch of exactly
+# one card, and this mode also gives up the inter-row gap, so the shortfall is separation PLUS jump.
+
+# Asserted from the card's own constant and the live separation rather than a literal, so a change
+# to card_scale cannot make this drift.
 	check(is_equal_approx(CardVisual.card_size_play.y - pa._row_open_height(),
 			float(pa.separation) + CardVisual.card_jump_rise_play),
 			"...by exactly separation + jump rise — 'card height - separation - jump height'",
@@ -1286,7 +1306,7 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 				float(pa.separation) + CardVisual.card_jump_rise_play])
 	SettingsManager.settings.spotlight_separation_mode = prev_mode
 
-	# AND IT CLOSES: an empty section releases the board.
+# AND IT CLOSES: an empty section releases the board.
 	view.game.spotlight_section_changed.emit([] as Array[CardData])
 	var closed := 0.0
 	while closed < 3.0 and not pa._row_open.is_empty():
@@ -1299,14 +1319,15 @@ func test_the_reveal_opens_a_row_and_moves_the_slots_below_it() -> void:
 			"%.1f vs %.1f" % [pa.slot_center_global(BoardCoord.new(0, (below).y, BoardCoord.ENTRANCE_ROW, (below).z)).y, closed_y])
 	await _teardown_view(view)
 
-## **GATE G3.1 + G3.2 — a prop anchored BELOW an expansion stays glued to its slot, and the row score
-## gutter stays level with its row, through the WHOLE expand/collapse cycle.**
-##
-## ⚠ **THROUGH THE CYCLE, NOT AT ITS ENDS, WHICH IS THE ONLY WAY THESE TWO CAN FAIL.** Both are
-## displacement bugs: if `slot_center_global` or the gutter learned about the opening but did so a
-## frame late, or eased on a different curve, the start and end states would still match perfectly and
-## the prop would swim against the board for the half-second in between. So this samples EVERY frame
-## from closed through fully open and back, and asserts the invariant on all of them.
+# A prop anchored BELOW an expansion stays glued to its slot, and the row score gutter stays level
+# with its row, through the WHOLE expand and collapse cycle.
+
+# ⚠ THROUGH THE CYCLE, NOT AT ITS ENDS, WHICH IS THE ONLY WAY THESE TWO CAN FAIL. Both are
+# displacement bugs: if slot_center_global or the gutter learned about the opening a frame late, or
+# eased on a different curve, the start and end states would still match perfectly.
+
+# The prop would swim against the board for the half-second in between, so this samples EVERY frame
+# from closed through fully open and back, and asserts the invariant on all of them.
 func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
@@ -1315,8 +1336,8 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 
 	var target : CardData = null
 	var below := Vector3i(-1, -1, -1)
-	# Entrance only -- see the note on the other selection loop: the fixture stocks both zones,
-	# and only the Entrance has a coordinate.
+# Entrance only, for the reason given on the other selection loop: the fixture stocks both zones,
+# and only the Entrance has a coordinate.
 	for data : CardData in pa.data_card.keys():
 		var v : BoardCoord = view.game.state.grid_position_of(data)
 		if not v.is_entrance() or v.h != 0: continue
@@ -1328,14 +1349,16 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 		await _teardown_view(view)
 		return
 
-	# A REAL `PropVisual` on the REAL layer, pinned to the slot below the opening, exactly as
-	# `_spawn_visual` pins one. ⚠ Not a stand-in: `_repin` is the code under test and it only runs for
-	# visuals the layer actually holds, so a hand-rolled Node2D would prove nothing about it.
-	# ⚠ **REGISTERED IN `_visuals`, NOT MERELY PARENTED — the first draft only did `add_child` and
-	# measured a 90 px drift, which is the whole opening.** That was the harness, not the code:
-	# `PropLayer._process` repins `_visuals.values()`, so a visual that is only a CHILD is never
-	# followed. Worth keeping as a comment because the failure looked exactly like the bug this gate
-	# is for — the prop sitting still while its slot moved out from under it.
+# A REAL PropVisual on the REAL layer, pinned to the slot below the opening exactly as _spawn_visual
+# pins one. ⚠ Not a stand-in: _repin is the code under test and it only runs for visuals the layer
+# actually holds, so a hand-rolled Node2D would prove nothing about it.
+
+# ⚠ REGISTERED IN `_visuals`, NOT MERELY PARENTED. A draft that only did add_child measured a 90 px
+# drift, which is the whole opening, because PropLayer._process repins the registered visuals and a
+# visual that is only a CHILD is never followed.
+
+# Worth keeping as a rule because that failure looks exactly like the bug this gate is for: the prop
+# sitting still while its slot moves out from under it.
 	var prop := PropData.new()
 	var vis := PropVisual.new()
 	vis.anchor_coord = BoardCoord.new(0, below.y, BoardCoord.ENTRANCE_ROW, below.z)
@@ -1352,18 +1375,19 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 	var samples := 0
 	var saw_partial := false
 	var elapsed := 0.0
-	# Open, hold, then close — sampling the invariant on every frame of it.
+# Open, hold, then close, sampling the invariant on every frame of it.
 	while elapsed < 6.0:
 		elapsed += await _tick_seconds()
 		if not is_instance_valid(vis): break
 		samples += 1
 		var t : float = pa._row_open.get(pa._reveal_key(_ent(0)), 0.0)
 		if t > 0.05 and t < 0.95: saw_partial = true
-		# G3.1: the prop's own pin must equal the live slot point every frame.
+# The prop's own pin must equal the live slot point every frame.
 		worst_prop = maxf(worst_prop,
 				(vis.position - pinned_offset).distance_to(pl._slot_point(BoardCoord.new(0, below.y, BoardCoord.ENTRANCE_ROW, below.z))))
-		# G3.2: the row gutter label for row 0 must carry the same opening the row card strip does.
-		var gutter : VBoxContainer = pa.upper_zone_left   # Entrance only -- LowerZone was deleted
+# The row gutter label for row 0 must carry the same opening the row card strip does, and the
+# gutter is Entrance-only, the lower zone having been deleted.
+		var gutter : VBoxContainer = pa.upper_zone_left
 		if gutter and gutter.get_child_count() > 0:
 			var label := gutter.get_child(0) as Control
 			if label:
@@ -1389,33 +1413,33 @@ func test_the_reveal_keeps_props_and_gutters_glued_G31_G32() -> void:
 	if is_instance_valid(vis): vis.queue_free()
 	await _teardown_view(view)
 
-## **A LIT CARD THAT MOVES MUST KEEP ITS LIGHT — the one row of the tool-coverage table that was a
-## REAL gap rather than a tuning-tool limitation.**
-##
-## `HANDOFF_spotlight`'s coverage table lists three things the spotlight tool cannot pose: the cue as
-## a timed event, two zones, and *"cards moving while lit; board scroll"*. Checked 2026-08-07, the
-## first two are covered on the REAL board regardless of the tool —
-## `test_the_momentary_cue_draws_outside_scoring` measures the cue over time, and both this suite and
-## `reveal_shot` walk `for zx in 2` (reveal_shot actually reveals in zone 1). **Only this one had no
-## coverage anywhere**, and its ❌ read like missing coverage rather than "the tool poses a static
-## board".
-##
-## ⚠ **IT IS ALSO THE ONE MOST LIKELY TO BREAK SILENTLY.** Beams and circles are pushed to the shader
-## as ABSOLUTE screen positions, re-derived every frame from `CardVisual.spotlight_center()`. Nothing
-## structural ties a light to its card — if that push is ever skipped, cached, or dirty-checked on
-## the wrong key, the light simply stays where the card USED to be. On a still board that is
-## invisible, and a card only moves while lit during a reveal, which is exactly when the eye is on
-## the beam rather than the card. ⚠ `LightLayer._push_lights` now has a dirty-check (added
-## 2026-08-07's review pass) — precisely the class of change that could break this.
+# A LIT CARD THAT MOVES MUST KEEP ITS LIGHT. Of the three things the spotlight tool cannot pose -
+# the cue as a timed event, two zones, and cards moving while lit or the board scrolling - only this
+# one had no coverage anywhere.
+
+# The other two are covered on the REAL board regardless of the tool:
+# test_the_momentary_cue_draws_outside_scoring measures the cue over time, and both this suite and
+# reveal_shot walk both zones.
+
+# ⚠ IT IS ALSO THE ONE MOST LIKELY TO BREAK SILENTLY. Beams and circles are pushed to the shader as
+# ABSOLUTE screen positions, re-derived every frame from CardVisual.spotlight_center(), and nothing
+# structural ties a light to its card.
+
+# If that push is ever skipped, cached, or dirty-checked on the wrong key, the light simply stays
+# where the card WAS. On a still board that is invisible, and a card only moves while lit
+# during a reveal, which is exactly when the eye is on the beam rather than the card.
+
+# ⚠ LightLayer._push_lights has a dirty-check, which is precisely the class of change that could
+# break this.
 func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
 	var pa := view.play_area
 	var layer := view.light_layer
 
-	# Light a row-0 card AND the card buried directly under it. Row 0 then opens to uncover the lower
-	# one, and THAT card is lit while it moves — which is the case. Lighting row 0 alone moves
-	# nothing that carries a light.
+# Light a row-0 card AND the card buried directly under it. Row 0 then opens to uncover the lower
+# one, and THAT card is lit while it moves, which is the case. Lighting row 0 alone moves nothing
+# that carries a light.
 	var at : Dictionary[Vector4i, CardData] = {}
 	for data : CardData in pa.data_card.keys():
 		at[view.game.state.grid_position_of(data).pack()] = data
@@ -1451,7 +1475,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 		if t > 0.05 and t < 0.95: saw_partial = true
 		var want := _centre_for(view, mover)
 		moved = maxf(moved, start_centre.distance_to(want))
-		# Some light must be sitting on this card's CURRENT art square, not the one it left.
+# Some light must be sitting on this card's CURRENT art square, not the one it left.
 		var nearest := INF
 		for l : LightLayer.Light in layer._lights:
 			nearest = minf(nearest, l.centre.distance_to(want))
@@ -1464,9 +1488,9 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 	check(saw_partial,
 			"...and the sampling caught the row PARTWAY open, so this is a mid-MOTION claim",
 			"never observed a partial opening — the ease was too fast to sample")
-	# ⚠ THE GUARD AGAINST A VACUOUS PASS: if the card never actually moved, a light that never moved
-	# either would sail through. A full opening is ~85 px, so anything under a fraction of that means
-	# the fixture stopped exercising the case and the assertion below would prove nothing.
+# ⚠ THE GUARD AGAINST A VACUOUS PASS: if the card never actually moved, a light that never moved
+# either would sail through. A full opening is about 85 px, so anything under a fraction of that
+# means the fixture stopped exercising the case and the assertion below would prove nothing.
 	check(moved > 20.0,
 			"the lit card really did MOVE while lit (else this whole test is vacuous)",
 			"it shifted only %.1f px over the cycle" % moved)
@@ -1476,19 +1500,19 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 			% [worst, layer._lights.size(), lit.size(), moved])
 	await _teardown_view(view)
 
-## **THE OTHER HALF OF "cards moving while lit; board SCROLL".**
-##
-## The reveal test above moves a card by growing a row. Scrolling moves EVERY card at once, and by a
-## different mechanism — the canvas transform rather than the layout — so a light that tracked one
-## could still miss the other. Lights are pushed in absolute screen space, so the question is real.
-##
-## ⚠ **THE BOARD HAS TO BE MADE SCROLLABLE FIRST, OR THIS TEST IS VACUOUS.** The shipped board fits
-## the window (the 6-column ceiling clears it by 25 px), so `scroll_horizontal` would clamp to 0, the
-## cards would not move, and a light that never moved either would sail through. `card_scale` is
-## doubled to force real overflow, and the test ASSERTS the overflow exists before it asserts
-## anything about lights.
-## ⚠ `card_scale` is a SHARED settings knob — restored immediately, and the suite's
-## `backup_real_settings()` keeps the player's file out of it either way.
+# THE OTHER HALF OF "cards moving while lit; board SCROLL". The reveal test above moves a card by
+# growing a row. Scrolling moves EVERY card at once, and by a different mechanism, the canvas
+# transform rather than the layout, so a light that tracked one could still miss the other.
+
+# Lights are pushed in absolute screen space, so the question is real.
+
+# ⚠ THE BOARD HAS TO BE MADE SCROLLABLE FIRST, OR THIS TEST IS VACUOUS. The shipped board fits the
+# window, the 6-column ceiling clearing it by 25 px, so scroll_horizontal would clamp to 0, the
+# cards would not move, and a light that never moved either would sail through.
+
+# card_scale is raised to force real overflow, and the test ASSERTS the overflow exists before it
+# asserts anything about lights. ⚠ card_scale is a SHARED settings knob, restored immediately, and
+# the suite's backup_real_settings() keeps the player's file out of it either way.
 func test_lights_track_a_scrolled_board() -> void:
 	var view : GameView = await _stand_up_view()
 	await _deal_until_stacked(view)
@@ -1501,12 +1525,12 @@ func test_lights_track_a_scrolled_board() -> void:
 		return
 
 	var prev_scale : float = SettingsManager.settings.card_scale
-	# ⚠ AN ABSOLUTE SCALE, NOT A DOUBLING OF WHATEVER IS SET. This test is about what SCROLLING
-	# does, so its fixture has to overflow the container whatever the shipped card_scale is; a
-	# relative bump stops overflowing the moment the default comes down and the test then proves
-	# nothing while still passing its own vacuity guard.
-	# ⚠ The board's window is now as wide as the game picture, so the scale that used to overflow
-	# a window-shaped one no longer does: measured, 5.0 gave 1041 px of content against 1152.
+# ⚠ AN ABSOLUTE SCALE, NOT A DOUBLING OF WHATEVER IS SET. This test is about what SCROLLING does, so
+# its fixture has to overflow the container whatever the shipped card_scale is; a relative bump stops
+# overflowing the moment the default comes down, and the test then proves nothing while still passing.
+
+# ⚠ The board's window is as wide as the game picture, so a scale that used to overflow a
+# window-shaped one no longer does: measured, 5.0 gave 1041 px of content against 1152.
 	SettingsManager.settings.card_scale = 8.0
 	pa.flush_rebuild()
 	for _i : int in 3: await _tick_seconds()
@@ -1527,7 +1551,7 @@ func test_lights_track_a_scrolled_board() -> void:
 		view.game.spotlight_section_changed.emit([target] as Array[CardData])
 		for _i : int in 3: await _tick_seconds()
 		var before := _centre_for(view, target)
-		# Scroll to the far end — every card slides under the lights at once.
+# Scroll to the far end: every card slides under the lights at once.
 		scroll.scroll_horizontal = int(bar.max_value)
 		for _i : int in 3: await _tick_seconds()
 		var after := _centre_for(view, target)
@@ -1548,41 +1572,46 @@ func test_lights_track_a_scrolled_board() -> void:
 	pa.flush_rebuild()
 	await _teardown_view(view)
 
-## **DEAL UNTIL A COLUMN IS ACTUALLY STACKED — WITHOUT THIS, S16 CANNOT BE TESTED AT ALL.**
-##
-## ⚠ **ONE `next()` GIVES A BOARD ONE CARD DEEP, WHERE NOTHING IS COVERED**, so the reveal correctly
-## does nothing and every assertion about it passes for the wrong reason. That is exactly how S16 came
-## to be reported as verified while its whole purpose — lifting a covering card off a buried one — had
-## never run: the fixture could not express the case. Each `Next` drops another card onto the columns.
-## A board with a COVERED row 0 -- a column at least two cards deep, so row 0 has something
-## under it to uncover, which is the only shape the reveal and the light-follow tests are about.
-## ⚠ IT BUILDS ITS OWN LOWER COLUMN AND STACKS THAT, for two reasons. The deal fills each
-## Entrance slot to exactly one card and stops, so no number of refills ever covers a row; and
-## stacking the ENTRANCE instead measures geometry the play area has not been rebuilt for yet
-## (the Entrance moves to y == -1 and pushes the board up as part of the flipped-board work),
-## which reads as a ~50 px light offset that is about the unbuilt layout, not about the light.
-## What these tests guard is the play area's row-reveal geometry, so the fixture is the shape
-## that geometry is written against. Nothing here depends on WHICH cards are used.
+# DEAL UNTIL A COLUMN IS ACTUALLY STACKED. ⚠ ONE next() GIVES A BOARD ONE CARD DEEP, WHERE NOTHING
+# IS COVERED, so the reveal correctly does nothing and every assertion about it passes for the wrong
+# reason.
+
+# That is exactly how a reveal comes to be reported as verified while its whole purpose, lifting a
+# covering card off a buried one, has never run: the fixture could not express the case. Each Next
+# drops another card onto the columns.
+
+# What is wanted is a board with a COVERED row 0, a column at least two cards deep, which is the
+# only shape the reveal and light-follow tests are about.
+
+# ⚠ IT BUILDS ITS OWN LOWER COLUMN AND STACKS THAT, for two reasons. The deal fills each Entrance
+# slot to exactly one card and stops, so no number of refills ever covers a row.
+
+# And stacking the ENTRANCE instead measures geometry the play area has not been rebuilt for yet,
+# which reads as an approximately 50 px light offset that is about the unbuilt layout rather than
+# the light. Nothing here depends on WHICH cards are used.
 func _deal_until_stacked(view: GameView) -> void:
 	var g := view.game
-	# Pair the lower zone to the Entrance column for column, the shape the play area's
-	# geometry is written against -- a lone column of a different width is not that shape.
+# Pair the lower zone to the Entrance column for column, the shape the play area's geometry is
+# written against: a lone column of a different width is not that shape.
 	while g.state.lower_zone.size() < g.state.upper_zone.size():
 		var header := TestFactories.m_card(1, TestFactories.uc())
 		Board.add_column(g.state, g.state.lower_zone, g.state.lower_zone_type, header)
-	# EVERY column gets the same depth. A board with one deep column and four empty ones is
-	# mostly empty space, so opening a row changes the whole board's height and the play area
-	# re-centres -- the lit card then travels ~180 px, twice a full row opening, which is not
-	# the motion this test is calibrated against. A uniformly stocked board keeps the opening
-	# local, which is what a played board looks like anyway.
-	# ⚠ CARDS ARE BUILT, NOT DRAWN. The draw deck is shuffled, so drawing made the board's depth
-	# and therefore the reveal's travel distance vary run to run (measured: the lit card moved
-	# anywhere from 340 to 550 px across runs). Nothing here depends on rank or suit, only on
-	# every column being the same known depth, so fixed cards are strictly better.
-	# BOTH ZONES, not just the lower one. The reveal is measured through slot_center_global,
-	# which has a coordinate for the Entrance and none for the legacy lower zone -- so a board
-	# that stacks only the lower zone gives the test nothing it can name. Stocking both keeps
-	# the every-column-same-known-depth property this fixture exists for.
+# EVERY column gets the same depth. A board with one deep column and four empty ones is mostly empty
+# space, so opening a row changes the whole board's height and the play area re-centres: the lit
+# card then travels about 180 px, twice a full row opening, which is not the calibrated motion.
+
+# A uniformly stocked board keeps the opening local, which is what a played board looks like anyway.
+
+# ⚠ CARDS ARE BUILT, NOT DRAWN. The draw deck is shuffled, so drawing makes the board's depth and
+# therefore the reveal's travel distance vary run to run - measured, the lit card moved anywhere
+# from 340 to 550 px across runs.
+
+# Nothing here depends on rank or suit, only on every column being the same known depth, so fixed
+# cards are strictly better.
+
+# BOTH ZONES, not just the lower one. The reveal is measured through slot_center_global, which has a
+# coordinate for the Entrance and none for the legacy lower zone, so a board that stacks only the
+# lower zone gives the test nothing it can name.
 	for _depth : int in 2:
 		for zone_x : int in 2:
 			var zone : Array[ArrayCardData] = g.state.upper_zone if zone_x == 0 \
@@ -1608,7 +1637,7 @@ func test_end_screen_above_board() -> void:
 	var g := view.game
 	await g.next()
 	await g.next()
-	# Force the win overlay directly (the seam _on_show_resolved does the real UI work).
+# Force the win overlay directly; the seam _on_show_resolved does the real UI work.
 	view._on_show_resolved(true, 100, 1)
 	await get_tree().process_frame
 	var order := dump_draw_order("end screen (win) over the board", view)
@@ -1619,17 +1648,17 @@ func test_end_screen_above_board() -> void:
 			"win %d vs playarea %d" % [win_rank, pa_rank])
 	await _teardown_view(view)
 
-## The stand-up's other half — stashed here so the eight GameView tests share ONE copy of the
-## twelve-line ceremony instead of eight slightly-divergeable ones.
+# The stand-up's other half, stashed here so the eight GameView tests share ONE copy of the ceremony
+# instead of eight slightly divergeable ones.
 var _prev_run : RunState = null
 var _prev_save_info : RunState = null
-## The design-sized SubViewport hosting the most recent `_stand_up_view()` -- torn down in
-## `_teardown_view` instead of the view directly, since the view is its child.
+# The design-sized SubViewport hosting the most recent _stand_up_view(), torn down in _teardown_view
+# instead of the view directly, since the view is its child.
 var _stand_up_vp : SubViewport = null
 
-## Park the save, start a seeded run, instantiate a real GameView and settle it two frames.
-## Callers needing a deterministic global stream call `seed()` BEFORE this — `new_run` uses its
-## own RNG, so the order is safe.
+# Park the save, start a seeded run, instantiate a real GameView and settle it two frames. Callers
+# needing a deterministic global stream call seed() BEFORE this, since new_run uses its own RNG and
+# the order is safe.
 func _stand_up_view() -> GameView:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -1640,11 +1669,9 @@ func _stand_up_view() -> GameView:
 	run.pending_node_id = 2
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
 	_stand_up_vp = TestGameViewHost.host(self, view)
-	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
-	# and one grid is what the default deck gives -- which would put every check below on a
-	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
-	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
-	# written against, and the opening view stays the product's own decision everywhere else.
+# THIS FIXTURE OWNS ITS VIEW MODE, latched to the overview, for the reason the other stand-up gives:
+# a one-grid board opens FOCUSED, and these checks are about the overview's scale. The opening view
+# stays the product's own decision everywhere else.
 	view.play_area._show_view_opened = true
 	view.play_area.open_zoomed_out()
 	await get_tree().process_frame
@@ -1652,7 +1679,8 @@ func _stand_up_view() -> GameView:
 	return view
 
 func _teardown_view(view: GameView) -> void:
-	_stand_up_vp.queue_free()   # frees view and its Game child too
+# Frees the view and its Game child too.
+	_stand_up_vp.queue_free()
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
@@ -1662,21 +1690,20 @@ func _teardown_view(view: GameView) -> void:
 	Main.save_info = _prev_save_info
 
 
-## THE GRID FORM OF THE HOOP SPLIT (GAP-012's unfinished half). A grid-anchored hoop now brackets,
-## and what it brackets is its HEIGHT LAYER — every cell's card at the anchor's `h` — because that
-## is the unit `_append_grids_row_major` keeps contiguous in `CardLayer`.
-##
-## ⚠ **THIS IS THE TEST THAT SEPARATES THE TWO READINGS OF "a grid row".** Reading it as the cell
-## row `y` would, on this one-row grid, return every card at every height; the back half would then
-## sort behind the h == 0 layer as well, and `back_rank > h0_rank` fails. Only the height-layer
-## reading brackets a contiguous set.
+# THE GRID FORM OF THE HOOP SPLIT. A grid-anchored hoop brackets its HEIGHT LAYER, every cell's card
+# at the anchor's h, because that is the unit _append_grids_row_major keeps contiguous in CardLayer.
+
+# ⚠ THIS IS THE TEST THAT SEPARATES THE TWO READINGS OF "a grid row". Reading it as the cell row `y`
+# would, on this one-row grid, return every card at every height; the back half would then sort
+# behind the h == 0 layer as well. Only the height-layer reading brackets a contiguous set.
 func test_hoop_split_brackets_a_grid_height_layer() -> void:
 	var g := make_stacked_grid_game(2, 3)
 	var pa := make_play_area()
 	await settle(pa)
 	var pl := pa.prop_layer
 	var p := PropData.new()
-	p.kind = 0   # hoop — has_back_half() == true
+# Kind 0 is the hoop, which has a back half.
+	p.kind = 0
 	p.at = BoardCoord.new(0, 0, 0, 1)
 	p.route = [] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
@@ -1705,7 +1732,7 @@ func test_hoop_split_brackets_a_grid_height_layer() -> void:
 	var order := dump_draw_order("grid hoop occupying cell (0,0) height 1", pa)
 	var back_rank := draw_rank(order, back)
 	var front_rank := draw_rank(order, front)
-	# Every cell's card at each height — the layers below, at, and above the bracket.
+# Every cell's card at each height: the layers below, at, and above the bracket.
 	var h0 : Array[int] = []
 	var h1 : Array[int] = []
 	var h2 : Array[int] = []
@@ -1738,7 +1765,7 @@ func test_hoop_split_brackets_a_grid_height_layer() -> void:
 			"the FRONT half stays below the height layer ABOVE it, not over the whole board",
 			"front %d vs h2 %s" % [front_rank, h2])
 
-	# Off every card the grid hoop unsplits, exactly like the Entrance one.
+# Off every card the grid hoop unsplits, exactly like the Entrance one.
 	vis.global_position = pa.slot_center_global(BoardCoord.new(0, 0, 0, 40))
 	for _j in 4:
 		await get_tree().process_frame
@@ -1749,12 +1776,12 @@ func test_hoop_split_brackets_a_grid_height_layer() -> void:
 	await cleanup(g, pa)
 
 
-## THE GRID FORM OF THE REVEAL'S QUERIES (GAP-012's other unfinished half, Q6=a). The open-row key
-## is `(grid, h)` with the Entrance on a reserved grid index, and `_row_covers_anything` asks the
-## same question of a grid's cells that it asks of the Entrance's columns.
-##
-## ⚠ The reveal's grid GEOMETRY is deliberately not built yet — `_reveal_geometry_exists` gates it
-## until `S22` gives a grid row band its arithmetic. This test pins the parts that ARE board-wide.
+# THE GRID FORM OF THE REVEAL'S QUERIES. The open-row key is (grid, h) with the Entrance on a
+# reserved grid index, and _row_covers_anything asks the same question of a grid's cells that it
+# asks of the Entrance's columns.
+
+# ⚠ The reveal's grid GEOMETRY is deliberately not built yet, _reveal_geometry_exists gating it
+# until a grid row band has its arithmetic. This test pins the parts that ARE board-wide.
 func test_the_reveal_key_and_cover_query_are_board_wide() -> void:
 	var g := make_stacked_grid_game(2, 3)
 	var pa := make_play_area()

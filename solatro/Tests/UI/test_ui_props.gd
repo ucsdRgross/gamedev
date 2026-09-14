@@ -1,38 +1,32 @@
 extends TestSuite
-# res://Tests/UI/test_ui_props.gd
-# ==============================================================================
-# UI PROPS (SUIT_PROPS_PLAN Phases 4-5): the VIEW side of the prop pipeline —
-# PlayArea slot geometry, PropLayer's begin_prop_tick/tick_done contract (spawn,
-# travel, teleport blink, despawn, card reactions), the status FX + tooltip
-# surfaces, the keyboard/controller focus inspector, and one full Submit through
-# a real GameView (the actual game_view.begin_prop_tick seam) under a watchdog.
-#
-# CATEGORY MAP: mostly BEHAVIOR — what the player sees (props appear, travel,
-# blink, vanish; cards jump; statuses/tooltips show; a submit never hangs).
-# check_impl pins: kind -> visual class mapping, slot-center math, the
-# PropData -> visual bookkeeping map.
-#
-# Ordering: owns CardEnvironment.CURRENT / Main.save_info / the animation-speed
-# setting while it runs, so it waits for every sibling suite EXCEPT the E2E suite
-# (which itself waits for ALL siblings, this one included) — this suite runs
-# second-to-last, E2E last. Waiting on E2E here would deadlock both.
-# Safety: real run.tres AND settings.tres are moved aside and restored (settings
-# writes to disk on every change, and this suite speeds up base_delay).
-# ==============================================================================
+# UI PROPS: the VIEW side of the prop pipeline. PlayArea slot geometry, PropLayer's
+# begin_prop_tick and tick_done contract - spawn, travel, teleport blink, despawn, card reactions -
+# the status FX and tooltip surfaces, the focus inspector, and one full pass through a real GameView.
+
+# CATEGORY MAP: mostly BEHAVIOR, what the player sees - props appear, travel, blink and vanish,
+# cards jump, statuses and tooltips show, a scoring pass never hangs. check_impl pins the kind to
+# visual class mapping, the slot-centre math, and the PropData to visual bookkeeping map.
+
+# Ordering: this suite owns CardEnvironment.CURRENT, Main.save_info and the animation-speed setting
+# while it runs, so it waits for every sibling EXCEPT the E2E suite, which itself waits for all
+# siblings including this one. This suite runs second to last; waiting on E2E here would deadlock.
+
+# Safety: the real run.tres AND settings.tres are moved aside and restored, since settings write to
+# disk on every change and this suite speeds up base_delay.
 
 const PLAY_AREA_SCENE := preload("res://UI/play_area.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 
-## Wall-clock cap for any single awaited animation/coroutine (base_delay is shrunk to the shared
-## TestLog.speed_base_delay for the whole suite, so real completions are far quicker than this).
+# Wall-clock cap for any single awaited animation or coroutine. base_delay is shrunk to the shared
+# TestLog.speed_base_delay for the whole suite, so real completions are far quicker than this.
 const WATCHDOG_SECS := 10.0
 
 func suite_name() -> String:
 	return "UI PROPS"
 
 func _ready() -> void:
-	# Runs before VISUAL LAYERS / E2E (they wait on this — shared CardEnvironment.CURRENT), so
-	# exclude them to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
+# Runs before the suites that wait on this one through the shared CardEnvironment.CURRENT, so they
+# are excluded to avoid a deadlock. See TestSuite.await_siblings_except and its DEADLOCK RULE.
 	await await_siblings_except(["VISUAL LAYERS", "GRID LAYOUT", "GRID VIEW", "SETTINGS RANGE",
 			"E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ UI PROPS TEST PASS ============")
@@ -61,14 +55,14 @@ func _ready() -> void:
 	restore_real_settings()
 	finish()
 
-# ==============================================================================
-# FIXTURE — a bare Game (one upper zone of one-card columns, exactly like
-# test_prop_engine.make_grid) plus a real play_area.tscn instance built from it.
-# The PropLayer is driven directly here (data one tick ahead, mirroring run_props);
-# the GameView scenario at the bottom exercises the real seam.
-# ==============================================================================
-## `empty_cols` columns get a header but NO cards — row paths still cross them (the live
-## boards that exposed the empty-column geometry bugs always had empty edge columns).
+# FIXTURE: a bare Game, one upper zone of one-card columns exactly like test_prop_engine.make_grid,
+# plus a real play_area.tscn instance built from it.
+
+# The PropLayer is driven directly here, data one tick ahead, mirroring run_props; the GameView
+# scenario at the bottom exercises the real seam.
+
+# `empty_cols` columns get a header but NO cards, and row paths still cross them. The live boards
+# that exposed the empty-column geometry bugs always had empty edge columns.
 func make_board_game(cols: int, empty_cols: Array[int] = []) -> Game:
 	var g := Game.new()
 	var s := GameData.new()
@@ -85,14 +79,15 @@ func make_board_game(cols: int, empty_cols: Array[int] = []) -> Game:
 		columns.append(TestFactories.col([card] as Array[CardData]))
 	s.upper_zone_type = types
 	s.upper_zone = columns
-	# ⚠ A REAL GRID, because these cards sit in the ENTRANCE and an Entrance score banks into its
-	# attached grid's bucket. With no grid there is nothing to bank into -- the score the player
-	# sees stays 0, which is the very loss these prop tests exist to catch.
+# ⚠ A REAL GRID, because these cards sit in the ENTRANCE and an Entrance score banks into its
+# attached grid's bucket. With no grid there is nothing to bank into: the score the player sees
+# stays 0, which is the very loss these prop tests exist to catch.
 	var grid := GridData.new()
 	grid.build_cells()
 	s.grids = [grid] as Array[GridData]
 	g.state = s
-	g._begin_act()   # reset compression so get_delay() is the plain base delay
+# Reset compression, so get_delay() is the plain base delay.
+	g._begin_act()
 	CardEnvironment.CURRENT = g
 	return g
 
@@ -100,31 +95,31 @@ func make_play_area() -> PlayArea:
 	var pa : PlayArea = PLAY_AREA_SCENE.instantiate()
 	add_child(pa)
 	pa.size = Vector2(1152, 648)
-	# Disable AUTHORED per-kind formations for these bare-PlayArea tests. They assert props land on
-	# EXACT slot centers / hold their row's y; an authored Formations/<kind>.tres adds a view-only
-	# lane_offset that shifts every slot point and would (correctly) break those geometry checks.
-	# test_batch_props_stagger injects its OWN formation AFTER this to test the formation path.
-	# (The real-GameView submit tests below use the shipped formations on purpose.)
+# Disable AUTHORED per-kind formations for these bare-PlayArea tests. They assert props land on
+# EXACT slot centres and hold their row's y, and an authored formation adds a view-only lane_offset
+# that shifts every slot point and would, correctly, break those geometry checks.
+
+# test_batch_props_stagger injects its OWN formation after this to test the formation path, and the
+# real-GameView tests below use the shipped formations on purpose.
 	_disable_formations(pa.prop_layer)
-	# THIS FIXTURE OWNS ITS VIEW MODE. The board opens FOCUSED when it holds exactly one grid,
-	# and one grid is what the default deck gives -- which would put every check below on a
-	# zoomed board. These suites assert the board's LAYOUT ARITHMETIC at the overview's scale;
-	# the zoomed board is GRID VIEW's subject. Latching here keeps the overview the fixture was
-	# written against, and the opening view stays the product's own decision everywhere else.
+# THIS FIXTURE OWNS ITS VIEW MODE, latched to the overview. The board opens FOCUSED on a single
+# grid, which would put every check below on a zoomed board, and these checks are about the layout
+# arithmetic at the overview's scale. The opening view stays the product's decision elsewhere.
 	pa._show_view_opened = true
 	pa.open_zoomed_out()
 	return pa
 
-## Mark every prop kind as "formation-checked, none present" so _formation_set() returns null and
-## lane_offset stays ZERO — props fly the exact slot line regardless of what .tres files exist.
+# Mark every prop kind as formation-checked with none present, so _formation_set() returns null and
+# lane_offset stays ZERO: props fly the exact slot line regardless of what .tres files exist.
 func _disable_formations(pl: PropLayer) -> void:
 	for kind : int in range(PropFormationSet.KIND_NAMES.size()):
 		pl._formation_checked[kind] = true
 
-## Wait until every board CardVisual is in-tree and ready, then until the slot GEOMETRY holds
-## still for a few consecutive frames — split containers, score labels, and the smooth-scroll
-## content settle over several frames after a build, and a moving board fakes direction
-## changes in the raw-position movement tests.
+# Wait until every board CardVisual is in-tree and ready, then until the slot GEOMETRY holds still
+# for a few consecutive frames.
+
+# Split containers, score labels and the smooth-scroll content settle over several frames after a
+# build, and a moving board fakes direction changes in the raw-position movement tests.
 func settle(pa: PlayArea) -> void:
 	var waited := 0.0
 	while not pa.visuals_ready() and waited < WATCHDOG_SECS:
@@ -142,16 +137,17 @@ func settle(pa: PlayArea) -> void:
 func slot(col: int) -> Vector3i:
 	return Vector3i(0, col, 0)
 
-## The Entrance's BoardCoord form of `slot(col)` -- `slot()` itself stays Vector3i because
-## `play_area.control_for_coord` is still zone-indexed; every prop-facing call site
-## (p.at/p.route, row_slot_path) uses this one instead.
+# The Entrance's BoardCoord form of slot(col). slot() itself stays Vector3i because
+# play_area.control_for_coord is still zone-indexed; every prop-facing call site uses this one
+# instead.
 func slot_coord(col: int) -> BoardCoord:
 	return BoardCoord.new(0, col, BoardCoord.ENTRANCE_ROW, 0)
 
 func cleanup(g: Game, pa: PlayArea) -> void:
 	pa.queue_free()
 	CardEnvironment.CURRENT = null
-	await get_tree().process_frame  # let the PlayArea actually free before the Game does
+# Let the PlayArea actually free before the Game does.
+	await get_tree().process_frame
 	g.free()
 
 ## Live PropVisual children only (the layer also hosts the focus inspector panel).
@@ -170,8 +166,8 @@ func _kind_name_of(vis: PropVisual) -> String:
 	if vis is FireworkVisual: return "firework"
 	return "hoop"
 
-## Concurrent card-pose watcher (fire WITHOUT await): flips the flags when ANY board card is
-## seen raised (JUMP reaction) or rotating (SPIN reaction) while `flag` is still false.
+# Concurrent card-pose watcher, fired WITHOUT await: flips the flags when ANY board card is seen
+# raised, the JUMP reaction, or rotating, the SPIN reaction, while `flag` is still false.
 func _watch_card_poses(pa: PlayArea, flag: Array[bool], saw_raised: Array[bool],
 		saw_spin: Array[bool]) -> void:
 	var waited := 0.0
@@ -183,8 +179,8 @@ func _watch_card_poses(pa: PlayArea, flag: Array[bool], saw_raised: Array[bool],
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 
-## True when every board card visual is at rest: offset home, no spin left, floating restored.
-## `detail` (size-1 array) receives the first offender's pose for the failure message.
+# True when every board card visual is at rest: offset home, no spin left, floating restored.
+# `detail`, a size-1 array, receives the first offender's pose for the failure message.
 func _cards_at_rest(pa: PlayArea, detail: Array[String]) -> bool:
 	for vis : CardVisual in pa.data_card.values():
 		if not is_instance_valid(vis) or not vis.offset: continue
@@ -205,8 +201,8 @@ func _await_cards_at_rest(pa: PlayArea, detail: Array[String]) -> bool:
 		rest = _cards_at_rest(pa, detail)
 	return rest
 
-## Start one visual tick and await its tick_done under a watchdog — a sync bug fails
-## the check instead of hanging the whole test run. Returns whether it completed.
+# Start one visual tick and await its tick_done under a watchdog, so a sync bug fails the check
+# instead of hanging the whole test run. Returns whether it completed.
 func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 		relocated: Array) -> bool:
 	var sig := pl.begin_prop_tick(live, spawned, movers, relocated)
@@ -220,9 +216,9 @@ func run_tick(pl: PropLayer, live: Array, spawned: Array, movers: Array,
 	sig.disconnect(handler)
 	return fired[0]
 
-## Drive a route prop through spawn -> sweep -> despawn EXACTLY like run_props' MOVE stage,
-## one awaited visual tick per data tick; flips flag[0] true once the whole flight (incl. its
-## final despawn tick) completed. Call WITHOUT await to run it concurrently with a sampler.
+# Drive a route prop through spawn, sweep and despawn EXACTLY like run_props' MOVE stage, one
+# awaited visual tick per data tick. Flips flag[0] true once the whole flight, including its final
+# despawn tick, completed. Call WITHOUT await to run it concurrently with a sampler.
 func _drive_route_flight(pl: PropLayer, p: PropData, flag: Array[bool]) -> void:
 	var ok := await run_tick(pl, [p], [p], [], [])
 	while ok and not p.done:
@@ -238,15 +234,16 @@ func _drive_route_flight(pl: PropLayer, p: PropData, flag: Array[bool]) -> void:
 			ok = await run_tick(pl, [p], [], [p], [])
 	flag[0] = ok
 
-## Per-frame RAW position sampler: captures the prop visual's GLOBAL position EVERY frame from
-## the moment it appears until the node frees — staging, sweep, AND the despawn exit, in ONE
-## continuous loop with no per-tick gaps (a per-tick poll missed frames between ticks and let
-## diagonal drift through: owner report). This is the raw visual output the
-## envelope/direction checks read. `poll`, when valid, runs each sampled frame with the visual.
-## `origin`, when valid, is subtracted from every sample: measuring relative to a live board
-## point cancels WHOLE-BOARD motion (smooth-scroll settle, relayout shifts move every global
-## together) so direction counts read the prop's motion relative to the board — exactly what
-## the player perceives — instead of flagging the board's own wobble as turns.
+# Per-frame RAW position sampler: captures the prop visual's GLOBAL position EVERY frame from the
+# moment it appears until the node frees - staging, sweep AND the despawn exit, in ONE continuous
+# loop with no per-tick gaps, since a per-tick poll misses frames and lets diagonal drift through.
+
+# This is the raw visual output the envelope and direction checks read. `poll`, when valid, runs
+# each sampled frame with the visual.
+
+# `origin`, when valid, is subtracted from every sample: measuring relative to a live board point
+# cancels WHOLE-BOARD motion, so direction counts read the prop's motion relative to the board,
+# which is exactly what the player perceives, instead of flagging the board's own wobble as turns.
 func _sample_flight(pl: PropLayer, p: PropData, samples: Array[Vector2],
 		poll: Callable, origin: Callable = Callable()) -> void:
 	var vis : PropVisual = null
@@ -264,9 +261,9 @@ func _sample_flight(pl: PropLayer, p: PropData, samples: Array[Vector2],
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 
-## Direction flips along one axis (0 = x, 1 = y) derived from RAW sampled positions — tests
-## the visual OUTPUT, not the interpolator's internals. Sub-pixel deltas are jitter, not
-## motion (deadzone). Prints every flip with its position so a failure names where it turned.
+# Direction flips along one axis, 0 for x and 1 for y, derived from RAW sampled positions, so this
+# tests the visual OUTPUT rather than the interpolator's internals. Sub-pixel deltas are jitter, not
+# motion. Prints every flip with its position so a failure names where it turned.
 func _direction_changes(samples: Array[Vector2], axis: int, label: String) -> int:
 	var flips := 0
 	var prev_sign := 0
@@ -286,9 +283,7 @@ class JumpHintMod extends PropModifier:
 	func reaction_for(_prop: PropData, _card: CardData) -> int:
 		return PropData.Reaction.JUMP
 
-# ==============================================================================
 # TESTS
-# ==============================================================================
 
 func test_slot_geometry() -> void:
 	var g := make_board_game(2)
@@ -297,19 +292,19 @@ func test_slot_geometry() -> void:
 	var control := pa.control_for_coord(slot(0))
 	check_impl(control != null, "an occupied slot coord maps to a board control")
 	if control:
-		# ⚠ A control's RECT centre is not where its card goes -- that was a third hand-copy of the
-		# anchoring, and it only agreed while every slot control happened to be a full card tall.
+# ⚠ A control's RECT centre is not where its card goes. That was a third hand-copy of the anchoring,
+# and it only agreed while every slot control happened to be a full card tall.
 		var visual : CardVisual = pa.data_card[pa.ui_data[control]]
 		var center := visual.get_card_control_center(control)
 		check_impl(pa.slot_center_global(slot_coord(0)).is_equal_approx(center),
 				"slot_center_global lands where the card's own control anchoring puts it",
 				"%s vs %s" % [pa.slot_center_global(slot_coord(0)), center])
-	# Slots past the built rows have no control: the slot MATH extrapolates down the column.
+# Slots past the built rows have no control: the slot MATH extrapolates down the column.
 	var deep_a := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 4))
 	var deep_b := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 5))
-	# ⚠ **THE DIRECTION IS MEASURED, NOT NAMED.** Which way a column grows is a design decision that
-	# has already changed once; what must always hold is that the fallback CONTINUES the direction
-	# the built slots establish, rather than reversing or flattening past the last control.
+# ⚠ THE DIRECTION IS MEASURED, NOT NAMED. Which way a column grows is a design decision that has
+# already changed once; what must always hold is that the fallback CONTINUES the direction the built
+# slots establish, rather than reversing or flattening past the last control.
 	var built_step := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)).y \
 			- pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).y
 	check_impl(signf(deep_b.y - deep_a.y) == signf(built_step)
@@ -318,10 +313,9 @@ func test_slot_geometry() -> void:
 			"empty-slot fallback walks straight along the column, the same way the built slots do",
 			"%s -> %s, built step %.1f" % [deep_a, deep_b, built_step])
 	await cleanup(g, pa)
-	# A COMPLETELY EMPTY column: its header is that column's LAST control, so the
-	# "last control is full card height" rule inflates it — the fallback must anchor to
-	# the header TOP or every row bends a full card downward at empty columns (the live
-	# diagonal-knife/invisible-hoop staging bug, owner report).
+# A COMPLETELY EMPTY column: its header is that column's LAST control, so the "last control is full
+# card height" rule inflates it. The fallback must anchor to the header TOP or every row bends a
+# full card downward at empty columns, which is the diagonal-knife and invisible-hoop staging bug.
 	g = make_board_game(3, [1] as Array[int])
 	pa = make_play_area()
 	await settle(pa)
@@ -331,24 +325,24 @@ func test_slot_geometry() -> void:
 			"an empty column's row-0 slot sits ON the row line of its occupied neighbors",
 			"occupied y %.1f vs empty-column y %.1f" % [occupied_y, empty_y])
 	await cleanup(g, pa)
-	# TASK 3 (owner spec): slot centers are PURE MATH (zone origin + indices), no
-	# control reads — verify the math reproduces the CONTROL layout at MULTIPLE card-separation
-	# levels, since the row pitch folds in card_separation_play_custom. The math must match the
-	# built controls' card anchors (control top + half a card) and keep empty columns on the row
-	# line at every separation.
+# Slot centres are PURE MATH, a zone origin plus indices, with no control reads. The math is
+# verified against the CONTROL layout at MULTIPLE card-separation levels, since the row pitch folds
+# in card_separation_play_custom.
+
+# It must match the built controls' card anchors and keep empty columns on the row line at every
+# separation.
 	var prev_sep := SettingsManager.settings.card_separation_scale
 	for sep_scale : float in [0.5, 1.0, 2.0] as Array[float]:
 		SettingsManager.settings.card_separation_scale = sep_scale
 		g = make_board_game(3, [1] as Array[int])
 		pa = make_play_area()
 		await settle(pa)
-		# ⚠ **ASK THE CARD WHERE IT PUTS ITSELF; DO NOT RE-DERIVE IT HERE.** This used to hand-copy
-		# the anchoring formula (`control top + half a card`), so it agreed with the code by
-		# construction rather than by test: it could not catch a wrong anchor, it ignored the
-		# control's own scale, and it broke the moment the anchoring convention legitimately
-		# changed. `get_card_control_center()` IS the production answer, so what is compared now is
-		# the two INDEPENDENT routes to one slot -- the pure arithmetic a prop uses, and the real
-		# control a card hangs on.
+# ⚠ ASK THE CARD WHERE IT PUTS ITSELF; DO NOT RE-DERIVE IT HERE. A hand-copied anchoring formula
+# agrees with the code by construction rather than by test: it cannot catch a wrong anchor, it
+# ignores the control's own scale, and it breaks when the convention legitimately changes.
+
+# get_card_control_center() IS the production answer, so what is compared is the two INDEPENDENT
+# routes to one slot: the pure arithmetic a prop uses, and the real control a card hangs on.
 		var control_a := pa.control_for_coord(slot(0))
 		var visual_a : CardVisual = pa.data_card[pa.ui_data[control_a]]
 		var anchor_a := visual_a.get_card_control_center(control_a)
@@ -359,10 +353,11 @@ func test_slot_geometry() -> void:
 		check_impl(is_equal_approx(pa.slot_center_global(slot_coord(0)).y,
 				pa.slot_center_global(slot_coord(1)).y),
 				"empty column stays on the row line at separation %.1f" % sep_scale)
-		# ⚠ **MAGNITUDE AND DIRECTION ARE SEPARATE CLAIMS.** The pitch's SIZE is arithmetic every
-		# prop depends on; its SIGN is a design decision. Asserting a signed number folded the two
-		# together, so a deliberate change of stacking direction would read as an arithmetic
-		# regression. The direction is asserted separately, where the stack's own build order is.
+# ⚠ MAGNITUDE AND DIRECTION ARE SEPARATE CLAIMS. The pitch's SIZE is arithmetic every prop depends
+# on; its SIGN is a design decision. Asserting a signed number folds the two together, so a
+# deliberate change of stacking direction would read as an arithmetic regression.
+
+# The direction is asserted separately, where the stack's own build order is.
 		var pitch := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 1)).y \
 				- pa.slot_center_global(slot_coord(0)).y
 		check_impl(is_equal_approx(absf(pitch),
@@ -372,27 +367,26 @@ func test_slot_geometry() -> void:
 		await cleanup(g, pa)
 	SettingsManager.settings.card_separation_scale = prev_sep
 
-## ⚠ **A BOARD WIDER THAN THE WINDOW IS A SUPPORTED STATE, AND NOTHING COVERED IT.**
-## Owner: *"it should be possible for there to be x-column wide boards if I decide to
-## change rules, with side scrolling allowed in order to see those cards. Tests should reflect that
-## instead of hardcoding to 6 wide, but 6 wide should be fine for most tests, just dont assume that
-## its always true."*
-##
-## The shipped rules set happens to cap the board at 6 columns today (5 upper + 6 lower
-## `SkillAdderInput*` cards in `Decks/deck.gd::_build_rules1`), and most fixtures here use widths at
-## or under that on purpose — a board that FITS is the only way to test prop VISIBILITY. But 6 is a
-## content fact, not a layout law, and a test suite that only ever sees 6 would report a rules change
-## as a UI regression. **This is the case that proves the design's own answer works:** the columns
-## still lay out on the same uniform pitch, and every one of them is inside the scrollable extent.
-##
-## ⚠ Deliberately far past the window (12 columns ≈ 1310 px of board against a 1152 px viewport), so
-## the overflow is not marginal and the check cannot pass by accident.
+# ⚠ A BOARD WIDER THAN THE WINDOW IS A SUPPORTED STATE, AND NOTHING COVERED IT. Owner:
+
+# > "it should be possible for there to be x-column wide boards if I decide to change rules, with
+# > side scrolling allowed in order to see those cards. Tests should reflect that instead of
+# > hardcoding to 6 wide, but 6 wide should be fine for most tests."
+
+# The shipped rules set happens to cap the board at 6 columns today, and most fixtures here use
+# widths at or under that on purpose, a board that FITS being the only way to test prop VISIBILITY.
+
+# But 6 is a content fact, not a layout law, and a suite that only ever sees 6 would report a rules
+# change as a UI regression. This is the case that proves the design's own answer works: the columns
+# still lay out on the same uniform pitch, and every one of them is inside the scrollable extent.
+
+# ⚠ Deliberately far past the window, 12 columns at about 1310 px of board against a 1152 px
+# viewport, so the overflow is not marginal and the check cannot pass by accident.
 func test_a_board_wider_than_the_window_stays_reachable() -> void:
 	const WIDE := 12
-	# ⚠ THE SCALE IS PINNED, for the same reason the column count is: this test is about a board
-	# WIDER THAN THE WINDOW, so the fixture has to make one whatever the shipped card_scale is.
-	# At the shipped 1.0, twelve columns fit comfortably and the test would pass while proving
-	# nothing about overflow at all.
+# ⚠ THE SCALE IS PINNED, for the same reason the column count is: this test is about a board WIDER
+# THAN THE WINDOW, so the fixture has to make one whatever the shipped card_scale is. At the shipped
+# 1.0, twelve columns fit comfortably and the test would pass while proving nothing about overflow.
 	var prev_scale : float = SettingsManager.settings.card_scale
 	SettingsManager.settings.card_scale = 2.5
 	var g := make_board_game(WIDE)
@@ -403,24 +397,24 @@ func test_a_board_wider_than_the_window_stays_reachable() -> void:
 	var first := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).x
 	var last := pa.slot_center_global(BoardCoord.new(0, WIDE - 1, BoardCoord.ENTRANCE_ROW, 0)).x
 	var view_width := pa.get_viewport_rect().size.x
-	# The premise: this really is wider than the window, or the rest of the test proves nothing.
+# The premise: this really is wider than the window, or the rest of the test proves nothing.
 	check(last + half > view_width,
 			"the %d-column fixture really does overflow the window (else this test is vacuous)" % WIDE,
 			"right edge %.1f vs viewport %.1f" % [last + half, view_width])
 
-	# Uniform pitch all the way out — a board that overflows must not start compressing or wrapping.
+# Uniform pitch all the way out: a board that overflows must not compress or wrap.
 	var pitch := (last - first) / float(WIDE - 1)
 	var expected := CardVisual.card_size_play.x + float(pa.separation)
 	check(is_equal_approx(pitch, expected),
 			"every column keeps the normal pitch past the window edge",
 			"pitch %.2f vs expected %.2f" % [pitch, expected])
 
-	# THE INVARIANT: reachable by scrolling. A column outside the scrollable extent is unreachable,
-	# which IS a bug — at 6 columns or 60.
+# THE INVARIANT: reachable by scrolling. A column outside the scrollable extent is unreachable,
+# which IS a bug, at 6 columns or 60.
 	_check_board_fits_window(pa, WIDE, "a deliberately over-wide %d-column board" % WIDE)
-	# Put the scale back before the next test in this suite inherits it. The suite's own
-	# backup_real_settings keeps the PLAYER's file safe either way; this is about the tests
-	# after this one, which would otherwise silently run at a scale they did not choose.
+# Put the scale back before the next test in this suite inherits it. The suite's own
+# backup_real_settings keeps the PLAYER's file safe either way; this is about the tests after this
+# one, which would otherwise silently run at a scale they did not choose.
 	SettingsManager.settings.card_scale = prev_scale
 	await cleanup(g, pa)
 
@@ -432,7 +426,7 @@ func test_prop_visual_lifecycle() -> void:
 	var p := PropData.new()
 	p.kind = 0
 	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
-	# tick 0: spawn — the visual pops at the route head
+# tick 0: spawn, and the visual pops at the route head
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "the spawn tick's animation completes and tick_done fires")
 	check(prop_visual_count(pl) == 1, "a spawned prop gets exactly one visual",
@@ -441,21 +435,19 @@ func test_prop_visual_lifecycle() -> void:
 	for child in pl.get_children():
 		if child is HoopVisual: is_hoop = true
 	check_impl(is_hoop, "kind 0 maps to the hoop visual")
-	# ticks 1..3: walk the route exactly like run_props (data one step ahead of the view)
+# ticks 1 to 3: walk the route exactly like run_props, data one step ahead of the view
 	while not p.route.is_empty():
 		p.at = p.route.pop_front()
 		ok = await run_tick(pl, [p], [], [p], [])
 		check(ok, "a mover tick completes (slot %s)" % str(p.at))
 	var vis : PropVisual = pl._visuals.get(p)
 	if vis:
- # NOTE: this landing check and the "arrives exactly" check in
-		# test_slow_props have been observed FAILING independent of the z→structure layering
-		# migration (their prop kinds/paths don't touch that code). They are timing-sensitive
-		# ([[running-godot-scenes]]): after the last tick the board can still be settling and
-		# _repin chases the live slot for a frame or two. Poll briefly for the position to settle,
-		# and dump the full leg state on failure so a real regression is distinguishable from jitter.
-		# Slot centre PLUS this kind's lane offset — for the hoop that is the card-jump rise it now
- # rides at (owner), so the bare slot centre is no longer where it parks.
+# This landing check and the "arrives exactly" check in test_slow_props are timing-sensitive: after
+# the last tick the board can still be settling and _repin chases the live slot for a frame or two.
+# Poll briefly for the position to settle, and dump the leg state on failure.
+
+# The target is the slot centre PLUS this kind's lane offset. For the hoop that is the card-jump
+# rise it rides at (owner), so the bare slot centre is no longer where it parks.
 		var want := pl.to_local(pa.slot_center_global(p.at)) + vis.lane_offset
 		var w := 0.0
 		while (vis.position - want).length() >= 1.0 and w < 1.0:
@@ -466,19 +458,20 @@ func test_prop_visual_lifecycle() -> void:
 				"the visual lands on its slot's center (plus its own lane offset)",
 				"pos %s vs want %s | anchor %s from %s target %s t %.2f/%.2f" %
 				[vis.position, want, vis.anchor_coord, vis.from, vis.target, vis.t, vis.t_goal])
-	# final tick: route exhausted -> done -> the visual exits into the void and frees itself.
-	# Slow the tick down FIRST: the fade below is sampled per frame, and at this suite's fast delay a
-	# single frame can cover the whole exit leg (delta/span > 1) — the same overshoot test_slow_props
-	# slows down for. Restored right after.
+# Final tick: the route is exhausted, so the visual exits into the void and frees itself.
+
+# Slow the tick down FIRST: the fade below is sampled per frame, and at this suite's fast delay a
+# single frame can cover the whole exit leg. Restored right after.
 	var fast := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = 0.4
 	p.done = true
 	ok = await run_tick(pl, [p], [], [], [])
 	check(ok, "the despawn tick completes")
-	# The exit fade must run WHILE the prop is still crossing, not after it lands: its void point is
-	# a card-width past the last slot, and the play-area rect clips there — so a fade that only
-	# started on arrival played entirely off-screen and the prop read as vanishing (owner report
-	# 2026-07-28). Sample the alpha over the leg and require it to be well down before t reaches 1.
+# The exit fade must run WHILE the prop is still crossing, not after it lands: its void point is a
+# card-width past the last slot and the play-area rect clips there, so a fade that only started on
+# arrival plays entirely off-screen and the prop reads as vanishing (owner report).
+
+# Sample the alpha over the leg and require it to be well down before t reaches 1.
 	var faded_in_flight := 1.0
 	var waited := 0.0
 	while prop_visual_count(pl) > 0 and waited < WATCHDOG_SECS:
@@ -495,12 +488,12 @@ func test_prop_visual_lifecycle() -> void:
 	check_impl(pl._visuals.is_empty(), "the PropData -> visual map is emptied (no leak)")
 	await cleanup(g, pa)
 
-## Knives/hoops run ticks_per_slot = 2: the visual must spread each slot crossing over BOTH
-## ticks (arriving as the residency ends), not sprint it in one tick and freeze for the next —
-## the freeze read as props "pausing and stopping" in playtests.
+# Knives and hoops run ticks_per_slot = 2: the visual must spread each slot crossing over BOTH
+# ticks, arriving as the residency ends, rather than sprinting it in one tick and freezing for the
+# next. That freeze read as props "pausing and stopping" in playtests.
 func test_slow_props_move_continuously() -> void:
-	# Slow the tick WAY down for this test: at FAST_DELAY a single frame can overshoot the
-	# whole leg (delta/span > 1), which would false-fail the mid-flight assertion.
+# Slow the tick WAY down for this test: at the fast delay a single frame can overshoot the whole
+# leg, which would false-fail the mid-flight assertion.
 	var fast := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = 0.4
 	var g := make_board_game(3)
@@ -513,23 +506,25 @@ func test_slow_props_move_continuously() -> void:
 	p.route = [slot_coord(0), slot_coord(1), slot_coord(2)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick completes")
-	p.at = p.route.pop_front()   # enter slot 0
+# enter slot 0
+	p.at = p.route.pop_front()
 	ok = await run_tick(pl, [p], [], [p], [])
 	check(ok, "entry tick into slot 0 completes")
-	# Assert mid-flight on a FULL-length leg (slot 0 -> slot 1); the staged->entry leg can be
-	# arbitrarily short, so it can't distinguish sprint from smooth.
-	p.at = p.route.pop_front()   # enter slot 1
+# Assert mid-flight on a FULL-length leg, slot 0 to slot 1. The staged-to-entry leg can be
+# arbitrarily short, so it cannot distinguish a sprint from smooth motion.
+# enter slot 1
+	p.at = p.route.pop_front()
 	ok = await run_tick(pl, [p], [], [p], [])
 	check(ok, "a 2-ticks-per-slot mover's entry tick completes at its half-way share")
 	var vis : PropVisual = pl._visuals.get(p)
 	var target := pl.to_local(pa.slot_center_global(p.at))
 	check(vis != null and (vis.position - target).length() > 1.0,
 			"the slow prop is still mid-flight after its entry tick (no one-tick sprint)")
-	# the in-between tick (no new slot) carries it the rest of the way — never frozen
+# the in-between tick, with no new slot, carries it the rest of the way and is never frozen
 	ok = await run_tick(pl, [p], [], [], [])
 	check(ok, "the mid-slot tick completes")
-	# Settle a few frames (see the timing NOTE in test_prop_visual_lifecycle); re-derive `target`
-	# live each frame since _repin chases the settling board. Dump the leg state on failure.
+# Settle a few frames, for the timing reason given in test_prop_visual_lifecycle, and re-derive the
+# target live each frame since _repin chases the settling board. Dump the leg state on failure.
 	var w := 0.0
 	target = pl.to_local(pa.slot_center_global(p.at))
 	while vis != null and (vis.position - target).length() >= 1.0 and w < 1.0:
@@ -555,7 +550,7 @@ func test_teleport_blinks() -> void:
 	p.route = [slot_coord(0)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "spawn tick before the teleport completes")
-	# a hook teleported the prop: the view must BLINK it to the destination, never lerp
+# a hook teleported the prop: the view must BLINK it to the destination, never lerp
 	p.at = slot_coord(2)
 	p.route = [] as Array[BoardCoord]
 	pl.begin_prop_tick([p], [], [], [[p, slot_coord(0), slot_coord(2)] as Array])
@@ -571,16 +566,17 @@ func test_teleport_blinks() -> void:
 	await cleanup(g, pa)
 
 func test_reactions_drive_card_pose() -> void:
-	# ⚠ SLOW THE ANIMATIONS DOWN FOR THIS TEST, exactly as test_slow_props_move_continuously does.
-	#
-	# The pulse below is a TWEEN PHASE, `delay * card_jump_pulse_fraction` long. At the suite's shared
-	# `TestLog.speed_base_delay` of 0.01 that is NINE MILLISECONDS — shorter than one 60 fps frame —
-	# so "poll until scale.x > 1.05" was really asking a once-per-frame sampler to land inside a
-	# sub-frame window. It passed only by luck of phase, and any change to the frame budget (a
-	# cheaper or costlier shader anywhere in the process is enough) flips it deterministically:
-	# measured 2026-07-30, 601 samples over 10 s all reading exactly 1.0 while `anim_jump` was
-	# provably being called with the right card. At 0.4 the pulse spans ~7 frames and the check
-	# measures the behaviour it claims to.
+# ⚠ SLOW THE ANIMATIONS DOWN FOR THIS TEST, exactly as test_slow_props_move_continuously does. The
+# pulse below is a TWEEN PHASE lasting delay times card_jump_pulse_fraction, and at the suite's
+# shared speed_base_delay of 0.01 that is NINE MILLISECONDS, shorter than one 60 fps frame.
+
+# So "poll until scale.x > 1.05" asks a once-per-frame sampler to land inside a sub-frame window. It
+# passes only by luck of phase, and any change to the frame budget - a cheaper or costlier shader
+# anywhere in the process is enough - flips it deterministically.
+
+# Measured: 601 samples over 10 s all reading exactly 1.0 while anim_jump was provably being called
+# with the right card. At 0.4 the pulse spans about 7 frames and the check measures the behaviour it
+# claims to.
 	var fast := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = 0.4
 	var g := make_board_game(2)
@@ -597,7 +593,7 @@ func test_reactions_drive_card_pose() -> void:
 	p.route = [slot_coord(1)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [], [p], [])
 	check(ok, "the reaction tick completes")
-	# anim_jump tweens the card's offset up; poll for the raised pose
+# anim_jump tweens the card's offset up, so poll for the raised pose
 	var raised := false
 	var waited := 0.0
 	while not raised and waited < WATCHDOG_SECS:
@@ -605,7 +601,7 @@ func test_reactions_drive_card_pose() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	check(raised, "a JUMP-hinting prop over a card makes the card jump")
-	# let the first jump's scale pulse finish (raised pose holds, scale settles back to 1)
+# let the first jump's scale pulse finish: the raised pose holds, the scale settles back to 1
 	var settled := false
 	waited = 0.0
 	while not settled and waited < WATCHDOG_SECS:
@@ -614,9 +610,9 @@ func test_reactions_drive_card_pose() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	check(settled, "the jump pose holds (raised, pulse finished) while the prop sits on the card")
-	# a SECOND prop arriving on the already-held card must RE-trigger the pose (scale pulse
-	# per arrival) — a train reacts once per prop, not once per occupancy streak (owner
-	# report 2026-07-13: cards "don't reliably spin" as knife trains crossed them).
+# A SECOND prop arriving on the already-held card must RE-trigger the pose, one scale pulse per
+# arrival: a train reacts once per prop, not once per occupancy streak. The owner reported cards
+# that "don't reliably spin" as knife trains crossed them.
 	var p2 := PropData.new()
 	p2.kind = 0
 	p2.mods = [JumpHintMod.new()] as Array[PropModifier]
@@ -631,7 +627,7 @@ func test_reactions_drive_card_pose() -> void:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 	check(pulsed, "a second prop arriving on a held card re-triggers its reaction (per-prop pulse)")
-	# both props move on -> the card returns to rest
+# both props move on, so the card returns to rest
 	p.at = slot_coord(1)
 	p2.at = slot_coord(1)
 	ok = await run_tick(pl, [p, p2], [], [p, p2], [])
@@ -646,18 +642,18 @@ func test_reactions_drive_card_pose() -> void:
 	SettingsManager.settings.base_delay = fast
 	await cleanup(g, pa)
 
-## Sample the RAW global position EVERY frame of a row prop's whole flight — staging, sweep,
-## despawn tween, one continuous sampler with no per-tick gaps — and hold it to the LIVE row
-## envelope. Mid-flight a focus grab resizes the layout exactly like a player hovering a card;
-## a leg locked to stale pixels then walks a diagonal off its row (owner report) —
-## the prop must ride the shifted row instead. The sweep must also never reverse direction
-## (derived from the raw samples, printed with positions).
+# Sample the RAW global position EVERY frame of a row prop's whole flight - staging, sweep, despawn
+# tween, one continuous sampler with no per-tick gaps - and hold it to the LIVE row envelope.
+
+# Mid-flight a focus grab resizes the layout exactly like a player hovering a card; a leg locked to
+# stale pixels then walks a diagonal off its row (owner report), and the prop must ride the shifted
+# row instead. The sweep must also never reverse direction, derived from the raw samples.
 func test_row_prop_never_leaves_its_row() -> void:
-	# Slow the tick so each leg spans many sampled frames (FAST_DELAY gives ~1 frame per leg).
+# Slow the tick so each leg spans many sampled frames; the fast delay gives about one per leg.
 	var fast := SettingsManager.settings.base_delay
 	SettingsManager.settings.base_delay = 0.3
-	# Column 0 — the ENTRY column — is EMPTY: the exact live shape (props enter at an empty
-	# edge column) whose inflated-header fallback staged knives diagonally off the board.
+# Column 0, the ENTRY column, is EMPTY: the exact live shape, props entering at an empty edge
+# column, whose inflated-header fallback staged knives diagonally off the board.
 	var g := make_board_game(4, [0] as Array[int])
 	var pa := make_play_area()
 	await settle(pa)
@@ -666,7 +662,8 @@ func test_row_prop_never_leaves_its_row() -> void:
 	p.kind = 1
 	p.ticks_per_slot = 2
 	p.route = g.row_slot_path(slot_coord(0), true)
-	p.countdown = p.ticks_per_slot   # what run_props' spawn stage sets for a batch's first prop
+# What run_props' spawn stage sets for a batch's first prop.
+	p.countdown = p.ticks_per_slot
 	var x_min := pa.slot_center_global(slot_coord(0)).x
 	var x_max := pa.slot_center_global(BoardCoord.new(0, 3, BoardCoord.ENTRANCE_ROW, 0)).x
 	var pitch := (x_max - x_min) / 3.0
@@ -677,7 +674,8 @@ func test_row_prop_never_leaves_its_row() -> void:
 	var label_poked : Array[bool] = [false]
 	var poll := func(vis: PropVisual) -> void:
 		var gp := vis.global_position
-		var row_y := pa.slot_center_global(slot_coord(0)).y   # LIVE: the relayout pokes move the row
+# LIVE, because the relayout pokes move the row.
+		var row_y := pa.slot_center_global(slot_coord(0)).y
 		if absf(gp.y - row_y) > band and stray.is_empty():
 			stray.append("y strayed to %s (live row y %.0f)" % [gp, row_y])
 		elif (gp.x < x_min - 2.0 * pitch or gp.x > x_max + 2.0 * pitch) and stray.is_empty():
@@ -685,16 +683,18 @@ func test_row_prop_never_leaves_its_row() -> void:
 		if not poked[0] and samples.size() >= 25:
 			poked[0] = true
 			var control := pa.control_for_coord(Vector3i(0, 1, 0))
-			if control: control.grab_focus()   # relayout poke 1: focus resizes headers/rows
+# Relayout poke 1: focus resizes headers and rows.
+			if control: control.grab_focus()
 		if not label_poked[0] and samples.size() >= 45:
 			label_poked[0] = true
-			# Relayout poke 2 — THE real mid-run trigger: a banked line score widens its
-			# BigNumberLabel and shifts the whole board (live submits do this every pass).
+# Relayout poke 2, THE real mid-run trigger: a banked line score widens its BigNumberLabel and
+# shifts the whole board, which live scoring passes do every pass.
 			g.resize_score_zone(g.state.scores_row_upper, 1)
 			g.state.scores_row_upper[0].plus_equals(987654321)
 			pa.update_score_controls()
 	var flight_ok : Array[bool] = [false]
-	_drive_route_flight(pl, p, flight_ok)   # concurrent: the sampler below owns the frames
+# Concurrent: the sampler below owns the frames.
+	_drive_route_flight(pl, p, flight_ok)
 	await _sample_flight(pl, p, samples, poll,
 			func() -> Vector2: return pa.slot_center_global(slot_coord(0)))
 	check(flight_ok[0], "every tick of the row flight completes")
@@ -710,16 +710,20 @@ func test_row_prop_never_leaves_its_row() -> void:
 	SettingsManager.settings.base_delay = fast
 	await cleanup(g, pa)
 
-## ONE shared movement contract, verified per kind from RAW frame-sampled positions (never the
-## interpolator's internals): row kinds (hoop, knife) sweep their row straight in one direction
-## and never reverse; ballistic kinds (ball, fire) fly monotonically toward their target with
-## exactly one vertical turn (the arc's peak) and end AT the target. All four ride the same
-## travel_curve — only arc_height differs — so a kind diverging here means someone forked the
-## movement code. Direction changes print with their positions.
+# ONE shared movement contract, verified per kind from RAW frame-sampled positions and never from
+# the interpolator's internals.
+
+# Row kinds, hoop and knife, sweep their row straight in one direction and never reverse; ballistic
+# kinds, ball and fire, fly monotonically toward their target with exactly one vertical turn at the
+# arc's peak and end AT the target.
+
+# All four ride the same travel_curve and only arc_height differs, so a kind diverging here means
+# someone forked the movement code. Direction changes print with their positions.
 func test_each_kind_moves_as_expected() -> void:
 	var fast := SettingsManager.settings.base_delay
-	SettingsManager.settings.base_delay = 0.3   # many sampled frames per leg (see row test)
-	# --- row travelers: hoop (kind 0) and knife (kind 1) share the straight sweep ---
+# Many sampled frames per leg, as in the row test.
+	SettingsManager.settings.base_delay = 0.3
+# row travellers: hoop and knife share the straight sweep
 	for kind : int in [0, 1]:
 		var label : String = "hoop" if kind == 0 else "knife"
 		var g := make_board_game(4)
@@ -729,15 +733,15 @@ func test_each_kind_moves_as_expected() -> void:
 		var p := PropData.new()
 		p.kind = kind
 		p.ticks_per_slot = 2
-		# Hoop sweeps RIGHT-TO-LEFT (entity_side_for_row sends real hoops and knives in from
-		# opposite edges), knife left-to-right — both directions of the shared sweep covered.
+# The hoop sweeps RIGHT-TO-LEFT and the knife left-to-right, entity_side_for_row sending real hoops
+# and knives in from opposite edges, so both directions of the shared sweep are covered.
 		p.route = g.row_slot_path(slot_coord(0), kind == 1)
 		p.countdown = p.ticks_per_slot
 		var band := CardVisual.card_size_play.y * 0.5
 		var samples : Array[Vector2] = []
 		var flight_ok : Array[bool] = [false]
 		_drive_route_flight(pl, p, flight_ok)
-		# samples are relative to the LIVE row anchor, so y deviation is directly |rel.y|
+# samples are relative to the LIVE row anchor, so y deviation is directly the absolute rel.y
 		await _sample_flight(pl, p, samples, Callable(),
 				func() -> Vector2: return pa.slot_center_global(slot_coord(0)))
 		check(flight_ok[0], "%s flight completes" % label)
@@ -749,7 +753,7 @@ func test_each_kind_moves_as_expected() -> void:
 		check(_direction_changes(samples, 0, label) == 0,
 				"%s sweeps its row in ONE direction (raw positions)" % label)
 		await cleanup(g, pa)
-	# --- ballistic: ball (kind 2) and fire (kind 3) share the arc ---
+# ballistic: ball and fire share the arc
 	for kind : int in [2, 3]:
 		var label : String = "ball" if kind == 2 else "fire"
 		var g := make_board_game(3)
@@ -758,7 +762,8 @@ func test_each_kind_moves_as_expected() -> void:
 		var pl := pa.prop_layer
 		var p := PropData.new()
 		p.kind = kind
-		p.source = g.state.upper_zone[0].datas[0]   # spawns at its card, arcs to the target
+# Spawns at its card and arcs to the target.
+		p.source = g.state.upper_zone[0].datas[0]
 		p.route = [slot_coord(2)] as Array[BoardCoord]
 		p.countdown = p.ticks_per_slot
 		var samples : Array[Vector2] = []
@@ -770,7 +775,8 @@ func test_each_kind_moves_as_expected() -> void:
 		check(_direction_changes(samples, 0, label) == 0,
 				"%s flies toward its target without reversing x (raw positions)" % label)
 		var y_flips := _direction_changes(samples, 1, label)
-		if y_flips != 1:   # dump the raw flight so a failure names the whole path, not one point
+# Dump the raw flight, so a failure names the whole path rather than one point.
+		if y_flips != 1:
 			TestLog.line("[%s] FULL SAMPLE DUMP (%d frames, board-relative): %s"
 					% [label, samples.size(), samples])
 		check(y_flips == 1,
@@ -782,8 +788,8 @@ func test_each_kind_moves_as_expected() -> void:
 		await cleanup(g, pa)
 	SettingsManager.settings.base_delay = fast
 
-## Ballistic props (ball/fire) must POOF at their target — continuing along the card->target
-## diagonal on despawn sent them flying off the board in seemingly random directions.
+# Ballistic props, ball and fire, must POOF at their target. Continuing along the card-to-target
+# diagonal on despawn sends them flying off the board in seemingly random directions.
 func test_ballistic_despawn_poofs_in_place() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -791,7 +797,8 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 	var pl := pa.prop_layer
 	var p := PropData.new()
 	p.kind = 2
-	p.source = g.state.upper_zone[0].datas[0]   # spawns at its card, arcs to the target
+# Spawns at its card and arcs to the target.
+	p.source = g.state.upper_zone[0].datas[0]
 	p.route = [slot_coord(2)] as Array[BoardCoord]
 	var ok := await run_tick(pl, [p], [p], [], [])
 	check(ok, "ballistic spawn tick completes")
@@ -819,10 +826,11 @@ func test_ballistic_despawn_poofs_in_place() -> void:
 			"a ballistic prop poofs AT its target (no random exit direction)", strayed)
 	await cleanup(g, pa)
 
-## A batch's props map onto their kind's PropFormationData points (owner spec):
-## with an authored formation, a burst reads as a condensed formation instead of a single-file
-## line; kinds with NO authored set (the default — no .tres shipped) fly the exact slot line.
-## The set is injected into the layer's cache here, never loaded from disk.
+# A batch's props map onto their kind's PropFormationData points: with an authored formation a burst
+# reads as a condensed formation instead of a single-file line.
+
+# Kinds with NO authored set, the default, fly the exact slot line. The set is injected into the
+# layer's cache here, never loaded from disk.
 func test_batch_props_stagger() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -844,7 +852,8 @@ func test_batch_props_stagger() -> void:
 	b.kind = 1
 	b.ticks_per_slot = 2
 	b.route = route.duplicate()
-	b.countdown = b.ticks_per_slot + 1   # run_props stages the i-th of a batch one tick back
+# run_props stages the i-th of a batch one tick back
+	b.countdown = b.ticks_per_slot + 1
 	var ok := await run_tick(pl, [a, b], [a, b], [], [])
 	check(ok, "the batch spawn tick completes")
 	var va : PropVisual = pl._visuals.get(a)
@@ -854,32 +863,35 @@ func test_batch_props_stagger() -> void:
 			"%s vs %s" % [va.position if va else Vector2.INF, vb.position if vb else Vector2.INF])
 	await cleanup(g, pa)
 
-## TASK 2 (owner spec): spread_by_separation points are STORED separation-agnostically
-## in FULL-CARD normalized space — ratio 1 when the separation equals the card height. Placing the
-## same visual pattern at ANY separation stores the SAME points, and offsets_for re-projects them
-## into whatever strip the live separation gives (same strip FRACTION at every level).
+# spread_by_separation points are STORED separation-agnostically, in FULL-CARD normalized space,
+# with ratio 1 when the separation equals the card height.
+
+# Placing the same visual pattern at ANY separation stores the SAME points, and offsets_for
+# re-projects them into whatever strip the live separation gives, the same strip FRACTION at every
+# level.
 func test_formation_separation_agnostic() -> void:
 	var top := -CardVisual.CARD_SIZE.y * 0.5
 	var max_factor := CardVisual.CARD_SIZE.y / float(CardVisual.CARD_SEPARATION)
-	# Ratio-1 reference: with the strip == the full card, stored points project 1:1.
+# Ratio-1 reference: with the strip equal to the full card, stored points project 1:1.
 	check_impl(is_equal_approx(PropFormationSet.norm_to_strip(12.5, max_factor), 12.5)
 			and is_equal_approx(PropFormationSet.strip_to_norm(12.5, max_factor), 12.5),
 			"at separation == card height (ratio 1) points store and project 1:1")
-	# Placement is separation-agnostic: authoring the SAME pattern (same fraction of the visible
-	# strip) at min, default, and max separation stores the SAME normalized point — and the
-	# strip -> norm -> strip round trip is exact at every factor.
+# Placement is separation-agnostic: authoring the SAME pattern, the same fraction of the visible
+# strip, at min, default and max separation stores the SAME normalized point, and the strip to norm
+# to strip round trip is exact at every factor.
 	var fraction := 0.6
 	var stored_ys : Array[float] = []
 	for factor : float in [0.25, 1.0, 2.0, max_factor] as Array[float]:
 		var strip_h := PropFormationSet.strip_ratio(factor) * CardVisual.CARD_SIZE.y
-		var placed := top + fraction * strip_h   # inside the strip — the round-trippable domain
+# Inside the strip, which is the round-trippable domain.
+		var placed := top + fraction * strip_h
 		var stored := PropFormationSet.strip_to_norm(placed, factor)
 		stored_ys.append(stored)
 		check_impl(is_equal_approx(PropFormationSet.norm_to_strip(stored, factor), placed),
 				"strip -> norm -> strip round-trips exactly at factor %.2f" % factor)
-	# A point placed BELOW the strip clamps to the card bottom on store — a formation can never
-	# leave one card (the authored knife.tres briefly stored y=73 on a 50-tall card and knives
-	# sank 1.5 cards under their row at high separation); bad stored values also clamp on read.
+# A point placed BELOW the strip clamps to the card bottom on store, so a formation can never leave
+# one card: a stored y of 73 on a 50-tall card sank knives 1.5 cards under their row at high
+# separation. Bad stored values also clamp on read.
 	check_impl(is_equal_approx(PropFormationSet.strip_to_norm(20.0, 0.25),
 			CardVisual.CARD_SIZE.y * 0.5),
 			"an out-of-strip placement stores the card bottom, never past the card")
@@ -890,8 +902,8 @@ func test_formation_separation_agnostic() -> void:
 		check_impl(is_equal_approx(stored_ys[i], stored_ys[0]),
 				"the same visual pattern stores the SAME normalized point at every separation",
 				"factor set stored %s" % str(stored_ys))
-	# Consume side: a stored bottom-of-card point always lands at the BOTTOM of the current strip —
-	# the whole card at max separation, the top sliver at min (offsets_for projection).
+# Consume side: a stored bottom-of-card point always lands at the BOTTOM of the current strip, the
+# whole card at max separation and the top sliver at min.
 	var fdata := PropFormationData.new()
 	fdata.spread_by_separation = true
 	fdata.points = PackedVector2Array([Vector2(3.0, CardVisual.CARD_SIZE.y * 0.5)])
@@ -903,19 +915,23 @@ func test_formation_separation_agnostic() -> void:
 		check_impl(is_equal_approx(got.y, top + strip_h) and is_equal_approx(got.x, 3.0),
 				"offsets_for projects a full-card point onto the strip bottom at factor %.2f" % factor,
 				"got %s want y %.2f" % [got, top + strip_h])
-	# spread_by_separation OFF keeps fixed card-space y regardless of the factor.
+# spread_by_separation OFF keeps a fixed card-space y regardless of the factor.
 	fdata.spread_by_separation = false
 	var fixed_a : Vector2 = fset.offsets_for(1, 7, 0.5)[0]
 	var fixed_b : Vector2 = fset.offsets_for(1, 7, max_factor)[0]
 	check_impl(fixed_a.is_equal_approx(fixed_b),
 			"a non-spread formation ignores the separation factor entirely")
 
-## Formation offsets and prop art must track LIVE settings mid-flight (owner report:
-## separation/card-scale changes did nothing until the next spawn). Root cause was
-## capture-at-spawn — and it is exactly why the earlier tests missed it: none of them touched a
-## setting while a prop was airborne. This one does: spawn a spread-formation knife, then move
-## the separation and card-scale sliders and assert the offset re-projects within a frame, the
-## spread clamps at one full card, and the art scales with the cards.
+# Formation offsets and prop art must track LIVE settings mid-flight. The owner reported that
+# separation and card-scale changes did nothing until the next spawn, and the root cause was
+# capture-at-spawn.
+
+# That is exactly why the earlier tests missed it: none of them touched a setting while a prop was
+# airborne.
+
+# This one spawns a spread-formation knife, then moves the separation and card-scale sliders and
+# asserts the offset re-projects within a frame, the spread clamps at one full card, and the art
+# scales with the cards.
 func test_formation_live_rescale() -> void:
 	var g := make_board_game(3)
 	var pa := make_play_area()
@@ -923,7 +939,8 @@ func test_formation_live_rescale() -> void:
 	var pl := pa.prop_layer
 	var fdata := PropFormationData.new()
 	fdata.spread_by_separation = true
-	fdata.points = PackedVector2Array([Vector2(4.0, CardVisual.CARD_SIZE.y * 0.5)])  # strip bottom
+# strip bottom
+	fdata.points = PackedVector2Array([Vector2(4.0, CardVisual.CARD_SIZE.y * 0.5)])
 	var fset := PropFormationSet.new()
 	fset.formations = [fdata] as Array[PropFormationData]
 	pl._formation_sets[1] = fset
@@ -939,21 +956,21 @@ func test_formation_live_rescale() -> void:
 	var prev_scale := SettingsManager.settings.card_scale
 	var prev_sep := SettingsManager.settings.card_separation_scale
 	var top := -CardVisual.CARD_SIZE.y * 0.5
-	# Separation change re-projects the offset IMMEDIATELY (same frame family as the cards).
+# A separation change re-projects the offset IMMEDIATELY, in the same frame family as the cards.
 	SettingsManager.settings.card_separation_scale = 2.0
 	await get_tree().process_frame
 	var strip_h := PropFormationSet.strip_ratio(2.0) * CardVisual.CARD_SIZE.y
 	check(vis != null and is_equal_approx(vis.lane_offset.y, (top + strip_h) * prev_scale),
 			"a separation change re-projects a spread offset mid-flight",
 			str(vis.lane_offset) if vis else "no visual")
-	# Max spread clamps at exactly one card even when the separation setting overshoots.
+# Max spread clamps at exactly one card even when the separation setting overshoots.
 	SettingsManager.settings.card_separation_scale = 50.0
 	await get_tree().process_frame
 	check(vis != null and is_equal_approx(vis.lane_offset.y,
 			CardVisual.CARD_SIZE.y * 0.5 * prev_scale),
 			"spread height clamps at one full card at absurd separation",
 			str(vis.lane_offset) if vis else "no visual")
-	# Card-scale change rescales the whole offset AND the prop art, live.
+# A card-scale change rescales the whole offset AND the prop art, live.
 	SettingsManager.settings.card_separation_scale = 1.0
 	SettingsManager.settings.card_scale = prev_scale * 2.0
 	await get_tree().process_frame
@@ -978,15 +995,17 @@ func test_status_and_description_surface() -> void:
 	var card := g.state.upper_zone[0].datas[0]
 	card.add_status(CardModifierStatus.stacked(StatusJuggling, 2))
 	var vis : CardVisual = pa.data_card.get(card)
-	# A status's ONLY card-side presence is now its FX — the StatusLayer that drew a placeholder icon
-	# and a stack count in the card's top-left is deleted (owner). So the surface to assert
-	# is that the status DECLARED something and the card is showing it; a status that declares no FX is
-	# deliberately invisible on the board, and `CardModifierStatus.fx_request` carries that rule.
+# A status's ONLY card-side presence is its FX: the StatusLayer that drew a placeholder icon and a
+# stack count in the card's top-left is deleted (owner).
+
+# So the surface to assert is that the status DECLARED something and the card is showing it. A
+# status that declares no FX is deliberately invisible on the board, and
+# CardModifierStatus.fx_request carries that rule.
 	check(vis != null and not vis._fx_requests().is_empty(),
 			"a card with a status collects that status's declared FX")
 	check_impl(vis != null and vis.fx != null and vis.fx.visible,
 			"the front-facing card is showing its FX attachment")
-	# describe_card is THE text every inspector surface shows (focus panel, viewers)
+# describe_card is THE text every inspector surface shows: the focus panel and the viewers
 	var text := ControlCard.describe_card(card)
 	check(text.contains(StatusJuggling.new().get_str()) and text.contains("×2"),
 			"the card description lists the status with its stack count", text)
@@ -999,18 +1018,19 @@ func test_focus_inspector_all_input_modes() -> void:
 	await settle(pa)
 	var card := g.state.upper_zone[0].datas[0]
 	var control : Control = pa.data_ui.get(card)
-	control.grab_focus()   # keyboard/controller path
+# the keyboard and controller path
+	control.grab_focus()
 	check(pa._focus_info != null and pa._focus_info.visible,
 			"keyboard/controller focus pops the card inspector panel")
 	check(pa._focus_info_label.text == ControlCard.describe_card(card),
 			"the inspector shows the focused card's full description")
-	# descriptions must NEVER interact with input: pure-display panel, no tooltip Window
+# descriptions must NEVER interact with input: a pure-display panel, no tooltip Window
 	check(pa._focus_info.mouse_filter == Control.MOUSE_FILTER_IGNORE
 			and pa._focus_info.focus_mode == Control.FOCUS_NONE,
 			"the inspector ignores the mouse and can never take focus (no click blocking)")
 	check(pa._focus_info.get_parent() == pa.overlay_layer,
 			"the inspector stays a permanent child of the overlay layer (scroll content) — never of a card control")
-	# the per-frame pin places it beside the anchor control (right of it, or flipped left)
+# the per-frame pin places it beside the anchor control, right of it or flipped left
 	await get_tree().process_frame
 	var panel_x := pa._focus_info.global_position.x
 	var right_x : float = control.global_position.x + control.size.x + pa.FOCUS_INFO_GAP
@@ -1020,34 +1040,37 @@ func test_focus_inspector_all_input_modes() -> void:
 			"panel x %.1f vs %.1f / %.1f" % [panel_x, right_x, left_x])
 	check(control.tooltip_text.is_empty(),
 			"board controls carry NO native tooltip (its popup window blocked clicks)")
-	# the mouse path shows the same panel (hover grabs focus), and hides on hover exit
+# the mouse path shows the same panel, hover grabbing focus, and hides on hover exit
 	pa.moused_hovered_control = control
 	pa.on_control_focus_entered(control)
 	check(pa._focus_info.visible, "mouse-hover focus pops the same inspector")
 	pa.moused_hovered_control = null
-	pa.hide_focus_info()   # what the control's mouse_exited handler does
+# What the control's mouse_exited handler does.
+	pa.hide_focus_info()
 	check(not pa._focus_info.visible, "leaving the hover hides it")
 	pa.on_control_focus_entered(control)
 	check(pa._focus_info.visible, "re-focusing pops it again")
-	pa.ungrab_cards()   # the ui_cancel path
+# The ui_cancel path.
+	pa.ungrab_cards()
 	check(not pa._focus_info.visible, "ui_cancel/ungrab dismisses the inspector")
 	await cleanup(g, pa)
 
-# ==============================================================================
-# FULL VIEW SCORING PASS — a real GameView (real game_view.begin_prop_tick seam), real
-# starter deck (every card suited -> scored melds spawn props), driven like E2E's
-# win scenario but WITH the view attached. The scoring pass runs under a watchdog: a
-# prop-tick sync regression fails the check instead of hanging the suite.
-# ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is no longer an act that
-# banks a performed board -- a line scores the instant a placement completes it, so the
-# fifth card into row 0 is what makes the props fly.
-# ==============================================================================
+# FULL VIEW SCORING PASS: a real GameView on the real begin_prop_tick seam, a real starter deck
+# whose every card is suited so scored melds spawn props, driven like the E2E win scenario but WITH
+# the view attached.
+
+# The scoring pass runs under a watchdog, so a prop-tick sync regression fails the check instead of
+# hanging the suite.
+
+# ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is not an act that banks a performed
+# board: a line scores the instant a placement completes it, so the fifth card into row 0 is what
+# makes the props fly.
 func test_game_view_scoring_pass_with_props() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	# FROZEN test deck, never Decks/deck.gd: this seeded run's observations (the 424242 deal
-	# scores knife melds) replay against TestDecks.seeded_deck's exact composition.
+# FROZEN test deck, never Decks/deck.gd: this seeded run's observations, the 424242 deal scoring
+# knife melds, replay against TestDecks.seeded_deck's exact composition.
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
@@ -1064,8 +1087,8 @@ func test_game_view_scoring_pass_with_props() -> void:
 	var pa := view.play_area
 	pa.flush_rebuild()
 	check(not pa.ui_data.is_empty(), "the deal built board controls")
-	# grab_focus needs a FOCUSABLE control — zone headers of occupied columns are FOCUS_NONE,
-	# and ui_data's first key is usually one of those.
+# grab_focus needs a FOCUSABLE control, and zone headers of occupied columns are FOCUS_NONE while
+# ui_data's first key is usually one of those.
 	var focusable : Control = null
 	for control : Control in pa.ui_data:
 		if control.focus_mode == Control.FOCUS_ALL:
@@ -1076,15 +1099,16 @@ func test_game_view_scoring_pass_with_props() -> void:
 	check(pa._focus_info != null and pa._focus_info.visible
 			and not pa._focus_info_label.text.is_empty(),
 			"focusing a dealt board card pops its inspector text in the real view")
-	# fire the submit WITHOUT awaiting it, then poll EVERY FRAME: watchdog + prop high-water
-	# mark + the live-seam guards (owner reports 2026-07-13): every hoop/knife must hold its
-	# anchor row's y through the REAL submit — score labels re-lay the board every banked pass,
-	# which is exactly where the live diagonal drift appeared — and every kind that spawns must
-	# enter the visible viewport at least once (hoops reportedly never show in the real view).
-	# ⚠ THE WATCHER GOES FIRST, and the placements are driven in the foreground after it. The
-	# other way round -- start the action, then await the watcher -- lets a scoring pass that
-	# resolves inside one frame finish before the watcher has polled even once, and the test
-	# then reports "no props" about a pass it never actually looked at.
+# Fire the placement WITHOUT awaiting it, then poll EVERY FRAME: watchdog, prop high-water mark and
+# the live-seam guards from the owner's reports.
+
+# Every hoop and knife must hold its anchor row's y through the REAL pass, since score labels re-lay
+# the board on every banked pass and that is exactly where the live diagonal drift appeared, and
+# every kind that spawns must enter the visible viewport at least once.
+
+# ⚠ THE WATCHER GOES FIRST, and the placements are driven in the foreground after it. The other way
+# round lets a scoring pass that resolves inside one frame finish before the watcher has polled even
+# once, and the test then reports "no props" about a pass it never looked at.
 	var finished : Array[bool] = [false]
 	var spawned_kinds : Dictionary[String, bool] = {}
 	var visible_kinds : Dictionary[String, bool] = {}
@@ -1110,11 +1134,12 @@ func test_game_view_scoring_pass_with_props() -> void:
 				"every spawned %s entered the visible viewport during the submit" % kind_name,
 				"spawned but never on-screen")
 	check(g.state.live_total() > 0, "the completed line paid out", str(g.state.live_total()))
-	# ⚠ AND THE PLAYER IS SHOWN IT. The score is derived from the per-grid buckets, which are
-	# BigNumbers written in place -- nothing about writing one announces itself, so a HUD that
-	# is merely correct when something else happens to refresh it is not a live HUD. Checked
-	# against the label's TEXT, not against the state, so a label wired to a retired field
-	# (which reads 0 forever) cannot pass.
+# ⚠ AND THE PLAYER IS SHOWN IT. The score is derived from the per-grid buckets, which are BigNumbers
+# written in place, and nothing about writing one announces itself, so a HUD that is merely correct
+# when something else happens to refresh it is not a live HUD.
+
+# It is checked against the label's TEXT rather than against the state, so a label wired to a
+# retired field, which reads 0 forever, cannot pass.
 	check(view.total_label.text == str(g.state.live_total()),
 			"the HUD shows the show's live score",
 			"label %s vs live %d" % [view.total_label.text, g.state.live_total()])
@@ -1125,37 +1150,40 @@ func test_game_view_scoring_pass_with_props() -> void:
 	check(prop_visual_count(pa.prop_layer) == 0,
 			"no prop visual is stranded after the act",
 			str(prop_visual_count(pa.prop_layer)))
-	# Meld jumps are DESIGNED to hold through the effects pass (score_line calls reset_meld
-	# only after _run_score_effects) — but by the end of the submit every surviving card must
-	# be back at rest: a stuck jump/spin here is the owner-reported animation-state bug.
+# Meld jumps are DESIGNED to hold through the effects pass, score_line calling reset_meld only after
+# _run_score_effects, but by the end every surviving card must be back at rest: a stuck jump or spin
+# here is the owner-reported animation-state bug.
 	var rest_detail : Array[String] = [""]
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card is at rest after the whole submit (no stuck meld jump or spin)",
 			rest_detail[0])
-	picture_vp.queue_free()   # frees view and its Game child too
+# Frees the view and its Game child too.
+	picture_vp.queue_free()
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
-	# join any in-flight background save BEFORE clearing, then put reality back (E2E pattern)
+# Join the background save before clearing, then put reality back.
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 
-## `_watch_live_props` in background form: same watch, result written into `out[0]` so the
-## caller can start it and then drive the action itself.
+# _watch_live_props in background form: the same watch, with the result written into out[0] so the
+# caller can start it and then drive the action itself.
 func _watch_live_props_into(out: Array[int], pa: PlayArea, flag: Array[bool],
 		spawned_kinds: Dictionary[String, bool], visible_kinds: Dictionary[String, bool],
 		row_stray: Array[String]) -> void:
 	out[0] = await _watch_live_props(pa, flag, spawned_kinds, visible_kinds, row_stray)
 
-## Poll the live PropLayer every frame until `flag` flips (or the watchdog expires): record
-## which kinds spawned / were ever visible inside the viewport, and collect row-hold strays —
-## every hoop/knife must ride its anchor row's LIVE y through any mid-run relayout (score
-## labels widening, focus resizes, rebuilds). Returns the prop-visual high-water mark.
-#⚠ THE DEALT PLAN PUTS RANDOM MARKS UNDER EVERY CELL, and a card's suit effect fires only where its
-#own cell's mark agrees on suit, so the cards this pass is about to place are copied onto the cells
-#they land on. `draw_card` pops the BACK of the deck, which is what fixes the order here.
+# Poll the live PropLayer every frame until `flag` flips, or the watchdog expires: record which
+# kinds spawned and were ever visible inside the viewport, and collect row-hold strays. Every hoop
+# and knife must ride its anchor row's LIVE y through any mid-run relayout.
+
+# Returns the prop-visual high-water mark.
+
+# ⚠ THE DEALT PLAN PUTS RANDOM MARKS UNDER EVERY CELL, and a card's suit effect fires only where its
+# own cell's mark agrees on suit, so the cards this pass is about to place are copied onto the cells
+# they land on. draw_card pops the BACK of the deck, which is what fixes the order here.
 func _mark_row_from_next_draws(g: Game, count: int) -> void:
 	var grid : GridData = g.state.grids[0]
 	var deck : Array[CardData] = g.state.draw_deck
@@ -1179,11 +1207,12 @@ func _watch_live_props(pa: PlayArea, flag: Array[bool],
 			spawned_kinds[kind_name] = true
 			if view_rect.has_point(vis.global_position):
 				visible_kinds[kind_name] = true
-			# Row-hold guard: hoops/knives only (ballistic kinds arc off their row by design).
+# Row-hold guard: hoops and knives only, since ballistic kinds arc off their row by design.
 			if not (vis is HoopVisual or vis is KnifeVisual): continue
 			if vis.anchor_coord.is_nowhere(): continue
 			var anchor := pa.slot_center_global(vis.anchor_coord)
-			if anchor == Vector2.ZERO: continue   # slot vanished mid-run; nothing to hold to
+# The slot vanished mid-run, so there is nothing to hold to.
+			if anchor == Vector2.ZERO: continue
 			if absf(vis.global_position.y - anchor.y) > CardVisual.card_size_play.y * 0.75 \
 					and row_stray.size() < 5:
 				row_stray.append("%s at %s vs row y %.0f (anchor %s, leg %s -> %s)"
@@ -1193,13 +1222,13 @@ func _watch_live_props(pa: PlayArea, flag: Array[bool],
 		waited += get_process_delta_time()
 	return max_props
 
-# ==============================================================================
-# FORCED ALL-KINDS LIVE RUN — the seeded submit above spawns only what its deal happens to
-# score (the 424242 run spawns knives alone), so hoops/balls/fires never touched the REAL
-# seam there and "hoops invisible in game view" slipped through. Craft a board where ONE
-# effects pass fans all four kinds at once — including an EMPTY edge column, the live trigger
-# for the diagonal staging bug — and run the REAL _run_score_effects through the REAL GameView.
-# ==============================================================================
+# FORCED ALL-KINDS LIVE RUN. The seeded pass above spawns only what its deal happens to score, the
+# 424242 run spawning knives alone, so hoops, balls and fires never touched the REAL seam there and
+# "hoops invisible in game view" slipped through.
+
+# So a board is crafted where ONE effects pass fans all four kinds at once, including an EMPTY edge
+# column, the live trigger for the diagonal staging bug, and the REAL _run_score_effects runs
+# through the REAL GameView.
 class ProbeSkill extends CardModifierSkill:
 	func get_str() -> String: return "Talent"
 	func get_description() -> String: return ""
@@ -1225,32 +1254,36 @@ func _suited(rank: int, suit: PipSuit) -> CardData:
 	c.stage = CardData.Stage.PLAY
 	return c
 
-## ⚠ **GAP-001's REAL FINDING, AS A CHECK OF ITS OWN: NOTHING ASSERTED THAT A FULL-WIDTH BOARD FITS
-## THE WINDOW.** The 40x54 card pushed a 7-column board 35 px past a 1152-px viewport, and the way
-## that surfaced was a FIRE PROP being invisible — a prop-visibility check reporting a layout fact,
-## three steps from the cause. The board had been sitting on exactly zero margin before that change,
-## so the outline did not introduce the problem, it consumed the last of a margin nobody was watching.
-##
-## ⚠ Measured through `slot_center_global`, which is the board's OWN slot math and what every prop
-## anchors to — NOT a re-derived `columns * (width + separation)` here. Two copies of that formula is
-## the seam this repo keeps getting caught by: a copy would keep passing while the real board moved.
-##
-## ⚠ **"THE BOARD FITS THE WINDOW" IS NOT AN INVARIANT AND MUST NEVER BE ASSERTED AS ONE**
-## (owner: *"it should be possible for there to be x-column wide boards if I decide to
-## change rules, with side scrolling allowed in order to see those cards"*). Column count is content:
-## it grows through the `SkillAdderInput*` rules cards, and the rules set is free to change. `PlayArea`
-## lives in a `ScrollContainer` precisely so a board wider than the window is a SUPPORTED state, not
-## a bug. A hard fits-the-window check would fail the first time a 7th adder is added — a config
-## change, not a regression — and the first instinct would be to "fix" the game to satisfy the test.
-##
-## ⚠ **SO THE ASSERTION IS REACHABILITY, WHICH HOLDS AT EVERY WIDTH:** the scroll container's content
-## must be at least as wide as the board, so every column can be scrolled to. That is the property
-## that actually protects the player — a column outside the SCROLLABLE extent is unreachable, and
-## that is a real bug at 6 columns or 60.
-##
-## Overflow past the viewport is reported as a WARNING, never a failure: it is information (GAP-001's
-## real lesson was that the board sat on exactly ZERO margin with nothing watching), but at some
-## column count it is simply what the design does.
+# ⚠ NOTHING ASSERTED THAT A FULL-WIDTH BOARD FITS THE WINDOW. The 40x54 card pushed a 7-column
+# board 35 px past a 1152 px viewport, and the way that surfaced was a FIRE PROP being invisible: a
+# prop-visibility check reporting a layout fact, three steps from the cause.
+
+# The board had been sitting on exactly zero margin before that change, so the outline did not
+# introduce the problem, it consumed the last of a margin nobody was watching.
+
+# ⚠ Measured through slot_center_global, which is the board's OWN slot math and what every prop
+# anchors to, NOT a re-derived columns times width plus separation here. Two copies of that formula
+# is the seam this repo keeps getting caught by: a copy would keep passing while the real board moved.
+
+# ⚠ "THE BOARD FITS THE WINDOW" IS NOT AN INVARIANT AND MUST NEVER BE ASSERTED AS ONE. Owner:
+
+# > "it should be possible for there to be x-column wide boards if I decide to change rules, with
+# > side scrolling allowed in order to see those cards"
+
+# Column count is content: it grows through the adder rules cards, and the rules set is free to
+# change. PlayArea lives in a ScrollContainer precisely so a board wider than the window is a
+# SUPPORTED state, not a bug.
+
+# A hard fits-the-window check would fail the first time a 7th adder is added, a config change
+# rather than a regression, and the first instinct would be to "fix" the game to satisfy the test.
+
+# ⚠ SO THE ASSERTION IS REACHABILITY, WHICH HOLDS AT EVERY WIDTH: the scroll container's content
+# must be at least as wide as the board, so every column can be scrolled to. A column outside the
+# SCROLLABLE extent is unreachable, and that is a real bug at 6 columns or 60.
+
+# Overflow past the viewport is reported as a WARNING, never a failure. It is information, the real
+# lesson being that the board sat on exactly ZERO margin with nothing watching, but at some column
+# count it is simply what the design does.
 func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void:
 	var half := CardVisual.card_size_play.x * 0.5
 	var left := pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).x - half
@@ -1259,7 +1292,7 @@ func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void
 	var view_width := pa.get_viewport_rect().size.x
 	var margin := minf(left, view_width - right)
 
-	# THE REAL INVARIANT: every column sits inside the scrollable content, so it can be reached.
+# THE REAL INVARIANT: every column sits inside the scrollable content, so it can be reached.
 	var scroll := pa.get_node_or_null(^"SmoothScrollContainer") as ScrollContainer
 	check(scroll != null, "the play area has its scroll container (%s)" % label)
 	if scroll:
@@ -1269,9 +1302,9 @@ func _check_board_fits_window(pa: PlayArea, columns: int, label: String) -> void
 				"every column is reachable by scrolling (%s)" % label,
 				"board right edge %.1f vs scrollable right %.1f (%d columns)"
 				% [right, content_right, columns])
-	# ⚠ Information only, and deliberately NOT `warn()`: that channel is the PLACEHOLDER list (surfaces
-	# still carrying hardcoded colours), and a supported layout state does not belong in it — routing
-	# it there inflates a count the palette work reads as its own backlog.
+# ⚠ Information only, and deliberately NOT warn(): that channel is the PLACEHOLDER list, surfaces
+# still carrying hardcoded colours, and a supported layout state does not belong in it. Routing it
+# there inflates a count the palette work reads as its own backlog.
 	TestLog.line("    [board width] %s — %d columns span x %.1f..%.1f in a %.1f px viewport, margin %.1f px%s"
 			% [label, columns, left, right, view_width, margin,
 			   "" if margin >= 0.0 else "  (SCROLLING REQUIRED — supported, not a failure)"])
@@ -1283,8 +1316,8 @@ func test_all_kinds_live_in_game_view() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	# The run only bootstraps a valid save — the board below is fully crafted, so the
-	# minimal frozen deck suffices (never Decks/deck.gd; playtest decks change freely).
+# The run only bootstraps a valid save. The board below is fully crafted, so the minimal frozen deck
+# suffices, and never Decks/deck.gd, since playtest decks change freely.
 	var src_cards := TestDecks.minimal_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
@@ -1316,7 +1349,8 @@ func test_all_kinds_live_in_game_view() -> void:
 	])
 	for source : CardData in [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]:
 		_mark_cell_of(s, source)
-	g.state = s          # state_bound rebinds the view to the crafted board
+# state_bound rebinds the view to the crafted board
+	g.state = s
 	g._begin_act()
 	var pa := view.play_area
 	pa.set_card_zones()
@@ -1325,8 +1359,8 @@ func test_all_kinds_live_in_game_view() -> void:
 	result.meld = [hoop_c, knife_c, ball_c, fire_c] as Array[CardData]
 	var finished : Array[bool] = [false]
 	_effects_then_flag(g, result, finished)
-	# Reaction poses on the REAL seam: the hoop JUMPs the row talents, the knives SPIN them
-	# (PropScoreTalents/PropScoreProps reaction_for) — both must be visible on the cards.
+# Reaction poses on the REAL seam: the hoop JUMPs the row talents and the knives SPIN them, per
+# their reaction_for, and both must be visible on the cards.
 	var saw_raised : Array[bool] = [false]
 	var saw_spin : Array[bool] = [false]
 	_watch_card_poses(pa, finished, saw_raised, saw_spin)
@@ -1351,12 +1385,13 @@ func test_all_kinds_live_in_game_view() -> void:
 	while prop_visual_count(pa.prop_layer) > 0 and waited < WATCHDOG_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	# No pose may outlive the pass: reaction-jumped/spun cards all return to rest.
+# No pose may outlive the pass: reaction-jumped and spun cards all return to rest.
 	var rest_detail : Array[String] = [""]
 	check(await _await_cards_at_rest(pa, rest_detail),
 			"every card returns to rest after the effects pass (no stuck jump/spin)",
 			rest_detail[0])
-	picture_vp.queue_free()   # frees its Game child too
+# Frees its Game child too.
+	picture_vp.queue_free()
 	await get_tree().process_frame
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()

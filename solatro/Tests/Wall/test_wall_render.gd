@@ -1,13 +1,9 @@
 extends TestSuite
-# res://Tests/Wall/test_wall_render.gd
-# ==============================================================================
-# WALL RENDER (S10 CONSTRUCTION group: N1, N5. S11 RENDER GATING group: N2, N3, N4, N6, N7).
-# PLAN.md §1.7, §1.8; TEST_PLAN.md §7.
-#
+# WALL RENDER: the wall's construction and its render gating.
+
 # Builds a real res://UI/Wall/wall.tscn plus a few real WallPicture instances from a small
-# PROGRAMMATIC WallLayout (never res://Assets/Wall/layout_default.tres -- that is the layout
-# TOOL's output, S34, out of scope here), then inspects the constructed tree.
-# ==============================================================================
+# PROGRAMMATIC WallLayout, never the authored layout resource, which is the layout tool's output and
+# out of scope here, then inspects the constructed tree.
 
 const WALL_SCENE := preload("res://UI/Wall/wall.tscn")
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
@@ -79,8 +75,8 @@ func _entry(id: StringName, slot_deg: int, size_multiplier: float,
 	e.frame_px = frame_px
 	return e
 
-## A small, varied, PROGRAMMATIC layout -- three pictures, different sizes and frame thicknesses,
-## enough to exercise real construction without authoring the tool's own layout resource.
+# A small, varied, PROGRAMMATIC layout: three pictures with different sizes and frame thicknesses,
+# enough to exercise real construction without authoring the tool's own layout resource.
 func _make_layout() -> WallLayout:
 	var l := WallLayout.new()
 	l.gap_px = 24.0
@@ -98,12 +94,13 @@ func _make_layout() -> WallLayout:
 func _build_wall() -> void:
 	_wall = WALL_SCENE.instantiate()
 	add_child(_wall)
-	# ⚠ Wall._ready() sets get_tree().paused = true, GLOBALLY, by design (§1.6) -- correct
-	# standalone, but this suite runs CONCURRENTLY with ~33 others that need normal processing to
-	# ever finish, and a global pause with no unpause hangs the whole run with no banner (measured:
-	# a 600s timeout, no suite ever signals finished). Safe to undo immediately: add_child() above
-	# already ran Wall._ready() SYNCHRONOUSLY (the parent was already in the tree), and nothing else
-	# can run between that call and this line since GDScript only yields at an explicit await.
+# ⚠ Wall._ready() sets get_tree().paused = true GLOBALLY by design: correct standalone, but this
+# suite runs CONCURRENTLY with ~33 others that need normal processing to ever finish, and a global
+# pause with no unpause hangs the whole run with no banner (measured: a 600 s timeout, no finish).
+
+# Safe to undo immediately: add_child() above already ran Wall._ready() SYNCHRONOUSLY, the parent
+# being in the tree already, and nothing else can run between that call and this line, because
+# GDScript only yields at an explicit await.
 	get_tree().paused = false
 	var layout := _make_layout()
 	var unlocked : Array[StringName] = [&"a", &"b", &"c"]
@@ -118,18 +115,18 @@ func _build_wall() -> void:
 		wp.build(rect, by_id[rect.id], viewports)
 		_pictures.append(wp)
 
-## Frees every constructed picture (and its off-tree SubViewport, teardown()'s whole reason to
-## exist) plus the wall itself, so this suite leaves nothing behind for its siblings.
+# Frees every constructed picture and its off-tree SubViewport, which is teardown()'s whole reason
+# to exist, plus the wall itself, so this suite leaves nothing behind for its siblings.
 func _teardown_wall() -> void:
 	for wp : WallPicture in _pictures: wp.teardown()
 	_pictures.clear()
 	if _wall and is_instance_valid(_wall): _wall.queue_free()
 	_wall = null
 
-# ------------------------------------------------------------------ N1, N5
+# ------------------------------------------------------------------ construction
 
-## N1: every SubViewport constructed for the wall is explicitly NEAREST -- the trap this repo has
-## hit four times (§1c).
+# Every SubViewport constructed for the wall is explicitly NEAREST, which is the trap this repo has
+# hit four times.
 func test_every_subviewport_is_explicitly_nearest() -> void:
 	check(_pictures.size() == 3, "3 pictures were constructed", str(_pictures.size()))
 	for wp : WallPicture in _pictures:
@@ -139,7 +136,7 @@ func test_every_subviewport_is_explicitly_nearest() -> void:
 					== Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST,
 					"%s's SubViewport is explicitly NEAREST" % wp.name)
 
-## N5: no SubViewportContainer exists anywhere in the wall (GAP-001=b -- the decision this defends).
+# No SubViewportContainer exists anywhere in the wall, which is the decision this defends.
 func test_no_subviewport_container_anywhere() -> void:
 	check(not _has_subviewport_container(_wall), "no SubViewportContainer anywhere in the wall")
 
@@ -149,18 +146,18 @@ func _has_subviewport_container(node: Node) -> bool:
 		if _has_subviewport_container(child): return true
 	return false
 
-# ------------------------------------------------------------------ N2, N3, N4, N6, N7 (S11)
+# ------------------------------------------------------------------ render gating
 
-## N3 (E4, Q78=b): every picture has a non-null texture straight out of build(), before any focus()
-## call is made anywhere in this suite -- run first in the RENDER GATING group on purpose so later
-## tests' focus()/unfocus() calls cannot retroactively make this claim vacuous.
+# Every picture has a non-null texture straight out of build(), before any focus() call is made
+# anywhere in this suite. It runs first in the render-gating group on purpose, so later tests'
+# focus() and unfocus() calls cannot retroactively make this claim vacuous.
 func test_unvisited_picture_has_rendered_once() -> void:
 	for wp : WallPicture in _pictures:
 		check(wp.viewport.get_texture() != null,
 				"%s's texture is non-null before any focus() call" % wp.name)
 
-## N2 (E3, Q82=a): a non-focused picture reports UPDATE_DISABLED, but its already-rendered texture
-## persists -- never null, never zero-size.
+# A non-focused picture reports UPDATE_DISABLED, but its already-rendered texture persists: never
+# null, never zero-size.
 func test_non_focused_picture_keeps_texture() -> void:
 	var wp := _pictures[0]
 	wp.focus()
@@ -172,9 +169,9 @@ func test_non_focused_picture_keeps_texture() -> void:
 	check(tex != null and tex.get_size() != Vector2.ZERO, "its texture is non-zero-size",
 			str(tex.get_size()) if tex else "null")
 
-## N4 (§1.8, GAP-002): SubViewport.size is written straight from the on-screen footprint, each axis
-## independently clamped below by settings.wall_view_min_texture_px -- shrinking one axis to 10px
-## clamps that (short) axis to the floor without disturbing the other.
+# SubViewport.size is written straight from the on-screen footprint, each axis independently clamped
+# below by settings.wall_view_min_texture_px, so shrinking one axis to 10px clamps that short axis
+# to the floor without disturbing the other.
 func test_wall_view_size_written_and_clamped() -> void:
 	var wp := _pictures[0]
 	wp.unfocus(Vector2(10, 500))
@@ -183,17 +180,18 @@ func test_wall_view_size_written_and_clamped() -> void:
 			"a 10px footprint clamps the short axis to wall_view_min_texture_px",
 			str(wp.viewport.size))
 
-## N6 (E7, Q208=b): restoring from minimise re-renders every picture once. Wall._notification hooks
-## NOTIFICATION_APPLICATION_FOCUS_IN (ASSUMPTIONS.md -- the closest built-in "un-minimise" event on
-## desktop) and calls mark_for_rerender() on every WallPicture under %Pictures.
+# Restoring from minimise re-renders every picture once. Wall._notification hooks
+# NOTIFICATION_APPLICATION_FOCUS_IN, the closest built-in un-minimise event on desktop, and calls
+# mark_for_rerender() on every WallPicture under %Pictures.
 func test_restore_from_minimise_rerenders() -> void:
-	# ⚠ ONE PICTURE IS FOCUSED. The original fixture settled EVERY picture to UPDATE_DISABLED, so
-	# none was live and the notification could not possibly harm one -- it asserted a property that
-	# could not fail (PICTURE_WALL.md C1). E7 and Q208=b both say every FROZEN texture is
-	# re-rendered, not every picture: the focused one is not frozen, it is UPDATE_ALWAYS, and
-	# forcing UPDATE_ONCE on it freezes the live screen for the rest of the session.
+# ⚠ ONE PICTURE IS FOCUSED. Settling EVERY picture to UPDATE_DISABLED leaves none live, so the
+# notification could not possibly harm one and the row asserts a property that cannot fail.
+
+# The rule is that every FROZEN texture is re-rendered, not every picture: the focused one is not
+# frozen, it is UPDATE_ALWAYS, and forcing UPDATE_ONCE on it freezes the live screen for the rest
+# of the session. The loop below settles the rest first.
 	for wp : WallPicture in _pictures:
-		wp.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED  # simulate "settled"
+		wp.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	var live : WallPicture = _pictures[0]
 	live.focus()
 	check(live.viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS,
@@ -208,15 +206,17 @@ func test_restore_from_minimise_rerenders() -> void:
 				"%s (frozen) went UPDATE_ONCE after the restore notification" % wp.name)
 	live.unfocus(Vector2(200.0, 120.0))
 
-## PICTURE_WALL.md C6: `res://Assets/Wall/layout_default.tres` had ZERO production readers --
-## `Main` called the hardcoded `Wall.initial_layout()`, so everything an author tuned in S34's tool
-## was discarded. Proves the loader really reads the FILE (not the fallback) by pointing it at a temp
-## resource carrying a value the built-in layout could never produce, and proves the fallback still
-## works when the file is absent. No mock: a real WallLayout, really saved, really loaded.
+# The authored layout resource had ZERO production readers, because Main called the hardcoded
+# Wall.initial_layout(), so everything an author tuned in the tool was discarded.
+
+# This proves the loader really reads the FILE rather than the fallback, by pointing it at a temp
+# resource carrying a value the built-in layout could never produce, and proves the fallback still
+# works when the file is absent. No mock: a real WallLayout, really saved, really loaded.
 func test_layout_is_loaded_from_disk_not_hardcoded() -> void:
 	var temp_path := "user://_test_layout_probe.tres"
 	var probe := WallLayout.new()
-	probe.gap_px = 1234.5   # a value initial_layout() never sets
+# A value initial_layout() never sets.
+	probe.gap_px = 1234.5
 	probe.home_id = &"probe_home"
 	var saved := ResourceSaver.save(probe, temp_path)
 	check(saved == OK, "the probe layout saved to disk")
@@ -231,9 +231,8 @@ func test_layout_is_loaded_from_disk_not_hardcoded() -> void:
 			"a missing file falls back to the built-in layout so a fresh checkout still boots")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
 
-## N7 (H6, Q34): the filter swaps on zoom, not on pan -- pure translation must never flip it. Owed
-## to S11 per TEST_PLAN.md §7's own suite header ("S10, S11"), even though the full camera-driven
-## wiring is S13's job (§1.7); this pins the method's own contract directly.
+# The filter swaps on zoom, not on pan: pure translation must never flip it. The full camera-driven
+# wiring is pinned by the test below; this one pins the method's own contract directly.
 func test_filter_swaps_on_zoom_not_pan() -> void:
 	var wp := _pictures[0]
 	var screen : Sprite2D = wp.get_node(^"%Screen")
@@ -244,25 +243,24 @@ func test_filter_swaps_on_zoom_not_pan() -> void:
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 			"a zoom change flips the filter to LINEAR")
 
-## M5 (PICTURE_WALL.md, S13, QR7=c, H4/H5, Q34=c): `update_filter(true)` had NO CALLER, so the
-## focused picture sampled NEAREST through every zoom and S13 was dead. The test above pins the
-## METHOD; this pins the WIRING -- a REAL camera zoom, on a REAL `Wall`, across REAL frames. It goes
-## red if `Wall._process()`'s tracking is removed.
-##
-## Q34=c is the half most easily lost: a pure PAN must leave the filter alone. Asserted after a
-## position change large enough that any position-sensitive implementation would have flipped it.
+# update_filter(true) with NO CALLER leaves the focused picture sampling NEAREST through every zoom,
+# and the wiring dead. The test above pins the METHOD; this pins the WIRING, with a REAL camera
+# zoom, on a REAL Wall, across REAL frames. It goes red if Wall._process()'s tracking is removed.
+
+# The half most easily lost is that a pure PAN must leave the filter alone. It is asserted after a
+# position change large enough that any position-sensitive implementation would have flipped it.
 func test_the_wall_actually_drives_the_filter_swap_as_the_camera_zooms() -> void:
 	var wp := _pictures[0]
 	var screen : Sprite2D = wp.get_node(^"%Screen")
 	var camera : Camera2D = _wall.get_node(^"%Camera2D")
-	# Exactly ONE focused picture, by construction: `_focused_picture()` returns the FIRST it finds,
-	# so an earlier test leaving another one focused would silently point this test at the wrong
-	# picture and it would then prove nothing about `wp` at all.
+# Exactly ONE focused picture, by construction: _focused_picture() returns the FIRST it finds, so an
+# earlier test leaving another one focused would silently point this test at the wrong picture and
+# it would then prove nothing about `wp` at all.
 	for other : WallPicture in _pictures:
 		if other != wp: other.unfocus(Vector2(100.0, 100.0))
 	wp.focus()
 
-	# One settling frame so the tracker has a zoom to compare against, then a frame at rest.
+# One settling frame so the tracker has a zoom to compare against, then a frame at rest.
 	await get_tree().process_frame
 	await get_tree().process_frame
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST,
@@ -289,15 +287,15 @@ func test_the_wall_actually_drives_the_filter_swap_as_the_camera_zooms() -> void
 	check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 			"H5: with nothing focused the picture stays LINEAR unconditionally, zoom or not")
 
-# ------------------------------------------------------------------ GAP-011 (H3)
+# ------------------------------------------------------------------ the overfill margin
 
-## GAP-011: `wall_overfill_margin` is a real, READ knob, not a promoted-but-ignored export -- the
-## exact defect §1.8 exists to prevent ("a knob nothing reads is the defect"). `focused_scale()`
-## takes the margin as a REQUIRED parameter (no default), so this also proves the parameter is
-## actually wired through, not merely present on `PlayerSettings`. Two visibly different margins on
-## the SAME native/window sizes must produce two DIFFERENT scales, and each must equal the plain
-## fill-ratio times its own margin exactly -- not just "different", which a sign flip or an
-## unrelated bug could also produce.
+# wall_overfill_margin is a real, READ knob, not a promoted-but-ignored export, a knob nothing reads
+# being the defect. focused_scale() takes the margin as a REQUIRED parameter with no default, so
+# this also proves the parameter is wired through rather than merely present on PlayerSettings.
+
+# Two visibly different margins on the SAME native and window sizes must produce two DIFFERENT
+# scales, and each must equal the plain fill ratio times its own margin exactly - not just
+# "different", which a sign flip or an unrelated bug could also produce.
 func test_overfill_margin_knob_actually_changes_the_scale() -> void:
 	var native := Vector2(400, 300)
 	var window := Vector2(1280, 720)
@@ -320,24 +318,26 @@ func test_overfill_margin_knob_actually_changes_the_scale() -> void:
 			"PlayerSettings.wall_overfill_margin defaults to 1.02 (GAP-011's answered value)",
 			"%.4f" % settings.wall_overfill_margin)
 
-## H3's own words: the picture overfills "whenever its aspect does not match" the window's -- the
-## margin is CONDITIONAL. Measured defect, not theorised: the unconditional version cropped the
-## real start-menu picture's own bottom button row at an ordinary 1280x720-in-1152x648 case (both
-## 16:9) -- a case with NOTHING to hide, since fill and fit already coincide at matching aspect.
+# The picture overfills whenever its aspect does not match the window's, so the margin is
+# CONDITIONAL.
+
+# Measured defect, not theorised: the unconditional version cropped the real start-menu picture's
+# own bottom button row at an ordinary 1280x720-in-1152x648 case, both 16:9 - a case with NOTHING to
+# hide, since fill and fit already coincide at matching aspect.
 func test_overfill_margin_only_applies_when_aspect_mismatches() -> void:
-	# Matching aspect, same magnitude too (both 16:9, native == window / (4/3)) -- the fill ratio
-	# itself is exactly 1.0, so a correct result here is REQUIRED to be exactly 1.0, not merely
-	# "some value the margin didn't touch" -- the coordinator's own literal ask.
+# Matching aspect and the same magnitude too, both 16:9 with native equal to window over 4/3, makes
+# the fill ratio itself exactly 1.0, so a correct result here is REQUIRED to be exactly 1.0 rather
+# than "some value the margin did not touch", which is the owner's own literal ask.
 	var matching_native := Vector2(1152, 648)
-	var matching_window := Vector2(1280, 720)   # 1280/1152 == 720/648 == 1.1111... -- same ratio
+	var matching_window := Vector2(1280, 720)
 	var matching_scale := WallPicture.focused_scale(matching_native, matching_window, 1.02)
 	check(is_equal_approx(matching_scale, 1.1111111),
 			"matching aspect gives the EXACT fill ratio, margin not applied at all",
 			"scale=%.6f expected=1.111111" % matching_scale)
 
-	# Mismatched aspect (4:3 native in a 16:9 window, same fixture the sibling test above already
-	# uses) -- the margin MUST still apply here, so this row cannot pass by disabling the margin
-	# outright; it has to be genuinely conditional.
+# Mismatched aspect, 4:3 native in a 16:9 window and the same fixture the sibling test above uses.
+# The margin MUST still apply here, so this row cannot pass by disabling the margin outright; it has
+# to be genuinely conditional.
 	var mismatched_native := Vector2(400, 300)
 	var mismatched_window := Vector2(1280, 720)
 	var fill_ratio := maxf(mismatched_window.x / mismatched_native.x,
@@ -350,14 +350,14 @@ func test_overfill_margin_only_applies_when_aspect_mismatches() -> void:
 			"...and that margin is not silently zero -- the mismatched case is genuinely "
 			+ "different from a bare fill ratio", "scale=%.6f fill=%.6f" % [mismatched_scale, fill_ratio])
 
-# ------------------------------------------------------------------ PICTURE_WALL.md B2
+# ------------------------------------------------------------------ the selected lift
 
-## PICTURE_WALL.md B2: `wall_selected_lift` is a REAL, READ knob -- was a typed literal
-## (`_SELECTED_LIFT`) in `wall_picture.gd`, same category `wall_overfill_margin`/`wall_light_offset`
-## already promoted. Two different lift values on the SAME picture must produce two different
-## `position` results after `set_selected(true)`, each exactly `rect.centre + the configured lift`
-## -- not just "different", the same rigor `test_overfill_margin_knob_actually_changes_the_scale`
-## above already established.
+# wall_selected_lift is a REAL, READ knob rather than a typed literal in wall_picture.gd, the same
+# category as wall_overfill_margin and wall_light_offset.
+
+# Two different lift values on the SAME picture must produce two different position results after
+# set_selected(true), each exactly the rect centre plus the configured lift - not just "different",
+# the same rigor the overfill-margin test above already established.
 func test_selected_lift_knob_actually_changes_the_position() -> void:
 	backup_real_settings()
 	var wp := _pictures[0]
@@ -383,13 +383,14 @@ func test_selected_lift_knob_actually_changes_the_position() -> void:
 	settings.wall_selected_lift = prev
 	restore_real_settings()
 
-# ------------------------------------------------------------------ S30 (B7, Q211=a)
+# ------------------------------------------------------------------ a live screen, reparented
 
-## S30 (B7, Q211=a, Q141=a): `build()`'s new `live_screen` parameter REPARENTS an
-## already-instantiated node as `screen_root` -- never instantiates a copy, never touches its
-## children/state. Proven by IDENTITY (`==`, not just "a screen_root exists"): the exact same
-## object handed in comes back out, still holding the marker child it had BEFORE `build()` ever
-## ran, and is a real child of the picture's own SubViewport afterward.
+# build()'s live_screen parameter REPARENTS an already-instantiated node as screen_root: it never
+# instantiates a copy and never touches its children or state.
+
+# Proven by IDENTITY, not by "a screen_root exists": the exact same object handed in comes back out,
+# still holding the marker child it had BEFORE build() ever ran, and is a real child of the
+# picture's own SubViewport afterward.
 func test_build_reparents_a_live_screen_unchanged() -> void:
 	var live := Node.new()
 	live.name = "PersistentMenuStandIn"
@@ -418,17 +419,17 @@ func test_build_reparents_a_live_screen_unchanged() -> void:
 	wp.teardown()
 	viewports.queue_free()
 
-# ------------------------------------------------------------------ S39 (E8, E9, Q203=a, Q210=a)
+# ------------------------------------------------------------------ screen lifecycle
 
-## E8/Q203=a (S39's own coverage-hole close -- TestLeakCanary structurally cannot watch this: it
-## never builds a Wall/WallPicture at all, and its own header explicitly locks it to run LAST and
-## ALONE because OBJECT_COUNT is engine-global, so retrofitting a Wall into it would both be the
-## wrong suite for a screen-lifecycle question and would pollute the very CardData deltas it exists
-## to measure). "All screens stay instantiated for the whole session... nothing is ever torn down"
-## proven by IDENTITY across several focus()/unfocus() cycles: the SAME screen_root node survives
-## every cycle, never freed and rebuilt -- which is what "nothing is ever torn down" cashes out to
-## for a picture that keeps getting focused and unfocused over and over, the exact thing a session
-## actually does.
+# The leak canary structurally cannot watch this: it never builds a Wall or WallPicture at all, and
+# its own header locks it to run LAST and ALONE because OBJECT_COUNT is engine-global.
+
+# Retrofitting a Wall into it would be the wrong suite for a screen-lifecycle question and would
+# pollute the very CardData deltas it exists to measure.
+
+# "All screens stay instantiated for the whole session, nothing is ever torn down" is proven here by
+# IDENTITY across several focus and unfocus cycles: the SAME screen_root node survives every cycle,
+# never freed and rebuilt, which is the exact thing a session actually does.
 func test_screen_root_survives_repeated_focus_unfocus_cycles() -> void:
 	var live := Node.new()
 	live.name = "PersistentScreenStandIn"
@@ -456,13 +457,13 @@ func test_screen_root_survives_repeated_focus_unfocus_cycles() -> void:
 	wp.teardown()
 	viewports.queue_free()
 
-## S39 (E9, Q210=a): `Wall.debug_memory_readout()` counts instantiated screens and viewports
-## correctly against a KNOWN fixture -- two pictures with a live screen (screens_instantiated == 2)
-## plus one "registered but unbuilt" picture with no scene at all (Q214=a's own case, screen_root
-## stays null) -- proving the count is screens ACTUALLY instantiated, not just pictures that exist.
-## Also asserts the reported string actually names both numbers, not just a placeholder message --
-## a check() that could pass on an empty/malformed string would be the exact "prints something,
-## proves nothing" trap this run keeps finding new forms of.
+# Wall.debug_memory_readout() counts instantiated screens and viewports correctly against a KNOWN
+# fixture: two pictures with a live screen, so screens_instantiated is 2, plus one registered but
+# unbuilt picture with no scene at all, whose screen_root stays null.
+
+# That proves the count is screens ACTUALLY instantiated, not just pictures that exist. The reported
+# string must also name both numbers rather than a placeholder message, since a check that could
+# pass on an empty or malformed string is the "prints something, proves nothing" trap.
 func test_debug_memory_readout_counts_screens_and_viewports() -> void:
 	var wall : Wall = WALL_SCENE.instantiate()
 	add_child(wall)
@@ -480,7 +481,7 @@ func test_debug_memory_readout_counts_screens_and_viewports() -> void:
 		entry.design_size = Vector2i(200, 150)
 		wp.build(rect, entry, viewports, Node.new())
 		built.append(wp)
-	# "unbuilt" (Q214=a): no scene, no live_screen -- screen_root stays null on purpose.
+# "unbuilt": no scene and no live_screen, so screen_root stays null on purpose.
 	var unbuilt_wp : WallPicture = WALL_PICTURE_SCENE.instantiate()
 	pictures_root.add_child(unbuilt_wp)
 	var unbuilt_rect := PictureRect.new(&"unbuilt", Vector2.ZERO, Vector2(200, 150),
@@ -502,34 +503,35 @@ func test_debug_memory_readout_counts_screens_and_viewports() -> void:
 	for wp : WallPicture in built: wp.teardown()
 	wall.queue_free()
 
-## S39 done-when's OTHER half ("the readout prints under the debug flag"), on a REAL `Main` --
-## `Main._wall_debug_readout_text()` is the gate `_print_wall_debug_readout()` prints whatever it
-## returns; tested directly rather than by capturing stdout (a `print()` call has no return value
-## to assert on). BOTH directions checked on the SAME `Main`, one right after the other -- the
-## coordinator's own instruction: "the false case is the 'assert it did not happen' shape, so make
-## sure it can fail." It can: the ON check just above proves this exact fixture, this exact flag,
-## produces non-empty text when true, so the OFF check going empty immediately after is a real
-## state change being observed, not a fixture that was always going to read empty regardless.
-## `backup_real_settings()`/`restore_real_settings()` park the real `user://settings.tres` for the
-## toggle's duration -- `SettingsManager` saves on every change (`test_wall_profile.gd`'s R4 uses
-## the identical pattern for the same reason, `wall_unlock_all`).
+# The readout must print under the debug flag, on a REAL Main. Main._wall_debug_readout_text() is
+# the gate, and _print_wall_debug_readout() prints whatever it returns, so it is tested directly
+# rather than by capturing stdout, a print() call having no return value to assert on.
+
+# BOTH directions are checked on the SAME Main, one right after the other, because the false case is
+# an "assert it did not happen" shape and has to be able to fail. The ON check just above proves
+# this exact fixture and flag produce non-empty text, so the OFF check going empty is a real change.
+
+# backup_real_settings() and restore_real_settings() park the real settings file for the toggle's
+# duration, because SettingsManager saves on every change. test_wall_profile.gd uses the identical
+# pattern for the same reason around wall_unlock_all.
 func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 	check(OS.is_debug_build(),
 			"sanity: this suite runs via the debug console exe -- OS.is_debug_build() is true, "
 			+ "the OTHER half of the gate this test does not flip")
 
 	backup_real_settings()
-	# ⚠ CONSTRUCTING A `Main` CLEARS THE SHARED `wall_info_mode` (C3, main.gd's own startup rule),
-	# and WALL FOCUS's info-toggle test sets that same flag on the same live `PlayerSettings` and
-	# then awaits a camera move. This suite does not wait for it, so a Main built here during that
-	# await clobbered its flag and failed it -- measured, 2 runs in 3, in a suite this test does not
-	# touch. Preserved and put straight back: production really does clear it, so the fix belongs on
-	# whichever side is the interloper, and that is this one.
+# ⚠ CONSTRUCTING A Main CLEARS THE SHARED wall_info_mode, which is main.gd's own startup rule, and
+# WALL FOCUS's info-toggle test sets that same flag on the same live PlayerSettings and then awaits
+# a camera move.
+
+# This suite does not wait for it, so a Main built here during that await clobbers the flag and
+# fails that suite - measured, 2 runs in 3. Preserved and put straight back: production really does
+# clear it, so the fix belongs on whichever side is the interloper, and that is this one.
 	var info_mode_before : bool = SettingsManager.settings.wall_info_mode
 	var main : Main = MAIN_SCENE.instantiate()
 	add_child(main)
-	# Main._ready() -> Wall._ready() sets get_tree().paused = true GLOBALLY -- undone immediately,
-	# same established reason every Wall/Main-building test in this suite family documents.
+# Main._ready() reaches Wall._ready(), which sets get_tree().paused = true GLOBALLY. It is undone
+# immediately, for the reason every Wall- and Main-building test in this suite family documents.
 	get_tree().paused = false
 	SettingsManager.settings.wall_info_mode = info_mode_before
 
@@ -553,10 +555,10 @@ func test_debug_readout_gated_by_wall_debug_readout_flag() -> void:
 	restore_real_settings()
 	main.queue_free()
 
-# ------------------------------------------------------------------ TP-118 (H20)
+# ------------------------------------------------------------------ the game picture's width
 
-## TP-118: the game picture's rect keeps its OWN authored width, unstretched to the window
-## aspect -- the fix for the packer squashing a 3656x685 picture down to ~1218x685.
+# The game picture's rect keeps its OWN authored width, unstretched to the window aspect. Without
+# that the packer squashes a 3656x685 picture down to about 1218x685.
 func test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect() -> void:
 	var layout := Wall.load_layout()
 	var game_entry : PictureEntry = null
@@ -577,13 +579,13 @@ func test_game_picture_keeps_its_real_width_not_squashed_to_window_aspect() -> v
 			"the packed width is the picture's own authored width, not a window-aspect-derived "
 			+ "sliver", "packed=%.3f expected=%.3f" % [rects[0].size.x, expected_width])
 
-## TP-118: packing the wall's real default-unlocked layout around the now much wider game
-## picture still produces a rect for every unlocked picture, and none of their FRAME rects
-## overlap -- at the default window aspect, a narrower aspect, and with every registered picture
-## (including the normally-locked `book`) unlocked at once, which is the case that actually
-## forces the wider game frame to push a neighbour (`settings`) to a new position -- measured:
-## `settings` moves from centre (2237.354, -641.244) with the fix to a different position without
-## it, proving the re-pack, not just the absence of an error.
+# Packing the wall's real default-unlocked layout around the much wider game picture still produces
+# a rect for every unlocked picture, and none of their FRAME rects overlap: at the default window
+# aspect, at a narrower aspect, and with every registered picture unlocked at once.
+
+# That last case is the one that actually forces the wider game frame to push a neighbour to a new
+# position - measured: `settings` sits at centre (2237.354, -641.244) with the fix and elsewhere
+# without it, which proves the re-pack rather than just the absence of an error.
 func test_default_layout_repacks_without_dropping_or_overlapping_any_picture() -> void:
 	var layout := Wall.load_layout()
 	var default_unlocked : Array[StringName] = []
@@ -614,8 +616,8 @@ func test_default_layout_repacks_without_dropping_or_overlapping_any_picture() -
 			+ "re-arranged around the wider picture, not merely avoided an error",
 			str(settings_rect.centre) if settings_rect else "missing")
 
-## Whether any two of `rects`' FRAME OUTER rects intersect (same idiom `test_wall_packer.gd`'s
-## `_has_any_overlap` uses).
+# Whether any two of `rects`' FRAME OUTER rects intersect, the same idiom test_wall_packer.gd's own
+# overlap helper uses.
 func _rects_overlap(rects: Array[PictureRect]) -> bool:
 	for i : int in rects.size():
 		for j : int in range(i + 1, rects.size()):
@@ -627,39 +629,39 @@ func _rects_overlap(rects: Array[PictureRect]) -> bool:
 
 # ------------------------------------------------------------------ drawn extent
 
-## What a picture DRAWS must equal its `PictureRect`, in every render-target state.
-##
-## ⚠ `%Screen`/`%Shadow` are `Sprite2D`s whose texture IS the `SubViewport` render target, so their
-## drawn size is `viewport.size * scale` -- NOT `design_size * scale`. Every scale site here used to
-## divide by `_design_size`, which is only equal to `viewport.size` while a picture is focused.
-## GAP-002 rewrites `viewport.size` to the wall-view footprint on `unfocus()` and on every resize,
-## so an unfocused picture collapsed to `rect.size * footprint / design_size` -- measured on a real
-## `Main`, a 1152x648 picture drew 385x216 inside its own full-size 1200x696 frame after one Wall
-## press, and shrank again on every resize.
-##
-## Asserted through the ENGINE's own `Sprite2D.get_rect()` rather than by re-deriving the scale:
-## an assertion on the scale field would re-prove this test's own arithmetic and could not fail for
-## the mismatch it exists to catch ([[tests-that-prove-nothing]] trap 6).
+# What a picture DRAWS must equal its PictureRect, in every render-target state.
+
+# ⚠ %Screen and %Shadow are Sprite2Ds whose texture IS the SubViewport render target, so their drawn
+# size is viewport.size * scale, NOT design_size * scale. Dividing a scale by _design_size is only
+# equal to viewport.size while a picture is focused.
+
+# viewport.size is rewritten to the wall-view footprint on unfocus() and on every resize, so an
+# unfocused picture collapses to rect.size * footprint / design_size - measured on a real Main, a
+# 1152x648 picture drew 385x216 inside its own full-size 1200x696 frame after one Wall press.
+
+# Asserted through the ENGINE's own Sprite2D.get_rect() rather than by re-deriving the scale: an
+# assertion on the scale field would re-prove this test's own arithmetic and could not fail for the
+# mismatch it exists to catch.
 func test_screen_draws_at_rect_size_through_every_render_target_change() -> void:
 	var wp := _pictures[0]
 	var screen : Sprite2D = wp.get_node(^"%Screen")
 	var shadow : Sprite2D = wp.get_node(^"%Shadow")
 
-	# An explicit arbitrary render-target size first: earlier tests in this suite have already
-	# unfocused this picture, so "straight out of build()" would be a lie about the state.
+# An explicit arbitrary render-target size first: earlier tests in this suite have already unfocused
+# this picture, so "straight out of build()" would be a lie about the state.
 	wp.update_wall_view_size(Vector2(100, 100))
 	_check_drawn(wp, screen, shadow, "with the render target at an arbitrary small size")
 	wp.focus()
 	_check_drawn(wp, screen, shadow, "focused (render target back at design_size)")
-	# The wall-view footprint a real `Main` passes: much smaller than the rect, which is the whole
-	# point -- GAP-002 spends render-target pixels on what is actually on screen.
+# The wall-view footprint a real Main passes, much smaller than the rect, which is the whole point:
+# render-target pixels are spent on what is actually on screen.
 	wp.unfocus(wp.rect.size * 0.25)
 	_check_drawn(wp, screen, shadow, "unfocused (render target shrunk to the footprint)")
-	# The resize path: `Main._on_window_resized()` calls this directly on every unfocused picture,
-	# with no focus()/unfocus() around it.
+# The resize path: Main._on_window_resized() calls this directly on every unfocused picture, with no
+# focus() or unfocus() around it.
 	wp.update_wall_view_size(wp.rect.size * 0.1)
 	_check_drawn(wp, screen, shadow, "after a bare update_wall_view_size(), as a resize does")
-	# And a re-pack to a genuinely different rect while the render target stays small.
+# And a re-pack to a genuinely different rect while the render target stays small.
 	var moved := PictureRect.new(wp.rect.id, wp.rect.centre + Vector2(40, 40),
 			wp.rect.size * 1.7, wp.rect.frame_px)
 	wp.reposition(moved)
@@ -678,20 +680,22 @@ func _check_drawn(wp: WallPicture, screen: Sprite2D, shadow: Sprite2D, when: Str
 
 # ------------------------------------------------------------------ nine-slice
 
-## S24/QR4=b: the frame is a genuine nine-slice in the REAL game -- built from the REAL
-## `layout_default.tres` entry, which is what C6 made the game load.
-##
-## ⚠ The gate used to be `entry.frame_texture == shared_frame_texture()`, reference identity, and a
-## texture deserialised from that .tres is a different instance -- so patch margins were never set
-## and a 40x40 bevel smeared across the whole frame. Every fixture in this repo assigns the shared
-## texture DIRECTLY, so nothing here could see it; this test deliberately goes through the file.
+# The frame is a genuine nine-slice in the REAL game, built from the REAL layout resource the game
+# loads.
+
+# ⚠ A gate of `entry.frame_texture == shared_frame_texture()` is reference identity, and a texture
+# deserialised from that .tres is a different instance, so patch margins never get set and a 40x40
+# bevel smears across the whole frame.
+
+# Every fixture in this repo assigns the shared texture DIRECTLY, so nothing there can see it; this
+# test deliberately goes through the file.
 func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
 	var layout := Wall.load_layout()
 	var entry : PictureEntry = layout.pictures[0]
 	check(entry.frame_texture != null, "sanity: the authored layout really carries a frame texture")
 	if entry.frame_texture == null: return
-	# The whole point: same pixels, different object. If these were the same instance the old
-	# identity gate would pass and this test would prove nothing.
+# The whole point: same pixels, different object. If these were the same instance an identity gate
+# would pass and this test would prove nothing.
 	check(entry.frame_texture != WallPicture.shared_frame_texture(),
 			"sanity: the .tres texture is a DIFFERENT instance from the generated shared one -- "
 			+ "if this ever becomes false, this test has stopped covering the defect it exists for")
@@ -706,8 +710,8 @@ func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
 			"the authored frame texture gets real nine-slice margins",
 			"l=%d t=%d r=%d b=%d" % [frame.patch_margin_left, frame.patch_margin_top,
 					frame.patch_margin_right, frame.patch_margin_bottom])
-	# The margins must fit the texture, or the corners are degenerate -- the failure the old
-	# identity gate was protecting against, now expressed as a property of the texture itself.
+# The margins must fit the texture, or the corners are degenerate - the failure an identity gate
+# only approximates, expressed here as a property of the texture itself.
 	var tex_size := entry.frame_texture.get_size()
 	check(frame.patch_margin_left + frame.patch_margin_right <= int(tex_size.x)
 			and frame.patch_margin_top + frame.patch_margin_bottom <= int(tex_size.y),
@@ -715,7 +719,7 @@ func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
 			"margins=%d+%d of %s" % [frame.patch_margin_left, frame.patch_margin_right, tex_size])
 	wp.teardown()
 
-	# A deliberately TINY texture: still a valid nine-slice, never a degenerate one.
+# A deliberately TINY texture: still a valid nine-slice, never a degenerate one.
 	var tiny := PictureEntry.new()
 	tiny.id = &"tiny"
 	tiny.design_size = Vector2i(64, 64)
@@ -733,14 +737,14 @@ func test_nine_slice_applies_to_the_layout_the_game_actually_loads() -> void:
 
 # ------------------------------------------------------------------ selection lift
 
-## F11/Q70=c: the lift is part of WHERE a picture is, so it survives a re-pack -- and it yields to
-## focus, because a focused picture is not in wall view.
-##
-## ⚠ Two halves that used to contradict each other. `reposition()` wrote `position = rect.centre`
-## flat, silently un-lifting a selected picture with nothing re-rendering the selection afterwards;
-## and `focus()` never cleared the lift, so a picture entered from the keyboard stayed 14 units high
-## for as long as the player was inside it. Both are now derived in one place from
-## `is_selected and not is_focused`.
+# The lift is part of WHERE a picture is, so it survives a re-pack, and it yields to focus, because
+# a focused picture is not in wall view.
+
+# ⚠ Two halves that can contradict each other. reposition() writing position = rect.centre flat
+# silently un-lifts a selected picture with nothing re-rendering the selection afterwards, and a
+# focus() that never clears the lift leaves a keyboard-entered picture 14 units high.
+
+# Both are derived in one place from `is_selected and not is_focused`.
 func test_selection_lift_survives_a_repack_and_yields_to_focus() -> void:
 	var wp := _pictures[0]
 	var lift : Vector2 = SettingsManager.settings.wall_selected_lift
@@ -750,14 +754,14 @@ func test_selection_lift_survives_a_repack_and_yields_to_focus() -> void:
 	check(wp.position.is_equal_approx(wp.rect.centre + lift),
 			"a selected picture in wall view is lifted", str(wp.position))
 
-	# THE RE-PACK: a new rect while the selection is live.
+# THE RE-PACK: a new rect while the selection is live.
 	var moved := PictureRect.new(wp.rect.id, wp.rect.centre + Vector2(90, 70), wp.rect.size,
 			wp.rect.frame_px)
 	wp.reposition(moved)
 	check(wp.position.is_equal_approx(moved.centre + lift),
 			"...and it is STILL lifted after a re-pack, at its new centre", str(wp.position))
 
-	# Entering it drops the lift; leaving it brings the lift back, because it is still selected.
+# Entering it drops the lift; leaving it brings the lift back, because it is still selected.
 	wp.focus()
 	check(wp.position.is_equal_approx(moved.centre),
 			"focusing it drops the lift -- a focused picture is not in wall view", str(wp.position))
@@ -774,16 +778,19 @@ func test_selection_lift_survives_a_repack_and_yields_to_focus() -> void:
 
 # ------------------------------------------------------------------ shared-track crossfade
 
-## S33: stepping between two pictures that share a music track must not stop the music.
-##
-## ⚠ `begin_music_crossfade()` early-returns without arming the background player when the
-## destination's stream is ALREADY the one playing -- deliberately, so a shared track does not
-## restart and glitch. But `finish_music_crossfade()` flipped `_music_active` regardless, promoting
-## the silent, never-armed player to foreground: the music stopped dead, which is precisely the
-## glitch the early return exists to prevent. Latent only because nothing in
-## `layout_default.tres` authors `music` yet.
+# Stepping between two pictures that share a music track must not stop the music.
+
+# ⚠ begin_music_crossfade() early-returns without arming the background player when the
+# destination's stream is ALREADY the one playing, deliberately, so a shared track does not restart
+# and glitch.
+
+# A finish_music_crossfade() that flips _music_active regardless promotes the silent, never-armed
+# player to foreground and the music stops dead, which is precisely the glitch the early return
+# exists to prevent. It is latent only because no authored layout entry carries music yet.
+
+# The stream below is a real, playable one, so no asset is needed.
 func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
-	var track := AudioStreamGenerator.new()   # a real, playable stream; no asset needed
+	var track := AudioStreamGenerator.new()
 	var entry := PictureEntry.new()
 	entry.id = &"shared"
 	entry.music = track
@@ -795,7 +802,7 @@ func test_a_crossfade_between_pictures_sharing_a_track_keeps_playing() -> void:
 	check(playing_before.playing and playing_before.stream == track,
 			"sanity: the shared track is playing before the move")
 
-	# The move: same entry as destination, i.e. the same stream.
+# The move: the same entry as destination, i.e. the same stream.
 	_wall.begin_music_crossfade(entry)
 	_wall.update_travel_music(Vector2.ZERO, Vector2(100, 0), Vector2(50, 0))
 	_wall.finish_music_crossfade()
@@ -828,11 +835,12 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	var near := PictureRect.new(start.id, start.centre + Vector2(40, 30), start.size,
 			start.frame_px)
 
-	# ⚠ THE FIRST ANIMATION MUST OUTLIVE THE SECOND, or this test is vacuous. Both tweens write
-	# `position` every frame and the later-created one's write lands last, so with equal durations
-	# the second simply paints over the first and the picture ends up correct ANYWAY -- measured:
-	# an earlier version of this test passed with the kill removed. A long first and a short second
-	# is what leaves the stale tween still writing after the real one has finished.
+# ⚠ THE FIRST ANIMATION MUST OUTLIVE THE SECOND, or this test is vacuous. Both tweens write position
+# every frame and the later-created one's write lands last, so with equal durations the second
+# simply paints over the first and the picture ends up correct ANYWAY.
+
+# Measured: with equal durations the test passed with the kill removed. A long first and a short
+# second is what leaves the stale tween still writing after the real one has finished.
 	settings.base_delay = 1.0
 	settings.wall_transition_delay = 2.0
 	var by_id : Dictionary[StringName, PictureRect] = {}
@@ -847,8 +855,8 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 	var second : Dictionary[StringName, PictureRect] = {}
 	second[start.id] = near
 	_wall.apply_layout(second, true)
-	# Long enough for the SHORT second tween to have finished and the LONG first one to still be
-	# running if it was never killed.
+# Long enough for the SHORT second tween to have finished and the LONG first one to still be running
+# if it was never killed.
 	for _i : int in range(30):
 		await get_tree().process_frame
 
@@ -867,11 +875,12 @@ func test_a_second_repack_kills_the_first_ones_tween() -> void:
 
 # ------------------------------------------------------------------ per-grid camera pose
 
-## `WallPicture.grid_state()` on a 3-grid board: the resting grid (index 1, `PlayArea._resting_grid`'s
-## own "middle of the grids" rule for an odd count) must reproduce `resting_state()` exactly, and
-## each neighbour must sit exactly one `PlayArea.grid_position_size_px()` pitch away -- the step
-## between consecutive grids' positions must equal that pitch, not just "some" offset, so a
-## neutralisation that drops the offset term still fails here.
+# WallPicture.grid_state() on a 3-grid board: the resting grid, index 1 under PlayArea's own "middle
+# of the grids" rule for an odd count, must reproduce resting_state() exactly.
+
+# Each neighbour must sit exactly one PlayArea.grid_position_size_px() pitch away, so the step
+# between consecutive grids' positions must equal that pitch rather than "some" offset, and a
+# neutralisation that drops the offset term still fails here.
 func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_grid() -> void:
 	var settings := SettingsManager.settings
 	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
@@ -909,9 +918,9 @@ func test_grid_state_steps_by_the_grid_pitch_and_reproduces_rest_at_the_resting_
 			"position.y is unchanged from resting_state() at every grid, only x steps",
 			"y0=%.4f y2=%.4f rest_y=%.4f" % [pos0.y, pos2.y, rest_pos.y])
 
-## `WallPicture.panned_state()`, the offset primitive `grid_state()` is now expressed in terms of.
-## Proves it directly, then proves the two AGREE on the identity that makes `grid_state()` a
-## delegation rather than a second, separately-maintained computation.
+# WallPicture.panned_state(), the offset primitive grid_state() is expressed in terms of. This
+# proves it directly, then proves the two AGREE on the identity that makes grid_state() a delegation
+# rather than a second, separately-maintained computation.
 func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void:
 	var settings := SettingsManager.settings
 	var rect := PictureRect.new(&"probe", Vector2(1828.0, 342.5), Vector2(3656.0, 685.0),
@@ -943,8 +952,8 @@ func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void
 	check(is_equal_approx(offset_zoom, rest_zoom),
 			"...and leaves zoom untouched", "offset_zoom=%.6f rest_zoom=%.6f" % [offset_zoom, rest_zoom])
 
-	# THE identity: grid_state() must equal panned_state() called at the same offset the grid
-	# implies, or grid_state() has drifted into a second, separately-maintained computation.
+# THE identity: grid_state() must equal panned_state() called at the same offset the grid implies,
+# or grid_state() has drifted into a second, separately-maintained computation.
 	var via_grid := WallPicture.grid_state(rect, window, settings, grid_index, resting_grid, pitch)
 	var via_offset := WallPicture.panned_state(rect, window, settings,
 			pitch * float(grid_index - resting_grid))
@@ -954,15 +963,15 @@ func test_panned_state_is_the_offset_primitive_grid_state_delegates_to() -> void
 			"grid_state() agrees with panned_state() called at the equivalent offset -- one "
 			+ "computation, not two", "grid=%s offset=%s" % [via_grid_pos, via_offset_pos])
 
-## `WallPicture.snap_pan_to_grid()` -- the arithmetic `Q173`/`Q179` put between a SAVED pan and the
-## board it is restored onto. Three separate obligations, and a neutralisation that drops any one of
-## them fails here: it rounds a pan that fell between two grids onto a whole step, it clamps a pan
-## that names a grid the board no longer has, and it leaves a pan that already names a real grid
-## exactly alone.
-##
-## `resting_grid` is 1 throughout -- an odd board's middle -- so a NEGATIVE offset is a real grid
-## rather than an out-of-range one, which is what makes the clamp check below distinguishable from
-## the round check.
+# WallPicture.snap_pan_to_grid(), the arithmetic between a SAVED pan and the board it is restored
+# onto. Three separate obligations, and a neutralisation that drops any one of them fails here.
+
+# It rounds a pan that fell between two grids onto a whole step, it clamps a pan that names a grid
+# the board no longer has, and it leaves a pan that already names a real grid exactly alone.
+
+# resting_grid is 1 throughout, an odd board's middle, so a NEGATIVE offset is a real grid rather
+# than an out-of-range one, which is what makes the clamp check below distinguishable from the
+# round check.
 func test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board() -> void:
 	var pitch := 846.0
 	var resting := 1
@@ -996,29 +1005,28 @@ func test_snap_pan_to_grid_rounds_to_a_whole_step_and_clamps_into_the_board() ->
 			str(WallPicture.snap_pan_to_grid(pitch, 0.0, resting, 3)))
 
 
-# ==============================================================================
-# TP-120 (S34, Q186=a) — `Tools/wall_editor.tscn` DRIVES EVERY KNOB IT SHOWS.
-#
-# The tool's whole promise is that a number tuned on its panel reaches the same code the game runs
-# it through -- otherwise the preview is not evidence about anything. `knobs_this_preview_does_not
-# _drive` is the tool's own honest answer, and this asserts it is EMPTY on a real run.
-#
-# ⚠ **THE FIELD USED TO BE A CLAIM, NOT A READING.** It returned "" for any run that had a `Wall`
-# at all, so this row would have passed while the board knobs on the panel were being ignored
-# outright by the hosted `GameView` -- which is exactly what was happening. The second check below
-# is the one that gives the first any weight: the SCREENS the tool hosts must resolve to the same
-# `preview_settings` the panel edits.
-#
-# ⚠ **A REAL `wall_editor.tscn`, NOT A STAND-IN** (hard rule 6): the thing under test is the tool's
-# own wiring, and a hand-built copy of it could only ever agree with itself.
-# ==============================================================================
+# Tools/wall_editor.tscn DRIVES EVERY KNOB IT SHOWS. The tool's whole promise is that a number tuned
+# on its panel reaches the same code the game runs it through; otherwise the preview is not evidence
+# about anything.
+
+# knobs_this_preview_does_not_drive is the tool's own honest answer, and this asserts it is EMPTY on
+# a real run.
+
+# ⚠ THE FIELD MUST BE A READING, NOT A CLAIM. One that returns "" for any run with a Wall at all
+# passes while the board knobs on the panel are ignored outright by the hosted GameView.
+
+# The second check below is what gives the first any weight: the SCREENS the tool hosts must resolve
+# to the same preview_settings the panel edits.
+
+# ⚠ A REAL wall_editor.tscn, NOT A STAND-IN: the thing under test is the tool's own wiring, and a
+# hand-built copy of it could only ever agree with itself.
 func test_the_wall_editor_drives_every_knob_it_shows() -> void:
 	var previous := WallPicture.editor_settings
 	var editor_scene : PackedScene = load("res://Tools/wall_editor.tscn")
 	var editor : WallEditor = editor_scene.instantiate()
 	add_child(editor)
-	# `Wall._ready()` pauses the tree globally, exactly as it does in the game; undone here the same
-	# way every other Main-hosted fixture in this repo undoes it.
+# Wall._ready() pauses the tree globally, exactly as it does in the game, and it is undone here the
+# same way every other Main-hosted fixture in this repo undoes it.
 	get_tree().paused = false
 	for _i : int in 4:
 		await get_tree().process_frame

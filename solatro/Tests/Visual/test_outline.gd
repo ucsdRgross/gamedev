@@ -1,38 +1,26 @@
 extends TestSuite
-# res://Tests/Visual/test_outline.gd
-# ==============================================================================
-# THE CARD OUTLINE — the 1-unit, 8-directional rim `Shaders/outline.gdshader` draws around every
+# THE CARD OUTLINE: the 1-unit, 8-directional rim Shaders/outline.gdshader draws around every
 # element on a card, and the geometry that had to change to make room for it.
-#
-# WHY A SEPARATE SUITE. The outline is the first thing in this project where the SHAPE THE PLAYER SEES
-# is produced by a shader rather than by geometry, and the card's FX mask is still geometry-derived.
-# That is two representations of one fact — "how big is this card" — with the engine comparing them
-# nowhere. Every check below is a comparison between the two, or between the shader and the padded UV
-# mapping that feeds it.
-#
-# ⚠ **THE ORACLE IS THE POINT.** The neighbour-bleed / 8-direction / rim-thickness claims are NOT
-# asserted as three separate spot checks; they are asserted as ONE exact image comparison against a
-# CPU oracle built from the sheet's own alpha. A spot check ("is there an outline?") passes on a 4-tap
-# implementation, on a rim that has eaten a source pixel, and on a rim made of the neighbouring
-# frame's art. The oracle disagrees with all three.
-#
-# WHAT IS COVERED ELSEWHERE, deliberately not duplicated here:
-#   * that the mask the fire stands on IS the drawn silhouette, at rest and at four deformed poses —
-#     `test_pixels.test_the_card_mask_is_the_card_the_player_sees` (it stands up a REAL CardVisual,
-#     which needs autoloads and a pinned animation; this suite is renderer-light on purpose).
-#   * that a prop texel is a card texel and the rim is exactly one unit —
-#     `test_pixels.test_one_pixel_size_for_all_art`.
-#
-# CATEGORY MAP: BEHAVIOR — what the player sees (the rim exists, is one unit, is 8-directional, is
-# this card's art and not its neighbour's, and the alert stops when its status does). IMPLEMENTATION
-# pins: the texel-to-art-unit identity, and the two source-level rules that keep the rim riding the
-# rig through deformation.
-# ==============================================================================
+
+# WHY A SEPARATE SUITE. The shape the player sees is produced by a shader while the card's FX mask is
+# still geometry-derived, and the engine compares the two nowhere. Every check below compares them,
+# or compares the shader against the padded UV mapping that feeds it.
+
+# ⚠ THE ORACLE IS THE POINT. The neighbour-bleed, 8-direction and rim-thickness claims are asserted
+# as ONE exact image comparison against a CPU oracle. A spot check passes on a 4-tap rim, on a rim
+# that has eaten a source pixel, and on a rim made of the neighbouring frame's art.
+
+# COVERED ELSEWHERE, deliberately not duplicated: that the mask the fire stands on IS the drawn
+# silhouette at rest and deformed, and that a prop texel is a card texel, both in test_pixels. That
+# suite stands up a REAL CardVisual with autoloads; this one is renderer-light on purpose.
+
+# CATEGORY MAP. BEHAVIOR is what the player sees: the rim exists, is one unit, is 8-directional, is
+# this card's art and not its neighbour's, and the alert stops when its status does. IMPLEMENTATION
+# pins the texel-to-art-unit identity and the two source rules that keep the rim riding the rig.
 
 const VP_SIZE := 64
 
-## Read as TEXT, not loaded as a scene: the claim is about what is SAVED on disk, and loading it
-## would run the `@tool` script that writes the material in the first place.
+## Read as TEXT: the claim is about what is SAVED on disk, and loading it would run the @tool script.
 const CARD_SCENE_PATH := "res://Cards/card_visual.tscn"
 
 var _vp : SubViewport
@@ -65,9 +53,9 @@ func _ready() -> void:
 	test_card_separation_derives_from_the_pip_row()
 	finish()
 
-## The guard, copied in shape from `test_pixels`: a dummy renderer compiles no shader and rasterizes
-## no triangle, so an outline check under `--headless` would be reported green having looked at
-## nothing. It FAILS with the fix in the message; it never skips (owner).
+# The guard, copied in shape from test_pixels: a dummy renderer compiles no shader and rasterizes no
+# triangle, so an outline check under --headless would be reported green having looked at nothing.
+# It FAILS with the fix in the message and never skips (owner).
 func _check_renderer() -> bool:
 	var display := DisplayServer.get_name()
 	var live := display != "headless"
@@ -79,19 +67,18 @@ func _build_stage() -> void:
 	_vp = SubViewport.new()
 	_vp.size = Vector2i(VP_SIZE, VP_SIZE)
 	_vp.disable_3d = true
-	# Transparent, so "was this pixel drawn" is answerable at all — an opaque clear colour answers yes
-	# for every pixel in the target.
+# Transparent, so "was this pixel drawn" is answerable at all: an opaque clear colour answers yes for
+# every pixel in the target.
 	_vp.transparent_bg = true
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	# ⚠ A SubViewport carries its OWN filter and it defaults to LINEAR — it does not inherit the
-	# project's `default_texture_filter = 0`. The rim is a one-texel feature and a bilinear read would
-	# smear it across two, so an exact comparison would be meaningless. Same trap `test_pixels` and
-	# `Tools/spotlight_tool.gd` both had to handle.
+# ⚠ A SubViewport carries its OWN filter and defaults to LINEAR, not inheriting the project's
+# default_texture_filter of 0. The rim is a one-texel feature and a bilinear read smears it across
+# two, making an exact comparison meaningless. Same trap in test_pixels and spotlight_tool.gd.
 	_vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(_vp)
 	_stage = Node2D.new()
-	# INTEGER centre at 1 art unit per pixel, so the polygon's corners land on pixel boundaries and the
-	# comparison below is texel-for-pixel rather than half-covered everywhere.
+# INTEGER centre at 1 art unit per pixel, so the polygon's corners land on pixel boundaries and the
+# comparison below is texel-for-pixel rather than half-covered everywhere.
 	_stage.position = Vector2(VP_SIZE, VP_SIZE) * 0.5
 	_vp.add_child(_stage)
 
@@ -106,14 +93,15 @@ func _shoot() -> Image:
 
 # ------------------------------------------------------------------ the texel identity
 
-## `per_texel` is 1.0 art unit per source texel for the card's TYPE frame under the INNER-rect mapping.
-##
-## ⚠ **ONE LINE, AND IT GUARDS THE THING MOST LIKELY TO HAVE BEEN MISSED IN THIS WHOLE CHANGE.**
-## `CardVisual._bind_rig` divides `CARD_SIZE` by the type frame's pixel size to turn the measured
-## corner bite into art units, and that was exactly 1.0 only while the type frame WAS the card. It is
-## not any more — the frame is 38x52 inside a 40x54 polygon — so dividing by `CARD_SIZE` gives
-## (1.0526, 1.0385) and inflates every corner notch by 4-5 %, quietly, under a comment still claiming
-## the value is 1.0. Nothing about that line looks size-dependent, which is what made it dangerous.
+# per_texel is 1.0 art unit per source texel for the card's TYPE frame under the INNER-rect mapping.
+
+# ⚠ ONE LINE, AND IT GUARDS THE THING MOST LIKELY TO BE MISSED IN THIS WHOLE CHANGE.
+# CardVisual._bind_rig divides CARD_SIZE by the type frame's pixel size to turn the measured corner
+# bite into art units, which is exactly 1.0 only while the type frame IS the card.
+
+# It is not: the frame is 38x52 inside a 40x54 polygon, so dividing by CARD_SIZE gives
+# (1.0526, 1.0385) and inflates every corner notch by 4-5 %. Nothing about that line looks
+# size-dependent, which is what makes it dangerous.
 func test_per_texel_is_one() -> void:
 	var frame_px := CardModifier.frame_size(CardModifierType.TYPE_TEXTURE,
 			CardModifierType.H_FRAMES, CardModifierType.V_FRAMES)
@@ -128,24 +116,20 @@ func test_per_texel_is_one() -> void:
 
 # ------------------------------------------------------------------ the rim, against an oracle
 
-## THE RIM, PIXEL FOR PIXEL, against a CPU oracle built from the sheet's own alpha.
-##
-## The oracle is written from the RULE, not from the shader: a texel is BODY if this frame's alpha is
-## opaque there, RIM if any of its eight neighbours INSIDE THIS FRAME is opaque, and transparent
-## otherwise. Three separate defects fail it and only it:
-##
-##  * **NEIGHBOUR BLEED.** The sheets carry no transparent gutter, so the padded window overlaps four
-##    neighbouring frames and only `u_frame_uv` stops them being sampled. ⚠ Measured 2026-08-04:
-##    13/13 rank, 18/19 suit-pip and 3/3 stamp frames have art touching their frame edge, so a missing
-##    clamp is LOUD on the pip sheets — but the 32x32 sheets are sparse (2/52 `suit_art` frames touch
-##    an edge), which is where a subtly wrong clamp would hide. **Both are tested below.**
-##  * **A 4-TAP RIM.** Diagonal-only contact must still produce its corner pixel. A 4-tap
-##    implementation passes any "is there an outline" check and leaves every diagonal notched.
-##  * **A RIM THAT ATE A SOURCE PIXEL.** Body wins over rim everywhere, so an off-by-one that draws the
-##    ink over the art's own outermost texel shows up as a body/rim mismatch rather than as nothing.
+# THE RIM, PIXEL FOR PIXEL, against a CPU oracle built from the sheet's own alpha. The oracle is
+# written from the RULE, not from the shader: a texel is BODY where this frame's alpha is opaque,
+# RIM where any of its eight neighbours INSIDE THIS FRAME is opaque, and transparent otherwise.
+
+# Three defects fail it and only it. NEIGHBOUR BLEED: the sheets carry no transparent gutter, so the
+# padded window overlaps four neighbouring frames and only u_frame_uv stops them being sampled -
+# outline.gdshader's frame-clamp rule records which sheets make that loud and which hide it.
+
+# A 4-TAP RIM: diagonal-only contact must still produce its corner pixel, and a 4-tap rim passes any
+# "is there an outline" check while leaving every diagonal notched. A RIM THAT ATE A SOURCE PIXEL:
+# body wins over rim, so an off-by-one shows as a body/rim mismatch rather than as nothing.
 func test_rim_matches_its_oracle() -> void:
-	# One DENSE frame (art running to every edge, where bleed is loud) and one SPARSE 32x32 frame
-	# (where a wrong clamp is quiet) — the two failure modes have opposite signatures.
+# One DENSE frame, art running to every edge where bleed is loud, and one SPARSE 32x32 frame where a
+# wrong clamp is quiet: the two failure modes have opposite signatures.
 	await _check_frame_against_oracle("rank pip 'A' (dense sheet, art on the frame edge)",
 			PipRankNumeral.RANK_TEXTURE, PipRankNumeral.H_FRAMES, PipRankNumeral.V_FRAMES, 0)
 	await _check_frame_against_oracle("suit pip (dense sheet)",
@@ -158,9 +142,9 @@ func _check_frame_against_oracle(label : String, sheet : Texture2D, h_frames : i
 	var frame := CardModifier.frame_rect(sheet, h_frames, v_frames, frame_index)
 	var w := int(CardOutline.WIDTH)
 
-	# The element exactly as a card builds it: a polygon one rim wider than its frame on every side,
-	# UV'd by the real padded mapping, wearing the real material. No stand-in — a stand-in cannot
-	# disagree with the game (CLAUDE.md rule 5).
+# The element exactly as a card builds it: a polygon one rim wider than its frame on every side, UV'd
+# by the real padded mapping, wearing the real material. No stand-in, because a stand-in cannot
+# disagree with the game.
 	var poly := Polygon2D.new()
 	var h := frame.size * 0.5 + Vector2.ONE * CardOutline.WIDTH
 	poly.polygon = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y),
@@ -178,11 +162,11 @@ func _check_frame_against_oracle(label : String, sheet : Texture2D, h_frames : i
 	var rim_missing := 0
 	var rim_spurious := 0
 	var first_bad := ""
-	# Walk the PADDED window: frame size plus a rim on each side, which is exactly the polygon.
+# Walk the PADDED window: frame size plus a rim on each side, which is exactly the polygon.
 	for py : int in int(frame.size.y) + 2 * w:
 		for px : int in int(frame.size.x) + 2 * w:
-			# This padded-window texel in the frame's own coordinates (the rim ring is negative / past
-			# the far edge, and `_frame_alpha` reads both as empty — which IS the clamp).
+# This padded-window texel in the frame's own coordinates. The rim ring is negative or past the far
+# edge and _frame_alpha reads both as empty, which IS the clamp.
 			var fx := px - w
 			var fy := py - w
 			var got := img.get_pixel(origin.x + px, origin.y + py)
@@ -207,15 +191,15 @@ func _check_frame_against_oracle(label : String, sheet : Texture2D, h_frames : i
 			+ "%d rim spurious (NEIGHBOUR BLEED — the padded window is sampling the frame next "
 			+ "door). %s") % [body_wrong, rim_missing, rim_spurious, first_bad])
 
-## This frame's alpha at `(fx, fy)` in FRAME coordinates, with everything outside the frame read as
-## empty. The oracle's copy of the shader's clamp — written from the rule rather than transcribed, so
-## the two can genuinely disagree.
+# This frame's alpha at (fx, fy) in FRAME coordinates, with everything outside the frame read as
+# empty. The oracle's copy of the shader's clamp, written from the rule rather than transcribed, so
+# the two can genuinely disagree.
 func _frame_alpha(src : Image, frame : Rect2, fx : int, fy : int) -> bool:
 	if fx < 0 or fy < 0 or fx >= int(frame.size.x) or fy >= int(frame.size.y): return false
 	return src.get_pixel(int(frame.position.x) + fx, int(frame.position.y) + fy).a > 0.5
 
-## Is any texel within Chebyshev distance `w` opaque? EIGHT directions at w = 1, corners included —
-## which is the half a 4-tap implementation gets wrong.
+# Is any texel within Chebyshev distance w opaque? EIGHT directions at w = 1, corners included,
+# which is the half a 4-tap implementation gets wrong.
 func _any_neighbour(src : Image, frame : Rect2, fx : int, fy : int, w : int) -> bool:
 	for dy : int in range(-w, w + 1):
 		for dx : int in range(-w, w + 1):
@@ -223,30 +207,30 @@ func _any_neighbour(src : Image, frame : Rect2, fx : int, fy : int, w : int) -> 
 			if _frame_alpha(src, frame, fx + dx, fy + dy): return true
 	return false
 
-## Colour equality at 8-bit precision. The render target is 8-bit per channel, so comparing floats
-## exactly would fail on rounding that no eye and no later pass can see.
+# Colour equality at 8-bit precision. The render target is 8-bit per channel, so comparing floats
+# exactly would fail on rounding that no eye and no later pass can see. Where both are transparent
+# RGB is undefined, so it is not compared.
 func _same(a : Color, b : Color) -> bool:
 	if absf(a.a - b.a) > 0.02: return false
-	if a.a < 0.5: return true             # both transparent: RGB is undefined, do not compare it
+	if a.a < 0.5: return true
 	return absf(a.r - b.r) < 0.02 and absf(a.g - b.g) < 0.02 and absf(a.b - b.b) < 0.02
 
 # ------------------------------------------------------------------ the mask seam
 
-## **A 1-UNIT DILATION PRESERVES A CORNER BITE EXACTLY**, so the FX mask — which is built from the type
-## frame's alpha via `CardModifierType.corner_notch()` and applied to the RIG's 40x54 rectangle — still
-## describes the drawn silhouette after the shader has rimmed it.
-##
-## The identity: put the art at offset (1,1) in the 40x54 card and let it bite an N x M rectangle out
-## of a corner. A card texel is covered iff some opaque art texel lies within Chebyshev distance 1, so
-## the corner texel stays clear exactly when `cx <= N-1` AND `cy <= M-1` — an N x M clear rectangle in
-## CARD space, the same N x M the art bit. Exact, therefore asserted exactly.
-##
-## ⚠ **AND IT ALSO CATCHES THE OTHER HALF, WHICH IS THE HALF THAT WILL BITE SOMEONE LATER.** The mask
-## agrees with the drawn edge only because the art reaches its frame boundary everywhere else — dilate
-## it by one and the silhouette lands exactly on the polygon. A future type frame drawn pulling IN from
-## its frame edge would leave the mask oversized there and root every flame off the art, silently.
-## Frames 12 and 13 of the shipped sheet already do this (96 and 92 perimeter texels against 172);
-## nothing uses them yet. **This check is what will fail the day something does.**
+# A 1-UNIT DILATION PRESERVES A CORNER BITE EXACTLY, so the FX mask, built from the type frame's
+# alpha via CardModifierType.corner_notch() and applied to the RIG's 40x54 rectangle, still describes
+# the drawn silhouette after the shader has rimmed it.
+
+# The identity: put the art at offset (1,1) in the 40x54 card and let it bite an N x M rectangle out
+# of a corner. A card texel is covered iff some opaque art texel lies within Chebyshev distance 1, so
+# the corner stays clear exactly when cx <= N-1 AND cy <= M-1. Exact, therefore asserted exactly.
+
+# ⚠ AND IT CATCHES THE OTHER HALF, THE ONE THAT WILL BITE SOMEONE LATER. The mask agrees with the
+# drawn edge only because the art reaches its frame boundary everywhere else. A type frame drawn
+# pulling IN from its frame edge leaves the mask oversized there and roots every flame off the art.
+
+# Frames 12 and 13 of the shipped sheet already pull in, 96 and 92 perimeter texels against 172, and
+# nothing uses them yet. This check is what will fail the day something does.
 func test_corner_bite_survives_the_dilation() -> void:
 	var src := CardModifierType.TYPE_TEXTURE.get_image()
 	var w := int(CardVisual.ART_OUTLINE)
@@ -257,28 +241,30 @@ func test_corner_bite_survives_the_dilation() -> void:
 				CardModifierType.H_FRAMES, CardModifierType.V_FRAMES, type_mod.get_frame())
 		var notch := type_mod.corner_notch()
 		var card := CardVisual.CARD_SIZE
-		# The DRAWN silhouette: this frame's alpha dilated by the rim, in card coordinates.
+# The DRAWN silhouette: this frame's alpha dilated by the rim, in card coordinates.
 		var drawn_clear_w := 0
 		while drawn_clear_w < int(card.x) and not _dilated(src, frame, drawn_clear_w, 0, w):
 			drawn_clear_w += 1
 		var drawn_clear_h := 0
 		while drawn_clear_h < int(card.y) and not _dilated(src, frame, 0, drawn_clear_h, w):
 			drawn_clear_h += 1
-		# ⚠ CONTAINMENT, NOT EQUALITY, and the difference is `corner_notch`'s own documented behaviour:
-		# it returns the largest clear rectangle BY AREA, which for a one-texel bite is exact and for a
-		# STAIRCASE corner deliberately under-cuts ("it under-cuts by a texel rather than eating art the
-		# frame actually draws"). So the mask's bite must FIT INSIDE the drawing's, never exceed it —
-		# under-cutting leaves a texel of flame on art, over-cutting leaves it on nothing.
+# ⚠ CONTAINMENT, NOT EQUALITY, which is corner_notch's own documented behaviour: it returns the
+# largest clear rectangle BY AREA, exact for a one-texel bite and deliberately under-cutting a
+# STAIRCASE corner by a texel rather than eating art the frame actually draws.
+
+# So the mask's bite must FIT INSIDE the drawing's and never exceed it: under-cutting leaves a texel
+# of flame on art, over-cutting leaves it on nothing.
 		check(notch.x <= drawn_clear_w and notch.y <= drawn_clear_h,
 				"frame %d: the corner the mask bites fits inside the corner the drawing bites"
 				% type_mod.get_frame(),
 				"drawn bites %d x %d, corner_notch() says %s — the mask is cutting MORE than the "
 				% [drawn_clear_w, drawn_clear_h, notch]
 				+ "drawing does, which puts flames on nothing at that corner")
-		# THE EXTENT SEAM: the drawn silhouette must REACH the card box on all four sides, because the
-		# mask (the rig at ±20/±27) says it does. Interior holes are fine — a type may be drawn hollow —
-		# but art that pulls IN from its frame edge makes the mask oversized there, and every effect on
-		# that card roots that far off the drawing with nothing in the engine to notice.
+# THE EXTENT SEAM: the drawn silhouette must REACH the card box on all four sides, because the mask,
+# the rig at ±20/±27, says it does. Interior holes are fine, since a type may be drawn hollow.
+
+# Art that pulls IN from its frame edge makes the mask oversized there, and every effect on that card
+# roots that far off the drawing with nothing in the engine to notice.
 		var short := Vector4i(_inset(src, frame, w, card, 0), _inset(src, frame, w, card, 1),
 				_inset(src, frame, w, card, 2), _inset(src, frame, w, card, 3))
 		check(short == Vector4i.ZERO,
@@ -291,9 +277,9 @@ func test_corner_bite_survives_the_dilation() -> void:
 		checked += 1
 	check_impl(checked == 4, "every shipped card type was checked", str(checked))
 
-## How far one SIDE of the drawn silhouette falls short of the card box, in art units, measured at that
-## side's MIDPOINT so the four corner bites do not count as shortfall. `side`: 0 left, 1 top, 2 right,
-## 3 bottom. Zero when the drawing reaches the box, which is what the mask assumes.
+# How far one SIDE of the drawn silhouette falls short of the card box, in art units, measured at that
+# side's MIDPOINT so the four corner bites do not count as shortfall. Sides are 0 left, 1 top,
+# 2 right, 3 bottom. Zero when the drawing reaches the box, which is what the mask assumes.
 func _inset(src : Image, frame : Rect2, w : int, card : Vector2, side : int) -> int:
 	var span := 0
 	var mid := 0
@@ -309,8 +295,8 @@ func _inset(src : Image, frame : Rect2, w : int, card : Vector2, side : int) -> 
 		if hit: return d
 	return span
 
-## Is card texel `(cx, cy)` covered by the art dilated by `w`? The art sits at offset `(w, w)` inside
-## the card, so a card texel maps to art texel `(cx - w, cy - w)` and the dilation reaches `w` around it.
+# Is card texel (cx, cy) covered by the art dilated by w? The art sits at offset (w, w) inside the
+# card, so a card texel maps to art texel (cx - w, cy - w) and the dilation reaches w around it.
 func _dilated(src : Image, frame : Rect2, cx : int, cy : int, w : int) -> bool:
 	for dy : int in range(-w, w + 1):
 		for dx : int in range(-w, w + 1):
@@ -323,13 +309,12 @@ func _dilated(src : Image, frame : Rect2, cx : int, cy : int, w : int) -> bool:
 
 # ------------------------------------------------------------------ the alert
 
-## THE ALERT IS RE-DERIVED FROM THE LIVE STATUS LIST, so it cannot leak and two of them cannot switch
-## each other off.
-##
-## ⚠ **ASSERTED BY REMOVING THE STATUS, NEVER BY CALLING AN "OFF" METHOD** — there deliberately is no
-## off method. An imperative `alert_on()` / `alert_off()` pair leaks the moment a status is freed,
-## merged away or rewound mid-alert, because nothing is left to call the off. That is the failure this
-## design exists to make impossible, so the test has to exercise the path that would have leaked.
+# THE ALERT IS RE-DERIVED FROM THE LIVE STATUS LIST, so it cannot leak and two of them cannot switch
+# each other off.
+
+# ⚠ ASSERTED BY REMOVING THE STATUS, NEVER BY CALLING AN "OFF" METHOD - there deliberately is no off
+# method. An imperative pair leaks the moment a status is freed, merged away or rewound mid-alert,
+# so the test has to exercise the path that would leak.
 func test_alert_is_off_until_a_status_declares_it() -> void:
 	var data := TestFactories.m_card(3.0, 1)
 	var vis : CardVisual = CardVisual.CARD_VISUAL.instantiate()
@@ -338,10 +323,9 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 	add_child(vis)
 	vis.show_front = true
 
-	# ⚠ **THE TUNING RESOURCE MUST ACTUALLY REACH THE ALERT**, or `tools/outline_atlas.tscn` is tuning a
-	# preview and the game keeps whatever was hardcoded — which is the exact failure the style resource
-	# was introduced to end. Two representations of one number with nothing comparing them is how this
-	# project's recurring bugs are shaped, so the comparison is written here rather than assumed.
+# ⚠ THE TUNING RESOURCE MUST ACTUALLY REACH THE ALERT, or tools/outline_atlas.tscn tunes a preview
+# while the game keeps whatever was hardcoded. Two representations of one number with nothing
+# comparing them is how this project's recurring bugs are shaped, so the comparison is written here.
 	var st := CardOutline.STYLE
 	var default_glare := CardAlert.glare()
 	check(default_glare.resolved_period(st) == st.glare_period_fraction
@@ -353,8 +337,8 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 			% [default_glare.resolved_period(st), default_glare.resolved_thickness(st),
 			default_glare.resolved_buffer(st), default_glare.resolved_color(st),
 			st.glare_period_fraction, st.glare_thickness, st.glare_buffer, st.glare_color])
-	# THROB keeps its OWN tempo and its OWN ink — the two are different cues and share neither (owner
-	# 2026-08-06). A single shared period would pass every other check in this file.
+# THROB keeps its OWN tempo and its OWN ink, the two being different cues that share neither (owner).
+# A single shared period would pass every other check in this file.
 	var default_throb := CardAlert.throb()
 	check(default_throb.resolved_period(st) == st.throb_period_fraction
 			and default_throb.resolved_color(st) == st.throb_color,
@@ -362,15 +346,16 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 			"throb(%.2f, %d) vs glare(%.2f, %d)"
 			% [default_throb.resolved_period(st), default_throb.resolved_color(st),
 			st.glare_period_fraction, st.glare_color])
-	# ⚠ **LATE RESOLUTION IS THE POINT, so assert it directly.** A status builds its request without
-	# knowing which card will read it, so the fields must still be UNSET afterwards — resolving them at
-	# construction would bake the shipped defaults in and make a TYPE's own style unreachable for every
-	# field the status did not name. That failure would be near-invisible: the card would look right for
-	# the default type and wrong for every type that overrode anything.
+# ⚠ LATE RESOLUTION IS THE POINT, so assert it directly. A status builds its request without knowing
+# which card will read it, so the fields must still be UNSET afterwards: resolving them at
+# construction bakes the shipped defaults in and makes a TYPE's own style unreachable.
+
+# That failure would be near-invisible - the card would look right for the default type and wrong for
+# every type that overrode anything.
 	check_impl(default_glare.period_fraction < 0.0 and default_glare.thickness < 0.0
 			and default_glare.buffer < 0.0 and default_glare.color < 0,
 			"an unqualified alert stores SENTINELS, so a per-type style can still override it")
-	# And a type's override is what those sentinels resolve against — the third layer, exercised.
+# And a type's override is what those sentinels resolve against: the third layer, exercised.
 	var custom := st.duplicate() as OutlineStyle
 	custom.glare_thickness = st.glare_thickness + 7.0
 	check(default_glare.resolved_thickness(custom) == st.glare_thickness + 7.0,
@@ -385,8 +370,8 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 	check(vis._alert != null and vis._alert.kind == CardOutline.Alert.GLARE,
 			"a status that DECLARES an alert turns the card's outline into one")
 
-	# TWO at once: the second clearing must not switch off the first, which a bool or a pushed flag
-	# would get wrong. `CardVisual` has the precedent for that hazard in `_spin_holding`.
+# TWO at once: the second clearing must not switch off the first, which a bool or a pushed flag would
+# get wrong. CardVisual has the precedent for that hazard in _spin_holding.
 	var two := StatusTestAlertThrob.new()
 	data.add_status(two)
 	vis.update_visual()
@@ -520,31 +505,31 @@ func _shimmer_oracle(phase : float) -> Color:
 
 # ------------------------------------------------------------------ the source-level rules
 
-## TWO RULES THAT ARE INVISIBLE IN A REST-POSE IMAGE AND DECIDE WHETHER AN ANIMATED CARD LOOKS RIGHT.
-##
-## All five polygons are skinned to the card's star rig, which autoplays, so a card is never the
-## rectangle it measures. The rim survives that because Polygon2D bone weights move VERTEX POSITIONS
-## and leave each vertex's UV alone — the fragment stage sees the same UV-to-texel correspondence at
-## rest and fully deformed. Two things have to hold, and BOTH pass every rest-pose pixel check:
-##
-##  1. the neighbourhood is tapped in UV space via `TEXTURE_PIXEL_SIZE`. A `SCREEN_UV` or `FRAGCOORD`
-##     neighbourhood holds a constant SCREEN thickness while the art stretches, so the rim DETACHES
-##     from the drawing — worst at the corners, where `Arm_TopLeft` swings out ~26 %.
-##  2. there is no `vertex()` function. Godot applies 2D skinning in the vertex stage, and a custom
-##     `vertex()` is the one way to interfere with it; not having one removes the question.
-##
-## ⚠ **THIS IS A SOURCE-TEXT CHECK, AND THAT IS THE PROPORTIONATE FORM.** Catching (1) by rendering
-## needs a pinned deformed pose and a thickness measurement along a stretched edge — which
-## `test_pixels.test_the_card_mask_is_the_card_the_player_sees` already does for the silhouette as a
-## whole. What is left is the rule itself, and a rule is cheapest to assert where it is written.
+# TWO RULES THAT ARE INVISIBLE IN A REST-POSE IMAGE AND DECIDE WHETHER AN ANIMATED CARD LOOKS RIGHT.
+# All five polygons are skinned to the card's star rig, which autoplays, so a card is never the
+# rectangle it measures.
+
+# The rim survives that because Polygon2D bone weights move VERTEX POSITIONS and leave each vertex's
+# UV alone: the fragment stage sees the same UV-to-texel correspondence at rest and fully deformed.
+# Two things have to hold, and BOTH pass every rest-pose pixel check.
+
+# First, the neighbourhood is tapped in UV space via TEXTURE_PIXEL_SIZE. A SCREEN_UV or FRAGCOORD
+# neighbourhood holds a constant SCREEN thickness while the art stretches, so the rim DETACHES from
+# the drawing, worst at the corners where Arm_TopLeft swings out ~26 %.
+
+# Second, there is no vertex() function. Godot applies 2D skinning in the vertex stage and a custom
+# vertex() is the one way to interfere with it; not having one removes the question.
+
+# ⚠ THIS IS A SOURCE-TEXT CHECK, AND THAT IS THE PROPORTIONATE FORM. Catching the first by rendering
+# needs a pinned deformed pose and a thickness measurement along a stretched edge, which test_pixels
+# already does for the silhouette as a whole. A rule is cheapest to assert where it is written.
 func test_shader_taps_in_texture_space() -> void:
 	var raw := FileAccess.get_file_as_string(CardOutline.SHADER.resource_path)
 	check_impl(not raw.is_empty(), "the outline shader source is readable",
 			CardOutline.SHADER.resource_path)
-	# ⚠ COMMENTS STRIPPED FIRST. The shader's own header EXPLAINS the rule by naming `SCREEN_UV` and
-	# `FRAGCOORD` as the things not to use, so a scan of the raw text finds them and fails on the
-	# documentation rather than on the code. A check that cannot tell a prohibition from its violation
-	# is worse than no check — it trains the next person to delete the comment.
+# ⚠ COMMENTS STRIPPED FIRST. The shader's own header EXPLAINS the rule by naming SCREEN_UV and
+# FRAGCOORD as the things not to use, so a scan of the raw text finds them and fails on the
+# documentation rather than on the code, training the next person to delete the comment.
 	var text := ""
 	for line : String in raw.split("\n"):
 		var slash := line.find("//")
@@ -556,29 +541,29 @@ func test_shader_taps_in_texture_space() -> void:
 			+ "art stretched and detach the rim from the drawing")
 	check_impl(not text.contains("void vertex()"),
 			"the shader writes no vertex() — Godot's 2D skinning lives there and must not be touched")
-	# ⚠ **NO USER FUNCTION MAY TAKE A `sampler2D`, AND THIS CHECK EXISTS BECAUSE THE SUITE MISSED IT
-	# ONCE.** `TEXTURE` is a `fragment()`-local built-in. Passing it into a helper compiles on the GLES3
-	# runtime path — so the game ran and every check in this file passed — while the EDITOR's shader
-	# compiler rejected it outright (*"Condition `!actions.custom_samplers.has(...)` is true"*), which
-	# broke every `@tool` host that previews the shader. The editor is where the art is judged, so a
-	# shader that is only correct where the tests look is not correct. Tap inline in `fragment()`.
+# ⚠ NO USER FUNCTION MAY TAKE A sampler2D. TEXTURE is a fragment()-local built-in, and passing it
+# into a helper compiles on the GLES3 runtime path - so the game runs and every check in this file
+# passes - while the EDITOR's shader compiler rejects it outright.
+
+# That breaks every @tool host that previews the shader, and the editor is where the art is judged,
+# so a shader that is only correct where the tests look is not correct. Tap inline in fragment().
 	check_impl(not text.contains("sampler2D") or text.count("sampler2D") == text.count("uniform sampler2D"),
 			"no user function takes a sampler2D — a built-in sampler passed as an argument compiles at "
 			+ "runtime and fails in the EDITOR, so the whole suite can go green on a broken shader",
 			"%d sampler2D mentions, %d of them uniforms"
 			% [text.count("sampler2D"), text.count("uniform sampler2D")])
 
-## ⚠ **THE CARD SCENE MUST SHIP NO SAVED MATERIAL, AND THAT IS NOT A STYLE RULE.**
-## `CardOutline.material_of()` assigns `poly.material`, which is a SCENE MUTATION — and `CardVisual`
-## is `@tool`, so it happens in the editor too. Any edit that dirties the scene therefore persists
-## whatever uniform state the scene's PREVIEW card happened to produce, and that card has no suit:
-## `card_visual.gd`'s art branch never runs for it, so `frame_polygon()` never fires on Suit or Art
-## and their `u_frame_uv` stays at the shader default `(0,0,1,1)` — the whole sheet, i.e. NO CLAMP.
-## The sheets are packed edge to edge with no gutter, so an unclamped padded window samples the four
-## neighbouring frames and the art visibly bleeds.
-##
-## This asserts the scene, not the symptom, so it catches ANY future editor re-bake rather than the
-## one uniform that happened to be wrong.
+# ⚠ THE CARD SCENE MUST SHIP NO SAVED MATERIAL, AND THAT IS NOT A STYLE RULE.
+# CardOutline.material_of() assigns poly.material, which is a SCENE MUTATION, and CardVisual is
+# @tool, so it happens in the editor too.
+
+# Any edit that dirties the scene persists whatever uniform state the scene's PREVIEW card produced,
+# and that card has no suit: card_visual.gd's art branch never runs for it, so frame_polygon() never
+# fires on Suit or Art and u_frame_uv stays at the shader default of the whole sheet, i.e. NO CLAMP.
+
+# The sheets are packed edge to edge with no gutter, so an unclamped padded window samples the four
+# neighbouring frames and the art visibly bleeds. This asserts the scene, not the symptom, so it
+# catches ANY future editor re-bake rather than the one uniform that happened to be wrong.
 func test_the_card_scene_ships_no_baked_material() -> void:
 	var text := FileAccess.get_file_as_string(CARD_SCENE_PATH)
 	check(not text.is_empty(), "the card scene is readable at %s" % CARD_SCENE_PATH)
@@ -588,22 +573,22 @@ func test_the_card_scene_ships_no_baked_material() -> void:
 	check(not text.contains("[sub_resource type=\"ShaderMaterial\""),
 			"card_visual.tscn defines no ShaderMaterial sub-resource")
 
-## TP-80 — CARD_SEPARATION is DERIVED from where the pips actually sit, not asserted to be 16.
-##
-## ⚠ THE WHOLE POINT IS THAT THE ART CAN MOVE. The visible strip of a covered card has to be
-## tall enough to show that card's pip row plus clearance for the idle rig, and the pip row's
-## position lives in `card_visual.tscn` where an art pass can change it. A check that read
-## `CARD_SEPARATION == 16` would pass with the pips moved anywhere at all, and the board's row
-## pitch would silently stop matching the art it exists to reveal.
-##
-## Stacks grow UPWARD, so the strip that stays visible is the card's BOTTOM band and the
-## margin that matters is the one below the pips. The arithmetic is the same as it was when
-## the strip was measured from the top, mirrored.
+# CARD_SEPARATION is DERIVED from where the pips actually sit, not asserted to be 16.
+
+# ⚠ THE WHOLE POINT IS THAT THE ART CAN MOVE. The visible strip of a covered card has to show that
+# card's pip row plus clearance for the idle rig, and the pip row's position lives in
+# card_visual.tscn where an art pass can change it.
+
+# A check reading CARD_SEPARATION == 16 would pass with the pips moved anywhere at all, and the
+# board's row pitch would silently stop matching the art it exists to reveal.
+
+# Stacks grow UPWARD, so the strip that stays visible is the card's BOTTOM band and the margin that
+# matters is the one below the pips.
 func test_card_separation_derives_from_the_pip_row() -> void:
 	var text := FileAccess.get_file_as_string(CARD_SCENE_PATH)
 	check(not text.is_empty(), "the card scene is readable at %s" % CARD_SCENE_PATH)
 
-	# The Rank pip is positioned in the scene; its polygon gives the pip's own extent.
+# The Rank pip is positioned in the scene; its polygon gives the pip's own extent.
 	var rank_y := _scene_node_position_y(text, "Rank")
 	var pip_half := _scene_node_polygon_half_height(text, "Rank")
 	check(rank_y > 0.0 and pip_half > 0.0,
@@ -614,8 +599,8 @@ func test_card_separation_derives_from_the_pip_row() -> void:
 	var pip_bottom := rank_y + pip_half
 	var margin_below := card_bottom - pip_bottom
 	var pip_height := pip_half * 2.0
-	# The one number that is a CHOICE rather than a measurement: the owner's clearance for the
-	# idle rig ("pip added 2 pixels, need 2 unit clearance to account for animations").
+# The one number that is a CHOICE rather than a measurement, the owner's clearance for the idle rig:
+# "pip added 2 pixels, need 2 unit clearance to account for animations".
 	var rig_clearance := 2.0
 	var derived := margin_below + pip_height + rig_clearance
 

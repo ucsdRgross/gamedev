@@ -1,14 +1,10 @@
 extends TestSuite
-# res://Tests/Engine/test_comparator.gd
-# PipComparator suite: default comparisons without an
-# environment, then mod overrides through a FakeEnvironment.
-# Non-freezing checks, every coroutine awaited (SC1 convention).
-#
-# CATEGORY MAP (see TestSuite):
-#   BEHAVIOR — what counts as adjacent/same/ace for real cards (card-game semantics,
-#     incl. the ace-high scorable rule) and that a rules-card mod can override compares.
-#   IMPLEMENTATION — null/NAN edge handling, non-standard pip classes, dispatch
-#     pins (fall-through, precedence, vararg regression, CURRENT lifecycle).
+# PipComparator: default comparisons with no environment, then mod overrides through a
+# FakeEnvironment. Non-freezing checks, every coroutine awaited.
+
+# CATEGORY MAP. BEHAVIOR is what counts as adjacent, same or ace for real cards, including the
+# ace-high scorable rule, and that a rules card can override comparisons. IMPLEMENTATION is null
+# and NAN edge handling, non-standard pip classes, and the dispatch pins.
 
 func suite_name() -> String:
 	return "COMPARATOR"
@@ -32,16 +28,15 @@ func _ready() -> void:
 	finish()
 
 
-# ==============================================================================
 # TEST DOUBLES
-# ==============================================================================
 
-## Parameterized test suit — compare_suits is always NAN now (suits are nominal); id drives
-## get_str so distinct ids are distinct suits and equal ids are the same suit.
+# Parameterized test suit. compare_suits is always NAN, suits being nominal, and id drives get_str
+# so distinct ids are distinct suits and equal ids are the same suit.
 class WeirdSuit extends PipSuit:
 	var id := 0
 	func get_suit_index() -> int: return 0
-	func palette_role() -> int: return PaletteDB.ROLES.suit_hoop   # never drawn
+# never drawn
+	func palette_role() -> int: return PaletteDB.ROLES.suit_hoop
 	func get_str() -> String: return "Weird%d" % id
 	func get_description() -> String: return "?"
 	func spawn_props() -> Array: return []
@@ -50,8 +45,8 @@ class WeirdSuit extends PipSuit:
 		s.id = i
 		return s
 
-## Rank outside PipRankNumeral — still has `value`, so compare_ranks falls to the
-## "value in both" arm and compares numerically (pinned below).
+# A rank outside PipRankNumeral. It still has `value`, so compare_ranks falls to the "value in
+# both" arm and compares numerically, which is pinned below.
 class WeirdRank extends PipRank:
 	func get_str() -> String: return "?"
 	func set_texture(_p: Polygon2D) -> void: pass
@@ -76,9 +71,7 @@ class SpyCompare extends CardModifierType:
 		return suit_result
 
 
-# ==============================================================================
-# SECTION 1: DEFAULTS, NO ENVIRONMENT (CURRENT == null -> mods skipped)
-# ==============================================================================
+# SECTION 1: DEFAULTS, NO ENVIRONMENT. CURRENT is null, so mods are skipped.
 func run_no_environment_tests() -> void:
 	behavior_section("SECTION 1: DEFAULT COMPARISONS (NO ENV)")
 	check_impl(CardEnvironment.CURRENT == null, "precondition: no CardEnvironment.CURRENT",
@@ -94,27 +87,24 @@ func run_no_environment_tests() -> void:
 	check_impl(is_nan(await PipComparator.compare_ranks(null, r5)), "compare_ranks null r1 -> NAN")
 	check_impl(is_nan(await PipComparator.compare_ranks(r5, null)), "compare_ranks null r2 -> NAN")
 
-	#suits are nominal now — compare_suits has no order, always NAN without a mod
-	#(BEHAVIOR: "suits have no rank order" is a rule of the new suit model)
+# Suits are nominal, so compare_suits has no order and is always NAN without a mod. "Suits have no
+# rank order" is a rule of the suit model.
 	check(is_nan(await PipComparator.compare_suits(s3, s1)), "compare_suits nominal -> NAN")
 	check_impl(is_nan(await PipComparator.compare_suits(null, s1)), "compare_suits null -> NAN")
 	check_impl(is_nan(await PipComparator.compare_suits(WeirdSuit.new(), s1)),
 			"compare_suits any suit -> NAN")
 
-	#pin: non-numeral ranks still compare via the generic `value` arm
+# pin: non-numeral ranks still compare via the generic `value` arm
 	var w4 : PipRank = WeirdRank.new().with_value(4)
 	check_impl(await PipComparator.compare_ranks(w4, r5) == -1.0,
 			"compare_ranks non-numeral rank with value compares numerically (pinned)")
 
 
-# ==============================================================================
-# SECTION 2: PREDICATES (adjacency, printed sameness, is_ace)
-#
-# ⚠ `is_rank_same` / `is_suit_same` were DELETED by plan step S21. They answered a SAMENESS
-# question by dispatching the ORDERING hooks, which is the cross-situation reuse Q62(a) removed —
-# stacking now asks `stack_*_same`, melding asks the meld hooks, and "do these print the same
-# value" with no dispatch at all is `printed_same`. The checks below moved with them.
-# ==============================================================================
+# SECTION 2: PREDICATES - adjacency, printed sameness, is_ace.
+
+# ⚠ is_rank_same and is_suit_same were DELETED. They answered a SAMENESS question by dispatching the
+# ORDERING hooks, which is the cross-situation reuse the design removed: stacking asks stack_*_same,
+# melding asks the meld hooks, and "do these print the same value" with no dispatch is printed_same.
 func run_predicate_tests() -> void:
 	behavior_section("SECTION 2: PREDICATES")
 	var a := PipRankNumeral.new().with_value(9)
@@ -153,9 +143,7 @@ func run_predicate_tests() -> void:
 	check(not PipComparator.is_ace(PipRankNumeral.new().with_value(13)), "is_ace king false")
 
 
-# ==============================================================================
-# SECTION 3: SCORABLE VALUES (SCORING_AUDIT G2 — ace-high coverage)
-# ==============================================================================
+# SECTION 3: SCORABLE VALUES, including ace-high coverage.
 func run_scorable_tests() -> void:
 	behavior_section("SECTION 3: SCORABLE VALUES")
 	var ace := PipRankNumeral.new().with_value(1)
@@ -177,9 +165,7 @@ func run_scorable_tests() -> void:
 	check(not PipComparator.is_scorable(rankless), "null rank not scorable")
 
 
-# ==============================================================================
 # SECTION 4: MOD OVERRIDES VIA FakeEnvironment
-# ==============================================================================
 func run_mod_override_tests() -> void:
 	implementation_section("SECTION 4: MOD OVERRIDES (FakeEnvironment)")
 	var env := FakeEnvironment.new()
@@ -194,33 +180,33 @@ func run_mod_override_tests() -> void:
 	var r9 := PipRankNumeral.new().with_value(9)
 	var r2 := PipRankNumeral.new().with_value(2)
 
-	#override wins over default math (BEHAVIOR: rules cards CAN rewrite comparisons)
+# override wins over default math: rules cards CAN rewrite comparisons
 	spy.rank_result = 0.0
 	check_behavior(await PipComparator.compare_ranks(r9, r2) == 0.0, "mod override: ranks 9,2 -> 0")
-	#S21: the ORDERING hook no longer answers any SAMENESS question — the delta it returns is
-	#all it governs, and `printed_same` (no dispatch) is what silence falls through to.
+# The ORDERING hook answers no SAMENESS question: the delta it returns is all it governs, and
+# printed_same, which dispatches nothing, is what silence falls through to.
 	check_behavior(not PipComparator.printed_same(r9, r2),
 			"printed_same ignores the ordering mod entirely: 9 and 2 still print differently")
 	check((spy.last_rank_args.size() == 2 and spy.last_rank_args[0] == r9 and spy.last_rank_args[1] == r2) as bool,
 			"hook receives TWO pip args, not one array (vararg regression)",
 			str(spy.last_rank_args))
 
-	#NAN from the mod falls through to the default compare (pin fall-through)
+# NAN from the mod falls through to the default compare, pinning fall-through
 	spy.rank_result = NAN
 	check(await PipComparator.compare_ranks(r9, r2) == 7.0,
 			"mod returning NAN falls through to default compare (pinned)")
 
-	#suits too
+# suits too
 	spy.suit_result = 5.0
 	check_behavior(await PipComparator.compare_suits(PipSuitHoop.new(),
 			PipSuitHoop.new()) == 5.0, "mod override: suits -> 5")
 
-	#nulls short-circuit BEFORE mods run (pinned: mods never see null pips)
+# nulls short-circuit BEFORE mods run, so mods never see null pips
 	spy.rank_calls = 0
 	check(is_nan(await PipComparator.compare_ranks(null, r2)) and spy.rank_calls == 0,
 			"null pips short-circuit before mod dispatch (pinned)")
 
-	#precedence: first card in iterator order wins, later spies not called
+# precedence: the first card in iterator order wins, later spies not called
 	var spy2 := SpyCompare.new()
 	spy2.rank_result = 99.0
 	cards.append(CardData.new().with_type(spy2))
@@ -231,7 +217,7 @@ func run_mod_override_tests() -> void:
 			"first implementing mod wins; later mods not called",
 			"diff %s spy2 calls %d" % [diff, spy2.rank_calls])
 
-	#skills only dispatch while their `spotlit` flag is set
+# skills only dispatch while their `spotlit` flag is set
 	env.card_collections.clear()
 	var skill_spy := SpySkillCompare.new()
 	var skill_carrier := CardData.new().with_skill(skill_spy)
@@ -249,33 +235,31 @@ func run_mod_override_tests() -> void:
 	env.free()
 	check(CardEnvironment.CURRENT == null, "removing FakeEnvironment restores CURRENT = null")
 
-# ==============================================================================
-# SECTION 5 (G1): END-TO-END SCORING UNDER AN ACTIVE COMPARATOR MOD
-#
-# ⚠ **SECTION 4 PROVES THE MOD REACHES `PipComparator`. IT DOES NOT PROVE IT REACHES THE SCORE** —
-# and those are different claims with a whole hand-building engine between them. `Scoring` reads
-# ranks and suits through the MELD hooks, so a mod that rewrites comparison must
-# change WHICH HAND a set of cards forms, not merely what a comparison returns. Nothing asserted
-# that, which is todo.md's G1: *"end-to-end scoring under an active comparator mod"*.
-#
-# ⚠ **EVERY CASE IS PAIRED WITH THE SAME CARDS UNMODDED.** A hand that is five-of-a-kind under the
-# mod proves nothing on its own — the fixture might simply be five of a kind. The control is what
-# makes the mod the cause, and it runs on the SAME CardData instances.
-# ==============================================================================
+# SECTION 5: END-TO-END SCORING UNDER AN ACTIVE COMPARATOR MOD.
+
+# ⚠ SECTION 4 PROVES THE MOD REACHES PipComparator. IT DOES NOT PROVE IT REACHES THE SCORE, and
+# those are different claims with a whole hand-building engine between them.
+
+# Scoring reads ranks and suits through the MELD hooks, so a mod that rewrites comparison must
+# change WHICH HAND a set of cards forms, not merely what a comparison returns.
+
+# ⚠ EVERY CASE IS PAIRED WITH THE SAME CARDS UNMODDED. A hand that is five-of-a-kind under the mod
+# proves nothing on its own, the fixture might simply be five of a kind. The control is what makes
+# the mod the cause, and it runs on the SAME CardData instances.
 func run_end_to_end_scoring_under_mod() -> void:
 	behavior_section("SECTION 5 (G1): SCORING UNDER AN ACTIVE COMPARATOR MOD")
 	var env := FakeEnvironment.new()
 	add_child(env)
 
-	# Five distinct ranks in five distinct suits: no pair, no flush, no straight by default.
+# Five distinct ranks, 2,4,6,8,10, in five distinct suits: no pair, no flush, no straight.
 	var hand : Array[CardData] = []
 	for i : int in 5:
 		var c := CardData.new()
-		c.rank = PipRankNumeral.new().with_value(float(2 + i * 2))   # 2,4,6,8,10
+		c.rank = PipRankNumeral.new().with_value(float(2 + i * 2))
 		c.suit = PipSuitTest.with_id(900 + i)
 		hand.append(c)
 
-	# --- control: the same cards with NO mod installed -----------------------------------------
+# control: the same cards with NO mod installed
 	var plain := await Scoring.PokerHands.score(hand)
 	var plain_types : Array[Scoring.MELD_TYPE] = plain[0].types if not plain.is_empty() \
 			else [] as Array[Scoring.MELD_TYPE]
@@ -285,40 +269,39 @@ func run_end_to_end_scoring_under_mod() -> void:
 	check(not plain_types.has(Scoring.MELD_TYPE.FLUSH),
 			"G1 control: five distinct suits are NOT a flush without a mod")
 
-	# ⚠⚠ **THE MOD DOES NOT REACH HAND BUILDING, AND THIS SECTION PINS THAT AS IT STANDS.**
-	# Measured 2026-08-07, writing this test: a mod returning 0.0 from `on_compare_ranks` ("every
-	# rank is the same") leaves `PokerHands.score` returning High Card, NOT five of a kind.
-	#
-	# It is not a dispatch failure — the hooks fire, as section 4 proves. There are simply TWO
-	# representations of "are these the same?" and only one of them is overridable:
-	#
-	#   * PAIRWISE — `compare_ranks`, which the ordering hooks DO override,
-	#     and which `Scoring.is_flush` calls. This is also the path the placement legality query
-	#     uses, so the hooks are live in the game today.
-	#   * PROFILE — `get_rank_profile(card.rank)` / `get_suit_profile(card.suit)` in
-	#     `_get_hand_profiles_async`, which derive per-card CLASS KEYS. All grouping (sets,
-	#     straights, houses) is built from these classes.
-	#
-	# ⚠ **THE SEAM IS CLOSED, BUT NOT BY THESE HOOKS.** comparator_buckets landed a separate
-	# meld surface — `on_meld_ranks_deny` / `_allow` and the suit pair — and profiling closes
-	# over it (section 6). `on_compare_ranks` / `on_compare_suits` deliberately did NOT gain
-	# grouping power: QR3(c)/Q62(a) give each situation its OWN hooks with no fallback between
-	# them, so a card wanting to regroup melds implements the meld hook. That is why the pins
-	# below still hold, and they now pin a DECISION rather than a gap.
-	#
-	# So `is_flush` obeys a suit mod while the hand that flush is attached to is grouped without it.
-	# ⚠ **IT IS ENTIRELY LATENT: no shipped card implements either hook** (grep `func
-	# on_compare_ranks` under Cards/ — nothing). The first rules card that says "all ranks count as
-	# the same" will land on this, and it will look like the card doing nothing.
-	#
-	# ⚠ **PINNED AS DECIDED.** Whether a comparator mod should restructure hands WAS the open call
-	# here; comparator_buckets QR3(c)/Q62(a)/Q97 answered it — melding gets its own hooks and the
-	# ordering hooks keep ordering. These checks are now the guard on that separation.
+# ⚠⚠ THE MOD DOES NOT REACH HAND BUILDING, AND THIS SECTION PINS THAT AS IT STANDS. Measured: a mod
+# returning 0.0 from on_compare_ranks, meaning "every rank is the same", leaves PokerHands.score
+# returning High Card, NOT five of a kind.
+
+# It is not a dispatch failure, since the hooks fire as section 4 proves. There are simply TWO
+# representations of "are these the same?" and only one of them is overridable.
+
+# PAIRWISE is compare_ranks, which the ordering hooks DO override and which Scoring.is_flush calls.
+# It is also the path the placement legality query uses, so the hooks are live in the game today.
+
+# PROFILE is get_rank_profile and get_suit_profile in _get_hand_profiles_async, which derive
+# per-card CLASS KEYS. All grouping - sets, straights, houses - is built from these classes.
+
+# ⚠ THE SEAM IS CLOSED, BUT NOT BY THESE HOOKS. A separate meld surface, on_meld_ranks_deny and
+# _allow plus the suit pair, exists and profiling closes over it.
+
+# on_compare_ranks and on_compare_suits deliberately did NOT gain grouping power: each situation
+# gets its OWN hooks with no fallback between them, so a card wanting to regroup melds implements
+# the meld hook. That is why the pins below still hold, and they pin a DECISION rather than a gap.
+
+# So is_flush obeys a suit mod while the hand that flush is attached to is grouped without it.
+
+# ⚠ IT IS ENTIRELY LATENT: no shipped card implements either hook. The first rules card that says
+# "all ranks count as the same" will land on this, and it will look like the card doing nothing.
+
+# ⚠ PINNED AS DECIDED. Melding gets its own hooks and the ordering hooks keep ordering; these
+# checks are the guard on that separation. The spy below reads ranks as identical and leaves suits
+# at their default behaviour.
 	var spy := SpyCompare.new()
 	var carrier : Array[CardData] = [CardData.new().with_type(spy)]
 	env.card_collections.append(carrier)
-	spy.rank_result = 0.0            # 0 == "these ranks are the same"
-	spy.suit_result = NAN            # suits keep default behaviour
+	spy.rank_result = 0.0
+	spy.suit_result = NAN
 	var ranked := await Scoring.PokerHands.score(hand)
 	var ranked_types : Array[Scoring.MELD_TYPE] = ranked[0].types if not ranked.is_empty() \
 			else [] as Array[Scoring.MELD_TYPE]
@@ -332,13 +315,14 @@ func run_end_to_end_scoring_under_mod() -> void:
 			"modded %d vs plain %d"
 			% [ranked[0].score if not ranked.is_empty() else -1, plain[0].score])
 
-	# --- suits: the ORDERING hook grants no melding power either -------------------------------
-	# ⚠ **THIS USED TO BE THE SEAM, ASSERTED AS A DISAGREEMENT.** `Scoring.is_flush` answered
-	# from the pairwise hook while formation grouped from suit buckets, so the same cards were
-	# a flush to one and not to the other. comparator_buckets Q25(a) closed it: `is_flush` now
-	# reads the SAME partition formation used, and cannot be asked without one. So the check
-	# below is no longer "they disagree" but "the ordering hook reaches NEITHER of them" —
-	# GATE 5's paired fixture in section 9 is where a real suit rule makes a flush.
+# Suits: the ORDERING hook grants no melding power either.
+
+# ⚠ Scoring.is_flush answering from the pairwise hook while formation grouped from suit buckets
+# makes the same cards a flush to one and not to the other. is_flush now reads the SAME partition
+# formation used, and cannot be asked without one.
+
+# So the check below is not "they disagree" but "the ordering hook reaches NEITHER of them". The
+# paired fixture in section 9 is where a real suit rule makes a flush.
 	spy.rank_result = NAN
 	spy.suit_result = 0.0
 	var suited := await Scoring.PokerHands.score(hand)
@@ -354,9 +338,9 @@ func run_end_to_end_scoring_under_mod() -> void:
 			+ "can no longer disagree about one set of cards",
 			"suit classes: %d" % suit_profile.suits.classes.size())
 
-	# --- and it must be REVERSIBLE: clearing the mod restores the control result ---------------
-	# ⚠ A cached profile or a static comparator result would keep the modded answer alive for every
-	# later suite, which is the kind of leak a one-way test never sees.
+# And it must be REVERSIBLE: clearing the mod restores the control result. ⚠ A cached profile or a
+# static comparator result would keep the modded answer alive for every later suite, which is the
+# kind of leak a one-way test never sees.
 	env.card_collections.clear()
 	var restored := await Scoring.PokerHands.score(hand)
 	var restored_types : Array[Scoring.MELD_TYPE] = restored[0].types if not restored.is_empty() \
@@ -370,23 +354,20 @@ func run_end_to_end_scoring_under_mod() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 6 (comparator_buckets GATE 2): STAGE 0 — THE IDENTITY PATH AND THE
-# DISPATCH CEILING
-#
-# Two claims, and they are the whole safety argument for wiring melding to the hooks:
-#
-#   1. **Nothing implements a meld hook -> ZERO comparator dispatches**, and the hand scores
-#      exactly as it does with no environment at all — which is the pre-feature path, so
-#      "byte-identical to Phase 1" is checkable rather than remembered.
-#   2. **A rule is asked once per DISTINCT KEY PAIR, never per CARD PAIR** (Q1=a). The fixture
-#      is deliberately built so those two numbers DIFFER (5 keys across 8 cards -> 10 vs 28);
-#      with equal counts the check would pass under either implementation and prove nothing.
-#
-# ⚠ The deny rule answers FALSE for every pair on purpose. A rule that merged something would
-# let the closure SKIP already-merged pairs, so it would understate the ceiling — never
-# merging is the worst case and therefore the honest one.
-# ==============================================================================
+# SECTION 6: THE IDENTITY PATH AND THE DISPATCH CEILING. Two claims, and they are the whole safety
+# argument for wiring melding to the hooks.
+
+# First, nothing implementing a meld hook means ZERO comparator dispatches, and the hand scores
+# exactly as it does with no environment at all, which is the pre-feature path. That makes
+# "identical to the pre-feature result" checkable rather than remembered.
+
+# Second, a rule is asked once per DISTINCT KEY PAIR, never per CARD PAIR. The fixture is
+# deliberately built so those two numbers DIFFER, 5 keys across 8 cards giving 10 against 28; with
+# equal counts the check would pass under either implementation and prove nothing.
+
+# ⚠ The deny rule answers FALSE for every pair on purpose. A rule that merged something would let
+# the closure SKIP already-merged pairs and so understate the ceiling; never merging is the worst
+# case and therefore the honest one.
 
 ## A deny rule that forbids nothing. Present, asked, and never merging.
 class DenyNever extends CardModifierType:
@@ -405,8 +386,8 @@ class AllRanksSame extends CardModifierType:
 	func get_frame() -> int: return 0
 	func on_meld_ranks_allow(_r1: PipRank, _r2: PipRank) -> bool: return true
 
-## The split exerciser (Q82=a, GAP-001): value 3 refuses to pair with ITSELF, so cards printing
-## 3 must come apart even though the printed values match. Every other pair is untouched.
+# The split exerciser: value 3 refuses to pair with ITSELF, so cards printing 3 must come apart even
+# though the printed values match. Every other pair is untouched.
 class DenyThrees extends CardModifierType:
 	func get_str() -> String: return "DenyThrees"
 	func get_description() -> String: return ""
@@ -417,7 +398,7 @@ class DenyThrees extends CardModifierType:
 func run_stage0_dispatch_gate() -> void:
 	behavior_section("SECTION 6 (GATE 2): STAGE-0 DISPATCH CEILING AND THE IDENTITY PATH")
 
-	# 8 cards over 5 distinct rank keys: card pairs = 28, distinct key pairs = 10.
+# 8 cards over 5 distinct rank keys: card pairs = 28, distinct key pairs = 10.
 	var hand : Array[CardData] = []
 	for i : int in 8:
 		var c := CardData.new()
@@ -425,14 +406,14 @@ func run_stage0_dispatch_gate() -> void:
 		c.suit = PipSuitTest.with_id(700 + (i % 3))
 		hand.append(c)
 
-	# --- control: the SAME cards with no environment at all (the pre-feature path) ---------
+# control: the SAME cards with no environment at all, which is the pre-feature path
 	check_impl(CardEnvironment.CURRENT == null, "GATE 2 precondition: no environment yet")
 	var control := await Scoring.PokerHands.score(hand)
 
 	var env := CountingEnvironment.new()
 	add_child(env)
 
-	# --- claim 1: an empty board dispatches nothing and changes nothing --------------------
+# claim 1: an empty board dispatches nothing and changes nothing
 	var identity := await Scoring.PokerHands.score(hand)
 	check(env.total() == 0,
 			"GATE 2: no card implements a meld hook -> ZERO comparator dispatches",
@@ -444,21 +425,21 @@ func run_stage0_dispatch_gate() -> void:
 			"identity '%s'/%d vs control '%s'/%d" % [identity[0].name, identity[0].score,
 					control[0].name, control[0].score])
 
-	# --- claim 2: one deny rule, asked per distinct KEY pair -------------------------------
+# claim 2: one deny rule, asked per distinct KEY pair
 	var deny := DenyNever.new()
 	env.card_collections.append([CardData.new().with_type(deny)] as Array[CardData])
 	deny.calls = 0
 	var profile := await Scoring._get_hand_profiles_async(hand)
 	var k := profile.ranks.distinct_keys().size()
-	#k(k+1)/2, not k(k-1)/2: the closure also asks each SELF-pair (k, k), which is how a deny
-	#splits two ordinary 7s (Q82=a, owner ruling — design/comparator_buckets/gaps/GAP-001.md).
+# k(k+1)/2, not k(k-1)/2: the closure also asks each SELF-pair (k, k), which is how a deny splits
+# two ordinary 7s (owner ruling).
 	var key_pairs := k * (k + 1) / 2
 	var card_pairs := hand.size() * (hand.size() - 1) / 2
 	check_impl(k == 5 and card_pairs == 28,
 			"GATE 2 fixture: the key-pair and card-pair counts must DIFFER for this to prove anything",
 			"k=%d key_pairs=%d card_pairs=%d" % [k, key_pairs, card_pairs])
-	#EXACT, not <=: a never-merging rule gives the closure no pair to skip, so the ceiling is
-	#also the floor. `<=` would pass just as well if the closure silently asked nothing at all.
+# EXACT, not <=: a never-merging rule gives the closure no pair to skip, so the ceiling is also the
+# floor. `<=` would pass just as well if the closure silently asked nothing at all.
 	check(deny.calls == key_pairs,
 			"GATE 2: one deny rule is asked EXACTLY k(k+1)/2 times per profile build",
 			"%d dispatches, ceiling %d" % [deny.calls, key_pairs])
@@ -466,15 +447,15 @@ func run_stage0_dispatch_gate() -> void:
 			"GATE 2: and never the card-pair count — pips printing one value are ONE question (Q1=a)",
 			"%d dispatches vs %d card pairs" % [deny.calls, card_pairs])
 
-	# --- a deny that forbids nothing must leave the hand exactly as it was -----------------
+# a deny that forbids nothing must leave the hand exactly as it was
 	var denied := await Scoring.PokerHands.score(hand)
 	check(denied[0].name == control[0].name and denied[0].score == control[0].score,
 			"GATE 2: a deny rule answering false changes no result",
 			"got '%s'/%d" % [denied[0].name, denied[0].score])
 
-	# --- and the closure is not dead code: an allow rule DOES merge the classes ------------
-	# ⚠ Paired with the control on the SAME CardData instances (§3): a hand that is one big set
-	# under the rule proves nothing unless the same cards were not one without it.
+# And the closure is not dead code: an allow rule DOES merge the classes. ⚠ Paired with the control
+# on the SAME CardData instances, because a hand that is one big set under the rule proves nothing
+# unless the same cards were not one without it.
 	env.card_collections.clear()
 	env.card_collections.append([CardData.new().with_type(AllRanksSame.new())] as Array[CardData])
 	var merged := await Scoring._get_hand_profiles_async(hand)
@@ -491,10 +472,9 @@ func run_stage0_dispatch_gate() -> void:
 			"GATE 2: a RANK rule leaves suits alone — no cross-domain, no cross-situation fallback",
 			"%d suit classes" % merged.suits.classes.size())
 
-	# --- the SPLIT: a deny beats printed sameness (Q82=a, GAP-001) -------------------------
-	# ⚠ The fixture holds two 3s, and the control above scored them as part of a multi-pair.
-	# Under the rule the SAME instances must come apart while the 2s and 4s stay paired — a
-	# deny forbids the pairing it was asked about and nothing else.
+# THE SPLIT: a deny beats printed sameness. ⚠ The fixture holds two 3s and the control above scored
+# them as part of a multi-pair, so under the rule the SAME instances must come apart while the 2s
+# and 4s stay paired: a deny forbids the pairing it was asked about and nothing else.
 	env.card_collections.clear()
 	env.card_collections.append([CardData.new().with_type(DenyThrees.new())] as Array[CardData])
 	var split := await Scoring._get_hand_profiles_async(hand)
@@ -517,7 +497,7 @@ func run_stage0_dispatch_gate() -> void:
 			"GATE 2/GAP-001: the 2s and the 4s are still pairs — an undenied value is untouched",
 			"%d classes of two" % still_paired)
 
-	# --- removal restores the baseline: no partition or verdict outlives its rule ----------
+# removal restores the baseline: no partition or verdict outlives its rule
 	env.card_collections.clear()
 	var restored := await Scoring.PokerHands.score(hand)
 	check(restored[0].name == control[0].name and restored[0].score == control[0].score,
@@ -528,17 +508,14 @@ func run_stage0_dispatch_gate() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 7 (comparator_buckets GATE 3): STAGE 1 — WHOLE-HAND RULES AND THE
-# ADVERSARIAL ROSTER
-#
-# GATE 3's claim: every adversarial double degrades as specified, the engine-error scan stays
-# clean except where a `push_error` IS the assertion, and a rule returning its input unchanged
-# produces a byte-identical result to no rule at all.
-#
-# ⚠ **THE HOSTILE DOUBLES ARE THE POINT, NOT THE WELL-BEHAVED ONES.** A grouping rule is
-# arbitrary content code handed the engine's own partition; nothing about it is trustworthy.
-# ==============================================================================
+# SECTION 7: WHOLE-HAND RULES AND THE ADVERSARIAL ROSTER.
+
+# The claim: every adversarial double degrades as specified, the engine-error scan stays clean
+# except where a push_error IS the assertion, and a rule returning its input unchanged produces a
+# result identical to no rule at all.
+
+# ⚠ THE HOSTILE DOUBLES ARE THE POINT, NOT THE WELL-BEHAVED ONES. A grouping rule is arbitrary
+# content code handed the engine's own partition; nothing about it is trustworthy.
 
 class GroupRuleBase extends CardModifierType:
 	var calls := 0
@@ -571,8 +548,8 @@ class NullPartition extends GroupRuleBase:
 		calls += 1
 		return null
 
-## Garbage in every slot the contract has: a null group, a null member, a non-card member,
-## an empty group. None of it may reach the partition, and none of it may lose a real card.
+# Garbage in every slot the contract has: a null group, a null member, a non-card member, an empty
+# group. None of it may reach the partition, and none of it may lose a real card.
 class BadPartition extends GroupRuleBase:
 	func on_meld_group_ranks(_cards: Array[CardData], _groups: Array[Array]) -> Array[Array]:
 		calls += 1
@@ -580,9 +557,9 @@ class BadPartition extends GroupRuleBase:
 		junk.append([] as Array[CardData])
 		return junk
 
-## Q89(b): a card of the rule's own making. Must be REFUSED with a push_error — and that
-## push_error is this test's assertion, which is why "comparator_buckets:" is allowlisted in
-## all_tests.gd's engine-error scan.
+# A card of the rule's own making. It must be REFUSED with a push_error, and that push_error is this
+# test's assertion, which is why the message prefix is allowlisted in all_tests.gd's engine-error
+# scan.
 class InventsACard extends GroupRuleBase:
 	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
 		calls += 1
@@ -594,8 +571,8 @@ class InventsACard extends GroupRuleBase:
 		out.append_array(groups)
 		return out
 
-## Q14(d): pulls a card in from elsewhere on the board. Legal — it joins this meld and
-## contributes its points (Q88=a) while still scoring in its own line (Q87=a).
+# Pulls a card in from elsewhere on the board. Legal: it joins this meld and contributes its points
+# while still scoring in its own line.
 class PullsInNeighbour extends GroupRuleBase:
 	var neighbour : CardData = null
 	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
@@ -606,12 +583,14 @@ class PullsInNeighbour extends GroupRuleBase:
 		out.append_array(groups)
 		return out
 
-## Scribbles on the partition it was handed, then names ONE card and nothing else.
-## ⚠ The two halves are the test. If the engine had handed out its own arrays instead of
-## copies, the clear() would have destroyed the `previous` partition that step 5 restores the
-## unnamed cards from — so "the other four cards are still grouped" is only true if the rule
-## was aliasing a copy. Returning `groups` itself here would have meant an EMPTY answer, which
-## §1.3 step 1 reads as NO MELD POSSIBLE — a different case, covered by NoMeldPossible.
+# Scribbles on the partition it was handed, then names ONE card and nothing else.
+
+# ⚠ The two halves are the test. Handing out the engine's own arrays instead of copies would let the
+# clear() destroy the `previous` partition the unnamed cards are restored from, so "the other four
+# cards are still grouped" is only true if the rule was aliasing a copy.
+
+# Returning `groups` itself here would mean an EMPTY answer, which reads as NO MELD POSSIBLE - a
+# different case, covered by NoMeldPossible.
 class MutatingMod extends GroupRuleBase:
 	func on_meld_group_ranks(cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
 		calls += 1
@@ -628,14 +607,16 @@ class BoardMutatingMod extends GroupRuleBase:
 		if not victim.is_empty(): victim.clear()
 		return groups
 
-## Suspends before answering. The whole pipeline is `await`-based, and a rule that really does
-## park mid-call must not lose the partition across the resume.
-## ⚠ **IT SUSPENDS ON A COROUTINE, NOT ON `process_frame`, AND THAT IS DELIBERATE.** Measured
-## while writing this: awaiting a frame from inside a suite hands control back to the scene
-## tree, the runner starts the NEXT suite, and `CardEnvironment.CURRENT` becomes someone
-## else's — every later check in this section then ran against the wrong board and the
-## re-entrancy double was never dispatched at all. That is a property of the harness, not of
-## grouping; a suite must never yield a frame while it owns CURRENT.
+# Suspends before answering. The whole pipeline is await-based, and a rule that really does park
+# mid-call must not lose the partition across the resume.
+
+# ⚠ IT SUSPENDS ON A COROUTINE, NOT ON process_frame, AND THAT IS DELIBERATE. Measured: awaiting a
+# frame from inside a suite hands control back to the scene tree, the runner starts the NEXT suite,
+# and CardEnvironment.CURRENT becomes someone else's.
+
+# Every later check in this section then runs against the wrong board and the re-entrancy double is
+# never dispatched at all. That is a property of the harness, not of grouping; a suite must never
+# yield a frame while it owns CURRENT.
 class SuspendingMod extends GroupRuleBase:
 	func on_meld_group_ranks(_cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
 		calls += 1
@@ -646,13 +627,12 @@ class SuspendingMod extends GroupRuleBase:
 				PipRankNumeral.new().with_value(3),
 				PipComparator.MELD_RANKS_DENY, PipComparator.MELD_RANKS_ALLOW)
 
-## ⚠ NOT HYPOTHETICAL — `SkillEvalPokerBest` already scores rows and columns from
-## inside scoring. This double scores from inside a GROUPING call, which Q15(b) allows with no
-## depth limit at all.
-## ⚠ **IT GUARDS ITS OWN DEPTH, AND IT HAS TO.** Scoring always runs the grouping rules, so an
-## UNGUARDED reentrant rule recurses forever and hangs the submit. That is DEFERRED.md R1, an
-## accepted risk (Q15=b + Q19=b + Q92=b): the engine has no backstop, so a test double is
-## exactly as safe as content chooses to be.
+# ⚠ NOT HYPOTHETICAL: SkillEvalPokerBest already scores rows and columns from inside scoring. This
+# double scores from inside a GROUPING call, which is allowed with no depth limit at all.
+
+# ⚠ IT GUARDS ITS OWN DEPTH, AND IT HAS TO. Scoring always runs the grouping rules, so an UNGUARDED
+# reentrant rule recurses forever and hangs the submit. That is an accepted risk: the engine has no
+# backstop, so a test double is exactly as safe as content chooses to be.
 class ReentrantMod extends GroupRuleBase:
 	var depth := 0
 	var deepest := 0
@@ -681,7 +661,7 @@ func _fresh_hand(n: int) -> Array[CardData]:
 
 func run_stage1_group_rules() -> void:
 	behavior_section("SECTION 7 (GATE 3): STAGE-1 WHOLE-HAND RULES AND THE ADVERSARIAL ROSTER")
-	var hand := _fresh_hand(5)              # 2,3,4,5,6 in five distinct suits — a straight
+	var hand := _fresh_hand(5)
 	check_impl(CardEnvironment.CURRENT == null, "GATE 3 precondition: no environment yet")
 	var control := await Scoring.PokerHands.score(hand)
 
@@ -690,8 +670,8 @@ func run_stage1_group_rules() -> void:
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 
-	# --- install(rule) helper is inlined: one carrier card, one type mod at a time ---------
-	# IDENTITY: byte-identical to no rule at all. This is GATE 3's second clause.
+# The install helper is inlined: one carrier card, one type mod at a time. IDENTITY means identical
+# to no rule at all, which is this section's second clause.
 	var identity := IdentityPartition.new()
 	carrier[0].with_type(identity)
 	var same := await Scoring.PokerHands.score(hand)
@@ -704,8 +684,8 @@ func run_stage1_group_rules() -> void:
 					_rank_values_of(same[0]), control[0].name, control[0].score,
 					_rank_values_of(control[0])])
 
-	# --- MERGE ALL: five ranks become one class, so it is a 5-of-a-kind and NOT a straight --
-	# ⚠ Paired with the control on the SAME instances: the control above scored a Straight.
+# MERGE ALL: five ranks become one class, so it is a 5-of-a-kind and NOT a straight. ⚠ Paired with
+# the control on the SAME instances, and the control above scored a Straight.
 	carrier[0].with_type(MergeAllRanks.new())
 	var merged := await Scoring.PokerHands.score(hand)
 	check(merged[0].types.has(Scoring.MELD_TYPE.X_OF_KIND)
@@ -713,7 +693,7 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: a merge-all rule makes a set of five and KILLS the straight (Q3=a, Q93=d)",
 			"got '%s' %s (control '%s')" % [merged[0].name, str(merged[0].types), control[0].name])
 
-	# --- NO MELD POSSIBLE, and its ABSENT twin: the line scores absolutely nothing ----------
+# NO MELD POSSIBLE, and its ABSENT twin: the line scores absolutely nothing
 	carrier[0].with_type(NoMeldPossible.new())
 	var nothing := await Scoring.PokerHands.score(hand)
 	check(nothing.is_empty(),
@@ -725,15 +705,15 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: an ABSENT grouping reads the same as an empty one (§1.3 step 1)",
 			"got %d results" % absent.size())
 
-	# --- BAD PARTITION: garbage names nothing, so omissions restore everything --------------
+# BAD PARTITION: garbage names nothing, so omissions restore everything
 	carrier[0].with_type(BadPartition.new())
 	var junked := await Scoring.PokerHands.score(hand)
 	check(junked[0].name == control[0].name and junked[0].score == control[0].score,
 			"GATE 3: a malformed partition degrades to 'named nothing', losing no card (Q11=a)",
 			"got '%s'/%d" % [junked[0].name, junked[0].score])
 
-	# --- INVENTS A CARD: refused, and the real cards keep their grouping --------------------
-	# ⚠ The push_error IS the assertion here; it is allowlisted by message in all_tests.gd.
+# INVENTS A CARD: refused, and the real cards keep their grouping. ⚠ The push_error IS the
+# assertion here; it is allowlisted by message in all_tests.gd.
 	carrier[0].with_type(InventsACard.new())
 	var invented := await Scoring.PokerHands.score(hand)
 	var ghost_free := true
@@ -746,9 +726,9 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: and the meld never grows past the cards that actually exist",
 			"%d cards" % invented[0].meld.size())
 
-	# --- PULLS IN A NEIGHBOUR: a board card that is NOT in the hand joins the meld ----------
+# PULLS IN A NEIGHBOUR: a board card that is NOT in the hand joins the meld, pairing with hand[0]
 	var neighbour := CardData.new()
-	neighbour.rank = PipRankNumeral.new().with_value(2)      # pairs with hand[0]
+	neighbour.rank = PipRankNumeral.new().with_value(2)
 	neighbour.suit = PipSuitTest.with_id(850)
 	env.card_collections.append([neighbour] as Array[CardData])
 	var puller := PullsInNeighbour.new()
@@ -762,7 +742,7 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: a rule pulls a BOARD card into this meld and it contributes (Q14=d, Q88=a)",
 			"best meld %s" % _rank_values_of(pulled[0]))
 
-	# --- MUTATING / ALIASING: a rule scribbling on what it was handed cannot corrupt us -----
+# MUTATING and ALIASING: a rule scribbling on what it was handed cannot corrupt us
 	carrier[0].with_type(MutatingMod.new())
 	var scribbled := await Scoring.PokerHands.score(hand)
 	check(scribbled[0].name == control[0].name and scribbled[0].score == control[0].score,
@@ -771,7 +751,7 @@ func run_stage1_group_rules() -> void:
 			"got '%s'/%d, want '%s'/%d" % [scribbled[0].name, scribbled[0].score,
 					control[0].name, control[0].score])
 
-	# --- BOARD MUTATION FROM INSIDE THE HOOK ------------------------------------------------
+# BOARD MUTATION FROM INSIDE THE HOOK
 	var boardmut := BoardMutatingMod.new()
 	var spare : Array[CardData] = [CardData.new()]
 	env.card_collections.append(spare)
@@ -782,7 +762,7 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: a rule mutating the BOARD mid-walk still returns a scored hand",
 			"got %d results" % mutated.size())
 
-	# --- SUSPENDING: the pipeline is await-based and must survive a real yield ---------------
+# SUSPENDING: the pipeline is await-based and must survive a real yield
 	carrier[0].with_type(SuspendingMod.new())
 	var suspended := await Scoring.PokerHands.score(hand)
 	check(suspended[0].name == control[0].name,
@@ -792,7 +772,7 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: and this suite still owns CURRENT after the suspend — a suite that yields "
 			+ "a FRAME loses it to the next one, silently invalidating every check after it")
 
-	# --- REENTRANT: scoring from inside a grouping call (R1) --------------------------------
+# REENTRANT: scoring from inside a grouping call
 	var reentrant := ReentrantMod.new()
 	carrier[0].with_type(reentrant)
 	var nested := await Scoring.PokerHands.score(hand)
@@ -803,7 +783,7 @@ func run_stage1_group_rules() -> void:
 			"GATE 3: and the outer hand still scores correctly after the re-entry",
 			"got '%s', want '%s'" % [nested[0].name, control[0].name])
 
-	# --- and removing every rule restores the baseline ---------------------------------------
+# and removing every rule restores the baseline
 	env.card_collections.clear()
 	var restored := await Scoring.PokerHands.score(hand)
 	check(restored[0].name == control[0].name and restored[0].score == control[0].score,
@@ -814,25 +794,24 @@ func run_stage1_group_rules() -> void:
 	env.free()
 
 
-# ==============================================================================
-# SECTION 8: A RULE'S ANSWER IS FIXED FOR THE HAND (gaps/GAP-003.md)
-#
-# The owner's ruling, and the reason there is no `compare_uncacheable`:
-#
-# > *"If a hand is chosen and is about to be scored, the random rule should already have been
-# > decided before the meld finding happens. Its not like the random rule will change whether
-# > looking for a straight vs flush or whatever."*
-#
-# ⚠ **THE SCOPE IS THE POINT.** One scored line rebuilds its profile several times (DEFERRED
-# E3), so a rule asked afresh per rebuild could hand the straight scan and the flush scan
-# DIFFERENT partitions of the same cards. The memo makes that unrepresentable — and because it
-# is keyed on the pass rather than the board, it behaves identically in tests and in `Game`,
-# which the board-revision cache it replaced did not (base environments cached nothing at all).
-# ==============================================================================
+# SECTION 8: A RULE'S ANSWER IS FIXED FOR THE HAND. The owner's ruling, and the reason there is no
+# compare_uncacheable:
 
-## Counts how often it is actually ASKED, so a memo hit is visible as a call that did not happen.
-## ⚠ **A GENUINELY RANDOM ANSWER**, deliberately: this used to be the case that needed an
-## opt-out, and it is now the case that proves none is needed.
+# > "If a hand is chosen and is about to be scored, the random rule should already have been decided
+# > before the meld finding happens. Its not like the random rule will change whether looking for a
+# > straight vs flush or whatever."
+
+# ⚠ THE SCOPE IS THE POINT. One scored line rebuilds its profile several times, so a rule asked
+# afresh per rebuild could hand the straight scan and the flush scan DIFFERENT partitions of the
+# same cards.
+
+# The memo makes that unrepresentable, and because it is keyed on the pass rather than the board it
+# behaves identically in tests and in Game, which a board-revision cache does not, base environments
+# caching nothing at all.
+
+# Counts how often it is actually ASKED, so a memo hit is visible as a call that did not happen.
+# ⚠ A GENUINELY RANDOM ANSWER, deliberately: it is the case that would need an opt-out, and it is
+# the case that proves none is needed.
 class CountingRandomDeny extends CardModifierType:
 	var calls := 0
 	var rng := RandomNumberGenerator.new()
@@ -851,7 +830,7 @@ func run_pair_cache() -> void:
 	var rule := CountingRandomDeny.new()
 	env.card_collections.append([CardData.new().with_type(rule)] as Array[CardData])
 
-	# --- asked once per distinct key pair, for the whole hand -------------------------------
+# asked once per distinct key pair, for the whole hand
 	rule.calls = 0
 	var profile := await Scoring._get_hand_profiles_async(hand)
 	var k := profile.ranks.distinct_keys().size()
@@ -859,9 +838,9 @@ func run_pair_cache() -> void:
 			"pass memo: one profile build asks each distinct key pair EXACTLY once",
 			"%d calls, %d pairs" % [rule.calls, k * (k + 1) / 2])
 
-	# --- a whole scoring pass rebuilds the profile many times and still asks only once ------
-	# ⚠ This is the check that matters. Without the memo the count would scale with the number
-	# of rebuilds, and a RANDOM rule would answer differently in each of them.
+# A whole scoring pass rebuilds the profile many times and still asks only once. ⚠ This is the check
+# that matters: without the memo the count would scale with the number of rebuilds, and a RANDOM
+# rule would answer differently in each of them.
 	rule.calls = 0
 	await Scoring.PokerHands.score(hand)
 	check(rule.calls == k * (k + 1) / 2,
@@ -869,24 +848,24 @@ func run_pair_cache() -> void:
 			+ "so every rebuild sees the same partition even from a random rule",
 			"%d calls, %d pairs" % [rule.calls, k * (k + 1) / 2])
 
-	# --- one hand is internally consistent, and that holds for a random rule ----------------
-	# A random rule answering per-question would make these two disagree constantly.
+# One hand is internally consistent, and that holds for a random rule. A random rule answering
+# per-question would make these two disagree constantly.
 	for _i in range(8):
 		var a := await Scoring.PokerHands.score(hand)
 		check_impl(not a.is_empty(), "pass memo: a random rule still produces a scored hand")
 
-	# --- but the NEXT hand re-asks: the memo is the pass, not the board ---------------------
-	# ⚠ The old cache was scoped to the board revision, which pinned a random rule's answer
-	# across every line of a submit. "Decided per hand" is the owner's wording and this is it.
+# But the NEXT hand re-asks: the memo is the pass, not the board. ⚠ A cache scoped to the board
+# revision pins a random rule's answer across every line of a submit; "decided per hand" is the
+# owner's wording and this is it.
 	rule.calls = 0
 	await Scoring.PokerHands.score(hand)
 	check(rule.calls > 0,
 			"pass memo: the NEXT pass asks again — the scope is the hand, not the board",
 			"%d calls" % rule.calls)
 
-	# --- and every pass opened was closed ----------------------------------------------------
-	# ⚠ A stranded depth would silently share one hand's verdicts with the next, forever, and
-	# nothing about the results would look wrong — so it is asserted rather than assumed.
+# And every pass opened was closed. ⚠ A stranded depth would silently share one hand's verdicts with
+# the next, forever, and nothing about the results would look wrong, so it is asserted rather than
+# assumed.
 	check(PipComparator.pass_is_closed(),
 			"pass memo: every pass this section opened has been closed — no depth stranded by "
 			+ "an abandoned coroutine")
@@ -894,14 +873,13 @@ func run_pair_cache() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 9 (GATES 4 AND 5): STRAIGHTS, ADJACENCY, AND CLASSIFICATION
-#
-# GATE 4: with NO mixed classes the straight scanners run exactly once per call — asserted on
-# the assignment count itself, not inferred — and every existing straight test stays green.
-# GATE 5: a suit rule that merges five distinct suits scores AS A FLUSH and `is_flush` agrees
-# on the same cards and profile. Formation and classification can no longer disagree.
-# ==============================================================================
+# SECTION 9: STRAIGHTS, ADJACENCY AND CLASSIFICATION.
+
+# With NO mixed classes the straight scanners run exactly once per call, asserted on the assignment
+# count itself rather than inferred, and every existing straight test stays green.
+
+# A suit rule that merges five distinct suits scores AS A FLUSH, and is_flush agrees on the same
+# cards and profile. Formation and classification can no longer disagree.
 
 ## Merges every suit into one — the stage-0 shape of The Best Bower's flush clause.
 class AllSuitsSame extends CardModifierType:
@@ -920,8 +898,8 @@ class MergeThreeAndNine extends CardModifierType:
 		var b := float(r2.value)
 		return (a == 3.0 and b == 9.0) or (a == 9.0 and b == 3.0)
 
-## The Red Wagon (QR8=b, Q71=c): a card also counts as the values it names, so the ORDINARY
-## scan finds it — no adjacency machinery anywhere.
+# A card also counts as the values it names, so the ORDINARY scan finds it and no adjacency
+# machinery is needed anywhere.
 class ExtraValues extends CardModifierType:
 	var extra : Array[float] = []
 	func get_str() -> String: return "ExtraValues"
@@ -942,8 +920,9 @@ class BreaksTheWrap extends CardModifierType:
 func run_straights_and_classification() -> void:
 	behavior_section("SECTION 9 (GATES 4 & 5): STRAIGHTS, ADJACENCY, CLASSIFICATION")
 
-	# --- GATE 4: nothing mixed -> exactly ONE assignment, so the scan runs once -------------
-	var run := _fresh_hand(5)                        # 2,3,4,5,6 — an honest straight
+# Nothing mixed means exactly ONE assignment, so the scan runs once. The hand is 2,3,4,5,6, an
+# honest straight.
+	var run := _fresh_hand(5)
 	var plain := await Scoring._get_hand_profiles_async(run)
 	check(Scoring.MultiStraightHandler._straight_assignments(plain).size() == 1,
 			"GATE 4: with no mixed class the straight search is ONE assignment — the existing "
@@ -958,8 +937,8 @@ func run_straights_and_classification() -> void:
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 
-	# --- Q95(a): a SAME-VALUE class still spends every card it holds ------------------------
-	# Three 7s must give the wrap scan three steps, exactly as before this feature existed.
+# A SAME-VALUE class still spends every card it holds. Three 7s must give the wrap scan three steps,
+# exactly as they would without this feature.
 	var sevens : Array[CardData] = []
 	for i : int in 3:
 		var c := CardData.new()
@@ -973,11 +952,12 @@ func run_straights_and_classification() -> void:
 			"Q95(a): a same-value class spends EVERY card at its position — three 7s, three steps",
 			"%d cards at 7" % (sev_pos[7.0].datas.size() if sev_pos.has(7.0) else -1))
 
-	# --- Q93(d)/Q96(c): a MIXED class spends ONE card, at whichever member makes the run ----
-	# Hand 3,4,5,6,9: with 3 and 9 merged the class offers position 3 OR position 9, and only
-	# the 9 completes 5-6-...-9? No — 6,9 are not adjacent, so 3 is the choice that keeps
-	# 3-4-5-6 alive. The point is that BOTH are candidates and the search picks, rather than
-	# the class sitting at its lowest member by decree (which is what Q20(c) would have done).
+# A MIXED class spends ONE card, at whichever member makes the run. In hand 3,4,5,6,9 with 3 and 9
+# merged, the class offers position 3 or position 9, and since 6 and 9 are not adjacent, 3 is the
+# choice that keeps 3-4-5-6 alive.
+
+# The point is that BOTH are candidates and the search picks, rather than the class sitting at its
+# lowest member by decree.
 	var mixed_hand : Array[CardData] = []
 	for v : float in [3.0, 4.0, 5.0, 6.0, 9.0]:
 		var c := CardData.new()
@@ -1004,8 +984,8 @@ func run_straights_and_classification() -> void:
 				"Q93(d): a mixed class spends exactly ONE card, so 5 cards offer 4",
 				"assignment %s spends %d" % [str(a), spent])
 
-	# --- S13: extra values ARE ordinary class keys, so the ordinary scan finds them ---------
-	# 2,3,4,5,6 already runs; give the 2 an extra value of 7 and the run reaches 7.
+# Extra values ARE ordinary class keys, so the ordinary scan finds them. 2,3,4,5,6 already runs;
+# give the 2 an extra value of 7 and the run reaches 7.
 	var wagon := ExtraValues.new()
 	wagon.extra = [7.0] as Array[float]
 	carrier[0].with_type(wagon)
@@ -1020,7 +1000,7 @@ func run_straights_and_classification() -> void:
 			"Q71(c): and the card sits in BOTH classes at once — the Harlequin path, reused",
 			"%d classes hold it" % wag_classes)
 
-	# --- Q72(b): breaking the wrap ----------------------------------------------------------
+# breaking the wrap
 	carrier[0].with_type(BreaksTheWrap.new())
 	var bounds := await PipComparator.get_wrap_bounds()
 	check(is_nan(bounds.x) and is_nan(bounds.y),
@@ -1029,14 +1009,14 @@ func run_straights_and_classification() -> void:
 	check(Scoring.MultiStraightHandler._scan_wrap(wrapless, bounds).is_empty(),
 			"Q72(b): and with it broken the wrap walk finds nothing — no run crosses the top")
 
-	# --- GATE 5: a suit rule forms a flush, and is_flush AGREES on the same cards -----------
-	# ⚠ The two used to be able to disagree about one set of cards; that is the bug this whole
-	# change exists to remove, so they are asserted side by side on the SAME profile.
+# A suit rule forms a flush, and is_flush AGREES on the same cards. ⚠ The two being able to disagree
+# about one set of cards is the bug this whole change exists to remove, so they are asserted side by
+# side on the SAME profile. The ranks below are 2,4,6,8,10 in five distinct suits: no structure.
 	var five_suits : Array[CardData] = []
 	for i : int in 5:
 		var c := CardData.new()
-		c.rank = PipRankNumeral.new().with_value(float(2 + i * 2))   # 2,4,6,8,10 — no structure
-		c.suit = PipSuitTest.with_id(920 + i)                        # five distinct suits
+		c.rank = PipRankNumeral.new().with_value(float(2 + i * 2))
+		c.suit = PipSuitTest.with_id(920 + i)
 		five_suits.append(c)
 	env.card_collections.clear()
 	var bare := await Scoring.PokerHands.score(five_suits)
@@ -1070,15 +1050,14 @@ func run_straights_and_classification() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 10 (S15–S17): THE REST OF THE ROSTER — SPOTLIT GATING, THE LIMITS THAT
-# MUST STAY LIMITS, DEGENERATE INPUTS, AND RULE COMBINATIONS
-#
-# ⚠ **Q30/Q33/Q34/Q63 ASSERT AN ABSENCE, WHICH IS WHY THEY ARE WORTH WRITING.** The owner chose
-# NO player-facing cue for a merge, a split, or rule order. An absence nobody pins is an
-# absence that gets filled in by accident, and the meld NAME is the one surface where a cue
-# would land first — so it is pinned to the ordinary name here. DEFERRED.md R2/R3.
-# ==============================================================================
+# SECTION 10: THE REST OF THE ROSTER - SPOTLIT GATING, THE LIMITS THAT MUST STAY LIMITS,
+# DEGENERATE INPUTS, AND RULE COMBINATIONS.
+
+# ⚠ SOME OF THESE ASSERT AN ABSENCE, WHICH IS WHY THEY ARE WORTH WRITING. The owner chose NO
+# player-facing cue for a merge, a split, or rule order.
+
+# An absence nobody pins is an absence that gets filled in by accident, and the meld NAME is the one
+# surface where a cue would land first, so it is pinned to the ordinary name here.
 
 ## A skill carrying a meld rule: dormant while unspotlit, like every other skill effect (Q5=a).
 class SkillMergesRanks extends CardModifierSkill:
@@ -1101,8 +1080,8 @@ class MergeTwoAndThree extends CardModifierType:
 		var b := float(r2.value)
 		return (a == 2.0 and b == 3.0) or (a == 3.0 and b == 2.0)
 
-## Stage 1, applied after another rule: keeps only the FIRST two cards of each group together
-## and singletonises the rest — the SPLIT exerciser, and the merge-then-split combination.
+# Stage 1, applied after another rule: keeps only the FIRST two cards of each group together and
+# singletonises the rest. The SPLIT exerciser, and the merge-then-split combination.
 class AtMostOnePartner extends GroupRuleBase:
 	func on_meld_group_ranks(_cards: Array[CardData], groups: Array[Array]) -> Array[Array]:
 		calls += 1
@@ -1118,12 +1097,12 @@ class AtMostOnePartner extends GroupRuleBase:
 
 func run_roster_and_combinations() -> void:
 	behavior_section("SECTION 10 (S15-S17): SPOTLIGHT, LIMITS, DEGENERATE INPUTS, COMBINATIONS")
-	var hand := _fresh_hand(5)                       # 2,3,4,5,6, five distinct suits
+	var hand := _fresh_hand(5)
 	var env := FakeEnvironment.new()
 	add_child(env)
 	var control := await Scoring.PokerHands.score(hand)
 
-	# --- Q5(a): an UNSPOTLIT skill's rule is dormant -----------------------------------------
+# an UNSPOTLIT skill's rule is dormant
 	var skill := SkillMergesRanks.new()
 	var skill_card := CardData.new()
 	skill_card.skill = skill
@@ -1140,7 +1119,7 @@ func run_roster_and_combinations() -> void:
 			"Q5(a): and spotlighting the SAME skill turns it on — one class, every card",
 			"%d calls, %d classes" % [skill.calls, live.ranks.classes.size()])
 
-	# --- Q30/Q33/Q34/Q63: nothing is shown to the player. Pinned as an ABSENCE ---------------
+# nothing is shown to the player, pinned as an ABSENCE
 	var merged := await Scoring.PokerHands.score(hand)
 	var ordinary := Scoring.get_loc_name(merged[0].types, merged[0].copies_count,
 			merged[0].copy_size)
@@ -1151,7 +1130,7 @@ func run_roster_and_combinations() -> void:
 	skill.spotlit = false
 	env.card_collections.clear()
 
-	# --- Q4(a)/Q23(a): a split shrinks SETS, a merge shortens STRAIGHTS ----------------------
+# a split shrinks SETS, a merge shortens STRAIGHTS
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 	carrier[0].with_type(AllRanksSame.new())
@@ -1162,10 +1141,9 @@ func run_roster_and_combinations() -> void:
 			+ "— confirmed as the intended trade",
 			"got '%s' (control '%s')" % [shortened[0].name, control[0].name])
 
-	# --- S17: merge-then-split, and both rule orders ----------------------------------------
-	# ⚠ Q10(a) makes board order a MECHANIC: two orders may legitimately differ. What must hold
-	# is that each order is identical to ITSELF across runs — otherwise two identical boards
-	# score differently for no reason a player could ever see.
+# Merge-then-split, and both rule orders. ⚠ Board order is a MECHANIC, so two orders may
+# legitimately differ. What must hold is that each order is identical to ITSELF across runs,
+# otherwise two identical boards score differently for no reason a player could ever see.
 	var splitter := AtMostOnePartner.new()
 	var split_card := CardData.new().with_type(splitter)
 	env.card_collections.clear()
@@ -1191,7 +1169,7 @@ func run_roster_and_combinations() -> void:
 			"'%s'/%d then '%s'/%d" % [order_ba_1[0].name, order_ba_1[0].score,
 					order_ba_2[0].name, order_ba_2[0].score])
 
-	# --- S17: two rules that both merge — composition, not precedence ------------------------
+# two rules that both merge: composition, not precedence
 	env.card_collections.clear()
 	env.card_collections.append([CardData.new().with_type(MergeTwoAndThree.new()),
 			CardData.new().with_type(MergeThreeAndNine.new())] as Array[CardData])
@@ -1205,7 +1183,7 @@ func run_roster_and_combinations() -> void:
 			+ "chain onto, so the class is exactly {2,3}",
 			"member_keys %s" % str(two_class.member_keys if two_class else []))
 
-	# --- S16: degenerate inputs, each with a rule installed ---------------------------------
+# degenerate inputs, each with a rule installed; the stones below have no rank and no suit
 	env.card_collections.clear()
 	env.card_collections.append(carrier)
 	carrier[0].with_type(AllRanksSame.new())
@@ -1219,7 +1197,7 @@ func run_roster_and_combinations() -> void:
 			"S16 degenerate: ONE card with a rule installed is still a High Card",
 			"got '%s'" % (lone[0].name if not lone.is_empty() else "<none>"))
 
-	var stones : Array[CardData] = [CardData.new(), CardData.new()]   # no rank, no suit
+	var stones : Array[CardData] = [CardData.new(), CardData.new()]
 	var stone_profile := await Scoring._get_hand_profiles_async(stones)
 	check(stone_profile.ranks.classes.is_empty() and stone_profile.suits.classes.is_empty(),
 			"S16 degenerate: ALL STONES profile to no classes at all — unscorable cards never "
@@ -1247,18 +1225,18 @@ func run_roster_and_combinations() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 11: COST — THE CARTESIAN PRODUCT IS 1 UNLESS A RULE ACTUALLY MERGED
-#
-# ⚠ **THIS SECTION EXISTS BECAUSE THE PRODUCT ONCE WAS NOT.** `member_keys` was derived from
-# the union of a class's members' VALUES, so a card carrying an extra rank value (§1.7) —
-# which sits in SEVERAL classes at once, one per value — marked EVERY class holding it
-# `mixed`. §1.5's search is `prod(member_keys.size())` over mixed classes, so eight dual-value
-# cards turned one straight scan into 2^16 of them and a single scoring pass took 23 seconds.
-# The fix is that a class OWNS its positions: seeded with the key it was created at, unioned
-# only when two classes MERGE. These checks pin the distinction, because the failure mode is
-# invisible in results — the scores were all correct, just astronomically slow.
-# ==============================================================================
+# SECTION 11: COST - THE CARTESIAN PRODUCT IS 1 UNLESS A RULE ACTUALLY MERGED.
+
+# ⚠ THIS SECTION EXISTS BECAUSE THE PRODUCT ONCE WAS NOT. Deriving member_keys from the union of a
+# class's members' VALUES marks EVERY class holding a card with an extra rank value `mixed`, that
+# card sitting in several classes at once, one per value.
+
+# The search is the product of member_keys sizes over mixed classes, so eight dual-value cards turn
+# one straight scan into 2^16 of them and a single scoring pass takes 23 seconds.
+
+# The fix is that a class OWNS its positions: seeded with the key it was created at, unioned only
+# when two classes MERGE. These checks pin the distinction, because the failure mode is invisible in
+# results - the scores are all correct, just astronomically slow.
 func run_search_cost() -> void:
 	behavior_section("SECTION 11: THE STRAIGHT SEARCH'S SIZE")
 	var hand := _fresh_hand(8)
@@ -1267,15 +1245,15 @@ func run_search_cost() -> void:
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 
-	# --- no rule at all: one assignment, i.e. the pre-feature scan, run once ----------------
+# no rule at all: one assignment, i.e. the pre-feature scan, run once
 	var bare := await Scoring._get_hand_profiles_async(hand)
 	check(Scoring.MultiStraightHandler._straight_assignments(bare).size() == 1,
 			"cost: no rule -> exactly ONE assignment",
 			"%d" % Scoring.MultiStraightHandler._straight_assignments(bare).size())
 
-	# --- EXTRA VALUES on every card: more positions, but STILL nothing mixed ----------------
-	# ⚠ This is the case that exploded. Eight cards each participating at two values is eight
-	# extra CLASSES, not eight mixed ones — a card's other value belongs to its other class.
+# EXTRA VALUES on every card: more positions, but STILL nothing mixed. ⚠ This is the case that
+# exploded. Eight cards each participating at two values is eight extra CLASSES, not eight mixed
+# ones, because a card's other value belongs to its other class.
 	var wagon := ExtraValues.new()
 	wagon.extra = [] as Array[float]
 	carrier[0].with_type(wagon)
@@ -1296,7 +1274,7 @@ func run_search_cost() -> void:
 			"%d positions from %d classes"
 			% [spread.ranks.position_count(), spread.ranks.classes.size()])
 
-	# --- and a REAL merge is what makes a class mixed ---------------------------------------
+# and a REAL merge is what makes a class mixed
 	carrier[0].with_type(MergeThreeAndNine.new())
 	var merged_hand : Array[CardData] = []
 	for v : float in [3.0, 9.0, 5.0]:
@@ -1318,15 +1296,14 @@ func run_search_cost() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 12: ONE CARD IS ONE STEP — extra values may not multiply a card
-#
-# ⚠ **QR5(a) KEPT MULTIPLICITY OUT OF SCOPE, AND Q89(b) CLOSED THE GROUPING BACK DOOR INTO IT.**
-# Adjacency (Q71=c) opens a THIRD route nobody asked about: a card declaring extra values sits in
-# one class per value, so the scanners can reach the same physical card at several positions. If
-# they spend it at each, one card becomes a whole straight — which is exactly The Forged Ace's
-# power, arriving by accident, in a design that deliberately declined it.
-# ==============================================================================
+# SECTION 12: ONE CARD IS ONE STEP - extra values may not multiply a card.
+
+# ⚠ MULTIPLICITY IS OUT OF SCOPE, AND THE GROUPING BACK DOOR INTO IT IS CLOSED. Adjacency opens a
+# THIRD route nobody asked about: a card declaring extra values sits in one class per value, so the
+# scanners can reach the same physical card at several positions.
+
+# If they spend it at each, one card becomes a whole straight, which is exactly The Forged Ace's
+# power arriving by accident, in a design that deliberately declined it.
 
 ## Two extra values on the 2, so positions 2,3,4 all hold the SAME physical card.
 class LadderValues extends CardModifierType:
@@ -1343,7 +1320,7 @@ func run_one_card_one_step() -> void:
 	add_child(env)
 	env.card_collections.append([CardData.new().with_type(LadderValues.new())] as Array[CardData])
 
-	# 2 (also 3 and 4), 5, 6 — five POSITIONS, but only THREE physical cards.
+# 2, also 3 and 4, then 5 and 6: five POSITIONS, but only THREE physical cards.
 	var hand : Array[CardData] = []
 	for v : float in [2.0, 5.0, 6.0]:
 		var c := CardData.new()
@@ -1389,18 +1366,18 @@ func run_one_card_one_step() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 13 (GATE 8, S22): THE STACKING SITUATION
-#
-# ⚠ **THIS FILE CONTAINED THE STRING "stack" ZERO TIMES BEFORE THIS SECTION.** The stack hooks
-# shipped as contract constants and documentation with NOTHING in production asking them, while
-# the placer and grabber still routed "same suit?" through `on_compare_suits` — the ORDERING
-# hook. That is exactly the cross-situation reuse QR3(c)/Q62(a) removed and the owner's Q97 note
-# named: *"you cannot directly reuse a card with a meld hook for stuff like stacking hooks."*
-#
-# **GATE 8 is the pair of checks in the middle**: a stack deny rule flips a placement from legal
-# to illegal, and the SAME predicate implemented as a MELD hook leaves that placement alone.
-# ==============================================================================
+# SECTION 13: THE STACKING SITUATION.
+
+# ⚠ THIS FILE CONTAINED THE STRING "stack" ZERO TIMES BEFORE THIS SECTION. The stack hooks shipped
+# as contract constants and documentation with NOTHING in production asking them, while the placer
+# and grabber still routed "same suit?" through on_compare_suits, the ORDERING hook.
+
+# That is exactly the cross-situation reuse the design removed, and what the owner's note named:
+
+# > "you cannot directly reuse a card with a meld hook for stuff like stacking hooks."
+
+# The pair of checks in the middle is the gate: a stack deny rule flips a placement from legal to
+# illegal, and the SAME predicate implemented as a MELD hook leaves that placement alone.
 
 class StackDenyAllSuits extends CardModifierSkill:
 	func get_str() -> String: return "StackDenyAllSuits"
@@ -1417,8 +1394,8 @@ class MeldDenyAllSuits extends CardModifierSkill:
 	func combo_key(_hook: StringName = &"") -> String: return ""
 	func on_meld_suits_deny(_s1: PipSuit, _s2: PipSuit) -> bool: return true
 
-## "Every suit is the same" for STACKING — the placer forbids repeated suits, so this makes a
-## previously LEGAL pairing illegal from the allow side.
+# "Every suit is the same" for STACKING. The placer forbids repeated suits, so this makes a
+# previously LEGAL pairing illegal from the allow side.
 class StackAllowAllSuits extends CardModifierSkill:
 	func get_str() -> String: return "StackAllowAllSuits"
 	func get_description() -> String: return ""
@@ -1431,7 +1408,7 @@ func run_stacking_situation() -> void:
 	var env := FakeEnvironment.new()
 	add_child(env)
 
-	# two DIFFERENT suits: `stack_suits_same` is false by printed values (Q81=a)
+# two DIFFERENT suits: `stack_suits_same` is false by printed values
 	var s_a : PipSuit = PipSuitTest.with_id(940)
 	var s_b : PipSuit = PipSuitTest.with_id(941)
 	check(not await PipComparator.stack_suits_same(s_a, s_b),
@@ -1439,7 +1416,7 @@ func run_stacking_situation() -> void:
 	check(await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
 			"stacking: and two of the same printed suit ARE")
 
-	# --- an ALLOW rule merges them, which is what the placer reads as "repeated suit" ---------
+# an ALLOW rule merges them, which is what the placer reads as a repeated suit
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 	var allow_skill := StackAllowAllSuits.new()
@@ -1449,7 +1426,7 @@ func run_stacking_situation() -> void:
 	check(await PipComparator.stack_suits_same(s_a, s_b),
 			"stacking: a stack ALLOW rule makes two distinct suits count as the same (Q83=a)")
 
-	# --- GATE 8, half one: a stack DENY rule beats the allow, and printed sameness ------------
+# half one: a stack DENY rule beats the allow, and printed sameness
 	var deny_skill := StackDenyAllSuits.new()
 	carrier[0].skill = deny_skill
 	deny_skill.data = carrier[0]
@@ -1458,8 +1435,8 @@ func run_stacking_situation() -> void:
 			"GATE 8: a stack DENY rule splits even two IDENTICAL printed suits — deny beats "
 			+ "allow and beats printed values (Q84=a, Q82=a)")
 
-	# --- GATE 8, half two: the SAME predicate as a MELD hook does NOT reach stacking ----------
-	# ⚠ This is the whole point of QR3(c): one hook per situation, no fallback between them.
+# Half two: the SAME predicate as a MELD hook does NOT reach stacking. ⚠ This is the whole point of
+# one hook per situation, with no fallback between them.
 	var meld_skill := MeldDenyAllSuits.new()
 	carrier[0].skill = meld_skill
 	meld_skill.data = carrier[0]
@@ -1476,26 +1453,26 @@ func run_stacking_situation() -> void:
 			"GATE 8: ...while that same meld rule DOES split the suit classes it was asked about",
 			"%d suit classes from 5 one-suit cards" % profile.suits.classes.size())
 
-	# --- Q5(a): an unspotlit skill's stacking rule is dormant ---------------------------------
+# an unspotlit skill's stacking rule is dormant
 	deny_skill.spotlit = false
 	carrier[0].skill = deny_skill
 	check(await PipComparator.stack_suits_same(s_a, PipSuitTest.with_id(940)),
 			"stacking: an UNSPOTLIT skill's stack rule is dormant, like every other skill effect")
 
-	# --- and the rank pair exists too, though the shipped rules cards use adjacency -----------
-	# ⚠ Rank ADJACENCY deliberately still goes through `compare_ranks` (Q55=a): "one step away"
-	# is a scalar, not a sameness question. This asserts the SAMENESS pair is wired anyway.
+# And the rank pair exists too, though the shipped rules cards use adjacency. ⚠ Rank ADJACENCY
+# deliberately still goes through compare_ranks, "one step away" being a scalar rather than a
+# sameness question. This asserts the SAMENESS pair is wired anyway.
 	env.card_collections.clear()
 	check(await PipComparator.stack_ranks_same(PipRankNumeral.new().with_value(4),
 			PipRankNumeral.new().with_value(4)),
 			"stacking: the rank pair is wired too — printed 4s are the same with no rule")
 
-	# --- S26: the isolation runs BOTH WAYS ---------------------------------------------------
-	# ⚠ GATE 8 proved a MELD rule does not reach stacking. The converse had no test: nothing
-	# proved a STACK rule leaves MELDING alone. The mechanism is symmetric by construction —
-	# different hook-name constants — but every other claim in this work carries its paired
-	# control, and "symmetric by construction" is exactly the kind of reasoning that left the
-	# stack hooks inert for a whole phase.
+# The isolation runs BOTH WAYS. ⚠ The gate above proved a MELD rule does not reach stacking; the
+# converse is that a STACK rule leaves MELDING alone.
+
+# The mechanism is symmetric by construction, the hook-name constants differing, but every other
+# claim in this work carries its paired control, and "symmetric by construction" is exactly the kind
+# of reasoning that leaves a hook inert unnoticed.
 	var iso_hand : Array[CardData] = [
 		TestFactories.m_card(3, 950), TestFactories.m_card(3, 951),
 		TestFactories.m_card(8, 950), TestFactories.m_card(8, 952),
@@ -1533,15 +1510,15 @@ func run_stacking_situation() -> void:
 	remove_child(env)
 	env.free()
 
-# ==============================================================================
-# SECTION 14: THE ROSTER ENTRIES THAT PINNED AN ANSWER AND HAD NO TEST
-#
-# ⚠ Found by auditing PLAN §3's named doubles against the suite. Most of the "missing" names were
-# shipped under other names (`NeverSame` is `DenyNever`, `DenyTwoSevens` is `DenyThrees`,
-# `AliasingMod` is `IdentityPartition`, `RedWagonRuns` is `ExtraValues`) and one is obsolete
-# (`LyingUncacheable` — GAP-003 deleted the opt-out it lied about). These four were genuinely
-# absent, and each pins a CONFIRMED ANSWER rather than a nice-to-have.
-# ==============================================================================
+# SECTION 14: THE ROSTER ENTRIES THAT PINNED AN ANSWER AND HAD NO TEST.
+
+# ⚠ Found by auditing the design's named doubles against the suite. Most of the missing names ship
+# under other names here - NeverSame is DenyNever, DenyTwoSevens is DenyThrees, AliasingMod is
+# IdentityPartition, RedWagonRuns is ExtraValues.
+
+# One is obsolete, the opt-out it lied about having been deleted.
+
+# These four were genuinely absent, and each pins a CONFIRMED ANSWER rather than a nice-to-have.
 
 ## `WithinOne` — the non-transitive rule Q2 is about: 1↔2 and 2↔3, but NOT 1↔3.
 class WithinOne extends CardModifierType:
@@ -1559,8 +1536,8 @@ class ParityMatch extends CardModifierType:
 	func on_meld_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
 		return int(r1.value) % 2 == int(r2.value) % 2
 
-## `UnrelatedHook` — implements a hook that has nothing to do with comparison. The gate must not
-## fire for it, and it must not be mistaken for an implementer of anything.
+# UnrelatedHook implements a hook that has nothing to do with comparison. The gate must not fire for
+# it, and it must not be mistaken for an implementer of anything.
 class UnrelatedHook extends CardModifierType:
 	var scored := 0
 	func get_str() -> String: return "UnrelatedHook"
@@ -1568,8 +1545,8 @@ class UnrelatedHook extends CardModifierType:
 	func get_frame() -> int: return 0
 	func on_score() -> void: scored += 1
 
-## A whole-hand rule whose answer depends on LIVE BOARD STATE — the Turk / Humbug shape. Q42(a)
-## says these are never memoised precisely because of this.
+# A whole-hand rule whose answer depends on LIVE BOARD STATE, the Turk and Humbug shape. These are
+# never memoised precisely because of this.
 class BoardDependentGroup extends CardModifierType:
 	var merge_everything := false
 	func get_str() -> String: return "BoardDependentGroup"
@@ -1587,9 +1564,9 @@ func run_roster_gaps() -> void:
 	var carrier : Array[CardData] = [CardData.new()]
 	env.card_collections.append(carrier)
 
-	# --- Q2(a): a NON-TRANSITIVE rule still yields ONE group, and the answer does not depend
-	# on which pair the engine happened to check first. This is what union-find is FOR, and the
-	# closure's whole reason to exist had no test.
+# A NON-TRANSITIVE rule still yields ONE group, and the answer does not depend on which pair the
+# engine happened to check first. This is what union-find is FOR, and the closure's whole reason to
+# exist had no test.
 	var chain : Array[CardData] = [
 		TestFactories.m_card(1, 930), TestFactories.m_card(2, 931), TestFactories.m_card(3, 932)]
 	carrier[0].with_type(WithinOne.new())
@@ -1598,13 +1575,13 @@ func run_roster_gaps() -> void:
 			"Q2(a) `WithinOne`: 1-2-3 under a non-transitive 'within 1' rule CHAINS into one "
 			+ "class — the answer is defined, not dependent on probe order",
 			"%d classes" % chained.ranks.classes.size())
-	# and reversing the hand order must not change it (the "two identical boards" clause)
+# and reversing the hand order must not change it, the "two identical boards" clause
 	var reversed_chain : Array[CardData] = [chain[2], chain[1], chain[0]]
 	var rev := await Scoring._get_hand_profiles_async(reversed_chain)
 	check(rev.ranks.classes.size() == 1,
 			"Q2(a): and the same cards in the opposite order close to the same single class")
 
-	# --- `ParityMatch`: the closure must not OVER-merge — two classes, not one ---------------
+# ParityMatch: the closure must not OVER-merge, so two classes, not one
 	var parity : Array[CardData] = [
 		TestFactories.m_card(2, 930), TestFactories.m_card(4, 931),
 		TestFactories.m_card(3, 932), TestFactories.m_card(5, 933)]
@@ -1615,7 +1592,7 @@ func run_roster_gaps() -> void:
 			+ "rule joins and nothing more",
 			"%d classes" % parted.ranks.classes.size())
 
-	# --- `UnrelatedHook`: a card implementing something else entirely must not trip the gate --
+# UnrelatedHook: a card implementing something else entirely must not trip the gate
 	var unrelated := UnrelatedHook.new()
 	carrier[0].with_type(unrelated)
 	check(not env.any_pair_implementer(PipComparator.MELD_RANKS_DENY,
@@ -1627,10 +1604,10 @@ func run_roster_gaps() -> void:
 			"`UnrelatedHook`: so the partition is the plain one-class-per-value identity",
 			"%d classes" % untouched.ranks.classes.size())
 
-	# --- Q42(a): a board-reading whole-hand rule is NEVER memoised across passes --------------
-	# ⚠ The Turk reads the card beneath it and Humbug reads its row, so their answers change
-	# without any pair verdict changing. If stage 1 were memoised like stage 0, the second pass
-	# would replay the first pass's board.
+# A board-reading whole-hand rule is NEVER memoised across passes. ⚠ The Turk reads the card beneath
+# it and Humbug reads its row, so their answers change without any pair verdict changing.
+
+# If stage 1 were memoised like stage 0, the second pass would replay the first pass's board.
 	var live := BoardDependentGroup.new()
 	carrier[0].with_type(live)
 	live.merge_everything = false
@@ -1645,9 +1622,9 @@ func run_roster_gaps() -> void:
 	remove_child(env)
 	env.free()
 
-## A partition rendered as a stable string: class keys and their members, in class order. What
-## "byte-identical" means for S26 — comparing counts alone would miss a reshuffle that preserved
-## them, which is the only interesting way this could break.
+# A partition rendered as a stable string: class keys and their members, in class order. That is
+# what "identical" means here, since comparing counts alone would miss a reshuffle that preserved
+# them, the only interesting way this could break.
 func _partition_fingerprint(profile: Scoring.HandProfile, ranks: bool) -> String:
 	var parts : Array[String] = []
 	if ranks:
@@ -1665,7 +1642,7 @@ func _partition_fingerprint(profile: Scoring.HandProfile, ranks: bool) -> String
 	parts.sort()
 	return " ".join(parts)
 
-## Gives EVERY card a second rank value — the shape that used to detonate the search.
+# Gives EVERY card a second rank value, the shape that detonates the search.
 class AllCardsExtraValue extends CardModifierType:
 	func get_str() -> String: return "AllCardsExtraValue"
 	func get_description() -> String: return ""
