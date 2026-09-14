@@ -2882,21 +2882,22 @@ func _refresh_mark_matches(game_state: GameData) -> void:
 			var mark : CardData = grid.cell_types[ci]
 			if not BoardPlan.is_marked(mark): continue
 			var coord := BoardCoord.new(gi, ci % grid.grid_width, ci / grid.grid_width, 0)
-			var would_match := 0
-			if takes_a_placement:
-				for held : CardData in selected_cards:
-					would_match |= await MarkMatch.matches_at(game_state, held, coord)
 			var realized := 0
 			for card : CardData in grid.cells[ci].datas:
 				var matched := await MarkMatch.matches_at(game_state, card, coord)
 				realized |= matched
 				_wear_match_rim(card, matched, PaletteDB.ROLES.match_rim_active)
-#IN THE MARKS LAYER THE MARK WEARS THE REALIZED RIM ITSELF: the card that agreed with it is
-#hidden there, so a cell already played correctly still reads as one.
-			if plan_layer_open and realized != 0:
+#IN THE MARKS LAYER THE MARK WEARS ITS OWN REALIZED RIM AND NOTHING ELSE: the card that agreed with
+#it is hidden there, and the layer is looked at and never played -- a would-match rim there would
+#promise the placement it refuses.
+			if plan_layer_open:
 				_wear_match_rim(mark, realized, PaletteDB.ROLES.match_rim_active)
-			else:
-				_wear_match_rim(mark, would_match, PaletteDB.ROLES.match_rim)
+				continue
+			var would_match := 0
+			if takes_a_placement:
+				for held : CardData in selected_cards:
+					would_match |= await MarkMatch.matches_at(game_state, held, coord)
+			_wear_match_rim(mark, would_match, PaletteDB.ROLES.match_rim)
 
 # The match test AWAITS, so the walk above can resume into a board that has been rebuilt under it
 # and a card it started with may have no visual any more.

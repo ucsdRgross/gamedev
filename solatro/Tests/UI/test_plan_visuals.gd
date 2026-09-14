@@ -59,6 +59,8 @@ func _ready() -> void:
 	await test_the_layer_toggle_is_reachable_by_every_input_mode()
 	await test_the_layer_view_peeks_while_the_face_button_is_held()
 	await test_the_layer_view_closes_on_a_board_mutation()
+	behavior_section("THE LAYER VIEW PROMISES NO PLACEMENT IT CANNOT TAKE")
+	await test_the_layer_view_draws_no_would_match_rim()
 	behavior_section("THE GAME-OVER LOCK OUTLIVES A VISUALS REFRESH")
 	await test_the_game_over_lock_survives_a_visuals_refresh()
 	await teardown_view()
@@ -1443,6 +1445,79 @@ func test_the_layer_view_closes_on_a_board_mutation() -> void:
 	check(not pa.plan_layer_open, "TP-69: a rebuilt board comes up in play")
 	var drawn := cells_not_in_layer(false)
 	check(drawn.is_empty(), "TP-69: with every played card drawn again", str(drawn))
+
+# ==============================================================================
+# TP-97 -- the layer promises no placement it cannot take
+# ==============================================================================
+
+# Every marked cell on the board drawing a rim in `palette_index`, which is the census this claim is
+# judged over -- the three cells the fixture named would let a fourth light unnoticed.
+func marks_rimmed_in(palette_index: int) -> Array[BoardCoord]:
+	var out : Array[BoardCoord] = []
+	for gi : int in game.state.grids.size():
+		var grid : GridData = game.state.grids[gi]
+		for ci : int in grid.cell_types.size():
+			var mark : CardData = grid.cell_types[ci]
+			if not BoardPlan.is_marked(mark): continue
+			var visual : CardVisual = pa.data_card.get(mark)
+			if not visual: continue
+			if rimmed_properties(visual, palette_index) != 0:
+				out.append(BoardCoord.new(gi, ci % grid.grid_width, ci / grid.grid_width, 0))
+	return out
+
+# Every mark whose activated rim is not exactly what the cards standing on it realized, asked of the
+# match test rather than of the refresh -- a mark nothing realized may wear none of that rim.
+func marks_rimmed_beyond_what_they_realized() -> Array[String]:
+	var out : Array[String] = []
+	for coord : BoardCoord in marks_rimmed_in(PaletteDB.ROLES.match_rim_active):
+		var grid : GridData = game.state.grids[coord.grid]
+		var realized := 0
+		for card : CardData in grid.cells[grid.cell_index(coord.x, coord.y)].datas:
+			realized |= await MarkMatch.matches_at(game.state, card, coord)
+		var drawn := rimmed_properties(mark_visual(coord), PaletteDB.ROLES.match_rim_active)
+		if drawn != realized:
+			out.append("(%d,%d,%d) realized %d drew %d" % [coord.grid, coord.x, coord.y, realized, drawn])
+	return out
+
+# The layer is a VIEWER -- it refuses the placement the would-match rim promises -- so a mark there
+# wears only what its own cards realized. The peek is the discriminating half: the card stays held
+# through it, and the rims it hid are back the moment it closes.
+func test_the_layer_view_draws_no_would_match_rim() -> void:
+	await mark_against_a_fresh_card()
+	await input.click(centre_of(held_card))
+	check(pa.selected_cards.has(held_card),
+			"TP-97: precondition: a card is held over the played board",
+			str(pa.selected_cards.size()))
+	await time_to_light(rank_cell)
+	var promised := marks_rimmed_in(PaletteDB.ROLES.match_rim).size()
+	check(promised > 0,
+			"TP-97: precondition: in play the held card lights at least one mark", str(promised))
+	var agreed := await MarkMatch.matches_at(game.state, held_card, rank_cell)
+	check(agreed != 0 and game.state.card_at(rank_cell) == null,
+			"TP-97: precondition: one of those marks has no card on it, so nothing realized it",
+			"agrees on %d" % agreed)
+
+	await input.key_press(plan_layer_key())
+	check(pa.plan_layer_open, "TP-97: precondition: the held key opened the layer view")
+	var cleared := await wait_for(func() -> bool:
+			return marks_rimmed_in(PaletteDB.ROLES.match_rim).is_empty())
+	check(cleared,
+			"TP-97: no mark in the layer wears the would-match rim, which the view cannot honour",
+			"%d marks drew it" % marks_rimmed_in(PaletteDB.ROLES.match_rim).size())
+	var unearned := await marks_rimmed_beyond_what_they_realized()
+	check(unearned.is_empty(),
+			"TP-97: and every rim it does draw is exactly what the cards on that mark realized",
+			str(unearned))
+
+	await input.key_release(plan_layer_key())
+	check(not pa.plan_layer_open, "TP-97: precondition: letting the key go returned to play")
+	check(pa.selected_cards.has(held_card),
+			"TP-97: the peek hands the held card back, still held", str(pa.selected_cards.size()))
+	await time_to_light(rank_cell)
+	check(marks_rimmed_in(PaletteDB.ROLES.match_rim).size() == promised,
+			"TP-97: and the marks it hid light again the moment it closes",
+			"%d before, %d after" % [promised, marks_rimmed_in(PaletteDB.ROLES.match_rim).size()])
+	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
 
 # ==============================================================================
 # TP-96 -- the game-over lock outlives a visuals refresh
