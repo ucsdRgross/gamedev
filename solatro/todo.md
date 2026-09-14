@@ -83,39 +83,36 @@ written when a run stalls or fails.
 
 ## Waiting on the owner
 
-- ⚠ **`design/board-plan/` is BUILT, on branch `board-plan`** — every cell opens with a mark, a
-  match pays into the line it scores, and a suit effect fires only where its cell's mark agrees on
-  suit (ARCHITECTURE_REVIEW §3a/§3e/§4). Six rulings are open, each with its options written out in
-  `design/board-plan/gaps/`:
-  - ⬜ **GAP-001** — the deal reads ONE stock (`draw_deck`) because the sidebar's per-slot stocks
-    have not landed; TP-05/TP-06 are parked until they do.
-  - ⬜ **GAP-002** — do the mark hooks also fire at LANDING, or only when a line through the cell
-    scores? The landing-time dispatch is not built, and a mult reported there has nothing to add to.
-  - ⬜ **GAP-003** — "re-deal a line", the third writer `QR5`=(c) promised, has no signature and is
-    unbuilt; `reroll_mark`, `grant_mark` and `swap_marks` ship.
-  - ⬜ **GAP-004** — the match rim was ruled WHITE and this palette has no white; it ships against
-    31 (cream) and 6 (gold). A ruling moves one number in `roles.tres`.
-  - ⬜ **GAP-005** — every controller shoulder is already bound, so the layer view's held peek is
-    keyboard (`M`) only; a pad reaches the view through the Marks button, not held.
-  - ⬜ **GAP-006** — the plan multiplies par play's score 3.3–5.1× but the ladder still peaks at
-    node 3, so the goal constants are unrefit and every goal is trivial meanwhile
-    (ARCHITECTURE_REVIEW §3b). This is
-    also why `design/poker-patience/gaps/GAP-041.md` did not close with it.
-  - ⬜ **For the owner's eye:** whether "no rim" alone reads as a mark at overview zoom.
+- ⚠ **`design/board-plan/` is BUILT and CLOSED, on branch `board-plan`** — every cell opens with
+  a mark, a match pays into the line it scores, a suit effect fires only where its cell's mark
+  agrees on suit, marks act at landing and at every line score, the layer view and the reveal
+  cascade ship (ARCHITECTURE_REVIEW §3a/§3e/§4). All six gap rulings are landed (`PLAN.md`
+  §1.10-bis). Waiting on the owner:
+  - ⬜ **Input during the opening reveal.** The board is live while the deal animates (a placement
+    made then is an undo step since the close); whether the deal should lock input for its ~1 s is
+    undecided by the design — today it does not.
+  - ⬜ **A row reroll on a saturated board redistributes the row's own faces** (the deck-cycling rule:
+    the given-up faces are the fewest-copies tier); only unused identities yield fresh ones. Whether
+    a line reroll should prefer faces the line did not have is the owner's call
+    (`design/board-plan/ASSUMPTIONS.md`, close F2).
+  - ⬜ **Same node, same plan holds only while the draw pile's order is the same** — `plan_seed` is per
+    node, but `Game.shuffle_deck` uses the unseeded global generator, so a node replayed shuffles
+    differently. Seeding the deck shuffle is outside the plan.
+  - ⬜ **For the owner's eye:** whether "no rim" alone reads as a mark at overview zoom; and under a
+    scoring beam at phase 0 the activated gold rim is the least tellable instant (verified at the
+    close, `TEST_PLAN.md` TP-72's beam half).
   - ⬜ **Touchscreen:** tapping on nothing while a card is held should cancel the hold (owner,
     from playtest); today only a real drop target or a second tap on the card releases it.
-  - ⬜ The landing feedback was never photographed with a scoring beam on the same cell
-    (`design/board-plan/TEST_PLAN.md` TP-72's second half); every other visual row is verified.
   - ⬜ **Recorded, no producer today.** A card an EFFECT moves off a marked cell keeps its last
-    `match_rim_active` rims on the pooled visual until the next rebuild, because
-    `PlayArea._refresh_mark_matches` re-derives only the cards STANDING on marked cells and
-    `Game.move_card_in_grid` has no shipped caller. A window losing focus while `M` is held may
-    leave the layer view open until the next press or board mutation — the peek closes on
-    `is_action_released`, and what the engine delivers on focus-out is unverified. The debug
-    undo/redo bar is not gated by `GameView._board_is_playable()` (debug builds only, and the
-    rebuild closes the layer anyway).
-  - 💡 Recorded for later, `Q81`, the owner's words: *"a possible future card that saves what you
-    actually played that game on the board as new plan"*. Out of scope for this design.
+    `match_rim_active` rims on the pooled visual until the next rebuild (`Game.move_card_in_grid`
+    has no shipped caller); an effect MOVING a card onto a mark fires no landing hook until a line
+    scores; a window losing focus while `M` is held may leave the layer view open until the next
+    press or board mutation (what the engine delivers on focus-out is unverified); the debug
+    undo/redo bar is not gated by `GameView._board_is_playable()` (debug builds only); a
+    `grant_mark` source printing neither rank nor suit is not `is_marked`; a grid added after the
+    draw pile is empty opens unmarked (no shipped path adds one that late); `is_ace` treats a
+    fractional rank in [1, 2) as the Ace; `_refresh_mark_matches` is not awaited, so a leniency hook
+    that suspends could land its rims after a rebuild (no shipped hook suspends).
 - ⬜ **Keep answering `design/effect-review/`** — every question was re-read against the live board
   and the confirmed designs; `build/_verdicts.tsv` has one verdict per question and `build/REVIEW.md`
   says how to change the build without renumbering recorded answers.
