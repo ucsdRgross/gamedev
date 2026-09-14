@@ -398,6 +398,9 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   ships one.
 
 ## Queued for the close (S17)
+- /docs: `todo.md`'s board-plan block still lists GAP-001..006 as open bullets; every one is resolved
+  (PLAN 1.10-bis) and S18-S25 landed them - rewrite the block to what is open now (the touchscreen
+  cancel, the overview-zoom rim question, TP-72's beam half, the no-producer observations).
 - /docs: `solatro/HANDOFF_phase9_goal_curve.md` quotes the retired 5376 / 0.26 in three places; the
   curve is now the S22 placeholder (18720 / 0).
 - /simplify: `MarkMatch._pip_same` computes two `pip_cache_key`s that `ask_pass` never reads under
