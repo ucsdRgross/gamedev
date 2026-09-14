@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 48 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+**State:** 49 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
 partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
 carries its `resolution:` block and the reading taken). The rulings create six execution steps,
 S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
@@ -228,9 +228,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red with the joypad event removed from project.godot: PLAN VISUALS 126 passed, 2 FAILED of 128 (X opens the layer; every marked cell draws its mark); green 128/128 at equal counts; TP-68''s 13 rows green both runs. Overseer full run: see the commit. project.godot diff is one insertion; button_index 2 was bound to nothing before (census: 0 ui_accept, 1 ui_cancel, 3 wall_info, 4 wall_overview, 9 wall_back, 10 wall_forward). No .gd production change: PlayArea asks the action, never a keycode. Headless editor open clean.'
+  notes: 'The peek is M or X, both held; the HUD Marks button toggles by mouse, touch, keyboard and controller Accept.'
 - id: S18
   description: GAP-001 (b1) - BoardPlan.stocks_of(state) splits draw_deck round-robin by the sidebar rule (earlier slots take the extras, no RNG); deal() reads it; TP-05, TP-06 unparked, TP-85. Deleted when the sidebar stocks land.
   files_touched: []
@@ -416,7 +416,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S21, S18, S20, S19, S23.
+Work in this order, one implementer, one full gate, one commit each: S18, S20, S19, S23.
 Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan

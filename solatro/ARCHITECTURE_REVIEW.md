@@ -685,8 +685,8 @@ that by re-checking every cell of `Line.cells` against the live board.
   is `PlayArea.reveal_plan`, cell by cell in the deal's own walk order
   (`GameData.plan_reveal_order`, transient and read by nothing else), paced by
   `plan_reveal_fraction` × `get_delay()`. The marks LAYER (`PlayArea.plan_layer_open`) hides the
-  played cards and draws every cell's mark: `ui_plan_layer` (M) PEEKS while held, the HUD Marks
-  button toggles, `_select_data` refuses selection while it is open,
+  played cards and draws every cell's mark: `ui_plan_layer` (M, or the X face button) PEEKS while
+  held, the HUD Marks button toggles, `_select_data` refuses selection while it is open,
   `GameView._board_is_playable()` gates undo and End, and `queue_rebuild()` / `setup_gui()` close
   it, so one board mutation always ends it. ⚠ WHAT IS LOOKED AT IS WHAT IS DRAWN: while it is open
   a covered cell's focus and its `card_info` are its MARK, because `_size_stack_slot(slot, true)`
