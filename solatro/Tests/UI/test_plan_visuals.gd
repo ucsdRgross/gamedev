@@ -59,6 +59,8 @@ func _ready() -> void:
 	await test_the_layer_toggle_is_reachable_by_every_input_mode()
 	await test_the_layer_view_peeks_while_the_face_button_is_held()
 	await test_the_layer_view_closes_on_a_board_mutation()
+	behavior_section("THE GAME-OVER LOCK OUTLIVES A VISUALS REFRESH")
+	await test_the_game_over_lock_survives_a_visuals_refresh()
 	await teardown_view()
 	finish()
 
@@ -1441,3 +1443,48 @@ func test_the_layer_view_closes_on_a_board_mutation() -> void:
 	check(not pa.plan_layer_open, "TP-69: a rebuilt board comes up in play")
 	var drawn := cells_not_in_layer(false)
 	check(drawn.is_empty(), "TP-69: with every played card drawn again", str(drawn))
+
+# ==============================================================================
+# TP-96 -- the game-over lock outlives a visuals refresh
+# ==============================================================================
+
+# The first card standing on grid 0, or null on a bare board: a claim about a locked card's focus
+# proves nothing without a card to make it about.
+func played_card_on_grid_0() -> CardData:
+	for cell : ArrayCardData in (game.state.grids[0] as GridData).cells:
+		if not cell.datas.is_empty(): return cell.datas[0]
+	return null
+
+# Every control the play area binds that can still take focus -- played cards and the cells' own
+# zone cards alike -- named by the card it carries. The set the game-over lock has to leave empty.
+func focusable_board_controls() -> Array[String]:
+	var out : Array[String] = []
+	for control : Control in pa.ui_data:
+		if control.focus_mode != Control.FOCUS_NONE: out.append(str(pa.ui_data[control]))
+	return out
+
+# A right-click, the Marks button and every other selection change end in a VISUALS refresh rather
+# than a rebuild, so a sizing pass that handed focus back would walk the keyboard onto a board the
+# outcome overlay has already covered.
+func test_the_game_over_lock_survives_a_visuals_refresh() -> void:
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	var played := played_card_on_grid_0()
+	var grid : GridData = game.state.grids[0]
+	check(played != null and cards_on_grid_0() < grid.cells.size(),
+			"TP-96: precondition: the board carries a played card and an empty cell",
+			"%d cards over %d cells" % [cards_on_grid_0(), grid.cells.size()])
+
+	pa.disable_board_focus()
+	var locked := focusable_board_controls()
+	check(locked.is_empty(),
+			"TP-96: precondition: the game-over lock stripped every board control", str(locked))
+	pa.set_card_zones_visuals()
+	var after := focusable_board_controls()
+	check(after.is_empty(),
+			"TP-96: a visuals refresh under the lock hands no control its focus back", str(after))
+
+	pa.enable_board_focus()
+	check((pa.data_ui[played] as Control).focus_mode == Control.FOCUS_ALL,
+			"TP-96: and dismissing the outcome makes the played card focusable again",
+			str((pa.data_ui[played] as Control).focus_mode))

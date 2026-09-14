@@ -1696,18 +1696,22 @@ func _stack_slot_center(origin_x: float, floor_y: float, column: int, h: int) ->
 
 #⚠ NO SEPARATION: a `VBoxContainer` gives even a zero-height child one and the row grew at its FIRST
 #card. In the `marks_layer` a cell's cards collapse instead, so its mark takes the size and focus.
+#⚠ NEVER GRANTS FOCUS WHILE `board_focus_locked`: every visuals refresh runs here, overlay up or not.
+
 ## **THE ONE PLACE A STACK'S CONTROLS ARE SIZED, AND SO WHERE A CELL'S FOCUS LANDS.**
 func _size_stack_slot(slot: Control, marks_layer: bool) -> void:
 	slot.add_theme_constant_override("separation", 0)
 	var occupied := slot.get_child_count() > 1 and not marks_layer
+	var grants_focus := not board_focus_locked
 	var zone_control : Control = slot.get_child(-1)
 	zone_control.custom_minimum_size = CardVisual.card_size_play if not occupied 			else Vector2(CardVisual.card_size_play.x, 0)
-	zone_control.focus_mode = Control.FOCUS_NONE if occupied else Control.FOCUS_ALL
+	zone_control.focus_mode = Control.FOCUS_ALL if grants_focus and not occupied else Control.FOCUS_NONE
 	for j : int in slot.get_child_count() - 1:
 		var card_control : Control = slot.get_child(j)
 		card_control.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
 				0.0 if marks_layer else _depth_pitch_px())
-		card_control.focus_mode = Control.FOCUS_NONE if marks_layer else Control.FOCUS_ALL
+		card_control.focus_mode = (Control.FOCUS_ALL if grants_focus and not marks_layer
+				else Control.FOCUS_NONE)
 	if occupied:
 		(slot.get_child(0) as Control).custom_minimum_size = CardVisual.card_size_play
 
