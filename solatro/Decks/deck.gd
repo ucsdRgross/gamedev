@@ -12,11 +12,9 @@ class_name Deck
 ## its only grant path today.
 static var ALL_SUITS : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
 
-## The active playtest deck. deck14 is the 20-card start deck the §15b goal curve is
-## calibrated against (2026-07 scoring rework). deck11 (24 cards incl. talents) stays
-## available in the picker for prop/reaction playtests.
+## The deck a show falls back to when no run supplied one: the standalone game_view.tscn boot.
 func get_deck() -> Array[CardData]:
-	return deck14
+	return deck4
 
 func get_rules() -> Array[CardData]:
 	return rules1
@@ -302,10 +300,7 @@ func _build_deck13() -> Array[CardData]:
 		out.append(_card(PipSuitKnife, rank))
 	return out
 
-## DECK 14 — 20-card START deck (2026-07 scoring rework, SCORING_MATH_PLAN §15b): ranks
-## 1–5 × 4 standard suits, no talents — the deck the goal curve (N0=20, G0, ALPHA) is
-## calibrated against. THE new-run default via get_deck(). (Named deck14, not the plan's
-## "deck12" — that slot was already the firework-access deck.)
+## DECK 14 — ranks 1–5 × 4 standard suits, no talents: the 20-card deck the goal curve is fitted to.
 var deck14 : Array[CardData]:
 	get:
 		if deck14.is_empty(): deck14 = _build_deck14()

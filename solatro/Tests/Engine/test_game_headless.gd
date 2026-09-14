@@ -29,6 +29,8 @@ func _ready() -> void:
 	await test_undo_rewinds_per_show_state()
 	await test_undo_at_game_over_rewinds_the_end()
 	test_add_deck_relinks_suit_backrefs()
+	test_standalone_boot_deals_the_standard_52()
+	test_a_run_deals_its_own_start_deck()
 	await test_score_line_headless_mutates_data()
 	await test_end_show_is_the_only_resolver()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
@@ -304,12 +306,11 @@ func test_undo_at_game_over_rewinds_the_end() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
-## Checklist 0.4's other half: add_deck deep-duplicates the saved deck into the show; the
-## duplicate must remap (not share or drop) every suit's back-reference.
+## A blank save falls back to the shipped deck, and add_deck's deep copy must remap every suit backref.
 func test_add_deck_relinks_suit_backrefs() -> void:
 	var g := make_game()
 	var prev_save_info : RunState = Main.save_info
-	Main.save_info = RunState.new()   # blank save -> add_deck falls back to the full starter Deck
+	Main.save_info = RunState.new()
 	g.add_deck()
 	var all_linked := not g.state.draw_deck.is_empty()
 	for card : CardData in g.state.draw_deck:
@@ -317,6 +318,52 @@ func test_add_deck_relinks_suit_backrefs() -> void:
 			all_linked = false
 	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
 			"deck size %d" % g.state.draw_deck.size())
+	Main.save_info = prev_save_info
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+## Running Levels/game_view.tscn on its own leaves the save blank, and a playtest wants the standard deck.
+func test_standalone_boot_deals_the_standard_52() -> void:
+	var g := make_game()
+	var prev_save_info : RunState = Main.save_info
+	Main.save_info = RunState.new()
+	g.add_deck()
+	var pairs : Dictionary[Vector2i, bool] = {}
+	var suits : Dictionary[int, bool] = {}
+	var ranks : Dictionary[int, bool] = {}
+	var modified := 0
+	for card : CardData in g.state.draw_deck:
+		var suit_index := (card.suit as PipSuit).get_suit_index()
+		var rank := int(card.rank.value)
+		pairs[Vector2i(suit_index, rank)] = true
+		suits[suit_index] = true
+		ranks[rank] = true
+		if card.skill or card.stamp: modified += 1
+	check(g.state.draw_deck.size() == 52, "the standalone boot deals 52 cards",
+			"%d cards" % g.state.draw_deck.size())
+	check(pairs.size() == 52 and suits.size() == 4 and ranks.size() == 13,
+			"every one of 4 suits at every one of 13 ranks, once",
+			"%d pairs, %d suits, %d ranks" % [pairs.size(), suits.size(), ranks.size()])
+	check(modified == 0, "no card in it carries a skill or a stamp", "%d modified" % modified)
+	Main.save_info = prev_save_info
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+## The other side of the standalone fallback: a real run still deals the deck it started with.
+func test_a_run_deals_its_own_start_deck() -> void:
+	var g := make_game()
+	var prev_save_info : RunState = Main.save_info
+	var prev_run : RunState = RunManager.run
+	backup_real_save(suite_tag())
+	var start := TestDecks.deck_20()
+	Main.save_info = RunManager.new_run(start, TestDecks.standard_rules())
+	g.add_deck()
+	check(g.state.draw_deck.size() == start.size(),
+			"a new run deals its own start deck, not the standalone default",
+			"%d cards, start deck %d" % [g.state.draw_deck.size(), start.size()])
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
 	Main.save_info = prev_save_info
 	CardEnvironment.CURRENT = null
 	free_game(g)
