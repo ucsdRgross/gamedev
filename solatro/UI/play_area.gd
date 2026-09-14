@@ -1447,7 +1447,7 @@ var _press_card_px := Vector2.ZERO
 var _drag_began := false
 ## The board's committed depth when the press a second one could pair with landed.
 var _depth_when_pressed : int = 0
-## Set by a tap and read by the release closing its gesture: that release is not a click, so the pair's second press cannot re-grab what the tap let go.
+## Set by a closed PAIR, tapped or refused, and read by the release closing its gesture: that release is not a click, so it can neither re-grab what a tap let go nor place again after a refusal.
 var _tapped_this_gesture := false
 ## Where the last finger press landed, for the next one to pair with.
 var _touch_press_at := Vector2.ZERO
@@ -1498,7 +1498,8 @@ func _pair_taps(data: CardData, depth_at_the_opening_press: int) -> bool:
 # finger presses can never tap twice.
 func _press_closes_a_pair(button: InputEventMouseButton) -> bool:
 	if not button.double_click or button.device == -1: return false
-	_tapped_this_gesture = _pair_taps(_tapped_card_at(button.position), _depth_when_pressed)
+	_pair_taps(_tapped_card_at(button.position), _depth_when_pressed)
+	_tapped_this_gesture = true
 	return true
 
 # GODOT NEVER MARKS A DOUBLE TAP ON A WINDOWS TOUCHSCREEN, so the board pairs two finger presses

@@ -154,6 +154,9 @@ func _ready() -> void:
 	await test_escape_cancels_everything_and_steps_back_in_one_press()
 	await test_releasing_the_held_card_leaves_the_locked_description_up()
 	await test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm()
+	behavior_section("PHASE 5: THE ARROW OFF AN ENTRANCE CARD")
+	await test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board()
+	await test_motion_over_the_container_reaches_the_following_card()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -3717,4 +3720,51 @@ func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
 			await _click_card(entrance[0])
 			check(_armed_card() == wanted,
 					"...and a click on an Entrance card re-arms onto it (S18.5, Q114=a)")
+	await _end_game_fixture()
+
+# The board's arrows must stay on the board's own cards: focus parked on the scroll container
+# leaves accept inert and draws its focus border across the picture.
+func test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to focus from",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		for keycode : Key in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
+			entrance[0].grab_focus()
+			await get_tree().process_frame
+			_push_key(_game_viewport, keycode, true)
+			await get_tree().process_frame
+			var owner := _game_viewport.gui_get_focus_owner()
+			check(not (owner is ScrollContainer),
+					"an arrow from an Entrance card does not focus a scroll container",
+					"%s -> %s" % [OS.get_keycode_string(keycode), owner])
+			_push_key(_game_viewport, keycode, false)
+			await get_tree().process_frame
+	await _end_game_fixture()
+
+## A following card keeps following wherever the pointer goes, including over the container.
+func test_motion_over_the_container_reaches_the_following_card() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a card to pick up",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		var held : CardData = _play_area.selected_cards[0] if _play_area.selected_cards else null
+		check(held != null and _play_area.data_card[held].following,
+				"the click left a card following the pointer", str(_play_area.selected_cards.size()))
+		_hover(entrance[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		var reached : Array[bool] = [false]
+		_play_area.description_dismiss_requested.connect(func() -> void: reached[0] = true)
+		check(_container.mouse_filter == Control.MOUSE_FILTER_STOP
+				and _container.get_global_rect().has_point(_container.container_rect().get_center()),
+				"the container really is a blocking control under that point",
+				"filter %d, rect %s" % [_container.mouse_filter, _container.get_global_rect()])
+		_hover_in(_booted_viewport, _container.container_rect().get_center())
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(reached[0], "motion over the container reached the board's pointer reader",
+				"dismiss %s" % reached[0])
 	await _end_game_fixture()

@@ -606,3 +606,11 @@
   calls it. Without that the flag survived the dropped click and the next `arm_leftmost()` armed a
   card that was `following` from birth, which `Q267`=a/`Q262`=a reserve for a card the player
   touched. The drag refusal already called `stop_following`, so it gets the same clear.
+- Phase 5 fix 4: no new name. `PlayArea._tapped_this_gesture` now means "this gesture's release
+  closes a PAIR", tapped or refused, and `_press_closes_a_pair()` sets it either way -- so
+  `_consume_as_card_release` eats the closing release of a REFUSED pair as it already ate a tap's.
+  Without it that release fell through the GUI pass as an ordinary click (measured: one
+  `data_selected` emission), which places again whenever the cell under it accepts the card the
+  first click's placement armed. New test row
+  `TestDragPlace.test_a_refused_pairs_release_places_nothing`, which pushes the one mouse motion a
+  real mouse makes between two clicks -- the hover refresh `_on_gui_input` reads.

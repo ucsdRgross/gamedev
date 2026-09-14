@@ -52,6 +52,7 @@ func _ready() -> void:
 	behavior_section("A TAP IS A SECOND PRESS PAIRED WITH THE FIRST")
 	await test_a_double_click_undoes_the_grab_the_first_click_made()
 	await test_a_tap_after_a_placement_is_refused()
+	await test_a_refused_pairs_release_places_nothing()
 	await test_a_touch_tap_after_a_placement_is_refused()
 	await test_a_double_click_on_the_armed_card_leaves_the_arm_standing()
 	await test_a_double_click_on_an_empty_cells_zone_card_taps()
@@ -603,6 +604,35 @@ func test_a_tap_after_a_placement_is_refused() -> void:
 		check(_placed_cards().has(held), "the pair's first click placed the armed card", _hand_str())
 		await _double_click(at)
 		_check_the_placement_stands_untapped(spy, held, committed)
+	await _end_fixture()
+
+# A REFUSED pair must give its closing release back to nobody: a real mouse puts a motion between
+# the two clicks, which refreshes the hover the GUI pass reads, and the release would otherwise
+# land as an ordinary click and place the card the placement just armed.
+func test_a_refused_pairs_release_places_nothing() -> void:
+	await _start_fixture()
+	var spy := TapSpy.new()
+	var held := _armed_card()
+	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
+	if held and cell:
+		var at := _control_centre(cell)
+		await _drag(at, at)
+		var committed := _game.save_history.size()
+		var next_arm := _armed_card()
+		check(_placed_cards().has(held) and next_arm != held,
+				"the pair's first click placed the armed card and the next one armed", _hand_str())
+		await _push(_motion(at + Vector2.RIGHT), _picture_viewport)
+		var selections : Array[CardData] = []
+		_pa.data_selected.connect(func(d: CardData) -> void: selections.append(d))
+		await _double_click(at)
+		check(selections.is_empty(),
+				"the refused pair's closing release is not a click (Q93a=a)",
+				"%d selection(s)" % selections.size())
+		check(_game.save_history.size() == committed,
+				"the refused pair's release commits nothing", "%d vs %d" % [
+						_game.save_history.size(), committed])
+		check(next_arm != null and not _placed_cards().has(next_arm),
+				"...and the card it armed is still in the Entrance", _hand_str())
 	await _end_fixture()
 
 # Q93a=a REACHED BY A FINGER: the pair's first finger press placed the armed card, so the second is
