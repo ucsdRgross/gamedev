@@ -592,6 +592,12 @@ enum SeparationMode {
 		card_drag_threshold = maxf(value, 0.0)
 		settings_changed.emit()
 
+## How long after a press a second one still pairs with it into a tap, in milliseconds.
+@export var card_tap_window_ms : float = 300.0:
+	set(value):
+		card_tap_window_ms = maxf(value, 0.0)
+		settings_changed.emit()
+
 @export var board_edge_pad_rows : float = 1.0:
 	set(value):
 		board_edge_pad_rows = maxf(value, 0.0)

@@ -16,6 +16,8 @@ const FIXTURE_WINDOW := Vector2i(1280, 720)
 ## TEST_PLAN 5.1's press-to-release distance: inside any card's own threshold.
 const SUB_THRESHOLD_TRAVEL_PX := 10.0
 const DEAL_TIMEOUT_SECS := 5.0
+## A window wide enough for a PUSHED pair: the frames one spans cost more wall clock than a player.
+const PUSHED_PAIR_WINDOW_MS := 2000.0
 
 var _viewport : SubViewport = null
 var _main : Main = null
@@ -26,6 +28,8 @@ var _picture_viewport : SubViewport = null
 var _container : HudContainer = null
 var _prev_run : RunState = null
 var _prev_save_info : RunState = null
+## Every card the board reported tapped this test, in order.
+var _taps : Array[CardData] = []
 
 func suite_name() -> String:
 	return "DRAG PLACE"
@@ -43,6 +47,15 @@ func _ready() -> void:
 	behavior_section("THE DRAG CHOOSES WHICH CARD IS MOVING")
 	await test_a_drag_from_a_board_card_cancels_the_arm()
 	await test_a_click_on_a_board_card_tries_to_place_first()
+	behavior_section("A TAP IS A SECOND PRESS PAIRED WITH THE FIRST")
+	await test_a_double_click_undoes_the_grab_the_first_click_made()
+	await test_a_tap_after_a_placement_is_refused()
+	await test_a_double_click_on_the_armed_card_leaves_the_arm_standing()
+	await test_a_double_click_on_an_empty_cells_zone_card_taps()
+	await test_a_finger_pairs_its_own_taps()
+	await test_a_key_or_pad_reaches_the_tap_two_ways()
+	await test_the_second_mouse_button_never_taps()
+	await test_the_tap_hook_runs_once_per_tap()
 	finish()
 
 # ==============================================================================
@@ -65,6 +78,20 @@ class BoardCardRule extends CardModifierStamp:
 		place_attempts += 1
 		return []
 
+# THE DUMMY TAP EFFECT, and the only card that hears a tap: it proves the hook is dispatched, and
+# is not a mechanic. A stamp, so the card it rides keeps its own type -- and it records the
+# tapped card's ID, never the card, which would be a reference cycle neither of them escapes.
+class TapSpy extends CardModifierStamp:
+	var taps : Array[int] = []
+	func get_str() -> String: return "Test Tap Spy"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_card_tapped(tapped: CardData) -> void:
+		taps.append(tapped.get_instance_id())
+
+func _record_tap(data: CardData) -> void:
+	_taps.append(data)
+
 func _start_fixture() -> void:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -81,6 +108,7 @@ func _start_fixture() -> void:
 	_game = _view.game
 	CardEnvironment.CURRENT = _game
 	_pa = _view.play_area
+	_pa.card_tapped.connect(_record_tap)
 	_picture_viewport = _main._pictures[&"game"].viewport
 	_container = _main.wall.get_node(^"%HudContainer")
 	await _await_the_deal()
@@ -96,6 +124,7 @@ func _end_fixture() -> void:
 	_pa = null
 	_picture_viewport = null
 	_container = null
+	_taps.clear()
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -268,18 +297,46 @@ func _touch_tap(at: Vector2) -> void:
 # A HELD card's own control is MOUSE_FILTER_IGNORE and the pointer passes straight through it, so
 # the key accept on its focused control is how a player reaches the card already in hand.
 func _select_the_card_in_hand(data: CardData) -> void:
+	await _focus_the_card(data)
+	await _press_key(KEY_ENTER)
+
+func _focus_the_card(data: CardData) -> void:
+	_pa.flush_rebuild()
 	_pa.data_ui[data].grab_focus()
 	await get_tree().process_frame
-	await _push(_accept_key(true), _picture_viewport)
-	await _push(_accept_key(false), _picture_viewport)
+
+func _press_key(code: Key) -> void:
+	await _push(_key(code, true), _picture_viewport)
+	await _push(_key(code, false), _picture_viewport)
 	await _frames(3)
 
-func _accept_key(pressed: bool) -> InputEventKey:
+func _key(code: Key, pressed: bool) -> InputEventKey:
 	var event := InputEventKey.new()
-	event.keycode = KEY_ENTER
-	event.physical_keycode = KEY_ENTER
+	event.keycode = code
+	event.physical_keycode = code
 	event.pressed = pressed
 	return event
+
+# The press the engine marks as a pair's second and the release that closes it: a double click, in
+# the two events a real one arrives as.
+func _double_click(at: Vector2) -> void:
+	var press := _mouse_button(at, true)
+	press.double_click = true
+	await _push(press, _picture_viewport)
+	await _push(_mouse_button(at, false), _picture_viewport)
+	await _frames(6)
+
+# The second mouse button, optionally marked as a pair's second -- which is the strictest form of
+# "it never taps", and the way a player empties the hand before one.
+func _right_click(at: Vector2, paired: bool) -> void:
+	var press := _mouse_button(at, true)
+	press.button_index = MOUSE_BUTTON_RIGHT
+	press.double_click = paired
+	var release := _mouse_button(at, false)
+	release.button_index = MOUSE_BUTTON_RIGHT
+	await _push(press, _picture_viewport)
+	await _push(release, _picture_viewport)
+	await _frames(4)
 
 # ==============================================================================
 # 5.1 – 5.3: THE THRESHOLD, AND WHAT A RELEASE LANDS ON
@@ -456,4 +513,186 @@ func test_a_click_on_a_board_card_tries_to_place_first() -> void:
 				_hand_str())
 		check(_placed_cards().size() == 1 and _game.save_history.size() == committed,
 				"...with nothing placed onto it (5.7)", _hand_str())
+	await _end_fixture()
+
+# ==============================================================================
+# THE TAP — a second press paired with the first, on every input a player has
+# ==============================================================================
+
+# Q92=a, Q93a=a: the pair's first click GRABS, and the tap undoes exactly that — the card is back
+# in its slot, following nothing, and the board hears the tap once.
+func test_a_double_click_undoes_the_grab_the_first_click_made() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 2:
+		var data : CardData = _pa.ui_data[entrance[1]]
+		var at := _control_centre(entrance[1])
+		await _drag(at, at)
+		check(_pa.selected_cards.has(data), "the pair's first click grabbed that card", _hand_str())
+		await _double_click(at)
+		check(_taps.size() == 1 and _taps.has(data), "the second press taps it, once (Q92=a)",
+				"%d tap(s)" % _taps.size())
+		check(not _pa.selected_cards.has(data) and not _is_lifted(data),
+				"...and the grab it undid puts the card back in its slot (Q92=a)", _hand_str())
+		check(not _is_following(data), "...where it follows nothing (Q92=a)", _hand_str())
+	await _end_fixture()
+
+# Q93a=a: a placement is never rewound by a double click. The pair's first click placed a card, so
+# the second is refused outright — no signal, no hook, nothing given back.
+func test_a_tap_after_a_placement_is_refused() -> void:
+	await _start_fixture()
+	var spy := TapSpy.new()
+	var held := _armed_card()
+	var cell := await _legal_cell_control(held) if held else null
+	check(held != null and cell != null,
+			"the show opens with a card armed and a cell that accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if held and cell:
+		held.with_stamp(spy)
+		var at := _control_centre(cell)
+		await _drag(at, at)
+		var committed := _game.save_history.size()
+		check(_placed_cards().has(held), "the pair's first click placed the armed card", _hand_str())
+		await _double_click(at)
+		check(_taps.is_empty(), "the second press taps nothing (Q93a=a)", "%d tap(s)" % _taps.size())
+		check(spy.taps.is_empty(), "...so no card hears one either (Q222=b)",
+				"%d hook call(s)" % spy.taps.size())
+		check(_placed_cards().has(held) and _game.save_history.size() == committed,
+				"...and the placement stands, unrewound (Q93a=a)", _hand_str())
+	await _end_fixture()
+
+# Q94=a: double-clicking the card the Entrance armed taps it and the arm STANDS — the same slot is
+# armed, its card lifted in place, following nothing.
+func test_a_double_click_on_the_armed_card_leaves_the_arm_standing() -> void:
+	await _start_fixture()
+	var armed := _armed_card()
+	var slot := _pa.armed_slot()
+	check(armed != null and slot != -1, "the show opens with the leftmost Entrance card armed",
+			_hand_str())
+	if armed:
+		var at := _card_centre(armed)
+		await _drag(at, at)
+		await _double_click(at)
+		check(_taps.size() == 1 and _taps.has(armed), "the pair taps the armed card (Q94=a)",
+				"%d tap(s)" % _taps.size())
+		check(_pa.armed_slot() == slot and _pa.selected_cards.has(armed),
+				"...and the arm stands on the same slot (Q94=a)", _hand_str())
+		check(_is_lifted(armed) and not _is_following(armed),
+				"...lifted, and following nothing (Q94=a)", _hand_str())
+	await _end_fixture()
+
+# Q97=b: an empty cell's zone card taps like any other card, because a cell can carry modifiers
+# too. The hand is emptied first, so the pair's first click has nothing to place.
+func test_a_double_click_on_an_empty_cells_zone_card_taps() -> void:
+	await _start_fixture()
+	var held := _armed_card()
+	var cell := await _legal_cell_control(held) if held else null
+	check(cell != null, "the board offers an empty cell the armed card could have gone into",
+			"cell %s" % [cell != null])
+	if cell:
+		var zone_card : CardData = _pa.ui_data[cell]
+		var at := _control_centre(cell)
+		await _right_click(at, false)
+		check(_pa.selected_cards.is_empty(), "the hand is empty before the pair", _hand_str())
+		await _drag(at, at)
+		await _double_click(at)
+		check(_taps.size() == 1 and _taps.has(zone_card),
+				"the pair taps the empty cell's own zone card (Q97=b)", "%d tap(s)" % _taps.size())
+		check(_placed_cards().is_empty(), "...and places nothing on the way (Q97=b)", _hand_str())
+	await _end_fixture()
+
+# Q95=a, Q96=b: Godot never marks a double tap on a Windows touchscreen, so the board pairs two
+# finger presses itself — inside the tap window, and no further apart than the drag threshold.
+func test_a_finger_pairs_its_own_taps() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 3, "the dealt Entrance offers three cards to a finger",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 3:
+		var data : CardData = _pa.ui_data[entrance[1]]
+		var near := _control_centre(entrance[1])
+		var far := _control_centre(entrance[2])
+		var window := PlayArea.settings().card_tap_window_ms
+		PlayArea.settings().card_tap_window_ms = PUSHED_PAIR_WINDOW_MS
+		await _touch_tap(near)
+		await _touch_tap(near)
+		check(_taps.size() == 1 and _taps.has(data),
+				"two finger presses inside the window, on one spot, are a tap (Q95=a)",
+				"%d tap(s)" % _taps.size())
+		await _touch_tap(far)
+		check(_taps.size() == 1, "...a press a whole card away from the last one is not (Q96=b)",
+				"%d tap(s)" % _taps.size())
+		PlayArea.settings().card_tap_window_ms = window
+		await _touch_tap(near)
+		await await_the_tap_window()
+		await _touch_tap(near)
+		check(_taps.size() == 1,
+				"...and two presses on one spot, further apart than the window, are not (Q96=b)",
+				"%d tap(s)" % _taps.size())
+	await _end_fixture()
+
+# Q98=d: a keyboard or pad reaches the tap two ways — the bound action on the focused card, and two
+# accept presses inside the window. One accept on its own still does what it always did.
+func test_a_key_or_pad_reaches_the_tap_two_ways() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 2:
+		var data : CardData = _pa.ui_data[entrance[1]]
+		await _focus_the_card(data)
+		await _press_key(KEY_ENTER)
+		check(_taps.is_empty() and _pa.selected_cards.has(data),
+				"one accept press grabs the focused card and taps nothing (Q98=d)", _hand_str())
+		await await_the_tap_window()
+		await _focus_the_card(data)
+		await _press_key(KEY_T)
+		check(_taps.size() == 1 and _taps.has(data),
+				"the bound tap action taps the focused card (Q98=d)", "%d tap(s)" % _taps.size())
+		await _focus_the_card(data)
+		await _press_key(KEY_ENTER)
+		await _focus_the_card(data)
+		await _press_key(KEY_ENTER)
+		check(_taps.size() == 2, "...and two accept presses inside the window are one too (Q98=d)",
+				"%d tap(s)" % _taps.size())
+	await _end_fixture()
+
+# F9: the second mouse button is cancel-only. It never taps, not even as a pair's second press.
+func test_the_second_mouse_button_never_taps() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 2, "the dealt Entrance offers a card to press",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 2:
+		var at := _control_centre(entrance[1])
+		await _drag(at, at)
+		await _right_click(at, false)
+		await _right_click(at, true)
+		check(_taps.is_empty(), "the second mouse button taps nothing (F9)",
+				"%d tap(s)" % _taps.size())
+		check(_pa.selected_cards.is_empty(), "...it cancels the grab, which is all it does (F9)",
+				_hand_str())
+	await _end_fixture()
+
+# Q161=c, Q222=b: ONE dummy effect, and it exists to prove the hook is dispatched — once per tap,
+# through the same broadcast every other card hook arrives on.
+func test_the_tap_hook_runs_once_per_tap() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(entrance.size() >= 2, "the dealt Entrance offers a card to wear the dummy effect",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 2:
+		var spy := TapSpy.new()
+		var data : CardData = _pa.ui_data[entrance[1]]
+		data.with_stamp(spy)
+		var at := _control_centre(entrance[1])
+		await _drag(at, at)
+		await _double_click(at)
+		check(_taps.size() == 1, "the pair tapped the card wearing the dummy effect (Q222=b)",
+				"%d tap(s)" % _taps.size())
+		check(spy.taps.size() == 1 and spy.taps.has(data.get_instance_id()),
+				"...and its hook ran once, with the tapped card (Q222=b)",
+				"%d hook call(s)" % spy.taps.size())
 	await _end_fixture()

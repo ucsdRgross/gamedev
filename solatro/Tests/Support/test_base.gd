@@ -122,6 +122,14 @@ func await_drawn_frames(count: int) -> void:
 				+ "the window reports can_draw=%s")
 				% [DRAWN_FRAME_WATCHDOG_SECS, count, DisplayServer.window_can_draw()])
 
+# TWO ACCEPT PRESSES INSIDE THE TAP WINDOW ARE A TAP, not two selections, so a check about a lone
+# accept on a focused card waits this out first. Read from the knob, never a frame count.
+func await_the_tap_window() -> void:
+	var waited := 0.0
+	while waited <= PlayArea.settings().card_tap_window_ms / 1000.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+
 func behavior_section(title: String) -> void:
 	_category = Category.BEHAVIOR
 	TestLog.line("\n--- [BEHAVIOR] %s ---" % title)

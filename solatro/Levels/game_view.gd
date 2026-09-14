@@ -91,6 +91,7 @@ func _ready() -> void:
 	play_area.data_selected.connect(_on_data_selected)
 	play_area.card_dragged.connect(_pick_up)
 	play_area.card_dropped.connect(_on_card_dropped)
+	play_area.card_tapped.connect(_on_card_tapped)
 	play_area.info_requested.connect(_relay_info_requested)
 	play_area.highlight_cleared.connect(hud_container.return_to_lock)
 	play_area.description_dismiss_requested.connect(_on_description_dismiss_requested)
@@ -412,6 +413,15 @@ func _on_data_selected(data: CardData) -> void:
 func _on_card_dropped(data: CardData) -> void:
 	if game.processing: return
 	if not await _place_held_onto(data): play_area.stop_following()
+
+# A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back and the Entrance re-derives
+# its arm, so a tap on the armed card leaves that card armed. Then the board hears the tap, which
+# is all it does in v1 -- no shipped card listens for it.
+func _on_card_tapped(data: CardData) -> void:
+	if play_area.selected_cards:
+		play_area.ungrab_cards()
+		await _arm_the_entrance()
+	await game.run_all_mods(&"on_card_tapped", data)
 
 # A landed placement finishes the interaction: the hand is empty, the container goes back to the
 # HUD, and the Entrance arms its next card.

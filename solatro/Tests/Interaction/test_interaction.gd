@@ -372,7 +372,7 @@ func test_controller_select_and_cancel() -> void:
 	if not control: return
 	selections.clear()
 	control.grab_focus()
-	await frames(1)
+	await await_the_tap_window()
 	await joy_tap(JOY_BUTTON_A)
 	check(selections.size() >= 1, "ui_accept (joypad A) on the focused card emits its selection")
 	pa.grab_cards([pa.ui_data[control]] as Array[CardData])

@@ -543,3 +543,30 @@
 - S16: `TestDragPlace` sits directly after `SIDEBAR` in `TestSuite`'s ordering chain (it hosts a
   real `Main` and writes `CardEnvironment.CURRENT` / `Main.save_info` / the real save); the six
   suites before it name "DRAG PLACE" in their excludes.
+- S17: the tap's refusal reads the BOARD's own committed depth (`save_history.size()`) at the
+  press that opened the pair against the depth at the tap. `Q93a`=a asks "did the first press
+  place?" and that is the board's own answer, so no new call from the view into the board and one
+  rule for every input. The bound `card_tap` action is exempt: it has no first press to undo, so
+  there is nothing a placement could make it rewind.
+- S17: A TAP EATS THE RELEASE THAT CLOSES ITS GESTURE (`_tapped_this_gesture`, consumed in
+  `_consume_as_card_release` beside the travelled release). Measured: without it the pair's second
+  release falls through to the GUI pass as an ordinary click and re-grabs the card the tap just
+  let go.
+- S17: the finger's pair is SELF-DETECTED and the engine's own synthesis never taps -- the mouse
+  reader ignores `double_click` on device -1. Godot copies a touch's `double_tap` onto the mouse
+  form it emulates, so on a platform that sets it both readers would otherwise fire for one pair.
+- S17: the tap pair's distance window is `_gesture_threshold_px()`, i.e. the drag threshold the
+  pair's FIRST press armed from the card it landed on. One distance model for the drag and the
+  tap, no second knob and no millimetres (`Q291`=a).
+- S17: undoing the grab and re-deriving the arm live in `GameView._on_card_tapped` --
+  `ungrab_cards()` + `_arm_the_entrance()`, the same two calls `_on_undo_pressed` makes, which is
+  what makes the arm STAND on a tap of the armed card (`Q94`=a). `PlayArea` only detects and emits.
+  With nothing held there is no grab to undo, so a tap on a bare card re-arms nothing.
+- S17: the hook reaches cards as `game.run_all_mods(&"on_card_tapped", data)` from that same
+  handler. `Scripts/card_effect_api.gd` is UNCHANGED: it has no subscription surface, and
+  `run_all_mods` already forwards any hook name.
+- S17: `card_tap` binds key T and joypad button 2 (X) -- the first pad face button neither accept
+  (button 0) nor cancel (button 1) uses, and clear of the wall's Back and shoulder bindings.
+- S17: the dummy tap effect is a `CardModifierStamp`, not a `CardModifierType`: `run_all_mods`
+  dispatches `type`, `stamp` and `statuses`, and a stamp leaves the Entrance card it rides the type
+  it was drawn from (S16's finding). It is test-local; nothing under `Cards/` listens.

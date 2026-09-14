@@ -6,6 +6,8 @@ signal data_selected(data : CardData)
 signal card_dragged(data: CardData)
 ## The drag's release landed on this card: the same placement a click asks for.
 signal card_dropped(data: CardData)
+## A second press paired with the first one into a tap on this card.
+signal card_tapped(data: CardData)
 ## A card is highlighted: its `InfoEntry` for the wall's one container.
 signal info_requested(entry: InfoEntry)
 
@@ -1443,6 +1445,16 @@ var _press_data : CardData = null
 var _press_card_px := Vector2.ZERO
 ## ONE PICKUP PER DRAG -- the swipe's own latch, in the card's half of the gesture.
 var _drag_began := false
+## The board's committed depth when the press a second one could pair with landed.
+var _depth_when_pressed : int = 0
+## Set by a tap and read by the release closing its gesture: that release is not a click, so the pair's second press cannot re-grab what the tap let go.
+var _tapped_this_gesture := false
+## Where the last finger press landed, for the next one to pair with.
+var _touch_press_at := Vector2.ZERO
+## When the last finger press landed, in milliseconds.
+var _touch_press_msec : int = 0
+## When the last accept press on a board card landed, in milliseconds.
+var _accept_press_msec : int = 0
 
 # A press only ARMS the gesture -- which card, where, and at what size -- so the release can tell a
 # click from a drag. A FINGER ARMS IT TOO: `emulate_mouse_from_touch` gives every touch its mouse
@@ -1451,6 +1463,7 @@ func _arm_card_gesture(at: Vector2) -> void:
 	flush_rebuild()
 	_press_origin = at
 	_drag_began = false
+	_depth_when_pressed = _committed_depth()
 	var control := _card_control_at(at)
 	_press_data = ui_data.get(control)
 	_press_card_px = control.get_global_rect().size if control else board_card_picture_px()
@@ -1458,6 +1471,56 @@ func _arm_card_gesture(at: Vector2) -> void:
 # How far this gesture must travel before its release places instead of its click grabbing.
 func _gesture_threshold_px() -> float:
 	return GestureMetrics.drag_threshold_px(_press_card_px, PlayArea.settings())
+
+# How many steps the board has committed. A placement moves it, which is how a tap tells one
+# apart from the grab it is allowed to undo.
+func _committed_depth() -> int:
+	var game := CardEnvironment.get_current_game()
+	return game.save_history.size() if game else 0
+
+# The card a pointer tap found, flushed first because a pending rebuild moves the controls it reads.
+func _tapped_card_at(at: Vector2) -> CardData:
+	flush_rebuild()
+	var data : CardData = ui_data.get(_card_control_at(at))
+	return data
+
+# A TAP UNDOES THE PRESS THAT OPENED ITS PAIR, and only a GRAB can be undone: once that press has
+# committed a step it placed a card, and a placement is never rewound by a tap.
+func _pair_taps(data: CardData) -> bool:
+	if not data or _committed_depth() != _depth_when_pressed: return false
+	card_tapped.emit(data)
+	return true
+
+# THE ENGINE PAIRS THE MOUSE'S OWN PRESSES: `double_click` arrives on the second one, at the OS
+# interval. A finger's mouse form (device -1) is left to the touch reader below, so one pair of
+# finger presses can never tap twice.
+func _press_closes_a_pair(button: InputEventMouseButton) -> bool:
+	if not button.double_click or button.device == -1: return false
+	_tapped_this_gesture = _pair_taps(_tapped_card_at(button.position))
+	return true
+
+# GODOT NEVER MARKS A DOUBLE TAP ON A WINDOWS TOUCHSCREEN, so the board pairs two finger presses
+# itself: inside the tap window, and no further apart than this gesture's own drag threshold.
+func _consume_as_touch_tap(event: InputEvent) -> bool:
+	var touch := event as InputEventScreenTouch
+	if not touch or not touch.pressed or touch.device == -1: return false
+	var now := Time.get_ticks_msec()
+	var paired := (now - _touch_press_msec <= PlayArea.settings().card_tap_window_ms
+			and _touch_press_at.distance_to(touch.position) <= _gesture_threshold_px())
+	_touch_press_msec = now
+	_touch_press_at = touch.position
+	if not paired: return false
+	_tapped_this_gesture = _pair_taps(_tapped_card_at(touch.position))
+	return _tapped_this_gesture
+
+# Two accept presses inside the tap window are a tap, which is how a keyboard or pad reaches one
+# without the bound action. The OPENING press is the one whose committed depth a refusal reads.
+func _accept_press_pairs() -> bool:
+	var now := Time.get_ticks_msec()
+	var paired := now - _accept_press_msec <= PlayArea.settings().card_tap_window_ms
+	_accept_press_msec = now
+	if not paired: _depth_when_pressed = _committed_depth()
+	return paired
 
 # THE DRAG DECIDES WHICH CARD IS MOVING, so one that starts on a card the player is not already
 # holding takes that card up, and lets go of whatever was armed.
@@ -1476,6 +1539,9 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
 	var dragged := _press_data
 	_press_data = null
+	if _tapped_this_gesture:
+		_tapped_this_gesture = false
+		return true
 	if _press_origin.distance_to(button.position) <= _gesture_threshold_px(): return false
 	if dragged: _release_places(button.position)
 	return true
@@ -1526,7 +1592,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _consume_as_view_action(event):
 		get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("card_tap"):
+		flush_rebuild()
+		if _board_control_has_focus():
+			card_tapped.emit(ui_data[focused_control])
+			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept"):
 		# IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds
 		# focus — an arrow selection must be committable on its own. With a board control focused
 		# the pass below already does it through `_consume_as_focus_click`, and the two agree
@@ -1541,7 +1612,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		# our last-known card control; it can go stale when focus moves to other UI, and it
 		# must stay inert while the game-over overlay has the board focus-locked).
 		if _board_control_has_focus():
-			if not _consume_as_focus_click(focused_control):
+			if _accept_press_pairs():
+				_pair_taps(ui_data[focused_control])
+			elif not _consume_as_focus_click(focused_control):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
@@ -1563,6 +1636,9 @@ func _input(event: InputEvent) -> void:
 	if _consume_as_swipe(event):
 		get_viewport().set_input_as_handled()
 		return
+	if _consume_as_touch_tap(event):
+		get_viewport().set_input_as_handled()
+		return
 	var motion := event as InputEventMouseMotion
 	if motion:
 		_take_up_the_dragged_card(motion.position)
@@ -1575,7 +1651,7 @@ func _input(event: InputEvent) -> void:
 			ungrab_cards()
 			return
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			_arm_card_gesture(mouse_event.position)
+			if not _press_closes_a_pair(mouse_event): _arm_card_gesture(mouse_event.position)
 			return
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
