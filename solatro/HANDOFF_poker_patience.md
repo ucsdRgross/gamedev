@@ -1116,8 +1116,6 @@ tag. The next occurrence will leave evidence.
   and should stay: they cover `add_line_score`'s LEGACY branch, which is still reachable (no shipped
   mod takes it since `PropBankColScore` was fixed). Do not sweep them up with the act payout.
 
-
-
 - ⚠⚠ **THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 5 failures.**
   `use_own_settings()` and `restore_real_settings()` REASSIGN the global `SettingsManager.settings`;
   `backup_real_settings()` alone does not. Three suites swap it — `SETTINGS RANGE` (chained),
