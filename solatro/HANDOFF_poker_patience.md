@@ -821,7 +821,8 @@ ZERO references to `live_total`, `board_total`, `grid_score`, `scores_row`, `sco
 **So a regression sending every grid section to the legacy bucket leaves the entire LINE DETECT suite
 green while the player's score goes to zero.** That is not hypothetical — it is exactly the defect
 found four times on this branch: the two prop mods, `CardEffectApi.line_section_at`, and
-`PropBankColScore` (still live). The suite that owns line scoring is blind to it.
+`PropBankColScore` (fixed on `board-plan`: it banks through `ScoringSection.of_line_for` like its
+siblings). The suite that owns line scoring is blind to it.
 ⚠ The justifying comments at `test_line_detect.gd:548-551` and `:915-916` — *"which bucket a section
 banks into is a later step"*, *"a grid line's bucket does not exist yet"* — are STALE. The buckets
 exist and are what the game reads.
@@ -1112,28 +1113,9 @@ tag. The next occurrence will leave evidence.
   act payout gone for good, or parked? `PLAN.md` §1.6 retired it in favour of the derived
   `live_total()`, which argues for deletion — but that is a ruling to confirm, not to assume.
   ⚠ **THE THREE `check()`s ON `row_total` / `col_total` IN `test_game_headless.gd` ARE DIFFERENT**
-  and should stay: they cover `add_line_score`'s LEGACY branch, which is still reachable and still
-  has a live defect in it (`PropBankColScore`, above). Do not sweep them up with the act payout.
+  and should stay: they cover `add_line_score`'s LEGACY branch, which is still reachable (no shipped
+  mod takes it since `PropBankColScore` was fixed). Do not sweep them up with the act payout.
 
-
-- ⚠⚠ **`PropBankColScore` LOSES EVERY FIREWORK COLUMN SCORE — LIVE, IN SHIPPED CONTENT, NOT LATENT.**
-  `Cards/Props/Mods/prop_bank_col_score.gd:16-19` hand-builds a bare `ScoringSection.new()` and never
-  sets `grid`, so it is **always** `-1` and `Game.add_line_score` **always** takes the legacy branch
-  into `state.scores_col_legacy` / `state.col_total` — neither of which `GameData.live_total()`
-  reads. `register_combo` runs first, so the multiplier moves and the points do not.
-  **`PipSuitFirework` is shipped** (`CARD_CATALOG.csv` "Added", granted by deck12), and
-  `Game._run_score_effects` runs its spawner over any scored meld, so this fires in a real show.
-  ⚠ **NOT FIXED HERE, AND THE REASON IS A REAL EDGE CASE, NOT SHYNESS.** The fix is to build the
-  section from a coordinate — `ScoringSection.of_line_for(g.state, <coord>, COL)` — but the obvious
-  coordinate does not always exist: `on_finish` fires from `Levels/game.gd:1224` when
-  `p.route.is_empty()`, and a firework that starts with an EMPTY rise route never entered a slot, so
-  `p.at` is still `BoardCoord.NOWHERE`. That is not a corner case — it is the exact scenario
-  `Tests/Engine/test_suit_props.gd::test_firework_banks_column` covers. **Deciding what an
-  empty-route firework banks into (almost certainly `prop.source`'s grid position) is the work.**
-  ⚠ `test_firework_banks_column` asserts `g.state.col_total == 3` and therefore **passes because the
-  defect exists** — the same calibration that hid the Juggling bug. Re-point it at
-  `line_score(scores_col, ...)` as part of the fix, or it will keep certifying the loss.
-  Found by the second close, from the assert that fix 2 added; outside the range that close reviewed.
 
 
 - ⚠⚠ **THE SETTINGS-ISOLATION ARCHITECTURE PROBLEM — owns 2 of the 5 failures.**

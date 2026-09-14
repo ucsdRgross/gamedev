@@ -227,16 +227,6 @@ over `state.grids`, reading ONLY `scores_row`, `scores_col`, `scores_cell` and `
 **Anything reaching `scores_row_upper`, `scores_row_lower`, `scores_col_legacy`, `row_total`,
 `col_total` or `mult_score` is lost.** Grep those six names before adding any scoring path.
 
-- ⬜ **`PropBankColScore` loses EVERY Firework column score.** `Cards/Props/Mods/prop_bank_col_score.gd:16-19`
-  hand-builds a bare `ScoringSection.new()` and never sets `grid`, so it is always `-1` and
-  `add_line_score` always takes the legacy branch. `PipSuitFirework` is shipped (deck12), so this
-  fires in a real show; `register_combo` runs first, so the multiplier moves and the points do not.
-  ⚠ **The fix is not a one-liner:** build the section from a coordinate, but `on_finish` fires when
-  `p.route.is_empty()` and a firework that starts with an EMPTY rise route never entered a slot, so
-  `p.at` is still `NOWHERE` — which is exactly the case `test_firework_banks_column` covers. Decide
-  what an empty-route firework banks into (probably `prop.source`'s grid position).
-  ⚠ That test asserts `col_total == 3`, so it **passes because the defect exists** — re-point it at
-  `line_score(scores_col, ...)` as part of the fix or it will keep certifying the loss.
 - ⬜ **No effect activation feeds the combo on a placement** — the grid game's only scoring action —
   contradicting `DESIGN.md` D11 (`Q323`=b). `game.gd:231` gates `register_combo` on
   `_act_cancellable`, written only inside `_perform_next`. See `gaps/GAP-043.md`: the design is
