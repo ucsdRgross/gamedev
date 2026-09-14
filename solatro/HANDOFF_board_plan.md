@@ -2,13 +2,14 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 52 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
-partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
-carries its `resolution:` block and the reading taken). The rulings create six execution steps,
-S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
-implementer, one full gate, one commit), and S17 (the close, a NEW session) comes after S23. Tree
-clean. Implementer sessions die to the Opus session limit every few hours; every cut-off so far
-was resumed with SendMessage from the same transcript, never restarted.
+**State:** 54 commits on `board-plan` (HEAD is this handoff commit). EVERY execution step is landed and
+verified: S1-S16, the four review-fix rounds (A-I), and the six steps the owner's gap rulings opened
+(S18-S23), one implementer, one full gate and one commit each; all six gaps are resolved with their
+`resolution:` blocks and PLAN 1.10-bis carries the rulings verbatim. Tree clean. Last gate: ALL 48
+SUITES: 4388 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
+before S1. OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort
+(Next up carries the prompt). Implementer sessions die to the Opus session limit every few hours;
+every cut-off so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -260,9 +261,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>; render plan_match_shot and a movement probe'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
-  notes: 'Owner: "you can implement that if its easy" - scoped as one alert kind plus one ramp resource; if it is not, report and park.'
+  status: done
+  evidence: 'Implementer red: blend replaced by a sample -> OUTLINE 38 passed, 2 FAILED of 40 (midpoints not the blend; a midpoint equals the resting ink); the wiring removed from _alert_of -> PLAN VISUALS 130/1 of 131 (exactly the activated elements run the shimmer: drew 0 of 3); green 40/40 and 131/131 at equal counts. Overseer full run: ALL 48 SUITES: 4388 CHECKS PASSED, errors log empty, SECTION 8 identical; banners vs S19 differ only in fuzz drift, banner order, PALETTE 36 -> 39, OUTLINE 37 -> 40, PLAN VISUALS 128 -> 131. Movement (plan_match_shot print): the rank-pip rim pixel over one 2.00 s loop shows 8 distinct colours (#f6c720 .. #58dadf .. #f7c510, out and back to gold), the control pixel on an unmatched mark 1 colour; 79 pixels of the pip box moved over a quarter loop, 0 of the control box. By eye (overseer, compare_s23.png at 5x): phase 0 gold rims on the landed 8-of-Hoops rank and suit pips, half a loop later the same two pips cyan, art, frame and neighbouring marks identical. Headless editor open clean.'
+  notes: 'CardOutline.Alert.SHIMMER, built by CardAlert.shimmer(), applied per element in CardVisual._alert_of to the elements wearing match_rim_active and nothing else; blends between consecutive entries of Assets/Palette/ramp_match.tres (6, 31, 3, 15, 12, 9; gold first so phase 0 IS the flat activated ink) - the one BLENDED ramp, owner-ruled, stated at the shader; OutlineStyle.shimmer_period_fraction 2.0 of get_delay(). One new uniform (the ramp strip); phase reuses u_alert_clock. fx_cost not measured: the branch is uniform-gated and reached only by activated-rim fragments.'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
@@ -416,8 +417,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S23.
-Then S17: open a NEW session at or above Opus 5 default effort and paste:
+S18-S23 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
     (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
