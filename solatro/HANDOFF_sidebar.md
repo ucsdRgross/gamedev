@@ -6,8 +6,9 @@ widened to every phase; do not stop at S18).
 **State:** Phases 1–5 done (S1–S18 committed; S18 at 8cfb5eee). The Phase 5 boundary review
 (Fable 5.1, over `17e9cc1c..8cfb5eee`) found 5 confirmed + 4 suspected — see "Phase 5 review":
 three confirmed are ruling contradictions filed as GAP-006/007/008 (owner calls, non-blocking);
-fixes 1–3 landed (1925fd9b, dcc81b8d, fix 3 after it); **next: the reproduce dispatch for the
-suspected 6/7/8**, then the bounded re-review of the fix commits, then Phase 6 (S19–S21), Phase 7
+fixes 1–4 landed (1925fd9b, dcc81b8d, 22aa4207, fix 4 after the handoff commit 582e1883);
+suspected 6 and 8 did not reproduce (rows pin them); **next: the bounded re-review of the fix
+commits**, then Phase 6 (S19–S21), Phase 7
 (S22), Phase 8 (S23), the closing phase S24 — all in this run (owner ruling). Briefs S19–S23 are
 written in `solatro/design/sidebar/briefs/`. GAP-004 is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
@@ -246,13 +247,18 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
    an empty hand (try_place stack=0 in the EventLog) — fixed, `PlayArea._end_the_gesture()` is the
    one clearing site, both cancel paths call it, dcc81b8d. The Escape twin was already green (the
    wall's transition lock swallows the release); it ships as a guard.
-6. SUSPECTED the two horizontal lines in `armed_focus_elsewhere.png` are the board's
-   `ScrollContainer` focus stylebox (FOCUS_ALL by construction; an Entrance-row arrow key runs the
-   engine's neighbour search and lands there) — a pad player's first Up leaves the card controls.
-7. SUSPECTED a mouse double-click on a cell can place TWO cards when a motion event refreshes the
-   hover inside the pair (the refused pair's second release falls through to `_on_gui_input`).
-8. SUSPECTED motion over the HudContainer (MOUSE_FILTER_STOP) never reaches the picture, so a
-   following card stops at the sidebar edge (Q270=a says it keeps going; pre-existing, untested).
+6. SUSPECTED → NOT REPRODUCED as stated: after Up the focus owner is a board card control and the
+   sidebar describes it (`_board_control_has_focus()` holds; pinned by a TestSidebar row). The two
+   lines ARE the SmoothScrollContainer's focus stylebox, drawn because a DESCENDANT holds focus
+   (`draw_focus_border`; measured: off → lines gone; they also show in description.png, never in
+   game_hud.png). Cosmetic, unfixed — OWNER CALL: `draw_focus_border = false` on the board's
+   scroll container is the one-line fix if the lines are unwanted.
+7. SUSPECTED → REPRODUCED: the refused pair's closing release emitted `data_selected` (a second
+   placement) — fixed, a closed pair (tapped or refused) eats its own closing release, fix 4.
+8. SUSPECTED → NOT REPRODUCED: root-viewport motion pushed inside the container's rect still
+   reached `PlayArea._on_pointer_moved` (pinned by a TestSidebar row: a following card keeps
+   following over the sidebar, Q270=a). The engine claim behind it was not verified against docs
+   this session; the measurement contradicts it.
 9. SUSPECTED → reproduced: a click during processing left `_next_grab_follows` set and the card
    that armed at the cascade's end followed from birth (at the cursor, lift −0.2 vs 18.8) — fixed,
    `stop_following()` clears the pending flag and the dropped-selection path calls it, fix 3.
@@ -385,14 +391,8 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. **Phase 5 suspected findings 6/7/8** — one `plan-implementer` dispatch that REPRODUCES each
-   (a test that goes red on HEAD, or an honest "did not reproduce" with what was tried) and
-   fixes only what reproduced, one fix per commit with a full run between (finding 6: print
-   `gui_get_focus_owner()` after the key in the snapshot's `_move_the_focus_off_the_armed_card`;
-   finding 7: a motion event inside the pair; finding 8: a following card with the pointer pushed
-   over the container).
-2. **Bounded re-review** of the fix commits (`8cfb5eee..HEAD`, `adversarial-review`, model fable,
-   read-only) — the Phase 3 pattern; fix confirmed findings the same way.
+1. **Bounded re-review** of the Phase 5 fix commits (`8cfb5eee..HEAD`, `adversarial-review`,
+   model fable, read-only) — the Phase 3 pattern; fix confirmed findings the same way.
 3. S19–S21 (Phase 6), S22 (Phase 7), S23 (Phase 8) — briefs `briefs/S19.md`–`S23.md` are
    written (rulings verbatim, overseer-defined rows where TEST_PLAN has only by-eye rows: charts
    I and K). Dispatch each FOREGROUND with its brief path; verify (done-when greps, doc_check on
