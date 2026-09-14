@@ -191,6 +191,7 @@ is in `all_tests.tscn`.
 | **TP-88** | `reroll_line(section)` re-deals every cell of one row, column or diagonal, covered included, from the fewest-copies pool; `reroll_grid(grid)` every cell of one grid; each leaves `validate()` clean and bumps `revision` once | a covered row; a 25-cell grid | GAP-003 | S20 |
 | **TP-89** | Holding the X face button (a synthesized `InputEventJoypadButton`, index 2) opens the layer view and releasing closes it, through the viewport | the TP-68 fixture | GAP-005 | S21 |
 | **TP-90** | `goal_alpha` is 0 and `goal_g0` is the beatable flat value; the goals-grow-with-boosters check reads a flat curve as non-decreasing | `RunManager.goal_for` | GAP-006 | S22 |
+| **TP-92** ⚑gate | The opening reveal is a CASCADE: the N cells start `get_delay() × plan_reveal_multiplier / N` apart, the whole deal completes within `get_delay() × plan_reveal_multiplier` plus one spin, and a later cell starts while the previous cell's spin is still in flight; TP-74's probe re-measured | the S11 probe, `plan_reveal_multiplier` 1.0 | playtest ruling (PLAN §1.10-bis) | S24 |
 | **TP-91** 👁 | The activated rim shimmers: over one loop the rim colour of a landed card's matching elements MOVES through the ramp, blended, measured over time, not a still | `plan_match_shot` landed.png plus a movement probe | GAP-004 | S23 |
 
 ## Deliberately NOT tested, and why

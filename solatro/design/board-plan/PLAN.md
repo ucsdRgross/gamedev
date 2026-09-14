@@ -305,6 +305,7 @@ mark (`DESIGN.md` §1c, §1m). Use the palette and the outline shader's three ov
 | GAP-004 | *"a, gold for now but would realistically be a shader that causes color to slowly interpolate between different colors over time like a rainbow shimmer effect"*, *"i prefer blending for shimmer effect, samples would look too distracting with jumps."* — 31 / 6 stand; the activated rim shimmers, BLENDED (an exception to §4i's sample rule). |
 | GAP-005 | *"expecting an on screen button that shows the mark view so touchscreen and mouse can interact with it as well, with controller types using one of the 4 main buttons of x y a b"* — the Marks button stands; X held peeks. |
 | GAP-006 | *"a or d, we arent far to decide what actual curve should be so a placeholder is fine"* — (a): flat alpha, `goal_g0` refit, a placeholder; GAP-041 stays open. |
+| Playtest (the reveal) | *"the initial mark spawning in is way too slow, make it based off of total duration. have total duration be based off of base delay, which i believe is 1 second right now, so whole spawning in is 1 second times a tunable multiplier. make it so it doesnt have to be purely in sequence when marks come in such that marks can spawn in while animation for previous marks have not ended, right now it waits for previous one to come in. this way it looks more like a cascade."* — the whole opening deal takes `get_delay() × plan_reveal_multiplier`; cells START that far apart and their spins overlap; `plan_reveal_fraction` retired. Step S24. |
 
 ### 1.11 Naming
 
@@ -333,7 +334,7 @@ All in `Scripts/player_settings.gd`, `@export_group("Balance — board plan")`, 
 | `plan_ace_value` | `10` | the Ace's value as a rank bonus |
 | `plan_talent_mult` | `1.0` | a talent match's contribution to `M` (⚠ 1 is neutral — see §1.5) |
 | `plan_hat_mult` | `1.0` | a hat match's contribution to `M` |
-| `plan_reveal_fraction` | `0.5` | one cell's share of the opening deal, as a fraction of `get_delay()` |
+| `plan_reveal_multiplier` | `1.0` | the WHOLE opening deal's duration as a multiple of `get_delay()`; cells start `total / cells` apart and their spins overlap (playtest ruling, S24) |
 
 ⚠ **Derived, never registered:** how many marks a board carries (`grid_width × grid_height` per
 grid), and how many per stock (`cells / stocks`). A stored count is a second representation of the

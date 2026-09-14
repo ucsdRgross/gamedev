@@ -117,7 +117,7 @@ StringName at a call site** — a typo silently disables the mechanic.
 `Scripts/player_settings.gd`, `@export_group("Balance — board plan")`:
 
 `plan_rank_match_step` · `plan_rank_flat_fallback` · `plan_ace_value` · `plan_talent_mult` ·
-`plan_hat_mult` · `plan_reveal_fraction`
+`plan_hat_mult` · `plan_reveal_multiplier` (replaces `plan_reveal_fraction` on the playtest ruling, S24)
 
 ## CardEffectApi additions
 
