@@ -67,6 +67,12 @@ static func deal(state: GameData, rng: RandomNumberGenerator) -> void
 static func write_mark(type_card: CardData, source: CardData, granted: bool) -> void
 static func clear_mark(type_card: CardData) -> void
 static func is_marked(type_card: CardData) -> bool      # THE predicate; validate() and is_spotlit() both call it
+static func redraw(state: GameData, cells: Array[CardData], rng: RandomNumberGenerator) -> bool   # one batch re-dealt AS ONE DEAL: the offer is read before any cell is cleared, the batch's own faces excluded; a reroll of one cell is a batch of one. Registered at the close
+static func stocks_of(state: GameData) -> Array[Array]
+
+# Scripts/board.gd - registered at the close
+static func deal_marks(state: GameData) -> void                       # every unmarked cell, from the stored seed; called by add_grid
+static func redraw_marks(state: GameData, cells: Array[CardData]) -> bool   # the batch above with the stored seed; the one path all three rerolls share
 
 # Scripts/mark_match.gd
 enum Property { RANK = 1, SUIT = 2, TALENT = 4, HAT = 8 }
@@ -80,6 +86,15 @@ static func mult_bonus(card: CardData, matched: int) -> float    # the talent + 
 # Scripts/game_data.gd
 @export_storage var plan_seed : int = 0
 var plan_reveal_order : Array[BoardCoord]   # TRANSIENT, never @export_storage: the cells in the order deal() walked them, for the opening reveal only. Added during execution - see ASSUMPTIONS.md
+func cell_type_at(coord: BoardCoord) -> CardData   # the cell's own zone card, marked or bare; null off the board. Registered at the close
+
+# Scripts/pip_comparator.gd - registered at the close
+static func printed_card_same(a: CardData, b: CardData) -> bool   # whole-card printed identity: the deal's "unused" set and I6 ask the same question
+static func modifier_script(mod: CardModifier) -> Script
+
+# Scripts/line_geometry.gd / scoring_section.gd - registered at the close
+static func col_cells(grid: GridData, x: int, h: int) -> Line     # public beside row_cells
+var line_cells : Array[Vector3i]                                  # ScoringSection: every cell the line runs through; read by reroll_line
 ```
 
 ## Hooks
@@ -153,6 +168,18 @@ already taken. The HUD control is what a pad reaches today.
 var matched_properties : int          # which of this card's elements wear the match rim, a Property mask
 var match_rim_index : int             # the palette entry those elements' rims take
 func set_match_rim(properties : int, palette_index : int) -> void   # the two are set together
+var mark_drawn : bool                 # false while the opening deal has not reached this cell. Registered at the close
+static var _shimmer_clock : float     # ONE phase for every shimmer on the board (playtest ruling, S26)
+func anim_spin(delay: float) -> float # paced by its caller
+
+# Cards/card_alert.gd, card_outline.gd, outline_style.gd - the activated rim's shimmer (GAP-004), registered at the close
+static func shimmer() -> CardAlert
+enum Alert { NONE, GLARE, THROB, SHIMMER }
+@export var shimmer_period_fraction : float    # OutlineStyle
+@export var shimmer_ramp : PaletteRamp         # OutlineStyle; `PaletteDB.RAMP_MATCH`
+
+# Cards/Types/type_grid_cell.gd - registered at the close
+func outline_style() -> OutlineStyle   # a mark's look: the shipped style with width 0
 
 # UI/play_area.gd
 func _refresh_mark_matches(game_state: GameData) -> void   # the one derivation, on every refresh
