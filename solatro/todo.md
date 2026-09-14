@@ -331,6 +331,9 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 - ⬜ **Props read the pre-grid axes** (owner, from playtest): fire and juggle spawn against the old
   column-as-stack shape and do nothing; the grid column is the new axis and the old column is now
   height. VFX.md §7 item 15 carries it.
+- ⬜ **A prop's back and front halves split around the wrong cards** (owner, from playtest): the
+  hoop's halves sort against other rows and the same row instead of hugging their own card as one
+  unit. VFX.md §7 item 16 carries it.
 
 - Description-panel scroll-lock, knife row behavior, hoop visibility, ballistic poof,
   undo-across-a-placement feel, held-loop spin, formation system + editor end-to-end (no formation

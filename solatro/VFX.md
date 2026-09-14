@@ -586,6 +586,20 @@ Nothing here is secretly broken — each is understood, and each is either accep
    ARCHITECTURE_REVIEW §4c and `UI/prop_layer.gd`'s placement against `BoardCoord` (grid, x, y,
    height); the suit rule (§4) already fires them per grid cell, so only the geometry is stale.
 
+16. **⬜ OPEN — a prop's two halves are layered against the wrong cards.** Owner, from playtest:
+   *"hoop has back half and front half. i noticed that back half was going behind cards not in same
+   row while front half was going in front of cards in same row, which looks wrong since it looks
+   like card is slicing through the hoop and the two halves become obvious ... ideally a card is
+   surrounded visually by the hoop, and those two halves are organized visually with the card as
+   one single object, so that hoop halves never get split as if they are on a layer within that
+   single layer component."* The draw order still sorts the prop halves by the pre-grid row/stack
+   shape, so since the grid added its row axis and cards stack UPWARD the back half sinks behind
+   cards in other rows while the front half rises over cards in the same row. The rule wanted: a
+   card and the halves of the props around it are ONE visual unit in the draw order — back half,
+   card, front half adjacent, never interleaved with another card. Seam to read first:
+   `LAYERING.md` (the draw-order contract) and `UI/prop_layer.gd`'s z-ordering against
+   `BoardCoord` (grid, x, y, height); it is the same stale geometry as item 15.
+
 ## 8. When you stop
 
 1. Full suite green, WINDOWED, with the suite count checked (§3).
