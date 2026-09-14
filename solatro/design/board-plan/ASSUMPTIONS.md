@@ -364,3 +364,11 @@ gap under `gaps/`.
   BEATABLE (`fit_power_beatable` scanned with alpha pinned to 0) and that line is the number:
   `FLAT: goal(N) = 18720.0 (alpha pinned to 0) tightness 0.47 of the ladder`, node 12's 25th
   percentile at 800 trials. The sim's `SHIPPED_G0` / `SHIPPED_ALPHA` mirrors moved with it.
+- S20 / GAP-003: `reroll_line` and `reroll_grid` collect their cells and hand them to
+  `CardEffectApi._redraw_marks`, the ONE write path all three rerolls share -- `Board.redraw_mark`
+  per cell, so the pool rule has no second copy, and ONE `revision` bump after the batch rather than
+  one per cell.
+- S20 / GAP-003: a diagonal is the one line shape that does not reduce to an index and a height, so
+  `ScoringSection` carries `line_cells`, the cells the line runs through, written by both grid
+  constructors (the column walk is public as `LineGeometry.col_cells` for it). `_collect_grid_line` collects
+  over that same list through `_cards_on_cells`, so the walk is not written twice.

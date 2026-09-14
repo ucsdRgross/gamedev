@@ -53,6 +53,10 @@ func _ready() -> void:
 	test_grant_marks_a_card_the_deck_never_had()
 	test_swap_exchanges_two_marks_whole()
 	await test_a_reroll_under_a_placed_card_is_live()
+	behavior_section("A WHOLE LINE AND A WHOLE GRID REROLLED AT ONCE")
+	await test_a_covered_row_rerolls_every_cell()
+	test_a_diagonal_rerolls_every_cell()
+	test_one_grid_rerolls_and_the_other_stands()
 	behavior_section("A PLAN SURVIVES A SAVE, AND A PLAN-LESS SAVE STILL PLAYS")
 	test_a_dealt_plan_survives_a_round_trip()
 	await test_a_plan_less_save_resumes_and_plays()
@@ -356,12 +360,23 @@ func mark_print(type_card: CardData) -> String:
 			type_card.suit.get_str() if type_card.suit else "",
 			skill.get_str() if skill else "", stamp.get_str() if stamp else ""]
 
+## One grid's marks, cell by cell in row-major order.
+func grid_prints(state: GameData, index: int) -> Array[String]:
+	var out : Array[String] = []
+	for type_card : CardData in state.grids[index].cell_types:
+		out.append(mark_print(type_card))
+	return out
+
 ## One grid's plan as a comparable string, cell by cell in row-major order.
 func grid_signature(state: GameData, index: int) -> String:
-	var parts : Array[String] = []
-	for type_card : CardData in state.grids[index].cell_types:
-		parts.append(mark_print(type_card))
-	return " ".join(parts)
+	return " ".join(grid_prints(state, index))
+
+## Which cells print something else than they did, by their index within the grid.
+func changed_cells(before: Array[String], after: Array[String]) -> Array[int]:
+	var out : Array[int] = []
+	for i : int in before.size():
+		if before[i] != after[i]: out.append(i)
+	return out
 
 ## The whole board's plan as one comparable string.
 func plan_signature(state: GameData) -> String:
@@ -776,7 +791,11 @@ func test_a_card_minted_after_the_deal_gets_no_mark() -> void:
 
 ## A dealt 5x5 board behind a live game -- what the effect api's mark surface is asked through.
 func planned_game(plan_seed: int) -> Game:
-	var state := make_state()
+	return planned_grids(1, plan_seed)
+
+## The same live game over `grid_count` dealt grids.
+func planned_grids(grid_count: int, plan_seed: int) -> Game:
+	var state := plan_state(TestDecks.plan_deck(), grid_count)
 	deal_onto(state, plan_seed)
 	var g := Game.new()
 	g.state = state
@@ -980,6 +999,125 @@ func test_a_reroll_under_a_placed_card_is_live() -> void:
 	check(g.state.validate().is_empty(),
 			"TP-52: rerolling under a placed card leaves the board consistent",
 			", ".join(g.state.validate()))
+	free_show(g)
+
+## Where each cell of `section` sits within its grid, in the order the line runs.
+func line_indices(state: GameData, section: ScoringSection) -> Array[int]:
+	var grid : GridData = state.grids[section.grid]
+	var out : Array[int] = []
+	for cell : Vector3i in section.line_cells:
+		out.append(grid.cell_index(cell.x, cell.y))
+	return out
+
+## A card standing on every cell of grid 0's row `y`, each one granted onto the cell it covers.
+func cover_row(g: Game, y: int) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for x : int in g.state.grids[0].grid_width:
+		var coord := BoardCoord.new(0, x, y, 0)
+		var standing := outsider_card()
+		g.effect_api.grant_mark(coord, standing)
+		Board.place_in_cell(g.state, standing, coord)
+		out.append(standing)
+	return out
+
+## A card in play printing a rank the plan deck never had, so a redraw cannot hand it back.
+func outsider_card() -> CardData:
+	var card := CardData.new().with_type(TypePaper.new()) \
+			.with_rank(PipRankNumeral.new().with_value(9)) \
+			.with_suit(PipSuitHoop.new())
+	card.stage = CardData.Stage.PLAY
+	return card
+
+## The flat corner-to-corner diagonal of `grid`, picked out of every line through its first cell.
+func flat_diagonal(grid: GridData) -> LineGeometry.Line:
+	var last := Vector3i(grid.grid_width - 1, grid.grid_height - 1, 0)
+	for line : LineGeometry.Line in LineGeometry.lines_through(grid, 0, 0, 0):
+		if line.kind == ScoringSection.LineKind.DIAG and line.cells.back() == last: return line
+	return null
+
+#TP-88: a line reroll is the one-cell redraw run over every cell of a row -- the covered ones too,
+#because the mark under a card is part of the line -- and one board change, so it bumps once.
+func test_a_covered_row_rerolls_every_cell() -> void:
+	var g := planned_game(914)
+	var standing := cover_row(g, 0)
+	var section := g.effect_api.line_section_at(BoardCoord.new(0, 0, 0, 0),
+			ScoringSection.LineKind.ROW)
+	var covered := BoardCoord.new(0, 2, 0, 0)
+	var matched : int = await MarkMatch.matches_at(g.state, standing[2], covered)
+	check(section.cards.size() == 5 and section.line_cells.size() == 5
+			and matched == (MarkMatch.Property.RANK | MarkMatch.Property.SUIT),
+			"TP-88: precondition: five cards stand on the five cells of the row, each matching",
+			"%d cards over %d cells, the third matched %d"
+			% [section.cards.size(), section.line_cells.size(), matched])
+	var offer := redraw_offer(g.state, g.effect_api.mark_at(BoardCoord.new(0, 0, 0, 0)))
+	var before := grid_prints(g.state, 0)
+	var revision := g.state.revision
+	g.effect_api.reroll_line(section)
+	check(changed_cells(before, grid_prints(g.state, 0)) == line_indices(g.state, section),
+			"TP-88: every cell of the covered row prints a new identity and no other cell moved",
+			"changed %s, the row is %s, %d identities were on offer at the first cell"
+			% [str(changed_cells(before, grid_prints(g.state, 0))),
+			str(line_indices(g.state, section)), offer.size()])
+	check(g.state.revision == revision + 1,
+			"TP-88: five cells redrawn are one board change and one bump",
+			"revision %d -> %d" % [revision, g.state.revision])
+	var moved : Array[int] = []
+	for x : int in standing.size():
+		if g.state.card_at(BoardCoord.new(0, x, 0, 0)) != standing[x]: moved.append(x)
+	check(moved.is_empty(), "TP-88: the cards standing on the row are where they were",
+			"cells %s hold another card" % str(moved))
+	check(g.state.validate().is_empty(), "TP-88: the rerolled line breaks no invariant",
+			", ".join(g.state.validate()))
+	var mark := g.effect_api.mark_at(covered)
+	var expected : int = MarkMatch.Property.SUIT if is_same(mark.suit.get_script(), PipSuitHoop) \
+			else 0
+	var after : int = await MarkMatch.matches_at(g.state, standing[2], covered)
+	check(after == expected and after != matched,
+			"TP-88: the card standing on a rerolled cell reads the NEW mark on the next ask",
+			"standing on %s: matched %d, the new mark allows %d"
+			% [mark_print(mark), after, expected])
+	free_show(g)
+
+#TP-88: a line is a row, a column or a diagonal, and the diagonal is the one shape that does not
+#reduce to an index -- the section carries its own cells, so the same reroll walks it unchanged.
+func test_a_diagonal_rerolls_every_cell() -> void:
+	var g := planned_game(915)
+	var section := g.effect_api.section_of_line(0, flat_diagonal(g.state.grids[0]))
+	var before := grid_prints(g.state, 0)
+	var revision := g.state.revision
+	g.effect_api.reroll_line(section)
+	check(changed_cells(before, grid_prints(g.state, 0)) == line_indices(g.state, section),
+			"TP-88: every cell of the diagonal prints a new identity and no other cell moved",
+			"changed %s, the diagonal is %s"
+			% [str(changed_cells(before, grid_prints(g.state, 0))),
+			str(line_indices(g.state, section))])
+	check(g.state.revision == revision + 1, "TP-88: a rerolled diagonal bumps once",
+			"revision %d -> %d" % [revision, g.state.revision])
+	check(g.state.validate().is_empty(), "TP-88: the rerolled diagonal breaks no invariant",
+			", ".join(g.state.validate()))
+	free_show(g)
+
+#TP-88: a grid reroll re-deals that grid and nothing else -- every cell of it redrawn, the board's
+#other grid untouched, and still one bump.
+func test_one_grid_rerolls_and_the_other_stands() -> void:
+	var g := planned_grids(2, 916)
+	var before_first := grid_prints(g.state, 0)
+	var before_second := grid_prints(g.state, 1)
+	var revision := g.state.revision
+	g.effect_api.reroll_grid(0)
+	var redrawn := changed_cells(before_first, grid_prints(g.state, 0))
+	check(redrawn.size() == before_first.size(),
+			"TP-88: every cell of the rerolled grid prints a new identity",
+			"%d of %d cells changed" % [redrawn.size(), before_first.size()])
+	check(changed_cells(before_second, grid_prints(g.state, 1)).is_empty(),
+			"TP-88: the other grid kept every mark it was dealt",
+			str(changed_cells(before_second, grid_prints(g.state, 1))))
+	check(g.state.revision == revision + 1,
+			"TP-88: a whole grid redrawn is one board change and one bump",
+			"revision %d -> %d" % [revision, g.state.revision])
+	check(marks_of(g.state).size() == 50 and g.state.validate().is_empty(),
+			"TP-88: both grids come back fully marked and break no invariant",
+			"%d marks; %s" % [marks_of(g.state).size(), ", ".join(g.state.validate())])
 	free_show(g)
 
 #TP-17: the deal result IS what persists, so every copy path has to carry the marks -- including

@@ -31,7 +31,7 @@ static func lines_through(grid: GridData, x: int, y: int, h: int) -> Array:
 	if x < 0 or x >= grid.grid_width or y < 0 or y >= grid.grid_height or h < 0:
 		return out
 	out.append(row_cells(grid, y, h))
-	out.append(_col(grid, x, h))
+	out.append(col_cells(grid, x, h))
 	out.append(_height_v(x, y, h))
 	out.append_array(_diagonals(grid, x, y, h))
 	return out
@@ -45,8 +45,8 @@ static func row_cells(grid: GridData, y: int, h: int) -> Line:
 		cells.append(Vector3i(xi, y, h))
 	return Line.new(ScoringSection.LineKind.ROW, cells)
 
-## Every cell of column `x` at height `h`, full grid height.
-static func _col(grid: GridData, x: int, h: int) -> Line:
+## Every cell of column `x` at height `h`, full grid height. Public beside `row_cells`.
+static func col_cells(grid: GridData, x: int, h: int) -> Line:
 	var cells : Array[Vector3i] = []
 	for yi in grid.grid_height:
 		cells.append(Vector3i(x, yi, h))

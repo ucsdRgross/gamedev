@@ -677,11 +677,13 @@ that by re-checking every cell of `Line.cells` against the live board.
   modifier changing a card's suit emits `data_changed` rather than bumping `revision`, so a
   revision-keyed verdict would answer stale. What a match PAYS is §3a, what it FIRES is §1.4, what
   it LIGHTS is §4j.
-- **Content writes marks through `CardEffectApi`**: `mark_at`, `reroll_mark`, `grant_mark`,
-  `swap_marks`, each bumping `revision` once after the write. ⚠ A reroll's offer EXCLUDES the face
-  it replaces and the cell is cleared only once a replacement is in hand — clear first and the
-  cleared identity is the sole fewest-copies card, so the reroll returns the same face forever.
-  "Re-deal a line" is unbuilt (`gaps/GAP-003.md`).
+- **Content writes marks through `CardEffectApi`**: `mark_at`, `reroll_mark`, `reroll_line`,
+  `reroll_grid`, `grant_mark`, `swap_marks`, each bumping `revision` once after the write. ⚠ A
+  reroll's offer EXCLUDES the face it replaces and the cell is cleared only once a replacement is in
+  hand — clear first and the cleared identity is the sole fewest-copies card, so the reroll returns
+  the same face forever. `reroll_line` re-deals every cell of one row, column or diagonal and
+  `reroll_grid` every cell of one grid, covered cells included; both run the one-cell redraw over
+  `CardEffectApi._redraw_marks`, which bumps ONCE for the whole batch.
 - **On screen** — a mark draws as a real card in full colour with NO rim, and the opening reveal
   is `PlayArea.reveal_plan`, cell by cell in the deal's own walk order
   (`GameData.plan_reveal_order`, transient and read by nothing else), paced by

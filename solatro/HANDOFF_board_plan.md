@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 50 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+**State:** 51 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
 partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
 carries its `resolution:` block and the reading taken). The rulings create six execution steps,
 S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
@@ -244,9 +244,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'Implementer red (BOARD PLAN, 124 checks all runs): the per-cell walk stopping after the first cell -> 3 FAILED (row, live match, diagonal); a bump per cell -> 3 FAILED (row 10->15, diagonal 0->5, grid 0->25); green 124/124. Overseer full run: see the commit. Offer at the first reroll of the covered row: 4 identities.'
+  notes: 'All three rerolls share CardEffectApi._redraw_marks (Board.redraw_mark per cell, one bump after the batch). ScoringSection gained line_cells (a diagonal does not reduce to index + height), written by both grid constructors; LineGeometry.col_cells public; the two card collectors share _cards_on_cells. Only test callers today, by design.'
 - id: S19
   description: GAP-002 - the two act hooks also fire at LANDING from place_card_in_grid (the parked S9 half); a mark mult is the query on_mark_line_mult summed into M during composition; add_line_mult retired; TP-86, TP-87; TP-32/TP-50 doubles moved onto the query. S9 becomes done.
   files_touched: []
@@ -416,7 +416,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S20, S19, S23.
+Work in this order, one implementer, one full gate, one commit each: S19, S23.
 Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan

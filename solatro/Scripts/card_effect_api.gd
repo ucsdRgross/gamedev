@@ -217,16 +217,13 @@ func remove_grid(index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_grid(_game.state, index)
 
-#A redraw takes the deal's pool minus the face it replaces, so the cell comes back with a different
-#one -- and nothing is written or bumped when the pool holds nothing else, so the mark stands.
 ## Redraw one cell's mark from the deck. The cell must be marked, on a board with a plan.
 func reroll_mark(coord: BoardCoord) -> void:
 	if not is_live(): return
 	var mark := mark_at(coord)
 	assert(mark != null, "reroll_mark needs a coordinate that names a cell")
-	assert(BoardPlan.is_marked(mark), "reroll_mark redraws a marked cell")
-	assert(_game.state.plan_seed != 0, "reroll_mark redraws from the plan the show was dealt")
-	if Board.redraw_mark(_game.state, mark): bump_revision()
+	var marks : Array[CardData] = [mark]
+	_redraw_marks(marks)
 
 #`source` may print a card the deck never had -- that is what a level poisoning or blessing a board
 #is -- so the mark is recorded as granted and the deck-membership invariant exempts it.
@@ -256,6 +253,34 @@ func swap_marks(a: BoardCoord, b: BoardCoord) -> void:
 	BoardPlan.write_mark(mark_a, was_b, granted_b)
 	BoardPlan.write_mark(mark_b, was_a, granted_a)
 	bump_revision()
+
+## Re-deal every cell of one row, column or diagonal, the covered cells included.
+func reroll_line(section: ScoringSection) -> void:
+	if not is_live(): return
+	var marks : Array[CardData] = []
+	for cell : Vector3i in section.line_cells:
+		var mark := mark_at(BoardCoord.new(section.grid, cell.x, cell.y, cell.z))
+		assert(mark != null, "reroll_line needs a section whose cells the board has")
+		marks.append(mark)
+	_redraw_marks(marks)
+
+## Re-deal every cell of one grid, the covered cells included.
+func reroll_grid(grid: int) -> void:
+	if not is_live(): return
+	assert(grid >= 0 and grid < _game.state.grids.size(),
+			"reroll_grid needs a grid the board has")
+	_redraw_marks(_game.state.grids[grid].cell_types)
+
+#THE write path all three rerolls share. Each cell takes the deal's pool minus the face it replaces,
+#so it comes back with a different one; nothing is written when the pool holds nothing else. ONE
+#bump after the batch -- a bump per cell rebuilds the whole board once per cell for one change.
+func _redraw_marks(marks: Array[CardData]) -> void:
+	assert(_game.state.plan_seed != 0, "a reroll redraws from the plan the show was dealt")
+	var redrawn := false
+	for mark : CardData in marks:
+		assert(BoardPlan.is_marked(mark), "a reroll redraws a marked cell")
+		if Board.redraw_mark(_game.state, mark): redrawn = true
+	if redrawn: bump_revision()
 
 ## The rules deck, left to right -- every persistent meta/creator card.
 func rules_deck() -> Array[CardData]:

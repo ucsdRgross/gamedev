@@ -31,6 +31,8 @@ var height : int = 0
 ## The cell a HEIGHT_V line stands in, within its grid. (-1, -1) for every other kind, which
 ## is not tied to a single cell.
 var cell : Vector2i = Vector2i(-1, -1)
+## Every cell the line runs through as (x, y, h) in `grid`, card or no card; empty off the grid.
+var line_cells : Array[Vector3i] = []
 ## How `refresh()` re-collects — captured at construction so `origin` stays pure provenance and a
 ## future non-line shape supplies its own re-derivation instead of being misread as a column.
 var _recollect : Callable = Callable()
@@ -76,25 +78,24 @@ static func of_line_at(state: GameData, grid: int, kind: LineKind, index: int, h
 	section.grid = grid
 	section.height = height
 	section.line_key = StringName("grid%d:%s:%d:%d" % [grid, LineKind.keys()[kind], index, height])
+	section.line_cells = _line_cells_at(state, grid, kind, index, height)
 	section._recollect = _collect_grid_line.bind(state, grid, kind, index, height)
 	section.cards = section._recollect.call()
 	return section
 
-## THE card list for a ROW or COL of `state.grids[grid]` at `height`. DIAG/HEIGHT_V collection
-## belongs to the detector card that finds those lines, not to this generic index+height shape.
+## THE card list for a ROW or COL of `state.grids[grid]` at `height`, re-derived live.
 static func _collect_grid_line(state: GameData, grid: int, kind: LineKind, index: int, height: int) -> Array[CardData]:
-	var out : Array[CardData] = []
+	return _cards_on_cells(state, grid, _line_cells_at(state, grid, kind, index, height))
+
+## The cells a ROW or COL of `state.grids[grid]` at `height` runs through, in the order it runs.
+static func _line_cells_at(state: GameData, grid: int, kind: LineKind, index: int,
+		height: int) -> Array[Vector3i]:
+	var out : Array[Vector3i] = []
 	if grid < 0 or grid >= state.grids.size(): return out
 	var g : GridData = state.grids[grid]
 	if not g: return out
-	if kind == LineKind.ROW:
-		for x in g.grid_width:
-			var c := state.card_at(BoardCoord.new(grid, x, index, height))
-			if c: out.append(c)
-	elif kind == LineKind.COL:
-		for y in g.grid_height:
-			var c := state.card_at(BoardCoord.new(grid, index, y, height))
-			if c: out.append(c)
+	if kind == LineKind.ROW: out = LineGeometry.row_cells(g, index, height).cells
+	elif kind == LineKind.COL: out = LineGeometry.col_cells(g, index, height).cells
 	return out
 
 ## The detector-card constructor: any `LineGeometry.Line` (ROW, COL, DIAG or HEIGHT_V) becomes
@@ -112,7 +113,8 @@ static func of_geometric_line(state: GameData, grid: int, line: LineGeometry.Lin
 	elif line.kind == LineKind.COL: section.index = first.x
 	elif line.kind == LineKind.HEIGHT_V: section.cell = Vector2i(first.x, first.y)
 	section.line_key = _key_for_geometric_line(grid, line)
-	section._recollect = _collect_geometric_line.bind(state, grid, line.cells)
+	section.line_cells = line.cells
+	section._recollect = _cards_on_cells.bind(state, grid, line.cells)
 	section.cards = section._recollect.call()
 	return section
 
@@ -124,8 +126,8 @@ static func _key_for_geometric_line(grid: int, line: LineGeometry.Line) -> Strin
 	var last : Vector3i = line.cells[line.cells.size() - 1]
 	return StringName("grid%d:%s:%s:%s" % [grid, LineKind.keys()[line.kind], first, last])
 
-## THE card list for an arbitrary geometric line: every cell that holds a card, read live.
-static func _collect_geometric_line(state: GameData, grid: int, cells: Array[Vector3i]) -> Array[CardData]:
+## THE card list any line collects: every one of its cells that holds a card, read live.
+static func _cards_on_cells(state: GameData, grid: int, cells: Array[Vector3i]) -> Array[CardData]:
 	var out : Array[CardData] = []
 	for c : Vector3i in cells:
 		var card := state.card_at(BoardCoord.new(grid, c.x, c.y, c.z))
