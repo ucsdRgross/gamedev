@@ -45,11 +45,10 @@ one. Measured cost of not doing it: a bucket-growing helper was added to `GameDa
 duplicated `Game.resize_score_zone`, and `mantissa = 0` ended up stated in two files — the
 existing one was also stricter, so collapsing them fixed a latent weakness as well.
 
-⚠ **This rule was reaching nobody.** It lives here and in `/simplify`, but the `/plan-run` brief
-template carries lines about tunable literals, design ids and registry names and NOT this one —
-so implementer briefs never said it. **Put it in the brief.** The same shape of failure produced
-26 card files reaching past a documented-but-unenforced boundary; where a rule matters, enforce
-it with a gate rather than restating it.
+⚠ **A rule reaches an implementer only through the brief.** This one lived here and in `/simplify`
+while the `/plan-run` brief template did not carry it, so briefs never said it and the code came back
+duplicated; the template now states it (its item 7) and the comment rules (item 6). Where a rule
+matters, put it in the brief and gate it — restating it elsewhere is how it gets ignored.
 
 **Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
 

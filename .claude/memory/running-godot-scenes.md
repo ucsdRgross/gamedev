@@ -57,9 +57,12 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
   and it also skips the engine-error gate and truncates the full run's log. The filter keeps all
   three.
 - **Two tiers.** Inner loop: `run_tests.py --logic`, the `logic` group in `all_tests.tscn`, headless,
-  32 suites in ~65 s, no GPU and no window. Gate: the full windowed run, ~190 s. ⚠ A tiered or
-  filtered run prints `FILTERED n of 45` and no clean verdict, so it is never the gate. Which suites
-  are out of the tier and why: `solatro/HEADLESS_TESTING.md` §0.
+  ~65 s, no GPU and no window (derive the tier's size from the scene, never from a doc). Gate: the
+  full windowed run, ~4 min. ⚠ A tiered or filtered run prints `FILTERED n of N` and no clean
+  verdict, so it is never the gate. Which suites are out of the tier and why:
+  `solatro/HEADLESS_TESTING.md` §0. A second session's Godot on the same box shares `user://`
+  through `%APPDATA%`: export a private `APPDATA` per session or the two runs truncate each other's
+  logs and push a full run past the wrapper's timeout (measured).
 - **One run at a time.** ⚠ Overlapping runs **FABRICATE FAILURES in unrelated suites** — they share
   `user://logs/godot.log`, the output logs and `user://run_save/run.tres`. Measured: whole runs
   printing `NO SUITE BANNER`, which vanished on serialising. **A failure observed while two runs

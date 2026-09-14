@@ -44,7 +44,9 @@ proving nothing, each of which looked fine in review; later runs added two more:
 12. **The test SETS UP the very condition whose absence is the bug.** Measured: a "no cut-off grid
     at rest" test called the centring routine itself before measuring — the one call the resting
     product never made — so it could not see that nothing positioned the view at startup. **A test
-    that arranges the state it is meant to observe is a tautology.**
+    that arranges the state it is meant to observe is a tautology.** Measured again: a determinism
+    fixture called `seed(...)` on the global generator before the show started, which the shipped
+    deck shuffle never does, so "the same node deals the same board" was true only in the test.
 
 13. **The check asserts a field the product does not READ.** Not item 7's calibrated tolerance — a
     whole assertion pointed at a RETIRED accumulator that still moved. Measured: a status-effect
@@ -52,7 +54,9 @@ proving nothing, each of which looked fine in review; later runs added two more:
     banking into a legacy total the shown score is not derived from. **It passed BECAUSE the defect
     existed**, and it certified the loss it was written to catch. Ask of every green check: *is this
     the value the player is shown, or merely one that changes?* A retired field is the most
-    dangerous kind, because it still moves.
+    dangerous kind, because it still moves — and it survives rewrites: a branch re-fixtured that
+    very test and left the assertion on the retired field, while the test beside it carried the
+    comment explaining why not to.
 
 14. **The test is the only caller.** A production function whose ONLY callers are tests is dead
     code that its own suite makes look live — the suite is green, the function is exercised, and

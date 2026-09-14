@@ -62,10 +62,6 @@ those.** Write down which readings you were choosing between, and test the input
 
 ## Evidence hierarchy
 
-**green suite < printed counts < a rendered pixel < movement measured over time.**
-
-⚠ **[[verify-visuals-by-eye]] is necessary and NOT sufficient.** A still cannot show a pulse, a
-travel, a retire, or a cascade that never advances — a still of a working loop and of a dead one are
-identical. Three misses in one session were invisible to a PNG by construction. **Anything with a
-DURATION needs an instrument that samples over time**, reporting what MOVED
-(`sections=4/4 show_flips=14 max_dim=0.75`), not that it did not crash.
+**green suite < printed counts < a rendered pixel < movement measured over time.** A still frame
+and a duration are two representations of one effect; [[verify-visuals-by-eye]] carries the rule
+and the measured misses.
