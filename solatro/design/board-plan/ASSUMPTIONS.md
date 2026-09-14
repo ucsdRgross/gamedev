@@ -109,13 +109,12 @@ gap under `gaps/`.
 - S5 / TEST_PLAN TP-39: the dispatch count is read at the ENVIRONMENT, so a board with no
   implementer can be counted at all. `CountingEnvironment` moved out of `test_comparator.gd` into
   `Tests/Support/counting_environment.gd` and both suites now share the one probe.
-- S6 / Q122, chart C5: no document names how a mark effect reports its "+2" into the line's summed
-  mult, and the hooks are `-> void`. The existing content pattern is an effect calling the api, so
-  the seam is `CardEffectApi.add_line_mult(amount: float)`, valid only while `score_line` is
-  composing a line (asserted). No shipped content uses it yet, so renaming is cheap; NAMES.md carries
-  it. Q52=(b) makes the mark hooks fire on every line score through the cell, so `score_line`
-  dispatches `on_mark_hit` / `on_mark_covered` for each meld card on a marked cell; the landing-time
-  dispatch from `place_card_in_grid` is PARKED on `gaps/GAP-002.md`, not built.
+- S19 / GAP-002, chart C5: a mark effect reports its "+2" by ANSWERING `on_mark_line_mult(card,
+  coord, matched) -> float`, which the composition asks of the mark's copied modifiers for every meld
+  card standing on a marked cell, matching or not; every answer is summed into the line's mult. The
+  two act hooks fire at BOTH moments -- once from `place_card_in_grid` when the card lands, and again
+  for every line score through the cell -- so an effect never has to know which moment it is in.
+  `CardEffectApi.add_line_mult` was deleted with its last caller.
 - S6 / Q104, Q122: the composition is ONE named function, `Game._compose_line_score(result)`, called
   from `score_line` where `result.score` used to be read; no document names it. The float product is
   truncated with `int()`, the same narrowing `ScoreModel` uses for its own float multipliers, and the
@@ -134,9 +133,9 @@ gap under `gaps/`.
 - S6 / Q25: a coordinate's cell type is read through a new `GameData.cell_type_at(coord)`, the
   inverse of `cell_type_coord`; `MarkMatch.matches_at` now calls it too, so the composition and the
   match test cannot disagree about which card a cell's mark is.
-- S6 / Q122: `Game.line_mult_bonus` is NAN except while a line composes, which is what
-  `add_line_mult`'s assert reads -- the precondition lives in the value it is about rather than in a
-  second flag.
+- S19 / GAP-002: the composition's mult accumulator is a LOCAL of `Game._compose_line_score`. With
+  the api seam gone nothing outside the composition can add to it, so a nested re-score inside a mark
+  hook leaves the outer line whole without a sentinel or a save/restore.
 - S6 / TEST_PLAN TP-30: the row's fixture re-derived. A pair of 5s melds TWO cards, so a 7 elsewhere
   in the row is outside `result.meld` and pays nothing by TP-36's own rule -- the row that pays
   `hand + 7` is a pair of SEVENS with one of them on a mark printing 7. TP-31 marks both sevens
@@ -174,7 +173,7 @@ gap under `gaps/`.
   from a PLACEMENT, so no mod activation has ever fed the combo. `_note_mod_fired` now takes the two
   windows as separate flags: a board-wide BROADCAST (`feeds_act_combo`) still registers only while an
   act resolves, and an ACTIVATION (`counts_as_activation`, `run_mark_mods`'s flag threaded through)
-  always registers. Reading the window off the `line_mult_bonus` sentinel instead would hand the
+  always registers. Reading the window off "a line is composing" instead would hand the
   combo to every broadcast inside a NESTED composition, and gating on `processing` would revive
   mod-activation combo for every content mod in every cascade -- neither is a change S9 was asked
   for. TP-79 pins the exclusion.
@@ -372,3 +371,10 @@ gap under `gaps/`.
   `ScoringSection` carries `line_cells`, the cells the line runs through, written by both grid
   constructors (the column walk is public as `LineGeometry.col_cells` for it). `_collect_grid_line` collects
   over that same list through `_cards_on_cells`, so the walk is not written twice.
+- S19 / GAP-002: the query's dispatch is `CardEnvironment.run_mark_query(card, function, ...params)
+  -> float`, named after `run_mark_mods` it shares its modifier list and skill gate with. It charges
+  no processing and passes `feeds_act_combo = false`, so an answer registers nothing even while the
+  placement's own act is cancellable.
+- S19 / GAP-002: the landing dispatch sits in `place_card_in_grid` after the card has settled and
+  before `_broadcast_board_mutation`, which is what the line detector scores from -- so a mark acts
+  before any line through its cell can. It is inside the act, so undo rewinds what it did.

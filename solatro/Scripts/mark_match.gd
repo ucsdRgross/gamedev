@@ -11,10 +11,12 @@ const MARK_RANKS_ALLOW : StringName = &"on_mark_ranks_allow"
 const MARK_SUITS_DENY : StringName = &"on_mark_suits_deny"
 const MARK_SUITS_ALLOW : StringName = &"on_mark_suits_allow"
 
-#The two hooks a mark's own copied modifiers answer, spelled here for the same reason as the
-#leniency family above: a retyped name disables the effect and nothing reports it.
+#The hooks a mark's own copied modifiers answer, spelled here for the same reason as the leniency
+#family above: a retyped name disables the effect and nothing reports it. The first two ACT, at the
+#landing and at every line score; the third is the QUESTION a composition asks for its multiplier.
 const MARK_HIT : StringName = &"on_mark_hit"
 const MARK_COVERED : StringName = &"on_mark_covered"
+const MARK_LINE_MULT : StringName = &"on_mark_line_mult"
 
 #Derived on EVERY call and cached NOWHERE: a modifier changing a card's suit emits `data_changed`
 #rather than bumping `revision`, so a remembered verdict would answer stale. Any card in the cell

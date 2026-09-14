@@ -98,7 +98,7 @@ says so and names its own variant.
 | **TP-27** ⚑gate | A mark pays **every time** a matching card lands — three land-remove-land cycles pay three times | one cell | `Q20`=(a) | S5 |
 | **TP-30** ⚑gate | **`(hand + flats) × M`.** A row scoring a pair of 5s with one rank match of 7 and no mults banks `hand + 7` | fixed 5-card row | `Q104`=(d), `Q21`=(a), `Q22`=(a) | S6 |
 | **TP-31** ⚑gate | **`M == 0` never multiplies.** The same row with zero mult bonuses banks `hand + flats`, NOT zero | same row | `Q122` | S6 |
-| **TP-32** ⚑gate | **Two ×2 marks make ×4.** Two mark effects each contributing `+2` give `M = 4` and the line banks `(hand + flats) × 4` | two marked cells in one row | `Q122`, `Q48`=(b) | S6 |
+| **TP-32** ⚑gate | **Two ×2 marks make ×4.** Two mark effects each contributing `+2` — answered through `on_mark_line_mult` — give `M = 4` and the line banks `(hand + flats) × 4` | two marked cells in one row | `Q122`, `Q48`=(b) | S6 |
 | **TP-33** ⚑gate | **`ScoreModel` is untouched.** `test_scoring.gd` SECTION 8's hand leaderboard is byte-identical to `main` | the existing suite | `Q104`=(d), `PLAN.md` §1.5 | S6 |
 | **TP-34** ⚑gate | A full flush's score is unchanged by any bonus — the flush double multiplies only the hand | a 5-card flush with one rank match | `Q104`=(d) | S6 |
 | **TP-35** | The Ace pays **10**; a rank with no integer value pays the flat fallback; a fractional rank rounds **up** | Ace, `HalfStepRank`, rank 2.5 | `Q26`, `Q27` | S6 |

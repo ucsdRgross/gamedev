@@ -34,6 +34,7 @@ func _ready() -> void:
 	await test_a_rank_match_is_added_to_the_line()
 	await test_a_line_with_no_mult_is_never_multiplied_to_nothing()
 	await test_mark_effects_sum_into_one_multiplier()
+	await test_a_marks_mult_is_a_question_the_composition_asks()
 	await test_a_cover_is_announced_and_a_match_adds_its_own_hook()
 	await test_a_marks_copied_skill_is_dispatched_the_mark_hooks()
 	await test_a_flush_keeps_its_own_score()
@@ -41,6 +42,7 @@ func _ready() -> void:
 	await test_a_card_pays_into_every_line_it_completes()
 	await test_a_match_registers_no_combo_class()
 	behavior_section("A MARK'S OWN EFFECT FIRES, AND IT COUNTS")
+	await test_a_mark_fires_the_moment_a_card_lands_on_it()
 	await test_the_hit_reaches_the_mark_and_the_card()
 	await test_a_mark_effect_fires_on_every_re_score()
 	await test_a_mark_firing_charges_the_cap_and_is_bounded()
@@ -373,14 +375,16 @@ class AfterScoreRecorder extends CardModifierStamp:
 
 
 #A mark worth twice the line it sits in, on a STAMP because that is the slot the shipped effects
-#use. The share reaches the line through the api's own seam, which is the only way a mark effect
-#has of multiplying one.
+#use. The share is ANSWERED rather than announced: the composition asks every mark a meld card
+#stands on, so an effect never has to know which moment it is in.
 class LineMultStamp extends CardModifierStamp:
 	func get_str() -> String: return "LineMultStamp"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
-	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
-		api.add_line_mult(2.0)
+	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	func combo_key(_hook: StringName = &"") -> String: return "LineMultStampClass"
+	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
+		return 2.0
 
 
 #Repaints its own card's suit the way an effect would -- through the card's own setter, which
@@ -405,8 +409,8 @@ class ReScoringMarkStamp extends CardModifierStamp:
 	func get_frame() -> int: return 0
 	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
 	func combo_key(_hook: StringName = &"") -> String: return "ReScoringMarkClass"
-	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
-		api.add_line_mult(2.0)
+	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
+		return 2.0
 	## Re-scores a ONE-CARD line in an EMPTY section, so nothing but this firing can charge the cap.
 	func on_mark_hit(card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
 		if game_ref.act_overrun or fires >= WATCHDOG: return
@@ -794,6 +798,34 @@ func test_mark_effects_sum_into_one_multiplier() -> void:
 	for g : Game in [bare, one, two, three] as Array[Game]:
 		free_game(g)
 
+#TP-87: the mult is a QUESTION the composition asks every mark a meld card stands on, so the shares
+#arrive without an effect knowing which moment it is in and two of them still make x4. Asking is not
+#firing: it charges nothing and names no class, and a mark that only ACTS contributes nothing at all.
+func test_a_marks_mult_is_a_question_the_composition_asks() -> void:
+	var plain := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var asked := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark()} as Dictionary[int, CardData])
+	var acting := await scored_row(triple_row(),
+			{0: row_card(2).with_stamp(MarkHookRecorder.new())} as Dictionary[int, CardData])
+	var hand := row_banked(plain)
+	check(hand > 0.0, "TP-87 precondition: the unmarked row banked its hand at all",
+			"banked %f" % hand)
+	check(row_banked(asked) == hand * 4.0,
+			"TP-87: both marks answered the query and their shares made x4",
+			"%f against a hand of %f" % [row_banked(asked), hand])
+	var spy := acting.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers > 0 and row_banked(acting) == hand,
+			"TP-87: a mark that only ACTS adds nothing to the multiplier, and a sum of 0 still skips",
+			"%d covers banked %f against a hand of %f" % [spy.covers, row_banked(acting), hand])
+	check(not asked.state.combo_classes.has(LineMultStamp.new().combo_key()),
+			"TP-87: answering the query registered no combo class",
+			"%s in %s" % [LineMultStamp.new().combo_key(), str(asked.state.combo_classes)])
+	check(asked.act_calls == plain.act_calls,
+			"TP-87: ...and charged no processing either",
+			"%d against the unmarked %d" % [asked.act_calls, plain.act_calls])
+	for g : Game in [plain, asked, acting] as Array[Game]:
+		free_game(g)
+
 #Every landing on a marked cell is a COVER, matching or not, so a x2 mark multiplies whatever is put
 #on it; a match adds `on_mark_hit` on top rather than replacing the cover. The levels say which is
 #which: the cover is the normal form, the match the realized one.
@@ -916,8 +948,60 @@ func test_a_match_registers_no_combo_class() -> void:
 
 
 # ==============================================================================
-# TP-46, TP-49, TP-50, TP-51 -- a mark that ACTS, and what its firing costs
+# TP-86, TP-46, TP-49, TP-50, TP-51 -- a mark that ACTS, and what its firing costs
 # ==============================================================================
+
+#TP-86: a mark acts the MOMENT a card lands on it, before any line through the cell scores -- this
+#board carries no scorer at all, so nothing it did could have banked and every firing counted here
+#is the landing's own. A card an effect placed lands the same way; `processing` is all that differs.
+func test_a_mark_fires_the_moment_a_card_lands_on_it() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	mark_cell(g.state, 1, 0, plan_card(PipSuitKnife, 3).with_stamp(MarkHookRecorder.new()))
+	mark_cell(g.state, 2, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	var matching := plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new())
+	await g.place_card_in_grid(matching, cell(0, 0))
+	await g.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(1, 0))
+	g.processing = true
+	await g.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(2, 0))
+	g.processing = false
+	var hit_mark := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var covered_mark := g.state.cell_type_at(cell(1, 0)).stamp as MarkHookRecorder
+	var by_effect := g.state.cell_type_at(cell(2, 0)).stamp as MarkHookRecorder
+	var on_card := matching.stamp as MarkHookRecorder
+	check(row_banked(g) == 0.0 and g.state.total_score == 0,
+			"TP-86 precondition: this board banked nothing, so no line score can have dispatched",
+			"row %f, total %d" % [row_banked(g), g.state.total_score])
+	check(hit_mark.covers == 1 and hit_mark.hits == 1,
+			"TP-86: the landing fired the cover once and, the card having matched, the hit once",
+			"%d covers, %d hits" % [hit_mark.covers, hit_mark.hits])
+	check(hit_mark.cover_level == 0 and hit_mark.hit_level == 1,
+			"TP-86: at the levels the score-time dispatch announces as well",
+			"cover %d, hit %d" % [hit_mark.cover_level, hit_mark.hit_level])
+	check(on_card.hits == 1 and on_card.hit_card_id == matching.get_instance_id(),
+			"TP-86: both recipients were told -- the mark's copied modifiers and the placed card's",
+			"%d hits on the card" % on_card.hits)
+	check(covered_mark.covers == 1 and covered_mark.hits == 0,
+			"TP-86: a landing that matched nothing fired the cover alone",
+			"%d covers, %d hits" % [covered_mark.covers, covered_mark.hits])
+	check(by_effect.covers == 1 and by_effect.hits == 1,
+			"TP-86: a card an effect placed fires them exactly as the player's placement did",
+			"%d covers, %d hits" % [by_effect.covers, by_effect.hits])
+	check(g.state.combo_classes.has(hit_mark.combo_key()),
+			"TP-86: the landing is an activation, so the copied modifier's class registered",
+			"%s missing from %s" % [hit_mark.combo_key(), str(g.state.combo_classes)])
+	free_game(g)
+	var bare := make_game()
+	mark_cell(bare.state, 0, 0, plan_card(PipSuitHoop, 5))
+	await bare.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(0, 0))
+	var counted := make_game()
+	mark_cell(counted.state, 0, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	await counted.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(0, 0))
+	check(counted.act_calls == bare.act_calls + 2,
+			"TP-86: the landing's cover and its hit each charged one unit of processing",
+			"%d against the unanswered %d" % [counted.act_calls, bare.act_calls])
+	free_game(bare)
+	free_game(counted)
 
 #TP-46: one hook, two recipients -- the mark's own copied modifiers and the card that covered it.
 #Both are told the same thing, which is what lets an effect on a card require its own mark.
@@ -998,9 +1082,9 @@ func test_a_mark_firing_charges_the_cap_and_is_bounded() -> void:
 	free_game(g)
 	restore_settings_snapshot(snapshot)
 
-#TP-50: a mark effect may score another line from inside the composition of the one it fired in, so
-#the outer line's summed mult is saved and put back rather than cleared. ⚠ The cell carries a COPY of
-#the modifier, so every field this double is driven by is set on the copy the cell is holding.
+#TP-50: a mark effect may score another line from inside the composition of the one it fired in, and
+#the outer line still banks its own summed mult. ⚠ The cell carries a COPY of the modifier, so every
+#field this double is driven by is set on the copy the cell is holding.
 func test_a_nested_re_score_leaves_the_outer_line_whole() -> void:
 	var control := await scored_row(triple_row(),
 			{0: row_card(7).with_stamp(LineMultStamp.new())} as Dictionary[int, CardData])

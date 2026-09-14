@@ -209,11 +209,15 @@ path which bumped `revision` without finishing the mutation that keeps them in s
    §3c** — do not restate them here.
    **The mark surface** — `on_mark_covered(card, coord, level)` on every cover and
    `on_mark_hit(card, coord, matched, level)` on a match, `level` 0 or 1 and nothing else.
-   Dispatched at SCORE time, for every meld card standing on a marked cell, through
+   Dispatched at BOTH moments — once from `place_card_in_grid` when the card lands, and again for
+   every meld card standing on a marked cell each time a line through it scores — through
    `CardEnvironment.run_mark_mods` to the MARK's copied modifiers and the placed CARD's — never
    through `run_all_mods`, because a mark is never spotlit. It counts as an ACTIVATION: the copied
    modifier's combo class registers and `note_processing` is charged, so a looping mark effect is
-   bounded by the runaway cap. The leniency family `on_mark_ranks_deny/allow`,
+   bounded by the runaway cap. `on_mark_line_mult(card, coord, matched) -> float` is the third, a
+   QUERY the composition asks of the mark's copied modifiers alone through `run_mark_query`: it
+   charges nothing and registers nothing, and every answer sums into the line's mult (§3a). The
+   leniency family `on_mark_ranks_deny/allow`,
    `on_mark_suits_deny/allow` are COMMENTS on `CardModifier` and never methods, asked through
    `PipComparator.ask_pass` BEFORE the presence test so content can rescue a pip a card does not
    print; every spelling lives once as a `MarkMatch.MARK_*` constant. The deal and the match: §3e.
@@ -464,10 +468,10 @@ line score = (hand score + Σ flat bonuses) × M      M = Σ bonus mults
   spotlight cascade — and pay **once per line**. A RANK match pays the printed rank rounded up,
   with the Ace and any rank carrying no integer value paying their own knobs (§3e).
 - **A match registers no combo class; a mark EFFECT firing is one** (§1.4).
-- A mark effect reports its mult through `CardEffectApi.add_line_mult`, which is valid ONLY while
-  a line composes — `Game.line_mult_bonus` is `NAN` otherwise, which is the precondition its
-  assert reads. The accumulator saves and restores around a nested composition, so a mark hook
-  re-scoring a line cannot clear the outer line's bonus.
+- A mark effect reports its mult by ANSWERING `on_mark_line_mult`, asked of every mark a meld card
+  stands on while the line composes (§1.4), so an effect never has to know which moment it is in.
+  The accumulator is a local of `Game._compose_line_score`: a mark hook re-scoring a line from
+  inside it cannot touch the outer line's sum.
 
 **Where a line banks** (`Game._add_grid_line_score`, the only place that decides):
 
@@ -675,8 +679,8 @@ that by re-checking every cell of `Line.cells` against the live board.
 - **The match** — `MarkMatch.matches_at(state, card, coord)` answers the `Property` bitmask of
   what a card and its own cell's mark agree on. **Derived on every call, cached nowhere:** a
   modifier changing a card's suit emits `data_changed` rather than bumping `revision`, so a
-  revision-keyed verdict would answer stale. What a match PAYS is §3a, what it FIRES is §1.4, what
-  it LIGHTS is §4j.
+  revision-keyed verdict would answer stale. What a match PAYS is §3a, what it FIRES — at the
+  landing and again at every line score through the cell — is §1.4, what it LIGHTS is §4j.
 - **Content writes marks through `CardEffectApi`**: `mark_at`, `reroll_mark`, `reroll_line`,
   `reroll_grid`, `grant_mark`, `swap_marks`, each bumping `revision` once after the write. ⚠ A
   reroll's offer EXCLUDES the face it replaces and the cell is cleared only once a replacement is in

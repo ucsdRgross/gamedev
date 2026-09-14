@@ -95,7 +95,9 @@ func on_mark_line_mult(card: CardData, coord: BoardCoord, matched: int) -> float
 ```
 
 Both act hooks fire at LANDING (once, from `place_card_in_grid`) and on every line score through the
-cell (GAP-002). Spelling constant: `MarkMatch.MARK_LINE_MULT`.
+cell (GAP-002). Spelling constant: `MarkMatch.MARK_LINE_MULT`. Dispatch: `CardEnvironment.run_mark_mods` for the two act hooks,
+`CardEnvironment.run_mark_query(card, function, ...params) -> float` for the query (charges nothing,
+registers nothing). Added during execution - see ASSUMPTIONS.md.
 
 The leniency family, declared as **COMMENTS** on `CardModifier` (never as methods —
 `ARCHITECTURE_REVIEW.md` §3c), mirroring `PipComparator`'s deny/allow shape:

@@ -2,7 +2,7 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 51 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
+**State:** 52 commits on `board-plan`. Every plan step S1-S16 landed and verified (S9, S13, S15 were
 partial on gaps). THE OWNER HAS RULED ON ALL SIX GAPS (PLAN 1.10-bis, verbatim; each gap file
 carries its `resolution:` block and the reading taken). The rulings create six execution steps,
 S18-S23, ordered smallest first under Next up; each runs as every earlier step did (one
@@ -152,12 +152,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs: is_spotlit exclusion removed -> MARK MATCH 7 passed, 4 FAILED of 11 (all four TP-44 checks); blocks_spotlight forced true -> 8 passed, 3 FAILED of 11; exclusion below the StampGlobal return -> 11 passed, 4 FAILED of 15 (the four globally-stamped-mark checks). Overseer full runs: ALL 47 SUITES: 4032 passed, 1 FAILED (WALL FOCUS standing line) at e41fe969; ALL 47 SUITES: 4002 CHECKS PASSED, errors log empty, after the fix. SPOTLIGHT 111/111 both times; SECTION 8 identical. grep: is_spotlit()'s first statement is the mark check.'
   notes: 'Measured by the implementer: a grid card is never NATURALLY spotlit (_blocked_from_above reads position_of, which carries no grid coordinate), so TP-44 contrasts forced-spotlight pairs plus an unforced globally stamped mark; see ASSUMPTIONS.md.'
 - id: S9
-  description: on_mark_covered / on_mark_hit count as activations (combo class, note_processing); TP-46..51, TP-53, TP-54. Landing-time dispatch PARKED on GAP-002.
+  description: on_mark_covered / on_mark_hit count as activations (combo class, note_processing); TP-46..51, TP-53, TP-54. Landing-time dispatch landed at S19 (GAP-002).
   files_touched: [solatro/Scripts/card_environment.gd, solatro/Levels/game.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/Support/test_grid_fixtures.gd]
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: partial
-  evidence: 'Score-time half DONE; landing-time dispatch PARKED on GAP-002. Implementer red runs per row (filtered MARK MATCH, green 111): placed-card dispatch removed (TP-46), first-scoring-only (TP-49), note_processing uncharged -> loop ran to the recorder cap, no hang (TP-50), feeds_combo false (TP-51), plan_seed dropped from the undo snapshot (TP-53), RNG injected (TP-54); details in the S9 evidence file. Overseer full run: ALL 47 SUITES: 4144 CHECKS PASSED, errors log empty; MARK MATCH 111/111; COMBO 26/26; E2E RUN 35/35; exit-time leak count identical to baseline; SECTION 8 identical; per-suite banners vs the previous gate differ only in MARK MATCH. grep: no run_mark_mods/MARK_HIT in place_card_in_grid; no feeds_combo=false on the mark path.'
+  status: done
+  evidence: 'Score-time half at S9; landing-time dispatch at S19 (TP-86). Implementer red runs per row (filtered MARK MATCH, green 111): placed-card dispatch removed (TP-46), first-scoring-only (TP-49), note_processing uncharged -> loop ran to the recorder cap, no hang (TP-50), feeds_combo false (TP-51), plan_seed dropped from the undo snapshot (TP-53), RNG injected (TP-54); details in the S9 evidence file. Overseer full run: ALL 47 SUITES: 4144 CHECKS PASSED, errors log empty; MARK MATCH 111/111; COMBO 26/26; E2E RUN 35/35; exit-time leak count identical to baseline; SECTION 8 identical; per-suite banners vs the previous gate differ only in MARK MATCH. grep: no run_mark_mods/MARK_HIT in place_card_in_grid; no feeds_combo=false on the mark path.'
   notes: 'Measured pre-existing bug, fixed mark-scoped: Game._note_mod_fired gated combo registration on _act_cancellable, set only inside _perform_next, so no modifier activation ever fed the combo in the grid game; the window is now "an act is resolving OR a line is composing". Composition is re-entrant (save/restore of line_mult_bonus) because TP-50 makes the nested api.score_line producible. board_digest now witnesses marks, plan_seed, combo set and total_score, so the E2E parity and save-reload rows assert them too. The placed card''s on_mark_hit moved to run_mark_mods (run_card_mods is the prop tick''s non-charging path).'
 - id: S10
   description: mark_at, reroll_mark, grant_mark, swap_marks on CardEffectApi; TP-52.
@@ -252,9 +252,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Marks acting on neighbouring cells: a content shape the query serves, recorded in todo, not built.'
+  status: done
+  evidence: 'Implementer red (MARK MATCH, 146 checks all runs): landing dispatch removed -> 7 FAILED, all TP-86 (0 covers / 0 hits on the matching, plain and effect-placed landings, levels -1, no card recipient, no class, no processing); the query not asked -> 4 FAILED (TP-87 x4 and TP-32''s three doubles, M stays 0); green 146/146. Overseer full run: ALL 48 SUITES: 4404 CHECKS PASSED, errors log empty, SECTION 8 identical; banners vs S20 differ only in fuzz drift and MARK MATCH 133 -> 146. add_line_mult and line_mult_bonus: 0 occurrences repo-wide. TP-46..51, TP-53, TP-54, TP-79, TP-32 counts unchanged before/after.'
+  notes: 'Landing dispatch: Game._run_mark_landing after the card settles and before _broadcast_board_mutation (inside the act, so undo and the replay cover it). Query: CardEnvironment.run_mark_query (charges nothing, feeds_act_combo false), summed into a LOCAL accumulator in _compose_line_score - no sentinel, no save/restore. S9 is done with this. Marks acting on neighbouring cells: a content shape the query serves, not built.'
 - id: S23
   description: GAP-004 - the activated rim SHIMMERS - a new outline alert kind interpolating (blended, owner exception to 4i) through a ramp of palette entries over a fraction of get_delay(); TP-91 measured over time; /fx-verify.
   files_touched: []
@@ -416,7 +416,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-Work in this order, one implementer, one full gate, one commit each: S19, S23.
+Work in this order, one implementer, one full gate, one commit each: S23.
 Then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan

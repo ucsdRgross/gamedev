@@ -273,10 +273,9 @@ func skill_spotlight_check() -> void:
 	if cued:
 		spotlight_cued.emit(cued)
 
-## Run `function` on ONE card's own modifiers — type, stamp, suit, a statuses snapshot, then
-## the spotlit skill. The ONLY dispatch that sees suits; the board-wide run_all_mods iterator
-## stays suit-free. Used by the prop tick loop's 3-phase pass (on_prop_passing/passed).
-## Cost: O(mods on this card). Statuses are appended as a copy (safe if one self-removes).
+#THE ONLY dispatch that sees suits -- the board-wide run_all_mods iterator stays suit-free. The prop
+#tick's 3-phase pass asks rather than fires, so this path charges no processing.
+## Run `function` on ONE card's own modifiers, the spotlit skill included.
 func run_card_mods(card: CardData, function: StringName, ...params: Array) -> void:
 	await _run_own_mods(card, function, params, card.skill != null and card.skill.spotlit, false)
 
@@ -284,18 +283,38 @@ func run_card_mods(card: CardData, function: StringName, ...params: Array) -> vo
 #carried in (never spotlit, so the gate would silence it); a real card keeps the spotlight rule.
 ## Run a mark hook on one card's own modifiers — an EFFECT firing, so it counts as processing.
 func run_mark_mods(card: CardData, function: StringName, ...params: Array) -> void:
-	await _run_own_mods(card, function, params,
-			BoardPlan.is_marked(card) or (card.skill != null and card.skill.spotlit), true)
+	await _run_own_mods(card, function, params, _mark_hooks_see_skill(card), true)
+
+#⚠ A QUESTION, ASKED OF THE SAME MODIFIERS THE MARK HOOKS REACH: it charges no processing and
+#registers no combo class, so an effect that only answers it is never an activation. Every answer
+#counts -- the shares SUM, so a second modifier offering one is not silenced by the first.
+func run_mark_query(card: CardData, function: StringName, ...params: Array) -> float:
+	var total := 0.0
+	for mod : CardModifier in _own_mods(card, _mark_hooks_see_skill(card)):
+		if mod and mod.has_method(function):
+			var share : float = await Callable(mod, function).callv(params)
+			total += share
+			_note_mod_fired(mod, function, false)
+	return total
+
+#A mark is never spotlit, so the skill gate would silence the copied face; a real card keeps it.
+func _mark_hooks_see_skill(card: CardData) -> bool:
+	return BoardPlan.is_marked(card) or (card.skill != null and card.skill.spotlit)
+
+#Statuses are appended as a COPY, so a status removing itself mid-hook cannot corrupt the walk
+#asking it, and the skill comes last because that is the order a card is asked in.
+func _own_mods(card: CardData, with_skill: bool) -> Array[CardModifier]:
+	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
+	mods.append_array(card.statuses)
+	if with_skill and card.skill: mods.append(card.skill)
+	return mods
 
 #⚠ A QUESTION IS NOT AN EFFECT FIRING (owner: "it shouldnt trigger on checks, but only when effect
 #actually triggers"), so the per-card path charges nothing; `counts_as_activation` is what a caller
 #dispatching a real effect passes, and it charges the ramp, the runaway cap and the combo alike.
 func _run_own_mods(card: CardData, function: StringName, params: Array, with_skill: bool,
 		counts_as_activation: bool) -> void:
-	var mods : Array[CardModifier] = [card.type, card.stamp, card.suit]
-	mods.append_array(card.statuses)
-	if with_skill and card.skill: mods.append(card.skill)
-	for mod : CardModifier in mods:
+	for mod : CardModifier in _own_mods(card, with_skill):
 		if mod and mod.has_method(function):
 			if counts_as_activation:
 				note_processing(1, "%d:%s" % [mod.get_instance_id(), function])

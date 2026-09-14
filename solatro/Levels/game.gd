@@ -764,6 +764,7 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if not processing and view:
 		view.release_grab()
 		await view.await_card_settled(card)
+	await _run_mark_landing(card, landed)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
 	await refill_entrance_if_due()
@@ -989,33 +990,46 @@ func score_line(result : Scoring.Result, section : ScoringSection) -> void:
 	await _run_score_effects(result)
 	if view: view.reset_meld(result)
 
-#⚠ NAN MEANS NO LINE IS COMPOSING, and `CardEffectApi.add_line_mult` asserts on it: a mark effect
-#may only add to the line it fired inside, and a sentinel keeps that precondition in the value it
-#is about rather than in a second flag that can fall out of step with it.
-var line_mult_bonus := NAN
-
-#Only a MELD card pays, and the hooks fire for every line its cell scores in: EVERY cover is announced
-#at level 0, a MATCH adds its own hook at level 1, and the line is `(hand + flats) x the SUMMED mults`
-#with a sum of 0 never multiplying. ⚠ RE-ENTRANT: a nested score puts the accumulator back.
+#Only a MELD card pays, and the mark of every cell one stands on both acts and is ASKED for its
+#share: the line is `(hand + flats) x the SUMMED mults`, with a sum of 0 never multiplying. ⚠ The
+#accumulator is a local, so a nested score inside one of these hooks leaves the outer line whole.
 func _compose_line_score(result: Scoring.Result) -> int:
-	var outer_mult_bonus := line_mult_bonus
-	line_mult_bonus = 0.0
 	var flats := 0
+	var mults := 0.0
 	for card : CardData in result.meld:
 		var coord := state.grid_position_of(card)
 		var matched : int = await MarkMatch.matches_at(state, card, coord)
 		flats += MarkMatch.flat_bonus(card, matched)
-		line_mult_bonus += MarkMatch.mult_bonus(card, matched)
-		var mark := state.cell_type_at(coord)
-		if not mark or not BoardPlan.is_marked(mark): continue
-		await run_mark_mods(mark, MarkMatch.MARK_COVERED, card, coord, 0)
-		if matched == 0: continue
-		await run_mark_mods(mark, MarkMatch.MARK_HIT, card, coord, matched, 1)
-		await run_mark_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
-	var summed := line_mult_bonus
-	line_mult_bonus = outer_mult_bonus
+		mults += MarkMatch.mult_bonus(card, matched)
+		var mark := _mark_under(coord)
+		if not mark: continue
+		mults += await run_mark_query(mark, MarkMatch.MARK_LINE_MULT, card, coord, matched)
+		await _run_mark_hooks(mark, card, coord, matched)
 	var line := result.score + flats
-	return int(line * summed) if not is_zero_approx(summed) else line
+	return int(line * mults) if not is_zero_approx(mults) else line
+
+#⚠ A MARK ACTS THE MOMENT A CARD LANDS ON IT, before any line through the cell can score, so an
+#effect that draws or reveals fires even on a placement that completes nothing. It acts again for
+#every line the cell scores in, announced identically from the composition.
+func _run_mark_landing(card: CardData, coord: BoardCoord) -> void:
+	var mark := _mark_under(coord)
+	if not mark: return
+	var matched : int = await MarkMatch.matches_at(state, card, coord)
+	await _run_mark_hooks(mark, card, coord, matched)
+
+#The mark under a coordinate, or null when the cell wears none -- the one gate both the mark hooks
+#and the mult query are asked behind.
+func _mark_under(coord: BoardCoord) -> CardData:
+	var mark := state.cell_type_at(coord)
+	return mark if mark and BoardPlan.is_marked(mark) else null
+
+#A mark ACTS at two moments and announces itself identically at both: EVERY cover at level 0, a
+#match adding its own hook at level 1 to the mark's copied modifiers and to the card that covered it.
+func _run_mark_hooks(mark: CardData, card: CardData, coord: BoardCoord, matched: int) -> void:
+	await run_mark_mods(mark, MarkMatch.MARK_COVERED, card, coord, 0)
+	if matched == 0: return
+	await run_mark_mods(mark, MarkMatch.MARK_HIT, card, coord, matched, 1)
+	await run_mark_mods(card, MarkMatch.MARK_HIT, card, coord, matched, 1)
 
 ## D10–D12b (spotlight S5–S7): force-spotlight a whole SECTION and let the board settle under it.
 ## The whole set is forced at once and ONE sweep fires every `on_spotlight` in board order
