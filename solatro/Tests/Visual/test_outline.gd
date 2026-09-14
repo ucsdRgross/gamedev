@@ -56,6 +56,7 @@ func _ready() -> void:
 	test_corner_bite_survives_the_dilation()
 	behavior_section("THE ALERT IS DECLARED, NOT TOGGLED")
 	test_alert_is_off_until_a_status_declares_it()
+	test_an_activated_rim_still_parks_the_status_phase()
 	behavior_section("THE SHIMMER BLENDS ALONG ITS RAMP, AND MOVES")
 	await test_shimmer_blends_between_ramp_entries()
 	implementation_section("THE RULES THAT KEEP THE RIM ON THE ART")
@@ -406,6 +407,36 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 			"still pushing kind %d" % pushed_kind)
 	check_impl(vis._alert_clock == 0.0 and pushed_clock == 0.0,
 			"and parks the phase, so the next alert starts at the beginning rather than mid-bounce",
+			"%f / %f" % [vis._alert_clock, pushed_clock])
+	vis.queue_free()
+
+# ⚠ THE SHIMMER IS NOT A STATUS ALERT, and a card wearing the activated rim runs it whenever no
+# status alerts -- so the GLARE/THROB phase has to park on that card too. The shimmer reads a
+# board-wide clock, so a phase left mid-bounce stays invisible until the next status alert opens on it.
+func test_an_activated_rim_still_parks_the_status_phase() -> void:
+	var data := TestFactories.m_card(3.0, 1)
+	var vis : CardVisual = CardVisual.CARD_VISUAL.instantiate()
+	vis.current_context = CardVisual.DisplayContext.PREVIEW
+	vis.data = data
+	add_child(vis)
+	vis.show_front = true
+	vis.set_match_rim(MarkMatch.Property.RANK, PaletteDB.ROLES.match_rim_active)
+
+	var throb := StatusTestAlertThrob.new()
+	data.add_status(throb)
+	vis.update_visual()
+	for _frame : int in 3:
+		vis._advance_alert(0.1)
+	check_impl(vis._alert_clock > 0.0,
+			"TP-99: a THROB on a card wearing the activated rim advances that card's own phase",
+			"%f" % vis._alert_clock)
+
+	data.remove_status(throb)
+	vis.update_visual()
+	var mat := vis.type.material as ShaderMaterial
+	var pushed_clock : float = mat.get_shader_parameter(&"u_alert_clock")
+	check(vis._alert_clock == 0.0 and pushed_clock == 0.0,
+			"TP-99: removing it parks that phase even though the rim goes on shimmering",
 			"%f / %f" % [vis._alert_clock, pushed_clock])
 	vis.queue_free()
 

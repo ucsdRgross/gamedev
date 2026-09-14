@@ -319,9 +319,9 @@ func _push_alert() -> void:
 	for poly : Polygon2D in elements:
 		CardOutline.set_alert(poly, _alert_of(elements[poly]), style)
 #Park the phase at rest so a card that alerted and stopped is bit-identical to one that never did --
-#otherwise the next alert would start wherever the last one happened to be interrupted. The clock is
-#pushed either way, so a card built mid-drift opens on the phase the board is already running.
-	if not _alert: _alert_clock = 0.0
+#a SHIMMER is not a status alert, so a card wearing the activated rim parks it too. Pushed either
+#way, so a card built mid-drift opens on the phase the board is already running.
+	if not _card_alert(): _alert_clock = 0.0
 	_push_alert_clock()
 
 #THE FIVE POLYGONS AND THE PRINTED PROPERTY EACH ONE DRAWS. The card frame draws none, so it asks
