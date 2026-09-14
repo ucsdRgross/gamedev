@@ -53,15 +53,12 @@ static func mult_bonus(_card: CardData, matched: int) -> float:
 	return mult
 
 #A printed pip agrees when the mark's own leniency rules say so and OTHERWISE only when BOTH cards
-#print one -- the two passes are asked FIRST, in the comparator's order, so content may rescue a pip
-#a card does not print, while printed identity's null-equals-null agrees with nothing on its own.
+#print one -- so two present pips are the comparator's own unmemoised sameness, while an ABSENT one
+#is asked of the two passes alone and printed identity's null-equals-null is never reached.
 static func _pip_same(a: Variant, b: Variant, deny: StringName, allow: StringName) -> bool:
-	var a_key : Variant = PipComparator.pip_cache_key(a)
-	var b_key : Variant = PipComparator.pip_cache_key(b)
-	if await PipComparator.ask_pass(deny, a, b, a_key, b_key, false): return false
-	if await PipComparator.ask_pass(allow, a, b, a_key, b_key, false): return true
-	if not a or not b: return false
-	return PipComparator.printed_same(a, b)
+	if a and b: return await PipComparator.pair_is_same(a, b, deny, allow, false)
+	if await PipComparator.ask_pass(deny, a, b, null, null, false): return false
+	return await PipComparator.ask_pass(allow, a, b, null, null, false)
 
 #A talent or hat agrees when BOTH slots are filled and name the same script: a mark carries its own
 #COPY of what the source printed, so the class is the identity, and the both-present half is the
