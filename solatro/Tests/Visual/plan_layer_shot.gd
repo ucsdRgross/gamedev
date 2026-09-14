@@ -7,7 +7,7 @@ extends Control
 # Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
 #     OUT_DIR=<absolute dir> <console exe> --path solatro res://Tests/Visual/plan_layer_shot.tscn
 
-# Deliberately NOT in all_tests.tscn: needs a real renderer and is by-eye material.
+#Not in all_tests.tscn: it needs a real renderer and is by-eye material.
 
 const OUT_DIR_FALLBACK := "user://plan_layer_shot"
 const SAVE_TAG := "plan_layer_shot"
@@ -83,8 +83,8 @@ func _land_a_card(view: GameView, card: CardData, coord: BoardCoord) -> void:
 	print("[plan_layer_shot] (%d,%d) covered by %s: %s"
 			% [coord.x, coord.y, str(card), str(g.state.card_at(coord) == card)])
 
-# A card that exists only to be copied onto a cell. Its pips are DUPLICATES: `with_suit` rebinds the
-# suit's backref to the card it is handed to, so a live card's own pip would lose the board.
+#The source card a mark is copied from, carrying DUPLICATE pips: handing over a live card's own
+#pip rebinds its backref and takes that card off the board.
 func _source(rank: PipRank, suit: PipSuit) -> CardData:
 	var source := CardData.new()
 	source.with_rank(rank.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as PipRank)
@@ -135,7 +135,7 @@ func _shoot(view: GameView, tag: String) -> void:
 	img.save_png("%s/%s.png" % [_out_dir, tag])
 	print("[plan_layer_shot] wrote %s.png" % tag)
 
-# Waits until the board stops moving, so a shot is never taken mid-transition.
+#Waits for the board to stop moving, so no shot is taken mid-transition.
 func _settle(view: GameView) -> void:
 	var last := Vector2(INF, INF)
 	for _frame : int in 180:

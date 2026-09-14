@@ -7,7 +7,7 @@ extends Control
 # Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
 #     OUT_DIR=<absolute dir> <console exe> --path solatro res://Tests/Visual/plan_match_shot.tscn
 
-# Deliberately NOT in all_tests.tscn: needs a real renderer and is by-eye material.
+#Not in all_tests.tscn: it needs a real renderer and is by-eye material.
 
 const OUT_DIR_FALLBACK := "user://plan_match_shot"
 const SAVE_TAG := "plan_match_shot"
@@ -57,8 +57,8 @@ func _ready() -> void:
 	TestGameViewHost.shot_teardown(SAVE_TAG)
 	get_tree().quit()
 
-# The card this shot picks up: one the board offers as a focus target in the Entrance, which is what
-# a pointer or a focus ring can reach.
+#The card this shot picks up: an Entrance card the board offers as a focus target, so a pointer or
+#a focus ring can reach it.
 func _an_entrance_card(g: Game, pa: PlayArea, kept: CardData) -> CardData:
 	for control : Control in pa.ui_data:
 		var data : CardData = pa.ui_data[control]
@@ -76,8 +76,8 @@ func _mark_the_three_cells(g: Game) -> void:
 	print("[plan_match_shot] holding %s over marks at (1,2) rank-only, (2,2) rank+suit, (3,2) neither"
 			% str(_held))
 
-# A card that exists only to be copied onto a cell. Its pips are DUPLICATES: `with_suit` rebinds the
-# suit's backref to the card it is handed to, so a live card's own pip would lose the board.
+#The source card a mark is copied from. Its pips are DUPLICATES, because with_suit rebinds a pip's
+#backref and a live card's pip handed over here would lose its own card.
 func _source(rank: PipRank, suit: PipSuit) -> CardData:
 	var source := CardData.new()
 	source.with_rank(rank.duplicate_deep(Resource.DEEP_DUPLICATE_ALL) as PipRank)
@@ -315,7 +315,7 @@ func _settle_view_of(pa: PlayArea) -> void:
 		if stable >= 10: return
 		last = now
 
-# Waits until the board stops moving, so a shot is never taken mid-transition.
+#Waits for the board to stop moving, so no shot is taken mid-transition.
 func _settle(view: GameView) -> void:
 	var last := Vector2(INF, INF)
 	for _frame : int in 180:

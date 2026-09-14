@@ -347,7 +347,7 @@ class BoardBroadcastStamp extends CardModifierStamp:
 	func get_str() -> String: return "BoardBroadcastStamp"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
-	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	## Named: an inner class has no resource_path, so the inherited key is empty.
 	func combo_key(_hook: StringName = &"") -> String: return "BoardBroadcastClass"
 	func on_after_score() -> void:
 		after_scores += 1
@@ -407,7 +407,7 @@ class LineMultStamp extends CardModifierStamp:
 	func get_str() -> String: return "LineMultStamp"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
-	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	## Named, because the key an inner class inherits would be the empty string.
 	func combo_key(_hook: StringName = &"") -> String: return "LineMultStampClass"
 	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
 		return 2.0
@@ -433,7 +433,7 @@ class ReScoringMarkStamp extends CardModifierStamp:
 	func get_str() -> String: return "ReScoringMarkStamp"
 	func get_description() -> String: return ""
 	func get_frame() -> int: return 0
-	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	## Named, since an inner class carries no resource_path to key on.
 	func combo_key(_hook: StringName = &"") -> String: return "ReScoringMarkClass"
 	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
 		return 2.0

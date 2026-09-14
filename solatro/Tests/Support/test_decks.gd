@@ -1,9 +1,12 @@
 class_name TestDecks
-## FROZEN deck + rules compositions for tests. Tests must NEVER pull decks from
-## Decks/deck.gd: those are the owner's freely-changing playtest decks, and one retuned
-## overnight silently retunes every seeded observation riding it, with nothing going red.
-## A test that needs a different composition adds a NEW function here; existing ones are
-## replay contracts — never edit them.
+## FROZEN deck and rules compositions for tests.
+
+#Tests must NEVER pull decks from Decks/deck.gd: those are the owner's freely-changing playtest
+#decks, and one retuned overnight silently retunes every seeded observation riding it, with nothing
+#going red.
+
+#A test that needs a different composition adds a NEW function here; existing ones are replay
+#contracts and are never edited.
 
 ## A plain paper card of `suit` at `rank` (mirror of Deck._card, frozen here on purpose).
 static func _card(suit: GDScript, rank: int) -> CardData:
@@ -11,10 +14,11 @@ static func _card(suit: GDScript, rank: int) -> CardData:
 			.with_suit(suit.new() as PipSuit) \
 			.with_rank(PipRankNumeral.new().with_value(rank))
 
-## The composition every seeded run (seed 424242 / 31337 in test_ui_props + test_e2e_run)
-## was built against — a verbatim freeze of Decks/deck.gd deck9 as of 2026-07-13 (TypeStone
-## sampler, 32 cards; card ORDER matters — the post-seed shuffle replays it).
-## WHAT THE SEEDED OBSERVATIONS RELY ON: the 424242 submit spawns knives only.
+#A verbatim freeze of the TypeStone sampler, 32 cards, and card ORDER matters because the
+#post-seed shuffle replays it. What the seeded observations rely on: the 424242 submit spawns
+#knives only.
+
+## The composition every seeded run in test_ui_props and test_e2e_run was built against.
 static func seeded_deck() -> Array[CardData]:
 	var out : Array[CardData] = []
 	for _i : int in 4:
@@ -41,9 +45,10 @@ static func standard_rules() -> Array[CardData]:
 		out.append(_card(PipSuitBall, 1).with_skill(skill))
 	return out
 
-## The sorted multiset of skill class names in a rules row. Lets a suite compare the frozen
-## mirror above against the shipped `Deck.rules1` without depending on pip values, card order,
-## or the random suits the shipped builder draws.
+#Lets a suite compare the frozen mirror above against the shipped Deck.rules1 without depending on
+#pip values, card order, or the random suits the shipped builder draws.
+
+## The sorted multiset of skill class names in a rules row.
 static func rules_skill_names(rules: Array[CardData]) -> Array[String]:
 	var out : Array[String] = []
 	for card : CardData in rules:
@@ -53,8 +58,9 @@ static func rules_skill_names(rules: Array[CardData]) -> Array[String]:
 	out.sort()
 	return out
 
-## The smallest valid save-bootstrap deck for tests that CRAFT their board afterwards
-## (composition irrelevant, it just has to exist): one plain card per standard suit.
+#Composition is irrelevant, it just has to exist: one plain card per standard suit.
+
+## The smallest valid save-bootstrap deck for tests that CRAFT their board afterwards.
 static func minimal_deck() -> Array[CardData]:
 	var out : Array[CardData] = []
 	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
@@ -62,9 +68,10 @@ static func minimal_deck() -> Array[CardData]:
 		out.append(_card(suit, 1))
 	return out
 
-## `FIX-DECK-52`: standard 52, every suit at ranks 1-13, all plain. FROZEN — the grid-allotment
-## boundary tests (52 -> 1 grid, 53 -> 2) replay against this exact composition; never
-## `Deck.deck4` (see the file header).
+#FROZEN: the grid-allotment boundary tests, 52 to one grid and 53 to two, replay against this
+#exact composition. Never Deck.deck4 - see the file header.
+
+## `FIX-DECK-52`: standard 52, every suit at ranks 1-13, all plain.
 static func deck_standard_52() -> Array[CardData]:
 	var out : Array[CardData] = []
 	var suits : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
@@ -91,8 +98,9 @@ static func plan_deck() -> Array[CardData]:
 			out.append(_card(suit, rank))
 	return out
 
-## `FIX-DECK-53`: `deck_standard_52` plus one plain card — built FROM the 52 fixture so the
-## boundary case cannot drift apart from it.
+#Built FROM the 52 fixture, so the boundary case cannot drift apart from it.
+
+## `FIX-DECK-53`: `deck_standard_52` plus one plain card.
 static func deck_53() -> Array[CardData]:
 	var out := deck_standard_52()
 	out.append(_card(PipSuitHoop, 1))

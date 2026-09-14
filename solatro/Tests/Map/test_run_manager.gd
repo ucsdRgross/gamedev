@@ -1,18 +1,13 @@
 extends TestSuite
-# res://Tests/Map/test_run_manager.gd
-# ==============================================================================
-# RUN MANAGER — fame/luck/goal formulas + RunState + (guarded) disk round-trip.
-# Formula tests run against a scratch RunState swapped into the RunManager autoload
-# (the real run is restored afterwards). Disk tests always run full: any real run.tres is
-# moved aside (backup_real_save) before the disk section and restored after, so the tests
-# never depend on — nor destroy — an actual run.
-#
-# CATEGORY MAP:
-#   BEHAVIOR — progression rules (lap direction, luck curve, §15b goal curve, fame from
-#     wins; overscore tax retired 2026-07) and the save/resume guarantees.
-#   IMPLEMENTATION — the packed-array score storage format; deep-copy/backref pins
-#     inside the disk tests (check_impl inline).
-# ==============================================================================
+#RUN MANAGER: fame, luck and goal formulas, RunState, and the guarded disk round-trip.
+
+#Formula tests run against a scratch RunState swapped into the RunManager autoload, the real run
+#being restored afterwards. Disk tests always run full: any real run.tres is moved aside before the
+#disk section and restored after, so the tests never depend on, nor destroy, an actual run.
+
+#CATEGORY MAP. BEHAVIOR is the progression rules - lap direction, luck curve, goal curve, fame from
+#wins - plus the save and resume guarantees. IMPLEMENTATION is the packed-array score storage
+#format and the deep-copy and backref pins inside the disk tests.
 
 func suite_name() -> String:
 	return "RUN MANAGER"
@@ -28,7 +23,8 @@ func _ready() -> void:
 	implementation_section("SCORE PACKING FORMAT")
 	test_scores_packing()
 	behavior_section("SAVE / RESUME ON DISK")
-	backup_real_save(suite_tag())   # move any real run.tres aside so disk tests run full, then restore
+#Move any real run.tres aside so disk tests run full, then restore it.
+	backup_real_save(suite_tag())
 	test_disk_round_trip()
 	test_game_state_round_trip()
 	restore_real_save(suite_tag())
@@ -99,10 +95,12 @@ func test_record_win() -> void:
 	check(run.fame == 150, "fame gains the FULL score (overscore tax removed, §8c′)",
 			"fame=%d" % run.fame)
 
-# GameData score packing: the BigNumber score arrays flatten to PARALLEL typed packed
-# arrays (mantissa float + exponent int), not an Array[Array] of pairs. Pure in-memory —
-# never touches disk, so it always runs. Guards the perf-motivated storage format and the
-# copy-on-write assign-back (packing must actually populate the fields).
+#GameData score packing: the BigNumber score arrays flatten to PARALLEL typed packed arrays,
+#mantissa float and exponent int, not an Array[Array] of pairs. Pure in-memory, never touching
+#disk, so it always runs.
+
+#It guards the perf-motivated storage format and the copy-on-write assign-back, packing having to
+#actually populate the fields.
 func test_scores_packing() -> void:
 	var gs := GameData.new()
 	gs.scores_col_legacy = _big_numbers([[4.2, 3], [1.5, 9], [7.0, 0]])
@@ -117,7 +115,7 @@ func test_scores_packing() -> void:
 			"mantissa/exponent columns stay aligned")
 	check(gs.packed_row_upper_mant.size() == 1 and gs.packed_row_lower_mant.is_empty(),
 			"each score array packs independently (incl. empty ones)")
-	# Round-trip back to runtime BigNumbers.
+#Round-trip back to runtime BigNumbers.
 	gs.scores_col_legacy = []
 	gs.scores_row_upper = []
 	gs.unpack_scores()
@@ -137,9 +135,9 @@ func _big_numbers(pairs: Array) -> Array[BigNumber]:
 	return out
 
 func test_disk_round_trip() -> void:
-	# REAL cards, not bare ones: modifiers carry a cyclic data backref that broke
-	# ResourceSaver ("Resource was not pre cached") until RunManager unlinked it around
-	# the write — always test with the full card graph.
+#REAL cards, not bare ones: modifiers carry a cyclic data backref that breaks ResourceSaver with
+#"Resource was not pre cached" unless RunManager unlinks it around the write. Always test with the
+#full card graph.
 	var cards: Array[CardData] = [
 		CardData.new().with_rank(PipRankNumeral.new().with_value(3)) \
 				.with_suit(PipSuitHoop.new()) \
@@ -152,15 +150,14 @@ func test_disk_round_trip() -> void:
 	check_impl(run.card_datas.size() == 1 and run.card_datas[0] != cards[0],
 			"new_run deep-copies the picked deck")
 	check(FileAccess.file_exists(RunManagerClass.RUN_PATH), "new_run writes run.tres")
-	# has_save gates on run.tres ALONE: the map bake is a regenerable cache of world_seed
-	# (WorldMapController.start_run rebakes it when missing), so a run with no bake yet still
-	# resumes.
+#has_save gates on run.tres ALONE: the map bake is a regenerable cache of world_seed, which
+#WorldMapController.start_run rebakes when missing, so a run with no bake yet still resumes.
 	check(RunManager.has_save(), "has_save is true from the run doc alone (map bake is a cache)")
 	check_impl(run.card_datas[0].skill.data == run.card_datas[0],
 			"modifier backrefs are relinked after saving")
 	run.fame = 777
 	run.traveled.append(Vector3i(1, 2, 0))
-	# Resume markers: a show is in progress on node 4.
+#Resume markers: a show is in progress on node 4.
 	run.pending_node_id = 4
 	run.pending_goal = 350
 	RunManager.save_run()
@@ -181,17 +178,17 @@ func test_disk_round_trip() -> void:
 	check(not FileAccess.file_exists(RunManagerClass.RUN_PATH), "clear_save deletes the run doc")
 	check(RunManager.run == null, "clear_save drops the in-memory run")
 
-# The in-progress show's FULL undo history (played boards + BigNumber scores) must survive
-# a quit/resume exactly — mid-game persistence + anti-cheat (every action saved).
+#The in-progress show's FULL undo history, played boards and BigNumber scores, must survive a quit
+#and resume exactly: mid-game persistence plus anti-cheat, every action saved.
 func test_game_state_round_trip() -> void:
 	var run := RunManager.new_run([] as Array[CardData], [] as Array[CardData])
-	# Build two runtime states (an undo stack of depth 2) and store them saveable.
+#Build two runtime states, an undo stack of depth 2, and store them saveable.
 	run.game_history = [_show_state(100), _show_state(123)] as Array[GameData]
-	# A Submit was mid-scoring when saved — the marker must survive so resume replays it.
+#A Submit was mid-scoring when saved, so the marker must survive for resume to replay it.
 	run.pending_action = &"on_run_scorer"
 	RunManager.save_run()
-	# Directly guards the temp-file-extension bug: a save that failed to write left no
-	# run.tres on disk (so Continue was disabled). The full state MUST be on disk here.
+#Directly guards the temp-file-extension bug: a save that fails to write leaves no run.tres on
+#disk, so Continue is disabled. The full state MUST be on disk here.
 	check(FileAccess.file_exists(RunManagerClass.RUN_PATH),
 			"save_run actually writes run.tres to disk (temp file keeps a .tres extension)")
 
@@ -201,7 +198,7 @@ func test_game_state_round_trip() -> void:
 	check(loaded.pending_action == &"on_run_scorer",
 			"pending-action marker persists (quit mid-scoring replays the Submit on resume)")
 	var top : GameData = loaded.game_history[-1]
-	# History snapshots are stored in saveable form — rebuild runtime to verify.
+#History snapshots are stored in saveable form, so runtime is rebuilt to verify.
 	top = top.duplicate_state()
 	top.restore_runtime()
 	check(top.goal == 500 and top.total_score == 123, "game state scalars round-trip")
@@ -215,8 +212,8 @@ func test_game_state_round_trip() -> void:
 			"BigNumber scores round-trip via the flattened snapshot")
 	RunManager.clear_save()
 
-# A runtime GameData with a played, modifier-carrying card and a BigNumber score, returned
-# in saveable form (as Game pushes to history).
+#A runtime GameData with a played, modifier-carrying card and a BigNumber score, returned in
+#saveable form, as Game pushes to history.
 func _show_state(total: int) -> GameData:
 	var gs := GameData.new()
 	gs.goal = 500
@@ -224,9 +221,9 @@ func _show_state(total: int) -> GameData:
 	var played := CardData.new().with_rank(PipRankNumeral.new().with_value(7)) \
 			.with_suit(PipSuitBall.new()).with_skill(SkillExtraPoint.new())
 	played.stage = CardData.Stage.PLAY
-	# ⚠ ON A GRID CELL, not the legacy lower zone. The claim is that a BOARD card and its relinked
-	# modifier backref survive the save round-trip; asserting it against storage nothing renders
-	# proved it for a board the player never sees.
+#⚠ ON A GRID CELL, not the legacy lower zone. The claim is that a BOARD card and its relinked
+#modifier backref survive the save round-trip, and asserting it against storage nothing renders
+#proves it only for a board the player never sees.
 	var grid := GridData.new()
 	grid.grid_width = 1
 	grid.grid_height = 1

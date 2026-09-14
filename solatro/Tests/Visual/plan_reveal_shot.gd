@@ -7,7 +7,7 @@ extends Control
 # Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
 #     OUT_DIR=<absolute dir> <console exe> --path solatro res://Tests/Visual/plan_reveal_shot.tscn
 
-# Deliberately NOT in all_tests.tscn: needs a real renderer and is by-eye material.
+#Not in all_tests.tscn: it needs a real renderer and is by-eye material.
 
 const OUT_DIR_FALLBACK := "user://reveal_shots"
 const SAVE_TAG := "plan_reveal_shot"
@@ -140,7 +140,7 @@ func _shoot(pa: PlayArea, tag: String) -> void:
 	img.save_png("%s/plan_rimless_%s.png" % [_out_dir, tag])
 	print("[plan_reveal_shot] wrote plan_rimless_%s.png" % tag)
 
-# Waits until the board stops moving, so a shot is never taken mid-transition.
+#Waits for the board to stop moving, so no shot is taken mid-transition.
 func _settle(view: GameView) -> void:
 	var last := Vector2(INF, INF)
 	for _frame : int in 180:
