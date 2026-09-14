@@ -2,14 +2,16 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 54 commits on `board-plan` (HEAD is this handoff commit). EVERY execution step is landed and
-verified: S1-S16, the four review-fix rounds (A-I), and the six steps the owner's gap rulings opened
-(S18-S23), one implementer, one full gate and one commit each; all six gaps are resolved with their
-`resolution:` blocks and PLAN 1.10-bis carries the rulings verbatim. Tree clean. Last gate: ALL 48
-SUITES: 4388 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
-before S1. OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort
-(Next up carries the prompt). Implementer sessions die to the Opus session limit every few hours;
-every cut-off so far was resumed with SendMessage from the same transcript, never restarted.
+**State:** 59 commits on `board-plan` (HEAD is this handoff commit). EVERY execution step is landed and
+verified: S1-S16, the review-fix rounds (A-I), the six steps the owner's gap rulings opened
+(S18-S23), and two playtest rulings (S24 the cascade reveal, S25 the standalone scene's 52-card
+deck), one implementer, one full gate and one commit each; all six gaps are resolved with their
+`resolution:` blocks and PLAN 1.10-bis carries every ruling verbatim. Tree clean. Last gate: ALL 48
+SUITES: 4404 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
+before S1. The owner has playtested the game view and approved the selection glow and the shimmer.
+OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort (Next up
+carries the prompt). Implementer sessions die to the Opus session limit every few hours; every
+cut-off so far was resumed with SendMessage from the same transcript, never restarted.
 **Entry docs:** solatro/design/board-plan/PLAN.md (self-contained), DESIGN.md (authority on
 behaviour), TEST_PLAN.md (every test that must exist), NAMES.md (every identifier),
 ASSUMPTIONS.md (decisions logged), gaps/, solatro/START_HERE.md
@@ -277,9 +279,9 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   files_touched: []
   verification_command: 'run_suite.sh <label>'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Deck.gd:19 active playtest deck returns deck14, which the 15b goal curve is fitted to; change only the standalone path.'
+  status: done
+  evidence: 'Implementer red with get_deck() pointed back at deck14: GAME HEADLESS 73 passed, 2 FAILED of 75 (52 cards; 4 suits x 13 ranks once); green 75/75. Overseer full run: see the S25 commit. Deck.get_deck() readers unchanged (game.gd add_deck''s blank-save fallback, leak_sentinel); a real run fills Main.save_info.card_datas from RunManager.new_run and never reaches it; the run deck check reads TestDecks.deck_20().size() (20).'
+  notes: 'get_deck() returns the shipped deck4 (the full standard 52). No .tscn touched: game_view.gd''s standalone boot builds Game with the default Deck.new(). Verified through the production accessor in a test, not by an F6 boot.'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
@@ -433,7 +435,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-S18-S24 are landed; S25 (the standalone scene's deck) runs next, then S17: open a NEW session at or above Opus 5 default effort and paste:
+S18-S25 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
     (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
