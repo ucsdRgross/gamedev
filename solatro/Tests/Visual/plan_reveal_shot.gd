@@ -29,9 +29,9 @@ func _ready() -> void:
 			TestDecks.deck_standard_52(), TestDecks.standard_rules(), 1_000_000_000, 2, 20260913)
 	var g := view.game
 	var pa := view.play_area
-	print("[plan_reveal_shot] base_delay %.2f, plan_reveal_fraction %.2f, get_delay %.2f"
+	print("[plan_reveal_shot] base_delay %.2f, plan_reveal_multiplier %.2f, get_delay %.2f"
 			% [SettingsManager.settings.base_delay,
-			SettingsManager.settings.plan_reveal_fraction, g.get_delay()])
+			SettingsManager.settings.plan_reveal_multiplier, g.get_delay()])
 	await _watch_the_reveal(pa, g)
 
 	_grant_a_mark_with_all_four(g)
@@ -52,12 +52,14 @@ func _ready() -> void:
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
 
-# THE MOVEMENT, which a still cannot show: one line per cell the reveal deals, with the wall clock
-# beside it and the coordinate it landed on, so the ORDER can be read against row-major.
+# THE MOVEMENT, which a still cannot show: one line per cell the reveal STARTS, with the wall clock
+# beside it and the coordinate it landed on, so the order and the stagger can both be read off it.
 func _watch_the_reveal(pa: PlayArea, g: Game) -> void:
 	var started := Time.get_ticks_msec()
 	var total := pa._plan_reveal_pending.size()
 	var last := -1
+	var first_start := -1
+	var final_start := 0
 	var waited := 0.0
 	while waited < REVEAL_WATCHDOG:
 		var left : int = pa._plan_reveal_pending.size()
@@ -66,16 +68,23 @@ func _watch_the_reveal(pa: PlayArea, g: Game) -> void:
 			started = Time.get_ticks_msec()
 			print("[plan_reveal_shot] reveal begins with %d cells to deal" % total)
 		if left != last and total > 0:
+			var at := Time.get_ticks_msec() - started
+			if left < total:
+				if first_start < 0: first_start = at
+				final_start = at
 			var next := "none"
 			if left > 0:
 				var coord := g.state.cell_type_coord(pa._plan_reveal_pending[0])
 				next = "grid %d cell (%d,%d)" % [coord.grid, coord.x, coord.y]
-			print("[plan_reveal_shot] t=%5d ms  revealed %2d of %2d  next %s"
-					% [Time.get_ticks_msec() - started, total - left, total, next])
+			print("[plan_reveal_shot] t=%5d ms  started %2d of %2d  next %s"
+					% [at, total - left, total, next])
 			last = left
 		if total > 0 and left == 0: break
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+	var span := float(final_start - maxi(first_start, 0))
+	print("[plan_reveal_shot] %d cells ~%.0f ms apart, %.2f s from the first start to the last"
+			% [total, span / float(maxi(total - 1, 1)), span / 1000.0])
 	print("[plan_reveal_shot] reveal done after %.2f s of wall clock" % waited)
 	var marks := 0
 	for type_card : CardData in g.state.grids[0].cell_types:

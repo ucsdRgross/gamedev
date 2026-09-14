@@ -18,6 +18,8 @@ extends TestSuite
 const PLAY_AREA_SCENE := preload("res://UI/play_area.tscn")
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const WATCHDOG_SECS := 15.0
+## Stretches the deal so a once-a-frame sampler sees one cell at a time, not the whole cascade.
+const OBSERVABLE_REVEAL_MULTIPLIER := 10.0
 
 func suite_name() -> String:
 	return "PLAN VISUALS"
@@ -36,6 +38,8 @@ func _ready() -> void:
 	await test_the_reveal_deals_the_marks_in_the_deals_own_order()
 	await test_a_show_with_no_view_deals_its_board_and_reveals_nothing()
 	await test_a_reveal_outlives_the_screen_that_holds_the_environment()
+	behavior_section("THE OPENING REVEAL IS A CASCADE OVER ONE TUNABLE DURATION")
+	await test_the_reveal_cascades_over_one_tunable_duration()
 	behavior_section("A HELD CARD LIGHTS EVERY MARK IT WOULD AGREE WITH")
 	await setup_view()
 	await test_holding_a_card_lights_the_marks_it_agrees_with()
@@ -269,6 +273,8 @@ func test_the_reveal_deals_the_marks_in_the_deals_own_order() -> void:
 	var pa := make_play_area()
 	await settle(pa)
 
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_reveal_multiplier = OBSERVABLE_REVEAL_MULTIPLIER
 	var running : Array[bool] = [false]
 	_reveal(pa, running)
 	var sizes : Array[int] = []
@@ -300,6 +306,7 @@ func test_the_reveal_deals_the_marks_in_the_deals_own_order() -> void:
 	for mark : CardData in expected:
 		if not pa.data_card[mark].mark_drawn: all_drawn = false
 	check(all_drawn, "TP-70a: every mark is printed when the reveal ends")
+	restore_settings_snapshot(snapshot)
 	await cleanup(g, pa)
 
 # Drives `reveal_plan` alongside the sampling loop above and reports when it returns, which is what
@@ -367,8 +374,14 @@ func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
 	var pa := make_play_area()
 	await settle(pa)
 
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_reveal_multiplier = OBSERVABLE_REVEAL_MULTIPLIER
 	var running : Array[bool] = [false]
 	_reveal(pa, running)
+#The cascade deals its first cell on the frame after it is scheduled, so the loss is staged once the
+#deal is under way -- which is the case this is about.
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var dealt : int = marked.size() - pa._plan_reveal_pending.size()
 	var passing := FakeEnvironment.new()
 	add_child(passing)
@@ -392,8 +405,114 @@ func test_a_reveal_outlives_the_screen_that_holds_the_environment() -> void:
 	for mark : CardData in marked:
 		if not pa.data_card[mark].mark_drawn: all_drawn = false
 	check(all_drawn, "TP-76: every mark is printed, the cells after the loss included")
+	restore_settings_snapshot(snapshot)
 	CardEnvironment.CURRENT = g
 	await cleanup(g, pa)
+
+# ==============================================================================
+# TP-92 -- the reveal is a cascade over one tunable duration
+# ==============================================================================
+
+## The pacing this measures at: a stagger of a few milliseconds cannot be sampled once a frame.
+const CASCADE_DELAY := 1.0
+## Deliberately NOT the shipped default, so a reveal that ignored the knob would measure differently.
+const CASCADE_MULTIPLIER := 2.0
+
+# THE WHOLE deal takes one multiple of the delay whatever the cell count, so the cells START that
+# span apart and a cell is still spinning when the ones after it arrive -- a cascade, not a queue.
+func test_the_reveal_cascades_over_one_tunable_duration() -> void:
+	var plan_snapshot := snapshot_settings("plan_")
+	var delay_snapshot := snapshot_settings("base_delay")
+	SettingsManager.settings.base_delay = CASCADE_DELAY
+	SettingsManager.settings.plan_reveal_multiplier = CASCADE_MULTIPLIER
+	var g := make_grid_game()
+	var marked := mark_every_cell(g.state)
+	var order : Array[BoardCoord] = []
+	for i : int in range(marked.size() - 1, -1, -1):
+		order.append(g.state.cell_type_coord(marked[i]))
+	g.state.plan_reveal_order = order
+	var expected : Array[CardData] = []
+	for coord : BoardCoord in order:
+		expected.append(g.state.cell_type_at(coord))
+	var pa := make_play_area()
+	await settle(pa)
+
+	var delay := g.get_delay()
+	var total := CASCADE_MULTIPLIER * delay
+	var stagger := total / float(expected.size())
+	var starts : Array[float] = []
+	var overlaps := 0
+	var order_held := true
+	var running : Array[bool] = [false]
+	_reveal(pa, running)
+	var began := Time.get_ticks_msec()
+	var waited := 0.0
+#Sampled until every start is in rather than until the coroutine returns: the last cell starts on
+#the very frame the cascade ends, so a loop keyed on the return misses it.
+	while starts.size() < expected.size() and waited < WATCHDOG_SECS:
+		var dealt : int = expected.size() - pa._plan_reveal_pending.size()
+		while starts.size() < dealt:
+			var k := starts.size()
+			starts.append(float(Time.get_ticks_msec() - began) / 1000.0)
+			if not pa.data_card[expected[k]].mark_drawn: order_held = false
+			if k > 0 and _is_spinning(pa.data_card[expected[k - 1]]): overlaps += 1
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	var spinning := true
+	while spinning and waited < WATCHDOG_SECS:
+		spinning = false
+		for mark : CardData in expected:
+			if _is_spinning(pa.data_card[mark]): spinning = true
+		if spinning:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
+	var finished_at := float(Time.get_ticks_msec() - began) / 1000.0
+#Read off `anim_spin` itself rather than retyping the fraction it turns a delay into, so the bound
+#below cannot drift away from the spin it is about.
+	var spin_secs : float = pa.data_card[expected[0]].anim_spin(delay)
+	restore_settings_snapshot(plan_snapshot)
+	restore_settings_snapshot(delay_snapshot)
+
+	check(starts.size() == expected.size(),
+			"TP-92: precondition: every cell's start was sampled",
+			"%d of %d sampled after %.1fs" % [starts.size(), expected.size(), waited])
+	check(spin_secs > 0.0, "TP-92: precondition: a spin has a length of its own",
+			"%.3f s" % spin_secs)
+	check(not running[0], "TP-92: the cascade dealt every cell", "waited %.1fs" % waited)
+	check(order_held,
+			"TP-92: each cell that starts is the next one in the deal's own walk order")
+#The probe samples once a frame and a scheduled start lands on the frame after its deadline, so a
+#start is read a frame or two late -- one whole stagger of slack, still an order tighter than the
+#half-a-delay per cell this replaced.
+	var tolerance := stagger
+	var worst := 0.0
+	var worst_cell := 0
+	for k : int in starts.size():
+		var drift := absf(starts[k] - float(k) * stagger)
+		if drift > worst:
+			worst = drift
+			worst_cell = k
+	check(worst <= tolerance,
+			"TP-92: cell k starts k shares of the whole duration in, the knob setting that duration",
+			"stagger %.3f s, worst drift %.3f s at cell %d" % [stagger, worst, worst_cell])
+	var last_start : float = starts[starts.size() - 1] if not starts.is_empty() else INF
+	check(last_start < total,
+			"TP-92: the last cell has started before the whole duration is up",
+			"last start %.3f s of %.3f s" % [last_start, total])
+	check(overlaps > 0,
+			"TP-92: a cell starts while the cell before it is still spinning",
+			"%d of %d starts overlapped the previous spin" % [overlaps, starts.size()])
+	check(finished_at <= total + spin_secs + tolerance,
+			"TP-92: the whole deal is over within that duration plus one spin",
+			"last spin ended %.2f s, budget %.2f s"
+			% [finished_at, total + spin_secs + tolerance])
+	await cleanup(g, pa)
+
+# A spin is IN FLIGHT while its own tween still turns the card, which is the state the overlap claim
+# is about -- a wall clock alone cannot see it.
+func _is_spinning(visual: CardVisual) -> bool:
+	var spin := visual.spin_tween
+	return spin != null and spin.is_valid() and spin.is_running()
 
 # ==============================================================================
 # THE HELD-CARD FIXTURE -- one real GameView, driven by synthesized device input

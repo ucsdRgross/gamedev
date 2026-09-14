@@ -238,8 +238,16 @@ gap under `gaps/`.
 - S11 / Q69: the reveal is driven from `PlayArea.reveal_plan()`, called from `_start_fresh_show` after
   the view rebuild and only when a view exists. The cells still to be dealt live on the PlayArea as
   their own zone cards, `_bind_stack` derives each cell's `CardVisual.mark_drawn` from that list, and
-  the per-cell step is the existing `anim_spin` plus `Pacing.wait(plan_reveal_fraction * get_delay())`
+  the per-cell step is the existing `anim_spin` on one tween-scheduled clock (S24)
   -- so a rebuild landing mid-reveal still shows exactly the marks the reveal has dealt.
+- S24 / the playtest ruling: the WHOLE opening deal is `plan_reveal_multiplier * get_delay()` (1.0,
+  replacing `plan_reveal_fraction`), divided by the cell count into the stagger the cells START
+  apart. One `Tween` of delayed callbacks carries that schedule, so the stagger cannot drift with the
+  frame rate; each callback deals its cell and leaves `anim_spin(get_delay())` running, so the spins
+  OVERLAP and a spin is six tenths of a delay whatever the stagger is. The first cell lands on the
+  frame after the reveal is scheduled rather than synchronously, which is what TP-76 stages its
+  environment loss around. A spin whose visual is freed by a rebuild dies with it: the tween is bound
+  to the CardVisual that created it.
 - S11, S12 / owner rulings during execution, verbatim: "no outline on mark when not being selected and
   on board, then white outline when indicating it matches current card being selected to show it
   matches." and "marks dont have specific type for now, keep using the zone type art". PLAN §1.10

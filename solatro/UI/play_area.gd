@@ -1732,8 +1732,8 @@ func _bind_stack(slot: Control, stack: Array[CardData], zone_card: CardData) -> 
 var _plan_reveal_pending : Array[CardData] = []
 
 # DEAL THE PLAN ON SCREEN, cell by cell in the order the deal actually walked -- which is what makes
-# the randomness legible -- each cell taking its own share of the live delay. Consumed once: a
-# resumed show carries no order and opens with its plan already printed.
+# the randomness legible -- the WHOLE deal taking one tunable multiple of the live delay. Consumed
+# once: a resumed show carries no order and opens with its plan already printed.
 func reveal_plan() -> void:
 	var game := CardEnvironment.get_current_game()
 	if not game: return
@@ -1750,14 +1750,24 @@ func reveal_plan() -> void:
 		var held : CardVisual = data_card.get(mark)
 		if held: held.mark_drawn = false
 	if not visuals_ready(): await board_visuals_ready
-	while not _plan_reveal_pending.is_empty():
-		var mark : CardData = _plan_reveal_pending.pop_front()
-		var visual : CardVisual = data_card.get(mark)
-		var delay := game.get_delay()
-		if visual:
-			visual.mark_drawn = true
-			visual.anim_spin(delay)
-		await Pacing.wait(self, SettingsManager.settings.plan_reveal_fraction * delay).timeout
+#Nothing left to deal is nothing to schedule, and a Tween with no steps is an engine error.
+	if _plan_reveal_pending.is_empty(): return
+	var cells := _plan_reveal_pending.size()
+	var stagger := SettingsManager.settings.plan_reveal_multiplier * game.get_delay() / float(cells)
+	var cascade := create_tween()
+	for i : int in cells:
+		cascade.tween_callback(_deal_next_mark.bind(game)).set_delay(stagger if i > 0 else 0.0)
+	await cascade.finished
+
+# ONE CELL'S TURN in that cascade: the mark joins the board the moment its spin STARTS and the spin
+# is left running, so the next cell arrives on the cascade's own clock and the spins overlap. The
+# pacing comes off the game the reveal resolved, never off a global any screen change rewrites.
+func _deal_next_mark(game: Game) -> void:
+	var mark : CardData = _plan_reveal_pending.pop_front()
+	var visual : CardVisual = data_card.get(mark)
+	if visual:
+		visual.mark_drawn = true
+		visual.anim_spin(game.get_delay())
 
 func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	# ⚠ **THE CONTAINER'S OWN `global_position` STOPS MIRRORING ITS CHILDREN THE MOMENT IT IS

@@ -690,8 +690,9 @@ that by re-checking every cell of `Line.cells` against the live board.
   `CardEffectApi._redraw_marks`, which bumps ONCE for the whole batch.
 - **On screen** — a mark draws as a real card in full colour with NO rim, and the opening reveal
   is `PlayArea.reveal_plan`, cell by cell in the deal's own walk order
-  (`GameData.plan_reveal_order`, transient and read by nothing else), paced by
-  `plan_reveal_fraction` × `get_delay()`. The marks LAYER (`PlayArea.plan_layer_open`) hides the
+  (`GameData.plan_reveal_order`, transient and read by nothing else). The WHOLE deal takes
+  `plan_reveal_multiplier` × `get_delay()`: the cells start that span divided by their count apart,
+  on one Tween of delayed callbacks, and each cell's spin is left running as the next arrives. The marks LAYER (`PlayArea.plan_layer_open`) hides the
   played cards and draws every cell's mark: `ui_plan_layer` (M, or the X face button) PEEKS while
   held, the HUD Marks button toggles, `_select_data` refuses selection while it is open,
   `GameView._board_is_playable()` gates undo and End, and `queue_rebuild()` / `setup_gui()` close
@@ -702,7 +703,7 @@ that by re-checking every cell of `Line.cells` against the live board.
   instead of sitting still.
 - **Knobs**, six, declared once under `@export_group("Balance — board plan")` in
   `Scripts/player_settings.gd`: `plan_rank_match_step`, `plan_rank_flat_fallback`,
-  `plan_ace_value`, `plan_talent_mult`, `plan_hat_mult`, `plan_reveal_fraction`.
+  `plan_ace_value`, `plan_talent_mult`, `plan_hat_mult`, `plan_reveal_multiplier`.
 - **Suites:** BOARD PLAN (`Tests/Engine/test_board_plan.gd`) and MARK MATCH
   (`Tests/Engine/test_mark_match.gd`), both in the `--logic` tier; PLAN VISUALS
   (`Tests/UI/test_plan_visuals.gd`), plus the shot scenes `Tests/Visual/plan_reveal_shot.tscn`,

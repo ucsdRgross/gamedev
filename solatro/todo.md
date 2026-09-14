@@ -101,8 +101,7 @@ written when a run stalls or fails.
     node 3, so the goal constants are unrefit and every goal is trivial meanwhile
     (ARCHITECTURE_REVIEW §3b). This is
     also why `design/poker-patience/gaps/GAP-041.md` did not close with it.
-  - ⬜ **For the owner's eye:** the 12.1 s opening reveal (`plan_reveal_fraction` 0.5 ×
-    `get_delay()`), and whether "no rim" alone reads as a mark at overview zoom.
+  - ⬜ **For the owner's eye:** whether "no rim" alone reads as a mark at overview zoom.
   - ⬜ The landing feedback was never photographed with a scoring beam on the same cell
     (`design/board-plan/TEST_PLAN.md` TP-72's second half); every other visual row is verified.
   - ⬜ **Recorded, no producer today.** A card an EFFECT moves off a marked cell keeps its last

@@ -692,8 +692,8 @@ var wall_info_mode : bool = false
 	set(value):
 		plan_hat_mult = value
 		settings_changed.emit()
-## One cell's share of the opening deal, as a fraction of get_delay().
-@export var plan_reveal_fraction : float = 0.5:
+## The WHOLE opening deal's length as a multiple of get_delay(); the cells start total/cells apart.
+@export var plan_reveal_multiplier : float = 1.0:
 	set(value):
-		plan_reveal_fraction = value
+		plan_reveal_multiplier = value
 		settings_changed.emit()

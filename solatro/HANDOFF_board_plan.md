@@ -127,7 +127,7 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   verification_kind: suite
   status: done
   evidence: 'Implementer red runs (MARK MATCH of 49): always RANK|SUIT -> 8 FAILED; script identity loosened -> 2 FAILED (TP-21, TP-22); result cached on revision -> 3 FAILED (TP-23, TP-39); routed through the MELD hooks -> 2 FAILED (TP-39 dispatch count caught the fallback); ceiling/ace dropped -> 3 FAILED (TP-35). Overseer full run: ALL 47 SUITES: 4078 CHECKS PASSED, errors log empty; MARK MATCH 49/49, COMPARATOR 154/154; SECTION 8 identical; banner diff vs S4 only MARK MATCH (+ fuzz drift). grep: enum, four MARK_* constants, four hooks as comments and zero as methods, five knobs under "Balance — board plan", no literal in the bonus functions, no production caller yet (S6/S9 own them).'
-  notes: 'The five knobs landed here because flat_bonus/mult_bonus need them (S14 keeps only plan_reveal_fraction). PipComparator.modifier_script made public; CountingEnvironment moved to Tests/Support. A rank with no int value is value = NAN (is_finite); 2.5 built with PipRankNumeral.with_value. ARCHITECTURE_REVIEW §1.4 hook roster needs the on_mark_* entry at S16.'
+  notes: 'The five knobs landed here because flat_bonus/mult_bonus need them (S14 keeps only plan_reveal_fraction (retired at S24)). PipComparator.modifier_script made public; CountingEnvironment moved to Tests/Support. A rank with no int value is value = NAN (is_finite); 2.5 built with PipRankNumeral.with_value. ARCHITECTURE_REVIEW §1.4 hook roster needs the on_mark_* entry at S16.'
 - id: S6
   description: (hand + flats) x M in score_line; TP-30..38; SECTION 8 leaderboard byte-identical.
   files_touched: [solatro/Levels/game.gd, solatro/Scripts/card_effect_api.gd, solatro/Scripts/card_environment.gd, solatro/Scripts/game_data.gd, solatro/Scripts/mark_match.gd, solatro/Tests/Engine/test_mark_match.gd, solatro/Tests/E2E/test_e2e_run.gd]
@@ -169,13 +169,13 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs (BOARD PLAN of 101): reroll drawing draw_deck[0] instead of the deal -> the fewest-copies check red; swap without relink -> the backref check red; grant with granted false -> the flag check and I6 red. Overseer full run: ALL 47 SUITES: 4193 CHECKS PASSED, errors log empty; BOARD PLAN 101/101; SECTION 8 identical; per-suite banners vs S9 differ only in BOARD PLAN. grep: four api functions with the registry signatures; BoardPlan.deal still has two call sites; Board.deal_marks shared by the late grid and the reroll; no global RNG.'
   notes: 'A content surface with NO shipped caller yet (by design). The three writers bump revision once each. QR5 follow-ups never asked: a reroll or swap MAY touch an occupied cell (logged assumption). grant_mark writes over an existing mark without a prior clear (write_mark assigns every slot).'
 - id: S11
-  description: the mark's look (owner ruling - a real card's colours, no rim); the reveal cell by cell in deal order (plan_reveal_fraction); description names the mark; TP-60, TP-61, TP-62, TP-70; by eye TP-71, TP-74, TP-75.
+  description: the mark's look (owner ruling - a real card's colours, no rim); the reveal cell by cell in deal order (plan_reveal_fraction (retired at S24)); description names the mark; TP-60, TP-61, TP-62, TP-70; by eye TP-71, TP-74, TP-75.
   files_touched: [solatro/Cards/Types/type_grid_cell.gd, solatro/Cards/card_outline.gd, solatro/Cards/card_visual.gd, solatro/UI/play_area.gd, solatro/Levels/game.gd, solatro/Levels/game_view.gd, solatro/Scripts/board_plan.gd, solatro/Scripts/game_data.gd, solatro/Scripts/player_settings.gd, solatro/Locale/localization.csv, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Visual/plan_reveal_shot.gd, solatro/Tests/all_tests.tscn, solatro/Tests/Support/test_base.gd]
   verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_reveal_shot.tscn and look'
   verification_kind: snapshot
   status: done
   evidence: 'Overseer full run: ALL 48 SUITES: 4236 passed, 1 FAILED (the standing WALL FOCUS line); PLAN VISUALS 30/30 (34/34 with TP-76, own commit); PIXELS 43/43; PALETTE 34/34; VISUAL LAYERS 221/221; SECTION 8 identical. By eye (overseer, 4x crop): a marked empty cell draws its art, rank pip and suit pip in full colour at full size inside the dashed ring with NO rim; a real card beside it is identical plus its dark rim and cream body (a played card frame); the unmarked cell is the bare ring. Pre-S11 crop confirms marks never had a cream body (the cell type frame is a hollow ring), so the only pixel change is the rim. TP-74 reveal measured over time by the sibling probe: 25 cells ~516 ms apart, 12.1 s total, in the walk order, not row-major. TP-75: no new palette entry; the palette-swap snapshot renders no board.'
-  notes: 'Owner ruling superseded Q63 grey (PLAN 1.10). Mechanism: the outline TYPE override layer with width 0; a measured engine bug fixed on the way (CardOutline.material_of re-seeded u_outline_width after set_rim, so no per-type width override survived). The reveal lives in PlayArea.reveal_plan() via a GameView delegate; plan_reveal_order transient. ⚠ FOR THE OWNER: the 12.1 s opening (plan_reveal_fraction 0.5 x get_delay) is the knob; and whether no rim alone reads as a mark at overview zoom.'
+  notes: 'Owner ruling superseded Q63 grey (PLAN 1.10). Mechanism: the outline TYPE override layer with width 0; a measured engine bug fixed on the way (CardOutline.material_of re-seeded u_outline_width after set_rim, so no per-type width override survived). The reveal lives in PlayArea.reveal_plan() via a GameView delegate; plan_reveal_order transient. ⚠ FOR THE OWNER: the 12.1 s opening (plan_reveal_fraction (retired at S24) 0.5 x get_delay) is the knob; and whether no rim alone reads as a mark at overview zoom.'
 - id: S12
   description: the match highlight while holding a card, and the landing feedback; palette roles match_rim/match_rim_active; TP-63, TP-64, TP-65, TP-83; by eye TP-72, TP-73.
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd, solatro/Scripts/palette_roles.gd, solatro/Assets/Palette/roles.tres, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Support/test_input.gd, solatro/Tests/Support/test_game_view_host.gd, solatro/Tests/Interaction/test_interaction.gd, solatro/Tests/Visual/plan_match_shot.gd, solatro/Tests/Visual/plan_match_shot.tscn, solatro/Tests/Visual/plan_reveal_shot.gd]
@@ -193,12 +193,12 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   evidence: 'Implementer red runs, each at 98 checks: layer swap deleted -> PLAN VISUALS 96/2 (TP-67 x2); selection refusal removed -> 94/4 (TP-66 x4); both closes removed -> 96/2 (TP-69 x2); HUD toggle open-only -> 94/4 (TP-68 x4); green 98/98 then 99/99 with the localisation check. Overseer full run: ALL 48 SUITES: 4311 CHECKS PASSED, errors log empty; PLAN VISUALS 99/99; SECTION 8 identical; banners vs S12 differ only in fuzz drift and PLAN VISUALS 63 -> 99. designloop check on the worktree: 0 errors, 0 warnings. By eye (overseer, plan_layer_shot + 3x crop): focused, all 25 cells draw their marks in full colour inside the dashed frames with no played card visible, three realized cells wear gold rims on the agreeing pips only, the localised Marks button sits under Deck, the Entrance row is untouched; overview, two full grids of marks with the realized rim legible, the third grid past the right edge as in S12. Headless editor open clean. Diff removes three indented comments and adds none; no modulate write, no design id, no literal beyond 0.'
   notes: 'PARTIAL on GAP-005: every shoulder is bound (wall_back L1, wall_forward R1, grid_pan L2/R2; poker-patience Q187=(b) forbids taking the wall''s), so ui_plan_layer carries only the M key and the pad reaches the view through the HUD control (TP-68 covers it by focus + Accept). Mechanism: one flag PlayArea.plan_layer_open; the key is a peek (pressed opens, released closes), the HUD Button toggles; _select_data refuses selection while open, GameView asks _board_is_playable() before undo and end-show; queue_rebuild() and setup_gui() close it. The white border in both shots is the engine''s ScrollContainer focus panel, present in S12''s landed.png at the same pixels - pre-existing, shows in the shipped game after the first board click.'
 - id: S14
-  description: the knobs - confirm the five landed at S5 and plan_reveal_fraction from S11 are declared once under "Balance - board plan" and read by production.
+  description: the knobs - confirm the five landed at S5 and plan_reveal_fraction (retired at S24) from S11 are declared once under "Balance - board plan" and read by production.
   files_touched: []
   verification_command: 'grep -c "var plan_" solatro/Scripts/player_settings.gd; grep -rl plan_<knob> solatro --include=*.gd'
   verification_kind: suite
   status: done
-  evidence: 'grep: each of plan_rank_match_step, plan_rank_flat_fallback, plan_ace_value, plan_talent_mult, plan_hat_mult declared once in player_settings.gd and read by Scripts/mark_match.gd; plan_reveal_fraction declared once and read by UI/play_area.gd; the group label "Balance - board plan" appears once. No code change; the S13 gate run (ALL 48 SUITES: 4311 CHECKS PASSED) is the run this tree was verified on.'
+  evidence: 'grep: each of plan_rank_match_step, plan_rank_flat_fallback, plan_ace_value, plan_talent_mult, plan_hat_mult declared once in player_settings.gd and read by Scripts/mark_match.gd; plan_reveal_fraction (retired at S24) declared once and read by UI/play_area.gd; the group label "Balance - board plan" appears once. No code change; the S13 gate run (ALL 48 SUITES: 4311 CHECKS PASSED) is the run this tree was verified on.'
   notes: 'Nothing to add: PLAN 1.12 lists exactly these six.'
 - id: S15
   description: the curve refit - scoring_sim.py models the deal, the match and the composition; scoring_parity.gd dumps marked boards; goal_g0/goal_alpha refit; GAP-041 closed by a poker-patience v3; TP-80..82.
@@ -264,6 +264,22 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   status: done
   evidence: 'Implementer red: blend replaced by a sample -> OUTLINE 38 passed, 2 FAILED of 40 (midpoints not the blend; a midpoint equals the resting ink); the wiring removed from _alert_of -> PLAN VISUALS 130/1 of 131 (exactly the activated elements run the shimmer: drew 0 of 3); green 40/40 and 131/131 at equal counts. Overseer full run: ALL 48 SUITES: 4388 CHECKS PASSED, errors log empty, SECTION 8 identical; banners vs S19 differ only in fuzz drift, banner order, PALETTE 36 -> 39, OUTLINE 37 -> 40, PLAN VISUALS 128 -> 131. Movement (plan_match_shot print): the rank-pip rim pixel over one 2.00 s loop shows 8 distinct colours (#f6c720 .. #58dadf .. #f7c510, out and back to gold), the control pixel on an unmatched mark 1 colour; 79 pixels of the pip box moved over a quarter loop, 0 of the control box. By eye (overseer, compare_s23.png at 5x): phase 0 gold rims on the landed 8-of-Hoops rank and suit pips, half a loop later the same two pips cyan, art, frame and neighbouring marks identical. Headless editor open clean.'
   notes: 'CardOutline.Alert.SHIMMER, built by CardAlert.shimmer(), applied per element in CardVisual._alert_of to the elements wearing match_rim_active and nothing else; blends between consecutive entries of Assets/Palette/ramp_match.tres (6, 31, 3, 15, 12, 9; gold first so phase 0 IS the flat activated ink) - the one BLENDED ramp, owner-ruled, stated at the shader; OutlineStyle.shimmer_period_fraction 2.0 of get_delay(). One new uniform (the ramp strip); phase reuses u_alert_clock. fx_cost not measured: the branch is uniform-gated and reached only by activated-rim fragments.'
+- id: S24
+  description: playtest ruling - the opening reveal is a cascade over get_delay() x plan_reveal_multiplier (1.0, replaces plan_reveal_fraction (retired at S24)); cells start total/N apart on one Tween and their spins overlap; TP-92.
+  files_touched: [solatro/UI/play_area.gd, solatro/Scripts/player_settings.gd, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Visual/plan_reveal_shot.gd]
+  verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_reveal_shot.tscn and read its timing print'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Implementer red (PLAN VISUALS, 139 checks all runs): the loop awaiting each spin -> 5 FAILED (dealt every cell after 15.0 s, start drift 12.7 s, last start 14.7 s of 2.0 s, 0 of 25 overlaps, total 15.0 s vs 2.68 s budget); the multiplier ignored -> 3 FAILED (start times, TP-70a cell-by-cell, TP-76 precondition); green 139/139. Overseer full run: see the S24 commit. Timing (shipped get_delay 1.00 s): stagger 40 ms by design, the shot printed 21 cells ~36 ms apart, 0.71 s first start to last, reveal done after 0.74 s wall clock, against S11 12.1 s; consecutive starts advance 16-50 ms with up to 25 spins in flight.'
+  notes: 'anim_spin is handed the full get_delay() (its spin length is derived from it); a spin whose visual a rebuild frees dies with its tween. The first cell lands the frame after reveal_plan() is scheduled. TP-70a and TP-76 re-fixtured at OBSERVABLE_REVEAL_MULTIPLIER 10.0 because the whole cascade is shorter than two frames at suite pacing. DESIGN.md is untouched (the implementer edited its tunable row; reverted - the design is the frozen v1 authority and PLAN 1.12 carries the retirement).'
+- id: S25
+  description: owner request - the standalone GameView scene (game_view.tscn run directly) boots with the standard 52-card deck instead of deck14, for playtesting; the run's start deck and the goal-curve fixtures untouched.
+  files_touched: []
+  verification_command: 'run_suite.sh <label>'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Deck.gd:19 active playtest deck returns deck14, which the 15b goal curve is fitted to; change only the standalone path.'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
@@ -408,7 +424,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
 - For the owner's eye: the board window's focus border (the engine's `ScrollContainer` focus
   panel) shows after the first board click, in either layer - pre-existing, visible in every
   by-eye shot that clicked the board.
-- For the owner's eye: the 12.1 s opening reveal (`plan_reveal_fraction` 0.5 x `get_delay`) and
+- For the owner's eye: the 12.1 s opening reveal (`plan_reveal_fraction (retired at S24)` 0.5 x `get_delay`) and
   whether "no rim" alone reads as a mark at overview zoom. `PipRankNumeral.get_str()` prints
   "NumeralRank5.0" in the mark's description (pre-existing wart).
 
@@ -417,7 +433,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-S18-S23 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
+S18-S24 are landed; S25 (the standalone scene's deck) runs next, then S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
     (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
