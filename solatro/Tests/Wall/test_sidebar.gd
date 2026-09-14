@@ -145,6 +145,7 @@ func _ready() -> void:
 	await test_the_arm_survives_undo_by_re_derivation()
 	await test_clicking_another_entrance_card_re_arms_onto_it()
 	await test_arming_again_leaves_the_held_card_alone()
+	await test_a_click_during_processing_does_not_make_the_next_arm_follow()
 	await test_the_disarm_leaves_nothing_armed()
 	await test_an_empty_entrance_arms_nothing()
 	behavior_section("S18: CANCEL")
@@ -3535,6 +3536,37 @@ func test_arming_again_leaves_the_held_card_alone() -> void:
 		check(_armed_card() == armed, "a second arm leaves the held card where it is (G1)")
 		check(_play_area.data_card[armed].following,
 				"...and does not reset what the player already started (Q263=a)")
+	await _end_game_fixture()
+
+## Q267=a/Q254=d: a click the board never acted on cannot make the NEXT arm follow -- an auto-armed card is one the player did not touch.
+func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	_play_area.ungrab_cards()
+	await get_tree().process_frame
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		game.processing = true
+		await _click_card(entrance[0])
+		check(_play_area.selected_cards.is_empty(),
+				"the click during a cascade grabbed nothing (1.9)",
+				str(_play_area.selected_cards.size()))
+		game.processing = false
+		await _play_area.arm_leftmost()
+		await get_tree().process_frame
+		var armed := _armed_card()
+		check(armed != null, "the cascade ended and the board armed its leftmost card")
+		if armed != null:
+			var visual : CardVisual = _play_area.data_card[armed]
+			check(not visual.following,
+					"a card the player never touched rests in its slot (Q267=a, Q254=d)")
+			await _await_card_settled(visual)
+			var lift := _lift_above_aim(visual, _slot_centre_of(visual))
+			check(absf(lift - visual.held_lift_px()) < 2.0,
+					"...at its slot centre raised by the lift, not at the cursor (G4)",
+					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
 	await _end_game_fixture()
 
 ## Q115=a: the disarm leaves nothing armed, "and the next click on a cell does nothing".

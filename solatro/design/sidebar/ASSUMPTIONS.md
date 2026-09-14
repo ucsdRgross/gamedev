@@ -600,3 +600,9 @@
   `..._an_escape_mid_drag_...` twin, sharing `_check_a_cancelled_drag_places_nothing()` with the
   new `_escape_press()` (root-viewport `ui_cancel`). Only the second-button row reproduced: the
   wall's transition lock already swallowed the release after an Escape, so the twin is a guard.
+- Phase 5 fix 3: no new name. `PlayArea.stop_following()` now also clears `_next_grab_follows`, so
+  it means "nothing tracks the cursor, including a click still waiting on its grab", and
+  `GameView._on_data_selected`'s `processing` early return -- the path that DROPS the selection --
+  calls it. Without that the flag survived the dropped click and the next `arm_leftmost()` armed a
+  card that was `following` from birth, which `Q267`=a/`Q262`=a reserve for a card the player
+  touched. The drag refusal already called `stop_following`, so it gets the same clear.

@@ -398,7 +398,9 @@ func _on_undo_pressed() -> void:
 # board action. A landed placement finishes the interaction and takes the container back to the
 # HUD; a REFUSED one leaves the description up and falls through to picking that card up instead.
 func _on_data_selected(data: CardData) -> void:
-	if game.processing: return
+	if game.processing:
+		play_area.stop_following()
+		return
 	hud_container.lock_to(PlayArea.card_info(data, play_area.board_card_window_px()), data)
 	play_area.locked_data = data
 	if play_area.selected_cards:

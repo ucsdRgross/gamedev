@@ -1563,8 +1563,9 @@ func _release_places(at: Vector2) -> void:
 	if target: card_dropped.emit(ui_data[target])
 	else: stop_following()
 
-## A refused release costs nothing: the card stays held and lifted, and only stops tracking the cursor.
+## Nothing tracks the cursor after this: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
 func stop_following() -> void:
+	_next_grab_follows = false
 	for data : CardData in selected_cards:
 		if data in data_card: data_card[data].following = false
 
