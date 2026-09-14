@@ -4,8 +4,10 @@
 on branch `sidebar`, one verified step per commit (owner ruling: the original S1–S18 scope was
 widened to every phase; do not stop at S18).
 **State:** Phases 1–4 done (S1–S13 committed; the Phase 3 adversarial review and its re-review
-are fixed in four commits, 54317308 → 17e9cc1c — see the two Phase 3 sections). Phase 5 is next:
-S14 (`following`), S15, S16, S17, S18; then Phase 6 (S19–S21),
+are fixed in four commits, 54317308 → 17e9cc1c — see the two Phase 3 sections). Phase 5 is
+S14–S17 done (4a008669, a5449e77, 99644d39, bf4b2b70); **S18 (cancel) is next** — its brief is
+written (see "Next up"), then the Phase 5 boundary adversarial review (Fable, read-only, over
+`17e9cc1c..HEAD`) and its fixes one at a time; then Phase 6 (S19–S21),
 Phase 5 (S14–S18), Phase 6 (S19–S21), Phase 7 (S22), Phase 8 (S23), the closing phase S24 — all in
 this run (owner ruling). GAP-004 (Q34's reading inside a viewer) is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
@@ -322,8 +324,9 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   notes: 'Q288=a needed NO new forwarding: a press on the board sets no gui.mouse_focus in the root viewport, so the release over the container reaches Wall._unhandled_input and rides WallInput.route into the picture (the earlier "gap candidate" was a misunderstanding of the engine, not a gap). The click is decided at the RELEASE. 5.1''s discriminator is the description LOCK (only the click route locks). A held card''s control is MOUSE_FILTER_IGNORE so no tap reaches the card in hand - 5.5''s toggle half is driven by key accept. 5.6/5.7 ride a test-local STAMP. New: Tests/Support/test_main_host.gd (TestSidebar''s _boot_main_at moved there). ⚠ Path.write_text on Windows rewrites sources to CRLF - the implementer''s neutralise driver now writes bytes; two source-reading test gates (registration, 6.3''s source pin) break on CRLF'
 - id: S17
   description: tap — double-click, card_tap action, card_tapped signal, one dummy effect
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'bf4b2b70: ALL 47 SUITES 4516 PASSED [21]; DRAG PLACE 31 -> 63 checks (S17.1-S17.8, overseer-defined rows - TEST_PLAN has none for S17/S18); red per neutralisation 8/2/3/5/4 FAILED; card_tap action, card_tapped signal, card_tap_window_ms knob, on_card_tapped dispatched only from GameView, nothing under Cards/ listens; doc_check 0 of 683 on added lines; LF verified'
+  notes: 'card_tap binding: key T + joypad button 2 (X) - NAMES fixes the name only. The refusal after a placement compares the board''s committed depth at the pair''s opening press vs at the tap; the bound action is exempt (no first press). A tap eats its closing release (else the second release re-grabs). The dummy effect is a test-local STAMP recording instance ids (holding the card leaked). New: TestSuite.await_the_tap_window() - an INTERACTION check whose two accepts now pair as a tap waits it out (Q98=d working). card_effect_api.gd unchanged (no subscription surface; run_all_mods forwards any hook)'
 - id: S18
   description: cancel — held card first, description second, Escape shows menu/wall
   status: pending
@@ -336,11 +339,41 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. S12. 2. S13. 3. S14 (then S15–S18, S19–S23, S24 close).
+1. **S18 (cancel)** — brief at `solatro/design/sidebar/briefs/S18.md` (it points at the RULES
+   section of `briefs/S12.md`, which every dispatch carries). Dispatch `plan-implementer`
+   FOREGROUND with the brief path; verify yourself (greps in its done-when, doc_check on ADDED
+   lines only, a full run, LOOK at `cancel_first_press.png`); commit; record here.
+2. **Phase 5 boundary review** — `adversarial-review` (model: fable, read-only, NEVER launches
+   Godot) over `17e9cc1c..HEAD` (S14–S18). Hand it a priority order (player journeys: the
+   always-armed board with mouse / pad / touch; the click-lock dismissed on leaving the cell —
+   S14 notes; the armed card riding the MOUSE after a key focus — S15 notes; the two unexplained
+   horizontal lines in `armed_focus_elsewhere.png`; the tap/cancel ordering; tests that prove
+   nothing), tell it to report early, and to read COMMITTED content via `git show` if an
+   implementer is working concurrently. Fix confirmed findings one dispatch at a time, full run
+   between, one commit each; then a bounded re-review of the fix commits (the Phase 3 pattern).
+3. S19–S21 (Phase 6), S22 (Phase 7), S23 (Phase 8) — the "Phase 2–5 audits" section carries the
+   S19–S23 audit facts; write each brief the same way (rulings verbatim from `answers.json` +
+   DESIGN §4, exact done-when, TEST_PLAN rows — S19–S23 DO have rows: §4 and §7 — call site,
+   comment rule, complexity rule, evidence file). Then S24 per `.claude/skills/plan-run/SKILL.md`
+   "Closing the run", every numbered item.
 
-Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md in worktree ../gamedev-sidebar,
-branch sidebar, Phases 1–5 only (stop at S18). Read solatro/HANDOFF_sidebar.md first, then
-`git log --oneline`, `git status --porcelain`, and a full suite run before continuing."*
+Working method that held up (keep it): the implementer appends evidence to a scratch file as it
+goes (turn-cap and API-limit stops lose the report — three dispatches this run were cut off and
+resumed with `SendMessage` to the same agent id, context intact, which beats a fresh dispatch);
+verify doc_check on ADDED lines only by intersecting its findings with `git diff HEAD -U0`'s
+`+` hunk ranges (the legacy backlog is hundreds of findings per touched file); check
+`tasklist | findstr Godot_v4.7` before and after every run and confirm the run's own log was not
+rotated (a new `godot2026-...log` inside the run window means another process started); the
+check TOTAL drifts ±30 between green runs (data-dependent suites) — judge on suite count and the
+failure set.
+
+Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md — ALL phases (owner ruling).
+Worktree C:\Users\khanr\Documents\GitHub\gamedev-sidebar, branch sidebar. Read
+solatro/HANDOFF_sidebar.md FIRST (state, per-step evidence, owner rulings, the S19–S23 audit,
+open gaps GAP-001..005, ASSUMPTIONS.md), then `git log --oneline main..HEAD`, `git status
+--porcelain`, and a full suite run (`py solatro/Tools/run_tests.py`, GODOT_BIN = the box's
+console exe, ~5 min, gate `ALL 47 SUITES ... CHECKS PASSED` + 0 SCRIPT ERROR + the two standing
+exit lines + 135 ObjectDB) before continuing. Next: S18 from briefs/S18.md."*
 
 ## References
 - solatro/design/sidebar/PLAN.md, DESIGN.md, TEST_PLAN.md, NAMES.md, answers.json
