@@ -306,6 +306,7 @@ mark (`DESIGN.md` §1c, §1m). Use the palette and the outline shader's three ov
 | GAP-005 | *"expecting an on screen button that shows the mark view so touchscreen and mouse can interact with it as well, with controller types using one of the 4 main buttons of x y a b"* — the Marks button stands; X held peeks. |
 | GAP-006 | *"a or d, we arent far to decide what actual curve should be so a placeholder is fine"* — (a): flat alpha, `goal_g0` refit, a placeholder; GAP-041 stays open. |
 | Playtest (the reveal) | *"the initial mark spawning in is way too slow, make it based off of total duration. have total duration be based off of base delay, which i believe is 1 second right now, so whole spawning in is 1 second times a tunable multiplier. make it so it doesnt have to be purely in sequence when marks come in such that marks can spawn in while animation for previous marks have not ended, right now it waits for previous one to come in. this way it looks more like a cascade."* — the whole opening deal takes `get_delay() × plan_reveal_multiplier`; cells START that far apart and their spins overlap; `plan_reveal_fraction` retired. Step S24. |
+| Playtest (the shimmer) | *"i would also prefer if shimmer effect was synced across all cards. the desynced version where each has its own timing is distracting."* — every shimmering element on every card shares ONE phase. Step S26. |
 
 ### 1.11 Naming
 

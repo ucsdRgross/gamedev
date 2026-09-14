@@ -575,6 +575,17 @@ Nothing here is secretly broken — each is understood, and each is either accep
    against the SubViewport's `size_2d_override` scaling (ARCHITECTURE_REVIEW §1m row 2,
    `WallPicture.update_wall_view_size()`).
 
+15. **⬜ OPEN — props still read the pre-grid axes.** Owner, from playtest: *"props are still
+   treating col as stacks from same row. for example, fire and juggle props do nothing when
+   triggered right now since they are still using system before grid was added, but columns should
+   now work based on grid columns, not stack columns or height as it is currently, since grid
+   system added new axis, and old col is now height based, while we added new dimension which is
+   now the column axis."* The grid added an axis: what the prop formations called a column is now
+   the stack's HEIGHT, and the grid's column is the new axis they never learned. Fire and juggle
+   spawn against the old shape and land on nothing. Seam to read first: the formations in
+   ARCHITECTURE_REVIEW §4c and `UI/prop_layer.gd`'s placement against `BoardCoord` (grid, x, y,
+   height); the suit rule (§4) already fires them per grid cell, so only the geometry is stale.
+
 ## 8. When you stop
 
 1. Full suite green, WINDOWED, with the suite count checked (§3).
