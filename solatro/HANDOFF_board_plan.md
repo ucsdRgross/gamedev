@@ -487,9 +487,8 @@ into main (`git merge-tree`) clean.
 ## Next up
 The run is CLOSED on the branch. The owner merges `board-plan` into `main` (a `git merge-tree`
 dry run against main was conflict-free at the close's start; re-check before merging). Open items
-for the owner are in `solatro/todo.md`'s board-plan block. The last sweep step (S-C part 2, the
-eight largest test files) is recorded in its own commit when it lands; if it is absent, those files
-still carry their legacy comment findings and the sweep is the next task.
+for the owner are in `solatro/todo.md`'s board-plan block. Every file the run edited is at 0
+comment findings (sweeps S-A, S-B, S-C parts 1 and 2, each proved code-identical).
 
 ## How this run operates (read before dispatching)
 - Overseer never reads source; verifies by bounded grep, its own full suite run, the SECTION 8
