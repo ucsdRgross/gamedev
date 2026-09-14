@@ -31,7 +31,7 @@ func _ready() -> void:
 	var pa := view.play_area
 	await _settle(view)
 
-	_held = _an_entrance_card(g, pa)
+	_held = _an_entrance_card(g, pa, null)
 	_mark_the_three_cells(g)
 	pa.flush_rebuild()
 	await _settle(view)
@@ -50,16 +50,19 @@ func _ready() -> void:
 	await _land_the_card(g, pa)
 	_park_the_shimmer(_landed_visual(view))
 	await _shoot(view, "landed")
-	await _probe_the_shimmer(view)
+	var second := await _land_a_second_card(g, pa)
+	await _input.move_to(_centre_of(pa, g.state.cell_type_at(_miss_cell)))
+	await _probe_the_shimmer(view, second)
 
 	TestGameViewHost.shot_teardown(SAVE_TAG)
 	get_tree().quit()
 
 # The card this shot picks up: one the board offers as a focus target in the Entrance, which is what
 # a pointer or a focus ring can reach.
-func _an_entrance_card(g: Game, pa: PlayArea) -> CardData:
+func _an_entrance_card(g: Game, pa: PlayArea, kept: CardData) -> CardData:
 	for control : Control in pa.ui_data:
 		var data : CardData = pa.ui_data[control]
+		if data == kept: continue
 		if control.focus_mode != Control.FOCUS_ALL or not control.is_visible_in_tree(): continue
 		if g.state.grid_position_of(data).is_entrance(): return data
 	return null
@@ -100,14 +103,7 @@ func _pick_the_card_up(pa: PlayArea) -> void:
 # The landing, plus the FOCUS highlight left on the same cell: the activated rim has to stay
 # tellable apart from the focus tint, and only one picture can show that.
 func _land_the_card(g: Game, pa: PlayArea) -> void:
-	await _input.click(_centre_of(pa, g.state.cell_type_at(_both_cell)))
-	var waited := 0.0
-	while waited < REVEAL_WATCHDOG and g.state.card_at(_both_cell) != _held:
-		await get_tree().process_frame
-		waited += get_process_delta_time()
-	pa.flush_rebuild()
-	await get_tree().process_frame
-	print("[plan_match_shot] landed on (2,2): %s" % str(g.state.card_at(_both_cell) == _held))
+	print("[plan_match_shot] landed on (2,2): %s" % str(await _place(g, pa, _held, _both_cell)))
 #The FOCUS HIGHLIGHT put there the way a player puts it there -- the pointer resting on the cell is
 #what the board reads as focus, and a bare `grab_focus` loses it to the next rebuild.
 	await pa.await_card_settled(_held)
@@ -116,6 +112,36 @@ func _land_the_card(g: Game, pa: PlayArea) -> void:
 	await _input.move_to(_centre_of(pa, _held))
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+# A PLACEMENT THROUGH THE PLATFORM'S OWN ROUTE -- the card clicked, then the cell -- and whether the
+# board took it. The card is picked up only if it is not already in hand.
+func _place(g: Game, pa: PlayArea, card: CardData, coord: BoardCoord) -> bool:
+	if not pa.selected_cards.has(card): await _input.click(_centre_of(pa, card))
+	await _input.click(_centre_of(pa, g.state.cell_type_at(coord)))
+	var waited := 0.0
+	while waited < REVEAL_WATCHDOG and g.state.card_at(coord) != card:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	return g.state.card_at(coord) == card
+
+# A SECOND REALIZED CELL, landed MANY frames after the first: the shimmer's phase is board-wide, and
+# two cards landed on one frame would agree even if it were not. Null when the board refuses it.
+func _land_a_second_card(g: Game, pa: PlayArea) -> CardData:
+	var second := _an_entrance_card(g, pa, _held)
+	if not second:
+		print("[plan_match_shot] shimmer: no second Entrance card to stage a second realized cell")
+		return null
+	g.effect_api.grant_mark(_rank_cell, _source(second.rank, second.suit))
+	pa.flush_rebuild()
+	await _settle_view_of(pa)
+	var landed := await _place(g, pa, second, _rank_cell)
+	print("[plan_match_shot] second card %s landed on (1,2): %s" % [str(second), str(landed)])
+	if not landed: return null
+	await pa.await_card_settled(second)
+	await _settle_view_of(pa)
+	return second
 
 func _centre_of(pa: PlayArea, card: CardData) -> Vector2:
 	return (pa.data_ui[card] as Control).get_global_rect().get_center()
@@ -161,8 +187,9 @@ func _report_cell(pa: PlayArea, g: Game, coord: BoardCoord, tag: String) -> void
 
 # `landed.png` IS PHASE 0, deliberately: the ramp opens on the ink the activated rim wears at rest,
 # so the first picture is the one a DEAD shimmer would also produce. The probe below is the evidence.
+# The phase parked is the BOARD'S -- every shimmering rim on it reads that one clock.
 func _park_the_shimmer(visual: CardVisual) -> void:
-	visual._alert_clock = 0.0
+	CardVisual._shimmer_clock = 0.0
 	visual._push_alert_clock()
 
 func _landed_visual(view: GameView) -> CardVisual:
@@ -171,28 +198,35 @@ func _landed_visual(view: GameView) -> CardVisual:
 # THE MOVEMENT MEASUREMENT, because a still cannot settle a pulse: one rim pixel of the landed card's
 # rank pip is read off the RENDER at evenly spaced moments of a single loop, beside a control pixel on
 # an unmatched mark's rim, which must not move at all.
-func _probe_the_shimmer(view: GameView) -> void:
+func _probe_the_shimmer(view: GameView, second: CardData) -> void:
 	var visual := _landed_visual(view)
 	var period : float = CardOutline.STYLE.shimmer_period_fraction * view.game.get_delay()
 #THE CONTROL IS ANOTHER CARD'S RANK PIP, not another element of this one: the pips that shimmer sit
 #inside this card's art box, so a control taken there measures them again and reads as movement.
 	var still : CardVisual = view.play_area.data_card[view.game.state.cell_type_at(_miss_cell)]
 	var control_box := _element_rect(still.rank)
-	var lit := await _a_moving_pixel(visual, period, control_box)
+	var lit := await _a_moving_pixel(visual, period, control_box, "the landed card")
 	if lit.x < 0:
 		print("[plan_match_shot] shimmer: nothing in the rank pip's box moved -- nothing to measure")
 		return
 	var plain := control_box.get_center()
+	var mate : CardVisual = view.play_area.data_card.get(second)
+	var mate_lit := Vector2i(-1, -1)
+	if mate: mate_lit = await _a_moving_pixel(mate, period, control_box, "the second landed card")
 
 	_park_the_shimmer(visual)
 	var lit_seen : PackedStringArray = PackedStringArray()
 	var control_seen : PackedStringArray = PackedStringArray()
 	var moments : PackedStringArray = PackedStringArray()
+	var together := 0
 	for i : int in SHIMMER_SAMPLES:
 		var img := await _frame_image()
 		var now := img.get_pixel(lit.x, lit.y).to_html(false)
 		var control := img.get_pixel(plain.x, plain.y).to_html(false)
-		moments.append("%.2f turns #%s" % [visual._alert_clock, now])
+		moments.append("%.2f turns #%s%s" % [CardVisual._shimmer_clock, now,
+				_mate_moment(img, mate, mate_lit, now)])
+		if mate_lit.x >= 0 and img.get_pixel(mate_lit.x, mate_lit.y).to_html(false) == now:
+			together += 1
 		if not lit_seen.has(now): lit_seen.append(now)
 		if not control_seen.has(control): control_seen.append(control)
 		if i == SHIMMER_SAMPLES / 2: img.save_png("%s/landed_phase.png" % _out_dir)
@@ -201,19 +235,37 @@ func _probe_the_shimmer(view: GameView) -> void:
 			% [lit, period, lit_seen.size(), ", #".join(lit_seen)])
 	print("[plan_match_shot] shimmer: control pixel %s on an unmatched mark's pip -- %d distinct: #%s"
 			% [plain, control_seen.size(), ", #".join(control_seen)])
+	if mate_lit.x >= 0:
+		print("[plan_match_shot] shimmer: TWO realized cells, landed a placement apart -- rim pixels "
+				+ "%s and %s agree at %d of %d moments, phases %.4f and %.4f"
+				% [lit, mate_lit, together, SHIMMER_SAMPLES, _pushed_phase(visual),
+				_pushed_phase(mate)])
 	print("[plan_match_shot] shimmer: moments -- %s" % ", ".join(moments))
+
+# The second realized card's pixel at this moment, for the moment list. Empty when the board could
+# not stage a second one, so the line still reads as the single-card probe it was.
+func _mate_moment(img: Image, mate: CardVisual, at: Vector2i, lit: String) -> String:
+	if not mate or at.x < 0: return ""
+	var now := img.get_pixel(at.x, at.y).to_html(false)
+	return " vs #%s %s" % [now, "same" if now == lit else "DIFFERS"]
+
+# The phase this card's rank pip is actually carrying, which is the number behind the pixels.
+func _pushed_phase(visual: CardVisual) -> float:
+	var mat := visual.rank.material as ShaderMaterial
+	var phase : float = mat.get_shader_parameter(&"u_alert_clock")
+	return phase
 
 # A pixel of the rank pip that MOVES between phase 0 and a quarter of a loop later, found by DIFFING
 # two captures rather than by naming a colour: the focused card is drawn through a modulate, so what
 # reaches the render is not the palette entry the rim was pushed. `control` is measured the same way.
-func _a_moving_pixel(visual: CardVisual, period: float, control: Rect2i) -> Vector2i:
+func _a_moving_pixel(visual: CardVisual, period: float, control: Rect2i, who: String) -> Vector2i:
 	_park_the_shimmer(visual)
 	var at_rest := await _frame_image()
 	await get_tree().create_timer(period * 0.25).timeout
 	var later := await _frame_image()
 	var moved := _pixels_that_moved(at_rest, later, _element_rect(visual.rank))
-	print("[plan_match_shot] shimmer: over a quarter loop %d pixels of the rank pip's box moved, "
-			% moved.size() + "%d of the control box, which must not move at all"
+	print("[plan_match_shot] shimmer: over a quarter loop %d pixels of %s's rank pip box moved, "
+			% [moved.size(), who] + "%d of the control box, which must not move at all"
 			% _pixels_that_moved(at_rest, later, control).size())
 	return moved[0] if not moved.is_empty() else Vector2i(-1, -1)
 

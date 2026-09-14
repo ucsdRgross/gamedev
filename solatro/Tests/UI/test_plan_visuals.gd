@@ -48,6 +48,8 @@ func _ready() -> void:
 	await test_a_card_agreeing_with_nothing_says_nothing()
 	behavior_section("A LANDED CARD WEARS THE ACTIVATED RIM UNTIL UNDO")
 	await test_a_landing_that_matched_activates_the_elements_that_agreed()
+	behavior_section("EVERY SHIMMER ON THE BOARD DRIFTS TOGETHER")
+	await test_every_shimmer_on_the_board_reads_one_phase()
 	behavior_section("THE LAYER VIEW DRAWS THE MARKS AND REFUSES THE BOARD")
 	await test_the_layer_view_refuses_a_placement()
 	await test_the_layer_view_opens_focused_and_in_the_overview()
@@ -674,6 +676,25 @@ func properties_pushing(visual: CardVisual, uniform: StringName, value: int) -> 
 		drawn |= MarkMatch.Property.HAT
 	return drawn
 
+# THE PHASE ONE ELEMENT IS ACTUALLY CARRYING, read off the live material. `uniform_of`'s twin: that
+# one narrows to int for the palette indices every other row asks about.
+func phase_of(poly: Polygon2D) -> float:
+	var mat := poly.material as ShaderMaterial
+	var phase : float = mat.get_shader_parameter(&"u_alert_clock")
+	return phase
+
+# Every DISTINCT phase any shimmering element anywhere on the board is carrying. One entry is the
+# whole claim: the census is taken over the board rather than over two named cards, so a third card
+# drifting on a clock of its own cannot hide behind them.
+func shimmer_phases() -> Array[float]:
+	var out : Array[float] = []
+	for card : CardData in pa.data_card:
+		var visual : CardVisual = pa.data_card[card]
+		for poly : Polygon2D in [visual.rank, visual.suit, visual.art, visual.stamp]:
+			if uniform_of(poly, &"u_alert_kind") != CardOutline.Alert.SHIMMER: continue
+			if not out.has(phase_of(poly)): out.append(phase_of(poly))
+	return out
+
 # Every marked cell whose drawn rims disagree with what the match test says about `tested`, which is
 # the whole claim: the view asks, and the answer is the board's rather than the view's own idea.
 func cells_disagreeing(tested: CardData, palette_index: int) -> Array[String]:
@@ -765,10 +786,16 @@ func commit_the_show_to_grid_0() -> bool:
 	var bare := BoardCoord.new(0, grid.grid_width - 1, grid.grid_height - 1, 0)
 	var other := entrance_card_besides(held_card)
 	await settle_on(other)
-	await input.click(centre_of(other))
-	await input.click(centre_of(game.state.cell_type_at(bare)))
+	return await land_on(bare, other)
+
+# A PLACEMENT MADE THE PLAYER'S OWN WAY -- the card picked up and the cell clicked through the
+# viewport -- and whether the board took it. The rebuild is flushed, so the caller reads the board
+# after the landing rather than the board mid-rebuild.
+func land_on(coord: BoardCoord, card: CardData) -> bool:
+	await input.click(centre_of(card))
+	await input.click(centre_of(game.state.cell_type_at(coord)))
 	var landed := await wait_for(func() -> bool:
-			return not game.processing and game.state.card_at(bare) == other)
+			return not game.processing and game.state.card_at(coord) == card)
 	pa.flush_rebuild()
 	await get_tree().process_frame
 	return landed
@@ -914,13 +941,8 @@ func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
 	var agreed := await MarkMatch.matches_at(game.state, held_card, both_cell)
 	check(agreed & MarkMatch.Property.RANK and agreed & MarkMatch.Property.SUIT,
 			"TP-83: precondition: the cell it lands on agrees on rank and suit", str(agreed))
-	await input.click(centre_of(held_card))
-	await input.click(centre_of(game.state.cell_type_at(both_cell)))
-	var landed := await wait_for(func() -> bool:
-			return not game.processing and game.state.card_at(both_cell) == held_card)
+	var landed := await land_on(both_cell, held_card)
 	check(landed, "TP-83: precondition: the card was placed on the marked cell")
-	pa.flush_rebuild()
-	await get_tree().process_frame
 
 	var visual : CardVisual = pa.data_card[held_card]
 	check(rimmed_properties(visual, PaletteDB.ROLES.match_rim_active) == agreed,
@@ -945,9 +967,13 @@ func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
 			"TP-91: and the elements that agreed with nothing run no alert at all",
 			"stamp %d, frame %d" % [uniform_of(visual.stamp, &"u_alert_kind"),
 			uniform_of(visual.type, &"u_alert_kind")])
-	var drifted := await wait_for(func() -> bool: return visual._alert_clock > 0.0)
+#THE ORACLE IS THE BOARD'S CLOCK, not this card's: the shimmer reads one shared phase, running since
+#the pass's first shimmering rim and never returning to 0, so it is read from where it stood rather
+#than against zero.
+	var stood_at := CardVisual._shimmer_clock
+	var drifted := await wait_for(func() -> bool: return CardVisual._shimmer_clock > stood_at)
 	check(drifted, "TP-91: and its phase advances on its own, so the colour is a function of TIME",
-			"clock still %f" % visual._alert_clock)
+			"clock still %f" % CardVisual._shimmer_clock)
 
 	await game.undo()
 	pa.flush_rebuild()
@@ -963,6 +989,78 @@ func test_a_landing_that_matched_activates_the_elements_that_agreed() -> void:
 	check(still_active.is_empty(),
 			"TP-83: after undo no element anywhere on the board reads the activated rim",
 			str(still_active))
+
+# ==============================================================================
+# TP-93 -- one shimmer phase for the whole board
+# ==============================================================================
+
+# ⚠ TWO CARDS LANDED ON THE SAME FRAME WOULD AGREE EVEN WITH A CLOCK EACH, so the gap between the two
+# landings is asserted before any phase is compared. Both go down through the real placement path,
+# because what the owner saw was cards that had landed at different moments drifting apart.
+func test_every_shimmer_on_the_board_reads_one_phase() -> void:
+	await mark_against_a_fresh_card()
+	var landed_first := await land_on(both_cell, held_card)
+	var first_frame := Engine.get_process_frames()
+	var second := entrance_card_besides(held_card)
+	game.effect_api.grant_mark(rank_cell, mark_source(second.rank, second.suit))
+	pa.flush_rebuild()
+	await settle_on(second)
+	var landed_second := await land_on(rank_cell, second)
+	var apart := Engine.get_process_frames() - first_frame
+	check(landed_first and landed_second,
+			"TP-93: precondition: two cards landed on marks they agree with",
+			"%s and %s" % [str(landed_first), str(landed_second)])
+	check(apart > 0,
+			"TP-93: precondition: the second landing is frames after the first, not on its frame",
+			"%d frames apart" % apart)
+
+	var first_visual : CardVisual = pa.data_card[held_card]
+	var second_visual : CardVisual = pa.data_card[second]
+	var shimmering_first := properties_pushing(first_visual, &"u_alert_kind",
+			CardOutline.Alert.SHIMMER)
+	var shimmering_second := properties_pushing(second_visual, &"u_alert_kind",
+			CardOutline.Alert.SHIMMER)
+	check(shimmering_first != 0 and shimmering_second != 0,
+			"TP-93: precondition: both landed cards have elements running the shimmer",
+			"%d and %d" % [shimmering_first, shimmering_second])
+	await get_tree().process_frame
+	var census := shimmer_phases()
+	check(census.size() == 1 and census[0] > 0.0,
+			"TP-93: every shimmering element on the board carries ONE phase at the same instant",
+			str(census))
+
+	var first_was := phase_of(first_visual.rank)
+	var second_was := phase_of(second_visual.rank)
+	for _frame : int in 5:
+		await get_tree().process_frame
+	var first_moved := phase_of(first_visual.rank) - first_was
+	var second_moved := phase_of(second_visual.rank) - second_was
+	check(first_moved > 0.0 and is_equal_approx(first_moved, second_moved),
+			"TP-93: and over the same frames both advance by the same amount",
+			"%f and %f" % [first_moved, second_moved])
+
+#A FRESH MATERIAL OPENS AT 0, which is the flat activated ink: zeroed here and rebuilt, the card has
+#to come back on the phase the board is already running rather than starting the drift again.
+	for poly : Polygon2D in [second_visual.rank, second_visual.suit]:
+		CardOutline.set_clock(poly, 0.0)
+	game.state.revision += 1
+	pa.queue_rebuild()
+	pa.flush_rebuild()
+	await get_tree().process_frame
+	var rebuilt : CardVisual = pa.data_card[second]
+	check(phase_of(rebuilt.rank) == CardVisual._shimmer_clock and CardVisual._shimmer_clock > 0.0,
+			"TP-93: a card rebuilt mid-drift joins at the shared phase rather than at 0",
+			"%f of %f" % [phase_of(rebuilt.rank), CardVisual._shimmer_clock])
+
+#THE BOARD IS PUT BACK: the rows after this one place a card of their own on these cells.
+	for _step : int in 4:
+		if cards_on_grid_0() == 0: break
+		await game.undo()
+		pa.flush_rebuild()
+		await get_tree().process_frame
+	check(cards_on_grid_0() == 0,
+			"TP-93: precondition: both landings are undone, leaving the board as it was found",
+			"%d card(s) still standing" % cards_on_grid_0())
 
 # ==============================================================================
 # TP-66..TP-69 -- the layer view

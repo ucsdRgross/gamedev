@@ -315,16 +315,20 @@ func _push_alert() -> void:
 	var reqs := _alert_requests()
 	_alert = reqs[reqs.size() - 1] if not reqs.is_empty() else _shimmer_request()
 	var style := outline_style()
-	CardOutline.set_alert(type, _card_alert(), style)
-	CardOutline.set_alert(rank, _alert_of(MarkMatch.Property.RANK), style)
-	CardOutline.set_alert(suit, _alert_of(MarkMatch.Property.SUIT), style)
-	CardOutline.set_alert(art, _alert_of(MarkMatch.Property.TALENT), style)
-	CardOutline.set_alert(stamp, _alert_of(MarkMatch.Property.HAT), style)
-	if not _alert:
-		# Park the phase at rest so a card that alerted and stopped is bit-identical to one that never
-		# did — otherwise the next alert would start wherever the last one happened to be interrupted.
-		_alert_clock = 0.0
-		_push_alert_clock()
+	var elements := _alert_elements()
+	for poly : Polygon2D in elements:
+		CardOutline.set_alert(poly, _alert_of(elements[poly]), style)
+#Park the phase at rest so a card that alerted and stopped is bit-identical to one that never did --
+#otherwise the next alert would start wherever the last one happened to be interrupted. The clock is
+#pushed either way, so a card built mid-drift opens on the phase the board is already running.
+	if not _alert: _alert_clock = 0.0
+	_push_alert_clock()
+
+#THE FIVE POLYGONS AND THE PRINTED PROPERTY EACH ONE DRAWS. The card frame draws none, so it asks
+#with 0 and takes the card's own alert -- the per-element shimmer is a fact about a printed slot.
+func _alert_elements() -> Dictionary[Polygon2D, int]:
+	return {type: 0, rank: MarkMatch.Property.RANK, suit: MarkMatch.Property.SUIT,
+			art: MarkMatch.Property.TALENT, stamp: MarkMatch.Property.HAT}
 
 # THE ACTIVATED RIM IS THE ONE THAT MOVES: an element wearing the realized ink drifts along the
 # style's ramp, whose first entry IS that ink, so a rim at rest and a rim at phase 0 are one colour.
@@ -362,14 +366,19 @@ func _alert_requests() -> Array[CardAlert]:
 	return reqs
 
 func _push_alert_clock() -> void:
-	for poly : Polygon2D in [type, rank, stamp, suit, art]:
-		CardOutline.set_clock(poly, _alert_clock)
+	var elements := _alert_elements()
+	for poly : Polygon2D in elements:
+		CardOutline.set_clock(poly, _clock_of(_alert_of(elements[poly])))
+
+#THE PHASE ONE ELEMENT READS: the board-wide one for a shimmer, this card's own for the other kinds.
+func _clock_of(alert : CardAlert) -> float:
+	if alert and alert.kind == CardOutline.Alert.SHIMMER: return _shimmer_clock
+	return _alert_clock
 
 ## The alert currently running on this card's outline, or null. Null is the overwhelmingly common case
 ## and is what makes the per-frame cost of this feature one null check on a resting board.
 var _alert : CardAlert = null
-## The alert's phase, in TURNS — one full bounce per unit. Advanced in `_process` while `_alert` is
-## live; the shader takes `fract()` of it, so it never needs wrapping here.
+## This card's GLARE or THROB phase, in TURNS -- one bounce per unit; the shader takes `fract()`.
 var _alert_clock : float = 0.0
 
 ## Advance the alert's phase over a period that is a FRACTION OF THE LIVE DELAY, so the cue quickens
@@ -381,14 +390,29 @@ var _alert_clock : float = 0.0
 func _advance_alert(delta : float) -> void:
 	var delay : float = settings().base_delay
 	if CardEnvironment.CURRENT: delay = CardEnvironment.CURRENT.get_delay()
-	# get_delay() reaches zero under the compression floor and on an undo-cancel snap; a zero period
-	# would divide by nothing and NaN the uniform, so floor it the way anim_spin_start does.
-	# The period follows the same three-layer resolution the colours do: this alert's own value if it
-	# named one, else THIS CARD's style — and glare and throb read different fields of it, because they
-	# are different cues and share no tempo.
-	var period := maxf(_alert.resolved_period(outline_style()) * delay, 0.05)
-	_alert_clock += delta / period
+	if _shimmer_request(): _advance_shimmer(delta, delay)
+	if _alert.kind != CardOutline.Alert.SHIMMER:
+		_alert_clock += delta / _alert_period(_alert, outline_style(), delay)
 	_push_alert_clock()
+
+#The period is this alert's own fraction of the live delay when it named one, else the style's --
+#glare, throb and shimmer read different fields, being different cues. Floored because get_delay()
+#reaches zero under the compression floor and on an undo-cancel snap, which would NaN the uniform.
+static func _alert_period(alert : CardAlert, style : OutlineStyle, delay : float) -> float:
+	return maxf(alert.resolved_period(style) * delay, 0.05)
+
+#ONE PHASE FOR EVERY SHIMMER ON THE BOARD (owner, from playtest: a per-card phase is distracting):
+#the first card to reach it in a frame moves it and every other card that frame reads what it wrote.
+#Its tempo is the SHIPPED style's, because a board-wide clock can take no one card's type override.
+static func _advance_shimmer(delta : float, delay : float) -> void:
+	if _shimmer_frame == Engine.get_process_frames(): return
+	_shimmer_frame = Engine.get_process_frames()
+	_shimmer_clock += delta / _alert_period(_SHIMMER, CardOutline.STYLE, delay)
+
+## The phase every shimmering rim on the board reads, in TURNS -- one full bounce per unit.
+static var _shimmer_clock : float = 0.0
+## The frame it last advanced on, so a hundred shimmering cards move it once between them.
+static var _shimmer_frame : int = -1
 
 ## Every visual effect this card's statuses ask for, in status order (later draws on top). Generic
 ## by construction: CardVisual never names an effect — statuses declare their own via fx_request().

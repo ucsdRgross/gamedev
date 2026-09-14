@@ -1529,8 +1529,12 @@ lights has to have a rim.
 sweeping the card), THROB (the whole rim toggling) and SHIMMER (the rim drifting along
 `ramp_match`, BLENDED — §4i's one exception). A status declares the first two and every element of
 the card shows them; nothing declares the shimmer — `CardVisual._alert_of` gives it to exactly the
-elements wearing `match_rim_active`, and it yields to any status that is alerting, because the five
-polygons share ONE clock and one kind each. ⚠ Its phase 0 IS the flat activated ink (the ramp opens
+elements wearing `match_rim_active`, and it yields to any status that is alerting, because a polygon
+carries one kind and one clock at a time. A glare or a throb runs on the CARD's clock, one for its
+five polygons; **every SHIMMER on the board shares ONE** (owner, from playtest: a per-card phase
+reads as distracting) -- a `CardVisual` static advanced once a frame by the first shimmering card,
+paced by the SHIPPED style because a board-wide clock can take no one card's type override, and
+stopped by a paused tree exactly as the per-card clocks are. ⚠ Its phase 0 IS the flat activated ink (the ramp opens
 on that entry), so no still picture can tell a live shimmer from a dead one: assert mid-phase.
 
 ### The landmines

@@ -392,3 +392,10 @@ gap under `gaps/`.
 - S19 / GAP-002: the landing dispatch sits in `place_card_in_grid` after the card has settled and
   before `_broadcast_board_mutation`, which is what the line detector scores from -- so a mark acts
   before any line through its cell can. It is inside the act, so undo rewinds what it did.
+- S26 / the playtest ruling: the shimmer's phase is BOARD-WIDE -- `CardVisual._shimmer_clock`, a
+  static advanced once a frame by the first shimmering card (guarded on `Engine.get_process_frames`)
+  and read by every element running that kind, so a card landing later joins the drift in progress.
+  It stops when the tree is paused, because it is advanced from `_process` like the per-card clock it
+  replaces, and it is paced by the SHIPPED style's `shimmer_period_fraction`: one clock for the board
+  can take no one card's type override. GLARE and THROB keep `_alert_clock`, which is a fact about
+  one card.

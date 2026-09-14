@@ -2,12 +2,12 @@
 
 **Goal:** land `solatro/design/board-plan/PLAN.md` steps S1–S17 (every phase, closing included) on branch `board-plan`, one
 verified step per commit. Owner ruling mid-run: do not stop at S10 — every phase is in scope.
-**State:** 59 commits on `board-plan` (HEAD is this handoff commit). EVERY execution step is landed and
+**State:** 65 commits on `board-plan` (HEAD is this handoff commit). EVERY execution step is landed and
 verified: S1-S16, the review-fix rounds (A-I), the six steps the owner's gap rulings opened
-(S18-S23), and two playtest rulings (S24 the cascade reveal, S25 the standalone scene's 52-card
-deck), one implementer, one full gate and one commit each; all six gaps are resolved with their
+(S18-S23), and three playtest rulings (S24 the cascade reveal, S25 the standalone scene's 52-card
+deck, S26 the board-wide shimmer phase), one implementer, one full gate and one commit each; all six gaps are resolved with their
 `resolution:` blocks and PLAN 1.10-bis carries every ruling verbatim. Tree clean. Last gate: ALL 48
-SUITES: 4408 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
+SUITES: 4425 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
 before S1. The owner has playtested the game view and approved the selection glow and the shimmer.
 OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort (Next up
 carries the prompt). Implementer sessions die to the Opus session limit every few hours; every
@@ -282,6 +282,14 @@ Overseer: Fable 5.1 at high effort; it writes no source.
   status: done
   evidence: 'Implementer red with get_deck() pointed back at deck14: GAME HEADLESS 73 passed, 2 FAILED of 75 (52 cards; 4 suits x 13 ranks once); green 75/75. Overseer full run: see the S25 commit. Deck.get_deck() readers unchanged (game.gd add_deck''s blank-save fallback, leak_sentinel); a real run fills Main.save_info.card_datas from RunManager.new_run and never reaches it; the run deck check reads TestDecks.deck_20().size() (20).'
   notes: 'get_deck() returns the shipped deck4 (the full standard 52). No .tscn touched: game_view.gd''s standalone boot builds Game with the default Deck.new(). Verified through the production accessor in a test, not by an F6 boot.'
+- id: S26
+  description: playtest ruling - every shimmer on the board shares ONE phase (CardVisual._shimmer_clock, a static advanced once a frame by the first shimmering card); GLARE and THROB keep their per-card clocks; TP-93.
+  files_touched: [solatro/Cards/card_visual.gd, solatro/Tests/UI/test_plan_visuals.gd, solatro/Tests/Visual/plan_match_shot.gd]
+  verification_command: 'run_suite.sh <label>; render Tests/Visual/plan_match_shot.tscn and read its two-cell print'
+  verification_kind: snapshot
+  status: done
+  evidence: 'Implementer red with per-card clocks restored: PLAN VISUALS 144 passed, 2 FAILED of 146 (one phase board-wide: [0.48409, 1.31702]; a rebuilt card joins the shared phase); green 146/146 at equal counts, OUTLINE 40/40. Overseer full run: %s, errors log empty, SECTION 8 identical; banners vs S25 differ only in fuzz drift, banner order and PLAN VISUALS 139 -> 146. The first overseer run STALLED in GRID VIEW at TP-141 (the standing 1-in-6 stall, no Godot alive after) and was re-run. Shot print: two realized cells landed a placement apart agree at 8 of 8 sampled moments (phases 1.0995 / 1.0995), 8 distinct colours over one loop, the control pixel 1. By eye (overseer, zoom_two_cards.png): a 3 of Fire and an 8 of Hoops wear the same mint-green pip rims at the same instant.'
+  notes: 'The board-wide clock is paced by the SHIPPED shimmer_period_fraction (one clock can take no one card type override); it stops under a paused tree exactly as the per-card clocks do. _alert_period extracted so both advances share one period resolution and the pre-existing 0.05 s floor.'
 - id: S17
   description: the closing sequence of /plan-run, every numbered item recorded. Hand to a NEW session at or above Opus 5 default effort (the READY FOR CLOSING block is in the last overseer message and in Next up).
   files_touched: []
@@ -438,7 +446,7 @@ Findings and their disposition; each defect is reproduced red before it is fixed
   `BoardPlan` row corrected to agree.
 
 ## Next up
-S18-S25 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
+S18-S26 are landed. S17: open a NEW session at or above Opus 5 default effort and paste:
 
     Run the closing phase of /plan-run for the branch board-plan in ../gamedev-boardplan
     (sibling of the main checkout). The code was implemented by Opus 5 (plan-implementer)
