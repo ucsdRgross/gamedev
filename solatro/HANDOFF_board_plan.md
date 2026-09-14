@@ -7,7 +7,7 @@ verified: S1-S16, the review-fix rounds (A-I), the six steps the owner's gap rul
 (S18-S23), and two playtest rulings (S24 the cascade reveal, S25 the standalone scene's 52-card
 deck), one implementer, one full gate and one commit each; all six gaps are resolved with their
 `resolution:` blocks and PLAN 1.10-bis carries every ruling verbatim. Tree clean. Last gate: ALL 48
-SUITES: 4404 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
+SUITES: 4408 CHECKS PASSED, errors log empty, SECTION 8 byte-identical to the baseline captured
 before S1. The owner has playtested the game view and approved the selection glow and the shimmer.
 OPEN: S17 only - the closing sequence, in a NEW session at or above Opus 5 default effort (Next up
 carries the prompt). Implementer sessions die to the Opus session limit every few hours; every
