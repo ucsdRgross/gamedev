@@ -63,6 +63,7 @@ func _ready() -> void:
 	await test_menus_title_and_button_row_centre_on_the_remaining_space()
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
+	await test_a_hovered_cards_description_draws_inside_the_container()
 	await test_the_preview_is_drawn_at_the_boards_own_card_size()
 	await test_the_preview_follows_a_resize_to_the_boards_new_card_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
@@ -1385,6 +1386,30 @@ func test_a_highlight_opens_the_description() -> void:
 			check(title.text == _expected_text(_play_area.ui_data[hovered])[0],
 					"...and the title follows the card the pointer is on", title.text)
 	await _end_main_fixture()
+
+# A state check reads the title's TEXT, which a panel laid out off screen still carries: this one
+# asks where the name, the preview and the body are DRAWN, through a shrink and back while it shows.
+func test_a_hovered_cards_description_draws_inside_the_container() -> void:
+	await _start_game_fixture()
+	var data := await _hover_a_card_with_a_visual()
+	check(data != null, "the pointer described a board card")
+	if data != null:
+		var windows : Array[Vector2i] = [Vector2i(1280, 720), Vector2i(600, 1000), Vector2i(1280, 720)]
+		for window : Vector2i in windows:
+			await _resize_viewport(_booted_viewport, window)
+			await get_tree().physics_frame
+			_check_description_draws_inside_the_container(window)
+	await _end_main_fixture()
+
+func _check_description_draws_inside_the_container(window: Vector2i) -> void:
+	var bounds := _sidebar_screen_rect(_container)
+	var parts : Array[Control] = [_panel.get_node(^"%Title") as Control,
+			_preview_card(_panel.current_entry.visual), _panel.get_node(^"%Body") as Control]
+	for part : Control in parts:
+		var rect := _sidebar_screen_rect(part)
+		check(part.is_visible_in_tree() and rect.has_area() and bounds.encloses(rect),
+				"the description's %s draws inside the container at %s" % [part.name, window],
+				"%s vs container %s" % [rect, bounds])
 
 ## How near the preview's drawn width must land on the board card's own -- a pixel of layout rounding on each side.
 const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
@@ -3268,10 +3293,9 @@ func test_closing_the_picker_drops_the_menus_description() -> void:
 				"Close fix 2: returning to the menu after the picker closed finds the HUD")
 	await _end_booted_fixture(viewport, main)
 
-# A real booster pack open on a live map at `size` -- the choice viewer's own fixture, since it is
-# reached through a map node rather than through a button. ⚠ The TEMPLATE is handed back with it:
-# a real map node holds it for the whole run, and a reroll calls its generator. Returns
-# `[viewport, main, viewer, template]`.
+# A real booster pack open on a live map at `size`, reached through a map node rather than a button.
+# ⚠ The TEMPLATE is handed back too: a real map node holds it for the whole run, and a reroll calls
+# its generator. Returns `[viewport, main, viewer, template]`.
 func _boot_map_with_a_booster(size: Vector2i) -> Array:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run

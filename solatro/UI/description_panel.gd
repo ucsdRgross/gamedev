@@ -86,9 +86,9 @@ func _make_still(node: Node) -> void:
 	for child : Node in node.get_children():
 		_make_still(child)
 
-# The panel's own height is the container's, so only the CONTENT's height is computed here, and
-# synchronously: a caller reading the panel straight after `show_entry()` must not see the layout
-# pass's leftovers from the previous entry. Called again on every resize, with the same entry up.
+# The CONTENT's height is computed synchronously, so a caller reading straight after `show_entry()`
+# never sees the last entry's layout. ⚠ THE SCROLL'S SIDEWAYS BAR IS NEVER SHOWN, NOT DISABLED: a
+# disabled one makes the grid's width the scroll's minimum, which shoves it left off the panel.
 func resize_to(panel_size: Vector2) -> void:
 	size = panel_size
 	_scroll.size = panel_size
