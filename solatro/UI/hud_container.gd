@@ -294,7 +294,7 @@ func release_screen(screen: StringName) -> void:
 	_release_remembered_entry(screen, null)
 	_release_locked_entry(screen)
 	_lock_by_screen.erase(screen)
-	if _processing_screen == screen: _processing_screen = &""
+	if screen == GAME_SCREEN: _game_processing = false
 
 # ⚠ FREED HERE AND NOT LEFT TO THE DICTIONARIES: on a whole-tree teardown this container's own
 # `_exit_tree()` has already run and cleared them, so a visual taken out of the panel afterwards
@@ -313,17 +313,17 @@ const MAP_SCREEN : StringName = &"map"
 ## The start menu's own focus id: its content is the deck picker, and what the picker described closes with it.
 const MENU_SCREEN : StringName = &"start_menu"
 
-## Which screen is mid-cascade, or `&""` while none is.
-var _processing_screen : StringName = &""
+## Whether the game screen is mid-cascade -- the one screen with a cascade.
+var _game_processing : bool = false
 
 ## Relayed by `GameView` from `Game.processing`: true reverts to the HUD and drops the lock for good, and once it ends the HUD holds until the next publication.
 func set_processing(busy: bool) -> void:
-	_processing_screen = GAME_SCREEN if busy else &""
+	_game_processing = busy
 	if _screen_is_processing(): show_hud()
 
 ## Whether the screen now showing is the one mid-cascade -- any other screen's container behaves as it always does.
 func _screen_is_processing() -> bool:
-	return _processing_screen != &"" and _processing_screen == _active_screen
+	return _game_processing and _active_screen == GAME_SCREEN
 
 # THE SIDEBAR READS ITS KEYS IN `_input`, BEFORE THE GUI PASS: the viewport's focus-neighbour
 # search consumes any arrow that finds a neighbour, so an arrow read any later never arrives while

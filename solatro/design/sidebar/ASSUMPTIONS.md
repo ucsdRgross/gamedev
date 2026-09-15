@@ -149,7 +149,7 @@
   always hit-testable, and the first version silently re-shot the locked card instead.
 - S7: new names NAMES.md does not list, all on `HudContainer`: `set_processing(busy)` (the method
   `GameView._on_processing_changed()` relays `Game.processing` through), the const
-  `PROCESSING_SCREEN` = `&"game"`, `_processing_screen`, `_screen_is_processing()` and
+  `PROCESSING_SCREEN` = `&"game"`, `_game_processing`, `_screen_is_processing()` and
   `_drops_publication()`. The rule is scoped by that const rather than by whichever screen happened
   to be active at the flip: `Main` sets the active screen at the END of `enter_game()`'s transition,
   after `GameView._ready()` has already run, so a latched screen id would be wrong for a show that

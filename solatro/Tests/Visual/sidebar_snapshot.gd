@@ -488,7 +488,7 @@ func _hover_a_pack_node(map: Map) -> void:
 # The map area shows only its loading text until generation finishes -- wait for that state
 # rather than a fixed sleep, so the still is never caught mid-generation.
 func _await_map_generated(controller: WorldMapController) -> void:
-	if controller.is_generated(): return
+	if controller._accepting_input: return
 	await controller.map_ready
 
 func _capture(out_path: String) -> void:

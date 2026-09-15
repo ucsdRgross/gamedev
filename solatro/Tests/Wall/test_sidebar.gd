@@ -1053,7 +1053,7 @@ func test_maps_camera_offset_moves_beside_the_container_not_under_it() -> void:
 func _focus_map(main: Main, run: RunState) -> void:
 	main.map_scene.start_run(run)
 	await main._focus_picture(&"map")
-	if not main.map_scene.controller.is_generated():
+	if not main.map_scene.controller._accepting_input:
 		await main.map_scene.controller.map_ready
 	await _await_camera_transform_settled()
 
@@ -2697,7 +2697,7 @@ func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
 	check(_container.showing_description(), "sanity: the map is left describing a pack node")
 	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	await _main._focus_picture(&"map")
-	if not _map.controller.is_generated():
+	if not _map.controller._accepting_input:
 		await _map.controller.map_ready
 	check(_hud_is_up(),
 			"Close fix 2: a new run's map opens on the HUD, not the last run's pack description")

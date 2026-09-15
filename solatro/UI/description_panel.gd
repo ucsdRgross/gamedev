@@ -99,13 +99,10 @@ func resize_to(panel_size: Vector2) -> void:
 	_content.size = Vector2(panel_size.x, content_h)
 	_content.custom_minimum_size.y = content_h
 
-# The name sits BESIDE the visual, so that row is as tall as the taller of the two.
+# The name sits BESIDE the visual, so that row is as tall as the taller of the two. An entry with no
+# visual of its own leaves the slot empty, and a flowing one sits below the row instead.
 func _top_row_height(width: float) -> float:
-	return maxf(_visual_height(), _text_height(_title_label, width))
-
-## The top row's visual height, or none when the entry brought no visual of its own -- `InfoEntry.visual` is optional, and a flowing one sits below the row instead.
-func _visual_height() -> float:
-	return _visual_slot.get_combined_minimum_size().y
+	return maxf(_visual_slot.get_combined_minimum_size().y, _text_height(_title_label, width))
 
 ## How tall `label`'s text wraps to at `width`, from font metrics -- Godot's own layout pass has not run yet.
 static func _text_height(label: Label, width: float) -> float:

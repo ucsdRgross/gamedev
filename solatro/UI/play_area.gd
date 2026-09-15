@@ -3157,7 +3157,6 @@ func _publish_info(data: CardData) -> void:
 # A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
 # player is asking is how much this slot has left to draw.
 func _publish_stock_info(slot: int) -> void:
-	if info_requested.get_connections().is_empty(): return
 	var game := CardEnvironment.get_current_game()
 	var entry := InfoEntry.new()
 	entry.title = game.state.upper_zone_type[slot].type.get_str()

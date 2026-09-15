@@ -53,12 +53,6 @@ func apply_container_shift(shift: Vector2) -> void:
 func _apply_camera_offset() -> void:
 	camera.offset = _container_shift / camera.zoom
 
-# Whether the graph has populated (`map_ready` already emitted) -- lets a caller that started a run
-# fire-and-forget, like the snapshot tool, tell a fresh generation from an already-finished one
-# without racing `map_ready` itself.
-func is_generated() -> bool:
-	return _accepting_input
-
 ## Build (or rebind) the WorldMap2D for this run: reload the bake when one exists, else
 ## generate from the pinned seed and bake exactly once (graph_export is only valid right
 ## after a generation this session — never re-bake after a reload).

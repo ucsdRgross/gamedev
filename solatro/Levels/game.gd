@@ -778,9 +778,9 @@ func _no_held_card_has_a_legal_placement() -> bool:
 					return false
 	return true
 
-## The Entrance's commit: the first placement locks `state.committed_grid` to that grid, and
-## a placement aimed at any other grid while committed is refused outright (no state change).
-## The commitment lifts again once no legal placement remains anywhere in the committed grid.
+# The Entrance's commit: the first placement locks `state.committed_grid`, and one aimed at any other
+# grid is refused outright. A PLAYER's winning placement commits BEFORE the hold and deals no refill;
+# one made under the board lock (a cascade's own) is not an ending.
 func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	if state.committed_grid != -1 and coord.grid != state.committed_grid:
 		return
@@ -826,9 +826,6 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 		await view.await_card_settled(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
-# A SETTLED board, and before the refill: an already-won show never deals another hand. The guard
-# is the board lock, so a placement made while the board is locked (a cascade's own) is not an
-# ending. The winning placement commits BEFORE the hold, like every other.
 	if not processing and state.has_met_goal():
 		await _commit_placement()
 		await _end_show_on_goal()

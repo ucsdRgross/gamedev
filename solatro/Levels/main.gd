@@ -23,6 +23,8 @@ var map_scene : Map = MAP.instantiate()
 static var save_info : RunState = RunState.new()
 
 var wall : Wall = null
+## This wall's one container, hand-carried to every screen before that screen's own `_ready()` runs.
+var hud_container : HudContainer = null
 var _pictures : Dictionary[StringName, WallPicture] = {}
 var _rects : Dictionary[StringName, PictureRect] = {}
 ## Every picture's authored entry, kept so the movers can read `.music` for whichever id they are
@@ -44,10 +46,9 @@ func _ready() -> void:
 
 	wall = WALL_SCENE.instantiate()
 	add_child(wall)
-	# Hand-carried before either screen's own `_ready()` runs, the same seam `enter_game()` uses
-	# for `GameView` -- both session-long screens bind to THIS wall's one container.
-	map_scene.hud_container = wall.get_node(^"%HudContainer") as HudContainer
-	menu_scene.hud_container = wall.get_node(^"%HudContainer") as HudContainer
+	hud_container = wall.get_node(^"%HudContainer") as HudContainer
+	map_scene.hud_container = hud_container
+	menu_scene.hud_container = hud_container
 	_window_size = get_viewport().get_visible_rect().size
 	_build_pictures()
 
@@ -75,7 +76,7 @@ func _ready() -> void:
 	camera.zoom = Vector2.ONE * WallPicture.focused_scale(start_rect.size, _window_size,
 			SettingsManager.settings.wall_overfill_margin)
 	_current_focus = &"start_menu"
-	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(&"start_menu")
+	hud_container.set_active_screen(HudContainer.MENU_SCREEN)
 	# No ceremony, matching the camera above: start_menu's music begins immediately at full
 	# volume, with nothing to fade FROM.
 	wall.start_music(_entries[&"start_menu"])
@@ -478,7 +479,7 @@ func _focus_picture(id: StringName, record_visit: bool = true) -> void:
 				wall.wall_view_centre(), dest_rect.centre, _entries[id])
 	dest_wp.focus()
 	_current_focus = id
-	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(id)
+	hud_container.set_active_screen(id)
 	# Fires for EVERY focus change, both branches above -- unlike `transition_landed`.
 	wall.focus_changed.emit(id)
 	if record_visit:
@@ -513,7 +514,7 @@ func _go_to_wall_view(duration_scale: float = 1.0) -> void:
 		source_wp.unfocus(_footprint(_rects[_current_focus]))
 		wall.enter_wall_view(_current_focus)
 	_current_focus = &""
-	(wall.get_node(^"%HudContainer") as HudContainer).set_active_screen(&"")
+	hud_container.set_active_screen(&"")
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	overlay.refresh(_focus_stack, _pictures.size(), _current_focus == &"")
 	_move_in_flight = false
@@ -529,7 +530,7 @@ func _on_wall_pressed() -> void:
 # A focused screen published something hoverable, and the wall's ONE container swaps its contents
 # to that description.
 func _on_screen_info_hovered(entry: InfoEntry) -> void:
-	(wall.get_node(^"%HudContainer") as HudContainer).show_description(entry)
+	hud_container.show_description(entry)
 
 ## Back retraces the `FocusStack` one step at a time, falling through to wall view only once the
 ## stack reports nothing behind the current picture.
@@ -599,8 +600,7 @@ func enter_game() -> void:
 	var game_wp : WallPicture = _pictures[&"game"]
 	if not game_wp.screen_root:
 		var new_view : GameView = GAME_VIEW.instantiate()
-		## Hand-carried before the view enters the tree, so it binds this wall's own container.
-		new_view.hud_container = wall.get_node(^"%HudContainer") as HudContainer
+		new_view.hud_container = hud_container
 		new_view.wall_picture = game_wp
 		new_view.game_ended.connect(game_ended)
 		new_view.run_lost.connect(_on_run_lost)

@@ -50,9 +50,11 @@ var combo_label : Label = null
 var _wall_camera : Camera2D = null
 var _wall_rect_centre_x : Callable = Callable()
 
+# `game` is handed this view BEFORE it enters the tree, so its own `_ready()` runs fully bound, and
+# its default state bypasses `state_bound`, so it is bound by hand. The board's reveal listens to the
+# lights' own section signal, so the two can never disagree which section is up.
 func _ready() -> void:
 	_bind_hud_container()
-	## Inject `self` before `game` enters the tree, so its _enter_tree/_ready run fully bound.
 	game = Game.new()
 	game.view = self
 	game.processing_changed.connect(_on_processing_changed)
@@ -62,21 +64,16 @@ func _ready() -> void:
 	game.combo_changed.connect(_on_combo_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
-	## Bind the spotlight after `game` exists -- it IS the CardEnvironment the cue comes from.
 	spotlight_director = SpotlightDirector.new()
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
 	spotlight_director.bind(light_layer, play_area, game)
-	## The reveal is a second listener on the same signal, so lights and layout can't disagree which section is up.
 	game.spotlight_section_changed.connect(play_area.set_reveal_cards)
 	_build_debug_bar()
 
-	## Rebind HUD/board signals whenever Game swaps its state (undo/resume replace it).
 	game.state_bound.connect(_on_state_bound)
-	## The initial default state bypasses the setter, so it is bound by hand here.
 	_bind_state(null, game.state)
 
-	## Submit carries the End label; end_show() is the only way to finish the continuous show.
 	hud_container.connect_for_screen(self, submit_button.pressed, func() -> void: game.end_show())
 	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
@@ -102,7 +99,6 @@ func _ready() -> void:
 
 	add_child(game)
 	_add_prop_debug_controls()
-	## Deferred: _refresh_hud early-returns before _ready finishes, so refresh once ready.
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
@@ -157,7 +153,6 @@ func _add_prop_debug_controls() -> void:
 	box.add_child(toggle)
 	box.add_child(step)
 	add_child(box)
-	## Bottom-right corner, growing up/left so the content never leaves the screen.
 	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 8)
@@ -186,15 +181,14 @@ func _bind_state(old_state: GameData, new_state: GameData) -> void:
 # GAME -> VIEW REACTIVE (signal-driven; no awaiting)
 # ==============================================================================
 
+# Owner ruling: the combo label hides at x1.0 rather than reading a no-op multiplier.
 func _refresh_hud() -> void:
 	if not is_node_ready() or not game: return
 	var state := game.state
 	goal_label.text = str(state.goal)
-	## The score is DERIVED (grid totals times the combo); there is no banked total to store.
 	total_label.text = str(state.live_total())
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
-	## Owner ruling: the combo label hides at x1.0 rather than reading a no-op multiplier.
 	combo_label.visible = combo > 1.0
 	_mark_goal_met(state.has_met_goal())
 	_refresh_end_reveal()
@@ -214,12 +208,11 @@ func _refresh_end_reveal() -> void:
 	var state := game.state
 	submit_button.visible = state.stocks_are_empty() or state.grids_are_full()
 
-## A new combo class registered this act: refresh + pulse the combo label.
 var _combo_tween : Tween = null
 
+# A new combo class registered this act: the label pulses in the same shape as `BigNumberLabel.anim_pop`.
 func _on_combo_changed(_count: int) -> void:
 	_refresh_hud()
-	## Pulse: same shape as BigNumberLabel.anim_pop.
 	var delay := game.get_delay()
 	if _combo_tween and _combo_tween.is_running():
 		_combo_tween.custom_step(INF)
@@ -251,7 +244,8 @@ func _publish_board_inset() -> void:
 		play_area.board_inset_top = 0.0
 	hud_container.resize_preview(play_area.board_card_window_px())
 
-## Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this picture.
+# Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
+# picture. `Tests/Engine/test_leak_canary.gd` discards through a view with no `Main`, hence no picture.
 func pile_center(pile: Control) -> Vector2:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var centre := pile.get_global_rect().get_center()
@@ -267,9 +261,6 @@ func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
 func _relay_info_requested(entry: InfoEntry) -> void:
 	entry.relay_to(info_requested)
 
-# The deck, discard and rules viewers are publishers exactly like the board: they hand their
-# highlights to this view, which relays them the same way, and closing one hands the sidebar back
-# to whatever was locked behind it.
 ## Every stock as ONE pile in a fixed suit-then-rank order, so neither which slot holds a card nor how soon it will be drawn leaks out of the Deck button.
 static func sorted_stock_union(state: GameData) -> Array[CardData]:
 	var cards := state.all_stock_cards()
@@ -279,6 +270,9 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 		return a.rank.value < b.rank.value)
 	return cards
 
+# The deck, discard and rules viewers are publishers exactly like the board: they hand their
+# highlights to this view, which relays them the same way, and closing one hands the sidebar back
+# to whatever was locked behind it.
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
 	_deck_viewer = DeckViewer.show_deck(self, cards, opener)
 	_deck_viewer.info_requested.connect(_relay_info_requested)
@@ -297,9 +291,10 @@ func _fit_open_viewer() -> void:
 			hud_container.window_scale(wall_picture))
 	if hud_container.showing_description(): _deck_viewer.republish_highlight()
 
+# Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
+# the press where it cannot act.
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
-	## Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores the press where it can't act.
 	hud_container.set_processing(busy)
 	if not busy: await _arm_the_entrance()
 
@@ -323,21 +318,18 @@ func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	_continue_button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
 	screen.add_child(_continue_button)
 	_continue_button.set_anchors_preset(Control.PRESET_CENTER)
-	## Sit below the big win/lose text.
 	_continue_button.position.y += CONTINUE_OFFSET_Y
 	_continue_button.pressed.connect(game.exit_show)
 	_continue_button.grab_focus()
 
-## Undo at the win/lose screen: drop the overlay. The Game's normal undo rebuild restores focus.
+## Undo at the win/lose screen: drop the overlay, and hand the freed Continue button's focus to Undo.
 func _on_show_unresolved() -> void:
 	win_screen.hide()
 	lose_screen.hide()
-	## The undo's rebuild follows and re-derives header focus.
 	play_area.enable_board_focus()
 	if _continue_button and is_instance_valid(_continue_button):
 		_continue_button.queue_free()
 	_continue_button = null
-	## Keyboard/controller: focus was on the freed Continue button.
 	undo_button.grab_focus()
 
 # ==============================================================================
@@ -380,12 +372,11 @@ func _arm_the_entrance() -> void:
 func sync_scores() -> void:
 	play_area.update_score_controls()
 
-## Rebuild EVERY board visual from the restored GameData (resume) -- the normal revision-bump rebuild path never touches the gutters, so a resume must populate both explicitly.
+# A resume rebuilds EVERY board visual from the restored GameData: the revision-bump rebuild never
+# touches the gutters. They reserve their space FIRST, so the cards lay out against the final height.
 func load_board_visuals() -> void:
-	## The gutters reserve their space FIRST, so the cards lay out against the final height rather than shifting down once the gutters are added afterwards.
 	play_area.update_score_controls()
 	play_area.flush_rebuild()
-	## CardVisuals enter via call_deferred, so they're ready one frame later than the build call.
 	if not play_area.visuals_ready():
 		await play_area.board_visuals_ready
 	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
@@ -431,8 +422,9 @@ func prop_tick_pending() -> bool:
 # VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)
 # ==============================================================================
 
+# What is held is the arm, and the arm is view-only: it is dropped here and re-derived from whatever
+# board the undo restores.
 func _on_undo_pressed() -> void:
-	## What is held is the arm, and the arm is view-only: it is dropped here and re-derived from whatever board the undo restores.
 	play_area.ungrab_cards()
 	game.undo()
 	await _arm_the_entrance()
@@ -490,18 +482,18 @@ func _pick_up(data: CardData) -> void:
 var _debug_bar : HBoxContainer = null
 var _record_button : Button = null
 
+# Top-right and parented to the VIEW like the prop debug box, so the two debug surfaces never
+# collide. The bar itself IGNOREs the mouse: a full-width bar would eat drags across the top.
 func _build_debug_bar() -> void:
 	if not OS.is_debug_build(): return
 	_debug_bar = HBoxContainer.new()
 	_debug_bar.name = "DebugBar"
-	## Top-right, away from the board and the HUD. IGNORE on the container so only the buttons themselves take clicks, or a full-width bar would eat drags across the top.
 	_debug_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_record_button = _add_debug_button(TRANSLATION.find('DEBUG_RECORD'), _on_debug_record)
 	_add_debug_button(TRANSLATION.find('DEBUG_UNDO'), _on_debug_undo)
 	_add_debug_button(TRANSLATION.find('DEBUG_REDO'), _on_debug_redo)
 	_add_debug_button(TRANSLATION.find('DEBUG_CUE'), _on_debug_cue)
 	add_child(_debug_bar)
-	## TOP-right, growing left, parented to the VIEW like the prop debug box, so the two debug surfaces live in one place and never collide.
 	_debug_bar.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_debug_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT,
 			Control.PRESET_MODE_MINSIZE, 8)
@@ -509,13 +501,13 @@ func _build_debug_bar() -> void:
 func _add_debug_button(text: String, handler: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	## Mouse-only: never steal focus from the board's keyboard/controller navigation.
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(handler)
 	_debug_bar.add_child(b)
 	return b
 
-## Toggle the capture. Stopping WRITES it and prints the folder, so the owner has a path to send.
+# The capture records every channel, since a playtest bug can be anywhere. Stopping WRITES it and
+# prints the folder, so the owner has a path to send.
 func _on_debug_record() -> void:
 	if EventLog.enabled:
 		EventLog.end()
@@ -523,14 +515,14 @@ func _on_debug_record() -> void:
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD')
 		print("=== EventLog written ===\n%s\n%s" % [dir, EventLog.summary()])
 	else:
-		## Every channel: a playtest bug can be anywhere.
 		EventLog.begin()
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD_STOP')
 
-## Stamps `SpotlightProbe` onto an uncovered, skill-free board card and re-runs the sweep, since the cue is otherwise unreachable without a skill implementing `on_spotlight` on the board.
+# The cue is unreachable without a skill implementing `on_spotlight`, so this stamps `SpotlightProbe`
+# on the first skill-free card that answers it is ACTUALLY spotlit -- a covered one says no -- and
+# runs the REAL sweep, so what shows is what a real activation looks like.
 func _on_debug_cue() -> void:
 	if not game or not game.state: return
-	## Stamp, then ask the card whether it is ACTUALLY spotlit, and unstamp if not: a covered card answers no, so the choice has to come from asking rather than guessing.
 	var chosen : CardData = null
 	for data : CardData in play_area.data_card.keys():
 		if data.skill != null: continue
@@ -544,7 +536,6 @@ func _on_debug_cue() -> void:
 		return
 	print("[debug cue] probe -> %s; watch for the circle, the beam and the shallower casual dim"
 			% chosen.log_str())
-	## The REAL sweep, not a hand-built emit, so what you see is what a real activation looks like.
 	await game.skill_spotlight_check()
 
 func _on_debug_undo() -> void:
