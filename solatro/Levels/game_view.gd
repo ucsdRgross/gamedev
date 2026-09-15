@@ -197,6 +197,23 @@ func _refresh_hud() -> void:
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
 	## Owner ruling: the combo label hides at x1.0 rather than reading a no-op multiplier.
 	combo_label.visible = combo > 1.0
+	_mark_goal_met(state.has_met_goal())
+	_refresh_end_reveal()
+
+# The Goal reads as reached the instant the running total passes it, which is one beat before the
+# show resolves. A palette role, never a literal, so a palette swap carries it.
+func _mark_goal_met(met: bool) -> void:
+	if met:
+		goal_label.add_theme_color_override(&"font_color",
+				PaletteDB.color(PaletteDB.ROLES.goal_met))
+	else:
+		goal_label.remove_theme_color_override(&"font_color")
+
+# End is the way to finish a show that can no longer be won, so it stays hidden until the show
+# CAN stop progressing: nothing left to draw anywhere, or no empty tile left to place into.
+func _refresh_end_reveal() -> void:
+	var state := game.state
+	submit_button.visible = state.stocks_are_empty() or state.grids_are_full()
 
 ## A new combo class registered this act: refresh + pulse the combo label.
 var _combo_tween : Tween = null
@@ -215,6 +232,7 @@ func _on_combo_changed(_count: int) -> void:
 # Board mutated (revision bump) -> coalesced rebuild at end of frame.
 func _on_board_changed() -> void:
 	play_area.queue_rebuild()
+	_refresh_end_reveal()
 
 # ⚠ TWO SCALES OUT OF ONE WINDOW, AND BOTH ARE RIGHT. `board_inset_*` reserves BOARD SPACE, so it
 # divides by the unmargined ratio; `picture_to_window_scale` is DRAWN PIXELS, the camera's resting

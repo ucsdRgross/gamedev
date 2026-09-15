@@ -31,6 +31,7 @@ const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
 const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
 const DRAG_RELEASE_RETURNED_OUT_PATH := "user://sidebar_snapshot/drag_release_returned.png"
 const CANCEL_FIRST_PRESS_OUT_PATH := "user://sidebar_snapshot/cancel_first_press.png"
+const GOAL_MET_OUT_PATH := "user://sidebar_snapshot/goal_met.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -226,6 +227,7 @@ func _ready() -> void:
 	await _refill_the_whole_entrance(view)
 	_capture(ENTRANCE_FLIP_MID_OUT_PATH)
 
+	await _show_the_goal_met(view)
 	var shot := await _shoot_a_cascade(main, view)
 	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
 
@@ -234,6 +236,21 @@ func _ready() -> void:
 	RunManager.clear_save()
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
+
+# The Goal wears its met state the instant the total reaches it, one beat before the show ends --
+# too short to photograph from a real placement, so the goal is dropped TO the settled board's
+# total instead. End stays hidden: there are still cards to draw and empty tiles to fill.
+func _show_the_goal_met(view: GameView) -> void:
+	var was := view.game.state.goal
+	view.hud_container.show_hud()
+	view.game.state.goal = view.game.state.live_total()
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(GOAL_MET_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT goal_met total=%d goal=%d end_visible=%s" % [
+			view.game.state.live_total(), view.game.state.goal,
+			str(view.submit_button.visible)])
+	view.game.state.goal = was
 
 # WHAT THE FACE-DOWN CARD COSTS THE BOARD, measured rather than argued: the Entrance is row -1, so
 # its real depth is what the board's floor has to clear, and a deeper row pushes everything above

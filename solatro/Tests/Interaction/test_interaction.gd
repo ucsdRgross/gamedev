@@ -456,6 +456,12 @@ func test_game_over_interactivity() -> void:
 	# ⚠ THROUGH THE BUTTON, not through game.end_show(). The button carries the End label, and
 	# a label is not a wire: calling end_show() directly here would pass just as happily with
 	# the button still bound to the retired Submit act, which is a show the player cannot end.
+	## End is hidden until the show can no longer progress and a hidden button cannot be clicked, so emptying every stock reaches the reveal condition this test is not about.
+	for stock : ArrayCardData in game.state.entrance_stocks():
+		stock.datas.clear()
+	game.state.revision += 1
+	await frames(1)
+	check(view.submit_button.visible, "precondition: End is revealed once nothing is left to draw")
 	check(view.submit_button.text == TRANSLATION.find('END_SHOW_BUTTON'),
 			"precondition: the button reads End", view.submit_button.text)
 	await click_hud_button(view.submit_button)

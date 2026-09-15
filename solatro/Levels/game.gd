@@ -821,6 +821,10 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 		await view.await_card_settled(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
+	## A SETTLED board, and before the refill: an already-won show never deals another hand, and an effect's nested placement is part of the act rather than its end.
+	if not processing and state.has_met_goal():
+		await _end_show_on_goal()
+		return
 	await refill_entrance_if_due()
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
 		state.committed_grid = -1
@@ -929,9 +933,16 @@ func draw_card(slot: int) -> CardData:
 func _update_submit_label() -> void:
 	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))
 
-## The player ends the performance. A show runs until this is called; there is no act count
-## and nothing resolves one on its own. Marks the state resolved BEFORE saving, so a quit at
-## the outcome screen resumes into the outcome rather than back into a live board.
+# Holds the settled board for the same read beat the cascade holds a revealed section for, so
+# the winning total is visible before the outcome screen covers it. Headless waits on nothing,
+# which keeps the logic tier byte-identical to the played one.
+func _end_show_on_goal() -> void:
+	if view:
+		await Pacing.wait(self, get_delay()
+				* SettingsManager.settings.spotlight_hold_fraction).timeout
+	end_show()
+
+## The performance ends here, by the End button or by the goal; the state is marked resolved BEFORE saving, so a quit at the outcome screen resumes into the outcome and not a live board.
 func end_show() -> void:
 	if state.show_ended: return
 	state.show_ended = true

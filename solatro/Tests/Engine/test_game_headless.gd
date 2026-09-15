@@ -14,6 +14,12 @@ extends TestSuite
 # undo, end) through the real Game API and assert the outcomes a player sees.
 # The single representation-level check (gutter BigNumber accumulation) is check_impl.
 
+## Higher than any fixture here can score, so a test about something else never trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 1000000
+
+## The goal the auto-end tests aim at -- low enough that one scored line clears it.
+const GOAL_WITHIN_ONE_LINE : int = 10
+
 func suite_name() -> String:
 	return "GAME HEADLESS"
 
@@ -31,6 +37,10 @@ func _ready() -> void:
 	await test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
 	await test_end_show_is_the_only_resolver()
+	await test_goal_reached_ends_the_show()
+	await test_goal_is_asked_after_the_whole_placement()
+	await test_undo_rewinds_an_automatic_end()
+	await test_full_board_does_not_end_the_show()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
 	await test_comparator_rules_change_a_real_act()
 	await test_authored_card_doubles()
@@ -774,6 +784,8 @@ func test_end_show_is_the_only_resolver() -> void:
 	var g := Game.new()
 	CardEnvironment.CURRENT = g
 	g.state = TestGridFixtures.build_fix_grid_1()
+	## Out of reach: reaching the goal now ends a show by itself, which would end this one for the RIGHT reason and make every "still live" assertion below pass without proving anything.
+	g.state.goal = GOAL_OUT_OF_REACH
 	# The detector is what scores a completed line, and the evaluator is what values it. Without
 	# both, the "a scored line does not resolve the show" leg below would assert over a line that
 	# never scored -- which is why the precondition after the placements is there.
@@ -798,6 +810,9 @@ func test_end_show_is_the_only_resolver() -> void:
 	check(g.state.live_total() > 0,
 			"precondition: the completed row actually scored -- otherwise this proves nothing",
 			str(g.state.live_total()))
+	check(not g.state.has_met_goal(),
+			"precondition: the goal is still out of reach, so the automatic end cannot fire here",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
 	check(not g.state.show_ended and resolved.is_empty(),
 			"a scored line does not resolve the show -- banking points is not finishing",
 			"show_ended=%s resolved=%s" % [str(g.state.show_ended), str(resolved)])
@@ -822,6 +837,100 @@ func test_end_show_is_the_only_resolver() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
+
+# Reaching the goal resolves the show with no button press, on a SETTLED board and before any
+# refill; a full board still does not; and undo rewinds an automatic end as it rewinds a manual
+# one.
+
+# Every auto-end test needs the same thing: a live grid show whose lines actually score, with a
+# goal it can reach. Built here so the four below differ only in the board they run on.
+func _goal_game(state: GameData, goal: int) -> Game:
+	var g := Game.new()
+	CardEnvironment.CURRENT = g
+	g.state = state
+	g.state.goal = goal
+	g.state.rules_deck = [
+		rules_card(SkillLineDetector.new()),
+		rules_card(SkillEvalPokerBest.new()),
+	] as Array[CardData]
+	g.save_state()
+	return g
+
+# Places one built card into a grid cell, the way the fixtures that carry no stock do.
+func _place_built(g: Game, x: int, y: int, rank: int) -> void:
+	var card := TestFactories.m_card(rank, TestFactories.uc())
+	card.stage = CardData.Stage.PLAY
+	await g.place_card_in_grid(card, BoardCoord.new(0, x, y, 0))
+
+func test_goal_reached_ends_the_show() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	var resolved : Array[bool] = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+	check(not g.state.show_ended and resolved.is_empty(),
+			"precondition: a fresh grid show is live")
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(g.state.live_total() >= g.state.goal,
+			"precondition: the completed row cleared the goal",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	check(g.state.show_ended,
+			"reaching the goal ended the show with no button press")
+	check(resolved.size() == 1 and resolved[0],
+			"show_resolved fired exactly once, as a win",
+			str(resolved))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+func test_goal_is_asked_after_the_whole_placement() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_triple(), GOAL_WITHIN_ONE_LINE)
+	var score_at_resolve : Array[int] = []
+	g.show_resolved.connect(func(_w: bool, score: int, _g: int) -> void:
+		score_at_resolve.append(score))
+	await _place_built(g, 2, 2, 1)
+	check(score_at_resolve.size() == 1,
+			"one placement completing several lines ended the show exactly once",
+			str(score_at_resolve))
+	check(g.state.scores_row.size() > 0 and g.state.scores_col.size() > 0,
+			"precondition: the placement completed lines in more than one direction",
+			"rows=%d cols=%d" % [g.state.scores_row.size(), g.state.scores_col.size()])
+	check(score_at_resolve[0] == g.state.live_total(),
+			"the show resolved on the SETTLED total -- every line of that placement had scored",
+			"at resolve %d, settled %d" % [score_at_resolve[0], g.state.live_total()])
+	check(g.state.committed_grid == 0,
+			"the end fired BEFORE the placement's tail -- the refill and the commitment lift never ran",
+			str(g.state.committed_grid))
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+func test_undo_rewinds_an_automatic_end() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(g.state.show_ended, "precondition: the goal ended the show")
+	g.undo()
+	check(not g.state.show_ended,
+			"undo rewinds an automatic end exactly as it rewinds a manual one")
+	check(not g.processing,
+			"and the player is back on a live board, not locked behind an outcome")
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+func test_full_board_does_not_end_the_show() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	## No detector: 25 placements complete 12 lines and would clear any goal worth naming, ending the show for the RIGHT reason and saying nothing about a full board.
+	g.state.rules_deck.clear()
+	for y : int in 5:
+		for x : int in 5:
+			await _place_built(g, x, y, 1)
+	check(g.state.grids_are_full(),
+			"precondition: every cell of the grid is filled")
+	check(not g.state.has_met_goal(),
+			"precondition: the goal was not reached",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	check(not g.state.show_ended,
+			"a full board does not end the show -- only the goal does")
+	CardEnvironment.CURRENT = null
+	free_game(g)
 
 # ==============================================================================
 # TP-80i -- THE RETIRED ACT HAS NO READERS.

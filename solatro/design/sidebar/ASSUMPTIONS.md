@@ -712,3 +712,29 @@
   with the fly-in. A card newly dealt into a stock hit it on its first stage change and deleted its
   own visual; the Deck control is not a place on the board, and `GameView.deck_ui` is not even
   assigned until after the deal.
+- S22: the goal check sits in `Game.place_card_in_grid` between `run_all_mods(&"on_card_placed")`
+  and `refill_entrance_if_due()`, guarded on `not processing`, and RETURNS -- so an ended show runs
+  neither the refill nor the commitment lift nor the placement's own `save_state()` (`end_show()`
+  saves for it). This is the reading of "after the WHOLE placement resolves" that excludes the
+  Entrance refill.
+- S22: `Game._end_show_on_goal()` is the pause plus the existing `end_show()`. The pause is
+  `get_delay() * SettingsManager.settings.spotlight_hold_fraction` through `Pacing.wait`, guarded
+  `if view:` so headless stays byte-identical. No new knob: the design named none, and the hold
+  fraction IS the project's "let it read" beat.
+- S22: `GameData.grids_are_full()` is the second half of the End reveal -- "no more possible action
+  on board (no empty tiles)". The first half is S19's `stocks_are_empty()`. The OR is taken in the
+  view, so no third predicate exists.
+- S22: `GameView._refresh_end_reveal()` is the ONLY writer of `submit_button.visible`, called from
+  `_refresh_hud()` (score-driven) and `_on_board_changed()` (board-driven). `GameView._mark_goal_met()`
+  is the Goal label's met state.
+- S22: `PaletteRoles.goal_met = 9` (the palette's bright green) is the Goal label's met colour --
+  a role like `hud_background`, never a literal.
+- S22: 7.1-7.4 live in `TestGameHeadless`, 7.5 in `TestSidebar` (it needs a real `GameView` and
+  `HudContainer`). No suite was added; the count stays 48.
+- S22: four existing tests now pin their goal out of reach because reaching it ends a show by
+  itself (`TestGameHeadless.GOAL_OUT_OF_REACH`, `TestSidebar.GOAL_OUT_OF_REACH`,
+  `TestE2E.GOAL_OUT_OF_REACH`); E2E scenario 1 lowers its goal to 1 immediately before its explicit
+  `end_show()` so the win still banks. `TestInteraction`'s game-over test empties every stock first,
+  because a hidden End cannot be clicked.
+- S22: `sidebar_snapshot.gd` gains `goal_met.png` via `_show_the_goal_met()`, which drops the goal
+  TO the settled board's total -- the real transition lasts one hold beat and cannot be photographed.

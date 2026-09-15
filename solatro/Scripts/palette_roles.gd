@@ -35,6 +35,9 @@ extends Resource
 ## The sidebar container's flat panel background (`HudContainer`).
 @export_range(0, 255, 1) var hud_background : int = 17
 
+## The Goal number once the running total has reached it, one beat before the show resolves.
+@export_range(0, 255, 1) var goal_met : int = 9
+
 # `art_outline` and `alert_glare` lived here and were MOVED, not copied, to `OutlineStyle`
 # (`Shaders/Styles/outline_default.tres`) — they are one effect's ink and glare band, and splitting
 # an effect's tuning across two resources is worse than splitting semantic colours across two homes.
@@ -48,7 +51,7 @@ const ROLE_NAMES : Array[StringName] = [
 	&"suit_hoop", &"suit_knife", &"suit_ball", &"suit_fire", &"suit_firework",
 	&"status_flame", &"status_ball",
 	&"ball_gloss",
-	&"hud_background",
+	&"hud_background", &"goal_met",
 ]
 
 ## This role's palette index. `roles.suit_hoop` is the normal path; this is for iterating ROLE_NAMES.

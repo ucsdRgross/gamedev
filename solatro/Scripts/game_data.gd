@@ -175,6 +175,13 @@ func stocks_are_empty() -> bool:
 		if not stock.datas.is_empty(): return false
 	return true
 
+## No empty tile is left anywhere: every grid cell already holds a card.
+func grids_are_full() -> bool:
+	for grid : GridData in grids:
+		for cell : ArrayCardData in grid.cells:
+			if cell.datas.is_empty(): return false
+	return true
+
 ## VIEWS over the Entrance zone -- `upper_zone` and `upper_zone_type` are no longer storage, so
 ## there is ONE representation of the Entrance and nothing to keep in step with it.
 ## ⚠ Every existing caller keeps working because a GDScript Array is a REFERENCE:

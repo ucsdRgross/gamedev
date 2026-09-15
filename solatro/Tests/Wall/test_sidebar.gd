@@ -14,6 +14,9 @@ const MENU_SCENE := preload("res://Levels/menu.tscn")
 # formula never depended on either retired control, so this is expected to stay unchanged.
 const MEASURED_BOARD_CENTRE_PX := 733.808
 
+## Higher than a real deck can score in a handful of placements, so a test about something else never trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 100000000
+
 func suite_name() -> String:
 	return "SIDEBAR"
 
@@ -166,7 +169,43 @@ func _ready() -> void:
 	await test_the_face_down_card_becomes_the_revealed_one()
 	await test_hovering_a_stock_says_how_many_it_has_left()
 	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
+	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
+	await test_end_is_revealed_when_no_action_remains()
 	finish()
+
+
+# ------------------------------------------- S22: THE END BUTTON'S REVEAL
+
+## 7.5: End is the way out of a show that cannot be won, so it stays hidden while the show can still progress.
+func test_end_is_revealed_when_no_action_remains() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	var state := view.game.state
+	check(not view.submit_button.visible,
+			"a live show with cards to draw and empty tiles hides End")
+	for stock : ArrayCardData in state.entrance_stocks():
+		stock.datas.clear()
+	_fill_every_grid_cell(state)
+	state.revision += 1
+	await get_tree().process_frame
+	check(view.submit_button.visible,
+			"every stock empty and no empty tile left reveals End")
+	state.entrance_stocks()[0].datas.append(TestFactories.m_card(5, TestFactories.uc()))
+	state.grids[0].cells[0].datas.clear()
+	state.revision += 1
+	await get_tree().process_frame
+	check(not view.submit_button.visible,
+			"one stock with a card AND an empty tile hides End again")
+	await _end_game_fixture()
+
+# The reveal asks about EMPTY tiles, so the fixture above needs a board with none left.
+func _fill_every_grid_cell(state: GameData) -> void:
+	for grid : GridData in state.grids:
+		for cell : ArrayCardData in grid.cells:
+			if cell.datas.is_empty():
+				var card := TestFactories.m_card(1, TestFactories.uc())
+				card.stage = CardData.Stage.PLAY
+				cell.datas.append(card)
 
 func _build_container() -> HudContainer:
 	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate()
@@ -3484,6 +3523,8 @@ func test_a_placement_arms_the_new_leftmost() -> void:
 ## Q118/G14: the Entrance refills left to right, and the refill's new leftmost is what arms next.
 func test_a_refill_arms_the_new_leftmost() -> void:
 	await _start_game_fixture()
+	## A real deck clears the default goal inside these few placements and the show would end before its next refill, so the goal goes out of reach and this stays a test about refills.
+	CardEnvironment.get_current_game().state.goal = GOAL_OUT_OF_REACH
 	var dealt : Array[CardData] = []
 	for column : ArrayCardData in CardEnvironment.get_current_game().state.upper_zone:
 		dealt.append_array(column.datas)
