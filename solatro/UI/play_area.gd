@@ -2493,18 +2493,27 @@ func update_card_zone_visuals(hbox: HBoxContainer, type: Array[CardData], datas:
 	# would slam an open row shut. Re-push the live openings over the top of it.
 	_apply_row_openings()
 
-	# 3. Focus neighborhood linking
-	for i in type.size() - 1:
-		var left: Control = hbox.get_child(i).get_child(0)
-		var right: Control = hbox.get_child(i+1).get_child(0)
-		left.focus_neighbor_right = right.get_path()
-		right.focus_neighbor_left = left.get_path()
+	_link_arrow_stops(hbox, type.size())
 
 	# ⚠ **THE BESPOKE HELD/SELECTED WIDENING IS GONE, BY OWNER RULING.** It reached into this
 	# container by fixed child index (`get_child(0)` / `get_child(1)` / `get_child(-1)`), which the
 	# reversal above inverts, and it was a second highlight mechanism beside the one every other
 	# card on the board already uses. `on_control_focus_entered()`'s widening is now the only one.
 	# ⚠ The look when picking a card up from the Entrance CHANGES; that is the ruling, not a bug.
+
+# Chains each slot's topmost control to its neighbours for the arrows, skipping a slot that shows
+# only its face-down card: the engine honours an explicit neighbour at every focus mode but
+# FOCUS_NONE, so a skipped slot must be left OUT of the chain, not relied on to refuse the focus.
+func _link_arrow_stops(hbox: HBoxContainer, slots: int) -> void:
+	var stops : Array[Control] = []
+	for i : int in slots:
+		var top := hbox.get_child(i).get_child(0) as Control
+		top.focus_neighbor_left = ^""
+		top.focus_neighbor_right = ^""
+		if not is_stock_control(top): stops.append(top)
+	for i : int in stops.size() - 1:
+		stops[i].focus_neighbor_right = stops[i + 1].get_path()
+		stops[i + 1].focus_neighbor_left = stops[i].get_path()
 
 # ==============================================================================
 # S20b — THE GRID BOARD

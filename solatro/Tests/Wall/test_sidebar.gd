@@ -172,6 +172,7 @@ func _ready() -> void:
 	await test_clicking_a_stock_describes_the_slot_and_locks_nothing()
 	await test_accepting_a_stock_describes_the_slot_and_locks_nothing()
 	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
+	await test_an_arrow_never_stops_on_a_face_down_card()
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
 	finish()
@@ -3874,10 +3875,15 @@ func _fixture_game() -> Game:
 # Every slot is emptied INTO THE DISCARD rather than dropped, so no card stops being reachable
 # from the state -- which is what the leak sentinel measures.
 func _empty_every_entrance_slot() -> void:
+	for slot : int in _fixture_game().state.upper_zone.size():
+		await _discard_held_cards_of(slot)
+
+# One slot emptied the same way, leaving its stock alone -- a slot that holds nothing but still
+# draws its face-down card.
+func _discard_held_cards_of(slot: int) -> void:
 	var state := _fixture_game().state
-	for column : ArrayCardData in state.upper_zone:
-		state.discard_deck.append_array(column.datas)
-		column.datas.clear()
+	state.discard_deck.append_array(state.upper_zone[slot].datas)
+	state.upper_zone[slot].datas.clear()
 	state.revision += 1
 	_play_area.set_card_zones()
 	await get_tree().process_frame
@@ -4159,6 +4165,51 @@ func test_accepting_a_stock_describes_the_slot_and_locks_nothing() -> void:
 			and body.text.contains(str(state.entrance_stocks()[1].datas.size())),
 			"...and what it shows is the SLOT's remaining count, not that card (S21.5c)",
 			"%s / %s" % [title.text, body.text])
+	await _end_game_fixture()
+
+## The control an arrow can land on in `slot`: the topmost one the neighbour links point at.
+func _slot_top_control(slot: int) -> Control:
+	return _play_area.upper_zone_right.get_child(slot).get_child(0) as Control
+
+## Presses one arrow on a focused board control and hands back whatever holds the focus after it.
+func _focus_after_arrow(from: Control, keycode: Key) -> Control:
+	from.grab_focus()
+	await get_tree().process_frame
+	_push_key(_game_viewport, keycode, true)
+	await get_tree().process_frame
+	_push_key(_game_viewport, keycode, false)
+	await get_tree().process_frame
+	return _game_viewport.gui_get_focus_owner()
+
+## S21.7: an arrow never stops on a face-down card -- a slot holding nothing is walked past to the next slot that shows a card the player could play.
+func test_an_arrow_never_stops_on_a_face_down_card() -> void:
+	await _start_game_fixture()
+	var state := _fixture_game().state
+	state.goal = GOAL_OUT_OF_REACH
+	check(state.upper_zone.size() >= 4, "sanity: four slots to leave gaps between",
+			str(state.upper_zone.size()))
+	var placed := await _place_the_arm()
+	check(placed != null and state.upper_zone[0].datas.is_empty(),
+			"a placement empties the leftmost slot while its neighbours still hold cards (S21.7)",
+			str(state.upper_zone[0].datas.size()))
+	check(_stock_controls(0).size() == 1,
+			"...and that slot still draws its face-down card (S21.7)",
+			str(_stock_controls(0).size()))
+	var landed := await _focus_after_arrow(_slot_top_control(1), KEY_LEFT)
+	check(landed != null and not _play_area.is_stock_control(landed),
+			"an arrow into the emptied slot never stops on its face-down card (S21.7)",
+			_board_input_state(_slot_top_control(0)))
+	check(landed == _slot_top_control(1),
+			"...and with no card revealed that way the selection stays where it was (S21.7)",
+			str(landed))
+	await _discard_held_cards_of(2)
+	landed = await _focus_after_arrow(_slot_top_control(1), KEY_RIGHT)
+	check(landed != null and not _play_area.is_stock_control(landed),
+			"...nor when the emptied slot lies between two that hold cards (S21.7)",
+			_board_input_state(_slot_top_control(2)))
+	check(landed == _slot_top_control(3),
+			"...the arrow reaches the next slot that shows a revealed card (S21.7)",
+			str(landed))
 	await _end_game_fixture()
 
 ## S21.6: the Deck viewer is every stock as ONE pile, sorted by suit then rank, so no slot order leaks.

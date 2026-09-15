@@ -697,9 +697,11 @@
   map, because a rebuild's dictionaries and the state can disagree mid-grab (measured: a missing
   `data_card` key through `arm_leftmost` -> `grab_cards`).
 - S21: the face-down card's control is `FOCUS_CLICK`, not `FOCUS_ALL` -- reachable by pointer and
-  click (which is what publishes the slot's description) but never an arrow stop, since nothing
-  there can be played. `PlayArea.is_stock_control()` is the public predicate, used by the publish
-  path and by the fixtures that mean "a card a player can grab".
+  click, which is what publishes the slot's description. ⚠ The focus mode alone does NOT keep the
+  arrows off it: Godot honours an explicit `focus_neighbor` at every mode but `FOCUS_NONE`, so what
+  makes it never an arrow stop is `_link_arrow_stops()` leaving it out of the chain, tested by
+  S21.7. `PlayArea.is_stock_control()` is the public predicate, used by the publish path, by the
+  link builder and by the fixtures that mean "a card a player can grab".
 - S21: `PlayArea._publish_stock_info()` sends the SLOT's own entry -- title the zone card's name,
   body `SIDEBAR_STOCK_REMAINING` with the count, no preview visual -- through the same
   `info_requested` route a card uses. ⚠ The localisation CSV's third column is a CONTEXT, not a
@@ -742,3 +744,7 @@
   rule, in the same `_consume_as_*` shape as `_consume_as_focus_click` -- a press on a stock
   control publishes the slot's own entry and is consumed, so `data_selected` never carries a
   hidden card and the sidebar cannot lock to one.
+- Phase 6 fix 8: `PlayArea._link_arrow_stops()` is the Entrance's neighbour chain -- each slot's
+  topmost control, minus the slots showing only a face-down card, so the arrows walk from one
+  revealed card to the next. Clearing both links every rebuild is part of it: the controls are
+  pooled, so a stale path would outlive the slot that earned it.
