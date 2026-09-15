@@ -168,6 +168,9 @@ func _ready() -> void:
 	await test_a_slot_shows_one_face_down_card_whatever_its_depth()
 	await test_the_face_down_card_becomes_the_revealed_one()
 	await test_hovering_a_stock_says_how_many_it_has_left()
+	await test_one_drained_stock_disarms_nothing()
+	await test_clicking_a_stock_describes_the_slot_and_locks_nothing()
+	await test_accepting_a_stock_describes_the_slot_and_locks_nothing()
 	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
@@ -4085,6 +4088,77 @@ func test_hovering_a_stock_says_how_many_it_has_left() -> void:
 	check(body.text.contains(str(before - 1)),
 			"...and drawing one card off it drops the count by one (S21.5)",
 			"%s vs %d" % [body.text, before - 1])
+	await _end_game_fixture()
+
+## 4.7: one slot running out of stock is not an empty deck, and it disarms nothing -- the armed card stays held through the rebuild that drops that slot's face-down card.
+func test_one_drained_stock_disarms_nothing() -> void:
+	await _start_game_fixture()
+	var state := _fixture_game().state
+	await _play_area.arm_leftmost()
+	await get_tree().process_frame
+	var armed := _armed_card()
+	var slot := _play_area.armed_slot()
+	check(armed != null, "the fixture's board starts with a card armed", str(slot))
+	var drained := state.entrance_stocks().size() - 1
+	state.discard_deck.append_array(state.entrance_stocks()[drained].datas)
+	state.entrance_stocks()[drained].datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	check(not state.stocks_are_empty(), "one drained stock is not an empty deck (4.7)",
+			str(_stock_controls(drained).size()))
+	check(_armed_card() == armed and _play_area.armed_slot() == slot,
+			"...and nothing disarms: the same card is still held in the same slot (4.7)",
+			"%s in %d" % [_armed_card(), _play_area.armed_slot()])
+	check(armed != null and _play_area.data_card[armed].held > 0,
+			"...still lifted as a held card (4.7)")
+	await _end_game_fixture()
+
+## S21.5b: a CLICK on the face-down card describes the slot too -- it never hands the hidden card to the view, so nothing locks to a card the player cannot see.
+func test_clicking_a_stock_describes_the_slot_and_locks_nothing() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var body : Label = _panel.get_node(^"%Body")
+	var state := _fixture_game().state
+	var stock_control := _stock_controls(1)[0]
+	var hidden : CardData = _play_area.ui_data[stock_control]
+	var clicked := _watch_clicks()
+	await _click_card(stock_control)
+	check(clicked.is_empty(), "a click on the face-down stock selects no card at all (S21.5b)",
+			_board_input_state(stock_control))
+	check(not _container.is_locked() and _play_area.locked_data == null,
+			"...so the sidebar is not locked to the hidden card (S21.5b)",
+			str(_play_area.locked_data))
+	check(title.text != hidden.rank.get_str()
+			and body.text.contains(str(state.entrance_stocks()[1].datas.size())),
+			"...and what it shows is the SLOT's remaining count, not that card (S21.5b)",
+			"%s / %s" % [title.text, body.text])
+	await _end_game_fixture()
+
+## S21.5c: the keyboard accept on the face-down card reads the same as the click -- the slot, never the hidden card.
+func test_accepting_a_stock_describes_the_slot_and_locks_nothing() -> void:
+	await _start_game_fixture()
+	var title : Label = _panel.get_node(^"%Title")
+	var body : Label = _panel.get_node(^"%Body")
+	var state := _fixture_game().state
+	var stock_control := _stock_controls(1)[0]
+	var hidden : CardData = _play_area.ui_data[stock_control]
+	var clicked := _watch_clicks()
+	stock_control.grab_focus()
+	await get_tree().process_frame
+	_push_key(_game_viewport, KEY_ENTER, true)
+	_push_key(_game_viewport, KEY_ENTER, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(clicked.is_empty(), "ui_accept on the face-down stock selects no card at all (S21.5c)",
+			_board_input_state(stock_control))
+	check(not _container.is_locked() and _play_area.locked_data == null,
+			"...so the sidebar is not locked to the hidden card (S21.5c)",
+			str(_play_area.locked_data))
+	check(title.text != hidden.rank.get_str()
+			and body.text.contains(str(state.entrance_stocks()[1].datas.size())),
+			"...and what it shows is the SLOT's remaining count, not that card (S21.5c)",
+			"%s / %s" % [title.text, body.text])
 	await _end_game_fixture()
 
 ## S21.6: the Deck viewer is every stock as ONE pile, sorted by suit then rank, so no slot order leaks.

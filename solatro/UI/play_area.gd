@@ -1266,6 +1266,14 @@ func _consume_as_focus_click(c: Control) -> bool:
 	focus_grid(gi)
 	return true
 
+# A press on a face-down card describes its SLOT instead of selecting it: the hidden card is not
+# something the player can be handed, so the sidebar must never lock to it. True when it consumed
+# the press.
+func _consume_as_stock_press(c: Control) -> bool:
+	if not is_stock_control(c): return false
+	_publish_stock_info(_stock_slot_of_control[c])
+	return true
+
 # ==============================================================================
 # MOVING THE SELECTION — ARROWS, AND THE ONE-FINGER SWIPE
 #
@@ -1593,7 +1601,8 @@ func _on_gui_input(event: InputEvent) -> void:
 					and focused_control == moused_hovered_control
 					and focused_control in ui_data):
 					#and not focused_control.is_in_group("CardVisualZoneControl")):
-				if not _consume_as_focus_click(focused_control):
+				if (not _consume_as_focus_click(focused_control)
+						and not _consume_as_stock_press(focused_control)):
 					_next_grab_follows = true
 					data_selected.emit(ui_data[focused_control])
 			elif _card_control_at(get_global_mouse_position()) == null:
@@ -1631,7 +1640,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _board_control_has_focus():
 			if _accept_press_pairs():
 				_pair_taps(ui_data[focused_control], _depth_when_pressed)
-			elif not _consume_as_focus_click(focused_control):
+			elif (not _consume_as_focus_click(focused_control)
+					and not _consume_as_stock_press(focused_control)):
 				data_selected.emit(ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):

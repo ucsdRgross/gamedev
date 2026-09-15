@@ -738,3 +738,7 @@
   because a hidden End cannot be clicked.
 - S22: `sidebar_snapshot.gd` gains `goal_met.png` via `_show_the_goal_met()`, which drops the goal
   TO the settled board's total -- the real transition lasts one hold beat and cannot be photographed.
+- Phase 6 fix 7: `PlayArea._consume_as_stock_press()` is the click/accept half of the face-down
+  rule, in the same `_consume_as_*` shape as `_consume_as_focus_click` -- a press on a stock
+  control publishes the slot's own entry and is consumed, so `data_selected` never carries a
+  hidden card and the sidebar cannot lock to one.
