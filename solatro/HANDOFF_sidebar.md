@@ -414,6 +414,39 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    pattern doc_check accepts; production code is clean.
 - Fixes 7, 8, 10, 11 and the card back traced clean on the real routes.
 
+## Phase 8 review (adversarial, Fable 5.1, at S23 over 9a9bcd16..eb635e79) — 4 confirmed, 3 suspected
+1. CONFIRMED the popup detaches from its dot: `show_above` places once (the only call, on hover)
+   and nothing follows the node through travel (the camera follows the token every frame), a
+   drag-pan, a wheel zoom or a resize — the label floats over empty map. S23.2 moves only the
+   pointer. → fix 13.
+2. CONFIRMED the popup never hides: nothing writes `visible = false`; a New Run regenerates the
+   map under the old label at its old position; entering a show leaves the label on the map
+   picture. ASSUMPTIONS' "mirrors Q133a=c" overreaches. S23.7 cannot fail (the game fixture never
+   hovers a map node) and the real sequence would fail. → fix 13 (same object: the popup's
+   position and lifetime follow the hovered node; hidden when the node is gone).
+3. CONFIRMED touch pan of the map is lost: the swallow of every `device == -1` mouse press runs
+   before `_pressed` is set, and `_pressed` has no other writer, so a one-finger drag never pans
+   and only hovers dots under the finger. Scope: the map only. → fix 14.
+4. CONFIRMED `DescriptionPanel.resize_to` counts the previous entry's queue-freed visual (still a
+   child until end of frame): pack → show leaves a grid-sized blank scroll area; pack → pack sums
+   both flows. → fix 15.
+5. SUSPECTED `_tapped_node` is never cleared by mouse hover or `start_run`, so mouse-hover A then
+   finger-tap A describes again instead of entering. Defensible under K5; noted.
+6. SUSPECTED popup unclamped at the top edge (already "owner should see").
+7. Evidence counts: the implementer's 4715 vs the overseer's 4680 on the same tree — the check
+   TOTAL drifts (data-dependent suites); the failure set was empty in both.
+- PLAN DRIFT: K2 "stays put" not met under camera motion (1); K5 built but touch pan regressed
+  (3); the popup's lifetime across New Run is un-ruled (2); six names without a NAMES entry
+  (`node_screen_rect`, `_travel_to`, `_consumed_as_touch`, `_tapped_node`, `%GridSlot`,
+  `_slot_for`) — in ASSUMPTIONS.
+- TEST SURFACE: S23.7 cannot fail as written; S23.4 pushes touch-first (the reverse of the
+  engine order the code claims — same outcome because the swallow is unconditional); S23.5's
+  "hovering a preview card changes nothing" is trivially true (nothing listens); S23.2 untested
+  under camera motion; no test for the popup after New Run / screen leave / resize, or for
+  `resize_to` after pack → show.
+- Clean: `_slot_for` routing (only one FlowContainer visual exists), the wall's `device`
+  forwarding, the touch swallow's scope, the keyboard path, Q136/Q139.
+
 ## Gaps
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
