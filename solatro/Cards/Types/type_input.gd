@@ -36,6 +36,6 @@ func on_refill() -> void:
 	var col : int = api.upper_zone_type().find(data)
 	if col == -1 or col >= api.upper_zone().size(): return
 	if api.upper_zone()[col].datas.size() > 0: return
-	var drawn_card := api.draw_card()
+	var drawn_card := api.draw_card(col)
 	if drawn_card:
 		api.place_card(drawn_card, 0, col)

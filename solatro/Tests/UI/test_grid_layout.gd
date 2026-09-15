@@ -1191,7 +1191,7 @@ func run_a_rows_zone_cards_share_one_line_at_a_non_one_zoom_test() -> void:
 	var depths : Array[int] = [2, 1, 0, 3]
 	for x : int in depths.size():
 		for _h : int in depths[x]:
-			var card := g.draw_card()
+			var card := g.draw_card(0)
 			if not card: break
 			await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, _h))
 	pa.focus_grid(0)
@@ -1313,7 +1313,7 @@ func run_the_first_card_in_a_cell_does_not_widen_its_row_test() -> void:
 			"precondition: every empty row is the same height, so a change can only come from a "
 			+ "card", "row 0 %.2f, row 1 %.2f" % [empty_h, other_empty_h])
 
-	var first := g.draw_card()
+	var first := g.draw_card(0)
 	check(first != null, "precondition: the deck gave a card to place")
 	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	pa.queue_rebuild()
@@ -1327,7 +1327,7 @@ func run_the_first_card_in_a_cell_does_not_widen_its_row_test() -> void:
 			"...and the untouched row beside it did not move either",
 			"%.2f vs %.2f" % [_row_control_height(pa, 0, 1), other_empty_h])
 
-	var second := g.draw_card()
+	var second := g.draw_card(0)
 	if second: await g.place_card_in_grid(second, BoardCoord.new(0, 0, 0, 1))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1458,7 +1458,7 @@ func run_the_card_is_put_down_before_anything_scores_test() -> void:
 	var g := view.game
 	await _settle_layout(view)
 
-	var card := g.draw_card()
+	var card := g.draw_card(0)
 	check(card != null, "precondition: the deck gave a card to place")
 	if card == null:
 		await _tear_down(view)
@@ -1524,7 +1524,7 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 	# Focusing zooms the board, which is what the product's own default one-grid show does.
 	pa.focus_grid(0)
 	await _settle_layout(view)
-	var first := g.draw_card()
+	var first := g.draw_card(0)
 	if first: await g.place_card_in_grid(first, BoardCoord.new(0, 0, 0, 0))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1534,7 +1534,7 @@ func run_a_deepening_stack_grows_the_board_upward_test() -> void:
 	var range_before : float = bar.max_value
 	var before := _cell_block_rect(pa, 0)
 	for h : int in range(1, 7):
-		var card := g.draw_card()
+		var card := g.draw_card(0)
 		if not card: break
 		await g.place_card_in_grid(card, BoardCoord.new(0, 0, 0, h))
 	pa.queue_rebuild()
@@ -1609,7 +1609,7 @@ func run_hovering_the_board_does_not_move_it_test() -> void:
 	pa.focus_grid(0)
 	await _settle_layout(view)
 	for h : int in 2:
-		var card := g.draw_card()
+		var card := g.draw_card(0)
 		if card: await g.place_card_in_grid(card, BoardCoord.new(0, 1, 2, h))
 	pa.queue_rebuild()
 	await _settle_layout(view)
@@ -1755,7 +1755,7 @@ func run_a_row_score_sits_on_its_pip_row_test() -> void:
 	pa.focus_grid(0)
 	await _settle_layout(view)
 	for h : int in 3:
-		var c := g.draw_card()
+		var c := g.draw_card(0)
 		if c: await g.place_card_in_grid(c, BoardCoord.new(0, 0, 2, h))
 	for h : int in 3:
 		g.state.bank_line_score(g.state.scores_row, 0, 2, h, 1234)
@@ -1815,7 +1815,7 @@ func run_the_entrance_stacks_upward_test() -> void:
 
 	var col : ArrayCardData = g.state.upper_zone[1]
 	while col.datas.size() < 3:
-		var c := g.draw_card()
+		var c := g.draw_card(0)
 		if not c: break
 		col.datas.append(c)
 	g.state.revision += 1

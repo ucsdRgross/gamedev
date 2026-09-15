@@ -81,7 +81,7 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, deck_button.pressed,
-			func() -> void: _open_deck_viewer(game.state.draw_deck, deck_button))
+			func() -> void: _open_deck_viewer(game.state.all_stock_cards(), deck_button))
 	var discard_button := discard_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, discard_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))

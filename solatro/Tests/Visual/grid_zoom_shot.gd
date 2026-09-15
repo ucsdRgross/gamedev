@@ -75,7 +75,7 @@ func _ready() -> void:
 	for gi : int in _grid_count:
 		var grid : GridData = g.state.grids[gi]
 		for x : int in mini(5, grid.grid_width):
-			var card := g.draw_card()
+			var card := TestGridFixtures.draw_any(g)
 			if not card: break
 			await g.place_card_in_grid(card, BoardCoord.new(gi, x, 0, 0))
 	pa.flush_rebuild()

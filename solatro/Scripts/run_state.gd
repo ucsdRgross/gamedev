@@ -5,6 +5,10 @@ extends Resource
 ## lap/fame/luck progression, the run deck, and the traveled-edge history. Saved to
 ## user://run_save/run.tres by RunManager; only @export vars persist.
 
+## The in-flight show's board shape; a run older than the per-slot stocks loads as 0 and is dropped.
+const STOCK_FORMAT := 1
+@export var stock_format : int = 0
+
 ## Reproducibility handle for the world map; pinned non-zero at run start so Continue
 ## regenerates identical terrain + node roles.
 @export var world_seed : int = 0

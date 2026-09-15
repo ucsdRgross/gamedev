@@ -191,11 +191,11 @@ func run_grid_tests() -> void:
 	run_tp16_grid_stack_order_test()
 	run_tp17_sparse_grid_test()
 
-## TP-15: draw_deck first, then the board, row-major within a grid. FIX-MIXED-H.
+## TP-15: the slot stocks first, then the board, row-major within a grid. FIX-MIXED-H.
 func run_tp15_grid_order_test() -> void:
 	var state := TestGridFixtures.build_fix_mixed_h()
 	var draw := cards(2)
-	state.draw_deck = draw
+	state.entrance_stocks()[0].datas.assign(draw)
 	env.card_collections = state.get_card_collections()
 
 	var expected : Array[CardData] = []
@@ -207,7 +207,7 @@ func run_tp15_grid_order_test() -> void:
 
 	var got := iterate()
 	check(got == expected,
-			"TP-15: draw_deck first, then the board, row-major within a grid",
+			"TP-15: the slot stocks first, then the board, row-major within a grid",
 			"got %d cards / want %d" % [got.size(), expected.size()])
 
 ## TP-16: within a cell the walk is bottom to top. FIX-STACK-5.

@@ -614,3 +614,28 @@
   first click's placement armed. New test row
   `TestDragPlace.test_a_refused_pairs_release_places_nothing`, which pushes the one mouse motion a
   real mouse makes between two clicks -- the hover refresh `_on_gui_input` reads.
+- S19: the stock rides the Entrance zone's own per-cell data: `GridData.stocks`, one
+  `ArrayCardData` per cell, reached through `GameData.entrance_stocks()` (grows to match
+  `cells`), `GameData.all_stock_cards()` (the flat union every walker and the deck viewer read)
+  and `GameData.stocks_are_empty()` (the "deck is empty" predicate S22 reads). So the set of
+  slots and the set of stocks cannot disagree.
+- S19: `Board.remove_column` carries the removed Entrance slot's stock out with it, returning
+  those cards among the orphans the ZoneAdder already discards (`Board._stock_orphans`).
+  `add_column` needs no counterpart -- `entrance_stocks()` grows.
+- S19: a board with NO Entrance slots still holds one stock. `add_deck` runs before the zone
+  adders build the row, so the shuffled deck lands in stock 0 and `Game.deal_stocks()` -- called
+  again by the bootstrap once the slots exist -- spreads it. `deal_stocks()` is also the seam
+  S20's `rebalance_stocks()` calls.
+- S19: `Game.draw_card(slot)` and `CardEffectApi.draw_card(slot)` take the slot whose stock they
+  pop; `TypeInput.on_refill` passes its own column. `CardEffectApi.draw_deck()` KEEPS its name as
+  the flat read-only view of the union (its one caller counts cards), and
+  `return_to_draw_deck(card)` puts the card on the shortest stock, earliest slot winning ties.
+- S19: old in-flight saves are discarded, not migrated, through a save version:
+  `RunState.stock_format` (`STOCK_FORMAT` = 1, written by `RunManager._build_payload`). A run
+  written before stocks loads as 0, and `RunManager._drop_unrebuildable_show()` clears its
+  `game_history` and pending markers on load -- the run survives, the show does not.
+- S19: `TestGridFixtures.draw_any(game)` draws the top of the first slot that still has one, for
+  the fixtures that want a card from what is left of the deck and do not care which slot owns it.
+- S19: `TestUIProps`' frozen-deck seed moved 424242 -> 424243. The per-slot deal changes which
+  cards reach the scored row, and the fixture's whole point is a seeded deal whose line spawns
+  props; the new seed restores that, the deck composition is unchanged.

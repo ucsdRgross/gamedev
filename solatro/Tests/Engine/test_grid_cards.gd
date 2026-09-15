@@ -48,12 +48,11 @@ func _rules_card(skill: CardModifierSkill) -> CardData:
 	skill.spotlit = true
 	return c
 
-## A Game whose draw_deck is `deck` and whose only rules card is a spotlit
-## SkillGridAllotment -- enough to fire on_game_start the way Levels/game.gd does.
+## A Game with its deck in one stock and one spotlit SkillGridAllotment, enough for on_game_start.
 func _allotment_game(deck: Array[CardData]) -> Game:
 	var g := Game.new()
 	var state := GameData.new()
-	state.draw_deck = _as_draw_deck(deck)
+	state.entrance_stocks()[0].datas.assign(_as_stock_cards(deck))
 	state.rules_deck = [_rules_card(SkillGridAllotment.new())] as Array[CardData]
 	g.state = state
 	CardEnvironment.CURRENT = g
@@ -232,7 +231,7 @@ func run_meta_card_adds_and_subtracts_creators_test() -> void:
 	var big : Array[CardData] = []
 	for _i : int in 6:
 		big.append_array(TestDecks.deck_standard_52())
-	g.state.draw_deck = big
+	g.state.entrance_stocks()[0].datas.assign(big)
 	await g.run_all_mods(&"on_game_start")
 	check(_creator_count(g) == 3,
 			"a deck far past the cap grows the creator count to the cap (3)",
@@ -242,7 +241,7 @@ func run_meta_card_adds_and_subtracts_creators_test() -> void:
 			"got %d grids" % g.state.grids.size())
 
 	# SHRINKS back: swap in a small deck and re-run again.
-	g.state.draw_deck = TestDecks.deck_20()
+	g.state.entrance_stocks()[0].datas.assign(TestDecks.deck_20())
 	await g.run_all_mods(&"on_game_start")
 	check(_creator_count(g) == 1,
 			"shrinking the deck subtracts creator cards back down to one",
@@ -267,11 +266,11 @@ func _creator_count(g: Game) -> int:
 
 ## A bare Game with 5 spotlit SkillAdderInputUpper cards (the Entrance's 5 columns) and no
 ## grid. Returns the game and the 5 TypeInput header instances, left to right.
-## Stamps a hand-assigned deck DRAW and returns it. Assigning `state.draw_deck` directly
-## skips `Game.add_deck`, which is what normally stamps the stage, and `validate()` checks a
+## Stamps a hand-assigned deck DRAW and returns it. Filling a stock directly skips
+## `Game.add_deck`, which is what normally stamps the stage, and `validate()` checks a
 ## card's stage against where it actually sits -- so without this every undo in the suite
 ## reports the whole deck as I5 violations (stage PLAY, expected DRAW).
-func _as_draw_deck(deck: Array[CardData]) -> Array[CardData]:
+func _as_stock_cards(deck: Array[CardData]) -> Array[CardData]:
 	for card : CardData in deck:
 		card.stage = CardData.Stage.DRAW
 	return deck
@@ -279,7 +278,7 @@ func _as_draw_deck(deck: Array[CardData]) -> Array[CardData]:
 func _entrance_game(deck: Array[CardData]) -> Dictionary:
 	var g := Game.new()
 	var state := GameData.new()
-	state.draw_deck = _as_draw_deck(deck)
+	state.entrance_stocks()[0].datas.assign(_as_stock_cards(deck))
 	var adders : Array[SkillAdderInputUpper] = []
 	for _i : int in 5:
 		adders.append(SkillAdderInputUpper.new())
@@ -293,6 +292,7 @@ func _entrance_game(deck: Array[CardData]) -> Dictionary:
 	for adder : SkillAdderInputUpper in adders:
 		await adder.on_spotlight()
 		headers.append(adder.card_data.type as TypeInput)
+	g.deal_stocks()
 	return {"game": g, "headers": headers}
 
 ## Deals the initial hand the way the game does: ask for a refill. The DECISION is the
@@ -307,20 +307,17 @@ func _deal(g: Game) -> void:
 func run_refill_fills_left_to_right_test() -> void:
 	behavior_section("A FULL REFILL FILLS LEFT TO RIGHT")
 	var deck := TestDecks.deck_standard_52()
-	# ⚠ Capture the expectation BEFORE handing the deck over: _entrance_game moves the cards
-	# into the draw deck and leaves this array empty, so reading it afterwards is out of bounds.
-	# draw_card() pops from the BACK, so the leftmost slot gets the LAST card.
-	var expected : Array[CardData] = []
-	for i : int in 5:
-		expected.append(deck[deck.size() - 1 - i])
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
+	var expected : Array[CardData] = []
+	for i : int in 5:
+		expected.append(g.stock_for_slot(i).back())
 	await _deal(g)
 	var ok := true
 	for i : int in 5:
 		if g.state.upper_zone[i].datas.size() != 1 or g.state.upper_zone[i].datas[0] != expected[i]:
 			ok = false
-	check(ok, "the deck's last 5 cards land in slots 0-4 in that exact order",
+	check(ok, "each slot takes the top card of its own stock",
 			"upper_zone: %s" % [g.state.upper_zone.map(func(c: ArrayCardData) -> String: return str(c.datas))])
 	_free_game(g)
 
@@ -333,8 +330,8 @@ func run_short_refill_leaves_right_slots_empty_test() -> void:
 	var parts := await _entrance_game(deck)
 	var g : Game = parts["game"]
 	await _deal(g)
-	check(g.state.draw_deck.is_empty(), "the short deck was drained entirely",
-			"got %d cards left" % g.state.draw_deck.size())
+	check(g.state.stocks_are_empty(), "the short deck was drained entirely",
+			"got %d cards left" % g.state.all_stock_cards().size())
 	for i : int in 3:
 		check(g.state.upper_zone[i].datas.size() == 1,
 				"slot %d got one of the 3 available cards" % i,
@@ -892,14 +889,14 @@ func run_replayed_refill_is_identical_test() -> void:
 			"%d cards" % g.state.upper_zone[1].datas.size())
 	g.save_state()
 	var pre_placement : GameData = g.save_history[-1]
-	var deck_before : int = g.state.draw_deck.size()
+	var deck_before : int = g.state.all_stock_cards().size()
 
 	var coord := BoardCoord.new(0, 0, 0, 0)
 	await g.place_card_in_grid(_held(g, 0), coord)
 	var expected := TestGridFixtures.board_digest(g.state)
-	check(g.state.draw_deck.size() < deck_before,
+	check(g.state.all_stock_cards().size() < deck_before,
 			"precondition: emptying the Entrance dealt a fresh hand from the deck",
-			"%d -> %d" % [deck_before, g.state.draw_deck.size()])
+			"%d -> %d" % [deck_before, g.state.all_stock_cards().size()])
 
 	g.state = g._runtime_state(pre_placement)
 	g.save_history = [pre_placement]

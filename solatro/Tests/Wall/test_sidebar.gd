@@ -2605,10 +2605,11 @@ func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
 func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> void:
 	await _start_game_fixture()
 	var state := (_main._pictures[&"game"].screen_root as GameView).game.state
-	check(state.draw_deck.size() >= 2, "sanity: the draw deck can seed a discard pile",
-			str(state.draw_deck.size()))
-	state.discard_deck.append(state.draw_deck[0])
-	state.discard_deck.append(state.draw_deck[1])
+	var stocked := state.all_stock_cards()
+	check(stocked.size() >= 2, "sanity: the slot stocks can seed a discard pile",
+			str(stocked.size()))
+	state.discard_deck.append(stocked[0])
+	state.discard_deck.append(stocked[1])
 	var entrance := await _entrance_card_controls()
 	check(not entrance.is_empty(), "the dealt board offers a lockable card", str(entrance.size()))
 	if not entrance.is_empty():
@@ -2684,10 +2685,11 @@ func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
 	await _check_viewer_publishes(_container.rules_ui.get_node(^"Button") as Button, "rules")
 	var view := _main._pictures[&"game"].screen_root as GameView
 	var state := view.game.state
-	check(state.draw_deck.size() >= 2, "sanity: the draw deck can seed a discard pile",
-			str(state.draw_deck.size()))
-	state.discard_deck.append(state.draw_deck[0])
-	state.discard_deck.append(state.draw_deck[1])
+	var stocked := state.all_stock_cards()
+	check(stocked.size() >= 2, "sanity: the slot stocks can seed a discard pile",
+			str(stocked.size()))
+	state.discard_deck.append(stocked[0])
+	state.discard_deck.append(stocked[1])
 	await _check_viewer_publishes(_container.discard_ui.get_node(^"Button") as Button, "discard")
 	await _end_game_fixture()
 

@@ -121,9 +121,9 @@ func run_win_and_resume_scenario() -> void:
 	# the slots -- asked before it, the refill finds nothing to fill and deals silently nothing.
 	var opening := entrance_cards(g)
 	check(opening > 0, "the opening deal fills the Entrance", "%d cards" % opening)
-	check(g.state.draw_deck.size() == deck_size - opening,
-			"the rest of the starter deck is in the draw pile",
-			"%d vs %d - %d" % [g.state.draw_deck.size(), deck_size, opening])
+	check(g.state.all_stock_cards().size() == deck_size - opening,
+			"the rest of the starter deck is in the slot stocks",
+			"%d vs %d - %d" % [g.state.all_stock_cards().size(), deck_size, opening])
 	check(g.save_history.size() == 1 and run.game_history.size() == 1,
 			"the opening board is committed to history and the save")
 	validate_ok(g, "fresh show")
@@ -197,9 +197,9 @@ func run_win_and_resume_scenario() -> void:
 			"fame %d, score %d" % [loaded.fame, exp_fame])
 	check(total_zone_cards(g2) == 0 and g2.state.discard_deck.is_empty(),
 			"the board and discard pile are swept clean")
-	check(g2.state.draw_deck.size() == deck_size,
+	check(g2.state.all_stock_cards().size() == deck_size,
 			"every card returns to the run deck — none created or lost",
-			"%d vs %d" % [g2.state.draw_deck.size(), deck_size])
+			"%d vs %d" % [g2.state.all_stock_cards().size(), deck_size])
 	check(Main.save_info.game_history.is_empty(),
 			"the finished show's history is dropped (Continue won't re-enter it)")
 	remove_child(g2)

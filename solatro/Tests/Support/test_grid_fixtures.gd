@@ -177,17 +177,24 @@ static func build_fix_full_15() -> GameData:
 # broadcast fires, the detector scores, and the Entrance refills. Shared so the suites that
 # need "a board with something on it" do not each grow their own.
 #
-# Cards come from the game's OWN draw deck via `draw_card()`, never from the Entrance: lifting
+# Cards come from the slots' own stocks via `draw_card()`, never from the Entrance itself: lifting
 # a card out of an Entrance slot has no mutation path yet (see gaps/GAP-008), and placing one
 # that is still in `upper_zone` would leave it in two collections at once.
 # ==============================================================================
+
+## The top card of the first slot that still has one -- these fixtures do not care which slot.
+static func draw_any(game: Game) -> CardData:
+	for slot : int in game.state.entrance_stocks().size():
+		var card := game.draw_card(slot)
+		if card: return card
+	return null
 
 ## Draws `count` cards and places them into consecutive cells of row `y`, left to right.
 ## Returns the cards actually placed -- fewer than `count` if the deck ran out.
 static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Array[CardData]:
 	var placed : Array[CardData] = []
 	for x : int in count:
-		var card := game.draw_card()
+		var card := draw_any(game)
 		if not card: break
 		await game.place_card_in_grid(card, BoardCoord.new(grid, x, y, 0))
 		placed.append(card)
@@ -215,7 +222,7 @@ static func board_digest(state: GameData) -> String:
 			names.append(card.log_str())
 		parts.append("e%d=[%s]" % [col, ",".join(names)])
 	for deck_name : String in ["draw", "discard"]:
-		var deck : Array[CardData] = state.draw_deck if deck_name == "draw" else state.discard_deck
+		var deck : Array[CardData] = state.all_stock_cards() if deck_name == "draw" else state.discard_deck
 		var names : Array[String] = []
 		for card : CardData in deck:
 			names.append(card.log_str())

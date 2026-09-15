@@ -8,6 +8,8 @@ extends Resource
 @export_storage var grid_height : int = 5
 @export_storage var cells : Array[ArrayCardData] = []
 @export_storage var cell_types : Array[CardData] = []
+## One face-down stock per cell, same order as `cells` -- only the Entrance zone deals into these.
+@export_storage var stocks : Array[ArrayCardData] = []
 
 ## Row-major index of cell (x, y) within this grid's own width.
 func cell_index(x: int, y: int) -> int:

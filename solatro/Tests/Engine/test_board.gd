@@ -62,7 +62,7 @@ func make_game() -> Game:
 	for i in 3:
 		var d := TestFactories.m_card(i + 1, TestFactories.uc())
 		d.stage = CardData.Stage.DRAW
-		s.draw_deck.append(d)
+		s.entrance_stocks()[0].datas.append(d)
 	g.state = s
 	return g
 
@@ -81,7 +81,7 @@ func snap(g: Game) -> Array:
 		for c in zone:
 			z.append(c.datas.duplicate())
 		out.append(z)
-	out.append(g.state.draw_deck.duplicate())
+	out.append(g.state.all_stock_cards())
 	out.append(g.state.discard_deck.duplicate())
 	return out
 
@@ -110,8 +110,8 @@ func run_locate_tests() -> void:
 			"upper header -> z == -1")
 	check(g.find_data_vec3(g.state.lower_zone_type[2]) == Vector3i(1, 2, -1),
 			"lower header -> z == -1")
-	check(g.find_data_vec3(g.state.draw_deck[0]) == Vector3i.MIN,
-			"draw-deck card is not a board position -> MIN")
+	check(g.find_data_vec3(g.stock_for_slot(0)[0]) == Vector3i.MIN,
+			"stock card is not a board position -> MIN")
 	check(g.find_data_vec3(TestFactories.m_card(1, 1)) == Vector3i.MIN,
 			"card in no collection -> MIN")
 
@@ -147,7 +147,7 @@ func run_topmost_tests() -> void:
 	check(not g.is_data_topmost(g.state.upper_zone_type[2]), "upper header, full column -> not")
 	check(g.is_data_topmost(g.state.lower_zone_type[0]), "lower header, empty column -> topmost")
 	check(not g.is_data_topmost(g.state.lower_zone_type[2]), "lower header, full column -> not")
-	check(not g.is_data_topmost(g.state.draw_deck[0]), "deck card is not topmost")
+	check(not g.is_data_topmost(g.stock_for_slot(0)[0]), "stock card is not topmost")
 	check(not g.is_data_topmost(TestFactories.m_card(1, 1)), "off-board card is not topmost")
 	free_game(g)
 
@@ -371,13 +371,13 @@ func run_draw_discard_tests() -> void:
 	behavior_section("SECTION 7: DRAW / DISCARD")
 	var g := make_game()
 
-	var top := g.state.draw_deck[-1]
-	var drawn := g.draw_card()
+	var top := g.stock_for_slot(0)[-1]
+	var drawn := g.draw_card(0)
 	check(drawn == top and drawn.stage == CardData.Stage.PLAY \
-			and g.state.draw_deck.size() == 2, "draw_card returns last card, stage PLAY")
+			and g.stock_for_slot(0).size() == 2, "draw_card returns last card, stage PLAY")
 
-	g.state.draw_deck.clear()
-	check(g.draw_card() == null, "draw_card on empty deck -> null")
+	g.stock_for_slot(0).clear()
+	check(g.draw_card(0) == null, "draw_card on an empty stock -> null")
 
 	#discard a mid-stack card: cards above shift down, discard pile gets it
 	var mid := col_datas(g, 0, 2)[1]

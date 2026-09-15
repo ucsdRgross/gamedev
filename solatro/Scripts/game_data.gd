@@ -125,7 +125,6 @@ func has_met_goal() -> bool:
 ## The grid list, left to right. Each grid carries its own size and cells (§1.3 of the
 ## poker-patience plan: nothing hard-codes 5x5).
 @export_storage var grids : Array[GridData] = []
-@export_storage var draw_deck : Array[CardData]
 @export_storage var discard_deck : Array[CardData]
 @export_storage var rules_deck : Array[CardData]
 ## THE ENTRANCE, as its own grid-shaped ZONE. Owner: *"entrance being similar to grid is the idea.
@@ -155,6 +154,26 @@ func entrance_zone() -> GridData:
 	if entrance.grid_width != want:
 		entrance.grid_width = want
 	return entrance
+
+## The stocks, grown so every slot has one -- `Board.add_column`/`remove_column` carry a stock with its column, and a board with no slots still keeps one, because add_deck deals before the zone adders build the row.
+func entrance_stocks() -> Array[ArrayCardData]:
+	var zone := entrance_zone()
+	while zone.stocks.size() < maxi(zone.cells.size(), 1):
+		zone.stocks.append(ArrayCardData.new())
+	return zone.stocks
+
+## Every stock's cards, slot by slot -- the flat view of what used to be the one draw deck.
+func all_stock_cards() -> Array[CardData]:
+	var all : Array[CardData] = []
+	for stock : ArrayCardData in entrance_stocks():
+		all.append_array(stock.datas)
+	return all
+
+## "The deck is empty" now that there are several: no slot has anything left to draw.
+func stocks_are_empty() -> bool:
+	for stock : ArrayCardData in entrance_stocks():
+		if not stock.datas.is_empty(): return false
+	return true
 
 ## VIEWS over the Entrance zone -- `upper_zone` and `upper_zone_type` are no longer storage, so
 ## there is ONE representation of the Entrance and nothing to keep in step with it.
@@ -405,13 +424,10 @@ func _scan_grid_positions() -> Dictionary[CardData, BoardCoord]:
 				out[upper_zone[c].datas[h]] = BoardCoord.new(0, c, BoardCoord.ENTRANCE_ROW, h)
 	return out
 
-## The board walk for `CardDataIterator` (run_all_mods, spotlight sweep, etc.): `draw_deck`
-## first, then every board collection, cell zone cards near the end. Each grid's cells wrap
-## in `GridCellWalk` so the grid is walked row-major with a full bottom-to-top stack per
-## cell and no early stop -- a grid is sparse by nature.
+## The board walk for `CardDataIterator`: stocks first, then the board, zone cards near the end; stocks and grid cells wrap in `GridCellWalk`, so each is walked a full stack at a time with no early stop.
 func get_card_collections() -> Array:
 	var out : Array = [
-		draw_deck,
+		GridCellWalk.new(entrance_stocks()),
 		upper_zone,
 		lower_zone,
 	]
@@ -427,7 +443,7 @@ func get_card_collections() -> Array:
 
 func all_card_datas() -> Array[CardData]:
 	var all : Array[CardData] = []
-	all.append_array(draw_deck)
+	all.append_array(all_stock_cards())
 	all.append_array(discard_deck)
 	all.append_array(rules_deck)
 	all.append_array(upper_zone_type)
@@ -480,12 +496,20 @@ func validate() -> Array[String]:
 			for r in zone[c].datas.size():
 				if not zone[c].datas[r]:
 					violations.append("I3: %s col %d row %d is null" % [zone_name, c, r])
-	for deck_name : String in ["draw_deck", "discard_deck", "rules_deck",
+	for deck_name : String in ["discard_deck", "rules_deck",
 			"upper_zone_type", "lower_zone_type"]:
 		var deck : Array[CardData] = get(deck_name)
 		for i in deck.size():
 			if not deck[i]:
 				violations.append("I3: %s index %d is null" % [deck_name, i])
+	for s in entrance_stocks().size():
+		var stock : ArrayCardData = entrance_stocks()[s]
+		if not stock:
+			violations.append("I3: entrance stock %d is null" % s)
+			continue
+		for i in stock.datas.size():
+			if not stock.datas[i]:
+				violations.append("I3: entrance stock %d index %d is null" % [s, i])
 	#I3: ALIASING -- the same GridData under two indexes, or the same cell array reachable from
 	#two cells. Neither shows up as a size or null violation: an aliased board looks entirely
 	#consistent until a placement into one grid appears in the other. Checked BEFORE the
@@ -528,7 +552,17 @@ func validate() -> Array[String]:
 	#Walks the named containers (not all_card_datas) so the message can say WHERE the
 	#card also lives instead of a bare true.
 	var seen : Dictionary[CardData, String] = {}
-	for deck_name : String in ["draw_deck", "discard_deck", "rules_deck",
+	for s in entrance_stocks().size():
+		var stock : ArrayCardData = entrance_stocks()[s]
+		if not stock: continue
+		var stock_here := "entrance stock %d" % s
+		for card : CardData in stock.datas:
+			if not card: continue
+			if seen.has(card):
+				violations.append("I1: card in two places: %s (%s, also %s)" \
+						% [card, stock_here, seen[card]])
+			seen[card] = stock_here
+	for deck_name : String in ["discard_deck", "rules_deck",
 			"upper_zone_type", "lower_zone_type"]:
 		for card : CardData in get(deck_name):
 			if not card: continue
@@ -572,7 +606,7 @@ func validate() -> Array[String]:
 				seen[card] = cell_here
 	#I5: stage matches location
 	var expected_stage : Dictionary[CardData, CardData.Stage] = {}
-	for card in draw_deck: expected_stage[card] = CardData.Stage.DRAW
+	for card in all_stock_cards(): expected_stage[card] = CardData.Stage.DRAW
 	for card in discard_deck: expected_stage[card] = CardData.Stage.DISCARD
 	for card in rules_deck: expected_stage[card] = CardData.Stage.RULES
 	for card in upper_zone_type: expected_stage[card] = CardData.Stage.ZONE

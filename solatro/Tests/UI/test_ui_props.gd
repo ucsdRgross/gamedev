@@ -997,6 +997,8 @@ func test_status_and_description_surface() -> void:
 # starter deck (every card suited -> scored melds spawn props), driven like E2E's
 # win scenario but WITH the view attached. The scoring pass runs under a watchdog: a
 # prop-tick sync regression fails the check instead of hanging the suite.
+# The deck is FROZEN (TestDecks.seeded_deck, never Decks/deck.gd) and the seed is chosen so the
+# deal scores prop-spawning melds.
 # ⚠ THE PASS IS DRIVEN BY A PLACEMENT, NOT BY A SUBMIT. Scoring is no longer an act that
 # banks a performed board -- a line scores the instant a placement completes it, so the
 # fifth card into row 0 is what makes the props fly.
@@ -1005,15 +1007,13 @@ func test_game_view_scoring_pass_with_props() -> void:
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	# FROZEN test deck, never Decks/deck.gd: this seeded run's observations (the 424242 deal
-	# scores knife melds) replay against TestDecks.seeded_deck's exact composition.
 	var src_cards := TestDecks.seeded_deck()
 	var src_rules := TestDecks.standard_rules()
 	var run := RunManager.new_run(src_cards, src_rules)
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
-	seed(424242)
+	seed(424243)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
 	var picture_vp := TestGameViewHost.host(self, view)
 	await get_tree().process_frame

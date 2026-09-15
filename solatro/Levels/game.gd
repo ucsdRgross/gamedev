@@ -253,12 +253,13 @@ func _start_fresh_show() -> void:
 	# The map node being played sets the fame requirement (RunManager.goal_for).
 	state.goal = maxi(Main.save_info.pending_goal, 1)
 	_update_submit_label()
-	add_deck()
+	await add_deck()
 	# ⚠ THE ORDER OF THESE FOUR IS LOAD-BEARING, and each one is here for its own reason.
 	# 1. Sweep first: run_all_mods only reaches a skill whose `spotlit` flag is already set, and
 	#    nothing sets it until a sweep runs -- so on_game_start called first reaches NO rules
 	#    card at all. This sweep is also what has the zone adders build the Entrance.
 	skill_spotlight_check()
+	deal_stocks()
 	# 2. Now the start hook lands. The allotment card sizes the grid count to the deck just
 	#    dealt and adds that many creator cards.
 	await run_all_mods(&"on_game_start")
@@ -328,7 +329,7 @@ func _resume_after_visuals() -> void:
 
 ## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
 ## board is the exact pre-action board, and these actions are deterministic — scoring has no
-## RNG, draws come from the already-ordered draw_deck — so the replay reproduces the original
+## RNG, draws come from the already-ordered stocks — so the replay reproduces the original
 ## outcome. Board visuals are already loaded (see _resume_after_visuals); input stays locked
 ## throughout (each _perform_* holds processing).
 func _replay_pending_action(action: StringName) -> void:
@@ -338,7 +339,7 @@ func _replay_pending_action(action: StringName) -> void:
 		&"on_placement": await _replay_pending_placement()
 
 ## Re-run the placement a quit interrupted. The restored board is the pre-placement one, so
-## the card named by the saved slot is back in the Entrance and the deck is back in its
+## the card named by the saved slot is back in the Entrance and its slot's stock is back in its
 ## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
 ## board, scoring and refill included. A slot that no longer holds anything means the marker
 ## outlived the board it described; the board is already correct, so there is nothing to do.
@@ -412,12 +413,27 @@ func add_deck() -> void:
 	for data in state.rules_deck:
 		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.RULES
-	state.draw_deck = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
-	for data in state.draw_deck:
+	var dealt : Array[CardData] = saved_deck.duplicate_deep(Resource.DEEP_DUPLICATE_ALL)
+	for data in dealt:
 		GameData.relink_card_backrefs(data)
 		data.stage = CardData.Stage.DRAW
-	shuffle_deck(state.draw_deck)
+	await shuffle_deck(dealt)
+	state.entrance_stocks()[0].datas.assign(dealt)
+	deal_stocks()
+
+## Deals the gathered stocks round-robin left to right, earlier slots taking the extras, with NO RNG -- add_deck's is the only shuffle, so a resumed board replays identically.
+func deal_stocks() -> void:
+	var cards := state.all_stock_cards()
+	var stocks := state.entrance_stocks()
+	for stock : ArrayCardData in stocks:
+		stock.datas.clear()
+	for i in cards.size():
+		stocks[i % stocks.size()].datas.append(cards[i])
 	state.revision += 1
+
+## The cards Entrance slot `slot` still has to draw, its top one last.
+func stock_for_slot(slot: int) -> Array[CardData]:
+	return state.entrance_stocks()[slot].datas
 
 func shuffle_deck(datas:Array[CardData]) -> void:
 	var new_deck : Array[CardData] = []
@@ -863,10 +879,11 @@ func is_data_topmost(data:CardData) -> bool:
 		return zone_col.datas.is_empty()
 	return vec3.z == zone_col.datas.size() - 1 and data == zone_col.datas[-1]
 
-#spawns new CARD where deck is
-func draw_card() -> CardData:
-	if state.draw_deck.size() > 0:
-		var data : CardData = state.draw_deck.pop_back()
+#spawns new CARD from the slot's own stock, top first
+func draw_card(slot: int) -> CardData:
+	var stock := stock_for_slot(slot)
+	if stock.size() > 0:
+		var data : CardData = stock.pop_back()
 		data.stage = CardData.Stage.PLAY
 		state.revision += 1
 		return data
@@ -921,28 +938,37 @@ func discard_data(data: CardData) -> void:
 func return_to_map() -> void:
 	await run_all_mods(&"on_game_end")
 	#sweep cards still on the board back into the deck (zone/type cards stay with their skills)
+	var returned : Array[CardData] = state.all_stock_cards()
 	for zone : Array[ArrayCardData] in [state.upper_zone, state.lower_zone]:
 		for col in zone:
-			state.draw_deck.append_array(col.datas)
+			returned.append_array(col.datas)
 			col.datas.clear()
 	# The grids hold the played cards, so the sweep has to reach them too or a show returns
 	# fewer cards to the run deck than it took -- the cell ZONE cards stay, they belong to the
 	# grid's own lifetime the way a column header belongs to its column.
 	for grid : GridData in state.grids:
 		for cell : ArrayCardData in grid.cells:
-			state.draw_deck.append_array(cell.datas)
+			returned.append_array(cell.datas)
 			cell.datas.clear()
-	state.draw_deck.append_array(state.discard_deck)
+	returned.append_array(state.discard_deck)
 	state.discard_deck.clear()
-	for data in state.draw_deck:
+	for data in returned:
 		data.stage = CardData.Stage.DRAW
+	_park_returned_deck(returned)
 	state.revision += 1
-	Main.save_info.card_datas = state.draw_deck
+	Main.save_info.card_datas = returned
 	RunManager.mark_deck_dirty()  # the run deck changed (board swept back in)
 	# The show is over — drop the undo history so Continue won't re-enter this game.
 	Main.save_info.game_history = [] as Array[GameData]
 	Main.save_info.game_history_trimmed = 0
 	game_ended.emit()
+
+## The swept-up deck is stage DRAW, so it sits in one stock or the board disagrees with itself.
+func _park_returned_deck(returned: Array[CardData]) -> void:
+	var stocks := state.entrance_stocks()
+	for stock : ArrayCardData in stocks:
+		stock.datas.clear()
+	stocks[0].datas.assign(returned)
 
 func resize_score_zone(score_zone:Array[BigNumber], size:int) -> void:
 	state.resize_grid_bucket(score_zone, size)

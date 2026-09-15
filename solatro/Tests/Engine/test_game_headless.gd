@@ -28,7 +28,7 @@ func _ready() -> void:
 	test_debug_history_is_uncapped_and_redoable()
 	await test_undo_rewinds_per_show_state()
 	await test_undo_at_game_over_rewinds_the_end()
-	test_add_deck_relinks_suit_backrefs()
+	await test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
 	await test_end_show_is_the_only_resolver()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
@@ -310,13 +310,14 @@ func test_add_deck_relinks_suit_backrefs() -> void:
 	var g := make_game()
 	var prev_save_info : RunState = Main.save_info
 	Main.save_info = RunState.new()   # blank save -> add_deck falls back to the full starter Deck
-	g.add_deck()
-	var all_linked := not g.state.draw_deck.is_empty()
-	for card : CardData in g.state.draw_deck:
+	await g.add_deck()
+	var dealt := g.state.all_stock_cards()
+	var all_linked := not dealt.is_empty()
+	for card : CardData in dealt:
 		if card.suit and card.suit.data != card:
 			all_linked = false
 	check_impl(all_linked, "add_deck's deep-duplicated deck keeps suit.data == its card",
-			"deck size %d" % g.state.draw_deck.size())
+			"deck size %d" % dealt.size())
 	Main.save_info = prev_save_info
 	CardEnvironment.CURRENT = null
 	free_game(g)

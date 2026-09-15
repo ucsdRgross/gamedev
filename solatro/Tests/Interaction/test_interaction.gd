@@ -418,7 +418,7 @@ func test_undo_button_cancels_live_act() -> void:
 	game.state.upper_zone[0].datas.clear()
 	game.state.revision += 1
 	var history_before : int = game.save_history.size()
-	var deck_before : int = game.state.draw_deck.size()
+	var deck_before : int = game.state.all_stock_cards().size()
 	_act_finished[0] = false
 	_act_in_background()
 	await frames(2)
@@ -437,9 +437,9 @@ func test_undo_button_cancels_live_act() -> void:
 	check(done, "the cancelled act hands input back (never hangs)")
 	check(game.save_history.size() == history_before,
 			"nothing was committed by the cancelled act")
-	check(game.state.draw_deck.size() == deck_before,
+	check(game.state.all_stock_cards().size() == deck_before,
 			"the cancelled act drew no card -- the pre-act board is back",
-			"%d vs %d" % [game.state.draw_deck.size(), deck_before])
+			"%d vs %d" % [game.state.all_stock_cards().size(), deck_before])
 	apply_test_speed()
 	# abort_all frees the visuals; queue_free lands end-of-frame — wait, don't count blind
 	var cleared := await wait_until(func() -> bool: return prop_visual_count() == 0)

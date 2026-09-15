@@ -57,11 +57,11 @@ func _shoot_board(n: int) -> void:
 	var grid : GridData = g.state.grids[0]
 	var placed : Array[CardData] = []
 	for x : int in mini(5, grid.grid_width):
-		var card := g.draw_card()
+		var card := TestGridFixtures.draw_any(g)
 		if not card: break
 		await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, 0))
 		placed.append(card)
-	var stacked := g.draw_card()
+	var stacked := TestGridFixtures.draw_any(g)
 	if stacked:
 		await g.place_card_in_grid(stacked, BoardCoord.new(0, 2, 0, 1))
 	pa.flush_rebuild()

@@ -48,7 +48,7 @@ func _ready() -> void:
 
 	for x : int in DEPTHS.size():
 		for h : int in DEPTHS[x]:
-			var card := g.draw_card()
+			var card := TestGridFixtures.draw_any(g)
 			if not card: break
 			await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, h))
 	pa.flush_rebuild()
