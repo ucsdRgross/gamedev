@@ -780,12 +780,13 @@
   fresh controls are born FOCUS_ALL, so the disable must come last. New test name
   `TestSidebar.test_the_outcome_screen_leaves_no_card_armed`, under the behavior section
   "THE RESOLVED SHOW LEAVES NOTHING ARMED".
-- S23: `MapNamePopup.show_above(node_name: String, node_rect: Rect2)` is the popup's whole API --
-  the map hands it the title of the entry it just published and the node's rect, so the popup
-  knows nothing of maps or graphs. It is placed once per hovered node and has no `_process`.
+- S23: `MapNamePopup.show_above(node_name: String, node: WorldGraphNode)` is the popup's whole API
+  besides `hide_name()` -- the map hands it the title of the entry it just published and the node
+  itself, and the popup holds that node as the only thing it remembers.
 - S23: `WorldMapController.node_screen_rect(node)` is the one conversion from a graph node to the
   map viewport's own coordinates (`get_global_transform_with_canvas()` + `marker_radius`), shared
-  by the popup's placement and by the tests that check it.
+  by the popup's placement and by the tests that check it. It is `static`: the popup re-asks it
+  every frame and holds no controller.
 - S23: the FIRST TAP RULE lives in `WorldMapController._consumed_as_touch()`, which also swallows
   the mouse press the engine emulates from that finger (`device == -1`, the same discrimination
   `UI/play_area.gd` uses) because the emulated press arrives BEFORE the touch event. The tapped
@@ -795,8 +796,17 @@
   and given the panel's own width to wrap at; every other visual still sits beside the name in the
   top row. `_slot_for(visual)` is the one place that choice is made -- a grid of many needs the
   whole width, which the name's row does not have. No flag on `InfoEntry`.
-- S23: the popup keeps the last node's name after the pointer leaves, exactly as the sidebar keeps
-  the last node's description -- `Map` still connects no `node_unhovered`.
+- S23: the popup keeps the last node's name after the pointer leaves -- `Map` still connects no
+  `node_unhovered` -- but it is ANCHORED to that node, not to a place: it re-places itself against
+  the node's current screen rect every frame it is up, so travel, a pan, a zoom and a resize all
+  carry it. Fix 13: the sidebar's keep-the-last-entry rule governs the sidebar only; the popup's
+  own lifetime ends when there is no dot to name.
+- Fix 13: `MapNamePopup.hide_name()` is called from three places in `Map` -- the run starting, a
+  node being entered, and `HudContainer.active_screen_changed` (the new no-argument signal the
+  container emits when a different screen becomes the active one, the same swap the HUD makes).
+- Fix 13: the tests drive a real pan through `TestSidebar._pan_map_by()` (a motion without its own
+  `relative` pans nothing), and `_enter_game_fixture()` is the tail of `_start_game_fixture()`
+  split out so a test can act on the map first and still reach the board by the product's route.
 - S23: `TestSidebar._start_game_fixture()` was split: `_start_map_fixture()` is the real `Main`
   resting on its generated map, and the game fixture carries it on into a dealt board. The shared
   teardown is `_end_main_fixture()` (renamed from `_end_game_fixture`), and the map picture's

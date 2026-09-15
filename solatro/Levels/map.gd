@@ -56,6 +56,8 @@ func _bind_hud_container() -> void:
 			_on_deck_clicked)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_map_inset)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewers)
+	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
+			name_popup.hide_name)
 	_publish_map_inset()
 
 # The container OUTLIVES this screen in the real game, but a test may `remove_child` a standalone
@@ -77,11 +79,13 @@ func start_run(new_run: RunState) -> void:
 	if not is_node_ready():
 		_pending_run = new_run
 		return
+	name_popup.hide_name()
 	controller.start_run(new_run)
 
 ## Node arrival dispatch: games (incl. the lap-target boss) launch a show, boosters open
 ## a take-all pack, the lap-origin anchor is just a rest stop.
 func _on_node_entered(node: WorldGraphNode) -> void:
+	name_popup.hide_name()
 	var role :String= node.meta.get(MapNodeRoles.ROLE_KEY, "")
 	if role == MapNodeRoles.ROLE_BOOSTER:
 		await _open_booster(node)
@@ -151,12 +155,12 @@ func _show_lap_summary() -> void:
 		_update_hud())
 
 # The description goes to the container, which anchors itself and needs no placement from here.
-# The NAME also stays at the node, because a map node is a bare dot: the same entry feeds both, so
-# the two can never disagree about what the node is called.
+# The NAME is anchored to the node itself, because a map node is a bare dot: the same entry feeds
+# both, so the two can never disagree about what the node is called.
 func _on_node_hovered(node: WorldGraphNode) -> void:
 	var entry := MapHoverPanel.get_info(node, run, controller.lap_target())
 	info_hovered.emit(entry)
-	name_popup.show_above(entry.title, controller.node_screen_rect(node))
+	name_popup.show_above(entry.title, node)
 
 func _update_hud() -> void:
 	if run == null: return

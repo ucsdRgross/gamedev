@@ -31,6 +31,9 @@ signal container_rect_changed
 ## The container went back to the HUD; the board drops the locked card's marking on it.
 signal description_dismissed
 
+## A different screen is showing; the map drops the name it had pinned to a dot on its own picture.
+signal active_screen_changed
+
 const SCENE := preload("res://UI/hud_container.tscn")
 
 ## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen used to repeat.
@@ -173,6 +176,7 @@ func set_active_screen(screen: StringName) -> void:
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
 		if remembered == null or _screen_is_processing(): _swap_to_hud()
 		else: show_description(remembered)
+		active_screen_changed.emit()
 	visible = screen != &""
 	if not visible: return
 	_game_hud.visible = screen == GAME_SCREEN

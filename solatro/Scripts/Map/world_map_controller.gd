@@ -331,7 +331,8 @@ func _node_at_mouse() -> WorldGraphNode:
 
 # Where `node`'s marker draws in the map viewport's own coordinates -- the space the map's `$UI`
 # overlays live in, so a caller can place something against the dot the player is pointing at.
-func node_screen_rect(node: WorldGraphNode) -> Rect2:
+# Static because the name popup re-asks it every frame and holds no controller.
+static func node_screen_rect(node: WorldGraphNode) -> Rect2:
 	var xform := node.get_global_transform_with_canvas()
 	var radius := node.marker_radius * xform.get_scale()
 	return Rect2(xform.origin - radius, radius * 2.0)

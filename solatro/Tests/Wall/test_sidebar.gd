@@ -17,6 +17,9 @@ const MEASURED_BOARD_CENTRE_PX := 733.808
 ## Higher than a real deck can score in a handful of placements, so a test about something else never trips the goal's own automatic end.
 const GOAL_OUT_OF_REACH : int = 100000000
 
+## Well past the map's own drag threshold, so the press under test becomes a pan and not a click.
+const MAP_PAN_DRAG := Vector2(120.0, 80.0)
+
 func suite_name() -> String:
 	return "SIDEBAR"
 
@@ -186,6 +189,9 @@ func _ready() -> void:
 	await test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
+	behavior_section("THE NAME IS ANCHORED TO THE DOT IT NAMES")
+	await test_the_name_follows_its_node_when_the_camera_pans()
+	await test_starting_a_run_takes_the_name_off_the_map()
 	finish()
 
 
@@ -1204,6 +1210,11 @@ func _start_map_fixture(size := Vector2i(1280, 720)) -> void:
 # route -- the board's focus, `GameView`'s relay, `Main`'s handler and the container's swap.
 func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
 	await _start_map_fixture(size)
+	await _enter_game_fixture()
+
+# The map fixture carried on into the game screen, split out so a test can do something on the map
+# FIRST and still reach the board through the product's own route.
+func _enter_game_fixture() -> void:
 	await _main.enter_game()
 	var view := _main._pictures[&"game"].screen_root as GameView
 	CardEnvironment.CURRENT = view.game
@@ -4356,7 +4367,7 @@ func test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar() -> void:
 	check(_popup_text(popup) == _panel.current_entry.title,
 			"S23.1: the popup says the node's name and nothing else",
 			"%s vs %s" % [_popup_text(popup), _panel.current_entry.title])
-	var dot := _map.controller.node_screen_rect(node)
+	var dot := WorldMapController.node_screen_rect(node)
 	check(absf(popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
 			"S23.1: the popup centres on the node",
 			"%s vs %s" % [popup.get_rect().get_center().x, dot.get_center().x])
@@ -4370,7 +4381,7 @@ func test_the_name_stays_put_while_the_pointer_moves_inside_the_node() -> void:
 	await _start_map_fixture()
 	var node := await _hover_a_map_node()
 	var placed : Vector2 = _map.name_popup.position
-	var dot := _map.controller.node_screen_rect(node)
+	var dot := WorldMapController.node_screen_rect(node)
 	_hover_in(_map_viewport, dot.get_center() + Vector2(dot.size.x * 0.25, 0.0))
 	await get_tree().process_frame
 	check(_map.name_popup.position == placed,
@@ -4388,7 +4399,7 @@ func test_one_click_travels_and_leaving_keeps_the_last_nodes_description() -> vo
 	check(_container.showing_description() and _panel.current_entry == described,
 			"S23.3: the pointer leaving the node keeps that node's description up")
 	var entered := _count_arrivals()
-	var at := _map.controller.node_screen_rect(node).get_center()
+	var at := WorldMapController.node_screen_rect(node).get_center()
 	_push_mouse_button(at, _map_viewport, true)
 	_push_mouse_button(at, _map_viewport, false)
 	await _await_map_arrival()
@@ -4400,7 +4411,7 @@ func test_one_click_travels_and_leaving_keeps_the_last_nodes_description() -> vo
 func test_the_first_tap_names_the_node_and_the_second_enters_it() -> void:
 	await _start_map_fixture()
 	var node := _map.controller._sorted_next()[0]
-	var at := _map.controller.node_screen_rect(node).get_center()
+	var at := WorldMapController.node_screen_rect(node).get_center()
 	var entered := _count_arrivals()
 	_push_finger(at)
 	await get_tree().process_frame
@@ -4463,7 +4474,7 @@ func test_selecting_a_node_by_key_describes_it() -> void:
 			"S23.6: the selected node is described in the sidebar")
 	check(_popup_text(_map.name_popup) == _panel.current_entry.title,
 			"S23.6: the selected node is named at the dot too")
-	var dot := _map.controller.node_screen_rect(selected)
+	var dot := WorldMapController.node_screen_rect(selected)
 	check(absf(_map.name_popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
 			"S23.6: the name is placed at the node the arrow selected",
 			"%s vs %s" % [_map.name_popup.get_rect().get_center().x, dot.get_center().x])
@@ -4471,23 +4482,73 @@ func test_selecting_a_node_by_key_describes_it() -> void:
 
 ## The popup is a MAP affordance for nodes that are just dots; a board card is already drawn.
 func test_no_name_popup_shows_on_the_board() -> void:
-	await _start_game_fixture()
+	await _start_map_fixture()
+	await _hover_a_map_node()
+	check(_map.name_popup.visible, "S23.7: the map node was named before the show was entered")
+	await _enter_game_fixture()
 	var controls := await _hoverable_card_controls()
 	_hover(controls[0].get_global_rect().get_center())
 	await get_tree().process_frame
+	check(_container.showing_description(), "S23.7: the board card is described")
+	check(_visible_name_popups().is_empty(),
+			"S23.7: no name popup is visible anywhere on the board",
+			str(_visible_name_popups().size()))
+	await _end_main_fixture()
+
+## A name is pinned to a dot, so the dot moving under the camera has to carry the name with it.
+func test_the_name_follows_its_node_when_the_camera_pans() -> void:
+	await _start_map_fixture()
+	var node := await _hover_a_map_node()
+	var before := WorldMapController.node_screen_rect(node)
+	_pan_map_by(before.get_center(), MAP_PAN_DRAG)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var dot := WorldMapController.node_screen_rect(node)
+	check(dot.get_center().distance_to(before.get_center()) > 1.0,
+			"Fix 13.1: the pan moved the node on screen",
+			"%s vs %s" % [dot.get_center(), before.get_center()])
+	check(absf(_map.name_popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
+			"Fix 13.1: the name is still centred on the node it names",
+			"%s vs %s" % [_map.name_popup.get_rect().get_center().x, dot.get_center().x])
+	check(_map.name_popup.position.y + _map.name_popup.size.y <= dot.position.y,
+			"Fix 13.1: the name is still above the node it names",
+			"%s vs %s" % [_map.name_popup.position.y + _map.name_popup.size.y, dot.position.y])
+	await _end_main_fixture()
+
+## A run starting over rebuilds the dots, so a name left from the last one labels nothing.
+func test_starting_a_run_takes_the_name_off_the_map() -> void:
+	await _start_map_fixture()
+	await _hover_a_map_node()
+	check(_map.name_popup.visible, "Fix 13.2: a node was named before the run restarted")
+	_map.start_run(RunManager.run)
+	await get_tree().process_frame
+	check(not _map.name_popup.visible,
+			"Fix 13.2: starting a run leaves no name on the map")
+	await _end_main_fixture()
+
+# The map pans on a mouse DRAG, so the motion has to carry its own `relative`: the controller moves
+# the camera by exactly that, and an event without it pans nothing.
+func _pan_map_by(from: Vector2, by: Vector2) -> void:
+	_push_mouse_button(from, _map_viewport, true)
+	var motion := InputEventMouseMotion.new()
+	motion.position = from + by
+	motion.global_position = motion.position
+	motion.relative = by
+	_map_viewport.push_input(motion)
+	_push_mouse_button(from + by, _map_viewport, false)
+
+## Every name popup the player can actually see, so a check can say the board carries none.
+func _visible_name_popups() -> Array[Node]:
 	var shown : Array[Node] = []
 	for popup : Node in get_tree().root.find_children("*", "MapNamePopup", true, false):
 		if (popup as Control).is_visible_in_tree(): shown.append(popup)
-	check(_container.showing_description(), "S23.7: the board card is described")
-	check(shown.is_empty(), "S23.7: no name popup is visible anywhere on the board",
-			str(shown.size()))
-	await _end_main_fixture()
+	return shown
 
 # The pointer pushed onto a reachable node in the MAP picture's own SubViewport -- the viewport the
 # wall pushes into, so the route under test is the product's own hover.
 func _hover_a_map_node() -> WorldGraphNode:
 	var node := _map.controller._sorted_next()[0]
-	_hover_in(_map_viewport, _map.controller.node_screen_rect(node).get_center())
+	_hover_in(_map_viewport, WorldMapController.node_screen_rect(node).get_center())
 	await get_tree().process_frame
 	return node
 
