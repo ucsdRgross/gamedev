@@ -989,7 +989,32 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      RERUN 14:48: `ALL 48 SUITES: 5218 CHECKS PASSED [21]`, clean exit (the two standing lines,
      135 ObjectDB, 0 SCRIPT ERROR). The teardown crash hit 1 of 2 full runs on E; recorded in
      Open bugs as intermittent.
-   - still owed: re-run `/fx-verify` (D and E changed pixels); close item 11 (delete `briefs/` and this handoff
+   - `/fx-verify` RE-RUN after D and E (Opus 5; render 14:55:48-14:56:16, exit 0, 24 new PNGs,
+     no tracked file modified): 9.2 PASSES on all eight description images (name, card visual
+     and body inset, title clear of the X); 9.1 PASS (Goal/Total below the buttons, grid centre
+     801.5 vs 800); 9.5 PASS; 9.7 PASS (lift 18.2 both states); 9.8 PASS; 9.3 PARTIAL (top case
+     grid 106 px left of the Entrance by a pixel scan, GAP-002); 9.6 not re-judged (one frame;
+     D and E did not touch the flip, the first sweep's duration verdict stands). GONE: the blank
+     panel, clipped first letters, the title under the X, description_scroll's HUD overlap.
+     STILL PRESENT (recorded): the focus-border lines, FX art escaping the clip, the Entrance
+     card over the top-case viewer, the picker text over the Inspect viewer, cards above the
+     picture mid-cascade, no focus highlight in a viewer, a name breaking at its period, the X
+     below the band under the 0.1 fraction and over the scrollbar. NEW: N1
+     description_follow.png shows the HUD, not a description following the hover under a lock
+     - close fix E's snapshot ungrab changed the follow step's setup, whose click now grabs and
+     its move dismisses the lock (GAP-008's behaviour): an instrument defect, fixed in the
+     snapshot next; N3 map_hud_top's map picture off-centre below the band and cut at its edge;
+     N4 menu_top's title and buttons squashed horizontally (cause unknown) - both to todo.md.
+   - snapshot follow step (N1) fixed: `_hover_another_entrance_card` sets the held card down with
+     `PlayArea.ungrab_cards()` (the product call `_lock_without_holding()` makes) before the
+     hover walk, and prints `locked=... showing=...`. Render 15:04, log `locked=true
+     showing=NumeralRank4.0`. Overseer look at description_follow.png: the sidebar holds
+     NumeralRank4.0's Ball description with the X, every board card upright, nothing following.
+     UNVERIFIED in pixels: the locked card's marking (a 1.825x brightening does not read on cream
+     faces; a temporary diagnostic, since deleted, listed exactly the hovered and the locked card
+     as marked). Every snapshot render reports "26 resources still in use at exit" (the snapshot
+     scene's own exit, not the suite's 15; present before this change).
+   - still owed: close item 11 (delete `briefs/` and this handoff), a final full doc_check (delete `briefs/` and this handoff
      once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
      scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
      overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
