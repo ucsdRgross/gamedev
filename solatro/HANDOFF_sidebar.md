@@ -601,6 +601,10 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 ```
 
 ## Open bugs
+- Back mid-show, then travel to another node: the new node is marked traveled with no show,
+  and the frozen old show resumes and banks its win against the new node's pending ids (a quit
+  after `_start_show` persists that pairing). Pre-existing, not specific to the automatic end's
+  hold. Owner should see.
 - TestSidebar `Fix 13.1: the pan moved the node on screen` failed once in the full run after
   close fix 1: identical screen positions before and after the test's pan, so the camera did not
   move and the follow checks after it passed vacuously. Close fix 1 touches only `undo()`'s
@@ -728,11 +732,30 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      card) RED on HEAD, 6 FAILED; DRAG PLACE 87 -> 95 green. The grid-card row first passed
      vacuously: `_legal_cell_control` picked a zero-height cell (`Rect2.encloses` accepts a
      zero-area rect); the shared `_is_reachable()` now also requires `has_area()`.
-   - still owed: close fix 4 (a dismissed description re-shows on return), 5 (DISCARD/RULES fly-to in
-     the wrong space), 6 (conventions and simplify residue), A (Main fixtures under the
-     product's pause state), B (weak test rows and the pan flake); reproduce first: the pad
-     focus after the X, the replayed last-card arm, Back during the hold, the double arm on
-     Undo.
+   - close fix 4 (code review finding (a), a dismissed description re-showed on leave and
+     return): new `HudContainer.dismiss_description()` frees the shown description, erases the
+     screen's remembered entry and shows the HUD. The five dismissals call it: the X, cancel, a
+     bare-board press, a landed placement, and the wall editor's lock toggle (its comment calls
+     that the X's dismissal; no suite test covers it). The processing hold and `_ready` still
+     call plain `show_hud()`, so memory survives a cascade. Two TestSidebar rows RED on HEAD
+     (722 passed, 2 FAILED), green after (724); 1.14 and 1.9-1.12 green.
+   - Trace of the four suspected items (Opus 5, read-only, at 8eb6659e):
+     double arm on Undo NOT REACHABLE after close fix 1 (`try_grab` never suspends for an
+     Entrance card; the second arm sees a held card) - closed.
+     Replayed last Entrance card REACHABLE: place the only Entrance card, quit mid-cascade,
+     Continue - the refill lands with nothing armed; the resume route's only unlock is in the
+     other branch and `GameView.rebuild` is not on it -> close fix 7.
+     Pad focus: after accept on the X nothing holds focus (engine semantics, not measured), and
+     the pad recovers only through L1 (zoom out) then the d-pad; at the OUTCOME a pad cannot
+     reach Undo at all (Continue is in the SubViewport, Undo in the root HUD, no undo action).
+     A regression of S2 moving the HUD to the root viewport, against the multi-modal hard rule
+     -> close fix 8, measure the two focus owners first.
+     Back during the winning hold REACHABLE but pre-existing: the hold FREEZES rather than
+     resolving off-screen; any Back mid-show followed by travel consumes the new node with no
+     show and resolves the old show's win against it -> Open bugs, owner should see.
+   - still owed: close fix 5 (DISCARD/RULES fly-to in the wrong space), 6 (conventions and
+     simplify residue), 7 (replay re-arm), 8 (pad reach of the board and Undo), A (Main
+     fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
 8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING. 10. Tooling feedback: PENDING.
 11. Delete the temporary plan documents (briefs, this handoff once folded): PENDING.
 
