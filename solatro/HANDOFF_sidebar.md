@@ -8,10 +8,10 @@ widened to every phase; do not stop at S18).
 three confirmed are ruling contradictions filed as GAP-006/007/008 (owner calls, non-blocking);
 fixes 1–4 landed (1925fd9b, dcc81b8d, 22aa4207, fix 4 after 582e1883); suspected 6 and 8 did
 not reproduce (rows pin them); the bounded re-review found 3 confirmed, fixed as fix 5 and fix 6
-(after dabde1e1). S19 landed (fde80a92, 48 suites). **Next: S20** (brief `briefs/S20.md`), S21,
-then Phase 7
-(S22), Phase 8 (S23), the closing phase S24 — all in this run (owner ruling). Briefs S19–S23 are
-written in `solatro/design/sidebar/briefs/`. GAP-004 is open, non-blocking.
+(after dabde1e1). Phase 6 landed: S19 fde80a92 (48 suites), S20 0cdd8e23, S21 under the owner's
+mid-run one-face-down ruling (see Owner rulings). **Next: S22** (brief `briefs/S22.md`), then
+Phase 8 (S23), the closing phase S24 — all in this run (owner ruling). Briefs S19–S23 are in
+`solatro/design/sidebar/briefs/`. GAP-004 is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
 `tasklist | findstr Godot_v4.7` before every run and wait it out — a concurrent run rotates
 `godot.log` and fabricated one GRID VIEW failure this session. PID 3020 is a stale Godot 4.1.2
@@ -66,6 +66,19 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   exit-time error lines beyond the two above.
 
 ## Owner rulings made during this run
+- **S21 visual (supersedes `Q217`=b, `Q244`=a, `Q245` "knob defaulting to 5"; `Q218`=b stands),
+  the owner's words verbatim, given mid-run while S21 was in flight:** *"the entrance cards refill
+  looks wrong to me. you set it as a bunch of stacks of cards, but the implementation in
+  board-plan worktree is closer to what i expected with cards revealed right on top of the
+  entrance slots and only being stack of 1, which it has already implemented. unrevealed cards in
+  the stocks should not be entities yet until ready to be flipped. expected behavior should be
+  zone should be replaced with a flipped over card with new card on top. once its flipped over to
+  reveal new set of entrance cards, the flipped card should take place of previously revealed card
+  and there is another back facing card underneath, implying the stack instead of showing it."*
+  Reading built: a non-empty stock shows exactly ONE face-down card beneath the revealed card; no
+  entity exists for any other stock card; at a refill the face-down card flips up to become the
+  revealed card and a fresh face-down appears beneath it while the stock still has cards; the cap
+  knob is deleted (no caller). DESIGN §4 / chart I8 need the owner's correction at the close.
 - `plan-implementer` maxTurns 50 → 150 (edited on main and on this branch).
 - Legacy comment debt is DEFERRED to its own pass: a step keeps every comment it writes or edits
   compliant and leaves old comments in touched files alone. `doc_check --changed` findings on those
@@ -415,7 +428,12 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   description: rebalance on slot add/remove, tops never move
   status: done
   evidence: 'commit after 62a0302f: ALL 48 SUITES 4600 PASSED [21] (implementer) - overseer run recorded in the commit; TestEntranceStocks 14 -> 20 checks (4.4, 4.5, 4.6 through the REAL seam: spotlighting/unspotlighting a SkillAdderInputUpper); red per neutralisation: tops-not-bottoms 2 FAILED, re-deal 3 FAILED, rebalance on exhaustion 1 FAILED, production caller deleted 2 FAILED; rebalance_stocks grep: one definition (game.gd), one production caller (card_effect_api.gd add/remove_column when the zone is the Entrance), tests never call it; no new RNG; doc_check 0 of 638 on added lines; LF on all six files'
-  notes: 'Board.remove_column PARKS the removed Entrance stock at the end of GridData.stocks (Board is static and holds no Game); a parameterless rebalance_stocks() pours the slotless stock into the survivors'' bottoms then pulls bottoms from over-share slots into the leftmost short slot until every slot holds deal_stocks()''s share. TestUIProps seed moved again 424243 -> 424245 (the bootstrap''s adders now rebalance as each slot appears) - the fixture depends on the deal permutation; a candidate for the test-surface review at close. Five private names + three test helpers in ASSUMPTIONS'
+  notes: 'S20 - Board.remove_column PARKS the removed Entrance stock at the end of GridData.stocks (Board is static and holds no Game); a parameterless rebalance_stocks() pours the slotless stock into the survivors'' bottoms then pulls bottoms from over-share slots into the leftmost short slot until every slot holds deal_stocks()''s share. TestUIProps seed moved again 424243 -> 424245 (the bootstrap''s adders now rebalance as each slot appears) - the fixture depends on the deal permutation; a candidate for the test-surface review at close. Five private names + three test helpers in ASSUMPTIONS'
+- id: S21
+  description: the flip - one face-down card implies the stock; flip in place, staggered; no fly-in; stock hover describes the slot; deck viewer shows the sorted union
+  status: done
+  evidence: 'commit after b2c3bb59: implementer ALL 48 SUITES 4628 PASSED [21]; overseer run in the commit; S21.1-S21.6 + S21.4b red-then-green (N1 deck-button spawn restored 1 FAILED in the wrong SPACE (-3.18,121.78) vs slot (830.54,699.16); N2 refill an occupied slot 1 FAILED; N3 zero stagger 4 FAILED; N4 entity per stock card -> red; N5 publish the card not the slot 2 FAILED with the hidden card''s text; N6 unsorted union 2 FAILED); deck_ui grep in card_visual.gd empty; entrance_flip_stagger defined once, read at one production site; cap knob gone; doc_check 0 on added lines (after the brief''s path fix); LF by bytes; by eye entrance_stocks.png: five slots, one revealed card over ONE blank face-down card each, nothing deeper, leftmost lifted; entrance_flip_mid.png: leftmost face-up, the four to its right still turning at successive phases over their face-down cards'
+  notes: 'OWNER RULING mid-step (see Owner rulings): one face-down card per non-empty stock, no entities for unrevealed cards, the face-down flips up in place and a fresh one appears beneath; entrance_stock_face_down_cap DELETED. Face-down-ness is CardVisual.face_down (not CardData.flipped, so saves and the viewer are untouched). CardVisual.on_stage_changed''s DRAW branch (fly to the Deck control) deleted - a card dealt into a stock hit it and freed its own visual. control_for_coord re-indexed (its old z+1 was already wrong for the reversed stack); _apply_row_openings via _control_height. Face-down controls FOCUS_CLICK. The 6.5 flip-rate literal untouched (pre-existing, no knob named). DESIGN chart I8 / Q217 / Q244 / Q245 need the owner''s correction at the close'
 ```
 
 ## Open bugs
