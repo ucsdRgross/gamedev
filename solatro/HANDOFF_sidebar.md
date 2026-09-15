@@ -40,7 +40,10 @@ the game window).
 TEST_PLAN.md (every test that must exist), NAMES.md (every identifier), solatro/START_HERE.md
 **IMPLEMENTED-BY:** `plan-implementer` subagent. S1–S4 (through commit 5b8f84b9 and S4's
 uncommitted first pass): `sonnet` at `effort: low`. From S4's finish onward: `opus` (Opus 5) at
-default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it writes no source.
+default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort through the close's
+items 1-4 and close fix 1, then Opus 5 (Fable's usage limit hit mid-close); it writes no source.
+Reviewers: every phase review and close items 2-4 ran on Fable 5.1; close item 5 onward on
+Opus 5, which is at the floor.
 
 ## Provenance
 - Code: `plan-implementer` — sonnet (effort low) for S1–S4's first pass; Opus 5 (default effort)
@@ -598,11 +601,125 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 ```
 
 ## Open bugs
+- TestSidebar `Fix 13.1: the pan moved the node on screen` failed once in the full run after
+  close fix 1: identical screen positions before and after the test's pan, so the camera did not
+  move and the follow checks after it passed vacuously. Close fix 1 touches only `undo()`'s
+  order. Measured: 1 failure in 4 runs (three `--filter Sidebar` reruns all passed 704 checks).
+  The test's pan is timing-dependent; the row should wait for the camera to move before it
+  measures (test-surface item 8's two-frame settle trap). Fix it with close fix B.
 - Preview-card FX art escapes the description panel's scroll clip below the fold (seen in
   map_popup.png; pre-existing, reproduced by S23 under HEAD's mounting). Owner should see.
 - GRID VIEW `one more pan-right at the board's end does not move the camera past it` failed once
   by 0.018 px (edge 545.640 vs 545.658) in ~14 branch runs; green on the rerun. Pre-existing
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
+
+## Close (S24) — each numbered item of "Closing the run", with its output
+1. `py .claude/tools/doc_check.py` FULL: `66 living docs + 314 source files checked - 0 error(s),
+   9 warning(s)` after fixing the one error (this handoff's resume prompt hard-coded the worktree
+   path). The 9 warnings are the repo-wide comment backlog counts (5336 indented, 2021 long doc,
+   699 long block, 556 trailing, 363 design id, 130 dated, 87 history, 54 restated, 4 line ref) —
+   the owner's deferred legacy-comment pass, not this run's.
+2. `adversarial-review` over `main...HEAD` (Fable 5.1, read-only) — 3 confirmed, 4 suspected:
+   (1) CONFIRMED undo at any outcome screen: `undo()`'s resolved branch writes `processing =
+   false` BEFORE the history pop, the false edge arms the leftmost card of the state about to be
+   discarded (`try_grab` never suspends), the rebuild keeps `selected_cards`, and the next click
+   on an empty cell places that phantom — `Board.place_in_cell` finds it nowhere and appends it,
+   the card is now in the grid AND the Entrance, and `return_to_map` sweeps both copies into the
+   run deck permanently (re-review 3, now traced) → close fix 1.
+   (2) CONFIRMED the map's and menu's sidebar memory survives New Run / Continue: only
+   `GameView._exit_tree` calls `release_screen`; the next run's map opens on the old run's node
+   description (Phase 2 finding 1's shape, fixed for the game screen only) → close fix 2.
+   (3) CONFIRMED a drag that starts on a card the board REFUSES to grab (a grid card, or an empty
+   cell's zone card) still places the ARMED card at the release point; a drag from bare board
+   places nothing → close fix 3 (only a drag whose pickup was accepted places).
+   (4) SUSPECTED a pad player who dismisses a description through the X is left with no focus
+   anywhere (the HUD lives in the root viewport since S2; the board only re-focuses from the
+   mouse, the one-shot rest, or the overview); same after an outcome undo → reproduce.
+   (5) SUSPECTED a replayed placement of the LAST Entrance card leaves nothing armed after its
+   refill (the replay route has no re-arm tail). (6) SUSPECTED Back during the winning hold
+   resolves the show off-screen; the map's `_start_show` then overwrites `pending_node_id` before
+   the old show's `return_to_map` resolves (re-review 4). (7) SUSPECTED `sorted_stock_union`
+   dereferences `suit` (no suitless card reaches a stock today).
+   PLAN DRIFT: 7.3 met in letter (headless); per-screen memory never scoped to the run; S16 built
+   "any drag from a card control" not "the held card"; Q68=b's return trip to the board unbuilt.
+   NAMES.md resolves except the plan's deletions and the overruled cap knob.
+3. `/code-review` high — run as its eight angles serially in ONE read-only Fable reviewer (the
+   skill's eight parallel finders exceed the two-subagent cap), filed through ReportFindings:
+   10 findings, 4 CONFIRMED / 6 PLAUSIBLE. CONFIRMED: (a) `HudContainer.show_hud()` never
+   erases the remembered entry, so a description dismissed with the X (or taken down by a
+   placement) re-shows on leave-and-return → close fix 4; (b) `CardVisual`'s DISCARD/RULES
+   fly-to still reads a ROOT-viewport control's centre inside the picture (the DRAW branch was
+   deleted for that reason; `api.discard_data()` callers reach it) → close fix 5; (c) the popup
+   calls `reset_size()` every frame it is visible → close fix 6 (with the simplify residue);
+   (d) 24 in-method comments relabelled `##` in game_view.gd (+main.gd:601, game.gd:828-830 a
+   column-0 block mid-body) to dodge the indent rule → close fix 6. PLAUSIBLE: the overlay's
+   touch targets are sized once at launch while the exit X follows resizes; Undo runs two
+   concurrent `_arm_the_entrance` coroutines (a mechanism for re-review 3 — close fix 1's
+   reorder removes the edge before the pop; reproduce the double grab after it); the board lock
+   doubles as the player-vs-effect discriminator (altitude; recorded, not changed);
+   `_next_grab_follows` is cross-await board state the pickup route should carry (altitude;
+   recorded); a speculative listener guard in `_publish_stock_info`; seven
+   `get_node(%HudContainer)` lookups in main.gd and the `WallInput.touch_target_px` pass-through
+   → close fix 6.
+4. Test-surface review (Fable 5.1, `tests-that-prove-nothing` as checklist) — 4 confirmed, 8
+   suspected/minor; none of the run's production names has only test callers:
+   (1) CONFIRMED every Main-hosted fixture sets `paused = false` (test_main_host.gd + eleven
+   copies in test_sidebar.gd) while the product runs with the tree paused and only the FOCUSED
+   screen root ALWAYS — 1.14, 1.12, the leave-while-locked row and every settle poll on an
+   unfocused screen run under a state the game never has → close fix A: run the Main fixtures
+   under the product's pause state and see what changes colour.
+   (2) CONFIRMED TEST_PLAN 2.2/2.6 restate `GestureMetrics`' arithmetic; no threshold check runs
+   at a board zoom other than 1.0 through `PlayArea` → close fix B.
+   (3) CONFIRMED 7.5's fixture is symmetric (every stock empty AND every cell full) so an AND
+   passes; Q107=c's "either ... or" is OR (End reveals with Entrance cards still placeable when
+   every stock is empty — as ruled) → assert each arm alone → close fix B.
+   (4) CONFIRMED 6.3 pins SOURCE TEXT (`arm_leftmost`'s body counts "grab" twice) — cannot fail
+   for the behaviour and blocked fix 6's clear → replace with the behavioural row → close fix B.
+   (5) 4.7 "nothing disarms" drains a slot unrelated to the arm; (6) hand-emitted signals /
+   `pressed.emit()` prove readers not routes (1.12, 6.10, the cross-show rows); (7) 6.1 measures
+   against a hand-set null; (8) two-frame settle polls in the new suites (the branch's own
+   measured trap); (9) 3.1–3.3 reconstruct the inset in the test; (10) the End-hidden sampler
+   never asserts it sampled; (11) TestDragPlace keeps `pending_goal = 1` (holds by luck);
+   (12) no registration gate in TestSidebar/TestDragPlace (mechanically verified: zero uncalled).
+   Docs: NAMES.md still lists `entrance_stock_face_down_cap`; ASSUMPTIONS names
+   `_publish_focus_description`/`_stash_description` are stale; TEST_PLAN 3.4's text says the
+   opposite of its test; 8.4 has no asserting test; 7.2's "after the last line" fixture (a
+   score-adding `on_card_placed` modifier) is still unwritten → close fix B / item 8.
+5. `/simplify`, four angles in one read-only reviewer (Opus 5; the first attempt on Fable died to
+   the usage limit): 14 cleanup items, no defects. Ranked by cost: (1) viewer hosting — the
+   relay/`return_to_lock`/fit/re-fit wiring is copied across game_view.gd, map.gd and menu.gd →
+   one `HudContainer` method; (2) three hand-rolled `_exit_tree` → `disconnect_for_screen` pairs
+   → connect `tree_exiting` once in `connect_for_screen`, also the home for `release_screen`
+   (close fix 2's cause); (3) the cover-scale formula has three homes (`game_view.gd`,
+   `local_rect_beside`, `focused_scale`) and the view re-branches the top/side inset; (4) the
+   "no listener" guard in three homes, two styles; (5) `PlayArea.card_info` lives on the board
+   though two viewers and the wall editor call it; (6) `_entrance_drawn_columns()` rebuilt three
+   times per rebuild and on every hover, `_refresh_card_marking()` twice per focus change;
+   (7) eight `GameView` alias fields for HudContainer controls; (8) `_processing_screen` is a
+   bool stored as a StringName; (9) `WorldMapController.is_generated()` has ONLY test callers —
+   contradicts item 4's "none"; (10) one-call-site wrappers to inline: `_apply_container_inset`,
+   `_visual_height`, `focus_exit`, `_end_the_gesture`; (11) `DeckViewer` reaches through its
+   opener's owner to the sidebar; (12) two even-share models for stocks; (13) two four-edge
+   viewer insets (acceptable); (14) `_refresh_end_reveal` runs twice per revision bump.
+   dup_check: no pair in production code the branch changed (three pairs in touched files blame
+   to main); in the branch's tests, five self-pairs in test_sidebar.gd and a 38-line pair between
+   two probe scripts. diff_shape: only the uncommitted test_interaction.gd add-only edit.
+6. `/fx-verify`: PENDING.
+7. Fixes from 1–6, one at a time, full run between:
+   - close fix 1 (review item 2 finding 1, undo at the outcome armed a card of the discarded
+     state, next placement duplicated it into the run deck): `Game.undo()` releases
+     `processing` as its last statement, after the history pop. Two checks in
+     TestInteraction's outcome-undo test, RED on HEAD (armed card not in the restored
+     Entrance; card total 71 vs 70), green after. Full runs: one failed on the flaky Fix 13.1
+     pan precondition, the second passed `ALL 48 SUITES: 4723 CHECKS PASSED [21]`.
+   - still owed: close fix 2 (map/menu memory survives New Run), 3 (a refused drag places the
+     armed card), 4 (a dismissed description re-shows on return), 5 (DISCARD/RULES fly-to in
+     the wrong space), 6 (conventions and simplify residue), A (Main fixtures under the
+     product's pause state), B (weak test rows and the pan flake); reproduce first: the pad
+     focus after the X, the replayed last-card arm, Back during the hold, the double arm on
+     Undo.
+8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING. 10. Tooling feedback: PENDING.
+11. Delete the temporary plan documents (briefs, this handoff once folded): PENDING.
 
 ## Next up
 1. **S24 — the closing phase**, per `.claude/skills/plan-run/SKILL.md` "Closing the run", every
@@ -637,7 +754,7 @@ check TOTAL drifts ±30 between green runs (data-dependent suites) — judge on 
 failure set.
 
 Resume prompt: *"Resume /plan-run on solatro/design/sidebar/PLAN.md — ALL phases (owner ruling).
-Worktree C:\Users\khanr\Documents\GitHub\gamedev-sidebar, branch sidebar. Read
+Worktree `../gamedev-sidebar` beside the main checkout, branch sidebar. Read
 solatro/HANDOFF_sidebar.md FIRST (state, per-step evidence, owner rulings, the S19–S23 audit,
 open gaps GAP-001..005, ASSUMPTIONS.md), then `git log --oneline main..HEAD`, `git status
 --porcelain`, and a full suite run (`py solatro/Tools/run_tests.py`, GODOT_BIN = the box's
