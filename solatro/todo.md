@@ -151,6 +151,15 @@ written when a run stalls or fails.
   - Back mid-show, then travel: the new node is consumed with no show, and the frozen old show banks its win against it (pre-existing).
   - Preview-card FX art below the description's fold escapes its scroll clip while the card frames are clipped (pre-existing).
   - WALL FOCUS, WALL RENDER and WALL INPUT still run their Main fixtures unpaused, because they run beside the ordering chain.
+  - A card name without spaces breaks at its period ("NumeralRank3." / "0") now that the title leaves the exit X's column.
+  - At a 1280×1000 window the HUD runs about 30 px past the bottom of its top band at the shipped `container_size_fraction`; the band is shorter than the HUD. Under a 0.1 fraction the exit X hangs below the band. The knob's range is a look call.
+  - The exit X overlaps the top of the description's scrollbar (pre-existing).
+  - The overlay buttons grow to the touch target when the window grows, but never shrink when it shrinks.
+  - In the top case the grid sits 76–89 px left of the centred Entrance (see `GAP-002`).
+  - In the top case an Entrance card draws over the deck viewer's panel; the deck picker's list text draws over the Inspect viewer's panel (pre-existing).
+  - Mid-cascade, a stack of cards in column 0 draws above the picture's top edge.
+  - No focus highlight is visible on the focused card inside a viewer.
+  - An intermittent engine crash in teardown (0xC0000005) after a passing banner makes `run_tests.py` exit 3; seen twice, unattributed.
 
 Everything below is unscheduled backlog.
 
