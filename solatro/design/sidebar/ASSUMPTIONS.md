@@ -770,3 +770,8 @@
   named `BLANK_CARD_FRAME` and still serves a card with no type. A card's frame is a UV window
   (`CardOutline.frame_polygon`), not a Sprite2D `frame`, so S21.4 asserts it through the
   `u_frame_uv` clamp the card pushes to its own shader.
+- Phase 7 fix 10: `%Submit` is authored HIDDEN in `UI/hud_container.tscn`. The container lives on
+  the wall from boot, so Button's default true left End flagged visible for every frame before a
+  GameView existed to write it; `GameView._refresh_end_reveal()` is still the only writer.
+  `TestSidebar.test_every_hud_member_is_visible_and_reachable` forces it visible to measure
+  geometry, the way that test already forces the Combo label.

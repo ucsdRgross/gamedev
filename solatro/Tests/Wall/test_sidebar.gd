@@ -175,6 +175,7 @@ func _ready() -> void:
 	await test_an_arrow_never_stops_on_a_face_down_card()
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
+	await test_end_stays_hidden_through_the_shows_first_frames()
 	finish()
 
 
@@ -210,6 +211,21 @@ func _fill_every_grid_cell(state: GameData) -> void:
 				var card := TestFactories.m_card(1, TestFactories.uc())
 				card.stage = CardData.Stage.PLAY
 				cell.datas.append(card)
+
+## End is hidden until the show cannot progress, so it may never appear while the show is starting up.
+func test_end_stays_hidden_through_the_shows_first_frames() -> void:
+	var seen : Array[bool] = [false, false]
+	var sampler := func() -> void:
+		if _main == null: return
+		var container := _main.wall.get_node(^"%HudContainer") as HudContainer
+		if container.submit_button.visible: seen[0] = true
+		if container.submit_button.is_visible_in_tree(): seen[1] = true
+	get_tree().process_frame.connect(sampler)
+	await _start_game_fixture()
+	get_tree().process_frame.disconnect(sampler)
+	check(not seen[0], "End is never flagged visible while a fresh show starts up")
+	check(not seen[1], "End is never on screen while a fresh show starts up")
+	await _end_game_fixture()
 
 func _build_container() -> HudContainer:
 	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate()
@@ -379,6 +395,8 @@ func test_every_hud_member_is_visible_and_reachable() -> void:
 	await get_tree().process_frame
 	var overlay : CanvasLayer = wall.get_node(^"%Overlay")
 	var container : HudContainer = overlay.get_node(^"HudContainer")
+	## Forced visible purely to measure geometry -- End authored hidden, its reveal tested elsewhere.
+	container.submit_button.visible = true
 
 	var clickable : Dictionary = {
 		"Deck": container.deck_ui.get_node(^"Button") as Control,
