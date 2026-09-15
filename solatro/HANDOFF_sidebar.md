@@ -465,6 +465,11 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
   forwarding, the touch swallow's scope, the keyboard path, Q136/Q139.
 
 ## Gaps
+- GAP-010 (open, OWNER CALL, not blocking) — Q135=(b)'s "way back to the pack": keep the grid under
+  the card, leave the sidebar, an explicit Back control (recommended), or re-hover the node. The
+  S23 brief misquoted Q135 as (a), so (a) ships meanwhile.
+- GAP-009 (open, OWNER CALL, not blocking) — a pad cannot reach Undo from the outcome screen: an undo
+  action, an Undo beside Continue (recommended), or as built.
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
 - GAP-007 (open, OWNER CALL, not blocking) — after a failed drag the card is "no longer following"
@@ -789,9 +794,33 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      differences are quotes of OTHER designs' questions (picture-wall's Q134, the board plan's
      Q33 and Q25) or a hypothetical (line 199), not misquotes. -> close fix C: build
      Q135=(b), re-aim S23.5.
-   - still owed: close fix 6 (conventions and simplify residue, plus `pile_center`'s
+   - close fix C BLOCKED, owner call: the implementer stopped before editing. Showing any entry
+     frees the panel's grid, so switching to a preview card frees the card being hovered and
+     "leave the card to return" has nothing to leave; no input reaches a preview card today
+     (`_make_still`); `return_to_lock` acts only while locked and the map never locks. Four
+     visibly different ways back -> GAP-010 filed (recommendation: an explicit Back control).
+     Meanwhile Q135=(a) ships as built.
+   - close fix 6 split in two dispatches: 6a conventions (the branch's own in-method `##`
+     comments, speculative guards, test-only production names, one-call wrappers, repeated
+     lookups), 6b structural simplify (viewer hosting, cover scale, guard homes, per-hover
+     recompute, reproduce-first the overlay touch targets). Simplify item 12 (two even-share
+     models) needs the owner to confirm order inside a slot does not matter - not changed.
+   - close fix 6a (conventions residue, behaviour-preserving): game_view.gd's 24 in-method `##`
+     comments folded or deleted (0 left), game.gd's mid-body block moved into
+     `place_card_in_grid`'s header, main.gd holds `hud_container` once (seven lookups -> one)
+     and sends `HudContainer.MENU_SCREEN`, `_publish_stock_info`'s listener guard deleted,
+     `HudContainer._processing_screen` -> bool `_game_processing`, `WorldMapController.
+     is_generated()` deleted (its three test callers now read the private `_accepting_input`
+     before awaiting `map_ready` - a test reaching a private field, noted). KEPT with reasons:
+     `pile_center`'s null-picture fallback (the assert went red only in test_leak_canary.gd,
+     whose per-cycle object count a WallPicture would change; the comment names it);
+     `WallInput.touch_target_px` (NAMES.md:79 and Q305=b fix the name); the eight GameView
+     alias fields (29 test and 4 card_visual uses; PLAN migration step 2 asks for them);
+     `focus_exit` (inlining reaches a private field); `_apply_container_inset` (2 call sites)
+     and `_end_the_gesture` (3). dup_check unchanged at 83 blocks.
+   - still owed: close fix 6b (structural simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
-     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), C (build Q135=(b)), A (Main
+     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
 8. `/docs` - PROPOSAL drafted by a read-only Opus 5 analyst, to apply after the fixes. Precedent
    (picture-wall, poker-patience, comparator_buckets, spotlight): KEEP `design/sidebar/`'s
