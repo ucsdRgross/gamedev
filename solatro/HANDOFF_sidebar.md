@@ -818,6 +818,37 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      alias fields (29 test and 4 card_visual uses; PLAN migration step 2 asks for them);
      `focus_exit` (inlining reaches a private field); `_apply_container_inset` (2 call sites)
      and `_end_the_gesture` (3). dup_check unchanged at 83 blocks.
+   - close fix A (Main fixtures keep the product's pause state), first pass BLOCKED on a
+     test-infrastructure choice: with the unpause removed, every check that went red was
+     TEST-SIDE and is fixed — four Sidebar scroll rows (the bare container now runs ALWAYS like
+     the wall's overlay), S21.4's back-frame check (a bounded wait for the flip that plays after
+     focus), and eight GridView swipe/paint rows (the bare view runs ALWAYS like a focused
+     screen). No product defect surfaced. But the full run HUNG: nothing restored the tree's
+     pause after the last Main teardown, so END-TO-END RUN, which hosts no Wall, stalled
+     after DRAG PLACE (E2E alone passes 35). Overseer decision (test infrastructure, not a
+     design call): the shared `TestMainHost` records `paused` before boot and writes it back
+     after teardown, as the one restore site, and every Wall fixture boots through it. Not
+     making E2E/LEAK CANARY ALWAYS: that patches the victims and edits the leak suite. A
+     "never run unpaused" rule is not broken by handing back state the fixture changed.
+     Out of scope, still unpausing: WALL FOCUS, WALL RENDER, WALL INPUT (their own comments
+     record a measured hang under the pause) and the four Visual probes (pause_model_spike
+     compares the two on purpose). Resumed with the decision, and DONE: `TestMainHost` gained
+     `mount`/`unmount` (record `paused` before, write it back after the node is freed, check
+     it); `boot`/`free_booted` build on them. Bare Walls go through the host too — a bare Wall
+     pauses the tree exactly as Main does, and without it the leak into E2E remained. Every
+     Wall fixture in Sidebar, DragPlace and GridView mounts through the host; GridView mounts
+     under the suite, not a SubViewport, because `Input.parse_input_event` never reaches a bare
+     SubViewport. The stalled pair passes (DragPlace 137, then E2E 35). The guard check ("the
+     booted wall runs under its session-long pause") went red 21 times with the unpause put
+     back. The check total rises ~350 (a guard at every mount and unmount). Implementer's
+     second full run: `ALL 48 SUITES: 5113 CHECKS PASSED [21]` (the first failed only the Fix
+     13.1 flake). dup_check on the touched test files: 8 pairs, down from 11.
+     Overseer grep: `paused = false` remains only in test_wall_focus.gd (9 sites),
+     test_wall_render.gd (4), test_wall_input.gd (1), the four Visual probes, and
+     test_wall_pause.gd's doc comment — exactly the out-of-scope set. Open for the owner: those
+     three suites still run their Main fixtures unpaused, because they run concurrently with
+     the ordering chain and a leftover pause hangs them; moving them into the chain would let
+     them use the host.
    - still owed: close fix 6b (structural simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
      `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
