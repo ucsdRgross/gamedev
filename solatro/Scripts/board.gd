@@ -246,18 +246,16 @@ static func remove_column(state: GameData, zone_cols: Array[ArrayCardData], zone
 	zone_types.remove_at(index)
 	#pop BEFORE the bump: board_changed listeners run synchronously inside the bump and
 	#must see types/columns already back in lockstep (the old order bumped mid-mutation)
-	var orphans : Array[CardData] = _stock_orphans(state, zone_cols, index)
+	_park_removed_stock(state, zone_cols, index)
 	var removed : ArrayCardData = zone_cols.pop_at(index)
-	orphans.append_array(removed.datas)
 	state.revision += 1
-	return orphans
-
-## An Entrance slot takes its own stock with it, so no card is stranded in a slotless stock.
-static func _stock_orphans(state: GameData, zone_cols: Array[ArrayCardData], index: int) -> Array[CardData]:
-	var stocks := state.entrance_stocks()
-	if not is_same(zone_cols, state.upper_zone) or index >= stocks.size(): return []
-	var removed : ArrayCardData = stocks.pop_at(index)
 	return removed.datas
+
+## A removed Entrance slot's stock moves to the END of the stocks, where it has no slot of its own and Game.rebalance_stocks pours it back into the survivors -- its cards are dealt out, not discarded.
+static func _park_removed_stock(state: GameData, zone_cols: Array[ArrayCardData], index: int) -> void:
+	var stocks := state.entrance_stocks()
+	if not is_same(zone_cols, state.upper_zone) or index >= stocks.size(): return
+	stocks.append(stocks.pop_at(index))
 
 
 # ==============================================================================

@@ -1013,7 +1013,7 @@ func test_game_view_scoring_pass_with_props() -> void:
 	Main.save_info = run
 	run.pending_goal = 1
 	run.pending_node_id = 2
-	seed(424243)
+	seed(424245)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
 	var picture_vp := TestGameViewHost.host(self, view)
 	await get_tree().process_frame

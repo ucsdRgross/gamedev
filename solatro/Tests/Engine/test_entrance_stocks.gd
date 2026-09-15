@@ -15,6 +15,9 @@ func _ready() -> void:
 	await run_round_robin_deal_test()
 	await run_same_order_deals_identically_test()
 	await run_replayed_placement_is_identical_test()
+	await run_removed_slot_pours_into_bottoms_test()
+	await run_added_slot_pulls_bottoms_test()
+	await run_exhausted_slot_stays_empty_test()
 	await run_one_empty_slot_is_not_an_empty_deck_test()
 	await run_walkers_reach_a_stock_card_test()
 	check_all_tests_registered()
@@ -52,6 +55,27 @@ func _stock_game(deck: Array[CardData], slots: int) -> Game:
 func _free_game(g: Game) -> void:
 	CardEnvironment.CURRENT = null
 	g.free()
+
+## Spotlights one more upper adder, which is the only production path that adds an Entrance slot.
+func _add_slot(g: Game) -> void:
+	var adder := SkillAdderInputUpper.new()
+	var card := CardData.new().with_skill(adder)
+	card.stage = CardData.Stage.RULES
+	adder.spotlit = true
+	g.state.rules_deck.append(card)
+	await adder.on_spotlight()
+
+## Unspotlights the adder that owns slot `slot`, the only production path that removes one.
+func _remove_slot(g: Game, slot: int) -> void:
+	var adder : SkillAdderInputUpper = g.state.rules_deck[slot].skill
+	await adder.on_unspotlight()
+
+func _stock_tops(g: Game, slots: Array[int]) -> Array[String]:
+	var tops : Array[String] = []
+	for slot : int in slots:
+		var top : CardData = g.stock_for_slot(slot).back()
+		tops.append(top.log_str())
+	return tops
 
 func _stock_sizes(g: Game) -> Array[int]:
 	var sizes : Array[int] = []
@@ -138,7 +162,55 @@ func run_replayed_placement_is_identical_test() -> void:
 
 
 # ==============================================================================
-# TEST_PLAN 4.7 -- "the deck is empty" is every stock empty, so one drained slot ends nothing.
+# TEST_PLAN 4.4 -- a removed slot's cards pour into the survivors' BOTTOMS: no top moves.
+# ==============================================================================
+func run_removed_slot_pours_into_bottoms_test() -> void:
+	behavior_section("A REMOVED SLOT POURS INTO THE BOTTOMS")
+	var g : Game = await _stock_game(TestDecks.deck_standard_52().slice(0, 20), 4)
+	var tops := _stock_tops(g, [0, 2, 3] as Array[int])
+	await _remove_slot(g, 1)
+	check(_stock_sizes(g) == ([7, 7, 6] as Array[int]),
+			"removing one of four slots of five leaves [7,7,6]", str(_stock_sizes(g)))
+	check(_stock_tops(g, [0, 1, 2] as Array[int]) == tops,
+			"every remaining slot's TOP card is unchanged (4.4)",
+			"%s vs %s" % [str(_stock_tops(g, [0, 1, 2] as Array[int])), str(tops)])
+	check(g.state.all_stock_cards().size() == 20,
+			"no card is lost with the slot", str(g.state.all_stock_cards().size()))
+	_free_game(g)
+
+
+# ==============================================================================
+# TEST_PLAN 4.5 -- an added slot pulls the bottom card of each existing slot in turn.
+# ==============================================================================
+func run_added_slot_pulls_bottoms_test() -> void:
+	behavior_section("AN ADDED SLOT PULLS BOTTOMS")
+	var g : Game = await _stock_game(TestDecks.deck_standard_52().slice(0, 18), 3)
+	var tops := _stock_tops(g, [0, 1, 2] as Array[int])
+	await _add_slot(g)
+	check(_stock_sizes(g) == ([5, 5, 4, 4] as Array[int]),
+			"adding a fourth slot to three slots of six leaves [5,5,4,4]", str(_stock_sizes(g)))
+	check(_stock_tops(g, [0, 1, 2] as Array[int]) == tops,
+			"every existing slot's TOP card is unchanged (4.5)",
+			"%s vs %s" % [str(_stock_tops(g, [0, 1, 2] as Array[int])), str(tops)])
+	_free_game(g)
+
+
+# ==============================================================================
+# TEST_PLAN 4.6 -- exhaustion is not an event: a drained slot stays at zero.
+# ==============================================================================
+func run_exhausted_slot_stays_empty_test() -> void:
+	behavior_section("AN EXHAUSTED SLOT STAYS EMPTY")
+	var g : Game = await _stock_game(TestDecks.deck_standard_52().slice(0, 20), 4)
+	while g.draw_card(0) != null:
+		pass
+	check(_stock_sizes(g) == ([0, 5, 5, 5] as Array[int]),
+			"draining a slot fires no rebalance: it stays at 0 and the others keep their five",
+			str(_stock_sizes(g)))
+	_free_game(g)
+
+
+# ==============================================================================
+# TEST_PLAN 4.7 --"the deck is empty" is every stock empty, so one drained slot ends nothing.
 # ==============================================================================
 func run_one_empty_slot_is_not_an_empty_deck_test() -> void:
 	behavior_section("ONE DRAINED SLOT IS NOT AN EMPTY DECK")

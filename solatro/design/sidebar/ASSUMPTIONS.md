@@ -654,3 +654,22 @@
 - S19: `TestUIProps`' frozen-deck seed moved 424242 -> 424243. The per-slot deal changes which
   cards reach the scored row, and the fixture's whole point is a seeded deal whose line spawns
   props; the new seed restores that, the deck composition is unchanged.
+- S20: the rebalance is ONE parameterless state-derived rule, `Game.rebalance_stocks()`, in two
+  named halves: `_pour_out_slotless_stocks()` empties any stock beyond the slot count from ITS
+  bottom, round-robin into the survivors' bottoms left to right; `_pull_bottoms_to_even_shares()`
+  then moves bottoms from slots above their even share (`_first_stock_below_target()` picks the
+  taker) until every slot holds what `deal_stocks()` would give it. Tops never move.
+- S20: `Board.remove_column` no longer orphans the removed Entrance slot's stock (S19's contract):
+  `Board._park_removed_stock()` moves that stock to the END of `GridData.stocks`, where it has no
+  slot, and the rebalance pours it back. A caller that removes a column without the rebalance
+  leaves the cards parked, not lost.
+- S20: the production seam is `CardEffectApi.add_column`/`remove_column` (the only path
+  `ZoneAdder` has), guarded by `_rebalance_if_entrance()` because only the Entrance owns stocks.
+  `Board` is static and holds no `Game`, so the call cannot sit inside it.
+- S20: `TestUIProps`' frozen-deck seed moved 424243 -> 424245. The bootstrap's zone adders now
+  rebalance as each slot appears, so the final `deal_stocks()` deals a different permutation and
+  the fixture's scored line stopped spawning props; the new seed restores that (424244 and 424246
+  also fail, 424247 also passes). The deck composition is unchanged.
+- S20: `TestEntranceStocks` drives the real seam through the adders themselves --
+  `_add_slot(g)` spotlights one more `SkillAdderInputUpper`, `_remove_slot(g, slot)` unspotlights
+  the adder that owns that slot -- so no test calls `rebalance_stocks()` directly.

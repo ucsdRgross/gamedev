@@ -431,6 +431,43 @@ func deal_stocks() -> void:
 		stocks[i % stocks.size()].datas.append(cards[i])
 	state.revision += 1
 
+## Re-spreads the stocks after the SET of slots changes: only BOTTOM cards move, so what each slot is about to draw is stable and a peek stays honest. No RNG, so it replays identically.
+func rebalance_stocks() -> void:
+	var stocks := state.entrance_stocks()
+	var slots := maxi(state.upper_zone.size(), 1)
+	_pour_out_slotless_stocks(stocks, slots)
+	_pull_bottoms_to_even_shares(stocks, slots)
+	state.revision += 1
+
+## A removed slot's parked stock empties from ITS bottom into the surviving slots' bottoms, left to right.
+func _pour_out_slotless_stocks(stocks: Array[ArrayCardData], slots: int) -> void:
+	while stocks.size() > slots:
+		var parked : ArrayCardData = stocks.pop_back()
+		var taker := 0
+		while not parked.datas.is_empty():
+			stocks[taker % slots].datas.push_front(parked.datas.pop_front())
+			taker += 1
+
+## Every slot short of the share deal_stocks would give it takes the bottom card of each fuller slot in turn.
+func _pull_bottoms_to_even_shares(stocks: Array[ArrayCardData], slots: int) -> void:
+	var total := state.all_stock_cards().size()
+	var targets : Array[int] = []
+	for i : int in slots:
+		targets.append(total / slots + (1 if i < total % slots else 0))
+	var donor := 0
+	var needy := _first_stock_below_target(stocks, targets)
+	while needy != -1:
+		while stocks[donor].datas.size() <= targets[donor]:
+			donor = (donor + 1) % slots
+		stocks[needy].datas.push_front(stocks[donor].datas.pop_front())
+		donor = (donor + 1) % slots
+		needy = _first_stock_below_target(stocks, targets)
+
+func _first_stock_below_target(stocks: Array[ArrayCardData], targets: Array[int]) -> int:
+	for i : int in targets.size():
+		if stocks[i].datas.size() < targets[i]: return i
+	return -1
+
 ## The cards Entrance slot `slot` still has to draw, its top one last.
 func stock_for_slot(slot: int) -> Array[CardData]:
 	return state.entrance_stocks()[slot].datas

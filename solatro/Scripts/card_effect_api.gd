@@ -191,12 +191,19 @@ func add_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 		header: CardData) -> void:
 	if not is_live(): return
 	Board.add_column(_game.state, zone_cols, zone_types, header)
+	_rebalance_if_entrance(zone_cols)
 
 ## Remove a zone column and its header; returns the orphaned cards for the caller to discard.
 func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 		index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
-	return Board.remove_column(_game.state, zone_cols, zone_types, index)
+	var orphans := Board.remove_column(_game.state, zone_cols, zone_types, index)
+	_rebalance_if_entrance(zone_cols)
+	return orphans
+
+## Only the Entrance owns stocks, so only a change to ITS set of slots re-spreads them.
+func _rebalance_if_entrance(zone_cols: Array[ArrayCardData]) -> void:
+	if is_same(zone_cols, _game.state.upper_zone): _game.rebalance_stocks()
 
 ## Append one grid to the board.
 func add_grid(grid: GridData) -> void:
