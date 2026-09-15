@@ -116,7 +116,6 @@ func _bind_hud_container() -> void:
 	total_label = hud_container.total_label
 	combo_label = hud_container.combo_label
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_board_inset)
-	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
 	hud_container.connect_for_screen(self, hud_container.description_dismissed,
 			_on_description_dismissed)
 	hud_container.connect_for_screen(self, hud_container.exit_accepted,
@@ -233,15 +232,12 @@ func _publish_board_inset() -> void:
 	var window := hud_container.get_viewport().get_visible_rect().size
 	var rect := hud_container.container_rect()
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
-	var picture_scale := maxf(window.x / design.x, window.y / design.y)
 	play_area.picture_to_window_scale = WallPicture.focused_scale(design, window,
 			PlayArea.settings().wall_overfill_margin)
-	if HudContainer.container_is_top(window, PlayArea.settings()):
-		play_area.board_inset_top = rect.size.y / picture_scale
-		play_area.board_inset_left = 0.0
-	else:
-		play_area.board_inset_left = rect.size.x / picture_scale
-		play_area.board_inset_top = 0.0
+	var inset := WallPicture.inset_beside(rect, HudContainer.container_is_top(window,
+			PlayArea.settings()), WallPicture.cover_scale(design, window))
+	play_area.board_inset_left = inset.x
+	play_area.board_inset_top = inset.y
 	hud_container.resize_preview(play_area.board_card_window_px())
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this
@@ -274,22 +270,7 @@ static func sorted_stock_union(state: GameData) -> Array[CardData]:
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
-	_deck_viewer = DeckViewer.show_deck(self, cards, opener)
-	_deck_viewer.info_requested.connect(_relay_info_requested)
-	_deck_viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	_fit_open_viewer()
-
-## The viewer open over this screen, if any -- one at a time, the same one `DeckViewer` itself keeps.
-var _deck_viewer : DeckViewer = null
-
-# A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD: the container moving under it re-fits it, and a
-# description that is UP is re-published at the size it now draws its cards at -- `_publish_board_inset()`
-# has just re-drawn it at the BOARD's. A closed viewer leaves its reference behind.
-func _fit_open_viewer() -> void:
-	if not is_instance_valid(_deck_viewer): return
-	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
-			hud_container.window_scale(wall_picture))
-	if hud_container.showing_description(): _deck_viewer.republish_highlight()
+	hud_container.host_viewer(DeckViewer.show_deck(self, cards, opener), wall_picture, info_requested)
 
 # Undo stays enabled while busy: it cancels a live act or rewinds a resolved one, and Game ignores
 # the press where it cannot act.

@@ -121,9 +121,9 @@
 - S6, measured: the description panel's WIDTH already followed a resize through the engine's own
   layout pass; what did not follow is the content height `resize_to()` computes, so
   `_apply_container_rect()` re-runs it for the entry already up.
-- S6 hygiene: the no-listener guard stays in `PlayArea` as `_publish_info()`, the ONE publish site
-  for the highlight and for both Info-mode click emits -- smaller than teaching four bare
-  `play_area.tscn` fixtures to connect a freeing sink, and it keeps the ownership rule in one place.
+- S6 hygiene: `PlayArea._publish_info()` is the ONE publish site for the highlight and for both
+  Info-mode click emits, and it publishes through `InfoEntry.relay_to()` like the viewers do, so the
+  no-listener guard (the bare `play_area.tscn` fixtures) lives only there.
 - S6b: "the pointer left every card" is a new `PlayArea` signal, `highlight_cleared`, NAMES.md does
   not list it. Two triggers, one signal: the per-control `mouse_exited` publishes only when
   `_card_control_at()` finds no card under the pointer (card to card is silent -- the card being
@@ -328,7 +328,7 @@
   instead, so it publishes nothing until the player moves onto a card.
 - S12 new names NAMES.md does not list: `InfoEntry.relay_to(out)` (the "emit it, or free the live
   preview nothing will take delivery of" shape `GameView._relay_info_requested` spelled out, now
-  shared with `Map._relay_info_hovered` and both viewers); `HudContainer.rect_beside(picture)` and
+  shared with `HudContainer.host_viewer()` and both viewers); `HudContainer.rect_beside(picture)` and
   `HudContainer.window_scale(picture)`; `WallPicture.window_scale(window)`;
   `CardsViewer.picture_to_window_scale` / `card_window_px()`; `DeckViewer.info_requested` /
   `highlight_cleared` / `fit_beside()` and the same three on `ChoiceViewer`;
@@ -351,11 +351,11 @@
   once and every fit SETS from them, since a fit now runs again on each window change and adding
   would double the inset (measured: 47 of 47 listed cards outside the space beside the container
   after one re-fit).
-- P3 review: A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD. `GameView._fit_open_viewer()` and
-  `Map._fit_open_viewers()` re-fit whatever viewer is open on `container_rect_changed`, the signal
-  the board re-fits on, connected AFTER `_publish_board_inset` / `_publish_map_inset` so the
-  viewer's own re-publish is what the description ends on. Each screen holds the viewer it opened
-  (`_deck_viewer`, plus `_choice_viewer` on the map, which can have both up at once).
+- P3 review: A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD. `HudContainer.host_viewer()` re-fits each
+  viewer on `container_rect_changed`, the signal the board re-fits on, connected when the viewer
+  opens and so AFTER `_publish_board_inset` / `_publish_map_inset`: the viewer's own re-publish is
+  what the description ends on. The connection is keyed by the viewer through `connect_for_screen`,
+  so it is dropped when the viewer leaves the tree; no screen holds a viewer reference.
 - P3 review: `CardsViewer.republish_highlight()` -- a re-fit publishes the list's current highlight
   again, so the description's preview is re-drawn at the size THAT viewer now draws its cards at
   rather than at the board's, which `GameView._publish_board_inset()` has just applied to the
@@ -372,7 +372,7 @@
   x 104 against the container's inner edge at 288. New names: `DeckPicker.viewer_opened(viewer)`
   (the picker announces what an Inspect opened; the screen hosting it owns the wiring),
   `Menu.info_requested` (the relay `Main` connects, the same one `GameView` exposes),
-  `Menu._on_viewer_opened()` / `Menu._fit_open_viewer()` (re-fitted on `container_rect_changed`
+  `Menu` connects `viewer_opened` to `HudContainer.host_viewer()` (re-fitted on `container_rect_changed`
   like the others). The viewer stays parented to the PICKER, so picking a deck frees it with the
   picker.
 - P3 review: `ChoiceViewer`'s pack, confirm button and reroll counter share one `Layout` Control
@@ -410,16 +410,15 @@
   map's Deck button and the map's and menu's insets as well (measured: the map's camera offset stayed
   (-144, 0) where a live inset reads (0, -81), and the Deck button opened nothing).
 - P3 re-review: `DeckViewer.republish_highlight()` / `ChoiceViewer.republish_highlight()` are public,
-  and the RE-FIT no longer republishes on its own: each opener (`GameView._fit_open_viewer`,
-  `Map._fit_open_viewers`, `Menu._fit_open_viewer`) asks for it only while
-  `hud_container.showing_description()`. A dismissal is the player's act, so a window change must not
+  and the RE-FIT no longer republishes on its own: `HudContainer._fit_viewer()`, the one re-fit every
+  hosted viewer shares, asks for it only while `showing_description()`. A dismissal is the player's act, so a window change must not
   undo one.
 - P3 re-review (overseer, reversible): the exit X is focusable WHENEVER a description shows, not only
   while locked -- `HudContainer._refresh_exit_focus()` reads the X's own visibility, and the new
-  `focus_exit()` is what `DeckViewer._hand_the_focus_back()` uses when the opener it would return the
-  focus to is not `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that
-  opened it, stranding a pad player). The opener's own `owner` IS its `HudContainer`, since the pile
-  buttons and the map's Deck button live in `hud_container.tscn`. `Q68`=b's `ui_up`-off-the-top rule
+  `DeckViewer.fallback_focus` (the X, set by `HudContainer.host_viewer()`) is what
+  `DeckViewer._hand_the_focus_back()` focuses when the opener it would return the focus to is not
+  `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that opened it,
+  stranding a pad player). The viewer never assumes its opener's owner type. `Q68`=b's `ui_up`-off-the-top rule
   is unchanged.
 - P3 re-review: `DeckPicker._inspect()` opens its viewer at `layer + 1`, above the picker's own Dim.
   The Dim is `MOUSE_FILTER_STOP` and covers the screen, so a viewer left at the default layer got no

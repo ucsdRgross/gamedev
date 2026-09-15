@@ -55,7 +55,6 @@ func _bind_hud_container() -> void:
 	hud_container.connect_for_screen(self, hud_container.map_deck_button.pressed,
 			_on_deck_clicked)
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _publish_map_inset)
-	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewers)
 	hud_container.connect_for_screen(self, hud_container.active_screen_changed,
 			name_popup.hide_name)
 	_publish_map_inset()
@@ -104,11 +103,9 @@ func _start_show(node: WorldGraphNode) -> void:
 # later from modifiers).
 func _open_booster(node: WorldGraphNode) -> void:
 	var booster: BoosterTemplate = node.meta.get(MapNodeRoles.BOOSTER_KEY)
-	_choice_viewer = await booster.on_map_picked(ui_layer)
-	_choice_viewer.confirmed.connect(_on_booster_confirmed)
-	_choice_viewer.info_requested.connect(_relay_info_hovered)
-	_choice_viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	_fit_open_viewers()
+	var viewer : ChoiceViewer = await booster.on_map_picked(ui_layer)
+	viewer.confirmed.connect(_on_booster_confirmed)
+	hud_container.host_viewer(viewer, wall_picture, info_hovered)
 
 func _on_booster_confirmed(cards: Array[CardData]) -> void:
 	for card in cards:
@@ -165,31 +162,5 @@ func _update_hud() -> void:
 	hud_container.luck_label.text = "Luck: %d%%" % int(RunManager.luck() * 100.0)
 
 func _on_deck_clicked() -> void:
-	_deck_viewer = DeckViewer.show_deck(self, Main.save_info.card_datas,
-			hud_container.map_deck_button)
-	_deck_viewer.info_requested.connect(_relay_info_hovered)
-	_deck_viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	_fit_open_viewers()
-
-## The viewers open over this screen: a pack arrived at and the run's deck list can both be up.
-var _deck_viewer : DeckViewer = null
-var _choice_viewer : ChoiceViewer = null
-
-# A VIEWER IS A SCREEN OCCUPANT LIKE THE MAP ITSELF: the container moving under it re-fits it, and
-# a description that is UP is re-published at the size it now draws its cards at. A taken pack and
-# a closed deck list free themselves and leave their references behind.
-func _fit_open_viewers() -> void:
-	var remaining := hud_container.rect_beside(wall_picture)
-	var scale := hud_container.window_scale(wall_picture)
-	var describing := hud_container.showing_description()
-	if is_instance_valid(_deck_viewer):
-		_deck_viewer.fit_beside(remaining, scale)
-		if describing: _deck_viewer.republish_highlight()
-	if is_instance_valid(_choice_viewer):
-		_choice_viewer.fit_beside(remaining, scale)
-		if describing: _choice_viewer.republish_highlight()
-
-# A viewer opened over this map publishes exactly as the map's own node hover does, and the relay
-# owns the live preview the entry carries when no `Main` is listening.
-func _relay_info_hovered(entry: InfoEntry) -> void:
-	entry.relay_to(info_hovered)
+	hud_container.host_viewer(DeckViewer.show_deck(self, Main.save_info.card_datas,
+			hud_container.map_deck_button), wall_picture, info_hovered)

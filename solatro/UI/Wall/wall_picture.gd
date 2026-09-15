@@ -313,18 +313,23 @@ func window_scale(window: Vector2) -> float:
 	return focused_scale(Vector2(_design_size), window, settings().wall_overfill_margin)
 
 # The space LEFT beside `rect` (the shared `HudContainer`'s rect, against this viewport's own
-# `window` size) once both convert into THIS picture's own space -- the unmargined `picture_scale`
-# shape `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.
+# `window` size) once both convert into THIS picture's own space -- the unmargined cover scale and
+# inset `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.
 func local_rect_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
 	var design := Vector2(_design_size)
-	var scale := maxf(window.x / design.x, window.y / design.y)
+	var scale := cover_scale(design, window)
 	var local_window := Rect2((design - window / scale) / 2.0, window / scale)
-	var inset := (rect.size.y if top else rect.size.x) / scale
-	if top:
-		return Rect2(local_window.position.x, local_window.position.y + inset,
-				local_window.size.x, local_window.size.y - inset)
-	return Rect2(local_window.position.x + inset, local_window.position.y,
-			local_window.size.x - inset, local_window.size.y)
+	var inset := inset_beside(rect, top, scale)
+	return Rect2(local_window.position + inset, local_window.size - inset)
+
+## The px `rect` takes off the space beside it at `scale`: its height when it sits on top, else its width.
+static func inset_beside(rect: Rect2, top: bool, scale: float) -> Vector2:
+	if top: return Vector2(0.0, rect.size.y / scale)
+	return Vector2(rect.size.x / scale, 0.0)
+
+## The scale at which `native_size` exactly covers `window_size`: the larger axis ratio, no margin.
+static func cover_scale(native_size: Vector2, window_size: Vector2) -> float:
+	return maxf(window_size.x / native_size.x, window_size.y / native_size.y)
 
 ## Rescales %Screen and %Shadow so this picture draws at exactly `rect.size`.
 ## ⚠ Both sprites' texture IS the SubViewport render target, so what they draw is
@@ -432,10 +437,8 @@ func write_state_blob() -> Dictionary:
 ## this function pure.
 static func focused_scale(native_size: Vector2, window_size: Vector2,
 		overfill_margin: float) -> float:
-	var x_ratio := window_size.x / native_size.x
-	var y_ratio := window_size.y / native_size.y
-	var fill := maxf(x_ratio, y_ratio)
-	if is_equal_approx(x_ratio, y_ratio):
+	var fill := cover_scale(native_size, window_size)
+	if is_equal_approx(window_size.x / native_size.x, window_size.y / native_size.y):
 		return fill
 	return fill * overfill_margin
 

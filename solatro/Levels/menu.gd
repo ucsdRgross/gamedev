@@ -46,7 +46,6 @@ func _ready() -> void:
 	_design_rect = _content_bounds()
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed,
 			_apply_container_inset)
-	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
 	_apply_container_inset()
 
 # The union of every button under `Main`, the title and the run row -- `_main_control` itself
@@ -85,31 +84,8 @@ func _on_new_run_pressed() -> void:
 	var picker := DeckPicker.add_to_scene(self)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
-	picker.viewer_opened.connect(_on_viewer_opened)
+	picker.viewer_opened.connect(hud_container.host_viewer.bind(wall_picture, info_requested))
 	picker.tree_exiting.connect(hud_container.release_screen.bind(HudContainer.MENU_SCREEN))
-
-## The viewer an Inspect opened over this menu, if any -- one at a time, the same one `DeckViewer` itself keeps.
-var _deck_viewer : DeckViewer = null
-
-# THE PICKER'S VIEWER IS A SCREEN OCCUPANT LIKE THE MENU ITSELF: it lays out in the space beside the
-# sidebar and publishes into it, the same rule the game screen's and the map's viewers follow.
-func _on_viewer_opened(viewer: DeckViewer) -> void:
-	_deck_viewer = viewer
-	viewer.info_requested.connect(_relay_info_requested)
-	viewer.highlight_cleared.connect(hud_container.return_to_lock)
-	_fit_open_viewer()
-
-# The re-fit re-publishes only a description that is UP: a dismissal is the player's own act and a
-# window change is not one.
-func _fit_open_viewer() -> void:
-	if not is_instance_valid(_deck_viewer): return
-	_deck_viewer.fit_beside(hud_container.rect_beside(wall_picture),
-			hud_container.window_scale(wall_picture))
-	if hud_container.showing_description(): _deck_viewer.republish_highlight()
-
-# The relay owns the live preview the entry carries when no `Main` is listening.
-func _relay_info_requested(entry: InfoEntry) -> void:
-	entry.relay_to(info_requested)
 
 ## Continue is only clickable while a resumable run exists on disk.
 func refresh_continue() -> void:

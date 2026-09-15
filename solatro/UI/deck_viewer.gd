@@ -22,6 +22,8 @@ static var _open : DeckViewer = null
 # Focus to restore on close, so keyboard/controller users land back on the button that
 # opened the viewer instead of nowhere.
 var _return_focus : Control = null
+## Where the focus goes on close when the opener is hidden; set by the `HudContainer` hosting this viewer.
+var fallback_focus : Control = null
 
 # ⚠ THE OPENER HANDS ITS OWN CONTROL IN: the pile buttons live in the wall overlay while this
 # viewer lives inside a picture's SubViewport, and focus is cleared across every viewport of one
@@ -45,12 +47,12 @@ func _close() -> void:
 	queue_free()
 
 # ⚠ THE OPENER CAN BE HIDDEN BY WHAT THIS VIEWER PUBLISHED: a pile button lives in the sidebar's
-# own scene, which hides its HUD stack while a description shows, so the focus goes to that
-# sidebar's exit X instead -- accept on it dismisses, and the buttons are back.
+# own scene, which hides its HUD stack while a description shows, so the focus goes to the fallback
+# its host set, the sidebar's exit X -- accept on it dismisses, and the buttons are back.
 func _hand_the_focus_back() -> void:
 	if not is_instance_valid(_return_focus): return
 	if _return_focus.is_visible_in_tree(): _return_focus.grab_focus()
-	else: (_return_focus.owner as HudContainer).focus_exit()
+	else: fallback_focus.grab_focus()
 
 # The initial focus is stolen from whatever button opened this viewer, so ui_accept cannot re-open
 # it and the arrows walk the cards (ControlCards are focus stops). ⚠ DEFERRED: that focus is a

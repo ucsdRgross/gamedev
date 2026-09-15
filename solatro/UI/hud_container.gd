@@ -118,12 +118,28 @@ func rect_beside(picture: WallPicture) -> Rect2:
 	var rect := container_rect()
 	var top := container_is_top(window, PlayArea.settings())
 	if picture: return picture.local_rect_beside(window, rect, top)
-	if top: return Rect2(0.0, rect.size.y, window.x, window.y - rect.size.y)
-	return Rect2(rect.size.x, 0.0, window.x - rect.size.x, window.y)
+	var inset := WallPicture.inset_beside(rect, top, 1.0)
+	return Rect2(inset, window - inset)
 
 ## How big a window pixel is against one of `picture`'s own -- what a screen inside it converts its own card sizes through to match this container's.
 func window_scale(picture: WallPicture) -> float:
 	return picture.window_scale(get_viewport().get_visible_rect().size) if picture else 1.0
+
+## Hosts a `DeckViewer` or `ChoiceViewer` opened in `picture`: relays its highlights to `relay`, returns to the lock on close, fits it beside this container.
+func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void:
+	viewer.connect(&"info_requested", func(entry: InfoEntry) -> void: entry.relay_to(relay))
+	viewer.connect(&"highlight_cleared", return_to_lock)
+	if viewer is DeckViewer: (viewer as DeckViewer).fallback_focus = _exit_button
+	var fit := func() -> void: _fit_viewer(viewer, picture)
+	connect_for_screen(viewer, container_rect_changed, fit)
+	fit.call()
+
+# A VIEWER IS A SCREEN OCCUPANT LIKE THE BOARD, re-fitted after its screen's own inset. It republishes
+# only while a description is UP, redrawing the preview at its own card size: a dismissal is the
+# player's act and a window change is not one.
+func _fit_viewer(viewer: Node, picture: WallPicture) -> void:
+	viewer.call(&"fit_beside", rect_beside(picture), window_scale(picture))
+	if showing_description(): viewer.call(&"republish_highlight")
 
 ## Sets this control's own rect to `container_rect()` and tells listeners it moved.
 func _apply_container_rect() -> void:
@@ -373,10 +389,6 @@ func _process(delta: float) -> void:
 # that opened it. Back on the HUD, nothing here is in anyone's focus chain.
 func _refresh_exit_focus() -> void:
 	_exit_button.focus_mode = Control.FOCUS_ALL if _exit_button.visible else Control.FOCUS_NONE
-
-## Puts the keyboard/pad focus on the exit X -- what a viewer hands the focus to when the description it published has hidden the button that opened it.
-func focus_exit() -> void:
-	_exit_button.grab_focus()
 
 ## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
 func resize_preview(card_px: Vector2) -> void:

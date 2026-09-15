@@ -3148,11 +3148,8 @@ func _publish_focus_left_cards() -> void:
 	if not ui_data.has(get_viewport().gui_get_focus_owner()): highlight_cleared.emit()
 
 # THE ONE PLACE A DESCRIPTION IS PUBLISHED -- a highlight or a click, mouse or key/pad alike.
-# ⚠ The entry carries a LIVE preview card, so an emit nothing listens to orphans one node per
-# call: the bare `play_area.tscn` fixtures are that case, and they get no emit at all.
 func _publish_info(data: CardData) -> void:
-	if info_requested.get_connections().is_empty(): return
-	info_requested.emit(card_info(data, board_card_window_px()))
+	card_info(data, board_card_window_px()).relay_to(info_requested)
 
 # A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
 # player is asking is how much this slot has left to draw.
