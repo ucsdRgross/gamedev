@@ -764,3 +764,9 @@
   three S22 ones: TP-122's placement scores thousands, and the leak canary's phase 4 quits
   mid-show, so neither may reach the goal. The canary drops its goal to 1 on the RESUMED board and
   lets the automatic end resolve the win (its `end_show()` call was a no-op after it).
+- Card back: the owner's ruling *"cardback should be frame 3"* is `CardVisual.CARD_BACK_FRAME`
+  = 3 of `card_types.png`, drawn by `update_visual()`'s non-front branch whenever
+  `showing_back()`; the branch's old bare literal 1, which a face-down card used to draw, is
+  named `BLANK_CARD_FRAME` and still serves a card with no type. A card's frame is a UV window
+  (`CardOutline.frame_polygon`), not a Sprite2D `frame`, so S21.4 asserts it through the
+  `u_frame_uv` clamp the card pushes to its own shader.

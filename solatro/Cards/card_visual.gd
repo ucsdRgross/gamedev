@@ -67,6 +67,11 @@ const CARD_JUMP_RISE := CARD_SIZE.y / 5.0
 ## 0.48/1.21 at t=0.15, 1.50/2.45 at t=0.30**. All-zero everywhere means the rig stopped moving.
 const RIG_ANIM : StringName = &"new_animation_2"
 
+## The frame of `card_types.png` a card shows when it is hiding its face -- the game's card back.
+const CARD_BACK_FRAME : int = 3
+## The frame of `card_types.png` a card with no type shows -- an unprinted card, not a back.
+const BLANK_CARD_FRAME : int = 1
+
 @export_tool_button("Update Visual") var editor_update_visual : Callable = update_visual
 
 enum DisplayContext {PLAY_AREA, MAP, DECK_VIEWER, PREVIEW}
@@ -243,12 +248,11 @@ func update_visual() -> void:
 		suit.hide()
 		art.hide()
 
-		#placeholder
 		CardOutline.frame_polygon(
 			type,CardModifierType.TYPE_TEXTURE,
 			CardModifierType.H_FRAMES,
 			CardModifierType.V_FRAMES,
-			1)
+			CARD_BACK_FRAME if showing_back() else BLANK_CARD_FRAME)
 		CardOutline.fill_texture(type)
 		type.show()
 	_push_outline_ink()

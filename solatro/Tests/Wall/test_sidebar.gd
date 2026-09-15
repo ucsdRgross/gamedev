@@ -4032,6 +4032,15 @@ func test_a_slot_shows_one_face_down_card_whatever_its_depth() -> void:
 	check(frame.custom_minimum_size.y == CardVisual.card_size_play.y,
 			"...and the empty slot with an empty stock is left showing its own frame (S21.4)",
 			str(frame.custom_minimum_size))
+	var face_down_visual : CardVisual = _play_area.data_card[
+			_play_area.ui_data[_stock_controls(0)[0]]]
+	var revealed_visual : CardVisual = _play_area.data_card[state.upper_zone[0].datas.back()]
+	check(_type_frame_origin(face_down_visual) == _sheet_frame_origin(CardVisual.CARD_BACK_FRAME),
+			"...and the face-down card draws the card back off the type sheet (S21.4)",
+			str(_type_frame_origin(face_down_visual)))
+	check(_type_frame_origin(revealed_visual) != _sheet_frame_origin(CardVisual.CARD_BACK_FRAME),
+			"...while the revealed card above it draws its own type, not the back (S21.4)",
+			str(_type_frame_origin(revealed_visual)))
 	state.discard_deck.append(_fixture_game().draw_card(1))
 	state.discard_deck.append_array(state.upper_zone[1].datas)
 	state.upper_zone[1].datas.clear()
@@ -4065,6 +4074,16 @@ func test_the_face_down_card_becomes_the_revealed_one() -> void:
 			"%d face down" % _stock_controls(0).size())
 	settings.base_delay = old_delay
 	await _end_game_fixture()
+
+## Which frame of the type sheet a card DRAWS: a Polygon2D has no `frame`, so its shader clamp says it.
+func _type_frame_origin(visual: CardVisual) -> Vector2:
+	var uv : Vector4 = CardOutline.material_of(visual.type).get_shader_parameter(&"u_frame_uv")
+	return (Vector2(uv.x, uv.y) * CardModifierType.TYPE_TEXTURE.get_size()).round()
+
+## Where one frame of the type sheet starts, from the same source `CardOutline.frame_polygon` uses.
+func _sheet_frame_origin(frame_index: int) -> Vector2:
+	return CardModifier.frame_rect(CardModifierType.TYPE_TEXTURE, CardModifierType.H_FRAMES,
+			CardModifierType.V_FRAMES, frame_index).position.round()
 
 ## The card entities a slot draws at all: its revealed cards plus its one face-down card, never its zone frame.
 func _card_entities(slot: int) -> int:
