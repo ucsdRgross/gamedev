@@ -770,11 +770,50 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      `try_place`'s non-grid branch no longer re-arms (only headless suites drive it). Game
      calling into its view has precedent (`undo()` calls `view.rebuild()`). TestSidebar row
      RED on HEAD (`selected_cards` empty after the resumed refill), green after (733 checks).
+   - close fix 8 (trace: pad focus): MEASURED (a) after a pad accept on the X both viewports'
+     focus owners are null and the d-pad and A do nothing - fixed: a key/pad accept on the X
+     returns focus to the described card, or the armed card if that control is gone, without
+     re-opening the description (`HudContainer.exit_accepted`, taken at the X's `gui_input`
+     because a mouse press was measured to focus the X too, so `has_focus()` cannot tell them
+     apart; `PlayArea.return_focus_to_board`). Row RED on HEAD, green after (TestSidebar 733 ->
+     742). MEASURED (b) at the outcome, Continue keeps focus in the SubViewport and no d-pad or
+     L1 press reaches Undo -> GAP-009 filed (OWNER CALL: an undo action, an Undo beside
+     Continue, or as built), not fixed.
+   - ⚠ OVERSEER ERROR found by the docs-fold analyst: the S23 brief quoted **Q135 = (a)**, but
+     answers.json holds **(b)**: "yes, and the sidebar switches to the card, with a way back to
+     the pack". S23 built (a), and row S23.5 pins the misread. Chart K9 was right; this
+     handoff's "K9 is stale" lines were wrong. A script cross-checked every `**Qnnn = (x)**` in
+     the briefs against answers.json: 64 checked, Q135 the only misquote (Q233 is a standing
+     ruling from an earlier design, absent from this answers file). The same check over PLAN.md
+     (59 citations), TEST_PLAN.md (49) and NAMES.md (7) found no mismatch; DESIGN.md's six
+     differences are quotes of OTHER designs' questions (picture-wall's Q134, the board plan's
+     Q33 and Q25) or a hypothetical (line 199), not misquotes. -> close fix C: build
+     Q135=(b), re-aim S23.5.
    - still owed: close fix 6 (conventions and simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
-     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), 8 (pad reach of the board and Undo), A (Main
+     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), C (build Q135=(b)), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
-8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING.
+8. `/docs` - PROPOSAL drafted by a read-only Opus 5 analyst, to apply after the fixes. Precedent
+   (picture-wall, poker-patience, comparator_buckets, spotlight): KEEP `design/sidebar/`'s
+   design set and gaps; DELETE `briefs/` and this handoff once folded. Corrections: DESIGN
+   node I8 and the override table at DESIGN.md:1037-1043 (count "Three" -> six; rows for
+   Q217/Q244/Q245 superseded by the S21 ruling, quoted once; answers.json left as the owner's
+   record), DESIGN.md:1533 and NAMES.md:110 delete the cap knob, PLAN.md:496/499, TEST_PLAN
+   9.5 (one face-down card, frame 3) and 3.4 (the centre does NOT move), TEST_PLAN §11 (G12
+   untested; charts I and K by eye only), DESIGN.md:489 the card back, NAMES §3 the
+   close-fix public names, DESIGN.md:460 and card_size_outline/IMPACT.md:659-663
+   (`get_control_center`), the test text "a show never resolves on its own" and
+   `test_end_show_is_the_only_resolver`, six stale ASSUMPTIONS names (lines 63-64, 90,
+   152-153, 232-233, 638). Fold targets: ARCHITECTURE_REVIEW.md §1.6 (a new "sidebar and
+   board input" subsection with the knob table and the measured gotchas), §1.2/1.3/1.5 (stocks,
+   the flip), §5 (the automatic end); PICTURE_WALL.md landmines and wiring table; todo.md
+   "Waiting on the owner" (GAP-001..009) and the owner-should-see items. Stale living-doc
+   references: START_HERE.md:14,182; ARCHITECTURE_REVIEW.md:28,42,48,180,227,289,1595;
+   LAYERING.md:103-110,229; PICTURE_WALL.md:34,95-99,152,232; todo.md:448-454;
+   HEADLESS_TESTING.md:49; DESIGN_DOC.md:129,291; fx-verify SKILL.md:56-60 (`wall_info_snapshot`
+   gone, add `sidebar_snapshot`). architecture-map.md: add the two-coordinate-spaces seam and
+   the screen-owned-state seam.
+9. `consolidate-memory`: PENDING.
 10. Tooling feedback - PROPOSAL drafted by a read-only Opus 5 analyst, not yet applied (the
    edits land after the fixes). 14 traps, ranked by what they would have saved: (1) state that
    outlives what it belongs to, 6 defects each found only by a reviewer -> plan-run brief
@@ -799,6 +838,10 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    mode, so the intersection method must be stated or built; plan-run Interruptions' "never
    resume mid-step" is too absolute; a reviewer's "none" is a claim to grep too; the
    overseer's allowed `grep -c` is dishonest for line endings.
+   Add (from this run's own overseer error): before dispatching a brief, script-check every
+   quoted `**Qnnn = (x)**` against answers.json - the S23 brief misquoted Q135 and a whole step
+   built the rejected option; the overseer rules forbid reading code but a bounded script over
+   the design files is allowed.
 11. Delete the temporary plan documents (briefs, this handoff once folded): PENDING.
 
 ## Next up
