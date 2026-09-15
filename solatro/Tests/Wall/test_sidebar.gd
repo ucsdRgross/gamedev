@@ -186,6 +186,7 @@ func _ready() -> void:
 	await test_the_name_stays_put_while_the_pointer_moves_inside_the_node()
 	await test_one_click_travels_and_leaving_keeps_the_last_nodes_description()
 	await test_the_first_tap_names_the_node_and_the_second_enters_it()
+	await test_a_finger_drag_pans_the_map()
 	await test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
@@ -4428,6 +4429,26 @@ func test_the_first_tap_names_the_node_and_the_second_enters_it() -> void:
 			"S23.4: a second tap on the same node enters it", str(entered.size()))
 	await _end_main_fixture()
 
+## A map is panned with one finger, so the rule that lets a tap NAME a dot must not eat the drag.
+func test_a_finger_drag_pans_the_map() -> void:
+	await _start_map_fixture()
+	var controller := _map.controller
+	var entered := _count_arrivals()
+	var before := controller.camera.position
+	_drag_finger_by(WorldMapController.node_screen_rect(controller._sorted_next()[0]).get_center(),
+			MAP_PAN_DRAG)
+	await get_tree().process_frame
+	var moved := before - controller.camera.position
+	var expected := MAP_PAN_DRAG / controller.camera.zoom.x
+	check(moved.is_equal_approx(expected),
+			"Fix 14.1: one finger pans the camera by the distance it dragged",
+			"%s vs %s" % [moved, expected])
+	check(entered.is_empty(), "Fix 14.1: a finger dragged across a node enters nothing",
+			str(entered.size()))
+	check(not _map.name_popup.visible,
+			"Fix 14.1: a finger dragged across a node names nothing")
+	await _end_main_fixture()
+
 # A pack's possible contents are a LIST, so they wrap to the sidebar's width under the body rather
 # than squeezing into the name's row -- and they describe nothing, being part of what is described.
 func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> void:
@@ -4552,19 +4573,44 @@ func _hover_a_map_node() -> WorldGraphNode:
 	await get_tree().process_frame
 	return node
 
-# A REAL finger: `device` stays at 0, which is what tells it from the mouse press the engine
+# A REAL finger: `device` stays at 0, which is what tells it from the mouse form the engine
 # synthesises from it.
-func _push_finger(at: Vector2) -> void:
+func _push_touch(at: Vector2, pressed: bool) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.position = at
-	touch.pressed = true
+	touch.pressed = pressed
 	_map_viewport.push_input(touch)
 
-# The mouse form the engine emulates from a finger press, marked `device` -1 -- it arrives BEFORE
-# the touch event, so a map that read it would travel on the tap that only meant to ask.
+# One finger tapping, in the engine's own dispatch order: it emits the mouse form it emulates from
+# a touch BEFORE the touch itself, at the press and again at the release.
+func _push_finger(at: Vector2) -> void:
+	_push_mouse_button(at, _map_viewport, true, -1)
+	_push_touch(at, true)
+	_push_mouse_button(at, _map_viewport, false, -1)
+	_push_touch(at, false)
+
+# One finger dragging, in the same order: a finger that travels arrives as an emulated motion
+# carrying `relative` (what the camera moves by) as well as its own screen drag.
+func _drag_finger_by(from: Vector2, by: Vector2) -> void:
+	_push_mouse_button(from, _map_viewport, true, -1)
+	_push_touch(from, true)
+	var motion := InputEventMouseMotion.new()
+	motion.position = from + by
+	motion.global_position = motion.position
+	motion.relative = by
+	motion.device = -1
+	_map_viewport.push_input(motion)
+	var drag := InputEventScreenDrag.new()
+	drag.position = from + by
+	drag.relative = by
+	_map_viewport.push_input(drag)
+	_push_mouse_button(from + by, _map_viewport, false, -1)
+	_push_touch(from + by, false)
+
+# The mouse press the engine emulates from a finger, marked `device` -1 -- it arrives BEFORE the
+# touch event, so a map that travelled on it would go there on the tap that only meant to ask.
 func _push_synthesised_mouse_press(at: Vector2) -> void:
 	_push_mouse_button(at, _map_viewport, true, -1)
-	_push_mouse_button(at, _map_viewport, false, -1)
 
 ## Every node the map is entered from here on, so a test can say how many clicks it took.
 func _count_arrivals() -> Array[WorldGraphNode]:

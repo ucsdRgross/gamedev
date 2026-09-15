@@ -819,3 +819,10 @@
 - Phase 7 fix 12: `TestEntranceStocks` gains `GOAL_OUT_OF_REACH` (the same 1000000 the other
   suites use) plus `_last_card_entrance_game()`, `_arm_interrupted_placement()`, `_cell_is_filled()`
   and `_restore_run()` -- the fixture for a quit mid-cascade and the teardown its tests share.
+- Fix 14: `WorldMapController._consumed_as_touch()` takes ONLY the emulated mouse RELEASE that
+  closes a press which never crossed `DRAG_THRESHOLD` -- the map's one distance model, the same
+  `_dragging` the mouse path uses. The emulated press and motion take that path untouched, so a
+  finger pans exactly as a mouse drag does; the first-tap rule fires on the lift, not the down.
+- Fix 14: `TestSidebar._push_touch(at, pressed)` is the bare finger form, `_push_finger()` the
+  whole tap and `_drag_finger_by(from, by)` the whole drag, both in the engine's dispatch order
+  (the emulated mouse form of a touch before the touch, at the press and again at the release).

@@ -339,16 +339,19 @@ static func node_screen_rect(node: WorldGraphNode) -> Rect2:
 
 # A MAP NODE IS A BARE DOT, so a finger has to be able to ask what one is without travelling to
 # it: the first tap names and describes the node, only a second tap on that same node enters it.
-# The engine's own mouse form of a finger press (device -1) arrives first and is swallowed here.
+# ⚠ ONLY A TAP IS TAKEN -- a finger that travelled is a pan, and pans by the mouse path below.
 func _consumed_as_touch(event: InputEvent) -> bool:
-	if event is InputEventMouseButton and event.device == -1:
-		return true
-	var touch := event as InputEventScreenTouch
-	if touch == null or not touch.pressed or touch.device == -1:
+	var lift := event as InputEventMouseButton
+	if lift == null or lift.device != -1 or lift.pressed \
+			or lift.button_index != MOUSE_BUTTON_LEFT:
 		return false
-	var node := _node_at((map.overlay().make_input_local(touch) as InputEventScreenTouch).position)
+	if not _pressed or _dragging:
+		return false
+	_pressed = false
+	var local := map.overlay().make_input_local(lift) as InputEventMouseButton
+	var node := _node_at(local.position)
 	if node == null:
-		return false
+		return true
 	if node == _tapped_node:
 		_travel_to(node)
 	else:
