@@ -430,7 +430,10 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    first, then enter. Fix 13.
 3. CONFIRMED touch pan of the map is lost: the swallow of every `device == -1` mouse press runs
    before `_pressed` is set, and `_pressed` has no other writer, so a one-finger drag never pans
-   and only hovers dots under the finger. Scope: the map only. → fix 14.
+   and only hovers dots under the finger. Scope: the map only. → fixed: the first-tap rule
+   consumes only the emulated release that closes a press which never crossed the map's own
+   `DRAG_THRESHOLD`, so a travelled finger pans as a mouse drag does; S23.4 reordered to the
+   engine's dispatch order (outcome unchanged). Fix 14.
 4. CONFIRMED `DescriptionPanel.resize_to` counts the previous entry's queue-freed visual (still a
    child until end of frame): pack → show leaves a grid-sized blank scroll area; pack → pack sums
    both flows. → fix 15.
