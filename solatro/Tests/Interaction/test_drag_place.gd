@@ -49,6 +49,8 @@ func _ready() -> void:
 	behavior_section("THE DRAG CHOOSES WHICH CARD IS MOVING")
 	await test_a_drag_from_a_board_card_cancels_the_arm()
 	await test_a_click_on_a_board_card_tries_to_place_first()
+	await test_a_refused_drag_from_an_empty_cell_places_nothing()
+	await test_a_refused_drag_from_a_grid_card_places_nothing()
 	behavior_section("A TAP IS A SECOND PRESS PAIRED WITH THE FIRST")
 	await test_a_double_click_undoes_the_grab_the_first_click_made()
 	await test_a_tap_after_a_placement_is_refused()
@@ -219,7 +221,7 @@ func _legal_cell_control(held: CardData) -> Control:
 	var rect := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
 	var candidates : Array[Control] = []
 	for control : Control in _pa.ui_data:
-		if not rect.encloses(control.get_global_rect()): continue
+		if not _is_reachable(control, rect): continue
 		if _game.state.cell_type_coord(_pa.ui_data[control]).is_nowhere(): continue
 		candidates.append(control)
 	var stack : Array[CardData] = [held]
@@ -228,6 +230,12 @@ func _legal_cell_control(held: CardData) -> Control:
 				&"on_can_place_stack", stack, _pa.ui_data[control])
 		if accepted: return control
 	return null
+
+# A collapsed cell control has no area, and `encloses` still accepts it, so a release aimed at its
+# centre lands on nothing at all.
+func _is_reachable(control: Control, on_screen: Rect2) -> bool:
+	var drawn := control.get_global_rect()
+	return drawn.has_area() and on_screen.encloses(drawn)
 
 # One placement made the way a player makes one -- the armed card dragged onto a cell that accepts
 # it -- so the rows that need a card already on the board start from a real one.
@@ -566,6 +574,62 @@ func test_a_click_on_a_board_card_tries_to_place_first() -> void:
 		check(_placed_cards().size() == 1 and _game.save_history.size() == committed,
 				"...with nothing placed onto it (5.7)", _hand_str())
 	await _end_fixture()
+
+# Only the card a drag carries can be placed by its release. One that starts on an empty cell's
+# zone card, which no rule picks up, carries nothing, so the armed card must not land instead.
+func test_a_refused_drag_from_an_empty_cell_places_nothing() -> void:
+	await _start_fixture()
+	var armed := _armed_card()
+	var cell := await _legal_cell_control(armed) if armed else null
+	var source := _an_empty_cell_other_than(cell)
+	check(cell != null and source != null, "the board offers two empty cells with a card armed",
+			"cell %s, source %s, %s" % [cell != null, source != null, _hand_str()])
+	if cell and source:
+		await _check_a_refused_drag_places_nothing(_control_centre(source), armed, cell)
+	await _end_fixture()
+
+# The same drag from a card already in the grid, which no shipped rule picks up.
+func test_a_refused_drag_from_a_grid_card_places_nothing() -> void:
+	await _start_fixture()
+	await _drag_the_arm_into_the_grid()
+	var placed := _placed_cards()
+	var armed := _armed_card()
+	var cell := await _legal_cell_control(armed) if armed else null
+	check(placed.size() == 1 and cell != null,
+			"a card is on the grid, the next Entrance card armed, and a cell accepts it",
+			"%d placed, cell %s, %s" % [placed.size(), cell != null, _hand_str()])
+	if placed.size() == 1 and cell:
+		await _check_a_refused_drag_places_nothing(_card_centre(placed[0]), armed, cell)
+	await _end_fixture()
+
+# A fully on-screen empty cell a drag can start from, which is not the one it is released on.
+func _an_empty_cell_other_than(excluded: Control) -> Control:
+	var rect := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
+	for control : Control in _pa.ui_data:
+		if control == excluded or not _is_reachable(control, rect): continue
+		var coord := _game.state.cell_type_coord(_pa.ui_data[control])
+		if not coord.is_nowhere() and _game.state.card_at(coord) == null: return control
+	return null
+
+# A card that does not place goes back: the release of a drag whose pickup the board refused drops
+# nothing, commits nothing, and leaves the armed card held in its Entrance slot.
+func _check_a_refused_drag_places_nothing(from: Vector2, armed: CardData, cell: Control) -> void:
+	var drops : Array[CardData] = []
+	_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
+	var committed := _game.save_history.size()
+	var placed := _placed_cards().size()
+	await _drag(from, _control_centre(cell))
+	check(drops.is_empty(), "the release of a refused pickup drops nothing (Q280=a)",
+			"%d drop(s)" % drops.size())
+	check(_game.save_history.size() == committed and _placed_cards().size() == placed,
+			"...so the board commits no step (Q280=a)", _hand_str())
+	check(_pa.selected_cards.has(armed) and _is_in_the_entrance(armed),
+			"...and the armed card is still held in its slot (Q281=a)", _hand_str())
+
+func _is_in_the_entrance(data: CardData) -> bool:
+	for slot : ArrayCardData in _game.state.upper_zone:
+		if data in slot.datas: return true
+	return false
 
 # ==============================================================================
 # THE TAP — a second press paired with the first, on every input a player has

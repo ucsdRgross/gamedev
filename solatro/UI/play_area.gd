@@ -1557,8 +1557,9 @@ func _take_up_the_dragged_card(at: Vector2) -> void:
 func _end_the_gesture() -> void:
 	_press_data = null
 
-# A gesture that TRAVELLED is never a click: its release places the held card, and the GUI pass
-# below never sees it. The press is forgotten here whichever branch the release takes.
+# A gesture that TRAVELLED is never a click, and the GUI pass below never sees it. It places only
+# when the dragged card IS the held one: a card no rule picked up carries nothing, so the armed card
+# must not land in its place. The press is forgotten here whichever branch the release takes.
 func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
 	var dragged := _press_data
@@ -1567,7 +1568,7 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 		_tapped_this_gesture = false
 		return true
 	if _press_origin.distance_to(button.position) <= _gesture_threshold_px(): return false
-	if dragged: _release_places(button.position)
+	if dragged in selected_cards: _release_places(button.position)
 	return true
 
 # The release places onto whatever the board offers under it, and the board answers whether that
