@@ -317,11 +317,12 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
    own description: `_bind_stack` binds the control to the real top stock card, the hover route
    checks `is_stock_control` but the click/accept routes emit `data_selected` with the hidden card
    and the view locks to it (the pickup is then refused, the lock stays). S21.5's rows only drove
-   `grab_focus()`. → fix 7.
-2. CONFIRMED (engine semantics) the face-down card IS an arrow stop when its slot holds no
-   revealed card: `update_card_zone_visuals` links `get_child(0)` as the explicit neighbour, and
-   Godot rejects an explicit neighbour only at FOCUS_NONE, so FOCUS_CLICK is reached by arrows.
-   ASSUMPTIONS S21 "never an arrow stop" is untested. → fix 8.
+   `grab_focus()`. → fixed, `PlayArea._consume_as_stock_press` gates both press routes on
+   `is_stock_control` (S21.5b/c red on HEAD), fix 7.
+2. CONFIRMED (engine semantics, then measured red) the face-down card was an arrow stop when its
+   slot held no revealed card: the link builder chained `get_child(0)`, and Godot rejects an
+   explicit neighbour only at FOCUS_NONE. → fixed, `PlayArea._link_arrow_stops()` chains only
+   slots whose top control is not a stock control (S21.7 red on HEAD), fix 8.
 3. SUSPECTED a card picked up inside its stagger wait is carried face-down and turns over in
    hand (cosmetic; the rebuild is deferred past `processing`'s release). Not reproduced; noted.
 4. SUSPECTED latent: `skill_spotlight_check()` is not awaited before `deal_stocks()`; today no
