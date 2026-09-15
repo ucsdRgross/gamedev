@@ -879,7 +879,27 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      does NOT move), 9.5 (one face-down card, frame 3), §11 (G12 untested; charts I and K by
      eye), 2.2/2.6 wording, 7.2 to its new fixture. Every changed row red with its product
      behaviour neutralised, restored byte-for-byte.
-   - still owed: close fix 6b (structural simplify residue, plus `pile_center`'s
+   - close fix 6b-1 (one home for duplicated logic, behaviour-preserving):
+     `HudContainer.host_viewer` wires every Deck/Choice viewer in one call per opener (relay,
+     `highlight_cleared` -> `return_to_lock`, fit, re-fit on `container_rect_changed`); its
+     `_fit_viewer` is the only site that republishes, and only while a description shows. The
+     host hands the viewer its `fallback_focus`, so `DeckViewer` no longer reaches through its
+     opener's owner and `HudContainer.focus_exit` is deleted. `WallPicture.cover_scale` is the
+     one cover-scale formula and `WallPicture.inset_beside` the one top/side inset (used by
+     `local_rect_beside`, the board inset and `rect_beside`'s no-picture fallback).
+     `PlayArea._publish_info` goes through `relay_to`, so the listener guard lives only in
+     `InfoEntry`. Engine fact measured on the way: Godot's duplicate-connection check ignores
+     bound arguments, so a second hosted viewer's bound re-fit raised "already connected" -
+     the re-fit is a per-viewer lambda. Map behaviour change: two open viewers re-fit and
+     republish in opening order (was deck-then-pack), and opening one no longer re-fits the
+     other. Load-bearing pair: `highlight_cleared` unwired -> B7's lock-return row red (1034
+     passed, 1 FAILED), restored green. dup_check 80 -> 80 (each copy was under its 8-line
+     threshold). New names `cover_scale`, `inset_beside`, `fallback_focus` in ASSUMPTIONS;
+     `host_viewer` in NAMES §3.
+   - still owed: close fix 6b-2 (per-hover recompute of `_entrance_drawn_columns`,
+     `_refresh_card_marking` twice per focus change, `_refresh_end_reveal` twice per revision,
+     the popup's per-frame `reset_size`, and reproduce-first the overlay touch targets sized
+     once at launch), plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
      `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
@@ -915,7 +935,18 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    ~:680, which still describes the deleted inspector panel), PICTURE_WALL's container
    landmine and wiring table, DESIGN_DOC.md:965 ("a show now ends when the player presses
    End"), the six stale ASSUMPTIONS names, briefs/ and this handoff deleted once folded.
-9. `consolidate-memory`: PENDING.
+9. `consolidate-memory` (Opus 5, `.claude/memory/` only): 17 files, 1098 -> 947 lines; all 20
+   indexed; doc_check 0 errors before and after. Merged 13 duplicates, each into the home read
+   when it bites (e.g. every run-diagnosis rule into `running-godot-scenes` "Diagnosing a red,
+   hung or flaky run"; rules a skill or agent enforces became pointers). Fixed: a 300 s kill
+   bound shorter than the 5-6 min full run, a "run alongside an editor hangs" line that
+   contradicted running-godot-scenes, a wrong pointer, dated frontmatter, history. LISTED FOR
+   MOVING into solatro docs (not moved): the test_ui_props settings backup and E2E wait deadlock
+   -> ARCHITECTURE_REVIEW §7; "import twice" and the snapshot-scene list -> HEADLESS_TESTING;
+   the `--import` translation/DLL rewrite -> HEADLESS_TESTING. Still stale OUTSIDE memory:
+   ARCHITECTURE_REVIEW.md:1570 "32 suites, ~65 s / ~190 s"; plan-implementer.md's maxTurns
+   comment says "one-subagent lock"; plan-run restates tests-that-prove-nothing items 13-14
+   twice.
 10. Tooling feedback - PROPOSAL drafted by a read-only Opus 5 analyst, not yet applied (the
    edits land after the fixes). 14 traps, ranked by what they would have saved: (1) state that
    outlives what it belongs to, 6 defects each found only by a reviewer -> plan-run brief
