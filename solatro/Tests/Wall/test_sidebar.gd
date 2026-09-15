@@ -188,6 +188,7 @@ func _ready() -> void:
 	await test_the_first_tap_names_the_node_and_the_second_enters_it()
 	await test_a_finger_drag_pans_the_map()
 	await test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing()
+	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
 	behavior_section("THE NAME IS ANCHORED TO THE DOT IT NAMES")
@@ -4453,7 +4454,7 @@ func test_a_finger_drag_pans_the_map() -> void:
 # than squeezing into the name's row -- and they describe nothing, being part of what is described.
 func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> void:
 	await _start_map_fixture()
-	_map._on_node_hovered(_a_booster_node())
+	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var flow := _panel.current_entry.visual as FlowContainer
@@ -4479,6 +4480,33 @@ func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> vo
 	await get_tree().process_frame
 	check(_panel.current_entry == described,
 			"S23.5: hovering a preview card does not replace the description it belongs to")
+	await _end_main_fixture()
+
+# The description is as tall as WHAT IT SHOWS NOW: a pack's grid left in the sum would give the
+# short entry after it a grid-sized blank to scroll through, and a pack after a pack two grids.
+func test_a_replaced_preview_grid_takes_its_height_with_it() -> void:
+	await _start_map_fixture()
+	var show_node := _a_map_node_with_role(MapNodeRoles.ROLE_GAME)
+	var pack_node := _a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER)
+	await _hover_map_node_and_settle(show_node)
+	var alone := _content_height()
+	await _hover_map_node_and_settle(pack_node)
+	var one_grid := _scroll_overflow()
+	var one_pack := _content_height()
+	check(one_grid > 0.0, "Fix 15.1: a pack's grid is inside what the sidebar scrolls",
+			"%.1f" % one_grid)
+	await _hover_map_node_and_settle(show_node)
+	check(absf(_content_height() - alone) <= 0.5,
+			"Fix 15.1: a short entry after a pack is only as tall as itself",
+			"%.1f after a pack vs %.1f alone" % [_content_height(), alone])
+	check(_scroll_overflow() == 0.0,
+			"Fix 15.1: ...so the sidebar has nothing left to scroll",
+			"%.1f" % _scroll_overflow())
+	await _hover_map_node_and_settle(pack_node)
+	await _hover_map_node_and_settle(pack_node)
+	check(absf(_content_height() - one_pack) <= 0.5,
+			"Fix 15.2: a pack after a pack is laid out to one grid's height, not two",
+			"%.1f vs %.1f" % [_content_height(), one_pack])
 	await _end_main_fixture()
 
 ## Whatever is selected is described, by pad and keyboard as well as by pointer.
@@ -4634,10 +4662,26 @@ func _popup_text(popup: MapNamePopup) -> String:
 		parts.append(label.text)
 	return "".join(parts)
 
-# A node carrying a talent pack, wherever it fell on the generated graph -- the only kind whose
-# entry brings a grid of preview cards.
-func _a_booster_node() -> WorldGraphNode:
+# A node of one kind, wherever it fell on the generated graph -- a pack's entry brings a grid of
+# preview cards and a show's brings none, which is the difference every height check here turns on.
+func _a_map_node_with_role(role: String) -> WorldGraphNode:
 	for node : WorldGraphNode in _map.controller.map.overlay().nodes():
-		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER:
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == role:
 			return node
 	return null
+
+# The description settled on what `node` publishes, through the product's own hover, so a height
+# read straight after is the one the player would scroll.
+func _hover_map_node_and_settle(node: WorldGraphNode) -> void:
+	_map._on_node_hovered(node)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## The height the description lays its content out to, which is the floor the scroll can never fall below.
+func _content_height() -> float:
+	return (_panel.get_node(^"%Content") as VBoxContainer).custom_minimum_size.y
+
+## How far the description can actually be scrolled, which is what a player meets rather than any one control's height.
+func _scroll_overflow() -> float:
+	var bar := _panel_scroll(_panel).get_v_scroll_bar()
+	return maxf(bar.max_value - bar.page, 0.0)

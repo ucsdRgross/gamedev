@@ -57,10 +57,12 @@ func detach_entry() -> void:
 	current_entry = null
 
 # ⚠ THE PANEL OWNS WHATEVER IS MOUNTED and frees it when another entry replaces it. A caller that
-# still needs its visual takes it back through `detach_entry()` first.
+# still needs its visual takes it back through `detach_entry()` first. It leaves the tree FIRST: a
+# queue-freed child is still a child until the frame ends, and this entry is measured before then.
 func _mount_visual(visual: Node) -> void:
 	for slot : Container in [_visual_slot, _grid_slot] as Array[Container]:
 		for child : Node in slot.get_children():
+			slot.remove_child(child)
 			child.queue_free()
 	if visual == null: return
 	_slot_for(visual).add_child(visual)

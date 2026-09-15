@@ -826,3 +826,12 @@
 - Fix 14: `TestSidebar._push_touch(at, pressed)` is the bare finger form, `_push_finger()` the
   whole tap and `_drag_finger_by(from, by)` the whole drag, both in the engine's dispatch order
   (the emulated mouse form of a touch before the touch, at the press and again at the release).
+- Fix 15: `DescriptionPanel._mount_visual()` takes the old visual OUT of its slot before freeing
+  it -- a queue-freed child is still a child until the frame ends, and `resize_to()` measures the
+  slots in the same call. New test names in `TestSidebar`:
+  `test_a_replaced_preview_grid_takes_its_height_with_it`, the helpers
+  `_hover_map_node_and_settle()`, `_content_height()`, `_scroll_overflow()`, and
+  `_a_map_node_with_role(role)` which replaces `_a_booster_node()` so a show node is reachable too.
+- Fix 15: the sidebar's scroll EXTENT settles a frame or more after a visual is re-mounted (a pack
+  replacing a pack reads 0 overflow while its grid is 1004 px tall), so a height assertion uses the
+  content's own laid-out height and the extent is only asked whether a short entry scrolls at all.
