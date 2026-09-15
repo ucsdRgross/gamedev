@@ -344,8 +344,15 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   an empty-held slot (fix 8), old-save refusal, `return_to_map` with a parked stock.
 
 ## Phase 7 review (adversarial, Fable 5.1, at S22 over bbc544e7..52f293b9) — 4 confirmed, 2 suspected
-One root cause behind 1–3: the goal check's early `return` skips the placement's `save_state()`,
-and the hold beat runs with `processing` false.
+One root cause behind 1–3: the goal check's early `return` skipped the placement's `save_state()`,
+and the hold beat ran with `processing` false. → fix 9: the winning placement commits (the grid
+commitment lift + its own `save_state()`) before the hold, the hold runs locked, the resume path
+re-fires the check when a board loads with the goal met and no outcome saved (a resume after
+"undo the automatic end, then quit" therefore ALSO lands on the outcome — Q104=a decides it;
+OWNER SHOULD SEE), the false comment names the lock. Six checks red with the fix neutralised.
+GRID CARDS TP-122 and LEAK CANARY phase 4 had passed only because the automatic end masked them
+(pinned out of reach). Open observation: a two-suite `--filter TestGameHeadless TestEntranceStocks`
+run showed a teardown-only 0xC0000005 after its banner, never alone and never in the full run.
 1. CONFIRMED the hold is an open window: the re-arm fires, Undo is enabled and pops the
    PRE-placement snapshot, then the timer's `end_show()` resolves the rewound board as a LOSS; a
    second placement inside the hold runs its cascade under the outcome screen. → fix 9.
