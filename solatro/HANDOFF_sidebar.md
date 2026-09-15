@@ -753,8 +753,18 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      Back during the winning hold REACHABLE but pre-existing: the hold FREEZES rather than
      resolving off-screen; any Back mid-show followed by travel consumes the new node with no
      show and resolves the old show's win against it -> Open bugs, owner should see.
-   - still owed: close fix 5 (DISCARD/RULES fly-to in the wrong space), 6 (conventions and
-     simplify residue), 7 (replay re-arm), 8 (pad reach of the board and Undo), A (Main
+   - close fix 5 (code review finding (b), cards leaving the board flew to the piles' ROOT
+     window pixels inside the picture): new `GameView.pile_center(pile)` converts the pile's
+     centre once through the existing `WallPicture.local_rect_beside(window, Rect2(), false)`;
+     both `CardVisual` branches (DISCARD and RULES, in `_ready` and `on_stage_changed`) call it,
+     and `CardVisual.get_control_center` (no other caller) is deleted. TestSidebar row RED on
+     HEAD (Discard landed on (299.5, 152) vs (787.6, 134.8)), green after; 724 -> 727 checks.
+     By eye: UNVERIFIED - a discarded visual is freed one frame after its stage change, so the
+     flight is invisible in play on HEAD and now. The conversion is the unmargined map, ~6 px
+     off the drawn point at `wall_overfill_margin` 1.02.
+   - still owed: close fix 6 (conventions and simplify residue, plus `pile_center`'s
+     null-picture fallback, whose only case is test fixtures - rule 7; and the stale
+     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), 7 (replay re-arm), 8 (pad reach of the board and Undo), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
 8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING. 10. Tooling feedback: PENDING.
 11. Delete the temporary plan documents (briefs, this handoff once folded): PENDING.
