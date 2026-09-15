@@ -422,8 +422,12 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 2. CONFIRMED the popup never hides: nothing writes `visible = false`; a New Run regenerates the
    map under the old label at its old position; entering a show leaves the label on the map
    picture. ASSUMPTIONS' "mirrors Q133a=c" overreaches. S23.7 cannot fail (the game fixture never
-   hovers a map node) and the real sequence would fail. → fix 13 (same object: the popup's
-   position and lifetime follow the hovered node; hidden when the node is gone).
+   hovers a map node) and the real sequence would fail. → fixed with 1: the popup holds its node
+   and re-places itself against `WorldMapController.node_screen_rect` (now static) every frame
+   it is up (the camera is written per frame during travel, so no notification covers it);
+   `hide_name()` on run start, on node entry, and on the new no-argument
+   `HudContainer.active_screen_changed` signal (one listener, the map). S23.7 rewritten to hover
+   first, then enter. Fix 13.
 3. CONFIRMED touch pan of the map is lost: the swallow of every `device == -1` mouse press runs
    before `_pressed` is set, and `_pressed` has no other writer, so a one-finger drag never pans
    and only hovers dots under the finger. Scope: the map only. → fix 14.
