@@ -337,10 +337,11 @@ func _hover_a_board_card(main: Main, view: GameView) -> void:
 		_push_pointer(viewport, control.get_global_rect().get_center())
 		return
 
-# The SCROLL still: the board's WORDIEST card, which is the longest description the game screen can
-# publish, READ FIRST and then squeezed -- the resize is what re-lays the description it already
-# has, so the still never depends on a second hover landing on a second control.
+# The SCROLL still: the board's WORDIEST card, READ FIRST and then squeezed so the resize re-lays it.
+# The held card goes back first: a held card's pointer crossing out of its own cell is a dismissal,
+# which would leave the still showing the HUD instead of the description it is named for.
 func _hover_the_wordiest_board_card(main: Main, view: GameView) -> void:
+	view.play_area.ungrab_cards()
 	var viewport : SubViewport = main._pictures[&"game"].viewport
 	var rect := Rect2(Vector2.ZERO, Vector2(viewport.size))
 	var wordiest : Control = null

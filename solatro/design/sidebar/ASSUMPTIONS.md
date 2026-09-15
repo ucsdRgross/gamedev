@@ -889,3 +889,15 @@
   `TestMainHost.mount` records the tree's `paused` under `PAUSED_BEFORE_BOOT` on the mounted node and
   `TestMainHost.unmount` writes it back after the node is freed -- the one site a test sets the flag,
   so a later suite with no wall (E2E RUN) does not inherit a pause and freeze.
+- Close fix E: the container's content inset is the overlay row's own authored gutter, read through
+  the new `WallOverlay.button_band_inset()` (the Back button's authored left edge) -- no project theme
+  exists and both margin containers defaulted to 0. `HudContainer._position_below_overlay_buttons()`
+  writes it as the left and right margin of `GameHudMargin` and `DescriptionMargin`, beside the band
+  top, and both contents fit to the new `HudContainer._content_size()` (was `_description_size()`)
+  through the new `_fit_content()`.
+- Close fix E: `DescriptionPanel`'s `%ExitColumn` is an empty control closing the name's row, widened
+  by `HudContainer._place_exit_button()` to the X's touch target, so the wrapped name stops before the
+  X's column while the body keeps the full width.
+- Close fix E: `GameHudMargin` grows DOWN, not both ways: a band shorter than the HUD (measured at a
+  1280x1000 window at the shipped `container_size_fraction`: 225 px band, HUD 30 px taller than the
+  room below the buttons) pushed Goal up over the buttons; now the overflow is below the band instead.

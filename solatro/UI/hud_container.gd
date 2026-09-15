@@ -10,6 +10,7 @@ extends PanelContainer
 @onready var _map_hud : Control = %MapHud
 @onready var _piles : HBoxContainer = %GameHud/Piles
 @onready var _exit_button : Button = %ExitX
+@onready var _exit_column : Control = _description_panel.get_node(^"%ExitColumn")
 
 @onready var submit_button : Button = %Submit
 @onready var undo_button : Button = %Undo
@@ -96,19 +97,23 @@ func _ready() -> void:
 func _position_below_overlay_buttons() -> void:
 	var overlay := get_parent() as WallOverlay
 	_band_top = overlay.button_band_bottom()
-	_game_hud_margin.add_theme_constant_override("margin_top", ceili(_band_top))
-	_description_margin.add_theme_constant_override("margin_top", ceili(_band_top))
+	var inset := roundi(overlay.button_band_inset())
+	for margin : MarginContainer in [_game_hud_margin, _description_margin] as Array[MarginContainer]:
+		margin.add_theme_constant_override("margin_top", ceili(_band_top))
+		margin.add_theme_constant_override("margin_left", inset)
+		margin.add_theme_constant_override("margin_right", inset)
 	_place_exit_button()
+	_fit_content()
 
-# The exit X means GO BACK TO THE HUD, so it is the touch affordance for that: grown to the same
-# minimum every overlay control is grown to, in the container's top-right, and parked BELOW the
-# overlay's own button band so it never hides under one.
+# The exit X means GO BACK TO THE HUD: grown to every overlay control's touch target, parked in the
+# container's top-right BELOW the overlay's button band, and its column is kept clear of the name.
 func _place_exit_button() -> void:
 	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
 			PlayArea.settings())
 	_exit_button.offset_left = -target
 	_exit_button.offset_top = _band_top
 	_exit_button.offset_bottom = _band_top + target
+	_exit_column.custom_minimum_size.x = target
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -148,9 +153,14 @@ func _apply_container_rect() -> void:
 	var rect := container_rect()
 	position = rect.position
 	size = rect.size
-	_fit_piles_to_width(rect.size.x)
-	if _description_panel.visible: _description_panel.resize_to(_description_size())
+	_fit_content()
 	container_rect_changed.emit()
+
+## Lays both contents out inside the margins: the pile row shares their width and a shown description re-wraps to it.
+func _fit_content() -> void:
+	var content := _content_size()
+	_fit_piles_to_width(content.x)
+	if _description_panel.visible: _description_panel.resize_to(content)
 
 ## The pile row's own width comes off the container's real size, never a literal, so Deck/Discard/Rules keep sharing it evenly however narrow the container gets.
 func _fit_piles_to_width(width: float) -> void:
@@ -252,7 +262,7 @@ func show_description(entry: InfoEntry) -> void:
 	_hud_stack.visible = false
 	_exit_button.visible = true
 	_refresh_exit_focus()
-	_description_panel.show_entry(entry, _description_size())
+	_description_panel.show_entry(entry, _content_size())
 
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
 func showing_description() -> bool:
@@ -396,9 +406,11 @@ func _refresh_exit_focus() -> void:
 func resize_preview(card_px: Vector2) -> void:
 	_description_panel.resize_preview(card_px)
 
-## The room the description has: the container minus the overlay's button band, which both contents start below.
-func _description_size() -> Vector2:
-	return container_rect().size - Vector2(0.0, _band_top)
+## The room both contents share: the container minus its margins, which are the same for the HUD and the description.
+func _content_size() -> Vector2:
+	var left := _description_margin.get_theme_constant(&"margin_left")
+	var right := _description_margin.get_theme_constant(&"margin_right")
+	return container_rect().size - Vector2(left + right, _description_margin.get_theme_constant(&"margin_top"))
 
 # A stashed visual is a NODE outside the tree that nothing else will collect. The MOUNTED one is
 # the panel's own child and goes with the tree, so only the detached ones are freed here.

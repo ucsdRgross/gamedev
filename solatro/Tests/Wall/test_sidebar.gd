@@ -53,6 +53,7 @@ func _ready() -> void:
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
+	await test_the_top_bands_hud_starts_below_the_overlay_buttons()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
 	await test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
 	await test_focus_change_drives_which_hud_stack_child_shows()
@@ -64,6 +65,8 @@ func _ready() -> void:
 	behavior_section("S5: A HIGHLIGHT PUBLISHES AND THE CONTAINER SHOWS")
 	await test_a_highlight_opens_the_description()
 	await test_a_hovered_cards_description_draws_inside_the_container()
+	await test_the_containers_content_starts_one_inset_inside_its_left_edge()
+	await test_the_title_leaves_the_exit_xs_column()
 	await test_the_preview_is_drawn_at_the_boards_own_card_size()
 	await test_the_preview_follows_a_resize_to_the_boards_new_card_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
@@ -1411,6 +1414,82 @@ func _check_description_draws_inside_the_container(window: Vector2i) -> void:
 				"the description's %s draws inside the container at %s" % [part.name, window],
 				"%s vs container %s" % [rect, bounds])
 
+## The windows the content inset is measured at: the shipped side case and the top case every top-band row uses.
+const INSET_WINDOWS : Array[Vector2i] = [Vector2i(1280, 720), Vector2i(600, 1000)]
+
+## A letter drawn at the container's very edge loses its first column, so the description and the HUD both start one overlay inset inside it.
+func test_the_containers_content_starts_one_inset_inside_its_left_edge() -> void:
+	await _start_game_fixture()
+	var data := await _hover_a_card_with_a_visual()
+	check(data != null, "the pointer described a board card")
+	if data != null:
+		for window : Vector2i in INSET_WINDOWS:
+			await _resize_viewport(_booted_viewport, window)
+			await get_tree().physics_frame
+			var parts : Array[Control] = [_panel.get_node(^"%Title") as Control,
+					_preview_card(_panel.current_entry.visual), _panel.get_node(^"%Body") as Control]
+			_check_parts_start_one_inset_inside(parts, "the description's", window)
+		_container.show_hud()
+		await get_tree().process_frame
+		var names : Array[StringName] = []
+		_collect_unique_names(_container.get_node(^"%GameHud"), _container, names)
+		var members : Array[Control] = []
+		for member_name : StringName in names:
+			var member := _container.get_node(NodePath("%" + member_name)) as Control
+			if member.is_visible_in_tree(): members.append(member)
+		_check_parts_start_one_inset_inside(members, "the HUD's", INSET_WINDOWS[-1])
+	await _end_main_fixture()
+
+func _check_parts_start_one_inset_inside(parts: Array[Control], owner_label: String,
+		window: Vector2i) -> void:
+	var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+	var edge := _sidebar_screen_rect(_container).position.x + overlay.button_band_inset()
+	for part : Control in parts:
+		var left := _sidebar_screen_rect(part).position.x
+		check(left >= edge - 0.5,
+				"close fix E: %s %s starts one overlay inset inside the container at %s"
+						% [owner_label, part.name, window],
+				"%.1f vs %.1f" % [left, edge])
+
+## The X sits over the description's top-right corner, so the wrapped name must leave that column free or a word draws beneath it.
+func test_the_title_leaves_the_exit_xs_column() -> void:
+	await _start_game_fixture()
+	var data := await _hover_a_card_with_a_visual()
+	check(data != null, "the pointer described a board card")
+	if data != null:
+		for window : Vector2i in INSET_WINDOWS:
+			await _resize_viewport(_booted_viewport, window)
+			await get_tree().physics_frame
+			var title := _sidebar_screen_rect(_panel.get_node(^"%Title") as Control)
+			var exit := _exit_button()
+			check(exit.is_visible_in_tree() and not title.intersects(exit.get_global_rect()),
+					"close fix E: the title leaves the exit X's column at %s" % window,
+					"title %s vs X %s" % [title, exit.get_global_rect()])
+	await _end_main_fixture()
+
+## A 1280x1000 window's logical canvas: the tallest band where the HUD is taller than the room below the buttons.
+const SHORT_TOP_BAND_WINDOW := Vector2i(1152, 900)
+
+## The overlay's buttons draw above the container, so a top band's HUD starts below their row at the shipped size, whatever the band's height.
+func test_the_top_bands_hud_starts_below_the_overlay_buttons() -> void:
+	for window : Vector2i in [INSET_WINDOWS[-1], SHORT_TOP_BAND_WINDOW] as Array[Vector2i]:
+		await _start_game_fixture(window)
+		var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+		check(HudContainer.container_is_top(Vector2(window), PlayArea.settings()),
+				"sanity: %s puts the container on the top band" % window)
+		await get_tree().process_frame
+		var band_bottom := overlay.button_band_bottom()
+		var names : Array[StringName] = []
+		_collect_unique_names(_container.get_node(^"%GameHud"), _container, names)
+		for member_name : StringName in names:
+			var member := _container.get_node(NodePath("%" + member_name)) as Control
+			if not member.is_visible_in_tree(): continue
+			var top := _sidebar_screen_rect(member).position.y
+			check(top >= band_bottom - 0.5,
+					"close fix E: %s starts below the overlay buttons at %s" % [member_name, window],
+					"%.1f vs band %.1f, container %s" % [top, band_bottom, _container.container_rect()])
+		await _end_main_fixture()
+
 ## How near the preview's drawn width must land on the board card's own -- a pixel of layout rounding on each side.
 const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
 
@@ -1953,10 +2032,10 @@ func test_a_resize_relays_the_description_to_the_new_width() -> void:
 		_booted_viewport.size = Vector2i(1920, 1080)
 		await get_tree().process_frame
 		await get_tree().process_frame
-		var width := _container.container_rect().size.x
+		var width := _container._content_size().x
 		var content : VBoxContainer = _panel.get_node(^"%Content")
 		check(absf(_panel.size.x - width) <= 1.0,
-				"the panel follows the container's new width",
+				"the panel follows the container's new width, inside its margins",
 				"%.1f vs %.1f" % [_panel.size.x, width])
 		check(absf(content.size.x - width) <= 1.0,
 				"...and so does the content it lays out",
