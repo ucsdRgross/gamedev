@@ -369,11 +369,13 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 4. CONFIRMED (dormant) the comment "an effect's nested placement is part of the act" is false:
    `on_card_placed` handlers run with `processing` false, so a nested `place_card_in_grid` enters
    as a player placement with its own goal check. No shipped handler exists. → fix 9 (comment).
-5. SUSPECTED End flashes at show start: `%Submit` defaults visible and `grids_are_full()` over
-   ZERO grids is true during the deal's `revision` bump before `on_game_start` builds a grid. →
-   reproduce after fix 9.
-6. SUSPECTED an armed card rides into the outcome screen (nothing ungrabs on `_on_show_resolved`;
-   pre-existing for a manual End with a card armed, now the default path). → reproduce after fix 9.
+5. SUSPECTED → REPRODUCED (the `visible` flag, not the screen: every flash frame precedes the
+   GameView, so the cause was `%Submit`'s authored default in `hud_container.tscn`, not the
+   zero-grid `grids_are_full()`) → fixed, the authored default is hidden; the bare-wall
+   reachability test forces Submit visible to measure geometry (fix 10).
+6. SUSPECTED → REPRODUCED: `end_show()` puts the outcome up while `play_area.selected_cards`
+   still holds the armed card (red: "the resolved show holds no armed card"; the test is in the
+   P7REPRO evidence file, not the tree). → fix 11: ungrab at `GameView._on_show_resolved`.
 - TEST SURFACE: `test_e2e_run.gd` still prints "a show never resolves on its own" and
   `test_end_show_is_the_only_resolver` keeps its name — both true only because their goals are
   pinned to 10^8/10^6 (re-aim their text at the close); `test_full_board_does_not_end_the_show`
