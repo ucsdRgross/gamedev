@@ -606,6 +606,13 @@
   calls it. Without that the flag survived the dropped click and the next `arm_leftmost()` armed a
   card that was `following` from birth, which `Q267`=a/`Q262`=a reserve for a card the player
   touched. The drag refusal already called `stop_following`, so it gets the same clear.
+- Phase 5 fix 6: no new name. `GameView._pick_up` calls `play_area.stop_following()` when
+  `try_grab` REFUSES, so a refused pickup drops the click's promise of following exactly as the
+  refused drop does. Without it the flag survived (nothing on the board is grabbable today) and the
+  next auto-arm reached through the processing edge -- `_on_processing_changed(false)` ->
+  `_arm_the_entrance` -> `arm_leftmost`, which never ungrabs first -- was born `following`,
+  measured 550.4 px off its slot centre against an 18.8 px lift. New test row
+  `TestSidebar.test_a_refused_pickup_does_not_make_the_next_arm_follow`.
 - Phase 5 fix 4: no new name. `PlayArea._tapped_this_gesture` now means "this gesture's release
   closes a PAIR", tapped or refused, and `_press_closes_a_pair()` sets it either way -- so
   `_consume_as_card_release` eats the closing release of a REFUSED pair as it already ate a tap's.

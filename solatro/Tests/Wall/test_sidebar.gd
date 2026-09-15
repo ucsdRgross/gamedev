@@ -146,6 +146,7 @@ func _ready() -> void:
 	await test_clicking_another_entrance_card_re_arms_onto_it()
 	await test_arming_again_leaves_the_held_card_alone()
 	await test_a_click_during_processing_does_not_make_the_next_arm_follow()
+	await test_a_refused_pickup_does_not_make_the_next_arm_follow()
 	await test_the_disarm_leaves_nothing_armed()
 	await test_an_empty_entrance_arms_nothing()
 	behavior_section("S18: CANCEL")
@@ -3567,6 +3568,40 @@ func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
 			var visual : CardVisual = _play_area.data_card[armed]
 			check(not visual.following,
 					"a card the player never touched rests in its slot (Q267=a, Q254=d)")
+			await _await_card_settled(visual)
+			var lift := _lift_above_aim(visual, _slot_centre_of(visual))
+			check(absf(lift - visual.held_lift_px()) < 2.0,
+					"...at its slot centre raised by the lift, not at the cursor (G4)",
+					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+	await _end_game_fixture()
+
+## Q267=a/Q262=a: a pickup the board REFUSED cannot make the next auto-arm follow -- an auto-armed card is one the player did not touch.
+func test_a_refused_pickup_does_not_make_the_next_arm_follow() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	var hoverable := await _hoverable_card_controls()
+	await _second_button_press(_bare_board_point(hoverable))
+	check(_play_area.selected_cards.is_empty(), "the second button let the armed card go (1.8)",
+			str(_play_area.selected_cards.size()))
+	var refused : Control = null
+	for control : Control in hoverable:
+		if not _play_area.upper_zone_right.is_ancestor_of(control) and _is_selectable(control):
+			refused = control
+			break
+	check(refused != null, "the dealt board offers a grid card no rule grabs")
+	if refused != null:
+		await _click_card(refused)
+		check(_play_area.selected_cards.is_empty(), "the click on that card grabbed nothing (1.9)",
+				str(_play_area.selected_cards.size()))
+		game.processing = true
+		game.processing = false
+		await _await_the_board_armed()
+		var armed := _armed_card()
+		check(armed != null, "the processing edge armed the leftmost Entrance card")
+		if armed != null:
+			var visual : CardVisual = _play_area.data_card[armed]
+			check(not visual.following,
+					"a card the player never touched rests in its slot (Q267=a, Q262=a)")
 			await _await_card_settled(visual)
 			var lift := _lift_above_aim(visual, _slot_centre_of(visual))
 			check(absf(lift - visual.held_lift_px()) < 2.0,

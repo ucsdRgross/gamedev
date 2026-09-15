@@ -434,10 +434,12 @@ func _place_held_onto(data: CardData) -> bool:
 	return true
 
 # THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
-# the hand exactly as it was.
+# the hand exactly as it was, and drops the click's promise that the grab it asked for would
+# follow the cursor -- otherwise the next auto-armed card is born following.
 func _pick_up(data: CardData) -> void:
 	var grabbed := await game.try_grab(data)
 	if grabbed: play_area.grab_cards(grabbed)
+	else: play_area.stop_following()
 
 
 # THE DEBUG BAR (owner tool, debug builds only): Record toggles an EventLog capture and writes it
