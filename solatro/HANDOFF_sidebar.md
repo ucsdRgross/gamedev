@@ -932,8 +932,37 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      reads the resized band (a neutralised run showed 55.2 vs 69.6). OPEN: the overlay only
      GROWS its buttons, so shrinking the window leaves them larger than the target (untested).
      Six stale ASSUMPTIONS names reworded.
-   - still owed: close fix D (the blank game-screen description), close fix E (the sidebar's left
-     margin), re-run `/fx-verify` after both; close item 11 (delete `briefs/` and this handoff
+   - close fix D (the blank game-screen description, fx-verify's 9.2 FAIL). The first dispatch
+     died on a connection error after finishing the diagnosis and the fix; its evidence file
+     carried the rest. BISECT in a throwaway detached worktree (since removed), looking at
+     description.png per commit: e9d36a39 GOOD, eb635e79 (S23) BAD, 2812354f BAD, HEAD BAD.
+     CAUSE, measured on HEAD: S23 set `%GridSlot`'s minimum width to the panel width in
+     `resize_to`; after a window shrink the Scroll (horizontal mode AUTO) adopted that stale,
+     wider minimum, grew both ways and drifted left by half the excess (436 px in the
+     snapshot's sequence), and `_scroll.size = panel_size` locked the offset in. A fresh
+     fixture never shrinks the window, so every state-asserting description row stayed green.
+     FIX: `description_panel.tscn` Scroll `horizontal_scroll_mode` 0 -> 3 (SHOW_NEVER): content
+     may be wider than the scroll without the scroll adopting its width; `resize_to` keeps its
+     order. Two rejected attempts are in the evidence: deleting the minimum broke S23.5's grid
+     width (312 vs 320), and writing the minimum first overflowed by the 8 px scrollbar on the
+     first show. New row `test_a_hovered_cards_description_draws_inside_the_container` (title,
+     preview and body inside the container across 1280x720 -> 600x1000 -> 1280x720) RED on HEAD
+     (78-140 px out on the left), green after; S23.5 and fix 15's rows green. By eye (render
+     13:57, before the overseer's own render): the Grid Cell preview beside "Grid Cell - One
+     cell of a Grid. Cards may be stacked here." NEW FINDING in that image: the wrapped title
+     runs under the exit X ("of" partly covered) -> joins close fix E.
+     OVERSEER RENDER 14:10:51 (24 PNGs, exit 0, no tracked file changed) after the full run
+     `ALL 48 SUITES: 5189 CHECKS PASSED [21]`: description.png draws the Grid Cell preview and
+     its text; viewer_description.png draws NumeralRank2.0 with its preview and the Hoop body
+     beside the deck viewer; viewer_description_top.png draws preview, name and the whole body
+     line in the band; choice_viewer_description.png draws NumeralRank11.0 and the Knife body.
+     9.2 PASSES again. Still visible: the title under the X, body text at x=0, and at 500x500
+     description_scroll.png shows the HUD with "Goal"/"Total" drawn over Back/Forward in the
+     top band (S2 had put the HUD content below the button band).
+   - still owed: close fix E (the container's content insets: a left margin, the title leaving
+     the exit X's column, and the top band's content starting below the overlay buttons; and
+     reproduce whether description_scroll.png should hold a description), re-run `/fx-verify`
+     after it; close item 11 (delete `briefs/` and this handoff
      once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
      scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
      overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
