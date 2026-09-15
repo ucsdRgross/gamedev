@@ -713,7 +713,30 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    dup_check: no pair in production code the branch changed (three pairs in touched files blame
    to main); in the branch's tests, five self-pairs in test_sidebar.gd and a 38-line pair between
    two probe scripts. diff_shape: only the uncommitted test_interaction.gd add-only edit.
-6. `/fx-verify`: PENDING.
+6. `/fx-verify` (Opus 5, two renders of `sidebar_snapshot`, 24 PNGs each, exit 0, no tracked
+   file modified; a screen recording for the flip): PASS 9.1 (board centred beside the
+   container), 9.5 (one face-down card per stock, red back with gold star = frame 3), 9.6 (the
+   flip runs strictly left to right, watched as a duration at the harness's slowed pacing), 9.7
+   (lift 18.2 in both states, from the log), 9.8 (the popup centred above its node; map picture
+   settled - the recorded mid-transition capture did not reproduce), goal_met. PARTIAL 9.3 (top
+   case: the band holds the HUD, but the grid sits 76-89 px left of the centred Entrance).
+   9.4 not shown, consistent with GAP-006. CONFIRMED recorded bugs: the scroll container's
+   focus-border lines; preview FX art escaping the scroll clip (also across the top band).
+   FAIL 9.2 - REGRESSION, overseer looked and confirmed: on the GAME screen a description draws
+   an empty sidebar (only the X) in description, description_follow, cancel_first_press,
+   entrance_flip_mid, viewer_description and choice_viewer_description; the top-case viewer shows
+   one body line starting left of x=0, so the content is laid out out of view. Map and menu
+   descriptions still draw. Last known good by eye: S21 (3a0ce903). The suite stayed green
+   because every description row asserts state, not layout. -> close fix D (layout row, bisect
+   in a throwaway detached worktree, fix at the cause).
+   Other findings, to fix or record after D: sidebar text has no left margin and the first
+   letter clips at x=0 ("Highlands", "Take", "Possible") -> close fix E; description_scroll
+   shows the HUD and Goal/Total overlap Back/Forward at 500x500 (may share D's cause); an
+   Entrance card draws over the deck viewer's panel in the top case, and the deck picker's list
+   text draws over the Inspect viewer's panel (the second recorded as pre-existing on main at
+   Phase 3); cards drawn above the picture's top edge mid-cascade (description_processing); no
+   focus highlight visible on a viewer's focused card; the locked view with its X is never
+   captured (the click-lock is dismissed by the follow, GAP-008).
 7. Fixes from 1–6, one at a time, full run between:
    - close fix 1 (review item 2 finding 1, undo at the outcome armed a card of the discarded
      state, next placement duplicated it into the run deck): `Game.undo()` releases
@@ -909,8 +932,8 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      reads the resized band (a neutralised run showed 55.2 vs 69.6). OPEN: the overlay only
      GROWS its buttons, so shrinking the window leaves them larger than the target (untested).
      Six stale ASSUMPTIONS names reworded.
-   - still owed: close item 6 (`/fx-verify` render of the flip, the card back, the popup and
-     the goal-met HUD, after 6b-2's commit); close item 11 (delete `briefs/` and this handoff
+   - still owed: close fix D (the blank game-screen description), close fix E (the sidebar's left
+     margin), re-run `/fx-verify` after both; close item 11 (delete `briefs/` and this handoff
      once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
      scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
      overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
