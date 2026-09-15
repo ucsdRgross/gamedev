@@ -403,6 +403,11 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   status: done
   evidence: '8cfb5eee: ALL 47 SUITES 4545 PASSED [21]; S18.1-S18.5 in TestSidebar, red per neutralisation 3/3/2/10 FAILED; done-when grep: same signals, only the view''s set_input_as_handled removed; doc_check 0 of 571 on added lines; LF verified; by eye cancel_first_press.png: five Entrance cards flat at equal height, the locked description (name, preview, Knife text, exit X) still up'
   notes: 'PlayArea._cancel_one_step (second button, consumed) and _cancel_everything (ui_cancel, NOT consumed so Wall.back_requested fires on the same press). ungrab_cards never hid the description - the collapse was in the placement path. 1.7''s cancel row lost its second-press half: the first Escape starts the wall''s locked transition, so a second press is inert by design. Fix 2 later added PlayArea._end_the_gesture() so a cancel also ends the press gesture'
+- id: S19
+  description: per-slot Entrance stocks replace draw_deck; every walker updated
+  status: done
+  evidence: 'fde80a92: ALL 48 SUITES 4594 PASSED [21]; suite 47 -> 48 (TestEntranceStocks 4.1, 4.2, 4.3, 4.7, 4.8; 14 checks); red per neutralisation: flat deal 3 FAILED (4.1 sizes [23,0,0,0,0], 4.7 x2), RNG in the deal 1 FAILED (4.2), walker skipped 1 FAILED (4.8 on_append 0); draw_deck grep outside archive/: only CardEffectApi.draw_deck()/return_to_draw_deck() (the flat union view); no new RNG site; doc_check 0 of 1472 on added lines; LF on all 31 files'
+  notes: 'Stocks ride the Entrance zone''s per-cell data (GridData.stocks) so the slot set and the stock set cannot disagree. Game.deal_stocks() runs twice at show start (inside add_deck before the zone adders exist, then after the first spotlight sweep - the real deal and S20''s seam); add_deck is now a coroutine. Board.remove_column carries a slot''s stock out with its orphans. Old saves refused through RunState.stock_format (RunManager._drop_unrebuildable_show for Game._resume_show). test_iterator TP-15 and test_grid_cards TP-70 re-aimed (stocks first, then the board; each slot takes its OWN top); TestUIProps seed 424242 -> 424243 (the deal hands that row different cards). TestGridFixtures.draw_any() added. All eight in ASSUMPTIONS'
 ```
 
 ## Open bugs
