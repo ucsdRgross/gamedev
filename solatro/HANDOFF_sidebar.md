@@ -79,6 +79,8 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   entity exists for any other stock card; at a refill the face-down card flips up to become the
   revealed card and a fresh face-down appears beneath it while the stock still has cards; the cap
   knob is deleted (no caller). DESIGN §4 / chart I8 need the owner's correction at the close.
+- **Card back, the owner's words verbatim (given after S21 landed):** *"cardback should be frame
+  3"* — the face-down card draws frame 3 of the card sprite sheet. Built as a fix after S22.
 - `plan-implementer` maxTurns 50 → 150 (edited on main and on this branch).
 - Legacy comment debt is DEFERRED to its own pass: a step keeps every comment it writes or edits
   compliant and leaves old comments in touched files alone. `doc_check --changed` findings on those
@@ -310,6 +312,36 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
 - Fixes 1–3 traced clean on the real routes; no design ids in production code from these commits
   (test-side citations are the standing backlog pattern).
 
+## Phase 6 review (adversarial, Fable 5.1, at S21 over 62a0302f..3a0ce903) — 2 confirmed, 4 suspected
+1. CONFIRMED a click or `ui_accept` on the face-down card locks the sidebar to the HIDDEN card's
+   own description: `_bind_stack` binds the control to the real top stock card, the hover route
+   checks `is_stock_control` but the click/accept routes emit `data_selected` with the hidden card
+   and the view locks to it (the pickup is then refused, the lock stays). S21.5's rows only drove
+   `grab_focus()`. → fix 7.
+2. CONFIRMED (engine semantics) the face-down card IS an arrow stop when its slot holds no
+   revealed card: `update_card_zone_visuals` links `get_child(0)` as the explicit neighbour, and
+   Godot rejects an explicit neighbour only at FOCUS_NONE, so FOCUS_CLICK is reached by arrows.
+   ASSUMPTIONS S21 "never an arrow stop" is untested. → fix 8.
+3. SUSPECTED a card picked up inside its stagger wait is carried face-down and turns over in
+   hand (cosmetic; the rebuild is deferred past `processing`'s release). Not reproduced; noted.
+4. SUSPECTED latent: `skill_spotlight_check()` is not awaited before `deal_stocks()`; today no
+   `on_spotlight` suspends, so the adders run first. Pre-existing call shape; noted.
+5. SUSPECTED `_entrance_slot_of` defaults to slot 0 for a card in no slot (unreachable today).
+6. SUSPECTED `sorted_stock_union` dereferences `suit` unconditionally; no suitless card reaches a
+   stock today.
+- Traced sound: resume-replay determinism (the final permutation is a fixed function of the one
+  shuffle: round-robin over the adder-by-adder rebalance), card conservation through park/pour/
+  sweep/undo, the flip mechanics, the re-indexed `control_for_coord`, the Q211 readers, Q224.
+- PLAN DRIFT: 4.7's "End is not revealed; nothing disarms" was letter-only in S19 (asserted the
+  predicate) — S22's 7.5 owns the reveal; the "nothing disarms" half is still owed (fix 7's
+  dispatch adds it). No test exercises the old-save refusal (Q224). TEST_PLAN 9.5 still says
+  "capped depth" against the mid-run ruling (fold at the close).
+- TEST SURFACE: TestUIProps' seed is coupled to the whole bootstrap permutation (moved twice);
+  test_grid_cards TP-70 now reads its expectation from `stock_for_slot().back()` so it proves only
+  that `draw_card(slot)` pops that slot's back; 4.3's digest compares the union flat (a wrong split
+  with the same union would pass). Missing rows: click on the face-down card (fix 7), arrow across
+  an empty-held slot (fix 8), old-save refusal, `return_to_map` with a parked stock.
+
 ## Gaps
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
@@ -423,7 +455,7 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   description: per-slot Entrance stocks replace draw_deck; every walker updated
   status: done
   evidence: 'fde80a92: ALL 48 SUITES 4594 PASSED [21]; suite 47 -> 48 (TestEntranceStocks 4.1, 4.2, 4.3, 4.7, 4.8; 14 checks); red per neutralisation: flat deal 3 FAILED (4.1 sizes [23,0,0,0,0], 4.7 x2), RNG in the deal 1 FAILED (4.2), walker skipped 1 FAILED (4.8 on_append 0); draw_deck grep outside archive/: only CardEffectApi.draw_deck()/return_to_draw_deck() (the flat union view); no new RNG site; doc_check 0 of 1472 on added lines; LF on all 31 files'
-  notes: 'Stocks ride the Entrance zone''s per-cell data (GridData.stocks) so the slot set and the stock set cannot disagree. Game.deal_stocks() runs twice at show start (inside add_deck before the zone adders exist, then after the first spotlight sweep - the real deal and S20''s seam); add_deck is now a coroutine. Board.remove_column carries a slot''s stock out with its orphans. Old saves refused through RunState.stock_format (RunManager._drop_unrebuildable_show for Game._resume_show). test_iterator TP-15 and test_grid_cards TP-70 re-aimed (stocks first, then the board; each slot takes its OWN top); TestUIProps seed 424242 -> 424243 (the deal hands that row different cards). TestGridFixtures.draw_any() added. All eight in ASSUMPTIONS'
+  notes: 'Stocks ride the Entrance zone''s per-cell data (GridData.stocks) so the slot set and the stock set cannot disagree. Game.deal_stocks() runs twice at show start (inside add_deck before the zone adders exist, then after the first spotlight sweep - the real deal and S20''s seam); add_deck is now a coroutine. Board.remove_column carried a slot''s stock out with its orphans (S20 replaced that with parking). Old saves refused through RunState.stock_format (RunManager._drop_unrebuildable_show for Game._resume_show). test_iterator TP-15 and test_grid_cards TP-70 re-aimed (stocks first, then the board; each slot takes its OWN top); TestUIProps seed 424242 -> 424243 (the deal hands that row different cards). TestGridFixtures.draw_any() added. All eight in ASSUMPTIONS'
 - id: S20
   description: rebalance on slot add/remove, tops never move
   status: done
@@ -434,6 +466,11 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   status: done
   evidence: 'commit after b2c3bb59: implementer ALL 48 SUITES 4628 PASSED [21]; overseer run in the commit; S21.1-S21.6 + S21.4b red-then-green (N1 deck-button spawn restored 1 FAILED in the wrong SPACE (-3.18,121.78) vs slot (830.54,699.16); N2 refill an occupied slot 1 FAILED; N3 zero stagger 4 FAILED; N4 entity per stock card -> red; N5 publish the card not the slot 2 FAILED with the hidden card''s text; N6 unsorted union 2 FAILED); deck_ui grep in card_visual.gd empty; entrance_flip_stagger defined once, read at one production site; cap knob gone; doc_check 0 on added lines (after the brief''s path fix); LF by bytes; by eye entrance_stocks.png: five slots, one revealed card over ONE blank face-down card each, nothing deeper, leftmost lifted; entrance_flip_mid.png: leftmost face-up, the four to its right still turning at successive phases over their face-down cards'
   notes: 'OWNER RULING mid-step (see Owner rulings): one face-down card per non-empty stock, no entities for unrevealed cards, the face-down flips up in place and a fresh one appears beneath; entrance_stock_face_down_cap DELETED. Face-down-ness is CardVisual.face_down (not CardData.flipped, so saves and the viewer are untouched). CardVisual.on_stage_changed''s DRAW branch (fly to the Deck control) deleted - a card dealt into a stock hit it and freed its own visual. control_for_coord re-indexed (its old z+1 was already wrong for the reversed stack); _apply_row_openings via _control_height. Face-down controls FOCUS_CLICK. The 6.5 flip-rate literal untouched (pre-existing, no knob named). DESIGN chart I8 / Q217 / Q244 / Q245 need the owner''s correction at the close'
+- id: S22
+  description: automatic end on goal; End starts hidden and is revealed when every stock is empty or no cell is empty
+  status: done
+  evidence: 'commit after bbc544e7: implementer ALL 48 SUITES 4636 PASSED [21] (and 4654 before the snapshot edits); overseer run in the commit; 7.1-7.4 in TestGameHeadless, 7.5 in TestSidebar; red per neutralisation: goal check deleted 4 FAILED, fired mid-cascade 4 FAILED, undo skips the flag 2 FAILED, end on a full board 1 FAILED, End always shown 3 FAILED; has_met_goal read at the post-cascade position (game.gd) and by the label (game_view.gd); submit_button.visible written from ONE site (GameView._refresh_end_reveal); doc_check 0 of 649 on added lines; LF by bytes; by eye goal_met.png: Goal value green beside a white Total, no End button (Undo alone), board settled'
+  notes: 'The check sits between on_card_placed and refill_entrance_if_due() and RETURNS, so an ended show never refills (Q101=a, not c). The pause reuses spotlight_hold_fraction of get_delay() through Pacing.wait (no new knob). Goal met colour = new PaletteRoles.goal_met (index 9, bright green). HONEST LIMIT 7.2: every line in the fixtures scores inside the mutation broadcast, so it proves "after all scoring, before the placement''s tail". Four existing tests had their goals pinned out of reach (a real consequence of the automatic end), each says why at the site. Q102b/Q102c/Q106b unanswered - skipped branches'
 ```
 
 ## Open bugs
