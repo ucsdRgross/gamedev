@@ -16,7 +16,7 @@ passed.
   point.
 - **A single-suite run is a debugging aid, never a verification** — it says nothing about the other
   suites, and cannot see a crash that only appears in the full run. On solatro a subset now says so
-  itself: the banner reads `FILTERED n of 45` and the wrapper prints no clean verdict for one.
+  itself: the banner reads `FILTERED n of <total>` and the wrapper prints no clean verdict for one.
 - **"No banner" is a crash — but it is not always YOUR crash.** Treat it as a failure of the change
   that produced it *only after re-running once*. Measured on solatro: 3 consecutive hangs at 30 of
   39 suites, then a clean HEAD twice, then the SAME working tree twice — 3 hangs and 4 passes with

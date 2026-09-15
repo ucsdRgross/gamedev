@@ -6,7 +6,7 @@ metadata:
 ---
 
 A green suite is the weakest evidence there is. One run produced **eight** tests that passed while
-proving nothing, each of which looked fine in review; later runs added two more:
+proving nothing, each of which looked fine in review; later runs added the rest:
 
 1. `await some_timer` instead of `await some_timer.timeout` — awaiting a non-signal resolves
    instantly, so the wait never happens.
@@ -16,8 +16,9 @@ proving nothing, each of which looked fine in review; later runs added two more:
    or "settle every item first" so the interesting one is never in the interesting state.
 4. **A leak that is not a check failure** — a class extending `Node`, not `RefCounted`, needs an
    explicit `.free()`.
-5. **A loop or sampler whose body never runs.** Assert the sample count is non-zero *before*
-   asserting anything about its contents.
+5. **A loop or sampler whose body never runs, or a chosen target that is degenerate.** Assert the
+   sample count is non-zero *before* asserting anything about its contents, and that a picked target
+   has extent: `Rect2.encloses` accepts a zero-area rect, so a zero-height cell passed vacuously.
 6. **An assertion on a local the production path never touches** — it re-proves a data structure's
    own arithmetic while being unable to fail for the wiring bug it exists to catch.
 7. **A tolerance calibrated to a bug** — it passes *because* the defect exists, and goes red when
@@ -41,6 +42,9 @@ proving nothing, each of which looked fine in review; later runs added two more:
     through the viewport — nothing happened at all, because an ancestor consumed it first. **If a
     behaviour depends on an event REACHING your code, the test must send it the way the platform
     does.** Green tests plus a feature no user could trigger.
+    ⚠ **Event ORDER is part of "the way the platform does".** Godot delivers a touch's emulated
+    mouse form (`device == -1`) BEFORE the `InputEventScreenTouch`, at press and at release; helpers
+    pushed the reverse twice on one branch.
 12. **The test SETS UP the very condition whose absence is the bug.** Measured: a "no cut-off grid
     at rest" test called the centring routine itself before measuring — the one call the resting
     product never made — so it could not see that nothing positioned the view at startup. **A test
@@ -66,8 +70,18 @@ proving nothing, each of which looked fine in review; later runs added two more:
     `--filter` pattern, and `--logic` runs one tier headless — so the SUITE COUNT, the only detector
     for a suite that failed to parse and load, is deliberately void for that run. A subset that
     passes says nothing about the suites it removed, and its transcript is the same shape as a green
-    one. Both ends of the log say `FILTERED n of 45` and the wrapper refuses a clean verdict for
+    one. Both ends of the log say `FILTERED n of <total>` and the wrapper refuses a clean verdict for
     exactly this reason; only the full unfiltered windowed run is a verdict.
+
+16. **A settle that waits two process frames.** Both can land inside one physics tick, so the value
+    has not moved yet (1 failure in 4 runs). Await `physics_frame` or the moved value itself. Same
+    shape: a `queue_free`d node stays a child, and a container's extent lags, until the frame ends.
+
+17. **A test defined but never registered in `_ready`.** It never runs and cannot fail. Solatro's
+    suites call `check_all_tests_registered()` to make that a failure.
+
+18. **A reviewer's "none" is a claim too.** A test-surface review reported no test-only production
+    names while a later pass found one. Grep the negative before recording it.
 
 **The rule that catches every one: prove every new test red-then-green.** Neutralise the behaviour,
 watch it fail, restore it, watch it pass. A test that has only ever been green may be asserting

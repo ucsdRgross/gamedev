@@ -37,7 +37,8 @@ what that shipped. Everything below aims at that failure.
 
 **Never** read, edit or write source files; never print file contents; never `git diff` without
 `--stat`. **May** read the plan documents, the handoff, cited design sections, gap files and agent
-reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite.
+reports; may run `grep -c`/`-l`, `git status --porcelain`, `ls`, and the suite. Line endings are
+checked with `git ls-files --eol`, never `grep`: Git Bash's `grep -c $'\r'` counted CR on every line of an LF file.
 
 **Verify every done-when yourself with a bounded command.** Never accept a self-reported green.
 
@@ -58,17 +59,22 @@ but it MUST carry:
    implemented on the only path that scores. Nobody noticed until a close two phases later, and by
    then the fix had grown a second open question. **State the ruling and make the done-when answer
    to it**, not only to a test id.
-   ⚠ **Quote it; never paraphrase.** Paraphrasing a gap's options once got an answer given against
-   a mislabelled list.
+   ⚠ **Quote it; never paraphrase — and script-check every quoted ruling letter against
+   `answers.json` before dispatching.** A brief misquoted one letter and a whole step built the
+   rejected option.
 4. ⚠ **The CALL SITE.** "Where is this called from, and what breaks if it is deleted?" A step whose
    done-when is only "TestX is green" will ship a component nothing calls. Require a test that fails
-   when the wiring is removed.
+   when the wiring is removed. **Name the coordinate space of every position the step reads or
+   writes** (root viewport or inside the picture) — 4 wrong-space defects on one branch.
 5. Any trap below that applies, named specifically.
 6. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
    and says WHY the method exists. No comment may have whitespace before it and none may trail
    code. An implementer that is not told this ships indented prose every time.
 7. ⚠ **The complexity rule, stated** — engine method before hand-rolled, existing helper before new
    one, each thing at its proper altitude. See the section below.
+8. ⚠ **Every field the step adds: what it belongs to, and which event ends it** (show end, New Run,
+   screen leave, a refused action). A test drives that event and asserts the field is gone.
+   Measured: 6 defects of state outliving its owner on one branch, each found only by a reviewer.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
 
@@ -93,9 +99,9 @@ Each layer caught things the one above it missed.
 5. **An adversarial reviewer tracing what a player actually does** — highest yield of the whole run.
 
 **Between gates, run the inner loop, not the gate.** On solatro that is
-`py solatro/Tools/run_tests.py --logic` — the renderer-independent tier, headless, ~65 s against
-~190 s windowed. It is a debugging aid and says so in its own banner (`FILTERED n of 45`, no clean
-verdict): a step is still only done on a FULL windowed run, and an implementer reporting `done` has
+`py solatro/Tools/run_tests.py --logic` — the renderer-independent tier, headless, several times
+faster than the windowed run ([[running-godot-scenes]] carries the timings). It is a debugging aid
+and says so in its own banner (`FILTERED n of <total>`, no clean verdict): a step is still only done on a FULL windowed run, and an implementer reporting `done` has
 run one. `--filter <NodeName>` narrows further while you are chasing one suite.
 
 **Do 3 and 5 at every phase boundary.** Doing them only at the end means finding six critical defects
@@ -147,6 +153,9 @@ needs enforcing rather than instructing, that is a `PreToolUse` hook on `Agent`.
 point release. When the distinction you need is between two versions of one family, the only
 reliable mechanism is a SEPARATE SESSION with that model chosen at startup, which is why the close
 hands over rather than dispatching.
+
+⚠ **A usage limit on the higher tier mid-close:** continue on the next tier only if it still clears
+the floor, and write the switch into `IMPLEMENTED-BY` before the next dispatch.
 
 **The floor is unenforceable without provenance** — record which model wrote the code, in the
 handoff's `## Provenance` section (`/handoff`). A run that never wrote it cannot be reviewed
@@ -207,12 +216,20 @@ expensive, or when it is an owner call.
 **Quote a gap's own option text when asking the owner to decide.** Paraphrasing one caused an answer
 to be given against a mislabelled list.
 
+⚠ **A ruling the owner gives mid-run is quoted verbatim in the handoff AND marked on every design
+node, answer, `TEST_PLAN` row and `NAMES` entry it supersedes, in the same commit.** An unmarked
+superseded node reads as the live rule to the next brief and the close's reviewer.
+
 ## Interruptions
 
 Sessions die to API limits — plan for it. On resume: read the handoff, then `git log --oneline`,
 `git status --porcelain`, and **a full suite run**, which is the only ground truth. If the suite is
 green and the last claimed step's done-when still passes, continue; otherwise that step is suspect —
-reset to the last commit and redo it. Never resume mid-step.
+reset to the last commit and redo it.
+
+**An implementer cut off mid-step is resumed with `SendMessage` to the same agent id first** — it
+still holds the step's context. Reset only if that fails, and not when its last act was a completed
+full-suite run: read that run's banner instead.
 
 ⚠ **Never reset the tree while a subagent is working in it.** One run did, and the agent correctly
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
@@ -278,7 +295,8 @@ Run in this order. Earlier items change the diff the later ones read.
    this order, keep a running list, and if you sense you are running long STOP INVESTIGATING AND
    REPORT WHAT YOU HAVE", and say that a partial report with three solid findings beats a thorough
    investigation that never lands.
-3. **`/code-review`** on the branch diff, at high effort — correctness.
+3. **`/code-review`** on the branch diff, at high effort — correctness. ⚠ Its finder agents run in
+   parallel, which the cap forbids: run its angles serially inside ONE read-only reviewer.
 4. **A TEST-SURFACE review subagent — the tests, as their own pass.** Items 2 and 3 read
    production; a test that passes while proving nothing is invisible to them by construction and
    invisible to the suite by definition, so nothing else in this list can find it. Hand it
@@ -298,7 +316,7 @@ Run in this order. Earlier items change the diff the later ones read.
 5. **`/simplify`** — the complexity section below is what it enforces.
    ⚠ **IT ASKS FOR FOUR PARALLEL AGENTS AND THIS REPO FORBIDS THAT.** `/simplify` is a built-in
    skill and cannot be edited here; its Phase 1 says to launch four review agents "in a single
-   message so they run concurrently", which the one-subagent hook blocks. Run its four angles
+   message so they run concurrently", which the two-subagent cap blocks. Run its four angles
    (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
    inline is strictly better anyway — four cold agents re-deriving context to read ten lines is
    the expensive path.
