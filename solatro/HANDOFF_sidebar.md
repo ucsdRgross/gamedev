@@ -606,6 +606,9 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 ```
 
 ## Open bugs
+- An intermittent engine crash in TEARDOWN (0xC0000005) after a passing banner: once in fix 9's
+  two-suite filtered run, once in 2 full runs on close fix E. The suite's verdict stands; the
+  wrapper exits 3. Unattributed.
 - Back mid-show, then travel to another node: the new node is marked traveled with no show,
   and the frozen old show resumes and banks its win against the new node's pending ids (a quit
   after `_start_show` persists that pairing). Pre-existing, not specific to the automatic end's
@@ -959,10 +962,34 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      9.2 PASSES again. Still visible: the title under the X, body text at x=0, and at 500x500
      description_scroll.png shows the HUD with "Goal"/"Total" drawn over Back/Forward in the
      top band (S2 had put the HUD content below the button band).
-   - still owed: close fix E (the container's content insets: a left margin, the title leaving
-     the exit X's column, and the top band's content starting below the overlay buttons; and
-     reproduce whether description_scroll.png should hold a description), re-run `/fx-verify`
-     after it; close item 11 (delete `briefs/` and this handoff
+   - close fix E (the container's content insets). RED on HEAD, with numbers: (a) the preview,
+     body and HUD labels started at x 0.0 against the 12.0 margin; (b) the title reached the X's
+     column (end 320 vs X left 276.8 at 1280x720); (c) at the SHIPPED default, a 1280x1000
+     window (lays out 1152x900) put Goal at y 51 over the button band's bottom at 66 - the HUD
+     margin container grew both ways; (d) description_scroll.png held the HUD because the
+     snapshot's own pointer move carried the held card out of its cell, a correct dismissal -
+     a snapshot defect, fixed in the snapshot. FIX: one content margin for the HUD and the
+     description, read from the overlay buttons' own left offset through
+     `WallOverlay.button_band_inset()` (the project has no theme); `DescriptionPanel` gained
+     `%ExitColumn` so the title stops before the X; `GameHudMargin` grows down. By eye, overseer
+     look at the 14:32 render: description.png's preview and text start ~14 px in and the title
+     wraps before the X; description_scroll.png holds the "Input Zone" description with its
+     scrollbar; viewer_description.png's body is inset; map_popup.png's lines no longer clip.
+     OWNER SHOULD SEE: a long card name now breaks at its period ("NumeralRank3." / "0")
+     because the title column is narrower; at a 1280x1000 window the HUD overflows its
+     225 px band by ~30 px (the band is too short for the HUD at the shipped fraction - the
+     knob's range is the owner's); under the harness's 0.1 fraction the X hangs below the band;
+     the X overlaps the top of the description's scrollbar (pre-existing at HEAD).
+     Overseer full run 14:41 for E: `ALL 48 SUITES: 5241 CHECKS PASSED [21]`, then the engine
+     crashed in TEARDOWN (0xC0000005) after the banner, so the wrapper exited 3 and preserved
+     the logs (logs-failed-20260915-144733); the verdict stands, the exit is not clean. Grep:
+     every `size_changed` connection and `_exit_tree` in the files E touched is identical at HEAD
+     (6b-2 added them, and HEAD ran two clean full runs), so E's diff adds no teardown hook. The
+     same teardown-only crash was seen once before this run (fix 9's two-suite filtered run).
+     RERUN 14:48: `ALL 48 SUITES: 5218 CHECKS PASSED [21]`, clean exit (the two standing lines,
+     135 ObjectDB, 0 SCRIPT ERROR). The teardown crash hit 1 of 2 full runs on E; recorded in
+     Open bugs as intermittent.
+   - still owed: re-run `/fx-verify` (D and E changed pixels); close item 11 (delete `briefs/` and this handoff
      once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
      scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
      overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
