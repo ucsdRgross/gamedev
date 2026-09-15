@@ -11,9 +11,14 @@ not reproduce (rows pin them); the bounded re-review found 3 confirmed, fixed as
 (after dabde1e1). Phase 6 landed: S19 fde80a92 (48 suites), S20 0cdd8e23, S21 under the owner's
 mid-run one-face-down ruling (see Owner rulings); its review's two confirmed defects fixed (fix
 7, fix 8). Phase 7 landed: S22 52f293b9; its review's root cause fixed (fix 9), End's authored
-default (fix 10), the resolve ungrab (fix 11); the card back is frame 3 (owner ruling). **Next:
-S23** (brief `briefs/S23.md`), then the closing phase S24 — all in this run (owner ruling).
-GAP-004 is open, non-blocking.
+default (fix 10), the resolve ungrab (fix 11); the card back is frame 3 (owner ruling). Phase 8
+landed: S23 eb635e79; its review's four confirmed defects fixed (fix 13 popup follows/hides, fix
+14 touch pan, fix 15 panel resize); the fix-commit re-review's two confirmed fixed (fix 12, the
+replay route). **EVERY PLAN STEP S1–S23 IS ON THE BRANCH. Next: the closing phase S24** per
+`.claude/skills/plan-run/SKILL.md` "Closing the run", every numbered item, results recorded here;
+still-open suspected items to reproduce inside the close: re-review 3 (undo after the automatic
+end arming a card of the popped state) and 4 (Back during the locked hold), Phase 8 item 5
+(`_tapped_node` never cleared by mouse hover). GAP-004 is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
 `tasklist | findstr Godot_v4.7` before every run and wait it out — a concurrent run rotates
 `godot.log` and fabricated one GRID VIEW failure this session. PID 3020 is a stale Godot 4.1.2
@@ -436,7 +441,9 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    engine's dispatch order (outcome unchanged). Fix 14.
 4. CONFIRMED `DescriptionPanel.resize_to` counts the previous entry's queue-freed visual (still a
    child until end of frame): pack → show leaves a grid-sized blank scroll area; pack → pack sums
-   both flows. → fix 15.
+   both flows. → fixed: the previous visual leaves its slot (`remove_child`) before `queue_free`,
+   so the slot's minimum size is honest; the pack → pack row asserts the laid-out content height
+   because the scrollbar's extent lags a re-mount by a frame (recorded in ASSUMPTIONS). Fix 15.
 5. SUSPECTED `_tapped_node` is never cleared by mouse hover or `start_run`, so mouse-hover A then
    finger-tap A describes again instead of entering. Defensible under K5; noted.
 6. SUSPECTED popup unclamped at the top edge (already "owner should see").
@@ -598,12 +605,20 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
 
 ## Next up
-1. S20, S21 (Phase 6), S22 (Phase 7), S23 (Phase 8) — briefs `briefs/S20.md`–`S23.md` are
-   written (rulings verbatim, overseer-defined rows where TEST_PLAN has only by-eye rows: charts
-   I and K). Dispatch each FOREGROUND with its brief path; verify (done-when greps, doc_check on
-   ADDED lines via the intersect script, a full run, LOOK at every PNG); commit; record here.
-   S19 raises the suite count to 48. Then S24 per `.claude/skills/plan-run/SKILL.md` "Closing the
-   run", every numbered item, results recorded here.
+1. **S24 — the closing phase**, per `.claude/skills/plan-run/SKILL.md` "Closing the run", every
+   numbered item in order, each result recorded in a `## Close` section here (the output, not a
+   claim): (1) `py .claude/tools/doc_check.py` FULL; (2) `adversarial-review` over `main...HEAD`
+   with a priority order and "report early"; (3) `/code-review` at high effort; (4) a
+   test-surface review subagent with `tests-that-prove-nothing` as its checklist; (5) `/simplify`
+   serially (four angles); (6) `/fx-verify` (S21's flip, the card back, the popup); (7) fix
+   everything found, one at a time, full run between, then re-run whichever of 1–6 a fix could
+   have invalidated — include the three still-open suspected items named in State; (8) `/docs`
+   (fold the briefs, GAPs and this handoff's residue into the living docs; correct DESIGN chart
+   K9 and I8/Q217/Q244/Q245 and TEST_PLAN 9.5 to the owner's rulings; re-aim the test text that
+   still says "a show never resolves on its own"); (9) `consolidate-memory`; (10) feed the
+   run's traps back into the skills and agents; (11) delete the briefs and this handoff once
+   folded. Then print the READY FOR CLOSING block if the owner wants the close in a NEW
+   session (the skill's rule) — the owner ruled S24 runs in THIS run, so run it here.
 - Doc defects to fold at the close: DESIGN chart node K9 contradicts Q135=a (the answer wins);
   TEST_PLAN §11 claims every chart node is covered but charts I and K have only by-eye rows.
 - ⚠ Line endings: shell `grep -c $'\r'` is unreliable in this Git Bash (it reported every line
