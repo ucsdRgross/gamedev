@@ -780,3 +780,24 @@
   fresh controls are born FOCUS_ALL, so the disable must come last. New test name
   `TestSidebar.test_the_outcome_screen_leaves_no_card_armed`, under the behavior section
   "THE RESOLVED SHOW LEAVES NOTHING ARMED".
+- S23: `MapNamePopup.show_above(node_name: String, node_rect: Rect2)` is the popup's whole API --
+  the map hands it the title of the entry it just published and the node's rect, so the popup
+  knows nothing of maps or graphs. It is placed once per hovered node and has no `_process`.
+- S23: `WorldMapController.node_screen_rect(node)` is the one conversion from a graph node to the
+  map viewport's own coordinates (`get_global_transform_with_canvas()` + `marker_radius`), shared
+  by the popup's placement and by the tests that check it.
+- S23: the FIRST TAP RULE lives in `WorldMapController._consumed_as_touch()`, which also swallows
+  the mouse press the engine emulates from that finger (`device == -1`, the same discrimination
+  `UI/play_area.gd` uses) because the emulated press arrives BEFORE the touch event. The tapped
+  node is remembered in `_tapped_node`; `_try_click()` became `_travel_to(node)`, and the mouse's
+  own path calls it with `_node_at_mouse()`.
+- S23: a `FlowContainer` visual is mounted BELOW the body, in `DescriptionPanel`'s new `%GridSlot`,
+  and given the panel's own width to wrap at; every other visual still sits beside the name in the
+  top row. `_slot_for(visual)` is the one place that choice is made -- a grid of many needs the
+  whole width, which the name's row does not have. No flag on `InfoEntry`.
+- S23: the popup keeps the last node's name after the pointer leaves, exactly as the sidebar keeps
+  the last node's description -- `Map` still connects no `node_unhovered`.
+- S23: `TestSidebar._start_game_fixture()` was split: `_start_map_fixture()` is the real `Main`
+  resting on its generated map, and the game fixture carries it on into a dealt board. The shared
+  teardown is `_end_main_fixture()` (renamed from `_end_game_fixture`), and the map picture's
+  viewport is `_map_viewport`.

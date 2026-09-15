@@ -178,6 +178,14 @@ func _ready() -> void:
 	await test_end_stays_hidden_through_the_shows_first_frames()
 	behavior_section("THE RESOLVED SHOW LEAVES NOTHING ARMED")
 	await test_the_outcome_screen_leaves_no_card_armed()
+	behavior_section("S23: THE MAP NAMES THE NODE AND DESCRIBES IT IN THE SIDEBAR")
+	await test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar()
+	await test_the_name_stays_put_while_the_pointer_moves_inside_the_node()
+	await test_one_click_travels_and_leaving_keeps_the_last_nodes_description()
+	await test_the_first_tap_names_the_node_and_the_second_enters_it()
+	await test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing()
+	await test_selecting_a_node_by_key_describes_it()
+	await test_no_name_popup_shows_on_the_board()
 	finish()
 
 
@@ -203,7 +211,7 @@ func test_end_is_revealed_when_no_action_remains() -> void:
 	await get_tree().process_frame
 	check(not view.submit_button.visible,
 			"one stock with a card AND an empty tile hides End again")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # The reveal asks about EMPTY tiles, so the fixture above needs a board with none left.
 func _fill_every_grid_cell(state: GameData) -> void:
@@ -227,7 +235,7 @@ func test_end_stays_hidden_through_the_shows_first_frames() -> void:
 	get_tree().process_frame.disconnect(sampler)
 	check(not seen[0], "End is never flagged visible while a fresh show starts up")
 	check(not seen[1], "End is never on screen while a fresh show starts up")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The show ends full stop, so nothing on the board is still armed under the outcome screen.
 func test_the_outcome_screen_leaves_no_card_armed() -> void:
@@ -238,7 +246,7 @@ func test_the_outcome_screen_leaves_no_card_armed() -> void:
 	await get_tree().process_frame
 	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
 	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 func _build_container() -> HudContainer:
 	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate()
@@ -1167,15 +1175,17 @@ var _prev_run : RunState = null
 var _prev_save_info : RunState = null
 ## The live fixture the S5 tests share, so four tests do not each re-derive the same five nodes.
 var _main : Main = null
+var _map : Map = null
 var _container : HudContainer = null
 var _panel : DescriptionPanel = null
 var _play_area : PlayArea = null
 var _game_viewport : SubViewport = null
+var _map_viewport : SubViewport = null
 var _booted_viewport : SubViewport = null
 
-# A real `Main` on a dealt game screen: the only fixture that proves the WHOLE route -- the board's
-# focus, `GameView`'s relay, `Main`'s handler and the container's swap -- with nothing stubbed.
-func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
+# A real `Main` resting on its generated map screen: the fixture every whole-route test starts
+# from, with nothing stubbed. Torn down by `_end_main_fixture()`.
+func _start_map_fixture(size := Vector2i(1280, 720)) -> void:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
 	_prev_save_info = Main.save_info
@@ -1184,19 +1194,28 @@ func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
 	var booted := await _boot_main_at(size)
 	_booted_viewport = booted[0]
 	_main = booted[1]
+	_map = _main.map_scene
+	_map_viewport = _main._pictures[&"map"].viewport
 	await _focus_map(_main, run)
+	_container = _main.wall.get_node(^"%HudContainer")
+	_panel = _container.get_node(^"%DescriptionPanel")
+
+# The same fixture carried on into a dealt game screen: the only one that proves the WHOLE board
+# route -- the board's focus, `GameView`'s relay, `Main`'s handler and the container's swap.
+func _start_game_fixture(size := Vector2i(1280, 720)) -> void:
+	await _start_map_fixture(size)
 	await _main.enter_game()
 	var view := _main._pictures[&"game"].screen_root as GameView
 	CardEnvironment.CURRENT = view.game
 	_play_area = view.play_area
 	_game_viewport = _main._pictures[&"game"].viewport
-	_container = _main.wall.get_node(^"%HudContainer")
-	_panel = _container.get_node(^"%DescriptionPanel")
 
-func _end_game_fixture() -> void:
+func _end_main_fixture() -> void:
 	await _free_booted_main(_booted_viewport, _main)
 	_booted_viewport = null
 	_main = null
+	_map = null
+	_map_viewport = null
 	_container = null
 	_panel = null
 	_play_area = null
@@ -1345,7 +1364,7 @@ func test_a_highlight_opens_the_description() -> void:
 		if hovered != null:
 			check(title.text == _expected_text(_play_area.ui_data[hovered])[0],
 					"...and the title follows the card the pointer is on", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## How near the preview's drawn width must land on the board card's own -- a pixel of layout rounding on each side.
 const PREVIEW_WIDTH_TOLERANCE_PX := 2.0
@@ -1407,7 +1426,7 @@ func test_the_preview_is_drawn_at_the_boards_own_card_size() -> void:
 					and title_rect.end.y > preview_rect.position.y,
 					"...and beside it, not under it (Q33=c)",
 					"name %s vs visual %s" % [title_rect, preview_rect])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q34=b through a resize: the preview is re-drawn at the board's NEW card size, not the one it was published at.
 func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
@@ -1429,7 +1448,7 @@ func test_the_preview_follows_a_resize_to_the_boards_new_card_size() -> void:
 					"the preview is re-drawn at the board card's width at the new window (Q34=b)",
 					"preview %.1f px vs board %.1f px at board zoom %.3f"
 					% [preview_px, board_px, _play_area.board_zoom])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.3/B4/Q32=a: the pointer leaving every card publishes nothing, so the description keeps its last entry.
 func test_losing_the_highlight_keeps_the_last_entry() -> void:
@@ -1453,7 +1472,7 @@ func test_losing_the_highlight_keeps_the_last_entry() -> void:
 				"...still the very same entry, by identity (Q32=a)")
 		check(title.text == _expected_text(_play_area.ui_data[controls[0]])[0],
 				"...still reading the card the pointer left", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.14/B15/B16/Q19=c/Q20=b: each screen remembers its own last description and gets it back on return.
 func test_leaving_and_returning_restores_the_screens_own_description() -> void:
@@ -1480,7 +1499,7 @@ func test_leaving_and_returning_restores_the_screens_own_description() -> void:
 				"...and it is the very entry that screen was left on (Q19=c)")
 		check(shown != null and shown.visual != null and shown.visual.get_parent() == slot,
 				"...with its own visual back in the panel")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The panel OWNS the mounted visual: the next entry frees the last, so reading along a row of cards leaks no preview.
 func test_a_new_entry_frees_the_visual_it_replaces() -> void:
@@ -1503,7 +1522,7 @@ func test_a_new_entry_frees_the_visual_it_replaces() -> void:
 				"%d visual(s) left in the slot" % slot.get_child_count())
 		check(_panel.current_entry != null and _panel.current_entry.visual != first,
 				"...and the panel shows the next card's own visual")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # ------------------------------------------------------------------ S6: the lock and the exit X
 
@@ -1527,12 +1546,13 @@ func _second_button_press(at: Vector2) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool) -> void:
+func _push_mouse_button(at: Vector2, viewport: SubViewport, pressed: bool, device := 0) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.pressed = pressed
 	event.position = at
 	event.global_position = at
+	event.device = device
 	viewport.push_input(event)
 
 # Entrance cards are the ones a click can GRAB, so Q56's "the click still performs its game action"
@@ -1607,7 +1627,7 @@ func test_a_click_grabs_the_card_and_locks_its_description() -> void:
 			var title : Label = _panel.get_node(^"%Title")
 			check(title.text == _expected_text(clicked[0])[0],
 					"...and the sidebar shows that card's own name", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.6/B8/Q61=a: only one lock exists, so locking a second card replaces the first.
 func test_locking_a_second_card_replaces_the_first() -> void:
@@ -1638,7 +1658,7 @@ func test_locking_a_second_card_replaces_the_first() -> void:
 				var title : Label = _panel.get_node(^"%Title")
 				check(title.text == _expected_text(clicked[1])[0],
 						"...with the second card's own description showing", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q58=c: the locked card keeps the marking a focused card gets, even once the focus has moved on.
 func test_the_locked_card_keeps_its_marking_while_focus_moves_on() -> void:
@@ -1668,7 +1688,7 @@ func test_the_locked_card_keeps_its_marking_while_focus_moves_on() -> void:
 					"...and the LOCKED card keeps the focus marking behind it (Q58=c)")
 			check(_play_area.data_card[moved].focused,
 					"...while the newly focused card is marked as well")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.13/B13/Q65=a: a board rebuild keeps the same CardData's description and its marking, whichever control now represents it.
 func test_a_board_rebuild_keeps_the_same_cards_description() -> void:
@@ -1691,7 +1711,7 @@ func test_a_board_rebuild_keeps_the_same_cards_description() -> void:
 		check(_play_area.data_ui.has(data), "...the card has a control again after the rebuild")
 		check(_play_area.data_card.has(data) and _play_area.data_card[data].focused,
 				"...and the marking is on whichever visual now represents it (B13)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.7/C16/Q179=a/Q180=a: pressing the exit X reverts the container to the HUD and drops the lock.
 func test_the_exit_x_reverts_to_the_hud() -> void:
@@ -1712,7 +1732,7 @@ func test_the_exit_x_reverts_to_the_hud() -> void:
 		check(not _container.is_locked(), "...and the lock is gone (B10)")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 		check(_play_area.locked_data == null, "...so the board drops the locked card's marking")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## C16/Q47=a: the exit X is a full touch target in the container's top-right, below the overlay's own button band, and only while the description shows.
 func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
@@ -1745,7 +1765,7 @@ func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
 		await get_tree().process_frame
 		check(not button.is_visible_in_tree(),
 				"the HUD hides it again: it belongs to the description")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one.
 func test_a_resize_relays_the_description_to_the_new_width() -> void:
@@ -1773,7 +1793,7 @@ func test_a_resize_relays_the_description_to_the_new_width() -> void:
 		check(absf(content.custom_minimum_size.y - carried) <= 0.5,
 				"...and the height it scrolls to is the new width's, not the old one's",
 				"%.1f carried vs %.1f fresh" % [carried, content.custom_minimum_size.y])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # ------------------------------------------------------------------ S6: follow, return, dismiss
 
@@ -1816,7 +1836,7 @@ func test_the_description_follows_the_hover_while_locked() -> void:
 					"...and the lock is still on the first card (B8)")
 			check(_play_area.data_card[locked].focused,
 					"...which keeps its marking behind the hover (Q58=c)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.5/B7/B4: the pointer leaving everything returns to the LOCKED card, and with no lock keeps the last entry.
 func test_leaving_everything_returns_to_the_locked_card() -> void:
@@ -1859,7 +1879,7 @@ func test_leaving_everything_returns_to_the_locked_card() -> void:
 			check(not _container.is_locked(), "nothing is locked once the container went back")
 			check(title.text == _expected_text(_play_area.ui_data[second])[0],
 					"...so leaving everything STAYS on the last card read (B4)", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## B7 for the pad: the board focus landing on a HUD control leaves no card highlighted, so the locked card comes back.
 func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
@@ -1890,7 +1910,7 @@ func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
 					str(_play_area.get_viewport().gui_get_focus_owner()))
 			check(title.text == _expected_text(locked)[0],
 					"...so the description returns to the locked card (B7, Q60=c)", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.7/B9/B10/Q64=a/Q100=c: cancel with nothing held reverts to the HUD, and the SAME press reaches the wall's own Back -- the transition then locks input, so there is no second press to make.
 func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
@@ -1916,7 +1936,7 @@ func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 		check(went_back[0],
 				"...and that ONE press also reaches the wall's own Back, rather than a second one doing it (Q100=c)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.1/Q99=b: the second mouse button cancels ONE thing per press -- the held card first, the description on the next press.
 func test_the_second_button_releases_the_held_card_then_dismisses() -> void:
@@ -1948,7 +1968,7 @@ func test_the_second_button_releases_the_held_card_then_dismisses() -> void:
 		check(not _container.showing_description() and dismissals.size() == 1,
 				"a second press then dismisses the description (S18.1, E21)",
 				str(dismissals.size()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.7/B9/B10: a real press on bare board reverts the container to the HUD.
 func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
@@ -1970,7 +1990,7 @@ func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"a press on bare board reverts the container to the HUD (B9, B10)")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # A landing for `held` the board itself accepts or refuses, asked through the SAME
 # `on_can_place_stack` dispatch `try_place` uses, so no placement rule is spelled out here.
@@ -2021,7 +2041,7 @@ func test_placing_a_card_closes_the_description() -> void:
 			check(hud_stack.visible and not _panel.visible,
 					"placing the card closes the description (B12, Q63=a)")
 			check(not _container.is_locked(), "...and the lock goes with it")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A leak is no check failure, so the one path that can orphan a visual -- a lock replaced while a hover holds the panel -- is checked here.
 func test_replacing_a_displaced_lock_frees_its_visual() -> void:
@@ -2103,7 +2123,7 @@ func test_processing_reverts_to_the_hud_and_drops_the_lock() -> void:
 		check(_hud_is_up(), "the lock is NOT restored when processing ends (B18)")
 		check(dismissals.is_empty(), "...and nothing is announced for a HUD that was already up",
 				str(dismissals.size()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.9/C8/Q259b=b: a REAL placement -- the HUD is what the whole cascade is watched in, from the flip to the last frame.
 func test_a_real_cascade_holds_the_hud_for_its_whole_length() -> void:
@@ -2123,7 +2143,7 @@ func test_a_real_cascade_holds_the_hud_for_its_whole_length() -> void:
 					"%d of %d frames" % [counts[3], counts[2]])
 			check(_hud_is_up(), "...and it is still up once the cascade has finished (B20)")
 			check(not _container.is_locked(), "...with no lock left behind (B18)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.10/B19/Q258=a: a hover DURING the cascade is ignored entirely, so a resting pointer cannot swap the HUD straight back out.
 func test_a_hover_during_processing_changes_nothing() -> void:
@@ -2142,7 +2162,7 @@ func test_a_hover_during_processing_changes_nothing() -> void:
 		check(_hud_is_up(), "...and the HUD is still what shows: the hover is ignored (B19, Q258=a)")
 		check(not _container.is_locked(), "...with no lock taken from it either")
 		game.processing = false
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.11/B20/C9/Q257=b: once the cascade ends the HUD holds until ANY focus event -- landing back on the card it was already on counts.
 func test_the_hud_holds_after_processing_until_any_focus_event() -> void:
@@ -2178,7 +2198,7 @@ func test_the_hud_holds_after_processing_until_any_focus_event() -> void:
 			if other != null:
 				check(title.text == _expected_text(_play_area.ui_data[other])[0],
 						"...and the ordinary hover route is live again", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.12/C10/Q260b=b: the processing rule is the GAME screen only -- the map has no cascade worth watching, so its container never swaps on one.
 func test_the_maps_container_does_not_swap_on_the_games_processing() -> void:
@@ -2199,7 +2219,7 @@ func test_the_maps_container_does_not_swap_on_the_games_processing() -> void:
 		check(_container.showing_description(),
 				"...and the map's own publications still reach it mid-cascade")
 		game.processing = false
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## B20/C9/Q257=b: nothing is de-duplicated away -- the very entry that was up when the cascade started re-shows when it is published again.
 func test_the_same_entry_published_again_after_processing_still_shows() -> void:
@@ -2437,7 +2457,7 @@ func test_the_arrows_scroll_only_once_the_description_is_locked() -> void:
 		check(handled_locked, "...spending the event before the board can see it")
 		check(_game_viewport.gui_get_focus_owner() == focused_before,
 				"...so the board's own selection does not move with it")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q68=b/C16: the exit X joins keyboard/pad navigation whenever a description shows -- a pad player can always dismiss what is shown -- and accept on it dismisses.
 func test_the_exit_x_joins_navigation_whenever_a_description_shows() -> void:
@@ -2472,7 +2492,7 @@ func test_the_exit_x_joins_navigation_whenever_a_description_shows() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"...and accept on it dismisses the description (C16)")
 		check(not _container.is_locked(), "...taking the lock with it")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # ------------------------------------------------ A SCREEN'S STATE BELONGS TO ITS OWN CONTENT
 
@@ -2511,7 +2531,7 @@ func test_a_finished_show_leaves_no_cascade_flag_for_the_next_one() -> void:
 		check(_container.showing_description(),
 				"the next show's first hover opens a description: B19 died with the last show")
 		check(not _container.is_locked(), "...and nothing is locked in it yet")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A new run replaces the show, so the container must not re-open the last show's locked description over a fresh board.
 func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
@@ -2527,7 +2547,7 @@ func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
 		check(_hud_is_up(), "the new show opens on the HUD, not the last show's description")
 		check(not _container.is_locked(), "...and with nothing locked (PLAN 5 step 1)")
 		check(_play_area.locked_data == null, "...and no card marked on the fresh board")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## B15/B16: leaving a screen is not a dismissal -- the lock comes back exactly as it was left, marking and all.
 func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
@@ -2551,7 +2571,7 @@ func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
 				"...on whichever visual represents it now")
 		check(_exit_button().focus_mode == Control.FOCUS_ALL,
 				"...and the exit X is navigable again (Q68=b)", str(_exit_button().focus_mode))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
 func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
@@ -2576,7 +2596,7 @@ func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
 	await get_tree().process_frame
 	check(is_instance_valid(DeckViewer._open),
 			"...and the map's own Deck button still opens its viewer after a show")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A description held back by a cascade is still that screen's own memory, and the next one to show frees it rather than orphaning it.
 func test_a_remembered_entry_dropped_by_a_cascade_is_freed() -> void:
@@ -2658,7 +2678,7 @@ func test_opening_a_viewer_by_pad_shows_its_first_card() -> void:
 		if first != null:
 			check(title.text == _expected_text(first.child.data)[0],
 					"...reading the first card's own name", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Keyboard/controller: closing a viewer hands the focus to something the player can SEE, and accept there brings the pile buttons back.
 func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
@@ -2683,7 +2703,7 @@ func test_closing_a_viewer_leaves_the_focus_somewhere_visible() -> void:
 	await get_tree().process_frame
 	check(button.has_focus(), "...and the Deck button can take the focus again (S12.9)",
 			str(_booted_viewport.gui_get_focus_owner()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A pile button pressed over an open viewer: the sidebar lands on the NEW viewer's own first card, with the board's lock still under it.
 func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> void:
@@ -2722,7 +2742,7 @@ func test_swapping_viewers_lands_the_sidebar_on_the_new_viewers_first_card() -> 
 					and title.text != read_title,
 					"the swap leaves the sidebar on the NEW viewer's first card (S12.10, B7)", title.text)
 			check(_container.is_locked(), "...with the board's lock still under it")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # The button's own press, not the pad's accept: these tests open a viewer from states where the
 # container is showing a description, which hides the pile buttons and so drops a pad's key focus.
@@ -2761,7 +2781,7 @@ func _check_viewer_publishes(button: Button, pile: String) -> void:
 func test_the_deck_viewer_publishes_into_the_sidebar() -> void:
 	await _start_game_fixture()
 	await _check_viewer_publishes(_container.deck_ui.get_node(^"Button") as Button, "deck")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The rules and discard viewers publish through their own buttons, by the same rule.
 func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
@@ -2775,7 +2795,7 @@ func test_the_rules_and_discard_viewers_publish_into_the_sidebar() -> void:
 	state.discard_deck.append(stocked[0])
 	state.discard_deck.append(stocked[1])
 	await _check_viewer_publishes(_container.discard_ui.get_node(^"Button") as Button, "discard")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # The space a viewer's cards belong in, in the PICTURE's own space: what `local_rect_beside()`
 # leaves once the container is reserved, at whatever window is up -- the side case's left inset and
@@ -2816,7 +2836,7 @@ func test_the_deck_viewers_cards_start_beside_the_container() -> void:
 			"%.1f vs %.1f" % [grid.get_global_rect().position.x, remaining.position.x])
 	_check_every_card_inside(cards, _unbounded_below(remaining),
 			"...and every listed card lies beside the container and inside the visible picture (S12.4)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # A REAL window change: the private `SubViewport` is resized and the tree given the frames the
 # container needs to re-apply its rect and everything that rides on it to follow.
@@ -2838,7 +2858,7 @@ func test_a_resize_re_fits_the_open_viewer() -> void:
 	_check_every_card_inside(cards,
 			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
 			"...and resizing back fits it from its authored margins, never inset twice (S12.13)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A dismissal is the player's own act: the container moving under an open viewer re-fits it without re-opening what the exit X put away.
 func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
@@ -2855,7 +2875,7 @@ func test_a_resize_does_not_re_open_a_dismissed_description() -> void:
 		await _resize_viewport(_booted_viewport, Vector2i(600, 1000))
 		check(_hud_is_up(),
 				"a resize under the open viewer leaves the dismissal standing (B9-B11)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The mounted preview belongs to whoever published it: a rect change re-draws a viewer's entry at the VIEWER's own card size, not at the board's.
 func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> void:
@@ -2880,7 +2900,7 @@ func test_a_resize_keeps_a_viewers_preview_at_the_viewers_own_card_size() -> voi
 					"the resize re-draws the entry at the VIEWER's own card size (S12.14, GAP-004's built reading)",
 					"preview %.1f vs viewer %.1f, board %.1f"
 					% [_card_drawn_width(preview.child), viewer_px, board_px])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The same claim at a TOP window: the listed cards clear the band and stay inside the visible picture.
 func test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window() -> void:
@@ -2892,7 +2912,7 @@ func test_the_deck_viewers_cards_lie_below_the_band_at_a_top_window() -> void:
 	_check_every_card_inside(cards,
 			_unbounded_below(_space_beside_the_container(_main._pictures[&"game"], _container)),
 			"every deck viewer card is drawn below the band and inside the visible picture (S12.12)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # A card name is often just a rank, so "the description followed the hover" is only a real claim
 # about a viewer card whose name the locked one does not already share -- and about one the
@@ -2939,7 +2959,7 @@ func test_a_board_lock_survives_opening_and_closing_a_viewer() -> void:
 			check(not is_instance_valid(DeckViewer._open), "escape closed the viewer")
 			check(_container.is_locked() and title.text == locked_title,
 					"...and the sidebar comes back to the card the board locked (B7)", title.text)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # The start menu's own Inspect viewer, reached the way a player reaches it: New Run opens the deck
 # picker, the first deck's Inspect button opens a viewer over the menu. Returns
@@ -3285,7 +3305,7 @@ func test_a_held_card_lifts_and_does_not_follow() -> void:
 		check(absf(lift - visual.held_lift_px()) < 2.0,
 				"...and rests at its slot centre raised by the lift (6.4, G4)",
 				"%.1f vs %.1f" % [lift, visual.held_lift_px()])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.5/G7/Q262=a: one mouse motion -- no threshold, no focus -- starts a held card following.
 func test_any_mouse_motion_starts_the_card_following() -> void:
@@ -3300,7 +3320,7 @@ func test_any_mouse_motion_starts_the_card_following() -> void:
 		_hover(_bare_board_point(controls))
 		await get_tree().process_frame
 		check(visual.following, "ONE mouse motion starts it following (6.5, Q262=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.6/G7: focus landing on a card by key or pad starts it too, with the mouse never touched.
 func test_a_key_focus_onto_a_card_starts_it_following() -> void:
@@ -3313,7 +3333,7 @@ func test_a_key_focus_onto_a_card_starts_it_following() -> void:
 		entrance[1].grab_focus()
 		await get_tree().process_frame
 		check(visual.following, "a key/pad focus landing on a card starts it following (6.6, G7)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.7/G8/Q263=a: following is a ONE-WAY latch -- a key event after it started does not stop it.
 func test_following_is_a_one_way_latch() -> void:
@@ -3334,7 +3354,7 @@ func test_following_is_a_one_way_latch() -> void:
 		await get_tree().process_frame
 		check(visual.following, "a key event after it started leaves it following (6.7, Q263=a)")
 		check(visual.held != 0, "...and the card is still held", str(visual.held))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.8/G8/Q265=a: the lift is the SAME height in both states, so following only makes the card move.
 func test_the_lift_is_the_same_height_in_both_states() -> void:
@@ -3358,7 +3378,7 @@ func test_the_lift_is_the_same_height_in_both_states() -> void:
 				"...and it rides the cursor at exactly that same lift (6.8, Q265=a)",
 				"%.1f vs %.1f" % [after, before])
 		check(visual.following, "...while following")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.9/G11/Q267=a: a card the player CLICKED follows at once -- the mouse has moved by definition.
 func test_a_clicked_card_follows_immediately() -> void:
@@ -3375,7 +3395,7 @@ func test_a_clicked_card_follows_immediately() -> void:
 			check(visual.held != 0 and visual.following,
 					"a CLICKED card is following as soon as it is held (6.9, Q267=a)",
 					"held %d following %s" % [visual.held, visual.following])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.7/B9/B10/Q268=a: the FOURTH dismissal -- a FOLLOWING card leaving its cell reverts to the HUD.
 func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
@@ -3395,7 +3415,7 @@ func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"a FOLLOWING card leaving its cell reverts the container to the HUD (1.7, Q268=a)")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 1.8/B11/Q268=a: a card that is NOT following dismisses nothing -- the motion that arms it closes no description.
 func test_a_lifted_card_that_is_not_following_keeps_the_description() -> void:
@@ -3420,7 +3440,7 @@ func test_a_lifted_card_that_is_not_following_keeps_the_description() -> void:
 					"a card that was NOT following dismisses nothing when the pointer leaves (1.8)",
 					str(dismissals.size()))
 			check(visual.following, "...that motion armed the following instead (Q262=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # ------------------------------------------------------------------ S15: THE ARM
 
@@ -3487,7 +3507,7 @@ func test_arming_moves_no_focus() -> void:
 	check(_game_viewport.gui_get_focus_owner() == null,
 			"...and left the viewport's focus owner where it was (6.1, Q250=a)",
 			str(_game_viewport.gui_get_focus_owner()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.2/B3/Q240=a: the armed card's description does not open on its own -- a fresh show is the HUD.
 func test_arming_leaves_the_container_on_the_hud() -> void:
@@ -3502,7 +3522,7 @@ func test_arming_leaves_the_container_on_the_hud() -> void:
 	await get_tree().process_frame
 	check(hud_stack.visible and not _panel.visible,
 			"...and arming again opens no description (6.2, B3)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.3/G1/G2: the arm's EFFECTS are a pickup's -- the game's own grab, held and lifted, not following.
 func test_arming_produces_a_pickups_own_state() -> void:
@@ -3518,7 +3538,7 @@ func test_arming_produces_a_pickups_own_state() -> void:
 		check(_play_area.armed_slot()
 						== CardEnvironment.get_current_game().entrance_slot_of(armed),
 				"...armed from the slot the game itself holds it in (6.3)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.3/Q252=b: the arm names the pickup's own two calls and nothing else that grabs.
 func test_arm_leftmost_names_only_the_pickups_own_calls() -> void:
@@ -3541,7 +3561,7 @@ func test_the_show_rests_the_focus_on_the_armed_card() -> void:
 				"...silently: the container still shows the HUD (Q240=a)")
 		check(not _play_area.data_card[armed].following,
 				"...and the rest focus started no following (Q254=d)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q116/G14: after a placement the NEW leftmost present card is what arms.
 func test_a_placement_arms_the_new_leftmost() -> void:
@@ -3553,7 +3573,7 @@ func test_a_placement_arms_the_new_leftmost() -> void:
 		check(_armed_card() != placed, "...and it is not the card that was just placed")
 		check(_armed_card() == _leftmost_present_card(),
 				"...it is the new leftmost present card (Q116, G14)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q118/G14: the Entrance refills left to right, and the refill's new leftmost is what arms next.
 func test_a_refill_arms_the_new_leftmost() -> void:
@@ -3576,7 +3596,7 @@ func test_a_refill_arms_the_new_leftmost() -> void:
 				"...and the refill's new leftmost card is the one armed (Q118)")
 		check(_play_area.armed_slot() == 0, "...which is the leftmost slot",
 				str(_play_area.armed_slot()))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 6.10/G16/Q117=a: the arm is view-only -- undo restores the board and the arm is re-derived.
 func test_the_arm_survives_undo_by_re_derivation() -> void:
@@ -3595,7 +3615,7 @@ func test_the_arm_survives_undo_by_re_derivation() -> void:
 		if _armed_card() != null:
 			check(_play_area.data_card[_armed_card()].held != 0,
 					"...held and lifted again, not merely present (6.10)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q114=a/QR6=a: clicking a different Entrance card re-arms onto it AND locks its description.
 func test_clicking_another_entrance_card_re_arms_onto_it() -> void:
@@ -3610,7 +3630,7 @@ func test_clicking_another_entrance_card_re_arms_onto_it() -> void:
 		check(_armed_card() == wanted, "the click re-arms onto the card it landed on (Q114=a)")
 		check(_container.is_locked() and _play_area.locked_data == wanted,
 				"...and the same click locks that card's description (Q114=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## G1: a re-arm never steals a card that is already held, nor resets what the player started.
 func test_arming_again_leaves_the_held_card_alone() -> void:
@@ -3627,7 +3647,7 @@ func test_arming_again_leaves_the_held_card_alone() -> void:
 		check(_armed_card() == armed, "a second arm leaves the held card where it is (G1)")
 		check(_play_area.data_card[armed].following,
 				"...and does not reset what the player already started (Q263=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q267=a/Q254=d: a click the board never acted on cannot make the NEXT arm follow -- an auto-armed card is one the player did not touch.
 func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
@@ -3658,7 +3678,7 @@ func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
 			check(absf(lift - visual.held_lift_px()) < 2.0,
 					"...at its slot centre raised by the lift, not at the cursor (G4)",
 					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q267=a/Q262=a: a pickup the board REFUSED cannot make the next auto-arm follow -- an auto-armed card is one the player did not touch.
 func test_a_refused_pickup_does_not_make_the_next_arm_follow() -> void:
@@ -3692,7 +3712,7 @@ func test_a_refused_pickup_does_not_make_the_next_arm_follow() -> void:
 			check(absf(lift - visual.held_lift_px()) < 2.0,
 					"...at its slot centre raised by the lift, not at the cursor (G4)",
 					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q115=a: the disarm leaves nothing armed, "and the next click on a cell does nothing".
 func test_the_disarm_leaves_nothing_armed() -> void:
@@ -3716,7 +3736,7 @@ func test_the_disarm_leaves_nothing_armed() -> void:
 			check(game.state.revision == before,
 					"...so the next click on a cell does nothing (Q115=a)",
 					"%d vs %d" % [game.state.revision, before])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Q119=a: an empty Entrance arms nothing, and a click on a cell then does nothing at all.
 func test_an_empty_entrance_arms_nothing() -> void:
@@ -3736,7 +3756,7 @@ func test_an_empty_entrance_arms_nothing() -> void:
 		await _click_card(cells[0])
 		check(_play_area.selected_cards.is_empty(),
 				"...and a click on a cell with nothing armed picks nothing up (Q119=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.2/F9: the second button with nothing held closes the description, and closes nothing else.
 func test_the_second_button_dismisses_a_description_with_nothing_held() -> void:
@@ -3753,7 +3773,7 @@ func test_the_second_button_dismisses_a_description_with_nothing_held() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"the second button reverts the container to the HUD (S18.2, Q99=b)")
 		check(not _container.is_locked(), "...and the lock is gone with it (S18.2)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.2/Q100=c: the second button is cancel-only -- with nothing to cancel it is not a way out of the screen.
 func test_the_second_button_with_nothing_to_cancel_does_nothing() -> void:
@@ -3772,7 +3792,7 @@ func test_the_second_button_with_nothing_to_cancel_does_nothing() -> void:
 			"with nothing held and nothing showing the second button leaves the HUD up (S18.2)")
 	check(not went_back[0],
 			"...and never reaches the wall's own Back (S18.2, F9)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and steps out of the screen.
 func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
@@ -3795,7 +3815,7 @@ func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 		check(not _container.showing_description(),
 				"...dismissed the description in the SAME press (S18.3, Q100=c)")
 		check(went_back[0], "...and still showed the menu/wall (S18.3, Q100=c)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.4/E20: releasing the held card is not a dismissal -- a locked description outlives it.
 func test_releasing_the_held_card_leaves_the_locked_description_up() -> void:
@@ -3814,7 +3834,7 @@ func test_releasing_the_held_card_leaves_the_locked_description_up() -> void:
 				"...and the lock it was read against is untouched (S18.4, E20)")
 		check(_play_area.locked_data == locked,
 				"...still on the same card (S18.4)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S18.5/Q115=a/Q114=a: a cancel disarms, the next click on a cell does nothing, and only a click on an Entrance card re-arms.
 func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
@@ -3842,7 +3862,7 @@ func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
 			await _click_card(entrance[0])
 			check(_armed_card() == wanted,
 					"...and a click on an Entrance card re-arms onto it (S18.5, Q114=a)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # The board's arrows must stay on the board's own cards: focus parked on the scroll container
 # leaves accept inert and draws its focus border across the picture.
@@ -3863,7 +3883,7 @@ func test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board() -> void
 					"%s -> %s" % [OS.get_keycode_string(keycode), owner])
 			_push_key(_game_viewport, keycode, false)
 			await get_tree().process_frame
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## A following card keeps following wherever the pointer goes, including over the container.
 func test_motion_over_the_container_reaches_the_following_card() -> void:
@@ -3889,7 +3909,7 @@ func test_motion_over_the_container_reaches_the_following_card() -> void:
 		await get_tree().process_frame
 		check(reached[0], "motion over the container reached the board's pointer reader",
 				"dismiss %s" % reached[0])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 # ==============================================================================
 # S21 -- THE ENTRANCE DRAWS FACE DOWN AND FLIPS IN PLACE
@@ -3953,7 +3973,7 @@ func test_a_refilled_card_appears_in_its_own_slot() -> void:
 			"the refilled card's visual is created at its own slot, not at the Deck button (S21.1)",
 			"%s vs slot %s" % [visual.global_position, slot_centre])
 	settings.base_delay = old_delay
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.2: a slot still holding a card keeps it, face up and in the same visual; only the empty slots draw and flip.
 func test_only_the_empty_slots_flip() -> void:
@@ -3991,7 +4011,7 @@ func test_only_the_empty_slots_flip() -> void:
 			str(flipping))
 	settings.base_delay = old_delay
 	settings.entrance_flip_stagger = old_stagger
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.3: the slots turn over left to right, one `entrance_flip_stagger` of the game's delay apart.
 func test_the_flip_waits_one_stagger_per_slot() -> void:
@@ -4028,7 +4048,7 @@ func test_the_flip_waits_one_stagger_per_slot() -> void:
 			"last slot %d" % last)
 	settings.base_delay = old_delay
 	settings.entrance_flip_stagger = old_stagger
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.4: a slot shows ONE face-down card however deep its stock is -- the rest are not entities at all.
 func test_a_slot_shows_one_face_down_card_whatever_its_depth() -> void:
@@ -4080,7 +4100,7 @@ func test_a_slot_shows_one_face_down_card_whatever_its_depth() -> void:
 	check(_card_entities(1) == 0,
 			"...and a slot whose last stock card has been drawn away is left with nothing (S21.4)",
 			str(_card_entities(1)))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.4b: the face-down card IS the next revealed card -- the same entity, turned over, with a fresh one beneath it.
 func test_the_face_down_card_becomes_the_revealed_one() -> void:
@@ -4104,7 +4124,7 @@ func test_the_face_down_card_becomes_the_revealed_one() -> void:
 			"...and one fresh face-down card has taken its place beneath (S21.4b)",
 			"%d face down" % _stock_controls(0).size())
 	settings.base_delay = old_delay
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## Which frame of the type sheet a card DRAWS: a Polygon2D has no `frame`, so its shader clamp says it.
 func _type_frame_origin(visual: CardVisual) -> Vector2:
@@ -4144,7 +4164,7 @@ func test_hovering_a_stock_says_how_many_it_has_left() -> void:
 	check(body.text.contains(str(before - 1)),
 			"...and drawing one card off it drops the count by one (S21.5)",
 			"%s vs %d" % [body.text, before - 1])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## 4.7: one slot running out of stock is not an empty deck, and it disarms nothing -- the armed card stays held through the rebuild that drops that slot's face-down card.
 func test_one_drained_stock_disarms_nothing() -> void:
@@ -4168,7 +4188,7 @@ func test_one_drained_stock_disarms_nothing() -> void:
 			"%s in %d" % [_armed_card(), _play_area.armed_slot()])
 	check(armed != null and _play_area.data_card[armed].held > 0,
 			"...still lifted as a held card (4.7)")
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.5b: a CLICK on the face-down card describes the slot too -- it never hands the hidden card to the view, so nothing locks to a card the player cannot see.
 func test_clicking_a_stock_describes_the_slot_and_locks_nothing() -> void:
@@ -4189,7 +4209,7 @@ func test_clicking_a_stock_describes_the_slot_and_locks_nothing() -> void:
 			and body.text.contains(str(state.entrance_stocks()[1].datas.size())),
 			"...and what it shows is the SLOT's remaining count, not that card (S21.5b)",
 			"%s / %s" % [title.text, body.text])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.5c: the keyboard accept on the face-down card reads the same as the click -- the slot, never the hidden card.
 func test_accepting_a_stock_describes_the_slot_and_locks_nothing() -> void:
@@ -4215,7 +4235,7 @@ func test_accepting_a_stock_describes_the_slot_and_locks_nothing() -> void:
 			and body.text.contains(str(state.entrance_stocks()[1].datas.size())),
 			"...and what it shows is the SLOT's remaining count, not that card (S21.5c)",
 			"%s / %s" % [title.text, body.text])
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The control an arrow can land on in `slot`: the topmost one the neighbour links point at.
 func _slot_top_control(slot: int) -> Control:
@@ -4260,7 +4280,7 @@ func test_an_arrow_never_stops_on_a_face_down_card() -> void:
 	check(landed == _slot_top_control(3),
 			"...the arrow reaches the next slot that shows a revealed card (S21.7)",
 			str(landed))
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## S21.6: the Deck viewer is every stock as ONE pile, sorted by suit then rank, so no slot order leaks.
 func test_the_deck_viewer_lists_every_stock_as_one_sorted_pile() -> void:
@@ -4297,7 +4317,7 @@ func test_the_deck_viewer_lists_every_stock_as_one_sorted_pile() -> void:
 			"...while the Discard viewer still lists its pile exactly as the pile holds it (S21.6)",
 			_suit_rank_log(DeckViewer._open.deck))
 	await _close_open_viewer(_game_viewport)
-	await _end_game_fixture()
+	await _end_main_fixture()
 
 ## The card the sort must put LAST, so "sorted" and "in slot order" cannot accidentally agree.
 func _card_of_the_latest_suit(cards: Array[CardData]) -> CardData:
@@ -4323,3 +4343,194 @@ func _suit_rank_log(cards: Array[CardData]) -> String:
 	for card : CardData in cards:
 		parts.append("%d/%d" % [card.suit.get_suit_index(), int(card.rank.value)])
 	return ", ".join(parts)
+
+# ------------------------------------------ S23: THE MAP'S NAME POPUP AND ITS SIDEBAR
+
+## A hovered map node is a bare dot, so it is named AT the dot while the sidebar carries the rest.
+func test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar() -> void:
+	await _start_map_fixture()
+	var node := await _hover_a_map_node()
+	var popup := _map.name_popup
+	check(_container.showing_description(), "S23.1: hovering a map node fills the sidebar")
+	check(popup.visible, "S23.1: the name popup shows above the node")
+	check(_popup_text(popup) == _panel.current_entry.title,
+			"S23.1: the popup says the node's name and nothing else",
+			"%s vs %s" % [_popup_text(popup), _panel.current_entry.title])
+	var dot := _map.controller.node_screen_rect(node)
+	check(absf(popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
+			"S23.1: the popup centres on the node",
+			"%s vs %s" % [popup.get_rect().get_center().x, dot.get_center().x])
+	check(popup.position.y + popup.size.y <= dot.position.y,
+			"S23.1: the popup sits entirely above the node",
+			"%s vs %s" % [popup.position.y + popup.size.y, dot.position.y])
+	await _end_main_fixture()
+
+## The name is a label on a dot, not a tooltip trailing the pointer: placed once, then left alone.
+func test_the_name_stays_put_while_the_pointer_moves_inside_the_node() -> void:
+	await _start_map_fixture()
+	var node := await _hover_a_map_node()
+	var placed : Vector2 = _map.name_popup.position
+	var dot := _map.controller.node_screen_rect(node)
+	_hover_in(_map_viewport, dot.get_center() + Vector2(dot.size.x * 0.25, 0.0))
+	await get_tree().process_frame
+	check(_map.name_popup.position == placed,
+			"S23.2: moving inside the node leaves the name where it was",
+			"%s vs %s" % [_map.name_popup.position, placed])
+	await _end_main_fixture()
+
+## Travelling never costs a second click, and the sidebar keeps the last node once the dot is left.
+func test_one_click_travels_and_leaving_keeps_the_last_nodes_description() -> void:
+	await _start_map_fixture()
+	var node := await _hover_a_map_node()
+	var described : InfoEntry = _panel.current_entry
+	_hover_in(_map_viewport, Vector2(_map_viewport.size) * 0.5 - Vector2(4000.0, 4000.0))
+	await get_tree().process_frame
+	check(_container.showing_description() and _panel.current_entry == described,
+			"S23.3: the pointer leaving the node keeps that node's description up")
+	var entered := _count_arrivals()
+	var at := _map.controller.node_screen_rect(node).get_center()
+	_push_mouse_button(at, _map_viewport, true)
+	_push_mouse_button(at, _map_viewport, false)
+	await _await_map_arrival()
+	check(entered.size() == 1 and entered[0] == node,
+			"S23.3: one click enters the node, with no second click", str(entered.size()))
+	await _end_main_fixture()
+
+## A finger has no hover, so the first tap has to be able to ask what a dot is without going there.
+func test_the_first_tap_names_the_node_and_the_second_enters_it() -> void:
+	await _start_map_fixture()
+	var node := _map.controller._sorted_next()[0]
+	var at := _map.controller.node_screen_rect(node).get_center()
+	var entered := _count_arrivals()
+	_push_finger(at)
+	await get_tree().process_frame
+	check(_container.showing_description() and _map.name_popup.visible,
+			"S23.4: the first tap names the node and describes it")
+	check(entered.is_empty(), "S23.4: the first tap does not enter the node", str(entered.size()))
+	_push_synthesised_mouse_press(at)
+	await get_tree().process_frame
+	check(entered.is_empty(),
+			"S23.4: the mouse press the engine synthesises from that finger enters nothing")
+	_push_finger(at)
+	await _await_map_arrival()
+	check(entered.size() == 1 and entered[0] == node,
+			"S23.4: a second tap on the same node enters it", str(entered.size()))
+	await _end_main_fixture()
+
+# A pack's possible contents are a LIST, so they wrap to the sidebar's width under the body rather
+# than squeezing into the name's row -- and they describe nothing, being part of what is described.
+func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> void:
+	await _start_map_fixture()
+	_map._on_node_hovered(_a_booster_node())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var flow := _panel.current_entry.visual as FlowContainer
+	check(flow != null and flow.get_parent() == _panel.get_node(^"%GridSlot"),
+			"S23.5: the pack's preview grid mounts below the body, not beside the name")
+	var cards := flow.find_children("*", "ControlCard", true, false)
+	var rows : Dictionary[float, bool] = {}
+	var inside := true
+	for card : Control in cards:
+		rows[card.position.y] = true
+		inside = inside and card.position.x >= 0.0
+		inside = inside and card.position.x + card.size.x <= flow.size.x + 1.0
+	check(cards.size() > 1 and rows.size() > 1,
+			"S23.5: the preview cards wrap onto more than one row",
+			"%d cards on %d rows" % [cards.size(), rows.size()])
+	check(inside, "S23.5: every preview card lies inside the grid's own width",
+			"grid width %s" % flow.size.x)
+	check(flow.size.x >= _panel.size.x - 1.0,
+			"S23.5: the grid wraps at the sidebar's own width",
+			"%s vs %s" % [flow.size.x, _panel.size.x])
+	var described : InfoEntry = _panel.current_entry
+	_hover_in(_booted_viewport, (cards[0] as Control).get_global_rect().get_center())
+	await get_tree().process_frame
+	check(_panel.current_entry == described,
+			"S23.5: hovering a preview card does not replace the description it belongs to")
+	await _end_main_fixture()
+
+## Whatever is selected is described, by pad and keyboard as well as by pointer.
+func test_selecting_a_node_by_key_describes_it() -> void:
+	await _start_map_fixture()
+	var key := InputEventKey.new()
+	key.keycode = KEY_RIGHT
+	key.pressed = true
+	_map_viewport.push_input(key)
+	await get_tree().process_frame
+	var selected := _map.controller._kb_selected()
+	check(selected != null, "S23.6: an arrow selects a reachable node")
+	check(_container.showing_description(),
+			"S23.6: the selected node is described in the sidebar")
+	check(_popup_text(_map.name_popup) == _panel.current_entry.title,
+			"S23.6: the selected node is named at the dot too")
+	var dot := _map.controller.node_screen_rect(selected)
+	check(absf(_map.name_popup.get_rect().get_center().x - dot.get_center().x) <= 1.0,
+			"S23.6: the name is placed at the node the arrow selected",
+			"%s vs %s" % [_map.name_popup.get_rect().get_center().x, dot.get_center().x])
+	await _end_main_fixture()
+
+## The popup is a MAP affordance for nodes that are just dots; a board card is already drawn.
+func test_no_name_popup_shows_on_the_board() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	_hover(controls[0].get_global_rect().get_center())
+	await get_tree().process_frame
+	var shown : Array[Node] = []
+	for popup : Node in get_tree().root.find_children("*", "MapNamePopup", true, false):
+		if (popup as Control).is_visible_in_tree(): shown.append(popup)
+	check(_container.showing_description(), "S23.7: the board card is described")
+	check(shown.is_empty(), "S23.7: no name popup is visible anywhere on the board",
+			str(shown.size()))
+	await _end_main_fixture()
+
+# The pointer pushed onto a reachable node in the MAP picture's own SubViewport -- the viewport the
+# wall pushes into, so the route under test is the product's own hover.
+func _hover_a_map_node() -> WorldGraphNode:
+	var node := _map.controller._sorted_next()[0]
+	_hover_in(_map_viewport, _map.controller.node_screen_rect(node).get_center())
+	await get_tree().process_frame
+	return node
+
+# A REAL finger: `device` stays at 0, which is what tells it from the mouse press the engine
+# synthesises from it.
+func _push_finger(at: Vector2) -> void:
+	var touch := InputEventScreenTouch.new()
+	touch.position = at
+	touch.pressed = true
+	_map_viewport.push_input(touch)
+
+# The mouse form the engine emulates from a finger press, marked `device` -1 -- it arrives BEFORE
+# the touch event, so a map that read it would travel on the tap that only meant to ask.
+func _push_synthesised_mouse_press(at: Vector2) -> void:
+	_push_mouse_button(at, _map_viewport, true, -1)
+	_push_mouse_button(at, _map_viewport, false, -1)
+
+## Every node the map is entered from here on, so a test can say how many clicks it took.
+func _count_arrivals() -> Array[WorldGraphNode]:
+	var entered : Array[WorldGraphNode] = []
+	_map.controller.node_entered.connect(func(node: WorldGraphNode) -> void: entered.append(node))
+	return entered
+
+# The token walks the edge curve over several frames, so the arrival is waited FOR. Bounded: a
+# travel that never ends is a bug to surface, not one to spin on.
+func _await_map_arrival() -> void:
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		if not _map.controller._moving: return
+
+## The whole of the popup's text, so a check can say it holds the name and nothing besides.
+func _popup_text(popup: MapNamePopup) -> String:
+	var parts : Array[String] = []
+	for label : Label in popup.find_children("*", "Label", true, false):
+		parts.append(label.text)
+	return "".join(parts)
+
+# A node carrying a talent pack, wherever it fell on the generated graph -- the only kind whose
+# entry brings a grid of preview cards.
+func _a_booster_node() -> WorldGraphNode:
+	for node : WorldGraphNode in _map.controller.map.overlay().nodes():
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER:
+			return node
+	return null

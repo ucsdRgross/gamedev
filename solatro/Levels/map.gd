@@ -2,7 +2,7 @@ extends CardEnvironment
 class_name Map
 
 ## The world-map screen: hosts the WorldMapController (worldgen addon + token traversal),
-## resolves node arrivals into games / booster packs, shows the node hover panel, and is
+## resolves node arrivals into games / booster packs, names the hovered node on the map, and is
 ## the CardEnvironment the booster generation mods run against (collections = the run
 ## deck in Main.save_info).
 
@@ -10,6 +10,7 @@ signal enter_game
 
 @onready var controller: WorldMapController = %WorldMapController
 @onready var ui_layer: CanvasLayer = $UI
+@onready var name_popup: MapNamePopup = %NamePopup
 ## Published and nothing more: the wall's one `HudContainer` decides what is shown.
 signal info_hovered(entry: InfoEntry)
 
@@ -149,10 +150,13 @@ func _show_lap_summary() -> void:
 		RunManager.save_run()
 		_update_hud())
 
-# ONLY PUBLISHES the entry, never places it: the card anchors itself to the WINDOW's bottom rather
-# than to the hovered node's screen position, so the map has no placement to compute.
+# The description goes to the container, which anchors itself and needs no placement from here.
+# The NAME also stays at the node, because a map node is a bare dot: the same entry feeds both, so
+# the two can never disagree about what the node is called.
 func _on_node_hovered(node: WorldGraphNode) -> void:
-	info_hovered.emit(MapHoverPanel.get_info(node, run, controller.lap_target()))
+	var entry := MapHoverPanel.get_info(node, run, controller.lap_target())
+	info_hovered.emit(entry)
+	name_popup.show_above(entry.title, controller.node_screen_rect(node))
 
 func _update_hud() -> void:
 	if run == null: return

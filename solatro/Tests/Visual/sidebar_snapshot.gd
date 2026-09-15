@@ -8,6 +8,7 @@ const FALLBACK_OUT_PATH := "user://sidebar_snapshot/game_hud.png"
 const TOP_CASE_OUT_PATH := "user://sidebar_snapshot/game_hud_top.png"
 const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
+const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
@@ -91,6 +92,12 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	_capture(MAP_HUD_OUT_PATH)
+
+	_hover_a_pack_node(main.map_scene)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MAP_POPUP_OUT_PATH)
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
 	await get_tree().process_frame
@@ -469,6 +476,14 @@ func _push_click(viewport: SubViewport, at: Vector2, pressed: bool) -> void:
 	event.position = at
 	event.global_position = at
 	viewport.push_input(event)
+
+# The MAP still: a talent-pack node hovered, so the one frame carries both halves of the map's
+# answer -- the name at the dot, and the pack's whole preview grid in the sidebar beside it.
+func _hover_a_pack_node(map: Map) -> void:
+	for node : WorldGraphNode in map.controller.map.overlay().nodes():
+		if node.meta.get(MapNodeRoles.ROLE_KEY, "") == MapNodeRoles.ROLE_BOOSTER:
+			map._on_node_hovered(node)
+			return
 
 # The map area shows only its loading text until generation finishes -- wait for that state
 # rather than a fixed sleep, so the still is never caught mid-generation.

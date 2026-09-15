@@ -5,7 +5,7 @@ extends Node2D
 ## Camera2D (pan/zoom/follow) and the player token, derives per-lap reachability over the
 ## DAG (forward on even laps, reversed on odd laps), restyles the overlay's own Line2Ds
 ## for the four edge states (traveled / next / usable / hidden), and turns mouse input
-## into node hover + travel.
+## into node hover + travel (a finger's first tap names a node, its second travels there).
 
 signal map_ready
 signal node_entered(node: WorldGraphNode)
@@ -38,6 +38,8 @@ var _pressed : bool = false
 var _dragging : bool = false
 # Keyboard/controller selection: index into _sorted_next(), -1 = nothing selected.
 var _kb_index : int = -1
+# The node the last finger tap named: the next tap on it is the one that travels.
+var _tapped_node : WorldGraphNode = null
 
 var _container_shift : Vector2 = Vector2.ZERO
 
@@ -256,6 +258,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			node_unhovered.emit()
 			get_viewport().set_input_as_handled()
 		return
+	if _consumed_as_touch(event):
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -269,7 +273,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_press_pos = mb.position
 			else:
 				if _pressed and not _dragging:
-					_try_click()
+					_travel_to(_node_at_mouse())
 				_pressed = false
 				_dragging = false
 	elif event is InputEventMouseMotion:
@@ -309,19 +313,48 @@ func _zoom_at(factor: float) -> void:
 	camera.zoom = Vector2(z, z)
 	_apply_camera_offset()
 
-# World-space radius test against all markers (camera zoom is baked into the global
-# mouse position, so no per-zoom math is needed).
-func _node_at_mouse() -> WorldGraphNode:
+# World-space radius test against all markers (camera zoom is baked into the overlay's own
+# local space, so no per-zoom math is needed).
+func _node_at(overlay_pos: Vector2) -> WorldGraphNode:
 	var overlay := map.overlay()
-	var mouse := overlay.get_local_mouse_position()
 	var best: WorldGraphNode = null
 	var best_d := maxf(overlay.node_radius * 2.0, 12.0)
 	for n: WorldGraphNode in overlay.nodes():
-		var d := n.position.distance_to(mouse)
+		var d := n.position.distance_to(overlay_pos)
 		if d < best_d:
 			best_d = d
 			best = n
 	return best
+
+func _node_at_mouse() -> WorldGraphNode:
+	return _node_at(map.overlay().get_local_mouse_position())
+
+# Where `node`'s marker draws in the map viewport's own coordinates -- the space the map's `$UI`
+# overlays live in, so a caller can place something against the dot the player is pointing at.
+func node_screen_rect(node: WorldGraphNode) -> Rect2:
+	var xform := node.get_global_transform_with_canvas()
+	var radius := node.marker_radius * xform.get_scale()
+	return Rect2(xform.origin - radius, radius * 2.0)
+
+# A MAP NODE IS A BARE DOT, so a finger has to be able to ask what one is without travelling to
+# it: the first tap names and describes the node, only a second tap on that same node enters it.
+# The engine's own mouse form of a finger press (device -1) arrives first and is swallowed here.
+func _consumed_as_touch(event: InputEvent) -> bool:
+	if event is InputEventMouseButton and event.device == -1:
+		return true
+	var touch := event as InputEventScreenTouch
+	if touch == null or not touch.pressed or touch.device == -1:
+		return false
+	var node := _node_at((map.overlay().make_input_local(touch) as InputEventScreenTouch).position)
+	if node == null:
+		return false
+	if node == _tapped_node:
+		_travel_to(node)
+	else:
+		_tapped_node = node
+		_hovered = node
+		node_hovered.emit(node)
+	return true
 
 func _update_hover() -> void:
 	var n := _node_at_mouse()
@@ -333,12 +366,13 @@ func _update_hover() -> void:
 	else:
 		node_unhovered.emit()
 
-func _try_click() -> void:
-	if _moving:
+# Empty space is the ordinary outcome of a click on a map, so nothing there is not a refusal.
+func _travel_to(node: WorldGraphNode) -> void:
+	if node == null or _moving:
 		return
-	var n := _node_at_mouse()
-	if n != null and n in next_nodes_of(_current):
-		move_to(n)
+	if node in next_nodes_of(_current):
+		_tapped_node = null
+		move_to(node)
 
 # Travel to a directly reachable node: walk the routed edge curve (reversed point order
 # on odd laps), record the history entry in forward-edge orientation, then re-derive
