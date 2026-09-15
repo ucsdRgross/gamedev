@@ -849,7 +849,23 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      three suites still run their Main fixtures unpaused, because they run concurrently with
      the ordering chain and a leftover pause hangs them; moving them into the chain would let
      them use the host.
-   - still owed: close fix 6b (structural simplify residue, plus `pile_center`'s
+   - close fix B1 (test rows that could not fail; tests only): 7.5 asserts each reveal arm alone
+     (`and` for `or` turned both reveal arms red); 6.3's source-text pin deleted, the row now
+     compares the dealt arm against a player's click on the same card (setting flags directly
+     turned it red); 4.7 drains the ARMED slot's own stock and gained the "End is not revealed"
+     check the row named but nothing asserted; 6.1 moves focus off the armed card with a real
+     arrow and re-arms through Undo ("null" is unobservable in the shipped show - TEST_PLAN row
+     text corrected); the End-hidden sampler counts its samples; TestDragPlace uses
+     GOAL_OUT_OF_REACH (goal 1 never ended a show, by luck); TestSidebar and TestDragPlace call
+     `check_all_tests_registered()` (the gate only matched `run_`; extended to `test_` in
+     test_base.gd, no gated suite changes); the Fix 13.1 pan waits for the moved value and the
+     settle polls wait a physics frame - five `--filter Sidebar` runs each 1024 PASSED. Every
+     strengthened row went red with its product behaviour neutralised, restored byte-for-byte.
+   - still owed: close fix B2 (route fidelity: 2.2/2.6 through PlayArea at a zoom other than
+     1.0; 1.12's hand-emitted `node_hovered`, 6.10's and 6.1's `pressed.emit()`, the cross-show
+     rows' direct `end_show()` - drive the real routes; 3.1-3.3 read the product's
+     `board_inset_left`; 7.2's "after the last line" fixture; the test text "a show never
+     resolves on its own"), close fix 6b (structural simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
      `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
@@ -898,6 +914,21 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    mode, so the intersection method must be stated or built; plan-run Interruptions' "never
    resume mid-step" is too absolute; a reviewer's "none" is a claim to grep too; the
    overseer's allowed `grep -c` is dishonest for line endings.
+   APPLIED by an Opus 5 editor to 7 `.claude/` files (plan-run SKILL, plan-implementer, tests-
+   that-prove-nothing, running-godot-scenes, one-fix-at-a-time, handoff SKILL, fx-verify SKILL):
+   all 12 items; full doc_check 0 errors, 9 warnings before and after. OWNER CALLS left unchanged:
+   (1) is the deferred legacy-comment ruling permanent (plan-implementer still says every touched
+   file leaves compliant)? (2) doc_check has no added-lines mode (a tool change); (3) the hook file
+   `one-subagent-at-a-time.ps1` and `release-subagent-lock.ps1`'s comment still say one (renaming
+   touches settings.json). The root CLAUDE.md's ~190 s / ~65 s were replaced by the overseer
+   ("minutes long", no number; `running-godot-scenes.md` holds the measurement). The editor had
+   written the grep trap backwards ("reports LF on a CRLF file") in plan-run SKILL.md:41 and
+   plan-implementer.md:108; corrected to the measured "counted CR on every line of an LF
+   file". Committed copies stay LF (`git ls-files --eol`: i/lf; the working copies are CRLF
+   only through `core.autocrlf=true`).
+   One more trap for the owner to weigh: in this session's Bash tool, a doubled backslash inside
+   a quoted heredoc reached Python as a single one (a SyntaxError once, and a byte replacement
+   that silently matched nothing once); building the character with `chr(92)` worked.
    Add (from this run's own overseer error): before dispatching a brief, script-check every
    quoted `**Qnnn = (x)**` against answers.json - the S23 brief misquoted Q135 and a whole step
    built the rejected option; the overseer rules forbid reading code but a bounded script over
