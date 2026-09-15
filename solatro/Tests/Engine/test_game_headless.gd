@@ -40,6 +40,7 @@ func _ready() -> void:
 	await test_goal_reached_ends_the_show()
 	await test_goal_is_asked_after_the_whole_placement()
 	await test_undo_rewinds_an_automatic_end()
+	await test_undo_during_the_hold_cannot_turn_the_win_into_a_loss()
 	await test_full_board_does_not_end_the_show()
 	behavior_section("COMPARATOR RULES CARDS, THROUGH A REAL GAME")
 	await test_comparator_rules_change_a_real_act()
@@ -883,6 +884,8 @@ func test_goal_reached_ends_the_show() -> void:
 
 func test_goal_is_asked_after_the_whole_placement() -> void:
 	var g := _goal_game(TestGridFixtures.build_fix_triple(), GOAL_WITHIN_ONE_LINE)
+	var spy := RefillSpy.new()
+	g.state.rules_deck.append(rules_card(spy))
 	var score_at_resolve : Array[int] = []
 	g.show_resolved.connect(func(_w: bool, score: int, _g: int) -> void:
 		score_at_resolve.append(score))
@@ -896,9 +899,9 @@ func test_goal_is_asked_after_the_whole_placement() -> void:
 	check(score_at_resolve[0] == g.state.live_total(),
 			"the show resolved on the SETTLED total -- every line of that placement had scored",
 			"at resolve %d, settled %d" % [score_at_resolve[0], g.state.live_total()])
-	check(g.state.committed_grid == 0,
-			"the end fired BEFORE the placement's tail -- the refill and the commitment lift never ran",
-			str(g.state.committed_grid))
+	check(not spy.fired,
+			"the end fired BEFORE the refill -- an ended show never deals another hand (7.2)",
+			str(spy.fired))
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
@@ -912,6 +915,36 @@ func test_undo_rewinds_an_automatic_end() -> void:
 			"undo rewinds an automatic end exactly as it rewinds a manual one")
 	check(not g.processing,
 			"and the player is back on a live board, not locked behind an outcome")
+	check(g.state.card_at(BoardCoord.new(0, 4, 0, 0)) != null,
+			"the WINNING PLACEMENT survives the undo -- only the end was rewound (7.3)")
+	check(g.state.live_total() >= g.state.goal,
+			"and the row it completed is still scored on that board",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	CardEnvironment.CURRENT = null
+	free_game(g)
+
+# The hold between the winning placement and the outcome is a board LOCK, not an open window: an
+# undo taken inside it would pop the pre-placement board and leave the pending end to resolve that
+# rewound board as a LOSS. Headless has no wait, so the lock's ORDER is what is observable.
+func test_undo_during_the_hold_cannot_turn_the_win_into_a_loss() -> void:
+	var g := _goal_game(TestGridFixtures.build_fix_grid_1(), GOAL_WITHIN_ONE_LINE)
+	var locked_while_the_win_was_pending : Array[bool] = [false]
+	var seq : Array[String] = []
+	g.processing_changed.connect(func(busy: bool) -> void:
+		seq.append("b=%s met=%s end=%s" % [busy, g.state.has_met_goal(), g.state.show_ended])
+		if busy and g.state.has_met_goal() and not g.state.show_ended:
+			locked_while_the_win_was_pending[0] = true)
+	var resolved : Array[bool] = []
+	g.show_resolved.connect(func(won: bool, _s: int, _g: int) -> void: resolved.append(won))
+	for x : int in 5:
+		await _place_built(g, x, 0, x + 2)
+	check(locked_while_the_win_was_pending[0],
+			"the board was locked from the moment the goal was met, before the show ended",
+			" | ".join(seq))
+	check(g.processing,
+			"and the lock is still held at the outcome, so undo cannot rewind the placement")
+	check(resolved.size() == 1 and resolved[0] and g.state.show_ended,
+			"the pending end resolved the WINNING board", str(resolved))
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
@@ -931,6 +964,16 @@ func test_full_board_does_not_end_the_show() -> void:
 			"a full board does not end the show -- only the goal does")
 	CardEnvironment.CURRENT = null
 	free_game(g)
+
+# The Entrance refill is the one thing an ended show must not do, and nothing else in these
+# fixtures observes it: no shipped rules card implements the hook.
+class RefillSpy extends CardModifierSkill:
+	var fired : bool = false
+	func get_str() -> String: return "RefillSpy"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_refill() -> void:
+		fired = true
 
 # ==============================================================================
 # TP-80i -- THE RETIRED ACT HAS NO READERS.

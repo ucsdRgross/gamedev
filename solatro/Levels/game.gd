@@ -324,8 +324,18 @@ func _resume_after_visuals() -> void:
 		_resolve_game()  # fully submitted before the quit — re-show win/lose (input stays locked)
 	elif Main.save_info.pending_action != &"":
 		await _replay_pending_action(Main.save_info.pending_action)
+		await _end_show_if_goal_met()
 	else:
-		processing = false  # nothing pending — the restored board is live again
+		await _end_show_if_goal_met()
+		if not state.show_ended:
+			processing = false
+
+# A quit inside the winning hold saved the board but not its outcome, and a replay runs under the
+# board lock where the placement's own goal check is skipped. Resume is where that check runs
+# instead, so the goal never ends up met on a board that is still live.
+func _end_show_if_goal_met() -> void:
+	if state.has_met_goal():
+		await _end_show_on_goal()
 
 ## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
 ## board is the exact pre-action board, and these actions are deterministic — scoring has no
@@ -821,20 +831,22 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 		await view.await_card_settled(card)
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
-	## A SETTLED board, and before the refill: an already-won show never deals another hand, and an effect's nested placement is part of the act rather than its end.
+# A SETTLED board, and before the refill: an already-won show never deals another hand. The guard
+# is the board lock, so a placement made while the board is locked (a cascade's own, a resume
+# replay) is not an ending. The winning placement commits BEFORE the hold, like every other.
 	if not processing and state.has_met_goal():
+		await _commit_placement()
 		await _end_show_on_goal()
 		return
 	await refill_entrance_if_due()
+	await _commit_placement()
+
+# A placement's commit: the grid commitment lifts once that grid has no legal placement left, and
+# a PLAYER's placement is the undo step. The snapshot is taken LAST so it carries the scores the
+# placement caused; under the board lock the placement belongs to the act that caused it instead.
+func _commit_placement() -> void:
 	if state.committed_grid != -1 and await _no_legal_placement_remains_in_grid(state.committed_grid):
 		state.committed_grid = -1
-	# THE PLACEMENT IS THE UNDO STEP -- one snapshot each, never a batch of five, exactly as
-	# try_place commits a player's drop. Taken LAST on purpose: the scores a placement caused
-	# live on `state`, so a snapshot taken any earlier would rewind the board without rewinding
-	# what it scored. A placement that moved nothing never got here (the guards above return),
-	# and save_state() skips an unmoved `revision` anyway, so putting a held card back still
-	# costs nothing. ⚠ Same `processing` guard as the act reset above: a placement made by an
-	# effect mid-cascade is part of the act that caused it, not an undo step of its own.
 	if not processing:
 		save_state()
 
@@ -933,13 +945,13 @@ func draw_card(slot: int) -> CardData:
 func _update_submit_label() -> void:
 	submit_label_changed.emit(TRANSLATION.find('END_SHOW_BUTTON'))
 
-# Holds the settled board for the same read beat the cascade holds a revealed section for, so
-# the winning total is visible before the outcome screen covers it. Headless waits on nothing,
-# which keeps the logic tier byte-identical to the played one.
+# Holds the settled board for the same read beat the cascade holds a revealed section for, so the
+# winning total is visible before the outcome screen covers it. THE BOARD IS LOCKED ACROSS THE
+# HOLD: an undo or a second placement inside it would rewind the very win about to be resolved.
 func _end_show_on_goal() -> void:
-	if view:
-		await Pacing.wait(self, get_delay()
-				* SettingsManager.settings.spotlight_hold_fraction).timeout
+	var hold : float = get_delay() * SettingsManager.settings.spotlight_hold_fraction
+	processing = true
+	if view: await Pacing.wait(self, hold).timeout
 	end_show()
 
 ## The performance ends here, by the End button or by the goal; the state is marked resolved BEFORE saving, so a quit at the outcome screen resumes into the outcome and not a live board.

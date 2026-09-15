@@ -41,6 +41,8 @@ const CYCLES := 10
 ## Session cycles are a whole double-show each — keep the count small.
 const SESSION_CYCLES := 3
 const WATCHDOG_SECS := 10.0
+## Higher than any board here scores, so a phase about allocation never trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 1000000
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const HOVER_PANEL_SCENE := preload("res://UI/map_hover_panel.tscn")
@@ -521,7 +523,8 @@ func _session_cycle() -> void:
 	# real scoring (props spawn + finish inside the awaited resolution -- see the placement fill
 	# below), UNDO across it (the quiescent Game.undo() drops the popped snapshot), redo,
 	# quit-mid-show -> resume, win.
-	run.pending_goal = 1
+	## Out of reach until the resumed board is in place: a met goal ends a show by itself, and this phase needs the quit to interrupt a LIVE show.
+	run.pending_goal = GOAL_OUT_OF_REACH
 	run.pending_node_id = 2
 	seed(424242)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
@@ -559,10 +562,9 @@ func _session_cycle() -> void:
 
 	var won : Array[bool] = []
 	g2.show_resolved.connect(func(w: bool, _score: int, _goal: int) -> void: won.append(w))
-	# The resumed board is whatever the quit committed; score a line on it so the goal of 1 is
-	# met through the real path rather than by assuming the pre-quit score survived.
+## The resumed board is whatever the quit committed, so the win is scored on it rather than assumed from the pre-quit score.
+	g2.state.goal = 1
 	await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
-	g2.end_show()
 	check_impl(won.size() == 1 and won[0], "the seeded show resolves as a win", str(won))
 	g2.exit_show()   # win path: return_to_map banks the deck into the run doc
 	await _settle()

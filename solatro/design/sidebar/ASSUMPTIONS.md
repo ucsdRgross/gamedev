@@ -716,9 +716,8 @@
   assigned until after the deal.
 - S22: the goal check sits in `Game.place_card_in_grid` between `run_all_mods(&"on_card_placed")`
   and `refill_entrance_if_due()`, guarded on `not processing`, and RETURNS -- so an ended show runs
-  neither the refill nor the commitment lift nor the placement's own `save_state()` (`end_show()`
-  saves for it). This is the reading of "after the WHOLE placement resolves" that excludes the
-  Entrance refill.
+  the placement's own commit (Phase 7 fix 9) but never the Entrance refill. This is the reading of
+  "after the WHOLE placement resolves" that excludes the refill.
 - S22: `Game._end_show_on_goal()` is the pause plus the existing `end_show()`. The pause is
   `get_delay() * SettingsManager.settings.spotlight_hold_fraction` through `Pacing.wait`, guarded
   `if view:` so headless stays byte-identical. No new knob: the design named none, and the hold
@@ -748,3 +747,20 @@
   topmost control, minus the slots showing only a face-down card, so the arrows walk from one
   revealed card to the next. Clearing both links every rebuild is part of it: the controls are
   pooled, so a stale path would outlive the slot that earned it.
+- Phase 7 fix 9: `Game._commit_placement()` is a placement's commit -- the grid commitment lift plus
+  the `save_state()` a PLAYER's placement owes. The winning placement runs it BEFORE the hold, so
+  undo after an automatic end rewinds only the end and the winning row survives.
+- Phase 7 fix 9: `Game._end_show_on_goal()` takes the board lock (`processing = true`) before the
+  hold, so no undo, re-arm or second placement fits inside it. The hold length is read from
+  `get_delay()` FIRST, because the lock is what compresses it.
+- Phase 7 fix 9: `Game._end_show_if_goal_met()` re-fires the goal check on resume (after a replay,
+  and on the no-marker branch). A board loaded with the goal met and no outcome saved therefore
+  ends the show -- including a board saved after an undo of an automatic end, which is
+  indistinguishable on disk and which the goal-ends-a-show rule wins.
+- Phase 7 fix 9: `TestGameHeadless.RefillSpy` is a test-only skill whose `on_refill` records the
+  hook; it is how 7.2 proves the end fired BEFORE the refill (`committed_grid` no longer says so,
+  because the commitment lift now runs with the placement's commit).
+- Phase 7 fix 9: `TestGridCards.GOAL_OUT_OF_REACH` and `TestLeakCanary.GOAL_OUT_OF_REACH` join the
+  three S22 ones: TP-122's placement scores thousands, and the leak canary's phase 4 quits
+  mid-show, so neither may reach the goal. The canary drops its goal to 1 on the RESUMED board and
+  lets the automatic end resolve the win (its `end_show()` call was a no-op after it).

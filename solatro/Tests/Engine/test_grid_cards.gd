@@ -3,6 +3,9 @@ extends TestSuite
 # Phase 4 of the poker-patience board: the rules cards that manage the grid board itself.
 # TP-62..TP-65 -- SkillGridAllotment matches the grid count to the deck size at game start.
 
+## Higher than any fixture here can score, so a test about something else never trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 1000000
+
 func suite_name() -> String:
 	return "GRID CARDS"
 
@@ -684,6 +687,8 @@ func run_undo_rewinds_every_score_a_placement_made_test() -> void:
 	# FIX-TRIPLE: cell (2,2) completes row 2, column 2 and a diagonal at once.
 	var fixture := TestGridFixtures.build_fix_triple()
 	g.state.grids = fixture.grids
+	## Out of reach: this placement scores thousands, and a met goal would end the show, whose own snapshot is what undo would then rewind instead of the placement's.
+	g.state.goal = GOAL_OUT_OF_REACH
 	g.save_state()
 	var before_total := g.state.live_total()
 	var before_history := g.save_history.size()

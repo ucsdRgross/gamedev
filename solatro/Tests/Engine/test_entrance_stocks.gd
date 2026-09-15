@@ -7,6 +7,9 @@ extends TestSuite
 # CATEGORY MAP: BEHAVIOR -- which card a slot produces and when the show runs out of them.
 # The walker and verifier checks are IMPLEMENTATION.
 
+## Low enough that one completed row clears it, the way the auto-end tests aim their goal.
+const GOAL_WITHIN_ONE_LINE : int = 10
+
 func suite_name() -> String:
 	return "ENTRANCE STOCKS"
 
@@ -15,6 +18,7 @@ func _ready() -> void:
 	await run_round_robin_deal_test()
 	await run_same_order_deals_identically_test()
 	await run_replayed_placement_is_identical_test()
+	await run_resume_ends_a_show_whose_goal_is_met_test()
 	await run_removed_slot_pours_into_bottoms_test()
 	await run_added_slot_pulls_bottoms_test()
 	await run_exhausted_slot_stays_empty_test()
@@ -159,6 +163,55 @@ func run_replayed_placement_is_identical_test() -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_info
+
+
+# ==============================================================================
+# A quit inside the winning hold saves the board WITHOUT its outcome, so the resume re-checks.
+# ==============================================================================
+func run_resume_ends_a_show_whose_goal_is_met_test() -> void:
+	behavior_section("A RESUME ENDS A SHOW WHOSE GOAL IS ALREADY MET")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	backup_real_save(suite_tag())
+	Main.save_info = RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	var g : Game = await _stock_game(TestDecks.deck_standard_52(), 5)
+	g.state.grids = TestGridFixtures.build_fix_grid_1().grids
+	_add_scoring_rules(g)
+	g.state.goal = GOAL_WITHIN_ONE_LINE
+	g.save_state()
+	for x : int in 5:
+		var card := TestFactories.m_card(x + 2, TestFactories.uc())
+		card.stage = CardData.Stage.PLAY
+		await g.place_card_in_grid(card, BoardCoord.new(0, x, 0, 0))
+	check(g.state.show_ended,
+			"precondition: the completed row cleared the goal and ended the show",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	g.state = g._runtime_state(g.save_history[-2])
+	g.save_history = [g.save_history[-2]]
+	RunManager.run.pending_action = &""
+	check(g.state.has_met_goal() and not g.state.show_ended,
+			"the board a quit inside the hold left on disk: goal met, outcome not saved yet",
+			"%d/%d ended=%s" % [g.state.live_total(), g.state.goal, g.state.show_ended])
+	g.processing = true
+	await g._resume_after_visuals()
+	check(g.state.show_ended,
+			"resuming it ends the show instead of handing back a live board with the goal met")
+	check(g.processing,
+			"and input stays locked behind the outcome")
+	_free_game(g)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_info
+
+## The two shipped rules cards that make a completed row score, which is what reaching a goal needs.
+func _add_scoring_rules(g: Game) -> void:
+	for skill : CardModifierSkill in ([SkillLineDetector.new(), SkillEvalPokerBest.new()] as Array[CardModifierSkill]):
+		var card := CardData.new().with_skill(skill)
+		card.stage = CardData.Stage.RULES
+		skill.spotlit = true
+		g.state.rules_deck.append(card)
 
 
 # ==============================================================================
