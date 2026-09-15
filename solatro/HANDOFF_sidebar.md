@@ -80,7 +80,10 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   revealed card and a fresh face-down appears beneath it while the stock still has cards; the cap
   knob is deleted (no caller). DESIGN §4 / chart I8 need the owner's correction at the close.
 - **Card back, the owner's words verbatim (given after S21 landed):** *"cardback should be frame
-  3"* — the face-down card draws frame 3 of the card sprite sheet. Built as a fix after S22.
+  3"* — the face-down card draws frame 3 of the card sprite sheet. Built after fix 9:
+  `CardVisual.CARD_BACK_FRAME` = 3 (and `BLANK_CARD_FRAME` = 1 names the branch's old bare
+  literal); a "frame" is the UV window `CardOutline.frame_polygon` writes. By eye
+  entrance_stocks.png: a red back with a gold star under each revealed card.
 - `plan-implementer` maxTurns 50 → 150 (edited on main and on this branch).
 - Legacy comment debt is DEFERRED to its own pass: a step keeps every comment it writes or edits
   compliant and leaves old comments in touched files alone. `doc_check --changed` findings on those
