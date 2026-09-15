@@ -274,6 +274,26 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   also leaves `_next_grab_follows` set; `arm_leftmost`'s body is pinned by 6.3's source test to
   exactly two "grab" occurrences, so the clear cannot live there. Open, low.
 
+## Phase 5 re-review of the fix commits (Fable 5.1, 8cfb5eee..9d69ac1e) — 3 confirmed, 2 suspected
+1. CONFIRMED fix 4 does not reach the TOUCH route: `_consume_as_touch_tap` sets
+   `_tapped_this_gesture` from `_pair_taps`' answer, false on a refusal, so the refused finger
+   pair's emulated release falls through to `_on_gui_input` and places again (finding 7 on touch).
+   The touch refusal row spies only `save_history.size()`, not `data_selected`. → fix 5.
+2. CONFIRMED (test surface) the finding-6 pin row asserts only `not (owner is ScrollContainer)`,
+   which a null focus owner satisfies; it never asserts the owner is a board card. → fix 5 (same
+   dispatch, test-only).
+3. SUSPECTED fix 4 swallows a legitimate rapid second placement on the SAME cell inside the OS
+   double-click interval (place A on X, click X again to stack B) — Q93a=a refuses the TAP, not
+   necessarily the click. OWNER CALL: is rapid same-cell stacking meant to cost a wait? Recorded,
+   not changed.
+4. CONFIRMED (flag survival) `_next_grab_follows` stays set after a REFUSED `try_grab` (click a
+   board card while nothing is grabbable); via Undo it is cleared (`ungrab_cards` first); via the
+   processing edge (End → cascade → arm) unread. → fix 6: clear it where the refused pickup drops.
+5. SUSPECTED the finding-8 pin row pins the fixture's tree order (container above the board's
+   viewport) rather than the product's. Noted; low.
+- Fixes 1–3 traced clean on the real routes; no design ids in production code from these commits
+  (test-side citations are the standing backlog pattern).
+
 ## Gaps
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
