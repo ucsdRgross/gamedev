@@ -861,11 +861,25 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      test_base.gd, no gated suite changes); the Fix 13.1 pan waits for the moved value and the
      settle polls wait a physics frame - five `--filter Sidebar` runs each 1024 PASSED. Every
      strengthened row went red with its product behaviour neutralised, restored byte-for-byte.
-   - still owed: close fix B2 (route fidelity: 2.2/2.6 through PlayArea at a zoom other than
-     1.0; 1.12's hand-emitted `node_hovered`, 6.10's and 6.1's `pressed.emit()`, the cross-show
-     rows' direct `end_show()` - drive the real routes; 3.1-3.3 read the product's
-     `board_inset_left`; 7.2's "after the last line" fixture; the test text "a show never
-     resolves on its own"), close fix 6b (structural simplify residue, plus `pile_center`'s
+   - close fix B2 (tests drive the real routes; tests and TEST_PLAN text only, production
+     untouched): new row 2.7 presses the armed card at a real board zoom (1.739; threshold
+     17.4 px) and releases just under it (the click) and just over it (a drop - no legal cell
+     sits within a threshold of an Entrance card, 55 px, so a placement is geometrically
+     impossible; TEST_PLAN 2.7 says so); 1.12 hovers a map node for real; 6.10, the Deck row,
+     End and Continue are real clicks through the root viewport (the click helper now waits
+     for the button's rect to settle); the two cross-show rows and the outcome row reach End
+     through its click; 3.1-3.3 assert the published `board_inset_left`/`board_inset_top`;
+     7.2 adds a test-local `PlacementBonus` whose `on_card_placed` adds score, so the end
+     fires only after it; the lying test text is renamed. KEPT: 6.1's `pressed.emit()` (a
+     real click empties the game picture's focus owner, the value 6.1 checks, measured twice;
+     the comment says so). RESIDUE: the End-click helper reveals End by moving every stock to
+     the discard, setting goal 0 and bumping `revision` by hand - the shortcut close item 4
+     finding (3) named on 7.5; `test_a_new_run_does_not_inherit_the_maps_last_description`
+     still calls `_map._on_node_hovered` directly. TEST_PLAN also corrected: 3.4 (the centre
+     does NOT move), 9.5 (one face-down card, frame 3), §11 (G12 untested; charts I and K by
+     eye), 2.2/2.6 wording, 7.2 to its new fixture. Every changed row red with its product
+     behaviour neutralised, restored byte-for-byte.
+   - still owed: close fix 6b (structural simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
      `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
@@ -889,6 +903,18 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    HEADLESS_TESTING.md:49; DESIGN_DOC.md:129,291; fx-verify SKILL.md:56-60 (`wall_info_snapshot`
    gone, add `sidebar_snapshot`). architecture-map.md: add the two-coordinate-spaces seam and
    the screen-owned-state seam.
+   APPLIED (part 1, Opus 5 editor): DESIGN.md node I8 and the override table (seven superseded
+   answers, the S21 ruling quoted once), the cap knob row deleted from DESIGN and NAMES, the
+   deck-spawn wording, the flip bullet (`face_down`, frame 3); PLAN.md's two S21 lines; NAMES
+   §3 gained the 13 public names the close added; IMPACT.md's pile bullet; START_HERE,
+   ARCHITECTURE_REVIEW, LAYERING, PICTURE_WALL, HEADLESS_TESTING, DESIGN_DOC stale references;
+   todo.md's dead `%MultScore` item deleted and "Sidebar: ten open gaps" added under Waiting on
+   the owner; architecture-map.md's two seams. K9 untouched (Q135=(b) is right; GAP-010).
+   Full doc_check 0 errors, 9 warnings. STILL OWED for part 2 (after close fix 6b): the
+   ARCHITECTURE_REVIEW §1.6 contract fold (it also retires rule 8 in a numbered list at
+   ~:680, which still describes the deleted inspector panel), PICTURE_WALL's container
+   landmine and wiring table, DESIGN_DOC.md:965 ("a show now ends when the player presses
+   End"), the six stale ASSUMPTIONS names, briefs/ and this handoff deleted once folded.
 9. `consolidate-memory`: PENDING.
 10. Tooling feedback - PROPOSAL drafted by a read-only Opus 5 analyst, not yet applied (the
    edits land after the fixes). 14 traps, ranked by what they would have saved: (1) state that
