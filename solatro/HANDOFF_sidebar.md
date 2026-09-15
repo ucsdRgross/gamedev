@@ -342,6 +342,36 @@ default effort. Overseer: Opus 5 through S4, then Fable 5.1 at high effort; it w
   with the same union would pass). Missing rows: click on the face-down card (fix 7), arrow across
   an empty-held slot (fix 8), old-save refusal, `return_to_map` with a parked stock.
 
+## Phase 7 review (adversarial, Fable 5.1, at S22 over bbc544e7..52f293b9) — 4 confirmed, 2 suspected
+One root cause behind 1–3: the goal check's early `return` skips the placement's `save_state()`,
+and the hold beat runs with `processing` false.
+1. CONFIRMED the hold is an open window: the re-arm fires, Undo is enabled and pops the
+   PRE-placement snapshot, then the timer's `end_show()` resolves the rewound board as a LOSS; a
+   second placement inside the hold runs its cascade under the outcome screen. → fix 9.
+2. CONFIRMED a quit inside the hold resumes onto a live/locked board with the goal met: only the
+   pre-placement board plus the `on_placement` marker are on disk; the replay runs with
+   `processing` true, so the goal check is skipped and the refill runs. → fix 9 (the check must
+   re-fire on resume when the outcome was never saved).
+3. CONFIRMED undo after an automatic end rewinds the WINNING PLACEMENT too (history holds
+   pre-placement, ended — the post-placement snapshot was never written); Q109=a "exactly as a
+   manual one" not met. 7.3 never asserts the winning row survives. → fix 9.
+4. CONFIRMED (dormant) the comment "an effect's nested placement is part of the act" is false:
+   `on_card_placed` handlers run with `processing` false, so a nested `place_card_in_grid` enters
+   as a player placement with its own goal check. No shipped handler exists. → fix 9 (comment).
+5. SUSPECTED End flashes at show start: `%Submit` defaults visible and `grids_are_full()` over
+   ZERO grids is true during the deal's `revision` bump before `on_game_start` builds a grid. →
+   reproduce after fix 9.
+6. SUSPECTED an armed card rides into the outcome screen (nothing ungrabs on `_on_show_resolved`;
+   pre-existing for a manual End with a card armed, now the default path). → reproduce after fix 9.
+- TEST SURFACE: `test_e2e_run.gd` still prints "a show never resolves on its own" and
+  `test_end_show_is_the_only_resolver` keeps its name — both true only because their goals are
+  pinned to 10^8/10^6 (re-aim their text at the close); `test_full_board_does_not_end_the_show`
+  proves only the trivial half (total 0); 7.5 drives `revision` by hand (the real edges bump it
+  by reading). A fixture that WOULD prove 7.2's position: a test-only modifier whose
+  `on_card_placed` adds score.
+- Clean: `_refresh_end_reveal` one writer, rebound on state swap; the Goal colour through
+  `PaletteDB.ROLES.goal_met`; `end_show()`'s save-before-resolve for a post-timer quit.
+
 ## Gaps
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
