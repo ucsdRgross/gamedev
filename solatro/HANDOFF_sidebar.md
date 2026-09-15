@@ -712,7 +712,16 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      TestInteraction's outcome-undo test, RED on HEAD (armed card not in the restored
      Entrance; card total 71 vs 70), green after. Full runs: one failed on the flaky Fix 13.1
      pan precondition, the second passed `ALL 48 SUITES: 4723 CHECKS PASSED [21]`.
-   - still owed: close fix 2 (map/menu memory survives New Run), 3 (a refused drag places the
+   - close fix 2 (review item 2 finding 2, the map's and menu's remembered description
+     survived New Run and the picker's close): `HudContainer.connect_for_screen` connects the
+     screen's `tree_exiting` one-shot to `disconnect_for_screen`, and the three hand-written
+     `_exit_tree` pairs are deleted. Each screen calls `release_screen` where its content ends:
+     GameView on leaving the tree, `Map.start_run` (the map scene persists across runs), the
+     deck picker leaving the tree. New consts `HudContainer.MAP_SCREEN`/`MENU_SCREEN`
+     (main.gd still spells the strings). Two TestSidebar rows RED on HEAD (Sidebar 708 passed,
+     2 FAILED), green after (710); 1.14 still green. Continue shares `start_run` but no test
+     drives it.
+   - still owed: close fix 3 (a refused drag places the
      armed card), 4 (a dismissed description re-shows on return), 5 (DISCARD/RULES fly-to in
      the wrong space), 6 (conventions and simplify residue), A (Main fixtures under the
      product's pause state), B (weak test rows and the pan flake); reproduce first: the pad
