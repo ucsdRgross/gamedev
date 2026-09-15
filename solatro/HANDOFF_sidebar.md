@@ -9,9 +9,11 @@ three confirmed are ruling contradictions filed as GAP-006/007/008 (owner calls,
 fixes 1–4 landed (1925fd9b, dcc81b8d, 22aa4207, fix 4 after 582e1883); suspected 6 and 8 did
 not reproduce (rows pin them); the bounded re-review found 3 confirmed, fixed as fix 5 and fix 6
 (after dabde1e1). Phase 6 landed: S19 fde80a92 (48 suites), S20 0cdd8e23, S21 under the owner's
-mid-run one-face-down ruling (see Owner rulings). **Next: S22** (brief `briefs/S22.md`), then
-Phase 8 (S23), the closing phase S24 — all in this run (owner ruling). Briefs S19–S23 are in
-`solatro/design/sidebar/briefs/`. GAP-004 is open, non-blocking.
+mid-run one-face-down ruling (see Owner rulings); its review's two confirmed defects fixed (fix
+7, fix 8). Phase 7 landed: S22 52f293b9; its review's root cause fixed (fix 9), End's authored
+default (fix 10), the resolve ungrab (fix 11); the card back is frame 3 (owner ruling). **Next:
+S23** (brief `briefs/S23.md`), then the closing phase S24 — all in this run (owner ruling).
+GAP-004 is open, non-blocking.
 ⚠ The owner's other worktree (`../gamedev-boardplan`) runs the suite unannounced; check
 `tasklist | findstr Godot_v4.7` before every run and wait it out — a concurrent run rotates
 `godot.log` and fabricated one GRID VIEW failure this session. PID 3020 is a stale Godot 4.1.2
@@ -375,7 +377,10 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    reachability test forces Submit visible to measure geometry (fix 10).
 6. SUSPECTED → REPRODUCED: `end_show()` puts the outcome up while `play_area.selected_cards`
    still holds the armed card (red: "the resolved show holds no armed card"; the test is in the
-   P7REPRO evidence file, not the tree). → fix 11: ungrab at `GameView._on_show_resolved`.
+   P7REPRO evidence file, not the tree). → fixed, `GameView._on_show_resolved` ungrabs through
+   the existing `ungrab_cards()` BEFORE `disable_board_focus()` (measured: the reverse order
+   breaks TestInteraction's game-over focus check, since a rebuild births FOCUS_ALL controls),
+   fix 11.
 - TEST SURFACE: `test_e2e_run.gd` still prints "a show never resolves on its own" and
   `test_end_show_is_the_only_resolver` keeps its name — both true only because their goals are
   pinned to 10^8/10^6 (re-aim their text at the close); `test_full_board_does_not_end_the_show`
