@@ -896,13 +896,24 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      passed, 1 FAILED), restored green. dup_check 80 -> 80 (each copy was under its 8-line
      threshold). New names `cover_scale`, `inset_beside`, `fallback_focus` in ASSUMPTIONS;
      `host_viewer` in NAMES §3.
-   - still owed: close fix 6b-2 (per-hover recompute of `_entrance_drawn_columns`,
-     `_refresh_card_marking` twice per focus change, `_refresh_end_reveal` twice per revision,
-     the popup's per-frame `reset_size`, and reproduce-first the overlay touch targets sized
-     once at launch), plus `pile_center`'s
-     null-picture fallback, whose only case is test fixtures - rule 7; and the stale
-     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), A (Main
-     fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
+   - close fix 6b-2 (per-hover work and resize): measured call counts, before -> after, with
+     temporary counters since removed: `_entrance_drawn_columns` per hover 2 -> 1, per rebuild
+     3 -> 2 (once per pass, no new name to share them), per placement 17 -> 9, per Undo 10 -> 6;
+     `_refresh_card_marking` per hover 2 -> 1; `_refresh_end_reveal` now has one caller,
+     `_on_board_changed`, with a state swap routed into it (the "twice per revision" did not
+     reproduce - it doubled only when one action fired both signals, and it re-ran on every
+     scalar write, 1 -> 0). The popup's `reset_size()` moved into `show_above()`. REPRODUCED
+     and fixed: after a 16:9 -> 4:3 resize the overlay's Back/Forward/Wall stayed 43.2 px
+     against a 57.6 px target; `WallOverlay` re-applies its touch targets on `size_changed`,
+     and `HudContainer` joins `size_changed` only after the overlay is ready, so the exit X
+     reads the resized band (a neutralised run showed 55.2 vs 69.6). OPEN: the overlay only
+     GROWS its buttons, so shrinking the window leaves them larger than the target (untested).
+     Six stale ASSUMPTIONS names reworded.
+   - still owed: close item 6 (`/fx-verify` render of the flip, the card back, the popup and
+     the goal-met HUD, after 6b-2's commit); close item 11 (delete `briefs/` and this handoff
+     once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
+     scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
+     overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
 8. `/docs` - PROPOSAL drafted by a read-only Opus 5 analyst, to apply after the fixes. Precedent
    (picture-wall, poker-patience, comparator_buckets, spotlight): KEEP `design/sidebar/`'s
    design set and gaps; DELETE `briefs/` and this handoff once folded. Corrections: DESIGN
@@ -935,6 +946,19 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
    ~:680, which still describes the deleted inspector panel), PICTURE_WALL's container
    landmine and wiring table, DESIGN_DOC.md:965 ("a show now ends when the player presses
    End"), the six stale ASSUMPTIONS names, briefs/ and this handoff deleted once folded.
+   APPLIED (part 2, Opus 5 editor): ARCHITECTURE_REVIEW §1.6 "The sidebar and board input"
+   (every contract, the 7-knob table from player_settings.gd, the five measured gotchas), §1.2
+   Entrance stocks, §1.3 the flip, §1.5 the old-save refusal, §5 the automatic end; §4b's rule 8
+   (the deleted inspector panel) removed and 9-11 renumbered (only "landmine 2" is cited by
+   number, elsewhere); §7's deadlock chain corrected to the eleven suites actually in the
+   ordering chain, stated once, with the UI PROPS settings backup and the E2E deadlock moved in
+   from memory. PICTURE_WALL: the container landmine (`inset_beside` over `cover_scale`), three
+   wiring rows (`connect_for_screen`, `host_viewer`, `MapNamePopup._place_above_node`), the
+   pause bullet (`TestMainHost.mount`/`unmount`). HEADLESS_TESTING: `sidebar_snapshot` and
+   `wall_editor_snapshot` outputs, the stale class cache and "import twice", `--import` as a
+   writer (the tracked files it rewrites, from `git ls-files`; not re-measured). todo.md:
+   "Sidebar: owner should see", ten items. Memory's moved content became pointers. Every cited
+   name grep-verified. doc_check 0 errors.
 9. `consolidate-memory` (Opus 5, `.claude/memory/` only): 17 files, 1098 -> 947 lines; all 20
    indexed; doc_check 0 errors before and after. Merged 13 duplicates, each into the home read
    when it bites (e.g. every run-diagnosis rule into `running-godot-scenes` "Diagnosing a red,
