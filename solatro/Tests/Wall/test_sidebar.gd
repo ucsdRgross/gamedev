@@ -176,6 +176,8 @@ func _ready() -> void:
 	behavior_section("S22: END IS REVEALED ONLY WHEN THE SHOW CAN NO LONGER PROGRESS")
 	await test_end_is_revealed_when_no_action_remains()
 	await test_end_stays_hidden_through_the_shows_first_frames()
+	behavior_section("THE RESOLVED SHOW LEAVES NOTHING ARMED")
+	await test_the_outcome_screen_leaves_no_card_armed()
 	finish()
 
 
@@ -225,6 +227,17 @@ func test_end_stays_hidden_through_the_shows_first_frames() -> void:
 	get_tree().process_frame.disconnect(sampler)
 	check(not seen[0], "End is never flagged visible while a fresh show starts up")
 	check(not seen[1], "End is never on screen while a fresh show starts up")
+	await _end_game_fixture()
+
+## The show ends full stop, so nothing on the board is still armed under the outcome screen.
+func test_the_outcome_screen_leaves_no_card_armed() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	check(not _play_area.selected_cards.is_empty(), "the deal arms an Entrance card")
+	view.game.end_show()
+	await get_tree().process_frame
+	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
+	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
 	await _end_game_fixture()
 
 func _build_container() -> HudContainer:

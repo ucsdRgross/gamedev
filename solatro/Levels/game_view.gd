@@ -302,11 +302,14 @@ func _on_submit_label_changed(text: String) -> void:
 ## The win/lose overlay covers ONLY the play area: the board is blocked while the rest of the HUD stays clickable -- Undo rewinds the outcome, the deck/discard/rules viewers open.
 var _continue_button : Button = null
 
+# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the board stops taking input, so the arm is let go
+# here too -- otherwise the held card keeps following the cursor over the outcome screen.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	var screen : Label = win_screen if won else lose_screen
 	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
 			else TRANSLATION.find('GAME_LOSE')
 	screen.show()
+	play_area.ungrab_cards()
 	play_area.disable_board_focus()
 	_continue_button = Button.new()
 	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')
