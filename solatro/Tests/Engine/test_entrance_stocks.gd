@@ -10,6 +10,9 @@ extends TestSuite
 ## Low enough that one completed row clears it, the way the auto-end tests aim their goal.
 const GOAL_WITHIN_ONE_LINE : int = 10
 
+## High enough that no fixture row reaches it, for the replays that must NOT end their show.
+const GOAL_OUT_OF_REACH : int = 1000000
+
 func suite_name() -> String:
 	return "ENTRANCE STOCKS"
 
@@ -19,6 +22,8 @@ func _ready() -> void:
 	await run_same_order_deals_identically_test()
 	await run_replayed_placement_is_identical_test()
 	await run_resume_ends_a_show_whose_goal_is_met_test()
+	await run_replayed_winning_placement_ends_the_show_test()
+	await run_replayed_ordinary_placement_unlocks_the_board_test()
 	await run_removed_slot_pours_into_bottoms_test()
 	await run_added_slot_pulls_bottoms_test()
 	await run_exhausted_slot_stays_empty_test()
@@ -158,11 +163,7 @@ func run_replayed_placement_is_identical_test() -> void:
 			"replayed:\n%s\n---- wanted:\n%s" % [
 			TestGridFixtures.board_digest(g.state), expected])
 	_free_game(g)
-	RunManager._shutdown_saver()
-	RunManager.clear_save()
-	restore_real_save(suite_tag())
-	RunManager.run = prev_run
-	Main.save_info = prev_info
+	_restore_run(prev_run, prev_info)
 
 
 # ==============================================================================
@@ -199,11 +200,114 @@ func run_resume_ends_a_show_whose_goal_is_met_test() -> void:
 	check(g.processing,
 			"and input stays locked behind the outcome")
 	_free_game(g)
+	_restore_run(prev_run, prev_info)
+
+# ==============================================================================
+# A quit mid-cascade of the WINNING placement: the replay runs that placement's whole tail.
+# ==============================================================================
+func run_replayed_winning_placement_ends_the_show_test() -> void:
+	behavior_section("A REPLAYED WINNING PLACEMENT ENDS THE SHOW BEFORE THE REFILL")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	backup_real_save(suite_tag())
+	Main.save_info = RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	var g : Game = await _last_card_entrance_game(GOAL_WITHIN_ONE_LINE)
+	check(not g.state.show_ended,
+			"precondition: the part-built row has not met the goal",
+			"%d/%d" % [g.state.live_total(), g.state.goal])
+	g.save_state()
+	var deck_before : int = g.state.all_stock_cards().size()
+	var coord := BoardCoord.new(0, 4, 0, 0)
+	_arm_interrupted_placement(g, coord)
+
+	await g._resume_after_visuals()
+
+	check(g.state.show_ended,
+			"the replayed placement meets the goal and ends the show",
+			"%d/%d ended=%s" % [g.state.live_total(), g.state.goal, g.state.show_ended])
+	check(g.state.all_stock_cards().size() == deck_before,
+			"and no refill deals onto the won board",
+			"%d -> %d" % [deck_before, g.state.all_stock_cards().size()])
+	var won : GameData = g.save_history[-2]
+	check(not won.show_ended and _cell_is_filled(won, coord),
+			"the won board is in history under the ended one, so undo keeps the winning placement",
+			"ended=%s placed=%s" % [won.show_ended, _cell_is_filled(won, coord)])
+	_free_game(g)
+	_restore_run(prev_run, prev_info)
+
+
+# ==============================================================================
+# A quit mid-cascade of an ORDINARY placement: the replay commits it like the live route does.
+# ==============================================================================
+func run_replayed_ordinary_placement_unlocks_the_board_test() -> void:
+	behavior_section("A REPLAYED ORDINARY PLACEMENT HANDS THE BOARD BACK")
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	backup_real_save(suite_tag())
+	Main.save_info = RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	var g : Game = await _last_card_entrance_game(GOAL_OUT_OF_REACH)
+	g.save_state()
+	_arm_interrupted_placement(g, BoardCoord.new(0, 4, 0, 0))
+
+	await g._resume_after_visuals()
+
+	check(not g.state.show_ended and not g.processing,
+			"the replayed placement leaves the board unlocked",
+			"ended=%s processing=%s" % [g.state.show_ended, g.processing])
+	check(RunManager.run.pending_action == &"" and RunManager.run.pending_placement_slot == -1,
+			"and the marker it replayed is cleared",
+			"%s / %d" % [RunManager.run.pending_action, RunManager.run.pending_placement_slot])
+	var settled := TestGridFixtures.board_digest(g.state)
+
+	await g._resume_after_visuals()
+
+	check(TestGridFixtures.board_digest(g.state) == settled,
+			"a second resume replays nothing: the placement is already committed",
+			"after:
+%s
+---- wanted:
+%s" % [TestGridFixtures.board_digest(g.state), settled])
+	_free_game(g)
+	_restore_run(prev_run, prev_info)
+
+## A board one placement short of a completed row, that card the LAST one in the Entrance.
+func _last_card_entrance_game(goal: int) -> Game:
+	var g : Game = await _stock_game(TestDecks.deck_standard_52(), 5)
+	g.state.grids = TestGridFixtures.build_fix_grid_1().grids
+	_add_scoring_rules(g)
+	g.state.goal = goal
+	await g.refill_entrance_if_due()
+	for slot : int in g.state.upper_zone.size():
+		g.state.upper_zone[slot].datas.clear()
+	Board.place_card(g.state, TestFactories.m_card(6, TestFactories.uc()), 0, 0)
+	for x : int in 4:
+		await g.place_card_in_grid(TestFactories.m_card(x + 2, TestFactories.uc()),
+				BoardCoord.new(0, x, 0, 0))
+	return g
+
+## Rewind to the pre-placement board, locked, with the marker a quit mid-cascade leaves.
+func _arm_interrupted_placement(g: Game, coord: BoardCoord) -> void:
+	var pre_placement : GameData = g.save_history[-1]
+	g.state = g._runtime_state(pre_placement)
+	g.save_history = [pre_placement]
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = Vector4i(coord.grid, coord.x, coord.y, coord.h)
+	g.processing = true
+
+## Whether the snapshot holds a card in `coord`'s cell -- what "the placement survived" looks like.
+func _cell_is_filled(snapshot: GameData, coord: BoardCoord) -> bool:
+	var grid : GridData = snapshot.grids[coord.grid]
+	return not grid.cells[grid.cell_index(coord.x, coord.y)].datas.is_empty()
+
+## Every test here that arms a run must put the real save back, or the next suite inherits it.
+func _restore_run(prev_run: RunState, prev_info: RunState) -> void:
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_info
+
 
 ## The two shipped rules cards that make a completed row score, which is what reaching a goal needs.
 func _add_scoring_rules(g: Game) -> void:

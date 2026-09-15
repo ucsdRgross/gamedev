@@ -330,31 +330,24 @@ func _resume_after_visuals() -> void:
 		if not state.show_ended:
 			processing = false
 
-# A quit inside the winning hold saved the board but not its outcome, and a replay runs under the
-# board lock where the placement's own goal check is skipped. Resume is where that check runs
-# instead, so the goal never ends up met on a board that is still live.
+# A quit inside the winning hold saved the board but not its outcome, so nothing on disk says the
+# show ended. Resume re-fires the check, so the goal never ends up met on a board that is still live.
 func _end_show_if_goal_met() -> void:
-	if state.has_met_goal():
+	if state.has_met_goal() and not state.show_ended:
 		await _end_show_on_goal()
 
-## Re-run a board action a quit interrupted mid-resolution (persisted marker). The restored
-## board is the exact pre-action board, and these actions are deterministic — scoring has no
-## RNG, draws come from the already-ordered stocks — so the replay reproduces the original
-## outcome. Board visuals are already loaded (see _resume_after_visuals); input stays locked
-## throughout (each _perform_* holds processing).
+# Re-run a board action a quit interrupted mid-resolution, from the exact pre-action board the
+# marker rode to disk; the actions carry no RNG, so the replay reproduces the original outcome.
+# Each replayed action owns the board lock exactly as it does live, and hands the board back.
 func _replay_pending_action(action: StringName) -> void:
 	print("[resume] replaying interrupted action: %s" % action)
 	match action:
 		&"on_next": await _perform_next()
 		&"on_placement": await _replay_pending_placement()
 
-## Re-run the placement a quit interrupted. The restored board is the pre-placement one, so
-## the card named by the saved slot is back in the Entrance and its slot's stock is back in its
-## pre-refill order -- there is no RNG anywhere in the path, so replaying reproduces the same
-## board, scoring and refill included. A slot that no longer holds anything means the marker
-## outlived the board it described; the board is already correct, so there is nothing to do.
-## Takes the slot's TOPMOST card, which is the one a player can pick up (`is_data_topmost`);
-## it matters only once the Entrance holds stacks rather than one card per slot.
+# The lock is handed to the placement, whose whole tail -- commit, goal check, refill -- is gated
+# on an unlocked board. Nothing in the path has RNG, so the pre-placement board reproduces the same
+# board; an empty slot means the marker outlived it, and the topmost card is the grabbable one.
 func _replay_pending_placement() -> void:
 	var slot : int = RunManager.run.pending_placement_slot
 	if slot < 0 or slot >= state.upper_zone.size(): return
@@ -362,6 +355,7 @@ func _replay_pending_placement() -> void:
 	if held.is_empty(): return
 	var c : Vector4i = RunManager.run.pending_placement_coord
 	var card : CardData = held.back()
+	processing = false
 	await place_card_in_grid(card, BoardCoord.new(c.x, c.y, c.z, c.w))
 
 # Rebuild a live runtime GameData from a saveable history snapshot (independent copy with
@@ -832,8 +826,8 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 	await _broadcast_board_mutation(landed, false)
 	await run_all_mods(&"on_card_placed", landed)
 # A SETTLED board, and before the refill: an already-won show never deals another hand. The guard
-# is the board lock, so a placement made while the board is locked (a cascade's own, a resume
-# replay) is not an ending. The winning placement commits BEFORE the hold, like every other.
+# is the board lock, so a placement made while the board is locked (a cascade's own) is not an
+# ending. The winning placement commits BEFORE the hold, like every other.
 	if not processing and state.has_met_goal():
 		await _commit_placement()
 		await _end_show_on_goal()

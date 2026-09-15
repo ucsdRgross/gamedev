@@ -801,3 +801,11 @@
   resting on its generated map, and the game fixture carries it on into a dealt board. The shared
   teardown is `_end_main_fixture()` (renamed from `_end_game_fixture`), and the map picture's
   viewport is `_map_viewport`.
+- Phase 7 fix 12: `Game._replay_pending_placement()` releases the resume's board lock before the
+  placement, so the replay runs the SAME route a live placement does -- its commit (which clears
+  the marker), its goal check before the refill, and the unlock it leaves behind. No new flag.
+- Phase 7 fix 12: `_end_show_if_goal_met()` also requires the show not already ended, so a replay
+  that ended the show itself is not held a second time.
+- Phase 7 fix 12: `TestEntranceStocks` gains `GOAL_OUT_OF_REACH` (the same 1000000 the other
+  suites use) plus `_last_card_entrance_game()`, `_arm_interrupted_placement()`, `_cell_is_filled()`
+  and `_restore_run()` -- the fixture for a quit mid-cascade and the teardown its tests share.
