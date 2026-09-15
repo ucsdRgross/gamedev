@@ -54,11 +54,13 @@ var _screen_connections : Dictionary[Node, Array] = {}
 
 ## Connects `sig` to `callable` and remembers the pair under `screen`, whose own teardown drops it.
 func connect_for_screen(screen: Node, sig: Signal, callable: Callable) -> void:
+	if not _screen_connections.has(screen):
+		screen.tree_exiting.connect(disconnect_for_screen.bind(screen), CONNECT_ONE_SHOT)
 	sig.connect(callable)
 	var pairs : Array = _screen_connections.get_or_add(screen, [])
 	pairs.append([sig, callable])
 
-## Drops every connection `screen` made through `connect_for_screen()` -- called from its own `_exit_tree()`.
+## Drops every connection `screen` made through `connect_for_screen()` -- fired once, by `screen` leaving the tree.
 func disconnect_for_screen(screen: Node) -> void:
 	var pairs : Array = _screen_connections.get(screen, [])
 	for pair : Array in pairs:
@@ -180,7 +182,7 @@ func set_active_screen(screen: StringName) -> void:
 	visible = screen != &""
 	if not visible: return
 	_game_hud.visible = screen == GAME_SCREEN
-	_map_hud.visible = screen == &"map"
+	_map_hud.visible = screen == MAP_SCREEN
 
 func show_hud() -> void:
 	_swap_to_hud()
@@ -284,6 +286,12 @@ func _release_shown_entry() -> void:
 
 ## The game screen's own focus id: the one screen with a cascade to watch, and the one whose content is replaced show by show.
 const GAME_SCREEN : StringName = &"game"
+
+## The map's own focus id: its content is the run, which a new run replaces on the same map.
+const MAP_SCREEN : StringName = &"map"
+
+## The start menu's own focus id: its content is the deck picker, and what the picker described closes with it.
+const MENU_SCREEN : StringName = &"start_menu"
 
 ## Which screen is mid-cascade, or `&""` while none is.
 var _processing_screen : StringName = &""

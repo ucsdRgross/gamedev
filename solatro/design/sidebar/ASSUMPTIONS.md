@@ -839,3 +839,12 @@
   pop, so the view's re-arm edge derives the armed card from the RESTORED Entrance instead of
   the state being discarded. New test helper name `TestInteraction.an_empty_cell_control()`,
   the control an armed card is aimed at (a free cell presents its own zone card).
+- Close fix 2: a screen's remembered description dies with its CONTENT on every screen, not only
+  the game's. `HudContainer.connect_for_screen()` connects the screen's `tree_exiting` once
+  (one-shot) to `disconnect_for_screen()`, replacing the `_exit_tree()` pairs in `GameView`,
+  `Map` and `Menu`; `GameView` connects its own `tree_exiting` to `release_screen(GAME_SCREEN)`,
+  `Map.start_run()` releases `MAP_SCREEN` (the map persists across runs, its content is the run)
+  and `Menu` releases `MENU_SCREEN` when the deck picker leaves the tree. New names:
+  `HudContainer.MAP_SCREEN`, `HudContainer.MENU_SCREEN`, and the `TestSidebar` tests
+  `test_a_new_run_does_not_inherit_the_maps_last_description`,
+  `test_closing_the_picker_drops_the_menus_description`.

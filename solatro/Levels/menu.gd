@@ -49,11 +49,6 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
 	_apply_container_inset()
 
-# The container OUTLIVES this screen in the real game, but a test may tear down a standalone
-# `Menu` -- same teardown shape as `GameView._exit_tree()`.
-func _exit_tree() -> void:
-	hud_container.disconnect_for_screen(self)
-
 # The union of every button under `Main`, the title and the run row -- `_main_control` itself
 # fills the whole window (its authored anchors), so its own rect cannot stand in for it.
 func _content_bounds() -> Rect2:
@@ -84,11 +79,14 @@ func _on_play_pressed() -> void:
 	play_row.visible = not play_row.visible
 	refresh_continue()
 
+# The picker is the only content on the menu that describes anything, so what it described goes
+# when the picker does.
 func _on_new_run_pressed() -> void:
 	var picker := DeckPicker.add_to_scene(self)
 	picker.deck_picked.connect(func(cards: Array[CardData], rules: Array[CardData]) -> void:
 		new_run_requested.emit(cards, rules))
 	picker.viewer_opened.connect(_on_viewer_opened)
+	picker.tree_exiting.connect(hud_container.release_screen.bind(HudContainer.MENU_SCREEN))
 
 ## The viewer an Inspect opened over this menu, if any -- one at a time, the same one `DeckViewer` itself keeps.
 var _deck_viewer : DeckViewer = null

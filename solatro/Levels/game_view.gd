@@ -106,8 +106,11 @@ func _ready() -> void:
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
+# ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW: `Main` reuses one screen id for every show, so
+# the view leaving the tree hands back its memory, its lock and its cascade flag.
 func _bind_hud_container() -> void:
 	hud_container = HudContainer.ensure(hud_container, self)
+	tree_exiting.connect(hud_container.release_screen.bind(HudContainer.GAME_SCREEN))
 	submit_button = hud_container.submit_button
 	undo_button = hud_container.undo_button
 	deck_ui = hud_container.deck_ui
@@ -132,12 +135,6 @@ func _on_description_dismissed() -> void:
 func _on_description_dismiss_requested() -> void:
 	if not hud_container.showing_description(): return
 	hud_container.show_hud()
-
-# ⚠ THE SHOW'S CONTAINER STATE DIES WITH THE SHOW, and it is released AFTER the connections are
-# dropped: the revert to the HUD it performs is this view's own doing, not a dismissal to relay.
-func _exit_tree() -> void:
-	hud_container.disconnect_for_screen(self)
-	hud_container.release_screen(HudContainer.GAME_SCREEN)
 
 ## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
 func _add_prop_debug_controls() -> void:

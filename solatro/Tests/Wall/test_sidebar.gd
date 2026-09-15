@@ -102,6 +102,7 @@ func _ready() -> void:
 	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
 	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
+	await test_a_new_run_does_not_inherit_the_maps_last_description()
 	await test_leaving_while_locked_keeps_the_whole_lock_alive()
 	await test_a_finished_show_leaves_the_maps_own_wiring_alive()
 	await test_a_remembered_entry_dropped_by_a_cascade_is_freed()
@@ -129,6 +130,7 @@ func _ready() -> void:
 	await test_the_start_menus_inspect_viewer_lists_beside_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_into_the_container()
 	await test_the_start_menus_inspect_viewer_publishes_on_hover()
+	await test_closing_the_picker_drops_the_menus_description()
 	await test_the_deck_builder_tool_loads_and_stands_up()
 	behavior_section("S14: HELD, THEN FOLLOWING")
 	await test_a_held_card_lifts_and_does_not_follow()
@@ -328,8 +330,8 @@ func _stand_up_view(host: Node, container: HudContainer) -> GameView:
 	CardEnvironment.CURRENT = view.game
 	return view
 
-# Leaves the view IN MEMORY, so Godot's own drop-on-free auto-disconnect never fires -- only
-# `_exit_tree()`'s explicit loop can be what discriminates a check on a dropped connection.
+# Leaves the view IN MEMORY, so Godot's own drop-on-free auto-disconnect never fires -- only the
+# container's one-shot `tree_exiting` disconnect can discriminate a check on a dropped connection.
 func _leave_tree_without_freeing(node: Node) -> void:
 	remove_child(node)
 
@@ -2562,6 +2564,20 @@ func test_a_new_run_does_not_inherit_the_last_shows_lock() -> void:
 		check(_play_area.locked_data == null, "...and no card marked on the fresh board")
 	await _end_main_fixture()
 
+## The map persists across runs, so its remembered description is the RUN's: a new run's map opens on its own HUD, not the last run's pack.
+func test_a_new_run_does_not_inherit_the_maps_last_description() -> void:
+	await _start_map_fixture()
+	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	await get_tree().process_frame
+	check(_container.showing_description(), "sanity: the map is left describing a pack node")
+	await _main._on_new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
+	await _main._focus_picture(&"map")
+	if not _map.controller.is_generated():
+		await _map.controller.map_ready
+	check(_hud_is_up(),
+			"Close fix 2: a new run's map opens on the HUD, not the last run's pack description")
+	await _end_main_fixture()
+
 ## B15/B16: leaving a screen is not a dismissal -- the lock comes back exactly as it was left, marking and all.
 func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
 	await _start_game_fixture()
@@ -3058,6 +3074,30 @@ func test_the_start_menus_inspect_viewer_publishes_on_hover() -> void:
 				"a pointer on the picker's viewer card opens the menu's description")
 		check(title.text == _expected_text(target.child.data)[0],
 				"...and the title reads that card's own name", title.text)
+	await _end_booted_fixture(viewport, main)
+
+## A card read in the picker belongs to the picker: once it closes, leaving the menu and coming back finds the HUD.
+func test_closing_the_picker_drops_the_menus_description() -> void:
+	var opened := await _open_the_pickers_inspect_viewer()
+	var viewport : SubViewport = opened[0]
+	var main : Main = opened[1]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var menu_viewport : SubViewport = main._pictures[&"start_menu"].viewport
+	var cards : Array[ControlCard] = []
+	if is_instance_valid(DeckViewer._open): cards = _listed_viewer_cards()
+	check(not cards.is_empty(), "the inspected deck lists a card to read", str(cards.size()))
+	if not cards.is_empty():
+		cards[0].grab_focus()
+		await get_tree().process_frame
+		check(container.showing_description(), "sanity: the menu is describing a picker card")
+		await _close_open_viewer(menu_viewport)
+		await _close_open_viewer(menu_viewport)
+		check(main.menu_scene.find_child("DeckPicker", true, false) == null,
+				"sanity: the second escape closed the picker itself")
+		await main._go_to_wall_view()
+		await main._focus_picture(&"start_menu")
+		check(not container.showing_description(),
+				"Close fix 2: returning to the menu after the picker closed finds the HUD")
 	await _end_booted_fixture(viewport, main)
 
 # A real booster pack open on a live map at `size` -- the choice viewer's own fixture, since it is

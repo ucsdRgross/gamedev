@@ -60,11 +60,6 @@ func _bind_hud_container() -> void:
 			name_popup.hide_name)
 	_publish_map_inset()
 
-# The container OUTLIVES this screen in the real game, but a test may `remove_child` a standalone
-# `Map` -- same teardown shape as `GameView._exit_tree()`.
-func _exit_tree() -> void:
-	hud_container.disconnect_for_screen(self)
-
 # The map DOES sit in a `WallPicture`, so the container's window px converts through that picture's
 # own cover scale -- `HudContainer.rect_beside()` is that one conversion, shared with `Menu`.
 func _publish_map_inset() -> void:
@@ -72,14 +67,15 @@ func _publish_map_inset() -> void:
 	var screen_size := controller.camera.get_viewport_rect().size
 	controller.apply_container_shift(screen_size / 2.0 - remaining.get_center())
 
-# Begin (or resume) a run on this map screen. Safe to call before the scene is in the
-# tree — the map generates/reloads once _ready has run.
+# Begin (or resume) a run on this map screen. Safe to call before the scene is in the tree. The
+# map persists across runs but its content is the run, so the last run's description goes here.
 func start_run(new_run: RunState) -> void:
 	run = new_run
 	if not is_node_ready():
 		_pending_run = new_run
 		return
 	name_popup.hide_name()
+	hud_container.release_screen(HudContainer.MAP_SCREEN)
 	controller.start_run(new_run)
 
 ## Node arrival dispatch: games (incl. the lap-target boss) launch a show, boosters open
