@@ -721,8 +721,14 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      (main.gd still spells the strings). Two TestSidebar rows RED on HEAD (Sidebar 708 passed,
      2 FAILED), green after (710); 1.14 still green. Continue shares `start_run` but no test
      drives it.
-   - still owed: close fix 3 (a refused drag places the
-     armed card), 4 (a dismissed description re-shows on return), 5 (DISCARD/RULES fly-to in
+   - close fix 3 (review item 2 finding 3, a drag from a card the board refused to grab placed
+     the armed card): `PlayArea._consume_as_card_release` places a travelled release only
+     when the dragged card is in `selected_cards`; the press still ends through
+     `_end_the_gesture()`. Two TestDragPlace rows (from an empty cell's zone card, from a grid
+     card) RED on HEAD, 6 FAILED; DRAG PLACE 87 -> 95 green. The grid-card row first passed
+     vacuously: `_legal_cell_control` picked a zero-height cell (`Rect2.encloses` accepts a
+     zero-area rect); the shared `_is_reachable()` now also requires `has_area()`.
+   - still owed: close fix 4 (a dismissed description re-shows on return), 5 (DISCARD/RULES fly-to in
      the wrong space), 6 (conventions and simplify residue), A (Main fixtures under the
      product's pause state), B (weak test rows and the pan flake); reproduce first: the pad
      focus after the X, the replayed last-card arm, Back during the hold, the double arm on
