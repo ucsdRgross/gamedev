@@ -390,6 +390,30 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
 - Clean: `_refresh_end_reveal` one writer, rebound on state swap; the Goal colour through
   `PaletteDB.ROLES.goal_met`; `end_show()`'s save-before-resolve for a post-timer quit.
 
+## Re-review of the Phase 6–7 fix commits (Fable 5.1, 82c6d15f..9a9bcd16) — 2 confirmed, 4 suspected
+1. CONFIRMED the REPLAY route still skips the placement's tail: quit mid-cascade of the winning
+   placement → resume → `_replay_pending_placement` → `place_card_in_grid` with `processing` true
+   → the goal branch is skipped, the refill runs on the won board, `save_state()` is skipped, then
+   `_end_show_if_goal_met()` writes the only post-placement snapshot as ended → undo at the
+   outcome rewinds the winning placement (Phase 7 finding 3 re-opened on this route). The resume
+   row sets `pending_action = ""` and never walks it. → fix 12.
+2. CONFIRMED a replayed NON-winning placement leaves the board LOCKED and its marker uncleared
+   (`_commit_placement` skips `save_state()` under `processing`, nothing unlocks; every later
+   resume replays it again) — pre-existing shape, re-authored by fix 9. → fix 12 (same root: the
+   replay must run the placement's tail — commit, unlock, goal check).
+3. SUSPECTED undo after the automatic end arms a card of the POPPED state: `undo()` writes
+   `processing = false` (synchronous `processing_changed` → `_arm_the_entrance`) BEFORE the
+   history pop; if `try_grab` does not yield a frame, `selected_cards` holds a stale CardData and
+   nothing is armed until Escape. → reproduce with a real view after fix 12.
+4. SUSPECTED Back during the locked hold: `_cancel_everything` is not gated on `processing`; the
+   wall steps back with the Game alive and the timer ends the show off-screen. Probably benign;
+   untested.
+5. Test surface: S21.7's "selection stays" check passes because the geometric fallback finds
+   nothing to the left in that fixture; the "reaches slot 3 over an emptied slot 2" check carries
+   the row. Test check strings carry plan row ids ("(S21.5b)", "(7.3)") — the standing test-side
+   pattern doc_check accepts; production code is clean.
+- Fixes 7, 8, 10, 11 and the card back traced clean on the real routes.
+
 ## Gaps
 - GAP-008 (open, OWNER CALL, not blocking) — a mouse click-lock on any grabbable card is dismissed
   by the motion a placement needs; options a/b/c in the file, recommendation (a).
@@ -519,9 +543,16 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
   status: done
   evidence: 'commit after bbc544e7: implementer ALL 48 SUITES 4636 PASSED [21] (and 4654 before the snapshot edits); overseer run in the commit; 7.1-7.4 in TestGameHeadless, 7.5 in TestSidebar; red per neutralisation: goal check deleted 4 FAILED, fired mid-cascade 4 FAILED, undo skips the flag 2 FAILED, end on a full board 1 FAILED, End always shown 3 FAILED; has_met_goal read at the post-cascade position (game.gd) and by the label (game_view.gd); submit_button.visible written from ONE site (GameView._refresh_end_reveal); doc_check 0 of 649 on added lines; LF by bytes; by eye goal_met.png: Goal value green beside a white Total, no End button (Undo alone), board settled'
   notes: 'The check sits between on_card_placed and refill_entrance_if_due() and RETURNS, so an ended show never refills (Q101=a, not c). The pause reuses spotlight_hold_fraction of get_delay() through Pacing.wait (no new knob). Goal met colour = new PaletteRoles.goal_met (index 9, bright green). HONEST LIMIT 7.2: every line in the fixtures scores inside the mutation broadcast, so it proves "after all scoring, before the placement''s tail". Four existing tests had their goals pinned out of reach (a real consequence of the automatic end), each says why at the site. Q102b/Q102c/Q106b unanswered - skipped branches'
+- id: S23
+  description: the map's name popup and sidebar; first touch tap describes; booster previews wrap
+  status: done
+  evidence: 'commit after 9a9bcd16: implementer ALL 48 SUITES 4715 PASSED [21]; overseer run in the commit; S23.1-S23.7 in TestSidebar, red per neutralisation 5/5/1/1/2/2 FAILED (S23.7 by construction); map_name_popup.gd/.tscn exist, owned by map.tscn''s $UI (%NamePopup), no MapNamePopup on the board; no new loader of map_hover_panel.tscn (the leak canary''s preload is the only one, as at HEAD); doc_check 0 of 30 on added lines; LF on all files; by eye map_popup.png: "Talent pack" popup above its node, the sidebar with name, biome, body and a wrapping preview row'
+  notes: 'Q135=(a) built; chart K9 contradicts it (stale, fold at the close). WorldMapController first-tap-names / second-tap-enters reuses play_area.gd''s device == -1 discrimination and swallows the emulated mouse press (it arrives first). DescriptionPanel gained %GridSlot + _slot_for(): a FlowContainer visual mounts below the body at full width, routed by TYPE. TestSidebar''s Main fixture split into _start_map_fixture/_start_game_fixture. The popup keeps the last node''s name after the pointer leaves (mirrors Q133a=c; not explicitly ruled - owner should see). OPEN BUG seen by eye (pre-existing, reproduced under HEAD''s mounting): preview cards below the sidebar''s fold draw their modifier art past the ScrollContainer''s clip while their frames are clipped - the FX attachment nodes escape the clip. map_popup.png catches the wall''s focus transition mid-flight (the same still rendered at two rects from identical code) - a settled capture should await the transition before _capture. The popup is not clamped: at the picture''s top edge the name clips off (Q131=b asked for no clamp) - owner should see'
 ```
 
 ## Open bugs
+- Preview-card FX art escapes the description panel's scroll clip below the fold (seen in
+  map_popup.png; pre-existing, reproduced by S23 under HEAD's mounting). Owner should see.
 - GRID VIEW `one more pan-right at the board's end does not move the camera past it` failed once
   by 0.018 px (edge 545.640 vs 545.658) in ~14 branch runs; green on the rerun. Pre-existing
   camera-settle timing, not touched by this run. Quote the denominator if it recurs.
