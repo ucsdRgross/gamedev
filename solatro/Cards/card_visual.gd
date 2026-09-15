@@ -622,10 +622,10 @@ func _ready() -> void:
 				global_position = get_card_control_center(control_anchor)
 		data.Stage.DISCARD:
 			if _game_view():
-				global_position = get_control_center(_game_view().discard_ui)
+				global_position = _game_view().pile_center(_game_view().discard_ui)
 		data.Stage.RULES:
 			if _game_view():
-				global_position = get_control_center(_game_view().rules_ui)
+				global_position = _game_view().pile_center(_game_view().rules_ui)
 	basis3d = resting_basis()
 	on_stage_changed()
 
@@ -669,11 +669,11 @@ func on_stage_changed() -> void:
 			await move_tween.finished
 		data.Stage.DISCARD:
 			if _game_view():
-				var target_pos := get_control_center(_game_view().discard_ui)
+				var target_pos := _game_view().pile_center(_game_view().discard_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.RULES:
 			if _game_view():
-				var target_pos := get_control_center(_game_view().rules_ui)
+				var target_pos := _game_view().pile_center(_game_view().rules_ui)
 				create_move_tween(target_pos).tween_callback(queue_free)
 
 ## The active game's view (the UI layer that owns the deck/discard/rules anchors + PlayArea).
@@ -697,9 +697,6 @@ func _control_scale(control:Control) -> Vector2:
 func get_card_control_center(control:Control) -> Vector2:
 	var y := (control.size.y - card_size.y / 2) if bottom_anchored else (card_size.y / 2)
 	return control.global_position + Vector2(control.size.x / 2, y) * _control_scale(control)
-
-func get_control_center(control:Control) -> Vector2:
-	return control.global_position + control.size / 2.0 * _control_scale(control)
 
 func _process(delta: float) -> void:
 	delta_self_moving_logic(delta)

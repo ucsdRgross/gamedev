@@ -249,6 +249,14 @@ func _publish_board_inset() -> void:
 		play_area.board_inset_top = 0.0
 	hud_container.resize_preview(play_area.board_card_window_px())
 
+## Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this picture.
+func pile_center(pile: Control) -> Vector2:
+	var window := hud_container.get_viewport().get_visible_rect().size
+	var centre := pile.get_global_rect().get_center()
+	if not wall_picture: return centre
+	var picture_window := wall_picture.local_rect_beside(window, Rect2(), false)
+	return picture_window.position + centre / window * picture_window.size
+
 ## Wires `Main`'s ONE wall camera and a rect-centre-x getter. Called once, right after `Main` instantiates this view.
 func bind_wall_camera(camera: Camera2D, rect_centre_x: Callable) -> void:
 	_wall_camera = camera

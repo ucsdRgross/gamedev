@@ -198,6 +198,8 @@ func _ready() -> void:
 	behavior_section("THE NAME IS ANCHORED TO THE DOT IT NAMES")
 	await test_the_name_follows_its_node_when_the_camera_pans()
 	await test_starting_a_run_takes_the_name_off_the_map()
+	behavior_section("A CARD LEAVING THE BOARD FLIES TO ITS PILE")
+	await test_a_card_leaving_the_board_flies_to_its_pile()
 	finish()
 
 
@@ -259,6 +261,36 @@ func test_the_outcome_screen_leaves_no_card_armed() -> void:
 	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
 	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
 	await _end_main_fixture()
+
+## A card leaving the board lands on its pile, which is drawn in the window, not in the picture.
+func test_a_card_leaving_the_board_flies_to_its_pile() -> void:
+	await _start_game_fixture(Vector2i(600, 1000))
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _await_camera_transform_settled()
+	var leaving : Array[CardData] = []
+	for data : CardData in _play_area.data_card:
+		if data.stage == CardData.Stage.PLAY: leaving.append(data)
+	check(leaving.size() >= 2, "the deal puts two cards on the board", str(leaving.size()))
+	var discarded := _play_area.data_card[leaving[0]] as CardVisual
+	var ruled := _play_area.data_card[leaving[1]] as CardVisual
+	await view.game.effect_api.discard_data(leaving[0])
+	_check_flight_lands_on(view, discarded, view.discard_ui, "the Discard pile")
+	view.game.effect_api.add_rules_card(leaving[1])
+	_check_flight_lands_on(view, ruled, view.rules_ui, "the Rules pile")
+	await _end_main_fixture()
+
+# The pile's button centre goes through the picture's one owned conversion, so a flight aimed at
+# the pile's raw window pixels misses it at any window the picture does not fill 1:1.
+func _check_flight_lands_on(view: GameView, flight: CardVisual, pile: Control,
+		label: String) -> void:
+	flight.move_tween.custom_step(view.game.get_delay())
+	var window := _container.get_viewport().get_visible_rect().size
+	var picture_window := view.wall_picture.local_rect_beside(window, Rect2(), false)
+	var button_centre := (pile.get_node(^"Button") as Control).get_global_rect().get_center()
+	var expected := picture_window.position + button_centre / window * picture_window.size
+	check(flight.global_position.distance_to(expected) <= 1.0,
+			"a card leaving the board lands on %s" % label,
+			"%s vs %s" % [flight.global_position, expected])
 
 func _build_container() -> HudContainer:
 	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate()

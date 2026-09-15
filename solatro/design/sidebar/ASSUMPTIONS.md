@@ -858,3 +858,9 @@
   `test_a_description_dismissed_with_the_x_stays_dismissed_on_return`,
   `test_a_description_a_placement_took_down_stays_down_on_return`, helper
   `_leave_the_game_and_return_by_the_wall()`.
+- Close fix 5: `GameView.pile_center(pile)` is where a card leaving the board aims -- the pile's
+  window centre carried once through `WallPicture.local_rect_beside(window, Rect2(), false)` (the
+  unmargined resting map, within ~6 px of the drawn point at `wall_overfill_margin` 1.02). With no
+  `wall_picture` (a GameView hosted without `Main`) it returns the window point, as
+  `HudContainer.rect_beside` does. `CardVisual.get_control_center` is deleted. New `TestSidebar` row
+  `test_a_card_leaving_the_board_flies_to_its_pile`, helper `_check_flight_lands_on()`.
