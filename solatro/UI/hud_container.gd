@@ -73,7 +73,7 @@ func disconnect_for_screen(screen: Node) -> void:
 func _ready() -> void:
 	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
 	_exit_button.tooltip_text = TRANSLATION.find('SIDEBAR_CLOSE')
-	_exit_button.pressed.connect(show_hud)
+	_exit_button.pressed.connect(dismiss_description)
 	_place_exit_button()
 	show_hud()
 	var overlay := get_parent() as WallOverlay
@@ -188,6 +188,13 @@ func show_hud() -> void:
 	_swap_to_hud()
 	clear_lock()
 	description_dismissed.emit()
+
+# A DISMISSAL ENDS WHAT WAS BEING READ, so the screen forgets it: leaving and coming back finds the
+# HUD. The cascade's hold is not a dismissal and goes through `show_hud()`, keeping the memory.
+func dismiss_description() -> void:
+	_release_shown_entry()
+	_release_remembered_entry(_active_screen, null)
+	show_hud()
 
 # ⚠ A SCREEN CHANGE IS NOT A DISMISSAL: the screen being left keeps its lock, and its board keeps
 # the marking on the locked card, so coming back finds what was being read exactly as it was. Every

@@ -134,7 +134,7 @@ func _on_description_dismissed() -> void:
 # button, and Escape is left for the wall's own Back so one press both cancels and steps out.
 func _on_description_dismiss_requested() -> void:
 	if not hud_container.showing_description(): return
-	hud_container.show_hud()
+	hud_container.dismiss_description()
 
 ## Debug prop stepping (owner tool): a toggle holds every finished tick open, and a step button releases exactly one, so a prop run can be watched tick by tick.
 func _add_prop_debug_controls() -> void:
@@ -456,7 +456,7 @@ func _on_card_tapped(data: CardData) -> void:
 func _place_held_onto(data: CardData) -> bool:
 	if not await game.try_place(play_area.selected_cards, data): return false
 	play_area.ungrab_cards()
-	hud_container.show_hud()
+	hud_container.dismiss_description()
 	await _arm_the_entrance()
 	return true
 

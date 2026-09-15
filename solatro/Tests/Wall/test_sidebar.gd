@@ -65,6 +65,8 @@ func _ready() -> void:
 	await test_the_preview_follows_a_resize_to_the_boards_new_card_size()
 	await test_losing_the_highlight_keeps_the_last_entry()
 	await test_leaving_and_returning_restores_the_screens_own_description()
+	await test_a_description_dismissed_with_the_x_stays_dismissed_on_return()
+	await test_a_description_a_placement_took_down_stays_down_on_return()
 	await test_a_new_entry_frees_the_visual_it_replaces()
 	behavior_section("S6: THE LOCK AND THE EXIT X")
 	await test_a_click_grabs_the_card_and_locks_its_description()
@@ -1514,6 +1516,57 @@ func test_leaving_and_returning_restores_the_screens_own_description() -> void:
 				"...and it is the very entry that screen was left on (Q19=c)")
 		check(shown != null and shown.visual != null and shown.visual.get_parent() == slot,
 				"...with its own visual back in the panel")
+	await _end_main_fixture()
+
+# The player's own way off the game and back: the overlay's Back and Forward buttons, each move
+# waited out, so the container sees exactly the two screen changes `Main` makes for them.
+func _leave_the_game_and_return_by_the_wall() -> void:
+	var overlay : Node = _main.wall.get_node(^"%Overlay")
+	await _click((overlay.get_node(^"%BackButton") as Control).get_global_rect().get_center(),
+			_booted_viewport)
+	await _wait_out_the_move()
+	check(_main._current_focus == &"map", "sanity: Back left the game for the map",
+			str(_main._current_focus))
+	await _click((overlay.get_node(^"%ForwardButton") as Control).get_global_rect().get_center(),
+			_booted_viewport)
+	await _wait_out_the_move()
+	check(_main._current_focus == &"game", "sanity: Forward returned to the game",
+			str(_main._current_focus))
+
+## Q64=a/B10: a description dismissed with the exit X stays dismissed -- leaving the game and coming back does not re-open it.
+func test_a_description_dismissed_with_the_x_stays_dismissed_on_return() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _lock_without_holding(entrance[0])
+		check(_container.showing_description(), "sanity: a description is up before the X")
+		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
+		check(_hud_is_up(), "sanity: the exit X reverted the container to the HUD")
+		await _leave_the_game_and_return_by_the_wall()
+		check(_hud_is_up(),
+				"Close fix 4: a description dismissed with the X does not come back on return (Q64=a, B10)")
+		check(not _container.is_locked(), "...and nothing is locked on return")
+	await _end_main_fixture()
+
+## Q64=a/B11: a description a placement took down stays down -- leaving the game and coming back does not re-open it.
+func test_a_description_a_placement_took_down_stays_down_on_return() -> void:
+	await _start_game_fixture()
+	await _await_the_board_armed()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		check(_container.showing_description(), "sanity: a description is up before the placement")
+		var placed := await _place_the_arm()
+		check(placed != null, "sanity: the armed card landed on a cell")
+		check(_hud_is_up(), "sanity: the placement reverted the container to the HUD")
+		await _leave_the_game_and_return_by_the_wall()
+		check(_hud_is_up(),
+				"Close fix 4: a description a placement took down does not come back on return (Q64=a, B11)")
 	await _end_main_fixture()
 
 ## The panel OWNS the mounted visual: the next entry frees the last, so reading along a row of cards leaks no preview.

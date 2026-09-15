@@ -849,3 +849,12 @@
   `test_a_new_run_does_not_inherit_the_maps_last_description`,
   `test_closing_the_picker_drops_the_menus_description`.
 - Close fix 3: a release places only when the dragged card IS the held one (`dragged in selected_cards` in `PlayArea._consume_as_card_release`); a drag whose pickup the board refused ends with nothing to drop, so the armed card no longer lands where a grid card or an empty cell's zone card was dragged. No new production name. New test names in `TestDragPlace`: `test_a_refused_drag_from_an_empty_cell_places_nothing`, `test_a_refused_drag_from_a_grid_card_places_nothing`, `_check_a_refused_drag_places_nothing()`, `_an_empty_cell_other_than()`, `_is_in_the_entrance()`, and `_is_reachable()`, which `_legal_cell_control()` now shares: it skips a zero-area cell control, which `Rect2.encloses` accepts and a release aimed at lands on nothing (it made the grid-card row pass vacuously).
+- Close fix 4: a DISMISSAL forgets the screen's remembered description; a swap that is not one keeps
+  it. `HudContainer.dismiss_description()` frees the shown entry, erases the screen's memory and
+  then calls `show_hud()`; the exit X, cancel and a bare-board press (via
+  `GameView._on_description_dismiss_requested`), a landed placement (`GameView._place_held_onto`)
+  and the wall editor's lock toggle call it. `show_hud()` stays for the cascade hold (S7: a screen
+  returned to mid-cascade keeps its memory) and the container's own `_ready`. New `TestSidebar` rows
+  `test_a_description_dismissed_with_the_x_stays_dismissed_on_return`,
+  `test_a_description_a_placement_took_down_stays_down_on_return`, helper
+  `_leave_the_game_and_return_by_the_wall()`.

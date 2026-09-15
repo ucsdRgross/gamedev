@@ -505,7 +505,7 @@ func _apply_locked_description() -> void:
 	var container := _container()
 	if container == null: return
 	if not preview_locked_description:
-		container.show_hud()
+		container.dismiss_description()
 		return
 	var area := _hosted_play_area()
 	if area == null: return
