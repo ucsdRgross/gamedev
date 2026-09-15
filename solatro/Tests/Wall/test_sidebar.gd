@@ -152,6 +152,7 @@ func _ready() -> void:
 	await test_the_show_rests_the_focus_on_the_armed_card()
 	await test_a_placement_arms_the_new_leftmost()
 	await test_a_refill_arms_the_new_leftmost()
+	await test_a_resumed_placement_arms_the_card_its_refill_drew()
 	await test_the_arm_survives_undo_by_re_derivation()
 	await test_clicking_another_entrance_card_re_arms_onto_it()
 	await test_arming_again_leaves_the_held_card_alone()
@@ -3734,6 +3735,49 @@ func test_a_refill_arms_the_new_leftmost() -> void:
 				"...and the refill's new leftmost card is the one armed (Q118)")
 		check(_play_area.armed_slot() == 0, "...which is the leftmost slot",
 				str(_play_area.armed_slot()))
+	await _end_main_fixture()
+
+## A show resumed mid-cascade must stand where the live show would have: its refill's card armed.
+func test_a_resumed_placement_arms_the_card_its_refill_drew() -> void:
+	await _start_game_fixture()
+	var game := CardEnvironment.get_current_game()
+	game.state.goal = GOAL_OUT_OF_REACH
+	var kept : CardData = game.state.upper_zone[0].datas.back()
+	for column : ArrayCardData in game.state.upper_zone:
+		column.datas.clear()
+	game.state.upper_zone[0].datas.append(kept)
+	var grid : GridData = game.state.grids[0]
+	check(grid.cells[grid.cell_index(0, 0)].datas.is_empty(), "sanity: the target cell is empty")
+	var stocked := game.state.entrance_stocks().filter(
+			func(stock: ArrayCardData) -> bool: return not stock.datas.is_empty())
+	check(not stocked.is_empty(), "sanity: the stocks still hold cards to refill from")
+	game.state.revision += 1
+	game.save_state()
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = Vector4i(0, 0, 0, 0)
+	_main._pictures[&"game"].detach_screen()
+	await _restart_the_show()
+	var resumed := CardEnvironment.get_current_game()
+	var waited := 0.0
+	while (resumed.processing or RunManager.run.pending_action != &"") \
+			and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	await _await_the_board_armed()
+	var resumed_grid : GridData = resumed.state.grids[0]
+	check(not resumed.processing and RunManager.run.pending_action == &""
+			and not resumed_grid.cells[resumed_grid.cell_index(0, 0)].datas.is_empty(),
+			"sanity: the resume replayed the placement and handed the board back (Q233=b)")
+	check(_play_area.armed_slot() != -1,
+			"sanity: the refill drew into the Entrance the placement emptied")
+	var armed := _armed_card()
+	check(armed != null and armed == _leftmost_present_card(),
+			"the resumed show arms the leftmost card its refill drew (Q116/Q118, Q233=b)",
+			str(_play_area.selected_cards.size()))
+	if armed != null:
+		check(_play_area.data_card[armed].held == 1, "...lifted in its slot as a pickup",
+				str(_play_area.data_card[armed].held))
 	await _end_main_fixture()
 
 ## 6.10/G16/Q117=a: the arm is view-only -- undo restores the board and the arm is re-derived.

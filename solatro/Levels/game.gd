@@ -835,6 +835,8 @@ func place_card_in_grid(card: CardData, coord: BoardCoord) -> void:
 		return
 	await refill_entrance_if_due()
 	await _commit_placement()
+	if not processing and view:
+		await view.arm_after_placement()
 
 # A placement's commit: the grid commitment lifts once that grid has no legal placement left, and
 # a PLAYER's placement is the undo step. The snapshot is taken LAST so it carries the scores the

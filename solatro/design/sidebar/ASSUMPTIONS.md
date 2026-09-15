@@ -864,3 +864,8 @@
   `wall_picture` (a GameView hosted without `Main`) it returns the window point, as
   `HudContainer.rect_beside` does. `CardVisual.get_control_center` is deleted. New `TestSidebar` row
   `test_a_card_leaving_the_board_flies_to_its_pile`, helper `_check_flight_lands_on()`.
+- Close fix 7: a grid placement arms the Entrance ONCE, after its refill and commit, whichever route
+  drove it: `Game.place_card_in_grid` ends a player's non-winning placement with the new
+  `GameView.arm_after_placement()` (drop the hand, re-derive the arm), which `_place_held_onto` used
+  to do after `try_place` returned -- so a resume's replay arms the card its refill drew. New
+  `TestSidebar` row `test_a_resumed_placement_arms_the_card_its_refill_drew`.

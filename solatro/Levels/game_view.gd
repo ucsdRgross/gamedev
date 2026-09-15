@@ -355,6 +355,12 @@ func rebuild() -> void:
 	play_area.setup_gui()
 	await _arm_the_entrance()
 
+# A placement arms once, AFTER its refill, whether a click or a resume's replay drove it: the
+# cascade's own unlock can arm a card the refill then leaves out of place, so the hand is re-derived.
+func arm_after_placement() -> void:
+	play_area.ungrab_cards()
+	await _arm_the_entrance()
+
 ## True once the show has rested the focus on its first armed card; it never rests it again.
 var _rested_the_focus : bool = false
 
@@ -459,13 +465,11 @@ func _on_card_tapped(data: CardData) -> void:
 		await _arm_the_entrance()
 	await game.run_all_mods(&"on_card_tapped", data)
 
-# A landed placement finishes the interaction: the hand is empty, the container goes back to the
-# HUD, and the Entrance arms its next card.
+# A landed placement finishes the interaction: the container goes back to the HUD. The placement
+# itself has already armed the Entrance's next card.
 func _place_held_onto(data: CardData) -> bool:
 	if not await game.try_place(play_area.selected_cards, data): return false
-	play_area.ungrab_cards()
 	hud_container.dismiss_description()
-	await _arm_the_entrance()
 	return true
 
 # THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
