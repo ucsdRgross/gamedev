@@ -19,6 +19,7 @@ func show_above(node_name: String, node: WorldGraphNode) -> void:
 	_name_label.text = node_name
 	_node = node
 	visible = true
+	reset_size()
 	set_process(true)
 	_place_above_node()
 
@@ -26,7 +27,6 @@ func _process(_delta: float) -> void:
 	_place_above_node()
 
 func _place_above_node() -> void:
-	reset_size()
 	var dot := WorldMapController.node_screen_rect(_node)
 	position = Vector2(dot.get_center().x - size.x * 0.5, dot.position.y - size.y)
 

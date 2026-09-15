@@ -2253,14 +2253,15 @@ func set_card_zones_visuals() -> void:
 	# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
 	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
 	# lower-zone cards draw over upper.
-	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, _entrance_drawn_columns())
+	var columns := _entrance_drawn_columns()
+	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, columns)
 	_turn_the_entrance_over(game_state)
 	update_grid_zone_visuals(game_state)
 	_seed_new_layers(game_state)
 	# The Entrance is row -1: its depth is part of the board's geometry, so a rebuild that changed
 	# it has to re-measure the floor. This moves the BOARD, never the strip.
 	_apply_entrance_strip_height()
-	_order_board_cards(game_state)
+	_order_board_cards(game_state, columns)
 
 	# Re-sync now too (not just every physics frame): a caller that reads Entrance geometry
 	# (`slot_center_global`) synchronously right after a rebuild, in the SAME frame, must not see
@@ -2413,12 +2414,12 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 ## share one ordered list / `seen` set / `pending` flag with the grids' `CardLayer` — a visual
 ## that is (correctly) parented in the OTHER layer would read as a deferred add that never lands,
 ## and the reorder would requeue itself every frame until the stack overflowed. Measured, twice.
-func _order_board_cards(game_state: GameData) -> void:
+func _order_board_cards(game_state: GameData, entrance_columns: Array[ArrayCardData]) -> void:
 	var entrance_ordered : Array[CardVisual] = []
 	var entrance_seen : Dictionary[CardVisual, bool] = {}
 	var entrance_pending : Array[bool] = [false]
 	_append_zone_row_major(entrance_ordered, entrance_seen, entrance_pending, entrance_card_layer,
-			game_state.upper_zone_type, _entrance_drawn_columns())
+			game_state.upper_zone_type, entrance_columns)
 	_apply_layer_order(entrance_card_layer, entrance_ordered)
 
 	var grid_ordered : Array[CardVisual] = []
@@ -2448,7 +2449,7 @@ var _reorder_queued := false
 func _deferred_reorder() -> void:
 	_reorder_queued = false
 	var game := CardEnvironment.get_current_game()
-	if game: _order_board_cards(game.state)
+	if game: _order_board_cards(game.state, _entrance_drawn_columns())
 
 ## Append one zone's CardVisuals in row-major order, scoped to `layer`: headers (row -1), then
 ## each row across all columns (ragged columns simply skip the rows they don't have). `pending[0]`
@@ -3185,7 +3186,6 @@ func on_control_focus_entered(control:Control) -> void:
 	focused_visual = null
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
-	_refresh_card_marking()
 	if ui_data.has(control) and not _focus_is_resting:
 		follow_cards()
 		if is_stock_control(control):

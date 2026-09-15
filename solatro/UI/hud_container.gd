@@ -82,14 +82,16 @@ func _ready() -> void:
 	show_hud()
 	var overlay := get_parent() as WallOverlay
 	if overlay:
-		overlay.ready.connect(_position_below_overlay_buttons, CONNECT_ONE_SHOT)
-		get_viewport().size_changed.connect(_position_below_overlay_buttons)
+		var follow_the_band := func() -> void:
+			_position_below_overlay_buttons()
+			get_viewport().size_changed.connect(_position_below_overlay_buttons)
+		overlay.ready.connect(follow_the_band, CONNECT_ONE_SHOT)
 	get_viewport().size_changed.connect(_apply_container_rect)
 	PlayArea.settings().settings_changed.connect(_apply_container_rect)
 	_apply_container_rect()
 
-# Waits for the OVERLAY's own `ready` signal, which fires after `WallOverlay._ready()` has grown
-# its button row -- `HudContainer` is that row's CHILD, so its own `_ready()` runs first otherwise.
+# Reads the band only after the OVERLAY has grown its row, at start and on every resize: this
+# container is that row's CHILD, so its own `_ready()` and resize listener would run first.
 # Only mounted under a `WallOverlay` in `wall.tscn`; a standalone instance (as the tests build) never connects.
 func _position_below_overlay_buttons() -> void:
 	var overlay := get_parent() as WallOverlay

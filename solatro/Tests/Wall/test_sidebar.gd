@@ -48,6 +48,7 @@ func _ready() -> void:
 	await test_game_hud_members_stay_inside_the_container_at_a_side_window()
 	await test_the_inset_is_394_at_the_pictures_own_aspect()
 	await test_an_ultrawide_window_clamps_and_narrows()
+	await test_a_resize_re_applies_every_overlay_touch_target()
 	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
@@ -1882,6 +1883,36 @@ func test_the_exit_x_is_a_touch_target_below_the_button_band() -> void:
 		await get_tree().process_frame
 		check(not button.is_visible_in_tree(),
 				"the HUD hides it again: it belongs to the description")
+	await _end_main_fixture()
+
+## The touch target is a share of the window's short side, so a resize that changes that side re-grows every overlay control and the exit X, and the X stays below the re-grown band.
+func test_a_resize_re_applies_every_overlay_touch_target() -> void:
+	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to hover",
+			str(controls.size()))
+	if not controls.is_empty():
+		_hover(controls[0].get_global_rect().get_center())
+		await get_tree().process_frame
+		await _resize_viewport(_booted_viewport, Vector2i(1280, 960))
+		var window := _container.get_viewport().get_visible_rect().size
+		check(window == Vector2(1280, 960), "sanity: the window took the 4:3 resize", str(window))
+		var target := GestureMetrics.touch_target_px(window, PlayArea.settings())
+		var overlay : WallOverlay = _main.wall.get_node(^"%Overlay")
+		var row : Array[Button] = [overlay._back_button, overlay._forward_button, overlay._wall_button]
+		for button : Button in row:
+			check(absf(button.size.y - target) <= 0.5 and button.size.x >= target - 0.5,
+					"%s is grown to the resized window's touch target" % button.name,
+					"%s vs %.1f" % [button.size, target])
+		var exit := _exit_button()
+		check(absf(exit.size.x - target) <= 0.5 and absf(exit.size.y - target) <= 0.5,
+				"...and so is the exit X", "%s vs %.1f" % [exit.size, target])
+		check(absf(overlay.button_band_bottom() - (row[0].position.y + target)) <= 0.5,
+				"the band's bottom is the resized row's bottom",
+				"%.1f vs %.1f" % [overlay.button_band_bottom(), row[0].position.y + target])
+		check(absf(exit.offset_top - overlay.button_band_bottom()) <= 0.5,
+				"...and the exit X is parked at that bottom, not the band from before the resize",
+				"%.1f vs %.1f" % [exit.offset_top, overlay.button_band_bottom()])
 	await _end_main_fixture()
 
 ## A resize re-lays the description that is already up, so its content follows the container's new width rather than keeping the old one.

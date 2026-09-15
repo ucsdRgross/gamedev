@@ -14,7 +14,7 @@ signal wall_pressed
 @onready var _forward_button : Button = %ForwardButton
 @onready var _wall_button : Button = %WallButton
 
-## Localises every label (never a literal string) and wires each control to its signal.
+## Localises every label (never a literal string), wires each control to its signal, and re-grows the row on every resize.
 func _ready() -> void:
 	_back_button.text = TRANSLATION.find('WALL_BACK')
 	_forward_button.text = TRANSLATION.find('WALL_FORWARD')
@@ -23,6 +23,7 @@ func _ready() -> void:
 	_forward_button.pressed.connect(_on_forward_pressed)
 	_wall_button.pressed.connect(_on_wall_pressed)
 	_apply_touch_targets()
+	get_viewport().size_changed.connect(_apply_touch_targets)
 
 ## Grows every overlay control to at least `WallInput.touch_target_px()` on both axes.
 ##

@@ -60,9 +60,10 @@
 - S5 ownership, one rule: the PANEL owns the visual while it is mounted and frees it when another
   entry replaces it; `HudContainer` owns each screen's remembered entry -- detached (not freed) on
   leaving that screen, re-mounted on return, and the detached ones freed in `_exit_tree()` (Q19=c).
-- S5: per-screen memory lives on `HudContainer` as `_entry_by_screen`, with `_stash_description()`
-  and `_restore_description()` hanging off the existing `set_active_screen()` -- that focus id is
-  already the only key every call site has in hand (B15, B16, Q20=b).
+- S5: per-screen memory lives on `HudContainer` as `_entry_by_screen`, keyed by the focus id
+  `set_active_screen()` takes; `dismiss_description()` erases a screen's entry and
+  `release_screen()` drops it when that screen's content ends -- that focus id is already the only
+  key every call site has in hand (B15, B16, Q20=b).
 - S5: the description's card visual is built in `CardVisual.DisplayContext.PREVIEW` and drawn at
   `PlayArea.board_card_window_px()` -- `card_size_play` times the live `board_zoom` times
   `picture_to_window_scale` -- because Q34=b's "the board's own card size" is the size a board card
@@ -87,8 +88,9 @@
   the one flag the rig's own animation runs off (Q35=b).
 - S5: the top row is the visual LEFT, the name right -- the notecard's own arrangement rotated for a
   tall panel, which is what `Q33`=c names. The body sits below, at the panel's full width.
-- S5: `PlayArea._publish_focus_description(control)` is a new private method: every highlight
-  publishes from `on_control_focus_entered`, so hover and key/pad share one site (B1). The click
+- S5: every highlight publishes from `PlayArea.on_control_focus_entered`, through
+  `_publish_info(data)` (or `_publish_stock_info(slot)` for a face-down card), so hover and key/pad
+  share one site (B1). The click
   emits and their Info-mode gate are untouched.
 - S5 corrects the step brief: while `wall_info_mode` is on the legacy `InfoCard` takes the entry
   INSTEAD of the container, not as well. Both surfaces reparent `entry.visual` and a node has one
@@ -149,8 +151,7 @@
   always hit-testable, and the first version silently re-shot the locked card instead.
 - S7: new names NAMES.md does not list, all on `HudContainer`: `set_processing(busy)` (the method
   `GameView._on_processing_changed()` relays `Game.processing` through), the const
-  `PROCESSING_SCREEN` = `&"game"`, `_game_processing`, `_screen_is_processing()` and
-  `_drops_publication()`. The rule is scoped by that const rather than by whichever screen happened
+  `GAME_SCREEN` = `&"game"`, the bool `_game_processing` and `_screen_is_processing()`. The rule is scoped by that const rather than by whichever screen happened
   to be active at the flip: `Main` sets the active screen at the END of `enter_game()`'s transition,
   after `GameView._ready()` has already run, so a latched screen id would be wrong for a show that
   starts processing during its own boot (C10, Q260b=b).
@@ -229,8 +230,8 @@
   Info mode was its only reader.
 - S9: `_pose_tween`/`_kill_pose_tween()` in the wall editor go with the info animation, which was
   their only writer; the tool's camera poses are snaps again, as they were before Info mode.
-- S9: `PlayArea._info_mode()` is deleted (no callers left). `_popups_allowed()` survives for S10
-  and now reads `wall_screen_popups` alone.
+- S9: `PlayArea._info_mode()` is deleted (no callers left). The in-board popup gate and its knob
+  outlived it, and S10 deleted both.
 - S9: `TestGameHeadless._gd_scripts_under()` is hoisted to `TestBase.gd_scripts_under()` so the 8.1
   check reuses it rather than duplicating the walker.
 - S9: `TestWallFocus.test_the_four_wall_actions_...` is renamed
@@ -242,7 +243,7 @@
   screen)` (called from `GameView._exit_tree()` right after `disconnect_for_screen()`, so the revert
   to the HUD it performs reaches no dying listener), `_release_shown_entry()`, `_swap_to_hud()`,
   `_release_remembered_entry()`, and the `screen` parameter on `_release_locked_entry()`.
-  `PROCESSING_SCREEN` is renamed `GAME_SCREEN`: one const for the game screen's own focus id, read
+  `GAME_SCREEN` is one const for the game screen's own focus id, read
   both by the cascade rule and by the view that releases that screen's state.
 - P2 review corrects the S6 line "`show_hud()` emits `description_dismissed` on every revert, a
   screen change included": a SCREEN CHANGE IS NOT A DISMISSAL. `set_active_screen()` swaps to the
@@ -633,8 +634,8 @@
   `cells`), `GameData.all_stock_cards()` (the flat union every walker and the deck viewer read)
   and `GameData.stocks_are_empty()` (the "deck is empty" predicate S22 reads). So the set of
   slots and the set of stocks cannot disagree.
-- S19: `Board.remove_column` carries the removed Entrance slot's stock out with it, returning
-  those cards among the orphans the ZoneAdder already discards (`Board._stock_orphans`).
+- S19: `Board.remove_column` carries the removed Entrance slot's stock out with it, which S20
+  now parks through `Board._park_removed_stock()` rather than discarding (see S20 below).
   `add_column` needs no counterpart -- `entrance_stocks()` grows.
 - S19: a board with NO Entrance slots still holds one stock. `add_deck` runs before the zone
   adders build the row, so the shuffled deck lands in stock 0 and `Game.deal_stocks()` -- called

@@ -160,8 +160,10 @@ func _add_prop_debug_controls() -> void:
 # STATE BINDING (disconnect old, connect new on every state swap)
 # ==============================================================================
 
+# A swapped-in state is a new board, and a swap bumps no revision of its own.
 func _on_state_bound(new_state: GameData) -> void:
 	_bind_state(_bound_state, new_state)
+	_on_board_changed()
 
 var _bound_state : GameData = null
 
@@ -190,7 +192,6 @@ func _refresh_hud() -> void:
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
 	combo_label.visible = combo > 1.0
 	_mark_goal_met(state.has_met_goal())
-	_refresh_end_reveal()
 
 # The Goal reads as reached the instant the running total passes it, which is one beat before the
 # show resolves. A palette role, never a literal, so a palette swap carries it.
