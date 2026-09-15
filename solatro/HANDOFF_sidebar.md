@@ -914,6 +914,12 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      once folded). Owner calls, not blocking: GAP-001..010, the deferred legacy-comment ruling's
      scope, doc_check's missing added-lines mode, the hook file's "one-subagent" name, the
      overlay buttons that grow but never shrink, and the three WALL suites that still unpause.
+   - `../gamedev-baseline` (the throwaway worktree of unmodified main at a28c79aa, made for by-eye
+     before/after captures) was NOT removed. Besides regenerated `--import` translation files it
+     holds untracked copies of `sidebar_snapshot.gd`, `.gd.uid` and `.tscn`; the `.tscn` matches a
+     committed version (d53f8261) but the `.gd` and `.uid` match no blob in any branch, so they may
+     be a variant adapted to run on main. OWNER CALL: `git worktree remove --force
+     ../gamedev-baseline` once those two files are known to be disposable.
 8. `/docs` - PROPOSAL drafted by a read-only Opus 5 analyst, to apply after the fixes. Precedent
    (picture-wall, poker-patience, comparator_buckets, spotlight): KEEP `design/sidebar/`'s
    design set and gaps; DELETE `briefs/` and this handoff once folded. Corrections: DESIGN
