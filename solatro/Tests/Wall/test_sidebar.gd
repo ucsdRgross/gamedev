@@ -158,6 +158,14 @@ func _ready() -> void:
 	behavior_section("PHASE 5: THE ARROW OFF AN ENTRANCE CARD")
 	await test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board()
 	await test_motion_over_the_container_reaches_the_following_card()
+	behavior_section("S21: THE ENTRANCE DRAWS FACE DOWN AND FLIPS IN PLACE")
+	await test_a_refilled_card_appears_in_its_own_slot()
+	await test_only_the_empty_slots_flip()
+	await test_the_flip_waits_one_stagger_per_slot()
+	await test_a_slot_shows_one_face_down_card_whatever_its_depth()
+	await test_the_face_down_card_becomes_the_revealed_one()
+	await test_hovering_a_stock_says_how_many_it_has_left()
+	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
 	finish()
 
 func _build_container() -> HudContainer:
@@ -1142,6 +1150,7 @@ func _hoverable_card_controls() -> Array[Control]:
 			if is_instance_valid(control): every.append(control)
 		out.clear()
 		for control : Control in every:
+			if _play_area.is_stock_control(control): continue
 			if not control.is_visible_in_tree(): continue
 			if control.mouse_filter == Control.MOUSE_FILTER_IGNORE: continue
 			if not _is_selectable(control): continue
@@ -3805,3 +3814,296 @@ func test_motion_over_the_container_reaches_the_following_card() -> void:
 		check(reached[0], "motion over the container reached the board's pointer reader",
 				"dismiss %s" % reached[0])
 	await _end_game_fixture()
+
+# ==============================================================================
+# S21 -- THE ENTRANCE DRAWS FACE DOWN AND FLIPS IN PLACE
+# ==============================================================================
+
+## An Entrance coordinate in the fixture's own board, for the slot geometry these tests measure.
+func _entrance_coord(slot: int) -> BoardCoord:
+	return BoardCoord.new(0, slot, BoardCoord.ENTRANCE_ROW, 0)
+
+## The live game behind the fixture's board.
+func _fixture_game() -> Game:
+	return (_main._pictures[&"game"].screen_root as GameView).game
+
+# Every slot is emptied INTO THE DISCARD rather than dropped, so no card stops being reachable
+# from the state -- which is what the leak sentinel measures.
+func _empty_every_entrance_slot() -> void:
+	var state := _fixture_game().state
+	for column : ArrayCardData in state.upper_zone:
+		state.discard_deck.append_array(column.datas)
+		column.datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+
+## The controls of `slot` that draw its face-down stock.
+func _stock_controls(slot: int) -> Array[Control]:
+	var out : Array[Control] = []
+	for child : Node in _play_area.upper_zone_right.get_child(slot).get_children():
+		var control := child as Control
+		if _play_area.is_stock_control(control): out.append(control)
+	return out
+
+## S21.1: no fly-in -- a card drawn into a slot whose empty stock left it no entity is BORN there. The delay is raised because the suite's own 0.01 s would carry a wrong spawn home before the first frame.
+func test_a_refilled_card_appears_in_its_own_slot() -> void:
+	await _start_game_fixture()
+	var settings := SettingsManager.settings
+	var old_delay := settings.base_delay
+	settings.base_delay = 1.0
+	var state := _fixture_game().state
+	await _empty_every_entrance_slot()
+	for stock : ArrayCardData in state.entrance_stocks():
+		state.discard_deck.append_array(stock.datas)
+		stock.datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	var returning : CardData = state.discard_deck.pop_back()
+	state.entrance_stocks()[0].datas.append(returning)
+	await _fixture_game().refill_entrance_if_due()
+	_play_area.flush_rebuild()
+	await get_tree().process_frame
+	var drawn : CardData = state.upper_zone[0].datas.back()
+	var visual : CardVisual = _play_area.data_card[drawn]
+	var slot_centre := _play_area.slot_center_global(_entrance_coord(0))
+	check(drawn == returning and visual.global_position.distance_to(slot_centre) <= 1.0,
+			"the refilled card's visual is created at its own slot, not at the Deck button (S21.1)",
+			"%s vs slot %s" % [visual.global_position, slot_centre])
+	settings.base_delay = old_delay
+	await _end_game_fixture()
+
+## S21.2: a slot still holding a card keeps it, face up and in the same visual; only the empty slots draw and flip.
+func test_only_the_empty_slots_flip() -> void:
+	await _start_game_fixture()
+	var settings := SettingsManager.settings
+	var old_delay := settings.base_delay
+	var old_stagger := settings.entrance_flip_stagger
+	settings.base_delay = 1.0
+	settings.entrance_flip_stagger = 0.5
+	var state := _fixture_game().state
+	check(state.upper_zone.size() >= 2, "sanity: the board has more than one Entrance slot",
+			str(state.upper_zone.size()))
+	for i : int in range(1, state.upper_zone.size()):
+		state.discard_deck.append_array(state.upper_zone[i].datas)
+		state.upper_zone[i].datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	var kept : CardData = state.upper_zone[0].datas.back()
+	var kept_visual : CardVisual = _play_area.data_card[kept]
+	await _fixture_game().run_all_mods(&"on_refill")
+	_play_area.flush_rebuild()
+	await get_tree().process_frame
+	var still_held : CardData = state.upper_zone[0].datas.back()
+	check(still_held == kept
+			and _play_area.data_card[kept] == kept_visual
+			and not kept_visual.face_down,
+			"the slot that already held a card keeps it, face up, in the same visual (S21.2)")
+	var flipping := 0
+	for i : int in range(1, state.upper_zone.size()):
+		var drawn : CardData = state.upper_zone[i].datas.back()
+		if _play_area.data_card[drawn].face_down: flipping += 1
+	check(flipping == state.upper_zone.size() - 1,
+			"...and every slot that was empty drew a card that is still turning over (S21.2)",
+			str(flipping))
+	settings.base_delay = old_delay
+	settings.entrance_flip_stagger = old_stagger
+	await _end_game_fixture()
+
+## S21.3: the slots turn over left to right, one `entrance_flip_stagger` of the game's delay apart.
+func test_the_flip_waits_one_stagger_per_slot() -> void:
+	await _start_game_fixture()
+	var settings := SettingsManager.settings
+	var old_delay := settings.base_delay
+	var old_stagger := settings.entrance_flip_stagger
+	settings.base_delay = 1.0
+	settings.entrance_flip_stagger = 0.5
+	var state := _fixture_game().state
+	var last := state.upper_zone.size() - 1
+	check(last >= 2, "sanity: three slots or more to stagger", str(state.upper_zone.size()))
+	await _empty_every_entrance_slot()
+	await _fixture_game().refill_entrance_if_due()
+	_play_area.flush_rebuild()
+	await get_tree().process_frame
+	var step : float = settings.entrance_flip_stagger * _fixture_game().get_delay()
+	check(is_zero_approx(_play_area.entrance_flip_delay(0))
+			and is_equal_approx(_play_area.entrance_flip_delay(1), step)
+			and is_equal_approx(_play_area.entrance_flip_delay(2), 2.0 * step),
+			"slot i waits i staggers of the game's own delay, left to right (S21.3)",
+			"%f, %f, %f (step %f)" % [_play_area.entrance_flip_delay(0),
+					_play_area.entrance_flip_delay(1), _play_area.entrance_flip_delay(2), step])
+	settings.entrance_flip_stagger = 0.25
+	var narrower : float = settings.entrance_flip_stagger * _fixture_game().get_delay()
+	check(is_equal_approx(_play_area.entrance_flip_delay(1), narrower) and narrower < step,
+			"...and the spacing is the knob's, not a number of its own (S21.3)",
+			"%f vs %f" % [_play_area.entrance_flip_delay(1), narrower])
+	settings.entrance_flip_stagger = 0.5
+	await get_tree().create_timer(0.25).timeout
+	check(not _play_area.data_card[state.upper_zone[0].datas.back()].face_down
+			and _play_area.data_card[state.upper_zone[last].datas.back()].face_down,
+			"...and on the board the leftmost slot has turned over while the last still has not",
+			"last slot %d" % last)
+	settings.base_delay = old_delay
+	settings.entrance_flip_stagger = old_stagger
+	await _end_game_fixture()
+
+## S21.4: a slot shows ONE face-down card however deep its stock is -- the rest are not entities at all.
+func test_a_slot_shows_one_face_down_card_whatever_its_depth() -> void:
+	await _start_game_fixture()
+	var state := _fixture_game().state
+	check(state.upper_zone.size() >= 4, "sanity: four slots to stock differently",
+			str(state.upper_zone.size()))
+	var pool := state.all_stock_cards()
+	check(pool.size() >= 9, "sanity: the deal leaves enough cards to stock them", str(pool.size()))
+	var stocks := state.entrance_stocks()
+	stocks[0].datas.assign(pool.slice(0, 8))
+	stocks[1].datas.assign(pool.slice(8, 9))
+	stocks[2].datas.clear()
+	stocks[3].datas.clear()
+	state.discard_deck.append_array(pool.slice(9))
+	for i : int in range(4, stocks.size()):
+		stocks[i].datas.clear()
+	state.discard_deck.append_array(state.upper_zone[3].datas)
+	state.upper_zone[3].datas.clear()
+	state.revision += 1
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	check(_card_entities(0) == 2 and _card_entities(1) == 2
+			and _card_entities(2) == 1 and _card_entities(3) == 0,
+			"a stock of eight is one face-down card, of one the same, an exhausted slot none (S21.4)",
+			"%d, %d, %d, %d" % [_card_entities(0), _card_entities(1), _card_entities(2),
+					_card_entities(3)])
+	check(_stock_controls(0).size() == 1 and _stock_controls(2).is_empty(),
+			"...and exactly one of a stocked slot's entities is the face-down card (S21.4)",
+			"%d, %d" % [_stock_controls(0).size(), _stock_controls(2).size()])
+	var frame : Control = _play_area.upper_zone_right.get_child(3).get_child(-1)
+	check(frame.custom_minimum_size.y == CardVisual.card_size_play.y,
+			"...and the empty slot with an empty stock is left showing its own frame (S21.4)",
+			str(frame.custom_minimum_size))
+	state.discard_deck.append(_fixture_game().draw_card(1))
+	state.discard_deck.append_array(state.upper_zone[1].datas)
+	state.upper_zone[1].datas.clear()
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	check(_card_entities(1) == 0,
+			"...and a slot whose last stock card has been drawn away is left with nothing (S21.4)",
+			str(_card_entities(1)))
+	await _end_game_fixture()
+
+## S21.4b: the face-down card IS the next revealed card -- the same entity, turned over, with a fresh one beneath it.
+func test_the_face_down_card_becomes_the_revealed_one() -> void:
+	await _start_game_fixture()
+	var settings := SettingsManager.settings
+	var old_delay := settings.base_delay
+	settings.base_delay = 1.0
+	var state := _fixture_game().state
+	await _empty_every_entrance_slot()
+	var waiting : CardData = _play_area.ui_data[_stock_controls(0)[0]]
+	var waiting_visual : CardVisual = _play_area.data_card[waiting]
+	var next_down : CardData = state.entrance_stocks()[0].datas[-2]
+	await _fixture_game().refill_entrance_if_due()
+	_play_area.flush_rebuild()
+	await get_tree().process_frame
+	var revealed : CardData = state.upper_zone[0].datas.back()
+	check(revealed == waiting and _play_area.data_card[revealed] == waiting_visual,
+			"the card that was lying face down IS the revealed one, in the same entity (S21.4b)")
+	check(_stock_controls(0).size() == 1
+			and _play_area.ui_data[_stock_controls(0)[0]] == next_down,
+			"...and one fresh face-down card has taken its place beneath (S21.4b)",
+			"%d face down" % _stock_controls(0).size())
+	settings.base_delay = old_delay
+	await _end_game_fixture()
+
+## The card entities a slot draws at all: its revealed cards plus its one face-down card, never its zone frame.
+func _card_entities(slot: int) -> int:
+	return _play_area.upper_zone_right.get_child(slot).get_child_count() - 1
+
+## S21.5: a face-down card describes the SLOT -- how many it has left -- never the card it hides. The focus LEAVES and comes back for the second read: a control already focused publishes nothing.
+func test_hovering_a_stock_says_how_many_it_has_left() -> void:
+	await _start_game_fixture()
+	var body : Label = _panel.get_node(^"%Body")
+	var state := _fixture_game().state
+	var stock_control := _stock_controls(1)[0]
+	stock_control.grab_focus()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var before : int = state.entrance_stocks()[1].datas.size()
+	check(_container.showing_description() and body.text.contains(str(before)),
+			"hovering the face-down stock publishes how many cards it has left (S21.5)",
+			"%s vs %d" % [body.text, before])
+	state.discard_deck.append(_fixture_game().draw_card(1))
+	_play_area.set_card_zones()
+	await get_tree().process_frame
+	_stock_controls(0)[0].grab_focus()
+	await get_tree().process_frame
+	_stock_controls(1)[0].grab_focus()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(body.text.contains(str(before - 1)),
+			"...and drawing one card off it drops the count by one (S21.5)",
+			"%s vs %d" % [body.text, before - 1])
+	await _end_game_fixture()
+
+## S21.6: the Deck viewer is every stock as ONE pile, sorted by suit then rank, so no slot order leaks.
+func test_the_deck_viewer_lists_every_stock_as_one_sorted_pile() -> void:
+	await _start_game_fixture()
+	var state := _fixture_game().state
+	var pool := state.all_stock_cards()
+	var stocks := state.entrance_stocks()
+	for stock : ArrayCardData in stocks:
+		stock.datas.clear()
+	var late := _card_of_the_latest_suit(pool)
+	stocks[0].datas.assign([late] as Array[CardData])
+	var rest : Array[CardData] = []
+	for card : CardData in pool:
+		if card != late: rest.append(card)
+	stocks[1].datas.assign(rest.slice(0, 3))
+	state.discard_deck.append_array(rest.slice(3))
+	state.revision += 1
+	var listed := await _open_viewer_cards(_container.deck_ui.get_node(^"Button") as Button)
+	var order : Array[CardData] = DeckViewer._open.deck
+	check(listed.size() == 4 and order.size() == 4,
+			"the viewer lists the union of both stocks as one pile (S21.6)",
+			"%d listed, %d cards" % [listed.size(), order.size()])
+	check(_is_sorted_by_suit_then_rank(order),
+			"...in suit-then-rank order", _suit_rank_log(order))
+	var last_listed : CardData = order.back()
+	check(last_listed == late,
+			"...which is NOT the slot order the stocks hold them in (S21.6)",
+			_suit_rank_log(order))
+	await _close_open_viewer(_game_viewport)
+	state.discard_deck.clear()
+	state.discard_deck.append_array([rest[1], rest[0]] as Array[CardData])
+	await _open_viewer_cards(_container.discard_ui.get_node(^"Button") as Button)
+	check(DeckViewer._open.deck == state.discard_deck,
+			"...while the Discard viewer still lists its pile exactly as the pile holds it (S21.6)",
+			_suit_rank_log(DeckViewer._open.deck))
+	await _close_open_viewer(_game_viewport)
+	await _end_game_fixture()
+
+## The card the sort must put LAST, so "sorted" and "in slot order" cannot accidentally agree.
+func _card_of_the_latest_suit(cards: Array[CardData]) -> CardData:
+	var latest : CardData = cards[0]
+	for card : CardData in cards:
+		if card.suit.get_suit_index() > latest.suit.get_suit_index() \
+				or (card.suit.get_suit_index() == latest.suit.get_suit_index()
+					and card.rank.value > latest.rank.value):
+			latest = card
+	return latest
+
+func _is_sorted_by_suit_then_rank(cards: Array[CardData]) -> bool:
+	for i : int in range(1, cards.size()):
+		var before : CardData = cards[i - 1]
+		var after : CardData = cards[i]
+		if before.suit.get_suit_index() > after.suit.get_suit_index(): return false
+		if before.suit.get_suit_index() == after.suit.get_suit_index() \
+				and before.rank.value > after.rank.value: return false
+	return true
+
+func _suit_rank_log(cards: Array[CardData]) -> String:
+	var parts : PackedStringArray = []
+	for card : CardData in cards:
+		parts.append("%d/%d" % [card.suit.get_suit_index(), int(card.rank.value)])
+	return ", ".join(parts)

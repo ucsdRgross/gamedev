@@ -1415,6 +1415,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 	# nothing that carries a light.
 	var at : Dictionary[Vector4i, CardData] = {}
 	for data : CardData in pa.data_card.keys():
+		if data.stage == CardData.Stage.DRAW: continue
 		at[view.game.state.grid_position_of(data).pack()] = data
 	var lit : Array[CardData] = []
 	var mover : CardData = null

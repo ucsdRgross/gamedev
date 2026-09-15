@@ -81,7 +81,7 @@ func _ready() -> void:
 	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, deck_button.pressed,
-			func() -> void: _open_deck_viewer(game.state.all_stock_cards(), deck_button))
+			func() -> void: _open_deck_viewer(sorted_stock_union(game.state), deck_button))
 	var discard_button := discard_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, discard_button.pressed,
 			func() -> void: _open_deck_viewer(game.state.discard_deck, discard_button))
@@ -245,6 +245,15 @@ func _relay_info_requested(entry: InfoEntry) -> void:
 # The deck, discard and rules viewers are publishers exactly like the board: they hand their
 # highlights to this view, which relays them the same way, and closing one hands the sidebar back
 # to whatever was locked behind it.
+## Every stock as ONE pile in a fixed suit-then-rank order, so neither which slot holds a card nor how soon it will be drawn leaks out of the Deck button.
+static func sorted_stock_union(state: GameData) -> Array[CardData]:
+	var cards := state.all_stock_cards()
+	cards.sort_custom(func(a: CardData, b: CardData) -> bool:
+		if a.suit.get_suit_index() != b.suit.get_suit_index():
+			return a.suit.get_suit_index() < b.suit.get_suit_index()
+		return a.rank.value < b.rank.value)
+	return cards
+
 func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
 	_deck_viewer = DeckViewer.show_deck(self, cards, opener)
 	_deck_viewer.info_requested.connect(_relay_info_requested)

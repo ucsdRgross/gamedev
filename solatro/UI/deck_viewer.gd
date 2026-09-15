@@ -12,15 +12,9 @@ signal highlight_cleared
 @onready var flow_container: FlowContainer = %FlowContainer
 @onready var margin_container: MarginContainer = $MarginContainer
 
-enum SORTING_TYPE {RANK,SUIT,EFFECT}
-enum SORTING_ORDER {ASCENDING,DESCENDING}
-
 var deck : Array[CardData]
 ## Owns this viewer's listed cards (the shared listing logic; see CardsViewer).
 var _cards : CardsViewer
-var randomized : bool = false
-var sorting_type : SORTING_TYPE = SORTING_TYPE.RANK
-var sorting_order : SORTING_ORDER = SORTING_ORDER.ASCENDING
 
 # Only one viewer at a time: opening a new one (Deck button, deck picker Inspect, Enter
 # re-triggering a still-focused button, ...) replaces the previous instead of stacking.

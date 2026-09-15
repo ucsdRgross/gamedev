@@ -673,3 +673,42 @@
 - S20: `TestEntranceStocks` drives the real seam through the adders themselves --
   `_add_slot(g)` spotlights one more `SkillAdderInputUpper`, `_remove_slot(g, slot)` unspotlights
   the adder that owns that slot -- so no test calls `rebalance_stocks()` directly.
+- S21: face-down-ness is a BOARD fact, not the card's: `CardVisual.face_down` (with
+  `showing_back()`, which ORs it with the data's own `flipped`, and `resting_basis()`, the face a
+  card arrives on) is what the Entrance sets, so the deck viewer and every save are untouched.
+  `CardVisual.flip_up_after(delay)` owns the wait through one engine tween (`flip_tween`) and is
+  idempotent, so a rebuild mid-flip cannot restart it; the flip ITSELF is the floating slerp that
+  was already there.
+- S21: `entrance_stock_face_down_cap` is DELETED per the owner's mid-step ruling. A slot draws
+  exactly ONE face-down card while its stock is non-empty (`PlayArea._face_down_depth()`), and no
+  other stock card is an entity at all. `_entrance_drawn_columns()` is what each slot draws
+  (that face-down card, then the cards it holds), and it is the array `set_card_zone`,
+  `update_card_zone_visuals` and the Entrance's draw order all run on -- so the face-down card is
+  bound, sized, ordered and positioned by the SAME code as every other board card.
+- S21: a slot's height 0 is one control up from the bottom while it has a face-down card, so
+  `PlayArea._control_height()` (the reveal's control pass) and `control_for_coord()` both subtract
+  it, and `_entrance_slot_center_global` adds it to `coord.h`. The revealed card therefore does not
+  move when the face-down card appears: measured card0_y 699.16 and grid cell0_y 147.83, identical
+  with the face-down card and with the stocks emptied -- the strip's own fixed reservation
+  (140.88 px) already covers the deeper row (100.87 px), so the board is not pushed up at all.
+- S21: `PlayArea.entrance_flip_delay(slot)` is the stagger, `slot * entrance_flip_stagger *
+  get_delay()`; `_turn_the_entrance_over()` is the per-rebuild pass that puts every DRAW-stage
+  card's visual face down and asks every revealed one to flip up. It reads STAGES, not the control
+  map, because a rebuild's dictionaries and the state can disagree mid-grab (measured: a missing
+  `data_card` key through `arm_leftmost` -> `grab_cards`).
+- S21: the face-down card's control is `FOCUS_CLICK`, not `FOCUS_ALL` -- reachable by pointer and
+  click (which is what publishes the slot's description) but never an arrow stop, since nothing
+  there can be played. `PlayArea.is_stock_control()` is the public predicate, used by the publish
+  path and by the fixtures that mean "a card a player can grab".
+- S21: `PlayArea._publish_stock_info()` sends the SLOT's own entry -- title the zone card's name,
+  body `SIDEBAR_STOCK_REMAINING` with the count, no preview visual -- through the same
+  `info_requested` route a card uses. ⚠ The localisation CSV's third column is a CONTEXT, not a
+  comment (see the two `INPUT_ZONE_CARD_DESCRIPTION` rows): text put there files the message under
+  that context and `TranslationServer` hands back the raw key.
+- S21: `GameView.sorted_stock_union(state)` is the Deck button's content -- one flat union sorted
+  by `suit.get_suit_index()` then `rank.value`. `DeckViewer`'s dead `SORTING_TYPE`/`SORTING_ORDER`
+  enums and `randomized`/`sorting_*` vars are deleted with it; the sort lives at the caller.
+- S21: `CardVisual.on_stage_changed`'s DRAW branch (fly to the Deck control and free) is deleted
+  with the fly-in. A card newly dealt into a stock hit it on its first stage change and deleted its
+  own visual; the Deck control is not a place on the board, and `GameView.deck_ui` is not even
+  assigned until after the deal.

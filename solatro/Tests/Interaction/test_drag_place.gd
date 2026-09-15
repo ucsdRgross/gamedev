@@ -176,6 +176,7 @@ func _entrance_controls() -> Array[Control]:
 	var out : Array[Control] = []
 	for control : Control in _pa.ui_data:
 		if control.focus_mode == Control.FOCUS_NONE: continue
+		if _pa.is_stock_control(control): continue
 		if _pa.upper_zone_right.is_ancestor_of(control): out.append(control)
 	out.sort_custom(func(a: Control, b: Control) -> bool:
 			return a.get_global_rect().position.x < b.get_global_rect().position.x)

@@ -1857,9 +1857,11 @@ func run_the_entrance_stacks_upward_test() -> void:
 	# the player actually clicks. This is what sharing `_size_stack_slot()` buys.
 	var vbox : Control = pa.upper_zone_right.get_child(1)
 	var zone_control : Control = vbox.get_child(-1)
-	check(vbox.get_child_count() == col.datas.size() + 1
+	var face_down : int = 1 if g.state.entrance_stocks()[1].datas.size() > 0 else 0
+	check(vbox.get_child_count() == col.datas.size() + face_down + 1
 			and is_equal_approx(zone_control.custom_minimum_size.y, 0.0),
-			"the column has one control per card plus its own ZONE card LAST, collapsed the way a "
+			"the column has one control per card it draws -- its revealed cards and the ONE face-down "
+			+ "card under them -- plus its own ZONE card LAST, collapsed the way a "
 			+ "covered cell frame is", "%d controls, zone min %s"
 			% [vbox.get_child_count(), zone_control.custom_minimum_size])
 	var pitch := float(CardVisual.card_separation_play_custom) + float(pa.separation)

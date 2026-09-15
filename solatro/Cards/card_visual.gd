@@ -143,9 +143,33 @@ var floating : bool = true:
 		if not floating:
 			if not is_node_ready():
 				await ready
-			basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data and data.flipped else 1)))
+			basis3d = resting_basis()
 			if Engine.is_editor_hint():
 				visual.position.y = 0
+
+# THE FACE A CARD RESTS ON: its back while the board hides it, its front otherwise. A card arrives
+# on it, and a hidden card that is revealed turns over to it in place, which is the only flip there
+# is now that a drawn card is born in the slot it was drawn into.
+func resting_basis() -> Basis:
+	return Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if showing_back() else 1)))
+
+## Hidden by the BOARD -- a card still waiting in its slot's stock -- which is not the data's own face.
+var face_down : bool = false
+
+## The card must draw its back: the board hides it, or the card itself is turned over.
+func showing_back() -> bool:
+	return face_down or (data != null and data.flipped)
+
+# THE FLIP ITSELF IS THE FLOATING SLERP; this only decides WHEN it starts, which is what lets a
+# row of slots turn over one after another. Idempotent: a rebuild mid-wait must not restart it.
+func flip_up_after(delay: float) -> void:
+	if not face_down: return
+	if flip_tween and flip_tween.is_running(): return
+	flip_tween = create_tween()
+	flip_tween.tween_interval(delay)
+	flip_tween.tween_callback(func() -> void: face_down = false)
+
+var flip_tween : Tween
 
 var basis3d : Basis = Basis(Vector3(-1,0,0), Vector3(0,1,0), Vector3(0,0,-1)):
 	set(value):
@@ -584,7 +608,7 @@ func _ready() -> void:
 		SettingsManager.settings_changed.connect(recalculate_size)
 	recalculate_size()
 	match data.previous_stage:
-		data.Stage.PLAY, data.Stage.ZONE:
+		data.Stage.PLAY, data.Stage.ZONE, data.Stage.DRAW:
 			# The anchor may not exist yet (a visual built the same frame as its control), and a
 			# viewer/preview visual never gets one at all -- the SAME guard `on_stage_changed()`
 			# already puts on this exact call. Without it, a preview card whose previous_stage is
@@ -592,22 +616,13 @@ func _ready() -> void:
 			# CardEnvironment was on screen, which a live `Map` (one itself) makes most of the time.
 			if CardEnvironment.CURRENT and is_instance_valid(control_anchor):
 				global_position = get_card_control_center(control_anchor)
-		data.Stage.DRAW:
-			if _game_view():
-				global_position = get_control_center(_game_view().deck_ui)
 		data.Stage.DISCARD:
 			if _game_view():
 				global_position = get_control_center(_game_view().discard_ui)
 		data.Stage.RULES:
 			if _game_view():
 				global_position = get_control_center(_game_view().rules_ui)
-	# Only a card drawn from the deck ONTO THE BOARD flips into view: it keeps the default
-	# face-down basis3d and the floating anim slerps it to front. Everything else — non-draw
-	# board cards AND every viewer card (deck/pack/preview), even ones whose previous_stage is
-	# DRAW — spawns already showing its resting face (respecting data.flipped). Without this the
-	# slerp would flip every card from back to front on init.
-	if not (current_context == DisplayContext.PLAY_AREA and data.previous_stage == data.Stage.DRAW):
-		basis3d = Basis.looking_at(Vector3(0, 0, -3.5 * (-1 if data.flipped else 1)))
+	basis3d = resting_basis()
 	on_stage_changed()
 
 ## The size a PREVIEW card is DRAWN at; ZERO leaves it at the context's own -- only a description's publisher knows the board's live drawn size.
@@ -648,10 +663,6 @@ func on_stage_changed() -> void:
 			var target_pos := get_card_control_center(control_anchor)
 			create_move_tween(target_pos)
 			await move_tween.finished
-		data.Stage.DRAW:
-			if _game_view():
-				var target_pos := get_control_center(_game_view().deck_ui)
-				create_move_tween(target_pos).tween_callback(queue_free)
 		data.Stage.DISCARD:
 			if _game_view():
 				var target_pos := get_control_center(_game_view().discard_ui)
@@ -765,7 +776,7 @@ func delta_floating_anim(delta:float) -> void:
 		x = 0
 		y = 0
 		bobbing = 0
-	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if data and data.flipped else 1))
+	var drift : Vector3 = Vector3(x, y, -3.5 * (-1 if showing_back() else 1))
 	basis3d = basis3d.slerp(Basis.looking_at(drift), 6.5 * delta)
 	visual.position.y = lerpf(visual.position.y, bobbing, 10 * delta)
 

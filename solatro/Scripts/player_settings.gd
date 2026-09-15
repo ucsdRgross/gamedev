@@ -562,6 +562,12 @@ enum SeparationMode {
 		entrance_visible_rows = maxf(value, 0.5)
 		settings_changed.emit()
 
+## Delay between one Entrance slot's refill flip and the next one's, as a fraction of get_delay().
+@export var entrance_flip_stagger : float = 0.15:
+	set(value):
+		entrance_flip_stagger = maxf(value, 0.0)
+		settings_changed.emit()
+
 ## Share of the window's near axis (width on the side, height on top) the HUD container claims.
 @export var container_size_fraction : float = 0.25:
 	set(value):

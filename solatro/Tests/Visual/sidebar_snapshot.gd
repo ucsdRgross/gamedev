@@ -19,6 +19,13 @@ const DESCRIPTION_SCROLL_OUT_PATH := "user://sidebar_snapshot/description_scroll
 const VIEWER_DESCRIPTION_OUT_PATH := "user://sidebar_snapshot/viewer_description.png"
 const VIEWER_DESCRIPTION_TOP_OUT_PATH := "user://sidebar_snapshot/viewer_description_top.png"
 const CHOICE_VIEWER_OUT_PATH := "user://sidebar_snapshot/choice_viewer_description.png"
+const ENTRANCE_STOCKS_OUT_PATH := "user://sidebar_snapshot/entrance_stocks.png"
+const ENTRANCE_FLIP_MID_OUT_PATH := "user://sidebar_snapshot/entrance_flip_mid.png"
+# Slow enough that the stagger is a THING YOU CAN SEE in one still: at the shipped 0.15 the whole
+# row is over before a frame lands. The still is of the mechanism, not of the shipped pacing.
+const FLIP_STILL_DELAY_SEC := 1.0
+const FLIP_STILL_STAGGER := 0.5
+const FLIP_STILL_FRAMES := 30
 const CARD_LIFTED_OUT_PATH := "user://sidebar_snapshot/card_lifted.png"
 const CARD_FOLLOWING_OUT_PATH := "user://sidebar_snapshot/card_following.png"
 const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_elsewhere.png"
@@ -111,6 +118,11 @@ func _ready() -> void:
 	await _await_held_card_settled(view, view.play_area.selected_cards[0])
 	await RenderingServer.frame_post_draw
 	_capture(_resolve_out_path())
+
+	await _report_the_entrance_depth(view)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(ENTRANCE_STOCKS_OUT_PATH)
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
 	await get_tree().process_frame
@@ -211,6 +223,9 @@ func _ready() -> void:
 	DeckViewer._open.free()
 	await get_tree().process_frame
 
+	await _refill_the_whole_entrance(view)
+	_capture(ENTRANCE_FLIP_MID_OUT_PATH)
+
 	var shot := await _shoot_a_cascade(main, view)
 	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
 
@@ -219,6 +234,55 @@ func _ready() -> void:
 	RunManager.clear_save()
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
+
+# WHAT THE FACE-DOWN CARD COSTS THE BOARD, measured rather than argued: the Entrance is row -1, so
+# its real depth is what the board's floor has to clear, and a deeper row pushes everything above
+# it up. Reported with the face-down card and again with the stocks set aside.
+func _report_the_entrance_depth(view: GameView) -> void:
+	var pa := view.play_area
+	_print_the_entrance_depth(pa, "face_down")
+	var parked : Array[Array] = []
+	for stock : ArrayCardData in view.game.state.entrance_stocks():
+		parked.append(stock.datas.duplicate())
+		stock.datas.clear()
+	pa.set_card_zones()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_print_the_entrance_depth(pa, "exhausted")
+	var stocks := view.game.state.entrance_stocks()
+	for i : int in parked.size():
+		stocks[i].datas.assign(parked[i])
+	pa.set_card_zones()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+func _print_the_entrance_depth(pa: PlayArea, label: String) -> void:
+	print("SIDEBAR_SNAPSHOT entrance_depth %s strip_full=%.2f row=%.2f card0_y=%.2f cell0_y=%.2f" % [
+			label, pa._entrance_strip_full_height(), pa._entrance_row_height(),
+			pa.slot_center_global(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW, 0)).y,
+			pa.slot_center_global(BoardCoord.new(0, 0, 0, 0)).y])
+
+# THE FLIP, CAUGHT PARTWAY ACROSS THE ROW: every slot is emptied into the discard and refilled
+# through the game's own refill, so the still is of the product's own staggered turn-over.
+func _refill_the_whole_entrance(view: GameView) -> void:
+	var settings := SettingsManager.settings
+	var old_delay := settings.base_delay
+	var old_stagger := settings.entrance_flip_stagger
+	settings.base_delay = FLIP_STILL_DELAY_SEC
+	settings.entrance_flip_stagger = FLIP_STILL_STAGGER
+	view.play_area.ungrab_cards()
+	for column : ArrayCardData in Board.zone(view.game.state, 0):
+		view.game.state.discard_deck.append_array(column.datas)
+		column.datas.clear()
+	view.game.state.revision += 1
+	view.play_area.set_card_zones()
+	await get_tree().process_frame
+	await view.game.refill_entrance_if_due()
+	view.play_area.flush_rebuild()
+	for frame : int in FLIP_STILL_FRAMES:
+		await RenderingServer.frame_post_draw
+	settings.base_delay = old_delay
+	settings.entrance_flip_stagger = old_stagger
 
 # Waits for every Entrance card's own move tween to stop running -- the deal's spawn animation --
 # so the still is never caught mid-flight. Bounded, not a fixed sleep: it returns the instant the

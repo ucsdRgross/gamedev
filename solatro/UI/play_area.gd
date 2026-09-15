@@ -1856,7 +1856,8 @@ func control_for_coord(v: Vector3i) -> Control:
 	var hbox : HBoxContainer = upper_zone_right
 	if v.y < 0 or v.y >= hbox.get_child_count(): return null
 	var vbox := hbox.get_child(v.y)
-	var idx := v.z + 1   # child 0 = the zone/type header (z == -1)
+	var cards := vbox.get_child_count() - 1
+	var idx := cards if v.z < 0 else cards - 1 - (v.z + _face_down_depth(v.y))
 	if idx < 0 or idx >= vbox.get_child_count(): return null
 	return vbox.get_child(idx) as Control
 
@@ -1960,11 +1961,12 @@ func _entrance_slot_center_global(coord: BoardCoord) -> Vector2:
 	var deepest := 0
 	var game := CardEnvironment.get_current_game()
 	if game:
-		for col : ArrayCardData in game.state.upper_zone:
-			deepest = maxi(deepest, col.datas.size())
+		for i : int in game.state.upper_zone.size():
+			deepest = maxi(deepest,
+					game.state.upper_zone[i].datas.size() + _face_down_depth(i))
 	var resting_h := CardVisual.card_size_play.y 			+ float(maxi(deepest - 1, 0)) * _depth_pitch_px()
 	var floor_y := upper_zone_right.global_position.y + resting_h * board_zoom
-	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h)
+	var at := _stack_slot_center(origin.x, floor_y, coord.x, coord.h + _face_down_depth(coord.x))
 	# ⚠ **THE UNIFORM PITCH IS NOT THE WHOLE STORY, AND EVERY PROP ANCHORS TO THIS.** The reveal
 	# grows one layer's strip, lifting every layer above it by an amount the pitch does not
 	# describe. Still pure math: the offset comes from the same eased numbers that size the
@@ -2194,9 +2196,10 @@ func set_card_zones() -> void:
 	if not game: return
 	ui_data.clear()
 	data_ui.clear()
+	_stock_slot_of_control.clear()
 	var game_state := game.state
 	# Handles structural validation, instantiations, and dictionary mapping
-	set_card_zone(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	set_card_zone(upper_zone_right, game_state.upper_zone_type, _entrance_drawn_columns())
 	set_grid_zones(game_state)
 	data_card = new_data_card
 	new_data_card = {}
@@ -2226,7 +2229,8 @@ func set_card_zones_visuals() -> void:
 	# Sizing, style overrides, and focus logic per zone; then ONE structural ordering pass over
 	# both zones (row-major — see _order_board_cards). Upper zone first, lower second, so
 	# lower-zone cards draw over upper.
-	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, game_state.upper_zone)
+	update_card_zone_visuals(upper_zone_right, game_state.upper_zone_type, _entrance_drawn_columns())
+	_turn_the_entrance_over(game_state)
 	update_grid_zone_visuals(game_state)
 	_seed_new_layers(game_state)
 	# The Entrance is row -1: its depth is part of the board's geometry, so a rebuild that changed
@@ -2248,6 +2252,72 @@ func set_card_zone(hbox: HBoxContainer, type: Array[CardData], datas: Array[Arra
 	# them. A grid cell goes through the same call.
 	for i in type.size():
 		_bind_stack(hbox.get_child(i) as Control, datas[i].datas, type[i])
+		_mark_stock_controls(hbox.get_child(i) as Control, i)
+
+## A slot's deepest control is its face-down card: it publishes the STOCK's description, never the hidden card's, and the arrows walk past it because nothing there can be played yet.
+func _mark_stock_controls(slot: Control, slot_index: int) -> void:
+	var stock_depth := _face_down_depth(slot_index)
+	var cards := slot.get_child_count() - 1
+	for j : int in stock_depth:
+		var control := slot.get_child(cards - 1 - j) as Control
+		_stock_slot_of_control[control] = slot_index
+		control.focus_mode = Control.FOCUS_CLICK
+
+## The board HEIGHT a slot's j-th control draws: the face-down card lies under height 0, so a stocked slot's heights start one control up from the bottom and the face-down card's own is below them all.
+func _control_height(slot_index: int, depth: int, j: int) -> int:
+	return depth - 1 - j - _face_down_depth(slot_index)
+
+## Which Entrance slot's stock a control draws, for the controls that draw one.
+var _stock_slot_of_control : Dictionary[Control, int] = {}
+
+## True while this control draws one of a slot's face-down stock rather than a card the slot holds.
+func is_stock_control(control: Control) -> bool:
+	return _stock_slot_of_control.has(control)
+
+## ONE face-down card under a slot that still has a stock, none for an exhausted one: the card about to be flipped is the only stock card that is ever an entity, and it implies the rest.
+func _face_down_depth(slot_index: int) -> int:
+	var game := CardEnvironment.get_current_game()
+	if not game: return 0
+	var stocks := game.state.entrance_stocks()
+	if slot_index < 0 or slot_index >= stocks.size(): return 0
+	return 1 if stocks[slot_index].datas.size() > 0 else 0
+
+## What each Entrance slot DRAWS, bottom to top: the one face-down card, then the cards it holds.
+func _entrance_drawn_columns() -> Array[ArrayCardData]:
+	var game := CardEnvironment.get_current_game()
+	var columns : Array[ArrayCardData] = []
+	if not game: return columns
+	var stocks := game.state.entrance_stocks()
+	for i : int in game.state.upper_zone.size():
+		var column := ArrayCardData.new()
+		var stock : Array[CardData] = stocks[i].datas
+		column.datas.assign(stock.slice(stock.size() - _face_down_depth(i)))
+		column.datas.append_array(game.state.upper_zone[i].datas)
+		columns.append(column)
+	return columns
+
+# A SLOT'S STOCK IS FACE DOWN AND WHAT THE SLOT HOLDS IS NOT. A card just drawn is the very visual
+# that lay face down on top of that stock, already in its slot, so all it has left to do is turn
+# over -- and the slots turn over left to right, in the order they drew.
+func _turn_the_entrance_over(game_state: GameData) -> void:
+	for data : CardData in data_card:
+		var visual : CardVisual = data_card[data]
+		if data.stage == CardData.Stage.DRAW:
+			visual.face_down = true
+		elif visual.face_down:
+			visual.flip_up_after(entrance_flip_delay(_entrance_slot_of(game_state, data)))
+
+## Which Entrance slot holds this card, or the leftmost when it is not in the Entrance at all.
+func _entrance_slot_of(game_state: GameData, data: CardData) -> int:
+	for i : int in game_state.upper_zone.size():
+		if game_state.upper_zone[i].datas.has(data): return i
+	return 0
+
+## The wait before slot `slot` turns its drawn card over: one stagger per slot from the left, as a fraction of the game's own delay, so the flip rides the pacing like every other animation.
+func entrance_flip_delay(slot: int) -> float:
+	var game := CardEnvironment.get_current_game()
+	if not game: return 0.0
+	return float(slot) * settings().entrance_flip_stagger * game.get_delay()
 
 ## Which `CardVisual` layer a slot control's card belongs in — the Entrance's own pinned layer
 ## if `c` lives under `upper_zone_right`, the board's otherwise. Walking `c`'s own ancestry (not
@@ -2271,6 +2341,7 @@ func _bind_slot(c: Control, connected_data: CardData) -> void:
 	# uninteractable and survives undo (owner bug report).
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE if connected_data in selected_cards \
 			else Control.MOUSE_FILTER_PASS
+	c.focus_mode = Control.FOCUS_ALL
 	var target_layer := _target_card_layer(c)
 	# ⚠ **EVERY card on this board hangs from its control's BOTTOM edge**, the Entrance included:
 	# the pips are on a card's bottom, so a stack that grew downward buried the very row the player
@@ -2323,7 +2394,7 @@ func _order_board_cards(game_state: GameData) -> void:
 	var entrance_seen : Dictionary[CardVisual, bool] = {}
 	var entrance_pending : Array[bool] = [false]
 	_append_zone_row_major(entrance_ordered, entrance_seen, entrance_pending, entrance_card_layer,
-			game_state.upper_zone_type, game_state.upper_zone)
+			game_state.upper_zone_type, _entrance_drawn_columns())
 	_apply_layer_order(entrance_card_layer, entrance_ordered)
 
 	var grid_ordered : Array[CardVisual] = []
@@ -3050,6 +3121,16 @@ func _publish_info(data: CardData) -> void:
 	if info_requested.get_connections().is_empty(): return
 	info_requested.emit(card_info(data, board_card_window_px()))
 
+# A FACE-DOWN CARD DESCRIBES THE SLOT, NEVER ITSELF -- what is hidden stays hidden, and what the
+# player is asking is how much this slot has left to draw.
+func _publish_stock_info(slot: int) -> void:
+	if info_requested.get_connections().is_empty(): return
+	var game := CardEnvironment.get_current_game()
+	var entry := InfoEntry.new()
+	entry.title = game.state.upper_zone_type[slot].type.get_str()
+	entry.body = TRANSLATION.find('SIDEBAR_STOCK_REMAINING') % game.state.entrance_stocks()[slot].datas.size()
+	info_requested.emit(entry)
+
 var focused_visual : CardVisual
 
 ## The card the sidebar is locked to, pushed in by `GameView` -- `null` while nothing is locked.
@@ -3078,7 +3159,10 @@ func on_control_focus_entered(control:Control) -> void:
 	_refresh_card_marking()
 	if ui_data.has(control) and not _focus_is_resting:
 		follow_cards()
-		_publish_info(ui_data[control])
+		if is_stock_control(control):
+			_publish_stock_info(_stock_slot_of_control[control])
+		else:
+			_publish_info(ui_data[control])
 
 	# ⚠ **HOVER DOES NOT RESIZE THE STACK, AND ESPECIALLY NOT ITS ZONE CARD.** This used to hand-size
 	# controls by fixed child index on every focus -- written when child 0 was the zone header and
@@ -3144,7 +3228,8 @@ func _apply_row_openings() -> void:
 		# pitch, and the slot's own zone card is the last child -- `update_card_zone_visuals()` owns
 		# that one. Left on the old top-down build, this pass silently put the old sizes back every
 		# frame and the controls stepped 16 px where the card arithmetic steps 20.
-		for col : Node in hbox.get_children():
+		for i : int in hbox.get_child_count():
+			var col : Node = hbox.get_child(i)
 			var depth := col.get_child_count() - 1
 			for j : int in depth:
 				var c := col.get_child(j) as Control
@@ -3152,7 +3237,7 @@ func _apply_row_openings() -> void:
 				var base : float = CardVisual.card_size_play.y if j == 0 else _depth_pitch_px()
 				c.custom_minimum_size = Vector2(CardVisual.card_size_play.x,
 						base + row_open_extra(BoardCoord.new(0, 0, BoardCoord.ENTRANCE_ROW,
-						depth - 1 - j)))
+						_control_height(i, depth, j))))
 	var gutter : VBoxContainer = upper_zone_left
 	if not gutter: return
 	for i : int in gutter.get_child_count():
