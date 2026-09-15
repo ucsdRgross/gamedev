@@ -835,3 +835,7 @@
 - Fix 15: the sidebar's scroll EXTENT settles a frame or more after a visual is re-mounted (a pack
   replacing a pack reads 0 overflow while its grid is 1004 px tall), so a height assertion uses the
   content's own laid-out height and the extent is only asked whether a short entry scrolls at all.
+- Close fix 1: `Game.undo()` releases `processing` as its LAST statement, after the history
+  pop, so the view's re-arm edge derives the armed card from the RESTORED Entrance instead of
+  the state being discarded. New test helper name `TestInteraction.an_empty_cell_control()`,
+  the control an armed card is aimed at (a free cell presents its own zone card).

@@ -579,6 +579,8 @@ func entrance_slot_of(card: CardData) -> int:
 ## Command (view-called): rewind one committed board. The held-cards guard is the VIEW's job
 ## (selection state lives there); Game owns the history rewind. Three states:
 ##   - win/lose screen up (_resolved): dismiss the outcome, then rewind the final Submit.
+## ⚠ `processing` is released LAST, after the pop: the view re-arms the Entrance on that false edge,
+## so an earlier release arms a card of the state this rewind is throwing away.
 ##   - an act is resolving (_act_cancellable): request a cancel — the act fast-forwards and
 ##     restores the pre-act board itself (_perform_next).
 ##   - otherwise locked (resume load / replay tail): ignored.
@@ -588,8 +590,6 @@ func undo() -> void:
 		_resolved = false
 		_won = false
 		show_unresolved.emit()
-		processing = false
-		# fall through: pop the final Submit's committed board below
 	elif processing:
 		# the restore needs a committed board to return to (always true in a real show —
 		# _start_fresh_show seeds history — but bare test fixtures may not have one)
@@ -611,6 +611,7 @@ func undo() -> void:
 			RunManager.request_save()
 		if view: view.rebuild()  # headless: state reverted; no board to force-rebuild
 		debug_validate("undo")
+	processing = false
 
 # ==============================================================================
 # DEBUG HISTORY — the owner's playtest-debugging loop.

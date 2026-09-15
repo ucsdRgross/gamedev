@@ -244,6 +244,16 @@ func a_card_control() -> Control:
 			return control
 	return null
 
+# What an armed card is aimed at: an EMPTY grid cell presents its own zone card as the drop
+# target, so this is the control a click at a free cell lands on.
+func an_empty_cell_control() -> Control:
+	pa.flush_rebuild()
+	for control : Control in pa.ui_data:
+		var coord := game.state.cell_type_coord(pa.ui_data[control])
+		if coord.is_nowhere() or game.state.card_at(coord) != null: continue
+		if control.is_visible_in_tree(): return control
+	return null
+
 func center_of(c: Control) -> Vector2:
 	return c.get_global_rect().get_center()
 
@@ -498,3 +508,19 @@ func test_game_over_interactivity() -> void:
 	check(not game.processing, "play resumes after the outcome undo")
 	check(not view.submit_button.disabled, "End comes back with play")
 	check(a_card_control() != null, "the rebuilt board is focusable again")
+	var entrance_cards : Array[CardData] = []
+	for col : ArrayCardData in game.state.upper_zone:
+		entrance_cards.append_array(col.datas)
+	var armed := pa.selected_cards
+	check(armed.size() == 1 and entrance_cards.has(armed[0]),
+			"the card armed after the outcome undo is a card of the RESTORED Entrance (Q117=a)",
+			"armed %d, entrance %d" % [armed.size(), entrance_cards.size()])
+	var cards_before := game.state.all_card_datas().size()
+	var cell := an_empty_cell_control()
+	check(cell != null, "the restored board offers an empty cell to place into")
+	if cell:
+		await mouse_click(center_of(cell))
+		await frames(2)
+		check(game.state.all_card_datas().size() == cards_before,
+				"placing after the outcome undo duplicates no card (Q109=a)",
+				"%d vs %d" % [game.state.all_card_datas().size(), cards_before])
