@@ -122,7 +122,7 @@ func _start_fixture() -> void:
 	await _settle_layout()
 
 func _end_fixture() -> void:
-	await TestMainHost.free_booted(_viewport, _main)
+	await TestMainHost.free_booted(self, _viewport, _main)
 	_viewport = null
 	_main = null
 	_view = null

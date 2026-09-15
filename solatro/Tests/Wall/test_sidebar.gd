@@ -34,9 +34,9 @@ func _ready() -> void:
 	test_show_hud_shows_only_the_hud_stack()
 	test_show_description_shows_only_the_description_panel()
 	behavior_section("THE GAME SCREEN'S HUD (S2)")
-	test_game_hud_holds_exactly_the_eight_members()
+	await test_game_hud_holds_exactly_the_eight_members()
 	test_no_retired_furniture_nodes_remain()
-	test_overlay_buttons_draw_above_the_hud_container()
+	await test_overlay_buttons_draw_above_the_hud_container()
 	await test_every_hud_member_is_visible_and_reachable()
 	await test_number_captions_and_values_do_not_overlap()
 	await test_game_hud_members_start_below_the_overlay_button_band()
@@ -52,7 +52,7 @@ func _ready() -> void:
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
 	behavior_section("S4: THE MAP GETS THE SAME CONTAINER")
-	test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
+	await test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_them()
 	await test_focus_change_drives_which_hud_stack_child_shows()
 	await test_map_deck_button_reaches_the_live_maps_handler_then_disconnects()
 	await test_maps_camera_offset_moves_beside_the_container_not_under_it()
@@ -294,8 +294,11 @@ func _check_flight_lands_on(view: GameView, flight: CardVisual, pile: Control,
 			"a card leaving the board lands on %s" % label,
 			"%s vs %s" % [flight.global_position, expected])
 
+# The game's one container sits under the wall's ALWAYS overlay and keeps answering input under the
+# session-long pause an earlier wall test in this suite leaves on, so a bare one runs the same way.
 func _build_container() -> HudContainer:
 	var container : HudContainer = HUD_CONTAINER_SCENE.instantiate()
+	container.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(container)
 	return container
 
@@ -344,13 +347,10 @@ func test_show_description_shows_only_the_description_panel() -> void:
 
 # ------------------------------------------------------------------ fixtures (S2)
 
-# Wall._ready() sets get_tree().paused = true GLOBALLY -- undone immediately, same reason every
-# other Wall-building suite in this run already documents.
+# The wall keeps the session-long pause its own `_ready()` sets, so an unfocused screen stays frozen
+# as it is in the game.
 func _build_wall() -> Wall:
-	var wall : Wall = WALL_SCENE.instantiate()
-	add_child(wall)
-	get_tree().paused = false
-	return wall
+	return TestMainHost.mount(self, self, WALL_SCENE) as Wall
 
 # A real, headless show, parked/restored the same way `_stand_up_grids` (`Tests/UI/test_grid_view.gd`).
 # `container` is hand-carried onto the view before it enters the tree, matching how
@@ -410,7 +410,7 @@ func test_game_hud_holds_exactly_the_eight_members() -> void:
 	check(names == expected,
 			"GameHud holds exactly Deck, Discard, Rules, Goal, Total, Combo, Undo, End (C4)",
 			str(names))
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 # Checked across BOTH `game_view.tscn` and `wall.tscn` -- the furniture migrated out of the view
 # and into the container, so scanning only one would miss a retired node reintroduced in the other.
@@ -438,7 +438,7 @@ func test_overlay_buttons_draw_above_the_hud_container() -> void:
 			"the container sits BEHIND the Back/Forward/Wall buttons in draw order",
 			"container=%d back=%d forward=%d wall=%d" % [container.get_index(),
 					back_button.get_index(), forward_button.get_index(), wall_button.get_index()])
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 # ------------------------------------------------------------------ every control reachable
 
@@ -453,13 +453,9 @@ func _assert_visible_and_sized(control: Control, window_size: Vector2i, ctx: Str
 # viewport, the way the engine decides hover. `Label`'s engine default is `MOUSE_FILTER_IGNORE`
 # (no hover at all), so Goal/Total/Combo are proven reachable geometrically instead.
 func test_every_hud_member_is_visible_and_reachable() -> void:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var wall : Wall = WALL_SCENE.instantiate()
-	viewport.add_child(wall)
-	get_tree().paused = false
-	await get_tree().process_frame
+	var booted := await TestMainHost.boot(self, Vector2i(1280, 720), WALL_SCENE)
+	var viewport : SubViewport = booted[0]
+	var wall : Wall = booted[1]
 	var overlay : CanvasLayer = wall.get_node(^"%Overlay")
 	var container : HudContainer = overlay.get_node(^"HudContainer")
 	## Forced visible purely to measure geometry -- End authored hidden, its reveal tested elsewhere.
@@ -492,19 +488,15 @@ func test_every_hud_member_is_visible_and_reachable() -> void:
 	for ctx : String in readable:
 		_assert_visible_and_sized(readable[ctx] as Control, viewport.size, ctx)
 
-	viewport.free()
+	await _free_booted_main(viewport, wall)
 
 # S2d: the caption and value halves of each number sat on top of each other before `Goal`/`Total`
 # became `HBoxContainer`s, so a bare rect-intersection check proves the fix without re-reading
 # pixels. A real `SubViewport` frame settles the containers' layout before the rects are read.
 func test_number_captions_and_values_do_not_overlap() -> void:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var wall : Wall = WALL_SCENE.instantiate()
-	viewport.add_child(wall)
-	get_tree().paused = false
-	await get_tree().process_frame
+	var booted := await TestMainHost.boot(self, Vector2i(1280, 720), WALL_SCENE)
+	var viewport : SubViewport = booted[0]
+	var wall : Wall = booted[1]
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	container.combo_label.visible = true
 	await get_tree().process_frame
@@ -522,18 +514,14 @@ func test_number_captions_and_values_do_not_overlap() -> void:
 		for j : int in range(i + 1, labels.size()):
 			check(not labels[i].get_global_rect().intersects(labels[j].get_global_rect()),
 					"%s and %s do not overlap" % [labels[i].get_parent().name, labels[j].get_parent().name])
-	viewport.free()
+	await _free_booted_main(viewport, wall)
 
 # S2d/Q46: the HUD's CONTENT must start below the overlay's Back/Forward/Wall row -- the panel
 # itself may still draw under it (draw order is `test_overlay_buttons_draw_above_the_hud_container`).
 func test_game_hud_members_start_below_the_overlay_button_band() -> void:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var wall : Wall = WALL_SCENE.instantiate()
-	viewport.add_child(wall)
-	get_tree().paused = false
-	await get_tree().process_frame
+	var booted := await TestMainHost.boot(self, Vector2i(1280, 720), WALL_SCENE)
+	var viewport : SubViewport = booted[0]
+	var wall : Wall = booted[1]
 	var overlay : WallOverlay = wall.get_node(^"%Overlay")
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
@@ -546,7 +534,7 @@ func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 		var control : Control = container.get_node(NodePath("%" + member_name)) as Control
 		check(control.get_global_rect().position.y >= band_bottom,
 				"%s starts below the overlay button band" % member_name, str(control.get_global_rect()))
-	viewport.free()
+	await _free_booted_main(viewport, wall)
 
 # A same-aspect window reports the project's own base resolution as its logical size under
 # `canvas_items`/`expand` stretch -- what a real 1280x720 (16:9) window gives every Control,
@@ -559,14 +547,9 @@ func _project_base_window() -> Vector2:
 # Q76=b: the container's contents are laid out to fit whatever it is set to, so no member may
 # reach past its own container's rect at a real 1280x720 window.
 func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(_project_base_window())
-	add_child(viewport)
-	var wall : Wall = WALL_SCENE.instantiate()
-	viewport.add_child(wall)
-	get_tree().paused = false
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var booted := await TestMainHost.boot(self, Vector2i(_project_base_window()), WALL_SCENE)
+	var viewport : SubViewport = booted[0]
+	var wall : Wall = booted[1]
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
 	container.combo_label.visible = true
@@ -583,7 +566,7 @@ func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
 				"%s's rect sits inside the container" % member_name,
 				"%s vs container %s" % [control.get_global_rect(), container_rect])
 	_check_button_labels_fit_their_own_minimum(container)
-	viewport.free()
+	await _free_booted_main(viewport, wall)
 
 # A Button's own TEXT overflows its rect silently (no layout error) once its assigned size is
 # squeezed below what the label needs, so this checks each button's OWN minimum, not its
@@ -624,7 +607,7 @@ func test_pressing_end_reaches_the_live_game_views_handler() -> void:
 	check(view.game.state.show_ended,
 			"pressing the container's End button reached the live GameView's own end_show()")
 	await _tear_down_view(view, prev_run, prev_save_info)
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 # The container OUTLIVES a per-show `GameView`: a first show's view tears down, its connections
 # must be gone, and a second view alone receives the next press -- the SAME container, never a
@@ -668,7 +651,7 @@ func test_a_second_shows_view_receives_the_press_after_the_first_tears_down() ->
 			"one press reaches exactly the second GameView after the first tore down")
 
 	await _tear_down_view(view_two, prev_run, prev_save_info)
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 # ------------------------------------------------------------------ scoped to its own wall
 
@@ -683,9 +666,7 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 	var prev_save_info : RunState = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await main.enter_game()
 	var game_wp : WallPicture = main._pictures[&"game"]
 	var view := game_wp.screen_root as GameView
@@ -701,15 +682,14 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 	check(view.game.state.show_ended,
 			"a press on this wall's own container reaches its GameView")
 
-	main.queue_free()
-	await get_tree().process_frame
+	await TestMainHost.unmount(self, main)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
 	RunManager.run = prev_run
 	Main.save_info = prev_save_info
-	other_wall.free()
+	await TestMainHost.unmount(self, other_wall)
 
 # ------------------------------------------------------------------ the container's geometry
 
@@ -775,9 +755,7 @@ func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement(
 	var prev_save_info : RunState = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await main.enter_game()
 	var game_wp : WallPicture = main._pictures[&"game"]
 	var view := game_wp.screen_root as GameView
@@ -794,8 +772,7 @@ func test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement(
 			"the board's centre is unchanged (within 0.5px) after the retired controls' removal",
 			"%.3f vs %.3f" % [centre, MEASURED_BOARD_CENTRE_PX])
 
-	main.queue_free()
-	await get_tree().process_frame
+	await TestMainHost.unmount(self, main)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -812,12 +789,9 @@ func test_a_real_resize_moves_the_container_and_republishes_the_inset() -> void:
 	var prev_save_info : RunState = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
 	await main.enter_game()
 	var game_wp : WallPicture = main._pictures[&"game"]
 	var view := game_wp.screen_root as GameView
@@ -840,9 +814,7 @@ func test_a_real_resize_moves_the_container_and_republishes_the_inset() -> void:
 
 	await _check_board_inset_left_on_ultrawide_resize(viewport, view, design)
 
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
+	await _free_booted_main(viewport, main)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -872,12 +844,9 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	var prev_save_info : RunState = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(600, 1000)
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
+	var booted := await _boot_main_at(Vector2i(600, 1000))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
 	await main.enter_game()
 	var game_wp : WallPicture = main._pictures[&"game"]
 	var view := game_wp.screen_root as GameView
@@ -908,9 +877,7 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 			"the Entrance strip's top edge sits below the band",
 			"%s vs band bottom %.3f" % [strip_rect, band.end.y])
 
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
+	await _free_booted_main(viewport, main)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -942,7 +909,7 @@ func test_map_hud_holds_exactly_the_four_members_and_maps_own_ui_is_empty_of_the
 		check(not _has_named_descendant(map, target),
 				"no %%%s node remains under map.tscn's own $UI" % target)
 	map.free()
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 ## (b) The real focus change drives which `HudStack` child shows, for all four screens.
 func test_focus_change_drives_which_hud_stack_child_shows() -> void:
@@ -951,9 +918,7 @@ func test_focus_change_drives_which_hud_stack_child_shows() -> void:
 	var prev_save_info : RunState = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await get_tree().process_frame
 	var container : HudContainer = main.wall.get_node(^"%HudContainer")
 	var game_hud : Control = container.get_node(^"%GameHud")
@@ -976,8 +941,7 @@ func test_focus_change_drives_which_hud_stack_child_shows() -> void:
 	await main._go_to_wall_view()
 	check(not container.visible, "wall overview: no container at all (Q21=b)")
 
-	main.queue_free()
-	await get_tree().process_frame
+	await TestMainHost.unmount(self, main)
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
@@ -1004,7 +968,7 @@ func test_map_deck_button_reaches_the_live_maps_handler_then_disconnects() -> vo
 		check(not sig.is_connected(callable),
 				"the map's container connection is gone once it leaves the tree")
 	map.free()
-	wall.free()
+	await TestMainHost.unmount(self, wall)
 
 # Camera2D recomputes its own cached canvas transform on the idle frames AFTER `offset` is
 # assigned, never the same one -- two extra frames is what it measures as settled here.
@@ -1100,8 +1064,8 @@ func _menu_buttons(main_menu: Menu) -> Array[Button]:
 func _boot_main_at(size: Vector2i) -> Array:
 	return await TestMainHost.boot(self, size)
 
-func _free_booted_main(viewport: SubViewport, main: Main) -> void:
-	await TestMainHost.free_booted(viewport, main)
+func _free_booted_main(viewport: SubViewport, node: Node) -> void:
+	await TestMainHost.free_booted(self, viewport, node)
 
 # (e) The start menu's buttons lie outside the reserved container band and inside the window, at
 # every window shape -- compared in ONE space (this menu's own picture space) via the single owned
@@ -1145,14 +1109,9 @@ func test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect() -> voi
 	backup_real_save(suite_tag())
 	var prev_run : RunState = RunManager.run
 	var prev_save_info : RunState = Main.save_info
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	add_child(viewport)
-	var main : Main = MAIN_SCENE.instantiate()
-	viewport.add_child(main)
-	get_tree().paused = false
-	await get_tree().process_frame
-	await get_tree().process_frame
+	var booted := await _boot_main_at(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
 	var main_menu : Menu = main.menu_scene
 	var authored_menu : Menu = MENU_SCENE.instantiate()
 	for button_name : StringName in _MENU_BUTTON_NAMES:
@@ -1165,9 +1124,7 @@ func test_menus_scale_is_uniform_and_keeps_each_buttons_authored_aspect() -> voi
 				"%s keeps its authored aspect (uniform scale)" % button_name,
 				"authored %.4f live %.4f" % [authored_aspect, live_aspect])
 	authored_menu.free()
-	main.queue_free()
-	await get_tree().process_frame
-	viewport.queue_free()
+	await _free_booted_main(viewport, main)
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	restore_real_save(suite_tag())
@@ -4275,6 +4232,14 @@ func test_the_flip_waits_one_stagger_per_slot() -> void:
 func test_a_slot_shows_one_face_down_card_whatever_its_depth() -> void:
 	await _start_game_fixture()
 	var state := _fixture_game().state
+	var dealt_visual : CardVisual = _play_area.data_card[state.upper_zone[0].datas.back()]
+	var waited := 0.0
+	while not dealt_visual.show_front and waited < CARD_CONTROL_TIMEOUT_SEC:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	check(dealt_visual.show_front,
+			"sanity: the dealt card has turned over once the game screen is focused and running",
+			"waited %.2fs" % waited)
 	check(state.upper_zone.size() >= 4, "sanity: four slots to stock differently",
 			str(state.upper_zone.size()))
 	var pool := state.all_stock_cards()

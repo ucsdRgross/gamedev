@@ -71,9 +71,9 @@ func _ready() -> void:
 func _stand_up() -> GameView:
 	return await _stand_up_grids(3)
 
-## The same stand-up at any grid count: FIX-GRID-3 at 3, FIX-GRID-1 at 1.
-## `host` is where the view is mounted; the suite itself by default. TP-141 passes a SubViewport of
-## the picture's own size, because a rendered pixel is only the product's pixel inside one.
+# A live GameView is always a picture's FOCUSED screen root, which keeps running under the wall's
+# session-long pause; a bare one runs the same way. `host` is where it mounts (the suite by default),
+# and a pixel check passes a SubViewport of the picture's own size.
 func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -84,6 +84,7 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	run.pending_node_id = 2
 	seed(20260829)
 	var view : GameView = GAME_VIEW_SCENE.instantiate()
+	view.process_mode = Node.PROCESS_MODE_ALWAYS
 	var mount : Node = host if host else self
 	mount.add_child(view)
 	await get_tree().process_frame
@@ -94,13 +95,14 @@ func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
-	# ⚠ THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS ALREADY OPENED, which production never
-	# does — the rules deck builds every grid in one deal, so `PlayArea` settles its opening view
-	# once and latches. Re-opening it here puts the fixture back in the state the same grid count
-	# would have reached on its own, and it is the product's own entry point deciding, not the test.
-	view.play_area.open_show_view()
+	_reopen_the_show_view(view)
 	await get_tree().process_frame
 	return view
+
+# THIS FIXTURE GROWS THE BOARD AFTER THE SHOW HAS OPENED, which the one-deal product never does, so
+# `PlayArea`'s latched opening view is re-run by the product's own entry point for the new count.
+func _reopen_the_show_view(view: GameView) -> void:
+	view.play_area.open_show_view()
 
 func _tear_down(view: GameView) -> void:
 	view.queue_free()
@@ -126,9 +128,7 @@ func _stand_up_main_grids(n: int) -> Main:
 	run.pending_goal = 1_000_000_000
 	run.pending_node_id = 2
 	seed(20260829)
-	var main : Main = MAIN_SCENE.instantiate()
-	add_child(main)
-	get_tree().paused = false   # Wall._ready() sets this globally; undone same as the probe.
+	var main := TestMainHost.mount(self, self, MAIN_SCENE) as Main
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await main.enter_game()
@@ -140,7 +140,7 @@ func _stand_up_main_grids(n: int) -> Main:
 	while view.game.state.grids.size() > n:
 		Board.remove_grid(view.game.state, view.game.state.grids.size() - 1)
 	view.play_area.flush_rebuild()
-	view.play_area.open_show_view()   # same reason as `_stand_up_grids` above
+	_reopen_the_show_view(view)
 	await get_tree().process_frame
 	return main
 
@@ -163,8 +163,7 @@ func _tear_down_main(main: Main) -> void:
 	restore_real_save(suite_tag())
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
-	main.queue_free()
-	await get_tree().process_frame
+	await TestMainHost.unmount(self, main)
 
 ## Fires the `pressed` half of a real `InputEventKey` through the engine's own pipeline — the same
 ## route a physical key press takes, never a direct call to the handler it drives.

@@ -882,3 +882,10 @@
   `test_accepting_the_exit_x_hands_the_focus_back_to_the_board` (helper `_tap_key()`), and a mouse
   check added to `test_the_exit_x_reverts_to_the_hud`. Undo at the outcome screen stays out of a
   pad's reach -> GAP-009, not fixed.
+- Close fix A: `TestGridView._reopen_the_show_view(view)` names the fixture's re-run of `PlayArea.open_show_view()`
+  after it grows the board; the bare `_stand_up_grids` view and `TestSidebar._build_container` run
+  PROCESS_MODE_ALWAYS, the mode a focused screen root and the wall's overlay have in the game.
+- Close fix A: a test holds the wall's pause for as long as its wall lives and never runs unpaused;
+  `TestMainHost.mount` records the tree's `paused` under `PAUSED_BEFORE_BOOT` on the mounted node and
+  `TestMainHost.unmount` writes it back after the node is freed -- the one site a test sets the flag,
+  so a later suite with no wall (E2E RUN) does not inherit a pause and freeze.
