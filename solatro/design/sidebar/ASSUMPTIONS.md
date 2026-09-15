@@ -614,6 +614,14 @@
   first click's placement armed. New test row
   `TestDragPlace.test_a_refused_pairs_release_places_nothing`, which pushes the one mouse motion a
   real mouse makes between two clicks -- the hover refresh `_on_gui_input` reads.
+- Phase 5 fix 5: `PlayArea._close_a_pair()` is the one place a pair closes for either input -- it
+  taps if the pair may tap and marks the gesture's release as a pair's either way, so the MOUSE
+  reader and the TOUCH reader share one rule. Without it a refused FINGER pair's emulated release
+  (device -1, dispatched after the touch) fell through to `_on_gui_input` and placed again
+  (measured: one `data_selected`). The touch refusal row now spies selections through the new
+  `TestDragPlace._spy_on_selections()`, and `_check_the_placement_stands_untapped()` takes them, so
+  both refusal rows assert it at one site. `TestSidebar`'s arrow-focus row now asserts the focus
+  owner is a board card (`ui_data.has(owner)`), which a null owner no longer satisfies.
 - S19: the stock rides the Entrance zone's own per-cell data: `GridData.stocks`, one
   `ArrayCardData` per cell, reached through `GameData.entrance_stocks()` (grows to match
   `cells`), `GameData.all_stock_cards()` (the flat union every walker and the deck viewer read)

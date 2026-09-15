@@ -3738,8 +3738,8 @@ func test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board() -> void
 			_push_key(_game_viewport, keycode, true)
 			await get_tree().process_frame
 			var owner := _game_viewport.gui_get_focus_owner()
-			check(not (owner is ScrollContainer),
-					"an arrow from an Entrance card does not focus a scroll container",
+			check(owner != null and _play_area.ui_data.has(owner),
+					"an arrow from an Entrance card leaves a board card focused, not a container",
 					"%s -> %s" % [OS.get_keycode_string(keycode), owner])
 			_push_key(_game_viewport, keycode, false)
 			await get_tree().process_frame

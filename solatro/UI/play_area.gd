@@ -1498,9 +1498,15 @@ func _pair_taps(data: CardData, depth_at_the_opening_press: int) -> bool:
 # finger presses can never tap twice.
 func _press_closes_a_pair(button: InputEventMouseButton) -> bool:
 	if not button.double_click or button.device == -1: return false
-	_pair_taps(_tapped_card_at(button.position), _depth_when_pressed)
-	_tapped_this_gesture = true
+	_close_a_pair(_tapped_card_at(button.position), _depth_when_pressed)
 	return true
+
+# ⚠ THE ONE PLACE A PAIR CLOSES, whichever input closed it: the release that ends it is never a
+# click, so a REFUSAL is marked exactly as a tap is, or it places again through the GUI pass.
+func _close_a_pair(data: CardData, depth_at_the_opening_press: int) -> bool:
+	var tapped := _pair_taps(data, depth_at_the_opening_press)
+	_tapped_this_gesture = true
+	return tapped
 
 # GODOT NEVER MARKS A DOUBLE TAP ON A WINDOWS TOUCHSCREEN, so the board pairs two finger presses
 # itself: inside the tap window, no further apart than this gesture's own drag threshold, and
@@ -1516,8 +1522,7 @@ func _consume_as_touch_tap(event: InputEvent) -> bool:
 	if not paired:
 		_touch_press_depth = _committed_depth()
 		return false
-	_tapped_this_gesture = _pair_taps(_tapped_card_at(touch.position), _touch_press_depth)
-	return _tapped_this_gesture
+	return _close_a_pair(_tapped_card_at(touch.position), _touch_press_depth)
 
 # Two accept presses inside the tap window are a tap, which is how a keyboard or pad reaches one
 # without the bound action. The OPENING press is the one whose committed depth a refusal reads.

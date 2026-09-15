@@ -602,8 +602,9 @@ func test_a_tap_after_a_placement_is_refused() -> void:
 		await _drag(at, at)
 		var committed := _game.save_history.size()
 		check(_placed_cards().has(held), "the pair's first click placed the armed card", _hand_str())
+		var selections := _spy_on_selections()
 		await _double_click(at)
-		_check_the_placement_stands_untapped(spy, held, committed)
+		_check_the_placement_stands_untapped(spy, held, committed, selections)
 	await _end_fixture()
 
 # A REFUSED pair must give its closing release back to nobody: a real mouse puts a motion between
@@ -622,15 +623,9 @@ func test_a_refused_pairs_release_places_nothing() -> void:
 		check(_placed_cards().has(held) and next_arm != held,
 				"the pair's first click placed the armed card and the next one armed", _hand_str())
 		await _push(_motion(at + Vector2.RIGHT), _picture_viewport)
-		var selections : Array[CardData] = []
-		_pa.data_selected.connect(func(d: CardData) -> void: selections.append(d))
+		var selections := _spy_on_selections()
 		await _double_click(at)
-		check(selections.is_empty(),
-				"the refused pair's closing release is not a click (Q93a=a)",
-				"%d selection(s)" % selections.size())
-		check(_game.save_history.size() == committed,
-				"the refused pair's release commits nothing", "%d vs %d" % [
-						_game.save_history.size(), committed])
+		_check_the_placement_stands_untapped(spy, held, committed, selections)
 		check(next_arm != null and not _placed_cards().has(next_arm),
 				"...and the card it armed is still in the Entrance", _hand_str())
 	await _end_fixture()
@@ -651,8 +646,9 @@ func test_a_touch_tap_after_a_placement_is_refused() -> void:
 		var committed := _game.save_history.size()
 		check(_placed_cards().has(held), "the pair's first finger press placed the armed card",
 				_hand_str())
+		var selections := _spy_on_selections()
 		await _touch_tap(at)
-		_check_the_placement_stands_untapped(spy, held, committed)
+		_check_the_placement_stands_untapped(spy, held, committed, selections)
 		PlayArea.settings().card_tap_window_ms = window
 	await _end_fixture()
 
@@ -666,11 +662,21 @@ func _cell_the_arm_can_be_placed_on(held: CardData, spy: TapSpy) -> Control:
 	if held and cell: held.with_stamp(spy)
 	return cell
 
-# What a refusal looks like from outside, for either input: no signal, no hook, and the placement
-# the pair's first press made still standing.
-func _check_the_placement_stands_untapped(spy: TapSpy, held: CardData, committed: int) -> void:
+# Everything the board selects from here on, so a row can prove a closing release gave the GUI pass
+# nothing to place with.
+func _spy_on_selections() -> Array[CardData]:
+	var selections : Array[CardData] = []
+	_pa.data_selected.connect(func(d: CardData) -> void: selections.append(d))
+	return selections
+
+# What a refusal looks like from outside, for either input: no signal, no hook, no selection, and
+# the placement the pair's first press made still standing.
+func _check_the_placement_stands_untapped(spy: TapSpy, held: CardData, committed: int,
+		selections: Array[CardData]) -> void:
 	check(_taps.is_empty(), "the pair's second press taps nothing (Q93a=a)",
 			"%d tap(s)" % _taps.size())
+	check(selections.is_empty(), "the refused pair's closing release is not a click (Q93a=a)",
+			"%d selection(s)" % selections.size())
 	check(spy.taps.is_empty(), "...so no card hears one either (Q222=b)",
 			"%d hook call(s)" % spy.taps.size())
 	check(_placed_cards().has(held) and _game.save_history.size() == committed,
