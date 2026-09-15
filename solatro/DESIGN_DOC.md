@@ -962,7 +962,7 @@ The notes end with an auto-generated summary the author disclaims. Assessment:
 | 15s as default scoring | Early | See cribbage row |
 | Mana bar | Late | Mana *cards* / any-card-as-resource instead |
 | **Whole-board Submit** | Mid | Superseded by the grid: a placement scores what it completes, immediately |
-| **Three acts per show (`MAX_SUBMITS`)** | Mid | Went with Submit; a show now ends when the player presses End |
+| **Three acts per show (`MAX_SUBMITS`)** | Mid | Went with Submit; a show ends when a placement meets the goal or the player presses End |
 | **Act payout `row × col × combo`** | Mid | Superseded by the per-grid bucket product, applied live |
 | **The upper/lower two-zone tableau** | Mid | Superseded by grids of stacked cells; the Entrance is a row of one grid |
 | **`score_additive` and `duplicate_class_scale`** | Late | Levers on an economy that no longer exists |

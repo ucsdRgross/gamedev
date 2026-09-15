@@ -1567,7 +1567,7 @@ which is definitionally what the in-run gate could not see, and parses the allow
 ⚠ **A FOCUSED RUN IS A DEBUGGING AID, NEVER A VERDICT.** `run_tests.py --filter <NodeName>...`
 prunes every suite matching no pattern, in `all_tests.gd::_enter_tree` — removal only, never a
 reorder, because suite order is a dependency graph. `--logic` runs the `logic` GROUP declared on the
-suite nodes in `all_tests.tscn`, HEADLESS: 32 suites in ~65 s against ~190 s for the full windowed
+suite nodes in `all_tests.tscn`, HEADLESS: 33 of 48 suites, faster than the full windowed
 run. The tier is a group rather than a list in the runner so the scene stays the registry it already
 is. Both forms print `FILTERED n of <total>` at both ends and the wrapper refuses a clean verdict — the
 suite count is the load-failure detector and a subset voids it. `--keep-output` keeps that run's

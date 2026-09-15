@@ -16,7 +16,7 @@ permissionMode: auto
      ⚠ Hooks still fire regardless of permission mode — `.claude/hooks/block-process-kill.ps1`
      continues to block killing a process by image name or wildcard.
      maxTurns: 150 — measured, 50 ended two Solatro steps mid-edit with no report, and a turn-cap
-     stop does not fire SubagentStop, so it also left the one-subagent lock held.
+     stop does not fire SubagentStop, so it also left the subagent lock held.
 
      Fields deliberately NOT set, so nobody "fixes" them later:
      memory:        the docs recommend `project` as a default, and it is wrong HERE. Persistent
