@@ -106,7 +106,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 4.4 | Removing a slot moves BOTTOMS only | 4 slots of 5, remove slot 1 | every remaining slot's TOP card is unchanged; sizes `[7, 7, 6]` | Gate | H5, H7, `Q204`=a, `Q207`=a | S20 |
 | 4.5 | Adding a slot pulls bottoms round-robin | 3 slots of 6, add one | sizes `[5, 5, 4, 4]`; every TOP unchanged | Gate | H8, H7, `Q205`=a | S20 |
 | 4.6 | An exhausted slot stays empty | drain one slot | no rebalance fires; the slot stays at 0 | Gate | H11, `Q210`=c | S20 |
-| 4.7 | "Deck empty" means EVERY slot empty | one slot empty, others not | End is not revealed; nothing disarms | Gate | `Q211`=a | S19 |
+| 4.7 | "Deck empty" means EVERY slot empty | the ARMED slot's own stock drained, others not; then its card placed | End is not revealed; nothing disarms; the card still places and the next leftmost arms after the refill | Gate | `Q211`=a | S19 |
 | 4.8 | Stocks are walked by board iteration | a card in a stock | `on_append` reaches it, and the stage verifier passes | Gate | H13, `Q225`=a | S19 |
 
 ## 5. `TestDragPlace` — chart E
@@ -125,9 +125,9 @@ reason, then implement. A test written after the code passes it is a test that a
 
 | # | Test | Fixture | Asserts | Kind | Node | Step |
 |---|---|---|---|---|---|---|
-| 6.1 | Arming moves NO focus | a fresh show | `focused_control` is null and `gui_get_focus_owner()` is unchanged after the arm | Gate | G3, `Q250`=a | S15 |
+| 6.1 | Arming moves NO focus | a fresh show, the focus moved off the armed card by an arrow, then re-armed by Undo | `focused_control` and `gui_get_focus_owner()` are unchanged after the re-arm | Gate | G3, `Q250`=a | S15 |
 | 6.2 | Arming does NOT open a description | a fresh show | the container shows the HUD | Gate | B3, `Q240`=a | S15 |
-| 6.3 | Arming calls the SAME functions as a pickup | spy on `try_grab`/`grab_cards` | both called, once each, with no extra flag | Gate | G2, `Q252`=b | S15 |
+| 6.3 | Arming produces the SAME state as a pickup | the dealt arm, then a player's own click on that card | the same held index, mouse filter, layer order and lift; only `following` differs | Gate | G2, `Q252`=b | S15 |
 | 6.4 | The card LIFTS immediately, and does not follow | after the arm, before any input | `held != 0`, `following == false`, position is the slot centre raised by the lift | Gate | G4, G5, `Q254`=d | S14 |
 | 6.5 | Any mouse motion starts following | one motion event | `following == true` | Gate | G7, `Q262`=a | S14 |
 | 6.6 | A key focus onto any card also starts it | one focus event, no mouse | `following == true` | Gate | G7 | S14 |

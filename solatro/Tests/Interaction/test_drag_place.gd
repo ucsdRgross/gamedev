@@ -16,6 +16,8 @@ const FIXTURE_WINDOW := Vector2i(1280, 720)
 ## TEST_PLAN 5.1's press-to-release distance: inside any card's own threshold.
 const SUB_THRESHOLD_TRAVEL_PX := 10.0
 const DEAL_TIMEOUT_SECS := 5.0
+## Higher than a real deck can score in a handful of placements, so no row's placement trips the goal's own automatic end.
+const GOAL_OUT_OF_REACH : int = 100000000
 ## A window wide enough for a PUSHED pair: the frames one spans cost more wall clock than a player.
 const PUSHED_PAIR_WINDOW_MS := 2000.0
 
@@ -37,6 +39,7 @@ func suite_name() -> String:
 func _ready() -> void:
 	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ DRAG PLACE TEST PASS ============")
+	check_all_tests_registered()
 	behavior_section("A CLICK AND A DRAG ARE ONE GESTURE")
 	await test_a_sub_threshold_release_is_a_click()
 	await test_an_over_threshold_release_on_a_legal_cell_places()
@@ -104,7 +107,7 @@ func _start_fixture() -> void:
 	_prev_save_info = Main.save_info
 	var run := RunManager.new_run(TestDecks.deck_standard_52(), TestDecks.standard_rules())
 	Main.save_info = run
-	run.pending_goal = 1
+	run.pending_goal = GOAL_OUT_OF_REACH
 	run.pending_node_id = 2
 	var booted := await TestMainHost.boot(self, FIXTURE_WINDOW)
 	_viewport = booted[0]
@@ -122,6 +125,8 @@ func _start_fixture() -> void:
 	await _settle_layout()
 
 func _end_fixture() -> void:
+	check(not _game.state.show_ended, "the row's placements left the show running",
+			str(_game.state.total_score))
 	await TestMainHost.free_booted(self, _viewport, _main)
 	_viewport = null
 	_main = null
@@ -158,6 +163,7 @@ func _settle_layout() -> void:
 	var last := INF
 	var waited := 0.0
 	while waited < 2.0:
+		await get_tree().physics_frame
 		await get_tree().process_frame
 		waited += get_process_delta_time()
 		var now := _pa.entrance_h_track.position.x

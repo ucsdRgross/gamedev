@@ -340,8 +340,8 @@ func restore_settings_snapshot(snap: Dictionary) -> void:
 ## added. This reads the suite's own source, so a suite gets the guard by calling it rather
 ## than by anyone remembering.
 ##
-## Name a helper `_something` rather than `run_something` to exempt it: `run_` is the
-## entry-point convention this checks.
+## Name a helper `_something` rather than `run_something` to exempt it: `run_` and `test_` are the
+## entry-point conventions this checks.
 func check_all_tests_registered() -> void:
 	implementation_section("REGISTRATION GATE")
 	var path : String = get_script().resource_path
@@ -362,14 +362,14 @@ func check_all_tests_registered() -> void:
 "
 	var defined : Array[String] = []
 	for raw : String in lines:
-		if raw.begins_with("func run_"):
+		if raw.begins_with("func run_") or raw.begins_with("func test_"):
 			defined.append(raw.substr(5, raw.find("(") - 5))
 	var unregistered : Array[String] = []
 	for name : String in defined:
 		if not ready_body.contains(name + "("): unregistered.append(name)
 	check(not defined.is_empty(), "the gate found this suite's tests at all", path)
 	check(unregistered.is_empty(),
-			"every run_* test defined in this suite is called from _ready",
+			"every run_* or test_* test defined in this suite is called from _ready",
 			"never called: %s" % ", ".join(unregistered))
 
 ## Print the suite banner + per-category failure split, then signal the aggregate runner
