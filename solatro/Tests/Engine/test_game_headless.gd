@@ -36,7 +36,7 @@ func _ready() -> void:
 	await test_undo_at_game_over_rewinds_the_end()
 	await test_add_deck_relinks_suit_backrefs()
 	await test_score_line_headless_mutates_data()
-	await test_end_show_is_the_only_resolver()
+	await test_short_of_the_goal_only_end_resolves()
 	await test_goal_reached_ends_the_show()
 	await test_goal_is_asked_after_the_whole_placement()
 	await test_undo_rewinds_an_automatic_end()
@@ -772,16 +772,9 @@ func test_authored_card_doubles() -> void:
 	free_game(g)
 
 
-# ==============================================================================
-# TP-80j -- END IS THE ONLY THING THAT RESOLVES A SHOW.
-#
-# The act is retired: there is no Submit, no banking moment and no Next button. That leaves
-# exactly one way for a show to finish, and this pins it from the other side -- every OTHER
-# path the player can drive must leave the show LIVE. A scored line is the interesting one:
-# it pays points, and paying points must not be mistaken for finishing.
-#
-# Driven on a GRID board, because that is the only board the game still has.
-func test_end_show_is_the_only_resolver() -> void:
+# While the goal is out of reach, every path a player drives short of End leaves the show live: a
+# scored line pays points, and paying points must not be mistaken for finishing.
+func test_short_of_the_goal_only_end_resolves() -> void:
 	var g := Game.new()
 	CardEnvironment.CURRENT = g
 	g.state = TestGridFixtures.build_fix_grid_1()
@@ -882,23 +875,30 @@ func test_goal_reached_ends_the_show() -> void:
 	CardEnvironment.CURRENT = null
 	free_game(g)
 
+# The goal sits beyond anything the lines alone score, so only the placement's own `on_card_placed`
+# score reaches it: a goal asked before that hook has run sees a total short of it.
 func test_goal_is_asked_after_the_whole_placement() -> void:
-	var g := _goal_game(TestGridFixtures.build_fix_triple(), GOAL_WITHIN_ONE_LINE)
+	var g := _goal_game(TestGridFixtures.build_fix_triple(), GOAL_OUT_OF_REACH)
 	var spy := RefillSpy.new()
+	var bonus := PlacementBonus.new()
 	g.state.rules_deck.append(rules_card(spy))
+	g.state.rules_deck.append(rules_card(bonus))
 	var score_at_resolve : Array[int] = []
 	g.show_resolved.connect(func(_w: bool, score: int, _g: int) -> void:
 		score_at_resolve.append(score))
 	await _place_built(g, 2, 2, 1)
+	check(bonus.fired, "precondition: the placement ran its on_card_placed score")
 	check(score_at_resolve.size() == 1,
-			"one placement completing several lines ended the show exactly once",
+			"one placement completing several lines ended the show exactly once (7.2)",
 			str(score_at_resolve))
 	check(g.state.scores_row.size() > 0 and g.state.scores_col.size() > 0,
 			"precondition: the placement completed lines in more than one direction",
 			"rows=%d cols=%d" % [g.state.scores_row.size(), g.state.scores_col.size()])
-	check(score_at_resolve[0] == g.state.live_total(),
-			"the show resolved on the SETTLED total -- every line of that placement had scored",
-			"at resolve %d, settled %d" % [score_at_resolve[0], g.state.live_total()])
+	check(not score_at_resolve.is_empty() and score_at_resolve[0] == g.state.live_total()
+			and score_at_resolve[0] >= g.state.goal,
+			"the show resolved on the total that includes the placement's on_card_placed score (7.2)",
+			"at resolve %s, settled %d, goal %d" % [str(score_at_resolve), g.state.live_total(),
+					g.state.goal])
 	check(not spy.fired,
 			"the end fired BEFORE the refill -- an ended show never deals another hand (7.2)",
 			str(spy.fired))
@@ -974,6 +974,18 @@ class RefillSpy extends CardModifierSkill:
 	func get_frame() -> int: return 0
 	func on_refill() -> void:
 		fired = true
+
+# A placement hook that pays: the score it banks is the last thing a placement adds, which is what
+# puts the goal check after the whole placement to the test.
+class PlacementBonus extends CardModifierSkill:
+	var fired : bool = false
+	func get_str() -> String: return "PlacementBonus"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_card_placed(coord: BoardCoord) -> void:
+		fired = true
+		CardEnvironment.get_current_game().state.bank_cell_score(coord.grid, Vector2i(coord.x, coord.y),
+				GOAL_OUT_OF_REACH)
 
 # ==============================================================================
 # TP-80i -- THE RETIRED ACT HAS NO READERS.

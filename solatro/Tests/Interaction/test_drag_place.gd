@@ -20,6 +20,8 @@ const DEAL_TIMEOUT_SECS := 5.0
 const GOAL_OUT_OF_REACH : int = 100000000
 ## A window wide enough for a PUSHED pair: the frames one spans cost more wall clock than a player.
 const PUSHED_PAIR_WINDOW_MS := 2000.0
+## How far either side of a card's drag threshold a release lands: past float noise, well inside a zoom's change to it.
+const THRESHOLD_MARGIN_PX := 2.0
 
 var _viewport : SubViewport = null
 var _main : Main = null
@@ -43,6 +45,7 @@ func _ready() -> void:
 	behavior_section("A CLICK AND A DRAG ARE ONE GESTURE")
 	await test_a_sub_threshold_release_is_a_click()
 	await test_an_over_threshold_release_on_a_legal_cell_places()
+	await test_the_drag_threshold_follows_the_boards_zoom()
 	await test_a_release_on_an_illegal_cell_returns_the_card()
 	behavior_section("RELEASES THE BOARD DOES NOT OWN")
 	await test_a_release_over_the_container_returns_the_card()
@@ -224,18 +227,22 @@ func _hand_str() -> String:
 # A cell the board itself accepts, asked through the same `on_can_place_stack` dispatch `try_place`
 # uses, and fully on screen where a real drag can reach it -- no placement rule is spelled out here.
 func _legal_cell_control(held: CardData) -> Control:
-	var rect := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
-	var candidates : Array[Control] = []
-	for control : Control in _pa.ui_data:
-		if not _is_reachable(control, rect): continue
-		if _game.state.cell_type_coord(_pa.ui_data[control]).is_nowhere(): continue
-		candidates.append(control)
 	var stack : Array[CardData] = [held]
-	for control : Control in candidates:
+	for control : Control in _reachable_cells():
 		var accepted : Array[CardData] = await _game.return_first_data_array_result(
 				&"on_can_place_stack", stack, _pa.ui_data[control])
 		if accepted: return control
 	return null
+
+# Every grid cell control fully on screen, where a real drag can reach it.
+func _reachable_cells() -> Array[Control]:
+	var rect := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
+	var cells : Array[Control] = []
+	for control : Control in _pa.ui_data:
+		if not _is_reachable(control, rect): continue
+		if _game.state.cell_type_coord(_pa.ui_data[control]).is_nowhere(): continue
+		cells.append(control)
+	return cells
 
 # A collapsed cell control has no area, and `encloses` still accepts it, so a release aimed at its
 # centre lands on nothing at all.
@@ -410,6 +417,52 @@ func test_an_over_threshold_release_on_a_legal_cell_places() -> void:
 		check(not _pa.selected_cards.has(held), "...and the hand let go of it (5.2)", _hand_str())
 	await _end_fixture()
 
+# The threshold a real press reads is the card as DRAWN on a board zoomed into a grid, so both
+# releases are measured from the size the player sees there, never from the unzoomed card.
+func test_the_drag_threshold_follows_the_boards_zoom() -> void:
+	await _start_fixture()
+	var entrance := _entrance_controls()
+	check(not is_equal_approx(_pa.board_zoom, 1.0), "the focused board sits at a zoom other than 1.0 (2.7)",
+			str(_pa.board_zoom))
+	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+			"%d control(s)" % entrance.size())
+	if entrance.size() >= 2:
+		await _check_a_release_just_under_the_threshold_clicks(entrance[1])
+		await _check_a_release_just_over_the_threshold_drops()
+	await _end_fixture()
+
+func _drawn_threshold_px(card: Control) -> float:
+	return GestureMetrics.drag_threshold_px(card.get_global_rect().size, PlayArea.settings())
+
+func _check_a_release_just_under_the_threshold_clicks(target: Control) -> void:
+	var data : CardData = _pa.ui_data[target]
+	var travel := _drawn_threshold_px(target) - THRESHOLD_MARGIN_PX
+	var at := _control_centre(target)
+	var drops := _spy_on_drops()
+	await _drag(at, at + Vector2(travel, 0.0))
+	check(drops.is_empty() and _pa.selected_cards.has(data) and _pa.locked_data == data
+			and _placed_cards().is_empty(),
+			"a release %.1f px from its press, just under the zoomed card's threshold, is a click (2.7)"
+			% [travel], "%d drop(s), %s" % [drops.size(), _hand_str()])
+
+# No legal cell lies within a threshold of any Entrance card -- the grid sits a gap wider than one
+# away -- so the release that proves "over" lands back on the held card, where it is a drop.
+func _check_a_release_just_over_the_threshold_drops() -> void:
+	var held := _armed_card()
+	var card : Control = _pa.data_ui[held]
+	var travel := _drawn_threshold_px(card) + THRESHOLD_MARGIN_PX
+	var at := _control_centre(card)
+	var drops := _spy_on_drops()
+	await _drag(at, at + Vector2(travel, 0.0))
+	check(drops.size() == 1 and drops.has(held) and _placed_cards().is_empty(),
+			"a release %.1f px from its press, just over the zoomed card's threshold, is a drag (2.7)"
+			% [travel], "%d drop(s), %s" % [drops.size(), _hand_str()])
+
+func _spy_on_drops() -> Array[CardData]:
+	var drops : Array[CardData] = []
+	_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
+	return drops
+
 # 5.3 (E17, Q280=a, Q281=a): a release over a cell the board refuses returns the card — back in
 # its slot, still armed, still lifted, and no longer following. A failed drag costs nothing.
 func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
@@ -481,8 +534,7 @@ func _check_a_cancelled_drag_places_nothing(by_escape: bool) -> void:
 	check(held != null and cell != null, "the show opens with a card armed and a cell that accepts it",
 			"held %s, cell %s" % [held != null, cell != null])
 	if held and cell:
-		var drops : Array[CardData] = []
-		_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
+		var drops := _spy_on_drops()
 		var committed := _game.save_history.size()
 		var at := _control_centre(cell)
 		await _begin_drag(_card_centre(held), at)
@@ -610,18 +662,15 @@ func test_a_refused_drag_from_a_grid_card_places_nothing() -> void:
 
 # A fully on-screen empty cell a drag can start from, which is not the one it is released on.
 func _an_empty_cell_other_than(excluded: Control) -> Control:
-	var rect := Rect2(Vector2.ZERO, Vector2(_picture_viewport.size))
-	for control : Control in _pa.ui_data:
-		if control == excluded or not _is_reachable(control, rect): continue
-		var coord := _game.state.cell_type_coord(_pa.ui_data[control])
-		if not coord.is_nowhere() and _game.state.card_at(coord) == null: return control
+	for control : Control in _reachable_cells():
+		if control == excluded: continue
+		if _game.state.card_at(_game.state.cell_type_coord(_pa.ui_data[control])) == null: return control
 	return null
 
 # A card that does not place goes back: the release of a drag whose pickup the board refused drops
 # nothing, commits nothing, and leaves the armed card held in its Entrance slot.
 func _check_a_refused_drag_places_nothing(from: Vector2, armed: CardData, cell: Control) -> void:
-	var drops : Array[CardData] = []
-	_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
+	var drops := _spy_on_drops()
 	var committed := _game.save_history.size()
 	var placed := _placed_cards().size()
 	await _drag(from, _control_centre(cell))

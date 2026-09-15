@@ -81,11 +81,12 @@ reason, then implement. A test written after the code passes it is a test that a
 | # | Test | Fixture | Asserts | Kind | Node | Step |
 |---|---|---|---|---|---|---|
 | 2.1 | Drag threshold is card-relative | card 216×286, `card_drag_threshold = 0.25` | `drag_threshold_px == 54.0` | Gate | M3, M4 | S13 |
-| 2.2 | …and scales with board zoom | the same card at zoom 2.0 → 432 wide | `== 108.0` | Gate | M3 | S13 |
+| 2.2 | …and scales with board zoom | the same card at zoom 2.0 → 432 wide, `GestureMetrics.drag_threshold_px` called directly (a unit row; 2.7 is the routed one) | `== 108.0` | Gate | M3 | S13 |
 | 2.3 | Touch target is window-relative, uncapped | window 1920×1080, `touch_target_fraction = 0.06` | `== 64.8`, and no clamp applied | Gate | M7, M8, `Q301`=a | S13 |
 | 2.4 | …and uses the SMALLER dimension | window 3840×1080 | still `64.8` | Gate | M7 | S13 |
 | 2.5 | **No DPI anywhere** | — | `grep` over `solatro/**/*.gd` outside `archive/` and `addons/` for `mm_to_px`, `screen_get_dpi` returns nothing | Gate | M1, L14 | S13 |
-| 2.6 | A gesture with no card uses the default card at the current zoom | bare-board swipe at zoom 1.0 | threshold equals 2.1's value | Gate | M5, `Q296`=a | S13 |
+| 2.6 | A gesture with no card uses the default card | `drag_threshold_px(CardVisual.card_size_play)` called directly, zoom 1.0 (a unit row; no swipe is driven) | `== card_size_play.x × card_drag_threshold` | Gate | M5, `Q296`=a | S13 |
+| 2.7 | The threshold a real press reads follows the board's zoom | `TestDragPlace`: a real Main focused on a grid by `focus_grid` (zoom ≠ 1.0); both distances from the drawn size of the card pressed | a release just UNDER that threshold is a click (grabbed, description locked, no drop, nothing placed); one just OVER it is a drag (one drop of the held card). Measured: no legal cell lies within a threshold of an Entrance card, so the over release lands back on the held card | Gate | M3, M5 | S13 |
 
 ## 3. Geometry — extends an existing engine suite
 
@@ -94,7 +95,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 3.1 | The inset is 394 px at the picture's own aspect | windows 1280×720, 1920×1080, 2560×1440 | `board_inset_left == 394.0 ± 0.5` in all three — the window cancels | Gate | D8, D10 | S3 |
 | 3.2 | Ultrawide clamps and narrows | 3840×1080, `container_size_max_px = 640` | `board_inset_left == 262.7 ± 0.5` | Gate | D7, D8 | S3 |
 | 3.3 | The container moves to the top when the leftover would be taller than wide | a window where `(w - container) / h < 1` | `container_is_top` true, and `board_inset_top` is set instead | Gate | D2, D6, `Q175`=a | S3 |
-| 3.4 | Deleting `%MultScore` and `%Preview` re-centres the board | before/after `_hud_authored_width()` | the board's centre moved, and the suite is green | Gate | C4, L9 | S2 |
+| 3.4 | Deleting `%MultScore` and `%Preview` does NOT re-centre the board | board centre after the deletion vs the pre-deletion 733.808 | within 0.5 px, and neither node exists | Gate | C4, L9 | S2 |
 
 ## 4. `TestEntranceStocks` — chart H
 
@@ -141,7 +142,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | # | Test | Fixture | Asserts | Kind | Node | Step |
 |---|---|---|---|---|---|---|
 | 7.1 | Reaching the goal ends the show with no button press | headless run, goal 10, a placement scoring 12 | `show_ended` true; `show_resolved` emitted once | Gate | J1, J2, `Q101`=a | S22 |
-| 7.2 | The check fires only after the WHOLE placement resolves | a placement completing 3 lines | `end_show` ran once, after the last line scored | Gate | J2 | S22 |
+| 7.2 | The check fires only after the WHOLE placement resolves | a placement completing 3 lines, and a test rules skill whose `on_card_placed` banks the score that reaches the goal | the show ended once, and `show_resolved` carries the total that includes that score | Gate | J2 | S22 |
 | 7.3 | Undo rewinds an automatic end | as 7.1, then undo | back on a live board, `show_ended` false | Gate | J11, `Q109`=a | S22 |
 | 7.4 | A full board still does NOT end the show | every cell filled, goal not met | `show_ended` false | Gate | J10, `Q108`=a | S22 |
 | 7.5 | End is REVEALED when no action remains | deck empty, no empty cells | the End button is visible/highlighted | Gate | J9, `Q107`=c | S22 |
@@ -167,7 +168,7 @@ shows, or say UNVERIFIED.
 | 9.2 | The container showing a description: name, card visual, body, exit X | C5, `Q33`=c | S5 |
 | 9.3 | The container at the TOP on a narrow window, board roughly square | D6, `Q175`=a | S3 |
 | 9.4 | An armed Entrance card: lifted, glowing, focus elsewhere | G4, G9 | S15 |
-| 9.5 | The Entrance's face-down stocks at the capped depth | I8, `Q217`=b | S21 |
+| 9.5 | The Entrance's face-down stocks: one revealed card over ONE face-down card (frame 3), never a deeper stack — the owner's S21 ruling | I8, `Q217`=b | S21 |
 | 9.6 | The refill flip, staggered left to right — **a duration, so watch it run** | I4, I5 | S21 |
 | 9.7 | A card following the cursor at the same lift it had at rest | G8, `Q265`=a | S14 |
 | 9.8 | The map: name popup above a node, everything else in the sidebar | K2, K3 | S23 |
@@ -192,3 +193,5 @@ deletions already proved by §8:
 - `F1` — an engine fact about Godot's event order, not our behaviour. `TestDragPlace` 5.1 exercises
   it indirectly.
 - `M12` — a record that `Q123` is reversed. Proved by 2.5 and 8.3.
+- `G12` — no test: the legal-cell highlight is unbuilt (`gaps/GAP-005.md`).
+- Charts `I` and `K` — by-eye rows only (9.5, 9.6, 9.8).

@@ -180,7 +180,7 @@ func run_win_and_resume_scenario() -> void:
 			resolved.append([won, score, goal]))
 	var more := await TestGridFixtures.place_row_from_deck(g2, 0, 1, 5)
 	check(more.size() == 5 and resolved.is_empty(),
-			"a show never resolves on its own -- only End resolves one",
+			"a placement short of the goal never resolves the show -- only the goal or End resolves one",
 			"%d placed, %d resolutions" % [more.size(), resolved.size()])
 	## Brought within reach only HERE: reachable during the placements above, the goal would end the show by itself and this scenario would never reach the resume or the button.
 	g2.state.goal = 1

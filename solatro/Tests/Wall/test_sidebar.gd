@@ -46,9 +46,9 @@ func _ready() -> void:
 	await test_the_game_views_hud_container_is_scoped_to_its_own_wall()
 	behavior_section("THE CONTAINER'S GEOMETRY")
 	await test_game_hud_members_stay_inside_the_container_at_a_side_window()
-	test_the_inset_is_394_at_the_pictures_own_aspect()
-	test_an_ultrawide_window_clamps_and_narrows()
-	test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
+	await test_the_inset_is_394_at_the_pictures_own_aspect()
+	await test_an_ultrawide_window_clamps_and_narrows()
+	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
@@ -267,7 +267,7 @@ func test_the_outcome_screen_leaves_no_card_armed() -> void:
 	await _start_game_fixture()
 	var view := _main._pictures[&"game"].screen_root as GameView
 	check(not _play_area.selected_cards.is_empty(), "the deal arms an Entrance card")
-	view.game.end_show()
+	await _end_the_show_by_its_button(view)
 	await get_tree().process_frame
 	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
 	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
@@ -702,47 +702,48 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 
 # ------------------------------------------------------------------ the container's geometry
 
-# Converts `rect_for_window`'s window-px container width to picture px through the focused
-# picture's own live scale -- the same conversion `GameView._publish_board_inset()` uses.
-func _inset_px(rect: Rect2, window: Vector2, settings_res: PlayerSettings) -> float:
-	var design := Vector2(PlayArea.game_picture_design_size(settings_res))
-	var picture_scale := maxf(window.x / design.x, window.y / design.y)
-	return rect.size.x / picture_scale
-
-## At the picture's own aspect the window cancels -- the inset is 394 px at any 16:9 window size.
+## At the picture's own aspect the window cancels -- the board is inset 394 px at any 16:9 window size.
 func test_the_inset_is_394_at_the_pictures_own_aspect() -> void:
-	var settings := PlayerSettings.new()
-	for window : Vector2 in [Vector2(1280.0, 720.0), Vector2(1920.0, 1080.0), Vector2(2560.0, 1440.0)]:
-		var rect := HudContainer.rect_for_window(window, settings)
-		var inset := _inset_px(rect, window, settings)
-		check(absf(inset - 394.0) <= 0.5,
-				"the inset is 394 px at %s" % window, "%.3f" % inset)
+	await _start_game_fixture()
+	for window : Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]:
+		await _resize_viewport(_booted_viewport, window)
+		check(absf(_play_area.board_inset_left - 394.0) <= 0.5,
+				"the board publishes a 394 px inset at %s (3.1)" % window,
+				"%.3f" % _play_area.board_inset_left)
+	await _end_main_fixture()
 
 ## An ultrawide window clamps the container, flush against the band's inner edge, empty space outboard.
 func test_an_ultrawide_window_clamps_and_narrows() -> void:
+	await _start_game_fixture(Vector2i(3840, 1080))
+	check(absf(_play_area.board_inset_left - 262.7) <= 0.5,
+			"an ultrawide window clamps and narrows the board's published inset (3.2)",
+			"%.3f" % _play_area.board_inset_left)
 	var settings := PlayerSettings.new()
 	var window := Vector2(3840.0, 1080.0)
 	var rect := HudContainer.rect_for_window(window, settings)
-	var inset := _inset_px(rect, window, settings)
-	check(absf(inset - 262.7) <= 0.5,
-			"an ultrawide window clamps and narrows the inset", "%.3f" % inset)
 	var inner_edge := settings.container_size_fraction * window.x
 	check(is_equal_approx(rect.position.x + rect.size.x, inner_edge),
 			"the container's right edge is flush against the band's inner edge")
 	check(rect.position.x > 0.0,
 			"the empty space from the clamp sits outboard of the container")
+	await _end_main_fixture()
 
 ## The container moves to the top band once the leftover play area would be taller than wide.
 func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide() -> void:
+	await _start_game_fixture(Vector2i(600, 1000))
 	var settings := PlayerSettings.new()
 	var window := Vector2(600.0, 1000.0)
 	check(HudContainer.container_is_top(window, settings),
 			"a portrait window puts the container on the top band")
+	check(_play_area.board_inset_top > 0.0 and is_zero_approx(_play_area.board_inset_left),
+			"...and the board publishes its inset off the top instead of the left (3.3)",
+			"top %.3f, left %.3f" % [_play_area.board_inset_top, _play_area.board_inset_left])
 	var rect := HudContainer.rect_for_window(window, settings)
 	check(is_equal_approx(rect.size.x, window.x),
 			"the top container spans the window's full width", "%.3f vs %.3f" % [rect.size.x, window.x])
 	check(rect.size.y > 0.0 and rect.size.y < window.y,
 			"the top container's height is the fractional/clamped container_px", "%.3f" % rect.size.y)
+	await _end_main_fixture()
 
 # ------------------------------------------------------------------ the board's centre after S2
 
@@ -1603,6 +1604,50 @@ func _click(at: Vector2, viewport: SubViewport) -> void:
 	_push_mouse_button(at, viewport, false)
 	await get_tree().process_frame
 
+# A real click on a button, in the viewport it is drawn in, answering whether it pressed: a hidden,
+# disabled or covered button swallows the click, which a hand-emitted `pressed` never could. A HUD
+# just swapped back lays its buttons out a frame later, so the click waits for the rect to land.
+func _click_button(button: Button, viewport: SubViewport) -> bool:
+	var presses : Array[int] = [0]
+	button.pressed.connect(func() -> void: presses[0] += 1, CONNECT_ONE_SHOT)
+	var at := Vector2.INF
+	var waited := 0.0
+	while at != button.get_global_rect().get_center() and waited < CARD_CONTROL_TIMEOUT_SEC:
+		at = button.get_global_rect().get_center()
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	_hover_in(viewport, at)
+	await get_tree().process_frame
+	await _click(at, viewport)
+	return presses[0] == 1
+
+# End shows only once the show cannot progress, so every stock goes to the discard pile the show
+# sweeps home; the goal is met too, so Continue hands back to the map instead of ending the run.
+func _end_the_show_by_its_button(view: GameView) -> void:
+	var state := view.game.state
+	for stock : ArrayCardData in state.entrance_stocks():
+		state.discard_deck.append_array(stock.datas)
+		stock.datas.clear()
+	state.goal = 0
+	state.revision += 1
+	await get_tree().process_frame
+	check(await _click_button(view.submit_button, _booted_viewport), "a real click on End pressed it")
+
+# The outcome screen builds Continue, so the click waits for it to be laid out, and then for the
+# hand-back move it starts to land on the map.
+func _continue_to_the_map(view: GameView) -> void:
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC and not (is_instance_valid(view._continue_button)
+			and view._continue_button.get_global_rect().has_area()):
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	check(await _click_button(view._continue_button, _game_viewport),
+			"a real click on Continue pressed it")
+	while waited < CARD_CONTROL_TIMEOUT_SEC and (_main._current_focus != &"map"
+			or _main._move_in_flight):
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+
 # The cancel button a player presses: a real right press into the game picture's own viewport, so
 # the board reads it through the same handler that hears the left one.
 func _second_button_press(at: Vector2) -> void:
@@ -2277,20 +2322,20 @@ func test_the_maps_container_does_not_swap_on_the_games_processing() -> void:
 	await _start_game_fixture()
 	await _main._focus_picture(&"map")
 	check((_container.get_node(^"%MapHud") as Control).visible, "the map is the focused screen")
-	var nodes := _main.map_scene.controller.map.overlay().nodes()
-	check(not nodes.is_empty(), "the generated map offers a node to hover", str(nodes.size()))
-	if not nodes.is_empty():
-		var node : WorldGraphNode = nodes[0]
-		_main.map_scene.controller.node_hovered.emit(node)
-		check(_container.showing_description(), "a map hover fills the sidebar")
-		var game := CardEnvironment.get_current_game()
-		game.processing = true
-		check(_container.showing_description(),
-				"the game's processing leaves the map's description up (C10, Q260b=b)")
-		_main.map_scene.controller.node_hovered.emit(node)
-		check(_container.showing_description(),
-				"...and the map's own publications still reach it mid-cascade")
-		game.processing = false
+	var node := await _hover_a_map_node()
+	check(_container.showing_description(), "a map hover fills the sidebar")
+	var game := CardEnvironment.get_current_game()
+	game.processing = true
+	check(_container.showing_description(),
+			"the game's processing leaves the map's description up (C10, Q260b=b)")
+	var described : InfoEntry = _panel.current_entry
+	_hover_in(_map_viewport, Vector2(_map_viewport.size) * 0.5 - Vector2(4000.0, 4000.0))
+	await get_tree().process_frame
+	_hover_in(_map_viewport, WorldMapController.node_screen_rect(node).get_center())
+	await get_tree().process_frame
+	check(_container.showing_description() and _panel.current_entry != described,
+			"...and a real hover's publication still reaches it mid-cascade (1.12)")
+	game.processing = false
 	await _end_main_fixture()
 
 ## B20/C9/Q257=b: nothing is de-duplicated away -- the very entry that was up when the cascade started re-shows when it is published again.
@@ -2624,10 +2669,10 @@ func _restart_the_show() -> void:
 ## A show hands back with its cascade flag still up, so the NEXT show must not inherit it: its first hover opens a description.
 func test_a_finished_show_leaves_no_cascade_flag_for_the_next_one() -> void:
 	await _start_game_fixture()
-	var game := CardEnvironment.get_current_game()
-	game.end_show()
-	check(game.processing, "the ended show is still flagged busy as it hands back")
-	await game.return_to_map()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _end_the_show_by_its_button(view)
+	check(view.game.processing, "the ended show is still flagged busy as it hands back")
+	await _continue_to_the_map(view)
 	await _restart_the_show()
 	var controls := await _hoverable_card_controls()
 	check(not controls.is_empty(), "the next show dealt a card control to hover",
@@ -2697,10 +2742,9 @@ func test_leaving_while_locked_keeps_the_whole_lock_alive() -> void:
 ## A show tears down ITS OWN wiring and nobody else's: the map it hands back to keeps its Deck button and its inset.
 func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
 	await _start_game_fixture()
-	var game := CardEnvironment.get_current_game()
-	game.end_show()
-	await game.return_to_map()
-	await _wait_out_the_move()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _end_the_show_by_its_button(view)
+	await _continue_to_the_map(view)
 	var map : Map = _main.map_scene
 	var camera : Camera2D = map.controller.camera
 	var before := camera.offset
@@ -2713,7 +2757,8 @@ func test_a_finished_show_leaves_the_maps_own_wiring_alive() -> void:
 			"the resize re-inset the map by itself: the finished show dropped only its own pairs",
 			"%s vs %s" % [after_the_resize, camera.offset])
 	check(not is_instance_valid(DeckViewer._open), "sanity: no viewer is open yet")
-	_container.map_deck_button.pressed.emit()
+	check(await _click_button(_container.map_deck_button, _booted_viewport),
+			"a real click on the map's Deck button pressed it")
 	await get_tree().process_frame
 	check(is_instance_valid(DeckViewer._open),
 			"...and the map's own Deck button still opens its viewer after a show")
@@ -3640,6 +3685,8 @@ func _pickup_state(data: CardData) -> String:
 			visual.held, _play_area.data_ui[data].mouse_filter,
 			visual.get_parent().get_child(-1) == visual]
 
+# Undo is pressed by hand here: a real click in the window's viewport, on Undo or on the exit X,
+# empties the game picture's focus owner (measured), which is the one reading this row makes.
 ## 6.1/G3/Q250=a: arming is a pickup, not a highlight -- a re-arm leaves the focus where the player put it.
 func test_arming_moves_no_focus() -> void:
 	await _start_game_fixture()
@@ -3813,7 +3860,8 @@ func test_the_arm_survives_undo_by_re_derivation() -> void:
 	check(placed != null, "the board offered the armed card a cell to land on")
 	if placed != null:
 		check(_armed_card() != placed, "the placement moved the arm on")
-		_container.undo_button.pressed.emit()
+		check(await _click_button(_container.undo_button, _booted_viewport),
+				"a real click on Undo pressed it (6.10)")
 		await _await_the_board_armed()
 		check(_armed_card() == _leftmost_present_card(),
 				"after an undo the arm is the leftmost present card again (6.10, Q117=a)")
