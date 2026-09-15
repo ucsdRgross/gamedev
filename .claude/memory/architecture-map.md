@@ -64,6 +64,6 @@ The authoritative copy of the mutation rules is the "MUTATION GUIDELINES" block 
 - Every UI must work with mouse, keyboard AND controller.
 - Tuning knobs live in `player_settings.gd`; durations derive from `get_delay()`, never
   wall-clock.
-- Warnings-as-errors: type every array element and every loop variable.
+- Warnings-as-errors — [[gdscript-type-all-arrays]].
 
 See [[machine-profiles]] for anything path- or hardware-shaped.

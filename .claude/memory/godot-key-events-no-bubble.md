@@ -1,10 +1,9 @@
 ---
 name: godot-key-events-no-bubble
 description: Godot 4 key/joypad events go ONLY to the focused control — no ancestor bubbling (mouse bubbles); container-root gui_input handlers for ui_accept/ui_cancel are dead code
-metadata: 
+metadata:
   node_type: memory
   type: reference
-  originSessionId: 7ebd1646-45bb-4f64-aa75-15d99765dbde
 ---
 
 Godot 4 delivers keyboard/joypad events ONLY to the focus-owner Control; unlike mouse

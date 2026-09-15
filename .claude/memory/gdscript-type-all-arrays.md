@@ -1,10 +1,9 @@
 ---
 name: gdscript-type-all-arrays
 description: Warnings-as-errors — type every Array and every for-iterator variable in this Godot project
-metadata: 
+metadata:
   node_type: memory
   type: feedback
-  originSessionId: 9142ade9-f98d-4441-8895-a93351149aea
 ---
 
 In the Solatro project, warnings are treated as errors, so **every `Array` carries its element
@@ -26,14 +25,9 @@ Variant was provided"*) and **`Callable.call()`**, which always returns Variant.
 `check(cmp.call(a, b), …)` and `var s := node.get_script()` all fail. Assign to a typed local
 first rather than wrapping in a converter.
 
-⚠ **All of these are PARSE errors, so the script never loads at all — and that is SILENT.** The rest
-of the run behaves normally and still reports success, just with that file's work missing. Judge a
-run by a stable structural count (how many suites/scenes reported), never by the word PASSED.
+⚠ **All of these are PARSE errors: the script never loads, silently, and the run still says
+PASSED.** The suite count is what detects it — [[running-godot-scenes]].
 
-**Why:** the project compiles with warnings-as-errors; an untyped array or loop var fails the
-build outright, not just a lint nag.
-
-**How to apply:** when writing GDScript here, type the array on creation AND type every loop
-variable at the `in`. Ranges/ints (`for i in n`) infer fine and don't need it. Class-ref arrays
-in a function body must be `var … : Array[GDScript]`, never `const` (see [[code-style-lean-documented]]).
-Related: [[architecture-map]].
+**How to apply:** type the array on creation AND type every loop variable at the `in`. Ranges/ints
+(`for i in n`) infer fine and don't need it. Class-ref arrays in a function body must be
+`var … : Array[GDScript]`, never `const`. Related: [[architecture-map]].

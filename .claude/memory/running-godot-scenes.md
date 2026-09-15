@@ -1,6 +1,6 @@
 ---
 name: running-godot-scenes
-description: "How to run Godot scenes and test suites yourself — the suite runs WINDOWED, a green banner is not proof, and which scenes still need the owner"
+description: "How to run Godot scenes and test suites yourself — the suite runs WINDOWED, a green banner is not proof, how to diagnose a red, hung or flaky run, and which scenes still need the owner"
 metadata:
   node_type: memory
   type: feedback
@@ -26,17 +26,20 @@ prints `ALL N SUITES: M CHECKS PASSED` with whole tests silently missing — and
 
 - **Redirect STDERR as well as stdout** and treat ANY `SCRIPT ERROR` line as a failure regardless of
   the summary.
-- When a section claims a check count, **diff it against the `check(` calls in the source.** The
-  total drifts run to run (the fuzz suites emit a data-dependent number), so only a per-SECTION
-  count can detect this.
+- When a section claims a check count, **diff it against the `check(` calls in the source** — only a
+  per-SECTION count can detect this.
 
 ⚠ **THE SUITE COUNT IS THE LOAD-FAILURE DETECTOR, SO A DOC THAT HARDCODES IT DISABLES THE
-DETECTOR.** A parse error in one suite drops that suite silently while every other suite finishes and
-the banner still reads PASSED — the count is the only signal. It was found stale in four documents at
-three different values at once, every one of them lower than the truth, so any of them would have
-read a real load failure as normal. **State the derivation beside the number, never the number
-alone:** `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`. Do not "fix" this
-by deleting the number — a detector you cannot compare against detects nothing.
+DETECTOR.** A parse error in one suite — every warnings-as-errors slip in
+[[gdscript-type-all-arrays]] is one — drops that suite silently while the banner still reads PASSED.
+It was found stale in four documents at three different values at once, every one lower than the
+truth. **State the derivation beside the number, never the number alone:**
+`grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`. Do not "fix" this by
+deleting the number — a detector you cannot compare against detects nothing.
+
+⚠ **Gate on the suite COUNT, an EMPTY errors log and an unchanged failure SET — never the check
+total.** `test_fuzz.gd` holds one `check()` and bumps the pass counter per iteration, so the total
+drifts by tens between identical runs (3956..3995 observed).
 
 ⚠ **A banner reading `N FAILED (0 behavior, 0 implementation)` is NOT an assertion failure.** Zero
 of each means no `check()` failed; the count is the engine-error gate. Read the errors log and the
@@ -46,9 +49,9 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
 ## Launching it
 
 - Launch so you WAIT: PowerShell `Start-Process <console exe> -RedirectStandardOutput <file>
-  -PassThru`, then `WaitForExit(300000)`. A bare `& $exe ...` can return while the run continues, and
-  two overlapping runs truncate each other's log so it looks hung. Always bound it with a timeout
-  that KILLS.
+  -PassThru`, then `WaitForExit(<ms>)` with a bound above the measured full-run time below. A bare
+  `& $exe ...` can return while the run continues, and two overlapping runs truncate each other's
+  log so it looks hung. Always bound it with a timeout that KILLS.
 - ⚠ **The `_console` exe is a wrapper: ending its PID orphans the game window.** A scene you may
   have to stop by PID launches with the non-console exe, and you end THAT PID.
 - **Never pass `--quit-after <ms>`** to force-quit a scene: it keeps the process alive for the full
@@ -61,24 +64,18 @@ across identical code it went 17, then 1, then 1 — so **diff the per-suite ban
 - **Two tiers.** Inner loop: `run_tests.py --logic`, the `logic` group in `all_tests.tscn`, headless,
   no GPU and no window. Gate: the full windowed run. Measured on the sidebar branch at 48 suites
   (33 in `logic`), Box A: full windowed run ~5–6 min, one `--filter` suite ~30 s. ⚠ A tiered or
-  filtered run prints `FILTERED n of <total>` and no clean verdict, so it is never the gate. Which
-  suites are out of the tier and why: `solatro/HEADLESS_TESTING.md` §0.
+  filtered run prints `FILTERED n of <total>`, voids the suite count and gives no clean verdict, so
+  it is never the gate. Which suites are out of the tier and why: `solatro/HEADLESS_TESTING.md` §0.
 - **One run at a time.** ⚠ Overlapping runs **FABRICATE FAILURES in unrelated suites** — they share
   `user://logs/godot.log`, the output logs and `user://run_save/run.tres`. Measured: whole runs
   printing `NO SUITE BANNER`, which vanished on serialising. **A failure observed while two runs
   overlapped is not evidence.** Check for live Godot processes before starting, including before a
-  background batch.
-  ⚠ **The converse trap:** do not then explain away a real intermittent failure as concurrency. The
-  persistence suite's flakes reproduce under strictly sequential runs too.
+  background batch. The converse trap is under "Diagnosing" below.
 - **Check no editor has the project open** — list Godot processes and inspect `MainWindowTitle`.
-  See [[godot-editor-disk-sync]] for the rule on what you may and may not shut down. If the editor is
-  open, write the code and ask the owner — it is their session and their unsaved work.
-  ⚠ **"It hangs indefinitely" is too strong, measured once:** a single windowed SNAPSHOT scene
-  (`standalone_view_shot`) run at the owner's explicit instruction while their editor sat open on the
-  very scene it loads completed normally, wrote its PNG, exited 0, and rewrote no tracked file. One
-  observation, on one box, for a short self-quitting scene — it does NOT license running the full
-  suite alongside an editor, and asking still comes first. Recorded so the rule is not defended with
-  a symptom that may not appear.
+  See [[godot-editor-disk-sync]] for what you may and may not shut down. If the editor is open, write
+  the code and ask the owner — the rule is their unsaved work. Do not defend it with "it hangs":
+  measured once, a short self-quitting snapshot scene run at the owner's instruction beside their
+  open editor exited 0 and rewrote no tracked file.
 
 ## Reading the result
 
@@ -89,6 +86,32 @@ grep on a red run returns nothing, which reads exactly like a hang; the passing 
 stdout, so "no match" there means red or crashed, never green. Read the full log only when it
 failed, to locate the suite. `test_output_errors.log` empty = green; LEAK CANARY's stderr
 `push_error`/ObjectDB lines are deliberate.
+
+## ⚠ Diagnosing a red, hung or flaky run
+
+**A green run is a sample, not a property of the branch.** Measured: a branch reported
+`ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and 2 of 16 runs of that identical code
+failed. **Quote the denominator** — `2 failures in 16 runs`, never "about one in eight".
+
+- **Preserve the logs BEFORE re-running.** The harness reopens its logs with truncate, so the reflex
+  re-run destroys the evidence. Solatro's wrapper copies them on a stall or a failure
+  (`run_tests.py --stall-timeout`); elsewhere copy the log directory by hand.
+- **No banner, or a stall, is not yet YOUR crash — re-run once before bisecting.** A slow suite still
+  streams checks; one silent after its banner is stalled. Measured: 3 hangs and 4 passes across
+  identical trees; a suite silent for 27 minutes in 1 run of 6 passed 215/215 alone in a minute. If
+  the failure follows the change across several runs, it is yours. ⚠ Never re-run until it passes
+  and call that a result.
+- **Run the failing suite ALONE to discriminate cross-suite interference.** Measured: two checks
+  failed at every commit through five different diagnoses; alone the suite passed 74/74 with a
+  0.0 px delta. Deterministic interference reads exactly like a deterministic bug. The tell is a
+  **rotating casualty** — WHICH check fails changes run to run.
+- **Do not name a cause you have not measured** — concurrency included. Overlapping runs do fabricate
+  failures, but the persistence suite's flakes reproduce under strictly sequential runs too, and one
+  stall was blamed first on concurrency and then on an unbounded loop, both written into a living
+  doc and both wrong. State only what the evidence bounds.
+- **A global timeout is not a watchdog.** One stalled suite eats the whole budget and discards every
+  other suite's verdict. A per-suite silence detector that NAMES the quiet suite belongs in the
+  WRAPPER, never the harness the suites run under — solatro's is `run_tests.py --stall-timeout`.
 
 ## Snapshot scenes — run them and READ the PNGs
 
@@ -136,34 +159,9 @@ of reality.
   a branch on the OTHER machine for the first time** (routine here). Fix: delete `.godot/`, then
   `--headless --path . --import` **twice** — the first pass still reports errors while building the
   cache. Do this BEFORE trusting any baseline.
-- **Disk/save tests must always run full.** `SolatroTest.backup_real_save()`/`restore_real_save()`
-  park any real `run.tres` before the disk section. Never reintroduce a save-existence `[SKIP]`
-  guard — it made results depend on unrelated player saves.
 - `test_ui_props.gd` backs up `settings.tres` (which saves on EVERY change) and waits for all sibling
   suites except E2E — E2E waits for everyone, so waiting on it deadlocks.
-- The SmoothScroll addon force-rewrites any Control entering its subtree to `MOUSE_FILTER_PASS`.
-  Display-only Controls under the play-area scroll content must pre-claim
-  `set_meta("_smooth_scroll_default_mouse_filter_set", true)` before `add_child`.
-
-## ⚠ A GREEN RUN IS A SAMPLE, NOT A PROPERTY OF THE BRANCH
-
-Measured: a branch reported `ALL 45 SUITES ... CHECKS PASSED` on the run that closed it, and **2 of
-16 runs of that identical code came back with a behaviour failure.** "The suite is green" was true of
-a run and false of the branch, and every number quoted from a single run inherited that.
-
-⚠ **QUOTE THE DENOMINATOR, NOT A RATE.** The same document carried three different failure rates in
-one night — each computed off whatever sample existed at that moment, each stated with confidence.
-Say `2 failures in 16 runs`, never "about one in four". A rate without its denominator is how a
-four-run sample becomes a claim.
-
-⚠ **AND THE CHECK TOTAL IS NOT AN ASSERTION COUNT.** In that suite `test_fuzz.gd` holds ONE `check()`
-and increments the pass counter by hand per iteration, so the headline number drifts by tens between
-identical runs (3956..3995 observed). **Gate on: the suite COUNT, an EMPTY errors log, and an
-unchanged failure SET** — never on the total.
-
-⚠ **AN INTERMITTENT FAULT DESTROYS ITS OWN EVIDENCE**, because the reflex after a red or hung run is
-to run it again and the harness reopens its logs with truncate. Preserve the log directory BEFORE
-re-running. Solatro's wrapper now does it automatically on a stall or a failure
-(`run_tests.py --stall-timeout`); elsewhere, copy it by hand.
+- Solatro's save-backup rule for disk tests and the SmoothScroll mouse-filter pre-claim:
+  `solatro/ARCHITECTURE_REVIEW.md` §7 and §4b.
 
 See [[godot-editor-disk-sync]] and [[architecture-map]].

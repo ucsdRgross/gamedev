@@ -1,18 +1,18 @@
 ---
 name: code-style-lean-documented
-description: "User wants low line count (delete unused code) but doc comments on every method's purpose, kept SHORT — state the rule, not the story; plans need references/sources for handoff"
-metadata: 
+description: "Delete unused code, reuse before writing, and a comment says only WHY a method exists — at column 0, never trailing, capped short; plans end with a references section"
+metadata:
   node_type: memory
   type: feedback
-  originSessionId: d1c50448-488f-47c2-b749-5658dd6afef7
-  modified: 2026-07-30T22:11:48.554Z
 ---
 
-Keep lines of code low by REMOVING old unused code outright (no dormant paths), while ADDING `##` doc comments that explain each method's intended purpose. Plans should include a references/sources section for easy handoff.
+Keep lines of code low by REMOVING old unused code outright — no dormant paths. Plans end with a
+references/sources section for easy handoff.
 
 ⚠⚠ **COMMENTS ARE A CODE SMELL.** Owner rule, verbatim: *"comments dont exist inline of methods,
 and only explains why the methods exists and nothing else. no historical stuff or what method does
-since that can be read through the code."* Three rules follow, and `doc_check` errors on all three:
+since that can be read through the code."* Three rules follow, and `doc_check --changed` errors on
+all three:
 
 1. **No comment may have whitespace before it** — a plain `#` sits at column 0, above the method.
 2. **No comment may share a line with code.**
@@ -20,37 +20,19 @@ since that can be read through the code."* Three rules follow, and `doc_check` e
    renders beside an exported knob in the Inspector, so it lives wherever its knob does — indented
    or not — and pays for that freedom with the tighter cap.
 
-If an inline comment feels necessary, that is a signal the code needs a name (extract the step into
-a well-named helper), not a signal it needs prose.
+If an inline comment feels necessary, the code needs a NAME (extract a well-named helper), not prose.
 
-⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT, including comments you did not write.** The repo carries a
-large legacy backlog and this is how it drains — whole-file on touch, never a repo-wide sweep. The
-rules are errors on changed files and a summary on a full run, so the report stays short enough to
-be read.
+⚠ **A FILE YOU EDIT MUST LEAVE COMPLIANT, including comments you did not write** — whole-file on
+touch is how the legacy backlog drains; never a repo-wide sweep.
 
-⚠ **A doc comment is a rule, not a story. Go straight to the point.** Same content, fewer words — every time. Cut in particular:
-- **The narrative of how a bug was found** ("the first build did X, and that was wrong twice over"). Keep the rule it produced and the number it measured; drop the plot.
-- **Facts that change nothing for the reader** — who reported it, what the old behaviour was, which session it landed in. Git has that.
-- **The same fact restated at a second site.** State it once where it is enforced; elsewhere point at that name.
-- **Line-number references** (`scoring.gd:811`) — they are dead references waiting to happen.
-- **Design-process ids** (`Q183=a`, `GAP-017=c`, `S34`, `PLAN.md §1.8`) — they name a document the
-  reader cannot see. State the rule the answer produced. Full rule, and why the traceability
-  instinct produces this: [[design-ids-stay-out-of-code]].
+A kept comment states the rule and its measured number, once, at the site that enforces it — the
+wording rules are CLAUDE.md "Doc hygiene", and design ids are [[design-ids-stay-out-of-code]].
 
 ⚠ **REUSE BEFORE YOU WRITE. Owner, verbatim:** *"reducing duplicate code as much as possible
-and no reinventing existing setups, or using existing engine methods when available."*
+and no reinventing existing setups, or using existing engine methods when available."* The three
+rules and their measured cost: `/plan-run` "Reduce complexity". `dup_check.py` and the commit gate
+enforce the duplication half.
 
-Search for an existing helper before adding one, and prefer an engine method over a hand-rolled
-one. Measured cost of not doing it: a bucket-growing helper was added to `GameData` that
-duplicated `Game.resize_score_zone`, and `mantissa = 0` ended up stated in two files — the
-existing one was also stricter, so collapsing them fixed a latent weakness as well.
-
-⚠ **This rule was reaching nobody.** It lives here and in `/simplify`, but the `/plan-run` brief
-template carries lines about tunable literals, design ids and registry names and NOT this one —
-so implementer briefs never said it. **Put it in the brief.** The same shape of failure produced
-26 card files reaching past a documented-but-unenforced boundary; where a rule matters, enforce
-it with a gate rather than restating it.
-
-**Why:** the codebase already follows a heavy-doc-comment style (see `graph_placement.gd`), and handoff-ready plans matter to the owner.
-
-**How to apply:** When editing gamedev code, prune dead code in the same pass; give every new/rewritten method a `##` purpose comment; end plans with a references section. **Before deleting any doc, run `git ls-files <path>` first** — the doc-hygiene policy (fold residue into the living doc, then delete the plan) assumes the file is tracked, and an untracked file deleted that way is gone for good. Use the `/handoff` skill for handoff docs. Commented-out code rule (owner ruling, `solatro/START_HERE.md`): replace with a TODO comment if it describes unimplemented logic, delete outright if the implementation exists elsewhere.
+Commented-out code (owner ruling, `solatro/START_HERE.md`): replace it with a TODO if it describes
+unimplemented logic, delete it outright if the implementation exists elsewhere. Handoff docs use
+`/handoff`; deleting a doc follows `/docs` step 3.

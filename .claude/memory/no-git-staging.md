@@ -1,10 +1,9 @@
 ---
 name: no-git-staging
 description: "Never commit to main — the owner drives it through GitHub Desktop; on ANY OTHER BRANCH committing is fine and needs no permission"
-metadata: 
+metadata:
   node_type: memory
   type: feedback
-  originSessionId: 06399959-4da7-488e-a177-7f72e1a2ef41
 ---
 
 Don't run `git add` / staging commands in this repo **by default**.

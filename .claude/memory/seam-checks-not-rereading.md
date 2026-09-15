@@ -23,17 +23,10 @@ nothing to the line of code written later.
 indefinitely because no single tool reads both representations, so the contradiction has nowhere to
 surface.
 
-⚠ **BUT SAME-KIND IS NOT SAFE, AND ASSUMING IT WAS COST A DOC PASS.** Two COMMENTS in ONE FILE said
-opposite things: a doc comment declared a container **clips**, and ninety lines below, the line that
-actually runs set `clip_contents = false` with the owner's reason for it. A doc pass quoted the first
-one as evidence and shipped the claim into two living documents; a live test asserted the opposite
-the whole time. A checker reads both comments and still cannot compare them, because **tools compare
-REFERENCES, not CLAIMS** — `doc_check` proves every name resolves and has nothing to say about
-whether two prose sentences contradict each other.
-
-**So: a code comment is not evidence about the code.** When a comment is the thing you are about to
-repeat in a doc, read the code it describes and the rest of its own file first. The comment nearest
-the enforcing line wins; the far one is the one that went stale.
+⚠ **Same-kind is not safe either: tools compare REFERENCES, not CLAIMS.** Two comments in one file
+can contradict each other while every name in them resolves. **A code comment is not evidence about
+the code** — read the line it describes; the comment nearest the enforcing line wins. The measured
+case is in `/docs` step 1.
 
 ## How to apply
 
@@ -64,8 +57,4 @@ those.** Write down which readings you were choosing between, and test the input
 
 **green suite < printed counts < a rendered pixel < movement measured over time.**
 
-⚠ **[[verify-visuals-by-eye]] is necessary and NOT sufficient.** A still cannot show a pulse, a
-travel, a retire, or a cascade that never advances — a still of a working loop and of a dead one are
-identical. Three misses in one session were invisible to a PNG by construction. **Anything with a
-DURATION needs an instrument that samples over time**, reporting what MOVED
-(`sections=4/4 show_flips=14 max_dim=0.75`), not that it did not crash.
+A still cannot show anything with a duration — [[verify-visuals-by-eye]].

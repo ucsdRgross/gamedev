@@ -12,7 +12,7 @@
 
 **Working agreements**
 - [No git staging](no-git-staging.md) — never commit to `main`; on any other branch committing is fine
-- [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, `##` purpose comments, kept short
+- [Code style: lean + documented](code-style-lean-documented.md) — delete unused code, reuse first; a comment says only why a method exists
 - [Design ids stay out of code](design-ids-stay-out-of-code.md) — no `Q183=a`/`GAP-017` in a comment, never in a user-facing string
 - [Verify visuals by eye](verify-visuals-by-eye.md) — describe the rendered image; a still cannot verify a duration
 - [No mocks in tools](no-mocks-in-tools.md) — harnesses host the real scene and real data
@@ -21,7 +21,7 @@
 - [Read the engine docs](read-the-engine-docs.md) — search before designing around a feature; the repo is not the engine
 
 **Godot practice** (applies to solatro and worldgen alike)
-- [Running Godot scenes](running-godot-scenes.md) — run the suite yourself, WINDOWED; a green banner is not proof
+- [Running Godot scenes](running-godot-scenes.md) — run the suite yourself, WINDOWED; a green banner is not proof; diagnosing a flaky run
 - [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files and locks dlls; never kill it
 - [Key events don't bubble](godot-key-events-no-bubble.md) — area-wide accept/cancel goes in `_unhandled_input`
 - [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
