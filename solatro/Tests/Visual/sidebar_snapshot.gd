@@ -181,6 +181,9 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(DESCRIPTION_FOLLOW_OUT_PATH)
+	var follow_title : Label = view.hud_container.get_node(^"%DescriptionPanel").get_node(^"%Title")
+	print("SIDEBAR_SNAPSHOT description_follow locked=%s showing=%s" % [
+			view.hud_container.is_locked(), follow_title.text])
 
 	var armed := _arm_an_entrance_card(main, view)
 	await _await_held_card_settled(view, armed)
@@ -364,10 +367,12 @@ func _report_overflow(main: Main) -> void:
 			get_viewport().get_visible_rect().size, scroll.get_v_scroll_bar().visible,
 			scroll.get_v_scroll_bar().max_value, scroll.size.y, scroll.scroll_vertical])
 
-# The FOLLOW still: a second card READ while the first stays locked, so the shot carries the
-# hovered card's description beside the locked card's own marking. Walked until the board itself
-# reports the pointer landed -- a control's centre is not always hit-testable, since cards overlap.
+# The FOLLOW still: the lock kept but the card set down first, since a click there also grabs and a
+# held card leaving its cell dismisses the lock. Walked until the board reports the pointer landed:
+# cards overlap, so a control's centre is not always hit-testable.
 func _hover_another_entrance_card(main: Main, view: GameView) -> void:
+	view.play_area.ungrab_cards()
+	await get_tree().process_frame
 	var viewport : SubViewport = main._pictures[&"game"].viewport
 	for control : Control in _entrance_controls(view, viewport):
 		if view.play_area.ui_data[control] == view.play_area.locked_data: continue
