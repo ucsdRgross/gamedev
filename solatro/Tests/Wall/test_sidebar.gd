@@ -101,6 +101,7 @@ func _ready() -> void:
 	await test_a_low_stick_deflection_still_scrolls_a_short_description()
 	await test_the_arrows_scroll_only_once_the_description_is_locked()
 	await test_the_exit_x_joins_navigation_whenever_a_description_shows()
+	await test_accepting_the_exit_x_hands_the_focus_back_to_the_board()
 	behavior_section("A SCREEN'S STATE BELONGS TO ITS OWN CONTENT")
 	await test_a_finished_show_leaves_no_cascade_flag_for_the_next_one()
 	await test_a_new_run_does_not_inherit_the_last_shows_lock()
@@ -1833,6 +1834,9 @@ func test_the_exit_x_reverts_to_the_hud() -> void:
 		check(not _container.is_locked(), "...and the lock is gone (B10)")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 		check(_play_area.locked_data == null, "...so the board drops the locked card's marking")
+		check(_game_viewport.gui_get_focus_owner() == null,
+				"...and a mouse click hands no focus back to the board (only a key/pad accept does)",
+				str(_game_viewport.gui_get_focus_owner()))
 	await _end_main_fixture()
 
 ## C16/Q47=a: the exit X is a full touch target in the container's top-right, below the overlay's own button band, and only while the description shows.
@@ -2593,6 +2597,41 @@ func test_the_exit_x_joins_navigation_whenever_a_description_shows() -> void:
 		check(hud_stack.visible and not _panel.visible,
 				"...and accept on it dismisses the description (C16)")
 		check(not _container.is_locked(), "...taking the lock with it")
+	await _end_main_fixture()
+
+func _tap_key(keycode: Key) -> void:
+	_push_key(_booted_viewport, keycode, true)
+	_push_key(_booted_viewport, keycode, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+## Multi-modal: a key/pad player who dismisses with the X lands back on the board, and the next accept acts there.
+func test_accepting_the_exit_x_hands_the_focus_back_to_the_board() -> void:
+	await _start_game_fixture()
+	await _hoverable_card_controls()
+	var described := _game_viewport.gui_get_focus_owner()
+	check(_play_area.ui_data.has(described),
+			"sanity: the show rests the focus on a board card", str(described))
+	var selected := _watch_clicks()
+	await _tap_key(KEY_ENTER)
+	check(_container.is_locked() and selected.size() == 1,
+			"sanity: accept on that card locked its description", str(selected.size()))
+	await _tap_key(KEY_UP)
+	check(_exit_button().has_focus(), "sanity: navigation reached the X (Q68=b)",
+			str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_ENTER)
+	check(_hud_is_up(), "accept on the X dismissed the description")
+	var expected : Control = described
+	if not (is_instance_valid(described) and _play_area.ui_data.has(described)):
+		expected = _play_area.data_ui.get(_armed_card())
+	check(expected != null and _game_viewport.gui_get_focus_owner() == expected,
+			"...and the focus is back on the board card it was opened from (Q68=b, multi-modal)",
+			"%s vs %s" % [_game_viewport.gui_get_focus_owner(), expected])
+	check(_hud_is_up(), "...without that focus re-opening what was just dismissed")
+	await await_the_tap_window()
+	await _tap_key(KEY_ENTER)
+	check(selected.size() == 2, "...so the next accept acts on the board (multi-modal)",
+			str(selected.size()))
 	await _end_main_fixture()
 
 # ------------------------------------------------ A SCREEN'S STATE BELONGS TO ITS OWN CONTENT

@@ -34,6 +34,9 @@ signal description_dismissed
 ## A different screen is showing; the map drops the name it had pinned to a dot on its own picture.
 signal active_screen_changed
 
+## The X was accepted from the keyboard or pad; hiding it left nothing focused, so the screen takes the focus back.
+signal exit_accepted
+
 const SCENE := preload("res://UI/hud_container.tscn")
 
 ## One home for the "a standalone fixture with no `Main` gets a private instance" fallback every screen used to repeat.
@@ -74,6 +77,7 @@ func _ready() -> void:
 	(get_theme_stylebox("panel") as StyleBoxFlat).bg_color = PaletteDB.color(PaletteDB.ROLES.hud_background)
 	_exit_button.tooltip_text = TRANSLATION.find('SIDEBAR_CLOSE')
 	_exit_button.pressed.connect(dismiss_description)
+	_exit_button.gui_input.connect(_on_exit_gui_input)
 	_place_exit_button()
 	show_hud()
 	var overlay := get_parent() as WallOverlay
@@ -195,6 +199,15 @@ func dismiss_description() -> void:
 	_release_shown_entry()
 	_release_remembered_entry(_active_screen, null)
 	show_hud()
+
+# A KEY/PAD ACCEPT ON THE X IS TAKEN HERE, before the button's own press: hiding the X leaves nothing
+# focused, and only that player needs the focus back. A mouse click also focuses the X, so it stays
+# the button's own press and leaves the focus where the pointer put it.
+func _on_exit_gui_input(event: InputEvent) -> void:
+	if not event.is_action_pressed(&"ui_accept"): return
+	_exit_button.accept_event()
+	dismiss_description()
+	exit_accepted.emit()
 
 # ⚠ A SCREEN CHANGE IS NOT A DISMISSAL: the screen being left keeps its lock, and its board keeps
 # the marking on the locked card, so coming back finds what was being read exactly as it was. Every

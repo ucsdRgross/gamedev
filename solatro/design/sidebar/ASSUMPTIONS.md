@@ -869,3 +869,16 @@
   `GameView.arm_after_placement()` (drop the hand, re-derive the arm), which `_place_held_onto` used
   to do after `try_place` returned -- so a resume's replay arms the card its refill drew. New
   `TestSidebar` row `test_a_resumed_placement_arms_the_card_its_refill_drew`.
+- Close fix 8: accept on the exit X from the keyboard or pad hands the focus back to the board.
+  `HudContainer._on_exit_gui_input()` takes `ui_accept` in the X's `gui_input` signal, which the
+  engine emits before `BaseButton` handles the event, dismisses, and emits the new
+  `HudContainer.exit_accepted`. A mouse click stays the button's own `pressed` ->
+  `dismiss_description()`: a mouse press also focuses the X (measured), so `has_focus()` cannot tell
+  the two apart, and a mouse dismissal must not move the focus. `GameView` connects the signal to the
+  new `PlayArea.return_focus_to_board()`, which RESTS the focus (no publish, no following) on
+  `focused_control`, or on the armed card through `rest_focus_on_armed()` once that control is freed
+  or out of `ui_data`; both rest through the new `_rest_focus_on(control)`. The map connects nothing,
+  so its X is unchanged. New `TestSidebar` row
+  `test_accepting_the_exit_x_hands_the_focus_back_to_the_board` (helper `_tap_key()`), and a mouse
+  check added to `test_the_exit_x_reverts_to_the_hud`. Undo at the outcome screen stays out of a
+  pad's reach -> GAP-009, not fixed.

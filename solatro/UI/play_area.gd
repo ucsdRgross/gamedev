@@ -1793,12 +1793,25 @@ func rest_focus_on_armed() -> bool:
 	flush_rebuild()
 	var control : Control = data_ui.get(selected_cards[0])
 	if not control: return false
+	_rest_focus_on(control)
+	return true
+
+# THE EXIT X TAKES THE FOCUS OUT OF THE BOARD'S VIEWPORT, and hiding it leaves nothing focused, so a
+# key/pad player is put back on the card they were reading, or on the armed card once that control
+# is gone. A rest, not a highlight: it must not re-open the description that was just dismissed.
+func return_focus_to_board() -> void:
+	flush_rebuild()
+	if is_instance_valid(focused_control) and focused_control in ui_data:
+		_rest_focus_on(focused_control)
+	else:
+		rest_focus_on_armed()
+
+func _rest_focus_on(control: Control) -> void:
 	_focus_is_resting = true
 	control.grab_focus()
 	_focus_is_resting = false
-	return true
 
-## True only across the show-start rest focus, which marks the armed card without announcing it.
+## True only across a rest focus, which marks a card without announcing it.
 var _focus_is_resting : bool = false
 
 ## Game over: the outcome overlay covers the board and blocks the mouse, but keyboard/

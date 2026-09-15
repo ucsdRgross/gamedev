@@ -123,6 +123,8 @@ func _bind_hud_container() -> void:
 	hud_container.connect_for_screen(self, hud_container.container_rect_changed, _fit_open_viewer)
 	hud_container.connect_for_screen(self, hud_container.description_dismissed,
 			_on_description_dismissed)
+	hud_container.connect_for_screen(self, hud_container.exit_accepted,
+			play_area.return_focus_to_board)
 
 # The board wears the locked card's marking, so the view relays the lock ENDING the same way it
 # relays the click that starts it. The container owns the lock itself; nothing else may clear it.
