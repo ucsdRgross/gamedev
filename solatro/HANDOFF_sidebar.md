@@ -762,11 +762,43 @@ run showed a teardown-only 0xC0000005 after its banner, never alone and never in
      By eye: UNVERIFIED - a discarded visual is freed one frame after its stage change, so the
      flight is invisible in play on HEAD and now. The conversion is the unmargined map, ~6 px
      off the drawn point at `wall_overfill_margin` 1.02.
+   - close fix 7 (trace: a replayed placement of the last Entrance card left nothing armed
+     after its refill): `Game.place_card_in_grid` ends a non-winning player placement, after
+     its refill and commit, with the new `GameView.arm_after_placement()` (drop the hand,
+     re-arm) - the ungrab and re-arm `_place_held_onto` did after `try_place` returned, moved
+     so the live and replay routes share one site. A winning placement returns before it.
+     `try_place`'s non-grid branch no longer re-arms (only headless suites drive it). Game
+     calling into its view has precedent (`undo()` calls `view.rebuild()`). TestSidebar row
+     RED on HEAD (`selected_cards` empty after the resumed refill), green after (733 checks).
    - still owed: close fix 6 (conventions and simplify residue, plus `pile_center`'s
      null-picture fallback, whose only case is test fixtures - rule 7; and the stale
-     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), 7 (replay re-arm), 8 (pad reach of the board and Undo), A (Main
+     `get_control_center` mentions at DESIGN.md:460 and card_size_outline/IMPACT.md:662), 8 (pad reach of the board and Undo), A (Main
      fixtures under the product's pause state), B (weak test rows and the Fix 13.1 pan flake).
-8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING. 10. Tooling feedback: PENDING.
+8. `/docs`: PENDING. 9. `consolidate-memory`: PENDING.
+10. Tooling feedback - PROPOSAL drafted by a read-only Opus 5 analyst, not yet applied (the
+   edits land after the fixes). 14 traps, ranked by what they would have saved: (1) state that
+   outlives what it belongs to, 6 defects each found only by a reviewer -> plan-run brief
+   template item 8 "what does each new field belong to, and which event ends it"; (2) Main
+   fixtures unpausing the tree -> plan-implementer rules (the memory already warned; no brief
+   carried it); (3) hand-registered suites skip new tests -> call
+   `check_all_tests_registered()` (exists at test_base.gd); (4) touch event ORDER -> sharpen
+   tests-that-prove-nothing item 11; (5) four wrong-space defects -> solatro START_HERE plus a
+   brief line "name the coordinate space"; (6) CRLF from Path.write_text and the lying
+   `grep -c $''` -> plan-implementer rules; (7) two-process-frame settles and queue_free'd
+   children -> new trap item; (8) zero-area `Rect2.encloses` -> sharpen item 5; (9) evidence
+   file and SendMessage resume -> plan-implementer + plan-run Interruptions; (10) mid-run owner
+   rulings must mark every superseded doc node in the same commit -> plan-run Gaps;
+   (11) `/code-review`'s parallel finders vs the cap -> plan-run close item 3; (12) never
+   `git checkout` a tracked file -> plan-implementer; (13) usage limit mid-close -> plan-run
+   model floor; (14) the console exe orphans a scene's window -> running-godot-scenes.
+   STALE lines it found: three places still say ONE subagent (the hook allows two; its
+   filename seeds the error); `FILTERED n of 45` hardcoded in four docs (the suite is 48);
+   run times understated (and handoff SKILL's resume command bypasses run_tests.py);
+   plan-implementer's "leave every touched file compliant" contradicts the owner's deferred
+   legacy-comment ruling (OWNER CALL: run-local or permanent?); doc_check has no added-lines
+   mode, so the intersection method must be stated or built; plan-run Interruptions' "never
+   resume mid-step" is too absolute; a reviewer's "none" is a claim to grep too; the
+   overseer's allowed `grep -c` is dishonest for line endings.
 11. Delete the temporary plan documents (briefs, this handoff once folded): PENDING.
 
 ## Next up
