@@ -25,7 +25,7 @@ because a rule-card in `rules_deck` implements `on_board_mutated` / `on_next`.
 Cards arrive in the **Entrance**, a row attached above the grid it is committed to. The player
 places one card per action into a cell, and every placement that completes a line scores it on
 the spot. **There is no Submit, no act count and no end-of-show payout** — the number on screen
-is derived live from the score buckets (§3). A show ends when the player presses End.
+is derived live from the score buckets (§3). A show ends when a placement meets the goal, or when the player presses End.
 
 
 ### 1.2 Class map
@@ -39,14 +39,14 @@ Main (Levels/main.gd, scene root)
  ├─ Wall (UI/Wall/wall.gd) ..... the pictures the show is played inside. The game picture is
  │                               one of them and is several screens wide, so the wall camera
  │                               PANS over it (PICTURE_WALL.md).
- └─ GameView (Levels/game_view.gd) .. the show's scene root: ALL UI/input/HUD/animation.
+ └─ GameView (Levels/game_view.gd) .. the show's scene root: board UI/input/animation; the HUD lives in `HudContainer` on the wall's overlay.
      │   Creates a headless Game child and injects itself (game.view = self); binds Game's
      │   reactive signals; buttons + card clicks call Game commands
      │   (end_show/next/undo/try_grab/try_place/place_card_in_grid).
      ├─ Game (Levels/game.gd) .. extends CardEnvironment; headless match logic. Mutates
      │   │                       only `state`; zero UI children; every visual touch is
      │   │                       `if view:` (view == null runs a full show — unit-tested)
-     │   ├─ state : GameData ... PURE DATA (Resource): draw/discard/rules decks, `grids`
+     │   ├─ state : GameData ... PURE DATA (Resource): discard/rules decks, per-slot Entrance stocks, `grids`
      │   │                       (each a GridData of stacked cells), the Entrance (still
      │   │                       backed by `upper_zone`), the per-grid score buckets, goal,
      │   │                       combo_classes/combo_repeats, show_ended, entrance_grid.
@@ -178,7 +178,7 @@ path which bumped `revision` without finishing the mutation that keeps them in s
   nothing**, and the mover sets that flag explicitly — it is never inferred by comparing
   heights.
 - **Next:** `run_all_mods("on_next")` → `TypeInput.on_next` per Entrance column, then
-  `draw_card()` refills.
+  each slot refills from its own stock (`draw_card(slot)`).
 - **End:** `Game.end_show()` sets `state.show_ended`, bumps `revision` so the End leaves an
   undo snapshot to rewind to, and resolves. **There is no Submit, no act count and no
   end-of-show payout.** Fame banks in `exit_show()` (Continue), not at the outcome screen (§5).
@@ -234,7 +234,7 @@ Map (Levels/map.gd, extends CardEnvironment) — map screen + booster CardEnviro
 ```
 
 **Flow:** Menu → new_run/continue → Map. Game/boss node → stash `pending_goal` → `Game`
-(one show, ended by the player pressing End — there is no act budget); win → `record_win`
+(one show, ended by meeting the goal or pressing End — there is no act budget); win → `record_win`
 (fame) at **Continue** → map; loss → run over → menu
 (save cleared). Booster node → take-all `ChoiceViewer`. End node = boss; winning flips to
 an endless reverse lap on the same graph (even lap forward, odd lap reversed; traveled
@@ -286,8 +286,8 @@ history stored in forward orientation).
 - **Multi-modal input is a hard project rule:** every UI works with mouse + keyboard +
   controller; modals steal focus and restore on close; `ui_cancel` closes; selectable
   elements are focus stops.
-- Card text surface is the **focus inspector panel** (permanent OverlayLayer child,
-  re-pinned per frame); native tooltips were removed deliberately (they blocked clicks).
+- Hover and focus publish the card to the sidebar (`HudContainer`); native tooltips were removed
+  deliberately (they blocked clicks).
 - Board draw order is 100% structural (no z_index anywhere) — see LAYERING.md.
 - ⚠️ **Board controls are POOLED per slot** (`PlayArea.set_card_zone` creates/frees Controls
   per column/row index and `_bind_slot` rebinds them to whatever CardData now occupies the
@@ -1569,7 +1569,7 @@ prunes every suite matching no pattern, in `all_tests.gd::_enter_tree` — remov
 reorder, because suite order is a dependency graph. `--logic` runs the `logic` GROUP declared on the
 suite nodes in `all_tests.tscn`, HEADLESS: 32 suites in ~65 s against ~190 s for the full windowed
 run. The tier is a group rather than a list in the runner so the scene stays the registry it already
-is. Both forms print `FILTERED n of 45` at both ends and the wrapper refuses a clean verdict — the
+is. Both forms print `FILTERED n of <total>` at both ends and the wrapper refuses a clean verdict — the
 suite count is the load-failure detector and a subset voids it. `--keep-output` keeps that run's
 stdout+stderr, the only record of the exit-time errors. Runbook, and which suites are deliberately
 out of the tier: **HEADLESS_TESTING.md §0**.
@@ -1592,7 +1592,7 @@ Conventions (formerly UNIT_TESTS_PLAN):
   excludes it by name. A new waiting suite needs the same exclude treatment everywhere.
 - ⚠ **Waiting protects the suite that NEEDS the shared state; nothing protects it from a
   suite that needs nothing and MUTATES it in passing.** Constructing production objects has
-  production side effects — building a `Main` clears the shared `wall_info_mode`, which failed
+  production side effects — building a `Main` writes shared settings on the way up, which failed
   WALL FOCUS from inside WALL RENDER, 2 runs in 3, naming a suite the change never touched. If
   your fixture constructs something real, ask what it writes on the way up and restore it.
 - **Tests never ride `Decks/deck.gd`** (the owner's freely-changing playtest deck) —

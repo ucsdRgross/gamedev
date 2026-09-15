@@ -11,7 +11,7 @@ A circus-themed solitaire deckbuilder. The board is **one to three grids, 5×5 b
 by side; each cell holds a **stack**. Cards wait in the **Entrance**, a row attached above the
 grid it is committed to, and the player places one card per action into a cell. **Every placement
 scores the rows, columns, diagonals and height runs it completes, immediately.** A show ends when
-the player presses End; the run is a tour across a generated world map.
+a placement meets the goal, or when the player presses End; the run is a tour across a generated world map.
 
 ⚠ **There is no Submit, no act count, no upper/lower tableau and no end-of-show payout.** Those
 were the previous board and they are gone — a suite gate fails any product file that names them.
@@ -179,7 +179,7 @@ must sit in the SAME folder as the main exe, which it launches by name.
   `%APPDATA%\Godot\app_userdata\Solatro\logs\test\test_output_all.log` — ⚠ **CHECK ITS MTIME, and
   note the `logs\test\` segment**: a file of that name also sits directly under `Solatro\`, is months
   stale, and greps clean while the banner reports failures. Run it yourself whenever the owner's
-  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (45) and the
+  editor is closed. ⚠ The check total drifts between runs — **judge by the SUITE count (48) and the
   failure set**; a drop in the suite count means a suite failed to LOAD while the banner still reads
   PASSED.
 - **Inner loop between gates:** `py solatro/Tools/run_tests.py --logic` — the 32

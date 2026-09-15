@@ -129,6 +129,17 @@ written when a run stalls or fails.
     two, with no cue explaining it (Q33=a chose that). That the cue is ABSENT is pinned by tests
     (`test_comparator.gd` §10 asserts the ordinary meld name, no marker); whether its absence reads
     as a scoring bug to a human is not a test's question.
+- ⬜ **Sidebar: ten open gaps**, each in `design/sidebar/gaps/`:
+  - `GAP-001` — does a 16:9 window wider than 2560 px clamp the container? Recommends clamping only windows wider than 16:9.
+  - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
+  - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
+  - `GAP-004` — a viewer's description preview: the board's card size or the viewer's? Recommends the viewer's (as built).
+  - `GAP-005` — the legal-cell highlight was never built: what is its mark? Recommends a tint on each legal cell's zone card, built with release-to-place.
+  - `GAP-006` — does a key/pad focus make the armed card follow an idle pointer? Recommends no: it waits lifted in its slot.
+  - `GAP-007` — after a failed drag, does mouse motion restart following? Recommends only a new press does.
+  - `GAP-008` — the motion a placement needs dismisses a mouse click-lock. Recommends exempting a click-locked card from the cell-leave dismissal.
+  - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
+  - `GAP-010` — what is `Q135`=(b)'s "way back to the pack" from a preview card? Recommends an explicit Back control; (a) ships meanwhile.
 Everything below is unscheduled backlog.
 
 ## Visual effects
@@ -445,13 +456,6 @@ See [PICTURE_WALL.md](PICTURE_WALL.md) for how it is put together and what will 
   Entrance rows is a STRUCTURAL change (it becomes cell-shaped like GridData), not a label one. ⚠ Row/col label COUNTS and the
   per-height stacks are ALREADY derived from the grid's own dimensions and buckets, so an 8x7 grid
   needs no work there; do not rebuild them.
-- **The retired act payout's HUD nodes are EMPTIED, not removed, and the removal belongs to the
-  GAP-038 pass.** `%MultScore` and its `Col`/`x`/`Row` children showed a frozen "0 x 0" because
-  nothing in the grid economy writes `mult_score`/`col_total`/`row_total`; `GameView._ready` now
-  blanks them. ⚠ **Deleting the nodes is the deeper fix and it is NOT free**: `%MultScore` is in
-  `_furniture`, and `_hud_authored_width()` maxes over that list to publish
-  `PlayArea.board_inset_left`, so removing it can shrink the HUD reserve and re-centre every grid.
-  That is HUD geometry, which is parked on `GAP-038`. Do it with that pass, not before.
 - **`ProfileManager.unlock()` has no production caller** — only tests call it, and `book` is the only
   locked entry, so S38/K2/K3/K4, `_repack_wall()`, `apply_layout(animate = true)` and
   `picture_unlocked` are all unreachable in the shipped game. Built-but-not-wired, and on neither

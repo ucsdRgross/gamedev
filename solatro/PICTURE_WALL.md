@@ -31,7 +31,7 @@ must not also try to scroll itself, or the two fight.
 | `Levels/main.gd` (`Main`) | **The orchestrator.** Focus, transitions, the `FocusStack`, every wall↔screen connection. Nothing else decides what a wall intent *means*. |
 | `UI/Wall/wall.gd` (`Wall`) | The camera, the pictures, input reading, selection. Announces player INTENT as signals; never resolves it. |
 | `UI/Wall/wall_picture.gd` | One picture: its SubViewport, frame, shadow, focus/unfocus, filter. |
-| `UI/Wall/wall_overlay.gd` | Back / Forward / Wall controls, and the touch-target clamp. |
+| `UI/Wall/wall_overlay.gd` | Back / Forward / Wall controls, and touch-target sizing (no clamp). |
 | `Scripts/Wall/wall_packer.gd` | Pure layout. No singletons, no nodes — keep it that way (§1.3). |
 | `Scripts/Wall/wall_transition.gd` | The camera tween and its clock. Pure `sample_at()` core plus a thin `_apply()`. |
 | `Scripts/Wall/focus_stack.gd` | Back/Forward history, ids only. Never positions. |
@@ -149,7 +149,7 @@ Inspector already gives arrays, undo and nested resources.
 | Panel | What it holds |
 |---|---|
 | `layout` | `gap_px`, the ellipse clamps, `view_margin`, `home_id`, and every `PictureEntry`: `slot` (placement ORDER — the packer resolves the angles), `size_multiplier`, `design_size`, `frame_px`, `frame_colour`, `keep_aspect`, `music`, `background_texture`. |
-| `preview_settings` | A standalone `PlayerSettings`. Transition duration and phase fractions, easing curves, overfill margin, shadow offset/opacity, info-card size, reveal scale, touch targets. |
+| `preview_settings` | A standalone `PlayerSettings`. Transition duration and phase fractions, easing curves, overfill margin, shadow offset/opacity, reveal scale, touch targets. |
 | `preview_aspect` | 0.5–4.0, re-packs live. The clamps only do something at the extremes. |
 | `unlocked_ids` | Seeded with EVERY id. Delete some to simulate a partial unlock. |
 | Transition preview | `preview_source_id`/`preview_dest_id` are seeded with the longest move on the wall; `play_transition` runs the real `WallTransition`. |

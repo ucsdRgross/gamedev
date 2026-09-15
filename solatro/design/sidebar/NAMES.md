@@ -82,6 +82,19 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `CardVisual` | `var following : bool` | NEW. `held` keeps its meaning; only `CardVisual`'s target reads this (G5, G8, `Q261`=a) |
 | `Game` | `func stock_for_slot(slot: int) -> Array[CardData]` | One slot's ordered stock (H1) |
 | `Game` | `func rebalance_stocks() -> void` | Add/remove rebalance, pure rule, no RNG (H7, H8) |
+| `CardVisual` | `const CARD_BACK_FRAME : int = 3` | The card-sheet frame a face-down card draws — owner: *"cardback should be frame 3"* (I8) |
+| `CardVisual` | `const BLANK_CARD_FRAME : int = 1` | The frame a card with no type draws |
+| `CardVisual` | `var face_down : bool` | Hidden by the board: a stock's face-down card. Not `CardData.flipped` (I8) |
+| `HudContainer` | `func dismiss_description() -> void` | A dismissal: frees the shown description, forgets the screen's remembered entry, shows the HUD |
+| `HudContainer` | `func release_screen(screen: StringName) -> void` | A screen's content ended: hands back its memory, lock and cascade flag |
+| `HudContainer` | `const MAP_SCREEN : StringName`, `const MENU_SCREEN : StringName` | The map's and the start menu's screen ids |
+| `HudContainer` | `signal active_screen_changed` | A different screen is showing |
+| `HudContainer` | `signal exit_accepted` | The X was accepted from keyboard or pad |
+| `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
+| `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
+| `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or the armed card |
+| `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
+| `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
 
 ## 4. Deleted methods and properties
 
@@ -107,7 +120,6 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `card_tap_window_ms` | `float` | `300.0` |
 | `card_drag_threshold` | `float` | `0.25` |
 | `touch_target_fraction` | `float` | `0.06` |
-| `entrance_stock_face_down_cap` | `int` | `5` |
 | `entrance_flip_stagger` | `float` | `0.15` |
 
 **Removed:** `wall_info_mode`, `wall_info_card_width`, `wall_info_card_max_height`,

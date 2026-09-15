@@ -657,10 +657,9 @@ so nobody "fixes" them.
 
 ### 3c. Scene values worth a look, not necessarily an edit
 
-- [game_view.tscn:337,356,376](Levels/game_view.tscn:337) — the Deck / Discard / Rules anchors are
-  `custom_minimum_size = Vector2(100, 100)`. Cards only take their *centre*
-  (`get_control_center`), so nothing breaks; but a card is 100×135 now, not 95×125, and these
-  panels read as card-sized slots.
+- `UI/hud_container.tscn` — the Deck / Discard / Rules piles live here, in the root viewport. A card
+  leaving the board flies to `GameView.pile_center()`, the pile's centre converted into the game
+  picture; the Deck is no longer a flight target.
 - [play_area.tscn:78](UI/play_area.tscn:78) — `Vector2(14, 14)`, the `CARD_SEPARATION` literal
   written into the scene rather than read from the constant.
 - [play_area.tscn:71](UI/play_area.tscn:71) — `split_offsets = PackedInt32Array(38)`. Coincidence,

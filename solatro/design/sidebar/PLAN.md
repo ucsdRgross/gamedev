@@ -493,10 +493,10 @@ sizes `[5,5,5,4,4]`, and that two runs from the same shuffled order produce iden
 **Done-when (hard gate):** a test removes a slot and asserts every remaining slot's TOP card is
 unchanged.
 
-⚠ `Q245` fixes the face-down cap, verbatim: *"knob defaulting to 5"* — so `entrance_stock_face_down_cap` starts at 5.
+⚠ The owner's S21 ruling supersedes `Q245`: there is no cap knob; a non-empty stock shows one face-down card.
 
 **S21 — The flip** *(implements I1–I12, Q203, Q213, Q214, Q215b, Q216, Q217, Q218, Q219, Q220, Q221, Q223, Q244, Q245)*
-Face-down stocks with the capped depth; flip in place, staggered left to right; no fly-in; hovering
+One face-down card per non-empty stock; flip in place, staggered left to right; no fly-in; hovering
 a stock describes the slot; deck viewer shows the sorted union.
 
 ### Phase 7 — automatic end

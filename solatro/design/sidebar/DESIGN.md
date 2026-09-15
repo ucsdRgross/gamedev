@@ -119,8 +119,8 @@ rather than guesses.** Twelve of them, 157 nodes, 151 edges, 17 cross-chart link
 from the rendered answers — starting with the 30 where you overrode my recommendation, because those
 are the ones that go wrong when written from memory.
 
-Three answers are now superseded by later ones and are listed in a table beside the charts, so
-nothing downstream cites the losing side: `Q127`, `Q203` and `Q59`.
+Seven answers are now superseded by later ones or by an owner ruling and are listed in a table
+beside the charts, so nothing downstream cites the losing side.
 
 Section 5's tunables were re-derived from the answers: three knobs deleted because an answer removed
 the need for them, two added for the Entrance stocks, and `hud_width_fraction` retired.
@@ -455,9 +455,11 @@ Who does the drawing:
 
 - `CardData.flipped` (`card_data.gd:53`) and `CardVisual.show_front` / `basis3d`
   (`card_visual.gd:146`, `:163`) — a card is drawn face-down by a basis rotated 180°, and the
-  floating animation slerps it to front.
+  floating animation slerps it to front. A stock's face-down card is `CardVisual.face_down`, not
+  `CardData.flipped`, so saves and viewers are untouched, and its back draws
+  `CardVisual.CARD_BACK_FRAME` = 3 — the owner: *"cardback should be frame 3"*.
 - **A card drawn from the deck onto the board ALREADY flips into view** — `card_visual.gd:602-608`
-  spawns it at the Deck control's position (`get_control_center(_game_view().deck_ui)`) keeping the
+  spawns it at the Deck control's centre, keeping the
   face-down basis, and only that case flips. So the braindump's change is *where the card starts*,
   not whether flipping exists.
 - ⚠ **Owner ruling 23 is enforced at `card_visual.gd:169`:** FX is gated on `show_front`, because
@@ -1034,15 +1036,27 @@ wrong.
 
 ### Answers that later answers superseded
 
-Three answers are still in `answers.json` but are no longer what the design says. They are listed
+Seven answers are still in `answers.json` but are no longer what the design says. They are listed
 here so nothing downstream cites the wrong one:
 
 | Superseded | By | What holds now |
 |---|---|---|
 | `Q127`=(b) — the armed card's description opens on its own | `Q240`=(a) | it does not; the container shows the HUD until something is genuinely highlighted |
-| `Q203`=(b) — a slot's depth is not visible | `Q244`=(a) | it is: a capped face-down stack, and hovering gives the exact count |
+| `Q203`=(b) — a slot's depth is not visible | `Q244`=(a) | depth is not drawn — one face-down card whatever the depth (the S21 ruling below) — and hovering the stock gives the exact count |
+| `Q217`=(b) — v1 draws up to a capped number of face-down cards | the owner's S21 ruling | one face-down card per non-empty stock |
+| `Q244`=(a) — depth is visible: the stack is drawn to a cap | the owner's S21 ruling | depth is not drawn; hovering the stock gives the exact count (`Q218`=(b) stands) |
+| `Q245` — the cap is a *"knob defaulting to 5"* | the owner's S21 ruling | no cap, no knob |
 | `Q123`=(b) in **`picture-wall`** — a touch target is *"9 mm physical, derived from the reported DPI"* | `Q284`=(d) + `Q293`=(b) | reversed outright: no DPI reading survives anywhere in the project. ⚠ This one is in ANOTHER design, and its code is shipped |
 | `Q59`=(c) — a card lifts to show it is SELECTED | `Q249` free text | *"glow means selected. lift means currently picked up which warns that next click on a highlighted space will put the lifted card down. the selection glow is over where selector is to show current selection as normal."* |
+
+The owner's S21 ruling, verbatim: *"the entrance cards refill looks wrong to me. you set it as a
+bunch of stacks of cards, but the implementation in board-plan worktree is closer to what i
+expected with cards revealed right on top of the entrance slots and only being stack of 1, which it
+has already implemented. unrevealed cards in the stocks should not be entities yet until ready to
+be flipped. expected behavior should be zone should be replaced with a flipped over card with new
+card on top. once its flipped over to reveal new set of entrance cards, the flipped card should
+take place of previously revealed card and there is another back facing card underneath, implying
+the stack instead of showing it."*
 
 ## Flowchart A — the description path as it exists today
 
@@ -1378,7 +1392,7 @@ flowchart TD
   I5["NEW — the stagger is a knob, as a fraction of get_delay per slot, never a wall-clock literal"]
   I6["NEW — slots still holding a face-up card do NOTHING. Only empty slots flip"]
   I7["NEW — there is no fly-in from the Deck control any more"]
-  I8["NEW — a capped stack of face-down cards is drawn, so depth reads at a glance. The cap is a knob defaulting to 5"]
+  I8["NEW — owner ruling at S21: a non-empty stock shows exactly ONE face-down card under the revealed card, drawn with frame 3 of the card sheet; no other stock card is an entity. At a refill it flips up to become the revealed card and a fresh face-down appears beneath while the stock has cards. No cap, no knob"]
   I9["NEW — a slot with nothing left shows an empty slot frame, which is what the Entrance already shows"]
   I10["NEW — hovering a face-down stock describes the SLOT, not a card: how many remain in this stock — chart B"]
   I11["NEW — a bonus reveal simply DEEPENS that slot's face-up stack, since the Entrance already holds a stack per slot"]
@@ -1530,7 +1544,6 @@ from a screenshot is a knob, not a contract** — all of these are exposed live 
 | `card_tap_window_ms` | milliseconds | 300 | the self-detected double-tap and double-press window. The OS interval is not readable from Godot, so this is the only one there is |
 | `card_drag_threshold` | fraction of the **CARD's current on-screen size** | 0.25 | how far a press must travel before the release places instead of the click grabbing. Scales with the card, so it is right at every board zoom |
 | `touch_target_fraction` | fraction of the **WINDOW's smaller dimension** | 0.06 | the minimum size of any overlay control, the sidebar's exit X included. No clamp: the fraction is the clamp |
-| `entrance_stock_face_down_cap` | count | **5** — your words: *"knob defaulting to 5"* | how many face-down cards are drawn on a slot's stock, so depth reads at a glance |
 | `entrance_flip_stagger` | fraction of `get_delay()` **per slot** | 0.15 | the left-to-right stagger as the Entrance flips up. Never a wall-clock literal — project rule |
 
 **Derived from a rule, never registered** — a stored default here could silently disagree with the

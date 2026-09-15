@@ -87,7 +87,6 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
    │  │  │  ├─ ParticleLayer (Node2D, z 0) — ParticleEngine's world debris; no host to be
    │  │  │  │                                occluded by, so ruling 2 does not apply to it
    │  │  │  └─ OverlayLayer (Node2D, z 0)  [LAST TopLevelVBox sibling → on top of the board]
-   │  │  │     ├─ Focus inspector panel (PanelContainer)   — no z; tree order
    │  │  │     └─ Score TextPopup (Node2D, transient)      — no z; tree order
    │  │  └─ EntranceStrip (Control)  ── LATER PlayArea SIBLING → the whole Entrance draws OVER
    │  │     │                            the scrolled grid content, which is what lets a card
@@ -100,14 +99,14 @@ game_view.tscn  (single canvas layer 0 — NO CanvasLayer anywhere)
    │  ├─ WinScreen (Label)  ── above PlayArea (later PlayContainer child, by tree order)
    │  │   └─ Dim (ColorRect, show_behind_parent → behind the Label text)
    │  └─ LoseScreen (Label) └─ Dim (ColorRect, show_behind_parent)
-   ├─ Submit / Undo / Reroll (Buttons)   ── "Submit" is the node's NAME; it ends the show
-   ├─ HUD Labels (ScoreName / Score / MultScore / Total / Goal / Turns / Rerolls / Preview)
-   ├─ Deck / Discard / Rules (Control + Button)
+   ├─ Reroll (Button), ScoreName / Score / Turns / Rerolls (Labels)
+   │    Submit / Undo, the HUD labels and Deck / Discard / Rules are NOT here: they live in
+   │    `UI/hud_container.tscn`, in the wall's `%Overlay` CanvasLayer (root viewport)
    ├─ Background (TextureRect, visible=false; if shown, paints over SceneRoot — no back layer)
    └─ LightLayer (ColorRect, full rect, mouse_filter=IGNORE)   [LAST SIBLING → over EVERYTHING]
        · the spotlight dim, circles and beams — one screen-space surface, NOT scrolling
        · ⚠ ITS POSITION IS A CONTRACT, not a convenience. The dim exempts NOTHING — props,
-         score popups, the focus panel and the HUD all dim, and so does the card glow, which is
+         score popups and this tree's labels all dim (the HUD is outside it), and so does the card glow, which is
          the entire mechanism by which a glow reads only inside its circle or beam. MOVING IT
          EARLIER SILENTLY UN-DIMS whatever now draws after it, with no error and no failing
          test — the symptom is "that one thing never goes dark".
@@ -226,7 +225,7 @@ it is only surprising if you expect one card layer.
   Void-exiting split props keep their back half pinned until the exit frees both.
 - **Card reactions** (`_update_reactions`): `anim_jump` / `anim_spin_*` — offset/rotation only,
   **no order change, no reparent**.
-- **Focus / hover**: the inspector panel (OverlayLayer child) is shown/pinned; no card order change.
+- **Focus / hover**: publishes the card to the sidebar (`HudContainer`); no card order change.
 - **Game over** (`_on_show_resolved`): Win/Lose Labels shown (above PlayArea by tree order);
   dismissed on `_on_show_unresolved`.
 

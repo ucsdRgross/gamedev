@@ -126,7 +126,7 @@ only the board; the HUD stays live. Consequence: **fame banks at Continue** (`ex
 `RunManager.record_win`), not at the outcome screen — the win stays undoable until committed,
 and resuming at the win screen can't double-bank.
 
-**Implementation state:** `Game`/`GameData` with draw deck, discard, the Entrance (still backed
+**Implementation state:** `Game`/`GameData` with per-slot Entrance stocks, discard, the Entrance (still backed
 by the old `upper_zone` array) and `grids`; `SkillGridAllotment` sizes the grid count to the
 deck and adds the `SkillGridCreator` cards that build them; `SkillLineDetector` answers every
 board mutation and scores what completed. ✅
@@ -288,7 +288,7 @@ alternative goal-manipulation effects. 💭
 - A card has: **suit, rank** (the pips), a **stamp slot**, a **skill slot**, and a
   **card type**.
 - Cards can have 1 parent and 1 child card — a stack.
-- There exists a board of one or more **grids**, an Entrance, a draw deck, a discard deck,
+- There exists a board of one or more **grids**, an Entrance, per-slot Entrance stocks, a discard deck,
   and a rule-set deck.
 - On game creation the rule-set deck is parsed to decide board layout — that is literally how
   the grids come to exist (`SkillGridAllotment` sizes the count, `SkillGridCreator` builds

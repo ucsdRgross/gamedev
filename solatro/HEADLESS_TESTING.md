@@ -46,7 +46,7 @@ pattern `@logic` to it; any other `--filter PATTERN` is a case-insensitive subst
 NODE name (`--filter Wall TestBoard`). Only `--logic` runs headless.
 
 ⚠ **NEITHER THE TIER NOR A FILTER IS A VERDICT.** A subset voids the suite-count detector (§0a), so
-the banner reads `FILTERED n of 45 SUITES` and the wrapper refuses a clean verdict. The full
+the banner reads `FILTERED n of <total> SUITES` and the wrapper refuses a clean verdict. The full
 unfiltered windowed run is the only green.
 
 Deliberately out of the tier, each measured headless:
@@ -164,7 +164,7 @@ pass. ⚠ **Re-derive the expected count, never trust a doc for it:**
 
 ⚠ **A FILTERED RUN VOIDS THAT DETECTOR BY CONSTRUCTION** — it removes suites on purpose, so the
 count proves nothing about the ones it dropped. That is why `--filter` / `--logic` print
-`FILTERED n of 45` at both ends of the log and the wrapper prints no clean verdict.
+`FILTERED n of <total>` at both ends of the log and the wrapper prints no clean verdict.
 
 ⚠ **BOUNDING ALSO COVERS A SOLO SUITE SCENE**, which never exits at all: `finish()` only emits
 `suite_finished`, and `get_tree().quit()` lives in `all_tests.gd`. A lone suite also has NO
