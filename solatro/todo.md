@@ -140,6 +140,18 @@ written when a run stalls or fails.
   - `GAP-008` — the motion a placement needs dismisses a mouse click-lock. Recommends exempting a click-locked card from the cell-leave dismissal.
   - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
   - `GAP-010` — what is `Q135`=(b)'s "way back to the pack" from a preview card? Recommends an explicit Back control; (a) ships meanwhile.
+- ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
+  - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
+  - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?
+  - Escape → Back → re-entering the game leaves nothing armed until a placement, undo or processing edge.
+  - The map's name popup keeps its name after the pointer leaves the dot, and is not clamped at the picture's top edge, where the name clips off.
+  - A resume after "undo the automatic end, then quit" lands on the outcome again.
+  - Opening any viewer hides the HUD stack, so a mouse player cannot swap Deck → Discard without closing first.
+  - `Q102b`, `Q102c` and `Q106b` in `design/sidebar/` are unanswered; their branches were skipped.
+  - Back mid-show, then travel: the new node is consumed with no show, and the frozen old show banks its win against it (pre-existing).
+  - Preview-card FX art below the description's fold escapes its scroll clip while the card frames are clipped (pre-existing).
+  - WALL FOCUS, WALL RENDER and WALL INPUT still run their Main fixtures unpaused, because they run beside the ordering chain.
+
 Everything below is unscheduled backlog.
 
 ## Visual effects

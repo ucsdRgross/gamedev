@@ -115,12 +115,10 @@ failed. **Quote the denominator** — `2 failures in 16 runs`, never "about one 
 
 ## Snapshot scenes — run them and READ the PNGs
 
-`Tests/Visual/fx_snapshot.tscn` (shader FX), `prop_art_snapshot.tscn` (prop and pip art) and
-`wall_editor_snapshot.tscn` (the picture-wall tool) all `quit()` themselves and run WINDOWED.
-Output goes to `$OUT_DIR` or `%APPDATA%\Godot\app_userdata\Solatro\*_snapshots\` — read them with the
-Read tool; crop and upscale with PIL when too small to judge. `cd` to the REPO ROOT first
-(`--path solatro` is relative). Prefer making the harness measure its own capture over eyeballing
-pixel positions. See [[verify-visuals-by-eye]].
+Snapshot scenes run WINDOWED and quit themselves; solatro's list and output paths:
+`solatro/HEADLESS_TESTING.md` §0b. Read the PNGs with the Read tool; crop and upscale with PIL when
+too small to judge. Prefer making the harness measure its own capture over eyeballing pixel
+positions. See [[verify-visuals-by-eye]].
 
 ## Testing an EDITOR-ONLY claim without opening the GUI
 
@@ -154,14 +152,9 @@ of reality.
 
 - **Scene filename ≠ script name** — `test_scoring.gd`'s scene is `test_score.tscn`. Glob
   `Tests/**/<name>.tscn` before invoking a single suite.
-- **A stale `.godot/` class cache turns a whole run into noise** — hundreds of `Could not find type
-  X`, every suite failing for no real reason. Two ways in: adding a `class_name`, and **checking out
-  a branch on the OTHER machine for the first time** (routine here). Fix: delete `.godot/`, then
-  `--headless --path . --import` **twice** — the first pass still reports errors while building the
-  cache. Do this BEFORE trusting any baseline.
-- `test_ui_props.gd` backs up `settings.tres` (which saves on EVERY change) and waits for all sibling
-  suites except E2E — E2E waits for everyone, so waiting on it deadlocks.
-- Solatro's save-backup rule for disk tests and the SmoothScroll mouse-filter pre-claim:
-  `solatro/ARCHITECTURE_REVIEW.md` §7 and §4b.
+- **A stale `.godot/` class cache turns a whole run into noise** — fix it before trusting any
+  baseline: `solatro/HEADLESS_TESTING.md` §2.
+- Solatro's suite ordering (the deadlock rule), settings and save backups, and the SmoothScroll
+  mouse-filter pre-claim: `solatro/ARCHITECTURE_REVIEW.md` §7 and §4b.
 
 See [[godot-editor-disk-sync]] and [[architecture-map]].

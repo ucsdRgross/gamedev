@@ -13,9 +13,8 @@ When the owner's Godot editor is open while you edit project files, three things
 2. Earlier file-read context can be **stale vs disk** (localization.csv showed
    `Flush (%s)` in old context but disk had `Flush %s`), and the running game can use
    **stale imported resources** (`.translation` from `TranslationServer`, not the CSV).
-3. **A `--import` run is itself a writer.** It rewrites tracked files —
-   `Locale/localization.en.translation` and two `~`-prefixed GDExtension DLLs. Check
-   `git status` afterwards and revert them, or they land in the owner's next commit.
+3. **A `--import` run is itself a writer** — solatro's list of the tracked files it rewrites:
+   `solatro/HEADLESS_TESTING.md` §2.
 
 **Why:** the live editor is a second writer/runtime you don't control.
 

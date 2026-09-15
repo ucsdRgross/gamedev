@@ -53,6 +53,9 @@ existing; if you delete one, the feature silently stops existing and its unit te
 | `Wall.back_requested` etc. | connected in `Main._ready()` | the key/button does nothing at all |
 | `WallTransition.input_unlocked` | connected to `wall.unlock_input` in `Main._focus_picture()` | input stays locked until landing, defeating C13 |
 | `Map.info_hovered` | connected in `Main._ready()` | the map's hover reaches no container |
+| `HudContainer.connect_for_screen()` | every HUD-button and inset connection in `GameView`, `Map`, `Menu` | a hand-wired connection is never dropped when its screen leaves the tree, and the next show's buttons and resize call into a freed screen |
+| `HudContainer.host_viewer()` | `GameView._open_deck_viewer()`, `Map` (deck and booster viewers), `Menu` via the picker's `viewer_opened` | the viewer publishes nothing, sits under the container, never re-fits, and its close never returns to the lock |
+| `MapNamePopup._place_above_node()` | `MapNamePopup._process()`, enabled by `show_above()`, against `WorldMapController.node_screen_rect` | the name floats where the hover left it while the camera travels, pans, zooms or resizes |
 | `Wall.apply_layout()` | `Main._build_pictures()` **and** `_repack_wall()`/`_on_window_resized()` | `_placement_order` stays empty, so all nine `wall_jump_N` keys are inert until something else happens to re-pack |
 
 **Every overlay control is `FOCUS_NONE`.** A `Control` holding GUI focus eats `ui_up/down/left/right`
@@ -92,9 +95,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   the camera's** — props and animations are authored to leave the board's edges, and a clip there
   culls them. So a grid that is off-window is off-CAMERA, not culled, and a card flying between
   grids is never cut.
-- ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `GameView`
-  publishes the HUD's width to `PlayArea.board_inset_left` and the board centres in what is
-  LEFT of the screen, not on the screen. **The board's WINDOW is what moves, not the content** —
+- ⚠ **The HUD follows the camera, and that is a decision, not an accident.** `HudContainer` is in
+  window px; `GameView._publish_board_inset` converts it with `WallPicture.inset_beside` — the
+  container's px over `WallPicture.cover_scale` — into `PlayArea.board_inset_left`, or
+  `board_inset_top` in the top case (`HudContainer.container_is_top`: the space left beside a side
+  container is taller than wide). The board centres in what is LEFT of the screen, not on the
+  screen. **The board's WINDOW is what moves, not the content** —
   insetting the scroller's own left edge makes every centring the board already does (the focused
   aim, the resting position, the removal re-centre) land in the post-HUD space for free.
   Offsetting the content instead leaves each of those to rediscover the inset separately.
@@ -131,10 +137,12 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
   advances there, and `await tween.finished` never returns: that is how a total soft-lock on the
   first Wall press shipped with a green suite. Any tween driving the wall goes on `%Camera2D`
   (PROCESS_MODE_ALWAYS), never on `Main`, which has no `process_mode`.
-- ⚠ **A test that unpauses cannot see any of that.** Most Wall-building suites do set
-  `get_tree().paused = false` right after `add_child()`, and must — they run alongside ~38 others
-  that need frames. But that workaround is a blind spot, not a rule: it is why the soft-lock,
-  `Pacing.wait()` and reduced motion's resting zoom all stayed invisible. **Anything asserting the
+- ⚠ **A test that unpauses cannot see any of that** — it is why the soft-lock, `Pacing.wait()` and
+  reduced motion's resting zoom all stayed invisible. Main-hosted fixtures keep the wall's pause by
+  mounting through `TestMainHost.mount`/`unmount`, which record `paused` before the mount and write
+  it back at teardown, so a later suite with no wall does not freeze. WALL FOCUS, WALL RENDER and
+  WALL INPUT still set `get_tree().paused = false`: they run beside the ordering chain, and a
+  leftover pause hangs them. **Anything asserting the
   PAUSE MODEL itself belongs in `TestWallPause`**, the one suite that runs dead last and alone and
   leaves the tree paused — and it must drive each move without `await`, polling `process_frame`
   under a bounded escape, so a move that never returns fails a check instead of hanging the run

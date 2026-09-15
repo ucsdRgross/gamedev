@@ -156,6 +156,14 @@ LeakSentinel (autoload, debug) . quiescent-moment card census (see §6).
 `validate()`'s I4 check compares BOTH against an independent rescan — that is what catches a
 path which bumped `revision` without finishing the mutation that keeps them in step.
 
+**Entrance stocks.** Each Entrance slot draws from its own stock, `GridData.stocks`, carried on the
+Entrance zone so the slot set and the stock set cannot disagree. `Game.deal_stocks()` deals them
+round-robin from `add_deck`'s one shuffle, with no RNG of its own, so a resume replays identically.
+`Game.rebalance_stocks()` runs when an Entrance column is added or removed: only BOTTOM cards
+move, so no slot's top ever changes. `Board.remove_column` parks a removed slot's stock at the end
+for that rebalance to pour into the survivors. `CardEffectApi.draw_deck()` is only the union view
+(`GameData.all_stock_cards()`), never a pile to draw from.
+
 
 ### 1.3 Key data flows
 
@@ -179,6 +187,13 @@ path which bumped `revision` without finishing the mutation that keeps them in s
   heights.
 - **Next:** `run_all_mods("on_next")` → `TypeInput.on_next` per Entrance column, then
   each slot refills from its own stock (`draw_card(slot)`).
+- **The flip.** A non-empty stock shows exactly ONE face-down card beneath the revealed card
+  (`CardVisual.face_down`, drawn as `CARD_BACK_FRAME`, frame 3); no other stock card has a visual.
+  At a refill it flips up in place, each slot later by `entrance_flip_stagger` × `get_delay()`.
+  Nothing flies in from the Deck. Hovering or pressing the face-down card describes the SLOT (cards
+  left, `PlayArea._publish_stock_info`), never the hidden card. The Deck button's viewer shows the
+  stocks' union sorted by suit then rank (`GameView.sorted_stock_union`), so neither slot nor draw
+  order leaks.
 - **End:** `Game.end_show()` sets `state.show_ended`, bumps `revision` so the End leaves an
   undo snapshot to rewind to, and resolves. **There is no Submit, no act count and no
   end-of-show payout.** Fame banks in `exit_show()` (Continue), not at the outcome screen (§5).
@@ -254,6 +269,9 @@ history stored in forward orientation).
   out from under the other. ⚠ It must stay SEPARATE from `_saver_mutex`, which guards the pending
   payload and must never be held across disk IO, or `request_save` would block on the very write
   it exists to avoid. All three call sites release the payload lock before entering the write.
+- A save older than per-slot stocks is refused, not migrated: `RunState.stock_format` below
+  `STOCK_FORMAT` drops the in-flight show (`RunManager._drop_unrebuildable_show`); the run survives
+  and Continue restarts that node.
 - `has_save()` gates on `run.tres` ALONE — the `map/` bake is a regenerable deterministic
   cache of `world_seed`; requiring it makes Continue fragile.
 - `BigNumber` is RefCounted (not serializable): score arrays persist as parallel
@@ -286,8 +304,8 @@ history stored in forward orientation).
 - **Multi-modal input is a hard project rule:** every UI works with mouse + keyboard +
   controller; modals steal focus and restore on close; `ui_cancel` closes; selectable
   elements are focus stops.
-- Hover and focus publish the card to the sidebar (`HudContainer`); native tooltips were removed
-  deliberately (they blocked clicks).
+- Hover and focus publish to the sidebar (below); native tooltips were removed deliberately
+  (they blocked clicks).
 - Board draw order is 100% structural (no z_index anywhere) — see LAYERING.md.
 - ⚠️ **Board controls are POOLED per slot** (`PlayArea.set_card_zone` creates/frees Controls
   per column/row index and `_bind_slot` rebinds them to whatever CardData now occupies the
@@ -301,6 +319,73 @@ history stored in forward orientation).
   UI placement to rebuild across (`design/poker-patience/gaps/GAP-008.md`). The rule above
   stands regardless; it is the guard that is missing, not the reason for it. Game also tells the view to `release_grab()`
   before an auto-Next, so the board never mutates under a live grab in the first place.
+
+#### The sidebar and board input
+
+- **One container.** `HudContainer` is the first child of the wall's root `%Overlay`, so it draws
+  beneath Back/Forward/Wall. It shows the HUD or a `DescriptionPanel`, never both.
+- **Per-screen memory** (the shown entry, the lock) is keyed by screen id (`GAME_SCREEN`,
+  `MAP_SCREEN`, `MENU_SCREEN`) and ended by `release_screen` where the screen's CONTENT ends:
+  `GameView` leaving the tree, `Map.start_run`, the deck picker leaving the tree. `Main` reuses one
+  id per screen, so memory nobody releases is inherited by the next show or run.
+  - `connect_for_screen` connects the screen's `tree_exiting` to `disconnect_for_screen`; no screen
+    writes its own `_exit_tree` pair.
+  - `dismiss_description()` is the one dismissal site and forgets the screen's entry: the X,
+    cancel, a bare-board press, a landed placement, the wall editor's lock toggle. `show_hud()`
+    keeps the memory, so it survives a cascade.
+  - The processing rule (HUD only, publications dropped) applies only while `GAME_SCREEN` shows.
+  - `host_viewer` wires every Deck/Choice viewer: relay, `highlight_cleared` → `return_to_lock`,
+    fit, and re-fit on `container_rect_changed`. It republishes only while a description shows — a
+    dismissal is the player's act, a resize is not.
+- **Held versus following** are two flags on `CardVisual`: `held` lifts the card in its slot,
+  `following` rides the pointer. Any mouse motion, including one emulated from a finger, latches
+  `following` (`PlayArea.follow_cards`).
+- **Arming is a pickup.** `PlayArea.arm_leftmost` makes the same `try_grab` → `grab_cards` calls a
+  click makes; nothing stores the arm (`armed_slot` re-derives it). `GameView.arm_after_placement()`
+  is the one re-arm site, called at the end of `Game.place_card_in_grid`, so the live and replay
+  routes share it.
+- **Click versus drag** is decided at the RELEASE: travel past `card_drag_threshold` × the pressed
+  card's width as drawn at the board's zoom is a drag. A drag places only when its card is in
+  `selected_cards`; one from a card no rule picked up places nothing (`_consume_as_card_release`).
+- **Tap** is a double press inside `card_tap_window_ms`, paired by the board itself (Godot never
+  marks a double tap on a Windows touchscreen). `_close_a_pair` is the one closing site: a closed
+  pair, tapped or refused, eats its own release. A tap after a placement is refused — the committed
+  depth moved since the opening press.
+- **Cancel.** The second mouse button takes one step per press (`_cancel_one_step`: the held card,
+  then the description) and is consumed. `ui_cancel` does both (`_cancel_everything`) and is NOT
+  consumed, so the wall's Back runs on the same press. Both end the press through `_end_the_gesture`.
+- **Pad focus.** Godot's focus search never crosses a viewport. A key/pad accept on the exit X,
+  read at its `gui_input` because a mouse click focuses the X too, emits `exit_accepted`, and
+  `PlayArea.return_focus_to_board` rests focus on the described card (the armed card if that
+  control is gone) without re-publishing.
+- **`GestureMetrics`** is the one home for gesture thresholds and touch-target size, each a
+  fraction of the thing touched. No DPI and no millimetres anywhere: the reported density is wrong
+  on multi-monitor Windows and on Android.
+
+| Knob (`player_settings.gd`) | Default | What it is |
+|---|---|---|
+| `container_size_fraction` | 0.25 | the container's share of the window's near axis |
+| `container_size_max_px` | 640.0 | pixel cap on that share |
+| `sidebar_scroll_pages_per_second` | 1.0 | stick scroll at full deflection |
+| `touch_target_fraction` | 0.06 | minimum overlay control size, of the window's smaller side |
+| `card_drag_threshold` | 0.25 | drag travel, of the card's drawn width |
+| `card_tap_window_ms` | 300.0 | second press pairs into a tap within this |
+| `entrance_flip_stagger` | 0.15 | per-slot refill flip delay, of `get_delay()` (§1.3) |
+
+Gotchas, each measured on this code:
+
+- ⚠ **Godot dispatches a touch's emulated mouse form (`device == -1`) BEFORE the touch.** A touch
+  reader that trusts state the mouse form sets reads it already re-armed — hence the touch reader's
+  own `_touch_press_depth`.
+- ⚠ **Everything runs in the LOGICAL canvas** (base 1152×648, `canvas_items` + `expand`): every
+  16:9 window is the same layout scaled; only non-16:9 windows change it.
+- ⚠ **Two coordinate spaces.** The HUD lives in the root viewport, the board inside a picture's
+  SubViewport. A position crosses only through `WallPicture.local_rect_beside`, `cover_scale`,
+  `inset_beside` or `GameView.pile_center`; four wrong-space defects shipped before that rule.
+- ⚠ **Godot's duplicate-connection check ignores bound arguments**: one method bound twice with
+  different arguments raises "already connected", so `host_viewer`'s per-viewer re-fit is a lambda.
+- ⚠ **A `queue_free`d child still counts toward layout until the frame ends**, so
+  `DescriptionPanel` `remove_child`s the previous visual before freeing it.
 
 ---
 
@@ -677,13 +762,11 @@ never serialized); a quit mid-act replays the act from the pre-act board.
    have a real-seconds floor** (`PropLayer.MIN_FLOURISH_SECS`): nothing awaits them, and at
    `base_delay = 0.1` a 0.12 fraction is 12 ms — under one frame.
 7. Props with `ticks_per_slot > 1` move CONTINUOUSLY via `span_ticks`/`t_goal` ratchet.
-8. The focus inspector panel is a permanent prop_layer child — keep it
-   `MOUSE_FILTER_IGNORE`/`FOCUS_NONE` + the addon meta; never reparent under controls.
-9. The spin reaction is an INFINITE tween — never `custom_step(INF)` it; its revolution
+8. The spin reaction is an INFINITE tween — never `custom_step(INF)` it; its revolution
    time floors get_delay() at 0.2s (zero-duration looping tweens trip Godot's guard).
-10. Only talents jump/spin (reaction hooks key on `card.skill`); an all-talent suit
-    spawns nothing (suppression) — deck9/deck10 show zero hoops BY CONSTRUCTION.
-11. **The hoop rides ONE CARD-JUMP above its slot centre** (`PropVisual.rides_card_jump` →
+9. Only talents jump/spin (reaction hooks key on `card.skill`); an all-talent suit
+   spawns nothing (suppression) — deck9/deck10 show zero hoops BY CONSTRUCTION.
+10. **The hoop rides ONE CARD-JUMP above its slot centre** (`PropVisual.rides_card_jump` →
     `CardVisual.card_jump_rise_play`, applied through the live lane offset), so a card that
     jumps lands its centre exactly in the ring — the card jumps INTO the hoop (owner
    ). `CardVisual.CARD_JUMP_RISE` is the ONE source of that number: `anim_jump`
@@ -1448,6 +1531,17 @@ returns early when the revision has not moved, so without the bump the End would
 snapshot and there would be nothing for the game-over undo to rewind to. The state is fully
 consistent at that point, so the bump is safe.
 
+**The automatic end.** A player's placement that meets the goal checks it after `on_card_placed`
+and before `refill_entrance_if_due()`, so an ended show never refills. It commits first (the grid
+commitment lift and its own `save_state()`), then `_end_show_on_goal` holds for
+`spotlight_hold_fraction` × `get_delay()` with the board LOCKED, then `end_show()`. An undo or a
+second placement inside an unlocked hold rewound the very win about to resolve. Resume re-fires the
+check (`_end_show_if_goal_met`) when the goal is met and no outcome was saved, after any replay.
+⚠ **`Game.undo()` releases `processing` as its LAST statement**, after the history pop: the false
+edge arms the Entrance, and before the pop it armed a card of the discarded state that the next
+placement duplicated into the run deck. End starts hidden; `GameView._refresh_end_reveal` shows it
+when every stock is empty OR no cell is empty (`stocks_are_empty`, `grids_are_full`).
+
 **Pending-action replay:** `_begin_action` marks the run with the action about to resolve, so a
 quit mid-resolution resumes by replaying it from the pre-action board. A **placement** needs two
 more things than a button press does — `_begin_placement(slot, coord)` records the Entrance
@@ -1586,7 +1680,9 @@ Conventions (formerly UNIT_TESTS_PLAN):
   `await_siblings_except` — waiting is a directed dependency; excludes must stay
   consistent across ALL suites or the run hangs. The canonical chain, each waiter excluding
   every suite AFTER it: **<engine/map suites: no wait> → INTERACTION → UI PROPS → VISUAL
-  LAYERS → GRID VIEW → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE.** WALL PAUSE
+  LAYERS → GRID LAYOUT → GRID VIEW → SIDEBAR → DRAG PLACE → SETTINGS RANGE → E2E RUN → LEAK
+  CANARY → WALL PAUSE.** UI PROPS, for one, parks `settings.tres` (`backup_real_settings()`) and
+  excludes E2E RUN, which waits on it, so waiting back would deadlock. WALL PAUSE
   is the permanent tail: it builds a real `Wall` whose `_ready()` pauses the tree and never
   clears it, so nothing may run after it — it excludes nothing and everyone before it
   excludes it by name. A new waiting suite needs the same exclude treatment everywhere.
@@ -1639,8 +1735,7 @@ Conventions (formerly UNIT_TESTS_PLAN):
   set their own absolute delays (they need real frames) and call `apply_test_speed()` when done.
 - ⚠ **THE RUN'S LENGTH IS A SERIALIZED CHAIN, not the sum of the suites** — they run concurrently,
   so `all_tests.gd::_ready` ranks every suite by FINISH time and the last finisher is
-  what you wait on. The chain is INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW
-  → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE; everything else sits in a flat 42–55 s
+  what you wait on. The chain is the DEADLOCK RULE's above; everything else sits in a flat 42–55 s
   plateau of startup plus per-frame awaits, PIXELS included — it is not a cost.
 - **Open for the owner:** GRID VIEW and GRID LAYOUT still pay `grid_pan_duration` (0.35 s,
   `player_settings.gd`), the one animation knob independent of `base_delay`, so the test pacing does

@@ -219,6 +219,15 @@ py solatro/Tools/snapshot_diff.py save    # stash the panels you trust
 py solatro/Tools/snapshot_diff.py diff    # re-run the scenes first, then prove nothing moved
 ```
 
+Two more write panels the diff does not cover — read them by eye:
+
+```bash
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/sidebar_snapshot.tscn      # -> sidebar_snapshot/
+"$GODOT_CONSOLE" --path solatro res://Tests/Visual/wall_editor_snapshot.tscn  # -> wall_editor_snapshot/
+```
+
+All of them `quit()` themselves. Run from the REPO ROOT (`--path solatro` is relative).
+
 **For a change that must NOT alter the picture, the diff is the instrument and your eye is not.**
 The reverse also holds: for a change that is supposed to look different, the diff says nothing.
 
@@ -310,12 +319,18 @@ and then produces nothing, parked on the first GPU `flush()`
 ## 2. Stale global class cache ("Could not find type X" cascades)
 
 `.godot/global_script_class_cache.cfg` goes stale when class-bearing scripts change outside the
-editor (agent edits, re-copying the vendored addon). Symptoms range from silent suite skips to hard
-parse-error cascades ("Identifier X not declared"). Fix FIRST, before debugging code:
+editor (agent edits, adding a `class_name`, re-copying the vendored addon, a branch's first
+checkout on another machine). Symptoms range from silent suite skips to hundreds of `Could not find
+type X` failures. Fix FIRST, before trusting any baseline: delete `.godot/`, then run
 
     Godot --headless --path <project> --import
 
-(`--import` itself exits cleanly headless.)
+**twice** — the first pass still reports errors while it builds the cache. (`--import` itself exits
+cleanly headless.)
+
+⚠ **`--import` is a writer.** It rewrites tracked files: `Locale/localization.en.translation`,
+`design/effect-review/*.translation` and their `.csv.import`. Check `git status` after it and put
+them back, or they land in the next commit.
 
 ## 3. Headless window size is (0,0)
 
