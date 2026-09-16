@@ -104,7 +104,7 @@
   shown -- it publishes, and the view relays in both directions (B5, Q56=a, PLAN 2).
 - S6: new names NAMES.md does not list -- `PlayArea.locked_data`, `PlayArea._refresh_card_marking()`,
   `PlayArea._publish_info()`, `GameView._on_description_dismissed()`,
-  `HudContainer._description_size()`, `HudContainer._place_exit_button()`, the `ExitLayer`/`%ExitX`
+  `HudContainer._description_size()`, `HudContainer._place_panel_controls()`, the `ExitLayer`/`%ExitX`
   nodes, and `DescriptionPanel.resize_to()` (S5's `_resize_to`, now also called on a resize).
 - S6: Q58=c's marking is `CardVisual.focused`, applied by ONE rule -- a card is marked while it holds
   the board focus OR while the sidebar is locked to it -- and re-applied at the end of
@@ -897,7 +897,7 @@
   top, and both contents fit to the new `HudContainer._content_size()` (was `_description_size()`)
   through the new `_fit_content()`.
 - Close fix E: `DescriptionPanel`'s `%ExitColumn` is an empty control closing the name's row, widened
-  by `HudContainer._place_exit_button()` to the X's touch target, so the wrapped name stops before the
+  by `HudContainer._place_panel_controls()` to the X's touch target, so the wrapped name stops before the
   X's column while the body keeps the full width.
 - Close fix E: `GameHudMargin` grows DOWN, not both ways: a band shorter than the HUD (measured at a
   1280x1000 window at the shipped `container_size_fraction`: 225 px band, HUD 30 px taller than the
@@ -914,3 +914,13 @@
   the container's width at the reference aspect. Crossing it on a window wider than 2560 px takes
   the container from `0.25 * window.x` straight to 640 px -- at 3840 px wide, 960 -> 640, and the
   inset 394 -> 262.7. It is continuous only at 2560 px wide, where the fraction equals the cap.
+- `GAP-010`=c, what ENDS a picked preview card besides the way back: nothing new was invented for
+  it. Hovering another map node, leaving the screen and the exit X already replace what shows, so
+  each of the three funnels through `HudContainer.return_to_pack()` (or clears `_pack_entry` in
+  `_swap_to_hud()`) before doing what it always did, which is what keeps the detached grid owned.
+  The map publishes NOTHING on un-hover (K6), so a picked card simply stays up when the pointer
+  leaves the pack's dot -- the same persistence the pack itself has.
+- `GAP-010`=c, the way back's face and place, which PLAN 2 leaves to the implementer: the glyph `<`
+  with a localised tooltip, grown to the same touch target as the exit X and parked at the head of
+  the name's row. It scrolls with the entry, as the name does; every entry opens at its own top, so
+  it is on screen the moment a picked card is shown.

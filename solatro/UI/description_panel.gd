@@ -8,12 +8,25 @@ extends Control
 @onready var _grid_slot : VBoxContainer = %GridSlot
 @onready var _title_label : Label = %Title
 @onready var _body_label : Label = %Body
+@onready var _back_button : Button = %Back
 
 ## Godot's own mouse wheel steps an eighth of a page per notch, so a key or a stick meaning "a nudge" moves by the same step.
 const WHEEL_STEP_PAGES := 0.125
 
+## A card listed in the mounted grid was pointed at, focused or tapped -- what the sidebar shows switches to that card.
+signal preview_card_picked(data: CardData, card_px: Vector2)
+
 ## The entry on screen, or null before the first `show_entry()`. Public so a caller can check WHICH entry shows, by identity.
 var current_entry : InfoEntry = null
+
+# HOW FAR THE PANEL IS SCROLLED, so a caller taking an entry away can put it back where its reader
+# left it. ⚠ The bar's range is the LAYOUT's answer and the layout is a frame away, so the restore
+# writes the content height `resize_to()` already computed -- what the next sort writes here anyway.
+var scroll_position : int:
+	get: return _scroll.scroll_vertical
+	set(value):
+		_scroll.get_v_scroll_bar().max_value = _content.custom_minimum_size.y
+		_scroll.scroll_vertical = value
 
 ## Fills the panel from `entry` and lays it out inside `panel_size` -- `HudContainer` passes its own `container_rect()`'s size.
 func show_entry(entry: InfoEntry, panel_size: Vector2) -> void:
@@ -53,7 +66,9 @@ func resize_preview(card_px: Vector2) -> void:
 func detach_entry() -> void:
 	if current_entry == null: return
 	var visual := current_entry.visual
-	if visual: _slot_for(visual).remove_child(visual)
+	if visual:
+		_unmake_grid_pickable(visual)
+		_slot_for(visual).remove_child(visual)
 	current_entry = null
 
 # ⚠ THE PANEL OWNS WHATEVER IS MOUNTED and frees it when another entry replaces it. A caller that
@@ -67,6 +82,7 @@ func _mount_visual(visual: Node) -> void:
 	if visual == null: return
 	_slot_for(visual).add_child(visual)
 	_make_still(visual)
+	_make_grid_pickable(visual)
 
 # ⚠ A WRAPPING GRID OF MANY NEEDS THE WHOLE WIDTH, so it cannot sit in the top row beside the
 # name: a flowing visual goes below the body instead, and scrolls with it.
@@ -86,6 +102,31 @@ func _make_still(node: Node) -> void:
 	for child : Node in node.get_children():
 		_make_still(child)
 
+# ⚠ THE ONE EXCEPTION TO THE STILLNESS ABOVE: a GRID IS A LIST TO PICK FROM, so every card it lists
+# takes the pointer, the pad and a finger back. What is drawn inside one stays inert, and a visual
+# that is not a grid stays inert whole.
+func _make_grid_pickable(visual: Node) -> void:
+	for card : ControlCard in _listed_cards(visual):
+		card.focus_mode = Control.FOCUS_ALL
+		card.mouse_filter = Control.MOUSE_FILTER_STOP
+		card.mouse_entered.connect(_pick_preview_card.bind(card))
+		card.focus_entered.connect(_pick_preview_card.bind(card))
+
+# A DETACHED GRID IS MOUNTED AGAIN when the panel is taken back to it, and Godot refuses a second
+# identical connection, so the picks leave with the grid.
+func _unmake_grid_pickable(visual: Node) -> void:
+	for card : ControlCard in _listed_cards(visual):
+		card.mouse_entered.disconnect(_pick_preview_card.bind(card))
+		card.focus_entered.disconnect(_pick_preview_card.bind(card))
+
+## The cards a mounted grid lists -- a visual that is not a grid lists none.
+func _listed_cards(visual: Node) -> Array[Node]:
+	if visual is not FlowContainer: return []
+	return visual.find_children("*", "ControlCard", true, false)
+
+func _pick_preview_card(card: ControlCard) -> void:
+	preview_card_picked.emit(card.child.data, card.child.card_size)
+
 # The CONTENT's height is computed synchronously, so a caller reading straight after `show_entry()`
 # never sees the last entry's layout. ⚠ THE SCROLL'S SIDEWAYS BAR IS NEVER SHOWN, NOT DISABLED: a
 # disabled one makes the grid's width the scroll's minimum, which shoves it left off the panel.
@@ -99,10 +140,13 @@ func resize_to(panel_size: Vector2) -> void:
 	_content.size = Vector2(panel_size.x, content_h)
 	_content.custom_minimum_size.y = content_h
 
-# The name sits BESIDE the visual, so that row is as tall as the taller of the two. An entry with no
-# visual of its own leaves the slot empty, and a flowing one sits below the row instead.
+# The name sits BESIDE the visual and the way back, so that row is as tall as the tallest of them.
+# An entry with no visual of its own leaves the slot empty, a way back that is down measures
+# nothing, and a flowing visual sits below the row instead.
 func _top_row_height(width: float) -> float:
-	return maxf(_visual_slot.get_combined_minimum_size().y, _text_height(_title_label, width))
+	var flanking := maxf(_visual_slot.get_combined_minimum_size().y,
+			_back_button.get_combined_minimum_size().y if _back_button.visible else 0.0)
+	return maxf(flanking, _text_height(_title_label, width))
 
 ## How tall `label`'s text wraps to at `width`, from font metrics -- Godot's own layout pass has not run yet.
 static func _text_height(label: Label, width: float) -> float:

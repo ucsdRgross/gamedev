@@ -23,6 +23,14 @@ size_flags_horizontal = 3
 [node name="TopRow" type="HBoxContainer" parent="Scroll/Content"]
 layout_mode = 2
 
+[node name="Back" type="Button" parent="Scroll/Content/TopRow"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 0
+focus_mode = 0
+text = "<"
+
 [node name="VisualSlot" type="HBoxContainer" parent="Scroll/Content/TopRow"]
 unique_name_in_owner = true
 layout_mode = 2

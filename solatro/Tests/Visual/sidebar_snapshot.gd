@@ -10,6 +10,7 @@ const CROPPED_SIDE_OUT_PATH := "user://sidebar_snapshot/game_hud_cropped_side.pn
 const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
+const MAP_PREVIEW_CARD_OUT_PATH := "user://sidebar_snapshot/map_preview_card.png"
 const MENU_OUT_PATH := "user://sidebar_snapshot/menu.png"
 const MENU_TOP_OUT_PATH := "user://sidebar_snapshot/menu_top.png"
 const MENU_INSPECT_OUT_PATH := "user://sidebar_snapshot/menu_inspect.png"
@@ -104,6 +105,8 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(MAP_POPUP_OUT_PATH)
+
+	await _capture_a_picked_preview_card(main)
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
 	await get_tree().process_frame
@@ -349,12 +352,9 @@ func _refill_the_whole_entrance(view: GameView) -> void:
 	settings.base_delay = old_delay
 	settings.entrance_flip_stagger = old_stagger
 
-# Waits for every Entrance card's own move tween to stop running -- the deal's spawn animation --
-# so the still is never caught mid-flight. Bounded, not a fixed sleep: it returns the instant the
-# board is actually settled.
-# A WINDOW CHANGE MOVES THE BOARD OVER SEVERAL FRAMES -- the scroller reaches its new resting x a
-# layout pass at a time, so a shot taken two frames after the resize photographs a transient in
-# which the Entrance has already moved and the cells have not.
+# ⚠ THE BOARD MOVES OVER SEVERAL FRAMES, both on a deal's spawn tweens and on a resize, where the
+# scroller reaches its new resting x a layout pass at a time -- a shot two frames after either
+# photographs a transient. Bounded, not a fixed sleep: it returns the instant the board is settled.
 func _await_board_settled(pa: PlayArea) -> void:
 	var last := INF
 	var still := 0
@@ -409,6 +409,38 @@ func _hover_the_wordiest_board_card(main: Main, view: GameView) -> void:
 			longest = words
 			wordiest = control
 	if wordiest: _push_pointer(viewport, wordiest.get_global_rect().get_center())
+
+# The pad's own way into a pack's grid: focusing a listed card switches the sidebar to that card and
+# puts the way back up, which is the state this still is of. Handed back to the pack afterwards, so
+# every still after it is of what it has always been of.
+func _capture_a_picked_preview_card(main: Main) -> void:
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var panel : DescriptionPanel = container.get_node(^"%DescriptionPanel")
+	var picked := _wordiest_listed_card(panel)
+	picked.grab_focus()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(MAP_PREVIEW_CARD_OUT_PATH)
+	print("SIDEBAR_SNAPSHOT map_preview_card title=\"%s\" body=\"%s\" describes=\"%s\" back_visible=%s"
+			% [(panel.get_node(^"%Title") as Label).text, (panel.get_node(^"%Body") as Label).text,
+			ControlCard.describe_card(picked.child.data),
+			(panel.get_node(^"%Back") as Button).visible])
+	container.return_to_pack()
+	await get_tree().process_frame
+
+# A pack lists plain cards as well as talented ones, and a plain one has nothing to say -- the still
+# is of what the switch SHOWS, so it is taken on the listed card with the most to say.
+func _wordiest_listed_card(panel: DescriptionPanel) -> ControlCard:
+	var wordiest : ControlCard = null
+	var longest := -1
+	for card : ControlCard in (panel.get_node(^"%GridSlot") as Control).find_children(
+			"*", "ControlCard", true, false):
+		var words := ControlCard.describe_card(card.child.data).length()
+		if words > longest:
+			longest = words
+			wordiest = card
+	return wordiest
 
 # The scroll still is worth looking at only if the body really overflows, which the window decides:
 # printed so the by-eye pass reads a number instead of squinting at a thin scrollbar.

@@ -48,7 +48,7 @@ This block, unchanged, goes into every document derived from this one.
 | `UI/hud_container.gd` | `HudContainer` | The ONE container. A `PanelContainer` that holds either the HUD or the description, never both (C1, C2, C5) |
 | `UI/hud_container.tscn` | — | Its scene. Owns the tab-free content swap and the exit X |
 | `UI/description_panel.gd` | `DescriptionPanel` | The description's contents: title, card visual, body, inside a `ScrollContainer` (C5, B2) |
-| `UI/description_panel.tscn` | — | Its scene |
+| `UI/description_panel.tscn` | — | Its scene. Owns `%Back`, the way back out of a preview card picked from a pack's grid, at the head of the name's row and up only while such a card shows (K9, `GAP-010`=c) |
 | `UI/map_name_popup.gd` | `MapNamePopup` | The small name-only popup above a map node (K2) |
 | `UI/map_name_popup.tscn` | — | Its scene |
 | `Scripts/gesture_metrics.gd` | `GestureMetrics` | The units model: `drag_threshold_px()` and `touch_target_px()` (M3, M7) |
@@ -93,6 +93,9 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `const MAP_SCREEN : StringName`, `const MENU_SCREEN : StringName` | The map's and the start menu's screen ids |
 | `HudContainer` | `signal active_screen_changed` | A different screen is showing |
 | `HudContainer` | `signal exit_accepted` | The X was accepted from keyboard or pad |
+| `HudContainer` | `func return_to_pack() -> void` | What `%Back` is wired to: re-shows the pack a preview card was picked out of, its own grid and its own scroll with it (K9, `GAP-010`=c) |
+| `DescriptionPanel` | `signal preview_card_picked(data: CardData, card_px: Vector2)` | A card listed in the mounted grid was pointed at, focused or tapped (K9, `Q135`=b, `Q137`=a) |
+| `DescriptionPanel` | `var scroll_position : int` | How far the panel is scrolled — the seam `return_to_pack()` restores the pack's own reading through |
 | `HudContainer` | `func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void` | Wires a `DeckViewer`/`ChoiceViewer` on any screen: relay, return to the lock, focus fallback, fit and re-fit (republishing only while a description shows) |
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
 | `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
@@ -163,6 +166,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | Key | Where |
 |---|---|
 | `SIDEBAR_CLOSE` | The exit X's tooltip (C16) |
+| `SIDEBAR_BACK` | `%Back`'s tooltip (K9, `GAP-010`=c) |
 | `SIDEBAR_STOCK_REMAINING` | The face-down stock's description: how many remain (I10) |
 
 ⚠ **Every user-facing string goes through `TRANSLATION.find` and this CSV — never a literal.**

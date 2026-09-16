@@ -201,7 +201,9 @@ func _ready() -> void:
 	await test_one_click_travels_and_leaving_keeps_the_last_nodes_description()
 	await test_the_first_tap_names_the_node_and_the_second_enters_it()
 	await test_a_finger_drag_pans_the_map()
-	await test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing()
+	await test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar()
+	await test_a_pack_preview_card_is_reachable_by_pad_and_by_finger()
+	await test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll()
 	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
@@ -4995,8 +4997,8 @@ func test_a_finger_drag_pans_the_map() -> void:
 	await _end_main_fixture()
 
 # A pack's possible contents are a LIST, so they wrap to the sidebar's width under the body rather
-# than squeezing into the name's row -- and they describe nothing, being part of what is described.
-func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> void:
+# than squeezing into the name's row -- and each listed card is a thing to point at in its own right.
+func test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar() -> void:
 	await _start_map_fixture()
 	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
 	await get_tree().process_frame
@@ -5020,11 +5022,93 @@ func test_a_packs_preview_cards_wrap_below_the_body_and_describe_nothing() -> vo
 			"S23.5: the grid wraps at the sidebar's own width",
 			"%s vs %s" % [flow.size.x, _panel.size.x])
 	var described : InfoEntry = _panel.current_entry
-	_hover_in(_booted_viewport, (cards[0] as Control).get_global_rect().get_center())
+	var pointed_at : ControlCard = cards[0] as ControlCard
+	_hover_in(_booted_viewport, pointed_at.get_global_rect().get_center())
 	await get_tree().process_frame
-	check(_panel.current_entry == described,
-			"S23.5: hovering a preview card does not replace the description it belongs to")
+	check(_panel.current_entry != described and _previewed_card() == pointed_at.child.data,
+			"S23.5: pointing at a preview card switches the sidebar to that card")
 	await _end_main_fixture()
+
+# Every way in reaches a listed preview card, not the pointer alone: a pad focuses one and a finger
+# taps one, and each switches the sidebar to the card it landed on.
+func test_a_pack_preview_card_is_reachable_by_pad_and_by_finger() -> void:
+	await _start_map_fixture()
+	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var pack : InfoEntry = _panel.current_entry
+	var listed := _preview_cards()
+	check(listed.size() > 1, "K9: the pack listed more than one preview card", str(listed.size()))
+	listed[0].grab_focus()
+	await get_tree().process_frame
+	check(_previewed_card() == listed[0].child.data,
+			"K9: focusing a preview card by pad switches the sidebar to that card")
+	check(await _press_back(), "K9: the way back is a real button a real click can press")
+	await get_tree().process_frame
+	check(_panel.current_entry == pack, "K9: ...and it returns the pack")
+	var tapped := _preview_cards()[1]
+	_push_finger_in(_booted_viewport, tapped.get_global_rect().get_center())
+	await get_tree().process_frame
+	check(_previewed_card() == tapped.child.data,
+			"K9: tapping a preview card with a finger switches the sidebar to that card")
+	await _end_main_fixture()
+
+# A pack's grid and how far into it you had read are the player's PLACE, so the way back out of a
+# picked card returns all three: the pack itself, the very grid it was showing, and the scroll.
+func test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll() -> void:
+	await _start_map_fixture()
+	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var pack : InfoEntry = _panel.current_entry
+	var grid := pack.visual
+	_panel.scroll_by_pages(1.0)
+	await get_tree().process_frame
+	var left_at := _panel_scroll(_panel).scroll_vertical
+	check(left_at > 0, "K9: the pack's own reading was scrolled off its top", str(left_at))
+	_preview_cards()[0].grab_focus()
+	await get_tree().process_frame
+	check(_panel.current_entry != pack, "K9: the picked card replaced the pack on the panel")
+	check(_back_controls().size() == 1,
+			"K9: exactly one way back is up while a picked card shows",
+			str(_back_controls().size()))
+	check(await _press_back(), "K9: the way back pressed")
+	await get_tree().process_frame
+	check(_panel.current_entry == pack, "K9: the way back returns the pack itself")
+	check(grid.get_parent() == _panel.get_node(^"%GridSlot"),
+			"K9: ...carrying the very grid it was showing, never a rebuilt one")
+	check(_panel_scroll(_panel).scroll_vertical == left_at,
+			"K9: ...scrolled where its reader left it",
+			"%d vs %d" % [_panel_scroll(_panel).scroll_vertical, left_at])
+	check(_back_controls().is_empty(), "K9: ...and the way back goes away with the card")
+	await _end_main_fixture()
+
+## The `CardData` the description is PREVIEWING beside its name, or null while it shows no card of its own.
+func _previewed_card() -> CardData:
+	for card : ControlCard in (_panel.get_node(^"%VisualSlot") as Control).find_children(
+			"*", "ControlCard", true, false):
+		return card.child.data
+	return null
+
+## The preview cards a pack's grid lists, in order -- empty while what shows is not a pack.
+func _preview_cards() -> Array[ControlCard]:
+	var out : Array[ControlCard] = []
+	for card : ControlCard in (_panel.get_node(^"%GridSlot") as Control).find_children(
+			"*", "ControlCard", true, false):
+		out.append(card)
+	return out
+
+## Every way back the panel is SHOWING, found the way a player finds one: by looking at the panel for it.
+func _back_controls() -> Array[Button]:
+	var out : Array[Button] = []
+	for button : Button in _panel.find_children("*", "Button", true, false):
+		if button.is_visible_in_tree() and button.tooltip_text == TRANSLATION.find(&"SIDEBAR_BACK"):
+			out.append(button)
+	return out
+
+# A REAL CLICK on whatever way back is up, looped over what the panel shows so a run with no way
+# back at all clicks nothing rather than dereferencing a null. Answers whether one pressed.
+func _press_back() -> bool:
+	var pressed := false
+	for back : Button in _back_controls():
+		if await _click_button(back, _booted_viewport): pressed = true
+	return pressed
 
 # The description is as tall as WHAT IT SHOWS NOW: a pack's grid left in the sum would give the
 # short entry after it a grid-sized blank to scroll through, and a pack after a pack two grids.
@@ -5154,18 +5238,27 @@ func _hover_a_map_node() -> WorldGraphNode:
 # A REAL finger: `device` stays at 0, which is what tells it from the mouse form the engine
 # synthesises from it.
 func _push_touch(at: Vector2, pressed: bool) -> void:
+	_push_touch_in(_map_viewport, at, pressed)
+
+# A finger pushed into whichever picture hosts what it lands on -- the sidebar's own controls are
+# not in the map's viewport, which `_push_touch()` pushes into.
+func _push_touch_in(viewport: Viewport, at: Vector2, pressed: bool) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.position = at
 	touch.pressed = pressed
-	_map_viewport.push_input(touch)
+	viewport.push_input(touch)
 
 # One finger tapping, in the engine's own dispatch order: it emits the mouse form it emulates from
 # a touch BEFORE the touch itself, at the press and again at the release.
 func _push_finger(at: Vector2) -> void:
-	_push_mouse_button(at, _map_viewport, true, -1)
-	_push_touch(at, true)
-	_push_mouse_button(at, _map_viewport, false, -1)
-	_push_touch(at, false)
+	_push_finger_in(_map_viewport, at)
+
+## The same tap, aimed at the viewport that hosts what the finger lands on.
+func _push_finger_in(viewport: SubViewport, at: Vector2) -> void:
+	_push_mouse_button(at, viewport, true, -1)
+	_push_touch_in(viewport, at, true)
+	_push_mouse_button(at, viewport, false, -1)
+	_push_touch_in(viewport, at, false)
 
 # One finger dragging, in the same order: a finger that travels arrives as an emulated motion
 # carrying `relative` (what the camera moves by) as well as its own screen drag.

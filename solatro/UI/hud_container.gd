@@ -11,6 +11,7 @@ extends PanelContainer
 @onready var _piles : HBoxContainer = %GameHud/Piles
 @onready var _exit_button : Button = %ExitX
 @onready var _exit_column : Control = _description_panel.get_node(^"%ExitColumn")
+@onready var _back_button : Button = _description_panel.get_node(^"%Back")
 
 @onready var submit_button : Button = %Submit
 @onready var undo_button : Button = %Undo
@@ -79,7 +80,10 @@ func _ready() -> void:
 	_exit_button.tooltip_text = TRANSLATION.find('SIDEBAR_CLOSE')
 	_exit_button.pressed.connect(dismiss_description)
 	_exit_button.gui_input.connect(_on_exit_gui_input)
-	_place_exit_button()
+	_back_button.tooltip_text = TRANSLATION.find('SIDEBAR_BACK')
+	_back_button.pressed.connect(return_to_pack)
+	_description_panel.preview_card_picked.connect(_show_preview_card)
+	_place_panel_controls()
 	show_hud()
 	var overlay := get_parent() as WallOverlay
 	if overlay:
@@ -102,18 +106,20 @@ func _position_below_overlay_buttons() -> void:
 		margin.add_theme_constant_override("margin_top", ceili(_band_top))
 		margin.add_theme_constant_override("margin_left", inset)
 		margin.add_theme_constant_override("margin_right", inset)
-	_place_exit_button()
+	_place_panel_controls()
 	_fit_content()
 
-# The exit X means GO BACK TO THE HUD: grown to every overlay control's touch target, parked in the
-# container's top-right BELOW the overlay's button band, and its column is kept clear of the name.
-func _place_exit_button() -> void:
+# EVERY CONTROL THAT CHANGES WHAT THE SIDEBAR SHOWS IS ONE TOUCH TARGET. The exit X means go back
+# to the HUD, parked in the container's top-right BELOW the overlay's button band with its column
+# kept clear of the name; the way back means go back to the pack, at the head of the name's row.
+func _place_panel_controls() -> void:
 	var target := WallInput.touch_target_px(get_viewport().get_visible_rect().size,
 			PlayArea.settings())
 	_exit_button.offset_left = -target
 	_exit_button.offset_top = _band_top
 	_exit_button.offset_bottom = _band_top + target
 	_exit_column.custom_minimum_size.x = target
+	_back_button.custom_minimum_size = Vector2(target, target)
 
 ## The container's own rect at the current window size -- what `PlayArea.board_inset_left`/`board_inset_top` are derived from.
 func container_rect() -> Rect2:
@@ -215,6 +221,7 @@ var _active_screen : StringName = &""
 # so coming back re-shows exactly what was being read.
 func set_active_screen(screen: StringName) -> void:
 	if screen != _active_screen:
+		if _pack_entry: return_to_pack()
 		_description_panel.detach_entry()
 		_active_screen = screen
 		var remembered : InfoEntry = _entry_by_screen.get(_active_screen)
@@ -254,6 +261,8 @@ func _swap_to_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
 	_exit_button.visible = false
+	_pack_entry = null
+	_show_back(false)
 	_aim_scroll_stick(0.0)
 	_refresh_exit_focus()
 
@@ -264,6 +273,7 @@ func show_description(entry: InfoEntry) -> void:
 	if _screen_is_processing():
 		_free_detached_visual(entry)
 		return
+	if _pack_entry: return_to_pack()
 	var locked : InfoEntry = _locked_entry_by_screen.get(_active_screen)
 	if locked and locked != entry and _description_panel.current_entry == locked:
 		_description_panel.detach_entry()
@@ -277,6 +287,38 @@ func show_description(entry: InfoEntry) -> void:
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
 func showing_description() -> bool:
 	return _description_panel.visible
+
+## The pack a shown preview card was picked OUT of -- `null` whenever what shows is not such a card.
+var _pack_entry : InfoEntry = null
+
+## How far into the pack its reader had got, so the way back returns it where they left it.
+var _pack_scroll : int = 0
+
+# ⚠ A PICKED CARD IS A THING INSIDE WHAT IS BEING READ, so the pack is KEPT rather than replaced:
+# its grid comes out of the panel whole and goes back in when the way back is pressed. Card to card
+# hands nothing out a second time -- the panel frees the card it is replacing.
+func _show_preview_card(data: CardData, card_px: Vector2) -> void:
+	if _pack_entry == null:
+		_pack_entry = _description_panel.current_entry
+		_pack_scroll = _description_panel.scroll_position
+		_description_panel.detach_entry()
+	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
+	_show_back(true)
+
+## Takes the panel back to the pack the shown card was picked out of: the same grid, scrolled where its reader left it.
+func return_to_pack() -> void:
+	var pack := _pack_entry
+	var scroll := _pack_scroll
+	_pack_entry = null
+	_show_back(false)
+	_description_panel.show_entry(pack, _content_size())
+	_description_panel.scroll_position = scroll
+
+# A WAY BACK IS UP ONLY WHILE THERE IS SOMETHING TO GO BACK TO, and it joins keyboard and pad
+# navigation for exactly that long -- the rule the exit X follows.
+func _show_back(shown: bool) -> void:
+	_back_button.visible = shown
+	_back_button.focus_mode = Control.FOCUS_ALL if shown else Control.FOCUS_NONE
 
 ## The card each screen's description is LOCKED to -- a lock survives leaving and returning, exactly as the remembered entry does.
 var _lock_by_screen : Dictionary[StringName, CardData] = {}

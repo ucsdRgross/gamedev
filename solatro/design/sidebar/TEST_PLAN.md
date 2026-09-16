@@ -77,6 +77,9 @@ reason, then implement. A test written after the code passes it is a test that a
 | 1.13 | A board rebuild keeps the same `CardData`'s description | show A's card, force `queue_rebuild()` | still showing A's description | Gate | B13, `Q65`=a | S6 |
 | 1.14 | Leaving and returning restores the screen's own description | show A on the game, go to the map, come back | shows A immediately | Gate | B15, B16, `Q19`=c, `Q20`=b | S5 |
 | 1.15 | A description opened inside a viewer previews the card at THAT VIEWER's size | open the deck viewer (it draws a card at twice a board card), highlight a listed card, resize the window | the preview's drawn width matches the viewer's card width, and the viewer's and the board's widths are far enough apart that the board's size would fail the same assertion | Gate | C5, `Q34`=b, `GAP-004`=b | S12 |
+| 1.16 | A pack's preview grid wraps to the sidebar's width, and POINTING at a listed card switches the sidebar to that card | `_start_map_fixture`, a booster map node hovered, a real pointer move onto the first listed card | the grid mounts below the body and wraps onto more than one row inside the sidebar's width; then the entry shown is no longer the pack's, and the card it previews is the one pointed at | Gate | K8, K9, `Q135`=b | S24 |
+| 1.17 | …and a pad and a finger reach a listed card too | as 1.16: `grab_focus()` on the first listed card, the way back, then a real tap (the emulated mouse press plus `InputEventScreenTouch`) on the second | each switches the sidebar to the card it landed on | Gate | K9, `Q137`=a | S24 |
+| 1.18 | The way back returns the pack with its grid and its scroll | as 1.16 but scrolled a page down first, then a listed card picked and a REAL click on the way back | exactly one way back is up while the picked card shows; after it, the pack entry itself, the very same grid node re-mounted under `%GridSlot`, the scroll back where it was, and no way back left | Gate | K9, `GAP-010`=c | S24 |
 
 ## 2. `TestGestureMetrics` — chart M
 
@@ -176,6 +179,7 @@ shows, or say UNVERIFIED.
 | 9.6 | The refill flip, staggered left to right — **a duration, so watch it run** | I4, I5 | S21 |
 | 9.7 | A card following the cursor at the same lift it had at rest | G8, `Q265`=a | S14 |
 | 9.8 | The map: name popup above a node, everything else in the sidebar | K2, K3 | S23 |
+| 9.9 | A pack's preview card picked out of its grid: the card's own name and preview in the sidebar, with the way back up beside them | K9, `GAP-010`=c | S24 |
 
 ## 10. Deliberately NOT tested, and why
 
@@ -197,4 +201,5 @@ deletions already proved by §8:
 - `F1` — an engine fact about Godot's event order, not our behaviour. `TestDragPlace` 5.1 exercises
   it indirectly.
 - `M12` — a record that `Q123` is reversed. Proved by 2.5 and 8.3.
-- Charts `I` and `K` — by-eye rows only (9.5, 9.6, 9.8).
+- Chart `I` — by-eye rows only (9.5, 9.6). Chart `K` is by-eye at 9.8 and 9.9, and gated at
+  1.16–1.18.
