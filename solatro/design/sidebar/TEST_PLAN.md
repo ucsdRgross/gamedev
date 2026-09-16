@@ -93,10 +93,11 @@ reason, then implement. A test written after the code passes it is a test that a
 
 | # | Test | Fixture | Asserts | Kind | Node | Step |
 |---|---|---|---|---|---|---|
-| 3.1 | The inset is 394 px at the picture's own aspect | windows 1280×720, 1920×1080, 2560×1440 | `board_inset_left == 394.0 ± 0.5` in all three — the window cancels | Gate | D8, D10 | S3 |
+| 3.1 | The inset is 394 px at the picture's own aspect | windows 1280×720, 1920×1080, 2560×1440, 3840×2160 | `board_inset_left == 394.0 ± 0.5` in all four — the window cancels, and 4K does not clamp (`GAP-001`=b) | Gate | D6, D8, D10 | S3 |
 | 3.2 | Ultrawide clamps and narrows | 3840×1080, `container_size_max_px = 640` | `board_inset_left == 262.7 ± 0.5` | Gate | D7, D8 | S3 |
-| 3.3 | The container moves to the top when the leftover would be taller than wide | a window where `(w - container) / h < 1` | `container_is_top` true, and `board_inset_top` is set instead | Gate | D2, D6, `Q175`=a | S3 |
+| 3.3 | The container moves to the top when the leftover would be taller than wide | a window where `(w - container) / h < 1` | `container_is_top` true, the container's own reserve goes on `board_inset_top`, and `board_inset_left` is that window's crop alone (`GAP-002`=a) | Gate | D2, D6, `Q175`=a | S3 |
 | 3.4 | Deleting `%MultScore` and `%Preview` does NOT re-centre the board | board centre after the deletion vs the pre-deletion 733.808 | within 0.5 px, and neither node exists | Gate | C4, L9 | S2 |
+| 3.5 | The board's region clears the container on a CROPPED window | windows 1920×1200 (16:10), 1600×1200 (4:3), 600×1000 (portrait) | the board's own rect does not intersect the container's band in the picture's space, and stays inside the visible picture — the relationship, not a measured constant | Gate | D8, D9, D10, `GAP-002`=a | S3 |
 
 ## 4. `TestEntranceStocks` — chart H
 

@@ -50,6 +50,7 @@ func _ready() -> void:
 	await test_an_ultrawide_window_clamps_and_narrows()
 	await test_a_resize_re_applies_every_overlay_touch_target()
 	await test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_wide()
+	await test_the_boards_region_clears_the_container_on_a_cropped_window()
 	await test_board_centre_after_hud_migration_matches_the_pre_deletion_measurement()
 	await test_a_real_resize_moves_the_container_and_republishes_the_inset()
 	await test_a_top_case_resize_fits_the_board_under_the_band()
@@ -709,10 +710,11 @@ func test_the_game_views_hud_container_is_scoped_to_its_own_wall() -> void:
 
 # ------------------------------------------------------------------ the container's geometry
 
-## At the picture's own aspect the window cancels -- the board is inset 394 px at any 16:9 window size.
+## At the picture's own aspect the window cancels and the cap never bites -- the board is inset 394 px at any 16:9 window size, 4K included.
 func test_the_inset_is_394_at_the_pictures_own_aspect() -> void:
 	await _start_game_fixture()
-	for window : Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440)]:
+	for window : Vector2i in [Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(2560, 1440),
+			Vector2i(3840, 2160)]:
 		await _resize_viewport(_booted_viewport, window)
 		check(absf(_play_area.board_inset_left - 394.0) <= 0.5,
 				"the board publishes a 394 px inset at %s (3.1)" % window,
@@ -742,14 +744,45 @@ func test_the_container_moves_to_the_top_when_the_leftover_would_be_taller_than_
 	var window := Vector2(600.0, 1000.0)
 	check(HudContainer.container_is_top(window, settings),
 			"a portrait window puts the container on the top band")
-	check(_play_area.board_inset_top > 0.0 and is_zero_approx(_play_area.board_inset_left),
-			"...and the board publishes its inset off the top instead of the left (3.3)",
-			"top %.3f, left %.3f" % [_play_area.board_inset_top, _play_area.board_inset_left])
+	var crop : Vector2 = (_main._pictures[&"game"] as WallPicture) \
+			.local_rect_beside(window, Rect2(), true).position
+	check(_play_area.board_inset_top > crop.y
+				and is_equal_approx(_play_area.board_inset_left, crop.x),
+			"...and the container's own reserve goes on the top, the left being the crop alone (3.3)",
+			"top %.3f, left %.3f, crop %s" % [_play_area.board_inset_top,
+				_play_area.board_inset_left, crop])
 	var rect := HudContainer.rect_for_window(window, settings)
 	check(is_equal_approx(rect.size.x, window.x),
 			"the top container spans the window's full width", "%.3f vs %.3f" % [rect.size.x, window.x])
 	check(rect.size.y > 0.0 and rect.size.y < window.y,
 			"the top container's height is the fractional/clamped container_px", "%.3f" % rect.size.y)
+	await _end_main_fixture()
+
+## A covering picture is cropped on every window narrower than its own aspect: the board's region must still clear the container and stay on screen there (3.5).
+func test_the_boards_region_clears_the_container_on_a_cropped_window() -> void:
+	await _start_game_fixture()
+	for size : Vector2i in [Vector2i(1920, 1200), Vector2i(1600, 1200), Vector2i(600, 1000)]:
+		await _resize_viewport(_booted_viewport, size)
+		_play_area.flush_rebuild()
+		await _settle_scroll_x(_play_area)
+		var picture : WallPicture = _main._pictures[&"game"]
+		var window := Vector2(size)
+		var top := HudContainer.container_is_top(window, PlayArea.settings())
+		var visible := picture.local_rect_beside(window, Rect2(), top)
+		var band := _band_rect_in_picture(picture, window, _container.container_rect(), top)
+		var board := _sidebar_screen_rect(_play_area.scroll_container)
+		check(not band.grow(-1.0).intersects(board),
+				"no part of the board's region sits under the container at %s (3.5)" % size,
+				"board %s vs band %s" % [board, band])
+		check(visible.grow(1.0).encloses(board),
+				"the board's region stays inside the visible picture at %s (3.5)" % size,
+				"board %s vs visible %s" % [board, visible])
+		var remaining := picture.local_rect_beside(window, _container.container_rect(), top)
+		check(absf(board.position.x - remaining.position.x) <= 1.0
+					and absf(board.end.x - remaining.end.x) <= 1.0,
+				"the board's region FILLS the width left beside the container at %s (3.5)" % size,
+				"board %.1f..%.1f vs %.1f..%.1f" % [board.position.x, board.end.x,
+					remaining.position.x, remaining.end.x])
 	await _end_main_fixture()
 
 # ------------------------------------------------------------------ the board's centre after S2
@@ -884,8 +917,10 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	check(is_equal_approx(pa.board_inset_top, band.size.y / picture_scale),
 			"board_inset_top equals the band's height converted to picture px",
 			"%.3f vs %.3f" % [pa.board_inset_top, band.size.y / picture_scale])
-	check(is_equal_approx(pa.board_inset_left, 0.0),
-			"board_inset_left stays zero in the top case")
+	var crop := game_wp.local_rect_beside(window, Rect2(), true).position
+	check(is_equal_approx(pa.board_inset_left, crop.x),
+			"board_inset_left is the covering picture's own crop in the top case",
+			"%.3f vs %.3f" % [pa.board_inset_left, crop.x])
 
 	var grid_rect := _sidebar_screen_rect(pa._cells_root(pa.grid_container.get_child(0) as Control))
 	check(grid_rect.position.y >= band.end.y,
@@ -894,6 +929,9 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	check(strip_rect.position.y >= band.end.y,
 			"the Entrance strip's top edge sits below the band",
 			"%s vs band bottom %.3f" % [strip_rect, band.end.y])
+	check(absf(grid_rect.get_center().x - strip_rect.get_center().x) <= 2.0,
+			"the grid and the Entrance share a centre in the top case",
+			"grid %.3f vs strip %.3f" % [grid_rect.get_center().x, strip_rect.get_center().x])
 
 	await _free_booted_main(viewport, main)
 	CardEnvironment.CURRENT = null
@@ -907,6 +945,13 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 func _sidebar_screen_rect(c: Control) -> Rect2:
 	var t := c.get_global_transform()
 	return Rect2(t.origin, t.get_scale() * c.size)
+
+## The part of `picture` the container covers, in that picture's own space: the visible rect less the space left beside it.
+func _band_rect_in_picture(picture: WallPicture, window: Vector2, band: Rect2, top: bool) -> Rect2:
+	var visible := picture.local_rect_beside(window, Rect2(), top)
+	var remaining := picture.local_rect_beside(window, band, top)
+	if top: return Rect2(visible.position, Vector2(visible.size.x, visible.size.y - remaining.size.y))
+	return Rect2(visible.position, Vector2(visible.size.x - remaining.size.x, visible.size.y))
 
 # ------------------------------------------------------------------ S4: the map's own container
 
@@ -1102,11 +1147,7 @@ func test_menus_buttons_lie_outside_the_container_and_inside_the_window() -> voi
 		var band_screen : Rect2 = container.container_rect()
 		var top := HudContainer.container_is_top(window, SettingsManager.settings)
 		var window_local := wp.local_rect_beside(window, Rect2(), top)
-		var remaining := wp.local_rect_beside(window, band_screen, top)
-		var band_local := Rect2(window_local.position.x, window_local.position.y,
-					window_local.size.x, window_local.size.y - remaining.size.y) if top \
-				else Rect2(window_local.position.x, window_local.position.y,
-					window_local.size.x - remaining.size.x, window_local.size.y)
+		var band_local := _band_rect_in_picture(wp, window, band_screen, top)
 		for button : Button in _menu_buttons(main.menu_scene):
 			var button_rect := button.get_global_rect()
 			check(not button_rect.intersects(band_local),

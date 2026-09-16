@@ -316,11 +316,14 @@ func window_scale(window: Vector2) -> float:
 # `window` size) once both convert into THIS picture's own space -- the unmargined cover scale and
 # inset `GameView._publish_board_inset()` uses, extended to a rect a focused screen can centre in.
 func local_rect_beside(window: Vector2, rect: Rect2, top: bool) -> Rect2:
-	var design := Vector2(_design_size)
+	return visible_rect_beside(Vector2(_design_size), window, rect, top)
+
+## The part of `design` a covering `window` SHOWS beside `rect`: what is left once the crop off each edge and `rect`'s own axis are both taken off.
+static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool) -> Rect2:
 	var scale := cover_scale(design, window)
-	var local_window := Rect2((design - window / scale) / 2.0, window / scale)
+	var visible := Rect2((design - window / scale) / 2.0, window / scale)
 	var inset := inset_beside(rect, top, scale)
-	return Rect2(local_window.position + inset, local_window.size - inset)
+	return Rect2(visible.position + inset, visible.size - inset)
 
 ## The px `rect` takes off the space beside it at `scale`: its height when it sits on top, else its width.
 static func inset_beside(rect: Rect2, top: bool, scale: float) -> Vector2:

@@ -164,7 +164,8 @@ written when a run stalls or fails.
   - At a 1280×1000 window the HUD runs about 30 px past the bottom of its top band at the shipped `container_size_fraction`; the band is shorter than the HUD. Under a 0.1 fraction the exit X hangs below the band. The knob's range is a look call.
   - The exit X overlaps the top of the description's scrollbar (pre-existing).
   - The overlay buttons grow to the touch target when the window grows, but never shrink when it shrinks.
-  - In the top case the grid sits 76–106 px left of the centred Entrance (see `GAP-002`), and the map picture sits off-centre below the band, cut at its edge.
+  - A resize pans the board to its new resting x over several frames while the Entrance moves at once, so the two are briefly out of line: measured mid-pan, 31 px at 1280x800 and 65 px at 600x1000, converging to within 1 px once the board stops. Whether the pan should be instant on a resize is a look call.
+  - In the top case the map picture sits off-centre below the band, cut at its edge.
   - The start menu's title and buttons are squashed horizontally in the top case; whether the sidebar causes it is unmeasured.
   - In the top case an Entrance card draws over the deck viewer's panel; the deck picker's list text draws over the Inspect viewer's panel (pre-existing).
   - Mid-cascade, a stack of cards in column 0 draws above the picture's top edge.

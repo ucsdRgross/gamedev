@@ -177,23 +177,33 @@ static func _floored_even_share(available: float, count: int) -> float:
 
 ## Whether `window` puts the container on the TOP band instead of the SIDE (the side case's own width decides).
 static func container_is_top(window: Vector2, settings_res: PlayerSettings) -> bool:
-	return (window.x - _container_px(window.x, settings_res)) / window.y < 1.0
+	return (window.x - _container_px(window, false, settings_res)) / window.y < 1.0
 
 # Pure arithmetic seam for `container_rect()`, so a headless test can drive the production
 # formula without booting a window. Flush against the INNER edge of its band when clamped,
 # leaving the empty space outboard of it.
 static func rect_for_window(window: Vector2, settings_res: PlayerSettings) -> Rect2:
 	if container_is_top(window, settings_res):
-		var px := _container_px(window.y, settings_res)
+		var px := _container_px(window, true, settings_res)
 		var inner_edge := settings_res.container_size_fraction * window.y
 		return Rect2(0.0, inner_edge - px, window.x, px)
-	var px := _container_px(window.x, settings_res)
+	var px := _container_px(window, false, settings_res)
 	var inner_edge := settings_res.container_size_fraction * window.x
 	return Rect2(inner_edge - px, 0.0, px, window.y)
 
-## The fraction of `reference`, capped at the pixel ceiling.
-static func _container_px(reference: float, settings_res: PlayerSettings) -> float:
-	return minf(settings_res.container_size_fraction * reference, settings_res.container_size_max_px)
+## The fraction of the band's own axis of `window`, capped only where that axis outruns the reference shape.
+static func _container_px(window: Vector2, top: bool, settings_res: PlayerSettings) -> float:
+	var px := settings_res.container_size_fraction * (window.y if top else window.x)
+	if not _band_axis_outruns_reference(window, top): return px
+	return minf(px, settings_res.container_size_max_px)
+
+# The cap is a rule about SHAPE, not about pixel count: it bites only where the band's own axis
+# outruns the project's reference window shape, so a window of that shape keeps the authored inset
+# at any size and only an ultrawide -- or an ultratall under the top band -- clamps.
+static func _band_axis_outruns_reference(window: Vector2, top: bool) -> bool:
+	var reference := PlayArea.reference_window_size()
+	if top: return window.y * reference.x > window.x * reference.y
+	return window.x * reference.y > window.y * reference.x
 
 ## The description each screen was last showing, so coming back returns to what you were reading rather than the HUD.
 var _entry_by_screen : Dictionary[StringName, InfoEntry] = {}

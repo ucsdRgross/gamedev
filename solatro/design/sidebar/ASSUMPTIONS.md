@@ -901,3 +901,15 @@
 - Close fix E: `GameHudMargin` grows DOWN, not both ways: a band shorter than the HUD (measured at a
   1280x1000 window at the shipped `container_size_fraction`: 225 px band, HUD 30 px taller than the
   room below the buttons) pushed Goal up over the buttons; now the overflow is below the band instead.
+- `GAP-001`=b, the reference the cap is measured against: `HudContainer` is shared between screens
+  and knows no picture, so the shape it compares the window to is the PROJECT's own authored window
+  size (`PlayArea.reference_window_size()`, ProjectSettings 1152x648 = exactly 16:9) rather than
+  either picture's. The map picture IS that shape exactly; the game picture is 1576x887 (1.77677)
+  only because its height is rounded up from the same reference aspect, and using its rounded
+  aspect would clamp a 3840x2160 window to 262.7 px -- contradicting the ruling's own "every 16:9
+  window keeps 394". The comparison cross-multiplies (`window.x * ref.y > window.y * ref.x`) so a
+  16:9 window lands exactly ON the boundary and does not clamp.
+- `GAP-001`=b, the consequence the ruling carries: making the cap a rule about SHAPE puts a step in
+  the container's width at the reference aspect. Crossing it on a window wider than 2560 px takes
+  the container from `0.25 * window.x` straight to 640 px -- at 3840 px wide, 960 -> 640, and the
+  inset 394 -> 262.7. It is continuous only at 2560 px wide, where the fraction equals the cap.

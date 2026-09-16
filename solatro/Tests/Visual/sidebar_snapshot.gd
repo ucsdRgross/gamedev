@@ -6,6 +6,7 @@ extends Node2D
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const FALLBACK_OUT_PATH := "user://sidebar_snapshot/game_hud.png"
 const TOP_CASE_OUT_PATH := "user://sidebar_snapshot/game_hud_top.png"
+const CROPPED_SIDE_OUT_PATH := "user://sidebar_snapshot/game_hud_cropped_side.png"
 const MAP_HUD_OUT_PATH := "user://sidebar_snapshot/map_hud.png"
 const MAP_HUD_TOP_OUT_PATH := "user://sidebar_snapshot/map_hud_top.png"
 const MAP_POPUP_OUT_PATH := "user://sidebar_snapshot/map_popup.png"
@@ -39,6 +40,9 @@ const GOAL_MET_OUT_PATH := "user://sidebar_snapshot/goal_met.png"
 const CASCADE_PLACEMENT_ATTEMPTS := 24
 const CASCADE_WATCH_FRAMES := 180
 const TOP_CASE_WINDOW_SIZE := Vector2i(600, 1000)
+# 16:10, so the game picture COVERS the window and is cropped left and right while the container
+# stays on the SIDE -- the shape the board's region has to clear the container on.
+const CROPPED_SIDE_WINDOW_SIZE := Vector2i(1280, 800)
 # MEASURED: no card's own text overflows the container at the shipped `container_size_fraction`
 # -- a square window's top band is 288 px and a description wraps to 97. So the scroll still
 # narrows the band through the same settings override the wall editor uses.
@@ -50,6 +54,8 @@ const SAVE_TAG := "sidebar_snapshot"
 ## The picture's own top-left corner, where the board lays out no cell and no card.
 const BARE_BOARD_POINT := Vector2(24.0, 24.0)
 const DEAL_SETTLE_TIMEOUT_SEC := 5.0
+## How many consecutive frames the board's cells must not move before a shot is taken of it.
+const BOARD_STILL_FRAMES := 3
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -133,11 +139,18 @@ func _ready() -> void:
 	_capture(ENTRANCE_STOCKS_OUT_PATH)
 
 	DisplayServer.window_set_size(TOP_CASE_WINDOW_SIZE)
-	await get_tree().process_frame
-	await get_tree().process_frame
+	await _await_board_settled(view.play_area)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(TOP_CASE_OUT_PATH)
+	_report_the_board_geometry(view, "game_hud_top")
+
+	DisplayServer.window_set_size(CROPPED_SIDE_WINDOW_SIZE)
+	await _await_board_settled(view.play_area)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(CROPPED_SIDE_OUT_PATH)
+	_report_the_board_geometry(view, "game_hud_cropped_side")
 
 	DisplayServer.window_set_size(window_size)
 	await get_tree().process_frame
@@ -263,6 +276,30 @@ func _show_the_goal_met(view: GameView) -> void:
 			str(view.submit_button.visible)])
 	view.game.state.goal = was
 
+# THE SHOT'S NUMBERS IN THE IMAGE'S OWN SPACE, so it can be checked rather than admired: the
+# board's left edge against the container's right edge, and the grid's and the Entrance's drawn
+# centres against the centre of the space left beside the container.
+func _report_the_board_geometry(view: GameView, shot: String) -> void:
+	var window := view.hud_container.get_viewport().get_visible_rect().size
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	var pa := view.play_area
+	var scale := WallPicture.cover_scale(design, window)
+	var origin := pa.board_visible_crop
+	var board := _drawn_span_x(pa.scroll_container, origin, scale)
+	var block := _drawn_span_x(pa._cells_root(pa.grid_container.get_child(0) as Control), origin, scale)
+	var entrance := _drawn_span_x(pa.upper_zone_right, origin, scale)
+	print(("SIDEBAR_SNAPSHOT %s window=%s grids=%d zoom=%.3f inset_picture_px=%.1f "
+			+ "crop_picture_px=%.1f container_right=%.1f board=%.1f..%.1f cells=%.1f..%.1f "
+			+ "entrance=%.1f..%.1f") % [shot, window, view.game.state.grids.size(), pa.board_zoom,
+			pa.board_inset_left, origin.x, view.hud_container.container_rect().end.x,
+			board.x, board.y, block.x, block.y, entrance.x, entrance.y])
+
+## A control's DRAWN horizontal span as `(left, right)` in window px: its own transform carries every scale above it, and the picture's crop and cover scale carry it out to the screen.
+func _drawn_span_x(c: Control, crop: Vector2, scale: float) -> Vector2:
+	var t := c.get_global_transform()
+	var left := (t.origin.x - crop.x) * scale
+	return Vector2(left, left + t.get_scale().x * c.size.x * scale)
+
 # WHAT THE FACE-DOWN CARD COSTS THE BOARD, measured rather than argued: the Entrance is row -1, so
 # its real depth is what the board's floor has to clear, and a deeper row pushes everything above
 # it up. Reported with the face-down card and again with the stocks set aside.
@@ -315,6 +352,21 @@ func _refill_the_whole_entrance(view: GameView) -> void:
 # Waits for every Entrance card's own move tween to stop running -- the deal's spawn animation --
 # so the still is never caught mid-flight. Bounded, not a fixed sleep: it returns the instant the
 # board is actually settled.
+# A WINDOW CHANGE MOVES THE BOARD OVER SEVERAL FRAMES -- the scroller reaches its new resting x a
+# layout pass at a time, so a shot taken two frames after the resize photographs a transient in
+# which the Entrance has already moved and the cells have not.
+func _await_board_settled(pa: PlayArea) -> void:
+	var last := INF
+	var still := 0
+	var waited := 0.0
+	while waited < DEAL_SETTLE_TIMEOUT_SEC and still < BOARD_STILL_FRAMES:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		var now := pa._cells_root(pa.grid_container.get_child(0) as Control).global_position.x
+		still = still + 1 if is_equal_approx(now, last) else 0
+		last = now
+
 func _await_deal_settled(view: GameView) -> void:
 	var waited := 0.0
 	while waited < DEAL_SETTLE_TIMEOUT_SEC:

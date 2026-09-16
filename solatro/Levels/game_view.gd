@@ -235,10 +235,11 @@ func _publish_board_inset() -> void:
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
 	play_area.picture_to_window_scale = WallPicture.focused_scale(design, window,
 			PlayArea.settings().wall_overfill_margin)
-	var inset := WallPicture.inset_beside(rect, HudContainer.container_is_top(window,
-			PlayArea.settings()), WallPicture.cover_scale(design, window))
-	play_area.board_inset_left = inset.x
-	play_area.board_inset_top = inset.y
+	var region := WallPicture.visible_rect_beside(design, window, rect,
+			HudContainer.container_is_top(window, PlayArea.settings()))
+	play_area.board_inset_left = region.position.x
+	play_area.board_inset_top = region.position.y
+	play_area.board_visible_crop = design - region.end
 	hud_container.resize_preview(play_area.board_card_window_px())
 
 # Where a card leaving the board aims at `pile`: the pile is drawn in the window, the card in this

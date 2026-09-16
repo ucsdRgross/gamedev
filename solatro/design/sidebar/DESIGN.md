@@ -1151,7 +1151,7 @@ flowchart TD
   C10["NEW — the processing rule is the GAME screen only. The map has no cascade worth watching — chart K"]
   C11["NEW — the panel eats clicks in its whole rect, which today's scattered controls do not"]
   C12["NEW — no hud_scale. The container lays out to its own rect, so the scale mechanism and both authored-offset caches go — chart L"]
-  C13["NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, which is what makes the geometry identical on both screens"]
+  C13["NEW — the MAP gets the same container, holding Fame, Lap, Luck and its Deck button, and both screens convert its window px through their own picture, which is what makes the geometry identical (GAP-003=a)"]
   C14["The debug bar and the prop-step controls stay OUTSIDE it, top-right, unchanged"]
   C15["GameView win or lose overlay still covers ONLY the play area, so the container stays live"]
   C16["NEW — the exit X in the container's top-right means GO BACK TO THE HUD, sized by the same touch-target rule as every other overlay control — chart M"]
@@ -1183,12 +1183,12 @@ flowchart TD
   D3["NEW — the container is on the LEFT, full window height"]
   D4["NEW — the container moves to the TOP, where the HUD also is, so the main playing window stays as square as possible"]
   D5["NEW — at the top the same fraction is read as a HEIGHT"]
-  D6{"NEW — is the window wide enough that the fraction exceeds the maximum"}
+  D6{"NEW — is the window more extreme in SHAPE than the project's reference window, which is what makes the maximum apply at all (GAP-001=b), and does the fraction exceed it"}
   D7["NEW — clamped, and the clamp is measured INWARD: the container sits flush against the inner edge of its band, so it stays near the middle and the empty space is on its far side"]
-  D8["NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale"]
-  D9["NEW — a matching TOP inset exists for the case where the container moved up"]
-  D10["NEW — the board centres in what is left, never on the screen"]
-  D11["The MAP uses the window fraction directly: it has no picture and needs no conversion"]
+  D8["NEW — PlayArea.board_inset_left becomes the container's width, converted from window pixels to picture pixels through the focused picture's live scale, plus the crop that covering scale puts off-window on that axis (GAP-002=a)"]
+  D9["NEW — a matching TOP inset exists for the case where the container moved up, and matching RIGHT and BOTTOM edges for the crop, so the board's region is the VISIBLE picture"]
+  D10["NEW — the board centres in what is left, never on the screen — and what is left is what the player can SEE beside the container"]
+  D11["The MAP converts exactly as the board does: window px through the map picture's live cover scale and through the map camera's own zoom (GAP-003=a)"]
   D12["NEW — the overlay's Back, Forward and Wall buttons draw ON TOP of the container and stay pressable"]
   D13["InfoCard._reposition_to_window — the same re-anchor on resize, keeping its content"]
   D14["NEW — the container does NOT pan with the board. GameView._process's furniture slide and PlayArea.pan_window_left_x are both deleted — chart L"]
@@ -1215,13 +1215,19 @@ picture *covers* the window, so its scale is `max(window.x / 1576, window.y / 88
 
 - **At the picture's own aspect the window cancels out entirely.** The inset is
   `0.25 × window.x ÷ (window.x ÷ 1576)` = `0.25 × 1576` = **394 picture px** — exactly today's
-  measured `board_inset_left`, at any 16:9 window size. So the board does not move at all on the
-  shape the game is authored for.
+  measured `board_inset_left`, at any 16:9 window size — 4K included, because the cap is a rule
+  about SHAPE and a 16:9 window never reaches it (D6, `GAP-001`=b). So the board does not move at
+  all on the shape the game is authored for.
 - **At 32:9** (3840×1080) the scale is driven by width, `3840 ÷ 1576` = 2.44, and
   `container_size_max_px` 640 clamps the container. The inset is `640 ÷ 2.44` = **262 picture px** —
   narrower, because the picture is magnified and the same band of screen covers less of it. Correct,
   and it is why the clamp is measured inward (D7): the container stays beside the board rather than
   drifting to a far edge.
+- **On any window narrower than the picture's aspect the picture is CROPPED**, by
+  `(1576 − window.x ÷ scale) ÷ 2` on each side, and the inset is a POSITION measured from the
+  picture's own edge — which is off-screen by exactly that. Every inset therefore gains the crop on
+  its axis and the board's region gains matching right and bottom edges (D9, `GAP-002`=a). At 16:9
+  and at 32:9 the horizontal crop is zero, so both numbers above stand.
 
 A value therefore exists that satisfies D1, D8 and D10 at once, and at the common aspect it is the
 number already shipping.

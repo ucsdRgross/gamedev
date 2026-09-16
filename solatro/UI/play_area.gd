@@ -42,14 +42,11 @@ enum ViewMode { OVERVIEW, FOCUSED }
 ## No grid is focused. ⚠ Never 0 — grid 0 is a real grid.
 const NO_GRID := -1
 
-## The width the HUD's rectangle takes on the LEFT, published by `GameView`. The board lays out in
-## what is left of the screen and CENTRES THERE, not on the screen (owner ruling). Zero for any host
-## that mounts a bare `PlayArea` with no HUD around it.
-##
-## ⚠ **THE BOARD'S WINDOW IS WHAT MOVES, NOT THE CONTENT.** Insetting the scroller's own left edge
-## makes every centring the board already does -- the focused aim, the resting position, the
-## removal re-centre -- land in the post-HUD space for free. Offsetting the content instead would
-## leave each of those to re-discover the inset separately.
+# ⚠ THE BOARD'S WINDOW IS WHAT MOVES, NOT THE CONTENT. Insetting the scroller's own edges makes
+# every centring the board already does -- the focused aim, the resting position, the removal
+# re-centre -- land in the post-HUD space for free, instead of re-discovering the reserve in each.
+
+## Picture px reserved on the LEFT, published by `GameView`: the container's width plus whatever a covering window crops off that edge. Zero for a bare `PlayArea` with no HUD around it.
 var board_inset_left : float = 0.0:
 	set(value):
 		if is_equal_approx(board_inset_left, value): return
@@ -57,12 +54,19 @@ var board_inset_left : float = 0.0:
 		if not is_instance_valid(scroll_container): return
 		_re_fit_after_inset_change()
 
-## The same reserve as `board_inset_left`, but off the TOP: the HUD container's TOP-band case
-## shifts the board down by this many picture px instead of right.
+## The same reserve off the TOP: the container's height in the TOP-band case, plus that edge's crop.
 var board_inset_top : float = 0.0:
 	set(value):
 		if is_equal_approx(board_inset_top, value): return
 		board_inset_top = maxf(value, 0.0)
+		if not is_instance_valid(scroll_container): return
+		_re_fit_after_inset_change()
+
+## The picture px a covering window crops off the RIGHT and BOTTOM, so the board fits and centres in what the player can SEE rather than in the whole picture. Zero at the picture's own aspect.
+var board_visible_crop : Vector2 = Vector2.ZERO:
+	set(value):
+		if board_visible_crop.is_equal_approx(value): return
+		board_visible_crop = value
 		if not is_instance_valid(scroll_container): return
 		_re_fit_after_inset_change()
 
@@ -364,11 +368,15 @@ static func grid_position_size_px(settings_res: PlayerSettings, buffer_override:
 	var buffer := buffer_override if buffer_override >= 0.0 else isolating_grid_buffer_px(settings_res)
 	var span := count * block.x + (count - 1.0) * buffer
 	var width := span + 2.0 * buffer
-	# The reference aspect is the project's own window shape, read from it rather than restated.
-	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
-	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
-	var aspect_minimum := width * ref_h / ref_w if ref_w > 0.0 and ref_h > 0.0 else 0.0
-	return Vector2(width, maxf(block.y, aspect_minimum))
+	var reference := reference_window_size()
+	return Vector2(width, maxf(block.y, width * reference.y / reference.x))
+
+## The project's own authored window shape -- the reference aspect the picture's height is built to and the container's cap is measured against, read from the project rather than restated.
+static func reference_window_size() -> Vector2:
+	var width : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
+	var height : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
+	assert(width > 0.0 and height > 0.0, "the project's viewport size is authored")
+	return Vector2(width, height)
 
 ## The size the game picture is laid out at: `grid_max_count` grids side by side, exactly the span
 ## `grid_position_size_px()` already computes -- three cell blocks, two isolating buffers between
@@ -769,8 +777,16 @@ var _board_strip_h := 0.0
 ## left where the unzoomed board had it.
 func _board_window_local() -> Vector2:
 	var pad := board_edge_pad_px(PlayArea.settings()) * board_zoom
-	return Vector2(maxf(size.x - hud_reserve_px(), 0.0),
-			maxf(size.y - _board_strip_h - 2.0 * pad - board_inset_top, 0.0)) / maxf(board_zoom, 0.0001)
+	return Vector2(maxf(_board_width_left(), 0.0),
+			maxf(_board_height_left() - _board_strip_h - 2.0 * pad, 0.0)) / maxf(board_zoom, 0.0001)
+
+## The width the board has: this control's own, less the container's capped reserve and the crop off the right edge.
+func _board_width_left() -> float:
+	return size.x - hud_reserve_px() - board_visible_crop.x
+
+## The height the board has: this control's own, less the top reserve and the crop off the bottom edge.
+func _board_height_left() -> float:
+	return size.y - board_inset_top - board_visible_crop.y
 
 ## `board_inset_left`, capped so the board is never starved of the room for a grid.
 ##
@@ -1047,10 +1063,10 @@ func focused_board_zoom(gi: int) -> float:
 	var base_strip := entrance_strip_height_px(PlayArea.settings(), 1.0)
 	var pad := board_edge_pad_px(PlayArea.settings())
 	if block_h <= 0.0 or size.y <= 0.0 or size.x <= 0.0: return OVERVIEW_BOARD_ZOOM
-	var tall := maxf(size.y - board_inset_top, 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
+	var tall := maxf(_board_height_left(), 0.0) / (block_h + _panel_gutter_h(gi) + base_strip
 			+ 2.0 * pad + _scroller_frame_h())
 	var wide := _panel_width(gi)
-	return tall if wide <= 0.0 else minf(tall, maxf(size.x - hud_reserve_px(), 1.0) / wide)
+	return tall if wide <= 0.0 else minf(tall, maxf(_board_width_left(), 1.0) / wide)
 
 ## The band the scroller keeps for its HORIZONTAL bar, which it reserves whether or not that bar is
 ## on screen -- `SCROLL_MODE_SHOW_NEVER` hides the bar and keeps the band.

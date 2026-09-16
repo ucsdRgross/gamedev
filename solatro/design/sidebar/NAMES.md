@@ -74,6 +74,9 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func clear_lock() -> void` | (B10) |
 | `HudContainer` | `func is_locked() -> bool` | |
 | `HudContainer` | `func container_rect() -> Rect2` | What `PlayArea.board_inset_left` is derived from (D8) |
+| `PlayArea` | `var board_visible_crop : Vector2` | The picture px a covering window crops off the RIGHT and BOTTOM: the board's region ends there, so it fits and centres in what the player can SEE (D9, D10, `GAP-002`=a) |
+| `PlayArea` | `static func reference_window_size() -> Vector2` | The project's own authored window shape, read from `ProjectSettings` — the aspect the game picture's height is built to and the container's cap is measured against (D6, `GAP-001`=b) |
+| `WallPicture` | `static func visible_rect_beside(design: Vector2, window: Vector2, rect: Rect2, top: bool) -> Rect2` | `local_rect_beside()`'s whole arithmetic, for a caller holding a design size but no picture instance; the instance method delegates to it (D8, `GAP-002`=a) |
 | `GestureMetrics` | `static func drag_threshold_px(card_size: Vector2, settings: PlayerSettings) -> float` | Card-relative (M3, M4) |
 | `GestureMetrics` | `static func touch_target_px(window: Vector2, settings: PlayerSettings) -> float` | Window-relative (M7, M8) |
 | `WallInput` | `static func touch_target_px(window: Vector2, settings: PlayerSettings) -> float` | ⚠ **KEEPS ITS NAME, NEW BODY AND NEW SIGNATURE** — delegates to `GestureMetrics`. Every caller keeps its seam (M9, `Q305`=b) |

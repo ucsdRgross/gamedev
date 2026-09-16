@@ -49,11 +49,17 @@ This block, unchanged, goes into every document derived from this one.
 ```
 container_is_top   := (window.x - container_px) / window.y  <  1.0
                       # "would the play area LEFT OVER be taller than it is wide"
-container_px       := min(settings.container_size_fraction * reference,
-                          settings.container_size_max_px)
+container_px       := settings.container_size_fraction * reference,
+                      capped at settings.container_size_max_px ONLY where the band's own axis
+                      outruns the project's reference window shape (1152x648, read from
+                      ProjectSettings through PlayArea.reference_window_size())
   where reference  := window.x   when the container is on the SIDE
                       window.y   when the container is on the TOP
 ```
+
+⚠ **The cap is a rule about SHAPE, not about pixel count** (`GAP-001`=b): a window of the reference
+shape keeps the authored 394 px inset at any size, 4K included, and only an ultrawide — or an
+ultratall under the top band — clamps.
 
 When clamped, the container is flush against the **inner** edge of its band: on the side its right
 edge sits at `container_px` measured inward from the band's outer limit, leaving the empty space
@@ -61,8 +67,10 @@ outboard of it. (D1, D2, D4, D6, D7, `Q177`=a)
 
 ```
 picture_scale      := max(window.x / 1576.0, window.y / 887.0)   # a focused picture COVERS
-PlayArea.board_inset_left := container_px / picture_scale        # side case
-PlayArea.board_inset_top  := container_px / picture_scale        # top case
+crop               := (design - window / picture_scale) / 2.0    # ...so it is CROPPED off-window
+PlayArea.board_inset_left   := crop.x + container_px / picture_scale   # side case
+PlayArea.board_inset_top    := crop.y + container_px / picture_scale   # top case
+PlayArea.board_visible_crop := crop                # the matching right and bottom edges
 ```
 
 ⚠ **`board_inset_*` is in PICTURE pixels and `container_px` is in WINDOW pixels.** The conversion
@@ -70,7 +78,14 @@ is the focused picture's live scale and must be recomputed on resize. At the pic
 the window cancels: the inset is `0.25 * 1576 = 394 px`, which is exactly today's measured value.
 (D8, D9, D10)
 
-The MAP uses `container_px` directly with no conversion — it has no picture. (D11, `Q247`=a)
+⚠ **The board's region is measured in the VISIBLE picture** (`GAP-002`=a): every inset gains the
+crop on its axis, so the board fits and centres in what the player can see beside the container on
+every window narrower than the picture's own aspect. `WallPicture.visible_rect_beside()` is the one
+place that arithmetic lives; `local_rect_beside()` is it for a picture instance.
+
+The MAP converts exactly as the board does — window px through the map picture's live cover scale,
+and through the map camera's own zoom — so its focus sits at the centre of the remaining space at
+every window and zoom. (D11, `Q247`=a as corrected by `GAP-003`=a)
 
 ### 1.2 The container's contents — authorised by `Q170`, `Q255`, `Q257`
 
@@ -240,7 +255,8 @@ before S1.
 `game_view.tscn` and calls `game_wp.attach_screen(new_view)` — so `GameView`, its `SceneRoot`, and
 every furniture control **live inside the game WallPicture's `SubViewport`**. That is *why* the HUD
 scales with the picture and why `hud_scale()` exists at all. The map's Fame/Lap/Luck sit in
-`map.tscn`'s own `$UI` `CanvasLayer`, inside the map picture's viewport.
+`map.tscn`'s own `$UI` `CanvasLayer`, inside the map picture's viewport — the map DOES live in a
+picture, which is why its own container offset converts through that picture's scale (§1.1).
 
 **Where they go:** `QR3`=(a) says *"every button and label moves into it"*, and `QR1`=(a) says the
 surface is ONE instance on the wall overlay, window-anchored. Both cannot be satisfied by leaving
