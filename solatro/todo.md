@@ -129,7 +129,8 @@ written when a run stalls or fails.
     two, with no cue explaining it (Q33=a chose that). That the cue is ABSENT is pinned by tests
     (`test_comparator.gd` §10 asserts the ordinary meld name, no marker); whether its absence reads
     as a scoring bug to a human is not a test's question.
-- ⬜ **Sidebar: ten open gaps**, each in `design/sidebar/gaps/`:
+- ⬜ **Sidebar: ten gaps, every one answered** — the owner took each gap's own recommendation;
+  the work items, in build order, are in `HANDOFF_sidebar_gaps.md`. Each gap in `design/sidebar/gaps/`:
   - `GAP-001` — does a 16:9 window wider than 2560 px clamp the container? Recommends clamping only windows wider than 16:9.
   - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
