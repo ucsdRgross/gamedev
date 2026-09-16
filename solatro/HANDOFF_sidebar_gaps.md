@@ -8,6 +8,18 @@ suite is green. Every gap in `solatro/design/sidebar/gaps/` is `status: answered
 *"i will take recommendation for all gaps"*, so each gap's own recommendation is the ruling.
 Nothing is in flight.
 
+**Done, one commit each:** `G6` `e2d9a4e0`, `G7` `d11aa4ed`, `G8` `37f48cb6`, `G5` `cd9b81bd`.
+**Left:** `G1`, `G2`, `G3` as one geometry pass, then `G4` and `G10`, then `G9`.
+
+⚠ **`GAP-011` is OPEN and needs the OWNER, not an implementer.** Building `G5` proved that
+`Shaders/outline.gdshader` ends `COLOR = out_col;` and never multiplies the incoming vertex COLOR,
+so **nothing `modulate` marks can draw**: the new legal-cell tint, and also `CardVisual.focused` —
+the glow `Q249` calls "selected", which has therefore never been on screen. Both standing "no focus
+highlight" look calls in `todo.md` are this one fact. The recommended fix is one token and switches
+`modulate` on for EVERY card at once, which is a board-wide look change nobody has seen. The
+blanket *"i will take recommendation for all gaps"* covered the ten gaps below; it does not reach a
+gap raised after it was said. Do not build `GAP-011` without a fresh ruling.
+
 **Entry docs:** `solatro/design/sidebar/` DESIGN.md (behaviour and the answer record), PLAN.md
 (contracts), TEST_PLAN.md (rows), NAMES.md (identifiers), ASSUMPTIONS.md (every reading the run
 invented), `gaps/GAP-001.md`..`gaps/GAP-010.md`; `solatro/ARCHITECTURE_REVIEW.md` §1.6 (the sidebar
@@ -51,8 +63,12 @@ should see"), `.claude/skills/plan-run/SKILL.md`.
   restore, watch them pass.
 - Anything visual: render `Tests/Visual/sidebar_snapshot.tscn` with the NON-console exe, wait for
   the process to exit, and LOOK at the PNGs under the Solatro user data's `sidebar_snapshot/`.
-- Known flake: an intermittent engine crash in TEARDOWN after a passing banner makes the wrapper
-  exit 3. Seen twice. Rerun once; the banner's verdict stands.
+- Known flakes, neither attributable to a change: an intermittent engine crash in TEARDOWN after a
+  passing banner makes the wrapper exit 3; and an intermittent map Deck-button click failure right
+  after a viewport resize (`a real click on the map's Deck button pressed it`), which passed in both
+  neighbouring runs. Rerun once; a passing banner's verdict stands.
+- ⚠ The placeholder-warning gate is AT its cap of 22 since `G5`. The next off-palette colour
+  breaches it — see `todo.md`'s "two measured costs" item.
 
 ## Tasks: one per gap, each ending in its own commit
 Each item: build the ruling, add the rows, then set the gap file to `status: built`, correct every
