@@ -1744,6 +1744,7 @@ func grab_cards(datas:Array[CardData]) -> void:
 	var carried : CardVisual = data_card.get(selected_cards[0]) if selected_cards else null
 	_pointer_was_in_the_origin_cell = (carried != null
 			and _origin_cell_rect(carried).has_point(get_global_mouse_position()))
+	_sweep_legal_cells()
 
 # THE SECOND BUTTON CANCELS ONE THING PER PRESS: the held card is let go first, so the description
 # it was read against survives that press, and only the next press closes the description.
@@ -1773,6 +1774,7 @@ func ungrab_cards() -> void:
 			card_control.mouse_filter = Control.MOUSE_FILTER_PASS
 	selected_cards = []
 	set_card_zones_visuals()
+	_sweep_legal_cells()
 
 # The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
 # an undo that restores the board carries the arm with it.
@@ -1851,10 +1853,13 @@ func enable_board_focus() -> void:
 #set_card_zones() (setup_gui/undo) clears the pending request instead.
 var _rebuild_queued := false
 
+# A queued rebuild IS a board mutation, so the drop map is re-swept here -- the one entry every
+# mutation reaches, and already collapsed to once a frame.
 func queue_rebuild() -> void:
 	if _rebuild_queued: return
 	_rebuild_queued = true
 	_deferred_rebuild.call_deferred()
+	_sweep_legal_cells()
 
 func _deferred_rebuild() -> void:
 	if not _rebuild_queued: return #a direct rebuild already happened this frame
@@ -3180,11 +3185,34 @@ var locked_data : CardData = null:
 
 # A card wears the focus marking while it HOLDS the board focus or while the sidebar is LOCKED to
 # it, so what is being read stays marked after the focus moves on, and a rebuild re-applies it to
-# whichever visual now represents that same card.
+# whichever visual now represents that same card. The drop map is re-applied with it, from the
+# last sweep, because a rebuild hands the same cell a different visual.
 func _refresh_card_marking() -> void:
+	var tint : Color = PlayArea.settings().legal_cell_tint
 	for data : CardData in data_card:
 		var visual : CardVisual = data_card[data]
 		visual.focused = visual == focused_visual or data == locked_data
+		visual.tint = tint if data in _legal_cells else Color.WHITE
+
+## The zone card of every cell the held card may land in — the drop map the tint draws.
+var _legal_cells : Dictionary[CardData, bool] = {}
+
+# THE DROP MAP, asked through the same legality dispatch `try_place` uses, so no placement rule is
+# restated here. ⚠ NEVER PER FRAME: the dispatch walks every card on the board for every cell, so
+# it is re-swept only where the answer can change — the hand, or the board.
+func _sweep_legal_cells() -> void:
+	var game := CardEnvironment.get_current_game()
+	if not game: return
+	var legal : Dictionary[CardData, bool] = {}
+	for grid : GridData in game.state.grids:
+		for i : int in grid.cells.size():
+			var target : CardData = grid.cells[i].datas.back() \
+					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+			var accepted : Array[CardData] = await game.return_first_data_array_result(
+					&"on_can_place_stack", selected_cards, target)
+			if accepted: legal[grid.cell_types[i]] = true
+	_legal_cells = legal
+	_refresh_card_marking()
 
 func on_control_focus_entered(control:Control) -> void:
 	flush_rebuild() #reads ui_data / data_card

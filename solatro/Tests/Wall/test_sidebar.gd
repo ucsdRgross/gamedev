@@ -167,6 +167,7 @@ func _ready() -> void:
 	await test_a_refused_pickup_does_not_make_the_next_arm_follow()
 	await test_the_disarm_leaves_nothing_armed()
 	await test_an_empty_entrance_arms_nothing()
+	await test_the_legal_cell_tint_follows_what_a_placement_accepts()
 	behavior_section("S18: CANCEL")
 	await test_the_second_button_dismisses_a_description_with_nothing_held()
 	await test_the_second_button_with_nothing_to_cancel_does_nothing()
@@ -2245,17 +2246,21 @@ func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 	await _end_main_fixture()
 
-# A landing for `held` the board itself accepts or refuses, asked through the SAME
+# Whether the board itself takes `held` onto this control, asked through the SAME
 # `on_can_place_stack` dispatch `try_place` uses, so no placement rule is spelled out here.
-func _placement_target(controls: Array[Control], held: Array[CardData], legal: bool) -> Control:
+func _board_accepts(held: Array[CardData], control: Control) -> bool:
 	var game := CardEnvironment.get_current_game()
+	var accepted : Array[CardData] = await game.return_first_data_array_result(
+			&"on_can_place_stack", held, _play_area.ui_data[control])
+	return not accepted.is_empty()
+
+# A landing for `held` the board itself accepts or refuses.
+func _placement_target(controls: Array[Control], held: Array[CardData], legal: bool) -> Control:
 	for control : Control in controls:
 		if not _is_selectable(control): continue
-		var data : CardData = _play_area.ui_data[control]
-		if data in held: continue
-		var accepted : Array[CardData] = await game.return_first_data_array_result(
-				&"on_can_place_stack", held, data)
-		if accepted.is_empty() != legal: return control
+		if _play_area.ui_data[control] in held: continue
+		var accepts := await _board_accepts(held, control)
+		if accepts == legal: return control
 	return null
 
 ## Clicks an Entrance card and hands back what the board grabbed -- the shared opening of every placement test.
@@ -4194,6 +4199,63 @@ func test_an_empty_entrance_arms_nothing() -> void:
 		check(_play_area.selected_cards.is_empty(),
 				"...and a click on a cell with nothing armed picks nothing up (Q119=a)")
 	await _end_main_fixture()
+
+## 6.11/G12/`GAP-005`=a: the tint IS the drop map -- it marks what the board accepts, nothing it refuses, and it follows the answer when a placement changes it.
+func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
+	await _start_game_fixture()
+	var held := await _grab_a_card_to_place()
+	if not held.is_empty():
+		var controls := await _hoverable_card_controls()
+		var cell := _an_empty_cells_control(controls)
+		var refused := await _placement_target(controls, held, false)
+		check(cell != null, "the dealt board offers an empty grid cell to aim at")
+		check(refused != null, "...and a target this card may NOT land on")
+		if cell != null and refused != null:
+			var zone_card : CardData = _play_area.ui_data[cell]
+			var accepted := await _board_accepts(held, cell)
+			check(accepted, "the board takes the held card onto that cell (6.11)")
+			check(_tint_of(zone_card) == _legal_cell_tint(),
+					"...and the cell's zone card wears the legal-cell tint (6.11, G12)",
+					str(_tint_of(zone_card)))
+			check(_tint_of(_play_area.ui_data[refused]) == Color.WHITE,
+					"a target the board refuses wears no tint (6.11, G12)",
+					str(_tint_of(_play_area.ui_data[refused])))
+			var marked_before := _tinted_cell_count()
+			await _click_card(cell)
+			await _hoverable_card_controls()
+			var now_held : Array[CardData] = _play_area.selected_cards.duplicate()
+			var still_accepted := await _board_accepts(now_held, _play_area.data_ui[held[0]])
+			check(not still_accepted, "the filled cell takes nothing more (6.11)")
+			check(_tint_of(zone_card) == Color.WHITE,
+					"...so the cell that was legal has lost the tint (6.11, G12)",
+					str(_tint_of(zone_card)))
+			check(_tinted_cell_count() == marked_before - 1,
+					"...and every cell still legal kept it (6.11, G12)",
+					"%d marked, was %d" % [_tinted_cell_count(), marked_before])
+	await _end_main_fixture()
+
+## The mark this card is wearing right now, WHITE for none.
+func _tint_of(data: CardData) -> Color:
+	return _play_area.data_card[data].tint
+
+func _legal_cell_tint() -> Color:
+	return PlayArea.settings().legal_cell_tint
+
+## An EMPTY cell's own zone control -- what a release onto that cell lands on.
+func _an_empty_cells_control(controls: Array[Control]) -> Control:
+	var game := CardEnvironment.get_current_game()
+	for control : Control in controls:
+		if not game.state.cell_type_coord(_play_area.ui_data[control]).is_nowhere(): return control
+	return null
+
+## How many of the board's cells are wearing the drop map.
+func _tinted_cell_count() -> int:
+	var game := CardEnvironment.get_current_game()
+	var marked := 0
+	for data : CardData in _play_area.data_card:
+		if game.state.cell_type_coord(data).is_nowhere(): continue
+		if _tint_of(data) != Color.WHITE: marked += 1
+	return marked
 
 ## S18.2/F9: the second button with nothing held closes the description, and closes nothing else.
 func test_the_second_button_dismisses_a_description_with_nothing_held() -> void:

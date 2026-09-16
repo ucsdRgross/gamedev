@@ -135,9 +135,20 @@ written when a run stalls or fails.
   - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
   - `GAP-004` — a viewer's description preview: the board's card size or the viewer's? Recommends the viewer's (as built).
-  - `GAP-005` — the legal-cell highlight was never built: what is its mark? Recommends a tint on each legal cell's zone card, built with release-to-place.
   - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
   - `GAP-010` — what is `Q135`=(b)'s "way back to the pack" from a preview card? Recommends an explicit Back control; (a) ships meanwhile.
+- ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**
+  - **The drop-map sweep is not free, and the number is here so nobody re-measures it.** It runs one
+    `on_can_place_stack` dispatch per cell per board mutation (coalesced to once a frame by
+    `_rebuild_queued`), which is the ruling's OWN cost: "the tint follows what `try_place` accepts"
+    means asking the real dispatch rather than a second legality rule. The full suite went
+    **351.6 s → 370.4 s**, carried by the board-mutating suites — E2E RUN 27.7→31.5, GRID LAYOUT
+    17.4→20.9, LEAK CANARY 10.7→12.6, DRAG PLACE 14.0→15.3. No "skip while processing" narrowing was
+    added: nobody ruled one, and it would leave the map stale at the end of a cascade.
+  - **The placeholder-warning headroom is gone.** The gate allows at most 22 and the run now emits
+    exactly 22, the new one being `legal_cell_tint` itself — so the NEXT item to add an off-palette
+    colour breaches the gate. That warning is provisional: `GAP-011` option (b) replaces the knob
+    with a palette entry and gives the slot back.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
   - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
   - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?

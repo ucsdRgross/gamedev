@@ -122,6 +122,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `card_drag_threshold` | `float` | `0.25` |
 | `touch_target_fraction` | `float` | `0.06` |
 | `entrance_flip_stagger` | `float` | `0.15` |
+| `legal_cell_tint` | `Color` | `Color(0.72, 1.35, 0.86)` |
 
 **Removed:** `wall_info_mode`, `wall_info_card_width`, `wall_info_card_max_height`,
 `wall_info_card_overlap`, `wall_info_zoom_scale`, `wall_screen_popups`, `hud_width_fraction`,

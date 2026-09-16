@@ -137,6 +137,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 6.8 | The lift height is the same in both states | before and after following starts | equal y-offset | Gate | G8, `Q265`=a | S14 |
 | 6.9 | A CLICKED card follows immediately | click an Entrance card | `following == true` on the same frame | Gate | G11, `Q267`=a | S14 |
 | 6.10 | The arm survives undo by re-derivation | place, undo | armed slot is the leftmost present again | Gate | G16, `Q117`=a | S15 |
+| 6.11 | The legal-cell tint IS the drop map | `TestSidebar`: a dealt board, a card grabbed, one empty cell and one target the board refuses, then that cell filled by a real click | the accepted cell's own zone card wears `legal_cell_tint`, the refused target wears none, and after the placement the filled cell has lost the tint while every cell still legal keeps it | Gate | G12, `Q24`=a, `Q124`=a, `GAP-005`=a | S16 |
 
 ## 7. Automatic end — chart J
 
@@ -194,5 +195,4 @@ deletions already proved by §8:
 - `F1` — an engine fact about Godot's event order, not our behaviour. `TestDragPlace` 5.1 exercises
   it indirectly.
 - `M12` — a record that `Q123` is reversed. Proved by 2.5 and 8.3.
-- `G12` — no test: the legal-cell highlight is unbuilt (`gaps/GAP-005.md`).
 - Charts `I` and `K` — by-eye rows only (9.5, 9.6, 9.8).

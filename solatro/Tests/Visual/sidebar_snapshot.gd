@@ -191,6 +191,7 @@ func _ready() -> void:
 	await RenderingServer.frame_post_draw
 	_capture(CARD_LIFTED_OUT_PATH)
 	_report_held_lift(view, armed, "lifted")
+	_report_the_drop_map(view, "card_lifted")
 
 	var pointer := _point_over_the_board(main, view)
 	await _await_held_card_settled(view, armed)
@@ -616,6 +617,19 @@ func _release_off_a_cell(main: Main, view: GameView, data: CardData) -> void:
 	await get_tree().process_frame
 	_push_click(viewport, BARE_BOARD_POINT, false)
 	await get_tree().process_frame
+
+# The drop map is a colour, so the still is checked against a COUNT: how many of the board's cells
+# the sweep marked legal for the card in hand, read back off the visuals that are drawing it.
+func _report_the_drop_map(view: GameView, shot: String) -> void:
+	var marked := 0
+	var cells := 0
+	for data : CardData in view.play_area.data_card:
+		if view.game.state.cell_type_coord(data).is_nowhere(): continue
+		cells += 1
+		if view.play_area.data_card[data].tint != Color.WHITE: marked += 1
+	print("SIDEBAR_SNAPSHOT %s legal_cells=%d of=%d tint=%s held=%d" % [
+			shot, marked, cells, PlayArea.settings().legal_cell_tint,
+			view.play_area.selected_cards.size()])
 
 # A held card EASES toward its target rather than snapping, so a still taken on the next frame
 # catches it mid-flight. The grab's own rebuild can hand the card a DIFFERENT visual, so the live

@@ -1235,7 +1235,7 @@ flowchart TD
   E3{"NEW — a CELL, and is a card armed"}
   E4["NEW — armed: the card is placed immediately, one click, no confirm — and on touch too, because it is undoable and hesitation is worse"]
   E5{"NEW — is the cell occupied"}
-  E6["NEW — occupied: the card STACKS, and the legal-cell highlight already showed that it would"]
+  E6["NEW — occupied: the card STACKS, and the tint already showed whether it would — an occupied cell offers the card on TOP as the target, so it is marked only while a rule accepts that (GAP-005=a)"]
   E7["NEW — nothing armed: the click opens that cell's description if it holds a card"]
   E8["NEW — a BOARD card: a CLICK still needs the armed card cancelled first, or the click would try to place onto it instead"]
   E9["NEW — if the board card is not stackable, picking it up is the only remaining action, so the grab is allowed straight away"]
@@ -1245,7 +1245,7 @@ flowchart TD
   E13["NEW — within the threshold: it was a CLICK. The card is grabbed and stays held — chart M for the threshold"]
   E14["NEW — beyond it: the RELEASE places, on both mouse and touch. One gesture model for every device"]
   E15{"NEW — released over what"}
-  E16["Game.place_card_in_grid — a LEGAL cell only, so the legal-cell highlight is literally the drop map"]
+  E16["Game.place_card_in_grid — a LEGAL cell only, and the tint is literally the drop map: it is swept through the same on_can_place_stack dispatch try_place uses (GAP-005=a)"]
   E17["NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing. The return HOLDS: only a new press starts it following again, never a mouse motion (GAP-007=a)"]
   E18["NEW — a drag-placed card is an ordinary undo step and commits the Entrance to its grid exactly as a clicked one does. Nothing downstream can tell which route was taken"]
   E19{"NEW — cancel is pressed"}
@@ -1317,7 +1317,7 @@ flowchart TD
   G9["NEW — GLOW means selected. LIFT means currently picked up, warning that the next click on a highlighted space will put it down. The selection glow sits wherever the selector is"]
   G10["NEW — focus RESTS on the armed card once, at the start of a show only. After that the two move independently"]
   G11["NEW — a card the player CLICKS follows immediately: the mouse has just moved by definition. The delay only ever applies to a card nobody touched"]
-  G12["NEW — every legal cell is highlighted, and because a card is armed for the whole show, that highlight is on for the whole show"]
+  G12["NEW — every legal cell's own zone card wears a tint, colour legal_cell_tint in player_settings.gd, re-swept when the hand or the board changes. A card is armed for the whole show, so the map is on for the whole show (GAP-005=a). ⚠ NOT ON SCREEN YET: the card shader discards modulate, so nothing modulate marks draws — GAP-011"]
   G13["Game.place_card_in_grid — the placement commits the Entrance to its grid. Arming commits nothing"]
   G14["NEW — after a placement, and after a refill, the new leftmost present card arms — chart I"]
   G15["NEW — cancel DISARMS, and clicks on cells then do nothing until something is armed again"]

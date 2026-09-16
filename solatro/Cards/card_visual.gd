@@ -116,11 +116,24 @@ static var card_jump_rise_play : float:
 	get():
 		return CARD_JUMP_RISE * settings().card_scale
 
+## The focus glow's brightness, as a multiplier on whatever colour the card already wears.
+const FOCUS_GLOW := Color(1.825, 1.825, 1.825)
+
 var focused : bool = false:
 	set(value):
 		focused = value
-		if focused: modulate = Color(1.825, 1.825, 1.825)
-		else: modulate = Color(1.0, 1.0, 1.0)
+		_apply_marks()
+## A board mark multiplied into this card's colour — WHITE is unmarked.
+var tint : Color = Color.WHITE:
+	set(value):
+		tint = value
+		_apply_marks()
+
+# ⚠ THE ONE PLACE `modulate` IS WRITTEN. The glow and the tint are two marks on one colour, so it
+# is derived from both; assigning it from either setter alone makes whichever ran last the winner.
+func _apply_marks() -> void:
+	modulate = tint * FOCUS_GLOW if focused else tint
+
 @export var data : CardData:
 	set(value):
 		if data == value: return
