@@ -148,6 +148,7 @@ func _ready() -> void:
 	await test_following_is_a_one_way_latch()
 	await test_the_lift_is_the_same_height_in_both_states()
 	await test_a_clicked_card_follows_immediately()
+	await test_a_click_locked_card_keeps_its_description_until_it_is_placed()
 	await test_a_following_card_leaving_its_cell_reverts_to_the_hud()
 	await test_a_lifted_card_that_is_not_following_keeps_the_description()
 	test_the_choice_viewer_owns_no_inspector_panel()
@@ -3732,8 +3733,8 @@ func test_a_clicked_card_follows_immediately() -> void:
 					"held %d following %s" % [visual.held, visual.following])
 	await _end_main_fixture()
 
-## 1.7/B9/B10/Q268=a: the FOURTH dismissal -- a FOLLOWING card leaving its cell reverts to the HUD.
-func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
+## 1.7/B9/B11/`GAP-008`=a: the click that locked and grabbed one card keeps its description through the drag, and the PLACEMENT closes it.
+func test_a_click_locked_card_keeps_its_description_until_it_is_placed() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var entrance := await _entrance_card_controls()
@@ -3747,9 +3748,45 @@ func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
 				"the click locked a description and grabbed the card it landed on")
 		_hover(_off_the_board_point())
 		await get_tree().process_frame
-		check(hud_stack.visible and not _panel.visible,
-				"a FOLLOWING card leaving its cell reverts the container to the HUD (1.7, Q268=a)")
-		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
+		check(_panel.visible and not hud_stack.visible and dismissals.is_empty(),
+				"the motion a placement needs does NOT dismiss the card the click locked (1.7, GAP-008=a)",
+				str(dismissals.size()))
+		var placed := await _place_the_arm()
+		check(placed != null, "the board offers that card a cell it may land on")
+		if placed != null:
+			check(hud_stack.visible and not _panel.visible,
+					"...and the placement is what reverts the container to the HUD (1.7, B11)")
+	await _end_main_fixture()
+
+## 1.7/B9/B10/Q268=a: the FOURTH dismissal -- a FOLLOWING card the player never clicked to lock leaves its cell and reverts to the HUD.
+func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
+	await _start_game_fixture()
+	var hud_stack : Control = _container.get_node(^"%HudStack")
+	var controls := await _hoverable_card_controls()
+	check(not controls.is_empty(), "the dealt board offers a card control to read",
+			str(controls.size()))
+	if not controls.is_empty():
+		await _lock_without_holding(controls[0])
+		var carried : Control = null
+		for control : Control in await _entrance_card_controls():
+			if _play_area.ui_data[control] != _play_area.locked_data:
+				carried = control
+				break
+		check(carried != null, "the board offers an Entrance card OTHER than the locked one to hold")
+		if carried != null:
+			var visual := await _arm_without_touching(carried)
+			var dismissals : Array[int] = []
+			_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+			_hover(_play_area._origin_cell_rect(visual).get_center())
+			await get_tree().process_frame
+			check(visual.following and _container.showing_description() and dismissals.is_empty(),
+					"the pointer inside the held card's own cell starts the follow and dismisses nothing",
+					str(dismissals.size()))
+			_hover(_off_the_board_point())
+			await get_tree().process_frame
+			check(hud_stack.visible and not _panel.visible,
+					"a FOLLOWING card leaving its cell reverts the container to the HUD (1.7, Q268=a)")
+			check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 	await _end_main_fixture()
 
 ## 1.8/B11/Q268=a: a card that is NOT following dismisses nothing -- the motion that arms it closes no description.
@@ -4285,19 +4322,19 @@ func test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board() -> void
 			await get_tree().process_frame
 	await _end_main_fixture()
 
-## A following card keeps following wherever the pointer goes, including over the container.
+## A following card keeps following wherever the pointer goes, including over the container -- witnessed by the cell-leave ask, which only a card the player did NOT click to lock still makes.
 func test_motion_over_the_container_reaches_the_following_card() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
 	check(not entrance.is_empty(), "the dealt board offers a card to pick up",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		await _click_card(entrance[0])
-		var held : CardData = _play_area.selected_cards[0] if _play_area.selected_cards else null
-		check(held != null and _play_area.data_card[held].following,
-				"the click left a card following the pointer", str(_play_area.selected_cards.size()))
-		_hover(entrance[0].get_global_rect().get_center())
+		var visual := await _arm_without_touching(entrance[0])
+		_hover(_play_area._origin_cell_rect(visual).get_center())
 		await get_tree().process_frame
+		check(visual.following,
+				"a motion inside its own cell left the card following the pointer",
+				str(_play_area.selected_cards.size()))
 		var reached : Array[bool] = [false]
 		_play_area.description_dismiss_requested.connect(func() -> void: reached[0] = true)
 		check(_container.mouse_filter == Control.MOUSE_FILTER_STOP

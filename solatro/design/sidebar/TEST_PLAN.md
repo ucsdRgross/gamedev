@@ -67,7 +67,8 @@ reason, then implement. A test written after the code passes it is a test that a
 | 1.4 | Click-lock, then hovering another card follows the hover | entries A then B, lock on A | shows B while hovering B | Gate | B7, `Q60`=c | S6 |
 | 1.5 | …and returns to the locked card when the pointer leaves everything | as 1.4, then publish nothing | shows A again | Gate | B7 | S6 |
 | 1.6 | Locking a second replaces the first | lock A, lock B, leave | shows B | Gate | B8, `Q61`=a | S6 |
-| 1.7 | Each of the four dismissals reverts to the HUD | lock A, then: exit X / cancel / bare-board click / card leaves its cell while following | HUD visible in all four | Gate | B9, B10, `Q64`=a | S6 |
+| 1.7 | Each of the four dismissals reverts to the HUD | lock A, then: exit X / cancel / bare-board click / a following card the player did NOT click to lock leaves its cell (lock A, arm B, pointer into B's own cell, then out) | HUD visible in all four; the fourth announced exactly once | Gate | B9, B10, `Q64`=a | S6 |
+| 1.7a | A card the player CLICKED to lock is EXEMPT from the cell-leave dismissal | click an Entrance card (one click locks and grabs it), pointer off the board, then place it | the description survives the drag with zero dismissals, and the placement is what reverts to the HUD | Gate | B9, B11, `GAP-008`=a | S6 |
 | 1.8 | A card leaving its cell while NOT following does NOT dismiss | armed card, `following == false`, cursor moves away | still showing the description | Gate | B11, `Q268`=a | S6 |
 | 1.9 | `processing` true reverts to the HUD, lock and all | lock A, set `processing = true` | HUD visible, `is_locked()` false | Gate | B17, B18, C8 | S7 |
 | 1.10 | A hover DURING processing changes nothing | as 1.9, then publish entry B | HUD still visible | Gate | B19, `Q258`=a | S7 |

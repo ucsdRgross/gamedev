@@ -1682,15 +1682,16 @@ func _input(event: InputEvent) -> void:
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
 
-# ANY mouse motion starts a held card following -- including the one Godot emulates from a finger,
-# and never a key or pad focus -- once a press has allowed it. A following card whose pointer
-# CROSSES OUT of its own cell closes the description, read before the latch that starts the follow.
+# ANY mouse motion starts a held card following -- the one Godot emulates from a finger included, a
+# key or pad focus never -- once a press has allowed it. Crossing OUT of the held card's own cell
+# closes the description, read before that latch, and NEVER for the card that same click locked.
 func _on_pointer_moved(at: Vector2) -> void:
 	if selected_cards.is_empty(): return
 	var carried : CardVisual = data_card.get(selected_cards[0])
 	if not carried: return
 	var inside := _origin_cell_rect(carried).has_point(at)
-	if carried.following and _pointer_was_in_the_origin_cell and not inside:
+	var crossed_out_of_its_cell := carried.following and _pointer_was_in_the_origin_cell and not inside
+	if crossed_out_of_its_cell and locked_data != selected_cards[0]:
 		description_dismiss_requested.emit()
 	_pointer_was_in_the_origin_cell = inside
 	if _motion_may_start_following: follow_cards()

@@ -90,7 +90,7 @@ Transitions, and nothing else may cause one:
 | pointer leaves everything, nothing locked | **stays** on the last entry | B4 |
 | click on a card | `lock_to(...)`, and the click still performs its game action | B5, `Q56`=a |
 | a locked card, pointer over another card | description follows the hover; returns to the locked card when the pointer leaves everything | B7, `Q60`=c |
-| exit X, cancel, click on bare board, or the held card leaves its cell **while following** | `show_hud()` | B9, B10, B11 |
+| exit X, cancel, click on bare board, or the held card leaves its cell **while following** — but **never the card the same click locked and grabbed**, whose placement closes it instead | `show_hud()` | B9, B10, B11, `GAP-008`=a |
 | `Game.processing` goes true | `show_hud()`, **lock cleared and not restored** | B17, B18, C8 |
 | hover during processing | **ignored entirely** | B19 |
 | processing ends | HUD holds until **any** focus event, including onto the same card | B20, C9, `Q257`=b |

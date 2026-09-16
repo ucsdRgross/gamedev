@@ -136,7 +136,6 @@ written when a run stalls or fails.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
   - `GAP-004` — a viewer's description preview: the board's card size or the viewer's? Recommends the viewer's (as built).
   - `GAP-005` — the legal-cell highlight was never built: what is its mark? Recommends a tint on each legal cell's zone card, built with release-to-place.
-  - `GAP-008` — the motion a placement needs dismisses a mouse click-lock. Recommends exempting a click-locked card from the cell-leave dismissal.
   - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
   - `GAP-010` — what is `Q135`=(b)'s "way back to the pack" from a preview card? Recommends an explicit Back control; (a) ships meanwhile.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:

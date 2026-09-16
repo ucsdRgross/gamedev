@@ -1102,7 +1102,7 @@ flowchart TD
   B8["NEW — locking a second card replaces the first. Only one lock exists"]
   B9{"NEW — a dismissal arrives"}
   B10["NEW — dismissing REVERTS the container to the HUD. Nothing is hidden, because the container is always on screen"]
-  B11["NEW — the held card leaves the bounds of the cell it came from — but ONLY once it is FOLLOWING, so an untouched armed card never closes a description by accident"]
+  B11["NEW — the held card leaves the bounds of the cell it came from — but ONLY once it is FOLLOWING, so an untouched armed card never closes a description by accident, and NEVER for a card the player CLICKED to lock: that one click both locked and grabbed it, so its placement is what closes it — `GAP-008`=a"]
   B12["NEW — the card is placed: the interaction is finished, so the description closes"]
   B13["NEW — a board rebuild keeps the same CardData's description, whichever control now represents it"]
   B14["NEW — the win or lose screen leaves the description open, so a card can still be read beside the result"]
@@ -1122,7 +1122,7 @@ flowchart TD
   B7 --> B9
   B9 -- "the exit X" --> B10
   B9 -- "cancel" --> B10
-  B9 -- "the card leaves its cell" --> B11
+  B9 -- "the card leaves its cell, and the player did not click it to lock" --> B11
   B9 -- "a click on bare board" --> B10
   B11 --> B10
   B12 --> B10
