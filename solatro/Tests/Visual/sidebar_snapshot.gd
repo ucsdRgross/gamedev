@@ -577,12 +577,11 @@ func _arm_an_entrance_card(main: Main, view: GameView) -> CardData:
 	view.play_area.grab_cards([data] as Array[CardData])
 	return data
 
-# The FOCUS-ELSEWHERE still: the ARM gives the lift and the GLOW stays with the focus, so the two
-# end up on different cards. The focus is moved the way a pad moves it, an arrow into the board's
-# own viewport, and what actually happened is printed beside the still.
+# The FOCUS-ELSEWHERE still: the armed card RESTING in its slot at its lift. The focus moves by
+# ARROW ALONE -- a pointer motion would start the follow and carry the card out of its slot -- and
+# what actually happened is printed beside the still.
 func _move_the_focus_off_the_armed_card(main: Main, view: GameView) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
-	_point_over_the_board(main, view)
 	await _await_held_card_settled(view, view.play_area.selected_cards[0])
 	var key := InputEventKey.new()
 	key.keycode = KEY_UP

@@ -1311,8 +1311,8 @@ flowchart TD
   G3["NEW — and it moves NO focus and NO selection highlight. Nothing to suppress on the description side, because no highlight moved — chart B"]
   G4["NEW — the card LIFTS the moment it arms, to show it is selected and about to move. That lift is the first thing a fresh board shows"]
   G5["NEW — but it does NOT follow the cursor yet"]
-  G6{"NEW — has a NEW FOCUS happened"}
-  G7["NEW — focus landing on any card by key or pad, OR any mouse motion at all. No threshold: the literal reading"]
+  G6{"NEW — has the POINTER moved"}
+  G7["NEW — any mouse motion at all, including the one Godot emulates from a touch. No threshold. A key or pad focus does NOT start it: the card stays lifted in its slot and the pad player places by accept on a cell (GAP-006=b)"]
   G8["NEW — now it follows, at the same lift height, so the only visible change is that it starts moving. Following is a ONE-WAY latch until the card is placed or cancelled"]
   G9["NEW — GLOW means selected. LIFT means currently picked up, warning that the next click on a highlighted space will put it down. The selection glow sits wherever the selector is"]
   G10["NEW — focus RESTS on the armed card once, at the start of a show only. After that the two move independently"]

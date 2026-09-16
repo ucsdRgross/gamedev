@@ -1680,9 +1680,9 @@ func _input(event: InputEvent) -> void:
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
 
-# ANY mouse motion starts a held card following, including the one Godot emulates from a finger.
-# A following card whose pointer CROSSES OUT of the cell it came from closes the description --
-# read before the latch, so the motion that starts the following never closes one by accident.
+# ANY mouse motion starts a held card following, including the one Godot emulates from a finger; a
+# key or pad focus does NOT. A following card whose pointer CROSSES OUT of its own cell closes the
+# description -- read before the latch, so the motion that STARTS the follow never closes one.
 func _on_pointer_moved(at: Vector2) -> void:
 	if selected_cards.is_empty(): return
 	var carried : CardVisual = data_card.get(selected_cards[0])
@@ -1786,7 +1786,7 @@ func arm_leftmost() -> void:
 	grab_cards(await game.try_grab(top))
 
 # The show opens with the board focus resting on the armed card, once: a key/pad player has to
-# start somewhere. It is NOT a highlight -- it publishes no description and starts no following.
+# start somewhere. It is NOT a highlight -- it publishes no description.
 # False when a board rebuilt behind the arm has no control for it, so the next arm rests instead.
 func rest_focus_on_armed() -> bool:
 	assert(not selected_cards.is_empty())
@@ -3187,7 +3187,6 @@ func on_control_focus_entered(control:Control) -> void:
 	if ui_data.has(control) and data_card.has(ui_data[control]):
 		focused_visual = data_card[ui_data[control]]
 	if ui_data.has(control) and not _focus_is_resting:
-		follow_cards()
 		if is_stock_control(control):
 			_publish_stock_info(_stock_slot_of_control[control])
 		else:

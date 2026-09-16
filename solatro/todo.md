@@ -136,7 +136,6 @@ written when a run stalls or fails.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
   - `GAP-004` — a viewer's description preview: the board's card size or the viewer's? Recommends the viewer's (as built).
   - `GAP-005` — the legal-cell highlight was never built: what is its mark? Recommends a tint on each legal cell's zone card, built with release-to-place.
-  - `GAP-006` — does a key/pad focus make the armed card follow an idle pointer? Recommends no: it waits lifted in its slot.
   - `GAP-007` — after a failed drag, does mouse motion restart following? Recommends only a new press does.
   - `GAP-008` — the motion a placement needs dismisses a mouse click-lock. Recommends exempting a click-locked card from the cell-leave dismissal.
   - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
@@ -161,6 +160,7 @@ written when a run stalls or fails.
   - In the top case an Entrance card draws over the deck viewer's panel; the deck picker's list text draws over the Inspect viewer's panel (pre-existing).
   - Mid-cascade, a stack of cards in column 0 draws above the picture's top edge.
   - No focus highlight is visible on the focused card inside a viewer.
+  - In the 9.4 still, the focused empty grid cell is indistinguishable from the other 24 — every empty cell wears the same animated dashed border, so there is no way in the image to see where a pad player's selector is.
   - An intermittent engine crash in teardown (0xC0000005) after a passing banner makes `run_tests.py` exit 3; seen twice, unattributed.
 
 Everything below is unscheduled backlog.

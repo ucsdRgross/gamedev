@@ -137,13 +137,12 @@ and not `following`, the card rests at its slot centre raised by the lift height
 height it has while following, so the only visible change when following starts is that it begins
 to move. (G4, G5, G8, `Q261`=a, `Q265`=a)
 
-`following` is set by either of two events, with **no threshold**:
-
-- focus landing on any card by key or pad;
-- any mouse motion at all.
+`following` is set by **any mouse motion at all**, with **no threshold** — including the motion
+Godot emulates from a touch. A focus landing on a card by key or pad does **not** set it: the armed
+card stays lifted in its slot, and the pad player places by accept on a cell.
 
 It is a **one-way latch**: once true it stays true until the card is placed or cancelled.
-(G6, G7, G8, `Q262`=a, `Q263`=a)
+(G6, G7, G8, `GAP-006`=b, `Q263`=a)
 
 A card the player CLICKS is `following` immediately — the mouse has moved by definition. (G11)
 

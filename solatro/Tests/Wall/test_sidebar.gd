@@ -144,7 +144,7 @@ func _ready() -> void:
 	behavior_section("S14: HELD, THEN FOLLOWING")
 	await test_a_held_card_lifts_and_does_not_follow()
 	await test_any_mouse_motion_starts_the_card_following()
-	await test_a_key_focus_onto_a_card_starts_it_following()
+	await test_a_key_focus_leaves_the_card_resting_until_a_motion()
 	await test_following_is_a_one_way_latch()
 	await test_the_lift_is_the_same_height_in_both_states()
 	await test_a_clicked_card_follows_immediately()
@@ -3647,9 +3647,10 @@ func test_any_mouse_motion_starts_the_card_following() -> void:
 		check(visual.following, "ONE mouse motion starts it following (6.5, Q262=a)")
 	await _end_main_fixture()
 
-## 6.6/G7: focus landing on a card by key or pad starts it too, with the mouse never touched.
-func test_a_key_focus_onto_a_card_starts_it_following() -> void:
+## 6.6/G7/GAP-006: a key or pad focus does NOT start the follow -- the card waits in its slot until the mouse moves.
+func test_a_key_focus_leaves_the_card_resting_until_a_motion() -> void:
 	await _start_game_fixture()
+	var controls := await _hoverable_card_controls()
 	var entrance := await _entrance_card_controls()
 	check(entrance.size() >= 2, "the dealt board offers two Entrance cards", str(entrance.size()))
 	if entrance.size() >= 2:
@@ -3657,7 +3658,16 @@ func test_a_key_focus_onto_a_card_starts_it_following() -> void:
 		check(not visual.following, "the armed card starts out not following")
 		entrance[1].grab_focus()
 		await get_tree().process_frame
-		check(visual.following, "a key/pad focus landing on a card starts it following (6.6, G7)")
+		check(not visual.following,
+				"a key/pad focus onto another card leaves it NOT following (6.6, GAP-006)")
+		await _await_card_settled(visual)
+		var lift := _lift_above_aim(visual, _slot_centre_of(visual))
+		check(absf(lift - visual.held_lift_px()) < 2.0,
+				"...still resting at its slot centre raised by the lift (6.6, GAP-006)",
+				"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+		_hover(_bare_board_point(controls))
+		await get_tree().process_frame
+		check(visual.following, "...and a LATER mouse motion starts it (6.6, GAP-006)")
 	await _end_main_fixture()
 
 ## 6.7/G8/Q263=a: following is a ONE-WAY latch -- a key event after it started does not stop it.

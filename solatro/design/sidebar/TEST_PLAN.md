@@ -131,7 +131,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 6.3 | Arming produces the SAME state as a pickup | the dealt arm, then a player's own click on that card | the same held index, mouse filter, layer order and lift; only `following` differs | Gate | G2, `Q252`=b | S15 |
 | 6.4 | The card LIFTS immediately, and does not follow | after the arm, before any input | `held != 0`, `following == false`, position is the slot centre raised by the lift | Gate | G4, G5, `Q254`=d | S14 |
 | 6.5 | Any mouse motion starts following | one motion event | `following == true` | Gate | G7, `Q262`=a | S14 |
-| 6.6 | A key focus onto any card also starts it | one focus event, no mouse | `following == true` | Gate | G7 | S14 |
+| 6.6 | A key focus does NOT start it; a later motion does | one focus event onto another card, no mouse, then one motion | `following == false` and the card still rests at its slot centre raised by the lift; after the motion `following == true` | Gate | G7, `GAP-006`=b | S14 |
 | 6.7 | Following is a one-way latch | start following, then send a key event | still `true` | Gate | G8, `Q263`=a | S14 |
 | 6.8 | The lift height is the same in both states | before and after following starts | equal y-offset | Gate | G8, `Q265`=a | S14 |
 | 6.9 | A CLICKED card follows immediately | click an Entrance card | `following == true` on the same frame | Gate | G11, `Q267`=a | S14 |
@@ -167,7 +167,7 @@ shows, or say UNVERIFIED.
 | 9.1 | The container on the game screen: HUD showing, board centred in what is left | C2, D10 | S3 |
 | 9.2 | The container showing a description: name, card visual, body, exit X | C5, `Q33`=c | S5 |
 | 9.3 | The container at the TOP on a narrow window, board roughly square | D6, `Q175`=a | S3 |
-| 9.4 | An armed Entrance card: lifted, glowing, focus elsewhere | G4, G9 | S15 |
+| 9.4 | An armed Entrance card lifted and RESTING in its own slot, with the focus and its marking elsewhere — REACHABLE by real input, arrow the focus off it and the card stays in its slot | G4, G9, `GAP-006`=b | S15 |
 | 9.5 | The Entrance's face-down stocks: one revealed card over ONE face-down card (frame 3), never a deeper stack — the owner's S21 ruling | I8, `Q217`=b | S21 |
 | 9.6 | The refill flip, staggered left to right — **a duration, so watch it run** | I4, I5 | S21 |
 | 9.7 | A card following the cursor at the same lift it had at rest | G8, `Q265`=a | S14 |
