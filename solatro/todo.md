@@ -134,7 +134,6 @@ written when a run stalls or fails.
   - `GAP-001` — does a 16:9 window wider than 2560 px clamp the container? Recommends clamping only windows wider than 16:9.
   - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
-  - `GAP-004` — a viewer's description preview: the board's card size or the viewer's? Recommends the viewer's (as built).
   - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
   - `GAP-010` — what is `Q135`=(b)'s "way back to the pack" from a preview card? Recommends an explicit Back control; (a) ships meanwhile.
 - ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**

@@ -76,6 +76,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 1.12 | The map's container does NOT swap on processing | map container, `processing = true` | unchanged | Gate | C10, `Q260b`=b | S7 |
 | 1.13 | A board rebuild keeps the same `CardData`'s description | show A's card, force `queue_rebuild()` | still showing A's description | Gate | B13, `Q65`=a | S6 |
 | 1.14 | Leaving and returning restores the screen's own description | show A on the game, go to the map, come back | shows A immediately | Gate | B15, B16, `Q19`=c, `Q20`=b | S5 |
+| 1.15 | A description opened inside a viewer previews the card at THAT VIEWER's size | open the deck viewer (it draws a card at twice a board card), highlight a listed card, resize the window | the preview's drawn width matches the viewer's card width, and the viewer's and the board's widths are far enough apart that the board's size would fail the same assertion | Gate | C5, `Q34`=b, `GAP-004`=b | S12 |
 
 ## 2. `TestGestureMetrics` — chart M
 

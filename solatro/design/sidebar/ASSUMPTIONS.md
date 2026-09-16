@@ -307,10 +307,11 @@
 - S11 new names NAMES.md does not list, tool-local and following that file's own `preview_*`
   convention: `WallEditor.preview_locked_description`, `WallEditor.container_side`.
 
-- S12: a viewer's description preview is drawn at the size THAT VIEWER draws a card at, in window
-  px -- `CardsViewer.card_window_px()` is `controls[0].child.card_size * picture_to_window_scale`.
-  Q34=b's "the board's own card size, so it reads as the same object" is about the object the
-  player is POINTING at, and inside a viewer that is the viewer's own card (L11, Q34).
+- S12, no longer an assumption -- RULED by GAP-004=b, and what S12 built is what the ruling keeps:
+  a viewer's description preview is drawn at the size THAT VIEWER draws a card at, in window px --
+  `CardsViewer.card_window_px()` is `controls[0].child.card_size * picture_to_window_scale`. Q34=b's
+  "the board's own card size, so it reads as the same object" is about the object the player is
+  POINTING at, and inside a viewer that is the viewer's own card (L11, Q34, GAP-004=b).
 - S12: viewers publish HIGHLIGHTS only. Hover and key/pad focus call into the sidebar; a click in a
   viewer is that viewer's own action (take, close) and never locks -- the lock is a board
   transition (L11, B5).

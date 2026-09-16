@@ -622,7 +622,7 @@ tell me.**
 - **Q31** `[Q30=b]` ⚑contract — How long is the dwell? · **(a)** 150 ms — barely perceptible, kills only the sweep · **(b)** 300 ms — a deliberate pause · **(c)** a knob, defaulting to 150 ms · *default* (c)
 - **Q32** `[Q30=a|b]` — The pointer leaves every card and nothing is locked. What does the sidebar do? · **(a)** keeps showing the last thing, exactly as `Q131` ruled for the notecard: *"if mouse goes over empty space while going to next card, notecard doesn't blink in and out of existence"* · **(b)** closes after a short grace period · **(c)** closes immediately · *default* (a) · notes — (a) is a standing owner ruling and reversing it needs a reason
 - **Q33** `[root]` — What does the sidebar show, top to bottom? · **(a)** the card's visual, then its name, then its description — the picture first, because you already know which card you are pointing at · **(b)** the name, then the visual, then the description · **(c)** the name and visual side by side at the top, then the description — the notecard's current arrangement, rotated for a tall panel · *default* (b)
-- **Q34** `[root]` ⚑contract — How big is the card visual in the sidebar? · **(a)** as wide as the sidebar allows, so it is the biggest the card is ever drawn — the braindump calls it a *"popup of the card visual"* · **(b)** at the board's own card size, so it reads as the same object · **(c)** a knob as a fraction of the sidebar width, defaulting to full width · *default* (c)
+- **Q34** `[root]` ⚑contract — How big is the card visual in the sidebar? · **(a)** as wide as the sidebar allows, so it is the biggest the card is ever drawn — the braindump calls it a *"popup of the card visual"* · **(b)** at the board's own card size, so it reads as the same object · **(c)** a knob as a fraction of the sidebar width, defaulting to full width · *default* (c) · notes — `GAP-004`=(b) settles what (b) means now that the viewers publish into this same sidebar: the preview is drawn at the size of the object it points at, so a description opened inside a viewer uses THAT viewer's card size, not the board's
 - **Q35** `[root]` — The sidebar's card visual is a REAL `CardVisual`, which idles and animates. Does it keep animating there? · **(a)** yes — it is the same living object, and a still image of an animated card is a lie about it · **(b)** no — it is frozen, so the reading surface is calm · *default* (a) · notes — `InfoCard._make_inert()` already strips focus and mouse from a preview while leaving drawing and idle animation alive, so (a) is the existing behaviour
 - **Q36** `[root]` ⚑gate — Does the sidebar show anything BEYOND what `ControlCard.describe_card()` already produces (name plus modifier lines)? · **(a)** no — same string, so the two surfaces cannot drift — **→ next:** nothing further about content · **(b)** yes — the extra room is the point, so it also shows the card's suit and rank, its current score contribution, and which lines it is part of — **→ next:** exactly which of those extras ship · **(c)** yes, and the extra content is a later design; v1 ships the same string in a bigger panel — **→ next:** nothing further about content in this version · *default* (c) · notes — (b) is where the sidebar earns its size, and every item in it is a separate piece of work
 - **Q37** `[Q36=b]` — Which of those extras, exactly? · **(a)** suit and rank spelled out · **(b)** the card's current contribution to the score · **(c)** which rows, columns, diagonals and height runs it currently sits in · **(d)** all three · *default* (d) · notes — this one is genuinely a list; free text is expected
@@ -1143,7 +1143,7 @@ flowchart TD
   C2["NEW — DEFAULT CONTENTS: the HUD"]
   C3["NEW — inside the HUD, top to bottom: the numbers first, then the piles as one ROW across the width, then the actions"]
   C4["NEW — members: Deck, Discard, Rules, Goal, Total, Combo, Undo, End. %MultScore and %Preview are DELETED in the same pass — chart L"]
-  C5["NEW — a highlight arrives, so the contents swap to the description — chart B"]
+  C5["NEW — a highlight arrives, so the contents swap to the description, its preview drawn at the size the highlighted object is itself drawn at: the board's card size from the board, each viewer's own from that viewer (GAP-004=b) — chart B"]
   C6["NEW — while the description shows, the HUD's controls are off screen. Accepted"]
   C7["NEW — a LOCKED description is forced back to the HUD by cancel"]
   C8["NEW — Game.processing forces it back too, lock and all, and the HUD is then what the player watches the cascade in: the score, the goal and the combo are what the cascade animates"]
@@ -1560,8 +1560,9 @@ rule that produces it:
 - `PlayArea.board_inset_left` is the container's width converted through the focused picture's live
   scale, and the matching TOP inset likewise;
 - the sidebar's **height** on the side is the window's;
-- the **card visual's** size in the sidebar is the board's own card size, so it reads as the same
-  object — not a fraction of anything;
+- the **card visual's** size in the sidebar is the size the object it points at is drawn at — the
+  board's card size from the board, each viewer's own card size from that viewer (`GAP-004`=b) — so
+  it reads as the same object, not a fraction of anything;
 - the **lift height** is one value for both armed-and-still and following, so the only visible change
   when following starts is that the card begins to move;
 - the **armed Entrance slot** is "leftmost present", re-derived after every undo;
