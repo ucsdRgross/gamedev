@@ -463,8 +463,9 @@ func _spy_on_drops() -> Array[CardData]:
 	_pa.card_dropped.connect(func(dropped: CardData) -> void: drops.append(dropped))
 	return drops
 
-# 5.3 (E17, Q280=a, Q281=a): a release over a cell the board refuses returns the card — back in
-# its slot, still armed, still lifted, and no longer following. A failed drag costs nothing.
+# 5.3 (E17, Q280=a, Q281=a, GAP-007=a): a release over a cell the board refuses returns the card —
+# back in its slot, still armed, still lifted, no longer following. The return survives mouse motion
+# and ends only on a new press. A failed drag costs nothing.
 func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
 	await _start_fixture()
 	await _drag_the_arm_into_the_grid()
@@ -484,7 +485,20 @@ func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
 		check(not _is_following(held), "...and no longer following (5.3, Q281=a)", _hand_str())
 		check(_pa.armed_slot() != -1 and _game.save_history.size() == committed,
 				"...still armed, with nothing committed (5.3)", _hand_str())
+		await _nudge(_card_centre(occupied[0]))
+		check(not _is_following(held) and _pa.armed_slot() != -1 and _placed_cards().size() == 1,
+				"...and a mouse motion afterwards leaves it resting in its slot (5.3, GAP-007=a)",
+				_hand_str())
+		await _push(_mouse_button(_card_centre(held), true), _picture_viewport)
+		await _nudge(_card_centre(held))
+		check(_is_following(held), "...until a NEW press restarts the follow (5.3, GAP-007=a)",
+				_hand_str())
 	await _end_fixture()
+
+# A motion the card cannot read as a drag: short of every threshold, so what it proves is the
+# MOTION, never the travel.
+func _nudge(from: Vector2) -> void:
+	await _push(_motion(from + Vector2(SUB_THRESHOLD_TRAVEL_PX, 0.0)), _picture_viewport)
 
 # ==============================================================================
 # 5.4 – 5.5: RELEASES THAT ARE NOT PLACEMENTS

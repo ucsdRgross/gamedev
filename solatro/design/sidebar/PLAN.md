@@ -144,6 +144,9 @@ card stays lifted in its slot, and the pad player places by accept on a cell.
 It is a **one-way latch**: once true it stays true until the card is placed or cancelled.
 (G6, G7, G8, `GAP-006`=b, `Q263`=a)
 
+One exception: a gesture that ended **without placing** — a refused drop, a refused grab — stops the
+follow, and motion does not restart it. Only a **new press**, or a fresh pickup, does. (`GAP-007`=a)
+
 A card the player CLICKS is `following` immediately — the mouse has moved by definition. (G11)
 
 ### 1.5 Arming — authorised by `Q117`, `Q252`

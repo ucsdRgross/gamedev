@@ -1471,6 +1471,7 @@ var _accept_press_msec : int = 0
 # form, which is why one gesture model needs no reader of its own for the touch forms.
 func _arm_card_gesture(at: Vector2) -> void:
 	flush_rebuild()
+	_motion_may_start_following = true
 	_press_origin = at
 	_drag_began = false
 	_depth_when_pressed = _committed_depth()
@@ -1578,9 +1579,10 @@ func _release_places(at: Vector2) -> void:
 	if target: card_dropped.emit(ui_data[target])
 	else: stop_following()
 
-## Nothing tracks the cursor after this: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
+## Nothing tracks the cursor until the next PRESS: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
 func stop_following() -> void:
 	_next_grab_follows = false
+	_motion_may_start_following = false
 	for data : CardData in selected_cards:
 		if data in data_card: data_card[data].following = false
 
@@ -1680,9 +1682,9 @@ func _input(event: InputEvent) -> void:
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
 
-# ANY mouse motion starts a held card following, including the one Godot emulates from a finger; a
-# key or pad focus does NOT. A following card whose pointer CROSSES OUT of its own cell closes the
-# description -- read before the latch, so the motion that STARTS the follow never closes one.
+# ANY mouse motion starts a held card following -- including the one Godot emulates from a finger,
+# and never a key or pad focus -- once a press has allowed it. A following card whose pointer
+# CROSSES OUT of its own cell closes the description, read before the latch that starts the follow.
 func _on_pointer_moved(at: Vector2) -> void:
 	if selected_cards.is_empty(): return
 	var carried : CardVisual = data_card.get(selected_cards[0])
@@ -1691,10 +1693,13 @@ func _on_pointer_moved(at: Vector2) -> void:
 	if carried.following and _pointer_was_in_the_origin_cell and not inside:
 		description_dismiss_requested.emit()
 	_pointer_was_in_the_origin_cell = inside
-	follow_cards()
+	if _motion_may_start_following: follow_cards()
 
 ## Where the pointer was last seen relative to the held card's own cell: a dismissal needs a real crossing OUT of it, and a card armed with the cursor elsewhere was never inside it to cross.
 var _pointer_was_in_the_origin_cell : bool = false
+
+## False once a gesture has ended without placing: a failed drag costs the player nothing, so the returned card waits in its slot for a NEW press rather than resuming the chase on the next twitch.
+var _motion_may_start_following : bool = true
 
 # The cell a held card came from: its own control stays put — only the visual rides the cursor —
 # and a card control's parent IS its cell slot.
@@ -1711,8 +1716,11 @@ func follow_cards() -> void:
 # for the grab it asked for; any other way the selection resolves drops it.
 var _next_grab_follows : bool = false
 
+# A CARD JUST TAKEN UP WAS NEVER CARRIED BY THE GESTURE THAT FAILED, so motion starts it following
+# even when the last release returned one -- an auto-arm reaches here with no press of its own.
 func grab_cards(datas:Array[CardData]) -> void:
 	var follows_at_once := _next_grab_follows
+	_motion_may_start_following = true
 	flush_rebuild() #reads data_card / data_ui
 	ungrab_cards()
 	selected_cards = datas

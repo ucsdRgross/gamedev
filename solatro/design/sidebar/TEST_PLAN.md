@@ -116,8 +116,8 @@ reason, then implement. A test written after the code passes it is a test that a
 |---|---|---|---|---|---|---|
 | 5.1 | A sub-threshold release is a CLICK | press and release 10 px apart, threshold 54 | the card is grabbed and stays held; nothing placed | Gate | E12, E13, `Q283`=a | S16 |
 | 5.2 | An over-threshold release on a LEGAL cell places | press on an Entrance card, release on an empty legal cell | `place_card_in_grid` ran; one undo step; the grid committed | Gate | E14, E16, E18 | S16 |
-| 5.3 | …on an illegal cell returns the card | release on an illegal cell | back in its slot, still armed, still lifted, `following == false` | Gate | E17, `Q280`=a, `Q281`=a | S16 |
-| 5.4 | …over the container returns it too | release over the container's rect | as 5.3 | Gate | E17, `Q288`=a | S16 |
+| 5.3 | …on an illegal cell returns the card, and the return HOLDS | release on an illegal cell, then a mouse motion, then a new press | back in its slot, still armed, still lifted, `following == false`; the motion leaves it resting there; the new press starts it following again | Gate | E17, `Q280`=a, `Q281`=a, `GAP-007`=a | S16 |
+| 5.4 | …over the container returns it too | release over the container's rect | the same return as 5.3: back in its slot, still armed, still lifted, `following == false` — it reaches the same gate, so 5.3 owns the hold | Gate | E17, `Q288`=a | S16 |
 | 5.5 | A touch TAP on a card needs no threshold | press and release on the card's own slot | the card is selected and lifted, not placed, not returned-with-cost | Gate | E24, `Q285`=b | S16 |
 | 5.6 | A drag from a BOARD card cancels the arm implicitly | armed Entrance card, drag a board card | the Entrance disarmed; the board card is the one held | Gate | E10, E11, `Q286`=b | S16 |
 | 5.7 | A CLICK on a board card still needs the cancel first | armed, click a board card | it attempts to place onto it, per your `Q122` note | Gate | E8, `Q122` note | S16 |

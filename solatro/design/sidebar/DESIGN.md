@@ -1246,7 +1246,7 @@ flowchart TD
   E14["NEW — beyond it: the RELEASE places, on both mouse and touch. One gesture model for every device"]
   E15{"NEW — released over what"}
   E16["Game.place_card_in_grid — a LEGAL cell only, so the legal-cell highlight is literally the drop map"]
-  E17["NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing"]
+  E17["NEW — anywhere else, the container included and off-window included: the card goes back to its slot, still armed, still lifted, no longer following. A failed drag costs nothing. The return HOLDS: only a new press starts it following again, never a mouse motion (GAP-007=a)"]
   E18["NEW — a drag-placed card is an ordinary undo step and commits the Entrance to its grid exactly as a clicked one does. Nothing downstream can tell which route was taken"]
   E19{"NEW — cancel is pressed"}
   E20["NEW — the HELD CARD is released first"]
