@@ -5180,6 +5180,7 @@ func test_a_finger_drag_pans_the_map() -> void:
 
 # A pack's possible contents are a LIST, so they wrap to the sidebar's width under the body rather
 # than squeezing into the name's row -- and each listed card is a thing to point at in its own right.
+# A pointer's pick took no focus, so it grants none: a grab would clear every viewport in the window.
 func test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar() -> void:
 	await _start_map_fixture()
 	_map._on_node_hovered(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
@@ -5205,10 +5206,24 @@ func test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar() -> 
 			"%s vs %s" % [flow.size.x, _panel.size.x])
 	var described : InfoEntry = _panel.current_entry
 	var pointed_at : ControlCard = cards[0] as ControlCard
+	var map_focused : Control = _map.name_popup
+	map_focused.focus_mode = Control.FOCUS_ALL
+	map_focused.grab_focus()
+	check(_map_viewport.gui_get_focus_owner() == map_focused,
+			"sanity: a control in the map picture's own viewport holds that viewport's focus")
+	var root_owner_before := _booted_viewport.gui_get_focus_owner()
 	_hover_in(_booted_viewport, pointed_at.get_global_rect().get_center())
 	await get_tree().process_frame
 	check(_panel.current_entry != described and _previewed_card() == pointed_at.child.data,
 			"S23.5: pointing at a preview card switches the sidebar to that card")
+	check(_back_controls().size() == 1 and not _back_controls()[0].has_focus(),
+			"1.16a: a pointer pick leaves the way back unfocused")
+	check(_booted_viewport.gui_get_focus_owner() == root_owner_before,
+			"1.16a: a pointer pick leaves the root viewport's focus where it was",
+			"%s vs %s" % [_booted_viewport.gui_get_focus_owner(), root_owner_before])
+	check(_map_viewport.gui_get_focus_owner() == map_focused,
+			"1.16a: a pointer pick leaves the map picture's own focus where it was",
+			str(_map_viewport.gui_get_focus_owner()))
 	await _end_main_fixture()
 
 # Every way in reaches a listed preview card, not the pointer alone: a pad focuses one and a finger

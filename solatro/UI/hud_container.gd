@@ -293,17 +293,19 @@ var _pack_scroll : int = 0
 var _picked_card : CardData = null
 
 # ⚠ A PICKED CARD IS A THING INSIDE WHAT IS BEING READ, so the pack is KEPT rather than replaced:
-# its grid comes out of the panel whole and goes back in on the way back. A pad's pick leaves the
-# tree with that grid and takes the focus with it, so the way back takes the focus up in its place.
+# its grid comes out of the panel whole and goes back in on the way back. Only a pick that HELD the
+# focus hands it to the way back: a grab clears every viewport in the window, a pointer's pick none.
 func _show_preview_card(data: CardData, card_px: Vector2) -> void:
+	var focused := get_viewport().gui_get_focus_owner()
 	if _pack_entry == null:
 		_pack_entry = _description_panel.current_entry
 		_pack_scroll = _description_panel.scroll_position
 		_description_panel.detach_entry()
+	var pick_took_the_focus := focused != null and _pack_entry.visual.is_ancestor_of(focused)
 	_picked_card = data
 	_join_focus_while_shown(_back_button, true)
 	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
-	if get_viewport().gui_get_focus_owner() == null: _back_button.grab_focus()
+	if pick_took_the_focus: _back_button.grab_focus()
 
 ## Takes the panel back to the pack the shown card was picked out of: the same grid, scrolled where its reader left it, and a pad player left on the way back rested on the very card they picked.
 func return_to_pack() -> void:
