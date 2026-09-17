@@ -149,14 +149,11 @@ written when a run stalls or fails.
     exactly 22, the new one being `legal_cell_tint` itself — so the NEXT item to add an off-palette
     colour breaches the gate. That warning is provisional: `GAP-011` option (b) replaces the knob
     with a palette entry and gives the slot back.
-- ⬜ **Sidebar: two gaps wait on the owner** (`design/sidebar/gaps/`). `GAP-011`: `Shaders/outline.gdshader`
-  ends `COLOR = out_col;` and never multiplies the vertex COLOR, so nothing `modulate` marks draws —
-  the legal-cell tint and `CardVisual.focused`'s glow have never been on screen; the one-token fix
-  switches `modulate` on for EVERY card, a board-wide look change. `GAP-012`: the map has no pad
-  route INTO the description panel (the board's route needs a lock the map never takes). The
-  blanket "i will take recommendation for all gaps" predates both; each needs a fresh ruling.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
   - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
+  - **The focus glow is now DRAWN** (`GAP-011`=a): `CardVisual.FOCUS_GLOW` 1.825 pushes the paper face to
+    pure white and shifts orange ink to yellow on the focused or held card (`card_lifted.png`,
+    `menu_inspect.png`, `viewer_description.png`). The value was chosen while nothing drew it.
   - The outcome's Continue and Undo sit under the spotlight layer's dim: text peaks at (73,71,80) over (12,10,22) in `outcome_buttons.png`. Whether the outcome row should be lit is a look call.
   - In the 600×1000 top case the stock row's top overlaps the grid's bottom row by about 10 px (`game_hud_top.png`).
   - A click on a card the board refuses to grab (a locked or occupied cell) while another card is armed parks the armed card until the next press — every `stop_following` clears `_motion_may_start_following`, not only a failed drag's. The `GAP-007` ruling names the failed drag; whether a refused click should hold the return too is a look call.
