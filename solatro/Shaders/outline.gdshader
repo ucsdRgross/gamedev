@@ -59,8 +59,8 @@ uniform int u_fill_index : hint_range(0, 255) = 0;
 // evaluate the alert against ONE coordinate, so a card shows a single band rather than five local
 // sweeps (design D9). One vec2 per polygon, because 1 texel = 1 art unit makes local -> card a pure
 // TRANSLATION - and it is the node's own position, pushed by `CardOutline`, so there is no second copy.
-// ⚠ REST card space, not deformed: reading true deformed position needs a varying from the vertex
-// stage, which rule 3 forbids. The two constraints agree.
+// ⚠ REST card space by design: the position is derived from UV plus this offset, which `CardOutline`
+// pushes once per polygon, so the band is fixed to the art's texels and deforms with them, as the rim does.
 uniform vec2 u_card_offset = vec2(0.0);
 uniform vec2 u_card_extent = vec2(40.0, 54.0);
 

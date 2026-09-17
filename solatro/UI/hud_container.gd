@@ -437,10 +437,19 @@ func _input(event: InputEvent) -> void:
 
 # ⚠ A SCREEN'S CONTROLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
 # crosses one, so the sidebar carries up, off the top of a description, onto the X itself. The
-# board's description must be locked first; the map never locks, so any it shows counts.
+# board's must be locked first; the map never locks, so any it shows counts while no viewer is up.
 func _navigates_to_exit(event: InputEvent) -> bool:
-	return (is_locked() or _active_screen == MAP_SCREEN) \
+	var map_without_a_viewer := _active_screen == MAP_SCREEN and not _hosting_a_viewer()
+	return (is_locked() or map_without_a_viewer) \
 			and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
+
+# A HOSTED VIEWER OWNS A FOCUS CHAIN OF ITS OWN, and an up pressed inside it walks that chain: the X
+# taking the press would strand the accept after it. Read off the connections `host_viewer()` made,
+# which the viewer's own teardown drops, so nothing here can go stale.
+func _hosting_a_viewer() -> bool:
+	for screen : Node in _screen_connections:
+		if screen is DeckViewer or screen is ChoiceViewer: return true
+	return false
 
 ## The scroll stick's last reported deflection, integrated per frame while it is off centre.
 var _scroll_stick : float = 0.0

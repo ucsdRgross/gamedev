@@ -210,6 +210,7 @@ func _ready() -> void:
 	await test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll()
 	await test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card()
 	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
+	await test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x()
 	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
@@ -5355,6 +5356,37 @@ func test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x() -> vo
 			"1.20: ...and the next right cycles the map's node again",
 			str(_map.controller._kb_index))
 	await _end_main_fixture()
+
+# A HOSTED VIEWER HAS A FOCUS CHAIN OF ITS OWN -- the pack's cards, their Rerolls, Take all -- so an
+# up pressed inside it walks that chain, never the panel: the X taking the press would clear the
+# viewer's focus, and the accept after it would find no owner in either viewport.
+func test_up_inside_a_hosted_viewer_walks_the_viewer_not_the_x() -> void:
+	var booted := await _boot_map_with_a_booster(Vector2i(1280, 720))
+	var viewport : SubViewport = booted[0]
+	var main : Main = booted[1]
+	var viewer : ChoiceViewer = booted[2]
+	var container : HudContainer = main.wall.get_node(^"%HudContainer")
+	var exit_x : Button = container.get_node(^"%ExitX")
+	var cards := _choice_viewer_cards(viewer)
+	check(viewer != null and not cards.is_empty(), "sanity: a pack is open on the map")
+	if viewer != null and not cards.is_empty():
+		cards[0].grab_focus()
+		await get_tree().process_frame
+		viewer.confirm_button.grab_focus()
+		await get_tree().process_frame
+		check(container.showing_description() and not container.is_locked(),
+				"sanity: the highlighted card's description is shown, unlocked, with Take all focused")
+		_push_key(viewport, KEY_UP, true)
+		_push_key(viewport, KEY_UP, false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var owner := viewer.get_viewport().gui_get_focus_owner()
+		check(owner != null and viewer.is_ancestor_of(owner),
+				"1.20a: up inside a hosted viewer keeps the focus in the viewer's own chain",
+				str(owner))
+		check(viewport.gui_get_focus_owner() != exit_x,
+				"1.20a: ...and the X did not take it", str(viewport.gui_get_focus_owner()))
+	await _end_booted_fixture(viewport, main)
 
 # Real key presses one at a time, each read back through the focus owner, so the walk proves the
 # neighbour chain and not a `grab_focus()`. Stops at `arrived` or after `steps` presses.
