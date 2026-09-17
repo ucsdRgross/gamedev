@@ -1833,6 +1833,16 @@ func return_focus_to_board() -> void:
 	else:
 		rest_focus_on_armed()
 
+# AN UNDONE END CAN PUT BACK A BOARD WITH NOTHING TO ARM -- the last dealt card placed after the
+# stocks ran dry -- and a pad player still needs a control to move from: the selected grid's origin
+# cell, the cell the overview's arrow selection lands on.
+func rest_focus_on_board() -> void:
+	if not selected_cards.is_empty():
+		rest_focus_on_armed()
+		return
+	flush_rebuild()
+	_rest_focus_on(_cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0)))
+
 func _rest_focus_on(control: Control) -> void:
 	_focus_is_resting = true
 	control.grab_focus()

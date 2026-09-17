@@ -198,6 +198,7 @@ func _ready() -> void:
 	await test_the_outcome_screen_leaves_no_card_armed()
 	behavior_section("THE OUTCOME'S UNDO IS REACHED BY PAD FROM CONTINUE")
 	await test_the_outcomes_undo_is_reachable_from_continue_by_pad()
+	await test_undo_from_an_end_reached_outcome_with_an_empty_entrance()
 	behavior_section("S23: THE MAP NAMES THE NODE AND DESCRIBES IT IN THE SIDEBAR")
 	await test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar()
 	await test_the_name_stays_put_while_the_pointer_moves_inside_the_node()
@@ -329,7 +330,7 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 			"7.6: the walk reaches the outcome's Undo again, so the accept lands on it",
 			str(back_on_undo))
 	var row : HBoxContainer = view._outcome_buttons
-	await _accept_the_focused_outcome_button()
+	await _accept_the_focused_outcome_button(func() -> bool: return _armed_card() != null)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"7.6: the pad's accept on that Undo takes the outcome screen away")
 	check(not view.game.state.show_ended and not view.game.processing,
@@ -350,15 +351,64 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 	await _end_main_fixture()
 
 # The accept lands on a button that rewinds the show, so the rebuild it starts is waited out before
-# anything is read: the outcome is dropped on the press and the board is re-armed frames later.
-func _accept_the_focused_outcome_button() -> void:
+# anything is read: the outcome is dropped on the press and the board is rested on frames later,
+# and what "rested" means is the row's to say -- an armed card, or a bare cell when there is none.
+func _accept_the_focused_outcome_button(rested: Callable) -> void:
 	_push_key(_booted_viewport, KEY_ENTER, true)
 	_push_key(_booted_viewport, KEY_ENTER, false)
 	var waited := 0.0
-	while waited < CARD_CONTROL_TIMEOUT_SEC and (_fixture_game().processing
-			or _armed_card() == null):
+	while waited < CARD_CONTROL_TIMEOUT_SEC and (_fixture_game().processing or not rested.call()):
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+
+# Row 7.7: the producer of an outcome with NOTHING to arm behind it -- the last dealt card placed
+# after the stocks ran dry -- committed as history's top, so undoing the End lands on it.
+func _commit_an_empty_entrance(game: Game) -> void:
+	_play_area.ungrab_cards()
+	var state := game.state
+	_drain_the_stocks(state)
+	for column : ArrayCardData in state.upper_zone:
+		column.datas.clear()
+	state.revision += 1
+	game.save_state()
+	_play_area.setup_gui()
+	await get_tree().process_frame
+
+## Row 7.7 (`GAP-009`=b): undoing an End reached with the Entrance EMPTY re-arms nothing, and the pad player still lands on a board control.
+func test_undo_from_an_end_reached_outcome_with_an_empty_entrance() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _commit_an_empty_entrance(view.game)
+	check(_play_area.armed_slot() == -1 and view.game.state.stocks_are_empty(),
+			"7.7: sanity: the Entrance and every stock are empty before End")
+	await _end_the_show_by_its_button(view)
+	await get_tree().process_frame
+	check(view.game.state.show_ended, "7.7: sanity: End with an empty Entrance ends the show")
+	check(_game_viewport.gui_get_focus_owner() == view._continue_button,
+			"7.7: the outcome opens with Continue holding the focus",
+			str(_game_viewport.gui_get_focus_owner()))
+	var undo := _outcome_undo_control(view)
+	var stepped_right : Control = await _outcome_pad_step(KEY_RIGHT)
+	check(undo != null and stepped_right == undo,
+			"7.7: one d-pad step off Continue lands on the outcome's Undo", str(stepped_right))
+	await _accept_the_focused_outcome_button(
+			func() -> bool: return _game_viewport.gui_get_focus_owner() != null)
+	check(not view.win_screen.visible and not view.lose_screen.visible,
+			"7.7: the pad's accept on that Undo takes both outcome screens away")
+	check(not view.game.state.show_ended and not view.game.processing,
+			"7.7: ...leaving the show live again",
+			"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
+	check(_play_area.selected_cards.is_empty() and _play_area.armed_slot() == -1,
+			"7.7: sanity: the undone End put back an Entrance with nothing to arm",
+			str(_play_area.selected_cards.size()))
+	var owner := _game_viewport.gui_get_focus_owner()
+	var on_a_cell := owner != null and _play_area.ui_data.has(owner) \
+			and _zone_card_of(_play_area.ui_data[owner]) != null
+	check(on_a_cell,
+			"7.7: the picture viewport's focus owner is a grid cell's control inside the board, "
+			+ "so a pad can move from it with nothing armed",
+			"picture=%s root=%s" % [owner, _booted_viewport.gui_get_focus_owner()])
+	await _end_main_fixture()
 
 ## A card leaving the board lands on its pile, which is drawn in the window, not in the picture.
 func test_a_card_leaving_the_board_flies_to_its_pile() -> void:
@@ -1846,13 +1896,17 @@ func _click_button(button: Button, viewport: SubViewport) -> bool:
 # sweeps home; the goal is met too, so Continue hands back to the map instead of ending the run.
 func _end_the_show_by_its_button(view: GameView) -> void:
 	var state := view.game.state
-	for stock : ArrayCardData in state.entrance_stocks():
-		state.discard_deck.append_array(stock.datas)
-		stock.datas.clear()
+	_drain_the_stocks(state)
 	state.goal = 0
 	state.revision += 1
 	await get_tree().process_frame
 	check(await _click_button(view.submit_button, _booted_viewport), "a real click on End pressed it")
+
+## Every stock goes to the discard pile the show sweeps home, which is what an exhausted deck leaves.
+func _drain_the_stocks(state: GameData) -> void:
+	for stock : ArrayCardData in state.entrance_stocks():
+		state.discard_deck.append_array(stock.datas)
+		stock.datas.clear()
 
 # The outcome screen builds Continue, so the click waits for it to be laid out, and then for the
 # hand-back move it starts to land on the map.

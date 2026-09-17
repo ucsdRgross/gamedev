@@ -319,10 +319,10 @@ func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable)
 
 # The outcome's Undo is pressed INSIDE the picture's SubViewport, and freeing its row leaves that
 # viewport with no focus owner: the HUD's Undo the rewind hands the focus to lives in the root,
-# where a pad's navigation cannot reach it, so the pad player is rested on the armed card.
+# where a pad's navigation cannot reach it, so the pad player is rested back on the board.
 func _on_outcome_undo_pressed() -> void:
 	await _on_undo_pressed()
-	play_area.rest_focus_on_armed()
+	play_area.rest_focus_on_board()
 
 ## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
 func _on_show_unresolved() -> void:

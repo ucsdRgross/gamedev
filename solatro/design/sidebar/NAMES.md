@@ -101,6 +101,9 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
 | `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
 | `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or the armed card |
+| `PlayArea` | `func rest_focus_on_board() -> void` | After the outcome's own Undo: the focus rests on the armed card, or — End reached with the Entrance empty, so the undo re-arms nothing — on the selected grid's origin cell, the control the overview's arrow selection lands on (J13, `GAP-009`=b) |
+| `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: awaits the shared `_on_undo_pressed` and then rests the picture viewport's focus on the board, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
+| `TestGridFixtures` | `static func tinted_cell_count(...) -> int` | Test support: the cells whose `modulate` wears `legal_cell_tint` (focused or not) — the one counter `TestSidebar` and the snapshot share |
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
 | `GameView` | `var _outcome_buttons : HBoxContainer` | The row the outcome's Continue and its own Undo sit in, centred on the win/lose screen and freed as one. The Undo button itself is a local: nothing keeps it, and a test finds it by its label (J13, `GAP-009`=b) |
