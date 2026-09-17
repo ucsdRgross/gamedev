@@ -353,8 +353,7 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
   `15 resources still in use` + the `135 ObjectDB` note (wrapper exit 2 on a green run).
 - Known flakes, each seen once or twice and never twice in a row — rerun once: a TEARDOWN crash
   (0xC0000005) after a passing banner (wrapper exit 3); a map Deck-button click failure right after
-  a viewport resize; `VISUAL LAYERS: a light follows its card across a board SCROLL`;
-  `PIXELS: card_scale 1.5`.
+  a viewport resize; `PIXELS: card_scale 1.5`.
 - ⚠ **A windowed suite on Box B runs at ~660 fps.** A wait of N process frames is a frame-rate
   dependent TIME: 30 frames measured 45 ms there, under the 50 ms a delta-integrated stick scroll
   needs for its first whole pixel. Wait on the moved value or on summed delta, never on a count.
