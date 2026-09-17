@@ -23,6 +23,7 @@ SKILL_SPOTLIGHT_PROBE_DESCRIPTION,Announces itself. Does nothing else.,descripti
 GAME_WIN_FAME,Fame +%d,
 GAME_LOSE,You lose!,
 GAME_CONTINUE,Continue,
+GAME_UNDO,Undo,
 GAME_COMBO,COMBO x%.1f,
 CHOICE_REROLL,Reroll,
 CHOICE_REROLLS_LEFT,Rerolls: %d,

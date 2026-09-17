@@ -287,6 +287,9 @@ func _on_submit_label_changed(text: String) -> void:
 ## The win/lose overlay covers ONLY the play area: the board is blocked while the rest of the HUD stays clickable -- Undo rewinds the outcome, the deck/discard/rules viewers open.
 var _continue_button : Button = null
 
+## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
+var _outcome_buttons : HBoxContainer = null
+
 # REACHING THE GOAL ENDS THE SHOW, FULL STOP: the board stops taking input, so the arm is let go
 # here too -- otherwise the held card keeps following the cursor over the outcome screen.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
@@ -296,22 +299,41 @@ func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	screen.show()
 	play_area.ungrab_cards()
 	play_area.disable_board_focus()
+	_outcome_buttons = HBoxContainer.new()
+	screen.add_child(_outcome_buttons)
 	_continue_button = Button.new()
 	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')
 	_continue_button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	screen.add_child(_continue_button)
-	_continue_button.set_anchors_preset(Control.PRESET_CENTER)
-	_continue_button.position.y += CONTINUE_OFFSET_Y
+	_outcome_buttons.add_child(_continue_button)
 	_continue_button.pressed.connect(game.exit_show)
+	# UNDO IS ON THE OUTCOME SCREEN TOO, and the HUD's own keeps its place for the mouse: focus
+	# navigation never leaves the picture's SubViewport, so without this one a pad or keyboard
+	# player can see the rewind but never reach it.
+	var outcome_undo := Button.new()
+	outcome_undo.text = TRANSLATION.find('GAME_UNDO')
+	outcome_undo.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
+	_outcome_buttons.add_child(outcome_undo)
+	outcome_undo.pressed.connect(_on_undo_pressed)
+	# These two are the whole walk this screen offers, so the pair is linked by hand rather than
+	# left to the automatic neighbour search.
+	_continue_button.focus_neighbor_right = _continue_button.get_path_to(outcome_undo)
+	outcome_undo.focus_neighbor_left = outcome_undo.get_path_to(_continue_button)
+	# ⚠ CENTRED ON ITS OWN MINIMUM SIZE, with both buttons already in it: anchoring alone keeps a
+	# control where it was built, which parks it in the picture's top-left corner, under the
+	# sidebar. Measured: Continue drawn across window x 0..134 while the sidebar ends at 288.
+	_outcome_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER,
+			Control.PRESET_MODE_MINSIZE)
+	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
 	_continue_button.grab_focus()
 
-## Undo at the win/lose screen: drop the overlay, and hand the freed Continue button's focus to Undo.
+## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
 func _on_show_unresolved() -> void:
 	win_screen.hide()
 	lose_screen.hide()
 	play_area.enable_board_focus()
-	if _continue_button and is_instance_valid(_continue_button):
-		_continue_button.queue_free()
+	if _outcome_buttons:
+		_outcome_buttons.queue_free()
+	_outcome_buttons = null
 	_continue_button = null
 	undo_button.grab_focus()
 

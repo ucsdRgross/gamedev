@@ -195,6 +195,8 @@ func _ready() -> void:
 	await test_end_stays_hidden_through_the_shows_first_frames()
 	behavior_section("THE RESOLVED SHOW LEAVES NOTHING ARMED")
 	await test_the_outcome_screen_leaves_no_card_armed()
+	behavior_section("THE OUTCOME'S UNDO IS REACHED BY PAD FROM CONTINUE")
+	await test_the_outcomes_undo_is_reachable_from_continue_by_pad()
 	behavior_section("S23: THE MAP NAMES THE NODE AND DESCRIBES IT IN THE SIDEBAR")
 	await test_hovering_a_map_node_names_the_dot_and_fills_the_sidebar()
 	await test_the_name_stays_put_while_the_pointer_moves_inside_the_node()
@@ -282,6 +284,68 @@ func test_the_outcome_screen_leaves_no_card_armed() -> void:
 	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
 	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
 	await _end_main_fixture()
+
+# Row 7.6: the outcome's two buttons live in the game picture's own SubViewport, which is where the
+# wall routes a pad press, so the walk between them is pushed there -- the same route a real pad
+# takes, and the one Godot's focus navigation cannot leave.
+func _outcome_pad_step(keycode: Key) -> Control:
+	_push_key(_game_viewport, keycode, true)
+	await get_tree().process_frame
+	_push_key(_game_viewport, keycode, false)
+	await get_tree().process_frame
+	return _game_viewport.gui_get_focus_owner()
+
+## The outcome screen's own Undo, found the way a player finds it: by looking at the screen that is up.
+func _outcome_undo_control(view: GameView) -> Button:
+	var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
+	for button : Button in screen.find_children("*", "Button", true, false):
+		if button.text == TRANSLATION.find(&"GAME_UNDO"): return button
+	return null
+
+## Row 7.6 (`GAP-009`=b): a pad player reaches Undo from the outcome by walking off Continue, and pressing it there puts the board back.
+func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
+	await _start_game_fixture()
+	var view := _main._pictures[&"game"].screen_root as GameView
+	await _end_the_show_by_its_button(view)
+	await get_tree().process_frame
+	check(view.game.state.show_ended, "sanity: the show is over and its outcome is up")
+	check(_game_viewport.gui_get_focus_owner() == view._continue_button,
+			"7.6: the outcome opens with Continue holding the focus",
+			str(_game_viewport.gui_get_focus_owner()))
+	check(TRANSLATION.find(&"GAME_UNDO") != "GAME_UNDO",
+			"7.6: the outcome's Undo has a localised label, so looking for it by text means something",
+			TRANSLATION.find(&"GAME_UNDO"))
+	var undo := _outcome_undo_control(view)
+	check(undo != null, "7.6: the outcome screen shows an Undo beside Continue")
+	check(view.undo_button.is_visible_in_tree(),
+			"7.6: ...and the HUD's own Undo stays up for the mouse (GAP-009=b)")
+	var stepped_right : Control = await _outcome_pad_step(KEY_RIGHT)
+	check(stepped_right == undo,
+			"7.6: one d-pad step off Continue lands on the outcome's Undo", str(stepped_right))
+	var stepped_back : Control = await _outcome_pad_step(KEY_LEFT)
+	check(stepped_back == view._continue_button,
+			"7.6: ...and the step back returns to Continue", str(stepped_back))
+	var back_on_undo : Control = await _outcome_pad_step(KEY_RIGHT)
+	if back_on_undo == undo and undo != null:
+		await _accept_the_focused_outcome_button()
+		check(not view.win_screen.visible and not view.lose_screen.visible,
+				"7.6: the pad's accept on that Undo takes the outcome screen away")
+		check(not view.game.state.show_ended and not view.game.processing,
+				"7.6: ...leaving the show live again",
+				"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
+		check(_armed_card() != null, "7.6: ...on a board that is armed and playable")
+	await _end_main_fixture()
+
+# The accept lands on a button that rewinds the show, so the rebuild it starts is waited out before
+# anything is read: the outcome is dropped on the press and the board is re-armed frames later.
+func _accept_the_focused_outcome_button() -> void:
+	_push_key(_game_viewport, KEY_ENTER, true)
+	_push_key(_game_viewport, KEY_ENTER, false)
+	var waited := 0.0
+	while waited < CARD_CONTROL_TIMEOUT_SEC and (_fixture_game().processing
+			or _armed_card() == null):
+		await get_tree().process_frame
+		waited += get_process_delta_time()
 
 ## A card leaving the board lands on its pile, which is drawn in the window, not in the picture.
 func test_a_card_leaving_the_board_flies_to_its_pile() -> void:

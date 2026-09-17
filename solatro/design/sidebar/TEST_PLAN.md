@@ -153,6 +153,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 7.3 | Undo rewinds an automatic end | as 7.1, then undo | back on a live board, `show_ended` false | Gate | J11, `Q109`=a | S22 |
 | 7.4 | A full board still does NOT end the show | every cell filled, goal not met | `show_ended` false | Gate | J10, `Q108`=a | S22 |
 | 7.5 | End is REVEALED when no action remains | deck empty, no empty cells | the End button is visible/highlighted | Gate | J9, `Q107`=c | S22 |
+| 7.6 | Undo is REACHED from the outcome by pad | `TestSidebar`'s real `Main`, the show ended and Continue holding the focus, then d-pad right, left, right and accept — pushed into the picture's own viewport, where the wall routes a pad press | the outcome shows an Undo beside Continue with a localised label; one step off Continue lands on it and the step back returns; the accept takes the outcome away, `show_ended` false, the board armed again; the HUD's own Undo stayed up throughout | Gate | J13, J11, `GAP-009`=b | S24 |
 
 ## 8. Removal proofs — chart L
 
@@ -180,6 +181,7 @@ shows, or say UNVERIFIED.
 | 9.7 | A card following the cursor at the same lift it had at rest | G8, `Q265`=a | S14 |
 | 9.8 | The map: name popup above a node, everything else in the sidebar | K2, K3 | S23 |
 | 9.9 | A pack's preview card picked out of its grid: the card's own name and preview in the sidebar, with the way back up beside them | K9, `GAP-010`=c | S24 |
+| 9.10 | The outcome screen: Continue and Undo side by side, both clear of the container, Continue wearing the focus, and the HUD's own Undo still up | J13, `GAP-009`=b | S24 |
 
 ## 10. Deliberately NOT tested, and why
 

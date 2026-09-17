@@ -1434,6 +1434,7 @@ flowchart TD
   J10["A full board still does NOT end a show: cards may remain in the Entrance and effects may free cells"]
   J11["Game.undo — rewinds an automatic end exactly as it rewinds a manual one, back to the live board"]
   J12["Resume lands on the outcome screen, because show_ended is saved before the resolve"]
+  J13["NEW — the outcome screen carries its own Undo beside Continue, in the same SubViewport, so a d-pad walks Continue ↔ Undo. Focus navigation never crosses a viewport and no undo action is bound, so the HUD's Undo is mouse-only from here; it stays where it is, and Undo shows twice while the outcome is up (GAP-009=b)"]
   J1 --> J2
   J2 -- "goal met" --> J3
   J3 --> J4
@@ -1446,6 +1447,7 @@ flowchart TD
   J10 --> J9
   J5 --> J11
   J5 --> J12
+  J11 --> J13
 ```
 
 ## Flowchart K — the map

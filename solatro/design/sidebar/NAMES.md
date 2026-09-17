@@ -102,6 +102,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or the armed card |
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
+| `GameView` | `var _outcome_buttons : HBoxContainer` | The row the outcome's Continue and its own Undo sit in, centred on the win/lose screen and freed as one. The Undo button itself is a local: nothing keeps it, and a test finds it by its label (J13, `GAP-009`=b) |
 
 ## 4. Deleted methods and properties
 
@@ -168,6 +169,10 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `SIDEBAR_CLOSE` | The exit X's tooltip (C16) |
 | `SIDEBAR_BACK` | `%Back`'s tooltip (K9, `GAP-010`=c) |
 | `SIDEBAR_STOCK_REMAINING` | The face-down stock's description: how many remain (I10) |
+| `GAME_UNDO` | The outcome screen's own Undo, beside Continue (J13, `GAP-009`=b) |
+
+⚠ **Leave a new row's third column EMPTY.** Godot's CSV importer reads it as the message CONTEXT, so
+a row that fills it is unreachable through `TRANSLATION.find` and the label renders as its own key.
 
 ⚠ **Every user-facing string goes through `TRANSLATION.find` and this CSV — never a literal.**
 Project rule 4.

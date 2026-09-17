@@ -134,7 +134,6 @@ written when a run stalls or fails.
   - `GAP-001` — does a 16:9 window wider than 2560 px clamp the container? Recommends clamping only windows wider than 16:9.
   - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
   - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
-  - `GAP-009` — a pad or keyboard cannot reach Undo at the outcome. Recommends an Undo button beside Continue.
 - ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**
   - **The drop-map sweep is not free, and the number is here so nobody re-measures it.** It runs one
     `on_can_place_stack` dispatch per cell per board mutation (coalesced to once a frame by

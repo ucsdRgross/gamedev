@@ -35,6 +35,7 @@ const ARMED_FOCUS_ELSEWHERE_OUT_PATH := "user://sidebar_snapshot/armed_focus_els
 const DRAG_RELEASE_RETURNED_OUT_PATH := "user://sidebar_snapshot/drag_release_returned.png"
 const CANCEL_FIRST_PRESS_OUT_PATH := "user://sidebar_snapshot/cancel_first_press.png"
 const GOAL_MET_OUT_PATH := "user://sidebar_snapshot/goal_met.png"
+const OUTCOME_BUTTONS_OUT_PATH := "user://sidebar_snapshot/outcome_buttons.png"
 # Only a placement that COMPLETES A LINE scores, and only a scoring cascade lasts long enough to
 # photograph -- so placements repeat until one of them does, and each is watched for that many
 # drawn frames before the tool gives up on it.
@@ -258,11 +259,46 @@ func _ready() -> void:
 	var shot := await _shoot_a_cascade(main, view)
 	print("SIDEBAR_SNAPSHOT cascade_captured=%s total=%d" % [shot, view.game.state.live_total()])
 
+	await _end_the_show(view)
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_capture(OUTCOME_BUTTONS_OUT_PATH)
+	_report_the_outcome_buttons(main, view)
+
 	CardEnvironment.CURRENT = null
 	RunManager._shutdown_saver()
 	RunManager.clear_save()
 	TestSuite.restore_real_save(SAVE_TAG)
 	get_tree().quit()
+
+# THE OUTCOME still: the show is ended the way reaching the goal ends it, once whatever the cascade
+# was still running has settled. The goal is dropped to the board's own total, so what is
+# photographed is the WIN screen and its buttons.
+func _end_the_show(view: GameView) -> void:
+	for frame : int in CASCADE_WATCH_FRAMES:
+		if not view.game.processing: break
+		await RenderingServer.frame_post_draw
+	view.game.state.goal = view.game.state.live_total()
+	view.game.end_show()
+	await get_tree().process_frame
+
+## What the outcome is OFFERING: each button it shows with the span it is DRAWN across in window px, which one wears the focus, and whether the HUD's Undo is up behind it.
+func _report_the_outcome_buttons(main: Main, view: GameView) -> void:
+	var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
+	var window := view.hud_container.get_viewport().get_visible_rect().size
+	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
+	var scale := WallPicture.cover_scale(design, window)
+	var drawn : Array[String] = []
+	for button : Button in screen.find_children("*", "Button", true, false):
+		var span := _drawn_span_x(button, view.play_area.board_visible_crop, scale)
+		drawn.append("%s=%.1f..%.1f" % [button.text, span.x, span.y])
+	var focused : Control = (main._pictures[&"game"].viewport as SubViewport).gui_get_focus_owner()
+	var focus_label := "none"
+	if focused is Button: focus_label = (focused as Button).text
+	print(("SIDEBAR_SNAPSHOT outcome_buttons won=%s drawn_x=[%s] container_right=%.1f focus=%s "
+			+ "hud_undo_up=%s") % [view.win_screen.visible, ", ".join(drawn),
+			view.hud_container.container_rect().end.x, focus_label,
+			view.undo_button.is_visible_in_tree()])
 
 # The Goal wears its met state the instant the total reaches it, one beat before the show ends --
 # too short to photograph from a real placement, so the goal is dropped TO the settled board's
