@@ -203,11 +203,15 @@ func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> 
 	var r := _grid_world_rect(main, pa, gi)
 	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
 
-## Does grid `gi`'s cell block put any pixel inside the CAMERA's OWN `visible_rect()`?
+# Does grid `gi`'s cell block put any pixel inside the board view? ⚠ A TOUCHING EDGE IS NOT A PIXEL
+# INSIDE: `isolating_grid_buffer_px` lands the neighbour's edge EXACTLY on the view's edge, and a
+# strict compare there flips on the last float ULP (measured: -393.9999 red vs -394.0000 green).
 func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
 	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
-	return r.end.x > visible.position.x and r.position.x < visible.end.x
+	var past_left := r.end.x > visible.position.x and not is_equal_approx(r.end.x, visible.position.x)
+	var short_of_right := r.position.x < visible.end.x and not is_equal_approx(r.position.x, visible.end.x)
+	return past_left and short_of_right
 
 ## What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
 ## the left.
@@ -853,13 +857,6 @@ func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 				% [str(_grid_world_rect(main, pa, gi)),
 				str(WallTransition.visible_rect(camera.position, camera.zoom.x, window_size))])
 	await _tear_down_main(main)
-
-## Does grid `gi`'s cell block put any pixel inside the board's window? The instrument for "out of
-## view" — an off-screen DISTANCE cannot tell "just outside" from "half in".
-func _overlaps_window(pa: PlayArea, gi: int) -> bool:
-	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
-	var win := _window_x(pa)
-	return r.end.x > win.x and r.position.x < win.y
 
 # ==============================================================================
 # TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,
