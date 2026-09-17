@@ -286,14 +286,11 @@ func test_the_outcome_screen_leaves_no_card_armed() -> void:
 	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
 	await _end_main_fixture()
 
-# Row 7.6: the outcome's two buttons live in the game picture's own SubViewport, which is where the
-# wall routes a pad press, so the walk between them is pushed there -- the same route a real pad
-# takes, and the one Godot's focus navigation cannot leave.
+# Row 7.6: the outcome's two buttons live in the game picture's own SubViewport. The step is pushed
+# into the ROOT viewport, where a real pad's press arrives, so the walk also proves the wall routes
+# it into the picture -- the viewport Godot's focus navigation cannot leave.
 func _outcome_pad_step(keycode: Key) -> Control:
-	_push_key(_game_viewport, keycode, true)
-	await get_tree().process_frame
-	_push_key(_game_viewport, keycode, false)
-	await get_tree().process_frame
+	await _tap_key(keycode)
 	return _game_viewport.gui_get_focus_owner()
 
 ## The outcome screen's own Undo, found the way a player finds it: by looking at the screen that is up.
@@ -321,31 +318,41 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 	check(view.undo_button.is_visible_in_tree(),
 			"7.6: ...and the HUD's own Undo stays up for the mouse (GAP-009=b)")
 	var stepped_right : Control = await _outcome_pad_step(KEY_RIGHT)
-	check(stepped_right == undo,
+	check(undo != null and stepped_right == undo,
 			"7.6: one d-pad step off Continue lands on the outcome's Undo", str(stepped_right))
 	var stepped_back : Control = await _outcome_pad_step(KEY_LEFT)
-	check(stepped_back == view._continue_button,
+	check(undo != null and stepped_back == view._continue_button,
 			"7.6: ...and the step back returns to Continue", str(stepped_back))
 	var back_on_undo : Control = await _outcome_pad_step(KEY_RIGHT)
-	if back_on_undo == undo and undo != null:
-		var row : HBoxContainer = view._outcome_buttons
-		await _accept_the_focused_outcome_button()
-		check(not view.win_screen.visible and not view.lose_screen.visible,
-				"7.6: the pad's accept on that Undo takes the outcome screen away")
-		check(not view.game.state.show_ended and not view.game.processing,
-				"7.6: ...leaving the show live again",
-				"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
-		check(_armed_card() != null, "7.6: ...on a board that is armed and playable")
-		check(view._outcome_buttons == null and not is_instance_valid(row),
-				"7.6: ...and the outcome's button row is freed with the screen, its field cleared",
-				"field=%s row_valid=%s" % [view._outcome_buttons, is_instance_valid(row)])
+	check(undo != null and back_on_undo == undo,
+			"7.6: the walk reaches the outcome's Undo again, so the accept lands on it",
+			str(back_on_undo))
+	var row : HBoxContainer = view._outcome_buttons
+	await _accept_the_focused_outcome_button()
+	check(not view.win_screen.visible and not view.lose_screen.visible,
+			"7.6: the pad's accept on that Undo takes the outcome screen away")
+	check(not view.game.state.show_ended and not view.game.processing,
+			"7.6: ...leaving the show live again",
+			"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
+	var armed := _armed_card()
+	check(armed != null, "7.6: ...on a board that is armed and playable")
+	check(armed != null and _game_viewport.gui_get_focus_owner() == _play_area.data_ui[armed],
+			"7.6: ...with the picture viewport's focus on the armed card's control, not parked on "
+			+ "the HUD's Undo in the root viewport (a pad player is back on the live board)",
+			"picture=%s root=%s" % [_game_viewport.gui_get_focus_owner(),
+					_booted_viewport.gui_get_focus_owner()])
+	check(view._outcome_buttons == null and not is_instance_valid(row),
+			"7.6: ...and the outcome's button row is freed with the screen, its field cleared",
+			"field=%s row_valid=%s" % [view._outcome_buttons, is_instance_valid(row)])
+	check(view.undo_button.is_visible_in_tree(),
+			"7.6: ...and the HUD's own Undo stayed up throughout")
 	await _end_main_fixture()
 
 # The accept lands on a button that rewinds the show, so the rebuild it starts is waited out before
 # anything is read: the outcome is dropped on the press and the board is re-armed frames later.
 func _accept_the_focused_outcome_button() -> void:
-	_push_key(_game_viewport, KEY_ENTER, true)
-	_push_key(_game_viewport, KEY_ENTER, false)
+	_push_key(_booted_viewport, KEY_ENTER, true)
+	_push_key(_booted_viewport, KEY_ENTER, false)
 	var waited := 0.0
 	while waited < CARD_CONTROL_TIMEOUT_SEC and (_fixture_game().processing
 			or _armed_card() == null):

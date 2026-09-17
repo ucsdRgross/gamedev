@@ -290,8 +290,9 @@ var _continue_button : Button = null
 ## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
 var _outcome_buttons : HBoxContainer = null
 
-# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the board stops taking input, so the arm is let go
-# here too -- otherwise the held card keeps following the cursor over the outcome screen.
+# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the arm is let go so the held card stops following
+# the cursor. Undo sits BESIDE Continue because focus navigation never leaves the picture's
+# SubViewport. ⚠ The row is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	var screen : Label = win_screen if won else lose_screen
 	screen.text = TRANSLATION.find('GAME_WIN_FAME') % score if won \
@@ -299,37 +300,37 @@ func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	screen.show()
 	play_area.ungrab_cards()
 	play_area.disable_board_focus()
-	_build_outcome_buttons(screen)
-	_continue_button.grab_focus()
-
-# UNDO SITS BESIDE CONTINUE: focus navigation never leaves the picture's SubViewport, so a pad
-# player can see the HUD's Undo but never reach it. ⚠ The row is centred on its OWN MINIMUM SIZE --
-# anchoring alone leaves a hand-built control in the picture's top-left corner, under the sidebar.
-func _build_outcome_buttons(screen: Label) -> void:
 	_outcome_buttons = HBoxContainer.new()
 	screen.add_child(_outcome_buttons)
-	_continue_button = _add_outcome_button('GAME_CONTINUE')
-	_continue_button.pressed.connect(game.exit_show)
-	var outcome_undo := _add_outcome_button('GAME_UNDO')
-	outcome_undo.pressed.connect(_on_undo_pressed)
+	_continue_button = _add_outcome_button(_outcome_buttons, &'GAME_CONTINUE', game.exit_show)
+	_add_outcome_button(_outcome_buttons, &'GAME_UNDO', _on_outcome_undo_pressed)
 	_outcome_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER,
 			Control.PRESET_MODE_MINSIZE)
 	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
+	_continue_button.grab_focus()
 
-func _add_outcome_button(label_key: String) -> Button:
+func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable) -> Button:
 	var button := Button.new()
-	button.text = TRANSLATION.find(label_key)
+	button.text = TRANSLATION.find(key)
 	button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	_outcome_buttons.add_child(button)
+	button.pressed.connect(handler)
+	row.add_child(button)
 	return button
+
+# The outcome's Undo is pressed INSIDE the picture's SubViewport, and freeing its row leaves that
+# viewport with no focus owner: the HUD's Undo the rewind hands the focus to lives in the root,
+# where a pad's navigation cannot reach it, so the pad player is rested on the armed card.
+func _on_outcome_undo_pressed() -> void:
+	await _on_undo_pressed()
+	play_area.rest_focus_on_armed()
 
 ## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
 func _on_show_unresolved() -> void:
 	win_screen.hide()
 	lose_screen.hide()
 	play_area.enable_board_focus()
-	if _outcome_buttons:
-		_outcome_buttons.queue_free()
+	assert(_outcome_buttons)
+	_outcome_buttons.queue_free()
 	_outcome_buttons = null
 	_continue_button = null
 	undo_button.grab_focus()
