@@ -418,8 +418,8 @@ func test_alert_is_off_until_a_status_declares_it() -> void:
 ##  1. the neighbourhood is tapped in UV space via `TEXTURE_PIXEL_SIZE`. A `SCREEN_UV` or `FRAGCOORD`
 ##     neighbourhood holds a constant SCREEN thickness while the art stretches, so the rim DETACHES
 ##     from the drawing — worst at the corners, where `Arm_TopLeft` swings out ~26 %.
-##  2. there is no `vertex()` function. Godot applies 2D skinning in the vertex stage, and a custom
-##     `vertex()` is the one way to interfere with it; not having one removes the question.
+##  2. `vertex()` never writes `VERTEX`. Skinning moves VERTEX before the shader sees it, so a
+##     `vertex()` that rewrites it detaches the rim; one that only copies `COLOR` into a varying does not.
 ##
 ## ⚠ **THIS IS A SOURCE-TEXT CHECK, AND THAT IS THE PROPORTIONATE FORM.** Catching (1) by rendering
 ## needs a pinned deformed pose and a thickness measurement along a stretched edge — which
@@ -442,8 +442,10 @@ func test_shader_taps_in_texture_space() -> void:
 	check_impl(not text.contains("SCREEN_UV") and not text.contains("FRAGCOORD"),
 			"and never a SCREEN-space one, which would hold a constant screen thickness while the "
 			+ "art stretched and detach the rim from the drawing")
-	check_impl(not text.contains("void vertex()"),
-			"the shader writes no vertex() — Godot's 2D skinning lives there and must not be touched")
+	var writes_vertex := RegEx.create_from_string("\\bVERTEX\\s*=[^=]")
+	check_impl(writes_vertex.search(text) == null,
+			"vertex() never writes VERTEX — skinning moves VERTEX before the shader sees it, and a "
+			+ "vertex() that writes it detaches the rim from the rig")
 	# ⚠ **NO USER FUNCTION MAY TAKE A `sampler2D`, AND THIS CHECK EXISTS BECAUSE THE SUITE MISSED IT
 	# ONCE.** `TEXTURE` is a `fragment()`-local built-in. Passing it into a helper compiles on the GLES3
 	# runtime path — so the game ran and every check in this file passed — while the EDITOR's shader

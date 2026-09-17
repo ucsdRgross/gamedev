@@ -48,6 +48,10 @@ const SEED := 12.5
 ## the ~5-unit-and-up disagreements a real path bug produces.
 const BALL_TOLERANCE := 2.0
 
+# How far a mean channel may sit from its prediction, in colour units: every source is 8-bit exact,
+# so a multiply then a quantise can only disagree by one rounding step per pixel.
+const PIXEL_TOLERANCE := 1.5 / 255.0
+
 var _vp : SubViewport
 var _stage : Node2D
 
@@ -69,8 +73,10 @@ func _ready() -> void:
 	await test_hoop_halves_reassemble()
 	await test_one_pixel_size_for_all_art()
 	await test_effects_take_their_host_modulate()
+	await test_the_card_takes_its_own_modulate()
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
+	check_all_tests_registered()
 	finish()
 
 ## The guard. A dummy renderer cannot compile a shader or rasterize a triangle, so every check below
@@ -758,23 +764,7 @@ func _report_stand_in_fidelity(t: float, rig: PackedVector2Array) -> void:
 ## it cannot find its data in a running game's play area, so a card built that way deletes itself on
 ## its first frame in a test.
 func _real_card(secs: float) -> CardVisual:
-	_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + 6.0)
-	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
-	card.current_context = CardVisual.DisplayContext.PREVIEW
-	_stage.add_child(card)
-	if not card.is_node_ready(): await card.ready
-	# ⚠ ITS OWN `_process` DELETES IT. `delta_self_moving_logic` queue_frees any non-PLAY_AREA card
-	# whose `control_anchor` is gone, and a test has no Control to anchor to — so the first frame frees
-	# the card out from under the shot. It also chases that anchor's position every frame, which would
-	# move the host mid-shot. Parked, exactly like `_park` does for an attachment; the one thing
-	# `_process` did that this check needs — `_track_fx_outline` — is called by hand below.
-	card.set_process(false)
-	# FRONT-FACING and still: `floating` drives the bob and the basis3d flip, and `show_front` is what
-	# puts the face on screen at all.
-	card.floating = false
-	# AFTER _ready, which sets it from card_scale: this suite works in art units and does its own zoom.
-	card.scale = Vector2.ONE
-	card.position = Vector2.ZERO
+	var card := await _host_card()
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	# ⚠ NOT `ap.autoplay` — the idle is no longer autoplayed (CardVisual.RIG_ANIM says why). Reading
 	# the flag here would make this whole loop measure the REST pose at every t and still pass.
@@ -803,7 +793,20 @@ func _real_card(secs: float) -> CardVisual:
 			+ "say anything about a deforming card")
 	return card if card.fx else null
 
-
+# A real CardVisual on the stage, parked and still. `_process` is off because `delta_self_moving_logic`
+# queue_frees any non-PLAY_AREA card without a `control_anchor` on its first frame; `floating` off
+# stops the bob and the basis3d flip; scale is reset AFTER `_ready` wrote card_scale into it.
+func _host_card() -> CardVisual:
+	_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + 6.0)
+	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
+	card.current_context = CardVisual.DisplayContext.PREVIEW
+	_stage.add_child(card)
+	if not card.is_node_ready(): await card.ready
+	card.set_process(false)
+	card.floating = false
+	card.scale = Vector2.ONE
+	card.position = Vector2.ZERO
+	return card
 
 # ----------------------------------------------------------------- the stage
 
@@ -1016,6 +1019,55 @@ func _shoot_modulated(kind: String, tint: Color) -> Image:
 	_park(att, 0.13)
 	return await _shoot()
 
+# The card's OWN art follows `modulate` (the legal-cell tint and the focus glow), the way its effects
+# do. The outline shader once overwrote the vertex colour carrying it, so both marks passed every
+# node-level test and reached no pixel. The 8-bit clamp is applied per pixel before the ratio.
+func test_the_card_takes_its_own_modulate() -> void:
+	behavior_section("THE CARD'S OWN ART FOLLOWS ITS MODULATE (legal-cell tint, focus glow)")
+	var plain := await _shoot_card(Color.WHITE, false)
+	var area := Rect2i(Vector2i.ZERO, plain.get_size())
+	var plain_mean := _mean_colour(plain, area)
+	check(plain_mean.a > 0.0, "the plain card drew something to compare against",
+			"no opaque pixel on the stage")
+	var legal_tint : Color = PlayArea.settings().legal_cell_tint
+	var tinted_mean := _mean_colour(await _shoot_card(legal_tint, false), area)
+	check(tinted_mean.g > plain_mean.g and tinted_mean.r < plain_mean.r,
+			"a tinted card's mean colour moves in the tint's own direction (green up, red down)",
+			"plain %s vs tinted %s under %s" % [plain_mean, tinted_mean, legal_tint])
+	var expected_tint := _mean_colour(plain, area, legal_tint)
+	check(_channels_within(tinted_mean, expected_tint, PIXEL_TOLERANCE),
+			"the tinted card is the plain card times the tint, channel by channel",
+			"tinted %s, predicted from plain %s" % [tinted_mean, expected_tint])
+	var focused_mean := _mean_colour(await _shoot_card(Color.WHITE, true), area)
+	var expected_glow := _mean_colour(plain, area, CardVisual.FOCUS_GLOW)
+	check(focused_mean.get_luminance() > plain_mean.get_luminance()
+			and absf(focused_mean.get_luminance() - expected_glow.get_luminance()) <= PIXEL_TOLERANCE,
+			"the focused card is brighter than the plain one by FOCUS_GLOW",
+			"luminance plain %.4f, focused %.4f, predicted %.4f" % [plain_mean.get_luminance(),
+					focused_mean.get_luminance(), expected_glow.get_luminance()])
+	var white := await _shoot_card(Color.WHITE, false)
+	check(white.get_data() == plain.get_data(),
+			"a WHITE tint is byte-identical to no tint",
+			"%d bytes differ" % _bytes_differing(white.get_data(), plain.get_data()))
+
+# The card as CardVisual draws it for the player, under one mark. `show_front` is what makes
+# `update_visual` put the face, rank pip and stamp on screen.
+func _shoot_card(tint: Color, focused: bool) -> Image:
+	var card := await _host_card()
+	card.show_front = true
+	card.tint = tint
+	card.focused = focused
+	return await _shoot()
+
+func _channels_within(a: Color, b: Color, tol: float) -> bool:
+	return absf(a.r - b.r) <= tol and absf(a.g - b.g) <= tol and absf(a.b - b.b) <= tol
+
+func _bytes_differing(a: PackedByteArray, b: PackedByteArray) -> int:
+	var n := 0
+	for i : int in a.size():
+		if a[i] != b[i]: n += 1
+	return n
+
 func _place(node: Node2D, node_scale: float) -> void:
 	node.scale = Vector2.ONE * node_scale
 	_stage.add_child(node)
@@ -1032,23 +1084,26 @@ func _shoot() -> Image:
 
 # ----------------------------------------------------------------- pixel readers
 
-## The highest luminance among the drawn pixels — "how far up the heat ramp did this effect get",
-## since the ramp runs deep red to white.
-## Mean luminance over the DRAWN pixels only — how bright the effect is overall, which is what a
-## highlight moves. (The peak barely moves: both effects already hit the ramp's white end, and the
-## render target clamps there.) Zero when nothing was drawn.
+# Mean luminance over the DRAWN pixels only: how bright the effect is overall, which is what a
+# highlight moves. The peak barely moves, because both effects already reach the ramp's white end.
 func _mean_luminance(img: Image, area: Rect2i) -> float:
-	var total := 0.0
+	return _mean_colour(img, area).get_luminance()
+
+# Mean colour over the DRAWN pixels, each first put `under` a modulate and clamped the way an 8-bit
+# render target clamps it, so a plain shot predicts the same shot under a mark. Alpha 0 when empty.
+func _mean_colour(img: Image, area: Rect2i, under: Color = Color.WHITE) -> Color:
+	var total := Color(0.0, 0.0, 0.0, 0.0)
 	var lit := 0
 	for y : int in range(area.position.y, area.end.y):
 		for x : int in range(area.position.x, area.end.x):
 			var c := img.get_pixel(x, y)
 			if not PixelProbe.is_opaque(c): continue
-			total += c.get_luminance()
+			total += (c * under).clamp()
 			lit += 1
-	return total / float(lit) if lit > 0 else 0.0
+	return total / float(lit) if lit > 0 else Color(0.0, 0.0, 0.0, 0.0)
 
-
+# The highest luminance among the drawn pixels: how far up the heat ramp (deep red to white) an
+# effect got.
 func _brightest_pixel(img: Image, area: Rect2i) -> Vector2i:
 	var best := Vector2i.ZERO
 	var best_l := -1.0

@@ -15,7 +15,8 @@ shader_type canvas_item;
 //     thickness while the art stretches and DETACHES - and passes every rest-pose check.
 //     (This is the OPPOSITE of `fire`/`glow`, which quantize on a WORLD grid so their pixels do not
 //     crawl under a moving card. Different job: those are not attached to the art's texels.)
-//  3. ⚠ WRITE NO `vertex()`. Godot applies 2D skinning there and this needs none.
+//  3. ⚠ `vertex()` ONLY COPIES `COLOR` INTO A VARYING, NEVER TOUCHES `VERTEX`. Godot's 2D skinning is
+//     applied before it (measured: a posed card's drawn extents are identical with and without it).
 //  4. ⚠ NEAREST FILTERING, NO MIPMAPS, or the taps blur and the frame clamp leaks fractional texels
 //     from neighbouring frames. Already correct project-wide - a DON'T-REGRESS item, not a task.
 //  5. ⚠ NEVER PASS `TEXTURE` TO A FUNCTION. It compiles on GLES3 and the EDITOR's compiler rejects it,
@@ -79,6 +80,14 @@ uniform float u_alert_thickness = 8.0;
 // travel AND suppresses the glare beyond that limit, so the band tapers instead of clipping. Why a
 // card's side rims blink without it: `OutlineStyle.glare_buffer`.
 uniform float u_alert_buffer = 0.0;
+
+// The host's `modulate` reaches `fragment()` only through this varying: the built-in COLOR there
+// is already multiplied by the texel under UV, and on the rim that texel is empty.
+varying vec4 v_modulate;
+
+void vertex() {
+	v_modulate = COLOR;
+}
 
 const int ALERT_NONE  = 0;
 const int ALERT_GLARE = 1;
@@ -198,5 +207,5 @@ void fragment() {
 		}
 		if (hit > 0.5) out_col = vec4(alert_ink(card_pos), 1.0);
 	}
-	COLOR = out_col;
+	COLOR = out_col * v_modulate;
 }

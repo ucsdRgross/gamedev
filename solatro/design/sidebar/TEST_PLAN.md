@@ -81,6 +81,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 1.17 | …and a pad and a finger reach a listed card too | as 1.16: `grab_focus()` on the first listed card, the way back, then a real tap (the emulated mouse press plus `InputEventScreenTouch`) on the second | each switches the sidebar to the card it landed on | Gate | K9, `Q137`=a | S24 |
 | 1.18 | The way back returns the pack with its grid and its scroll | as 1.16 but scrolled a page down first, then a listed card picked and a REAL click on the way back | exactly one way back is up while the picked card shows; after it, the pack entry itself, the very same grid node re-mounted under `%GridSlot`, the scroll back where it was, and no way back left | Gate | K9, `GAP-010`=c | S24 |
 | 1.19 | A pad's pick lands on the way back, and the way back lands on the picked card | as 1.17's pad half: `grab_focus()` on a listed card, then `ui_accept` pushed into the ROOT viewport (where the panel and `%Back` live) | after the pick, the root viewport's focus owner is `%Back` — the picked grid left the tree and took the focus with it; after the accept, the pack is back and the root viewport's focus owner is the very card that was picked | Gate | K9, `GAP-010`=c, `Q137`=a | close |
+| 1.20 | On the map a pad ENTERS the panel by `ui_up` and leaves it by the X | `TestSidebar`'s real `Main` on the map screen, a booster node described (the pack in the panel, nothing locked), then `ui_up` pushed into the ROOT viewport (the way a pad press arrives), then `ui_down`/neighbour steps until a listed card holds the focus, then `ui_accept` on the X after the way back | after `ui_up` the root viewport's focus owner is the exit X and the map's node selection did not cycle; the neighbour walk reaches a listed card (which picks it — 1.19 takes over); after the X's accept the description is gone, the HUD is up, no root control holds the focus, and the next `ui_right` cycles the map's node again | Gate | K10, `Q137`=a, `GAP-012`=a | close |
 
 ## 2. `TestGestureMetrics` — chart M
 
@@ -144,6 +145,7 @@ reason, then implement. A test written after the code passes it is a test that a
 | 6.9 | A CLICKED card follows immediately | click an Entrance card | `following == true` on the same frame | Gate | G11, `Q267`=a | S14 |
 | 6.10 | The arm survives undo by re-derivation | place, undo | armed slot is the leftmost present again | Gate | G16, `Q117`=a | S15 |
 | 6.11 | The legal-cell tint IS the drop map | `TestSidebar`: a dealt board, a card grabbed, one empty cell and one CELL the board refuses (a zone card, never an Entrance card — the map only ever holds zone cards), then that cell filled by a real click | the accepted cell's own zone card wears `legal_cell_tint` in its `modulate` (the value drawn, not the `tint` field), the refused cell's zone card wears none, and after the placement the filled cell has lost the tint while every cell still legal keeps it | Gate | G12, `Q24`=a, `Q124`=a, `GAP-005`=a | S16 |
+| 6.12 | The tint and the glow reach the PIXELS | `TestPixels`: one `CardVisual` drawn plain, one with `tint = legal_cell_tint`, one with `focused = true`, each captured the way `test_effects_take_their_host_modulate` captures a host | the tinted card's mean colour differs from the plain one's in the tint's own direction (its green channel up by the tint's ratio within tolerance); the focused card's mean luminance is brighter than the plain one's by `FOCUS_GLOW` within tolerance; a white tint is byte-identical to plain | Gate | G12, E6, `Q249`, `GAP-011`=a | close |
 
 ## 7. Automatic end — chart J
 
@@ -184,6 +186,7 @@ shows, or say UNVERIFIED.
 | 9.8 | The map: name popup above a node, everything else in the sidebar | K2, K3 | S23 |
 | 9.9 | A pack's preview card picked out of its grid: the card's own name and preview in the sidebar, with the way back up beside them | K9, `GAP-010`=c | S24 |
 | 9.10 | The outcome screen: Continue and Undo side by side, both clear of the container, Continue wearing the focus, and the HUD's own Undo still up | J13, `GAP-009`=b | S24 |
+| 9.11 | A held card's legal cells TINTED on the board, the focused card glowing, every other card unchanged from before the shader honoured `modulate` | G12, `Q249`, `GAP-011`=a | close |
 
 ## 10. Deliberately NOT tested, and why
 
