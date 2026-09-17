@@ -1,7 +1,7 @@
 {
   "slug": "effect-review",
-  "doc_hash": "sha256:8e7016c750d2a43548110155cdc0c603b4a1ca5f4e91aeaa341f3e3720ad9fea",
-  "updated": "2026-09-03T12:10:18Z",
+  "doc_hash": "sha256:23f95aafc63597228c236dc31393cbc0c666d284f6f42c206d6aa5a033a8b02b",
+  "updated": "2026-09-17T04:29:11Z",
   "answers": {
     "Q0001": {
       "state": "chosen",
@@ -551,6 +551,420 @@
       "active": true,
       "round": 1,
       "at": "2026-09-03T12:10:18Z"
+    },
+    "Q0062": {
+      "state": "chosen",
+      "option": null,
+      "note": "based on this idea, split it into 2 different effects, have card whose effect scores based on amount of non talent cards there are, and another whose effect scores based on amount of talent cards there are",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T04:10:46Z"
+    },
+    "Q0063": {
+      "state": "chosen",
+      "option": null,
+      "note": "score of meld containing this skill is added to multiplier combo instead of to the flat point side.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T04:12:12Z"
+    },
+    "Q0064": {
+      "state": "chosen",
+      "option": "d",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:11:08Z"
+    },
+    "Q0065": {
+      "state": "chosen",
+      "option": null,
+      "note": "add +1 to flat point for every +1 in combo, basically matching the contribution",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:14:18Z"
+    },
+    "Q0066": {
+      "state": "chosen",
+      "option": "b",
+      "note": "alternate boss effect, every other entrance pass prevents any score from happening, but double score on other turn.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:32:33Z"
+    },
+    "Q0067": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, extra points for each card around this card that shares no similarity in rank suit skill",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:35:15Z"
+    },
+    "Q0068": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, counts as 3 rank 1 cards in one for all purposes. original rank on the card is ignored",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:41:55Z"
+    },
+    "Q0069": {
+      "state": "chosen",
+      "option": null,
+      "note": "if this card finishes a column, double its meld score",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:43:30Z"
+    },
+    "Q0070": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T07:47:41Z"
+    },
+    "Q0071": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T08:37:21Z"
+    },
+    "Q0072": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T08:38:21Z"
+    },
+    "Q0073": {
+      "state": "chosen",
+      "option": null,
+      "note": "this would make more sense as a stamp. repeat triggers are always fresh on the attached card",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:22:46Z"
+    },
+    "Q0074": {
+      "state": "chosen",
+      "option": null,
+      "note": "tap to absorb all future scoring on same board into this card. that score becomes that cards own score bonus when the card itself is scored. stops absorbing scores once its been scored at least once.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:26:03Z"
+    },
+    "Q0075": {
+      "state": "chosen",
+      "option": null,
+      "note": "would make more sense as a meld detector that detects when ranks in a line adds up to certain number. player should not be forced to calculate exact score a potential hand can get, but adding up ranks of cards is easy.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:29:38Z"
+    },
+    "Q0076": {
+      "state": "chosen",
+      "option": "d",
+      "note": "simple ux/ui looking at a card causing effects makes no sense to me",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:32:49Z"
+    },
+    "Q0077": {
+      "state": "chosen",
+      "option": null,
+      "note": "multiplier per distinct rank on the board",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:40:53Z"
+    },
+    "Q0078": {
+      "state": "chosen",
+      "option": null,
+      "note": "melds scored after card placed that fills in last empty spot on a board gets bonus multiplier ",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:46:02Z"
+    },
+    "Q0079": {
+      "state": "chosen",
+      "option": null,
+      "note": "worst hand is high card, so skill should be scores a bonus as the high card in high card meld. gains permanent bonus for amount of cards it is in the same meld with, but only scores its bonus if its the high card.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:50:28Z"
+    },
+    "Q0080": {
+      "state": "chosen",
+      "option": null,
+      "note": "meld checker, after a line is complete, score points based on highest and lowest ranked card in the line, scaling with their gap.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:55:27Z"
+    },
+    "Q0081": {
+      "state": "chosen",
+      "option": null,
+      "note": "this will trigger by default always since by definition every line of a grid will be scored under normal play.\nskill where score points based on amount of cards on board that participated in meld instead, rewarding hands and board where every single card participated. can count same card multiple times if used across different melds.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T09:58:14Z"
+    },
+    "Q0082": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, extra points for repeating same meld with different suit or ranks. for example flush cannot be same suit, straight cannot use same ranks, x of a kind cannot be same rank.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:00:15Z"
+    },
+    "Q0083": {
+      "state": "chosen",
+      "option": null,
+      "note": "scores multiplier based on amount of cards used from deck, scaling with larger decks and being drawn late",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:05:20Z"
+    },
+    "Q0084": {
+      "state": "chosen",
+      "option": null,
+      "note": "scores multiplier if part of first meld created on the board",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:06:18Z"
+    },
+    "Q0085": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:21:42Z"
+    },
+    "Q0086": {
+      "state": "chosen",
+      "option": "d",
+      "note": "no point scoring points if you already won",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:22:37Z"
+    },
+    "Q0087": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:23:36Z"
+    },
+    "Q0088": {
+      "state": "chosen",
+      "option": "b",
+      "note": "skill not rule",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:24:41Z"
+    },
+    "Q0089": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, tap to activate, next card you click on gets all cards of same rank scored as 1 meld and discarded from board",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:36:34Z"
+    },
+    "Q0090": {
+      "state": "chosen",
+      "option": "b",
+      "note": "should be a skill not rule. follows same rules as blackjack when scoring the meld since aces and faces count as 10",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:37:40Z"
+    },
+    "Q0091": {
+      "state": "chosen",
+      "option": "c",
+      "note": "skill",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:38:34Z"
+    },
+    "Q0092": {
+      "state": "chosen",
+      "option": "c",
+      "note": "skill instead, but this is a duplicate effect",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:40:25Z"
+    },
+    "Q0093": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:42:15Z"
+    },
+    "Q0094": {
+      "state": "chosen",
+      "option": "c",
+      "note": "skill not rule",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T10:43:03Z"
+    },
+    "Q0095": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, multiplier scaling based on unique suits on board",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T11:21:44Z"
+    },
+    "Q0096": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T11:23:04Z"
+    },
+    "Q0097": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, when board is filled in, score entire board as one meld\ndifferent skill idea, when placed, draw 1 from each entrance stock and score the hand, then discard it.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T11:25:40Z"
+    },
+    "Q0098": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, when placed immediately scores the lines it is in, using marks for empty cells",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-16T11:27:11Z"
+    },
+    "Q0099": {
+      "state": "chosen",
+      "option": "a",
+      "note": "skill, scores points for matching",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T02:39:57Z"
+    },
+    "Q0100": {
+      "state": "chosen",
+      "option": "c",
+      "note": "skill, if added ranks of two cards add to 13, they can be matched, scored, and discarded. happens if one card is attempted to be stacked on another.",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T02:40:06Z"
+    },
+    "Q0101": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T02:40:21Z"
+    },
+    "Q0102": {
+      "state": "chosen",
+      "option": "b",
+      "note": "skill",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T02:43:07Z"
+    },
+    "Q0103": {
+      "state": "chosen",
+      "option": null,
+      "note": "personal meld that scores whenever there is a combination of cards chained together orthogonally that adds to 15, so can score multiple times",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T02:45:18Z"
+    },
+    "Q0104": {
+      "state": "chosen",
+      "option": null,
+      "note": "since having everything be same suit is easy to play around, i would rather reward variety in suits and ranks. so instead have skill that massively rewards grid having no cards with matching suit and rank.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T03:08:03Z"
+    },
+    "Q0106": {
+      "state": "chosen",
+      "option": "c",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T03:08:33Z"
+    },
+    "Q0107": {
+      "state": "chosen",
+      "option": null,
+      "note": "this is just 2 pair or 4 pair, already implemented. therefore should be skill that checks for 4 different pairs across entire board",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T04:28:47Z"
+    },
+    "Q0108": {
+      "state": "chosen",
+      "option": "a",
+      "note": "skill",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T04:29:11Z"
     }
   }
 }
