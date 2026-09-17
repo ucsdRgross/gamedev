@@ -125,7 +125,21 @@ func _listed_cards(visual: Node) -> Array[Node]:
 	return visual.find_children("*", "ControlCard", true, false)
 
 func _pick_preview_card(card: ControlCard) -> void:
+	if _focus_is_resting: return
 	preview_card_picked.emit(card.child.data, card.child.card_size)
+
+## True only across a rest focus, which marks a listed card without picking it.
+var _focus_is_resting : bool = false
+
+# THE WAY BACK LANDS A PAD PLAYER ON THE CARD THEY PICKED, and a focus is a pick, so this one is a
+# rest instead: the card is marked and owns the next press without opening again.
+func rest_focus_on(data: CardData) -> void:
+	var listed := _listed_cards(current_entry.visual).filter(
+			func(card: ControlCard) -> bool: return card.child.data == data)
+	assert(listed.size() == 1, "the picked card is listed once in the pack it came from")
+	_focus_is_resting = true
+	(listed[0] as Control).grab_focus()
+	_focus_is_resting = false
 
 # The CONTENT's height is computed synchronously, so a caller reading straight after `show_entry()`
 # never sees the last entry's layout. ⚠ THE SCROLL'S SIDEWAYS BAR IS NEVER SHOWN, NOT DISABLED: a

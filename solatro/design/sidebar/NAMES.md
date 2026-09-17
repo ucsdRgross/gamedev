@@ -55,11 +55,9 @@ This block, unchanged, goes into every document derived from this one.
 
 ## 2. Deleted files
 
-| Path | Why |
-|---|---|
-| `UI/Wall/info_card.gd`, `UI/Wall/info_card.tscn` | `InfoCard` is replaced by `DescriptionPanel` inside the container (L1) |
-| `Tests/Wall/test_wall_info.gd` / `.tscn` | Replaced by `Tests/Wall/test_sidebar.gd` (L6) |
-| `Tests/Visual/wall_info_snapshot.gd` / `.tscn` | Replaced by `Tests/Visual/sidebar_snapshot.gd` (L6) |
+`InfoCard` (script and scene), its `TestWallInfo` suite and its `wall_info_snapshot` scene are gone —
+replaced by `DescriptionPanel` inside the container (L1), `Tests/Wall/test_sidebar.gd` and
+`Tests/Visual/sidebar_snapshot.gd` (L6).
 
 ⚠ `Scripts/Wall/info_entry.gd` (`InfoEntry`) **survives unchanged** — it is the publish shape every
 screen already uses, and nothing about it is Info-mode-specific.
@@ -96,6 +94,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func return_to_pack() -> void` | What `%Back` is wired to: re-shows the pack a preview card was picked out of, its own grid and its own scroll with it (K9, `GAP-010`=c) |
 | `DescriptionPanel` | `signal preview_card_picked(data: CardData, card_px: Vector2)` | A card listed in the mounted grid was pointed at, focused or tapped (K9, `Q135`=b, `Q137`=a) |
 | `DescriptionPanel` | `var scroll_position : int` | How far the panel is scrolled — the seam `return_to_pack()` restores the pack's own reading through |
+| `DescriptionPanel` | `func rest_focus_on(data: CardData) -> void` | Focuses the listed card that shows `data` as a REST, not a pick: `_focus_is_resting` makes `_pick_preview_card` ignore that one `focus_entered`, the way `PlayArea._rest_focus_on` rests without highlighting (K9, `GAP-010`=c) |
+| `HudContainer` | `var _picked_card : CardData` | The card a shown preview was picked for; lives exactly as long as `_pack_entry` and is where the way back rests the focus when `%Back` held it (K9, `GAP-010`=c) |
 | `HudContainer` | `func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void` | Wires a `DeckViewer`/`ChoiceViewer` on any screen: relay, return to the lock, focus fallback, fit and re-fit (republishing only while a description shows) |
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
 | `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
@@ -103,6 +103,8 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
 | `GameView` | `var _outcome_buttons : HBoxContainer` | The row the outcome's Continue and its own Undo sit in, centred on the win/lose screen and freed as one. The Undo button itself is a local: nothing keeps it, and a test finds it by its label (J13, `GAP-009`=b) |
+| `GameView` | `func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable) -> Button` | One localised button in the outcome row, wired to `handler`; Continue and Undo are its two callers (J13, `GAP-009`=b) |
+| `Game` | `func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]` | THE ONE legality walk: the zone card of every cell in `grids` where `held` may land, asked through `on_can_place_stack` exactly as `try_place` asks. `_no_held_card_has_a_legal_placement`, `_no_legal_placement_remains_in_grid` and `PlayArea._sweep_legal_cells` all read it (G12, `GAP-005`=a) |
 
 ## 4. Deleted methods and properties
 

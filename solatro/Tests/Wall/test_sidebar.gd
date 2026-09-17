@@ -206,6 +206,7 @@ func _ready() -> void:
 	await test_a_packs_preview_cards_wrap_below_the_body_and_switch_the_sidebar()
 	await test_a_pack_preview_card_is_reachable_by_pad_and_by_finger()
 	await test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll()
+	await test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card()
 	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
@@ -5145,6 +5146,35 @@ func test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll() -> void:
 			"K9: ...scrolled where its reader left it",
 			"%d vs %d" % [_panel_scroll(_panel).scroll_vertical, left_at])
 	check(_back_controls().is_empty(), "K9: ...and the way back goes away with the card")
+	await _end_main_fixture()
+
+# A PAD'S PICK TAKES THE FOCUS OUT OF THE TREE WITH THE GRID, so nothing would own the next press:
+# the pick lands the focus on the way back, and the way back lands it on the very card picked --
+# a rest, not a pick, or the card would open again. The picked card's layout counts the way back.
+func test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card() -> void:
+	await _start_map_fixture()
+	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var pack : InfoEntry = _panel.current_entry
+	var picked := _preview_cards()[0]
+	picked.grab_focus()
+	await get_tree().process_frame
+	check(_previewed_card() == picked.child.data,
+			"sanity: the pad's pick switched the sidebar to that card")
+	var owner := _booted_viewport.gui_get_focus_owner()
+	check(_back_controls().size() == 1 and owner == _back_controls()[0],
+			"1.19: a pad's pick lands the focus on the way back", str(owner))
+	var first_layout := _content_height()
+	_panel.resize_to(_panel.size)
+	check(absf(_content_height() - first_layout) <= 0.5,
+			"1.19: the picked card's first layout already counted the way back's row",
+			"%.1f at the pick vs %.1f laid out again" % [first_layout, _content_height()])
+	await _tap_key(KEY_ENTER)
+	check(_panel.current_entry == pack, "1.19: accept on the way back returns the pack")
+	owner = _booted_viewport.gui_get_focus_owner()
+	check(owner == picked, "1.19: ...and lands the focus on the very card that was picked",
+			str(owner))
+	check(_container._picked_card == null,
+			"1.19: the picked card is forgotten with the return, as the pack is")
 	await _end_main_fixture()
 
 ## The `CardData` the description is PREVIEWING beside its name, or null while it shows no card of its own.

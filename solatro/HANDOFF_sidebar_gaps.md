@@ -2,11 +2,58 @@
 
 **Goal:** build the ten gap rulings the owner accepted, on branch `sidebar`, one verified item per
 commit, then hand the branch to the closing phase of `/plan-run`.
-**State:** ALL TEN GAPS ARE BUILT AND VERIFIED. The sidebar plan run (PLAN.md S1–S24 and its
-closing sequence) was already complete; the ten gaps followed, one commit each, and the last (`G9`)
-is verified and committed. Every gap in `solatro/design/sidebar/gaps/` is `status: built` except
-`GAP-011`, which is `open` and waits on the owner. The branch is unmerged. There is no
-`../gamedev-sidebar` worktree any more: the main checkout is on `sidebar`.
+**State:** THE CLOSE IS IN PROGRESS (Opus 5 reviewer session, fable reviewers). Items 1–6 of
+"Closing the run" have run over the ten gap commits `dec20d42..a37900b2`; their outputs are in
+"## Close ledger" below and item 7 (fixes) is under way. Every gap in
+`solatro/design/sidebar/gaps/` is `status: built` except `GAP-011`, which is `open` and waits on
+the owner. The branch is unmerged. The main checkout is on `sidebar`; there is no worktree.
+
+## Close ledger
+1. `doc_check.py` full: 0 errors, 9 warnings (the standing style backlog CLAUDE.md names).
+   Baseline suite on Box B: `ALL 48 SUITES: 5279 passed, 1 FAILED` — the PIXELS `fire brightens`
+   check; 0 `SCRIPT ERROR`; 22 placeholder warnings; expected exit profile. **Discriminated:**
+   `--filter WallRender Pixels` → red (162 passed, 1 FAILED, same numbers); `--filter Pixels` → 43
+   green. WALL RENDER leaves state PIXELS reads. (The suite node is `TestWallRender`; the pattern
+   `"Wall Render"` matches nothing.)
+2. `adversarial-review` (fable): CONFIRMED `hud_container.gd:_show_preview_card` — a pick by pad
+   detaches the focused grid, the root viewport has no focus owner, `%Back` is never focused.
+   SUSPECTED: outcome Undo by pad leaves the board viewport unfocused; sweep interleaving under an
+   awaiting placement rule; NAMES.md lacks `_build_outcome_buttons`/`_add_outcome_button`.
+   PLAN DRIFT: GAP-010=c's pad half; GAP-009 row 7.6 never asserts the focus owner.
+3. `/code-review` (fable, angles serial): CONFIRMED the two pad-focus defects above (game_view.gd
+   `_on_show_unresolved` → `undo_button.grab_focus()` in the ROOT viewport; `_arm_the_entrance`
+   skips `rest_focus_on_armed` once `_rested_the_focus` is set); `_motion_may_start_following`
+   cleared by EVERY `stop_following`, so a click on a locked card parks the armed card (beyond
+   GAP-007's text); `_show_preview_card` lays out before `_show_back(true)` so the top row is
+   measured without Back; the legal-cell sweep runs on every `queue_rebuild` (each cascade step).
+   Resolved: the "grid re-picked under a stationary cursor" hazard does not exist (godot#112513).
+4. Test-surface (fable): 7.6 asserts `_armed_card() != null`, never the focus owner; 7.6's
+   `check(stepped_right == undo)` is null==null when Undo is absent, and its gate SKIPS five checks
+   rather than failing them (the a37900b2 message's "stayed green" conflated skipped with green —
+   compare per-suite counts); 6.11 asserts `CardVisual.tint` (never shown) not `modulate`, and its
+   "refused target" is an Entrance card, never a cell, so a sweep marking every cell passes; 6.6
+   measures y only; 1.17/1.18's pad half is `grab_focus()` + a real click on Back, so no row
+   proves a pad reaches Back. Test-only production callers: none (grepped the full list).
+   Red-then-green audit: cd9b81bd claims +12, the test yields +10; the rest consistent.
+5. `/simplify` (fable, angles serial): `_sweep_legal_cells` is the THIRD copy of the legality walk
+   (`game.gd` `_no_held_card_has_a_legal_placement`, `_no_legal_placement_remains_in_grid`) and
+   asks a Game question from the view; the sweep runs with an EMPTY hand on every cascade step and
+   never on the direct `set_card_zones` path; `if _outcome_buttons:` has no null producer (rule 7);
+   `_build_outcome_buttons` and `_band_axis_outruns_reference` have one call site (rule 8);
+   `_show_back` restates `_refresh_exit_focus`; three test copies of the legal-target dispatch;
+   `FOCUS_GLOW` and `reference_window_size()` restated in tests. Backlog (not applied): one
+   `board_region` Rect2 in place of three setters that each re-fit; the panel owning its Back;
+   `scroll_position` via `set_deferred`.
+6. `/fx-verify` (fable, 27 shots rendered, key ones re-read by the overseer): PASS on all six
+   numbered items. Looked at: outcome row (Continue outlined, Undo beside, one row, legible, dim
+   under the spotlight layer); preview Back beside a frameless sprite with the title wrapping in a
+   ~100 px column when the body is empty; viewer previews within 1 px of the viewer's cards;
+   geometry — container edge and visible crop agree; the GAP-005 tint confirmed NOT drawn
+   (`legal_cells=25 of=25`, interiors (76,76,76)); `armed_focus_elsewhere.png` shows two
+   full-width grey rules at y≈66/537 — the board ScrollContainer's focus border
+   (`draw_focus_border = true` in `play_area.tscn`, unchanged on this branch; the docs say it
+   draws when any descendant is focused) with its sides off-picture. Harness note: the scene
+   honours `OUT_PATH` for `game_hud.png` only, not `OUT_DIR`.
 **Entry docs:** `solatro/design/sidebar/` DESIGN.md, PLAN.md, TEST_PLAN.md, NAMES.md,
 ASSUMPTIONS.md, `gaps/GAP-001.md`..`gaps/GAP-011.md`; `solatro/ARCHITECTURE_REVIEW.md` §1.6;
 `solatro/PICTURE_WALL.md`; `solatro/todo.md` ("Sidebar: owner should see", "PIXELS `fire

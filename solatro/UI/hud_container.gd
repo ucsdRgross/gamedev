@@ -262,6 +262,7 @@ func _swap_to_hud() -> void:
 	_description_panel.visible = false
 	_exit_button.visible = false
 	_pack_entry = null
+	_picked_card = null
 	_show_back(false)
 	_aim_scroll_stick(0.0)
 	_refresh_exit_focus()
@@ -294,25 +295,34 @@ var _pack_entry : InfoEntry = null
 ## How far into the pack its reader had got, so the way back returns it where they left it.
 var _pack_scroll : int = 0
 
+## The card picked out of that pack, which the way back rests a pad player's focus on -- `null` whenever `_pack_entry` is.
+var _picked_card : CardData = null
+
 # ⚠ A PICKED CARD IS A THING INSIDE WHAT IS BEING READ, so the pack is KEPT rather than replaced:
-# its grid comes out of the panel whole and goes back in when the way back is pressed. Card to card
-# hands nothing out a second time -- the panel frees the card it is replacing.
+# its grid comes out of the panel whole and goes back in on the way back. A pad's pick leaves the
+# tree with that grid and takes the focus with it, so the way back takes the focus up in its place.
 func _show_preview_card(data: CardData, card_px: Vector2) -> void:
 	if _pack_entry == null:
 		_pack_entry = _description_panel.current_entry
 		_pack_scroll = _description_panel.scroll_position
 		_description_panel.detach_entry()
-	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
+	_picked_card = data
 	_show_back(true)
+	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
+	if get_viewport().gui_get_focus_owner() == null: _back_button.grab_focus()
 
-## Takes the panel back to the pack the shown card was picked out of: the same grid, scrolled where its reader left it.
+## Takes the panel back to the pack the shown card was picked out of: the same grid, scrolled where its reader left it, and a pad player left on the way back rested on the very card they picked.
 func return_to_pack() -> void:
 	var pack := _pack_entry
 	var scroll := _pack_scroll
+	var picked := _picked_card
+	var pad_is_on_the_way_back := _back_button.has_focus()
 	_pack_entry = null
+	_picked_card = null
 	_show_back(false)
 	_description_panel.show_entry(pack, _content_size())
 	_description_panel.scroll_position = scroll
+	if pad_is_on_the_way_back: _description_panel.rest_focus_on(picked)
 
 # A WAY BACK IS UP ONLY WHILE THERE IS SOMETHING TO GO BACK TO, and it joins keyboard and pad
 # navigation for exactly that long -- the rule the exit X follows.
