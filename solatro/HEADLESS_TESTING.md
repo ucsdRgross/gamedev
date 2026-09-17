@@ -345,3 +345,33 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
 - Suite check TOTALS vary run-to-run (data-dependent suites). Compare FAILURE SETS, not counts.
 - Worldgen scenes `addon_bake_test` / `addon_node_test` never call `quit()` (by design — they are
   also demos); kill them after the PASS lines.
+
+## 5. Suite ordering — the wait chain
+
+Most suites run concurrently. A few need near-exclusive access to global singletons
+(`CardEnvironment.CURRENT`, `Main.save_info`, `SettingsManager`) and wait for other suites at the top
+of their `_ready()` via `await_siblings_except()`.
+
+- **Waiting protects the suite that NEEDS the state; nothing protects it from a suite that needs
+  nothing and MUTATES it in passing.** Constructing production objects has production side effects:
+  one suite's fixture failed another mid-await, 2 runs in 3, in a suite the change never touched. If
+  a fixture constructs something real, ask what it writes on the way up and preserve/restore it.
+- **Waiting is a directed dependency.** If A waits for B, B must not wait for A — directly or
+  transitively — or both hang and the run never quits (the log tail just stops). Measured once, when
+  VISUAL LAYERS waited for INTERACTION while INTERACTION still waited for it.
+- The canonical linear order; each waiter excludes every suite AFTER it, plus itself:
+  `<engine/map suites: no wait>` → INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW →
+  SIDEBAR → DRAG PLACE → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE.
+- GRID LAYOUT is in the chain because it measures through `CardEnvironment.CURRENT` across awaits
+  (`PlayArea._own_grid_row_height` resolves its grid from `get_current_game()`): concurrently, another
+  suite took CURRENT and a two-deep row measured as a bare card height, 10 runs in 11.
+- WALL PAUSE is the permanent tail: its real `Wall._ready()` sets `get_tree().paused = true` and never
+  clears it (that persistence is what it tests), so nothing may run after it. It excludes nothing and
+  every suite before it excludes `"WALL PAUSE"` by name.
+- Adding a waiting suite: place it in the chain, pass the names of every suite AFTER it to
+  `await_siblings_except()`, and add its name to the excludes of every suite BEFORE it. Never let two
+  suites exclude-then-wait on each other.
+- **The shared `PlayerSettings` is live for every concurrent suite, and every setter emits
+  `settings_changed` even for an unchanged value** — a write from one suite restyles every live
+  `FxAttachment`, including a sibling's parked shot. `apply_test_speed()` therefore writes only when
+  the pacing differs; a suite that must change a knob mid-run restores it and accepts the emit.
