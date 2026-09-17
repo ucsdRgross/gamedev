@@ -197,19 +197,15 @@ static func rect_for_window(window: Vector2, settings_res: PlayerSettings) -> Re
 	var inner_edge := settings_res.container_size_fraction * window.x
 	return Rect2(inner_edge - px, 0.0, px, window.y)
 
-## The fraction of the band's own axis of `window`, capped only where that axis outruns the reference shape.
-static func _container_px(window: Vector2, top: bool, settings_res: PlayerSettings) -> float:
-	var px := settings_res.container_size_fraction * (window.y if top else window.x)
-	if not _band_axis_outruns_reference(window, top): return px
-	return minf(px, settings_res.container_size_max_px)
-
 # The cap is a rule about SHAPE, not about pixel count: it bites only where the band's own axis
 # outruns the project's reference window shape, so a window of that shape keeps the authored inset
 # at any size and only an ultrawide -- or an ultratall under the top band -- clamps.
-static func _band_axis_outruns_reference(window: Vector2, top: bool) -> bool:
+static func _container_px(window: Vector2, top: bool, settings_res: PlayerSettings) -> float:
+	var px := settings_res.container_size_fraction * (window.y if top else window.x)
 	var reference := PlayArea.reference_window_size()
-	if top: return window.y * reference.x > window.x * reference.y
-	return window.x * reference.y > window.y * reference.x
+	var band_axis_outruns_reference := (window.y * reference.x > window.x * reference.y) if top 			else (window.x * reference.y > window.y * reference.x)
+	if not band_axis_outruns_reference: return px
+	return minf(px, settings_res.container_size_max_px)
 
 ## The description each screen was last showing, so coming back returns to what you were reading rather than the HUD.
 var _entry_by_screen : Dictionary[StringName, InfoEntry] = {}
@@ -260,12 +256,11 @@ func _on_exit_gui_input(event: InputEvent) -> void:
 func _swap_to_hud() -> void:
 	_hud_stack.visible = true
 	_description_panel.visible = false
-	_exit_button.visible = false
+	_join_focus_while_shown(_exit_button, false)
 	_pack_entry = null
 	_picked_card = null
-	_show_back(false)
+	_join_focus_while_shown(_back_button, false)
 	_aim_scroll_stick(0.0)
-	_refresh_exit_focus()
 
 # The locked entry is what a lost highlight comes BACK to, so a hover that displaces it takes its
 # visual OUT rather than freeing it. A publication arriving mid-cascade is dropped instead, and it
@@ -281,8 +276,7 @@ func show_description(entry: InfoEntry) -> void:
 	_release_remembered_entry(_active_screen, entry)
 	_entry_by_screen[_active_screen] = entry
 	_hud_stack.visible = false
-	_exit_button.visible = true
-	_refresh_exit_focus()
+	_join_focus_while_shown(_exit_button, true)
 	_description_panel.show_entry(entry, _content_size())
 
 ## Whether the description is what shows -- `GameView` asks before spending a cancel on dismissing it.
@@ -307,7 +301,7 @@ func _show_preview_card(data: CardData, card_px: Vector2) -> void:
 		_pack_scroll = _description_panel.scroll_position
 		_description_panel.detach_entry()
 	_picked_card = data
-	_show_back(true)
+	_join_focus_while_shown(_back_button, true)
 	_description_panel.show_entry(PlayArea.card_info(data, card_px), _content_size())
 	if get_viewport().gui_get_focus_owner() == null: _back_button.grab_focus()
 
@@ -319,16 +313,17 @@ func return_to_pack() -> void:
 	var pad_is_on_the_way_back := _back_button.has_focus()
 	_pack_entry = null
 	_picked_card = null
-	_show_back(false)
+	_join_focus_while_shown(_back_button, false)
 	_description_panel.show_entry(pack, _content_size())
 	_description_panel.scroll_position = scroll
 	if pad_is_on_the_way_back: _description_panel.rest_focus_on(picked)
 
-# A WAY BACK IS UP ONLY WHILE THERE IS SOMETHING TO GO BACK TO, and it joins keyboard and pad
-# navigation for exactly that long -- the rule the exit X follows.
-func _show_back(shown: bool) -> void:
-	_back_button.visible = shown
-	_back_button.focus_mode = Control.FOCUS_ALL if shown else Control.FOCUS_NONE
+# ⚠ A PANEL CONTROL JOINS KEYBOARD/PAD NAVIGATION FOR EXACTLY AS LONG AS IT IS UP: a pad player
+# must always be able to dismiss what is shown, since a viewer's own opening highlight can hide the
+# button that opened it. Back on the HUD, nothing here is in anyone's focus chain.
+func _join_focus_while_shown(button: Button, shown: bool) -> void:
+	button.visible = shown
+	button.focus_mode = Control.FOCUS_ALL if shown else Control.FOCUS_NONE
 
 ## The card each screen's description is LOCKED to -- a lock survives leaving and returning, exactly as the remembered entry does.
 var _lock_by_screen : Dictionary[StringName, CardData] = {}
@@ -457,12 +452,6 @@ func _aim_scroll_stick(axis_value: float) -> void:
 func _process(delta: float) -> void:
 	_description_panel.scroll_by_pages(
 			_scroll_stick * delta * PlayArea.settings().sidebar_scroll_pages_per_second)
-
-# ⚠ A PAD PLAYER MUST ALWAYS BE ABLE TO DISMISS WHAT IS SHOWN: the X joins keyboard/pad
-# navigation for as long as it is up, since a viewer's own opening highlight can hide the button
-# that opened it. Back on the HUD, nothing here is in anyone's focus chain.
-func _refresh_exit_focus() -> void:
-	_exit_button.focus_mode = Control.FOCUS_ALL if _exit_button.visible else Control.FOCUS_NONE
 
 ## Re-draws the description's preview at `card_px`: the size a board card is drawn at moves with the window, and the preview reads as the same object only while it matches.
 func resize_preview(card_px: Vector2) -> void:

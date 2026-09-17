@@ -195,7 +195,7 @@
 - S8: new names NAMES.md does not list -- `PlayerSettings.sidebar_scroll_pages_per_second` (the
   scroll rate NAMES 5 has no knob for), `DescriptionPanel.scroll_by_pages()` and its
   `WHEEL_STEP_PAGES` const, `HudContainer._aim_scroll_stick()`,
-  `_scroll_stick` and `_refresh_exit_focus()`. The unit everywhere is a PAGE of the description's
+  `_scroll_stick` and `_join_focus_while_shown()`. The unit everywhere is a PAGE of the description's
   own visible height: Godot's `ScrollContainer` steps an eighth of one per wheel notch, so an arrow
   moves `WHEEL_STEP_PAGES` and the stick's default 1.0 page a second is eight notches a second.
 - S8: Q68=b is `%ExitX.focus_mode` -- `FOCUS_ALL` while the sidebar is locked, `FOCUS_NONE`
@@ -416,7 +416,7 @@
   hosted viewer shares, asks for it only while `showing_description()`. A dismissal is the player's act, so a window change must not
   undo one.
 - P3 re-review (overseer, reversible): the exit X is focusable WHENEVER a description shows, not only
-  while locked -- `HudContainer._refresh_exit_focus()` reads the X's own visibility, and the new
+  while locked -- `HudContainer._join_focus_while_shown()` ties the X's focus to its visibility, and the new
   `DeckViewer.fallback_focus` (the X, set by `HudContainer.host_viewer()`) is what
   `DeckViewer._hand_the_focus_back()` focuses when the opener it would return the focus to is not
   `is_visible_in_tree()` (a viewer's opening highlight hides the pile buttons that opened it,

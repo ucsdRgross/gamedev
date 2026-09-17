@@ -96,6 +96,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `DescriptionPanel` | `var scroll_position : int` | How far the panel is scrolled — the seam `return_to_pack()` restores the pack's own reading through |
 | `DescriptionPanel` | `func rest_focus_on(data: CardData) -> void` | Focuses the listed card that shows `data` as a REST, not a pick: `_focus_is_resting` makes `_pick_preview_card` ignore that one `focus_entered`, the way `PlayArea._rest_focus_on` rests without highlighting (K9, `GAP-010`=c) |
 | `HudContainer` | `var _picked_card : CardData` | The card a shown preview was picked for; lives exactly as long as `_pack_entry` and is where the way back rests the focus when `%Back` held it (K9, `GAP-010`=c) |
+| `HudContainer` | `func _join_focus_while_shown(button: Button, shown: bool) -> void` | The one rule for the X and `%Back`: a panel control is visible and in the focus chain for exactly the same span (C16, K9) |
 | `HudContainer` | `func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void` | Wires a `DeckViewer`/`ChoiceViewer` on any screen: relay, return to the lock, focus fallback, fit and re-fit (republishing only while a description shows) |
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
 | `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
