@@ -23,7 +23,12 @@ A green suite is the weakest evidence there is. Every test below passed review w
 7. **A tolerance calibrated to a bug** — it passes *because* the defect exists, and goes red when
    someone fixes it.
 8. **A new test that breaks a DIFFERENT suite** via global state left behind (a pause flag, a live
-   node, a running tween). A failure you cannot find in your own suite means suspect your fixture.
+   node, a running tween) — **or via a no-op BROADCAST**: a teardown that writes a shared setting
+   to the value it already holds, into a setter that emits unconditionally, restyles every live
+   listener in the suites still running. Measured: one suite's `finish()` turned a pixel check red
+   in the suite after it, deterministically, with nothing "left behind". A failure you cannot
+   find in your own suite means suspect your fixture — and your teardown. Discriminate with the
+   runner's filter: the two suites together red, the victim alone green.
 9. **A fixture that clears the very global state the feature runs under.** Every `Main`-based test
    wrote `get_tree().paused = false` right after `add_child()`; the shipped game holds the tree
    paused for the whole session. That one habit hid a total soft-lock, a timer that never fires and
@@ -69,15 +74,25 @@ A green suite is the weakest evidence there is. Every test below passed review w
     load-failure detector, so only the full unfiltered windowed run is a verdict —
     [[running-godot-scenes]].
 
-16. **A settle that waits two process frames.** Both can land inside one physics tick, so the value
-    has not moved yet (1 failure in 4 runs). Await `physics_frame` or the moved value itself. Same
-    shape: a `queue_free`d node stays a child, and a container's extent lags, until the frame ends.
+16. **A settle that waits N process frames.** Two can land inside one physics tick, so the value
+    has not moved yet (1 failure in 4 runs); and N frames is a frame-rate-dependent TIME — 30
+    frames measured 45 ms on a box running the windowed suite at ~660 fps, under the 50 ms a
+    delta-integrated scroll needed for its first whole pixel, so a check green for months went red
+    on identical bytes. Await `physics_frame`, summed delta, or the moved value itself. Same shape:
+    a `queue_free`d node stays a child, and a container's extent lags, until the frame ends.
 
 17. **A test defined but never registered in `_ready`.** It never runs and cannot fail. Solatro's
     suites call `check_all_tests_registered()` to make that a failure.
 
 18. **A reviewer's "none" is a claim too.** A test-surface review reported no test-only production
     names while a later pass found one. Grep the negative before recording it.
+
+19. **A strict comparison against a value the product places EXACTLY on the boundary.** The
+    isolation buffer put a neighbour's edge precisely at the view's edge, and `>` flipped on the
+    last float ULP (`-393.9999` red, `-394.0000` green) — 3 runs in 7, on identical bytes,
+    diagnosed as a settle race until a print showed everything at rest. Decide the touching case
+    explicitly (`is_equal_approx`), and **measure a flake before changing the wait**: the
+    diagnosis is a claim, the print is the evidence.
 
 **The rule that catches every one: prove every new test red-then-green**, and **compare PER-SUITE
 check counts across the red and green runs** — a suite whose count dropped had assertions silently

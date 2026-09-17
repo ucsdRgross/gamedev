@@ -131,25 +131,36 @@ written when a run stalls or fails.
     as a scoring bug to a human is not a test's question.
 - ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**
   - **The drop-map sweep is not free, and the number is here so nobody re-measures it.** It runs one
-    `on_can_place_stack` dispatch per cell per board mutation (coalesced to once a frame by
-    `_rebuild_queued`), which is the ruling's OWN cost: "the tint follows what `try_place` accepts"
-    means asking the real dispatch rather than a second legality rule. The full suite went
-    **351.6 s → 370.4 s**, carried by the board-mutating suites — E2E RUN 27.7→31.5, GRID LAYOUT
-    17.4→20.9, LEAK CANARY 10.7→12.6, DRAG PLACE 14.0→15.3. No "skip while processing" narrowing was
-    added: nobody ruled one, and it would leave the map stale at the end of a cascade.
+    `on_can_place_stack` dispatch per cell per rebuild (`set_card_zones`, once a frame) while a card
+    is held — an empty hand is an empty map with no dispatch — which is the ruling's OWN cost: "the
+    tint follows what `try_place` accepts" means asking the real dispatch rather than a second
+    legality rule. Before the empty-hand short-circuit the full suite went **351.6 s → 370.4 s**,
+    carried by the board-mutating suites — E2E RUN 27.7→31.5, GRID LAYOUT 17.4→20.9, LEAK CANARY
+    10.7→12.6, DRAG PLACE 14.0→15.3. No "skip while processing" narrowing was added: nobody ruled
+    one, and it would leave the map stale at the end of a cascade.
+  - **The two no-legal-placement loops in `game.gd` lost their early exit** when they were composed
+    over `Game.legal_cells_for` (one walk, three readers): each now walks every cell of a grid
+    before answering, after every placement and every commit. Unmeasured; the sweep already pays
+    the same walk per rebuild, so this at most doubles it. Measure on Box A before narrowing.
+  - **Two stick "rest" checks in `test_sidebar.gd` hold `STICK_HELD_FRAMES` (10 frames, ~15 ms at
+    Box B's ~660 fps)**, so they prove rest over a frame-rate-dependent span. A time span costs
+    ~2 s per suite run; the owner's call.
   - **The placeholder-warning headroom is gone.** The gate allows at most 22 and the run now emits
     exactly 22, the new one being `legal_cell_tint` itself — so the NEXT item to add an off-palette
     colour breaches the gate. That warning is provisional: `GAP-011` option (b) replaces the knob
     with a palette entry and gives the slot back.
-- ⬜ **PIXELS `fire brightens when its host is highlighted` fails in the full run on Box B** —
-  measured `0.294 plain vs 0.296 highlighted` against a +5% floor, the same numbers in 3 of 4 full
-  runs on the `sidebar` branch there, and 43/43 with `--filter Pixels` alone. The one full run that
-  passed it was the run in which `Tools/wall_editor.tscn` failed to load (a stale class cache), and
-  WALL RENDER — which mounts that scene — finishes immediately before PIXELS. Not GPU noise (the
-  values do not move) and in no file the sidebar gap work touched. Box A's full runs on the same
-  commits were green. First discriminator: `--filter "Wall Render" Pixels` together.
+- ⬜ **Sidebar: two gaps wait on the owner** (`design/sidebar/gaps/`). `GAP-011`: `Shaders/outline.gdshader`
+  ends `COLOR = out_col;` and never multiplies the vertex COLOR, so nothing `modulate` marks draws —
+  the legal-cell tint and `CardVisual.focused`'s glow have never been on screen; the one-token fix
+  switches `modulate` on for EVERY card, a board-wide look change. `GAP-012`: the map has no pad
+  route INTO the description panel (the board's route needs a lock the map never takes). The
+  blanket "i will take recommendation for all gaps" predates both; each needs a fresh ruling.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
   - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
+  - The outcome's Continue and Undo sit under the spotlight layer's dim: text peaks at (73,71,80) over (12,10,22) in `outcome_buttons.png`. Whether the outcome row should be lit is a look call.
+  - In the 600×1000 top case the stock row's top overlaps the grid's bottom row by about 10 px (`game_hud_top.png`).
+  - A click on a card the board refuses to grab (a locked or occupied cell) while another card is armed parks the armed card until the next press — every `stop_following` clears `_motion_may_start_following`, not only a failed drag's. The `GAP-007` ruling names the failed drag; whether a refused click should hold the return too is a look call.
+  - The map has no pad route INTO the description panel: `GAP-012`.
   - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?
   - Escape → Back → re-entering the game leaves nothing armed until a placement, undo or processing edge.
   - The map's name popup keeps its name after the pointer leaves the dot, and is not clamped at the picture's top edge, where the name clips off.

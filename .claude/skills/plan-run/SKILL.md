@@ -65,7 +65,10 @@ but it MUST carry:
 4. ⚠ **The CALL SITE.** "Where is this called from, and what breaks if it is deleted?" A step whose
    done-when is only "TestX is green" will ship a component nothing calls. Require a test that fails
    when the wiring is removed. **Name the coordinate space of every position the step reads or
-   writes** (root viewport or inside the picture) — 4 wrong-space defects on one branch.
+   writes** (root viewport or inside the picture) — 4 wrong-space defects on one branch. **For a
+   pad or keyboard route, name the VIEWPORT the focus must END in and require the row to assert
+   its focus owner** — two pad features on one branch were green on their state change while the
+   pad was stranded in the other viewport ([[godot-key-events-no-bubble]]).
 5. Any trap below that applies, named specifically.
 6. ⚠ **The comment rule, stated.** A comment sits at column 0, above the method, at most 3 lines,
    and says WHY the method exists. No comment may have whitespace before it and none may trail
@@ -313,6 +316,10 @@ Run in this order. Earlier items change the diff the later ones read.
      grids, silently banking score into a grid that does not exist.
    - **Can this check fail at all?** `check(true, ...)`, an assertion on a constant, or a comparison
      of two things that are equal when both are empty.
+   - **After a pad route, does the row assert the FOCUS OWNER, in the viewport the pad moves on
+     next?** Two rows asserted the state change and never the owner; both features stranded the
+     pad. And a gate that SKIPS its later checks when a walk fails shrinks the count instead of
+     going red — compare per-suite counts.
 5. **`/simplify`** — the complexity section below is what it enforces.
    ⚠ **IT ASKS FOR FOUR PARALLEL AGENTS AND THIS REPO FORBIDS THAT.** `/simplify` is a built-in
    skill and cannot be edited here; its Phase 1 says to launch four review agents "in a single
@@ -323,7 +330,12 @@ Run in this order. Earlier items change the diff the later ones read.
 6. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
    not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
 7. **Fix everything 1–6 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
-   — then re-run whichever of 1–6 your fixes could have invalidated.
+   — then re-run whichever of 1–6 your fixes could have invalidated. ⚠ **The fix commits are a
+   diff and get their own item-2 pass.** Measured: of nine fixes on one close, one asserted on a
+   producer the row's fixture never reached (End with an empty Entrance) and one over-reached
+   (a grab meant for the pad fired on every pointer pick); the re-review caught both, the suite
+   neither. A fix brief for a FLAKE says "measure the quantity first; the diagnosis is a claim" —
+   one diagnosed settle race was a float-ULP boundary, found by a print.
 8. **`/docs`** — fold the run's residue into the living docs.
 9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
 10. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a

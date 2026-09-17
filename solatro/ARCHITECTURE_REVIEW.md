@@ -357,7 +357,28 @@ history stored in forward orientation).
 - **Pad focus.** Godot's focus search never crosses a viewport. A key/pad accept on the exit X,
   read at its `gui_input` because a mouse click focuses the X too, emits `exit_accepted`, and
   `PlayArea.return_focus_to_board` rests focus on the described card (the armed card if that
-  control is gone) without re-publishing.
+  control is gone) without re-publishing. The outcome row's own Undo rests through
+  `PlayArea.rest_focus_on_board` instead: the armed card, or — End reached with the Entrance empty,
+  so the undo re-arms nothing — the selected grid's origin cell. The HUD's Undo is a root-viewport
+  press and rests nothing.
+  - ⚠ **`Control.grab_focus()` clears the focus owner of EVERY viewport in the window** (measured:
+    a grab in the root viewport nulled the map SubViewport's owner). So `HudContainer` grabs
+    `%Back` only when the pick took the focus — the root owner is read BEFORE `detach_entry()`
+    and must have sat inside the pack's grid. A pointer pick leaves the focus where it was.
+- **A preview card and the way back.** Picking a card listed in a pack's grid keeps the pack
+  (`_pack_entry`, `_pack_scroll`, `_picked_card` — one lifetime, cleared in `return_to_pack` and
+  `_swap_to_hud`) and hands its grid out detached rather than freed. `%Back` is shown BEFORE the
+  card is laid out, so the top row's height counts it. The way back re-mounts the grid, restores
+  the scroll and, when Back held the focus, rests it on the picked card through
+  `DescriptionPanel.rest_focus_on` — a rest `_pick_preview_card` ignores, since a listed card's
+  `focus_entered` is otherwise a pick. The map has no pad route INTO the panel: `GAP-012`.
+- **The legal-cell drop map.** `Game.legal_cells_for(held, grids)` is the ONE legality walk — the
+  two no-legal-placement loops and `PlayArea._sweep_legal_cells` all read it, through the same
+  `on_can_place_stack` dispatch `try_place` asks. The sweep runs when the hand changes and once per
+  rebuild from `set_card_zones` (every rebuild path, after the frame's mutations); an empty hand is
+  an empty map with no dispatch. The mark is `CardVisual.tint`, folded into `modulate` with the
+  focus glow by `_apply_marks` — and not drawn until `GAP-011` is ruled (`outline.gdshader` ignores
+  vertex COLOR).
 - **`GestureMetrics`** is the one home for gesture thresholds and touch-target size, each a
   fraction of the thing touched. No DPI and no millimetres anywhere: the reported density is wrong
   on multi-monitor Windows and on Android.

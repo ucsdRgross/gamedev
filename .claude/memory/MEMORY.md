@@ -23,7 +23,7 @@
 **Godot practice** (applies to solatro and worldgen alike)
 - [Running Godot scenes](running-godot-scenes.md) — run the suite yourself, WINDOWED; a green banner is not proof; diagnosing a flaky run
 - [Godot editor disk sync](godot-editor-disk-sync.md) — an open editor rewrites files and locks dlls; never kill it
-- [Key events don't bubble](godot-key-events-no-bubble.md) — area-wide accept/cancel goes in `_unhandled_input`
+- [Key events don't bubble](godot-key-events-no-bubble.md) — accept/cancel go in `_unhandled_input`; focus never crosses a viewport
 - [Type all arrays](gdscript-type-all-arrays.md) — warnings-as-errors: type elements and loop variables
 - [PowerShell mangles UTF-8](powershell-mangles-utf8.md) — never `Get-Content | Set-Content` a source file
 

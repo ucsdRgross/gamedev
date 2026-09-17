@@ -61,11 +61,13 @@ a blank frame at exit 0 is this class of tool's characteristic failure.
    - **`sidebar_snapshot`** is the sidebar HUD's instrument (container, description, stocks, map
      popup, goal met); it writes every shot under `user://sidebar_snapshot/`.
      ⚠ **They do NOT write to the `{fx,prop_art}_snapshots` folders.** Each takes an env var and
-     falls back to `user://<scene_name>/` — `OUT_DIR` for the multi-shot scenes, `OUT_PATH` for the
-     single-shot ones (`main_boot`, `wall_filter_swap`, `wall_overfill`,
-     `wall_picture_construction`, `wall_skeleton`). Set it to a directory you can read back:
-     `$env:OUT_DIR=<dir>` before `Start-Process`, since a scene's own header is otherwise the only
-     place that convention is written down.
+     falls back to `user://<scene_name>/` — `OUT_DIR` for the multi-shot wall scenes, `OUT_PATH`
+     for the single-shot ones (`main_boot`, `wall_filter_swap`, `wall_overfill`,
+     `wall_picture_construction`, `wall_skeleton`). ⚠ `sidebar_snapshot` honours `OUT_PATH` for
+     its FIRST shot only and hard-codes the other 26 under `user://sidebar_snapshot/` — read that
+     folder, and park the previous run's PNGs first so a stale shot cannot read as fresh. Set
+     the env var before `Start-Process`; a scene's own header is otherwise the only place that
+     convention is written down.
    Launch so you WAIT for exit (`Start-Process ... -PassThru` then `WaitForExit`), and run one
    Godot at a time — concurrent runs starve each other on the Intel UHD.
 

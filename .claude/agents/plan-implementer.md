@@ -102,6 +102,9 @@ skipped check as a pass.
   `STEP:` report, which is where it is read. Test assertion messages are the one exemption.
 - **Comments carry rules, not history** — keep the ⚠ and the measured number, drop the plot.
 - Verify both with `py .claude/tools/doc_check.py --changed` before reporting.
+- **A diagnosis in your brief is a claim.** When the brief says "the cause is X", print the
+  quantity first and let the number confirm it; if it does not, report what you measured instead of
+  building the prescribed fix. Two of one close's diagnoses were wrong, and the print said so.
 - **Never kill a process by image name or wildcard** — an explicit verified `-Id <pid>` is fine.
 - **PowerShell mangles UTF-8** — never `Get-Content | Set-Content` a source file; use Edit.
 - **Python `write_text` on Windows writes CRLF.** Write bytes, then verify LF with `git ls-files
