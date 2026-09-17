@@ -2816,9 +2816,10 @@ func test_the_scroll_stick_scrolls_the_description_and_not_the_hud() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_push_scroll_stick(get_viewport(), 1.0)
-	for frame : int in STICK_HELD_FRAMES: await get_tree().process_frame
+	var held := await _hold_stick_until_scrolled(scroll, 0)
 	var scrolled := scroll.scroll_vertical
-	check(scrolled > 0, "the stick scrolls the description while it shows (Q42=a)", str(scrolled))
+	check(scrolled > 0, "the stick scrolls the description while it shows (Q42=a)",
+			"%d px after %.0f ms" % [scrolled, held * 1000.0])
 	_push_scroll_stick(get_viewport(), 0.0)
 	await get_tree().process_frame
 	var rested := scroll.scroll_vertical
@@ -2839,8 +2840,17 @@ const SHORT_PANEL_PX := 40.0
 ## A deflection clear of the stick's own deadzone but nowhere near full.
 const LOW_STICK_DEFLECTION := 0.25
 
-## Frames the low deflection is held for -- long enough that whole pixels of scroll have accumulated.
-const LOW_STICK_FRAMES := 30
+## Summed process delta a held stick is given to move the scroll before the check gives up, at any frame rate this suite runs at.
+const STICK_HELD_SECONDS := 1.0
+
+# THE STICK IS INTEGRATED PER DELTA, SO A FRAME COUNT PROVES NOTHING: 30 frames measured 45 ms at
+# the windowed rate, short of the 50 ms a gentle push needs for its first whole pixel.
+func _hold_stick_until_scrolled(scroll: ScrollContainer, from: int) -> float:
+	var elapsed := 0.0
+	while scroll.scroll_vertical == from and elapsed < STICK_HELD_SECONDS:
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+	return elapsed
 
 ## Q42=a: a gentle push on the stick still scrolls a short description, rather than rounding away to nothing every frame.
 func test_a_low_stick_deflection_still_scrolls_a_short_description() -> void:
@@ -2855,10 +2865,10 @@ func test_a_low_stick_deflection_still_scrolls_a_short_description() -> void:
 			"the description is short enough that one frame of a gentle push is under a pixel",
 			str(scroll.size.y))
 	_push_scroll_stick(get_viewport(), LOW_STICK_DEFLECTION)
-	for frame : int in LOW_STICK_FRAMES: await get_tree().process_frame
+	var held := await _hold_stick_until_scrolled(scroll, 0)
 	check(scroll.scroll_vertical > 0,
 			"a low stick deflection still scrolls a short description (Q42=a)",
-			"%d px after %d frames" % [scroll.scroll_vertical, LOW_STICK_FRAMES])
+			"%d px after %.0f ms" % [scroll.scroll_vertical, held * 1000.0])
 	_push_scroll_stick(get_viewport(), 0.0)
 	container.queue_free()
 
