@@ -224,14 +224,12 @@ func _hand_str() -> String:
 			_is_lifted(held) if held else false, _pa.armed_slot(),
 			_placed_cards().size(), _game.save_history.size()]
 
-# A cell the board itself accepts, asked through the same `on_can_place_stack` dispatch `try_place`
-# uses, and fully on screen where a real drag can reach it -- no placement rule is spelled out here.
+# A cell on the board's own drop map, fully on screen where a real drag can reach it -- no
+# placement rule is spelled out here.
 func _legal_cell_control(held: CardData) -> Control:
-	var stack : Array[CardData] = [held]
+	var legal := await _game.legal_cells_for([held] as Array[CardData], _game.state.grids)
 	for control : Control in _reachable_cells():
-		var accepted : Array[CardData] = await _game.return_first_data_array_result(
-				&"on_can_place_stack", stack, _pa.ui_data[control])
-		if accepted: return control
+		if _pa.ui_data[control] in legal: return control
 	return null
 
 # Every grid cell control fully on screen, where a real drag can reach it.

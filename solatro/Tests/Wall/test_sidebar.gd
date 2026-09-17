@@ -169,6 +169,7 @@ func _ready() -> void:
 	await test_the_disarm_leaves_nothing_armed()
 	await test_an_empty_entrance_arms_nothing()
 	await test_the_legal_cell_tint_follows_what_a_placement_accepts()
+	await test_a_direct_rebuild_re_sweeps_the_drop_map()
 	behavior_section("S18: CANCEL")
 	await test_the_second_button_dismisses_a_description_with_nothing_held()
 	await test_the_second_button_with_nothing_to_cancel_does_nothing()
@@ -2365,21 +2366,34 @@ func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 	await _end_main_fixture()
 
-# Whether the board itself takes `held` onto this control, asked through the SAME
-# `on_can_place_stack` dispatch `try_place` uses, so no placement rule is spelled out here.
+# Whether the board's own drop map takes `held` onto the cell this control belongs to, so no
+# placement rule is spelled out here.
 func _board_accepts(held: Array[CardData], control: Control) -> bool:
+	return _zone_card_of(_play_area.ui_data[control]) in await _drop_map(held)
+
+## The zone cards the board lets `held` land on, asked the way the tint asks.
+func _drop_map(held: Array[CardData]) -> Array[CardData]:
 	var game := CardEnvironment.get_current_game()
-	var accepted : Array[CardData] = await game.return_first_data_array_result(
-			&"on_can_place_stack", held, _play_area.ui_data[control])
-	return not accepted.is_empty()
+	return await game.legal_cells_for(held, game.state.grids)
+
+# The map holds ZONE cards, so a control is looked up by the cell it names or sits in; an
+# Entrance card sits in no cell (its row is -1, which is no cell index) and is a landing the
+# map never holds.
+func _zone_card_of(data: CardData) -> CardData:
+	var state := CardEnvironment.get_current_game().state
+	if not state.cell_type_coord(data).is_nowhere(): return data
+	var coord := state.grid_position_of(data)
+	if coord.is_nowhere() or coord.is_entrance(): return null
+	var grid : GridData = state.grids[coord.grid]
+	return grid.cell_types[grid.cell_index(coord.x, coord.y)]
 
 # A landing for `held` the board itself accepts or refuses.
 func _placement_target(controls: Array[Control], held: Array[CardData], legal: bool) -> Control:
+	var map := await _drop_map(held)
 	for control : Control in controls:
 		if not _is_selectable(control): continue
 		if _play_area.ui_data[control] in held: continue
-		var accepts := await _board_accepts(held, control)
-		if accepts == legal: return control
+		if (_zone_card_of(_play_area.ui_data[control]) in map) == legal: return control
 	return null
 
 ## Clicks an Entrance card and hands back what the board grabbed -- the shared opening of every placement test.
@@ -4351,6 +4365,35 @@ func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 			check(_tinted_cell_count() == marked_before - 1,
 					"...and every cell still legal kept it (6.11, G12)",
 					"%d marked, was %d" % [_tinted_cell_count(), marked_before])
+	await _end_main_fixture()
+
+## 6.11/G12: the DIRECT rebuild (setup_gui, undo) re-sweeps the drop map too -- a cell filled behind the arm has left the map once the board is rebuilt.
+func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
+	await _start_game_fixture()
+	var state := CardEnvironment.get_current_game().state
+	var armed := _armed_card()
+	check(armed != null, "the deal armed a card")
+	var filler : CardData = state.upper_zone[1].datas.back() if state.upper_zone.size() > 1 else null
+	check(filler != null, "...and dealt a second Entrance card to fill a cell with")
+	if armed != null and filler != null:
+		var grid : GridData = state.grids[0]
+		var zone_card : CardData = grid.cell_types[0]
+		check(zone_card in _play_area._legal_cells, "the empty cell is on the drop map before the fill")
+		state.upper_zone[1].datas.erase(filler)
+		grid.cells[0].datas.append(filler)
+		filler.stage = CardData.Stage.PLAY
+		state.invalidate_pos_index()
+		_play_area.setup_gui()
+		await get_tree().process_frame
+		var expected := await _drop_map(_play_area.selected_cards)
+		check(zone_card not in expected, "the board refuses the filled cell")
+		var swept := _play_area._legal_cells.size() == expected.size()
+		for legal : CardData in expected:
+			swept = swept and legal in _play_area._legal_cells
+		check(swept, "a direct rebuild re-swept the drop map to what the board accepts (6.11, G12)",
+				"%d mapped, %d legal" % [_play_area._legal_cells.size(), expected.size()])
+		check(_tint_of(zone_card) == Color.WHITE,
+				"...so the filled cell wears no tint (6.11, G12)", str(_tint_of(zone_card)))
 	await _end_main_fixture()
 
 ## The mark this card is wearing right now, WHITE for none.

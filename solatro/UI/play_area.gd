@@ -1869,13 +1869,10 @@ func enable_board_focus() -> void:
 #set_card_zones() (setup_gui/undo) clears the pending request instead.
 var _rebuild_queued := false
 
-# A queued rebuild IS a board mutation, so the drop map is re-swept here -- the one entry every
-# mutation reaches, and already collapsed to once a frame.
 func queue_rebuild() -> void:
 	if _rebuild_queued: return
 	_rebuild_queued = true
 	_deferred_rebuild.call_deferred()
-	_sweep_legal_cells()
 
 func _deferred_rebuild() -> void:
 	if not _rebuild_queued: return #a direct rebuild already happened this frame
@@ -2258,6 +2255,7 @@ func set_card_zones() -> void:
 	data_card = new_data_card
 	new_data_card = {}
 	set_card_zones_visuals()
+	_sweep_legal_cells()
 	# Game-over lock outlives rebuilds: re-strip whatever focus the passes above assigned.
 	if board_focus_locked:
 		for control : Control in ui_data:
@@ -3213,20 +3211,15 @@ func _refresh_card_marking() -> void:
 ## The zone card of every cell the held card may land in — the drop map the tint draws.
 var _legal_cells : Dictionary[CardData, bool] = {}
 
-# THE DROP MAP, asked through the same legality dispatch `try_place` uses, so no placement rule is
-# restated here. ⚠ NEVER PER FRAME: the dispatch walks every card on the board for every cell, so
-# it is re-swept only where the answer can change — the hand, or the board.
+# THE DROP MAP, read from the Game's one legality walk so no placement rule is restated here.
+# ⚠ NEVER PER FRAME, AND NEVER FOR AN EMPTY HAND: the walk asks every card on the board for every
+# cell, so it runs only once per rebuild or hand change, and an empty hand lands nowhere unasked.
 func _sweep_legal_cells() -> void:
-	var game := CardEnvironment.get_current_game()
-	if not game: return
 	var legal : Dictionary[CardData, bool] = {}
-	for grid : GridData in game.state.grids:
-		for i : int in grid.cells.size():
-			var target : CardData = grid.cells[i].datas.back() \
-					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-			var accepted : Array[CardData] = await game.return_first_data_array_result(
-					&"on_can_place_stack", selected_cards, target)
-			if accepted: legal[grid.cell_types[i]] = true
+	if not selected_cards.is_empty():
+		var game := CardEnvironment.get_current_game()
+		for zone_card : CardData in await game.legal_cells_for(selected_cards, game.state.grids):
+			legal[zone_card] = true
 	_legal_cells = legal
 	_refresh_card_marking()
 

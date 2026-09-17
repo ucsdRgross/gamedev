@@ -548,9 +548,9 @@ func _shoot_a_cascade(main: Main, view: GameView) -> bool:
 		if view.play_area.selected_cards.is_empty(): await _click_an_entrance_card(main, view)
 		var held : Array[CardData] = view.play_area.selected_cards.duplicate()
 		if held.is_empty(): continue
-		var target := await _legal_target(view, held)
-		if target == null: continue
-		view.play_area.data_selected.emit(target)
+		var legal := await view.game.legal_cells_for(held, view.game.state.grids)
+		if legal.is_empty(): continue
+		view.play_area.data_selected.emit(legal[0])
 		if await _capture_while_processing(view): return true
 	return false
 
@@ -565,21 +565,6 @@ func _capture_while_processing(view: GameView) -> bool:
 			_capture(DESCRIPTION_PROCESSING_OUT_PATH)
 			return true
 	return false
-
-# A GRID landing the board itself accepts, asked through the same `on_can_place_stack` dispatch
-# `try_place` uses, so no placement rule is spelled out in this tool. Only a grid cell runs the
-# mutation pass that scores; stacking inside the Entrance is a legal move that cascades nothing.
-func _legal_target(view: GameView, held: Array[CardData]) -> CardData:
-	var candidates : Array[CardData] = []
-	for control : Control in view.play_area.ui_data:
-		var data : CardData = view.play_area.ui_data[control]
-		if data in held: continue
-		if not view.game.state.cell_type_coord(data).is_nowhere(): candidates.append(data)
-	for data : CardData in candidates:
-		var accepted : Array[CardData] = await view.game.return_first_data_array_result(
-				&"on_can_place_stack", held, data)
-		if not accepted.is_empty(): return data
-	return null
 
 func _push_pointer(viewport: SubViewport, at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()

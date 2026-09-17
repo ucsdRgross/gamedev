@@ -765,17 +765,24 @@ func _entrance_is_empty() -> bool:
 		if column.datas.size() > 0: return false
 	return true
 
-## Every held Entrance card has been asked, through the same legality dispatch a real
-## placement uses, and none of them can go anywhere on any grid.
+# THE ONE LEGALITY WALK. An occupied cell presents the card on top of it as the target, an empty
+# one its own zone card, and the answer comes from the same dispatch `try_place` asks -- so no
+# placement rule is restated by the refill, the commit or the drop map that read this.
+func legal_cells_for(held: Array[CardData], grids: Array[GridData]) -> Array[CardData]:
+	var legal : Array[CardData] = []
+	for grid : GridData in grids:
+		for i : int in grid.cells.size():
+			var target : CardData = grid.cells[i].datas.back() \
+					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
+			var accepted : Array[CardData] = await return_first_data_array_result(
+					&"on_can_place_stack", held, target)
+			if not accepted.is_empty(): legal.append(grid.cell_types[i])
+	return legal
+
+## Every held Entrance card has been asked, and none of them can go anywhere on any grid.
 func _no_held_card_has_a_legal_placement() -> bool:
-	for column : ArrayCardData in state.upper_zone:
-		if column.datas.is_empty(): continue
-		var held : Array[CardData] = [column.datas.back()]
-		for grid : GridData in state.grids:
-			for i : int in grid.cells.size():
-				var target : CardData = grid.cells[i].datas.back() 						if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-				if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
-					return false
+	for grid_index : int in state.grids.size():
+		if not await _no_legal_placement_remains_in_grid(grid_index): return false
 	return true
 
 # The Entrance's commit: the first placement locks `state.committed_grid`, and one aimed at any other
@@ -844,21 +851,14 @@ func _commit_placement() -> void:
 	if not processing:
 		save_state()
 
-## Same legality question TypeInput._no_legal_move_remains asks (every held Entrance card
-## against every grid, via the same on_can_place_stack dispatch try_place uses), narrowed to
-## the cells of ONE grid -- whether the committed grid still has anywhere for a held card to go.
+## The refill's question narrowed to ONE grid -- whether the committed grid still has anywhere for a held card to go.
 func _no_legal_placement_remains_in_grid(grid_index: int) -> bool:
-	if grid_index < 0 or grid_index >= state.grids.size(): return true
-	var grid : GridData = state.grids[grid_index]
-	if not grid: return true
+	assert(grid_index >= 0 and grid_index < state.grids.size())
+	var grids : Array[GridData] = [state.grids[grid_index]]
 	for column : ArrayCardData in state.upper_zone:
 		if column.datas.is_empty(): continue
 		var held : Array[CardData] = [column.datas.back()]
-		for i : int in grid.cells.size():
-			var target : CardData = grid.cells[i].datas.back() \
-					if grid.cells[i].datas.size() > 0 else grid.cell_types[i]
-			if not (await return_first_data_array_result(&"on_can_place_stack", held, target)).is_empty():
-				return false
+		if not (await legal_cells_for(held, grids)).is_empty(): return false
 	return true
 
 ## Moves a card already on the grid board to `coord`, then runs the mutation pass.
