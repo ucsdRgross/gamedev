@@ -129,11 +129,6 @@ written when a run stalls or fails.
     two, with no cue explaining it (Q33=a chose that). That the cue is ABSENT is pinned by tests
     (`test_comparator.gd` §10 asserts the ordinary meld name, no marker); whether its absence reads
     as a scoring bug to a human is not a test's question.
-- ⬜ **Sidebar: ten gaps, every one answered** — the owner took each gap's own recommendation;
-  the work items, in build order, are in `HANDOFF_sidebar_gaps.md`. Each gap in `design/sidebar/gaps/`:
-  - `GAP-001` — does a 16:9 window wider than 2560 px clamp the container? Recommends clamping only windows wider than 16:9.
-  - `GAP-002` — does the board inset account for the covering picture's crop below 16:9? Recommends measuring the region in the visible picture.
-  - `GAP-003` — D11 says the map has no picture; it has one. Recommends correcting D11 to convert through picture scale and camera zoom (as built).
 - ⬜ **Sidebar: two measured costs the legal-cell tint left behind.**
   - **The drop-map sweep is not free, and the number is here so nobody re-measures it.** It runs one
     `on_can_place_stack` dispatch per cell per board mutation (coalesced to once a frame by
@@ -146,6 +141,13 @@ written when a run stalls or fails.
     exactly 22, the new one being `legal_cell_tint` itself — so the NEXT item to add an off-palette
     colour breaches the gate. That warning is provisional: `GAP-011` option (b) replaces the knob
     with a palette entry and gives the slot back.
+- ⬜ **PIXELS `fire brightens when its host is highlighted` fails in the full run on Box B** —
+  measured `0.294 plain vs 0.296 highlighted` against a +5% floor, the same numbers in 3 of 4 full
+  runs on the `sidebar` branch there, and 43/43 with `--filter Pixels` alone. The one full run that
+  passed it was the run in which `Tools/wall_editor.tscn` failed to load (a stale class cache), and
+  WALL RENDER — which mounts that scene — finishes immediately before PIXELS. Not GPU noise (the
+  values do not move) and in no file the sidebar gap work touched. Box A's full runs on the same
+  commits were green. First discriminator: `--filter "Wall Render" Pixels` together.
 - ⬜ **Sidebar: owner should see** — built as ruled or pre-existing; each is a look call:
   - The board's scroll container draws its focus border as two lines across the board while a card inside it holds focus. `draw_focus_border = false` on it removes them.
   - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?

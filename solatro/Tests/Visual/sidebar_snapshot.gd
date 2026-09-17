@@ -282,22 +282,27 @@ func _end_the_show(view: GameView) -> void:
 	view.game.end_show()
 	await get_tree().process_frame
 
-## What the outcome is OFFERING: each button it shows with the span it is DRAWN across in window px, which one wears the focus, and whether the HUD's Undo is up behind it.
+# What the outcome is OFFERING, in the PIXELS of the capture: the window is stretched
+# (`canvas_items`, `expand`), so canvas units are carried to the PNG through the root viewport's
+# own final transform -- the same map the engine draws with, never a factor typed here.
 func _report_the_outcome_buttons(main: Main, view: GameView) -> void:
 	var screen : Label = view.win_screen if view.win_screen.visible else view.lose_screen
-	var window := view.hud_container.get_viewport().get_visible_rect().size
+	var root : Viewport = view.hud_container.get_viewport()
+	var window := root.get_visible_rect().size
+	var to_pixels := root.get_final_transform()
 	var design := Vector2(PlayArea.game_picture_design_size(PlayArea.settings()))
 	var scale := WallPicture.cover_scale(design, window)
 	var drawn : Array[String] = []
 	for button : Button in screen.find_children("*", "Button", true, false):
 		var span := _drawn_span_x(button, view.play_area.board_visible_crop, scale)
-		drawn.append("%s=%.1f..%.1f" % [button.text, span.x, span.y])
+		drawn.append("%s=%.1f..%.1f" % [button.text, (to_pixels * Vector2(span.x, 0.0)).x,
+				(to_pixels * Vector2(span.y, 0.0)).x])
 	var focused : Control = (main._pictures[&"game"].viewport as SubViewport).gui_get_focus_owner()
 	var focus_label := "none"
 	if focused is Button: focus_label = (focused as Button).text
 	print(("SIDEBAR_SNAPSHOT outcome_buttons won=%s drawn_x=[%s] container_right=%.1f focus=%s "
 			+ "hud_undo_up=%s") % [view.win_screen.visible, ", ".join(drawn),
-			view.hud_container.container_rect().end.x, focus_label,
+			(to_pixels * view.hud_container.container_rect().end).x, focus_label,
 			view.undo_button.is_visible_in_tree()])
 
 # The Goal wears its met state the instant the total reaches it, one beat before the show ends --
@@ -333,7 +338,7 @@ func _report_the_board_geometry(view: GameView, shot: String) -> void:
 			pa.board_inset_left, origin.x, view.hud_container.container_rect().end.x,
 			board.x, board.y, block.x, block.y, entrance.x, entrance.y])
 
-## A control's DRAWN horizontal span as `(left, right)` in window px: its own transform carries every scale above it, and the picture's crop and cover scale carry it out to the screen.
+## A control's DRAWN horizontal span as `(left, right)` in the root viewport's canvas units: its own transform carries every scale above it, and the picture's crop and cover scale carry it out to the wall.
 func _drawn_span_x(c: Control, crop: Vector2, scale: float) -> Vector2:
 	var t := c.get_global_transform()
 	var left := (t.origin.x - crop.x) * scale

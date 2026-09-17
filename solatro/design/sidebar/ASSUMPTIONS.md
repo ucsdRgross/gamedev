@@ -882,7 +882,7 @@
   so its X is unchanged. New `TestSidebar` row
   `test_accepting_the_exit_x_hands_the_focus_back_to_the_board` (helper `_tap_key()`), and a mouse
   check added to `test_the_exit_x_reverts_to_the_hud`. Undo at the outcome screen stays out of a
-  pad's reach -> GAP-009, not fixed.
+  pad's reach -> GAP-009, built as its option (b): the outcome carries its own Undo beside Continue.
 - Close fix A: `TestGridView._reopen_the_show_view(view)` names the fixture's re-run of `PlayArea.open_show_view()`
   after it grows the board; the bare `_stand_up_grids` view and `TestSidebar._build_container` run
   PROCESS_MODE_ALWAYS, the mode a focused screen root and the wall's overlay have in the game.

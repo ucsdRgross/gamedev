@@ -299,32 +299,29 @@ func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
 	screen.show()
 	play_area.ungrab_cards()
 	play_area.disable_board_focus()
+	_build_outcome_buttons(screen)
+	_continue_button.grab_focus()
+
+# UNDO SITS BESIDE CONTINUE: focus navigation never leaves the picture's SubViewport, so a pad
+# player can see the HUD's Undo but never reach it. ⚠ The row is centred on its OWN MINIMUM SIZE --
+# anchoring alone leaves a hand-built control in the picture's top-left corner, under the sidebar.
+func _build_outcome_buttons(screen: Label) -> void:
 	_outcome_buttons = HBoxContainer.new()
 	screen.add_child(_outcome_buttons)
-	_continue_button = Button.new()
-	_continue_button.text = TRANSLATION.find('GAME_CONTINUE')
-	_continue_button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	_outcome_buttons.add_child(_continue_button)
+	_continue_button = _add_outcome_button('GAME_CONTINUE')
 	_continue_button.pressed.connect(game.exit_show)
-	# UNDO IS ON THE OUTCOME SCREEN TOO, and the HUD's own keeps its place for the mouse: focus
-	# navigation never leaves the picture's SubViewport, so without this one a pad or keyboard
-	# player can see the rewind but never reach it.
-	var outcome_undo := Button.new()
-	outcome_undo.text = TRANSLATION.find('GAME_UNDO')
-	outcome_undo.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
-	_outcome_buttons.add_child(outcome_undo)
+	var outcome_undo := _add_outcome_button('GAME_UNDO')
 	outcome_undo.pressed.connect(_on_undo_pressed)
-	# These two are the whole walk this screen offers, so the pair is linked by hand rather than
-	# left to the automatic neighbour search.
-	_continue_button.focus_neighbor_right = _continue_button.get_path_to(outcome_undo)
-	outcome_undo.focus_neighbor_left = outcome_undo.get_path_to(_continue_button)
-	# ⚠ CENTRED ON ITS OWN MINIMUM SIZE, with both buttons already in it: anchoring alone keeps a
-	# control where it was built, which parks it in the picture's top-left corner, under the
-	# sidebar. Measured: Continue drawn across window x 0..134 while the sidebar ends at 288.
 	_outcome_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER,
 			Control.PRESET_MODE_MINSIZE)
 	_outcome_buttons.position.y += CONTINUE_OFFSET_Y
-	_continue_button.grab_focus()
+
+func _add_outcome_button(label_key: String) -> Button:
+	var button := Button.new()
+	button.text = TRANSLATION.find(label_key)
+	button.add_theme_font_size_override(&"font_size", CONTINUE_FONT_SIZE)
+	_outcome_buttons.add_child(button)
+	return button
 
 ## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
 func _on_show_unresolved() -> void:

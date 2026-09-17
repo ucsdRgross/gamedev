@@ -327,6 +327,7 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 			"7.6: ...and the step back returns to Continue", str(stepped_back))
 	var back_on_undo : Control = await _outcome_pad_step(KEY_RIGHT)
 	if back_on_undo == undo and undo != null:
+		var row : HBoxContainer = view._outcome_buttons
 		await _accept_the_focused_outcome_button()
 		check(not view.win_screen.visible and not view.lose_screen.visible,
 				"7.6: the pad's accept on that Undo takes the outcome screen away")
@@ -334,6 +335,9 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 				"7.6: ...leaving the show live again",
 				"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
 		check(_armed_card() != null, "7.6: ...on a board that is armed and playable")
+		check(view._outcome_buttons == null and not is_instance_valid(row),
+				"7.6: ...and the outcome's button row is freed with the screen, its field cleared",
+				"field=%s row_valid=%s" % [view._outcome_buttons, is_instance_valid(row)])
 	await _end_main_fixture()
 
 # The accept lands on a button that rewinds the show, so the rebuild it starts is waited out before
