@@ -1450,10 +1450,7 @@ func test_lights_stay_glued_to_cards_that_move_while_lit() -> void:
 		var want := _centre_for(view, mover)
 		moved = maxf(moved, start_centre.distance_to(want))
 		# Some light must be sitting on this card's CURRENT art square, not the one it left.
-		var nearest := INF
-		for l : LightLayer.Light in layer._lights:
-			nearest = minf(nearest, l.centre.distance_to(want))
-		if not layer._lights.is_empty(): worst = maxf(worst, nearest)
+		worst = maxf(worst, _nearest_light_offset(layer, want))
 		if elapsed > 2.5 and not pa._row_open_wanted.is_empty():
 			view.game.spotlight_section_changed.emit([] as Array[CardData])
 		if elapsed > 2.5 and pa._row_open.is_empty(): break
@@ -1521,26 +1518,24 @@ func test_lights_track_a_scrolled_board() -> void:
 	check(target != null, "there is a card to light on the scrolled board")
 	var worst := 0.0
 	var moved := 0.0
+	var waited := 0.0
 	if target != null and scrollable:
 		view.game.spotlight_section_changed.emit([target] as Array[CardData])
 		for _i : int in 3: await _tick_seconds()
 		var before := _centre_for(view, target)
-		# Scroll to the far end — every card slides under the lights at once.
 		scroll.scroll_horizontal = int(bar.max_value)
-		for _i : int in 3: await _tick_seconds()
+		waited = await _wait_for_light_on_scrolled_card(view, target, before)
 		var after := _centre_for(view, target)
 		moved = before.distance_to(after)
-		var nearest := INF
-		for l : LightLayer.Light in layer._lights:
-			nearest = minf(nearest, l.centre.distance_to(after))
-		worst = nearest if not layer._lights.is_empty() else 0.0
+		worst = _nearest_light_offset(layer, after)
 		view.game.spotlight_section_changed.emit([] as Array[CardData])
 		for _i : int in 2: await _tick_seconds()
 
 	check(moved > 20.0, "scrolling really did move the lit card (else this is vacuous)",
-			"it shifted only %.1f px" % moved)
+			"it shifted only %.1f px in %.0f ms" % [moved, waited * 1000.0])
 	check(worst < 1.0, "a light follows its card across a board SCROLL, not just a layout move",
-			"the nearest light was %.2f px off the scrolled card's centre" % worst)
+			"the nearest light was %.2f px off the scrolled card's centre after %.0f ms"
+			% [worst, waited * 1000.0])
 
 	SettingsManager.settings.card_scale = prev_scale
 	pa.flush_rebuild()
@@ -1595,6 +1590,25 @@ func _deal_until_stacked(view: GameView) -> void:
 func _centre_for(view: GameView, data: CardData) -> Vector2:
 	var cv : CardVisual = view.play_area.data_card.get(data)
 	return cv.spotlight_center() if is_instance_valid(cv) else Vector2.ZERO
+
+## How far the closest light sits from `point`; 0 with nothing lit, which the vacuity guards catch.
+func _nearest_light_offset(layer: LightLayer, point: Vector2) -> float:
+	var nearest := INF
+	for l : LightLayer.Light in layer._lights:
+		nearest = minf(nearest, l.centre.distance_to(point))
+	return nearest if not layer._lights.is_empty() else 0.0
+
+# Scrolled content lands 1-3 frames after the set (a deferred layout sort) and the light re-reads
+# its card one frame behind that, so a wait counted in frames is a race. Returns the seconds
+# waited; the 1 s cap is what fails a light that never follows.
+func _wait_for_light_on_scrolled_card(view: GameView, target: CardData, before: Vector2) -> float:
+	var waited := 0.0
+	while waited < 1.0:
+		waited += await _tick_seconds()
+		var after := _centre_for(view, target)
+		if before.distance_to(after) > 20.0 and _nearest_light_offset(view.light_layer, after) < 1.0:
+			break
+	return waited
 
 ## One frame of real time, and how long it took.
 func _tick_seconds() -> float:
