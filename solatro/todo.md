@@ -157,7 +157,6 @@ written when a run stalls or fails.
   - The outcome's Continue and Undo sit under the spotlight layer's dim: text peaks at (73,71,80) over (12,10,22) in `outcome_buttons.png`. Whether the outcome row should be lit is a look call.
   - In the 600×1000 top case the stock row's top overlaps the grid's bottom row by about 10 px (`game_hud_top.png`).
   - A click on a card the board refuses to grab (a locked or occupied cell) while another card is armed parks the armed card until the next press — every `stop_following` clears `_motion_may_start_following`, not only a failed drag's. The `GAP-007` ruling names the failed drag; whether a refused click should hold the return too is a look call.
-  - The map has no pad route INTO the description panel: `GAP-012`.
   - A second click on the same cell inside the double-click window closes a pair, so a rapid same-cell stack is swallowed. Should stacking cost a wait?
   - Escape → Back → re-entering the game leaves nothing armed until a placement, undo or processing edge.
   - The map's name popup keeps its name after the pointer leaves the dot, and is not clamped at the picture's top edge, where the name clips off.

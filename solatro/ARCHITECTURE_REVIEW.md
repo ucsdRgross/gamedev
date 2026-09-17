@@ -371,14 +371,16 @@ history stored in forward orientation).
   card is laid out, so the top row's height counts it. The way back re-mounts the grid, restores
   the scroll and, when Back held the focus, rests it on the picked card through
   `DescriptionPanel.rest_focus_on` — a rest `_pick_preview_card` ignores, since a listed card's
-  `focus_entered` is otherwise a pick. The map has no pad route INTO the panel: `GAP-012`.
+  `focus_entered` is otherwise a pick. On the map, which never locks, `ui_up` at the top of ANY
+  shown description carries the pad onto the X (`_navigates_to_exit`); `ui_left` keeps the map's
+  backward node cycle, and after the X's accept the wall routes the next press to the map again.
 - **The legal-cell drop map.** `Game.legal_cells_for(held, grids)` is the ONE legality walk — the
   two no-legal-placement loops and `PlayArea._sweep_legal_cells` all read it, through the same
   `on_can_place_stack` dispatch `try_place` asks. The sweep runs when the hand changes and once per
   rebuild from `set_card_zones` (every rebuild path, after the frame's mutations); an empty hand is
   an empty map with no dispatch. The mark is `CardVisual.tint`, folded into `modulate` with the
-  focus glow by `_apply_marks` — and not drawn until `GAP-011` is ruled (`outline.gdshader` ignores
-  vertex COLOR).
+  focus glow by `_apply_marks`; `outline.gdshader` carries `modulate` through a varying written in
+  `vertex()`, since in `fragment()` `COLOR` is already vertex colour × TEXTURE (§4j).
 - **`GestureMetrics`** is the one home for gesture thresholds and touch-target size, each a
   fraction of the thing touched. No DPI and no millimetres anywhere: the reported density is wrong
   on multi-monitor Windows and on Android.
