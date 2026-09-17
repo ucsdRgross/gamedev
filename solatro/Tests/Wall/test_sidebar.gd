@@ -209,6 +209,7 @@ func _ready() -> void:
 	await test_a_pack_preview_card_is_reachable_by_pad_and_by_finger()
 	await test_the_way_back_returns_the_pack_with_its_grid_and_its_scroll()
 	await test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card()
+	await test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x()
 	await test_a_replaced_preview_grid_takes_its_height_with_it()
 	await test_selecting_a_node_by_key_describes_it()
 	await test_no_name_popup_shows_on_the_board()
@@ -5314,6 +5315,54 @@ func test_a_pads_pick_lands_on_the_way_back_and_the_way_back_on_the_picked_card(
 	check(_container._picked_card == null,
 			"1.19: the picked card is forgotten with the return, as the pack is")
 	await _end_main_fixture()
+
+# THE MAP NEVER LOCKS, so up at the top of any description it shows is the press that enters the
+# panel: onto the X, from which the neighbour search reaches the listed cards. The X's accept is
+# the way out -- the description gone, no focus owner, and the next arrow cycles the map again.
+func test_a_pad_enters_the_panel_by_up_on_the_map_and_leaves_it_by_the_x() -> void:
+	await _start_map_fixture()
+	await _hover_map_node_and_settle(_a_map_node_with_role(MapNodeRoles.ROLE_BOOSTER))
+	var pack : InfoEntry = _panel.current_entry
+	var selection_before : int = _map.controller._kb_index
+	check(not _container.is_locked(), "sanity: the map's description is shown, not locked")
+	await _tap_key(KEY_UP)
+	var owner := _booted_viewport.gui_get_focus_owner()
+	check(owner == _exit_button(), "1.20: up at the top of the map's description focuses the X",
+			str(owner))
+	check(_map.controller._kb_index == selection_before and _panel.current_entry == pack,
+			"1.20: ...and the map's node selection did not cycle",
+			"%d vs %d" % [_map.controller._kb_index, selection_before])
+	var listed : Array[CardData] = []
+	for card : ControlCard in _preview_cards(): listed.append(card.child.data)
+	owner = await _tap_until(KEY_DOWN, func() -> bool:
+			return _container._picked_card != null, listed.size())
+	check(listed.has(_container._picked_card),
+			"1.20: the neighbour walk down from the X lands the focus on a listed card, which picks it",
+			"%s picked, %s focused" % [_container._picked_card, owner])
+	await _tap_key(KEY_ENTER)
+	check(_panel.current_entry == pack, "sanity: the way back returned the pack")
+	owner = await _tap_until(KEY_UP, func() -> bool:
+			return _booted_viewport.gui_get_focus_owner() == _exit_button(), listed.size())
+	check(owner == _exit_button(), "1.20: up from the returned card walks back to the X",
+			str(owner))
+	await _tap_key(KEY_ENTER)
+	check(not _container.showing_description() and _hud_is_up(),
+			"1.20: accept on the X takes the description down and puts the HUD up")
+	check(_booted_viewport.gui_get_focus_owner() == null,
+			"1.20: ...leaving no root control focused", str(_booted_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_RIGHT)
+	check(_map.controller._kb_index != selection_before,
+			"1.20: ...and the next right cycles the map's node again",
+			str(_map.controller._kb_index))
+	await _end_main_fixture()
+
+# Real key presses one at a time, each read back through the focus owner, so the walk proves the
+# neighbour chain and not a `grab_focus()`. Stops at `arrived` or after `steps` presses.
+func _tap_until(keycode: Key, arrived: Callable, steps: int) -> Control:
+	for step : int in steps:
+		if arrived.call(): break
+		await _tap_key(keycode)
+	return _booted_viewport.gui_get_focus_owner()
 
 ## The `CardData` the description is PREVIEWING beside its name, or null while it shows no card of its own.
 func _previewed_card() -> CardData:

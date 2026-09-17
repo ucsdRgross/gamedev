@@ -435,11 +435,12 @@ func _input(event: InputEvent) -> void:
 	_description_panel.scroll_by_pages(pages)
 	get_viewport().set_input_as_handled()
 
-# ⚠ THE BOARD'S CELLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
-# crosses one, so the sidebar carries navigation onto the X itself: up, off the top of a locked
-# description, is the press that has nothing left to scroll and leaves its content upward.
+# ⚠ A SCREEN'S CONTROLS AND THE EXIT X SIT IN DIFFERENT VIEWPORTS, and Godot's focus search never
+# crosses one, so the sidebar carries up, off the top of a description, onto the X itself. The
+# board's description must be locked first; the map never locks, so any it shows counts.
 func _navigates_to_exit(event: InputEvent) -> bool:
-	return is_locked() and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
+	return (is_locked() or _active_screen == MAP_SCREEN) \
+			and event.is_action_pressed(&"ui_up", true) and _description_panel.at_top()
 
 ## The scroll stick's last reported deflection, integrated per frame while it is off centre.
 var _scroll_stick : float = 0.0
