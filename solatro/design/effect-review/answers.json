@@ -1,7 +1,7 @@
 {
   "slug": "effect-review",
   "doc_hash": "sha256:23f95aafc63597228c236dc31393cbc0c666d284f6f42c206d6aa5a033a8b02b",
-  "updated": "2026-09-17T04:29:11Z",
+  "updated": "2026-09-17T09:04:23Z",
   "answers": {
     "Q0001": {
       "state": "chosen",
@@ -965,6 +965,78 @@
       "active": true,
       "round": 1,
       "at": "2026-09-17T04:29:11Z"
+    },
+    "Q0109": {
+      "state": "chosen",
+      "option": null,
+      "note": "marks can fill in gaps to make melds, as long as there is only 1 empty space which the mark is filling in for",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T05:39:22Z"
+    },
+    "Q0110": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T05:39:38Z"
+    },
+    "Q0111": {
+      "state": "chosen",
+      "option": null,
+      "note": "first card placed on the board is the trump. cards with matching suit get wild suit and cards with matching rank get wild rank.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T05:45:11Z"
+    },
+    "Q0112": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, stacks build one rank down regardless of suit",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T07:30:22Z"
+    },
+    "Q0113": {
+      "state": "chosen",
+      "option": null,
+      "note": "boss/hazard, rows and columns only score if they are next to already scored row or column. first row and column hand made still score anyways.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T07:39:40Z"
+    },
+    "Q0114": {
+      "state": "chosen",
+      "option": null,
+      "note": "boss, each meld can only be scored once per show (or repeat melds keep halving in value)",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T08:17:18Z"
+    },
+    "Q0115": {
+      "state": "chosen",
+      "option": "b",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T08:17:49Z"
+    },
+    "Q0116": {
+      "state": "chosen",
+      "option": "a",
+      "note": "",
+      "override": false,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T09:04:23Z"
     }
   }
 }

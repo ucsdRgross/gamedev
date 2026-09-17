@@ -121,3 +121,12 @@
 {"seq":121,"at":"2026-09-17T03:08:33Z","event":"answer","id":"Q0106","state":"chosen","option":"c","note":"","override":false,"round":1}
 {"seq":122,"at":"2026-09-17T04:28:47Z","event":"answer","id":"Q0107","state":"chosen","option":null,"note":"this is just 2 pair or 4 pair, already implemented. therefore should be skill that checks for 4 different pairs across entire board","override":true,"round":1}
 {"seq":123,"at":"2026-09-17T04:29:11Z","event":"answer","id":"Q0108","state":"chosen","option":"a","note":"skill","override":false,"round":1}
+{"seq":124,"at":"2026-09-17T05:39:22Z","event":"answer","id":"Q0109","state":"chosen","option":null,"note":"marks can fill in gaps to make melds, as long as there is only 1 empty space which the mark is filling in for","override":true,"round":1}
+{"seq":125,"at":"2026-09-17T05:39:38Z","event":"answer","id":"Q0110","state":"chosen","option":"a","note":"","override":false,"round":1}
+{"seq":126,"at":"2026-09-17T05:45:02Z","event":"answer","id":"Q0111","state":"chosen","option":null,"note":"first card placed on the board is the trump. cards with matching suit get wild suit and cards with matching rank get wild rank.","override":true,"round":1}
+{"seq":127,"at":"2026-09-17T05:45:11Z","event":"answer","id":"Q0111","state":"chosen","option":null,"note":"first card placed on the board is the trump. cards with matching suit get wild suit and cards with matching rank get wild rank.","override":true,"round":1}
+{"seq":128,"at":"2026-09-17T07:30:22Z","event":"answer","id":"Q0112","state":"chosen","option":null,"note":"skill, stacks build one rank down regardless of suit","override":true,"round":1}
+{"seq":129,"at":"2026-09-17T07:39:40Z","event":"answer","id":"Q0113","state":"chosen","option":null,"note":"boss/hazard, rows and columns only score if they are next to already scored row or column. first row and column hand made still score anyways.","override":true,"round":1}
+{"seq":130,"at":"2026-09-17T08:17:18Z","event":"answer","id":"Q0114","state":"chosen","option":null,"note":"boss, each meld can only be scored once per show (or repeat melds keep halving in value)","override":true,"round":1}
+{"seq":131,"at":"2026-09-17T08:17:49Z","event":"answer","id":"Q0115","state":"chosen","option":"b","note":"","override":false,"round":1}
+{"seq":132,"at":"2026-09-17T09:04:23Z","event":"answer","id":"Q0116","state":"chosen","option":"a","note":"","override":false,"round":1}
