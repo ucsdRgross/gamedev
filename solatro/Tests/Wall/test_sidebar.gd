@@ -632,18 +632,12 @@ func test_game_hud_members_start_below_the_overlay_button_band() -> void:
 				"%s starts below the overlay button band" % member_name, str(control.get_global_rect()))
 	await _free_booted_main(viewport, wall)
 
-# A same-aspect window reports the project's own base resolution as its logical size under
-# `canvas_items`/`expand` stretch -- what a real 1280x720 (16:9) window gives every Control,
-# never the raw window pixels. Reading it here keeps the fixture honest about that difference.
-func _project_base_window() -> Vector2:
-	var w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 1152)
-	var h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 648)
-	return Vector2(w, h)
-
-# Q76=b: the container's contents are laid out to fit whatever it is set to, so no member may
-# reach past its own container's rect at a real 1280x720 window.
+# The container's contents are laid out to fit whatever it is set to, so no member may reach past
+# its own container's rect at a real 1280x720 window. A same-aspect window reports the project's
+# own base resolution as its logical size under `canvas_items`/`expand` stretch.
 func test_game_hud_members_stay_inside_the_container_at_a_side_window() -> void:
-	var booted := await TestMainHost.boot(self, Vector2i(_project_base_window()), WALL_SCENE)
+	var booted := await TestMainHost.boot(self, Vector2i(PlayArea.reference_window_size()),
+			WALL_SCENE)
 	var viewport : SubViewport = booted[0]
 	var wall : Wall = booted[1]
 	var container : HudContainer = wall.get_node(^"%Overlay/HudContainer")
@@ -3800,10 +3794,10 @@ func test_a_key_focus_leaves_the_card_resting_until_a_motion() -> void:
 		check(not visual.following,
 				"a key/pad focus onto another card leaves it NOT following (6.6, GAP-006)")
 		await _await_card_settled(visual)
-		var lift := _lift_above_aim(visual, _slot_centre_of(visual))
-		check(absf(lift - visual.held_lift_px()) < 2.0,
+		var rest := _slot_centre_of(visual) - Vector2(0.0, visual.held_lift_px())
+		check(visual.global_position.distance_to(rest) < 2.0,
 				"...still resting at its slot centre raised by the lift (6.6, GAP-006)",
-				"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+				"%s vs %s" % [visual.global_position, rest])
 		_hover(_bare_board_point(controls))
 		await get_tree().process_frame
 		check(visual.following, "...and a LATER mouse motion starts it (6.6, GAP-006)")
@@ -4336,35 +4330,39 @@ func test_an_empty_entrance_arms_nothing() -> void:
 ## 6.11/G12/`GAP-005`=a: the tint IS the drop map -- it marks what the board accepts, nothing it refuses, and it follows the answer when a placement changes it.
 func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 	await _start_game_fixture()
+	var filler := await _fill_a_cell_behind_the_arm(0)
+	check(filler != null, "the deal offered a second Entrance card to fill a cell with")
 	var held := await _grab_a_card_to_place()
-	if not held.is_empty():
+	if filler != null and not held.is_empty():
 		var controls := await _hoverable_card_controls()
 		var cell := _an_empty_cells_control(controls)
-		var refused := await _placement_target(controls, held, false)
+		var refused := await _placement_target(_cell_controls(controls), held, false)
 		check(cell != null, "the dealt board offers an empty grid cell to aim at")
-		check(refused != null, "...and a target this card may NOT land on")
+		check(refused != null, "...and a CELL this card may NOT land on -- never an Entrance card")
 		if cell != null and refused != null:
 			var zone_card : CardData = _play_area.ui_data[cell]
+			var refused_cell := _zone_card_of(_play_area.ui_data[refused])
 			var accepted := await _board_accepts(held, cell)
 			check(accepted, "the board takes the held card onto that cell (6.11)")
-			check(_tint_of(zone_card) == _legal_cell_tint(),
-					"...and the cell's zone card wears the legal-cell tint (6.11, G12)",
+			check(_tint_of(zone_card) == _drawn(_legal_cell_tint(), zone_card),
+					"...and the cell's zone card is DRAWN in the legal-cell tint (6.11, G12)",
 					str(_tint_of(zone_card)))
-			check(_tint_of(_play_area.ui_data[refused]) == Color.WHITE,
-					"a target the board refuses wears no tint (6.11, G12)",
-					str(_tint_of(_play_area.ui_data[refused])))
-			var marked_before := _tinted_cell_count()
+			check(_tint_of(refused_cell) == _drawn(Color.WHITE, refused_cell),
+					"a cell the board refuses is drawn with no tint (6.11, G12)",
+					str(_tint_of(refused_cell)))
+			var marked_before := TestGridFixtures.tinted_cell_count(_play_area)
 			await _click_card(cell)
 			await _hoverable_card_controls()
 			var now_held : Array[CardData] = _play_area.selected_cards.duplicate()
 			var still_accepted := await _board_accepts(now_held, _play_area.data_ui[held[0]])
 			check(not still_accepted, "the filled cell takes nothing more (6.11)")
-			check(_tint_of(zone_card) == Color.WHITE,
+			check(_tint_of(zone_card) == _drawn(Color.WHITE, zone_card),
 					"...so the cell that was legal has lost the tint (6.11, G12)",
 					str(_tint_of(zone_card)))
-			check(_tinted_cell_count() == marked_before - 1,
+			var marked_after := TestGridFixtures.tinted_cell_count(_play_area)
+			check(marked_after == marked_before - 1,
 					"...and every cell still legal kept it (6.11, G12)",
-					"%d marked, was %d" % [_tinted_cell_count(), marked_before])
+					"%d marked, was %d" % [marked_after, marked_before])
 	await _end_main_fixture()
 
 ## 6.11/G12: the DIRECT rebuild (setup_gui, undo) re-sweeps the drop map too -- a cell filled behind the arm has left the map once the board is rebuilt.
@@ -4373,18 +4371,11 @@ func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 	var state := CardEnvironment.get_current_game().state
 	var armed := _armed_card()
 	check(armed != null, "the deal armed a card")
-	var filler : CardData = state.upper_zone[1].datas.back() if state.upper_zone.size() > 1 else null
+	var zone_card : CardData = state.grids[0].cell_types[0]
+	check(zone_card in _play_area._legal_cells, "the empty cell is on the drop map before the fill")
+	var filler := await _fill_a_cell_behind_the_arm(0)
 	check(filler != null, "...and dealt a second Entrance card to fill a cell with")
 	if armed != null and filler != null:
-		var grid : GridData = state.grids[0]
-		var zone_card : CardData = grid.cell_types[0]
-		check(zone_card in _play_area._legal_cells, "the empty cell is on the drop map before the fill")
-		state.upper_zone[1].datas.erase(filler)
-		grid.cells[0].datas.append(filler)
-		filler.stage = CardData.Stage.PLAY
-		state.invalidate_pos_index()
-		_play_area.setup_gui()
-		await get_tree().process_frame
 		var expected := await _drop_map(_play_area.selected_cards)
 		check(zone_card not in expected, "the board refuses the filled cell")
 		var swept := _play_area._legal_cells.size() == expected.size()
@@ -4392,13 +4383,33 @@ func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 			swept = swept and legal in _play_area._legal_cells
 		check(swept, "a direct rebuild re-swept the drop map to what the board accepts (6.11, G12)",
 				"%d mapped, %d legal" % [_play_area._legal_cells.size(), expected.size()])
-		check(_tint_of(zone_card) == Color.WHITE,
-				"...so the filled cell wears no tint (6.11, G12)", str(_tint_of(zone_card)))
+		check(_tint_of(zone_card) == _drawn(Color.WHITE, zone_card),
+				"...so the filled cell is drawn with no tint (6.11, G12)", str(_tint_of(zone_card)))
 	await _end_main_fixture()
 
-## The mark this card is wearing right now, WHITE for none.
+# A fresh deal refuses NO cell -- every cell is empty and an empty cell takes anything -- so the
+# fixture fills one BEHIND the arm, through the state and a direct rebuild: its top then refuses
+# every card, because the standard rules carry no stacking placer. The filler, or null if undealt.
+func _fill_a_cell_behind_the_arm(cell: int) -> CardData:
+	var state := CardEnvironment.get_current_game().state
+	if state.upper_zone.size() < 2 or state.upper_zone[1].datas.is_empty(): return null
+	var filler : CardData = state.upper_zone[1].datas.back()
+	state.upper_zone[1].datas.erase(filler)
+	state.grids[0].cells[cell].datas.append(filler)
+	filler.stage = CardData.Stage.PLAY
+	state.invalidate_pos_index()
+	_play_area.setup_gui()
+	await get_tree().process_frame
+	return filler
+
+## The colour this card is DRAWN with -- `modulate`, what the player sees, never the `tint` field.
 func _tint_of(data: CardData) -> Color:
-	return _play_area.data_card[data].tint
+	return _play_area.data_card[data].modulate
+
+## What `mark` looks like drawn on this card: under the focus glow if the card holds the focus.
+func _drawn(mark: Color, data: CardData) -> Color:
+	var visual : CardVisual = _play_area.data_card[data]
+	return mark * CardVisual.FOCUS_GLOW if visual.focused else mark
 
 func _legal_cell_tint() -> Color:
 	return PlayArea.settings().legal_cell_tint
@@ -4410,14 +4421,12 @@ func _an_empty_cells_control(controls: Array[Control]) -> Control:
 		if not game.state.cell_type_coord(_play_area.ui_data[control]).is_nowhere(): return control
 	return null
 
-## How many of the board's cells are wearing the drop map.
-func _tinted_cell_count() -> int:
-	var game := CardEnvironment.get_current_game()
-	var marked := 0
-	for data : CardData in _play_area.data_card:
-		if game.state.cell_type_coord(data).is_nowhere(): continue
-		if _tint_of(data) != Color.WHITE: marked += 1
-	return marked
+## The controls that sit in a CELL -- a zone control or a card stacked in one -- and never an Entrance card.
+func _cell_controls(controls: Array[Control]) -> Array[Control]:
+	var out : Array[Control] = []
+	for control : Control in controls:
+		if _zone_card_of(_play_area.ui_data[control]) != null: out.append(control)
+	return out
 
 ## S18.2/F9: the second button with nothing held closes the description, and closes nothing else.
 func test_the_second_button_dismisses_a_description_with_nothing_held() -> void:

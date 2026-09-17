@@ -975,8 +975,7 @@ func _check_directions_split() -> void:
 ## (halved modulate → less coverage), which is the fade half of the same mechanism.
 func test_effects_take_their_host_modulate() -> void:
 	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
-	# The literal CardVisual.focused writes; if that changes, this check should move with it.
-	var highlight := Color(1.825, 1.825, 1.825)
+	var highlight := CardVisual.FOCUS_GLOW
 	for kind : String in ["fire", "balls"] as Array[String]:
 		var plain := await _shoot_modulated(kind, Color.WHITE)
 		var lit := await _shoot_modulated(kind, highlight)

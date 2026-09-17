@@ -1925,9 +1925,8 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION,
 	# whichever is LARGER. Measured on the position, never the whole picture: a picture at the
 	# window's own aspect is framed whole at rest and leaves the camera nothing to step across.
-	var ref_w : float = ProjectSettings.get_setting("display/window/size/viewport_width", 0)
-	var ref_h : float = ProjectSettings.get_setting("display/window/size/viewport_height", 0)
-	var aspect_minimum := position_size.x * ref_h / ref_w
+	var window_size := PlayArea.reference_window_size()
+	var aspect_minimum := position_size.x * window_size.y / window_size.x
 	check(float(design.y) >= block.y - 1.0,
 			"the picture is at least the board's own natural height (TP-113)",
 			"design %d px, natural %.1f px" % [design.y, block.y])
@@ -1941,7 +1940,6 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"design %d px, larger of %.1f / %.1f" % [design.y, block.y, aspect_minimum])
 	# The camera's step, in the picture's own units: what `resting_state` frames against what
 	# exists. This is the property `H22` names and the reason the picture was widened at all.
-	var window_size := Vector2(ref_w, ref_h)
 	var rest_zoom := WallPicture.focused_scale(Vector2(design), window_size,
 			st.wall_overfill_margin)
 	var visible_w := window_size.x / maxf(rest_zoom, 0.0001)
