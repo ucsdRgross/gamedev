@@ -1,7 +1,7 @@
 {
   "slug": "effect-review",
   "doc_hash": "sha256:23f95aafc63597228c236dc31393cbc0c666d284f6f42c206d6aa5a033a8b02b",
-  "updated": "2026-09-17T09:04:23Z",
+  "updated": "2026-09-18T01:08:59Z",
   "answers": {
     "Q0001": {
       "state": "chosen",
@@ -1037,6 +1037,33 @@
       "active": true,
       "round": 1,
       "at": "2026-09-17T09:04:23Z"
+    },
+    "Q0117": {
+      "state": "chosen",
+      "option": null,
+      "note": "melds can be made if difference between ranks is same across the cards in an arranged sequence, positioning of cards dont matter.\nso a scoring hand would contain a sub sequence from these possible builds\n1: A,2,3,4,5,6,7,8,9,10,J,Q,K.\n2: 2,4,6,8,10,Q,A,3,5,7,9,J,K.\n3: 3,6,9,Q,2,5,8,J,A,4,7,10,K.\n4: 4,8,Q,3,7,J,2,6,10,A,5,9,K.\nthis means maximum possible meld size is 13",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T21:44:00Z"
+    },
+    "Q0118": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, 7s on board allow stacking up or down same suit cards. can only be either upwards or downwards, not both, so player must choose one.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-17T23:40:38Z"
+    },
+    "Q0119": {
+      "state": "chosen",
+      "option": null,
+      "note": "skill, meld where all 13 base ranks exist on the board at the same time. idea is that this is possible only by creating stacks on the board, so player tries to create stacks as deep as possible.",
+      "override": true,
+      "active": true,
+      "round": 1,
+      "at": "2026-09-18T01:08:59Z"
     }
   }
 }
