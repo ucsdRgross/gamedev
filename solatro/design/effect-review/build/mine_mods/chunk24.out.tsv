@@ -1,0 +1,68 @@
+C	UnStable	Decimal Ranks (Root 2, e, Pi, Half)	Decimal ranks sit between integer ranks and can substitute for either neighbor in a Straight; a Straight containing one is a distinct hand ("Gay")	V3	rank
+C	UnStable	The Half	Splits 1 selected integer-rank card into 2 cards with half the rank (rounded down); if odd, also adds a 0.5-rank card	G7	consumable
+C	UnStable	Micro SD Card	If in the leftmost cell, banks chips from cards leaving the board with rank 0/1 and strips their rank to 0; self-destruct chance grows with banked amount	C12	skill
+C	UnStable	Social Experiment	For each played numbered card, doubles its points and gives them to the next card in sequence, then strips the source card's rank to 0	H5	skill
+C	UnStable	Binary Number	If the completed line has 4 or fewer cards and all are rank 0/1, reads their ranks as a binary number and creates a card with that rank	B1	consumable
+C	UnStable	Engineer	Decimal-rank cards count as the nearest integer rounded up, but only when the completed line is not a Straight	V1	skill
+C	UnStable	Inductor	For each pair of played cards sharing rank and suit, chance to copy one card's type, stamp, or a further property onto the other	G3	skill
+C	UnStable	Dummy Data	For each card not part of the completed line, chance to strip its rank to 0 while it keeps its banked points	G5	skill
+MOD	UnStable	101	8	vanilla-esque content mod adding decimal ranks, auxiliary cards, seals and enhancements; most jokers are numeric variants of standard shapes, skipped
+C	UP THE ANTE!	Guardsman	All scoring cards are retriggered once for every card in the line that did not score	A5	skill
+C	UP THE ANTE!	Fish 'n Chips	The fifth card to score in a completed line permanently gains points, every time	C12	skill
+C	UP THE ANTE!	Recursion	Retrigger all scoring cards if the completed line contains exactly one distinct rank	A5	skill
+MOD	UP THE ANTE!	21	3	vanilla-adjacent joker pack, mostly numeric variants of standard suit/enhancement/edition mult effects
+C	VallKarri	Full Mansion	A new hand type built from a Three of a Kind plus a Four of a Kind sharing the board at once	B1	consumable
+C	VallKarri	Ancient Fingers	All cards of one suit on the board are forcibly placed into a completed line, then replaced with new draws	R4	hazard
+C	VallKarri	Niko Gray	At level start, debuffs and doubles the values of the leftmost skill card, then removes the debuff at level end	H3	skill
+C	VallKarri	Encore Deck/Sleeve	After a line scores, every end-of-show effect on the board fires immediately instead of waiting for the show to end	H6	consumable
+MOD	VallKarri	92	4	chaotic unbalanced mod adding a leveling system and many new consumable types; most jokers are numeric or economy variants, skipped
+C	Vanilla Redux	(mod-wide)	Rebalances existing joker numbers and scaling formulas (e.g. additive to multiplicative mult, threshold changes)	A3	skill
+MOD	Vanilla Redux	45	0	balance-overhaul mod that only retunes numbers on existing vanilla effects, no new mechanic shapes
+C	Vega's Stuff	Anaphase	After this card is played 3 times, creates a permanent basic copy of itself	G1	type
+C	Vega's Stuff	(unnamed enhancement)	Gains points when scored, but loses points for every level it sits uncovered/held instead of being played	I5	type
+C	Vega's Stuff	Stitched	If 2 or more Stitched-type cards are in the same completed line, retrigger the line once	A5	type
+MOD	Vega's Stuff	44	3	small content mod adding enhancements and editions; most are numeric variants of standard scaling shapes
+C	Venetian	The Pin / The Fence	A hazard that curses only the cards NOT on the edge of a line, or only the ones ON the edge, splitting the line by interior vs. border position	C13	hazard
+C	Venetian	The Cross	A hazard that re-applies a curse to any card that was ever cursed earlier this run, tracking history rather than current state	T2	hazard
+C	Venetian	The Trident	A hazard that forces every completed line this level to resolve as a fixed hand type (Three of a Kind) regardless of the cards played	B1	hazard
+MOD	Venetian	23	3	small mod adding boss-blind hazards themed on curses/statuses; most are plain suit or rank debuffs, skipped
+C	Vertigo	(unnamed hazard)	A hazard that only allows at most 2 cards in a completed line to actually score	A11	hazard
+MOD	Vertigo	3	1	tiny mod adding traffic-sign-themed boss hazards, barely any content in this batch
+C	Victin's Collection	The Loop / Lavender Loop	A hazard that, once cleared, immediately repeats itself with no refresh	R3	hazard
+C	Victin's Collection	Tyrian Patriarch	A hazard that only becomes playable after two other hazards have been cleared earlier in the run, then grants a resource	U4	hazard
+C	Victin's Collection	Skyscraper	Scoring cards gain points for every card remaining in the deck with a strictly lower rank than themselves	F11	skill
+C	Victin's Collection	Champion's Belt	Turns every hazard for the rest of the run into the harshest hazard variant	R8	skill
+MOD	Victin's Collection	38	4	content mod adding jokers and many boss blinds; most jokers are standard suit/hand-type conditionals, skipped
+C	Visibility	Bronze Seal	Copies the effect of the leftmost card in the completed line; copying another Bronze-stamped card retriggers this one instead	G3	stamp
+C	Visibility	P.A.M.A.	Groups two pairs of stamps into shared identities, so each stamp in a pair also counts as its partner	B4	skill
+C	Visibility	The Totem	Retriggers a specific rank-and-suit combination twice; the target combination changes at the end of every level	A5	skill
+C	Visibility	Monolith	Multiplier grows each time a line is completed, resets on specific hand types, and its target hand type also rotates on every single completion	K6	skill
+C	Visibility	Conquain	If the completed line has exactly 2 cards, the left one is converted into a copy of the right one	G9	skill
+C	Visibility	(unnamed joker)	Completing a Three of a Kind forces every card currently on the board to leave into the discard pile	R4	skill
+MOD	Visibility	66	6	vanilla-ish mod adding jokers, decks, seals and Divine cards; archived/unmaintained; most content is standard suit/rank conditionals, skipped
+C	VividStasisAndOtherRhythmGames	Aleph-0	Gives points for each rank that has NOT appeared in any completed line yet this run	T2	skill
+C	VividStasisAndOtherRhythmGames	(unnamed skill)	At level start, upgrades the run's highest-level hand type and downgrades its most-played hand type in the same action	A13	skill
+C	VividStasisAndOtherRhythmGames	Second Heaven	Only becomes available after another specific skill card has destroyed itself via its own effect	T3	skill
+C	VividStasisAndOtherRhythmGames	New York Back Raise	Inactive until the run completes one specific rare hand type in one specific suit, then activates permanently	G8	skill
+MOD	VividStasisAndOtherRhythmGames	31	4	rhythm-game-themed joker pack; most effects are standard scaling conditionals on suit/rank/hand, skipped
+MOD	VtuberID Jokers	11	0	small vtuber-culture-themed joker pack; all listed effects are plain scaling/retrigger/create shapes already covered
+MOD	WaffleMod	4	0	stub article with only two tarot cards and two boss blinds listed, no unusual mechanic shapes present
+C	Warp Zone Mod	The Yew	A hazard that scrambles the order of every skill card on the board before each line is completed	E3	hazard
+C	Warp Zone Mod	The Unknown	A hazard that hides its own name and effect from the player entirely	M2	hazard
+C	Warp Zone Mod	Gravity Deck	Every completed line and every card leaving the board is treated as if it were simultaneously the first and last such event of the show	K8	consumable
+C	Warp Zone Mod	Ballerina	The last card to score in a completed line gives points equal to its own rank	C12	skill
+C	Warp Zone Mod	Cubism Joker	Gives points for each distinct hand type completed so far this run	P5	skill
+C	Warp Zone Mod	Strongman	Every other skill card's growth effect fires one additional time whenever it would normally fire	H3	skill
+C	Warp Zone Mod	Soccer Card	Gains a stack of multiplier for every individual trigger event fired by any other skill card, counted separately per event	H7	skill
+C	Warp Zone Mod	Holy Book	Chance to prevent a loss; self-destructs after doing so 3 times	L5	skill
+C	Warp Zone Mod	Melancholy Joker	Adds the total rank value of every card that left the board this level to its own multiplier, resetting each level	F10	skill
+C	Warp Zone Mod	Self Portrait	Face cards give bonus multiplier specifically on their retrigger events, not on their initial score	H2	skill
+C	Warp Zone Mod	Cursed Rune	Multiplier grows each time any skill card on the board is destroyed, regardless of source	I4	skill
+MOD	Warp Zone Mod	128	11	large assorted content mod with many boss blinds and jokers; bulk is standard suit/rank/edition scaling, skipped
+C	Warp Zone!	Jimbo the Forbidden One	Self-destructs if the deck's total card count falls outside a fixed range, policing overall deck size	F11	skill
+C	Warp Zone!	Planeswalker	Has 3 different effects depending on which of 3 positions it currently occupies, and loses a resource each level until it self-destructs	C12	skill
+C	Warp Zone!	War Without Reason	Multiplier grows each time the current line beats the best line this card has seen so far this run	A13	skill
+C	Warp Zone!	Weevilite	A status on a card spreads to the cards adjacent to it within the same completed line	I11	status
+MOD	Warp Zone!	30	4	Freh's reference-heavy joker pack; most effects are standard suit/edition scaling, skipped
+MOD	Wheel Of Fortune	3	0	tiny Joker-Forge mod adding a Mineral consumable type and two plain enhancement-granting cards
+MOD	Willatro	4	0	incomplete stub article; only a few jokers listed, all standard suit-rotation or destroy-for-chips shapes

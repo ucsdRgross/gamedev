@@ -4,29 +4,15 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-⚠ **THE CORPUS WAS MINED FROM THE PRE-GRID DESIGN DOCUMENTS, AND THEY HAVE NOW BEEN REPLACED.**
-That is the one thing to read before touching anything here. `solatro/DESIGN_DOC.md`,
-`DESIGN_RECOMMENDATIONS.md` and `DESIGN_REFERENCES.md` described the two-zone tableau — acts, act
-payouts, Submit, patience — when this corpus was mined out of them, and **228 of the 1,409
-questions (16.2%) use vocabulary that names nothing in the game**. Q0011 cites *"DESIGN_DOC.md
-section 2"* by name, and that section is now a different section. **7 of the 28 already-answered
-questions are affected.** The grid versions of those three documents landed on the
-**`poker-patience` branch** (Phase 10, S41), with the pre-grid originals kept in `solatro/archive/`
-so this corpus's provenance and `DROPPED.csv`'s fold targets still resolve. **See S12 below —
-re-mining against the new versions is the next build task, and it is not cosmetic.**
+**State:** the questionnaire is live: **1,591 askable questions, 83 retired in place**, 0 parser
+errors, 0 warnings. The owner has answered **118**. The current work stream is **S13** (below): the
+`rule` slot is gone, the Balatro mod wiki is being mined for new effects, and a duplicate hunt is
+queued. **The S13 TODO list is the thing to read first when resuming.**
 
-**State:** the questionnaire is **built, live and answerable** — 1,409 questions, 0 parser errors,
-0 warnings. The owner has answered **28** of them so far; the rest are open. Every source is
-mined and folded in: nine repo documents, two reference wikis, and thirty-six external games
-registered in `build/SOURCES.md`. Every repo
-source has been line-audited for content the mining pass missed. **Every taxonomy class outside
-family N and the deliberately-excluded feel-only family W now carries at least four effects.**
-**Every build task from the original plan is done; the re-mine (S12) is a NEW one, opened by the
-design documents being replaced.**
-
-**Entry docs:** `solatro/START_HERE.md` · `solatro/design/effect-review/DESIGN.md` ·
-`designloop/README.md` (the questionnaire tool) · `.claude/skills/flowchart-design/SKILL.md` §5
-(question grammar)
+**Entry docs:** `solatro/design/effect-review/build/GAME_BRIEF.md` (the rulebook every effect must
+fit — read it before judging anything) · `solatro/design/effect-review/build/REVIEW.md` (how to
+change the build without moving an answered id) · `designloop/README.md` (the questionnaire tool) ·
+`.claude/skills/flowchart-design/SKILL.md` §5 (question grammar)
 
 ## How to run it
 
@@ -63,6 +49,7 @@ the next render silently discards the edit.
 | `build/variants/v*.py` | variants for batch 1, which was tagged separately in `batches/tagged01.tsv` |
 | `build/GAME_BRIEF.md` | the rules brief every mining subagent must be given |
 | `build/TAXONOMY_CODES.md` | the 226 class codes, regenerate with `build_taxonomy_page.py` |
+| `build/mine_mods/` | **S13 working set**: the mod-wiki crawl in chunks, per-chunk candidate TSVs, `new_draft.tsv` (the judged keep-list), the subagent briefs, the dedupe groups |
 
 ## Tasks
 
@@ -185,6 +172,29 @@ the next render silently discards the edit.
     build/GAME_BRIEF.md is already rewritten for the grid economy -- it is the brief any mining
     pass must be given, and it is the model for what the restated questions should sound like.
 
+- id: S13
+  description: >
+    Retire the `rule` slot (owner ruling: the rules deck is a deck, not an effect), mine every
+    content mod on balatromods.miraheze.org for effects the questionnaire lacks, and remove
+    duplicate questions.
+  files_touched: [solatro/design/effect-review/build/generated, solatro/design/effect-review/build/decisions, solatro/design/effect-review/build/variants, solatro/design/effect-review/build/batches/tagged01.tsv, solatro/design/effect-review/build/retired_questions.py, solatro/design/effect-review/build/GAME_BRIEF.md, solatro/design/effect-review/build/header.md]
+  verification_command: 'py solatro/design/effect-review/build/fixkit.py && npm --prefix designloop run check -- solatro/effect-review'
+  verification_kind: manual
+  status: done
+  evidence: >
+    1,591 live, 83 retired, 0 errors, 0 warnings, order unchanged Q0001-Q1509. Family AA adds 165
+    questions (BM0001-BM0165); 11 duplicates retired in place. Slot pass landed: 0 `rule` slots remain. 477 became `skill` (prefix stripped, 40 rewritten
+    where the words only made sense as a global rule), 143 hazard-shaped ones became `hazard`,
+    94 map/run/meta/deck-preset ones became `structure`, 58 retired in place (rules deck as a
+    mechanism, or shop/gold, or overscore). fixkit.verify(): order unchanged Q0001-Q1509;
+    designloop check 0 errors 0 warnings.
+  notes: >
+    Mining and dedupe run through subagents (two at a time, sonnet, no Godot). The wiki crawl
+    (1,352 pages, 290 mods, ~19k effect rows, 30% removed mechanically for money/shop/held-hand
+    terms) is condensed into `build/mine_mods/chunks/`; `crawl.py` + `chunk.py` there re-create it.
+    New effects go in a new last-sorting family so no answered id moves. The TODO list under
+    "Next up" is the live state.
+
 - id: S9
   description: Owner answers the questionnaire; export the final CSV.
   files_touched: [solatro/design/effect-review/EFFECTS.csv]
@@ -240,26 +250,58 @@ solatro/design/effect-review/               new directory
 ```
 No game code, no tests, no vendored addon touched.
 
-## Next up
+## Next up — the S13 TODO list
 
-**S12 — re-mine the corpus against the grid documents**, then **S9 — the owner answers.**
+Everything for S13 lives in `solatro/design/effect-review/build/mine_mods/`. Tick items off here as
+they land; this list is the resumption point.
 
-⚠ S12 comes first for the 228 affected questions and can run alongside answering for the rest:
-an owner ruling given against a question that describes a mechanic the game does not have is a
-ruling that has to be thrown away, and 7 have already been given.
+**Mining the Balatro mod wiki** (`MINE_PROMPT.md` is the subagent brief; `chunks/chunkNN.txt` are
+the batches; `chunkNN.out.tsv` are the results; sonnet, two agents at a time, never Godot)
 
-**S9 — the owner answers.** It is the only other task left. Nothing blocks it, no further mining is
-required, and the build side is finished: every class outside family N and feel-only W offers at
-least four choices, so no class forces a decision the owner has no alternatives within.
+- [x] chunks 01–25 mined — launch each as: *"Read and follow exactly the brief at
+      `build/mine_mods/MINE_PROMPT.md`. Your batch file: `build/mine_mods/chunks/chunkNN.txt`.
+      Your output path: `build/mine_mods/chunkNN.out.tsv`."* A chunk is complete when its MOD-line
+      count equals the number of `==== MOD:` headers in its batch file.
+- [x] candidates from chunks 01–25 judged against the questionnaire → `new_draft.tsv`
+      (name, class, slot, one-line mechanic; `(variant of X)` rows fold into X's options)
+- [x] all chunk candidates judged (~940 read, ~150 new questions plus folded variants)
 
-Per-family totals at 1,409 questions:
-`G 94` · `S 92` · `A 86` · `I 82` · `C 80` · `P 77` · `D 73` · `E 69` · `L 67` · `B 65` · `Q 63` ·
-`H 59` · `K 58` · `F 58` · `U 57` · `R 53` · `O 52` · `M 50` · `J 47` · `T 45` · `V 45` · `X 35` ·
-`W 2` · `N 0`.
+**The four sources the owner added** — mine each, judge, append to `new_draft.tsv`:
 
-If more depth is ever wanted, the honest remaining thin spots are `W` (2, excluded on purpose) and
-the classes still in single figures inside otherwise-large families — but the taxonomy no longer has
-a hole, and further generation would be padding rather than coverage.
+- [x] A Solitaire Mystery FAQ (12 new shapes appended; GameFAQs refuses scripts — read it through the browser pane) — https://gamefaqs.gamespot.com/pc/536242-a-solitaire-mystery/faqs/82166
+      (the game's 30 rule sets, written out; wave 2 mined this game from the braindump only)
+- [x] Zachtronics Solitaire Collection rules (re-read from the in-game rule screenshots; nothing beyond wave 2) — https://zachtronics.com/solitaire-rules/ (the primary
+      rules pages; wave 2 used the braindump's summary)
+- [x] Degenerate Gamblers card list (crawled to `mine_mods/extra/`; 38 candidates, 2 new shapes — most of it is two-player blackjack) — https://degenerategamblers.miraheze.org/wiki/Cards (blackjack
+      deckbuilder; crawl with the same MediaWiki API recipe as `crawl.py`)
+- [x] Combolands and Zoominoes — structure confirmed from fan guides and reviews, recorded in `SOURCES.md` wave 6; 5 shapes added
+
+**Landing the new effects**
+
+- [x] `build/generated/g024.py`–`g026.py` written from `new_draft.tsv` (family AA, `BM0001`–`BM0165`): a new LAST-sorting family (add it after
+      `Z` in `taxonomy_data.py`, e.g. code `AA`, classes named for the taxonomy class each effect
+      would otherwise sit in — the family-Z pattern), eids `BM0001…`, `SOURCE = "Balatro mod wiki"`,
+      three variants each that differ in a way worth choosing between, default never reject, no
+      name shared with a live effect (`grep` the name across `build/` first)
+- [x] rendered, order unchanged Q0001–Q1509, checker 0 errors 0 warnings (1,602 live, 72 retired)
+- [x] `build/SOURCES.md`: wave-6 section (the mod wiki: 290 mods, ~19k rows, 30% removed
+      mechanically for money/shop/held-hand terms; which mods yielded most) and the four new sources
+- [x] `build/header.md`: counts and the new family
+
+**The duplicate hunt** (`DEDUPE_PROMPT.md` is the brief; `dedupe_1..4.txt` are the groups)
+
+- [x] four sonnet agents → `dedupe_N.out.tsv` (10 HIGH, 6 MEDIUM, 9 KEEP-BOTH)
+- [x] 11 retired in place as duplicates (the HIGH pairs plus one MEDIUM that read as identical); the answered pairs Q0088/Q0091/Q0092 stand as the owner's own rulings
+- [x] re-rendered, order unchanged, checker 0 errors 0 warnings, `EFFECTS.csv` exported
+
+**Close-out**
+
+- [x] `mine_mods/chunks/` deleted (re-creatable with `crawl.py` + `chunk.py`)
+- [ ] delete this TODO block once the owner has read it; what remains is in the S13 task entry and `SOURCES.md`
+- [x] `py .claude/tools/doc_check.py --changed`: clean on every file this stream wrote (the `Q7`/`Q8` findings in `g019.py` and `taxonomy_data.py` are family-Q class codes, a standing false positive)
+
+Then **S9 — the owner answers.** S12 (re-mining the pre-grid corpus) is superseded in practice:
+the architecture review recorded in `header.md` re-read every question against the grid.
 
 ## Provenance
 
@@ -269,32 +311,13 @@ a hole, and further generation would be padding rather than coverage.
 
 ## Opening prompt for the next agent
 
-> Read `solatro/HANDOFF_effect_review.md`, then `solatro/design/effect-review/build/GAME_BRIEF.md`.
->
-> The effect-review questionnaire is **finished on the build side** — 1,409 questions, 0 parser
-> errors, 0 warnings, and every taxonomy class outside family N (excluded by owner ruling) and
-> feel-only family W carries at least four effects. The owner has answered none of it yet.
->
-> The only remaining task is **S9: the owner answers**, then
-> `py solatro/design/effect-review/export_csv.py` rebuilds `EFFECTS.csv`. Run the export at any
-> point for a partial picture; unanswered questions export as `unanswered` rather than being dropped.
->
-> **If you are asked to add more effects anyway, the rules are not negotiable:**
-> - Never hand-edit `DESIGN.md`. It is generated by `build/render.py` from the data under `build/`.
-> - Add new effects as the next numbered `build/generated/g*.py`, declaring `SOURCE` for provenance.
-> - Re-render with `py solatro/design/effect-review/build/render.py`, then verify with
->   `npm --prefix designloop run check -- solatro/effect-review`. **It must stay 0 errors, 0 warnings.**
-> - Generate nothing for family **N** (view, camera, UI). The owner excluded it; its 10 classes stay
->   in the taxonomy so the hole remains visible.
-> - Every effect must fit one card slot — suit, rank, type, stamp, skill, consumable, rule or status.
-> - Three variants per effect that differ in a way worth choosing between, plus reject. The
->   recommended answer is never reject.
-> - No two live effects may share a name; check before rendering.
-> - Update `build/SOURCES.md` whenever a source is added, mined or declined, and update this handoff
->   before the session ends.
->
-> Do not spawn parallel subagents — a previous session lost eight to a rate limit and inline work
-> proved faster anyway.
+> Read `solatro/HANDOFF_effect_review.md` — the S13 TODO list under "Next up" is the resumption
+> point — then `solatro/design/effect-review/build/GAME_BRIEF.md`. Work the unticked items in
+> order. Rules that are not negotiable: never hand-edit `DESIGN.md`; never rename or delete an
+> effect (the question id is positional — retire in place); new effects go in a last-sorting family;
+> re-render and run `fixkit.verify()` after every source change; the designloop check stays at 0
+> errors, 0 warnings; at most two subagents at a time and none of them runs Godot; the owner's
+> answers stand — an answered question is never retired or rewritten.
 
 ## References
 

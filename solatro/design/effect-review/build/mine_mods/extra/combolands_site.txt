@@ -1,0 +1,931 @@
+# https://combolands.site/buildings/
+Combolands Buildings: What Sources Confirm
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Buildings: What Sources Confirm
+Quick Answer
+Crux Games advertises 120+ buildings. This page lists the
+45 that are named in a public source — a patch note, a Steam
+ Community guide, or a discussion thread — together with what that source actually says. It is
+ not the full roster, and it does not pretend to be. For the complete list in game, v1.0.5 added
+ an in-game Compendium.
+Crux Games advertises 120+ buildings. This table is not all of them — it is every building named in a source you can open yourself: the developers' patch notes and announcements, the community guides on the Steam hub, and the launch-week discussion threads. Where a source gives a number we quote the number and say which patch it came from; where it does not, the effect column says what the source actually claimed and nothing more. Nothing here is invented to fill a row.
+Version note: Numbers marked (demo) come from Next Fest demo patch notes in April–June 2026, before the 1.0 progression overhaul. Treat them as historical unless a 1.0 patch note repeats them.
+## Agricultural
+| Building | Role | What the source says | Source 
+| Sunflower Field | Crop | Reads the crop tag. Its in-game text is "transform then trigger every 3 weeks" — players note this is deliberately not the same as transforming back. | Community guide; Orchard/Wheat thread 
+| Scarecrow | Farm | Reads the farm tag rather than the crop tag — the pair of them is the guild's first lesson in tags. | Community guide 'Combolands簡易説明書' 
+| Wheat Farm | Farm | Transform-then-trigger family. Named in the launch-week thread asking whether orchards and wheat farms were bugged; the answer was that this is how they work. | Orchard fields and wheat farms thread 
+| Orchard Field | Crop | Same transform-then-trigger family as Wheat Farm. | Orchard fields and wheat farms thread 
+| Ranch | Husbandry | Scores from husbandry buildings in range. Demo v6 changed that score from +40 to +30 (demo). | Demo v6 patch notes, 2026-04-17 
+| Pickers Hut | Transform | Called out by a launch-week player as the Agricultural piece that enables other guilds through transforms. | Best & Worst Guild thread 
+| Composter | Removal payoff | Triggers when a building in range is removed: gives each farm in range +0.1 mult. Passively removes any adjacent Manure (demo). | Demo v9 patch notes, 2026-06-15 
+| Manure | Removal fodder | Triggers when removed: +1 Gold (demo). | Demo v9 patch notes, 2026-06-15 
+| Honeypot | Multiplier | Changed from 0.2 mult to 0.3 mult (demo). | Demo v9 patch notes, 2026-06-15 
+| Granary | Storage | Appears in search demand as "combolands grainary". Named by players; no published numbers we can verify. | Search demand; community mentions 
+## Frontier
+| Building | Role | What the source says | Source 
+| Shaman | Reroll payoff | Triggers when a building inside its range gains a reroll — the guild's main scorer. | Community guide 'Combolands簡易説明書' 
+| Grove | Rare | Half of the two-rare loop players describe: "a Grove and a Shaman, which just trigger each other". | Best & Worst Guild thread 
+## Martial
+| Building | Role | What the source says | Source 
+| Guard Tower | Removal payoff | Triggers when a building in its range is removed. | Community guide 'Combolands簡易説明書' 
+| Banner | Self-removal | Triggers when the Banner itself is removed. | Community guide 'Combolands簡易説明書' 
+| Watch Tower | Terrain | Removing a Watch Tower creates trees on plateaus — a v1.0.6 bugfix confirms this is intended behaviour. | v1.0.6 patch notes, 2026-08-28 
+| Ballista | Trigger | Named alongside Gold Pan as one of the two pieces "very good at helping the player securing their first barrel of gold" in a Martial + Commercial run. | Steam guide 'Guide: Unlocking Rogues & Arcane' 
+## Commercial
+| Building | Role | What the source says | Source 
+| Marketplace | Re-trigger | Re-fires Stall-family buildings. Two Marketplaces joined with Rainbow Paint is the loop players describe as "trigger x10 every turn for the rest of" the run. | Community guide; Best & Worst Guild thread 
+| Stall (family) | Scorer | The building family Marketplace re-fires. | Community guide 'Combolands簡易説明書' 
+| Gold Pan | Gold | Early gold generation; named with Vineyard as the Commercial early-game. | Best & Worst Guild thread; Rogues unlock guide 
+| Vineyard | Gold | Early gold. Also the example given for why multiplier on a non-scoring building can matter — a relic applies mult to gold gain. | Best & Worst Guild thread; multiplier thread 
+| Trading Post | Scorer | Preview scores for Trading Post were fixed in the launch-day patch, alongside Reliquary, Shrine and Vault. | v1.0.3 patch notes, 2026-08-24 
+## Civic
+| Building | Role | What the source says | Source 
+| Tax Collector | Reset | Resets plots. A plot that has finished growing no longer scores, so Tax Collector restarts the cycle. | Community guide 'Combolands簡易説明書' 
+## Industrial
+| Building | Role | What the source says | Source 
+| Mine | Producer | Can be built adjacent to rock; produces minerals. | Community guide 'Combolands簡易説明書' 
+| Smelter | Consumer | Consumes the minerals Mine produces — the two ends of the guild's chain. | Community guide 'Combolands簡易説明書' 
+| Sawmill | Producer | A v1.0.4 fix restored Sawmill triggering Manufacturer, which confirms the intended link. | v1.0.4 patch notes, 2026-08-25 
+| Manufacturer | Consumer | Triggered by Sawmill. | v1.0.4 patch notes, 2026-08-25 
+| Brewery | Chain | Subject of a launch-week bug report thread; named as part of the trigger chain. | [BUG] Breweries stopped triggering thread 
+| Charcoal | Modifier | Changed at launch to read "campfires burn for 3 times as long". | v1.0.3 patch notes, 2026-08-24 
+| Campfire | Timed | The building Charcoal extends. | v1.0.3 patch notes, 2026-08-24 
+## Maritime
+| Building | Role | What the source says | Source 
+| Fishing Boat | Water scorer | The guild's centrepiece — most Maritime cards either buff it or read off it. Every Maritime building is water- or shallow-only. | Community guide 'Combolands簡易説明書' 
+## Rogues (secret)
+| Building | Role | What the source says | Source 
+| Rogue Hideout | xmult | Credited by an endless-mode player for "supercharging my xmult" past Megalopolis XIX. | Secret Final Boss thread 
+## Neutral, terrain and structures
+| Building | Role | What the source says | Source 
+| Wall | Terrain | Placement count raised from 5 to 6 (demo). Enclosure matters: community guide coverage stresses that walls only pay off when the area is properly closed. | Demo v8 patch notes, 2026-06-09; community guide video 
+| Palisade | Terrain | Placement count raised from 7 to 9 (demo). | Demo v8 patch notes, 2026-06-09 
+| Plateau | Terrain | Placement count raised 3→4 (demo v6) then 4→5 (demo v8). Since v1.0.4 you can no longer build plateaus on plateaus. | Demo v6 and v8 patch notes; v1.0.4 patch notes 
+| Railway / Rail | Terrain | Placement count raised 2→3 (demo v6) then 3→4 (demo v8). Its in-game text says anything connected to one part of the railway is connected to all of it; a launch-week player asked what that means in practice and got no authoritative answer, so we leave it unexplained. | Demo v6 and v8 patch notes; 'When triggered' thread 
+| Scaffolding | Structure | Its text mentions a mult bonus for buildings placed on top of it. A launch-week player reports being unable to place anything on it. Unconfirmed as of 2026-08-30. | 'When triggered' thread 
+| Inn | Structure | A v1.0.6 fix restored the Inn's effect when it was placed from a blueprint. | v1.0.6 patch notes, 2026-08-28 
+| Stockpile | Structure | A v1.0.4 fix made Stockpile score correctly from Plateau. | v1.0.4 patch notes, 2026-08-25 
+| Reliquary | Scorer | Preview score fixed at launch. Named with Shrine as the heavy lifter in a very deep endless run. | v1.0.3 patch notes; Secret Final Boss thread 
+| Shrine | Scorer | Preview score fixed at launch. An endless player reports "e11 base score on my shrines" by Milestone L. | v1.0.3 patch notes; Secret Final Boss thread 
+| Vault | Scorer | Preview score fixed at launch. | v1.0.3 patch notes, 2026-08-24 
+| Effigy | Structure | An infinite fire bug on Effigy was fixed during the demo (demo). | Demo v8 announcement, 2026-06-09 
+| Temple | Structure | A commenter on the achievements guide notes "the 4 temple build" as a known build that has no achievement attached. | Secret Achievements guide comments 
+| Mystical Conduit | "When triggered" | Given by a player as the example of a building whose text says it does something when triggered without saying how to trigger it. | 'When triggered' thread 
+| Bookshelf | Collector | Holds tomes. A v1.0.6 fix stopped gems and tomes from failing to enter the Jewellery Box and Bookshelf. | v1.0.6 patch notes, 2026-08-28 
+## How buildings are described in game
+The Japanese-language community guide breaks a card down into four parts, which is the clearest
+ public explanation of what you are reading when you hover a building: its guild and rarity, its
+ activation condition, its effect — where a light-blue targeting line means adjacent and
+ an orange line means range — plus the terrain it can be placed on, and its tags.
+Tags are what most of the cross-building effects actually key off. Sunflower Field reads the
+crop tag while Scarecrow reads farm; Ranch reads husbandry; and a
+ launch-week thread notes that adding the irrigator tag to scoring buildings is one of the
+ few cases where a multiplier on a non-scoring building matters. More on that on the
+scoring page.
+## Blueprints
+Blueprints let you re-place a building you have already seen, and they stack — a v1.0.6 fix
+ addressed duplicate blueprints failing to stack, and a v1.0.4 fix addressed duplicates always
+ arriving with only one charge. You can hold a maximum of three, and unlike buildings they do not
+ advance the week when used. One of the demo-era potions hands you a
+ blueprint of a target building outright.
+Building list re-checked: August 30, 2026
+## More Combolands Guides & Data
+MECHANICScoring & Triggers
+Base score, mult, xmult and what "when triggered" actually means.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/guides/milestones-and-weeks/
+Combolands Milestones: Targets, Weeks & When to Bank
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+ Home › Guides 
+Combolands Milestones: Targets, Weeks & When to Bank
+Quick Answer
+Each Combolands milestone is a score target plus a number of weeks. Once you unlock the neutral option to end a milestone the moment you hit its target, the real decision each milestone becomes whether to bank early or spend the remaining weeks compounding your engine.
+## The clock and the target
+Every milestone gives you two numbers: a score target and the weeks remaining to reach it.
+Placing a building advances the week; blueprints do not, which is part of why they are
+worth holding. The Steam store screenshots show the early rungs — Small Town with a 3,000 target,
+Capital City with 13,000 — so the ramp is steep from the start.
+There is also an extension time shown alongside the target: even past the intended period you can
+keep going up to that limit. Sitting between those two numbers is the whole tempo question.
+## Bank early or keep building?
+Once you have the neutral unlock that lets you close a milestone the instant you hit its target — it
+needs Neutral level 7 and a finished run — every milestone poses the same question. Ending early
+banks the win and moves you on. Playing out the remaining weeks does nothing for this target but
+compounds the engine you carry into the next one, which is always bigger.
+The bias in a compounding game is toward staying. The endless-mode reports make the
+maths visible: once a build doubles its own weekly output faster than the target doubles, the gap
+never closes again. But there is no in-game guidance on when the trade flips, and it is one of the ten
+things a launch-week guide video lists as under-explained.
+## Council requests are milestone-scoped
+Council requests are set against the current milestone, not the run — the Spymaster’s request is
+to collect 75 gold during a milestone, and screenshots show requests phrased as “transform 6 more
+buildings this milestone”. Two consequences:
+A request you cannot finish this milestone is dead weight, so read the scope before accepting.
+Since v1.0.6 your first Council Request refresh is free, so there is no cost to rerolling one
+bad offer. Further refreshes cost gold and get more expensive each time.
+Detail on the councillors page.
+## Past the named milestones
+Clear all ten ranks and the named milestones give way to Megalopolis I, II, III and upward. That
+is endless mode, where the target doubles roughly every eight weeks while a good
+build doubles every week. Players have taken it far enough to break the score requirements at
+Megalopolis XXXV.
+## Where the difficulty actually is
+Steam’s public stats show the milestone structure is hardest at the beginning, not the end: 53.9% of
+owners have cleared the Villager rank and 40.5% have cleared Yeoman — a 13.4-point drop, larger than
+any gap further up the rank ladder. If you are losing milestones, the fix is usually in
+trigger chaining rather than in tempo decisions.
+ Was this guide helpful? 👍 Yes 👎 No 
+Thanks for the feedback!
+## On This Page
+ The clock and the target 
+ Bank early or keep building? 
+ Council requests are milestone-scoped 
+ Past the named milestones 
+ Where the difficulty actually is 
+## Related Guides
+ Combolands Beginner Guide: Your First Island 
+ Combolands Tips: 10 Things Worth Knowing Early 
+ Combolands Unlocks: Guilds, Neutral Levels & Endless 
+## More Combolands Guides & Data
+MECHANICScoring & Triggers
+Base score, mult, xmult and what "when triggered" actually means.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/guides/tips/
+Combolands Tips: 10 Things Worth Knowing Early
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+ Home › Guides 
+Combolands Tips: 10 Things Worth Knowing Early
+Quick Answer
+The tips that change results fastest in Combolands: read targeting-line colour before placement value, treat removals as a tool rather than a mistake, use the Merchant to trade 3 gold for a 5-gold vote, and stop chasing multipliers on buildings that do not score.
+Ten things that took the community a launch week to work out. Every one traces back to a patch note,
+a community guide or a named discussion thread — the sources page lists them all.
+## 1. Placement value is not placement quality
+The biggest preview number is not the best play, because it only shows this week. A building placed
+where a range effect can reach several future placements beats one placed where it scores highest
+right now. This is the point a launch-week guide video makes first, and it is the most common early
+mistake.
+## 2. The colour of the targeting line is a rule, not decoration
+Light blue means adjacent; orange means range. Two cards can have near-identical text and want
+completely different layouts. See the beginner guide.
+## 3. Removing your own buildings is a tool
+The entire Martial guild scores off removals — Guard Tower fires when something in range is removed,
+Banner fires when the Banner itself goes. Agricultural has its own version: one player names
+Composter plus farmland as their removal package. If you are treating demolition as damage control,
+you are missing a scoring engine.
+## 4. Trade 3 gold for 5 with the Merchant
+With the Merchant councillor seated, buying a vote costs 3 gold and the vote gives 5. That loop is
+how players clear the Spymaster’s 75-gold council request without building a run around it. Full
+economy on the gold page.
+## 5. Multipliers on non-scoring buildings are usually wasted
+Two documented exceptions, and only two: there is a relic that applies mult to gold gain — which
+makes mult on a Vineyard real — and adding the irrigator tag to a scoring building. Outside those,
+the launch-week thread’s own conclusion was that it “seems pointless”.
+## 6. Learn one blowup and aim for it
+The most-cited one: two Marketplaces joined with rainbow paint, which a player describes as
+triggering “x10 every turn for the rest of” the run. It needs gold to fish for the right paint,
+which is a large part of why several players rate Commercial the strongest opener. More combinations
+on the potions and paints page.
+## 7. Paints run out
+The launch-day patch reduced the durations of red, green, gold and blue paint. A paint is a timer, so
+set up a paint-dependent loop early enough in the milestone that the rest of it can ride the loop.
+## 8. You can end a milestone early — once you unlock it
+A neutral unlock lets you close a milestone the moment you hit its target instead of playing out the
+remaining weeks. It needs Neutral level 7 and a finished run. Knowing whether to bank early or keep
+building is one of the decisions a launch-week guide video lists as under-explained.
+## 9. Terrain decides which guild is good on this island
+Maritime builds only on sea and shallow water. Mine needs rock adjacency. A long coastline is worth
+more to one pair of guilds than a fat interior is, and maps have been procedurally generated since the
+second demo. Details on the walls and terrain page.
+## 10. If an achievement did not pop, restart the game
+Guild unlocks resolve when a run ends, so in endless mode they can sit pending.
+Patch v1.0.6 added a check on launch for exactly these, which makes closing and reopening the game the
+documented fix rather than folklore.
+## What is still unexplained
+Two things nobody has answered, so do not lose time on them: what a railway connection actually does
+for range effects, and whether anything can genuinely be placed on scaffolding. Both were raised in
+launch week and neither got an authoritative answer. Version 1.0.5 added an in-game Compendium — the
+developers’ own acknowledgement that the card text was doing too much work alone.
+ Was this guide helpful? 👍 Yes 👎 No 
+Thanks for the feedback!
+## On This Page
+ 1. Placement value is not placement quality 
+ 2. The colour of the targeting line is a rule, not decoration 
+ 3. Removing your own buildings is a tool 
+ 4. Trade 3 gold for 5 with the Merchant 
+ 5. Multipliers on non-scoring buildings are usually wasted 
+ 6. Learn one blowup and aim for it 
+ 7. Paints run out 
+ 8. You can end a milestone early — once you unlock it 
+ 9. Terrain decides which guild is good on this island 
+ 10. If an achievement did not pop, restart the game 
+ What is still unexplained 
+## Related Guides
+ Combolands Beginner Guide: Your First Island 
+ Combolands Milestones: Targets, Weeks & When to Bank 
+ Combolands Unlocks: Guilds, Neutral Levels & Endless 
+## More Combolands Guides & Data
+MECHANICScoring & Triggers
+Base score, mult, xmult and what "when triggered" actually means.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/guild-combos/
+All 21 Combolands Guild Combos
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+All 21 Combolands Guild Combos
+Quick Answer
+Combolands gives you 7 pickable guilds and every run takes 2 of them, so there are exactly
+21 guild combinations — the same 21 the Guild Journeyman and Ultimate
+ Guildmaster achievements ask you to win with. Only 0.8% of Steam owners have won once with all
+ 21, and 0.2% have done it on Regent. The secret guilds, Rogues and Arcane, are not part of the
+ 21 because they cannot be picked at the start of a run.
+Every run picks 2 of the 7 base guilds, which is exactly 21 pairings — the number Crux Games quotes on the Steam page, and the number behind the Guild Journeyman achievement (win once with all 21) and Ultimate Guildmaster (win all 21 on Regent). Rogues and Arcane are unlocked separately and cannot be picked at the start, so they are not part of the 21. The 'how it reads' column is built from each guild's documented loop; the evidence column says whether a specific source discusses that pairing or whether we combined the two guild descriptions ourselves.
+ All 21 pairings — 4 have a source that discusses the pair directly, the rest are combined from the two guilds' own documented loops. 
+| Pairing | How it reads | Evidence 
+| Agricultural + Frontier | Transform effects feeding a reroll engine: the Agricultural side changes buildings, the Frontier side wants rerolls arriving so Shaman keeps firing. | Derived 
+| Agricultural + Martial | Composter and farmland give Martial the steady stream of removals it scores from, while Martial's demolish access resets Agricultural plots on demand. | Documented — a launch-week player names "compost + farmland for removes" as an Agricultural package that enables other guilds 
+| Agricultural + Commercial | Farm scoring with a gold engine behind it, so the shop can be leaned on to find the specific crop or farm piece the board is missing. | Derived 
+| Agricultural + Civic | Two growth clocks in one city — crops that transform then trigger, plots that grow then stop. Tax Collector is the shared reset button. | Derived 
+| Agricultural + Industrial | Farms as the raw input feeding an Industrial chain, so one placement fires on both sides of the board. | Documented — a launch-week community video is built entirely on this pairing ("I Combined Farming With Industry... Then EVERYTHING Started Triggering") 
+| Agricultural + Maritime | Land farms plus the water-only building set, which means the two guilds barely compete for the same tiles on a procedural island. | Derived 
+| Frontier + Martial | Rerolls and removals both count as 'things that happen to a building', so a single Martial demolish can pay the Frontier side too. | Derived 
+| Frontier + Commercial | Gold buys rerolls, rerolls feed Shaman. This is the pairing that turns the shop into a scoring engine rather than a shopping trip. | Derived 
+| Frontier + Civic | Reroll generation next to plots that need repeated resets — the Civic clock gives Frontier something to keep re-rolling around. | Derived 
+| Frontier + Industrial | Reroll pressure on a production chain, used to keep pulling the specific intermediate goods the chain needs. | Derived 
+| Frontier + Maritime | A consistent water scoring core with Frontier's reroll drip on the land tiles — the reason several players rate Maritime as good "no matter what partner". | Derived 
+| Martial + Commercial | Commercial buildings hand you gold, Martial re-triggers them after they have already been placed. The Ballista and the Gold Pan are the two pieces called out for getting your first real pile of gold together. | Documented — this is the pairing the Rogues-unlock guide recommends for the Spymaster's 75-gold council request 
+| Martial + Civic | Demolish access on top of plots that need resetting. On paper it fits; in practice at least one launch-week player did not get it to work. | Documented — "civic + martial is an awful combo... maybe just bad luck on civil's part" (Best & Worst Guild thread) 
+| Martial + Industrial | Removals as the trigger source for a production chain, which is one of the ways players describe getting Industrial multipliers moving early. | Derived 
+| Martial + Maritime | A stable water scorer with a land-side enabler. Martial is repeatedly described as a support faction, and Maritime is the most self-sufficient scorer. | Derived 
+| Commercial + Civic | Gold funding the repeated plot resets that Civic scoring lives on. | Derived 
+| Commercial + Industrial | The shop pays for the missing link in the production chain — the pairing where buying your way to a Smelter actually matters. | Derived 
+| Commercial + Maritime | Two of the three guilds with the most best-guild votes in the launch-week thread, run together: consistent water scoring plus the gold to shape the shop. | Derived 
+| Civic + Industrial | Plot growth and production chains both reward leaving a section of the island untouched for several weeks. | Derived 
+| Civic + Maritime | Land plots and water buildings split the island cleanly, which suits maps where the usable grass area is small. | Derived 
+| Industrial + Maritime | A production chain on land with Fishing Boat scoring off the coast. Mine needs rock adjacency and Maritime needs water, so map generation matters more here than in most pairs. | Derived 
+## Why 21 and not more
+Seven guilds choosing two, order irrelevant, is 7 × 6 ÷ 2 = 21. Crux Games quotes the number on
+ the Steam page and builds two achievements around it. Because Rogues
+ and Arcane only enter a run partway through, adding them does not change the count — which is
+ also why the completion achievements stayed at 21 after the secret guilds were in.
+## Chasing Guild Journeyman
+The two completion achievements are the rarest things in the game: Guild Journeyman
+(win at least once with all 21 combinations) sits at 0.8% of owners and
+Ultimate Guildmaster (the same 21 on Regent) at 0.2%. For scale, 5.4% of owners
+ have beaten Regent once — so of the players who can clear the top rank, roughly one in twenty-seven
+ has ground out every pairing at it. The achievements page has the
+ full rarity ladder.
+One practical warning from the launch week: guild achievements have been reported not popping in
+endless mode until the game is restarted. Patch v1.0.6 added a check
+ on launch for pending achievements, so restarting is the documented fix.
+Table re-checked: August 30, 2026
+## More Combolands Guides & Data
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+DATAAchievements
+All 21 achievements with unlock conditions and global rarity.
+UNLOCKSecret Guilds
+Exact steps to unlock Rogues and Arcane.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/guild-tier-list/
+Combolands Guild Tier List (Community Vote)
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Guild Tier List (Community Vote)
+Last updated: 2026-08-30
+Two rankings, two different questions. This tier list is the community one: it tallies the best/worst votes in the launch-week Best & Worst Guild thread on Steam, where 15 players argued it out between 2026-08-28 and 2026-08-30. It is opinion, and small — read it as where experienced players were leaning in week one, not as solved theory. For the hard-numbers view, the ranks page and the guild pages carry the Steam global achievement rates instead.
+## S Tier
+| Name | Role | Why 
+| Maritime | Self-sufficient scorer | Highest best-guild tally in the thread at 4.5 votes and zero worst votes. The recurring word is consistent: "a very consistent gameplan no matter what partner". Also the lowest victory-achievement rate of the seven at 19.7%, because it unlocks late. 
+| Commercial | Gold engine | 3.5 best votes against 1 worst. Early gold via Gold Pan and Vineyard funds the shop, and the Marketplace loop is the single most-cited blowup: "2 marketplaces connected with rainbow paint on them will trigger x10 every turn". 
+## A Tier
+| Name | Role | Why 
+| Martial | Enabler / demolish access | The most split guild after Frontier: 1.5 best and roughly 2.5 worst votes, but the defence is specific — "probably the strongest just for how good it is at enabling other buildings (and very consistent access to demolish)". Weak alone, strong as a partner. 
+| Industrial | Multiplier ramp | 1 best vote, no worst votes. "One of the easiest to get massive multipliers going on". 
+| Civic | Plot growth | No best or worst votes of its own, but named inside one player's top tier alongside Agriculture and Industry. Its Tax Collector reset is the mechanic to learn first. 
+## B Tier
+| Name | Role | Why 
+| Agricultural | Enabler with transforms | 2 worst votes, no clean best votes — yet also the loudest defence in the thread: "I am constantly shocked at how low people see agriculture given how strong it is, can very easily win even without the 2nd guild with agriculture on Regent". Highest victory-achievement rate at 73.9%, because it is available early. 
+| Frontier | Reroll engine | The thread's own tally-keeper summarised it as "emerging as the least popular, now having half of the worst place votes to itself" — 4 worst votes against 0.5 best. The dissent is that it needs the right rares: "a nothing burger till getting right trinkets (or two rares, a Grove and a Shaman, which just trigger each other)". 
+## Unlocked Tier
+| Name | Role | Why 
+| Rogues | Secret guild — triggers and money | Not in the vote because it is not one of the 21 pickable pairings. The guide that documented its unlock calls it "the most powerful guild in this game", and endless-mode players credit Rogue Hideouts for runaway xmult. One player's endless pick: "for a push into endless best: Rogue". 
+| Arcane | Secret guild — unusual effects | Also outside the vote. Described by the same guide as "overall powerful but not as much as the rogues guild does". 
+Vote tally re-read: August 30, 2026
+## The other ranking: how often each guild actually wins
+Every guild has its own Steam victory achievement, so there is a second, colder ranking sitting
+ in public — the share of owners who hold it. It disagrees with the vote almost perfectly, and
+ that is the point: guilds unlock in sequence, so this column measures availability much more than
+ it measures power. Maritime is last here and first in the vote.
+| Guild | Owners who have won with it | Community vote position 
+| Agricultural | 73.9% | B tier 
+| Frontier | 72.6% | B tier 
+| Martial | 56.8% | A tier 
+| Commercial | 35.9% | S tier 
+| Civic | 30.6% | A tier 
+| Industrial | 26.5% | A tier 
+| Maritime | 19.7% | S tier 
+## How to read a week-one tier list
+Fifteen people arguing on a discussion board is not a solved metagame. Two of them explicitly
+ refused to commit — one wrote "honestly i think they can all be strong", and the player who has
+ the all-combinations achievement answered that "every guild and every combination of guilds can
+ win", before admitting they still would not press random for money. Treat the S tier as
+ "reliable while you are learning", not as a list of correct answers.
+If you want the mechanical reasons behind each placement, the guilds page
+has each guild's scoring loop and named buildings, and the
+21 combinations table covers pairings rather than single guilds.
+## More Combolands Guides & Data
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+DATARank Clear Rates
+All 10 difficulty ranks with the share of players who have beaten each.
+UNLOCKSecret Guilds
+Exact steps to unlock Rogues and Arcane.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/guilds/
+Combolands Guilds: All 9 Explained
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Guilds: All 9 Explained
+Combolands has 9 guilds. Seven are pickable at the start of a run and every
+ run takes two of them, which is where the 21 guild combinations
+come from. The other two — Rogues and Arcane — are unlocked
+ through council requests and heirlooms, and cannot be chosen when a run begins.
+## The 7 pickable guilds
+Win rates are the share of all Steam owners holding that guild's victory achievement, pulled from Steam's public global achievement stats on 2026-08-30. Guilds unlock in sequence as you play, so this is a clear-rate order, not a power ranking — see the community vote on the tier list page for that.
+| Guild | Won with | What it scores off | Named buildings 
+| Agricultural | 73.9% | Crop and farm tags. Sunflower Field looks at crop buildings, Scarecrow looks at farm buildings, and the guild leans on transform effects that turn one building into another and then trigger it. | Sunflower Field, Scarecrow, Wheat Farm, Orchard Field, Ranch, Pickers Hut, Composter, Manure, Honeypot 
+| Frontier | 72.6% | Scores off rerolls — gaining them and triggering off the gain. Shaman fires when a building inside its range picks up a reroll, so the guild wants a steady drip of rerolls rather than a single big one. | Shaman, Grove 
+| Martial | 56.8% | Scores off removals — gaining removes and triggering off them. Guard Tower fires when a building in its range is removed; Banner fires when the Banner itself is removed. It is the guild that wants you to knock your own city down. | Guard Tower, Banner, Watch Tower, Ballista 
+| Commercial | 35.9% | Stall-family buildings that Marketplace re-fires, plus buildings that generate the gold you spend in the shop. It is the guild most able to buy its way into the pieces it needs. | Stall family, Marketplace, Gold Pan, Vineyard, Trading Post 
+| Civic | 30.6% | Grows plots for score. A plot that has finished growing stops scoring, so the guild's own Tax Collector resets grown plots to start the cycle again. | Tax Collector, plot buildings 
+| Industrial | 26.5% | A production chain: raw resources become intermediate goods that a final building consumes. Mine must be built next to rock and produces minerals; Smelter consumes them. | Mine, Smelter, Sawmill, Manufacturer, Brewery, Charcoal 
+| Maritime | 19.7% | Every building in it is placed on sea or shallow water, and most of the guild points at the Fishing Boat — buffing it or reading off it. | Fishing Boat and the water-only building set 
+## What players say about each one
+## Agricultural
+"Can very easily win even without the 2nd guild with agriculture on Regent" — one player also credits Pickers Hut for transforms and Composter + farmland for removes. Two players voted it worst.
+Sources: Steam achievement stats; community guide 'Combolands簡易説明書'; Best & Worst Guild thread
+## Frontier
+The most argued-over guild in the launch-week thread: four players called it the worst, one called it "easily one of the best" for cheap reroll generation. A third describes it as "a nothing burger till getting right trinkets (or two rares, a Grove and a Shaman, which just trigger each other)".
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread
+## Martial
+Read as a support faction rather than a scorer: "a good utility guild but pretty weak on their own, great with a lot of other guilds". One player rates it strongest overall "just for how good it is at enabling other buildings (and very consistent access to demolish)".
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread
+## Commercial
+Top of the launch-week vote tally with 3.5 best votes. "Literally 2 marketplaces connected with rainbow paint on them will trigger x10 every turn"; another player calls it "easily the strongest" for early gold via Gold Pans and Vineyards.
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread
+## Civic
+Named in the top tier by one voter alongside Agriculture and Industry; another found "civic + martial is an awful combo" but flagged it as possibly bad luck.
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread
+## Industrial
+"One of the easiest to get massive multipliers going on". One player's personal best pick.
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread
+## Maritime
+Led the best-guild vote with 4.5 points. "Maritime, just a very consistent gameplan no matter what partner"; "might be the strongest because it's so damn consistent". Note it was cut from the Next Fest demo and replaced by Martial, returning only for the full release.
+Sources: Steam achievement stats; 'Combolands簡易説明書'; Best & Worst Guild thread; dev post 2026-06-05
+## The 2 secret guilds
+## Rogues
+Unlock: Complete the Spymaster's council request — collect 75 gold during a single milestone. The request pays out a Spymaster vote, and using that vote adds Rogues to your current run and every run after it.
+What it does: Buildings that trigger other buildings and collect money, usually carrying a minor drawback. In endless runs the Rogue Hideouts are what players credit for runaway xmult.
+Cannot be picked at the start of a run. The guide author who documented the unlock calls it "the most powerful guild in this game".
+Sources: Steam guide 'Guide: Unlocking Rogues & Arcane'; endless-mode thread
+## Arcane
+Unlock: Find the Jewellery Box heirloom, then collect 8 gems (they do not need to be unique) to complete it. Selling the completed box gives the Lost Crown heirloom; selling the Lost Crown gives a Wizard vote, which unlocks Arcane.
+What it does: Buildings with unusual effects — strong, but by the same guide's reckoning not as strong as Rogues.
+Also not pickable at the start of a run. The Antiquarian councillor is the fastest route: keep feeding it votes and it can both hand you the box and keep supplying gems.
+Sources: Steam guide 'Guide: Unlocking Rogues & Arcane'
+Full unlock walkthrough for Rogues and Arcane →
+## Why the win rates are not a power ranking
+Guilds unlock in sequence as you play, so a guild you meet in hour one will always be ahead of
+ one you meet in hour ten. Agricultural sits at 73.9% and Maritime at 19.7%, yet Maritime topped
+ the community's own best-guild vote and Agricultural picked up worst-guild votes. Read this table
+ as availability, and the guild tier list as opinion.
+Guild data re-checked: August 30, 2026
+## More Combolands Guides & Data
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+UNLOCKSecret Guilds
+Exact steps to unlock Rogues and Arcane.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/heirlooms/
+Combolands Heirlooms: How They Work
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Heirlooms: How They Work
+Quick Answer
+Heirlooms are Combolands' passive item slot — the Steam page promises
+100+ passive heirlooms. Most sit in the background buffing your build,
+ but a few only pay out when you sell them, and that is how the
+Arcane guild is unlocked: fill the Jewellery Box with 8 gems,
+ sell it for the Lost Crown, sell the Lost Crown for a Wizard vote.
+## The rules that apply to all of them
+Heirlooms are passive. The Steam description calls them "100+ passive heirlooms to further enhance your build", and the game treats them as a separate slot from buildings and blueprints.
+Some heirlooms do something when you sell them rather than while you hold them — that is the whole basis of the Arcane guild unlock chain.
+Since v1.0.6 (2026-08-28) your final gold score takes heirloom sell values into consideration, so unsold heirlooms are no longer dead weight at the end of a run.
+Heirlooms arrive from heirloom chests, the shop and council request rewards. One of the potions added in the Next Fest demo makes the next heirloom chest contain only rare or better.
+## Every heirloom named in a public source
+Crux Games advertises 100+ passive heirlooms. Only a handful are named in public sources, and every one of those is named here with the source that names it. The rest are not listed because we have no way to check them — a table of invented heirloom effects would be worse than a short honest one.
+| Heirloom | Type | What the source says | Source 
+| Jewellery Box | Collector | Collects gems. Filling it takes 8 gems, and they do not have to be unique. Selling the completed box gives you the Lost Crown. | Steam guide 'Guide: Unlocking Rogues & Arcane'; v1.0.6 patch notes 
+| Bookshelf | Collector | The tome equivalent of the Jewellery Box. A v1.0.6 fix stopped gems and tomes from sometimes failing to go into the Jewellery Box and Bookshelf, which is the clearest public confirmation of how the pair works. | v1.0.6 patch notes, 2026-08-28 
+| Lost Crown | Sell-to-use | Awarded for selling a completed Jewellery Box. Selling the Lost Crown in turn gives a Wizard vote, and using that vote unlocks the Arcane guild. | Steam guide 'Guide: Unlocking Rogues & Arcane' 
+| Crystal Ball | Display / score | Named in the v1.0.4 fix that made heirlooms and Crystal Ball show week changes correctly on the starting score animation. | v1.0.4 patch notes, 2026-08-25 
+| Gold-multiplier relic (name not published) | Economy | A launch-week player answering "is there any point to a multiplier on buildings that don't score?" says there is a relic which applies mult to gold gain, which makes mult on a Vineyard worth having. The relic's name is not given, so we do not guess it. | Multiplier thread, 2026-08-30 
+| Gems | Collectible | The items the Jewellery Box collects. Eight of them complete it. The Antiquarian councillor is the reliable supply. | Steam guide 'Guide: Unlocking Rogues & Arcane' 
+| Tomes | Collectible | The items the Bookshelf collects, named alongside gems in the v1.0.6 fix. | v1.0.6 patch notes, 2026-08-28 
+## The Jewellery Box chain, step by step
+Get the box. It can appear in the shop or in heirloom chests. The
+Antiquarian councillor is the reliable route — it can hand you the
+ box and then keep supplying gems.
+Feed it 8 gems. Duplicates count; they do not have to be unique.
+Sell the completed box to receive the Lost Crown.
+Sell the Lost Crown to receive a Wizard vote, which unlocks Arcane.
+If gems and tomes seem to vanish instead of entering the box or the Bookshelf, that was a real
+ bug — fixed in v1.0.6 on 2026-08-28.
+## Do not sell everything at the end
+Since v1.0.6 your final gold score takes heirloom sell values into consideration. Before that
+ patch, an unsold heirloom contributed nothing to the end-of-run gold figure; now it does, so
+ dumping your collection in the last week to convert it is no longer the obvious play.
+Heirloom data re-checked: August 30, 2026
+## More Combolands Guides & Data
+UNLOCKSecret Guilds
+Exact steps to unlock Rogues and Arcane.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/scoring/
+Combolands Scoring, Triggers & Multipliers
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Scoring, Triggers & Multipliers
+Quick Answer
+Combolands buildings come in two kinds. Some fire on their own every few weeks. Others say they
+ do something "when triggered" — those need another building to fire them, and
+ the game does not tell you which. Chaining the second kind is what separates the easy ranks
+ from the rest: as one launch-week player put it, "to beat the game above easy you will need to
+ use combos that don't rely on auto triggers usually".
+## Reading a building's targeting
+The clearest public explanation of the card layout comes from the Japanese community guide on the
+ Steam hub. A building shows you its guild and rarity, its activation condition, its effect, the
+ terrain it can sit on, and its tags. The effect draws a targeting line, and the colour of that
+ line is the part people miss:
+Light blue line = adjacent. Only the tiles touching it.
+Orange line = range. A wider area around it.
+Guard Tower "triggers when a building in range is removed"; Banner triggers when the
+ Banner itself is removed. Same guild, completely different placement rules. The
+buildings page lists which effects each documented building uses.
+## Tags, not names
+Most cross-building effects key off tags rather than specific buildings. Sunflower Field reads the
+crop tag; Scarecrow reads farm; Ranch reads husbandry. Two buildings
+ that look related in the art may share no tag at all, and two that look unrelated may chain
+ perfectly.
+## Transform then trigger is not transform back
+A launch-week thread asked whether orchard fields and wheat farms were bugged because they seemed
+ to change into something else and stay that way. The answer, from another player, was that this
+ is exactly what the card says: "They don't say that they transform back. They say explicitly that
+ they 'transform then trigger'. Sunflower says 'transform then trigger every 3 weeks'." Read the
+ verb order literally — that is the whole rule.
+## Base score, mult and xmult
+Three layers stack, and they scale very differently. Endless-mode players describe pushing base
+ score into the e11 range on Shrines while separately running thousands of mult and using Rogue
+ Hideouts to drive an xmult on top. One player summarised the endgame priority as
+ pivoting away from base score toward mult once enchantment was already compounding.
+## When is a multiplier wasted?
+Usually, on a building that does not score. A launch-week thread asked exactly this and got two
+ concrete exceptions:
+There is a relic that applies mult to gold gain, which makes mult on something like a
+ Vineyard worth having. See heirlooms.
+It matters "if you add the irrigator tag to scoring buildings" — the tag turns a non-scorer into
+ part of a scoring chain.
+Outside those, the thread's own conclusion was that it "seems pointless".
+## Milestones and weeks
+A run is a sequence of milestones, each with a score target and a number of weeks. The screenshots
+ on the Steam page show the early ones — Small Town with a 3,000 target, Capital City with 13,000.
+ Since the Next Fest demo there has been a neutral unlock that lets you end a milestone as soon as
+ you hit its target rather than playing out the remaining weeks; it needs Neutral level 7 and a
+ finished run to unlock. Timing that decision is one of the ten things a launch-week guide video
+ lists as under-explained.
+Past the named milestones, targets become Megalopolis I, II, III and so on — that is
+endless mode, where the scaling maths becomes the whole game.
+## Two things that still are not explained in game
+ Railways. The card says anything connected to one part of the railway is
+ connected to all of it. A player asked what that means for, say, connecting a building to a
+ cluster of husbandry buildings, and no authoritative answer followed. Unconfirmed as of 2026-08-30.
+ Scaffolding. Its text mentions a mult bonus for buildings placed on top of it,
+ but the same player reports being unable to place anything on it. Also unconfirmed.
+Version 1.0.5 added an in-game Compendium, which the developers describe as by far the most
+ requested feature — a sign they know the wording is doing a lot of unassisted work.
+Page re-checked: August 30, 2026
+## More Combolands Guides & Data
+DATARank Clear Rates
+All 10 difficulty ranks with the share of players who have beaten each.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/secret-guilds/
+Combolands Secret Guilds: Rogues & Arcane
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Secret Guilds: Rogues & Arcane
+Quick Answer
+Combolands has two secret guilds. Rogues unlocks by completing the Spymaster's
+ council request — collect 75 gold during one milestone — then using the Spymaster vote it pays
+ out. Arcane unlocks by filling the Jewellery Box heirloom with 8 gems, selling
+ it for the Lost Crown, then selling the Lost Crown for a Wizard vote. Both stay unlocked for
+ every future run, and neither can be picked at the start of one.
+## Rogues
+ Take the Spymaster's request. Complete the Spymaster's council request — collect 75 gold during a single milestone. The request pays out a Spymaster vote, and using that vote adds Rogues to your current run and every run after it. 
+ Run Commercial to make the gold, Martial to re-fire it. The guide that
+ documented this unlock recommends exactly that pairing: Commercial supplies buildings that
+ grant gold, Martial supplies ways to trigger them again after placement. It singles out the
+Ballista and the Gold Pan as the two pieces most likely to get your
+ first real pile of gold together.
+ Use the Merchant councillor's arithmetic. With the
+Merchant in your council, buying a vote costs 3 while the vote
+ gives 5. Repeating that is the cheapest documented way to clear a 75-gold target inside one
+ milestone.
+ Spend the vote. Using the Spymaster vote adds Rogues to your current run and
+ to every run afterwards.
+ What you get: Buildings that trigger other buildings and collect money, usually carrying a minor drawback. In endless runs the Rogue Hideouts are what players credit for runaway xmult. Cannot be picked at the start of a run. The guide author who documented the unlock calls it "the most powerful guild in this game". 
+Source: Steam guide 'Guide: Unlocking Rogues & Arcane'; endless-mode thread
+## Arcane
+ Find the Jewellery Box. It can turn up in the shop or in heirloom chests —
+ the guide's phrasing is "basically everywhere". The reliable route is the
+Antiquarian councillor, which can both hand you the box and keep
+ supplying gems if you keep feeding it votes.
+ Collect 8 gems. They do not have to be unique, so duplicates count.
+ Sell the completed box. That gives you the Lost Crown
+heirloom.
+ Sell the Lost Crown. That gives a Wizard vote, and using the Wizard vote
+ unlocks Arcane.
+ What you get: Buildings with unusual effects — strong, but by the same guide's reckoning not as strong as Rogues. Also not pickable at the start of a run. The Antiquarian councillor is the fastest route: keep feeding it votes and it can both hand you the box and keep supplying gems. 
+Source: Steam guide 'Guide: Unlocking Rogues & Arcane'
+## Two things that will make you think it failed
+ New guilds unlock after the run ends, not at the moment you use the vote. If
+ you are in endless mode, the guide's author notes the achievement
+ only appears after you restart the game — and v1.0.6 added a launch-time check for exactly
+ these pending achievements, which suggests the developers saw the same reports.
+ Neither guild is selectable at the start of a run. They enter play through the
+ run itself, so an empty guild-select screen is not a sign the unlock failed.
+Unlock steps re-checked: August 30, 2026
+## More Combolands Guides & Data
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+DATARank Clear Rates
+All 10 difficulty ranks with the share of players who have beaten each.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/sources/
+Where This Site Gets Its Numbers | Combolands
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Where This Site Gets Its Numbers
+Every number and quote on this site comes from one of the sources below. They are all public and all openable — if a table here disagrees with what you see in game, check the source and tell us.
+## Official — Crux Games and Steam
+| What it gives us | Where | Note 
+| Store page: price, platforms, genre, release date, feature counts (7 guilds, 21 combinations, 120+ buildings, 100+ heirlooms, 13+ councillors, 10 ranks) | store.steampowered.com/app/4075620 | Read 2026-08-30. 
+| Patch notes and announcements v1.0.3–v1.0.6, the 2026-08-28 roadmap post, and the Next Fest demo notes v6–v9 | Steam news feed for app 4075620 | All 16 posts read in full; the ones we cite are dated in the updates ledger. 
+| Global achievement percentages for all 21 achievements | Steam's public global achievement stats API for app 4075620 | Pulled 2026-08-30. These move as more people play — every table using them carries its own date. 
+| Review score: 646 reviews, 630 positive | Steam's public review summary for app 4075620 | Pulled 2026-08-30. 
+| Launch trailer and the announcement trailer | The CruxGames YouTube channel | Embedded on the homepage. 
+## Community — Steam Community guides
+| What it gives us | Where | Note 
+| Rogues and Arcane unlock chains, the Merchant vote arithmetic, and the Martial + Commercial gold opening | 'Guide: Unlocking Rogues & Arcane' on the Steam guides hub | One author, but the steps are specific and checkable in game. 
+| Per-guild mechanics and key cards; the adjacent-versus-range targeting lines; the card anatomy breakdown | 'Combolands簡易説明書', a Japanese-language guide on the Steam guides hub | The single most useful mechanical source we found. Facts used, wording ours. 
+| The existence and scope of unofficial Simplified Chinese and Russian translations | Two translation-patch guides on the Steam guides hub | We cite that they exist and what their own loaders report about the game's text volume. We do not link or host the files. 
+## Community — Steam discussion board
+| What it gives us | Where | Note 
+| The best/worst guild vote tally behind our tier list | 'Best & Worst Guild' thread, 15 posts, 2026-08-28 to 2026-08-30 | Opinion, and a small sample. Labelled as such wherever we use it. 
+| Endless-mode scaling numbers, the Megalopolis XXXV break, and the out-of-bounds building trick | 'I Beat The Secret Final Boss' thread | Player accounts, not developer statements. 
+| Steam Deck legibility reports from players who have actually played on one | 'Someone plays this on Steam Deck?' thread | Two first-hand accounts. 
+| The demo being pulled; the macOS and GeForce Now question going unanswered; transform-then-trigger behaviour; the 'when triggered' confusion; the Ranger councillor mult bug | Five separate launch-week threads | Where a developer answered we say so; where nobody did, we say that too. 
+## Press
+| What it gives us | Where | Note 
+| The Cities: Skylines meets Balatro framing | Polygon preview, 2026-08-12 | Also the piece Crux Games credits for the game breaking out. 
+| The Terra Nil designer connection and the itch.io prototype backstory | GamingOnLinux articles from 2026-04-15 and 2026-08-05, both syndicated into the Steam news feed | Sam Alfred designed Terra Nil; Crux Games also credits help from Landfall. 
+## What is not a source here
+| What it gives us | Where | Note 
+| Datamined files, leaked builds, or spreadsheets we cannot trace to a person | — | Not used. 
+| Key resellers, repack sites and crack listings | — | These dominate the search results around this game. We do not link them and we do not summarise them. 
+| Our own play sessions | — | We do not claim in-game testing we have not done. Where only one player has reported something, the page says one player reported it. 
+## How we handle disagreement
+When two sources conflict, this site does not pick a winner quietly. Numbers that came from the
+ Next Fest demo are labelled demo-era wherever they appear, because the 1.0 build overhauled
+ progression and the developers have not restated them. Claims that rest on a single player's
+ account say so in the sentence. Things nobody has answered — what a railway connection actually
+ does for range effects, whether anything can be placed on scaffolding, the two hidden
+ achievements — are marked unconfirmed rather than filled in with a plausible guess.
+## What we cannot do
+We do not have a way to benchmark this game ourselves, so nothing here is presented as our own
+ testing. That is also why the review page carries no score of our own — it
+ reports Steam's numbers and the community's complaints, both attributed.
+## Found something wrong?
+Tell us and we will check the source. Contact page — corrections that come
+ with a link get fixed the same day. Combolands Compendium is not affiliated with Crux Games.
+Source list reviewed: August 30, 2026
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/
+
+# https://combolands.site/walls/
+Combolands Walls, Terrain & Plateaus
+ Combolands Compendium 
+ GuildsCombosBuildingsHeirloomsRanksGuidesFAQ 
+× 
+Combolands Walls, Terrain & Plateaus
+Quick Answer
+Walls in Combolands are about enclosure, not decoration — a wall line that does
+ not fully close the area it is meant to close does nothing. That is the point of the launch-week
+ community video titled "It's ALL ABOUT Walls in Combolands", and it is the terrain rule that
+ most often costs people a milestone they thought they had.
+## Terrain pieces and their placement counts
+Placement counts are how many of each piece a single card gives you. All the numbers below come
+ from Next Fest demo patch notes in April and June 2026 — the developers have not restated them
+ since the 1.0 progression overhaul, so treat them as the last published values rather than as
+ current gospel.
+| Piece | Placements (last published) | What it does 
+| Wall | 5 → 6 (demo v8) | The enclosure piece. Community guide coverage stresses that walls only pay off when the area they surround is properly closed — a gap is not a smaller bonus, it is no bonus. 
+| Palisade | 7 → 9 (demo v8) | The cheaper, more plentiful enclosure piece — nearly twice as many placements as walls. 
+| Plateau | 3 → 4 (demo v6), 4 → 5 (demo v8) | Raised terrain. Since v1.0.4 you cannot build plateaus on plateaus. Stockpile scores from Plateau correctly as of the same patch, and removing a Watch Tower creates trees on plateaus as of v1.0.6. 
+| Railway / Rail | 2 → 3 (demo v6), 3 → 4 (demo v8) | Connection piece. Its card says anything connected to one part of the railway is connected to all of it; what that means for range effects has not been authoritatively answered. 
+| Scaffolding | — | Its text mentions a mult bonus for buildings placed on top of it, but a launch-week player reports being unable to place anything on it. Unconfirmed. 
+## The tile types
+| Tile | Why it matters 
+| Grass | The default buildable surface, and most of a generated island. 
+| Sand | The beach ring. Citizens spawn on sand tiles as well as from Martial buildings, as of demo v9. 
+| Rock | Mine must be built adjacent to rock, which is what makes the Industrial chain map-dependent. 
+| Shallow water | The pale band around the island. Part of the Maritime guild’s buildable area. 
+| Deep sea | The rest of the map. Also Maritime’s territory — every building in that guild is water-only. 
+| Plateau | Raised ground you create. Cannot be stacked on itself since v1.0.4. 
+## Why the island shape decides your run
+Maps have been procedurally generated since the second demo, and demo v9 explicitly improved the
+ generator "to make bigger islands". That makes terrain a constraint you draft around rather than
+ a fixed layout you memorise:
+ Maritime can only build on sea and shallow water, so an island with a
+ long coastline is worth far more to it than a fat one.
+ Industrial needs rock adjacency for Mine, so a rockless island cuts the
+ front of its production chain.
+Pairing Maritime with a land guild means the two halves of your build barely compete for tiles
+ — one of the reasons players describe Maritime as consistent "no matter what partner".
+## Removal is a terrain tool too
+Because Martial scores off removals and gives consistent demolish access,
+ knocking down your own buildings is a normal part of shaping the board rather than a mistake.
+ Removing a Watch Tower even puts trees back on plateaus. The
+scoring page covers which buildings pay you for that.
+Terrain data re-checked: August 30, 2026
+## More Combolands Guides & Data
+MECHANICScoring & Triggers
+Base score, mult, xmult and what "when triggered" actually means.
+RANKINGGuild Tier List
+All 9 guilds ranked, with global win rates from Steam achievement data.
+TABLE21 Guild Combos
+Every two-guild pairing, what it wants and how hard it is to steer.
+ Combolands Compendium 
+A reader-run compendium for Combolands, kept honest by citing where each number came from. Not affiliated with Crux Games.
+Pages
+ Guilds 
+ Combos 
+ Buildings 
+ Heirlooms 
+ Ranks 
+ Guides 
+ FAQ 
+Site
+About
+Privacy Policy
+Contact Us
+Official Site
+© 2026 Combolands Compendium. Not an official site. Game assets and names are property of their respective rights holders.
+ 
+
+## External links on this page
+https://store.steampowered.com/app/4075620/Combolands_Roguelike_Citybuilder/

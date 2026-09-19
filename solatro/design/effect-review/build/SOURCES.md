@@ -94,6 +94,33 @@ taxonomy — the classes no source reached, and the last classes sitting at thre
 written against the prop code itself (`Cards/Props/prop_data.gd`, `prop_spawner.gd`,
 `prop_modifier.gd`), whose fields are the levers family Q was not using.
 
+
+## Wave 6 — the Balatro mod wiki, and four sources the owner named
+
+**`BM0001` onward, rendered as family AA.** Every mod on balatromods.miraheze.org's `Category:Mods`
+(466 pages; resource packs, texture packs and tooling skipped; Cryptid and Pokermon skipped because
+wave 1 mined them) was crawled through the MediaWiki API — the main page plus every index subpage
+(`/Jokers`, `/Decks`, `/Boss Blinds`, `/Card Modifiers`, consumable pages, `/Poker Hands`, `/Stakes`,
+`/Tags`, `/Challenges`…), and the README of any thin mod whose page linked to its repository for the
+effect list. 290 mods, 1,352 pages, ~19,000 effect rows. Rows naming money, shops, sell values,
+rerolls, boosters, vouchers or a held hand were removed mechanically (30%); the rest were read row by
+row by subagents against `mine_mods/MINE_PROMPT.md`, which passes an effect only when its trigger,
+target or action is one the taxonomy does not spell out. ~940 candidates came back; each was judged
+against the whole questionnaire by hand, and about one in six was a new shape. The rest were
+numeric reskins of vanilla jokers, or duplicates of questions already here (Bottom Deal, The Running
+Order, Non Verisimile, Obelisk, The Costume Fitting and the Ceremonial Dagger were the commonest
+twins). Yield was highest from the big original mods — Entropy, Balatrhodes Island, Highest
+Priestess, Maximus, Lapsem's Mod, Ortalab, The Binding of Jimbo — and near zero from crossover
+packs. The per-mod ledger is `mine_mods/chunkNN.out.tsv`; the keep-list is `mine_mods/new_draft.tsv`.
+
+| Source | Outcome |
+|---|---|
+| **A Solitaire Mystery** — the full rules transcription (GameFAQs guide 82166; the site refuses scripted fetches, read it in a browser) | wave 2 had this game from the braindump only. The transcription adds twelve shapes: the two-move lock, the chaos swap, the parity build, a stack that counts as one card of its height, the orbit phase gate, the circuit, the ambiguous card, the locked column, the river with its suit-ratio loss, the loan from tomorrow, the garden plot, and the binary group |
+| **Zachtronics Solitaire Collection** — the in-game rule screens on zachtronics.com/solitaire-rules (images, read by eye) | re-read in full; every rule already had a question from wave 2 (the free edge, the sanctioned cheat, the dragon collapse, foundations from both ends, the one-use pocket, the glued run) |
+| **Dungeons & Degenerate Gamblers** — degenerategamblers.miraheze.org, the Cards / Effects / Encounters / Decks index pages (328 pages crawled to `mine_mods/extra/`) | a blackjack deckbuilder: value + suit, on-play / on-stand / on-tie / on-discard / exploit triggers; chips, HP and shield ignored |
+| **Combolands** (Crux Games) — no official wiki; combolands.site, combolands.wiki, combolandsguide.wiki and the Steam guides they cite | a roguelike grid citybuilder: buildings are cards, placement against terrain and tagged neighbours fires score chains; adjacent vs range targeting; "when triggered" buildings need another building to fire them; walls score only when an enclosure is fully closed; railways make everything they touch adjacent. Four shapes added: the crop cycle, the production line, the enclosure, the rail line |
+| **Zoominoes** (Starlight Games) — no wiki; Steam page and launch reviews | a tile roguelike: animal tiles carry a value, one of four colours and a land/sky/sea type; a tile may only be placed adjacent to one sharing its colour or type; chains multiply; snacks upgrade tiles, souvenirs are passive modifiers. Its rare abilities (play the whole hand at once, cover the ring of cells around a tile, buff the undrawn deck) already have questions; the connection rule is added as The Kinship Rule |
+
 ## Deliberately not mined
 
 | Source | Why |

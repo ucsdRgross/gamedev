@@ -402,4 +402,15 @@ FAMILIES = [
  ("Z6","Sliding and shrinking","none","rows that shove and cells that close - would be C5, C6, E2 or X4"),
  ("Z7","Goals and payouts","none","win conditions and end-of-show bonuses - would be A9, U2, X2 or T5"),
 ]),
+("AA", "The Balatro mod wiki, and four named games",
+ "Effects mined from every content mod on balatromods.miraheze.org, then from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes (SOURCES.md, wave 6). Every class names the taxonomy class it would otherwise sit in; it is a separate family only because the question id is positional.", [
+ ("AA1","Scoring and the buckets","none","would be A1-A14: resolution-order payouts, bucket routing, hazards on what scores"),
+ ("AA2","Melds and hands","none","would be B1-B10: new hands, hand levelling, hands that stand in for others"),
+ ("AA3","Lines, position and adjacency","none","would be C10-C15: position in the line, the centre cell, stamps and types that reach neighbours"),
+ ("AA4","Height, movement, the deck and the discard","none","would be D, E and F: stacks, swaps, stocks, the discard pile as a scoring zone"),
+ ("AA5","Creation, transformation and meta-effects","none","would be G and H: copies, rank surgery, retrigger shapes, effects on effects"),
+ ("AA6","State, chance and information","none","would be I, L, M, V and X: growth and decay, odds, hidden cells, rank scales"),
+ ("AA7","Hazards","none","would be R and B3: level modifiers with a counterplay, on scoring, placement and the deck"),
+ ("AA8","From the four named games","none","the circuit, the garden plot, the production line, walls and rails"),
+]),
 ]

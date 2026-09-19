@@ -4,7 +4,7 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,487 live questions, plus 22 retired in place.** There is no branching: every question is
+**1,591 live questions, plus 83 retired in place.** There is no branching: every question is
 independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
 
@@ -62,6 +62,16 @@ document only because the question id is positional. The games whose rules the c
 free cells, redeals, pairs adding to thirteen, Gaps, the 5×5 poker square itself — are listed with
 what they folded into in `build/SOURCES.md`.
 
+**6. There is no `rule` slot any more.** Owner ruling: the rules deck is a deck, not an effect. Every
+"Rule: …" question is now a **skill** (the same mechanic, carried by a card); boss, town and
+difficulty shapes are **hazards**; map, deck-preset, quest and meta-progression shapes are
+**structure**; questions about editing the rules deck itself, or about shops and gold, are retired
+in place. Eleven questions found to duplicate another are retired in place, naming their twin.
+
+**7. Family AA is new — 165 live effects across eight classes**, mined from every content mod on the
+Balatro mod wiki and from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes.
+`build/SOURCES.md` wave 6 records what was read and what each source yielded.
+
 ---
 
 ## 0. How to review this document
@@ -91,8 +101,11 @@ choosing it.
 ```
 
 - **slot** — where the effect lives on a card: `suit`, `rank`, `type`, `stamp`, `skill`,
-  `consumable`, `rule`, or `status`. Every effect here fits one of them; that was the filter for
-  getting in at all.
+  `consumable`, or `status` — or one of two things that are not a card: `hazard`, a level
+  modifier (boss, town, difficulty), and `structure`, a run-shaped idea (map, deck preset, quest,
+  minigame, meta-progression) kept so you can rule on it. There is no `rule` slot: the rules deck
+  is a deck, not an effect, so a "changes a default" idea is asked as a skill. There is no
+  currency and no shop, so shop and gold questions are retired in place.
 - **class code** — its cell in the design-space taxonomy (`C4`, `H6`, `P3`…). Two effects sharing
   a class code are competing for the same design space, which is why they are next to each other.
 - **provenance** — the document or wiki it was mined from, or `generated` if it was written to

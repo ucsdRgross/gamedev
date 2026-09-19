@@ -81,4 +81,132 @@ RETIRED = {
     "G0173": 'Duplicate of Maximized (every card counts as one of only two ranks). Asked there.',  # Q1342
 
     "M0020": "Duplicate of The Quoted Fee (the show's goal set from what the plan would score). A goal is set by the level, so the question is asked there.",  # Q1426
+
+    "E0757": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0137
+
+    "E1584": 'Retired: there is no currency and no shop. Premise is cards arriving rented from a shop, paid in gold every show and bought out for a lump sum; a run-external shop/economy structure the game has no currency for.',  # Q0672
+
+    "G0214": 'Retired: there is no currency and no shop. Premise is banked currency earning interest, requiring a persistent held/spendable currency distinct from score; points bank instantly and are not held as wealth.',  # Q0679
+
+    "G0333": 'Retired: there is no currency and no shop. Whole premise is a shop resale mechanism, cards reappearing in a later shop at a price; a run-external shop structure, not a card talent.',  # Q0691
+
+    "E0432": 'Retired: there is no currency and no shop. Whole premise is how shop prices are paid; the shop is a run-external structure where no card is on the grid or spotlit.',  # Q0694
+
+    "E0434": "Retired: there is no currency and no shop. Whole premise is the run's overall currency system (cards replacing gold); a global economic structure, not a talent any one card performs.",  # Q0695
+
+    "E1654": 'Retired: there is no currency and no shop. Mechanic requires capping points against a second currency (gold, then fame); collapses to nonsense if gold becomes points, and the game has no second currency to compare against.',  # Q0704
+
+    "E1601": 'Retired: there is no currency and no shop. Whole premise is shop price escalation from purchases; a run-external shop structure, not something a spotlit card does.',  # Q0710
+
+    "E0524": 'Retired: there is no currency and no shop. Whole premise is the cost of rerolling shop offers; the shop is a run-external structure outside any show, where no card is spotlit.',  # Q0726
+
+    "E1838": 'Retired: there is no currency and no shop. Whole premise is shop stock visibility and pricing; the shop is a run-external structure, not a card talent.',  # Q0853
+
+    "E0410": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0889
+
+    "E0489": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0890
+
+    "E0704": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0891
+
+    "G0245": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0892
+
+    "E0503": "Retired: there is no currency and no shop. Doubles run-structure parameters (the show goal, shop packs, starting slots) alongside cards, which a single card's talent cannot carry.",  # Q0909
+
+    "E0681": 'Retired: there is no currency and no shop. Premise is shop pricing and town access rules plus a fixed six-class deck preset -- economy and run-structure, not a card talent.',  # Q0917
+
+    "E0742": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0919
+
+    "E0421": 'Retired: there is no currency and no shop. Premise is turning shop UI controls into cards, a shop/economy and interface concern, not a board talent.',  # Q0924
+
+    "G0166": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0928
+
+    "E0101": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0929
+
+    "E0740": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0930
+
+    "G0032": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0933
+
+    "G0459": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0934
+
+    "G0036": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0937
+
+    "G0034": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q0939
+
+
+    "G0209": "Raises the next show's goal for scoring well, directly against the standing overscore ruling, and is a run-structure goal mechanism besides.",  # Q1112
+
+    "E1024": "Retired: there is no currency and no shop. Premise is a rival's gold-draining offer affecting future rival shows -- economy and run-structure.",  # Q1129
+
+    "E0956": 'Retired: there is no currency and no shop. Premise is bidding gold for map-node picks -- economy and map structure.',  # Q1145
+
+
+    "E1752": 'Retired: there is no currency and no shop. Premise is shop appearance odds and slot counts -- shop/economy.',  # Q1173
+
+    "E0408": 'Retired: there is no currency and no shop. Premise is a map pack node and its pick rules -- map/shop structure.',  # Q1174
+
+
+
+    "E1312": 'Retired: there is no currency and no shop. Premise is a map offer of a single high-rarity card -- map/shop structure.',  # Q1180
+
+    "E1992": 'Retired: there is no currency and no shop. Premise is buying shop upgrades and their tiers -- shop/economy.',  # Q1182
+
+    "E1668": 'Retired: there is no currency and no shop. Premise is card duplicate availability in shops and packs -- shop structure.',  # Q1183
+
+    "E0772": 'Retired: there is no currency and no shop. Premise is which suits are obtainable only from shop packs -- shop structure.',  # Q1184
+
+    "E0787": "Retired: there is no currency and no shop. Premise is tips raising the next map node's offer rarity -- economy/map structure.",  # Q1185
+
+    "E0796": 'Retired: there is no currency and no shop. Premise is how shop packs are opened and rerolled -- shop structure.',  # Q1186
+
+    "E0811": 'Retired: there is no currency and no shop. Premise is a between-towns hiring pool of discounted cards -- shop/town structure.',  # Q1188
+
+
+    "E0895": 'Retired: there is no currency and no shop. Premise is trading cards with a town -- town/economy structure.',  # Q1192
+
+    "E0947": 'Retired: there is no currency and no shop. Premise is buying a cheap fake card from a shop -- shop/economy.',  # Q1193
+
+    "E1484": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q1196
+
+    "E1486": 'Retired: there is no currency and no shop. Premise is shop pack result odds -- shop structure.',  # Q1197
+
+
+    "E0598": 'Retired: there is no currency and no shop. Premise is run-behaviour-triggered strike/tax events, including deck-cutting and a tax economy -- run structure.',  # Q1202
+
+    "E0818": 'Retired: there is no currency and no shop. Premise is a one-time fame gain costing all held gold -- meta currency/economy.',  # Q1206
+
+    "G0334": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q1236
+
+    "G0353": "Retired: there is no currency and no shop. Premise is shop and pack offer weighting based on last show's play -- shop/economy structure.",  # Q1245
+
+    "E0438": 'Retired: there is no currency and no shop. Premise is a prestige-spending meta-shop -- meta currency and shop structure.',  # Q1247
+
+    "G0449": 'Retired: there is no currency and no shop. Premise is a second currency spendable only between runs -- meta currency.',  # Q1252
+
+    "E0393": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q1255
+
+    "E1514": 'Retired: there is no currency and no shop. Premise is a difficulty-stake mode making shop cards unsellable -- run-mode selection and shop/economy.',  # Q1256
+
+    "E0982": 'Retired by owner ruling: the rules deck is a deck, not an effect, so a question about adding, editing, moving or reading rule cards has no effect to rule on.',  # Q1269
+
+    "G0018": 'Duplicate of Q0421 (The Death Rattle): the same trigger, target and action; the owner rules on it there.',  # Q0633
+
+    "G0170": 'Duplicate of Q0490 (Sawing in Half): the same trigger, target and action; the owner rules on it there.',  # Q0491
+
+    "E0760": 'Duplicate of Q0588 (The Charge Bank): the same trigger, target and action; the owner rules on it there.',  # Q0592
+
+    "G0430": 'Duplicate of Q1058 (The Orphaned Prop): the same trigger, target and action; the owner rules on it there.',  # Q1076
+
+    "G0477": 'Duplicate of Q0999 (One Ring at a Time): the same trigger, target and action; the owner rules on it there.',  # Q1002
+
+    "G0423": 'Duplicate of Q1053 (Curtain Call): the same trigger, target and action; the owner rules on it there.',  # Q1059
+
+    "G0397": 'Duplicate of Q1380 (The Bench): the same trigger, target and action; the owner rules on it there.',  # Q1381
+
+    "G0400": 'Duplicate of Q1380 (The Bench): the same trigger, target and action; the owner rules on it there.',  # Q1385
+
+    "E1063": 'Duplicate of Q1364 (The Wildcard): the same trigger, target and action; the owner rules on it there.',  # Q1365
+
+    "E0822": 'Duplicate of Q1264 (Seasonal crown): the same trigger, target and action; the owner rules on it there.',  # Q1265
+
+    "G0114": 'Duplicate of Q1324 (The Conflicting Notes): the same trigger, target and action; the owner rules on it there.',  # Q1325
 }

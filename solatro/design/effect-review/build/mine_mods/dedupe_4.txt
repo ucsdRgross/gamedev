@@ -1,0 +1,1820 @@
+Q1120 | The Volcano | hazard | R7
+  mechanic: The floor is lava
+  (a) Terrain boss: the bottom row is lava; any card ending a turn there catches Burning and loses 1 rank per turn
+  (b) Terrain boss: the bottom row is lava and rises one row every three turns
+  (c) Terrain boss: one row is lava, and which row it is moves every turn, telegraphed one turn ahead
+Q1121 | Tornado card | skill | R7
+  mechanic: A tornado of random size
+  (a) Affects an area whose size is rolled between one cell and a whole grid
+  (b) Affects a single cell, and the area grows by one each turn it stays on the board
+  (c) Affects an area whose size is rolled, and its path is telegraphed one turn ahead
+Q1122 | Tsunami card | skill | R7
+  mechanic: A wave that lowers the ceiling
+  (a) Washes up from the bottom row, lowering the maximum stack height, then recedes
+  (b) Washes up from the bottom row, lowering the maximum stack height permanently for the show
+  (c) Washes up from the bottom, lowering the height cap as it rises and restoring it as it recedes, on a fixed cycle
+Q1123 | Blossom Stake | structure | R8
+  mechanic: Any boss, any time
+  (a) Final-tier bosses may appear at any point in the tour
+  (b) Final-tier bosses may appear at any point, and you are warned one town ahead
+  (c) Bosses are drawn from the whole pool at every town, so difficulty is unordered
+Q1124 | Boss Tag | consumable | R8
+  mechanic: Reroll the boss
+  (a) Consumable: reroll the current town's boss
+  (b) Consumable: reroll the current town's boss, seeing the replacement before committing
+  (c) Consumable: reroll the boss, and you may keep whichever of the two you prefer
+Q1125 | Hippodrome factions | structure | R8
+  mechanic: The crowd has favourites
+  (a) Each show an audience faction favours one suit; ignoring them too long summons a Riot boss
+  (b) Each show an audience faction favours one suit, and playing to them pays a bonus
+  (c) Each show two factions favour opposing suits; pleasing one angers the other, and neglecting both summons a Riot
+Q1126 | Obsidian Orb | hazard | R8
+  mechanic: Every boss you have already beaten, at once
+  (a) Boss: carries the abilities of every boss you have beaten this run
+  (b) Boss: carries the abilities of the three bosses you beat fastest
+  (c) Boss: carries every beaten boss's ability, and you may disable one for a fame cost
+Q1127 | The Rat Sheet | consumable | R8
+  mechanic: Raises the stakes for both sides
+  (a) Consumable: raises the next rival show's difficulty for both players; if both would pass, you take a quarter of its payout
+  (b) Consumable: raises the next rival show's difficulty for both; if you pass and the rival does not, you take all of its payout
+  (c) Consumable: raises the next rival show's difficulty for the rival only, at the cost of fame
+Q1128 | The Rival Show | hazard | R8
+  mechanic: Somebody played this town first
+  (a) Recurring boss: a rival plays the town first and raises the goal by 30%; beating it steals a card from the rival's deck
+  (b) Recurring boss: a rival plays the town first and raises the goal by whatever margin it beat its own goal by
+  (c) Recurring boss: a rival plays the town first; you see the exact board it built, and beating its score steals a card
+Q1130 | Candy Sticks | skill | R9
+  mechanic: The boss starts late
+  (a) The next boss's ability does not switch on until you have completed one line
+  (b) The next boss's ability does not switch on until the show's second placement
+  (c) Every boss's ability starts one placement late for the rest of the run
+Q1131 | FEMA mode | skill | R9
+  mechanic: Relief arrives after enough disasters
+  (a) After a number of weather cards, disaster relief becomes available as a free repair
+  (b) After a number of weather cards, disaster relief becomes available and scales with how much damage was taken
+  (c) After a number of weather cards, you choose between relief now or a larger payout if you survive the next one
+Q1132 | Hey Rube! | hazard | R9
+  mechanic: Boss: each placement, every card in the rightmost column gets Exhausted unless an Escape Artist-class card stands in that column
+  (a) Boss: each placement, every card in the rightmost column is Exhausted unless an Escape Artist stands in that column
+  (b) Boss: each placement, every card in one random column is Exhausted unless a protective stamp stands in it
+  (c) Boss: each placement, the column that scored least is Exhausted entirely
+Q1133 | Matador | skill | R9
+  mechanic: Paid for setting off the trap
+  (a) Earn gold whenever a line you score triggers the boss's ability
+  (b) Earn gold and points whenever a line you score triggers the boss's ability
+  (c) Earn gold whenever the boss's ability fires at all, whoever set it off
+Q1134 | Fog of war on choices | structure | S1
+  mechanic: You cannot see far ahead
+  (a) Fog obscures map choices beyond the next step
+  (b) Fog obscures map choices beyond the next two steps
+  (c) Fog obscures choices beyond the next step, and lifts one step further each time you win a show
+Q1135 | The Advance Man | consumable | S1
+  mechanic: Consumable: reveals all fog-of-war nodes within 2 edges of the player's position, including contents
+  (a) Consumable: reveals every fogged map node within two steps, contents included
+  (b) Consumable: reveals every fogged map node on the whole route, but only their types, not their contents
+  (c) Consumable: reveals every fogged node within two steps and lets you swap two of them
+Q1136 | The Mitt Camp Reading | consumable | S1
+  mechanic: Buys the truth about what is ahead
+  (a) Consumable: pay 1 gold for one true fact about each of the next three map nodes
+  (b) Consumable: pay 1 gold for one true fact about a node of your choice anywhere on the route
+  (c) Consumable: pay 1 gold per node to learn one true fact about it, as many as you can afford
+Q1137 | The Panorama | consumable | S1
+  mechanic: Shows the shape of the route
+  (a) Consumable: reveals the type of every node on the world map, but not its contents
+  (b) Consumable: reveals the type of every node, and the contents of the next three
+  (c) Consumable: reveals the type of every node for the rest of the run, not just now
+Q1138 | Branching escalating-difficulty paths | hazard | S2
+  mechanic: Branching paths of rising difficulty
+  (a) Map: branching paths of escalating difficulty, splitting roguelike routes from preset puzzle levels
+  (b) Map: branching paths of escalating difficulty, where clearing one path unlocks a shortcut on another
+  (c) Map: branching paths where each path has its own theme and its own escalating difficulty curve
+Q1139 | Calendar shows (Inti Raymi) | structure | S2
+  mechanic: Festivals on a fixed calendar
+  (a) Bonus festivals appear at fixed intervals along the route, every Nth node
+  (b) Bonus festivals appear at fixed intervals, and reaching one early carries the bonus forward
+  (c) Bonus festivals appear at fixed intervals, and you may spend fame to move one closer
+Q1140 | FTL constellation map | hazard | S2
+  mechanic: A constellation you cannot walk back
+  (a) Map: a constellation of cities with no backtracking; touring builds fame, and hazards and weather occur between them
+  (b) Map: a constellation with no backtracking, and each city visited raises the odds of hazards on the next leg
+  (c) Map: a constellation with no backtracking, and you plan the whole route before the tour begins
+Q1141 | Map alternative topologies | hazard | S2
+  mechanic: The route has no end, only a shape
+  (a) Map: no final city; the route circles and towns become revisitable once enough time has passed
+  (b) Map: no final city; you must return to where you started, and the return leg is harder
+  (c) Map: the route circles, and each full circuit raises every town's goal
+Q1142 | Map probability rings | structure | S2
+  mechanic: Better cards toward the middle
+  (a) The map is a square of probability rings, with higher-rank nodes likelier toward the centre
+  (b) The map is a square of probability rings, and travelling inward costs more fame per step
+  (c) The map is a square of probability rings, and the centre is only reachable once per run
+Q1143 | Route-as-song bonus | structure | S2
+  mechanic: Repeat the route, strengthen the placement
+  (a) Repeating a route pattern you have walked before grants a strengthening bonus
+  (b) Repeating a route pattern grants a bonus that grows with how long the repeated stretch is
+  (c) Repeating a route pattern grants a bonus, and repeating it in reverse grants a different one
+Q1144 | The International Final | structure | S2
+  mechanic: The regions you toured vote
+  (a) Suits favoured by regions you toured generously score extra in the final show
+  (b) Suits favoured by regions you toured generously score extra, and regions you skipped penalise theirs
+  (c) Each region you toured contributes one favoured suit to a final pool, and lines using them score extra
+Q1146 | The Route Book | structure | S2
+  mechanic: Plan the route, then stick to it
+  (a) Plan an intended route before the run; deviating from it costs fame
+  (b) Plan an intended route before the run; following it pays a bonus, and deviating costs nothing
+  (c) Plan an intended route; deviating costs fame, but you may re-plan once per biome
+Q1147 | Triangle map boss phase | structure | S2
+  mechanic: Boss phases in the terrain
+  (a) The map places a boss phase every few tiers, drawn as terrain
+  (b) The map places a boss phase every few tiers, and fights happen only at those phases
+  (c) The map places boss phases every few tiers, and you may pay fame to skip one per run
+Q1148 | Triangle map choice | structure | S2
+  mechanic: A triangle you narrow as you climb
+  (a) Choose from the next three options; moving left permanently loses the right lanes, and the middle loses both
+  (b) Choose from the next three options; the lanes you lose become visible so you know what you gave up
+  (c) Choose from the next three; lanes lost reopen once per run at a fame cost
+Q1149 | Location difficulty from card | structure | S3
+  mechanic: The card on the node is the node
+  (a) A map location's suit and rank set its difficulty and its type
+  (b) A map location's rank sets its difficulty and its suit sets its type, and both are visible before travelling
+  (c) A map location's card is the reward you win from it, so choosing the node chooses the prize
+Q1150 | Monopoly pay-to-unlock squares | structure | S3
+  mechanic: Pay a card to open the square
+  (a) Some map squares must be unlocked by sacrificing a card before they can be used
+  (b) Some map squares must be unlocked by sacrificing a card of a named class
+  (c) Some map squares must be unlocked with a card, and the card you spend determines the reward
+Q1151 | Special map squares | structure | S3
+  mechanic: Squares that mean something fixed
+  (a) Map squares carry fixed effects by rank, with higher ranks more likely toward the centre
+  (b) Map squares carry fixed effects by rank, and one rank is designated the shop rank each run
+  (c) Map squares carry fixed effects by rank, and an effect can change a square's rank to change what it is
+Q1152 | The Egress (event) | hazard | S3
+  mechanic: A sign that says This Way Out
+  (a) Map event: following a mysterious sign skips the node entirely, with no reward and no risk
+  (b) Map event: following the sign skips the node and pays a small fame bonus for the mystery
+  (c) Map event: following the sign skips the node and reveals what you would have faced
+Q1153 | The Ghost Train | hazard | S3
+  mechanic: A node you cannot preview
+  (a) Map node: its contents cannot be previewed, and its average reward is better for it
+  (b) Map node: its contents cannot be previewed, and it is always either the best or the worst node available
+  (c) Map node: unpreviewable, with a better average reward, and previewing it at all costs fame
+Q1154 | The Locked Room | hazard | S3
+  mechanic: Needs the right keys
+  (a) Map node: requires specific card types as keys to open its reward
+  (b) Map node: requires specific card types as keys, and shows which before you commit to it
+  (c) Map node: requires keys, and each key you lack can be bought with fame instead
+Q1155 | The Unsanctioned Show | hazard | S3
+  mechanic: Perform where you should not
+  (a) Map node: performing at a forbidden node pays enormous fame, and failing loses the run's tips
+  (b) Map node: performing at a forbidden node pays enormous fame, and failing bars you from the region
+  (c) Map node: a forbidden node pays enormous fame, and merely visiting it marks you for a later boss
+Q1156 | Amusement city (Coney Island) | hazard | S4
+  mechanic: A town that is never the same twice
+  (a) Town: its layout and offers differ every visit, and a map event may burn it down so it rebuilds changed
+  (b) Town: its layout and offers differ every visit, and each visit makes the next one stranger
+  (c) Town: its layout and offers are rerolled each visit, and you may pay fame to reroll once more
+Q1157 | Arena/naumachia town | hazard | S4
+  mechanic: Only the dangerous acts score
+  (a) Town: only risk-tagged cards score here
+  (b) Town: only risk-tagged cards score, and they score double
+  (c) Town: only risk-tagged cards score, and a flood event fills the bottom rows so nothing may be placed there
+Q1158 | Bartholomew Fair town | hazard | S4
+  mechanic: Every shop at once, and pickpockets
+  (a) Town: every shop type is open at once, but a pickpocket event fires between purchases
+  (b) Town: every shop type is open at once, and prices rise with each purchase
+  (c) Town: every shop type is open at once; a pickpocket fires between purchases, and catching one pays double what it took
+Q1159 | Cabaret city | hazard | S4
+  mechanic: A town that stays up late
+  (a) Town: night-show rules apply, favouring Dancer and Concessions cards
+  (b) Town: night-show rules favour two classes drawn at random for that town
+  (c) Town: night rules favour whichever class you have fewest of, and penalise your most common
+Q1160 | Exposition City | hazard | S4
+  mechanic: One enormous show that takes all comers
+  (a) Town: a single vast goal, once per map, where every suit is welcome and nothing is penalised
+  (b) Town: a single vast goal where every suit is welcome, and the reward scales with how far past it you get
+  (c) Town: a single vast goal where every suit is welcome, but the show ends after a fixed, small number of placements
+Q1161 | Friendly Acrobat town | hazard | S4
+  mechanic: A town that likes tumblers
+  (a) Town: Acrobat cards cost less here and an Acrobat pack is guaranteed
+  (b) Town: cards of one class cost less here and a pack of that class is guaranteed, the class differing per town
+  (c) Town: cards matching the class you own most of cost less here
+Q1162 | Improving town (Chautauqua) | hazard | S4
+  mechanic: A town with standards
+  (a) Town: no risk-tagged cards may score, and Concessions cards score double
+  (b) Town: no risk-tagged cards may score, and one class you name at arrival scores double
+  (c) Town: no risk-tagged cards may score, and every clean show raises the town's standing reward
+Q1163 | Jaded city (Richiardi) | hazard | S4
+  mechanic: A town that has seen it all
+  (a) Town: only shock and risk-tagged acts impress here; everything else scores half
+  (b) Town: only shock and risk-tagged acts score at all
+  (c) Town: only acts you have never played in this town before score at full value
+Q1164 | Outlawed | type | S4
+  mechanic: In pious/lawful towns this card cannot score at all; everywhere else it scores double
+  (a) In lawful towns this card cannot score at all; everywhere else it scores double
+  (b) In lawful towns this card cannot be placed at all; everywhere else it scores double
+  (c) The first town that outlaws this card makes it score double for the rest of the run
+Q1165 | Pierrot | skill | S4
+  mechanic: Gains bonus multiplier on odd-numbered shows of the tour; has no effect otherwise
+  (a) Gains a multiplier on odd-numbered shows of the tour and does nothing on even ones
+  (b) Gains a multiplier that grows by one step for each show of the tour it has been played in
+  (c) Gains a multiplier on any show where it is the only card of its class on the grid
+Q1166 | Resort towns | hazard | S4
+  mechanic: An easy stop
+  (a) Town: lower goals, better shops, no boss
+  (b) Town: lower goals and better shops, but no card rewards
+  (c) Town: lower goals and better shops, and the next town's goal rises to compensate
+Q1167 | The Rappings | hazard | S4
+  mechanic: A town that stays haunted
+  (a) Town: answers come by knocks, and debunking the haunting does not lift it
+  (b) Town: answers come by knocks; debunking it converts the town to a normal one permanently
+  (c) Town: answers come by knocks, and the knocks are honest exactly as often as the town is
+Q1168 | The Right to Perform | hazard | S4
+  mechanic: Comply, or fight for it
+  (a) Town: comply with a ban for no fame, or resist and play a hazard show for double fame and permanent change
+  (b) Town: comply for no fame, or resist for double fame at the risk of losing the town for the run
+  (c) Town: comply, resist, or negotiate, each opening a different show type
+Q1169 | The Scam Booking | hazard | S4
+  mechanic: There is no venue
+  (a) Town: arrive to find no venue; improvise a show where only Commons score, or take the failure
+  (b) Town: arrive to find no venue; improvise where only Commons score, or oversell beyond your deck for a larger prize
+  (c) Town: arrive to find no venue, and choose which restriction the improvised show runs under
+Q1170 | Town size score requirements | structure | S4
+  mechanic: Small towns, big cities
+  (a) Town size sets the score requirement, with small towns cheap and cities dear
+  (b) Town size sets both the requirement and the reward, scaling together
+  (c) Town size sets the requirement, and you choose the size you play when you arrive
+Q1171 | Tragedy scoring (Circo criollo) | skill | S4
+  mechanic: Tragedy sells
+  (a) Drama cards score on failed shows, so losing pays something
+  (b) Drama cards score on failed shows, and score more the worse the failure
+  (c) Drama cards score on failed shows, and a failed show with enough of them counts as a win for fame
+Q1172 | Add all cards to map | structure | S5
+  mechanic: Every card is somewhere on the map
+  (a) Every card in the game appears somewhere on the map as a collectible node
+  (b) Every card appears on the map, and cards you already own appear as upgrades instead
+  (c) Every card appears on the map, but only those you have unlocked are visible
+Q1175 | Booster Tag | consumable | S5
+  mechanic: The next pack is twice the pack
+  (a) Consumable: the next pack holds double the cards and double the choices
+  (b) Consumable: the next pack holds double the cards, but you still keep the same number
+  (c) Consumable: the next three packs each hold one extra card and one extra choice
+Q1176 | Buttercup | skill | S5
+  mechanic: Holds a shop item for later
+  (a) Stores one shop item; selling this card puts the stored item into the next shop
+  (b) Stores one shop item; selling this card gives you the stored item directly
+  (c) Stores up to three shop items, released one per town
+Q1177 | Disaster card packs | structure | S5
+  mechanic: A pack of disasters to pick from
+  (a) Disaster packs appear on the map as a choosable option
+  (b) Disaster packs appear on the map; taking one pays fame up front and adds hazards later
+  (c) Disaster packs appear as an option, and refusing one raises the next town's goal
+Q1178 | Fame gates pack rarity | structure | S5
+  mechanic: Fame buys better odds
+  (a) Accumulated fame raises a run-wide luck value that gates stamp, skill and type rolls in packs
+  (b) Accumulated fame raises pack rarity odds directly, with no separate luck value
+  (c) Accumulated fame raises the luck value, and spending fame at a shop raises it further for one pack
+Q1179 | Kitty Printer | skill | S5
+  mechanic: All rewards become one kind
+  (a) Every skip reward becomes the same named kind
+  (b) Every skip reward becomes a kind you choose at run start
+  (c) Every skip reward becomes the kind you have taken least this run
+Q1181 | Red Card | skill | S5
+  mechanic: Paid for what you turn down
+  (a) Gains a permanent bonus every time you skip a pack
+  (b) Gains a permanent bonus every time you skip a pack or a map node
+  (c) Gains a permanent bonus per skip, and skipping also reveals what you passed up
+Q1187 | Ten-in-One pack | hazard | S5
+  mechanic: Ten cheap acts in one
+  (a) Pack: ten Common cards
+  (b) Pack: ten Common cards, of which you keep five
+  (c) Pack: ten Common cards, and any duplicate among them upgrades instead
+Q1189 | The Boss Trade | structure | S5
+  mechanic: A large reward you have to give something up for
+  (a) After each boss you are offered a large permanent effect that replaces one you already carry
+  (b) After each boss you are offered a large permanent effect at the cost of a permanent restriction of your choice
+  (c) After each boss you are offered three large permanent effects and must take one, drawbacks included
+Q1190 | The Carousel | structure | S5
+  mechanic: A shared draft you physically move through
+  (a) At intervals, a rotating ring of cards is offered and you take one by moving to it, with earlier picks going to whoever is furthest behind
+  (b) At intervals, a ring of cards is offered and picks go in score order, best first
+  (c) At intervals a ring of cards is offered, each carrying an attached stamp, and you take the pair together
+Q1191 | The Gathering | hazard | S5
+  mechanic: Everything on offer at once
+  (a) Festival node: every regional card pool is available at once, one purchase from each
+  (b) Festival node: every pool is available at once, with one purchase total
+  (c) Festival node: every pool is available, and each purchase raises the price of the rest
+Q1194 | The New Act | structure | S5
+  mechanic: A preview of something not unlocked yet
+  (a) A mechanic you have not unlocked appears for one show as a preview
+  (b) A mechanic you have not unlocked appears for one show, and completing that show unlocks it early
+  (c) An unlocked-elsewhere mechanic appears for one show, chosen from what you are closest to unlocking
+Q1195 | The Showbag | consumable | S5
+  mechanic: A cheap bag with one thing you wanted
+  (a) Consumable pack: four random Commons, one of them guaranteed to be a Concessions card
+  (b) Consumable pack: four random Commons, one of them guaranteed to be a class you name
+  (c) Consumable pack: four random Commons; you keep two and the rest are discarded
+Q1198 | Antique poster / benefit show | hazard | S6
+  mechanic: A show played for one card
+  (a) Map event: all of a show's proceeds go to one card of your choice, buffing it massively
+  (b) Map event: all of a show's proceeds go to one card, buffing it by the fraction of the goal you exceeded
+  (c) Map event: all proceeds go to one card, and that card cannot be sold for the rest of the run
+Q1199 | Fantasyland | skill | S6
+  mechanic: A strong result changes how the next show is dealt
+  (a) A strong enough hand in a named line means the next show deals ten cards into the Entrance instead of five
+  (b) A strong enough hand in a named line means the next show starts with a card already placed where you want it
+  (c) A strong enough hand means the next show deals ten cards into the Entrance, and staying in it requires repeating the feat
+Q1200 | Gym node (Zurkhaneh) | hazard | S6
+  mechanic: A gym with a code of honour
+  (a) Map node: permanently +1 rank to one card, but only if that card has never destroyed another
+  (b) Map node: permanently +1 rank to one card, with no condition
+  (c) Map node: permanently +1 rank to one card that has never destroyed another, or +2 if it has never been covered either
+Q1201 | Head of state attends | structure | S6
+  mechanic: Someone important is watching
+  (a) Passing this show permanently raises the fame floor for the rest of the run
+  (b) Passing this show permanently raises the fame floor; failing it lowers the ceiling
+  (c) Passing this show raises the fame floor, and the raise is larger the further past the goal you get
+Q1203 | Meal call (cookhouse flag) | structure | S6
+  mechanic: A rest between regions
+  (a) Once per region, a rest tick clears one debuff from every card
+  (b) Once per region, a rest tick clears all debuffs from one card of your choice
+  (c) Once per region, a rest tick clears one debuff per card, or two if you skip the region's shop
+Q1204 | Panem et circenses free show | hazard | S6
+  mechanic: Play for free, earn goodwill
+  (a) Give a free show: no gold, a large fame gain and increased town loyalty
+  (b) Give a free show: no gold, a large fame gain, and the town's shop is permanently cheaper
+  (c) Give a free show: no gold and a large fame gain; loyalty earned this way can be spent to skip a later hazard
+Q1205 | Reward fast/lean wins | skill | S6
+  mechanic: Winning lean is worth something
+  (a) Winning a show quickly or with few cards pays extra points
+  (b) Winning a show quickly or with few cards buffs the cards left in the deck
+  (c) Winning quickly pays points, and winning with few cards buffs the deck, and doing both pays a further bonus
+Q1207 | The Fire (venue loss) | hazard | S6
+  mechanic: The venue burns down
+  (a) Map event: lose a venue mid-tour, choosing between an insurance payout and a rebuild
+  (b) Map event: lose a venue mid-tour; the insurance payout is gold and the rebuild is a permanent bonus
+  (c) Map event: lose a venue mid-tour, and whichever you choose defines the character of the next few towns
+Q1208 | The friendly grapple (Glíma) | hazard | S6
+  mechanic: A bout with nothing on it
+  (a) Map node: test a card against a boss's stats with nothing at stake
+  (b) Map node: test a card against a boss with nothing at stake, and learn one of the boss's hidden rules
+  (c) Map node: a no-stakes bout that, if won, lowers that boss's goal when you meet it for real
+Q1209 | The Lantern Roast | hazard | S6
+  mechanic: The town laughs at your failures
+  (a) Map event: the town satirises your run's failures; accept for fame or take offence for a fight
+  (b) Map event: the town satirises your failures, and the fame paid scales with how badly the run has gone
+  (c) Map event: the town satirises your failures; accepting pays fame and permanently marks one card as the butt of the joke
+Q1210 | The Pie Car | hazard | S6
+  mechanic: Rest, or gamble
+  (a) Rest node: heal one debuff, or gamble at a rigged game for a small chance at a large win
+  (b) Rest node: heal one debuff, or gamble the heal itself for a chance at healing everything
+  (c) Rest node: heal one debuff, or gamble at a rigged game you may cheat at if you hold the right card
+Q1211 | The Rest Stop | structure | S6
+  mechanic: Rest, or improve
+  (a) Between shows you choose exactly one of two: restore the run resource you are short of, or permanently upgrade one card
+  (b) Between shows you choose one of three: restore, upgrade one card, or remove one card
+  (c) Between shows you choose one of two, and each show you choose the same one makes it cheaper and the other dearer
+Q1212 | The Cancelled Date | structure | S7
+  mechanic: A show that never happened
+  (a) One failed show per run is struck from the record, costing its rewards but not the tour
+  (b) One failed show per run is struck from the record, and the town is removed from the route
+  (c) One failed show per run is struck, and the fame you would have earned is halved and paid anyway
+Q1213 | The Insurance Policy | consumable | S7
+  mechanic: One failure, covered
+  (a) Consumable: the next show lost this run is refunded, and the run continues as if it had been cleared at exactly target
+  (b) Consumable: the next show lost this run is refunded, but the run keeps none of that show rewards and the next target rises
+  (c) Consumable: the next show lost this run is replayed once from the start with the same deck
+Q1214 | The Second House | consumable | S7
+  mechanic: Play the room again
+  (a) Consumable: replay a failed show from the start with the same deck and a new card order
+  (b) Consumable: replay a failed show from the start with the identical card order
+  (c) Consumable: replay a failed show, keeping whatever score you had already banked
+Q1215 | The Understudy | skill | S7
+  mechanic: Somebody goes on in your place
+  (a) Once per run, a failed show is survived and the tour continues, at the cost of this card
+  (b) Once per run, a failed show is survived and the tour continues at no cost
+  (c) Once per run, a failed show is survived, and the next show's goal rises by what you fell short by
+Q1216 | Biome tour structure | structure | S8
+  mechanic: A tour with gates in it
+  (a) The run is split into biomes that change map generation, with a fame gate roughly every ten shows
+  (b) The run is split into biomes that change map generation, with a fame gate at each biome boundary
+  (c) The run is split into biomes you pick the order of before the tour starts, each with its own fame gate
+Q1217 | Endless bookings | structure | S8
+  mechanic: The contracts get absurd
+  (a) In endless mode, each repeat's booking terms become more extreme
+  (b) In endless mode, each repeat adds one clause to the booking, stacking
+  (c) In endless mode, each repeat's booking is drawn from progressively harsher pools, and you may reject one per lap
+Q1218 | Endless lap reversal | structure | S8
+  mechanic: The tour turns around and goes back
+  (a) Finishing a lap reverses the tour end to start on the same map, with goals scaling per lap
+  (b) Finishing a lap reverses the tour, and every town you already played is harder the second time
+  (c) Finishing a lap reverses the tour, and the towns you skipped the first time are the only ones available
+Q1219 | Redeo | skill | S8
+  mechanic: Buy your way closer to the end
+  (a) Spend a rising sum of gold to shorten the tour by one town; the price doubles each time
+  (b) Spend a fixed sum of gold to shorten the tour by one town, any number of times
+  (c) Spend a rising sum to shorten the tour, and the fame requirement of the remaining towns rises to match
+Q1220 | Residency mode | hazard | S8
+  mechanic: Stay in one city and let it change
+  (a) Endless mode: stay in one city that evolves each show instead of circling the map
+  (b) Endless mode: stay in one city that evolves, and every fifth show it changes character entirely
+  (c) Endless mode: stay in one city, and each show you choose which of its aspects escalates
+Q1221 | The Joke | structure | S8
+  mechanic: Overshoot far enough and skip ahead
+  (a) Scoring more than double the goal jumps you forward several towns at once
+  (b) Scoring more than double the goal jumps you forward one town
+  (c) Scoring more than double the goal lets you choose between jumping ahead or taking the reward twice
+Q1222 | Hype Poster | consumable | S9
+  mechanic: Consumable: doubles the next show's fame requirement, in exchange for its rewards scaling up two tiers
+  (a) Consumable: the next show's goal doubles and its rewards scale up two tiers
+  (b) Consumable: the next show's goal rises 50% and its rewards scale up one tier
+  (c) Consumable: you set the next show's goal multiplier yourself, and the rewards scale with whatever you set
+Q1223 | The Escalating Stakes | skill | S9
+  mechanic: Raise the bar yourself, before you know the deck
+  (a) Cue at show start: raise the show target by half; if you clear it, the show pays double and the next show pays a step more as well
+  (b) Cue at show start: raise the show target by half; if you clear it the show pays double, and if you miss it you lose the show
+  (c) Cue at show start: raise the target by any amount you name; the payout scales with how much you raised it
+Q1224 | The Standing Wager | structure | S9
+  mechanic: The stake carries between shows
+  (a) A stake raised in one show carries into the next at the same level unless you pay to lower it
+  (b) A stake raised in one show carries into the next and rises again automatically each show you clear
+  (c) A stake raised in one show resets at the next, but clearing it banks a permanent reward
+Q1225 | The Understated Bill | consumable | S9
+  mechanic: Promise less, and be paid for the surprise
+  (a) Consumable: lower the show target; the show pays less, but every step scored above the lowered target pays at the original rate plus a bonus
+  (b) Consumable: lower the show target and the payout together, and bank the difference as a permanent reward
+  (c) Consumable: lower this show's target, and the next show's target absorbs what you took off
+Q1226 | Storyteller | skill | T1
+  mechanic: Keeps some of it for next time
+  (a) Carries a portion of this show's score into the next show's opening total
+  (b) Carries a portion of this show's unspent score forward, and the portion grows each show it goes unspent
+  (c) Carries a portion forward, and you choose whether to bank it as score or as fame
+Q1227 | The Banked Act | consumable | T1
+  mechanic: Set score aside instead of taking it
+  (a) Consumable: bank one placement payout instead of scoring it; it pays out in the next show at one and a half times
+  (b) Consumable: bank one placement payout; it pays out whenever you choose, growing a step each show it waits
+  (c) Consumable: bank one placement payout; it pays out at run end at triple, and is lost if the run ends badly
+Q1228 | The Deficit | structure | T1
+  mechanic: Falling short follows you
+  (a) A show cleared by less than a tenth of its target starts the next show with that gap added to the target
+  (b) A show cleared by a narrow margin raises the next target, and a show cleared by a wide one lowers it
+  (c) A show cleared narrowly raises the next target, and clearing that one anyway pays a bonus
+Q1229 | The Griot | skill | T1
+  mechanic: Preserves up to 20% of a show's unspent score into the next show's opening total, and re-triggers one chosen effect from last show at the next show's start
+  (a) Carries up to 20% of a show's unspent score into the next show's opening total, and re-fires one chosen effect from last show at the next show's start
+  (b) Carries up to 20% of a show's unspent score into the next show's opening total
+  (c) Carries up to 20% of unspent score forward, and the carried amount compounds if it goes unspent again
+Q1230 | The Open Ledger | stamp | T1
+  mechanic: One line that never resets
+  (a) The line this card sits in keeps its running total between shows rather than resetting
+  (b) The line this card sits in keeps its total between shows, and the total is paid out in full the first time the line completes as a made hand
+  (c) The line this card sits in keeps its total between shows, halving at each boundary
+Q1231 | The Overrun | skill | T1
+  mechanic: Score above the target does not evaporate
+  (a) Score above the show target carries into the next show as opening score
+  (b) Half the score above the target carries into the next show as opening score
+  (c) Score above the target carries into the next show, but only if you end the show without using an undo
+Q1232 | Bamberg dynasty saves | skill | T2
+  mechanic: A line of decks that inherits
+  (a) One card is inherited by the next run, keeping whatever it gained in this one
+  (b) One card of your choice is inherited by the next run at its starting state, not its final one
+  (c) One card is inherited by the next run, and each generation it survives adds a permanent bonus
+Q1233 | Monster | skill | T2
+  mechanic: Future copies start stronger
+  (a) Every future copy of this card starts with a bonus this one has accumulated
+  (b) Every future copy starts with a bonus, carried across runs on the same profile
+  (c) Every future copy starts stronger, and this card weakens as its copies grow
+Q1234 | Per-card personal bests | skill | T2
+  mechanic: The card remembers its own record
+  (a) Personal bests are recorded on the card itself for this run, and beating one scores a bonus
+  (b) Personal bests are recorded on the card for this run, and beating one permanently raises that card's floor for the rest of the run
+  (c) Personal bests are recorded per card for this run, and a card that beats its record three times gains a rarity tier for the rest of the run
+Q1235 | The Belt | stamp | T2
+  mechanic: Exactly one card in the save file holds this stamp at a time; it scores double, and a challenge boss can take it and it must be won back
+  (a) Exactly one card in the save file carries this stamp; it scores double, and a challenge boss can take it and must be beaten to win it back
+  (b) Exactly one card in the save file carries this stamp; it scores double and can be moved to another card between runs
+  (c) Exactly one card in the save file carries this stamp; it scores double and its bonus grows with every run it survives
+Q1237 | The Long Memory | skill | T2
+  mechanic: A card that remembers what it did
+  (a) This card records the highest-scoring line it was ever part of, and scores a fraction of that total every show thereafter
+  (b) This card records the highest-scoring line it was part of this run, and matching that line again scores it double
+  (c) This card records every hand type it has been part of, and scores a step for each distinct one
+Q1238 | The Press Book | skill | T2
+  mechanic: A card that keeps a record of the run
+  (a) This card records each distinct hand type scored anywhere this run, and scores a step per record
+  (b) This card records each distinct hand type scored this run, and once it holds five it may spend them all for one enormous payout
+  (c) This card records the single best act of the run and re-fires that placement's highest-scoring effect once per show
+Q1239 | Biome/route meta-unlocks | structure | T3
+  mechanic: More world, unlocked over time
+  (a) Meta progress unlocks additional biomes and lengthens the possible route
+  (b) Meta progress unlocks additional biomes; route length is fixed and you choose which biomes fill it
+  (c) Meta progress unlocks additional biomes, and each biome unlocked adds one card to the global pool
+Q1240 | Card unlock tracks | structure | T3
+  mechanic: Two ways to unlock things
+  (a) Specific in-game actions unlock specific cards, while a separate threshold track unlocks commons through generic progress
+  (b) Every unlock runs off one generic progress track, with no action-specific unlocks
+  (c) Specific actions unlock specific cards; the generic track unlocks commons, and rarer cards need archetype-specific play
+Q1241 | Lore scraps unlock | structure | T3
+  mechanic: Scraps of a story you unlock
+  (a) Wins and specific actions unlock lore scraps
+  (b) Wins and specific actions unlock lore scraps, and completing a set unlocks a card
+  (c) Wins unlock lore scraps that each name a condition for the next one, forming a chain
+Q1242 | Route-length achievements | structure | T3
+  mechanic: Distance travelled counts for something
+  (a) Achievements for total map distance walked across all runs
+  (b) Achievements for total distance walked, each unlocking a card
+  (c) Total distance walked feeds a permanent bonus rather than discrete achievements
+Q1243 | Speedrun endless categories | structure | T3
+  mechanic: Endless mode has categories
+  (a) Endless rulesets ship as named speedrun categories with per-category personal bests
+  (b) Endless rulesets ship as named categories, and each has its own unlock track
+  (c) Endless rulesets ship as named categories you can combine, with records kept per combination
+Q1244 | The Exile (daily challenge) | structure | T3
+  mechanic: A fixed board, once a day
+  (a) A hard fixed layout offered as a daily challenge
+  (b) A hard fixed layout as a daily challenge, with a shared leaderboard seed
+  (c) A hard fixed layout as a daily challenge, and beating it grants a card for the next normal run
+Q1246 | The Standing Ovation | structure | T3
+  mechanic: Doing something well adds it to the pool
+  (a) The first time you score any hand type above a threshold, a card matching that hand type is added to the run pool permanently
+  (b) The first time you score any hand type above a threshold, that hand type levels up permanently for the run
+  (c) The first time you score a hand type above a threshold, a card matching it is added to the pool, and beating the threshold again raises it
+Q1248 | Event-recycled prestige | structure | T4
+  mechanic: Prestige, but only for this run
+  (a) A map event grants temporary prestige points to spend mid-run, using the meta-progression screen
+  (b) A map event grants temporary prestige points that expire at the end of the current biome
+  (c) A map event lets you borrow prestige against your final score, paid back out of the run's winnings
+Q1249 | The Academy | hazard | T4
+  mechanic: A school that upgrades a card
+  (a) Meta building: permanently upgrades one Common card per season into its Rare version
+  (b) Meta building: permanently upgrades one card per season by one rarity tier, whatever it starts at
+  (c) Meta building: upgrades one card per season, and the card chosen is unavailable for that run
+Q1250 | The Prestige Layer | structure | T4
+  mechanic: Reset the run to make the next one faster
+  (a) You may end a run early to convert its score into a permanent multiplier on every future run
+  (b) You may end a run early for a permanent multiplier, and the multiplier scales with how far you got
+  (c) You may end a run early for a permanent multiplier, and each reset makes the next reset worth more
+Q1251 | The Retired Act | consumable | T4
+  mechanic: Cash a card in for something that outlives the run
+  (a) Consumable: remove a card from the run permanently and convert it into prestige currency scaled to its rank
+  (b) Consumable: remove a card from the run permanently and convert it into prestige currency scaled to how much it scored this run
+  (c) Consumable: remove a card from the run and convert it into prestige currency, which is doubled if the run is then won
+Q1253 | The School (social circus) | structure | T4
+  mechanic: Turns junk into trained cards
+  (a) Between runs, converts discarded and junk cards into trained Commons
+  (b) Between runs, converts junk cards into trained Commons, one per run
+  (c) Between runs, converts junk into trained Commons, and the conversion rate improves the more junk you feed it
+Q1254 | Ascendant Stake | hazard | T5
+  mechanic: Fewer choices everywhere
+  (a) Difficulty: one fewer shop slot for the whole run
+  (b) Difficulty: one fewer shop slot and one fewer pack slot
+  (c) Difficulty: one fewer shop slot, and the slot returns if you win a show without buying anything
+Q1257 | Brown Stake | hazard | T5
+  mechanic: Stickers can stack
+  (a) Difficulty: every card sticker may coexist with every other, so one card can carry several drawbacks
+  (b) Difficulty: stickers may coexist, but a card carrying two sells for double
+  (c) Difficulty: stickers may coexist, and a card carrying three becomes Legendary
+Q1258 | Diamond Stake | hazard | T5
+  mechanic: The tour is longer
+  (a) Difficulty: the run must go further before it can be won
+  (b) Difficulty: the run must go further, and the extra towns are all bosses
+  (c) Difficulty: the run must go further, and you choose how much further for a proportional reward
+Q1259 | Glass Stake | hazard | T5
+  mechanic: Cards shatter as they score
+  (a) Difficulty: a small proportion of cards shatter when they score
+  (b) Difficulty: a small proportion shatter when they score, and shattered cards pay gold
+  (c) Difficulty: a small proportion shatter when they score, rising as the tour goes on
+Q1260 | Horizon Stake | hazard | T5
+  mechanic: The deck keeps growing
+  (a) Difficulty: a random card is added to the deck at each show's start
+  (b) Difficulty: a random card is added at each show's start, and you may remove one for gold
+  (c) Difficulty: a random card is added each show, chosen from cards you have already rejected
+Q1261 | Platinum Stake | hazard | T5
+  mechanic: Fewer shows per tier
+  (a) Difficulty: the small shows are removed, leaving fewer chances to earn per tier
+  (b) Difficulty: the small shows are removed, and the remaining ones pay more
+  (c) Difficulty: one show per tier is removed, and you choose which
+Q1262 | Purple Stake | structure | T5
+  mechanic: The goal climbs faster
+  (a) The score needed scales up faster with each town
+  (b) The score needed scales up faster, and the reward scales with it
+  (c) The score needed scales faster, and you may spend fame to flatten the curve for one town
+Q1263 | Dynasty save bonus | structure | T6
+  mechanic: A bonus for finishing again
+  (a) A standing bonus for consecutive finished tours in one save file
+  (b) A standing bonus for consecutive finished tours, reset by any failed run
+  (c) A standing bonus per finished tour, which never resets but grows more slowly each time
+Q1264 | Seasonal crown | structure | T6
+  mechanic: A title held until someone takes it
+  (a) A per-season champion title carried between runs until beaten
+  (b) A per-season champion title that grants a standing bonus while held
+  (c) A per-season title that grants a bonus while held, and the bonus grows the longer you hold it
+Q1265 | The Birdman Race | structure | T6
+  mechanic: First to claim it holds it
+  (a) A seasonal first-to-claim contest whose winning card holds a title for the whole tour
+  (b) A seasonal contest whose winning card holds a title granting a standing bonus until another card takes it
+  (c) A seasonal contest that can be re-contested at any town, with the title changing hands
+Q1266 | The Ghost Show | structure | T6
+  mechanic: Only findable at the right hour
+  (a) A secret card findable only in the menu after real-world midnight
+  (b) A secret card findable only at a specific real-world hour, differing per profile
+  (c) A secret card findable only under a real-world condition the game never states
+Q1267 | The One-Night-Only | consumable | T6
+  mechanic: Usable once, ever
+  (a) Consumable: an effect of enormous size that can be used once per profile and is then gone from every future run
+  (b) Consumable: an effect of enormous size usable once per profile, which returns after a run is won without it
+  (c) Consumable: an effect of enormous size usable once per profile, which is replaced by a weaker permanent version afterward
+Q1268 | The Rope Trick | skill | T6
+  mechanic: Only real once the rumour is true
+  (a) Exists only in rumour and can never be drawn until a hidden condition makes it real
+  (b) Exists only in rumour until a hidden condition makes it real, at which point it is added to every future run
+  (c) Exists only in rumour; each run raises the chance it becomes real, and it stays real once it does
+Q1270 | The Signature Trick | skill | T6
+  mechanic: A card each profile can only learn once
+  (a) The first run in which this card scores above a threshold, it is added to the profile permanently and cannot be earned again
+  (b) The first run in which this card scores above a threshold, it is added to the profile permanently, and each later run may swap it for a different one
+  (c) This card may be placed in exactly one run per profile, and choosing it locks out the other cards of its class for that profile
+Q1271 | Connect 4 mini-mode | structure | U1
+  mechanic: Four in a row
+  (a) A Connect-4 minigame mode played with placed cards
+  (b) A Connect-4 side objective running alongside normal play, paying a bonus for four of a suit in a line
+  (c) A Connect-4 minigame where the town places against you on the same grid
+Q1272 | Cups and balls minigame | structure | U1
+  mechanic: Find the ball
+  (a) A three-card shuffle minigame available in shops and events
+  (b) A three-card shuffle minigame in shops and events, where guessing right upgrades the card you find
+  (c) A three-card shuffle minigame whose difficulty rises each time you win it, with the reward rising too
+Q1273 | Fishing minigame card | skill | U1
+  mechanic: Fish a card out of the deck
+  (a) Place this card over the deck to play a fishing minigame for a card from it
+  (b) Place this card over the deck to fish; the harder the fish, the better the card
+  (c) Place this card over the deck to fish, with one attempt per show and a chance of losing the card instead
+Q1274 | Forbidden-solitaire event mode | hazard | U1
+  mechanic: Click cards straight into hand
+  (a) Event mode: clicking a card sends it directly to your hand rather than the grid
+  (b) Event mode: clicking a card sends it to your hand, and the hand is scored as a single poker hand at the end
+  (c) Event mode: clicking a card sends it to your hand, and you may return one per turn to the board
+Q1275 | Karuta duel | structure | U1
+  mechanic: First to spot it
+  (a) A speed-pick minigame where the first correct click takes the reward
+  (b) A speed-pick minigame where each correct click is worth more than the last
+  (c) A speed-pick minigame where a wrong click costs you the show
+Q1276 | Mini Metro mode | structure | U1
+  mechanic: Straights become lines on a map
+  (a) The ends of straights become stations joined by their straight, and must serve passengers over a number of turns
+  (b) The ends of straights become stations; each new straight extends the network, and the network's size is the score
+  (c) The ends of straights become stations that must be connected into a single network before the show ends
+Q1277 | The Arcade | hazard | U1
+  mechanic: A node full of small games
+  (a) Map node: play solitaire-variant minigames for tickets
+  (b) Map node: play solitaire-variant minigames for tickets, with harder variants paying more
+  (c) Map node: play a minigame chosen from three, each tied to a different reward type
+Q1278 | The Box Theater | skill | U1
+  mechanic: A show inside the card
+  (a) Cue: play a miniature five-cell line inside this card from the next Entrance cards, scoring it separately
+  (b) Cue: play a miniature five-cell line inside this card; its result is added to whichever line scores next
+  (c) Cue: play a miniature line inside this card using the whole Entrance at once, scoring it separately
+Q1279 | Collect number cards to progress | structure | U2
+  mechanic: Collect the numbers, then face the faces
+  (a) Win by collecting every number card, which unlocks a final stage against the face cards
+  (b) Win by collecting every number card of one suit, then facing that suit's face cards
+  (c) Win by collecting every number card; face cards cannot be scored until you have
+Q1280 | Dispute settled by performance | hazard | U2
+  mechanic: Settled by performance, not points
+  (a) Show variant: a town dispute is settled by performance rather than by score
+  (b) Show variant: a town dispute is settled by which side scores the more varied board, not the higher one
+  (c) Show variant: a dispute is settled by matching a formation the town names, not by score at all
+Q1281 | Fork Solitaire | skill | U2
+  mechanic: The board branches and you play both
+  (a) At a chosen moment the board forks into two states; you play both and keep the higher score
+  (b) At a chosen moment the board forks; you play both and keep the SUM of the two
+  (c) The board forks and you play both, but any card destroyed in either branch is destroyed in both
+Q1282 | Hard cap on flush win-con plays | hazard | U2
+  mechanic: Win by a flush, but only so often
+  (a) Alternate win: a single flush wins the show, with a hard cap on how many flushes a run may ever play
+  (b) Alternate win: a single flush wins, and the cap falls by one each time you use it
+  (c) Alternate win: a flush wins, and the required flush grows longer each time you win that way
+Q1283 | Judged-category scoring | hazard | U2
+  mechanic: Graded in categories, not totals
+  (a) Show: formation, suit variety and stamps are graded as separate scored categories rather than one total
+  (b) Show: three categories are graded separately, and you must pass two of the three
+  (c) Show: three categories are graded separately, and only your weakest category counts
+Q1284 | The Balance | hazard | U2
+  mechanic: Final-tier boss: cannot be beaten by score; win by ending the show with row total and column total within 10% of each other
+  (a) Final boss: score cannot beat it; win by ending the show with the row total and the column total within 10% of each other
+  (b) Final boss: win by ending the show with the row and column totals within 10% of each other, while still meeting a reduced goal
+  (c) Final boss: win by ending with every grid's score within 10% of every other grid's
+Q1285 | The Demolition Show | hazard | U2
+  mechanic: Score by destroying, not by playing
+  (a) Show: discarding scores points per card destroyed, and normal play scores nothing
+  (b) Show: discarding scores points per card destroyed, alongside normal scoring
+  (c) Show: discarding scores per card destroyed, and the goal is a count of cards rather than a score
+Q1286 | The Exploration Show | hazard | U2
+  mechanic: No goal, just things to find
+  (a) Show: no score goal at all, only hidden bonuses to find in a pre-built board
+  (b) Show: no score goal, only hidden bonuses, and a limited number of turns to find them
+  (c) Show: no score goal; the reward is whatever you uncover, and leaving early keeps what you have
+Q1287 | The Faire | hazard | U2
+  mechanic: The audience performs and you judge
+  (a) Show: the town performs and your cards judge them, for easy fame
+  (b) Show: the town performs and your cards judge them; judging harshly pays more but costs loyalty
+  (c) Show: the town performs, and you score by predicting which of their acts will score highest
+Q1288 | The Fall | skill | U2
+  mechanic: Win by dropping, not by climbing
+  (a) Alternate win: move a card down two or more levels of height in one action
+  (b) Alternate win: move a card down from the top of the tallest stack to the floor in one action
+  (c) Alternate win: end a show having dropped more total height than you built
+Q1289 | The Last Line | hazard | U2
+  mechanic: One cell must never be reached
+  (a) Alternate loss: a named cell must never be occupied by a hazard; if it is, the show ends immediately
+  (b) Alternate loss: a named cell must never be occupied by a hazard, and defending it successfully pays a bonus each placement
+  (c) Alternate loss: a named cell must never be reached, and its location moves each placement
+Q1290 | The Long Count | hazard | U2
+  mechanic: Win on the board's state, not on your own
+  (a) Alternate win: the show is won the moment a set number of sealed cells exist anywhere, whoever made them
+  (b) Alternate win: the show is won when a set number of sealed cells exist, and hazards that seal cells count toward it
+  (c) Alternate win: the show is won when every grid holds at least one sealed cell
+Q1291 | The One Ring card | skill | U2
+  mechanic: Destroy it and you win
+  (a) You always know exactly where this card is, and permanently destroying it wins the match
+  (b) You always know where it is, and destroying it wins the match, but only in the final show
+  (c) You always know where it is; destroying it wins, and every effect in the game tries to protect it
+Q1292 | Festival mini-contest node | hazard | U3
+  mechanic: Win any one of three
+  (a) Map node: win any one of three mini-contests - score, formation or speed - for the prize
+  (b) Map node: win any one of three mini-contests; winning two takes a larger prize
+  (c) Map node: three mini-contests, and you must declare which one you are attempting before seeing your deck
+Q1293 | Mini-game score-free events | structure | U3
+  mechanic: Some shows are not about score
+  (a) Some encounters replace the score goal with a puzzle objective, such as triggering five times
+  (b) Some encounters offer both a score goal and a puzzle objective, and either wins
+  (c) Some encounters replace the score goal with a puzzle objective drawn from a pool, revealed only on arrival
+Q1294 | The Masked Audience / One-on-One | hazard | U3
+  mechanic: Fame hidden around the board
+  (a) Show: fame sources are hidden around the board to be found rather than scored
+  (b) Show: fame is hidden around the board, and a single audience token pays outsized fame if performed to alone
+  (c) Show: fame is hidden around the board, and each one found reveals a hint to the next
+Q1295 | The String Figure | structure | U3
+  mechanic: Copy the pattern
+  (a) Copy a displayed board pattern with your own cards for a bonus
+  (b) Copy a displayed board pattern for a bonus, with a larger pattern shown each time you succeed
+  (c) Copy a displayed board pattern, or invent one the town must copy back
+Q1296 | The Water Torture Cell | skill | U3
+  mechanic: Three locks, one escape
+  (a) Arrives locked under three conditions - covered, column unscored, unmoved - one unlocking per turn in order; a full escape pays a large bonus
+  (b) Arrives locked under three conditions that unlock in any order as you satisfy them; a full escape pays a large bonus
+  (c) Arrives locked under three conditions; each one you break pays a bonus, and breaking all three pays a much larger one
+Q1297 | Turning the tip | structure | U3
+  mechanic: A hidden objective revealed after the fact
+  (a) Convert an audience faction into fame, with a hidden bonus objective revealed only once the show is cleared
+  (b) Convert an audience faction into fame, with the bonus objective stated up front
+  (c) Convert an audience faction into fame; the hidden objective is revealed after the show, and completing it later pays out retroactively
+Q1298 | Wordle-style hidden target card | skill | U3
+  mechanic: Guess the card it is thinking of
+  (a) Sets a hidden target rank and suit and reports whether the last placed card is wrong, close, or exact; the first correctly placed line wins
+  (b) Sets a hidden target and reports only wrong or exact, with no close
+  (c) Sets a hidden target and reports wrong, close or exact; each guess narrows the possibilities visibly
+Q1299 | Quest-chain triggered stage acts | structure | U4
+  mechanic: A story told in the right order
+  (a) A quest chain where each stage unlocks only after the previous one's effect has been triggered
+  (b) A quest chain where stages may be completed in any order, but completing them in sequence pays a bonus
+  (c) A quest chain where each stage names the next only once the previous is done
+Q1300 | The Metal Chain | skill | U4
+  mechanic: A sequence that must be consumed in order
+  (a) A named chain of ranks may only be scored in strict ascending order, and skipping one locks the rest
+  (b) A named chain must be scored in order, and completing the whole chain pays enormously
+  (c) A named chain must be scored in order; the chain is reseeded each show and its order is shown up front
+Q1301 | The Three Tricks | skill | U4
+  mechanic: This card earns its next stage
+  (a) This card carries a chain of three objectives; completing one upgrades the card and reveals the next
+  (b) This card carries a chain of three objectives, all visible; completing all three transforms it into a different card entirely
+  (c) This card carries a chain of three objectives; completing one upgrades the card, and failing to finish the chain by show end resets it
+Q1302 | The Three-Act Bill | structure | U4
+  mechanic: Each objective is unlocked by the last
+  (a) Three objectives are given in order; each becomes visible and claimable only once the one before it is done, and the third pays permanently for the run
+  (b) Three objectives are given in order; each pays as it is completed, and the third pays permanently for the run
+  (c) Three objectives are given in order, all visible from the start, and only the third pays anything
+Q1303 | Built-in symmetric PvP mode | hazard | U5
+  mechanic: Same deck, same cards, higher score
+  (a) PvP: both players start with the same deck and draw the same cards, aiming for the higher score
+  (b) PvP: both players share a deck and alternate taking cards from one Entrance
+  (c) PvP: both players use the same deck and card order, and each sees the other's board as it builds
+Q1304 | Crew formation battle / class legalization | structure | U5
+  mechanic: Crew against crew
+  (a) A formation battle against a rival crew, decided by whose formation scores higher
+  (b) A formation battle against a rival crew, alternating one formation each until someone cannot answer
+  (c) A formation battle against a rival crew; winning makes an outlaw class legal in that town for the rest of the run
+Q1305 | Head To Head | structure | U5
+  mechanic: Your line is matched against theirs, position by position
+  (a) In a rival show, your line is compared to theirs card by card from one end, and the winner of each pairing scores
+  (b) In a rival show, your whole line's total is compared to theirs, not card by card
+  (c) In a rival show, your line is compared card by card, and a card that beats its opposite carries the surplus to the next pairing
+Q1306 | One-upmanship duel (scissors dance) | hazard | U5
+  mechanic: Alternating melds until someone falls short
+  (a) Duel: you and a rival alternate melds, each having to beat the last; the first to fall short loses the wager
+  (b) Duel: you and a rival alternate melds; falling short costs one card rather than the whole wager
+  (c) Duel: alternating melds, each having to beat the last, and you set the wager before seeing your opening board
+Q1307 | The Eating Contest | structure | U5
+  mechanic: An eating contest
+  (a) A sanctioned outing where consuming cards race a rival to eat the town's offering fastest
+  (b) An eating contest where the winner keeps everything eaten and the loser keeps nothing
+  (c) An eating contest where you wager how much your card will eat before it starts
+Q1308 | The Laughing Duel | structure | U5
+  mechanic: Break the rhythm and you lose
+  (a) A pattern-matching duel against a town where breaking rhythm loses the show
+  (b) A pattern-matching duel where each show's pattern is longer than the last
+  (c) A pattern-matching duel where you set the pattern and the town must follow, alternating who leads
+Q1309 | The Showdown | structure | U5
+  mechanic: Same town, against a rival
+  (a) Play the same town against a rival's score; the winner takes both crowds
+  (b) Play the same town against a rival's score; the winner takes both crowds and one of the loser's cards
+  (c) Play the same town against a rival, seeing their board as it builds
+Q1310 | The Tent Challenge | structure | U5
+  mechanic: Called out by name
+  (a) A town champion calls out one of your cards for a duel: win for gold, lose a rank
+  (b) A town champion calls out one of your cards; you may substitute another at a cost
+  (c) A town champion calls out your highest card for a duel, and refusing costs fame
+Q1311 | The Apprenticeship | skill | U6
+  mechanic: A quest the card sets itself
+  (a) Names an objective when acquired, drawn from a pool; finishing it transforms this card into a Rare version of itself
+  (b) Names an objective when acquired; finishing it lets you choose one of three permanent rewards
+  (c) Names a new objective each time the previous one is finished, escalating, with a permanent reward each time
+Q1312 | The Commission | structure | U6
+  mechanic: The town sets you a task
+  (a) Each town states one objective; completing it during that show grants a permanent run-scoped effect
+  (b) Each town states one objective; completing it grants gold rather than a permanent effect
+  (c) Each town states one objective, and you may accept it for a permanent reward or decline it for a smaller immediate one
+Q1313 | The Contract | skill | U6
+  mechanic: A stated objective with a permanent reward
+  (a) Names an objective at run start; completing it permanently upgrades this card for the rest of the run
+  (b) Names an objective at run start; completing it permanently upgrades every card of its class for the rest of the run
+  (c) Names an objective at run start; completing it adds a new card to your deck permanently
+Q1314 | The Long Game | skill | U6
+  mechanic: An objective that spans the whole tour
+  (a) Names one objective at run start that can only be finished late in the tour, and pays enormously when it is
+  (b) Names one objective at run start with a partial reward at each town you make progress in
+  (c) Names one objective for the whole tour, and abandoning it at any point converts the progress made into fame
+Q1315 | The Standing Order | stamp | U6
+  mechanic: Attaches a quest to any card
+  (a) Attach an objective to any card you own; completing it permanently upgrades that card
+  (b) Attach an objective to any card; completing it permanently upgrades that card and destroys this stamp
+  (c) Attach an objective to any card; completing it upgrades that card, and the stamp then moves to a card of your choosing
+Q1316 | Overshoot | structure | U7
+  mechanic: Progress past the target is not wasted
+  (a) Progress past an objective's target carries into the next objective
+  (b) Progress past an objective's target is converted to fame
+  (c) Progress past the target raises the reward rather than carrying forward
+Q1317 | The Progress Report | skill | U7
+  mechanic: Reading progress costs something
+  (a) Cue: reveal the exact progress of one hidden objective, at the cost of a placement
+  (b) Cue: reveal the exact progress of every hidden objective, once per show
+  (c) Cue: reveal one hidden objective's progress for free, but doing so raises what it requires
+Q1318 | The Silent Tally | structure | U7
+  mechanic: Progress you cannot see until it matters
+  (a) Quest progress is hidden until it passes halfway, then shown for the rest of the run
+  (b) Quest progress is hidden entirely, and only completion is announced
+  (c) Quest progress is hidden, and may be read once per show at the cost of a placement
+Q1319 | The Tally Board | structure | U7
+  mechanic: How a quest shows its progress
+  (a) Every active objective shows its exact progress at all times
+  (b) Every active objective shows only whether it is close, not how close
+  (c) Objectives show exact progress, but only while you are not in the middle of a placement
+Q1320 | The Open Secret | structure | U8
+  mechanic: Hidden objectives exist and are findable
+  (a) A pool of hidden objectives is live every run; completing one reveals it and pays permanently
+  (b) A pool of hidden objectives is live, and completing one reveals it permanently for all future runs
+  (c) Hidden objectives are live, and any you complete stay hidden until the run ends
+Q1321 | The Retroactive Clause | skill | U8
+  mechanic: Pays for what you already did
+  (a) When acquired, checks what you have already done this run and immediately pays out any objective already met
+  (b) When acquired, names an objective and counts progress made before you had it
+  (c) When acquired, pays out for the single most impressive thing you have already done this run
+Q1322 | The Sealed Brief | structure | U8
+  mechanic: You can see how far along you are, but not what you are doing
+  (a) A hidden quest shows its progress bar from the start but never says what it is for until it completes
+  (b) A hidden quest shows its progress bar, and one word of its text is revealed at each quarter
+  (c) A hidden quest shows nothing at all, and completing it reveals both the quest and its reward at once
+Q1323 | The Unspoken Brief | skill | U8
+  mechanic: A quest you finish before you hear about it
+  (a) Carries a hidden objective, announced only once you have completed it, with a permanent reward
+  (b) Carries a hidden objective that reveals itself once you are most of the way through it
+  (c) Carries a hidden objective, and each show gives you one clue toward what it is
+Q1324 | The Conflicting Notes | structure | U9
+  mechanic: Two briefs that contradict each other
+  (a) Two quests are offered whose conditions cannot both hold; progress on one erases progress on the other
+  (b) Two contradictory quests are offered; progress on both is kept, but only the first completed pays
+  (c) Two contradictory quests are offered, and abandoning one outright doubles the reward of the other
+Q1325 | The Double Booking | structure | U9
+  mechanic: Two quests that cannot both be finished
+  (a) Two objectives run at once and are mutually exclusive; finishing one voids the other
+  (b) Two mutually exclusive objectives run at once, and abandoning one early pays a small consolation
+  (c) Two mutually exclusive objectives run at once, and you must declare which you are chasing before the second town
+Q1326 | The Rival Contract | structure | U9
+  mechanic: A quest a rival is also chasing
+  (a) An objective is shared with a rival show; whoever finishes it first takes the reward
+  (b) An objective is shared with a rival, and you can see how far along they are
+  (c) An objective is shared with a rival; finishing second still pays, at a fraction
+Q1327 | The Ultimatum | skill | U9
+  mechanic: Take the quest or take the payout
+  (a) Offers an immediate reward or an objective worth several times more; taking one removes the other
+  (b) Offers an immediate reward or an objective; you may take the reward and still attempt the objective at a penalty
+  (c) Offers an immediate reward or an objective, and the objective's value rises the longer you leave it unclaimed
+Q1328 | Maximized | skill | V1
+  mechanic: Only two ranks exist
+  (a) Every face card counts as the same rank and every number card as the same rank
+  (b) Every card counts as one of two ranks, chosen when this skill activates
+  (c) Every card counts as one of two ranks, and which two changes each show
+Q1329 | Pareidolia | skill | V1
+  mechanic: Everything is a face card
+  (a) Every card counts as a face card for every effect
+  (b) Every card counts as a face card, and face cards count as no rank at all for runs
+  (c) Every card counts as whichever card type an effect is looking for
+Q1330 | The Backward-Backward | skill | V1
+  mechanic: Cue: reverse the run direction of one column for the rest of the show, so descending counts as ascending and vice versa
+  (a) Cue: reverse the run direction of one column for the rest of the show, so descending reads as ascending
+  (b) Cue: reverse the run direction of one line for one turn
+  (c) Cue: reverse the run direction of every line in one grid for the rest of the show
+Q1331 | The Blank | rank | V1
+  mechanic: This card has no rank or suit: it can stack on anything and anything can stack on it, but it never melds and scores 0
+  (a) Has no rank and no suit: anything stacks on it and it stacks on anything, but it never melds and scores 0
+  (b) Has no rank and no suit for stacking, but counts as whatever the line needs when a meld is checked
+  (c) Has no rank and no suit, and any line containing it scores as if it had four cards instead of five
+Q1332 | The Blank Rank | skill | V1
+  mechanic: A card with no number at all
+  (a) This card has no rank; it may be stacked on anything and anything may be stacked on it, and it counts as no rank for melds
+  (b) This card has no rank for stacking purposes, but takes the rank of whatever it is stacked on for melds
+  (c) This card has no rank until a line containing it scores, at which point it takes whichever rank scores best
+Q1333 | The Understudy Rank | stamp | V1
+  mechanic: Its number is borrowed
+  (a) This card compares as the rank of the card directly below it in the stack
+  (b) This card compares as the rank of whichever adjacent card has the highest rank
+  (c) This card compares as the rank of the last card placed anywhere on the grid
+Q1334 | Wild rank (copycat/understudy) | rank | V1
+  mechanic: Copies whatever it can find
+  (a) Rank 0 that also counts as any rank already present in your deck, for stacking and melds; behaves as blank with nothing to copy
+  (b) Rank 0 that counts as any rank present on the board, updating as the board changes
+  (c) Rank 0 that counts as whichever rank would score its line highest
+Q1335 | Clowns as wildcard/joker stand-ins | skill | V2
+  mechanic: Clowns stand in for anyone
+  (a) Counts as a copy of any other card on the board for meld purposes
+  (b) Counts as a copy of any one card on the board, chosen when placed and fixed thereafter
+  (c) Counts as a copy of whichever card would complete the best meld in its line
+Q1336 | Gentleman juggling | skill | V2
+  mechanic: Plain cards become juggling balls
+  (a) Skill-less cards in this card's row count as the Balls suit
+  (b) Skill-less cards anywhere on this card's grid count as the Balls suit
+  (c) Skill-less cards in this card's row count as whichever suit this card is
+Q1337 | The Colourblind Rule | skill | V2
+  mechanic: Only the colour matters
+  (a) Suits are compared by colour alone, so a flush needs only five of one colour
+  (b) Suits are compared by colour alone for stacking, and by suit for melds
+  (c) Suits are compared by colour alone, and a five-card flush that is also a single suit scores an extra step
+Q1338 | The Rewritten Noun | skill | V2
+  mechanic: Changes what a card counts AS, globally
+  (a) Cue: name a suit and a second suit; for the rest of the show every card of the first counts as the second
+  (b) Cue: name a rank and a second rank; for the rest of the show every card of the first counts as the second
+  (c) Cue: name any two card properties and swap them across the whole board for the rest of the show
+Q1339 | The Unsuited | skill | V2
+  mechanic: A card that belongs to nothing
+  (a) This card counts as no suit at all: it breaks any flush it is part of, and nothing may be stacked on it by suit
+  (b) This card counts as no suit, but its line ignores it entirely when working out the hand, scoring the other four
+  (c) This card counts as no suit and cannot be targeted by any effect that names a suit
+Q1340 | The Wild Costume | stamp | V2
+  mechanic: A card that answers to every suit
+  (a) This card counts as every suit at once for melds and for stacking
+  (b) This card counts as every suit for melds but as none for stacking
+  (c) This card counts as every suit, and each line that scores it as a different suit adds one to the combo
+Q1341 | 31/99-style fixed point values | rank | V3
+  mechanic: Odd values, aiming at a total
+  (a) Ranks carry fixed odd values - ace 1 or 11, ten worth -10, King worth 99 - and lines score toward a target total
+  (b) Ranks carry fixed odd values, and a line scores only if it lands exactly on the target total
+  (c) Ranks carry fixed odd values you can see before placing, and overshooting the target scores nothing
+Q1343 | Freakshow off-rank cards | rank | V3
+  mechanic: No normal number
+  (a) Freakshow cards carry no ordinary rank number and cannot be compared numerically
+  (b) Freakshow cards carry no ordinary rank, but count as whatever their neighbours need for a run
+  (c) Freakshow cards carry a rank outside the normal range, high or low, that no meld can include
+Q1344 | Half-Step | stamp | V3
+  mechanic: This card has rank N and a half, letting it stack legally between rank N and N+1 in runs, but it never participates in poker melds
+  (a) This card's rank is N and a half: it stacks legally between N and N+1, but never counts in a poker meld
+  (b) This card's rank is N and a half: it stacks between N and N+1, and shows down for melds
+  (c) This card counts as either N or N+1 for any single check, chosen fresh each time
+Q1345 | Decimal numbers (Half-Step hat) | stamp | V3
+  mechanic: Counts as itself and one higher at once
+  (a) This card's rank counts as both itself and one higher simultaneously, so it can serve two melds at once
+  (b) This card's rank counts as itself and one higher, but only one of the two may score per Entrance refill
+  (c) This card's rank counts as itself, one higher and one lower, serving up to three melds
+Q1346 | Misrule show | hazard | V3
+  mechanic: Ranks upside down
+  (a) Show: all ranks are reversed, 2 counting high and King counting low; winning pays large tips
+  (b) Show: all ranks are reversed for one placement of your choosing, not the whole show
+  (c) Show: all ranks are reversed, and you are told which placement it will happen in one placement ahead
+Q1347 | The Half Rank | type | V3
+  mechanic: A material that halves what it holds
+  (a) Cards of this material carry half ranks, so two of them together make one whole rank for straights
+  (b) Cards of this material carry half ranks that round up for melds and down for stacking
+  (c) Cards of this material carry half ranks, and a line of five halves scores as a made hand of its own
+Q1348 | The Spin (whirling) | skill | V3
+  mechanic: Its rank turns
+  (a) Cycles its rank by one each turn, wrapping from King back to 1
+  (b) Cycles its rank by one each turn, and you may stop the cycle once per show
+  (c) Cycles its rank each turn, and the cycle speeds up the longer it stays on the board
+Q1349 | 5 starting suits | skill | V4
+  mechanic: Five suits, not four
+  (a) Five suits instead of four, making flushes harder and enabling an anti-flush hand
+  (b) Five suits instead of four, with the fifth appearing only on cards this skill creates
+  (c) Five suits instead of four, and a line containing all five counts as its own meld
+Q1350 | Harlequin | suit | V4
+  mechanic: This card counts as both of its printed suits for every comparison, meld, and suit effect, firing both suits' props
+  (a) Counts as both of its printed suits for every comparison, meld and suit effect, firing both suits' props
+  (b) Counts as both printed suits for melds only; stacking and props use the first
+  (c) Counts as both printed suits, and the two swap places each time it scores
+Q1351 | Ten-suit challenge deck | skill | V4
+  mechanic: Ten suits
+  (a) Ten suits instead of four, making flushes far harder and suit variety far easier
+  (b) Ten suits, and any five distinct suits in a line counts as its own meld
+  (c) Ten suits, of which five are active each show, so the roster changes
+Q1352 | The Best Bower | suit | V4
+  mechanic: This card counts as every suit for flush evaluation (but not for suit-stacking rules), and its prop identity is randomly one of the game's props each time
+  (a) Counts as every suit for flush evaluation but not for stacking, and its prop is a random one of the game's props each time
+  (b) Counts as every suit for both flushes and stacking, and fires no prop of its own
+  (c) Counts as every suit for flushes, and fires the prop of whichever suit is most common on its grid
+Q1353 | The Fifth Suit | skill | V4
+  mechanic: A suit the deck did not have
+  (a) A fifth suit is added to the deck; it flushes only with itself, and no rank of it exists twice
+  (b) A fifth suit is added; it flushes with any suit but never counts toward a straight
+  (c) A fifth suit is added, and a line containing all five suits scores as a made hand of its own
+Q1354 | The Split Costume | skill | V4
+  mechanic: One card, two suits
+  (a) This card carries two suits at once and counts as whichever suits its line better
+  (b) This card carries two suits and counts as both at once, so it can be in two flushes in the same line
+  (c) This card carries two suits, and you choose which one applies each time it is placed
+Q1355 | Rock Paper Scissors | suit | V5
+  mechanic: Rock, paper, scissors
+  (a) At game start becomes rock, paper or scissors; stacking on another such card requires winning the throw, with ties broken by rank
+  (b) At game start becomes rock, paper or scissors; it beats one suit and loses to another, and ties never stack
+  (c) It re-rolls its throw every time it is placed, so its stacking legality changes each time
+Q1356 | The Circle Of Suits | skill | V5
+  mechanic: Suits beat each other in a ring
+  (a) Suits form a ring in which each may be stacked on the next and on no other
+  (b) Suits form a ring for stacking, and a line running the ring in order scores as a made hand of its own
+  (c) Suits form a ring for stacking, and the ring rotates one step each placement
+Q1357 | The Rank Wheel | skill | V5
+  mechanic: High and low fold into each other
+  (a) Rank comparison is circular - the top rank is beaten by the bottom one, and every straight may wrap
+  (b) Rank comparison is circular for stacking legality but not for melds
+  (c) Rank comparison is circular, and a wrapped straight scores an extra step for having wrapped
+Q1358 | The Standoff | skill | V5
+  mechanic: Three cards that cannot be ordered
+  (a) While this card is spotlit, its line is compared as a ring: no card in it is highest, and the line scores as its best three-card hand instead
+  (b) While this card is spotlit, comparisons in its line are non-transitive, and any effect that names the highest card in the line fails
+  (c) While this card is spotlit, comparisons in its line are non-transitive, and every card in it counts as beating exactly one other
+Q1359 | Clever Hans | skill | V6
+  mechanic: Counts as a copy of its highest orthogonally-adjacent neighbor's rank; with no neighbors, its rank is 1
+  (a) This card's rank equals its highest orthogonally adjacent neighbour's rank, or 1 with no neighbours
+  (b) This card's rank equals the sum of its orthogonally adjacent neighbours' ranks, capped at 13
+  (c) This card's rank and suit both copy whichever neighbour was placed most recently
+Q1360 | Hanafuda Reskin | skill | V6
+  mechanic: When a town outlaws a suit, all your cards of that suit count as the suit of the adjacent card for that show
+  (a) When a town outlaws a suit, your cards of that suit count as their adjacent card's suit for the show
+  (b) When a town outlaws a suit, your cards of that suit count as a suit of your choice for the show
+  (c) Your cards always count as the suit of whichever orthogonal neighbour was placed most recently
+Q1361 | The Chameleon Cell | zone | V6
+  mechanic: The cell decides what sits in it
+  (a) A card placed in this cell takes the suit of the card to its left for as long as it stays there
+  (b) A card placed in this cell takes the suit and rank of whichever adjacent card has the highest rank
+  (c) A card placed in this cell takes whichever suit would complete the most lines through it
+Q1362 | The Majority Rule | skill | V6
+  mechanic: The board decides what a card is
+  (a) A card with no card adjacent to it takes the suit that is most common on its grid
+  (b) Every card takes the suit that is most common in its own row, overriding its printed suit
+  (c) A card surrounded on all four sides by one suit becomes that suit permanently
+Q1363 | The Turk | skill | V6
+  mechanic: Borrows the rank underneath
+  (a) This card's rank is the rank of the card directly beneath it in its stack, or 0 with nothing beneath
+  (b) This card's rank is the summed rank of everything beneath it in its stack, capped at 13
+  (c) This card's rank is the rank of the card beneath it, and it also inherits that card's suit
+Q1364 | The Wildcard | skill | V6
+  mechanic: Becomes whatever its row already has
+  (a) On every board change, becomes a copy of a rank and suit already present in its row
+  (b) On every board change, becomes a copy of whichever rank and suit is most common in its row
+  (c) On every board change, becomes whichever rank and suit would score its row highest
+Q1365 | Wild pip | rank | V6
+  mechanic: A pip that borrows from the board
+  (a) Wild pip: takes a rank and suit at random from those present on its row, updating on every board change
+  (b) Wild pip: takes a rank and suit at random from those present on its grid, fixed once it is placed
+  (c) Wild pip: takes whichever rank and suit appear most in its line, updating on every board change
+Q1366 | The Abacus | skill | V7
+  mechanic: Adds its neighbours together
+  (a) This card's rank is the sum of its orthogonal neighbours' ranks, capped at the deck's highest rank
+  (b) This card's rank is the sum of its orthogonal neighbours' ranks, uncapped
+  (c) This card's rank is the sum of its neighbours' ranks minus its own printed rank
+Q1367 | The Difference | skill | V7
+  mechanic: Scores the gap, not the value
+  (a) Scores the difference between its own rank and its highest neighbour's
+  (b) Scores the difference between the highest and lowest ranks in its line
+  (c) Scores the difference between its own rank and its lowest neighbour's, doubled if that difference is exactly one
+Q1368 | The Doubling Act | stamp | V7
+  mechanic: Twice the number, once the card
+  (a) This card's rank counts as double its printed value for every check
+  (b) This card's rank counts as double for melds only, and normal for stacking
+  (c) This card's rank doubles each time it scores, until it exceeds the deck's highest rank and wraps to 1
+Q1369 | The Doubling Rank | type | V7
+  mechanic: A material whose number keeps growing
+  (a) Cards of this material double their rank each time a line containing them scores, resetting at show end
+  (b) Cards of this material double their rank each time a line containing them scores, and the gain is permanent
+  (c) Cards of this material double their rank when scored and halve it when moved
+Q1370 | The Gap Card | stamp | V7
+  mechanic: Its rank is what separates its neighbours
+  (a) This card compares as the difference between the ranks of the cards on either side of it in its row
+  (b) This card compares as the difference between the highest and lowest ranks in its row
+  (c) This card compares as the difference between its printed rank and the rank of the card below it in the stack
+Q1371 | The Halving | stamp | V7
+  mechanic: Splits the number in two
+  (a) This card's rank counts as half its printed value, rounded down, for every check
+  (b) This card's rank counts as half for melds and full for stacking
+  (c) This card's rank counts as half, and the other half is given to an adjacent card
+Q1372 | The Sum Card | skill | V7
+  mechanic: Its rank is other cards added together
+  (a) This card compares as the sum of the ranks of the cards orthogonally adjacent to it
+  (b) This card compares as the sum of the two highest adjacent ranks
+  (c) This card compares as the sum of every card in its column below it
+Q1373 | The Bust | skill | X1
+  mechanic: A line that scored nothing feeds the next one
+  (a) When a line completes and scores nothing, this card banks that line and adds it to the next line that does score
+  (b) When a line completes and scores nothing, the next line to score does so at double
+  (c) When a line completes and scores nothing, every card in it is returned to the entrance rather than staying on the board
+Q1374 | The Dropped Bit | skill | X1
+  mechanic: A line that never finished is still worth something
+  (a) At show end, every incomplete line pays a step per card it did hold
+  (b) At show end, every incomplete line pays a step per card, doubled for lines that were one card short
+  (c) At show end, only the single closest incomplete line pays, and it pays as if it had completed with a blank
+Q1375 | The Dropped Catch | skill | X1
+  mechanic: Paid when a line fails
+  (a) Scores a bonus for every line that completes and scores nothing
+  (b) Scores a bonus for every line that completes and scores nothing, and the bonus grows each time
+  (c) Scores a bonus for every line left incomplete when the show ends
+Q1376 | The Empty House | skill | X1
+  mechanic: Failure is the axis
+  (a) The show's combo counts lines that failed rather than lines that scored
+  (b) The show's combo counts both, so a mixed placement pays most
+  (c) A placement in which every line failed pays a large flat bonus instead of nothing
+Q1377 | The Faint Trigger | skill | X1
+  mechanic: Dying is a trigger like any other
+  (a) A destroyed card fires a faint effect if it has one, resolving after the destruction
+  (b) A destroyed card fires a faint effect, and faint effects resolve before anything else that turn
+  (c) A destroyed card fires a faint effect, and a card destroyed by your own effects fires it twice
+Q1378 | The Safety Net | skill | X1
+  mechanic: Turns a failed line into something
+  (a) A line that scores nothing instead pays flat points equal to its highest rank
+  (b) A line that scores nothing instead pays flat points and clears itself, freeing the cells
+  (c) A line that scores nothing may be re-formed once, and pays double if it scores the second time
+Q1379 | The Silent Row | stamp | X1
+  mechanic: Paid for the line you deliberately never close
+  (a) This card scores a step per Entrance refill for each line through it that remains incomplete, and loses the lot when one completes
+  (b) This card scores a step per Entrance refill for each incomplete line through it, and keeps what it banked when one completes
+  (c) This card scores a step per Entrance refill for each incomplete line on the whole grid
+Q1380 | The Bench | skill | X2
+  mechanic: Paid for what never came out
+  (a) Scores a bonus per card left in the deck when the show ends
+  (b) Scores a bonus per card left in the Entrance when the show ends
+  (c) Scores a bonus per card that has never once been placed this run
+Q1381 | The Cut Act | skill | X2
+  mechanic: What you never drew still counts
+  (a) At show end, score a step for every five cards left undrawn in the deck
+  (b) At show end, score a step for every five undrawn cards, and nothing at all if the deck was emptied
+  (c) At show end, the undrawn cards are revealed and score as if they had formed lines
+Q1382 | The Cut List | skill | X2
+  mechanic: Rewards cards for staying in
+  (a) Any card that goes a whole show without being placed gains +1 rank permanently
+  (b) Any card that goes a whole show without being placed gains a permanent bonus, lost the moment it is placed
+  (c) Any card that goes three consecutive shows unplaced upgrades a rarity tier
+Q1383 | The Standby | skill | X2
+  mechanic: A card that is paid for waiting in the wings
+  (a) This card scores a step for every placement it spends in the entrance without being placed, paid when it is finally placed
+  (b) This card scores a step per Entrance refill spent in the entrance, paid at show end whether or not it is ever placed
+  (c) This card scores a step per Entrance refill spent in the entrance, and if it is never placed it upgrades permanently instead
+Q1384 | The Uncalled Understudy | stamp | X2
+  mechanic: A card that improves by not being used
+  (a) This card upgrades permanently at the end of any show in which it was never placed
+  (b) This card upgrades permanently at the end of any show in which it was never scored, whether or not it was placed
+  (c) This card upgrades at the end of any show in which it was never placed, and downgrades in any show it was
+Q1385 | The Unopened Envelope | skill | X2
+  mechanic: Cards the whole run never reached
+  (a) Every card never drawn by a show's end pays a bonus at that show's end
+  (b) At each show start, one card never drawn this run is put directly into the entrance
+  (c) A card never drawn for three shows running is permanently upgraded
+Q1386 | Understaffed | skill | X2
+  mechanic: The unplayed are counted against you
+  (a) Cards left in the Entrance at show end each subtract from the final score
+  (b) Cards left in the Entrance at show end are destroyed
+  (c) Cards left in the Entrance at show end are carried into the next show's Entrance
+Q1387 | One Card Short | skill | X3
+  mechanic: The hand you almost had
+  (a) When a line completes, this card also pays for the best hand that line was one card away from
+  (b) When a line completes one card short of a better hand, this card pays the difference between the two
+  (c) When a line completes one card short of a better hand, this card pays as if it had reached it, once per Entrance refill
+Q1388 | One Short | skill | X3
+  mechanic: Almost is a state the board can read
+  (a) A line one card short of a meld is flagged, and effects may read that flag
+  (b) A line one card short of a meld scores at a quarter value immediately
+  (c) A line one card short is marked, and completing a marked line pays double
+Q1389 | The Almost Flush | stamp | X3
+  mechanic: Four of a suit is a hand of its own
+  (a) This card treats four of a suit in its line as a scoring hand at its own modest rate
+  (b) This card treats four of anything in its line - suit, rank, class - as a scoring hand at a modest rate
+  (c) This card treats any line one card short of a made hand as scoring at half that hand's rate
+Q1390 | The Glancing Blow | skill | X3
+  mechanic: A prop that misses is worth more
+  (a) Every prop that finishes its path without hitting anything scores a bonus
+  (b) Every prop that misses scores a bonus, and this card gains a permanent bonus for each
+  (c) Every prop that misses is re-launched once from the opposite edge
+Q1391 | The Missed Knife | suit | X3
+  mechanic: Props that hit nothing pay anyway
+  (a) A prop from this suit that finishes its path without crossing a single card scores as if it had crossed five
+  (b) A prop from this suit scores a step for every empty cell it crossed as well as every card
+  (c) A prop from this suit that crosses no cards respawns at the opposite edge instead of finishing
+Q1392 | The Narrow Loss | skill | X3
+  mechanic: Coming close to the target is not nothing
+  (a) A show that ends within a tenth of its target is not lost; it is replayed once with the board as it stood
+  (b) A show that ends within a tenth of its target is still lost, but the run keeps the rewards
+  (c) A show that ends within a tenth of its target is lost, and the shortfall becomes a permanent bonus to the next attempt
+Q1393 | The Near Thing | skill | X3
+  mechanic: Paid for coming close
+  (a) Scores a bonus for every line that ends the show exactly one card short of complete
+  (b) Scores a bonus for every line one card short, and names which card would have finished it
+  (c) Scores a bonus scaling with how close the show's final score came to the goal without reaching it
+Q1394 | Leave No Trace | skill | X4
+  mechanic: An empty board is the goal
+  (a) Ending a show with an empty board pays an enormous bonus
+  (b) Ending a show with an empty board pays a bonus scaling with how many cards passed through it
+  (c) Ending a show with fewer than five cards placed pays a bonus scaling inversely with the count
+Q1395 | Room To Work | skill | X4
+  mechanic: A card that wants space around it
+  (a) This card scores a step for every empty cell orthogonally adjacent to it, checked when its line scores
+  (b) This card scores a step for every empty cell in its 3x3, checked when its line scores
+  (c) This card scores a step for every empty cell adjacent to it, and loses a step for every occupied one
+Q1396 | The Bare Stage | skill | X4
+  mechanic: Paid for the cells you did not fill
+  (a) Scores a bonus per empty cell on its grid when the show ends
+  (b) Scores a bonus per empty cell in its own row and column
+  (c) Scores a bonus per empty cell on the whole board, across every grid
+Q1397 | The Dead End | skill | X4
+  mechanic: Cutting the board off has a cost
+  (a) Any empty cell that no Entrance card can legally be placed in when the Entrance refills is destroyed and counts against the show
+  (b) Any empty cell no Entrance card can legally reach at a refill is destroyed, but pays a small consolation
+  (c) Any empty cell no Entrance card can legally reach at a refill is sealed rather than destroyed, and sealing enough cells triggers a bonus
+Q1398 | The Empty Stage | skill | X4
+  mechanic: The cells you left alone are worth something
+  (a) At show end, score a step for every empty cell on the board
+  (b) At show end, score a step for every empty cell, and double for every wholly empty line
+  (c) At show end, score a step for every empty cell, and nothing at all if any grid is completely full
+Q1399 | The Gap | skill | X4
+  mechanic: The empty cells are the thing you move
+  (a) You do not move cards, you move the gaps: a gap is filled by the card that continues the run to its left
+  (b) You move gaps rather than cards, and a gap at the start of a line may be filled by any card
+  (c) You move gaps rather than cards, and a gap that cannot be legally filled is sealed for the rest of the show
+Q1400 | The Reserved Seat | consumable | X4
+  mechanic: A cell you promise to leave alone
+  (a) Consumable: name an empty cell; if it is still empty at show end, it pays out heavily, and if it is not, it pays nothing
+  (b) Consumable: name an empty cell; nothing may be placed there for the rest of the show, and it pays out at show end
+  (c) Consumable: name up to three empty cells; each still empty at show end pays, and each filled one costs
+Q1401 | The Reserved Space | skill | X4
+  mechanic: Spends emptiness
+  (a) Cue: consume three empty cells on a grid to fire a large effect; the cells stay unusable for the show
+  (b) Cue: consume three empty cells to fire a large effect; the cells return at the end of the placement
+  (c) Cue: consume any number of empty cells, with the effect scaling on how many you spend
+Q1402 | The Dead Air | skill | X5
+  mechanic: A refill that scores nothing is the trigger
+  (a) An Entrance refill whose placements scored nothing fires this card's effect at full strength
+  (b) An Entrance refill whose placements scored nothing fires this card's effect, growing with each consecutive scoreless refill
+  (c) An Entrance refill whose placements scored nothing fires this card's effect and deals one extra card into the next refill
+Q1403 | The Patient Crowd | skill | X5
+  mechanic: Silence is not always failure
+  (a) When an Entrance refill's placements score nothing, one of its cards is shuffled back into the deck rather than spent
+  (b) When a refill scores nothing, one of its cards is shuffled back into the deck, but the show's goal rises a step
+  (c) The first scoreless refill of each show is free; every one after discards an extra card from the deck
+Q1404 | The Quiet House | skill | X5
+  mechanic: A card that improves by being on stage for nothing
+  (a) This card is permanently upgraded at the end of any Entrance refill in which no line completed anywhere
+  (b) This card is permanently upgraded at the end of any Entrance refill in which its own line did not complete
+  (c) This card is upgraded for the show after any scoreless refill, and the upgrades are made permanent if the show is won
+Q1405 | The Rebuilding Act | skill | X5
+  mechanic: A scoreless refill is spent rebuilding instead
+  (a) An Entrance refill that completes no line is followed by a free rebuilding phase - every card on the board may be moved once, at no cost
+  (b) An Entrance refill that completes no line is followed by a rebuilding phase in which up to three cards may be moved
+  (c) An Entrance refill that completes no line is followed by a rebuilding phase in which cards may be moved freely, and one card is discarded from the deck for it
+Q1406 | The Silent Act | skill | X5
+  mechanic: A refill that scored nothing changes what the next refill is worth
+  (a) An Entrance refill that completes no line at all raises the next refill's payout by half
+  (b) An Entrance refill that completes no line raises the next refill's payout by half, and a second consecutive one ends the show
+  (c) An Entrance refill that completes no line pays nothing and costs one patience, but its cards are shuffled back into the deck
+Q1407 | The Slow Burn | skill | X5
+  mechanic: Banks the refills you wasted
+  (a) Each scoreless Entrance refill banks a multiplier that is paid out on the next line that scores
+  (b) Each scoreless refill banks a multiplier, paid out at show end whether or not anything scores after
+  (c) Each scoreless refill banks a multiplier, and the bank is lost if two scoring refills pass without spending it
+Q1408 | The Honk | skill | W1
+  mechanic: No mechanical consequence at all
+  (a) Cue for a noise and nothing else, unlimited uses, with no effect on play whatsoever
+  (b) Cue for a noise; every fifth honk in a show pays a token bonus
+  (c) Cue for a noise, and honking on the exact turn a line completes pays a hidden bonus
+Q1409 | The House Band | skill | W2
+  mechanic: Changes the show, not the score
+  (a) While on the board, the music and background change, with no mechanical effect
+  (b) While on the board, the music and background change, and the change signals which hazard is coming
+  (c) While on the board, the presentation changes and the change is different per class of card that scored last
+Q1410 | Chalk Dust | stamp | Y1
+  mechanic: The mark pays twice for the card wearing it
+  (a) Every property this card matches pays double
+  (b) The first property this card matches each show pays double
+  (c) Every property this card matches pays double, but a miss destroys this stamp
+Q1411 | Hitting It Cold | skill | Y1
+  mechanic: The first one is the one that counts
+  (a) The first mark you match each show pays triple
+  (b) The first mark you match each show pays triple, and every later match that show pays nothing extra
+  (c) The first mark you match in each grid pays triple
+Q1412 | The Double Take | skill | Y1
+  mechanic: One card, two marks
+  (a) Cue: place this card on a marked cell and it is compared against the marks of that cell AND all four cells orthogonally adjacent to it
+  (b) Cue: place this card and it is compared against its own mark twice, paying both
+  (c) Cue: place this card on a marked cell and it is compared against the mark of any ONE cell you choose in the same row
+Q1413 | The Perfectionist | skill | Y1
+  mechanic: All four, or nothing
+  (a) Pays a large mult when this card matches every property its mark prints, and nothing at all otherwise
+  (b) Pays a large mult when this card matches every property its mark prints, and its ordinary bonuses otherwise
+  (c) Pays a growing mult for each consecutive full match you land this show
+Q1414 | The Rank Outsider | rank | Y1
+  mechanic: Its number is whatever the plan asked for
+  (a) This card counts as the rank of whatever mark it is placed on, for matching and for melding alike
+  (b) This card counts as the rank of whatever mark it is placed on, for matching only - its meld rank is unchanged
+  (c) This card counts as the rank of whatever mark it is placed on, and permanently becomes that rank
+Q1415 | The Standing Ovation | skill | Y1
+  mechanic: Matching feeds the multiplier
+  (a) Each property matched anywhere on the board this show adds to this card's mult, permanently
+  (b) Each property matched in this card's own lines adds to its mult for the rest of the show
+  (c) Each FULL match anywhere on the board adds to this card's mult, permanently
+Q1416 | The Suit Case | suit | Y1
+  mechanic: A suit that carries its own permission
+  (a) A card of this suit fires its suit effect whether or not its mark agrees on suit
+  (b) A card of this suit fires its suit effect whether or not its mark agrees, at half strength
+  (c) A card of this suit fires its suit effect on ANY match, not only a suit match
+Q1417 | The Understudy | skill | Y1
+  mechanic: Pays for being second best
+  (a) When this card is placed on a mark it does NOT match, it still pays the rank bonus of whatever the mark wanted
+  (b) When this card is placed on a mark it does not match, it pays half the rank bonus the mark wanted
+  (c) When this card is placed on a mark it does not match, it pays the rank bonus and the mark survives to be matched again
+Q1418 | The Amplifier | stamp | Y2
+  mechanic: A mark that doubles the line
+  (a) As a mark: every line through this cell scores double for as long as any card sits on it
+  (b) As a mark: every line through this cell scores double for as long as a MATCHING card sits on it
+  (c) As a mark: the first line through this cell to score each show scores double
+Q1419 | The Chorus Line | skill | Y2
+  mechanic: Marks that perform in concert
+  (a) When two marks in one line are matched in the same placement, both their mark effects fire twice
+  (b) When every mark in one line is matched, each of their mark effects fires again
+  (c) Matching a mark also fires the mark effect of the cell to its left
+Q1420 | The Contract | skill | Y2
+  mechanic: A promise the board holds you to
+  (a) As a mark: if this cell is still unmatched when you press End, the show scores nothing
+  (b) As a mark: if this cell is still unmatched when you press End, the show's score is halved
+  (c) As a mark: if this cell IS matched by the time you press End, the show's score is doubled
+Q1421 | The Reserved Cell | type | Y2
+  mechanic: A mark nothing can cover
+  (a) As a mark: no card may be placed on this cell until every other cell of its grid holds a card
+  (b) As a mark: no card may be placed on this cell unless it matches the mark
+  (c) As a mark: a card placed on this cell goes underneath the mark, which stays visible on top
+Q1422 | The Second Billing | skill | Y2
+  mechanic: Its stronger form only on its own mark
+  (a) This card's skill fires at its stronger form when the card matches its mark on ANY property, not only on talent
+  (b) This card's skill fires ONLY when the card is placed on a mark it matches, and does nothing otherwise
+  (c) This card's skill fires at its stronger form when placed on any mark at all
+Q1423 | The Springboard | skill | Y2
+  mechanic: A mark that throws whatever lands on it
+  (a) As a mark: the card placed on this cell scores as if it were one rank higher
+  (b) As a mark: the card placed on this cell scores as if it were one rank higher, and two higher if it matched
+  (c) As a mark: the card placed on this cell is moved to the cell above it after scoring
+Q1424 | The Stand-In | skill | Y2
+  mechanic: The mark performs instead of the card
+  (a) As a mark: when any card covers this cell, this card's own skill fires as though it had been placed there
+  (b) As a mark: when a MATCHING card covers this cell, this card's own skill fires as though it had been placed there
+  (c) As a mark: when any card covers this cell, this card's skill fires and the mark is spent
+Q1425 | The Trapdoor | type | Y2
+  mechanic: A mark that takes what you give it
+  (a) As a mark: the first card placed on this cell is discarded instead, and the mark remains
+  (b) As a mark: the first card placed on this cell is returned to the Entrance instead, and the mark remains
+  (c) As a mark: a card placed on this cell that does not match it is discarded instead
+Q1427 | The Casting Call | consumable | Y3
+  mechanic: Reads the board before you play it
+  (a) Consumable: name a rank; every mark of that rank is revealed with a marker you can see from the overview
+  (b) Consumable: name a rank; every mark of that rank pays double when matched this show
+  (c) Consumable: name a rank; every mark of that rank is re-dealt to a card of your choosing
+Q1428 | The Dead Spot | skill | Y3
+  mechanic: Finds the plan's worst cell
+  (a) Cue: names the cell whose mark contributes least to any line, and pays for covering it with anything
+  (b) Cue: names the cell whose mark contributes least, and destroys that mark
+  (c) Cue: names the cell whose mark contributes least, and re-deals it
+Q1429 | The Reader | skill | Y3
+  mechanic: Pays for lines the plan already made
+  (a) When a line completes, pays extra if the marks under it would have made the same hand type
+  (b) When a line completes, pays extra if the marks under it would have made ANY scoring hand
+  (c) When a line completes, pays extra if the marks under it would have made a BETTER hand than you did
+Q1430 | The Route Book | skill | Y3
+  mechanic: Scores for what the plan asked for, not for what you did
+  (a) At show end, pays for every property the plan printed, whether or not you matched it
+  (b) At show end, pays for every property of the plan you DID match
+  (c) At show end, pays for every property of the plan you did NOT match
+Q1431 | The Typecast | skill | Y3
+  mechanic: Rewards a plan that repeats itself
+  (a) Gains a permanent mult for every cell whose mark shares a suit with this card
+  (b) Gains a permanent mult for every cell whose mark is an exact copy of this card
+  (c) Gains a mult for the largest number of marks in the plan that share any one suit
+Q1432 | The Booking | skill | Y4
+  mechanic: Marks itself onto the board
+  (a) At show start, this card's own mark is placed on a cell you choose instead of a random one
+  (b) At show start, this card is marked onto three cells instead of one
+  (c) At show start, this card's mark is placed on the cell that already has the most lines through it
+Q1433 | The Cancelled Date | skill | Y4
+  mechanic: Destroys the plan for profit
+  (a) Cue: destroy any unmatched mark and gain gold equal to its rank
+  (b) Cue: destroy any unmatched mark and gain a permanent mult
+  (c) Cue: destroy every unmatched mark in one line and gain a large one-off score
+Q1434 | The Rewrite | consumable | Y4
+  mechanic: Redraws one cell of the plan
+  (a) Consumable: re-deal the mark of any one cell from the deck
+  (b) Consumable: re-deal the marks of any one line from the deck
+  (c) Consumable: set the mark of any one empty cell to a card of your choosing from the deck
+Q1435 | The Rolling Call | skill | Y4
+  mechanic: The plan grows as you play
+  (a) Every time you match a mark, an unmarked cell is dealt a new mark
+  (b) Every time you match a mark, the NEXT card in the Entrance is marked onto an empty cell
+  (c) Every time you FAIL to match, an unmarked cell is dealt a new mark
+Q1436 | The Standing Set | skill | Y4
+  mechanic: The plan outlives the show
+  (a) The plan is not re-dealt between shows; the same marks stand until they are matched
+  (b) Marks you matched stay matched across shows and pay a smaller bonus each time
+  (c) The plan is re-dealt each show, but any mark you never covered is dealt again to the same cell
+Q1437 | The Swap | consumable | Y4
+  mechanic: Two marks change places
+  (a) Consumable: exchange the marks of any two empty cells
+  (b) Consumable: exchange the marks of any two cells, covered or not
+  (c) Consumable: exchange the marks of any two cells in the same line, twice per show
+Q1438 | The Colour Match | skill | Y5
+  mechanic: Near enough, for a suit
+  (a) A card matches a mark's suit if the two suits share a prop family, not only if they are the same suit
+  (b) A card always matches a mark's suit, and the suit bonus is halved for everyone
+  (c) A card matches a mark's suit if either card carries no talent
+Q1439 | The Loose Blocking | skill | Y5
+  mechanic: The mark does not have to be underneath
+  (a) A card matches the mark of any cell orthogonally adjacent to the one it is placed in, if its own is unmatched
+  (b) A card also matches the mark of the cell directly above it in the grid, as well as its own
+  (c) A card matches the mark of any cell in its own line, once per line per show
+Q1440 | The Near Enough | skill | Y5
+  mechanic: One step off still counts
+  (a) A rank one away from the mark's rank counts as a rank match, at half the bonus
+  (b) A rank one away from the mark's rank counts as a full rank match
+  (c) A rank one away counts, and a rank two away counts at half
+Q1441 | The Quick Change | stamp | Y5
+  mechanic: Wears whatever the mark is wearing
+  (a) This card counts as matching the hat of any mark it is placed on
+  (b) This card counts as matching the hat and the talent of any mark it is placed on
+  (c) This card counts as matching whichever single property you name when you place it
+Q1442 | The Cut Number | skill | Y6
+  mechanic: Unmatched marks cost something
+  (a) Every mark left unmatched at show end reduces the score by its rank
+  (b) Every mark left unmatched at show end reduces the score by a fixed amount
+  (c) A show ending with any unmatched mark cannot earn a perfect bonus
+Q1443 | The Dark Cell | type | Y6
+  mechanic: A cell the plan lost
+  (a) A cell whose mark has been destroyed or withheld by an effect pays double for the card placed there, since nothing is planned for it
+  (b) A cell whose mark has been destroyed or withheld by an effect scores nothing for the card placed there
+  (c) A cell whose mark has been destroyed or withheld takes the mark of the cell that scored most this show
+Q1444 | The Empty House | skill | Y6
+  mechanic: Pays for the plan you ignored
+  (a) At show end, pays a large amount for every mark that was never covered by anything
+  (b) At show end, pays a large amount for every mark that was covered but never matched
+  (c) At show end, pays for every cell that never held a card at all
+Q1445 | The Missed Cue | skill | Y6
+  mechanic: Grows on failure
+  (a) Gains a permanent mult every time a card is placed on a mark it matches nothing of
+  (b) Gains a permanent mult every time a mark is destroyed unmatched
+  (c) Gains a permanent mult for each show that ends with more than half the plan unmatched
+Q1446 | The Guest Director | hazard | Y7
+  mechanic: Someone else blocks the show
+  (a) Level: one line of the grid is marked by the level instead of by your deck
+  (b) Level: half the grid is marked by the level instead of by your deck, in a scattered pattern
+  (c) Level: the whole grid is marked by the level and your deck marks nothing
+Q1447 | The House Deck | hazard | Y7
+  mechanic: Marks of cards you have never owned
+  (a) Level: the marks are drawn from a fixed house deck rather than from yours, and matching them still pays normally
+  (b) Level: the marks are drawn from a house deck, and matching one adds that card to your deck for the run
+  (c) Level: the marks are drawn from a house deck one rank above anything you own
+Q1448 | The Rewritten Bill | hazard | Y7
+  mechanic: The plan changes under you
+  (a) Level: every fifth placement, one unmatched mark is re-dealt somewhere else
+  (b) Level: every fifth placement, one unmatched mark is re-dealt to a different card
+  (c) Level: every placement, the two lowest-value unmatched marks swap cells
+Q1449 | The Split Bill | hazard | Y7
+  mechanic: Two plans, one board
+  (a) Level: with more than one grid, one grid is marked by your deck and the rest by the level
+  (b) Level: with more than one grid, each grid is marked from a different half of your deck
+  (c) Level: one grid is marked and the others are left blank
+Q1450 | The Bad Notice | hazard | Y8
+  mechanic: Marks you are punished for hitting
+  (a) Level: some cells carry a marked card that scores NEGATIVE when matched, shown before you commit
+  (b) Level: some cells carry a mark that scores nothing when matched and pays double when deliberately missed
+  (c) Level: some cells carry a mark that, when matched, disables that card's own effect for the show
+Q1451 | The Fading Chalk | hazard | Y8
+  mechanic: The plan expires
+  (a) Level: a mark that has not been matched within a fixed number of placements disappears
+  (b) Level: a mark that has not been matched within a fixed number of placements becomes a hazard cell
+  (c) Level: the whole plan fades one cell at a time, oldest first, from the show's midpoint
+Q1452 | The Poisoned Plan | hazard | Y8
+  mechanic: The plan carries a status
+  (a) Level: every mark of one named suit applies Burning to whatever covers it
+  (b) Level: every mark applies its own card's statuses to whatever covers it
+  (c) Level: one cell's mark applies a status of the level's choosing, and it is visible
+Q1453 | The Rent Book | hazard | Y8
+  mechanic: The plan costs to use
+  (a) Level: matching a mark costs gold equal to its rank, and you may decline to match
+  (b) Level: matching a mark costs a placement's worth of Entrance refill
+  (c) Level: the first match each show is free and every later one costs gold
+Q1454 | The Understudy Riot | hazard | Y8
+  mechanic: Ignore the plan and it acts on its own
+  (a) Level: any cell whose mark you cover with a non-matching card places that mark's card onto the grid for you, somewhere else
+  (b) Level: any mark still unmatched at show end is placed onto the board and scores against you
+  (c) Level: covering a mark with a non-matching card discards a card from the Entrance
+Q1455 | The Kind House | hazard | Y9
+  mechanic: The level hands you a good board
+  (a) Level: the plan is dealt so that at least one line already forms a scoring hand if fully matched
+  (b) Level: the plan is dealt so that every line forms at least a pair if fully matched
+  (c) Level: the plan is dealt from your best cards rather than at random
+Q1456 | The Open Rehearsal | hazard | Y9
+  mechanic: The plan is negotiable
+  (a) Level: before the first placement, you may re-deal any three cells of the plan
+  (b) Level: before the first placement, you may swap any two marks, twice
+  (c) Level: once per show you may re-deal one cell of the plan, at any time
+Q1457 | The Solved Row | hazard | Y9
+  mechanic: Part of the plan comes already done
+  (a) Level: one line of the grid starts with its cards already placed and already matched
+  (b) Level: one line starts with its cards already placed but unmatched, so you may improve on it
+  (c) Level: one cell starts already matched, chosen at random
+Q1458 | The Standing Invitation | hazard | Y9
+  mechanic: Matching is worth more here
+  (a) Level: every property matched pays double for the whole show
+  (b) Level: every FULL match pays double for the whole show
+  (c) Level: the mults from talent and hat matches are doubled, and flat rank bonuses are not
+Q1459 | The Banned Number | hazard | Y10
+  mechanic: Your own plan tells the level what to forbid
+  (a) Level: the hand type the plan would most often make scores nothing this show
+  (b) Level: the suit that appears most often in the plan scores nothing this show
+  (c) Level: the rank that appears most often in the plan cannot be placed at all
+Q1460 | The Critic | hazard | Y10
+  mechanic: Judged against the plan rather than against a number
+  (a) Level: the show is won by matching a stated fraction of the plan, and the score does not matter
+  (b) Level: the show is won by beating what the plan would have scored, whatever that number is
+  (c) Level: the show is won normally, but failing to match half the plan halves the reward
+Q1461 | The Quoted Fee | hazard | Y10
+  mechanic: The goal is set from your own plan
+  (a) Level: the show's goal is a fraction of what the plan would score if every mark were matched
+  (b) Level: the show's goal is set from what the plan's best single line would score
+  (c) Level: the show's goal is fixed, but beating what the plan would have scored pays a bonus
+Q1462 | The Typecaster | hazard | Y10
+  mechanic: The plan decides what the level rewards
+  (a) Level: whichever suit the plan carries most of pays double when matched
+  (b) Level: whichever suit the plan carries LEAST of pays triple when matched
+  (c) Level: the level names one property at show start and only that property pays
+Q1463 | The Closed Rehearsal | hazard | Y11
+  mechanic: A plan you cannot read
+  (a) Level: every mark is face down and is revealed only when a card is placed on it
+  (b) Level: every mark is face down and is revealed when a card is placed in an adjacent cell
+  (c) Level: marks are face down until the first line scores, then all reveal at once
+Q1464 | The Dark Grid | hazard | Y11
+  mechanic: One board goes unplanned
+  (a) Level: with more than one grid, one grid carries no marks at all
+  (b) Level: with more than one grid, one grid's marks are hidden until you commit the Entrance to it
+  (c) Level: one grid's marks are shown only in the layer view, never on the board
+Q1465 | The Fogged Plan | hazard | Y11
+  mechanic: Reading it costs something
+  (a) Level: the layer view may be opened a fixed number of times per show
+  (b) Level: opening the layer view costs a placement
+  (c) Level: the layer view shows only the row your Entrance is committed toward
+Q1466 | The Partial Bill | hazard | Y11
+  mechanic: Half the plan is legible
+  (a) Level: a mark shows its rank but not its suit
+  (b) Level: a mark shows its suit but not its rank
+  (c) Level: a mark shows only whether it carries a talent or a hat, not which
+Q1467 | The Cold Reading | hazard | Y12
+  mechanic: A quest you are not told about
+  (a) Objective: an unstated pattern of matches pays out when you happen to complete it
+  (b) Objective: an unstated pattern, with a hint shown after the third match
+  (c) Objective: an unstated pattern that is revealed the moment it becomes impossible
+Q1468 | The Full House Call | hazard | Y12
+  mechanic: A quest stated in marks
+  (a) Objective: match every mark in any one line to win a permanent reward
+  (b) Objective: match every mark in any one line, and the reward grows with the line's length
+  (c) Objective: match every mark in a row AND the column that crosses it
+Q1469 | The Long Run | hazard | Y12
+  mechanic: A quest across shows
+  (a) Objective: match a stated number of marks across the whole run, counted between shows
+  (b) Objective: match at least one mark in every show of the run
+  (c) Objective: complete a show having matched every property at least once
+Q1470 | The Understudy's Night | hazard | Y12
+  mechanic: The boss condition is the plan
+  (a) Boss: the show is beaten only by matching a stated fraction of the plan, whatever you score
+  (b) Boss: the show is beaten normally, but every unmatched mark subtracts from the total
+  (c) Boss: the show is beaten by matching every mark of one named property
+Q1471 | Dress Code, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: some cells demand a named suit and refuse anything else. A mark already IS a cell asking for a suit
+  (a) Keep it bespoke: a demanding cell stays its own rule, separate from marks
+  (b) Fold it in: a demanding cell is a mark that REFUSES anything not matching its suit
+  (c) Fold it in, and generalise: a mark may refuse on any one of its four properties, not only suit
+Q1472 | Sight Unseen, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: every card is face down in the Entrance and only turns face up once placed. The plan is the mirror of this - the board is legible while the hand is not
+  (a) Keep it bespoke: the Entrance blindfold has nothing to do with the plan
+  (b) Pair them: the Entrance is blind AND the plan is fully visible, so the plan is the only information you have
+  (c) Invert it: the Entrance is visible and the plan is blind
+Q1473 | The Dye Vat, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: some cells convert whatever is placed on them to a named suit
+  (a) Keep it bespoke: a converting cell stays its own rule
+  (b) Fold it in: a converting cell is a mark that rewrites what covers it to its own suit
+  (c) Fold it in, and generalise: a mark may rewrite any one property of what covers it
+Q1474 | The Ranked Floor, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: scattered cells add or subtract from the rank of whatever is placed on them, shown before you commit
+  (a) Keep it bespoke: a rank-shifting cell stays its own rule
+  (b) Fold it in: the shift is the mark's own rank bonus, applied whether or not the card matches
+  (c) Fold it in as the mirror: a mark you MISS applies its rank as a penalty instead of a bonus
+Q1475 | The Sealed Envelope, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: one card starts face down somewhere in a grid and is revealed when a card is placed beside it
+  (a) Keep it bespoke: the envelope stays a placed card, not a mark
+  (b) Fold it in: the envelope is a face-down mark revealed by an adjacent placement
+  (c) Fold it in, and pay for it: a face-down mark pays double when matched blind
+Q1476 | The Understudy Fills In, as a mark | hazard | Y13
+  mechanic: Ships in levels.csv: any grid you place nothing into during a refill has a random card placed in it for you
+  (a) Keep it bespoke: the random placement stays unrelated to the plan
+  (b) Fold it in: the card placed for you is the one the plan marked for that cell
+  (c) Fold it in: the card placed for you is the plan's mark, and it counts as matched
+Q1477 | The Dead End | skill | Z1
+  mechanic: A rank nothing may cover
+  (a) Nothing may be stacked on a rank-1 card
+  (b) Nothing may be stacked on a rank-1 card, and a rank-1 card pays double when its line scores
+  (c) Nothing may be stacked on whichever card holds the highest rank on the board at the moment of placement
+Q1478 | The Glued Run | skill | Z1
+  mechanic: Once joined, never parted
+  (a) Cards joined into an ordered run cannot be separated again, except the topmost card
+  (b) Cards joined into an ordered run cannot be separated again, and the run scores as one card of its top rank
+  (c) Cards joined into an ordered run cannot be separated for the rest of the Entrance refill
+Q1479 | The Golf Rule | skill | Z1
+  mechanic: One higher or one lower, any suit, wrapping
+  (a) A card may be stacked on a card one rank above or one rank below it, any suit, and rank 1 wraps to rank 13
+  (b) A card may be stacked one rank above or below, any suit, and a stack pays its length the moment it can grow no further
+  (c) Each column names its own base card at show start, and only cards one rank above or below its current top may join it
+Q1480 | The Supermove | skill | Z1
+  mechanic: Move as many at once as you could have moved one by one
+  (a) An ordered run moves as one unit only if its length is at most the number of empty cells on its grid plus one
+  (b) An ordered run moves as one unit only if its length is at most the empty cells plus one, doubled for each empty column
+  (c) An ordered run of any length moves as one unit, and each card beyond the empty-cell count costs one point
+Q1481 | The Yukon Move | skill | Z1
+  mechanic: Move the whole pile from any card down, in order or not
+  (a) Cue: move a stack from any card down as one unit, whatever order it is in, onto a card one rank above its bottom card
+  (b) Cue: move a stack from any card down as one unit, whatever order it is in, onto any empty cell
+  (c) Cue: move a stack from any card down as one unit, and every card in it that was out of order pays a point on landing
+Q1482 | The Captives | hazard | Z2
+  mechanic: The cards you need most start buried
+  (a) Level: the four aces are dealt to the bottom of the Entrance stocks, and each one freed pays a bonus
+  (b) Level: the four aces are dealt to the bottom of the Entrance stocks, and no line holding an ace scores until all four are on the board
+  (c) Level: four cards named by the level are dealt to the bottom of the Entrance stocks, and freeing all four wins the show outright
+Q1483 | The One-Use Pocket | skill | Z2
+  mechanic: A holding cell that works once
+  (a) One pocket beside the grid holds one card, and closes for the show once that card leaves it
+  (b) One pocket beside the grid holds one card, which may leave it only into an empty column; the pocket then closes for the show
+  (c) Three pockets beside the grid each hold one card once per show, and a card leaving a pocket pays its rank
+Q1484 | The Two-Suit Deck | skill | Z2
+  mechanic: A deck of only two suits, doubled
+  (a) Cards are built from two suits only, each present twice over
+  (b) Cards are built from one suit only, four times over
+  (c) Cards are built from two suits only, and flushes pay half while straights pay double
+Q1485 | The Blue Bonnet | skill | Z3
+  mechanic: One move, once per refill
+  (a) After each Entrance refill you may move one placed card to any empty cell
+  (b) After each Entrance refill you may move one placed card to an adjacent empty cell
+  (c) After each Entrance refill you may swap two placed cards
+Q1486 | The Cruel Redeal | consumable | Z3
+  mechanic: Gather the board in order and lay it out again, unshuffled
+  (a) Consumable: gather every grid card in reading order and re-deal them into the grid in that order, so only what you moved changes place
+  (b) Consumable: gather every grid card in reading order and re-deal them column by column
+  (c) Consumable: gather the Entrance stocks in order and re-deal them round-robin, unshuffled
+Q1487 | The Flip-Three | skill | Z3
+  mechanic: Three come up at once, and only the top may be taken
+  (a) Each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath stay hidden
+  (b) Each Entrance stock turns three cards up at once and only the topmost may be taken; the two beneath are visible
+  (c) The Entrance turns three cards onto a single slot, only the topmost may be taken, and the other four slots stay closed
+Q1488 | The Refill Gate | hazard | Z3
+  mechanic: No new cards while a column stands empty
+  (a) Level: the Entrance will not refill while any column of the committed grid is empty
+  (b) Level: the Entrance will not refill while any column is empty, and the first card into an empty column pays a bonus
+  (c) Level: the Entrance will not refill while any row or any column is empty
+Q1489 | The Spider Deal | consumable | Z3
+  mechanic: One card onto every column at once
+  (a) Consumable: deal one card from the deck onto the top of every column of the grid
+  (b) Consumable: deal one card from the deck onto the top of the three leftmost columns
+  (c) Consumable: deal one card from the deck onto every column, and any line it completes scores double
+Q1490 | The Clock Face | hazard | Z4
+  mechanic: Each column has a rank it must finish on
+  (a) Level: each column is assigned a rank at show start, and a stack in it pays only when its top card is that rank
+  (b) Level: each column is assigned a rank at show start; a stack in it may not grow past that rank, and reaching it exactly pays double
+  (c) Level: each column is assigned a rank at show start, and the assignments rotate one column to the right at every refill
+Q1491 | The Dealt Base | skill | Z4
+  mechanic: The rank a straight starts from is dealt at show start
+  (a) At show start one rank is dealt as the base, and straights wrap past rank 13 back to rank 1 up to the base
+  (b) At show start one rank is dealt as the base, and only a card of the rank below it may be the first card into an empty column
+  (c) At show start one rank is dealt as the base, and a straight that starts on the base pays double
+Q1492 | The Osmosis Rule | skill | Z4
+  mechanic: A rank may enter a row only if the row above already holds it
+  (a) A card may be placed in a row only if the row above already holds a card of the same rank; the top row is free
+  (b) A card may be placed in a row only if the row above already holds a card of the same rank, and the top row accepts one suit
+  (c) Placement is free, but a card scores in a row only if the row above holds a card of the same rank
+Q1493 | The Scorpion Count | skill | Z4
+  mechanic: Stacks headed by a king pay per card
+  (a) A same-suit descending stack headed by a king pays one point per card each time its column changes
+  (b) A same-suit descending stack headed by a king pays one point per card, and a full thirteen is removed from the board for a bonus
+  (c) A descending stack of any suits headed by a king pays one point per card each time its column changes
+Q1494 | The Starter | skill | Z4
+  mechanic: The last card of the deck belongs to every line
+  (a) The last card of the deck is never placed; it counts as a member of every line on the board at once
+  (b) The last card of the deck is never placed; it counts as a sixth card in every line, and a jack starter pays every line an extra point
+  (c) The last card of the deck is never placed; it counts as a member of every line on one grid you choose
+Q1495 | The Strategy Rule | skill | Z4
+  mechanic: Nothing pays until the deck is empty
+  (a) Completed lines score nothing until the deck is empty; then every complete line scores at once, doubled
+  (b) Completed lines score nothing until the deck is empty; then every complete line scores at once, and each counts as a first-of-its-class for the combo
+  (c) Completed lines score nothing until the deck is empty; then every complete line scores once and the show ends
+Q1496 | The Aces Up Cull | skill | Z5
+  mechanic: Of two spotlit cards of one suit, the lower may go
+  (a) When two spotlit cards share a suit, the lower may be discarded; aces count highest
+  (b) When two spotlit cards share a suit, the lower may be discarded and pays its rank; aces count highest
+  (c) When two spotlit cards share a suit, the lower is discarded automatically at the next refill; aces count highest
+Q1497 | The Air Lock | skill | Z5
+  mechanic: Two of a rank, side by side, come off together
+  (a) Two orthogonally adjacent cards of the same rank may be removed together for twice their rank
+  (b) Two orthogonally adjacent cards of the same rank, or one rank apart, may be removed together for their ranks; ace and king count as adjacent ranks
+  (c) Two orthogonally adjacent cards of the same rank may be removed together, and the last eight pairs removed pay their ranks again at End
+Q1498 | The Rising Set | skill | Z5
+  mechanic: Each set removed pays more than the last
+  (a) Three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this show
+  (b) Three cards of one rank in one row or column are removed and pay the rank times the number of sets removed so far this show
+  (c) Three cards of one rank in one column are removed and pay the rank times the number of sets removed so far this run
+Q1499 | The Sandwich | skill | Z5
+  mechanic: Flanked by two of a kind, a card is taken
+  (a) A card whose two line-neighbours share a rank or a suit may be removed for points equal to its rank
+  (b) Two adjacent cards whose outer neighbours share a rank or a suit may be removed together for their ranks
+  (c) A card whose two line-neighbours share a rank or a suit pays its rank every time its line is touched, and stays
+Q1500 | The Dealt-Full Grid | hazard | Z6
+  mechanic: The grid starts full and every placement shoves one out
+  (a) Level: the grid is dealt full at show start; every placement enters from an edge, shoves its line one cell, and the card pushed off is discarded
+  (b) Level: the grid is dealt full at show start, and a placement replaces a card of your choice, which is discarded
+  (c) Level: the grid is dealt full at show start, with three single-use pockets beside it that hold a card each
+Q1501 | The Emptied Fan | skill | Z6
+  mechanic: A cell once emptied stays empty
+  (a) A cell a card has left cannot be filled again this show
+  (b) A cell a card has left cannot be filled again this show, and each such cell pays a point at End
+  (c) A column every card has left cannot be filled again this show
+Q1502 | The Forced Fill | skill | Z6
+  mechanic: A gap inside a row must be closed before you go on
+  (a) An empty cell with cards on both sides in its row must be filled by sliding an orthogonal neighbour into it before the next placement
+  (b) After each removal you may slide up to two cards one cell each into empty cells
+  (c) An empty cell inside a row is filled at once by the card to its right, and the rest of the row follows
+Q1503 | The Shrinking Row | skill | Z6
+  mechanic: A cell vacated at the end of a row is gone for the show
+  (a) When the card at either end of a row leaves, that cell is removed from the grid for the rest of the show
+  (b) When the card at either end of a row leaves, that cell is removed for the show, and a row shortened to four cells scores four-card hands
+  (c) When the card at either end of a row leaves, that cell is removed for the show and the deck loses one card with it
+Q1504 | The Slider | skill | Z6
+  mechanic: Place at the edge and the row shoves along
+  (a) A card placed onto a full row's edge cell shoves the row one cell; the card pushed off the far end returns to the deck if the row still holds its rank, and is discarded otherwise
+  (b) A card placed onto a full row's or column's edge cell shoves the line one cell, and the card pushed off is discarded
+  (c) A card placed onto a row's edge cell shoves the row along to its first empty cell, and nothing is ever pushed off
+Q1505 | The Final Bow | skill | Z7
+  mechanic: The last card standing pays its rank
+  (a) At End, the last card placed pays its rank again
+  (b) At End, if every card of the deck has been placed, the last card placed pays its rank times the combo
+  (c) At End, the last eight cards placed each pay their rank again
+Q1506 | The Royal Marriage | hazard | Z7
+  mechanic: Bring the king to his queen
+  (a) Objective: end the show with the king and queen of hearts orthogonally adjacent for a bonus
+  (b) Objective: end the show with the king and queen of hearts adjacent, paid per card that was removed from between them in reading order
+  (c) Objective: two cards named by the level must end the show adjacent, and the show is won when they do, whatever the score
+Q1507 | The Strike | skill | Z7
+  mechanic: A clean frame is paid the next two frames' worth again
+  (a) A line completed within one Entrance refill of the previous line also earns the score of the next two lines completed
+  (b) A line completed within one Entrance refill of the previous line also earns the score of the next line completed
+  (c) A line completed within one refill of the previous line pays ten plus the next two lines' scores, and one that takes two refills pays ten plus the next one's
+Q1508 | The Ten Pins | skill | Z7
+  mechanic: A row whose ranks never fall, left to right
+  (a) A new hand: a row whose ranks never decrease from left to right scores as a hand, and ranks may repeat
+  (b) A new hand: a row whose ranks never decrease from left to right scores, paying more the fewer gaps its ranks have
+  (c) A new hand: a row whose ranks never decrease from left to right scores, a card that fits nowhere in it counts as a miss, and three misses void the row
+Q1509 | The Winnable Shuffle | hazard | Z7
+  mechanic: A deal someone has already won
+  (a) Level: the deck order is one a previous run won with, and the show's payout is reduced
+  (b) Level: the deck order is one a previous run won with, shown as such, at full payout but a higher goal
+  (c) Level: the deck is a fresh order, and winning it adds that order to a pool of winnable deals later runs can draw

@@ -85,10 +85,16 @@ breadth of distinct triggers matters as much as size of numbers.
 | **stamp** | The hat / equipment slot. Modifies HOW the card's other parts fire (double trigger, active while covered, always spotlit). |
 | **skill** | The talent / feat slot. The joker-equivalent and the widest slot. |
 | **consumable** | A card spent for a one-shot effect instead of being placed. |
-| **rule** | A card in the hidden rules deck. Changes a DEFAULT rather than adding an exception. |
+| **hazard** | A level modifier a level draws (`blinds.csv`): boss, town, map-node and difficulty shapes. Not a card. |
+| **structure** | A run-shaped idea — map, deck preset, quest, minigame, meta-progression. Not a card; kept only so the owner can rule on it. |
 | **status** | Applied at runtime, never authored — burning, juggling, injury. Only reachable via another effect. |
 
 If an idea cannot be expressed in one of those slots, it does not belong in this corpus.
+
+⚠ **There is no `rule` slot.** Owner ruling: the rules deck is a deck, not an effect. In code it holds
+ordinary skill cards that stay live for the whole run (`CardEffectApi.rules_deck()`,
+`Cards/Skills/Rules/`). An idea shaped "Rule: X changes a default" is asked as a **skill** — a card
+whose talent makes X true while it is live — and a boss/level/town shape is a **hazard**.
 
 ## Live hooks an effect can fire on
 

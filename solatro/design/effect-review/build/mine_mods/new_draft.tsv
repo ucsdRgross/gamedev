@@ -1,0 +1,218 @@
+#001	The Warm-Up Act	H8	skill	when a card of a named rank scores, every card that resolves after it in that line pays double
+#002	The Rails	E7	hazard	movement effects may only move a card along one axis this show
+#005+#335	The Amalgam	D8	skill	a completed line collapses into one card
+#006	The Left Wing	C12	skill	extra points per scoring card on one named side of this card in its line
+#007+#322	The Ambigram	C13	skill	a line whose ranks read the same both ways pays a bonus multiplier
+#008+#134+#135	The Prime Sum	B1	skill	a line whose ranks sum to a prime scores as its own hand (variants: target sum / arithmetic to 24)
+#012	The Fresh Bill	R5	hazard	a line may not share any rank or suit with the previous completed line
+#021+#332	The Colour Wheel	G9	skill	suits drift one step around a fixed cycle when they score
+#032	The Word Backstage	F9	skill	completing a line with rank X buffs every rank-X card still in the stocks
+#036	The Veteran's Card	R9	hazard	only cards that have passed through the discard keep their talents
+#040+#262	The Material Flush	B1	skill	five cards matching on TYPE score as a hand (3+2 types = full house)
+#051+#056+#085+#170+#261+#309+#318	The Matinee Clock	K6	skill	a bonus keyed to the real-world clock (session time / time of day / weekday)
+#053	The Quick-Change Fan	H7	skill	banks a bonus each time any card's suit or rank is changed by an effect
+#060	The Forgery Trap	H4	skill	a copy effect that targets this card destroys the copier instead
+#061	The Average Night	A13	skill	once per show a line below the show's running average is raised to it
+#070+#194+#240	The Chain Letter	G3	skill	overwrites/creates a copy of itself in a neighbouring cell on a trigger
+#074	The Centrepiece	C12	skill	the centre card of a line lends its type to the whole line
+#076	The Four Colours	P5	skill	bonus per distinct suit that has scored a flush this show
+#084	The Centre Ring	C12	skill	this card's talent is a different one while it sits on a named cell
+#086	The Ensemble Rate	A13	skill	every card in a line pays what the line's best card pays
+#098+#125+#269	The Inverted Bill	A6	hazard	every flat-point bonus becomes multiplier (and the reverse)
+#101	The Single Take	R1	hazard	retrigger effects are disabled
+#106	The Jinx	L2	skill	every chance always fails; this card grows per forced failure
+#108	The Reset Button	I12	consumable	revert one card to its printed identity, erasing growth and decay
+#116	The One-Night Stand	B3	skill	each hand type may score once per show; each distinct one raises this card
+#118+#271	The Underdog Hand	B6	skill	the least-completed hand type levels up whenever another hand completes
+#122+#165	The Sticky Stamp	C10	stamp	the wearer's stamp copies onto an orthogonal neighbour when it scores
+#127	The Rising Tide	B6	skill	levelling a hand type also levels its neighbours on the ladder
+#140	The Rabbit's Foot	C10	skill	orthogonal neighbours' probability checks always succeed
+#146+#274	The Spotlight Spill	A5	skill	cards adjacent to a stamped card are retriggered
+#147	The Debut	A12	skill	the first time each rank / suit scores this show pays combo
+#148+#244	The Curtain Call	A5	skill	completing a line retriggers every card that scored earlier this show
+#153	The Levelling Crowd	A13	hazard	the most-completed line kind pays at the least-completed kind's rate
+#155	The Shrapnel	C10	stamp	when the wearer leaves the board, one orthogonal neighbour is destroyed
+#159	The Cooling Rank	R1	hazard	the rank that most recently completed a line scores nothing until the next line
+#160	The Dye Bath	G5	consumable	destroy one card; every card on the board takes its suit
+#166	The Wild Hat	B5	stamp	a stamp that counts as every stamp
+#179	The Understudy Ban	R1	hazard	of identical cards on the board only the first placed keeps its talent
+#185	The Neglected Rank	R5	hazard	a line scores only if it holds the rank that has scored least this show
+#186	The Redistribution	B6	hazard	completing a line drains half its hand type's level into the other hand types
+#192	The Unreliable Programme	M6	skill	reveals the next five cards of a stock, exactly one of them false
+#195	The Black Cat	L9	skill	large bonus, destroyed the moment any probability check on the board fails
+#201	The Fuse	G4	skill	when a line completes, destroy cards inward from one end while they share a rank, paying per card
+#204+#218	The Crescendo	A5	skill	each card in a completed line retriggers by its position from one end
+#206	The Persistence	L11	skill	every probability check rerolls until it succeeds; pays per reroll
+#208	The Carry-Over	A9	consumable	the next completed line starts from the previous line's score
+#209	The Impostor Hand	B4	skill	name two hand types; the first scores as the second
+#210	The Everything Hand	B7	consumable	the next completed line counts as every hand type at once
+#219	The Stain	F10	skill	when this card leaves the board its type copies onto its former neighbours
+#223	The Acid Bath	R2	hazard	any card that leaves the board loses its rank and suit
+#224	The Monotone Crowd	A3	hazard	each distinct rank on the board divides the multiplier
+#225	The Weight Limit	R5	hazard	a line whose ranks sum above a threshold scores nothing
+#226	The Wrong Spotlight	A7	hazard	only the cards outside the completing line score
+#233	The Ringside	C12	skill	bonus scales with distance from the grid's centre
+#234	The Restless	E1	skill	gains permanently each time you move it
+#235	The Recall	C3	hazard	a completed line's cards return to the Entrance stocks after scoring
+#242	The Crowd Favourite	P1	skill	cards of the board's most common rank score extra
+#247	The Skewer	D7	skill	cue: pull every card to one side of this card in its row into a stack on it
+#258	The Plain Clothes Ban	R1	hazard	cards with no type, stamp or skill score nothing
+#259	The Loose Ends	X1	skill	pays per card on the board not yet in any completed line
+#268	The Pendulum	A6	skill	alternates between feeding flat points and multiplier each time it scores
+#270	The Silver Lining	R9	skill	any debuffed card counts as wild
+#275	The Umbrella	I12	stamp	the wearer and its orthogonal neighbours ignore debuffs
+#278	The Spent Casing	A5	type	retriggers once per card that has left the board this show
+#288	The Reunion	B1	skill	the first card of each of the last five completed lines forms a virtual line scored as a hand
+#294	The Second Serving	C12	skill	among same-rank cards in a line the first pays nothing and each later one double
+#297	The Emergency Fund	A9	skill	banks a share of points, released only if the show would otherwise fall short
+#298	The Tourist	E10	skill	gains for each cell it has never occupied before
+#303	The Set List Card	R4	skill	demands a suit each show, rotating; missing it destroys the card
+#305	The Siamese Pair	P10	skill	bond two cards; placing one places its partner in the mirrored cell
+#310	The Triple Entry	A6	skill	every completed line pays into all three buckets at once
+#316	The Typecasting	F1	hazard	the cards you have placed most often this run are buried at the bottom of their stocks
+#329	The Blindfold Bargain	M3	skill	large bonus; each trigger deals the next Entrance card face down
+#331	The Trophy	R9	skill	after a hazard show, permanently gains a weakened copy of that hazard's rule as a benefit
+#338	The Kryptonite	M6	skill	a hidden suit; completing a line of it destroys this card
+#339	The Underdog Bill	B7	skill	every completed line scores as the hand type completed least this show
+#340	The Spare	I3	skill	this card's bonus applies to the next two lines after its own
+#341	The Holes	X3	skill	pays per rank missing between a line's lowest and highest
+#346	The Clear-Out	G4	skill	cue: destroy every card not part of a completed line, paying per card
+#348	The Boomerang	F5	stamp	when the wearer leaves the board it returns to an Entrance stock instead of the discard
+#354+#368	The Bound Stamp	P10	stamp	wearers share a fate: one leaving grows the others / one destroyed destroys all
+#357	The Narrow Act	I5	skill	a large bonus that shrinks per distinct hand type completed this run
+#358	The Multiplier Suit	A6	suit	cards of this suit pay their rank into the multiplier instead of points
+#367	The Fixed Odds	R1	hazard	chance triggers never roll; they pay a flat multiplier instead
+#371	The Status Meld	B1	skill	cards sharing a status count as matching for melds
+#378	The Mimic	H1	skill	always carries the talent of the most recently placed skill card
+#381	(variant of The Underdog Hand)	B6	-	chance to level every hand type except the one that just completed
+#382+#395	(variants of The Loose Ends)	X1	-	flanked-by-a-line card pays / idle cards feed the multiplier
+#385	The Ratchet	L7	skill	each trigger adds permanent mult and a new ban on what may score; breaking a ban resets both
+#391	The Understudy's Break	G9	skill	a skill-less card that completes a high-card line gains a talent for the show
+#394	The Mean	V7	skill	the card whose rank equals its line's average rank pays double
+#407	(variant of The Unreliable Programme)	M6	-	each revealed card may independently stay hidden
+#411	The Dimming	M3	hazard	every suit that has scored this show is dealt face down from then on
+#414	The Demotion	B3	hazard	every completed line pays as the next-weakest hand type
+#415	The Crowded Rank	R1	hazard	the rank you own most of, and its neighbouring ranks, are debuffed
+#417	The Erosion	R2	hazard	every completed line also discards that many cards from the stocks
+#418	The Echo Bill	A6	hazard	every line pays at the value of the most recently completed hand type
+#423	The Zero-Sum Ladder	B6	skill	the hand just completed gains a level taken from another hand type
+#426	The Merry-Go-Round	G5	consumable	choose three cards; their ranks (or suits, or stamps) rotate one step
+#429	The Lantern	I7	hazard	a status that never clears; a line may hold at most one lit card
+#435	The Echo of an Echo	A5	skill	each retrigger has a chance to retrigger again
+#444	(variant of The Quick-Change Fan)	G5	-	cards whose suit or rank has ever been changed score extra
+#446	The Wake	F10	skill	when a card leaves the board, every other card on it gains points
+#447	(variant of The Acid Bath)	R2	-	discarded cards take a corrupted type instead
+#448	The Favoured Axis	B3	hazard	the line KIND (row/column/diagonal/height) completed most this show scores nothing until another overtakes it
+#452	(variant of The Warm-Up Act)	H8	-	re-fires every card that resolved earlier in the sequence
+#453	(variant of The Material Flush)	B1	-	five different types in one line
+#463	The Decrescendo	A13	skill	gains when a line scores less than the previous one, loses when more
+#465	(variant of The Prime Sum)	B1	-	ranks sum to exactly zero using negative ranks
+#466	The Reverse	H8	rank	a rank that flips its line's resolution order
+#471+#515	The Growth Hormone	H3	skill	every effect that raises a rank raises it one more / growth rates doubled
+#472	The Next In Line	F3	skill	pays the rank of the next card due from a named stock
+#473	(variant of The Echo of an Echo)	A5	-	chain until a roll fails
+#482	(variant of The Redistribution)	B6	-	no hand type may exceed the average level
+#490	The Zigzag	C13	skill	mult per consecutive card whose rank parity flips
+#492	(variant of The Boomerang)	F5	-	every card leaving the board goes to the bottom of its stock
+#495	(variant of The Matinee Clock)	K6	-	a hazard acting on a real-time interval
+#496	(variant of The Shrapnel)	C10	-	destroys the next occupied cell in a direction
+#497	(variant of The Crescendo)	A5	-	every second card in placement order
+#498	(dup of The Weight Limit)	R5	-	-
+#499	The Drift	G6	hazard	each Entrance refill nudges some board ranks up or down by one
+#500	The One-Use Costume	R1	hazard	a card's type and stamp are stripped after they score once
+#501	(dup of The Plain Clothes Ban)	R1	-	-
+#502	The Cold Open	C12	hazard	the first card to resolve in each line scores nothing
+#503	The Warmer, Colder	M4	skill	a hidden cell each show; pays more the closer this card sits to it
+#508	(variant of The Curtain Call)	A5	-	every earlier line pays again
+#518	The Salvage	H5	skill	when a card is destroyed its stamp moves to a random other card
+#523	(variant of The Wake)	F10	-	the leaving card itself gains a permanent bonus
+#525	The Rubber Stamp	F4	consumable	choose a card in a stock; the cards above it become copies of it
+#531	The Encore Line	A13	skill	a line whose ranks repeat the previous line's ranks in order pays a bonus
+#532+#540	The Even Bill	A13	skill	bonus when every line kind has completed equally / scales with kinds not yet completed
+#537+#538	(variants of The Favoured Axis)	B3	-	destroys the over-used kind's cards / blocks scoring until the least-used kind completes
+#541	(variant of The Zero-Sum Ladder)	B6	-	downgrade a hand level for a permanent multiplier
+#547	(variant of The Crescendo)	A5	-	the median-rank card retriggers
+#555	(variant of The Amalgam)	D8	-	at show end the whole board fuses into one card
+#556	The Mixed Company	B3	hazard	a line must hold at least two suits (or two ranks) to score
+#558	(variant of The Cold Open)	C12	-	the lowest-ranked card of each line scores nothing
+#560+#571	(variants of The Blindfold Bargain)	M3	-	pays when a card arrives face down / grows when a face-down card scores
+#561	(variant of The Multiplier Suit)	A6	-	two named ranks instead of a suit
+#566	(variant of The Pendulum)	A6	-	alternates by odd/even line count
+#567	(variant of The Dimming)	M3	-	typed cards arrive face down
+#577	(variant of The Four Colours)	P5	-	escalates at the fifth distinct suit
+#578	The Lost Star	F10	skill	pays the highest rank in the discard pile
+#581	The Double Count	B2	skill	when a line completes, one of its cards counts twice for the hand
+#586	The Relay Tower	H5	skill	a consumable used on this card applies to every skill card on the board
+#591	(variant of The Impostor Hand)	B4	-	every line scores as one named hand
+#597+#599	The Ghost Partner	F10	skill	when a card scores, a same-rank card in the discard pile scores with it / the last destroyed card scores again
+#601	The Intensifier	I10	skill	every status applied anywhere is doubled
+#622	(variant of The Neglected Rank)	R5	-	the suit least represented across the stocks
+#623	The Flood	R2	hazard	a plain deck's worth of cards is added to the Entrance stocks for the show
+#628	(variant of The Silver Lining)	R9	-	a suppressed card retriggers its line instead
+#630	The Neighbourly Rank	V7	skill	a card scores extra when its line holds a rank one above or below its own
+#633	The Uniform	A12	skill	a multiplier for FEW distinct ranks in a line (the counterpart of Zooble)
+#636	The Balanced Line	C13	skill	a line holding an equal number of each suit present pays a bonus
+#645	(variant of The Rails)	E7	-	all movement effects disabled
+#646	The Tremor	C3	type	when this card scores, every neighbour's completed line re-scores
+#660	The Creeping Ban	R3	hazard	each completed line debuffs the next rank in order, widening the banned set
+#666	The Dyed Coat	M6	hazard	some cards show a false suit until they score
+#667	The Sudden Death	R5	hazard	a placement is legal only if it completes a line
+#670+#678	(variants of The Crescendo)	A5	-	all but the endpoints / alternating odd-even positions
+#672	(variant of The Decrescendo)	A13	-	a weaker hand type than the previous line
+#674	(variant of The Boomerang)	F5	-	as a skill: a completed line's cards return to a stock
+#680	(variant of The Debut)	A12	-	first time each hand type completes
+#682	The Bequest	G4	skill	destroy a card; its rank is split between its two neighbours
+#684	The Inverted Scale	V3	skill	cards pay inversely to their rank
+#687	The Transfusion	V7	consumable	move points of rank from one card to another
+#692	The Tattoo	G5	skill	fold a card's stamp and type into its rank permanently, removing them
+#696	The No-Repeats	R2	hazard	any card exactly matching another in the stocks is destroyed
+#706	(variant of The Redistribution)	B6	-	all hand levels pooled and spread evenly
+#709+#710	(variants of The Zero-Sum Ladder)	B6	-	drain the neighbours of your most-played hand / swap two hands' levels
+#718	The Exhausted Rank	F11	skill	grows for each rank with no copies left in the stocks
+#719	The Royal Issue	G1	skill	a line holding a King and a Queen creates a Jack in the stocks
+#723	(variant of The Rising Tide)	B6	-	one fixed partner hand levels with it
+#730	The Trim	G4	skill	when a line completes its highest- and lowest-ranked cards leave the board, paying a bonus
+#741	(variant of The Pendulum)	A6	-	cards in a line alternate points/mult in resolution order
+#743	The Forbidden Three	L9	skill	grows per copy of a named rank in the deck, but three of that rank on the board at once loses the show
+#749	(variant of The Rising Tide)	B6	-	levelling one hand levels its whole family
+#752	The Coin Toss	L6	skill	cue: flip a coin to double the show's score or zero it
+#755	The Levelling Rank	V3	skill	every scoring card's rank moves one step toward a named rank
+#782	(variant of The Encore Line)	A13	-	any rank repeated from the previous line pays extra
+#807	The Binary	G1	skill	a line of rank-1 and rankless cards reads as a binary number and creates a card of that rank
+#811	The Guardsman	A5	skill	each card that made the hand is retriggered once per card in the line that did not
+#814	The Full Mansion	B1	skill	three of a kind plus four of a kind anywhere on the board scores as a hand
+#817	The Rehearsal Run	H6	skill	cue: every show-end effect fires now
+#825	The Two Spotlights	A7	hazard	at most two cards in a completed line score
+#828	The Skyscraper	F11	skill	a scoring card pays per undrawn card of lower rank
+#836	(variant of The Debut)	A12	-	pays for ranks that have not scored yet
+#859	(variant of The Two Spotlights)	A7	-	only the highest-ranked card scores
+#863	The Equaliser	G5	skill	every card in a completed line becomes the line's average rank
+#868	(variant of The Wrong Spotlight)	A7	-	as a skill: swaps which cards count as scoring
+#879	(variant of The Shrapnel)	C10	-	destroyed wearer destroys every neighbour
+#883	(variant of The Impostor Hand)	B4	-	hand X also counts as hand Y for effects keyed to Y
+#894	The Bookends	C12	skill	the cards between two same-rank cards in a line are retriggered
+#907	(variant of The Wake)	F10	-	as a type: its destruction buffs every other card
+#913	(variant of The Everything Hand)	B7	-	a line pays for every hand type it actually contains
+#ASM-Lock	The Fresh Lock	E7	skill	a cell a card just entered is locked for the next two placements
+#ASM-Chaotic	The Chaos Swap	E9	hazard	every placed card swaps places with a random other spotlit card / with the previously placed card
+#ASM-Uneven	The Parity Build	D1	skill	stacks alternate even and odd ranks
+#ASM-Cheatdeck	The Headcount	D9	skill	a stack counts as one card whose rank is its height
+#ASM-Binary	(variant of The Binary)	G1	-	a group of 1s and 0s reads as a binary number
+#ASM-Solartaire	The Orbit	C9	skill	each column has a phase advanced by cards of its suit; cards move only between columns in the same phase
+#ASM-Circuit	The Circuit	C10	type	cards carry connectors; a card is powered only if linked through neighbours to a King, and unpowered cards score nothing
+#ASM-Tabula	The Ambiguous Card	V6	type	a card with no identity that resolves permanently once only one identity fits its neighbours
+#ASM-LockKey	The Locked Column	C4	hazard	a column accepts nothing until the key cells beside it are filled
+#ASM-Ferret	The River	R5	hazard	the board has two halves; you place only on the half you stand on, crossing moves you, and a half may never hold two more of suit A than suit B
+#ASM-TimeTravel	The Loan From Tomorrow	K8	skill	cue: take a card from the stocks now; it must be sent back within N placements or the show is lost
+#ASM-Garden	The Garden Plot	C11	skill	cards of a suit arranged in that suit's shape with an average rank of N are harvested for points
+#920	(variant of The Reverse)	H8	-	as a skill: retriggers a line in reverse placement order
+#930	(variant of The Bookends)	C12	-	two copies of this card bound the zone
+#938	The Plain Company	A3	skill	a multiplier per scoring card that carries no type, stamp or skill
+#940	(variant of The Ghost Partner)	F10	-	bonus per discard-pile card sharing suit or rank
+#CL-Civic	The Crop Cycle	I5	skill	a card gains each refill until full, then scores nothing until an effect resets it
+#CL-Industrial	The Production Line	C10	skill	three cards chain: one makes a token on scoring, its neighbour converts it, the next consumes it for points
+#CL-Walls	The Enclosure	C11	type	wall-type cards enclose a region; a closed loop pays per enclosed cell, a gap pays nothing
+#CL-Rail	The Rail Line	C15	type	a chain of rail cards makes every card touching the chain adjacent to every other
+#ZM-Kinship	The Kinship Rule	E8	hazard	a card may only be placed adjacent to a card sharing its suit or rank
+#DG03	The Overflow	V3	rank	a rank pushed past King (or below Ace) becomes wild instead of clamping
+#DG13	The Dead Heat	A13	skill	pays when two lines this show score exactly the same

@@ -10,7 +10,7 @@ ROWS = [
  "A strip of cells sits above the grid that only cards already scored once may enter, and they score again from up there",
  "c"),
 
-("G0143","The Bonded Troupe","P6","rule",
+("G0143","The Bonded Troupe","P6","structure",
  "Cards trained together take a shared tag. (DESIGN_REFERENCES.md F6, the Academy family)",
  "Between runs, several Common cards may be trained together; they gain a shared group tag and score a bonus whenever two of them are on the board",
  "Between runs, several Commons may be trained together into one merged card of their summed rank",

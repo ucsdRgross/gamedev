@@ -1,0 +1,51 @@
+C	I can't think of a good balatro mod name	License to Maim	When Boss Blind selected, has a 1 in 3 chance to invert its effects	When a hazard begins, a skill card gives a 1-in-3 chance the hazard's effect is inverted into a bonus instead of a penalty.	L1	skill
+C	I can't think of a good balatro mod name	Enthusiast's Timepiece	X2.5 Mult, loses X0.01 Mult per second spent outside of a Blind, resets when Boss Blind is defeated	A skill card grants a large multiplier that decays by real elapsed wall-clock time between placements, resetting when a hazard clears.	K6	skill
+C	I can't think of a good balatro mod name	Omega Flowery	SPOILER: Hands below level 99 become level 99, All Poker Hands are considered to contain all Poker Hands	A skill card makes every completed line bank into every hand-type's bucket simultaneously, not just its own kind.	B4	skill
+MOD	I can't think of a good balatro mod name	50	3	large joke-heavy joker mod; many entries are pure flavor gags or reference real-world hardware/ELO/audio devices with no portable mechanic
+C	In Stars and Time	(none)	(none)	(none)	(none)	(none)
+MOD	In Stars and Time	16	0	small mod themed on the game In Stars and Time; jokers are time-loop flavor and numeric reskins, nothing with an unpredictable trigger/target/action shape
+C	Ink And Color	(none)	(none)	(none)	(none)	(none)
+MOD	Ink And Color	11	0	adds two suits with matching jokers/tarot; every effect is a numeric suit-conditional mult/chip variant already covered by the taxonomy
+C	Invalidated	Granite Blast	0% Overheat +400 Chips. Every time this Joker is triggered, it gains +20% Overheat. If Overheat is 100%, do not trigger. Restyle sets Overheat to 0% (Click this Joker to Restyle)	A skill card pays large flat points each trigger but builds toward a heat cap that disables it until the player taps it to manually vent the heat.	I1	skill
+MOD	Invalidated	22	1	joke-toned mod; most jokers are flavor gags (game-crashing, click counters, FPS-based) with no portable mechanic, one real charge-gauge idea
+C	Isaactro	Technology	If Four of a Kind is played with 1 unscored card, convert it to the rank of the other cards	If a line is one card short of matching rank across all five cells, the odd card out is auto-converted to complete the match.	B2	skill
+C	Isaactro	Spoon Bender	Balances Chips and Mult when calculating score for played hand	A skill card redistributes value between two of a grid's scoring buckets so they end up equal before the grid's product is taken.	A6	skill
+MOD	Isaactro	36	2	Binding of Isaac crossover mod; large joker list, almost entirely numeric reskins of common shapes
+C	Jade Penguin's Adapt or Toast!	Maroon Mole	Most played cards are shuffled to the bottom of your deck	A hazard identifies the specific cards you've placed most often this run and sends them to the bottom of their Entrance stock.	F1	hazard
+MOD	Jade Penguin's Adapt or Toast!	13	1	small mod adding Showdown-themed hazards and matching skill cards
+C	Jambatro	Amplifier	X0.02 Mult for every Chip difference between the current Hand Chips before scoring and 100	A skill card's multiplier scales with how far a completing line's flat points sit from a fixed reference value, rewarding both very small and very large lines.	A13	skill
+C	Jambatro	Calendar	+5 Mult +26 Chips; Mult and Chips depend on the current month and year	A skill card's flat points and multiplier are set by the real-world calendar date rather than any board state.	K6	skill
+C	Jambatro	Its Eeffoc...	If straight is played backwards, +13 mult (ex: 10, J, Q, K, A)	A skill card pays a bonus if the cards forming a completed straight-type line were physically placed in descending rank order.	C13	skill
+C	Jambatro	Fat Joker	1 in 6 chance of eating each played card and gaining +5 Mult; 0 in 200 chance of a fatal heart attack, chance increases with Mult	A skill card grows stronger by consuming placed cards, but its own chance of self-destructing rises as its accumulated bonus grows.	L3	skill
+C	Jambatro	Seagull	1 in 1 chance to steal up to -50 Chips and gain +6 Mult; chance to steal decreases with mult, chance to release increases with mult	A skill card's odds of banking more multiplier shrink and its odds of releasing its stash grow in tandem as the stash builds, forcing a periodic payout.	L2	skill
+C	Jambatro	(unnamed - mirrored hand joker)	If Two Pair, Full House or Four/Five of a Kind is played mirrored, +14 mult (ex: 10, 4, 4, 4, 10)	A skill card pays a bonus when the ranks across a completed line read as a palindrome from one end to the other.	C13	skill
+MOD	Jambatro	62	6	very large joke-heavy joker mod; many creative shapes alongside many pure-flavor entries
+C	Jank Jonklers	Self Portrait	Gains X0.1 Mult whenever you [action]; changes every blind (use Tarot, use Planet, destroy a card, play <=3 cards, discard 3+ face cards, play High Card/Straight/Flush, score Glass)	A skill card's triggering condition is redrawn at random from a wide pool of board events each time a new show begins.	G6	skill
+MOD	Jank Jonklers	22	1	small joker mod, mostly numeric reskins
+C	Jimbo's Moon Vacation	(none)	(none)	(none)	(none)	(none)
+MOD	Jimbo's Moon Vacation	5	0	small mod adding a seal and spectral cards; one audio cue references an unlisted "Time Bomb" card whose effect text this batch does not carry
+C	Joker Studio	(none)	(none)	(none)	(none)	(none)
+MOD	Joker Studio	0	0	not a content mod - a runtime joker-creation toolkit/API for players and other mods to build custom jokers; no fixed effects to mine
+C	Joker-Paca	(none)	(none)	(none)	(none)	(none)
+MOD	Joker-Paca	49	0	large vanilla-adjacent joker mod (75 jokers); effects are almost entirely numeric variants of common shapes
+C	JokerHub	(unnamed - ordered ranks joker)	+15 Mult if poker hand contains at least 2 scored ranks and scored ranks are arranged from lowest to highest	A skill card pays a bonus when the ranks of the cards in a completed line, read in placement order, run from lowest to highest.	C13	skill
+C	JokerHub	Leap Frog	+30 chips per Joker to the left if there are more than there were during any hand this round	A skill card pays flat points for each neighboring skill card beyond the highest count of neighbors it has seen so far this show, rewarding a new personal-best.	A13	skill
+C	JokerHub	Orb of Confusion	X3 Mult; first hand of each round is drawn face down	A skill card grants a large multiplier but forces the next card into the Entrance to be dealt face down, its slots hidden until placed.	M3	skill
+C	JokerHub	Metal Joker	Steel cards are considered Gold cards and vice versa	A skill card makes two card types mutually swap identities for all purposes while it is live.	G5	skill
+C	JokerHub	Amamiya	When Boss Blind is defeated, this Joker permanently gains an ability based on the Boss Blind	When a hazard ends, a skill card permanently gains an ability derived from that specific hazard's own rule.	R9	skill
+MOD	JokerHub	18	5	small joker mod aiming for vanilla balance; several genuinely novel mechanics despite the small list
+C	JokeyPony	Sunset Shimmer	On first hand of round, convert all played cards into their next suit before scoring (e.g. Spades become Hearts, Clubs become Diamonds)	A skill card cyclically shifts every card in a completing line to the next suit in a fixed rotation immediately before the line scores.	G5	skill
+C	JokeyPony	Party Cannon	This Joker gains +2 Mult when a hand is played; gives stored Mult and resets if played hand is not your most played hand	A skill card banks multiplier on every completed line and pays out its whole stash the moment you complete a line type that isn't your most-repeated one this show.	A9	skill
+MOD	JokeyPony	47	2	large My Little Pony-themed joker mod; mostly numeric reskins despite the size
+C	Joking Around	Ransom Joker	When a hand is played, add halved arithmetic mean of Chips of all played cards to this Joker's Chips	A skill card permanently banks half the average flat-point value of the cards in a completed line.	A1	skill
+C	Joking Around	Pied Piper	First scored card gains Chips and Enhancements of other scored cards; all cards aside from the first have 1 in 2 chance to be destroyed after scoring	When a line completes, one designated card absorbs the points and types of every other card in the line, and the rest have a chance to be sent to the discard pile.	D8	skill
+C	Joking Around	Comeback	X4 Mult if the last discarded hand is played	A skill card pays a large bonus when the line you just completed matches the composition of the most recent group of cards sent to the discard pile.	F10	skill
+MOD	Joking Around	14	3	joker mod, wiki list incomplete (22 of 42 listed); several novel aggregate/merge mechanics
+C	JoyousSpring	(none)	(none)	(none)	(none)	(none)
+MOD	JoyousSpring	42	0	huge Yu-Gi-Oh crossover mod (650+ jokers across 42 archetypes); this batch carries only summary/booster/Hanafuda/poker-hand pages, not individual joker effect text, and the Hanafuda melds are new-meld-type variants already covered many times over
+C	Kaliimoddy	If You Play This Suit I'll Self Destruct	X2.5 Mult; Destroyed if the Mystery Suit is played	A skill card carries a hidden weakness suit unknown to the player; completing a line of that suit destroys the card, discovered only by consequence.	M6	skill
+C	Kaliimoddy	Mysterious Hole	Forces all played hands to evaluate as your least-played poker hand (Defaults to High Card)	A skill card overrides every completed line to bank as whichever hand type you've completed least often this show.	B7	skill
+MOD	Kaliimoddy	28	2	small joker mod with an extensive audio-cue flavor list; a couple of hidden-info/history-override mechanics
+C	KCVanilla	Ten-Pin	If played hand contains a scoring 10, X2 Mult for next 2 hands	A skill card grants a doubled multiplier that stays active for the next two lines that score, rather than the current one.	I3	skill
+C	KCVanilla	Swiss Joker	X1 Mult for each gap of 1 rank between the ranks of played poker hand (ex: 2s and 4s, but no 3)	A skill card pays a multiplier for each missing intermediate rank within the spread of ranks in a completed line, rewarding the gaps themselves.	C13	skill
+MOD	KCVanilla	13	2	small vanilla-styled joker mod; two novel pattern/duration mechanics

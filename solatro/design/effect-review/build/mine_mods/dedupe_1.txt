@@ -1,0 +1,1760 @@
+Q0001 | Cheering Team card | skill | A1 [ANSWERED]
+  mechanic: Pays its own suit
+  (a) Each scored card sharing this card's suit gains extra points
+  (b) Each scored card sharing this card's suit gains extra points, scaling with how many of them there are
+  (c) Each scored card sharing this card's suit gains extra points, and this card gains the same again
+Q0002 | Crowd glow | skill | A1 [ANSWERED]
+  mechanic: The crowd trickles in regardless
+  (a) On a low-scoring turn, a small amount of fame arrives anyway
+  (b) On a turn that scores nothing at all, a small amount of fame arrives anyway
+  (c) On a low-scoring turn, fame arrives inversely to what you scored, so the worst turns pay most
+Q0003 | Extra Point | skill | A1 [ANSWERED]
+  mechanic: Gain extra flat points on score (+10)
+  (a) +10 points when this card scores
+  (b) +2 points for each card in the line this card scores in
+  (c) +10 points when this card scores, doubling each further time it scores in the same show
+Q0004 | The Pose (Sandow) | skill | A1 [ANSWERED]
+  mechanic: Scores by standing still
+  (a) Scores by being spotlit and doing nothing, rather than by melding
+  (b) Scores by being spotlit and doing nothing, paying more the longer it holds the pose
+  (c) Scores by being spotlit and doing nothing, and cannot score by melding at all
+Q0005 | The Sparkler | skill | A1 [ANSWERED]
+  mechanic: Straight into the column score
+  (a) When this card scores, +10 flat points go to its column's score
+  (b) When this card scores, flat points equal to its rank go to its column's score
+  (c) When this card scores, +10 flat points go to whichever of its lines scored lowest
+Q0006 | Bootstraps | skill | A2 [ANSWERED]
+  mechanic: Paid by what is in your pocket
+  (a) Gains a multiplier for every fixed amount of gold you hold
+  (b) Gains a multiplier for every fixed amount of gold, and spending gold mid-show lowers it immediately
+  (c) Gains a multiplier for gold held, capped, and converts overflow gold into flat points
+Q0007 | Combo card | skill | A2 [ANSWERED]
+  mechanic: Scored cards keep the hand's value
+  (a) During scoring, each card gains temporary points equal to the hand it scored in
+  (b) During scoring, each card gains permanent points equal to the hand it scored in, once
+  (c) During scoring, each card gains temporary points equal to the hand it scored in, doubled if it scored in two lines
+Q0008 | Diamond type | type | A2 [ANSWERED]
+  mechanic: Twice the score, twice the price
+  (a) Doubles this card's score, and costs 3 more when traded at shops
+  (b) Doubles this card's score, and it cannot be sold at all
+  (c) Doubles this card's score, and every other card of its suit costs more at shops
+Q0009 | More Poker card | skill | A2 [ANSWERED]
+  mechanic: Poker hands pay double
+  (a) Poker hands score double
+  (b) Poker hands score double, but only the highest hand of each placement
+  (c) Poker hands score double, and non-poker melds score nothing
+Q0010 | Noble Family card | skill | A2 [ANSWERED]
+  mechanic: Face cards feed each other
+  (a) Each scored face card raises the points of the next scored face card by 1
+  (b) Each scored face card raises the next one by 1, and the chain resets at the end of each placement
+  (c) Each scored face card raises the next by 1, with no reset, so the chain runs the whole show
+Q0012 | Hoop tower | skill | A3 [ANSWERED]
+  mechanic: Same suit, stacked hoops
+  (a) Consecutive same-suit cards in a line multiply their score together
+  (b) Consecutive same-suit cards in a line multiply their score, and the multiplier grows with run length
+  (c) Consecutive same-suit cards in a line multiply their score, counting across grid boundaries at the same row
+Q0013 | Joker Stencil | skill | A3 [ANSWERED]
+  mechanic: Paid by the room you left
+  (a) Gains a multiplier for every empty skill slot you are carrying
+  (b) Gains a multiplier for every empty cell on the grid at scoring
+  (c) Gains a multiplier for every empty skill slot, doubled if every slot but its own is empty
+Q0014 | Pagliacci | skill | A3 [ANSWERED]
+  mechanic: Gains bonus multiplier while this card carries any debuff or negative status
+  (a) Gains a multiplier while carrying any debuff or negative status
+  (b) Gains a multiplier per debuff or negative status it carries, stacking
+  (c) Gains a multiplier per debuffed card anywhere in its grid, whether or not it is one of them
+Q0015 | Searing Knife | skill | A3 [ANSWERED]
+  mechanic: When scored, its column pays 3x this placement but is locked (no placement or grabs) for the next 2 turns
+  (a) When this card scores, its column pays triple this placement and is locked against placement and grabs for two turns
+  (b) When this card scores, its column pays triple this placement and is locked for the rest of the show
+  (c) When this card scores, its column pays triple, and the column to each side is locked for one turn
+Q0016 | Swashbuckler | skill | A3 [ANSWERED]
+  mechanic: Paid by what your collection is worth
+  (a) Adds the total sell value of your other cards to the multiplier
+  (b) Adds the total sell value of your other cards to the multiplier, and selling any of them lowers it at once
+  (c) Adds the sell value of your single most valuable other card, doubled
+Q0017 | The Advance Campaign | skill | A3 [ANSWERED]
+  mechanic: Cue before a show: spend N Gold tokens to multiply that show's fame payout by 1 + N/10
+  (a) Cue before a show: spend N gold to multiply that show's payout by 1 + N/10
+  (b) Cue before a show: spend all your gold to multiply that show's payout by 1 + gold/10, capped at triple
+  (c) Cue before a show: spend N gold to multiply the payout by 1 + N/10, but the next show's goal rises by the same fraction
+Q0018 | The Kecak Chorus | skill | A3 [ANSWERED]
+  mechanic: Paid by the low cards on the board
+  (a) When any meld scores, gains a multiplier per rank-1 card on the board
+  (b) When any meld scores, gains a multiplier per card on the board below rank 4
+  (c) When any meld scores, gains a multiplier per card on the board whose rank is lower than this card's
+Q0019 | The Wall of Death | skill | A3 [ANSWERED]
+  mechanic: Both neighbours pay, and both pay for it
+  (a) Both adjacent columns gain a multiplier, and every card in them takes an Exhausted debuff at show end
+  (b) Both adjacent columns gain a multiplier, and one random card in each is Exhausted at show end
+  (c) Both adjacent columns gain a multiplier scaling with how many cards are in them, and all of those cards are Exhausted at show end
+Q0020 | Abstract Card | skill | A4 [ANSWERED]
+  mechanic: Raises the score to a power
+  (a) Raises the placement's multiplier to a power rather than adding or multiplying, with a chance of being destroyed each show
+  (b) Raises the placement's multiplier to a power, with no destruction risk but a very small exponent
+  (c) Raises the multiplier to a power that grows the longer this card survives, with a rising chance of destruction
+Q0021 | Breaking Infinity | skill | A4 [ANSWERED]
+  mechanic: The ceiling itself becomes a thing you remove
+  (a) Score is capped until an effect removes the cap, after which higher operators become available
+  (b) Score is capped until an effect removes the cap; removing it also raises every goal to match
+  (c) Score is capped, and each cap broken permanently unlocks the next operator tier for the rest of the run
+Q0022 | Critical Deck | skill | A4 [ANSWERED]
+  mechanic: A coin flip on the exponent
+  (a) After each placement, a small chance the multiplier is squared, and a smaller chance it is square-rooted
+  (b) After each placement, a small chance the multiplier is squared, with no downside
+  (c) After each placement, the multiplier is raised to a random power between a half and two
+Q0023 | Googol Play Card | skill | A4 [ANSWERED]
+  mechanic: A tiny chance at an absurd number
+  (a) A small chance per Entrance refill of an enormous multiplier, and nothing otherwise
+  (b) A small chance per Entrance refill of an enormous multiplier, with a modest one the rest of the time
+  (c) A small chance of an enormous multiplier, and the chance improves each placement it fails
+Q0024 | Double Trigger | stamp | A5 [ANSWERED]
+  mechanic: All of this card's effects trigger twice, once per scoring pass
+  (a) All of this card's effects trigger twice
+  (b) All of this card's effects trigger twice, but only on the first line it completes each show
+  (c) This card's effects trigger once more for each line it belongs to, so a card scoring in a row and a column fires three times
+Q0025 | Echoing Trigger | skill | A5 [ANSWERED]
+  mechanic: All triggers on the grid repeat once, per card, per scoring pass
+  (a) Every card's triggers on the grid repeat once per scoring pass
+  (b) Every card's triggers in this card's own row and column repeat once
+  (c) Every card's triggers on the grid repeat once, and this card is destroyed at the end of the show
+Q0026 | Exposed | skill | A5 [ANSWERED]
+  mechanic: Retriggers the plain ones, kills the faces
+  (a) Retriggers every scoring non-face card twice more, and debuffs every face card
+  (b) Retriggers every scoring non-face card twice more, and face cards simply score normally
+  (c) Retriggers whichever card type is rarer on the board, and debuffs the commoner one
+Q0027 | Hanging Chad | skill | A5 [ANSWERED]
+  mechanic: Re-fires whichever card went first
+  (a) Retriggers the first card of a scoring line two extra times
+  (b) Retriggers the first and last card of a scoring line one extra time each
+  (c) Retriggers the first card of every scoring line once, across every line that scores
+Q0028 | Seltzer | skill | A5 [ANSWERED]
+  mechanic: Retriggers everything, then burns out
+  (a) Retriggers every scoring card for the next ten placements, then is destroyed
+  (b) Retriggers every scoring card for the next three scoring passes, then is destroyed
+  (c) Retriggers every scoring card until it has retriggered a fixed total number of times, then is destroyed
+Q0029 | The Aerialist | skill | A5 [ANSWERED]
+  mechanic: Once per placement, re-scores the topmost meld, but is destroyed permanently if her column ever fails to score
+  (a) Once per placement, re-scores the highest meld; destroyed for good if her column ever fails to score
+  (b) Once per placement, re-scores the highest meld; destroyed for good the first time her column fails to score twice running
+  (c) Once per placement, re-scores any meld you choose; each use carries a 1-in-8 chance of destroying her
+Q0030 | The Clock Hang | skill | A5 [ANSWERED]
+  mechanic: May be placed half-off the grid past the last column; while hanging it is double-spotlit (its skill fires twice), but any board-shift effect discards it
+  (a) May be placed half off the grid past the last column; while hanging its skill fires twice, and any board-shift effect discards it
+  (b) May be placed half off the grid past any edge; while hanging its skill fires twice and it cannot be part of any meld
+  (c) May be placed half off the grid; while hanging it fires twice, and it falls off at the end of the placement unless a line scored
+Q0031 | The Drone Swarm | skill | A5 [ANSWERED]
+  mechanic: Cue, once per show: re-triggers any formation bonus already scored this run, paying it again without needing the cards
+  (a) Cue, once per show: re-trigger any formation bonus already scored this run, paying it again without needing the cards
+  (b) Cue, once per show: re-trigger any formation bonus already scored this show, paying it again
+  (c) Cue, once per show: re-trigger the highest-paying formation bonus of the run, at half value
+Q0032 | The Encore | stamp | A5 [ANSWERED]
+  mechanic: If this card's skill triggered this show, there is a seeded 50% chance it triggers once more at show end
+  (a) If this card's skill triggered this show, a 50% chance it triggers once more at show end
+  (b) If this card's skill triggered this show, it triggers once more at show end, guaranteed
+  (c) If this card's skill triggered this show, a 50% chance per trigger that it fires again at show end, capped at three
+Q0033 | The Fanchant | skill | A5 [ANSWERED]
+  mechanic: After all scoring resolves, each meld that raised the show's combo pays again at 25%
+  (a) After all scoring resolves, every meld that raised the show's combo pays again at 25%
+  (b) After all scoring resolves, the single highest meld that raised the combo pays again in full
+  (c) After all scoring resolves, every meld that raised the combo pays again at 10% per distinct class involved
+Q0034 | The Groundhog | skill | A5 [ANSWERED]
+  mechanic: Cue, once per show: replay the previous placement's entire effect sequence against the current board, same effects and order, targets resolved fresh
+  (a) Cue, once per show: replay the previous placement's whole effect sequence against the current board, targets resolved fresh
+  (b) Cue, once per show: replay only the effects of the previous placement that scored
+  (c) Cue, once per show: replay the previous placement's effect sequence twice, and this card is discarded afterwards
+Q0035 | Broken Sync Catalyst | skill | A6 [ANSWERED]
+  mechanic: Trades chips for mult
+  (a) Swaps a tenth of the line's flat points into its multiplier
+  (b) Swaps a tenth of the flat points into multiplier, or the reverse, whichever scores higher
+  (c) Swaps a proportion you choose, up to a half, between flat points and multiplier
+Q0036 | The Accountant | skill | A6 [ANSWERED]
+  mechanic: At payout, before row x column multiplication, shift up to 20% of the larger axis total onto the smaller, costing 2 combo to invoke
+  (a) At payout, before row times column, shift up to 20% of the larger axis total onto the smaller, at a cost of 2 combo
+  (b) At payout, shift up to 20% of the larger axis total onto the smaller, free of charge
+  (c) At payout, the row and column totals are averaged and both set to that average, at a cost of 2 combo
+Q0037 | The Credit Line | skill | A6 [ANSWERED]
+  mechanic: Points earned here are paid somewhere else
+  (a) Cue: name another line; for the rest of the placement, everything this line scores is paid into that one instead
+  (b) Cue: name another line; half of what this line scores is paid into that one, and the other half scores normally
+  (c) Cue: name another card; everything this line scores is banked onto that card and pays out when it next scores
+Q0038 | The Running Total | skill | A6 [ANSWERED]
+  mechanic: Every line shows what it is worth as you build
+  (a) Each line's accumulating score is visible at its end while you build, not only when it completes
+  (b) Each line's accumulating score is visible, and effects may read it mid-build
+  (c) Each line's total is visible, and a line may be cashed out early at a discount
+Q0039 | AP Joker | skill | A7 [ANSWERED]
+  mechanic: Saves itself for the boss
+  (a) Scores a large multiplier against bosses only
+  (b) Scores a large multiplier against bosses, and nothing at all otherwise
+  (c) Scores a multiplier that scales with how many bosses you have already beaten this run
+Q0040 | Card Sharp | skill | A7 [ANSWERED]
+  mechanic: Paid for repeating yourself
+  (a) Gains a multiplier if the hand it scores in has already been scored this show
+  (b) Gains a multiplier if the hand it scores in has already been scored this placement
+  (c) Gains a multiplier that grows each time the same hand type is scored again in a show
+Q0041 | Facile | skill | A7 [ANSWERED]
+  mechanic: Rewards a board you have barely used
+  (a) Raises the multiplier to a power if the scoring cards have been scored few times this run
+  (b) Raises the multiplier to a power if none of the scoring cards has ever scored before
+  (c) Raises the multiplier to a power scaling inversely with how often the scoring cards have been used
+Q0042 | Flash | type | A7 [ANSWERED]
+  mechanic: The first time this card would score each show it scores triple; every later score that show is zero
+  (a) The first time this card scores each show it scores triple; every later score that show is zero
+  (b) The first time this card scores each show it scores triple; every later score that show is halved
+  (c) The first line this card completes each show scores triple for every card in it, and this card cannot score again that show
+Q0043 | Green Seal | skill | A7 [ANSWERED]
+  mechanic: Pays for the card that did not score
+  (a) Creates a bonus card whenever a placed card fails to score
+  (b) Creates a bonus card whenever a placed card fails to score, capped once per Entrance refill
+  (c) Creates a bonus card for each card in a completed line that contributed nothing to the hand
+Q0044 | Lot Lice | hazard | A7 [ANSWERED]
+  mechanic: Town rule: the show's first placement scores 0 fame
+  (a) Town rule: the show's first placement scores nothing
+  (b) Town rule: the first line completed in each grid scores nothing
+  (c) Town rule: the show's first placement scores nothing and the second scores double
+Q0045 | Non-scoring bonus card | skill | A7 [ANSWERED]
+  mechanic: Paid for not being used
+  (a) If this card is not part of any scoring hand, it gives 10 points
+  (b) If this card is not part of any scoring hand, it gives points equal to its rank
+  (c) If this card is not part of any scoring hand this Entrance refill, it gives 10 points and gains +1 rank
+Q0046 | Obelisk | skill | A7 [ANSWERED]
+  mechanic: Paid for not repeating yourself
+  (a) Gains a permanent multiplier for each consecutive placement played without scoring your most-played hand, resetting when you do
+  (b) Gains a permanent multiplier per Entrance refill played without repeating any hand you have already scored this show
+  (c) Gains a permanent multiplier per consecutive placement without your most-played hand, and keeps half of it through the reset
+Q0048 | Supernova | skill | A7 [ANSWERED]
+  mechanic: Paid by how often you have played it
+  (a) Adds to the multiplier the number of times the scoring hand type has been played this run
+  (b) Adds the number of times the scoring hand type has been played this show only
+  (c) Adds the number of times the hand has been played this run, and doubles if it is your most-played
+Q0049 | The Chromatic | skill | A8 [ANSWERED]
+  mechanic: Negative on alternate placements
+  (a) Applies a negative multiplier on every odd-numbered placement and a positive one on every even
+  (b) Applies a negative multiplier on every odd placement, and nothing on the even ones
+  (c) Applies a negative multiplier on alternating placements, and you choose which placement it starts on
+Q0050 | The Deficit Rank | rank | A8 [ANSWERED]
+  mechanic: A number below zero
+  (a) This rank subtracts its value from the line it is in, and adds one to the combo for every card it drags down
+  (b) This rank subtracts its value from the line, and doubles the line if the line still scores above target
+  (c) This rank subtracts its value, and is the only rank that may be stacked on anything
+Q0051 | The Eyesore | type | A8 [ANSWERED]
+  mechanic: A card you must place that hurts what surrounds it
+  (a) This card must be placed like any other and subtracts from every neighbour, but is worth a great deal itself
+  (b) This card subtracts from every neighbour, and pays out fully only if it ends the show with no neighbours at all
+  (c) This card subtracts from neighbours, and converts everything it subtracted into its own score when its line completes
+Q0052 | The Negative | status | A8 [ANSWERED]
+  mechanic: Props under it subtract score and add combo. (line 821)
+  (a) A card at negative rank spawns props that subtract score instead of adding it, and each one still raises the show's combo
+  (b) A card at negative rank spawns props that subtract score, and they raise the combo by double
+  (c) A card at negative rank subtracts score itself and raises the combo, but its props behave normally
+Q0053 | Grock's Instrument | skill | A9 [ANSWERED]
+  mechanic: Each placement this card would score, it instead hops one column away and banks the points; when it has no legal hop left, it scores everything banked at once
+  (a) Each placement it would score, it hops one column instead and banks the points; when it cannot hop, it pays out the whole bank
+  (b) Each placement it would score, it banks the points instead; cue at any time to pay the bank out
+  (c) Each placement it would score, it hops one column and banks double; if another effect ever moves it, the bank is lost
+Q0054 | Mid-show instant tips | skill | A9 [ANSWERED]
+  mechanic: Tips paid on the spot
+  (a) A meld that scores over a threshold also pays gold on the spot
+  (b) A meld over a threshold pays gold on the spot instead of its points, at a worse exchange rate
+  (c) A meld over a threshold offers gold on the spot, and you choose per meld whether to take the gold or keep the points
+Q0055 | Style flourish (Mie) | skill | A9 [ANSWERED]
+  mechanic: Holds the pose for the applause
+  (a) A scored meld holds on screen a beat longer and pays extra tips
+  (b) A scored meld holds a beat longer and pays extra tips, and holding two in a row pays more
+  (c) You may choose to hold a meld, delaying the next placement by a turn in exchange for extra tips
+Q0056 | Suspended Overhead | consumable | A9 [ANSWERED]
+  mechanic: Paid for now, delivered later
+  (a) Consumable: name any effect and a number of Entrance refills; it fires for free that many placements from now, at a strength that grows with the wait
+  (b) Consumable: name any effect; it fires three scoring passes from now at triple strength, and cannot be cancelled
+  (c) Consumable: name any effect and a number of Entrance refills; it fires then, and every placement of waiting also adds one to the combo
+Q0057 | The Hunger Artist | skill | A9 [ANSWERED]
+  mechanic: Gains bonus points for every consecutive show it stays in the deck unplayed; when finally played and scored, pays it all at once and resets to zero
+  (a) Gains bonus points for each consecutive show it stays in the deck unplayed, pays it all when scored, then resets to zero
+  (b) Gains bonus points for each consecutive show unplayed, pays out when scored, and keeps half the total through the reset
+  (c) Gains bonus points per show unplayed with no cap, but is destroyed if it goes ten shows unplayed
+Q0058 | The Instrument | skill | A9 [ANSWERED]
+  mechanic: Keeps missing until it does not
+  (a) Moves away rather than scoring each time it would score; when finally played it scores everything it dodged
+  (b) Moves away rather than scoring, banking each dodge; cue at any time to cash the bank
+  (c) Moves away rather than scoring, and each dodge raises what it eventually pays by more than the last
+Q0059 | Clears Feed A Resource | skill | A10 [ANSWERED]
+  mechanic: A completed line pays fuel, not points
+  (a) A completed line pays a resource rather than score, and the resource is what powers your effects
+  (b) A completed line pays both score and a resource, at a reduced rate for each
+  (c) A completed line pays a resource whose kind is set by the line's dominant suit
+Q0060 | The Cloakroom | skill | A10 [ANSWERED]
+  mechanic: Points become charges
+  (a) Cue when a placement finishes resolving: convert this placement payout into charges at a fixed rate, spendable on any cued effect
+  (b) Cue when a placement finishes resolving: convert half this placement payout into charges, keeping the other half as score
+  (c) Every placement, the score above target is converted into charges automatically rather than banked
+Q0061 | The Hat Line | skill | A10 [ANSWERED]
+  mechanic: At show end, cue to convert the placement's unused combo above the payout into Gold tokens instead of losing it
+  (a) At show end, cue to turn the placement's unused combo into gold tokens rather than lose it
+  (b) At show end, unused combo automatically becomes gold tokens
+  (c) At show end, cue to turn unused combo into gold, or into a rank increase on one card, your choice
+Q0062 | The Lecture | skill | A10 [ANSWERED]
+  mechanic: Turns flavour into fame
+  (a) Converts a card's flavour text into fame, once per card
+  (b) Converts a card's flavour text into fame each time that card scores
+  (c) Converts flavour text into fame, paying more for cards you have never scored before
+Q0063 | Lemon Trophy | skill | A11 [ANSWERED]
+  mechanic: The multiplier cannot outgrow the points
+  (a) The multiplier can never exceed the flat points it is multiplying
+  (b) The multiplier can never exceed the flat points, and any excess converts to flat points instead
+  (c) The multiplier and the flat points are both clamped to whichever is lower, then both doubled
+Q0064 | The Round Number | skill | A11 [ANSWERED]
+  mechanic: Every line comes out tidy
+  (a) Every line score is rounded to the nearest ten, up or down as the arithmetic falls
+  (b) Every line score is rounded up to the next ten
+  (c) Every line score is rounded down to the previous ten, and the remainder is banked and paid at show end
+Q0065 | The Softcap | skill | A11 [ANSWERED]
+  mechanic: Growth slows rather than stopping
+  (a) Past a threshold, additional score is added at a reducing rate rather than being capped outright
+  (b) Past a threshold, additional score is added at a reducing rate, and a second threshold caps it hard
+  (c) Past a threshold, additional multiplier converts to flat points instead of being reduced
+Q0066 | The Tax | hazard | A11 [ANSWERED]
+  mechanic: A ceiling on each placement
+  (a) Boss: each placement's score is capped at a fraction of the goal, so no single act can win it
+  (b) Boss: each placement's score is capped at a fraction of the goal, and the cap rises each placement
+  (c) Boss: each placement's score is capped, and anything above the cap is banked for the next placement
+Q0067 | Diversity-based scoring instead of combo | skill | A12 [ANSWERED]
+  mechanic: Variety as its own axis
+  (a) The placement's payout scales with how many distinct suits and types are on the board, alongside the combo
+  (b) The placement's payout scales with distinct suits and types instead of the combo, replacing it
+  (c) The placement's payout scales with distinct suits and types, and the combo scales with distinct effects, multiplying together
+Q0068 | Flea Circus | skill | A12 [ANSWERED]
+  mechanic: When scored, counts as five rank-1 cards for combo-counting purposes (not points)
+  (a) When scored, counts as five separate triggers for the combo without adding any points
+  (b) When scored, counts as one extra trigger for each card in its line, without adding points
+  (c) When scored, counts as five separate triggers, and each one can be amplified by retrigger effects
+Q0069 | Grand Spec | skill | A12 [ANSWERED]
+  mechanic: If every column has scored a meld this show, doubles the show's combo multiplier
+  (a) If every column has scored a meld this show, the show's combo doubles
+  (b) If every row and every column has scored a meld this show, the show's combo triples
+  (c) The placement's combo is multiplied by the number of columns that scored a meld
+Q0070 | Presentation | skill | A12 [ANSWERED]
+  mechanic: While spotlit, each time a placed card's rank is higher than the last card placed, gain +1 combo for the placement
+  (a) While spotlit, each placed card of higher rank than the last placed card adds +1 combo for the placement
+  (b) While spotlit, an unbroken ascending sequence of placements adds +1 combo per placement, and any drop resets it
+  (c) While spotlit, each placed card of higher rank than the last adds +1 combo, and each lower one removes 1
+Q0071 | Spangle | stamp | A12 [ANSWERED]
+  mechanic: The first time this card is part of any scored meld each placement, it adds +1 to the show's combo
+  (a) The first time this card is part of a scored meld each placement, it adds +1 to the show's combo
+  (b) Every time this card is part of a scored meld, it adds +1 to the show's combo
+  (c) The first time this card is part of a scored meld each placement, it adds +1 combo for each distinct suit in that meld
+Q0072 | The Calliope | skill | A12 [ANSWERED]
+  mechanic: Gains +1 combo for every different class that scored this placement
+  (a) Gains +1 combo for every different class that scored this placement
+  (b) Gains +1 combo for every different class on the grid, whether or not it scored
+  (c) Gains +1 combo per class that scored, and double that if every class on the grid scored
+Q0073 | The Dramaturg | skill | A12 [ANSWERED]
+  mechanic: Rewrites one card's combo identity so each of its triggers registers a fresh combo key every time this placement, instead of only on first activation
+  (a) Rewrites one card's combo identity so each of its triggers registers a fresh combo key this placement, instead of only the first
+  (b) Rewrites every card's combo identity so each trigger registers a fresh combo key this placement
+  (c) Rewrites one card's combo identity permanently, so its triggers always register fresh combo keys
+Q0074 | The Exchange Rate | skill | A12 [ANSWERED]
+  mechanic: When a placement finishes resolving, cue to convert unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next placement
+  (a) When a placement finishes resolving, cue to turn unused combo above 3 into flat points at a fixed rate, or spend points to pre-register +1 combo for the next placement
+  (b) When a placement finishes resolving, unused combo above 3 automatically becomes flat points at a fixed rate
+  (c) When a placement finishes resolving, cue to bank unused combo, carrying it into the next placement instead of converting it
+Q0075 | The Forty-Two | skill | A12 [ANSWERED]
+  mechanic: When a row's score plus its column's score totals exactly 42, the show's combo gains +3
+  (a) When a row's score plus its column's score totals exactly 42, the show's combo gains +3
+  (b) When a row's score plus its column's score totals a specific number reseeded each run, the show's combo gains +3
+  (c) When a row's score and its column's score are exactly equal, the show's combo gains +3
+Q0076 | The System | skill | A12 [ANSWERED]
+  mechanic: Paid by the combo, and shy of inspection
+  (a) After each placement, gains bonus points scaled to that placement's combo; any inspection effect halves the bonus permanently
+  (b) After each placement, gains bonus points scaled to that placement's combo, with no downside
+  (c) After each placement, gains bonus points scaled to the combo; being inspected halves it, and it recovers one step per show uninspected
+Q0077 | Zooble | skill | A12 [ANSWERED]
+  mechanic: Paid for rank variety, unless it is a run
+  (a) Gains a multiplier per distinct rank in the scoring line, unless that line is a straight
+  (b) Gains a multiplier per distinct rank in the scoring line, always
+  (c) Gains a multiplier per distinct rank and per distinct suit in the scoring line, unless it is a straight or a flush
+Q0078 | Drumroll | skill | A13 [ANSWERED]
+  mechanic: The last meld scored each placement gets a bonus multiplier
+  (a) The last line scored in each placement pays double
+  (b) The highest-scoring line of each placement pays double
+  (c) The lowest-scoring line of each placement is re-scored as though it were the highest
+Q0079 | The First Juggler | skill | A13 [ANSWERED]
+  mechanic: The oldest trick there is
+  (a) Scores a bonus for completing the simplest possible meld
+  (b) Scores a bonus for completing the simplest meld, growing each time you do it again
+  (c) Scores a bonus for completing the lowest-scoring meld of the placement, so the worst hand pays
+Q0080 | The Odd Couple | skill | A13 [ANSWERED]
+  mechanic: The extremes of the row pay each other
+  (a) The lowest- and highest-ranked cards in this card's row pay each other bonus points when the row scores
+  (b) The lowest- and highest-ranked cards in this card's row pay each other bonus points scaling with the gap between them
+  (c) In every line this card belongs to, the highest and lowest cards pay each other bonus points
+Q0081 | The Scoop | skill | A13 [ANSWERED]
+  mechanic: Taking every line pays more than the sum
+  (a) Scoring every line of a grid pays a large bonus on top of the individual lines
+  (b) Scoring every line of every grid pays a large bonus
+  (c) Scoring every line pays a bonus scaling with how many lines the grid has
+Q0082 | Positional Royalties | skill | A14 [ANSWERED]
+  mechanic: The same hand is worth more where it is harder
+  (a) A hand pays more in lines where the ordering rule makes it harder to achieve, so a flush in the middle beats a flush at the back
+  (b) A hand pays more the closer its line is to the centre of the grid, whatever the ordering rule
+  (c) Each line carries a printed multiplier fixed at show start, so which line you build a hand in is a decision
+Q0083 | The Comeback | skill | A14 [ANSWERED]
+  mechanic: Stronger the further behind you are
+  (a) Scores a multiplier scaling with how far below the goal you currently are
+  (b) Scores a multiplier scaling with how far behind you are, and nothing once you are ahead
+  (c) Scores a multiplier scaling with how far behind you are at the START of each placement, so catching up early costs you
+Q0084 | The Front-Runner | skill | A14 [ANSWERED]
+  mechanic: Stronger once you are already winning
+  (a) Scores a multiplier once you are past the goal, scaling with the overshoot
+  (b) Scores a multiplier once you are past halfway to the goal, fixed
+  (c) Scores a multiplier past the goal, and the overshoot it earns is banked as fame rather than points
+Q0085 | The Handicapper | skill | A14 [ANSWERED]
+  mechanic: The board reads the scoreboard
+  (a) Every effect that scales reads the gap to the goal as its scaling input
+  (b) Every effect that scales reads the gap to the goal, but only in the last placement before you press End
+  (c) Falling far enough behind switches the whole board to a stronger set of defaults for that show
+Q0086 | The Photo Finish | skill | A14 [ANSWERED]
+  mechanic: Pays for landing exactly
+  (a) Pays an enormous bonus for finishing a show within a hair of the goal, and nothing for overshooting
+  (b) Pays a bonus scaling inversely with how far past the goal you finish
+  (c) Pays an enormous bonus for finishing exactly on the goal, to the point
+Q0087 | Adjacency-required marriage melds | skill | B1 [ANSWERED]
+  mechanic: Melds that need true adjacency
+  (a) Marriage melds require the cards to be exactly adjacent, not merely in the same line
+  (b) Marriage melds require exact adjacency, and diagonal adjacency counts double
+  (c) Marriage melds require exact adjacency, and any two adjacent cards that pair score as a meld of their own
+Q0088 | Badugi | skill | B1 [ANSWERED]
+  mechanic: A hand made entirely of differences
+  (a) A new hand: four cards with no two sharing a rank and no two sharing a suit
+  (b) A new hand: a full line with no two cards sharing a rank and no two sharing a suit
+  (c) A new hand: four cards sharing neither rank nor suit, ranked by how low its highest card is
+Q0089 | Beehive four-of-a-kind removal | skill | B1 [ANSWERED]
+  mechanic: Take four of a kind off the board
+  (a) Any four of a kind on the grid may be removed together for a bonus
+  (b) Any four of a kind on the grid may be removed together, scoring as a meld and freeing the cells
+  (c) Any four of a kind may be removed, and doing so pulls four new cards into the Entrance
+Q0090 | Blackjack bust rule | skill | B1 [ANSWERED]
+  mechanic: Twenty-one exactly
+  (a) A line whose ranks total exactly 21 scores as its own meld; going over scores nothing
+  (b) A line whose ranks total exactly 21 scores as its own meld, alongside its poker hand
+  (c) A line totalling exactly 21 scores as a meld, and the closest line to 21 without going over scores as well
+Q0091 | Bulwark | skill | B1 [ANSWERED]
+  mechanic: A hand made of rankless cards
+  (a) A new hand: five rankless, suitless cards score as a large flat meld
+  (b) A new hand: five rankless cards score as a large meld, and each blank card in your deck raises it
+  (c) A new hand: any five cards that share no rank and no suit at all score as a meld
+Q0092 | Clusterfuck/Cluster | skill | B1 [ANSWERED]
+  mechanic: A hand made of nothing matching
+  (a) A new hand: eight or more cards containing no pair, no flush and no straight score as a large meld
+  (b) A new hand: a full line containing no pair, flush or straight scores as a large meld
+  (c) A new hand: a line where no two cards share a rank or a suit scores as a large meld
+Q0093 | Cribbage phase-1 stack-to-31 | skill | B1 [ANSWERED]
+  mechanic: Build to thirty-one
+  (a) A running total builds across placements up to 31, scoring at exact totals along the way
+  (b) A running total builds across placements up to 31; hitting exactly 31 scores, and overshooting resets it
+  (c) A running total builds per line rather than per show, scoring at exact totals along the way
+Q0094 | Cribbage-style scoring | skill | B1 [ANSWERED]
+  mechanic: Cribbage counting
+  (a) Face cards count as 10; score 2 per 15-sum, 2 per 31-sum, 2 per pair, 6 per triple, 12 per quad, and 3 to 7 for runs
+  (b) Face cards count as 10, and only the 15-sums score, at 2 each
+  (c) Face cards count as 10; the cribbage counts score alongside poker hands rather than replacing them
+Q0095 | Flower Pot | skill | B1 [ANSWERED]
+  mechanic: One of every suit
+  (a) A line containing one card of every suit scores as its own meld
+  (b) A line containing one card of every suit scores as its own meld, ranked above a flush
+  (c) A line containing one card of every suit scores as a meld, and the more suits the game has the more it pays
+Q0096 | Mahjong hand check across ring | skill | B1 [ANSWERED]
+  mechanic: Mahjong hands across a grid
+  (a) A grid holding four triplets and a pair across its rows or its columns scores as a mahjong hand
+  (b) A grid holding four triplets and a pair scores as a mahjong hand, replacing its poker scoring
+  (c) Any grid satisfying one of a set of named mahjong hands scores that hand as a bonus meld
+Q0097 | Many Have Lost Their Minds Comprehending This Joker | skill | B1 [ANSWERED]
+  mechanic: A hand made of the entire deck
+  (a) A hand consisting of every card in the deck at once scores an absurd amount
+  (b) A hand consisting of every card on the board at once scores an absurd amount
+  (c) A hand consisting of every card in the deck scores absurdly, and is the only way to win that show
+Q0098 | None | skill | B1 [ANSWERED]
+  mechanic: A hand of no cards at all
+  (a) At show end, each empty line counts as its own meld, worth nothing but registering as a hand
+  (b) At show end, an empty line scores as its own meld, and pays out if it is the only line of its grid left empty
+  (c) At show end, every empty line counts as a hand, and every empty line on the board raises the show's combo
+Q0099 | Pyramid entrance-match removal | skill | B1 [ANSWERED]
+  mechanic: Match the Entrance card to clear
+  (a) A grid card may be removed if it matches the current Entrance card by one rank up or down
+  (b) A grid card may be removed if it matches the current Entrance card in rank or in suit
+  (c) A grid card may be removed if it matches the Entrance card by rank; doing so scores both
+Q0100 | Pyramid pair-removal rule | skill | B1 [ANSWERED]
+  mechanic: Pairs that add to thirteen
+  (a) Two cards whose ranks sum to 13 may be removed together for a bonus
+  (b) Two cards whose ranks sum to 13, or which match, may be removed together for a bonus
+  (c) Two cards summing to 13 may be removed and score as a meld, freeing their cells
+Q0101 | Rummy meld types | skill | B1 [ANSWERED]
+  mechanic: Runs and sets, rummy style
+  (a) Three or more same-suit consecutive cards, or three to four of the same rank, score as melds
+  (b) Three or more same-suit consecutive cards score as melds, but same-rank sets do not
+  (c) Rummy melds score alongside poker hands rather than replacing them
+Q0102 | Sets-of-3 rank boost (Risk) | skill | B1 [ANSWERED]
+  mechanic: Sets of three do something
+  (a) Any three matching cards on the grid trigger an effect, such as raising their ranks
+  (b) Any three matching cards on the grid may be cashed in for an effect you choose from three
+  (c) Any three matching cards trigger an effect, and the effect improves the more sets you have cashed
+Q0103 | The Fifteen | skill | B1 [ANSWERED]
+  mechanic: This card also melds with any adjacent neighbors whose ranks sum to 15 with it
+  (a) Also melds with any adjacent neighbours whose ranks sum to 15 with it
+  (b) Also melds with any set of cards in its line whose ranks sum to 15 with it
+  (c) Also melds with any adjacent neighbours whose ranks sum to a target that changes each show
+Q0104 | The Pure Hand | skill | B1 [ANSWERED]
+  mechanic: A whole grid in one suit
+  (a) A new hand: an entire grid of one suit scores enormously
+  (b) A new hand: an entire grid of one suit, or of one suit plus one named exception, scores enormously
+  (c) A new hand: an entire grid using only two suits scores enormously, and one suit scores more again
+Q0106 | The Triple | skill | B1 [ANSWERED]
+  mechanic: A short run pays out
+  (a) If this card completes a run of exactly three cards assembled that turn, that run scores triple
+  (b) If this card completes a run of exactly three cards, that run scores triple; runs of four or more score nothing
+  (c) Any run of exactly three cards scores as a full meld in its own right, whoever completes it
+Q0107 | Ultimate Pair | skill | B1 [ANSWERED]
+  mechanic: Two pairs, each in its own suit
+  (a) A new hand: two two-pairs, each one entirely within a single suit, across two suits
+  (b) A new hand: two two-pairs each within a single suit, and it outranks a full house
+  (c) A new hand: any two melds each confined to one suit, across two different suits
+Q0108 | Four Fingers | skill | B2 [ANSWERED]
+  mechanic: Four is enough
+  (a) Flushes and straights may be completed with four cards instead of five
+  (b) Flushes may be completed with four cards; straights still need five
+  (c) Any meld may be completed one card short, at three quarters of its value
+Q0109 | Paved Joker | skill | B2 [ANSWERED]
+  mechanic: Blanks plug the gaps
+  (a) Rankless cards may fill single-rank gaps in straights and flushes
+  (b) Rankless cards may fill any number of gaps in straights and flushes
+  (c) Rankless cards may fill gaps, and each one used raises the line's score
+Q0110 | Shortcut | skill | B2 [ANSWERED]
+  mechanic: Straights can skip
+  (a) Straights may be completed with gaps of one rank
+  (b) Straights may be completed with gaps of one rank, at three quarters value
+  (c) Straights may be completed with gaps of one rank, and gaps of two if the line is otherwise a flush
+Q0111 | The Red Wagon | skill | B2 [ANSWERED]
+  mechanic: Money counts as anything
+  (a) While spotlit, every Gold token in the deck counts as a wildcard toward any column run
+  (b) While spotlit, every Gold token on the grid counts as a wildcard toward any line at all
+  (c) While spotlit, every token card of any kind counts as a wildcard toward any line
+Q0112 | The Spider Rule | skill | B2 [ANSWERED]
+  mechanic: Build loosely, but only clear strictly
+  (a) Stacks build one rank down regardless of suit, but a run is only removed and scored when it is entirely one suit
+  (b) Stacks build one rank down regardless of suit, and a run of any suits may be removed and scored at a lower rate
+  (c) Stacks build loosely, and a same-suit run scores double what a mixed one does
+Q0113 | Fouling | skill | B3 [ANSWERED]
+  mechanic: Lines must be ordered by strength, or nothing scores
+  (a) Each line must score at least as high as the line above it; break the order and the whole grid scores nothing
+  (b) Each line must beat the line above it; break the order and only the offending line scores nothing
+  (c) Each line must beat the line above it; break the order and the grid scores, but pays a penalty larger than the best line was worth
+Q0114 | The Blacklisted Hand | skill | B3 [ANSWERED]
+  mechanic: The hand you leaned on stops paying
+  (a) The hand type you scored most in one placement scores nothing in the next
+  (b) The hand type you scored most in one placement scores half in the next, and full again the placement after
+  (c) Each hand type may be scored only twice per show; the third time it pays nothing
+Q0115 | The Eye | hazard | B3 [ANSWERED]
+  mechanic: Boss: no hand type twice
+  (a) Boss: no hand type may be scored more than once in a show
+  (b) Boss: no hand type may be scored more than once per Entrance refill
+  (c) Boss: no hand type may be scored twice in a row, but may return later
+Q0116 | The Mouth | hazard | B3 [ANSWERED]
+  mechanic: Boss: only one hand type all show
+  (a) Boss: only one hand type may be scored for the whole show, fixed by the first line you complete
+  (b) Boss: only one hand type may be scored, named by the boss before the show starts
+  (c) Boss: only one hand type may be scored, and you choose it before seeing your Entrance
+Q0117 | Calculation Solitaire looping stacks | skill | B4 [ANSWERED]
+  mechanic: Piles that count by their own number
+  (a) Foundation stacks build in increments of their own base number, wrapping past King
+  (b) Foundation stacks build in increments of their base number without wrapping, ending at King
+  (c) Each column builds in increments of its own index, so column 3 stacks in threes
+Q0118 | Fan Tan foundation-build rule | skill | B4 [ANSWERED]
+  mechanic: Sevens are the foundation
+  (a) Sevens are foundations, extended only by a same-suit card one rank higher or lower
+  (b) Sevens are foundations extended by any suit, one rank higher or lower
+  (c) The first time this card is spotlit, name a rank; it becomes the foundation for the rest of the run, extended by same-suit neighbours in rank
+Q0119 | Foundations From Both Ends | skill | B4 [ANSWERED]
+  mechanic: Two foundations growing toward each other
+  (a) A line may be built from its low end upward or its high end downward, and it scores when the two meet
+  (b) A line is built from both ends toward the middle, and the card that closes the gap scores double
+  (c) Two foundations run in opposite directions and a card may join either; completing both pays enormously
+Q0120 | Spite and Malice communal foundations | skill | B4
+  mechanic: Communal foundations, kings wild
+  (a) Up to four shared foundations build from 1 to Queen regardless of suit, with kings wild; a completed foundation is set aside and replaced
+  (b) Up to four shared foundations build from 1 to Queen regardless of suit, and completing one scores it as a meld
+  (c) One shared foundation builds 1 to Queen with kings wild, and completing it scores the whole run at once
+Q0121 | The Forged Ace | rank | B4
+  mechanic: This card has an enormous rank that counts as two Aces in melds; if any inspection effect examines it, it is destroyed and the show's fame payout is voided
+  (a) An enormous rank counting as two Aces in melds; any inspection effect that examines it destroys it and voids the show's payout
+  (b) An enormous rank counting as two Aces in melds; being inspected destroys it but the payout survives
+  (c) An enormous rank counting as two Aces; each show it survives without being inspected, its rank grows
+Q0122 | The Headliner | rank | B4
+  mechanic: Aces are renamed and count as either rank 1 or rank 14 in runs, whichever is more favorable, decided at evaluation time
+  (a) Aces count as either rank 1 or rank 14 in runs, whichever helps, decided when the line is read
+  (b) Aces count as either 1 or 14 in runs and in melds, whichever helps
+  (c) Every rank may count as one higher or one lower when a run is read, decided per line
+Q0123 | Canasta rank-based wildcards | skill | B5
+  mechanic: One rank is wild
+  (a) The first time this card is spotlit, name a rank; it acts as a wildcard in every meld for the rest of the run
+  (b) One rank acts as a wildcard, and which rank it is changes each show
+  (c) One rank acts as a wildcard, and using it in a meld consumes it permanently
+Q0124 | Crazy Eights wild-suit rule | skill | B5
+  mechanic: One rank changes the suit
+  (a) One rank is wild and names the suit the next card must match
+  (b) One rank is wild and names the suit every card must match until another is played
+  (c) One rank is wild and names the suit for its whole line, retroactively
+Q0125 | Deuces Wild | skill | B5
+  mechanic: One rank is designated wild for the show
+  (a) One rank named at show start is wild in every meld
+  (b) One rank is wild, and it changes each placement
+  (c) One rank is wild, and any line using a wild pays three quarters
+Q0126 | Smeared Joker | skill | B5
+  mechanic: Two suits count as one
+  (a) Two named pairs of suits each count as a single suit for melds
+  (b) Two named pairs of suits count as one for melds but stay distinct for stacking
+  (c) All suits count as one suit for flushes only, making flushes trivial and everything else unchanged
+Q0127 | The Salt | rank | B5
+  mechanic: Matches its own kind, or anything
+  (a) This card melds either with another of its own kind or with any card at all, your choice at scoring
+  (b) This card melds with any card at all, but never with another of its own kind
+  (c) This card melds with anything, and every one used in a meld makes the next one in the deck stricter
+Q0128 | Burnt Joker | skill | B6
+  mechanic: Levels up a hand type
+  (a) Permanently raises the level of the first hand type discarded each show, so that hand scores more for the rest of the run
+  (b) Permanently raises the level of the first hand type scored each show
+  (c) Permanently raises the level of whichever hand type you have scored least this run
+Q0129 | The Arm | hazard | B6
+  mechanic: Boss: your hands get worse
+  (a) Boss: permanently lowers the level of whichever hand type you score
+  (b) Boss: lowers the level of the hand type you score for this show only
+  (c) Boss: permanently lowers the level of your most-played hand type, once
+Q0130 | The Practised Hand | skill | B6
+  mechanic: Hands you play often get better, and hands you neglect rot
+  (a) Each hand type levels up one step each time it is scored, and loses a level each show it is never scored
+  (b) Each hand type levels up one step each time it is scored, and levels never decay
+  (c) Each hand type levels one step per show in which it was scored at all, however many times
+Q0131 | Universum | skill | B6
+  mechanic: Levelling up is worth more
+  (a) When a hand type levels up, it gains multiplier and flat points rather than flat points alone
+  (b) When a hand type levels up, it gains double what it normally would
+  (c) When a hand type levels up, every other hand type gains a small amount too
+Q0132 | Lowball | skill | B7
+  mechanic: The worst hand wins
+  (a) Lines are scored on the WORST poker hand they contain rather than the best
+  (b) Lines are scored on the worst hand, and the ace counts low
+  (c) One line per grid, named at show start, is scored on its worst hand while the rest score normally
+Q0133 | Only first poker hand scores | skill | B7
+  mechanic: Only the best hand on a line counts
+  (a) Only the best poker hand on a line scores; further hands on that line are ignored
+  (b) Only the first hand completed on a line scores; later ones on that line are ignored
+  (c) Every hand on a line scores, but each after the first at half value
+Q0134 | Splash | skill | B7
+  mechanic: Every card in the line counts
+  (a) Every card in a scoring line contributes, not only those the hand uses
+  (b) Every card in a scoring line contributes, with unused cards at half value
+  (c) Every card in the grid contributes to every line it touches
+Q0135 | The Contrary | skill | B7
+  mechanic: Descending runs count as ascending, and the worst poker hand scores instead of the best, on each row
+  (a) Descending runs count as ascending, and each row scores its worst poker hand instead of its best
+  (b) Each line scores its worst poker hand instead of its best, and pays triple for doing so
+  (c) Each line scores its worst poker hand, and any line that would have scored nothing scores its best instead
+Q0136 | Dead Man's Hand | skill | B8
+  mechanic: Scoring two pair, Aces over Eights, in one row pays a jackpot and triggers a map event
+  (a) A hidden meld: two pair, aces over eights, in one line pays a large bonus the first time it is found each run
+  (b) A hidden meld the game never names, reseeded each run; you have to find out which hand pays
+  (c) A hidden meld: two pair, aces over eights, pays a large bonus every time and permanently unlocks a card the first time it is found
+Q0138 | Sword Swallower | skill | B8
+  mechanic: A column that is one perfect descending run from top to floor pays a large bonus and mints a Knife-suit card
+  (a) A column that is one perfect descending run from top to floor pays a large bonus and mints a Knives card
+  (b) Any line that is one perfect run in either direction pays a large bonus and mints a card of that line's dominant suit
+  (c) A column that is a perfect descending run pays a large bonus, and finding it once reveals what it does permanently
+Q0139 | The Secret | skill | B8
+  mechanic: A condition nobody announced
+  (a) Place this card face down naming a condition; when the condition is met the card flips and its effect fires unprompted
+  (b) Place this card face down; the condition is drawn at random from a known list, and it flips when met
+  (c) Place this card face down naming a condition; if the show ends without the condition being met, the card is destroyed and pays nothing
+Q0140 | The Three Rings | skill | B8
+  mechanic: Three full lines in one placement
+  (a) Scoring three separate full five-card hands in one placement permanently unlocks a new skill for the rest of the run
+  (b) Scoring three separate full five-card hands in one placement pays a large bonus, every time
+  (c) Scoring every row of a grid in one show permanently unlocks a new skill for the rest of the run
+Q0141 | The Voladores | skill | B8
+  mechanic: Four columns, four descents
+  (a) Four different columns each holding a full thirteen-rank descent in one show banks an enormous fame bonus
+  (b) Four different columns each holding any full descent in one show banks a large fame bonus
+  (c) Four different lines each holding a full descent in one show banks a large bonus, and reveals what it does permanently
+Q0142 | The Yakuza Hand | skill | B8
+  mechanic: The worthless hand
+  (a) A meld of exactly 8-9-3 pays a large jackpot
+  (b) A meld of exactly 8-9-3 pays a large jackpot, and each time it is found the jackpot grows
+  (c) A meld of three specific ranks, reseeded each run, pays a large jackpot
+Q0143 | Goalpost card | skill | B9
+  mechanic: Boosts whichever hand matters this run
+  (a) Enhances one viable scoring type, chosen at random per run
+  (b) Enhances one viable scoring type, chosen by you at run start
+  (c) Enhances whichever scoring type you have used least this run, updating as you play
+Q0144 | The Episode Rules | skill | B9
+  mechanic: This run is played under a different rulebook
+  (a) The first time this card is spotlit, name three hand types as the only ones that score; every other completed line pays nothing, for the rest of the run
+  (b) The first time this card is spotlit, name three hand types that score double, for the rest of the run; everything else scores normally
+  (c) The first time this card is spotlit, name three hand types that score double and one that scores nothing, for the rest of the run
+Q0145 | The Hand Card | skill | B9
+  mechanic: A published list of which hands are worth playing this run
+  (a) The first time this card is spotlit, name a list of hands that score, for the rest of the run; hands not on the list score nothing
+  (b) The first time this card is spotlit, name a list of hands that score double, for the rest of the run; everything else scores normally
+  (c) The first time this card is spotlit, name a list of hands; completing every hand on the list wins the run outright
+Q0146 | The Private Objective | skill | B9
+  mechanic: A scoring goal only this run has
+  (a) The first time this card is spotlit, draw a hidden scoring objective, revealed immediately, that pays alongside normal scoring for the rest of the run
+  (b) The first time this card is spotlit, draw a scoring objective that stays hidden until the run ends
+  (c) The first time this card is spotlit, draw three objectives and choose one; the others stay live for a rival
+Q0147 | This Season's Trend | skill | B9
+  mechanic: Certain abilities, not hands, pay extra this run. (line 835)
+  (a) The first time this card is spotlit, name a few abilities as trending; they score extra whenever they fire, for the rest of the run
+  (b) The first time this card is spotlit, name a few abilities as trending; the trend rotates every town
+  (c) A few abilities trend at a time, and using a trending ability enough times makes it trend permanently for the rest of the run
+Q0148 | Half Joker | skill | B10
+  mechanic: Paid for playing short
+  (a) Scores a large multiplier if its line completes while the grid holds ten cards or fewer
+  (b) Scores a large multiplier scaling with how few cards the grid holds when its line completes
+  (c) Scores a large multiplier if the whole grid holds fewer than ten cards
+Q0150 | Rank-merging meld rule | skill | B10
+  mechanic: Longer lines pay disproportionately
+  (a) A line's points are multiplied by its length, doubling at five cards and rising with every card beyond five, where another effect makes a line longer
+  (b) A line's points are multiplied by its length linearly, with no cap
+  (c) A line's points are multiplied by its length, and lines longer than the grid pay a further bonus
+Q0151 | The Six-Card Line | skill | B10
+  mechanic: Lines are longer than the grid was built for
+  (a) Lines are six cells long, so each grid row runs one cell into the grid beside it
+  (b) Lines are six cells long, drawn only on grids that have been widened to six by an unlock
+  (c) Lines may be five or six cells, and a six-card line scores as the best five plus a length bonus
+Q0152 | Line Ledger | skill | C1
+  mechanic: Turns line types on and off
+  (a) At show start, choose two of rows, columns, diagonals and height columns; only those score
+  (b) At show start, one line type is disabled at random and everything else scores double
+  (c) Each placement, one line type is enabled that was not before, so the board opens up over the show
+Q0153 | The Clearance Threshold | skill | C1
+  mechanic: A line that passes a mark clears itself
+  (a) A line whose running total passes a threshold scores and empties, freeing its cells
+  (b) A line whose total passes a threshold scores and empties, and the threshold rises each time
+  (c) A line whose total passes a threshold scores and empties, and the grid shifts to fill the gap
+Q0154 | The Long Diagonal | skill | C1
+  mechanic: Turns a diagonal into a scoring line
+  (a) The two long diagonals score as lines, alongside the rows and columns, which is already the default - this option keeps it
+  (b) The two long diagonals score, and any card sitting on both of them counts twice
+  (c) Every diagonal of four cards or more scores, not only the two long ones
+Q0155 | The Short Ring | skill | C1
+  mechanic: Grants the short diagonals as lines
+  (a) The four four-card diagonals of a grid also score as lines
+  (b) The four four-card diagonals score at half value
+  (c) One short diagonal per grid, chosen at show start, scores as a full line
+Q0156 | The Border Line | skill | C2
+  mechanic: The edge of the grid is a track of its own
+  (a) Any five consecutive cells along the grid border score as a line
+  (b) The sixteen border cells score as one line when all are filled, paying at the best five within it
+  (c) Any five consecutive border cells score as a line, and a line that turns a corner scores an extra step
+Q0157 | The Knight Line | skill | C2
+  mechanic: Five cells a knight apart
+  (a) While this card is on the grid, any five cells connected by knight moves score as a line
+  (b) While this card is on the grid, five cells connected by knight moves score as a line, and this card must be one of them
+  (c) Cue once per Entrance refill: nominate five cells connected by knight moves; if all are filled they score as a line
+Q0158 | The Puszta Five | skill | C2
+  mechanic: In every column at once
+  (a) Cue, once per show: for one scoring pass this card counts as a member of every column's meld
+  (b) Cue, once per show: for one scoring pass this card counts as a member of every line's meld, rows and diagonals included
+  (c) Cue, once per show: for one scoring pass this card counts as a member of the same column in every grid
+Q0160 | Stage Fright | skill | C3
+  mechanic: Disturbance costs instead of pays
+  (a) Disturbing a completed line re-scores it, but the re-score subtracts rather than adds
+  (b) Disturbing a completed line scores nothing at all, so lines are final once made
+  (c) Disturbing a completed line re-scores it, and each disturbance halves what that line can ever pay again
+Q0161 | The Cascade | skill | C3
+  mechanic: A clear collapses the board and can clear again
+  (a) A completed line clears and everything above falls in; a line completed by the fall scores again at a rising multiplier
+  (b) A completed line clears and everything above falls in, but a chain reaction scores at flat value
+  (c) A completed line clears and the board collapses; chains are capped at three to keep it bounded
+Q0162 | The Reprise | skill | C3
+  mechanic: Re-fires a line by disturbing it
+  (a) Cue: lift and replace one card in a completed line to score that line again
+  (b) Cue: lift and replace one card to re-score its line, at half value each subsequent time
+  (c) Any card removed and replaced re-scores its line, with no cue needed and no limit, which is already the default - this option keeps it
+Q0163 | The Understudy Call | skill | C3
+  mechanic: Swaps a card without breaking the line
+  (a) Cue: swap one card in a completed line for one in the Entrance; the line re-scores with the new card
+  (b) Cue: swap one card in a completed line for one in the Entrance, but the line does not re-score
+  (c) Cue: swap any two cards between two completed lines; both re-score
+Q0164 | Element boards (ice/water) | skill | C4
+  mechanic: Rows that do not hold still
+  (a) Ice rows slide any card placed on them to the end of the column; water rows let cards drift
+  (b) One row per grid is ice, sliding any card placed on it to the end of its column
+  (c) Ice and water rows appear at random per show, and which rows they are is telegraphed before you place
+Q0166 | Free Cell reserve slots | skill | C4
+  mechanic: A reserve you can reach any time
+  (a) Free reserve cells hold cards outside the grid and can be drawn from at any moment
+  (b) Free reserve cells hold cards outside the grid, and cards there still count for class and set bonuses
+  (c) Free reserve cells hold cards, and a card returning from reserve keeps whatever it gained while there
+Q0167 | Sawdust | type | C4
+  mechanic: When this card is discarded from the grid, its slot keeps a marker that gives the next card placed there bonus points on its first score
+  (a) When this card leaves a cell, the cell keeps a marker giving the next card placed there bonus points on its first score
+  (b) When any card leaves a cell, that cell keeps a marker giving the next card placed there bonus points
+  (c) When this card leaves a cell, the cell is marked permanently and every card ever placed there scores bonus points
+Q0168 | Tetris shape-matching bonus tiles | skill | C4
+  mechanic: Cells that want a shape
+  (a) Certain cells want a preset tetromino shape placed over them, rotatable, matched by suit or rank, for a bonus
+  (b) Certain cells want a preset shape placed over them, matched by suit only
+  (c) Certain cells want a shape that changes each show, and matching it scores the whole shape as a meld
+Q0169 | The Butoh Walker | skill | C4
+  mechanic: Moves one slot automatically every other turn; every slot it leaves permanently grants bonus points to the next card scored there
+  (a) Moves one cell on its own every other turn, and every cell it leaves permanently grants bonus points to the next card scored there
+  (b) Moves one cell on its own every turn, marking the cell it leaves for the rest of the show only
+  (c) Moves one cell on its own every other turn, and the cells it has left form a trail that pays out all at once when it completes a loop
+Q0172 | Trap card | skill | C4
+  mechanic: A space that is not really there
+  (a) Creates an extra empty cell; the next card placed there goes beneath this card instead, and the cell vanishes
+  (b) Creates an extra empty cell that any card may use normally, until this card leaves
+  (c) Creates an extra empty cell that swallows the next card placed there entirely, removing it from the show
+Q0174 | Minesweeper bomb-prefilled grid | skill | C5
+  mechanic: Bombs under the grid
+  (a) Grids start with hidden bombs; numbered cells show how many are adjacent, and placing on a bomb lowers that card's value
+  (b) Grids start with hidden bombs; numbered cells show how many are adjacent, and placing on a bomb destroys the card
+  (c) Grids start with hidden bombs you may defuse by completing a line through them
+Q0175 | Null | type | C5
+  mechanic: Junk material inserted by hazards: occupies a slot, scores nothing, and melds nothing
+  (a) Junk inserted by hazards: it fills a cell, scores nothing and melds nothing
+  (b) Junk inserted by hazards: it fills a cell and melds nothing, and can only be cleared by a line completing around it
+  (c) Junk inserted by hazards: it fills a cell, melds nothing, and drags its whole line's score to zero
+Q0176 | Spaceship card | skill | C5
+  mechanic: Can be placed off the board
+  (a) May be placed in an otherwise illegal off-grid cell
+  (b) May be placed in an off-grid cell, where it counts toward every line's meld but cannot be targeted
+  (c) May be placed off-grid, and creates a new legal cell there that any card can later use
+Q0177 | Mobile pageant zone | skill | C6
+  mechanic: A zone that will not stay put
+  (a) One column relocates each turn
+  (b) One column relocates each turn, carrying its cards with it
+  (c) One cell of the grid relocates each turn, leaving a hole where it was
+Q0178 | Non-5x5 ring layouts with hazards | skill | C6
+  mechanic: Grids that are not five by five
+  (a) Alternative grid layouts that are not 5x5, some pre-filled with cards or hazards
+  (b) Alternative grid layouts that are not 5x5, with line length adjusting to the layout
+  (c) Alternative grid layouts chosen per town, so the shape of the board is part of the venue
+Q0179 | Sliced Reality (summary) | skill | C6
+  mechanic: Splits a column, or welds two together
+  (a) Splits one column into two, or merges two columns into one
+  (b) Splits one column into two, or merges two into one, once per show
+  (c) Splits one column into two or merges two into one, and the affected cards redistribute rather than being discarded
+Q0180 | The Floors | skill | C6
+  mechanic: The grid is stacked into levels that resolve in order
+  (a) A grid's stack heights act as floors that resolve bottom to top, and a threat that survives one floor rises to the next
+  (b) A grid's stack heights act as floors that resolve bottom to top, and a threat stopped on a floor is destroyed there
+  (c) A grid's stack heights act as floors, and you choose the order they resolve in each show
+Q0182 | Uneven Rows | skill | C6
+  mechanic: The lines are not the same length
+  (a) A grid's lines have different lengths - three, five, five - and a short line is scored on its own smaller hand table
+  (b) A grid's lines have different lengths, and a short line pays proportionally more per card
+  (c) A grid's lines have different lengths, and you choose the shape before the show starts
+Q0183 | Cross-grid row expansion setting | hazard | C7
+  mechanic: Grids grow together, or apart
+  (a) Setting: when one grid's rows spread apart to make room for height, every other grid spreads too
+  (b) Setting: only the grid that grew spreads, and the others stay compact
+  (c) Setting: grids spread together, and a line can then run across grids at the same height
+Q0184 | Rows spanning multiple grids | skill | C7
+  mechanic: Lines that run across grids
+  (a) Rows may run across multiple grids at the same y, scoring as one long line
+  (b) Rows may run across grids at the same y, scoring as one line but only if every grid contributes
+  (c) Rows may run across grids, and such a line scores separately from each grid's own row
+Q0185 | The Aligned Column | skill | C7
+  mechanic: Columns line up across grids as well
+  (a) The same column index across every grid forms one long line, scored as the best five within it
+  (b) The same column index across grids forms a line only when every grid has that column full
+  (c) The same column index across grids forms a line, and cards in it also still score in their own grid column
+Q0187 | Strike the Set | skill | C8
+  mechanic: Closes a grid down
+  (a) Cue: close one grid; its cards are discarded and the show's goal drops proportionally
+  (b) Cue: close one grid; its cards return to the deck and the goal is unchanged
+  (c) Cue: close one grid and its cards are dealt into the remaining grids' empty cells
+Q0188 | The Fourth Ring | skill | C8
+  mechanic: Opens another grid
+  (a) Unlocks one additional grid for this show only
+  (b) Unlocks one additional grid permanently for the rest of the run
+  (c) Unlocks one additional grid, and the show's goal rises by the fraction it adds
+Q0189 | The Merger | skill | C8
+  mechanic: Welds two grids into one
+  (a) Cue: merge two adjacent grids into one wider grid, so its rows are ten cards long
+  (b) Cue: merge two adjacent grids, and lines in the merged grid need seven cards rather than five
+  (c) Cue: merge two adjacent grids, overlaying them so cards land on top of each other as height
+Q0190 | The Touring Rig | skill | C8
+  mechanic: Grids arrive when you earn them, not when the deck grows
+  (a) A new grid unlocks each time a show is cleared above target, rather than per fifty-two cards of deck
+  (b) A new grid unlocks per fifty-two cards as usual, and one more may be bought outright between shows
+  (c) Grids unlock per fifty-two cards, and one is taken away each time a show is cleared below target
+Q0191 | Per-ring independent entrances | skill | C9
+  mechanic: Every grid has its own Entrance
+  (a) Each grid holds its own five-card Entrance, playable in any order between grids
+  (b) Each grid holds its own Entrance, but only one may be played from per turn
+  (c) Each grid holds its own Entrance, and cards may be swapped between them at a cost
+Q0192 | The Booked Stage | skill | C9
+  mechanic: One grid holds the whole placement
+  (a) While this card is on a grid, the Entrance stays committed to that grid for the whole show rather than lifting, and every line it completes scores an extra step
+  (b) While this card is on a grid, the Entrance stays committed to that grid for the whole show, and every grid it locks out pays at show end for staying untouched
+  (c) While this card is on a grid, the entrance alternates strictly between grids, one refresh each
+Q0193 | The Free Hand | skill | C9
+  mechanic: You may change your mind about which grid you are feeding
+  (a) Once the first card of a refresh is placed you may still switch grids, but switching costs an Entrance card, discarded
+  (b) You may switch grids mid-refresh once per Entrance refill at no cost
+  (c) You may switch grids mid-refresh freely, but a refresh split across grids scores no line bonuses
+Q0194 | Trigger cross-ring effects while placing | skill | C9
+  mechanic: Trigger elsewhere while you place here
+  (a) Effects in other grids may be triggered while placing into the committed grid
+  (b) Effects in other grids may be triggered while placing, but only once per refresh
+  (c) Effects in other grids fire automatically when a line completes in the committed grid
+Q0195 | Fairy Floss | skill | C10
+  mechanic: When scored, gives +1 rank to all orthogonally adjacent cards for the rest of the show
+  (a) When this card scores, every orthogonally adjacent card gains +1 rank for the rest of the show
+  (b) When this card is placed, every orthogonally and diagonally adjacent card gains +1 rank permanently
+  (c) When this card scores, every card in the 3x3 around it gains +1 rank for the rest of the show
+Q0196 | Misdirection | skill | C10
+  mechanic: While spotlit, the topmost covered card in each adjacent column is also treated as spotlit
+  (a) While spotlit, the topmost covered card in each adjacent column also counts as spotlit
+  (b) While spotlit, every covered card in this card's own column also counts as spotlit
+  (c) While spotlit, the card directly beneath this one also counts as spotlit
+Q0197 | Mr. Punch | skill | C10
+  mechanic: Each placement, gains points for every orthogonally adjacent card debuffed or destroyed
+  (a) Each placement, gains points for every orthogonally adjacent card that is debuffed or destroyed
+  (b) Each placement, gains points for every debuffed or destroyed card anywhere in its grid
+  (c) Gains +1 permanent rank each time an orthogonally adjacent card is destroyed
+Q0198 | Neighbor-type value bonus (3-Ring Circus) | skill | C10
+  mechanic: Cares who is beside it
+  (a) Gains value based on the types of the cards to its left and right
+  (b) Gains value based on the types of all four orthogonal neighbours
+  (c) Gains value based on how many distinct types surround it, in all eight directions
+Q0199 | Punch | skill | C10
+  mechanic: Hits what is next to it
+  (a) Scores points for each adjacent card it beats in rank
+  (b) Scores points for each adjacent card it beats in rank, and knocks the lowest one out of the grid
+  (c) Scores points for each adjacent card it beats, doubled if it beats all four
+Q0200 | Spiderweb | skill | C10
+  mechanic: When scored, gains +1 point per card diagonally adjacent to it
+  (a) On scoring, gains +1 point per diagonally adjacent card
+  (b) On scoring, gains +1 point per card on both full diagonals running through its cell
+  (c) On scoring, gains +1 point per diagonally adjacent card, doubled if all four diagonals are occupied
+Q0201 | Terrain Combinations | skill | C10
+  mechanic: Two placed hazards make a third thing
+  (a) Two specific hazard cards placed adjacent transform into a stronger single hazard with a larger reward
+  (b) Two specific hazards placed adjacent cancel each other out
+  (c) Two hazards placed adjacent combine, and the combination is different for each pair
+Q0202 | The Courier | skill | C10
+  mechanic: While spotlit, this card counts as a member of both its own column's and the adjacent column's melds
+  (a) While spotlit, this card counts in both its own column's melds and the adjacent column's
+  (b) While spotlit, this card counts in the melds of every line that passes within one cell of it
+  (c) While spotlit, this card counts in both its own column's and its own row's melds twice over
+Q0203 | The Puppet (Bunraku) | skill | C10
+  mechanic: Needs hands to work it
+  (a) A powerful card that only functions while two or more adjacent cards support it
+  (b) A powerful card that only functions while two adjacent cards support it, scaling with how many do
+  (c) A powerful card that needs two supporters, and its supporters score as well when it does
+Q0204 | The Wiring Diagram | stamp | C10
+  mechanic: Names exactly which neighbours it checks
+  (a) This card names which of its neighbouring cells it reads, and ignores the rest
+  (b) This card names which neighbouring cells it reads, and you may re-point them once per show
+  (c) This card reads only the neighbours that are diagonal to it, never the orthogonal ones
+Q0205 | The Zoning Board | skill | C10
+  mechanic: Adds to some neighbours and subtracts from others
+  (a) This card adds points to the cells on one side of it and subtracts from the cells on the other
+  (b) This card adds points to orthogonal neighbours and subtracts from diagonal ones
+  (c) This card adds to neighbours of its own suit and subtracts from all others
+Q0206 | The Awkward Shape | type | C11
+  mechanic: Occupies more than one cell, and can be turned
+  (a) This card occupies an L-shaped footprint of three cells and may be rotated when placed
+  (b) This card occupies a two-cell footprint and may be rotated when placed
+  (c) This card occupies an L of three cells, may be rotated, and counts in every line any of its cells touches
+Q0207 | The Corridor | skill | C11
+  mechanic: Connected regions score, not lines
+  (a) The largest connected group of each suit scores, alongside the normal lines
+  (b) The largest connected group of each suit scores INSTEAD of the normal lines
+  (c) Every connected group of three or more of one suit scores, and the largest scores double
+Q0209 | The Ring Of Five | skill | C11
+  mechanic: A shape that is not a line
+  (a) This card scores for every card in the ring of eight cells around it, counting suits and ranks as a hand
+  (b) This card scores for the ring of eight around it only when all eight are filled, paying as a made hand
+  (c) This card scores for the ring of eight around it, and the ring may cross into a neighbouring grid
+Q0210 | Hunting Season | skill | C12
+  mechanic: Kills the middle one
+  (a) If a line scores a three of a kind, the centre card of that line is destroyed afterwards
+  (b) If a line scores a three of a kind, the centre card is destroyed and this card takes its rank
+  (c) The centre cell of any scoring line is destroyed afterwards, whatever the line's length
+Q0211 | Performance Rings | skill | C12
+  mechanic: Depth is worth more
+  (a) Score zones by stack height: heights 1 to 5 score at 1x, 6 to 10 at 2x, 11 to 15 at 3x, and so on
+  (b) Score zones by stack height, with the multiplier applying only to the column score, not the row
+  (c) Score zones by height rather than row: every five levels of stack height multiplies that stack's score by one more
+Q0212 | Ring Column | hazard | C12
+  mechanic: One per column: adds one grid column at game creation; its rank equals which column it is
+  (a) One per column: adds a grid column at game creation, its rank equal to which column it is
+  (b) One per column: adds a grid column at game creation, and can be destroyed mid-run to remove that column
+  (c) One per column: adds a grid column whose cells all carry a bonus matching the column's rank
+Q0213 | Sliced Bread | skill | C12
+  mechanic: On submission, if a same-suit card sits lower in this card's stack, gain a point per card between them
+  (a) On scoring, gain a point for each card lying between this card and the nearest same-suit card lower in its stack
+  (b) On scoring, gain a point for each card between this one and the nearest same-suit card anywhere in its line
+  (c) On scoring, gain a point for each card between this one and every same-suit card in its line, counting each pair
+Q0214 | Escaramuza | skill | C13
+  mechanic: When the grid's column heights read the same left-to-right as right-to-left at scoring, gain bonus multiplier on the placement
+  (a) If the grid's column heights read the same left to right as right to left when a line scores, the placement gains a large multiplier
+  (b) While the grid's column heights read the same in both directions, every line scored pays double
+  (c) Any line whose ranks read the same forwards as backwards pays double
+Q0215 | Front And Back | skill | C13
+  mechanic: The row a card sits in decides what it does
+  (a) Cards in the grid's front rows take hazards first and cards in the back rows score more, so placement is a risk trade
+  (b) Cards in the front rows take hazards first; back rows are otherwise identical
+  (c) Front rows take hazards first and score less; the boundary between front and back moves each placement
+Q0216 | Sudoku-rule grid bonus | skill | C13
+  mechanic: Sudoku on the grid
+  (a) If the ranks on a grid satisfy sudoku constraints, the grid scores a bonus
+  (b) If any row, column or block satisfies sudoku constraints, that line scores a bonus
+  (c) If no rank repeats in any row or column of a grid, that grid scores a bonus scaling with how full it is
+Q0217 | The Button | skill | C13
+  mechanic: Three connected of a kind pays a token
+  (a) Three connected cards sharing a suit may be cashed for a token that scores at show end
+  (b) Three connected cards sharing a suit or a rank may be cashed for a token
+  (c) Three connected cards of a kind pay a token, and the token's value rises with each one already banked
+Q0218 | The Hammer | hazard | C13
+  mechanic: Half the ranks are dead
+  (a) Boss: every odd-ranked card is debuffed
+  (b) Boss: every card of one parity is debuffed, and which parity flips each placement
+  (c) Boss: every odd-ranked card is debuffed, and every even-ranked card scores double
+Q0219 | The Junk Orchestra | skill | C13
+  mechanic: Scores by position, not by rank
+  (a) Skill-less cards score by their positional pattern rather than their ranks
+  (b) Skill-less cards score by positional pattern, paying more the more regular the pattern is
+  (c) Skill-less cards score by positional pattern, and matching a pattern named at show start pays double
+Q0220 | The Kickline | skill | C13
+  mechanic: A pattern across the tops of the columns
+  (a) When the top cards of all five columns share a suit at scoring, the row above them scores again
+  (b) When the top cards of all five columns share a suit, every line through them scores again
+  (c) When the top cards of all five columns form any poker hand, that hand scores as a sixth line
+Q0221 | The Pyramid | skill | C13
+  mechanic: A staircase of stacks
+  (a) Formation: three adjacent columns holding stacks of exactly 3, 2 and 1 score a bonus meld
+  (b) Formation: any three adjacent columns whose heights descend by one score a bonus meld, scaling with the height they start from
+  (c) Formation: any run of columns whose heights ascend or descend by one scores a bonus meld per column involved
+Q0222 | The Repulsor | hazard | C13
+  mechanic: Only the ends of the row fire
+  (a) Boss: only the first and last card of each line trigger; everything between does nothing
+  (b) Boss: only the first and last card of each line trigger, and they trigger twice
+  (c) Boss: only the centre card of each line triggers
+Q0223 | Callback | skill | C14
+  mechanic: Reaches back a fixed number of turns
+  (a) Cue: re-trigger whatever card you placed three turns ago, wherever it is now
+  (b) Cue: re-trigger whatever card you placed on the previous turn
+  (c) Cue: name a turn number; re-trigger the card you placed on that turn this show
+Q0224 | The Opener | skill | C14
+  mechanic: Remembers what went first
+  (a) Scores a bonus equal to the rank of the first card you placed this show
+  (b) Scores a bonus equal to the rank of the first card placed in its own line
+  (c) The first card placed after each Entrance refill is spotlit until the next refill, wherever it sits
+Q0225 | The Running Order | skill | C14
+  mechanic: Reads the sequence, not the position
+  (a) Scores a bonus if the cards in its line were placed in ascending rank order
+  (b) Scores a bonus if the cards in its line were placed in any strictly ordered sequence, ascending or descending
+  (c) Scores a bonus per card in its line that was placed in order, so a partly ordered line still pays
+Q0226 | The Understudy List | skill | C14
+  mechanic: Placement order is recorded and readable
+  (a) The order cards were placed in is tracked and shown, and effects may read it
+  (b) Placement order is tracked but hidden, and only specific effects may read it
+  (c) Placement order is tracked, and the last three placements are always visible on the board
+Q0227 | The Diagonal Company | skill | C15
+  mechanic: Only diagonals count as adjacent
+  (a) Adjacency is diagonal only; orthogonal neighbours do not count as adjacent
+  (b) Adjacency is diagonal only for effects, but lines still score orthogonally
+  (c) Adjacency is diagonal only, and which it is flips each placement
+Q0228 | The Joined Tents | skill | C15
+  mechanic: Grids touch at their edges
+  (a) The rightmost column of each grid is adjacent to the leftmost column of the next
+  (b) Grids are adjacent at their edges, and a line may cross that seam
+  (c) Grids are adjacent at their edges only while both are more than half full
+Q0229 | The Long Reach | stamp | C15
+  mechanic: Counts distant cells as adjacent
+  (a) This card treats every cell in its own row and column as adjacent to it
+  (b) This card treats every cell within two steps as adjacent to it
+  (c) This card treats the mirrored cell across the grid's centre as adjacent to it
+Q0230 | The Round Ring | skill | C15
+  mechanic: The grid wraps
+  (a) The grid's left and right edges are adjacent, so rows wrap around
+  (b) All four edges wrap, so the grid is a torus and every cell has four neighbours
+  (c) The edges wrap, and a line that uses the wrap scores double
+Q0231 | The Telescope | stamp | C15
+  mechanic: Treats the whole board as adjacent
+  (a) While this is in play, every card counts as adjacent to every other for adjacency effects
+  (b) While this is in play, every card in the same grid counts as adjacent to every other
+  (c) While this is in play, this card alone counts as adjacent to everything
+Q0232 | Accordion pile-combining rule | skill | D1
+  mechanic: Piles that combine at a distance
+  (a) Stacks whose top cards match may combine if they are adjacent or exactly three apart
+  (b) Stacks whose top cards match may combine if they are adjacent, two apart, or at opposite ends of the line
+  (c) Stacks whose top cards match may combine at any distance, but only along a row
+Q0233 | Any card placeable on this card | skill | D1
+  mechanic: Anything can go on top of it
+  (a) Any card may be placed on top of this one, whatever the stacking rules say
+  (b) Any card may be placed on top of this one, and doing so scores this card immediately
+  (c) Any card may be placed on top of this one, and this card takes the suit of whatever lands there
+Q0235 | Devil's Grip +3 rank stacking | skill | D1
+  mechanic: Stack by threes
+  (a) Stacking requires a rank exactly three higher, with the starting row deciding the sequence
+  (b) Stacking requires a rank exactly three higher or three lower
+  (c) The first time this card is spotlit, name a fixed rank gap; stacking requires that gap for the rest of the run
+Q0236 | Hanoi Solitaire | skill | D1
+  mechanic: Only smaller on larger, ever
+  (a) A card may only be stacked on a card of strictly higher rank
+  (b) A card may only be stacked on a card of strictly higher rank, and a full descending stack scores as its own meld
+  (c) A card may only be stacked on a higher rank, and moving a stack moves only its top card
+Q0237 | Jumbo | skill | D1
+  mechanic: Heavy: no cards may be placed on this card, but it can be placed on anything; scores bonus points per card beneath it when scored
+  (a) Nothing may be placed on this card, though it may be placed on anything; scores bonus points per card beneath it
+  (b) Nothing may be placed on this card and it may only go on an empty cell; it scores triple
+  (c) Nothing may be placed on this card; it scores bonus points per card in its whole column
+Q0238 | Klondike empty-space king rule | skill | D1
+  mechanic: Only a king opens an empty cell
+  (a) An empty cell can only be filled by a stack headed by the highest rank
+  (b) An empty cell can only be filled by a stack headed by the highest rank, or by a single card of any rank
+  (c) An empty cell can be filled by a stack headed by any face card
+Q0239 | OG Placer | skill | D1
+  mechanic: Default placement legality: a stack may be placed where the join continues a legal run without same-suit contact
+  (a) Default placement legality: a stack lands where the join continues a legal run without same-suit contact
+  (b) Default placement legality: a stack lands anywhere, and an illegal join simply scores nothing
+  (c) Default placement legality: a stack lands where the join is adjacent in rank, whatever the suits
+Q0240 | Rosin | type | D1
+  mechanic: Cards placed onto this card cannot be picked up again, but score +1 bonus per level deeper than they stand
+  (a) Cards placed on this one can never be lifted again, but score +1 for each level they sit above it
+  (b) Cards placed on this one can never be lifted again, and score double
+  (c) Cards placed on this one can be lifted only by paying a charge, and score +1 per level above it
+Q0241 | The Grip | skill | D1
+  mechanic: The bottom card legalises the pile
+  (a) The bottom card of a stack makes everything above it legal, whatever the stacking rules say
+  (b) The bottom card of a stack makes everything directly above it legal, one card only
+  (c) The bottom card legalises the whole stack, and the stack cannot be broken up afterwards
+Q0242 | The Mighty Atom | skill | D1
+  mechanic: Small, and holds up anything
+  (a) A rank-3 card that can legally hold any stack above it, whatever the stacking rules
+  (b) A rank-3 card that can hold any stack above it, and scores per card it is holding
+  (c) A low-ranked card that can hold any stack, and the lower its rank the more it scores for doing so
+Q0243 | The Packer | skill | D1
+  mechanic: Build downward in alternating colour
+  (a) Stacks build one rank down in alternating colour, and a whole ordered run moves as one
+  (b) Stacks build one rank down in alternating colour, and only single cards move
+  (c) Stacks build one rank down in any colour but the same one, and a whole run moves as one
+Q0244 | OG Grabber | skill | D2
+  mechanic: Default grab legality: a stack may be picked up if it is an ascending or descending run with no two same-suit cards adjacent
+  (a) Default grab legality: a stack lifts if it is an ascending or descending run with no two same-suit cards touching
+  (b) Default grab legality: any stack lifts, and legality is checked only when it is put down
+  (c) Default grab legality: a stack lifts if every card in it shares a suit or every card in it shares a rank
+Q0245 | Ringmaster's Grip | stamp | D2
+  mechanic: This card and the stack it heads can always be picked up, regardless of stack legality
+  (a) This card and the stack it heads can always be picked up, whatever the stacking rules say
+  (b) This card and the stack it heads can always be picked up, and can always be put down anywhere
+  (c) Any stack containing this card can always be picked up, even from underneath it
+Q0246 | The Acrobat | skill | D2
+  mechanic: This card can be grabbed even while covered; the cards above cascade down one slot
+  (a) This card can be grabbed while covered; the cards above it cascade down one slot
+  (b) This card can be grabbed while covered, taking the cards above it along as a stack
+  (c) Any card can be grabbed while covered while this one is on the grid; the cards above cascade down
+Q0247 | The Recall | skill | D2
+  mechanic: Cards may come back off the foundation
+  (a) A card that has already scored may be taken back off its line and replayed elsewhere
+  (b) A card that has already scored may be taken back once per show
+  (c) A scored card may be taken back, but its line then scores nothing for the rest of the show
+Q0248 | Carrier-stacking bonus points | skill | D3
+  mechanic: Tricks on top of other performers
+  (a) A skill card stacked on another skill card scores bonus points for both
+  (b) A skill card stacked on another skill card scores bonus points scaling with the stack's height
+  (c) A skill card stacked on another scores bonus points, and the carrier also fires its own skill again
+Q0249 | Chair stack | skill | D3
+  mechanic: Paid by the tallest stack
+  (a) Gains a multiplier per card in the tallest column on its grid
+  (b) Gains a multiplier per card in its own column
+  (c) Gains a multiplier per card in the tallest column of any grid, counting across all of them
+Q0250 | Mallakhamb Pole | skill | D3
+  mechanic: While spotlit, every card in this card's column gains bonus points per row of column height when the column scores
+  (a) While spotlit, every card in this card's column gains bonus points per level of column height when that column scores
+  (b) While spotlit, this card scores its rank once for every level of height beneath it
+  (c) While spotlit, a height line completed in this card's column scores twice
+Q0251 | Poker Crown | skill | D3
+  mechanic: When scored, this card and the 4 cards directly above it in its column stack are also evaluated as a poker hand, once
+  (a) When this card scores, it and the four cards directly above it in its stack are also read as a poker hand, once
+  (b) When this card scores, it and the four cards directly above it are read as a poker hand every time, not just once
+  (c) When this card scores, the five cards nearest it in any straight line, including diagonals, are also read as a poker hand
+Q0252 | The Backlift | skill | D3
+  mechanic: Paid by what is piled on it
+  (a) Scores extra per card currently stacked on top of this one
+  (b) Scores extra per card stacked on top, doubled if it is the bottom of its stack
+  (c) Scores extra per card stacked on top, and the whole stack scores with it
+Q0253 | The Forge | skill | D3
+  mechanic: Two placements, both onto the same cell
+  (a) Cue: place two Entrance cards this turn onto the SAME cell, building height two at once
+  (b) Cue: place two Entrance cards onto the same cell, and the pair scores as a single card of their summed rank
+  (c) Cue: place any number of Entrance cards onto one cell this turn, at one patience each
+Q0254 | Collapse | consumable | D4
+  mechanic: Brings a whole column down
+  (a) Consumable: every stack on one grid compacts to the floor at once, scoring each card that falls
+  (b) Consumable: every stack on one grid compacts to the floor, scoring nothing
+  (c) Consumable: one stack collapses entirely, and its cards spread into the nearest empty cells
+Q0255 | Dead Weight | skill | D4
+  mechanic: What happens to the pile above
+  (a) Removing a card drops everything above it down one level, which is what already happens - this option keeps the default
+  (b) Removing a card leaves a gap in the stack that only another card can fill
+  (c) Removing a card drops everything above it, and each card that falls scores its rank
+Q0256 | The Scaffold | skill | D4
+  mechanic: Holds the stack up
+  (a) While this card is anywhere in a stack, removing a card from that stack leaves the rest suspended
+  (b) While this card is at the bottom of a stack, that stack never compacts
+  (c) While this card is in a stack, cards above a removal fall two levels instead of one
+Q0257 | The Tire Trick | skill | D4
+  mechanic: Hidden in the stack, gone when it is taken apart. (line 975)
+  (a) While buried, this card is safe from everything; dismantling the stack removes it from play, and rebuilding the stack brings it back
+  (b) While buried, this card is safe from everything; dismantling the stack destroys it permanently
+  (c) While buried it is safe and scores nothing; dismantling the stack removes it, and it returns with a bonus when the stack is rebuilt to the same height
+Q0258 | Air | type | D5
+  mechanic: Whenever this card's stack changes, it automatically moves to the top of that stack
+  (a) Whenever its stack changes, this card rises to the top of that stack
+  (b) This card can never be covered: a card placed on it goes underneath it instead
+  (c) At each Entrance refresh this card rises one position in its stack, reaching the top over time rather than at once
+Q0259 | Deep In The Stack | skill | D5
+  mechanic: The further down it sits, the harder it hits
+  (a) This card scores an extra step for every card stacked above it
+  (b) This card scores an extra step for every card above it, and cannot be reached by effects that name the top of a stack
+  (c) Every card scores an extra step per card above it, and the top card of any stack scores nothing extra
+Q0260 | Earth | type | D5
+  mechanic: Whenever this card's stack changes, it automatically sinks to the bottom of that stack, carrying its stamp with it
+  (a) Whenever its stack changes, this card sinks to the bottom of that stack
+  (b) This card can never be placed on another card; anything played to its cell goes on top of it
+  (c) At each Entrance refresh this card sinks one position in its stack
+Q0261 | Gold type | type | D5
+  mechanic: Sinks, but not all the way
+  (a) Sinks toward the bottom of its stack, stopping at other heavy cards, and costs more at shops
+  (b) Sinks straight to the bottom of its stack regardless of what is there
+  (c) Sinks one level per turn until it reaches the bottom or meets another heavy card
+Q0262 | Stalactites | skill | D5
+  mechanic: Lines grow downward from a fixed top
+  (a) Lines build downward from a fixed card at the top rather than upward from the floor
+  (b) Lines build downward from a fixed top, and the fixed card may never be moved
+  (c) Half the lines build downward from a fixed top and half upward from the floor
+Q0263 | The Surveyor | skill | D5
+  mechanic: Everything you drop sinks
+  (a) While spotlit, cards you drop resolve to the bottom of the target column instead of the top
+  (b) While spotlit, cards you drop resolve to whichever end of the target column you choose
+  (c) While spotlit, cards you drop resolve to the bottom of the target column, and the card displaced scores as it rises
+Q0264 | Tunneler card | skill | D5
+  mechanic: Everything sinks past it
+  (a) A single card placed on this one drops to the bottom of the stack instead
+  (b) A single card placed on this one drops to the bottom of the stack, and this card scores its rank
+  (c) Every card placed on this one drops to the bottom, so the stack builds downward
+Q0265 | Distancing card | skill | D6
+  mechanic: Hovers without covering
+  (a) Hovers above its stack without blocking the card beneath, and cannot be clicked
+  (b) Hovers above its stack without blocking the card beneath, and counts as occupying an extra row for line purposes
+  (c) Hovers above its stack without blocking anything, and any card may be placed beneath it freely
+Q0266 | Ghost Light | stamp | D6
+  mechanic: This card does not block the Spotlight of cards beneath it; they stay active as if uncovered
+  (a) Does not block the spotlight of cards beneath it
+  (b) Does not block the spotlight of cards beneath it, and nor does anything else in its column
+  (c) Does not block the spotlight of cards beneath it, and the card directly beneath also scores when this one does
+Q0267 | Kuroko | stamp | D6
+  mechanic: This card does not block Spotlight beneath it and cannot be targeted by boss or town effects
+  (a) Does not block spotlight beneath it, and cannot be targeted by boss or town effects
+  (b) Does not block spotlight beneath it, and cannot be targeted by any effect at all, including your own
+  (c) Does not block spotlight beneath it, and the cards beneath it cannot be targeted either
+Q0268 | Glass type | type | D6
+  mechanic: Transparent, and brittle
+  (a) Cards behind this one stay spotlit through it, but it breaks if a Heavy card passes through
+  (b) Cards behind this one stay spotlit through it, and it breaks the third time anything passes through
+  (c) Cards behind this one stay spotlit, and it never breaks, but it cannot score itself
+Q0269 | Global | stamp | D6
+  mechanic: This card's modifiers are active from anywhere: grid, Entrance, deck, or discard
+  (a) This card's modifiers are active from anywhere: grid, Entrance, deck or discard
+  (b) This card's modifiers are active from the Entrance and the deck, but not from the discard
+  (c) This card's modifiers are active from anywhere, at half effect when it is not on the grid
+Q0270 | Hidden bearers (costaleros) | skill | D6
+  mechanic: The ones underneath are carrying it
+  (a) Covered cards beneath a scoring card add their ranks to it
+  (b) Covered cards beneath a scoring card add half their ranks to it, rounded down
+  (c) Covered cards beneath a scoring card add their ranks to it, and each also counts as a trigger for the combo
+Q0271 | Humbug | skill | D6
+  mechanic: While covered, counts as a copy of the most valuable card in its row; when uncovered, is revealed as junk (rank 2, base score only)
+  (a) While covered, counts as a copy of the highest-value card in its row; uncovered it is junk at rank 2
+  (b) While covered, counts as a copy of the highest-value card in its row; uncovering it destroys it
+  (c) While covered, counts as a copy of the card covering it; uncovered it is junk at rank 2
+Q0272 | Lithograph | type | D6
+  mechanic: While this card sits in the Entrance its skill is active globally; on the grid it has no effect
+  (a) This card's skill is active globally while it is in the Entrance, and does nothing on the grid
+  (b) This card's skill is active globally from the Entrance, and at half strength on the grid
+  (c) This card's skill is active from the Entrance or the deck, and does nothing on the grid
+Q0273 | Revealing | stamp | D6
+  mechanic: This card's modifiers stay active while covered
+  (a) This card's modifiers stay active while it is covered
+  (b) This card's modifiers stay active while covered, and it stays visible by pushing the rows below it down
+  (c) This card's modifiers stay active while covered, at half strength
+Q0274 | The Free Edge | skill | D6
+  mechanic: Playable only if something is open beside it
+  (a) A card may only be picked up if at least one of its horizontal neighbours is empty
+  (b) A card may only be picked up if it is uncovered AND has a free edge, so a card walled in on both sides is stuck
+  (c) A card with a free edge counts as spotlit whether or not it is covered
+Q0275 | The Prompter | skill | D6
+  mechanic: Keeps one card in the light
+  (a) While spotlit, choose one card in this card's column; that card's modifiers stay active however it is covered
+  (b) While spotlit, choose one card anywhere on the grid; its modifiers stay active however it is covered
+  (c) While spotlit, every card directly beneath this one keeps its modifiers active
+Q0276 | The Seed | skill | D6
+  mechanic: Grows while it is buried
+  (a) Gains +1 rank every turn it stays covered
+  (b) Gains +1 rank every turn it stays covered, and loses it all the moment it is uncovered
+  (c) Gains +1 rank every turn covered, keeping the gain permanently once it finally scores
+Q0277 | The Shadow | skill | D6
+  mechanic: Tall cards suppress what stands behind them
+  (a) A card casts a shadow across cells behind it proportional to its height, and shadowed cards score nothing
+  (b) A card casts a shadow proportional to its height, and shadowed cards score half
+  (c) A card casts a shadow proportional to its height, and the direction the shadow falls rotates each placement
+Q0278 | The Spirit Cabinet | skill | D6
+  mechanic: Works best buried
+  (a) While fully covered, every card in this card's column triggers as though spotlit
+  (b) While fully covered, every card in this card's grid triggers as though spotlit
+  (c) While fully covered, this card's own column triggers as though spotlit, and the effect grows with how deeply it is buried
+Q0279 | The Stilt-Walker | skill | D6
+  mechanic: Tall enough to be seen over one card
+  (a) Spotlit even when covered by one card, but not by two
+  (b) Spotlit even when covered by one card, and the card covering it is spotlit too
+  (c) Spotlit through any number of covering cards, but its effects work at half strength per card above it
+Q0280 | Champion card | skill | D7
+  mechanic: Clears its own rank above and below
+  (a) Cards of the same rank directly above or below this one are discarded
+  (b) Cards of the same rank anywhere in this card's column are discarded, and this card gains a rank for each
+  (c) Cards of the same rank adjacent in any direction are discarded, and this card scores their summed rank
+Q0281 | Consume | skill | D7
+  mechanic: Eat what is underneath and grow
+  (a) When this card is placed onto another, it destroys the card beneath and adds that rank to its own permanently
+  (b) When placed onto another, it destroys the card beneath and adds half that rank to its own, permanently
+  (c) When placed onto another, it destroys the card beneath and takes its suit, rank and skill outright
+Q0282 | Edith's Bayonet | skill | D7
+  mechanic: Cue: permanently destroy one Knives-suit card and add its rank to this card's own, forever
+  (a) Cue: destroy one card of this card's own suit anywhere on the grid and add its rank to this card's, permanently
+  (b) Cue: destroy the card directly above this one and add its rank to this card's, permanently
+  (c) Automatically destroys any card of its own suit placed orthogonally adjacent to it, gaining half that card's rank
+Q0283 | Gentling | skill | D7
+  mechanic: Tame it instead of eating it
+  (a) Animal cards may be buffed into loyalty rather than consumed, gaining rank without being destroyed
+  (b) Animal cards may be buffed into loyalty rather than consumed; a loyal card cannot be eaten by anything afterwards
+  (c) Any card may be tamed rather than eaten, gaining half the rank the eater would have taken
+Q0284 | Hungry Hippo | skill | D7
+  mechanic: Consumes cards dropped onto it, adding their rank to its own up to a cap of 13, and returns everything eaten at show end
+  (a) Eats cards placed on it, adding their rank to its own up to 13, and gives everything back at show end
+  (b) Eats cards placed on it, adding their rank to its own up to 13; what it eats is destroyed
+  (c) Eats cards placed on it, adding half their rank rounded up with no cap, and gives them back at show end
+Q0285 | Mabel's Tigers | skill | D7
+  mechanic: Consumes prop (skill-less) cards dropped on it, gaining +1 rank per card eaten, with no cap, permanently
+  (a) Eats skill-less cards placed on it, gaining +1 rank each, permanently and without cap
+  (b) Eats skill-less cards placed on it, gaining that card's full rank, permanently and without cap
+  (c) Eats any card placed on it for +1 rank, but loses 1 rank at the end of each show
+Q0286 | Sin of Gluttony | skill | D7
+  mechanic: Consumes cards from anywhere (grid, Entrance, or decks, via cue), with no cap, permanently gaining rank
+  (a) Cue: consume any card anywhere - grid, Entrance or deck - gaining its rank permanently, with no cap
+  (b) Cue: consume any card anywhere, gaining its rank permanently with no cap, but the consumed card is removed from the run
+  (c) Consumes automatically: at each Entrance refresh it eats the lowest-ranked card on its grid and gains that rank permanently
+Q0287 | Parasite card | skill | D7
+  mechanic: Replaces its host
+  (a) Attaches to the next card placed on it; when a line scores, it replaces that card
+  (b) Attaches to the next card placed on it; when a line scores it replaces that card and keeps its rank
+  (c) Attaches to the next card placed on it and slowly drains its rank each turn, replacing it at rank 0
+Q0288 | Snake card | skill | D7
+  mechanic: Eats downward through the stack
+  (a) Consumes every lower-ranked card beneath it, leaving a temporary body card of the same rank behind each
+  (b) Consumes every lower-ranked card beneath it outright, leaving nothing behind
+  (c) Consumes one lower-ranked card beneath it per turn, leaving a body card each time
+Q0289 | The Digesting Duck | skill | D7
+  mechanic: Consumes cards dropped on it like a Glutton, but secretly stores them; cue to return any one stored card to the Entrance
+  (a) Consumes cards dropped on it but stores them instead of destroying them; cue to return any one stored card to the Entrance
+  (b) Consumes cards dropped on it and stores them; all stored cards return to the deck at show end
+  (c) Consumes cards dropped on it and stores them; cue to return one, and it scores bonus points per card still stored
+Q0290 | Vampire | skill | D7
+  mechanic: Eats the enhancements off cards
+  (a) Gains a permanent multiplier per stamped card that scores, and strips that card's stamp
+  (b) Gains a permanent multiplier per stamped card that scores, leaving the stamp intact
+  (c) Gains a permanent multiplier per stamped card that scores and strips the stamp, keeping it for itself
+Q0291 | Conjoined cards | skill | D8
+  mechanic: Two cards, one body
+  (a) Two cards are permanently fused side by side; they move as one unit but score as two
+  (b) Two cards are permanently fused; they move as one unit and score as one card of summed rank
+  (c) Two cards are fused until one of them scores, at which point they separate
+Q0292 | Frankenstein | skill | D8
+  mechanic: When a line scores, merges with the cards directly above and below it into one 3-card stack of summed rank that stays in the zone after scoring
+  (a) When a line scores, merges with the cards directly above and below into one card of their summed rank
+  (b) Cue: merges with the card directly above into one card carrying both suits and their summed rank
+  (c) When a line scores, merges with its whole stack into one card of summed rank, capped at 30
+Q0293 | The Double Act | skill | D8
+  mechanic: Two cards that become one performer
+  (a) Cue: fuse this card with the card directly above it into a single card carrying both skills and the higher rank
+  (b) Cue: fuse this card with any adjacent card of the same class into one carrying both skills and the summed rank
+  (c) Cue: fuse this card with the card above it into one carrying both skills; the fused card cannot be moved or unfused
+Q0294 | The Merge | skill | D8
+  mechanic: Two equal cards become the next one up
+  (a) Two cards of equal rank pushed together merge into one of the next rank up
+  (b) Two cards of equal rank pushed together merge into one of double the rank
+  (c) Two cards of equal rank merge into the next rank up, and a merge that creates the highest rank scores enormously
+Q0295 | The Castell | skill | D9
+  mechanic: Formation: a stack of 6+ cards topped by the lowest-ranked card pays a large bonus at scoring; if the stack is broken by a hazard first, lose double the bonus instead
+  (a) A stack of six or more topped by its own lowest-ranked card pays a large bonus at scoring; if a hazard breaks it first, lose double that bonus
+  (b) A stack of six or more topped by its own lowest-ranked card pays a large bonus, with no penalty for breaking
+  (c) Any stack topped by its own lowest-ranked card pays a bonus scaling with the stack's height
+Q0296 | The Contortionist | skill | D9
+  mechanic: May share one grid slot with another card; both cards count in melds
+  (a) May share one cell with another card; both count in melds
+  (b) May share one cell with another card; both count in melds, and the pair scores as a single card of their summed rank
+  (c) May share a cell with any number of cards, but only the top two count in melds
+Q0297 | The Foot Juggler | skill | D9
+  mechanic: Holds one card spinning above itself
+  (a) Holds one card suspended in a sub-slot above itself, playable from there at any time
+  (b) Holds one card suspended above itself; that card scores in every line this card belongs to
+  (c) Holds up to two cards suspended above itself, played one at a time
+Q0298 | The Half Card | rank | D9
+  mechanic: This card has half rank (rounded down) and half size: two copies occupy one grid slot together and meld as one combined card
+  (a) Half rank rounded down and half size: two copies share one cell and meld as a single combined card
+  (b) Half rank rounded down and half size: two copies share one cell and meld as two separate cards
+  (c) Half rank and half size: it shares a cell with any card, and the pair melds as whichever of the two is more useful
+Q0299 | The Seven Pyramid | skill | D9
+  mechanic: One stack, seven high
+  (a) Formation: a single stack of exactly seven legally-run cards scores a large bonus; broken by a hazard, rebuilding it once scores double
+  (b) Formation: a single stack of exactly seven legally-run cards scores a large bonus, once per show
+  (c) Formation: any stack of five or more legally-run cards scores a bonus scaling with its height
+Q0300 | The Singa Barong | skill | D9
+  mechanic: Carries the whole stack as one
+  (a) Everything above this card counts as a single card for movement
+  (b) Everything above this card counts as a single card for movement and for scoring
+  (c) Everything above this card counts as one card for movement, and this card scores their summed rank
+Q0301 | Low Ceiling | hazard | D10
+  mechanic: A venue that will not take a tall act
+  (a) Boss: stack height is capped for this show, where it is normally unbounded
+  (b) Boss: stack height is capped, and the cap falls by one each placement
+  (c) Boss: stack height is capped and any stack already taller is cut down to it
+Q0302 | The Cherry Picker | skill | D10
+  mechanic: Raises the ceiling
+  (a) While on the board, this card exempts its own stack from any height cap a level imposes
+  (b) Raises any imposed height cap by one for each level this card sits above the floor
+  (c) Removes any imposed height cap, and scores a bonus per level of the tallest stack
+Q0303 | The Dome | skill | D10
+  mechanic: Seals a cell against any further height
+  (a) Cue: seal a cell at its current height so nothing may ever be stacked on it again
+  (b) Cue: seal a cell at its current height for the rest of the show only
+  (c) Cue: seal a cell, and every sealed cell on the grid raises this card's score
+Q0304 | The Rigging Loft | skill | D10
+  mechanic: Sets how high a stack may go
+  (a) Stacks may not exceed a fixed height, and a card that would exceed it cannot be placed
+  (b) Stacks may not exceed a fixed height, and a card that would exceed it pushes the bottom card out instead
+  (c) There is no height cap, but every level above the fifth costs one patience to place
+Q0305 | Hopak Burst | skill | E1
+  mechanic: Cue, 1 charge per show: jumps this card's entire stack one row upward in its column, sliding everything beneath up
+  (a) Cue, one charge per show: this card's whole stack jumps one row up its column, sliding everything beneath it up
+  (b) Cue, one charge per show: this card alone jumps one row up its column, swapping with whatever is there
+  (c) Cue, one charge per show: this card's whole stack jumps to the top row of its column
+Q0306 | Rabbit card | skill | E1
+  mechanic: Bolts when you reach for it
+  (a) If clicked or grabbed, this card moves to the furthest orthogonal cell instead
+  (b) If clicked or grabbed, this card moves one cell away at random
+  (c) If clicked or grabbed, this card moves to the furthest orthogonal cell and scores a bonus for escaping
+Q0307 | Selection sort card | skill | E1
+  mechanic: Sorts itself upward
+  (a) Moves up one position whenever the card above it is of lower rank
+  (b) Moves up one position per turn until the card above it is of higher rank
+  (c) Moves up one position whenever the card above is lower, and scores a bonus each time it moves
+Q0308 | The Crowd Surf | skill | E1
+  mechanic: Cue: pass this card across the tops of all columns to the far edge, scoring bonus points per column crossed; if any crossed column is empty, this card is discarded instead
+  (a) Cue: pass this card across the tops of every column to the far edge, scoring per column crossed; an empty column discards it
+  (b) Cue: pass this card across the tops of every column, scoring per column crossed; an empty column simply stops it there
+  (c) Cue: pass this card across the tops of every column and on into the next grid, scoring per column crossed
+Q0309 | The Leotard | skill | E1
+  mechanic: Carries its stack anywhere
+  (a) Cue: move this card and everything above it to the top of any column, ignoring legality
+  (b) Cue: move this card and everything above it to any cell in any grid, ignoring legality
+  (c) Cue: move this card and everything above it one column sideways, keeping its row
+Q0310 | The Messenger | skill | E1
+  mechanic: Unlimited movement, so long as height never changes
+  (a) Cue: move this card any distance across cells of the same height, as many times as you like
+  (b) Cue: move every card of your choosing any distance, so long as none of them changes height
+  (c) Cue: move this card any distance at the same height, and it scores per cell crossed
+Q0311 | The Second Step | skill | E1
+  mechanic: Moves twice, but never back
+  (a) Cue: move this card twice in one action, and it may not return to the cell it started in
+  (b) Cue: move this card twice in one action with no restriction on where it ends
+  (c) Cue: move this card any number of times in one action, so long as each cell is one it has not occupied this placement
+Q0312 | The Traceur | skill | E1
+  mechanic: Never enters a stack
+  (a) Moves only across the tops of columns, never into a stack; cue to move any distance sideways along topmost cells
+  (b) Moves only across the tops of columns; cue to move one column per turn, and it scores per column it has crossed
+  (c) Moves only across the tops of columns and may cross into the next grid, cueing to move any distance
+Q0313 | Tumbler's Poise | skill | E1
+  mechanic: One hop, spend it or lose it
+  (a) One charge per turn: cue to hop this card one column sideways, and an unused charge spends itself on the next refresh
+  (b) One charge per turn: cue to hop one column sideways; unused charges accumulate up to three
+  (c) One charge per turn: cue to hop one cell in any direction, and an unused charge spends itself on the next refresh
+Q0314 | Walking Through the Wall | skill | E1
+  mechanic: Steps through what is in the way
+  (a) Cue: move this card through an occupied cell into the empty cell beyond it
+  (b) Cue: move this card through any number of occupied cells in a straight line to the first empty one
+  (c) Cue: move this card through an occupied cell into the cell beyond, and the card passed through is spotlit for the placement
+Q0315 | Carries a chosen card | skill | E2
+  mechanic: Takes a passenger
+  (a) Carries one chosen card wherever it moves, so the two relocate together
+  (b) Carries one chosen card wherever it moves, and that card cannot be targeted while carried
+  (c) Carries every card adjacent to it when it moves, so a cluster relocates as a unit
+Q0316 | Colleano's Somersault | skill | E2
+  mechanic: Cue: swaps positions with the single card covering it
+  (a) Cue: swap places with the card directly covering this one
+  (b) Cue: swap places with any card in the same stack
+  (c) Swaps with the card covering it automatically, every time a line it belongs to completes
+Q0317 | Foot of God | skill | E2
+  mechanic: Cue: this card switches locations with any card on screen (grid, Entrance, or decks)
+  (a) Cue: swap places with any card on screen, including the Entrance and the decks
+  (b) Cue: swap places with any card on the grid, in any grid
+  (c) Cue: swap places with any card on screen, and the card swapped with keeps this card's stamp
+Q0318 | Hand of God | skill | E2
+  mechanic: Cue: move any card to any grid location ignoring legality, or reorder the cards inside any deck
+  (a) Cue: move any card to any cell ignoring legality, or reorder any deck
+  (b) Cue: move any card to any cell, ignoring legality
+  (c) Cue: move any card to any cell and reorder any deck, but the show's goal rises 10% each time you do
+Q0319 | Human Cannonball | skill | E2
+  mechanic: Cue: fire the bottom card of any column to the top of any other column
+  (a) Cue: fire the bottom card of any column to the top of any other column
+  (b) Cue: fire the bottom card of any column into the same cell of an adjacent grid
+  (c) Cue: fire this card to any empty cell in any grid, scoring every card it passes over
+Q0320 | Jenga card | skill | E2
+  mechanic: Pull one out and the pile shifts
+  (a) Clicking a buried card moves it to the top of the next-smallest stack, leaving a gap; too many gaps and this card is discarded
+  (b) Clicking a buried card moves it to the top of the smallest stack on the grid, leaving a gap
+  (c) Clicking a buried card moves it to the top of any stack you choose, leaving a gap that closes when a placement finishes resolving
+Q0321 | The Bull | skill | E2
+  mechanic: Pushes rather than swaps
+  (a) Placing this card onto an occupied cell pushes that card one further in the same direction; it is destroyed if there is no room
+  (b) Placing this card onto an occupied cell pushes that card one further; if there is no room the placement is illegal
+  (c) Placing this card pushes the whole line of cards beyond it along by one, like a shove
+Q0322 | The Displacer | skill | E2
+  mechanic: Swaps with what it would have pushed out
+  (a) Placing this card onto an occupied cell swaps the two rather than stacking
+  (b) Placing this card onto an occupied cell swaps the two, and the displaced card keeps this one's stamp
+  (c) Placing this card onto an occupied cell swaps them, and both count as newly placed for line-completion purposes
+Q0323 | The Dragon Meld | skill | E2
+  mechanic: When a run of 4+ scores while this card is in it, that run can be relocated as a unit anywhere on the grid once, next turn
+  (a) When a run of four or more scores with this card in it, that run may be relocated as one unit anywhere on the grid next turn
+  (b) When a run of four or more scores with this card in it, that run may be relocated as one unit to any grid, next turn
+  (c) When any run of four or more scores, it may be relocated as one unit once, and this card is spent for the show
+Q0324 | Blondin's Crossing | skill | E3
+  mechanic: Once per show: shift an entire row one column left or right, wrapping around the grid edge
+  (a) Once per show, shift a whole row one cell left or right, wrapping at the grid edge
+  (b) Cue with three charges: shift a whole row or column one cell, wrapping at the edge
+  (c) Once per show, shift a whole row one cell; the card pushed off the edge is discarded rather than wrapping
+Q0325 | Earthquake card | consumable | E3
+  mechanic: Shakes the board apart
+  (a) Scrambles the positions of every card on one grid
+  (b) Scrambles the positions of every card on one grid, and any line the scramble happens to complete scores
+  (c) Scrambles every card on every grid
+Q0326 | Poker shuffle: pre-commit reshuffle | skill | E3
+  mechanic: Rearrange before the square is full
+  (a) Placed cards may be shifted around freely until all 25 cells are filled
+  (b) Placed cards may be shifted around freely until the first line completes
+  (c) Placed cards may be shifted freely, but each shift costs one patience or one placement
+Q0327 | The Hanged Man | consumable | E3
+  mechanic: Consumable: flips the order of one entire stack, bottom becomes top
+  (a) Consumable: flip one whole stack over, bottom becomes top
+  (b) Consumable: flip one whole stack over, and every card in it re-triggers as it lands
+  (c) Consumable: flip one whole column of the grid, so the top row becomes the bottom
+Q0328 | Three-box shuffle | skill | E3
+  mechanic: Shuffles three of them
+  (a) Cue: rearrange the order of any three adjacent cards
+  (b) Cue: rearrange the order of any three cards in one line
+  (c) Cue: rearrange any three adjacent cards, and if the new order completes a meld it scores at once
+Q0329 | Turntable card | consumable | E3
+  mechanic: Turns the board upside down
+  (a) Flips the whole grid vertically, so the top row becomes the bottom
+  (b) Flips the whole grid vertically, and every line re-scores in its new position
+  (c) Flips every grid vertically at once
+Q0330 | Windy Day card | skill | E3
+  mechanic: The wind takes the board
+  (a) Every card shifts one row or column at random
+  (b) Every card shifts one cell in the same random direction
+  (c) Every card shifts one cell in the same direction, and the direction is telegraphed one turn ahead
+Q0331 | The Advancing Line | skill | E4
+  mechanic: A gap in the line closes toward one end
+  (a) When a card leaves a line, everything behind it shifts one step to close the gap
+  (b) When a card leaves a line, everything behind it shifts to close the gap, and each card that moves triggers
+  (c) When a card leaves a line, the gap stays open and can only be filled from the Entrance
+Q0332 | The High Dive | skill | E4
+  mechanic: Cue: drop this card from the top of its column to the bottom, scoring bonus points per row fallen
+  (a) Cue: drop this card from the top of its column to the bottom, scoring per row fallen
+  (b) Cue: drop this card from the top of its column to the bottom, scoring per row fallen and applying a status to each card it passes
+  (c) Cue: drop this card through its column and on into the same column of the grid below, scoring per row fallen
+Q0333 | The Slide | skill | E4
+  mechanic: Everything moves at once, in one direction
+  (a) An action slides every card on the grid in one direction until it hits something, and merges happen where equals meet
+  (b) An action slides every card in one direction, with no merging
+  (c) An action slides one line in one direction rather than the whole grid
+Q0334 | Water | type | E4
+  mechanic: Always seeks the lowest level
+  (a) On each refresh, if an adjacent column is shorter, this card flows sideways into it
+  (b) On each refresh, this card flows toward the shortest column on its grid, one step at a time
+  (c) On each refresh, this card flows into the shortest adjacent column, and every card it passes catches a Wet status
+Q0335 | Brass Ring | skill | E5
+  mechanic: A token rotates one column per turn; if that column scores while the token is on it, the meld pays double and a Ticket Stub is banked
+  (a) A token marks one column and rotates one column per Entrance refresh; a line scored through the marked column pays double
+  (b) A token marks one cell and walks one cell per placement; the card placed on the marked cell scores twice
+  (c) A token marks the same column in every grid at once; scoring that column in all grids in one placement pays a large bonus
+Q0336 | Checkers hop-capture card | skill | E5
+  mechanic: Hops over what is in the way
+  (a) May hop over an adjacent card into the cell beyond it
+  (b) May hop over an adjacent card into the cell beyond, and may chain hops while empty cells follow
+  (c) May hop over an adjacent card into the cell beyond, capturing what it jumped
+Q0337 | Conveyor Deck | skill | E5
+  mechanic: The board conveys
+  (a) Cards may not be rearranged; at each show's start the rightmost is duplicated and the leftmost destroyed
+  (b) Cards may not be rearranged; at each show's start the whole line shifts one position
+  (c) At each show's start the rightmost is duplicated and the leftmost destroyed, and you may pay points to freeze it
+Q0338 | Diabolo | skill | E5
+  mechanic: Every Entrance refresh, alternates between two adjacent columns, granting bonus points to the top card of the column it leaves
+  (a) On each Entrance refresh this card moves between two adjacent columns, giving bonus points to the top card of the column it leaves
+  (b) On each Entrance refresh this card moves one cell along its row, wrapping, and gives +1 rank to the card it passes
+  (c) On each line completion this card jumps to the mirrored cell across the grid's centre
+Q0339 | The Bishop | skill | E5
+  mechanic: May be placed onto any card along an open diagonal, capturing it; blocked by occupied slots between
+  (a) May be placed on any card along an open diagonal, capturing it; occupied cells in between block the path
+  (b) May be placed on any card along an open diagonal or orthogonal line, capturing it
+  (c) May be placed on any card along an open diagonal, capturing it, and a capture raises this card's rank by 1
+Q0340 | The King | skill | E5
+  mechanic: Moves like a king, and is worth taking
+  (a) Moves one cell in any direction by swapping only, never capturing; steps out of check on its own whenever you act; a chess card that captures it gains a large bonus and +1 rank
+  (b) Moves one cell in any direction by swapping; if it is ever captured, the show ends immediately
+  (c) Moves one cell in any direction by swapping, and every card orthogonally adjacent to it cannot be targeted by hazards
+Q0341 | The Knight | skill | E5
+  mechanic: Jumps in an L and takes what it lands on
+  (a) May be placed on any card two cells and one cell away, discarding it and taking its place, ignoring stacking legality
+  (b) May be placed on any card an L away, and the card it lands on is returned to the Entrance rather than discarded
+  (c) May be placed on any card an L away in any grid, discarding it and taking its place
+Q0342 | The Line of Sight | skill | E5
+  mechanic: Clears what is directly beyond
+  (a) Moving this card into a cell destroys whatever sits in the next cell along the same direction
+  (b) Moving this card into a cell destroys whatever sits in the next cell along, and this card gains its rank
+  (c) Moving this card into a cell pushes everything in that direction one cell, destroying only what falls off the grid
+Q0343 | The Pawn | skill | E5
+  mechanic: Advances and takes on the diagonal
+  (a) Stacked under a card, it swaps upward with it on each refresh, two slots if it is bottommost; placed diagonally onto a card, it captures and replaces it
+  (b) Stacked under a card, it swaps upward on each refresh; it captures diagonally, and reaching the top of its column it becomes any other chess card you own
+  (c) Stacked under a card, it swaps upward on each refresh; it captures diagonally, and each capture raises its rank by 1
+Q0344 | The Procession | skill | E5
+  mechanic: A meld that walks
+  (a) A scored meld walks one column per turn, collecting a bonus from each column it crosses
+  (b) A scored meld walks one column per turn until it reaches the edge, then stops
+  (c) A scored meld walks one column per turn and can cross into the next grid, collecting from each
+Q0345 | The Rook | skill | E5
+  mechanic: Takes along its row or column
+  (a) May be placed on any card along its open row or column, capturing it
+  (b) May be placed on any card along its open row or column, capturing it, and may continue into the next grid at the same row
+  (c) May be placed on any card along its open row or column, capturing it, but only toward the grid's edge
+Q0346 | The Queen | skill | E5
+  mechanic: Takes along any open line
+  (a) May be placed on any card along an open line or diagonal, capturing it
+  (b) May be placed on any card along an open line or diagonal, capturing it, and may pass through one occupied cell
+  (c) May be placed on any card along an open line or diagonal in any grid, capturing it
+Q0347 | Cards bounce/swap between grids | skill | E6
+  mechanic: Bounces a card to another grid
+  (a) Cue: send a card to the same cell in another grid, or swap two cards between grids
+  (b) Cue: send a card to any cell in an adjacent grid
+  (c) Cue: swap two whole columns between two grids
+Q0348 | The Long Step | skill | E6
+  mechanic: Five to the left is the next grid over
+  (a) Cue: move this card five cells in any direction; five left or right lands in the same cell of the neighbouring grid
+  (b) Cue: move any card five cells in any direction, crossing into the neighbouring grid if it runs off the edge
+  (c) Cue: move this card five cells, and it may cross as many grid boundaries as the distance allows
+Q0349 | The Tour Bus | stamp | E6
+  mechanic: A card that never stays in one town
+  (a) At the end of each placement, this card moves to the same coordinate one grid to the right, wrapping at the last grid
+  (b) At the end of each placement, this card moves one grid to the right and one cell down, wrapping at both edges
+  (c) At the end of each placement this card moves one grid right, and scores a step for every grid it has visited this show
+Q0350 | The Understudy Swap | skill | E6
+  mechanic: Trades places with its opposite number
+  (a) Cue: swap this card with whatever occupies the same coordinate in the neighbouring grid
+  (b) Cue: swap any card with whatever occupies the same coordinate in any other grid
+  (c) On each placement end, this card automatically swaps with the same coordinate in the next grid, touring the board
+Q0351 | Centrifugal column (Wall of Death) | skill | E7
+  mechanic: Nothing falls while it spins
+  (a) Cards in this column cannot fall or be discarded while it spins, for a limited number of turns
+  (b) Cards in this column cannot fall or be discarded while it spins, and the spin lasts until the column scores
+  (c) Cards in this column cannot fall or be discarded, and the column also cannot be added to, for three turns
+Q0352 | Quartz Stake | hazard | E7
+  mechanic: Some cards get pinned in place
+  (a) Difficulty: a proportion of cards arrive pinned and cannot be moved from their position
+  (b) Difficulty: a proportion arrive pinned to the first position, blocking that slot
+  (c) Difficulty: a proportion arrive pinned, and unpinning one costs gold
+Q0353 | Stone | type | E7
+  mechanic: Once placed on the grid this card cannot be grabbed again, and it scores a bonus for remaining unmoved
+  (a) Once placed, this card can never be grabbed again, and scores a bonus for staying unmoved
+  (b) Once placed, this card can never be grabbed again, and its bonus grows each show it stays put
+  (c) Once placed, this card can only be moved by paying gold, and scores a bonus for each turn it stayed put
+Q0354 | Straitjacket | skill | E7
+  mechanic: Starts each show unable to be moved; frees itself and scores bonus points the first time its column scores
+  (a) Starts each show unable to be moved; frees itself and scores bonus points the first time its column scores
+  (b) Starts each show unable to be moved; frees itself the first time any line it belongs to scores, and the bonus scales with how long it stayed bound
+  (c) Starts each show unable to be moved and never frees itself, but scores triple
+Q0355 | The Decision | skill | E7
+  mechanic: Play a card and it is fixed there
+  (a) Cards become immovable the moment they are placed or discarded, which is already the default - this option keeps it
+  (b) Cards become immovable once placed, and a pack of drawbacks opens after the show
+  (c) Cards become immovable once they have scored, but stay movable until then
+Q0356 | The Handicap | skill | E7
+  mechanic: Cue at show start: lock this card's movement for the show (cannot be grabbed) in exchange for scoring double all show
+  (a) Cue at show start: lock this card against being grabbed for the show, and it scores double all show
+  (b) Cue at show start: lock any one card against being grabbed for the show, and it scores double
+  (c) Cue at show start: lock this card for the show; it scores double, and triple if it is never covered either
+Q0357 | The Light and Heavy Chest | skill | E7
+  mechanic: Yours to move, nobody else's
+  (a) You may always grab this card, and no board effect or hazard can move or discard it
+  (b) You may always grab this card, and no effect at all can move it, including your own others
+  (c) You may always grab this card and everything above it, and hazards cannot touch its whole stack
+Q0358 | Boss: adjacency-only placement | hazard | E8
+  mechanic: Boss: cards must touch
+  (a) Boss: cards may only be placed adjacent to a card already on the grid
+  (b) Boss: cards may only be placed adjacent to a card already placed, diagonals not counting
+  (c) Boss: cards must be placed adjacent to the card placed immediately before, forming a path
+Q0359 | Column-locked entrance placement | skill | E8
+  mechanic: One card per column, per refresh
+  (a) Each column accepts only one Entrance card per refresh, from whichever of the five you choose
+  (b) Each column accepts only one Entrance card per refresh, and the column is chosen for you at random
+  (c) Each column accepts one Entrance card per refresh, and filling all five in one refresh pays a bonus
+Q0360 | Cross-path entrance bonus | skill | E8
+  mechanic: Rewards cards crossing paths
+  (a) Scores a bonus when Entrance cards cross each other's paths on the way to the cells they are placed in
+  (b) Scores a bonus per crossing, so an entirely reversed Entrance pays most
+  (c) Scores a bonus when Entrance cards cross, and a larger one if every card crosses at least one other
+Q0361 | Leader elemental fears | skill | E8
+  mechanic: Afraid of the sharp ones
+  (a) Some leaders fear fire or knives and cannot be placed on cards of those suits
+  (b) Some leaders fear one suit, chosen at run start, and cannot be placed adjacent to it either
+  (c) Some leaders fear one suit and cannot be placed on it, but score double when they end a show next to it
+Q0362 | No-adjacency placement with shifting | skill | E8
+  mechanic: Place freely, but everything shifts
+  (a) Cards may be placed anywhere, and a second card placed five cells away fixes the first card's final position
+  (b) Cards may be placed anywhere, and the grid shifts to centre itself on whatever has been placed
+  (c) Cards may be placed anywhere, and the grid's boundaries are only fixed once the fifth card is down
+Q0363 | The Diva | skill | E8
+  mechanic: Will not go on second
+  (a) The strongest card of its class, but its skill is disabled unless it is placed first each show
+  (b) The strongest card of its class, but its skill is disabled unless it is the first card placed in its grid
+  (c) The strongest card of its class; placing it first each show also buffs everything placed after it
+Q0364 | The Floor Plan | skill | E8
+  mechanic: Every placement must connect to what is already down
+  (a) A card may only be placed adjacent to a card already on the grid, and a placement that closes off empty cells wastes them for the show
+  (b) A card may only be placed adjacent to one already down, with no penalty for closing cells off
+  (c) A card may only be placed adjacent to one already down, and cells it closes off are scored as if empty at show end
+Q0365 | The Invisible Wall | skill | E8
+  mechanic: Seals a column against everything
+  (a) Cue: seal one empty column for a turn so nothing may enter or leave it, hazards included
+  (b) Cue: seal one column for a turn, cards and all, so nothing in it can be moved, scored or hit
+  (c) Cue: seal one cell permanently; nothing may ever be placed there again
+Q0366 | Sleight of Hand | skill | E9
+  mechanic: The card does not land where you put it. (line 937)
+  (a) Cards you place have a chance to land in a different cell than the one you chose, and you are shown where after the fact
+  (b) Cards you place always land one cell off in a direction this card names, so the offset is learnable
+  (c) Cards you place land where you chose, but this card silently swaps two already-placed cards each placement

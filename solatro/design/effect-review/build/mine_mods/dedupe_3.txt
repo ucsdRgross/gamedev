@@ -1,0 +1,1800 @@
+Q0740 | The House Clock | skill | K6
+  mechanic: Everything on the board is on a timer
+  (a) Every card on the grid carries a counter that drops on each placement; a card whose counter reaches zero fires its effect unprompted
+  (b) Every card carries a counter that drops on each placement, and a card at zero is removed rather than firing
+  (c) Every card carries a counter that drops each Entrance refill rather than each placement, and fires at zero
+Q0741 | The Saga | skill | K6
+  mechanic: A card that tells its story one beat per placement
+  (a) This card advances one chapter each time you place a card anywhere, firing a larger effect at each of three chapters, then is destroyed
+  (b) This card advances one chapter per Entrance refill rather than per Entrance refill, and holds on the board once its last chapter fires
+  (c) This card advances one chapter per Entrance refill, and you may spend a placement to hold it on its current chapter
+Q0742 | The Ticking Card | stamp | K6
+  mechanic: Its own clock, running on your actions
+  (a) This card carries a counter that drops by one on every placement anywhere; at zero it fires its effect and resets
+  (b) This card carries a counter that drops on every placement; at zero it fires and the counter resets one higher
+  (c) This card carries a counter that drops on every placement; at zero it fires and the card is spent
+Q0743 | The Vanishing Act | stamp | K6
+  mechanic: A countdown that runs whatever you do
+  (a) This card loses one counter each placement and is destroyed at zero; its effect scales with the counters remaining
+  (b) This card loses one counter per placement anywhere and is destroyed at zero; its effect scales with counters remaining
+  (c) This card loses one counter each placement and is destroyed at zero, but scoring it adds a counter back
+Q0744 | La Belle Lucie merci rule | skill | K7
+  mechanic: One mercy move
+  (a) When no legal moves remain, one card may be shifted up or down by one position
+  (b) When no legal moves remain, one card may be moved anywhere, once per show
+  (c) One mercy move is granted per show whether or not you are stuck, and it is lost if unused
+Q0745 | Limited Move Solitaire | skill | K7
+  mechanic: A budget of moves for the whole show
+  (a) The show allows a fixed number of moves in total, and running out ends it
+  (b) The show allows a fixed number of moves, and unused moves convert to score at the end
+  (c) The show allows a fixed number of moves; each line completed refunds one
+Q0746 | Soundcheck | skill | K7
+  mechanic: At show start, grants one free move (grab and place one stack) before the first Entrance refresh, without spending a placement
+  (a) At show start, one free grab-and-place before the first Entrance refresh, costing no placement
+  (b) At the start of every placement, one free grab-and-place costing no placement
+  (c) At show start, one free grab-and-place, and another every time a grid is completely filled
+Q0747 | Stuntman | skill | K7
+  mechanic: Huge, and it costs you room
+  (a) A very large flat bonus, at the cost of two Entrance slots
+  (b) A very large flat bonus, at the cost of one placement per show
+  (c) A very large flat bonus, at the cost of two Entrance slots, refundable by selling it
+Q0748 | The Automation | skill | K7
+  mechanic: Something you used to do by hand starts doing itself
+  (a) An action you have performed enough times becomes automatic for the rest of the run
+  (b) An action performed enough times becomes automatic for the rest of the run, and you may switch it off
+  (c) An action performed enough times becomes automatic permanently for the rest of the run, even if this card is later removed from play
+Q0749 | The Double Harvest | skill | K7
+  mechanic: Two placements, never the same cell
+  (a) Cue: place two Entrance cards this turn instead of one, into different cells
+  (b) Cue: place two Entrance cards this turn into different cells, and only the second may complete a line
+  (c) Cue: place two Entrance cards into different cells, and a bonus if they land in different grids
+Q0750 | The Sanctioned Cheat | skill | K7
+  mechanic: You may break placement legality, carefully
+  (a) You may place a card anywhere regardless of legality a limited number of times per show
+  (b) You may place a card anywhere regardless of legality at any time, but each cheat permanently raises the show's goal
+  (c) You may cheat once per show, and the cheated card is marked and scores nothing
+Q0751 | 5D multiverse time-travel card | skill | K8
+  mechanic: Sends a card into the past
+  (a) Cue: send a card into a past board state, play that board out, and keep only what differs from the present
+  (b) Cue: send a card into the previous turn's board state and replay that turn with it there
+  (c) Cue: rewind the grid to its state three turns ago, keeping every card you have gained since
+Q0752 | Labyrinth | skill | K8
+  mechanic: Every placement is the show's first placement
+  (a) Every placement counts as the show's first placement for every effect that cares
+  (b) Every placement counts as the show's first placement, and every discard as the first discard
+  (c) Every placement counts as the first, and every placement also counts as the last
+Q0753 | The Crowd Takes Over | skill | K8
+  mechanic: The audience plays your turn
+  (a) For one turn, a seeded random audience makes your moves for you
+  (b) For one turn the audience makes your moves, and anything it scores pays double
+  (c) For one turn the audience proposes each move and you may veto one of them
+Q0754 | The Forethought | skill | K8
+  mechanic: Acts on both sides of its own move
+  (a) Cue: this card acts once before it moves and once after, at the cost of never being able to gain height that turn
+  (b) Cue: this card acts before and after it moves, with no cost
+  (c) Cue: choose per turn whether this card acts before moving, after, or both at the cost of its height
+Q0755 | The Fourth Wall | skill | K8
+  mechanic: Once per Entrance refill, during scoring resolution, pauses the show to allow one grab/place before resolution continues
+  (a) Once per Entrance refill, pause scoring mid-resolution to make one grab and place before resolution continues
+  (b) Once per show, pause scoring mid-resolution to make one grab and place
+  (c) Once per Entrance refill, pause scoring mid-resolution to make one grab and place, but the paused line scores at half
+Q0756 | The Stance | skill | K8
+  mechanic: A mode you are in until you leave it
+  (a) Cue: enter one of two stances; each changes which hooks fire on your whole board, and you may switch once per Entrance refill
+  (b) Cue: enter one of two stances; switching costs an Entrance card, discarded, and leaving a stance pays out what it accumulated
+  (c) Cue: enter one of three stances at show start; you cannot change it for the rest of the show
+Q0757 | The Time Signature | skill | K8
+  mechanic: Splits the placement in two
+  (a) Rows score when the placement scores as normal; columns score at the start of the next turn against the board as it then stands, and the combo carries across
+  (b) Rows score when the placement scores; columns score at the start of the next turn at half value
+  (c) You choose per Entrance refill whether rows or columns resolve first, and the second one resolves against the board the first one left
+Q0758 | Time Travel Solitaire | skill | K8
+  mechanic: Rewind the board and keep what you learned
+  (a) Rewind the grid to an earlier state at will; the deck order is unchanged, so what you saw still holds
+  (b) Rewind the grid to an earlier state, and the deck reshuffles so knowledge does not carry
+  (c) Rewind the grid to an earlier state a limited number of times, keeping any cards you gained since
+Q0759 | Paper the House | consumable | K9
+  mechanic: Consumable: auto-passes one town's fame check, but grants zero fame and zero rewards from it
+  (a) Consumable: one town's requirement passes automatically, granting no fame and no rewards
+  (b) Consumable: one town's requirement passes automatically at half fame and half rewards
+  (c) Consumable: one town's requirement passes automatically, and the following town's goal rises by the fame you skipped
+Q0760 | Golden Buzzer | consumable | K9
+  mechanic: Consumable, once per run: skips one town's requirement entirely for an instant win with full rewards
+  (a) Consumable, once per run: one show is skipped and counts as won with full rewards
+  (b) Consumable, once per run: one show is skipped and counts as won, with no rewards
+  (c) Consumable, once per run: one show is won immediately at whatever score is already on the grid
+Q0761 | The Early Curtain | skill | K9
+  mechanic: Stop while you are ahead
+  (a) Cue: end the show now; the payout is multiplied by the number of Entrance refills still left in the deck
+  (b) Cue: end the show now; the payout is multiplied by the refills left in the deck, but the target for the next show rises
+  (c) Cue: end the show now and keep the board standing into the next show as well as the payout
+Q0762 | The Gong | hazard | K9
+  mechanic: Town hazard: any placement scoring under 25% of goal ends the show immediately
+  (a) Town hazard: any placement scoring under 25% of goal ends the show at once
+  (b) Town hazard: any placement scoring under 25% of goal costs you an Entrance card, discarded
+  (c) Town hazard: any placement scoring less than the one before it ends the show at once
+Q0763 | The Big Top | skill | K10
+  mechanic: Priced in board space
+  (a) This card blocks the four cells around it, which can never be filled, and scores hugely for it
+  (b) This card blocks the four cells around it, and scores in proportion to how many it is blocking
+  (c) This card blocks its neighbours until it scores, then releases them
+Q0764 | The Clearance | skill | K10
+  mechanic: Room is the resource
+  (a) Effects are paid for with empty cells rather than gold, at a fixed rate
+  (b) Effects may be paid for with empty cells or points, your choice, at a fixed rate
+  (c) Effects are paid for with empty cells, and a full grid means nothing can fire
+Q0765 | The Deposit | skill | K10
+  mechanic: Pay a cell to fire
+  (a) Cue: permanently destroy one empty cell on the grid to fire this card's effect
+  (b) Cue: block one empty cell for the rest of the show to fire this card's effect
+  (c) Cue: block one empty cell per use, so repeated use costs more and more room
+Q0766 | The Ground Rent | skill | K10
+  mechanic: One card each Entrance refill buys nothing but space
+  (a) One card per Entrance refill must be placed as a resource rather than scored; it never scores, but it pays for cued effects all show
+  (b) One card per Entrance refill may be placed as a resource rather than scored; you choose whether to spend the placement that way
+  (c) One card per Entrance refill is placed as a resource, and resource cards form their own line that scores at show end
+Q0767 | The Augment Offer | structure | K11
+  mechanic: Three permanent choices at fixed points in the run
+  (a) At three fixed points in the run you are offered three run-permanent effects and must take one
+  (b) At three fixed points you are offered three run-permanent effects and must take one, with a reroll available for gold
+  (c) At three fixed points you are offered three, must take one, and the two refused are removed from the pool for the rest of the run
+Q0768 | The Casting Call | skill | K11
+  mechanic: Lets you choose the target every time
+  (a) Each time this card triggers, you choose which card its effect lands on
+  (b) Each time this card triggers, you choose the target from three the card offers
+  (c) Each time this card triggers you choose the target, and choosing the same one twice running doubles it
+Q0769 | The Director's Note | skill | K11
+  mechanic: Fires, then asks
+  (a) When a line scores, choose which of its cards keeps the bonus for the rest of the show
+  (b) When a line scores, choose one of its cards to score again immediately
+  (c) When a line scores, choose between a large bonus now and a smaller permanent one
+Q0770 | The Discovery | consumable | K11
+  mechanic: Three doors, pick one
+  (a) Consumable: three cards are drawn from the deck and shown; take one and bin the other two
+  (b) Consumable: three cards are shown from anywhere in the deck; take one, and the other two return to the top
+  (c) Consumable: three cards are shown; take one now and one more later in the show, and bin the third
+Q0771 | The Fork | consumable | K11
+  mechanic: Two roads, pick one
+  (a) Consumable: offers two effects drawn at random; you take one and the other is lost
+  (b) Consumable: offers two effects; you take one now and the other becomes available next show
+  (c) Consumable: offers three effects and you take one, with the rejected two raising the odds of better offers later
+Q0772 | Bus Driver | skill | L1
+  mechanic: Usually great, sometimes awful
+  (a) A large multiplier three times in four, and an equally large penalty the fourth
+  (b) A large multiplier three times in four, and nothing the fourth
+  (c) A large multiplier three times in four and a penalty the fourth, with the odds improving each time it pays out
+Q0773 | Chocolate Die | structure | L1
+  mechanic: A die decides what happens next
+  (a) Beating a boss rolls a die to start a random event
+  (b) Beating a boss rolls a die to start a random event, and you may reroll once
+  (c) Beating a boss rolls a die whose faces you have collected over the run
+Q0774 | Color-wheel booth | structure | L1
+  mechanic: Bet on a colour
+  (a) Stake a gold card on a suit at a wheel; hitting it pays out several times over
+  (b) Stake any number of gold cards on a suit at a wheel; hitting it pays out several times over
+  (c) Stake a gold card on a suit; hitting it pays out, and missing converts the stake into a debuff card
+Q0775 | Glitched | stamp | L1
+  mechanic: Every number on it is a lie
+  (a) Every value on this card is randomised within a wide band, rerolled each show
+  (b) Every value on this card is randomised once, when acquired, and fixed thereafter
+  (c) Every value is randomised each placement, so the same card is different every time it fires
+Q0776 | Misprint | skill | L1
+  mechanic: A wildly variable bonus
+  (a) Scores a random multiplier between nothing and a large amount, rerolled every placement
+  (b) Scores a random multiplier between nothing and a large amount, fixed for the whole show once rolled
+  (c) Scores a random multiplier, and you may reroll it once per Entrance refill
+Q0777 | Run the monte (thrower) | structure | L1
+  mechanic: Run the game yourself
+  (a) Play the swindler's side for gold, at the risk of the town's reputation
+  (b) Play the swindler's side for gold; being caught bars you from that town for the rest of the run
+  (c) Play the swindler's side for gold, with the payout and the risk both set by how long you keep going
+Q0778 | Snake Oil | consumable | L1
+  mechanic: Consumable: gives +3 rank to one card this show, with a seeded 1-in-4 chance of doing nothing
+  (a) Consumable: +3 rank to one card this show, with a 1-in-4 chance of doing nothing at all
+  (b) Consumable: +3 rank to one card permanently, with a 1-in-2 chance of doing nothing at all
+  (c) Consumable: +3 rank to one card this show; on the 1-in-4 failure it instead loses 3 rank
+Q0779 | The Faro Bank | structure | L1
+  mechanic: A crooked bank
+  (a) Gambling node where the house cheats, and you may cheat back
+  (b) Gambling node where the house cheats; catching it out pays the whole bank
+  (c) Gambling node where the house cheats and you may cheat back, with being caught costing town reputation
+Q0780 | Trick-or-Treat | skill | L1
+  mechanic: Sold, it is a treat or a trick
+  (a) When sold, usually creates two useful tokens, and occasionally a cursed card instead
+  (b) When sold, creates two useful tokens or a cursed card at even odds
+  (c) When sold, creates tokens or a curse, and you may pay gold to improve the odds
+Q0781 | Wheel of Death roulette | skill | L1
+  mechanic: A wheel that lands where the knife did
+  (a) A bonus wheel spins and pays out on the cell where the last Knives card scored
+  (b) A bonus wheel spins and pays out on a random cell, with the payout scaling with that cell's rank
+  (c) A bonus wheel spins where the last Knives card scored, and you may re-spin once at the cost of half the payout
+Q0782 | Fragile | skill | L2
+  mechanic: Its odds cannot be improved
+  (a) A large multiplier with a small chance of destruction each trigger, and no effect may alter those odds
+  (b) A large multiplier with a small chance of destruction, and odds-improving effects work on it normally
+  (c) A large multiplier whose destruction odds cannot be altered, and which grows each time it survives
+Q0783 | Non Verisimile | skill | L2
+  mechanic: Long odds pay proportionally
+  (a) Whenever a probability check succeeds, gains a multiplier equal to how unlikely it was
+  (b) Whenever a probability check succeeds, gains a fixed multiplier regardless of the odds
+  (c) Whenever a probability check succeeds, gains a multiplier equal to its odds, and loses one when a check fails
+Q0784 | Oops! All 6s | skill | L2
+  mechanic: Doubles every chance in the game
+  (a) Every stated probability in the game is doubled
+  (b) Every stated probability affecting your own cards is doubled
+  (c) Every stated probability is doubled, including the ones that work against you
+Q0785 | The Balanced Pool | skill | L2
+  mechanic: Every roll pulled toward the middle
+  (a) Every probability roll this show is rolled twice and the results averaged
+  (b) Every probability roll this show is rolled twice and the better result taken, but only once per Entrance refill
+  (c) Every probability roll draws from a pool that empties as it is used, so results even out over the show
+Q0786 | Wheel of Hope | skill | L2
+  mechanic: Paid for its failures
+  (a) Gains a permanent multiplier every time one of your probability checks fails
+  (b) Gains a permanent multiplier every time a probability check fails, and loses it when one succeeds
+  (c) Gains a permanent multiplier per failed check, scaling with how likely that check was to succeed
+Q0787 | Injury stacking status | skill | L3
+  mechanic: Injuries stack, and they end careers
+  (a) Each placement a card performs may add an injury stack, and each stack raises the chance it retires permanently; a card that sits out a placement sheds one
+  (b) Each placement may add an injury stack raising the retirement chance; stacks never clear
+  (c) Each placement may add an injury stack; a card sits out to shed one, and a protective card lowers the chance
+Q0788 | Net card lowers retirement, raises injury | skill | L3
+  mechanic: A net changes the odds
+  (a) Raises the chance of injury but lowers the chance of retirement
+  (b) Lowers the chance of retirement without affecting injury at all
+  (c) Raises injury chance and lowers retirement chance, and converts each prevented retirement into fame
+Q0789 | The Bruise | status | L3
+  mechanic: Damage that does not heal on its own
+  (a) A bruised card scores a step less; bruises stack, and a card at three bruises is destroyed
+  (b) A bruised card scores a step less; bruises stack and clear one per show
+  (c) A bruised card scores a step less and cannot be moved; bruises never clear, and a card at three is removed from the run
+Q0790 | The Corruption Meter | skill | L3
+  mechanic: Failure accumulates where you can see it
+  (a) Each placement that scores below its target adds one corruption; at five corruption a random card is permanently removed from the deck
+  (b) Each placement below target adds one corruption; each corruption raises every target a step, and corruption never clears
+  (c) Each placement below target adds one corruption, and each placement above target removes one
+Q0791 | Contract Ink | stamp | L4
+  mechanic: Scores +X points per show it is played; if benched two shows in a row, it is permanently removed from the deck
+  (a) Scores bonus points each show it is played; two consecutive shows unplaced and it is removed from the deck for good
+  (b) Scores bonus points each show it is played; one show unplaced and it drops a rarity tier
+  (c) Scores double points each show it is played, and is removed from the deck for good after five shows regardless
+Q0792 | Railroad Jump | hazard | L4
+  mechanic: Map-edge hazard: traveling this route costs one card, permanently removed from the deck
+  (a) Map hazard: taking this route costs one card, removed from the deck for good
+  (b) Map hazard: taking this route costs one card of your choice, removed from the deck for good
+  (c) Map hazard: taking this route costs one random card, which returns two towns later
+Q0793 | The Last Season | stamp | L4
+  mechanic: A card that has a last night
+  (a) This card scores double, and is permanently removed from the deck after three shows
+  (b) This card scores double, and is removed after three shows unless you pay to renew it each time
+  (c) This card scores double and is removed after three shows, leaving behind a permanent upgrade for whichever card was next to it most often
+Q0794 | The Void | consumable | L4
+  mechanic: Take a card out of the run for good
+  (a) Consumable: remove any card from the run permanently; every remaining card of its suit is upgraded a step
+  (b) Consumable: remove any card from the run permanently and gain its rank as a permanent bonus to one other card
+  (c) Consumable: remove any card from the run permanently; the deck pays out a step per card removed this way, compounding
+Q0795 | Bull-leap vault | skill | L5
+  mechanic: Dodges the attack and takes a bow
+  (a) When a boss attacks this card's column, it dodges and scores instead
+  (b) When a boss attacks anywhere on its grid, this card dodges the hit for the whole column and scores
+  (c) When a boss attacks this card's column, it dodges and scores; each successful dodge raises the score it takes
+Q0796 | Deus ex Machina | consumable | L5
+  mechanic: Consumable, once per run: when a show is lost, it is instead won at exactly the goal
+  (a) Consumable, once per run: a lost show is instead won at exactly its goal
+  (b) Consumable: a lost show is replayed from the start with the same deck and a fresh seed
+  (c) Consumable, once per run: a lost show is won, and the next show's goal doubles
+Q0797 | Press Bribery | skill | L5
+  mechanic: Once: on failing a town, keep touring as if it were won; if still unspent by the final town, converts to an automatic win there
+  (a) Once: a failed town is treated as won and the tour continues; unspent at the final town, it becomes an automatic win there
+  (b) Once: a failed town is treated as won and the tour continues; unspent, it is simply wasted
+  (c) Once: a failed town is replayed with the Entrance order known in advance
+Q0798 | The Elimination Save | skill | L5
+  mechanic: Two would die, so they duel
+  (a) When two cards would be destroyed at once, they duel and the winner survives
+  (b) When two cards would be destroyed at once, you choose which survives
+  (c) When two cards would be destroyed at once they duel, and the survivor takes the loser's rank
+Q0799 | The Mime | stamp | L5
+  mechanic: Takes the hit for the stack
+  (a) Attaches to a stack and absorbs the first hostile effect aimed at any card in it
+  (b) Attaches to a stack and absorbs every hostile effect aimed at it, breaking after three
+  (c) Attaches to a stack and absorbs the first hostile effect each show, refreshing between shows
+Q0800 | The Rodeo Clown | skill | L5
+  mechanic: Steps in front of the hit
+  (a) Once per turn, when a boss or town effect targets another of your cards, it hits this one instead
+  (b) Whenever a boss or town effect targets another of your cards, it hits this one instead, until this card is destroyed
+  (c) Once per turn, redirect a hostile effect onto this card, and this card scores bonus points for taking it
+Q0801 | The Ward | stamp | L5
+  mechanic: One bad thing, absorbed
+  (a) This card absorbs the first status, prop hit or destruction aimed at it each show, then the stamp is spent
+  (b) This card absorbs the first such event each placement rather than each show
+  (c) This card absorbs the first such event aimed at anything in its row each show
+Q0802 | All In card | skill | L6
+  mechanic: Double now, double the goal
+  (a) On the next score, the total doubles, and so does the score needed next round
+  (b) On the next score the total doubles, and the next show's goal rises by half
+  (c) You choose the multiplier; the goal rises by the same multiplier
+Q0803 | Flesh Panopticon | hazard | L6
+  mechanic: An enormous boss that pays enormously
+  (a) Boss: the goal is many times larger than normal, and beating it grants an outsized reward
+  (b) Boss: the goal is many times larger, and you may decline it for a lesser reward
+  (c) Boss: you set the multiplier on the goal yourself, and the reward scales with it
+Q0804 | Overpurified | skill | L6
+  mechanic: Past the goal is not free
+  (a) Cue: once the show's goal is met, every line you score pays double, but if the show ends short of double the goal those lines score nothing
+  (b) Cue: once the show's goal is met, every line you score pays double
+  (c) Cue: once the show's goal is met, every line you score pays double, and each such line also raises the next show's goal
+Q0805 | Risk/reward doubled-points tricks | skill | L6
+  mechanic: Bigger tricks fail more often
+  (a) Higher-tier tricks pay more and fail more often, with risk-lowering cards to manage it
+  (b) Higher-tier tricks pay more and fail more often, and you opt in per trick
+  (c) Every trick may be attempted at doubled points for doubled failure chance, chosen per attempt
+Q0806 | The Bullet Catch | skill | L6
+  mechanic: When scored in the Spotlight, scores 10x rank, but has a seeded 1-in-13 chance of being destroyed instead
+  (a) When scored while spotlit, scores ten times its rank, with a 1-in-13 chance of being destroyed instead
+  (b) When scored while spotlit, scores ten times its rank, with a 1-in-13 chance of being destroyed; each survival shortens the odds by one
+  (c) When scored while spotlit, you choose the multiplier up to ten times rank, and the destruction chance scales with it
+Q0807 | The Committee | skill | L6
+  mechanic: Placement a fake for inspection
+  (a) Placement a fake card for testing: a large reward if it survives scrutiny, destroyed if it does not
+  (b) Placement a fake for testing: a large reward if it survives, and it becomes real if it does
+  (c) Placement any card for testing: the reward scales with how fake it is, and failure destroys it
+Q0808 | The Mask Wager | hazard | L6
+  mechanic: Stake your identity
+  (a) Duel: stake a card's stamp and identity; losing unmasks it permanently across the save file
+  (b) Duel: stake a card's stamp; losing removes the stamp but leaves the card
+  (c) Duel: stake a card's identity, and the prize is the opponent's, so a win doubles your stamps
+Q0809 | Entrance-set betting proposal | skill | L7
+  mechanic: Bet on this Entrance against the next
+  (a) Before placing, wager on whether the current Entrance will out-score the next one
+  (b) Before placing, wager on whether the current Entrance will out-score the next; winning lets you keep both
+  (c) Before placing, you may sell the current Entrance unseen for a fixed sum and take the next instead
+Q0810 | Mock the Booking | skill | L7
+  mechanic: Talks the contract down
+  (a) Once per tour, reduce the declared Booking target
+  (b) Once per tour, reduce the declared Booking target by half
+  (c) Once per show, reduce the declared Booking target, but the reward falls by the same fraction
+Q0811 | The Booking | skill | L7
+  mechanic: Declares a goal/term for the show (e.g. score X with no Knife melds); fulfilling it grants bonus fame, missing it triggers a worse penalty
+  (a) Declare a term for the show before it starts - a score with a named restriction; meeting it pays a bonus, missing it costs more than the bonus was worth
+  (b) Declare a term before the show; meeting it pays a bonus, missing it simply pays nothing
+  (c) Declare a term before the show, and declare how much you are staking on it; both the bonus and the penalty scale with the stake
+Q0812 | The Rider | skill | L7
+  mechanic: Carries a clause you have to honour
+  (a) Carries one hidden instruction; obeying it all show scores this card double, and breaking it scores it zero without telling you
+  (b) Carries one hidden instruction; obeying it scores this card double, and breaking it is announced when it happens
+  (c) Carries one hidden instruction that you may pay gold to read before the show starts
+Q0813 | Crit chance to increase score | skill | L8
+  mechanic: Sometimes a trigger lands harder
+  (a) Every trigger has a small chance to crit and pay double
+  (b) Every trigger has a small chance to crit and pay double, with the chance rising per trigger already fired this placement
+  (c) Every trigger has a chance to crit; the chance is fixed but the crit multiplier grows with the show's combo
+Q0814 | The Critical Peg | stamp | L8
+  mechanic: One card whose triggers can land harder, rather than the whole board
+  (a) Every trigger from this card has a small chance to fire at triple strength
+  (b) Every trigger from this card has a small chance to fire at triple strength, and the chance rises each time it fails to
+  (c) Every trigger anywhere has a small chance to fire at triple strength while this card is spotlit
+Q0815 | The Long Odds | skill | L8
+  mechanic: Trades reliability for a tail
+  (a) Cue: for the rest of this placement every trigger has a chance to land at five times strength and a chance to fizzle entirely
+  (b) Cue: for the rest of this show every trigger has a chance at five times strength and a chance to fizzle
+  (c) Every trigger from cards in this row has a chance at five times strength and a chance to fizzle, permanently
+Q0816 | The Lucky Cell | skill | L8
+  mechanic: One cell on the grid pays out big
+  (a) One cell per grid is chosen at show start; any trigger that fires from it lands at triple strength
+  (b) One cell per grid is marked and moves each placement; triggers from it land at triple strength
+  (c) One cell per grid is marked; triggers from it land at triple strength, and the cell is revealed only once something fires there
+Q0817 | Brodie's Leap | skill | L9
+  mechanic: Banks fame each show for an unearned stunt; if ever exposed by an inspection effect, loses double everything banked
+  (a) Banks points each show instead of scoring them; any inspection effect used on this card forfeits the whole bank
+  (b) Banks points each show and pays out at the end of the run, but the bank is lost entirely if this card is ever covered
+  (c) Banks double points each show, with a 1-in-4 chance at the end of each show that the bank is lost
+Q0818 | Cavendish | skill | L9
+  mechanic: Enormous, and it might not survive
+  (a) Triples score, with a 1-in-1000 chance of being destroyed at the end of each show
+  (b) Triples score, with a 1-in-100 chance of being destroyed at the end of each show
+  (c) Triples score, and the destruction chance rises each show it survives
+Q0819 | Cherry Pie | consumable | L9
+  mechanic: A debuff you took on purpose
+  (a) Take a debuff card for this show in exchange for gold
+  (b) Take a debuff card for this show in exchange for gold scaling with how bad the debuff is
+  (c) Take a debuff card for the rest of the run in exchange for gold every show
+Q0820 | Devil Parade | hazard | L9
+  mechanic: Play the show with damaged goods
+  (a) Show variant: play the debuffed cards; each one scored turns its debuff into fame
+  (b) Show variant: play the debuffed cards; each one scored clears its debuff permanently
+  (c) Show variant: every card you play is debuffed on arrival, and scoring turns each debuff into fame
+Q0821 | Monopoly Money | skill | L9
+  mechanic: Money that might not be real
+  (a) A chance that purchases are destroyed on buying, and selling this card halves your gold
+  (b) A chance that purchases are destroyed on buying, and selling this card costs all your gold
+  (c) A chance purchases are destroyed, and each destroyed purchase permanently buffs this card
+Q0822 | The Corrupted Face | type | L9
+  mechanic: A material that pays and takes
+  (a) Cards of this material score double, and each time one scores, a random card in the deck loses a rank
+  (b) Cards of this material score double, and each time one scores, another card of this material is destroyed
+  (c) Cards of this material score double, and at show end each one still on the board costs you a card from the deck
+Q0823 | The Dirty Opening | hazard | L9
+  mechanic: Everything starts damaged
+  (a) Show: every card starts debuffed, and any card that scores anyway pays double
+  (b) Show: every card starts debuffed, and scoring one clears its debuff
+  (c) Show: every card starts debuffed and pays double; the debuffs deepen each placement
+Q0824 | The Kneeling Devil | skill | L9
+  mechanic: A liability that pays off at the very end
+  (a) Debuffs its own column every show; kept in the deck for the whole tour, it becomes a Legendary at the final city
+  (b) Debuffs its own column every show; kept for the whole tour it becomes Legendary, and selling it early pays nothing
+  (c) Debuffs its own column every show, and each show survived raises what it becomes at the final city by one tier
+Q0825 | The Scottish Play curse | skill | L9
+  mechanic: Do not say its name
+  (a) Cueing this card by its true name brings bad luck; a discoverable ritual cleanses it
+  (b) Cueing this card by its true name brings bad luck permanently, with no cure
+  (c) Cueing it by name brings bad luck, and the ritual that cleanses it is different each run
+Q0826 | Till Eulenspiegel deal | skill | L9
+  mechanic: Does exactly what it says
+  (a) Grants exactly what its text says rather than what you meant by it
+  (b) Grants exactly what its text says, and the text is written to be misread
+  (c) Grants exactly what its text says; you may pay fame to have the text clarified before accepting
+Q0827 | White Elephant | skill | L9
+  mechanic: Enormous, and it eats
+  (a) Scores hugely, but consumes 1 gold token every show it stays in the deck, or 1 rank from your richest card if you have none
+  (b) Scores hugely, but consumes 1 gold every show, and is destroyed if you cannot pay
+  (c) Scores hugely, and its upkeep rises by 1 gold for every show it has been in the deck
+Q0828 | Burning Man build-to-burn | skill | L10
+  mechanic: Build it up to burn it down
+  (a) Build a temporary venue out of your own cards and burn it for a payout; ending the show with an empty board pays a further bonus
+  (b) Build a temporary venue out of your own cards and burn it for a payout scaling with the ranks committed
+  (c) Build a temporary venue and burn it; the payout scales with the ranks committed, and an empty board at show end doubles it
+Q0829 | Ceremonial Dagger | skill | L10
+  mechanic: Eats the card beside it for good
+  (a) When a show begins, destroys an adjacent card and permanently gains twice that card's value as a multiplier
+  (b) When a show begins, destroys an adjacent card and permanently gains that card's value
+  (c) Cue to destroy an adjacent card at any time, gaining twice its value permanently
+Q0830 | Madness | skill | L10
+  mechanic: Grows by eating your own
+  (a) When a show begins, gains a multiplier and destroys one of your other cards at random
+  (b) When a show begins, gains a multiplier and destroys one of your other cards, chosen by you
+  (c) Gains a multiplier each placement and destroys one of your cards at random each placement
+Q0831 | The Cash-Out | skill | L10
+  mechanic: Removes itself for a large payout
+  (a) Cue: destroy this card to score a large amount scaling with how long it has been in play
+  (b) Cue: destroy this card to score a large flat amount, available from the moment it arrives
+  (c) Cue: destroy this card to score an amount scaling with how many of its own class are on the board
+Q0832 | The Ninot | skill | L10
+  mechanic: An investment that only pays if it burns
+  (a) Cue: bank any part of the placement's score into this card each show; burning it at the final city pays triple everything invested, and a seeded vote may instead pardon it into the next run
+  (b) Cue: bank any part of the placement's score into this card; burning it at the final city pays triple, with no chance of a pardon
+  (c) Cue: bank any part of the placement's score into this card; you may burn it at any city for double, or hold for triple at the last
+Q0833 | The Sacrifice | skill | L10
+  mechanic: Cards are the currency for playing cards
+  (a) Placing a card costs you another card already on the grid, destroyed to pay for it
+  (b) Placing a card of high rank costs another card on the grid; low ranks are free
+  (c) Placing a card costs another card, and the cost may be paid from the Entrance instead of the grid
+Q0834 | No Two Alike | skill | L11
+  mechanic: Repeated actions stop repeating
+  (a) Once this fires, no repeated action returns the same result again for the rest of the show
+  (b) Once this fires, no repeated action repeats for the rest of the run
+  (c) Once this fires, repeated actions never repeat, and each distinct result raises the combo
+Q0835 | The Marked Seed | skill | L11
+  mechanic: Rolls are correlated, not independent
+  (a) Probability checks of the same kind are correlated, so a run of failures makes success likelier
+  (b) Probability checks are fully independent, and the game says so plainly
+  (c) Checks are correlated within a show and reset between shows
+Q0836 | The Prepared Deck | skill | L11
+  mechanic: Makes an outcome stop being random
+  (a) Cue: the next probability check this show succeeds automatically
+  (b) Cue: the next probability check this show is rolled twice and the better result kept
+  (c) Cue: fix the next probability check's result now, before you know what it will be used for
+Q0837 | The Rehearsal | skill | L11
+  mechanic: See the roll before you commit
+  (a) Cue: see the result of the next probability check before deciding whether to take it
+  (b) Cue: see the result of the next check, and you may re-roll it once at a cost
+  (c) Cue once per show: see the results of every probability check that show, in advance
+Q0838 | The Snake Eyes Rule | skill | L11
+  mechanic: Making randomness stop repeating
+  (a) A random result cannot come up twice in a row; the second draw re-rolls until it differs
+  (b) Every random effect draws without replacement from its list, reshuffling only when the list empties
+  (c) The show's random results are fixed at show start and shown in advance
+Q0839 | Chorus cards | skill | M1
+  mechanic: Two in a row see it coming
+  (a) While any two of these share a row, the boss's next intent is revealed one turn early
+  (b) While any two of these share a line, the boss's next two intents are revealed
+  (c) While any two of these are on the board at all, the boss's next intent is revealed one turn early
+Q0840 | Effect-order deck viewer | skill | M1
+  mechanic: Shows the order effects will fire in
+  (a) Shows the trigger order of every skill in the deck, even while the deck is shuffled
+  (b) Shows the trigger order of the next five skills that will fire
+  (c) Shows the trigger order of every skill, and lets you swap two of them once per show
+Q0841 | Everything Face Up | skill | M1
+  mechanic: Nothing is hidden; the difficulty is the puzzle
+  (a) The whole deck is visible from the start, so the show is pure planning with no unknowns
+  (b) The whole deck is visible but its order is not, so you know what is coming but not when
+  (c) The whole deck is visible for the show's first placement only, then hidden again
+Q0842 | Eye of God | skill | M1
+  mechanic: Reveals all decks (including draw order), the hidden rules deck, and the true identity of every card, including fakes
+  (a) Reveals the draw order of the deck, the hidden rules deck, and the true identity of every disguised card
+  (b) Reveals the next five cards of the deck and the hidden rules deck, but not disguised cards
+  (c) Reveals all of it, and in exchange one random card of yours is revealed to the show's hazards
+Q0843 | The audience warns you | skill | M1
+  mechanic: The crowd shouts a warning
+  (a) The crowd warns one step before a hazard hits a card
+  (b) The crowd warns one step before a hazard hits, and names which card it will hit
+  (c) The crowd warns one step ahead, and warns earlier the higher the town's loyalty
+Q0844 | The Disaster March | skill | M1
+  mechanic: Learn the tell
+  (a) A hidden audio cue plays one turn before a surprise boss effect
+  (b) A hidden audio cue plays one turn before a surprise effect, and a visual tell appears once you have heard it enough times
+  (c) A hidden cue plays one turn before a surprise effect, differing per boss so each has to be learned
+Q0845 | The Discoverie | consumable | M1
+  mechanic: Consumable, 3 uses: reveals every fake card in play (yours, the shop's, the town's); banned (a crime event) in pious towns
+  (a) Consumable with three uses: reveals every fake card in play, yours and the town's; using it in a pious town is a crime
+  (b) Consumable with three uses: reveals every fake card in play
+  (c) Consumable with three uses: reveals every fake card, and each fake revealed mints a gold token
+Q0846 | The Learned Pig | skill | M1
+  mechanic: Reads anything face-down
+  (a) Once per turn, reveal the identity of any face-down, hidden or unknown card
+  (b) Once per turn, reveal the identity of any hidden card, and it stays revealed for the rest of the show
+  (c) Every hidden card adjacent to this one is permanently revealed
+Q0847 | The Ouija Board | consumable | M1
+  mechanic: Asks the deck a question
+  (a) Consumable with three charges: ask one true-or-false question about the deck per show, answered honestly
+  (b) Consumable with three charges: ask one true-or-false question about the deck or the map per show
+  (c) Consumable with three charges: ask one question per show; the answer is honest, but a wrong guess costs an Entrance card, discarded
+Q0848 | The Séance Buster | skill | M1
+  mechanic: Calls out every fake on the board
+  (a) Cue: reveal every fake card on the board, yours and the town's, scoring bonus points per fake exposed
+  (b) Cue: reveal every fake on the board and destroy the town's, scoring per fake exposed
+  (c) Cue: reveal one fake per Entrance refill automatically, scoring bonus points each time
+Q0849 | X-Ray Eyes | skill | M1
+  mechanic: Sees more the deeper it is buried
+  (a) While covered, reveals every face-down board card and the top three of the deck
+  (b) While covered, reveals every face-down board card and the top of the deck, seeing one card further per card covering it
+  (c) While covered, reveals every face-down board card; while uncovered it reveals nothing at all
+Q0850 | Bauta | stamp | M2
+  mechanic: This card's rarity and identity are hidden from inspection effects until it scores
+  (a) This card's rank, suit and skill are hidden from inspection until it first scores
+  (b) This card's rank and suit are hidden from you as well as from effects until it is placed
+  (c) This card shows itself as a copy of another random card on the grid until it scores
+Q0851 | Blackout turn | skill | M2
+  mechanic: One turn in the dark
+  (a) One turn is played with the whole board face down
+  (b) One turn is played with the whole board face down, and any line completed blind scores double
+  (c) One turn per show is played face down, chosen by you rather than forced
+Q0852 | Concealed Versus Exposed | skill | M2
+  mechanic: A hand built in the open is worth less
+  (a) A line built entirely from face-down cards pays more than the same line built face up
+  (b) A line built entirely face down pays double, and revealing any card of it forfeits the bonus
+  (c) A line built face down pays more, and you choose per card whether to place it face up or down
+Q0854 | Grand Vanish | skill | M2
+  mechanic: Cue, once per show: hide an entire column so it cannot be seen, targeted, scored, or touched for one turn; it then returns with bonus points on every card
+  (a) Cue, once per show: one column vanishes for a turn, unseeable and untargetable, then returns with bonus points on every card
+  (b) Cue: one column vanishes until the end of the show and its cards return to the Entrance
+  (c) Cue, once per show: one column vanishes for a turn and returns in a different column's position
+Q0855 | The Fish | hazard | M2
+  mechanic: Boss: cards arrive face down
+  (a) Boss: cards are dealt face down after each placement
+  (b) Boss: cards are dealt face down after each placement, and turn face up once placed
+  (c) Boss: cards are dealt face down and stay face down until they score
+Q0856 | The Mask Maker | skill | M2
+  mechanic: Puts a card behind a mask
+  (a) Cue, once per show: mask any card, hiding its identity and rarity from inspections and towns until it scores twice
+  (b) Cue, once per show: mask any card until it scores twice; while masked it cannot be targeted by town hazards
+  (c) Cue: mask any card permanently; it never unmasks, but it also never counts toward set or class bonuses
+Q0857 | Klondike reveal-on-move rule | skill | M3
+  mechanic: Moving one reveals the next
+  (a) Moving a face-up card off a stack turns the card beneath face up
+  (b) Moving a face-up card off a stack turns the card beneath face up and spotlights it for the placement
+  (c) Moving any card reveals the card beneath, and revealing pays a small bonus
+Q0858 | The Envelope Act | skill | M3
+  mechanic: A card placed face down and turned up only when its line resolves
+  (a) Cue on placement: place this card face down; it turns face up and takes effect only when its line completes
+  (b) Cue on placement: place this card face down; it turns up when its line completes, and pays double for having been hidden
+  (c) Cue on placement: place any card face down; it turns up when its line completes, and until then counts as a blank for meld purposes
+Q0859 | The Reveal Fee | skill | M3
+  mechanic: A face-down card costs something to turn over
+  (a) A face-down card does not turn up on its own; you pay to flip it, and it does nothing until you do
+  (b) A face-down card flips free the first time each placement and costs thereafter
+  (c) A face-down card flips only when paid for, and the price is its rank
+Q0860 | The Sucker Trap | skill | M3
+  mechanic: A face-down card that punishes whatever disturbs it
+  (a) While face down, any effect that reads or moves this card is cancelled and the reader takes a penalty
+  (b) While face down, any effect that reads or moves this card flips it and fires its effect on the reader instead
+  (c) While face down, any effect that reads this card is cancelled; any effect that moves it is redirected onto the mover
+Q0861 | The Trick | hazard | M3
+  mechanic: Everything flips over
+  (a) Boss: after each placement, every face-up card in the Entrance flips face down
+  (b) Boss: after each placement, every face-up card on the grid flips face down
+  (c) Boss: after each placement, every card flips - face-up becomes face-down and back again
+Q0862 | Murder Mystery Solitaire | skill | M4
+  mechanic: Deduce the fact the board is hiding
+  (a) One hidden fact about the deck is deducible from what you have seen; naming it correctly pays enormously and naming it wrongly costs the show
+  (b) One hidden fact is deducible; naming it correctly pays, and a wrong guess costs only a placement
+  (c) One hidden fact is deducible, and each placement reveals one further clue whether you want it or not
+Q0863 | Second Sight | skill | M4
+  mechanic: Predicts the board, not the hand
+  (a) At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus
+  (b) At each Entrance refill, name a cell; if a card scores there before the next refill, gain a bonus, and if none does, lose one
+  (c) At each Entrance refill, name a cell and a rank; matching both before the next refill pays enormously and matching one pays a little
+Q0864 | The Mentalist | skill | M4
+  mechanic: Calls it before it happens
+  (a) At show start, name a hand type; scoring it pays a large bonus, and failing to costs nothing
+  (b) At show start, name a hand type; scoring it pays a large bonus, and failing to costs fame
+  (c) At show start, name a hand type and a placement; scoring it in exactly that placement pays an enormous bonus
+Q0865 | The Sealed Envelope | consumable | M4
+  mechanic: A prediction opened later
+  (a) Consumable: write down a prediction now, opened at show end; a correct one pays several times over
+  (b) Consumable: write down a prediction now, opened at show end, and you may change it once
+  (c) Consumable: write a prediction that is opened three shows later, paying more the longer it waited
+Q0866 | Chalk On The Case | skill | M5
+  mechanic: Tagged cards become addressable by every effect
+  (a) A tagged card can be named as the target by any effect whose text says a random card
+  (b) A tagged card can be named by any targeting effect, and a card may carry only one tag at a time
+  (c) Tags are placed by the player, one per Entrance refill, and every targeting effect prefers tags over random choice
+Q0867 | Marked | stamp | M5
+  mechanic: Always shows this card's position in the deck
+  (a) This card's position in the deck is always visible
+  (b) This card's position in the deck is always visible, and once per show you may move it up one place
+  (c) Every card sharing this card's suit shows its position in the deck
+Q0868 | The Marked Deck | stamp | M5
+  mechanic: One named card whose position is always known
+  (a) Name one card at show start; its location in the deck, entrance or grid is shown to you at all times
+  (b) Name one card at show start; its location is shown, and any effect that says a random card picks it
+  (c) Name one card per Entrance refill; its location is shown until the next refill, and you may name a different one next placement
+Q0869 | The Tail | skill | M5
+  mechanic: A tag that draws everything toward it
+  (a) Cue: tag one card on the grid; every prop and hazard this placement targets the tagged card first
+  (b) Cue: tag one card; every prop this placement targets it first, and every hazard avoids it
+  (c) The last card placed is always tagged, and props target the tagged card before any other
+Q0870 | Amogus fake card | skill | M6
+  mechanic: One of your cards is lying
+  (a) A card is secretly fake: playing it loses score, and it ignores the rules on certain turns until you find and remove it
+  (b) A card is secretly fake and loses score when played; it is revealed after it has cost you three times
+  (c) A card is secretly fake, and each turn you may accuse one card, at a cost if you are wrong
+Q0871 | Kayfabe | skill | M6
+  mechanic: While in play, all fake cards count as real and score as what they pretend to be; removing this card reverts that
+  (a) While in play, every fake card counts as real and scores as whatever it pretends to be
+  (b) While in play, fakes count as real, and any card you publicly name as fake becomes fake
+  (c) While in play, fakes count as real, and real cards you have never scored count as fake
+Q0872 | Marketed monster | skill | M6
+  mechanic: Advertised as a monster
+  (a) Debuffs adjacent cards while secretly being harmless, and is exposed if inspected
+  (b) Debuffs adjacent cards while secretly being harmless; being exposed turns the debuff into a buff
+  (c) Appears to debuff adjacent cards but actually buffs them, and inspection reveals the truth to the town, not to you
+Q0873 | Spy | skill | M6
+  mechanic: Disguised until you buy it
+  (a) Appears in the shop disguised as a different card, revealed only once bought
+  (b) Appears in the shop disguised, and you may pay to inspect it before buying
+  (c) Appears disguised, and is revealed the first time it scores rather than on purchase
+Q0874 | The Charm | skill | M6
+  mechanic: The card text is not the trigger
+  (a) The printed trigger is not the real one; the real trigger is something else entirely
+  (b) The printed trigger is not the real one, and the real one is revealed after it first fires
+  (c) The printed trigger is not the real one; inspecting the card reveals the truth at a cost
+Q0875 | The Gaff | rank | M6
+  mechanic: Shows one value, holds another
+  (a) Wild pip: displays a fixed rank and suit until scored, then reveals its true randomly determined value
+  (b) Wild pip: displays a fixed rank and suit until scored, then becomes whatever would have scored highest
+  (c) Wild pip: displays a fixed value that is a lie, and inspecting it before scoring reveals the truth
+Q0876 | The Radio Dummy | skill | M6
+  mechanic: Its gimmick does not work, and it scores anyway
+  (a) Its stated gimmick is nullified by the board context, and it scores regardless
+  (b) Its stated gimmick is nullified, and it scores more the more thoroughly it is nullified
+  (c) Its stated gimmick never works, and the card scores a flat amount that no effect can change
+Q0877 | The Skipping Tape | skill | M6
+  mechanic: Exposed after the fact
+  (a) A fake that already scored is exposed retroactively, and you pay back the fame it earned
+  (b) A fake that already scored is exposed retroactively, and you pay back double
+  (c) A fake that already scored may be exposed retroactively, and you may pay points to bury the story instead
+Q0878 | The Unicorn | skill | M6
+  mechanic: Worth a fortune until somebody checks
+  (a) Scores as a Legendary at five times base until an inspection effect examines it, after which it scores half, forever
+  (b) Scores as a Legendary until inspected, after which it scores half for the rest of that show only
+  (c) Scores as a Legendary until inspected; being inspected destroys it outright
+Q0879 | Zip's Question Mark | skill | M6
+  mechanic: Its text is just a question mark
+  (a) This card's text is permanently a question mark and its effect is never stated anywhere
+  (b) This card's text is a question mark until it has fired three times, then it reads plainly
+  (c) This card's text is a question mark, and its effect is rerolled every run so it can never be learned
+Q0880 | Exposure cost | skill | M7
+  mechanic: Looking behind the curtain costs something
+  (a) Revealing a fake's true nature, yours or the boss's, costs fame
+  (b) Revealing a fake's true nature costs an Entrance card, discarded
+  (c) Revealing a fake costs fame, and revealing your own costs double
+Q0881 | The Blind Placement | skill | M7
+  mechanic: Refusing to look is worth something
+  (a) Cue: place the next entrance card without seeing its face; if it completes a line, that line scores double
+  (b) Cue: place the next entrance card face down and unseen; it scores double but cannot be moved for the rest of the show
+  (c) Every card you place without looking scores an extra step, and the bonus compounds while you never look
+Q0882 | The Blind Spot | skill | M7
+  mechanic: The inspector can only watch one side
+  (a) While the inspector watches one grid, outlawed cards may act freely in the others
+  (b) While the inspector watches one grid, outlawed cards act freely elsewhere, and you are shown where they are watching
+  (c) The inspector watches one grid, chosen fresh each turn without warning
+Q0883 | The Escalating Look | skill | M7
+  mechanic: Each glance costs more than the last
+  (a) The first inspection each show is free, the second costs one patience, and each after that costs one more
+  (b) Every inspection this show costs one more than the last, but each one shows one card further
+  (c) Inspections are free, but each one permanently raises the show's score requirement by a small step
+Q0884 | The Ticket Booth | skill | M7
+  mechanic: Looking behind the curtain has a standing price
+  (a) Reading any hidden information - deck order, rules deck, a face-down card - costs one Entrance card, discarded
+  (b) Reading hidden information is free once per Entrance refill and costs an Entrance card thereafter
+  (c) Reading hidden information costs an Entrance card, and every look also reveals one thing to the show's hazards
+Q0885 | The Blind | skill | M8
+  mechanic: Hides your board from the opposition
+  (a) The boss cannot see one grid of your choice, so its targeting never lands there
+  (b) The boss cannot see one grid of your choice, and targets the others twice as often
+  (c) The boss cannot see any card that has not yet scored
+Q0886 | The Critic In The Stalls | skill | M8
+  mechanic: What the show can see of your board
+  (a) Hazards and boss rules read only the cards that are currently spotlit; anything covered is invisible to them
+  (b) Hazards read only spotlit cards, and a covered card may be revealed deliberately to bait them
+  (c) Hazards read the whole board, but one card per Entrance refill may be hidden from them by cue
+Q0887 | The Decoy | skill | M8
+  mechanic: Shows the opposition something false
+  (a) Presents a false picture of your board so the boss targets a card that is not there
+  (b) Presents a false picture so the boss targets this card instead of what it wanted
+  (c) Presents a false picture; the boss targets at random instead of choosing
+Q0888 | The Tell | skill | M8
+  mechanic: The opposition reads you back
+  (a) The boss targets whichever card scored most last placement
+  (b) The boss targets whichever card scored most last placement, and you are told before it lands
+  (c) The boss targets whichever card you have moved most this show
+Q0893 | The Convention | skill | O1
+  mechanic: Enact one new law chosen from a fixed slate of three; it becomes a permanent rule card for the rest of the run
+  (a) Enact one law from a slate of three; it becomes a permanent rule card for the rest of the run
+  (b) Enact one law from a slate of three each town; the previous one is repealed when a new one passes
+  (c) Enact one law from a slate of three; you may repeal it later by destroying this card
+Q0894 | Contradiction | skill | O2
+  mechanic: Two stacking rules at once
+  (a) Two stacking rules apply at once, and a build is legal if it satisfies either
+  (b) Two stacking rules apply at once, and a build is legal only if it satisfies both
+  (c) Two stacking rules apply, one per grid, so different grids build differently
+Q0895 | House Rules: Building | skill | O2
+  mechanic: Rewrites what a legal build is
+  (a) Replaces the default stacking rule with same-suit ascending instead of different-suit adjacent
+  (b) Replaces the default stacking rule with anything-on-anything, removing legality entirely
+  (c) The stacking rule is drawn at random each show from a fixed set, and announced before play
+Q0896 | The Amendment Clause | skill | O2
+  mechanic: Lets you edit the stacking rule
+  (a) Cue once per show: relax one clause of the stacking rule for the rest of the show
+  (b) Cue once per show: relax one clause of the stacking rule for one placement only
+  (c) Cue once per show: swap the stacking rule for any other you have seen this run
+Q0897 | The Descending Build | skill | O2
+  mechanic: Stacks must run downhill
+  (a) A card may be stacked only on a card of higher rank, in any suit
+  (b) A card may be stacked only on a card of exactly one rank higher, in any suit
+  (c) A card may be stacked only on a higher rank, and a stack that descends without a gap scores as a straight
+Q0898 | The Open Build | skill | O2
+  mechanic: Anything on anything
+  (a) Any card may be stacked on any other, with no suit or rank restriction at all
+  (b) Any card may be stacked on any other, but a stack built illegally scores as its bottom card only
+  (c) Any card may be stacked on any other, and each illegal build costs one patience
+Q0899 | Two Rulebooks | skill | O2
+  mechanic: Different parts of the board build differently
+  (a) Some columns build by suit and others by alternating colour, marked before you place
+  (b) Rows build by one rule and columns by another, so a card must satisfy both to score in both
+  (c) Each grid uses its own stacking rule, drawn at show start
+Q0900 | Double Billing | skill | O3
+  mechanic: Two scoring rules, both paid
+  (a) Every line scores under two rules at once, and both payouts are banked
+  (b) Every line scores under two rules, and you keep whichever paid more
+  (c) Rows score under one rule and columns under another
+Q0901 | House Rules: Scoring | skill | O3
+  mechanic: Rewrites how a line resolves
+  (a) A line's score is the sum of its ranks rather than its poker hand
+  (b) A line's score is its poker hand multiplied by the number of distinct suits in it
+  (c) A line scores as its poker hand, or its rank sum, whichever is higher
+Q0902 | The Best Hand Only | skill | O3
+  mechanic: One hand per placement, not twelve
+  (a) Only the single highest-scoring line each placement pays; the others complete without scoring
+  (b) Only the highest-scoring line each placement pays, at five times its normal rate
+  (c) Only the highest-scoring line pays, and every other completed line adds one to the combo instead
+Q0903 | The Deferred Line | skill | O3
+  mechanic: Lines wait for the curtain
+  (a) A completed line does not score immediately; it holds and pays at the next Entrance refill, so effects can still change it
+  (b) A completed line holds and pays at the next Entrance refill, and pays an extra step for every placement it was left standing
+  (c) A completed line holds until you press End, and every held line pays at once
+Q0904 | The Revised Bill | skill | O3
+  mechanic: Swaps the scoring rule mid-show
+  (a) Cue: swap the scoring rule for the rest of the show from a slate of three
+  (b) Cue: swap the scoring rule for one placement only, from a slate of three
+  (c) Cue: swap the scoring rule, and every line already scored this show re-scores under the new one
+Q0905 | The Simultaneous Resolution | skill | O3
+  mechanic: Lines that complete together are one hand
+  (a) Lines completed by the same placement resolve as a single hand made of all their cards, scored as the best five
+  (b) Lines completed by the same placement resolve as one hand and pay once, at a rate scaled to how many lines merged
+  (c) Lines completed by the same placement resolve separately, and each one after the first pays an extra step
+Q0906 | 15 Minute City | structure | O4
+  mechanic: A deck with holes in it
+  (a) Deck: two copies of every face card and no aces, twos or threes
+  (b) Deck: two copies of every face card and no low ranks, with two locked cards you can never remove
+  (c) Deck: a named set of ranks is missing entirely, and which ranks differ per challenge
+Q0907 | Antimatter Deck | structure | O4
+  mechanic: Every deck's upside at once
+  (a) Deck: carries the upside of every deck you have already won with
+  (b) Deck: carries the upside of every deck in the game at once
+  (c) Deck: carries the upside of every deck you have won with, and one downside for each
+Q0908 | CCD Deck | skill | O4
+  mechanic: Every card is also a consumable
+  (a) Every card is also a random consumable, spendable instead of placed
+  (b) Every card is also a consumable, and spending it removes the card from the deck
+  (c) Every card is also a consumable, and which consumable it grants rerolls each show
+Q0910 | Edition Deck | skill | O4
+  mechanic: Every card is the same edition
+  (a) Every card on this grid carries this card's chosen enhancement, and no card may ever change it
+  (b) Every card on this grid carries this card's chosen enhancement, and you may change it once per show
+  (c) Every card on this grid carries an enhancement chosen at random each show
+Q0911 | Enter the Gungeon | structure | O4
+  mechanic: Every show is a boss
+  (a) Deck: every show is a boss show and none may be skipped
+  (b) Deck: every show is a boss show, and beating one lets you skip the next
+  (c) Deck: every show is a boss show, and the bosses are drawn without repeating
+Q0912 | Glowing Deck | skill | O4
+  mechanic: Beating a boss buffs everything
+  (a) Beating a boss multiplies the values of every card you own
+  (b) Beating a boss multiplies the values of one card you choose
+  (c) Beating a boss multiplies every card's values, and losing one divides them
+Q0913 | Hundred Entertainments deck | structure | O4
+  mechanic: A hundred commons
+  (a) Deck: 100 cards, all Common, built for combo scoring
+  (b) Deck: 100 cards, all Common, and the combo multiplier counts double
+  (c) Deck: 100 cards, all Common, and every tenth card scored upgrades permanently
+Q0914 | Input Column | hazard | O4
+  mechanic: One per column: on Entrance refresh, drops its upper-zone stack into the paired grid column, then draws a card from the deck to refill
+  (a) One per column: on Entrance refresh its stack drops into the paired grid column and it draws a replacement
+  (b) One per column: on Entrance refresh its card may be placed in any column, not only the paired one
+  (c) One per column: on Entrance refresh its card drops into the paired column of whichever grid you are focused on
+Q0915 | Legendary Deck | structure | O4
+  mechanic: Starts legendary, and might get more
+  (a) Deck: starts with a Legendary card, with a chance of gaining another whenever a boss is beaten
+  (b) Deck: starts with a Legendary card and nothing else out of the ordinary
+  (c) Deck: starts with a Legendary, and every Legendary gained costs you two Commons
+Q0916 | Magic deck | skill | O4
+  mechanic: Suits as elements, melds as spells
+  (a) Each suit acts as an element, and completing certain suit combinations casts a spell effect
+  (b) Each suit acts as an element, and any line with three or more elements casts a random spell
+  (c) Each suit acts as an element, and this card lets you choose which spell each combination casts
+Q0918 | Punk / Minimal unlockable decks | structure | O4
+  mechanic: Two decks with a philosophy
+  (a) Decks: a rule-breaking commons deck with no Producer class, and a pips-only deck with no skills at all
+  (b) Decks: a rule-breaking commons deck, and a pips-only deck where pip effects are twice as strong
+  (c) Decks: a commons-only deck that upgrades cards through play, and a pips-only deck that gains one skill per tour
+Q0920 | Small-tent starting deck (Carpas) | structure | O4
+  mechanic: Start small, end famous
+  (a) Deck: a weak starting deck built around an underdog-to-star arc, gaining strength as fame rises
+  (b) Deck: a weak starting deck whose cards each upgrade once at a fame threshold
+  (c) Deck: a weak starting deck that gains one card of the highest rarity you have ever scored, each tour
+Q0921 | Suit Deck | skill | O4
+  mechanic: One suit, all the way down
+  (a) While spotlit, every card on this card's grid counts as this card's suit, and no card may ever change suit
+  (b) While spotlit, every card on this card's grid counts as this card's suit, and flushes score nothing
+  (c) While spotlit, every card on this card's grid counts as one suit, and the suit changes each show
+Q0922 | Survivor deck | structure | O4
+  mechanic: Suits as supplies
+  (a) Deck: suits represent survival resources - food, water, blade and so on - each with its own upkeep
+  (b) Deck: suits represent survival resources, and running out of one imposes a debuff until it is replenished
+  (c) Deck: suits are resources consumed when scored and replenished by specific melds
+Q0923 | The Collective deck | skill | O4
+  mechanic: No stars, just the ensemble
+  (a) While spotlit, every card shares the average power of all cards, and a deck with no rares scores a bonus multiplier
+  (b) While spotlit, every card shares the average power of all cards, so buffing one buffs all
+  (c) While spotlit, every card shares the average power of the cards on the board, recalculated as cards are placed
+Q0925 | The Doubled Next | skill | O5
+  mechanic: One refill, two deals
+  (a) While this card is on the grid, each Entrance refill deals twice, discarding the first deal
+  (b) While this card is on the grid, each Entrance refill deals twice and you keep the better of the two
+  (c) While this card is on the grid, each Entrance refill deals twice and both sets are available at once
+Q0927 | The Third Button | skill | O5
+  mechanic: A control the game did not have
+  (a) A third button is added beside End and Undo that swaps the contents of two grid cells, usable once per Entrance refill
+  (b) A third button is added beside End and Undo that re-deals one Entrance slot, usable a fixed number of times per show
+  (c) A third button is added; a skill defines what it does, and only the currently spotlit skill's version applies
+Q0931 | The Announced Rule | consumable | O6
+  mechanic: Make a hidden default say what it is
+  (a) Consumable: reveal one rule card currently in force, permanently, for the rest of the run
+  (b) Consumable: reveal every rule card currently in force for the rest of this show only
+  (c) Consumable: reveal one rule card and choose whether to keep it or discard it
+Q0932 | The Fourth Wall | skill | O6
+  mechanic: A card that knows what it is
+  (a) This card can be removed from the grid and physically re-placed elsewhere in the run's interface, changing what it affects
+  (b) This card announces the hidden rule that is currently working against you
+  (c) This card can read one other card's hidden text aloud, permanently revealing it for the run
+Q0935 | The Side Tent | skill | O7
+  mechanic: A rule that only applies to one grid
+  (a) This card's talent affects only its own grid, never another
+  (b) This card's talent affects only its own grid, and may be moved to another grid once per show
+  (c) This card's talent affects only its own grid, and every other grid gets the opposite effect
+Q0936 | The Travelling Clause | skill | O7
+  mechanic: A rule that moves between grids
+  (a) One rule moves to the next grid every Entrance refresh
+  (b) One rule moves to the grid you are focused on whenever you switch
+  (c) One rule moves to whichever grid has the fewest cards, every refresh
+Q0938 | Rider Clause | skill | O8
+  mechanic: Adds your own clause to the venue
+  (a) Cue before a show: add one rule card of your own to the town's rules for that show
+  (b) Cue before a show: add one of your own rules, and the town adds one more of its own in exchange
+  (c) Cue before a show: swap one of the town's rules for one of yours
+Q0940 | The Town Ordinance | structure | O8
+  mechanic: Where you play sets a standing restriction
+  (a) Each town imposes one restriction for every show played there, announced before you arrive
+  (b) Each town imposes one restriction announced only after the show's first placement
+  (c) Each town offers a choice of two restrictions, the harder one paying more
+Q0941 | Rehearsal Hall | skill | P1
+  mechanic: Class counts unlock tiers
+  (a) Two, four and six cards of one class on the board each unlock a stronger bonus for that class
+  (b) Every second card of one class on the board raises that class's bonus by one step, with no cap
+  (c) Two, four and six of one class unlock tiers, and the tiers differ per class
+Q0942 | The Census Taker | skill | P1
+  mechanic: Counts one named thing, anywhere
+  (a) Scores a bonus per card of one named class anywhere on the board, however far away
+  (b) Scores a bonus per card of one named class in its own grid only
+  (c) Scores a bonus per card of the class it has seen least this run, so it chases variety
+Q0943 | The Full Troupe | skill | P1
+  mechanic: Pays for how many of a class are out
+  (a) Scores a bonus for every card of a named class on the board
+  (b) Scores a bonus for every card of a named class on the board, squared rather than summed
+  (c) Scores a bonus for every card of whichever class is most represented on the board
+Q0944 | Thin Bill | skill | P1
+  mechanic: Pays for having almost none
+  (a) Scores a large bonus if exactly one card of its class is on the board
+  (b) Scores a large bonus if it is the only card of its class in the whole deck
+  (c) Scores a bonus scaling inversely with how many of its class are on the board
+Q0945 | Cross-class Clown leader | skill | P2
+  mechanic: A leader whose joke lands everywhere
+  (a) Leader: its buff reaches every class rather than one
+  (b) Leader: its buff reaches every class, at half the strength a single-class leader would give
+  (c) Leader: its buff reaches every class, growing with the number of distinct classes on the board
+Q0946 | Engineer-impresario leader | skill | P2
+  mechanic: Danger comes cheaper
+  (a) Leader: risk-tagged cards cost less to acquire
+  (b) Leader: risk-tagged cards cost less and their failure odds are halved
+  (c) Leader: risk-tagged cards cost less, and each one on the board lowers the cost of the next
+Q0947 | Gambler leader (Poker Alice) | skill | P2
+  mechanic: A leader for a gambling deck
+  (a) Leader: every probability roll you make is rolled twice, keeping the better
+  (b) Leader: every probability roll is rolled twice keeping the better, but failures cost double
+  (c) Leader: you may re-roll one failed probability check per show
+Q0948 | Magician leader (Tenkatsu) | skill | P2
+  mechanic: A leader who prints cards
+  (a) Leader: produces one token card per show
+  (b) Leader: produces one token card per Entrance refill, whose suit you choose
+  (c) Leader: produces a token card whenever a line scores with no token in it
+Q0949 | Satirical Animal Trainer leader | skill | P2
+  mechanic: Fame up, relations down
+  (a) Leader: satire raises fame and lowers town relations
+  (b) Leader: satire raises fame and lowers town relations, and low relations raise the payout further
+  (c) Leader: satire raises fame and lowers relations; at zero relations the town bars you and pays a lump sum
+Q0950 | The Front Rank | skill | P2
+  mechanic: Where a card stands changes what its class does
+  (a) A class bonus applies only to cards of that class in the outermost ring of the grid
+  (b) A class bonus applies at full strength in the outer ring and half strength in the centre
+  (c) Each class names the ring it wants, and its bonus applies only there
+Q0951 | The Juggler King | skill | P2
+  mechanic: Leader that keeps one suit scoring
+  (a) Leader: Balls cards may re-score each placement for as long as at least one Balls card scores every placement
+  (b) Leader: cards of one suit you name at run start may re-score each placement while that suit scores every placement
+  (c) Leader: cards of the suit that scored most last placement may re-score this placement
+Q0952 | The Ringmaster | skill | P2
+  mechanic: The leader who never leaves
+  (a) Leader with no suit or rank: starts in the Entrance, is always grabbable, may be placed anywhere uncovered, and stays on the board from one show to the next, starting each show already placed
+  (b) Leader with no suit or rank that stays on the board from one show to the next, but may only occupy the centre cell of a grid
+  (c) Leader with no suit or rank that stays on the board from one show to the next and counts as a member of every line it touches
+Q0953 | The Satirist | skill | P2
+  mechanic: More fame, worse weather
+  (a) Leader: shows earn 25% more fame, and every town's hazard is one tier harsher
+  (b) Leader: shows earn 25% more fame, and every town gets one extra hazard
+  (c) Leader: shows earn 25% more fame per hazard active in the town, and hazards are one tier harsher
+Q0954 | The Sharpshooter | skill | P2
+  mechanic: Calls the rank of the night
+  (a) Leader: name a rank at each show start; cards of that rank score double all show
+  (b) Leader: name a rank at each show start; cards of that rank score double, and cards one either side score 50% more
+  (c) Leader: the rank you placed most last show scores double this show
+Q0955 | The Showman | skill | P2
+  mechanic: Fakes are free here
+  (a) Leader: shops offer one extra card, and every fake or disguised card costs nothing to acquire
+  (b) Leader: shops offer one extra card, and fakes cost nothing but cannot be sold
+  (c) Leader: shops offer one extra card, and one card per shop is always a fake, offered free
+Q0956 | The Sibyl | skill | P2
+  mechanic: Sees the top and rerolls for free
+  (a) Leader: the top of the deck is always revealed, and the first reroll at every shop is free
+  (b) Leader: the top of the deck is always revealed, and you may send it to the bottom once per show
+  (c) Leader: the top three cards of the deck are always revealed, but shop rerolls cost double
+Q0957 | The Sweet Tooth | skill | P2
+  mechanic: Makes the buffs stick
+  (a) Leader: every rank buff your effects grant becomes permanent instead of lasting the show
+  (b) Leader: every rank buff your effects grant lasts an extra show, stacking if reapplied
+  (c) Leader: rank buffs become permanent, but every debuff your cards take is permanent too
+Q0958 | The Tiger Queen | skill | P2
+  mechanic: Takes the lid off eating
+  (a) Leader: every consumption effect loses its cap, so rank gains from eating are unbounded
+  (b) Leader: every consumption effect loses its cap, and eaten cards are never returned
+  (c) Leader: consumption caps double rather than vanish, and eating a card of the same class as the eater ignores the cap entirely
+Q0959 | The Widow's Succession | skill | P2
+  mechanic: The partner inherits
+  (a) When a leader is destroyed, its partner card inherits the leader slot and one signature power
+  (b) When a leader is destroyed, its partner inherits the leader slot with all its powers
+  (c) When a leader is destroyed, any card of its class may be promoted, keeping one power of your choice
+Q0960 | Pink Lemonade | skill | P3
+  mechanic: When a Flames card and a Concessions card score in the same row, gain bonus points and refill 1 card into the Entrance
+  (a) When a Flames card and a Concessions card score in the same line, gain bonus points and refill one Entrance card
+  (b) When any two named classes score in the same line, gain bonus points and refill one Entrance card
+  (c) When two cards of different classes score adjacent to each other, gain bonus points; refill one Entrance card if three or more classes were involved
+Q0961 | The Consumer | skill | P3
+  mechanic: Eats a specific neighbour and grows on it
+  (a) Consumes an adjacent card of one named class permanently, gaining its rank
+  (b) Consumes an adjacent card of one named class each placement, gaining its rank each time
+  (c) Consumes an adjacent card of a class that changes each show, gaining double its rank
+Q0962 | The Engineer | skill | P3
+  mechanic: Gamble-tagged cards cost 1 less to acquire and their destruction odds are halved
+  (a) Gamble-tagged cards cost 1 less to acquire and their destruction odds are halved
+  (b) Gamble-tagged cards cost 1 less and every probability roll they make is rolled twice, keeping the better
+  (c) Gamble-tagged cards cost 1 less, and each one on the grid raises every other one's payout
+Q0963 | The Lion's Bride | skill | P3
+  mechanic: Survives the animal act
+  (a) Scores bonus points each placement it shares a column with a consuming Animal card and is not eaten
+  (b) Scores bonus points each placement it is adjacent to any card that consumes, and cannot be eaten by it
+  (c) Scores bonus points scaling with how many consuming cards are on its grid, and is always eaten last
+Q0964 | Macabre Joker | skill | P4
+  mechanic: Purges everything but one class
+  (a) When a show begins, destroys every card not of a named class, creating a token for each destroyed
+  (b) When a show begins, destroys every card not of a named class, with no compensation
+  (c) When a show begins, destroys every card not of the class you own most of, creating a token for each
+Q0965 | The Closed Shop | skill | P4
+  mechanic: This grid admits one union only
+  (a) While this card is on a grid, that grid accepts only cards of this card's class; everything else must go elsewhere
+  (b) While this card is on a grid, cards of other classes may be placed there but score nothing
+  (c) While this card is on a grid, that grid accepts only two named classes, and lines of a single class score double
+Q0966 | The Rival Acts | skill | P4
+  mechanic: Two classes that will not share a stage
+  (a) Two named classes may never be placed on the same grid; the entrance will not release one onto a grid holding the other
+  (b) Two named classes may share a grid, but while they do neither scores
+  (c) Two named classes may share a grid; while they do, both score double and both are destroyed when a placement finishes resolving
+Q0967 | The Struck Name | consumable | P4
+  mechanic: Take a class off the bill
+  (a) Consumable: name a class; no card of that class may be placed for the rest of the show, and every other class scores an extra step
+  (b) Consumable: name a class; no card of that class may be drawn for the rest of the show
+  (c) Consumable: name a class; cards of that class are removed from the deck for the rest of the run, and you are paid for each one removed
+Q0968 | Clown set bonus raises patience | skill | P5
+  mechanic: Clowns buy you patience
+  (a) Each distinct Clown card on the board raises patience by 1, and holding a full set gives a chance not to spend patience at all
+  (b) Each distinct Clown card on the board raises patience by 1
+  (c) Each distinct Clown card raises patience by 1, and a full set stops patience being spent entirely
+Q0969 | Congress deck | structure | P5
+  mechanic: One of everything
+  (a) Deck: starts with one card from every regional tradition, with cross-tradition synergy tags
+  (b) Deck: starts with one card from every class, and class bonuses count double
+  (c) Deck: starts with one card from every tradition, and holding a full set of any tradition pays a standing bonus
+Q0970 | Houses | skill | P5
+  mechanic: Cards belong to houses
+  (a) Cards belong to named houses led by a Mother card, and each house member scores extra when its Mother card is on the board
+  (b) Cards belong to named houses led by a Mother card; a full house on the board pays a standing bonus
+  (c) Cards belong to houses, and a house's Mother card buffs every member on the board by the house's size
+Q0971 | Named court card identities | structure | P5
+  mechanic: The face cards have names
+  (a) Face cards carry hidden historical identities discovered through play; finding all twelve grants a meta reward
+  (b) Face cards carry hidden identities; each one discovered permanently buffs that card
+  (c) Face cards carry hidden identities discovered through play, and each discovery reveals a hint toward the next
+Q0972 | The Dragon Collapse | skill | P5
+  mechanic: Collect a set, and it seals a slot
+  (a) When all four cards of a named group are uncovered at once, they collapse into one cell which is then permanently sealed
+  (b) When all four of a named group are uncovered, they collapse and are removed from the run entirely, paying their summed rank
+  (c) When all four of a named group are uncovered, they collapse into one card carrying all four of their skills
+Q0973 | The Erdnase Cipher | structure | P5
+  mechanic: A signature that turns up across runs
+  (a) A hidden signature appears on random cards across many runs; collecting them all unlocks an unexplained reward
+  (b) A hidden signature appears on random cards; scoring a signed card pays a small bonus and marks progress
+  (c) A hidden signature appears across runs, and each one found makes the next slightly more likely
+Q0974 | The Major Arcana | consumable | P5
+  mechanic: A set worth completing across runs
+  (a) A series of 22 unique one-shot consumables; collecting all 22 across runs grants a permanent profile reward
+  (b) A series of 22 unique one-shot consumables; each one you have already used this run makes the next cheaper
+  (c) A series of 22 unique consumables; holding any three at once lets you spend them together for a combined effect
+Q0975 | Animal-puppet tokens | skill | P6
+  mechanic: An animal that is legally a puppet
+  (a) Animal effects that register as Puppet-type, immune to animal bans
+  (b) Animal effects that register as Puppet-type, immune to animal bans but excluded from Animal class bonuses
+  (c) Any card may be re-registered as Puppet-type once per run, dodging bans on its real class
+Q0976 | Bahurupiya | type | P6
+  mechanic: At the start of each show, this card is assigned a random different class (seeded), and counts for that class's synergy effects for the show
+  (a) At show start this card is assigned a random class and counts as that class all show
+  (b) Counts as every class at once for class-count effects, but never as its own
+  (c) Counts as whichever class is most represented on its grid, updating as cards are placed
+Q0977 | Face/heel alignment | structure | P6
+  mechanic: Villain or hero, and towns care
+  (a) Cards carry a face or heel alignment with different bonuses, and towns prefer one or the other
+  (b) Cards carry a face or heel alignment you may flip once per show, with towns preferring one
+  (c) Cards carry an alignment, and a card scoring against a town's preference earns a different currency instead of fame
+Q0978 | Greasepaint | stamp | P6
+  mechanic: This card counts as a Clown-class card in addition to its own class
+  (a) Counts as a Clown-class card in addition to its own class
+  (b) Counts as one additional class of your choice, fixed when the stamp is applied
+  (c) Counts as every class already present in its grid
+Q0979 | The Bonded Troupe | structure | P6
+  mechanic: Cards trained together take a shared tag. (DESIGN_REFERENCES.md F6, the Academy family)
+  (a) Between runs, several Common cards may be trained together; they gain a shared group tag and score a bonus whenever two of them are on the board
+  (b) Between runs, several Commons may be trained together into one merged card of their summed rank
+  (c) Between runs, several Commons gain a shared tag, and the bonus scales with how many of the troupe are on the board at once
+Q0980 | The Capoeirista | skill | P6
+  mechanic: Registered as a Dancer but functions as an Escape Artist; town bans on Escape Artist-type acts still let it perform
+  (a) Registered as a Dancer but works as an Escape Artist, so town bans on Escape Artists never catch it
+  (b) Registered as one class and works as another, both chosen when acquired, so bans on the working class never catch it
+  (c) Whenever a town bans a class, this card registers as a different one for that show
+Q0981 | The Heel Turn | structure | P6
+  mechanic: Turn heel, and stay turned
+  (a) Flip the leader to heel mid-tour for new powers and changed town reactions, with no way back this run
+  (b) Flip the leader to heel mid-tour, and flip back once at the cost of all accumulated heat
+  (c) Flip the leader to heel mid-tour; every town's reaction changes, and heel shows pay a different currency
+Q0982 | The Impresario | rank | P6
+  mechanic: Kings are renamed, count as Producer-class cards, and give +1 trade value when spent at shops
+  (a) Kings count as Producer-class cards and give +1 trade value when spent at shops
+  (b) Kings count as Producer-class cards, give +1 trade value, and mint a gold token whenever they score
+  (c) Every face card counts as a Producer-class card and gives +1 trade value at shops
+Q0983 | The Little Umbrella | skill | P6
+  mechanic: A prop that lends its class
+  (a) While held, lets its holder perform Acrobat moves regardless of the holder's class
+  (b) While held, lets its holder count as any one class you name
+  (c) While held, lets its holder perform the moves of whichever class is adjacent to it
+Q0984 | The One-Man Band | skill | P6
+  mechanic: Three jobs, badly
+  (a) Counts as three classes chosen when acquired, each at one-third effect
+  (b) Counts as three classes chosen when acquired, each at full effect, but it can never be the target of a class bonus itself
+  (c) Counts as three classes chosen fresh at the start of each show, each at one-third effect
+Q0985 | The Jongleur | skill | P6
+  mechanic: Every class at once, at a discount
+  (a) Counts as every class for group effects, with all class bonuses at half value
+  (b) Counts as every class for group effects at full value, but scores no points of its own
+  (c) Counts as every class present on its own grid at full value, and none that are absent
+Q0986 | The Renaming | structure | P6
+  mechanic: A class renames itself
+  (a) After a vote event, one class's tag upgrades to a better-received label with better town reactions
+  (b) After a vote event, one class's tag changes, and cards of that class gain a new synergy
+  (c) After a vote event you choose which class renames, and towns react to the new label from then on
+Q0987 | The Shift | skill | P6
+  mechanic: Change what a card counts as
+  (a) Cue: change one card on the grid to any class for the rest of the show
+  (b) Cue: change one card to any class permanently, once per run
+  (c) Cue: change every card in one line to the class of the card you point at, for the rest of the show
+Q0988 | The Talking Wire | skill | P6
+  mechanic: Two classes on one trigger
+  (a) Counts as two named classes on the same trigger, so both class bonuses apply at once
+  (b) Counts as two named classes, but each bonus applies at half
+  (c) Counts as two classes of your choosing, re-chosen at the start of each show
+Q0989 | Troupe adoption | skill | P6
+  mechanic: Everyone takes the leader's colours
+  (a) Any card without a class takes the current leader's class tag
+  (b) Any card without a class takes the current leader's class, and loses it if the leader is destroyed
+  (c) Every card takes the leader's class tag in addition to its own
+Q0990 | Autochess-style ring type combo | skill | P7
+  mechanic: Copies of a class in one grid pay off
+  (a) Multiple cards of the same class in one grid trigger a scaling bonus at 2, 4 and 6 copies
+  (b) Multiple cards of the same class in one grid trigger a bonus scaling smoothly with the count
+  (c) Multiple cards of the same class in one grid trigger a bonus at 2, 4 and 6, and the bonus differs per class
+Q0991 | Baseball Card | skill | P7
+  mechanic: Paid by rarity
+  (a) Every card of a named rarity on the board gives a multiplier
+  (b) Every card of a named rarity on the board gives a multiplier, and the rarity rises each show
+  (c) The multiplier scales with how many distinct rarities are represented on the board
+Q0992 | Beige Deck | skill | P7
+  mechanic: Commons hit far harder
+  (a) Common cards have their values quadrupled
+  (b) Common cards have their values quadrupled, and rarer cards halved
+  (c) Whichever rarity you own most of has its values quadrupled
+Q0993 | Driver's License | skill | P7
+  mechanic: Paid once your deck is stamped enough
+  (a) Triples score once your deck holds at least a threshold number of stamped cards
+  (b) Triples score once the deck holds a threshold of stamped cards, and the threshold rises each time it triggers
+  (c) Scales smoothly with how many stamped cards the deck holds, rather than snapping at a threshold
+Q0994 | Stone Joker | skill | P7
+  mechanic: Paid by a type you have collected
+  (a) Gains a flat bonus for each card of a named type in your whole deck
+  (b) Gains a flat bonus for each card of a named type in your deck, and names the type when acquired
+  (c) Gains a flat bonus for each card of whichever type you own most of
+Q0995 | Thalia and Melpomeme | skill | P7
+  mechanic: Paid by variety of rarity
+  (a) Gains a multiplier for every pair of distinct rarities among the cards you own
+  (b) Gains a multiplier for every distinct rarity you own at least one of
+  (c) Gains a multiplier for every pair of distinct rarities, doubled if you own one of every rarity
+Q0996 | The Cloverleaf | skill | P7
+  mechanic: Four of a kind together upgrade each other
+  (a) Four cards of the same class placed in a two-by-two block all upgrade permanently
+  (b) Four cards of the same class placed adjacent in any shape all upgrade for the show
+  (c) Four of the same class in a two-by-two block upgrade permanently, and the block then counts as one card
+Q0998 | The Trait Tier | skill | P7
+  mechanic: Enough of a class turns a threshold on
+  (a) Fielding a threshold number of one class activates a tier bonus for every card of that class, with higher thresholds giving stronger tiers
+  (b) Fielding a threshold number of one class activates a tier bonus for that class, and only the highest tier reached applies
+  (c) Class tiers activate at thresholds, and a class one card short of a tier shows how close it is
+Q0999 | One Ring at a Time | skill | P8
+  mechanic: Class bonuses count per grid
+  (a) Class counts are counted per grid rather than across the whole board
+  (b) Class counts are per grid, and a class present in every grid pays a further bonus
+  (c) Class counts are per grid, and a grid holding only one class pays double for it
+Q1000 | Rival Companies | skill | P8
+  mechanic: Two grids, two classes
+  (a) Each grid is assigned a class at show start; cards of that class score double there and half elsewhere
+  (b) Each grid is assigned a class; cards of other classes cannot be placed there at all
+  (c) Each grid is assigned a class, and you choose the assignment before the show
+Q1001 | The Company Split | skill | P8
+  mechanic: Rewards spreading a class thin
+  (a) Scores a bonus for each grid containing at least one card of its class
+  (b) Scores a bonus for each grid containing at least two cards of its class
+  (c) Scores a bonus for each grid containing its class, doubled if every grid does
+Q1002 | The Local Troupe | skill | P8
+  mechanic: Each grid keeps its own company
+  (a) Class bonuses count only the cards on the same grid, and a grid holding one class only pays an extra step
+  (b) Class bonuses count per grid, and a class that appears on every grid pays an extra step
+  (c) Class bonuses count per grid, and each grid names one class at show start that pays double there
+Q1003 | Reserved Seating | skill | P9
+  mechanic: Some cells only take one class
+  (a) Certain cells accept only cards of a named class, shown before you place
+  (b) Certain cells accept only a named class, and a card of that class placed there scores double
+  (c) Certain cells accept only a named class, and which class is rerolled each placement
+Q1004 | The Dressing Room | zone | P9
+  mechanic: A cell that belongs to whoever used it last
+  (a) This cell accepts only cards of the class that last scored in it; the first card placed there sets the class for the show
+  (b) This cell accepts only cards of the class that last scored in it, and the class resets each Entrance refill
+  (c) This cell accepts any class, but a card whose class differs from the last one to score there scores nothing
+Q1005 | The Star Trap | skill | P9
+  mechanic: Claims a cell for its own class
+  (a) Cue: claim one empty cell so only cards of this card's class may be placed there; that card scores double
+  (b) Cue: claim one empty cell so only this card's class may go there, permanently
+  (c) Cue: claim one empty cell so only this card's class may go there, and every such cell raises the class's bonus
+Q1006 | Union Rules | skill | P9
+  mechanic: A class must be represented
+  (a) At least one card of each class already on the board must be placed each Entrance refill, or the next refill's placements score nothing
+  (b) Each row must contain at least two distinct classes to score
+  (c) Each line must contain at least one card of the class named at show start to score at all
+Q1007 | Club passing | skill | P10
+  mechanic: Passing clubs between columns
+  (a) Two of these in different columns trade a buff back and forth on every refresh
+  (b) Two of these in different columns trade a buff back and forth, and the buff grows each pass
+  (c) Two of these trade a buff every refresh, and the buff grows with the distance between them
+Q1008 | Flyer & catcher system | skill | P10
+  mechanic: Thrown to wherever the catcher is
+  (a) The Flyer may be thrown to any column containing the Catcher
+  (b) The Flyer may be thrown to any cell adjacent to the Catcher, in any grid
+  (c) The Flyer may be thrown to the Catcher's column, and both score if it lands in the same line
+Q1009 | Karagöz & Hacivat | skill | P10
+  mechanic: Bound pair: each gains bonus multiplier while they are in opposite zones (one in the Entrance, one on the grid)
+  (a) A bound pair: each gains a multiplier while they sit in opposite zones, one in the Entrance and one on the grid
+  (b) A bound pair: each gains a multiplier while they share a line, and neither scores at all if the other is absent
+  (c) A bound pair: each gains a multiplier that scales with the distance between them on the grid
+Q1010 | Pizza Slice | skill | P10
+  mechanic: Grows when its siblings die
+  (a) Gains a multiplier whenever another card of the same kind is sold
+  (b) Gains a multiplier whenever another card of the same kind is sold or destroyed
+  (c) Gains a multiplier per sibling sold, and the last surviving one keeps the whole total
+Q1011 | The Grudge | skill | P10
+  mechanic: Two cards that remember each other
+  (a) Two named cards are rivals; while both are on the same grid, both score nothing
+  (b) Two named cards are rivals; while both are on the same grid both score double, and if either is destroyed the other is too
+  (c) Two named cards are rivals; each show they share a grid, the pairing scores a step more than it did last time
+Q1012 | The Old Favour | skill | P10
+  mechanic: A card that pays back what another one did for it
+  (a) This card scores a step for every placement in which the card next to it scored, counted across the whole run
+  (b) This card scores a step for every placement in which the card next to it scored, counted this show only
+  (c) This card names one other card at run start and scores a step for every show they both appeared in
+Q1013 | The Paired Giants | skill | P10
+  mechanic: Two that need each other on the board
+  (a) A pair: each gains a multiplier while both are anywhere on the board
+  (b) A pair: each gains a multiplier while both are on the board, doubled while they are in the same grid
+  (c) A pair: each gains a multiplier while both are on the board, and each loses one when its partner is destroyed
+Q1014 | The Second Sight | skill | P10
+  mechanic: Two that see the deck together
+  (a) A pair: while both are on the board, the top card of the deck is always revealed
+  (b) A pair: while both are on the board, the top three cards of the deck are always revealed
+  (c) A pair: while both are on the board the top card is revealed, and while they are in the same line you may reorder the top three
+Q1015 | The Tango Pair | skill | P10
+  mechanic: Two that dance, one that leads
+  (a) A pair that must stay adjacent, the free one sliding to rejoin each refresh; they alternate lead each turn and only the leader's skill fires, at +50%
+  (b) A pair that must stay adjacent; both skills fire, each at +25%
+  (c) A pair that must stay adjacent; they alternate lead, and the follower's skill fires on the leader's target
+Q1016 | The Triple Somersault | skill | P10
+  mechanic: A partner has to catch what goes blind. (line 1092)
+  (a) A three-stage effect where the middle stage resolves hidden from you, and a partner card must be on the board to complete it or the whole thing fails
+  (b) A three-stage effect whose middle stage is hidden; without a partner card it completes anyway at a third of its value
+  (c) A three-stage effect where the middle stage is hidden and the partner must be in the same line, paying enormously if it lands
+Q1017 | Whiteface & Auguste | skill | P10
+  mechanic: One gives the order, the other misreads it
+  (a) Cue the first to name an adjacent card's trigger; the second fires it on a different valid target instead, at 150%
+  (b) Cue the first to name any card's trigger; the second fires it on a target of your choosing, at 150%
+  (c) Cue the first to name an adjacent card's trigger; the second fires it on a random valid target at 200%
+Q1018 | PropArtist hat | stamp | Q1
+  mechanic: Its suit prop fires even when talented
+  (a) This card's suit prop effect still fires even though the card carries a skill
+  (b) This card's suit prop effect still fires with a skill, but at half the prop count
+  (c) Every card on the grid fires its suit prop regardless of skills while this one is spotlit
+Q1019 | The Crowded Sky | skill | Q1
+  mechanic: A ceiling on how many props can be in the air
+  (a) No more than four props may be travelling at once anywhere on the board; further props wait their turn
+  (b) No more than four props may travel at once per grid, and a fifth spawn destroys the oldest
+  (c) There is no ceiling, and every prop in the air beyond the fourth adds one to the combo
+Q1020 | The Emit Order | suit | Q1
+  mechanic: The last prop out is the heaviest
+  (a) In a volley from this suit, each prop is a step stronger than the one before it
+  (b) In a volley from this suit, the first prop is the strongest and each after it is weaker
+  (c) In a volley from this suit every prop is equal, but the volley is one larger for each earlier volley this placement
+Q1021 | The Multiball | suit | Q1
+  mechanic: One score, many props at once
+  (a) This suit spawns three props at once rather than one, each on its own path
+  (b) This suit spawns three props at once, but each carries a third of the usual effect
+  (c) This suit spawns one prop, and one more for every other card of this suit already on the grid
+Q1022 | The Prop Master | skill | Q1
+  mechanic: More props from everything
+  (a) Every prop-spawning suit effect produces one extra prop per volley
+  (b) Every prop-spawning suit effect produces one extra prop per volley, and props travel one cell further
+  (c) Every prop-spawning suit effect produces props equal to the number of distinct suits that scored in the line
+Q1023 | The Reload | skill | Q1
+  mechanic: Props are a magazine, not a faucet
+  (a) Each suit has a fixed number of props per show; when they are spent that suit spawns nothing until the next show
+  (b) Each suit has a fixed number of props per show, and props are returned to the magazine when they finish their path without hitting anything
+  (c) Each suit has a fixed number of props per Entrance refill, refilled at the start of the next placement
+Q1024 | The Slow Volley | stamp | Q1
+  mechanic: Fewer props, but each one lingers
+  (a) Props this card spawns arrive one at a time rather than as a burst, and each travels at half speed
+  (b) Props this card spawns arrive one at a time at half speed, and each fires twice on every card it crosses
+  (c) Props this card spawns arrive as a burst but travel at half speed, so the whole volley overlaps the placement
+Q1025 | The Staggered Train | stamp | Q1
+  mechanic: A volley strung out over the placement
+  (a) Props this card spawns emit one per tick rather than all at once, so the volley trails across the board
+  (b) Props this card spawns emit one per tick, and each one that is still travelling when the next emits adds one to the combo
+  (c) Props this card spawns emit all at once, but each is held back a tick longer than the last before it starts moving
+Q1026 | Electric | suit | Q2
+  mechanic: When this card scores, an arc prop hops card-to-card through orthogonally adjacent cards, adding points per link, until it reaches a gap
+  (a) On score, an arc hops between orthogonally adjacent cards adding points per link, stopping at the first gap
+  (b) On score, an arc hops between every card of the same suit in the grid regardless of adjacency, adding points per link
+  (c) On score, an arc hops between orthogonally and diagonally adjacent cards adding points per link, and can cross into the next grid at the same row
+Q1027 | Fireworks | suit | Q2
+  mechanic: When this card scores, its rocket prop rises up the column and banks the column's score directly
+  (a) On score, a rocket rises up the column and banks the column's score directly, scaled by this card's rank
+  (b) On score, a rocket rises up the column and banks the column's score; each firework trigger adds one more rocket to the next
+  (c) On score, a rocket rises through every grid at this column index, banking each of their column scores
+Q1028 | The Aimed Shot | skill | Q2
+  mechanic: You point it, the board does the rest
+  (a) Cue on spawn: choose the direction the next prop leaves in; it then travels on its own until it stops
+  (b) Cue on spawn: choose the direction and the speed of the next prop
+  (c) Cue on spawn: choose the target cell; the prop routes to it by the longest path that crosses the most cards
+Q1029 | The Bounce | suit | Q2
+  mechanic: A prop that never travels straight
+  (a) This suit spawns a prop that changes direction ninety degrees each time it crosses an occupied cell
+  (b) This suit spawns a prop that changes direction ninety degrees at each occupied cell, and finishes when it reaches an edge
+  (c) This suit spawns a prop that reflects off the grid edges and keeps travelling until its tick budget runs out
+Q1030 | The Mancala Walk | suit | Q2
+  mechanic: A prop that seeds as it goes
+  (a) This suit spawns a prop that walks cell by cell around the ring of the grid, dropping one step of score in each cell it passes
+  (b) This suit spawns a prop that walks the ring, dropping score in each cell, and dropping double in cells that are empty
+  (c) This suit spawns a prop that walks the ring for exactly as many cells as its spawner rank, dropping score in each
+Q1031 | The Marionette | skill | Q2
+  mechanic: Take the controls
+  (a) Take direct control of one prop for the placement: it moves one cell per tick in the direction you steer
+  (b) Take direct control of one prop for the placement, and it may change direction once per tick
+  (c) Take direct control of every prop your own cards spawn this placement, steering them one at a time
+Q1032 | The Route Rewrite | skill | Q2
+  mechanic: Redraws where a prop is going, mid-flight
+  (a) Cue: redraw the remaining path of any prop in flight to any cells you choose of the same length
+  (b) Cue: redraw the remaining path of any prop in flight, and it may be any length up to twice the original
+  (c) Every prop that enters this card has the rest of its path redrawn to cross as many occupied cells as possible
+Q1033 | The Scenic Route | suit | Q2
+  mechanic: The long way round pays better
+  (a) Props from this suit take the longest path to their destination rather than the shortest, and score per cell crossed
+  (b) Props from this suit take the longest path, and score per cell crossed only where the cell was occupied
+  (c) Props from this suit take a path that visits every line on the grid once, at half strength per cell
+Q1034 | The Slow Prop | stamp | Q2
+  mechanic: Speed is a lever of its own
+  (a) Props this card spawns travel at half speed, and fire on every card they cross twice
+  (b) Props this card spawns travel at double speed, cross twice as many cells, and fire once each
+  (c) Props this card spawns start slow and accelerate, firing at growing strength as they go
+Q1035 | The Transformer | skill | Q2
+  mechanic: Changes a prop in flight
+  (a) A prop passing this card is converted into a different kind of prop and continues on
+  (b) A prop passing this card is converted and its remaining path is recalculated from here
+  (c) A prop passing this card is duplicated, one continuing as it was and one as a different kind
+Q1036 | The Bomb Peg | skill | Q3
+  mechanic: A prop that goes off where it lands
+  (a) A prop that reaches this card detonates, firing its effect on every card orthogonally adjacent instead of on this one
+  (b) A prop that reaches this card detonates on every adjacent card, and this card is destroyed
+  (c) A prop that reaches this card detonates across the whole 3x3 around it, at reduced strength per card
+Q1037 | The Branding Iron | suit | Q3
+  mechanic: A prop that leaves equipment behind
+  (a) A prop from this suit leaves a stamp on the last card it reaches, chosen from the stamps already on the grid
+  (b) A prop from this suit leaves a stamp on every card it crosses, spending itself after three
+  (c) A prop from this suit leaves a stamp on the last card it reaches, and the stamp is lost when that card is moved
+Q1038 | The Hoop Encore | stamp | Q3
+  mechanic: A prop that makes talents fire again
+  (a) A prop from this card re-fires the skill of every card it crosses
+  (b) A prop from this card re-fires the skill of every card it crosses, at half strength
+  (c) A prop from this card re-fires the skill of the single highest-ranked card it crosses, at double strength
+Q1039 | The Juggling Ball | suit | Q3
+  mechanic: A prop that leaves the card unsettled
+  (a) A prop from this suit applies Juggling to every card it crosses; a juggling card scores twice but may be knocked off its cell
+  (b) A prop from this suit applies Juggling to the first card it crosses only, and that card scores twice for the placement
+  (c) A prop from this suit applies Juggling to every card it crosses, and each juggling card adds one to the combo
+Q1040 | The Muck | status | Q3
+  mechanic: A prop that leaves the board worse
+  (a) A prop carrying this status coats every card it crosses; a coated card scores nothing until another prop crosses it
+  (b) A prop carrying this status coats every card it crosses; a coated card scores half until the end of the placement
+  (c) A prop carrying this status coats the first card it crosses only, and that card must be cleared by a second prop before it scores again
+Q1041 | The Payload | suit | Q3
+  mechanic: What the prop is worth is what it has been through
+  (a) A prop from this suit adds nothing on the cards it crosses; it banks one step per card and pays the whole total into the last card
+  (b) A prop from this suit banks one step per card crossed and pays the total into the last card, doubling if it crosses five
+  (c) A prop from this suit banks one step per card crossed and pays the total into whichever card in its path scored highest
+Q1042 | The Prop Tax | skill | Q3
+  mechanic: A prop that takes instead of giving
+  (a) A prop from this card removes a step from every card it crosses and pays the whole total to this card
+  (b) A prop from this card removes a step from every card it crosses and pays the total to the last card it reaches
+  (c) A prop from this card removes a rank from every card it crosses permanently, and pays the total to this card
+Q1043 | The Refresh Peg | skill | Q3
+  mechanic: Being hit puts the board back
+  (a) A prop that crosses this card restores every card in its line to spotlit, uncovering whatever was buried
+  (b) A prop that crosses this card restores its own line to spotlit and re-arms every spent cue in that line
+  (c) A prop that crosses this card re-arms every spent cue on the grid, once per Entrance refill
+Q1044 | The Target Girl | skill | Q3
+  mechanic: Every miss is worth something
+  (a) In a row a knife prop crosses, every miss becomes points
+  (b) In any line a prop crosses, every miss becomes points
+  (c) In a row a knife crosses, every miss becomes points, and a hit on this card becomes double points
+Q1045 | The Cascade | skill | Q4
+  mechanic: Props spawn props
+  (a) When two props meet, a third prop spawns at that cell carrying the weaker one's effect
+  (b) When two props meet, a third spawns carrying both effects at half strength
+  (c) Every prop that finishes its path spawns a smaller prop travelling perpendicular to it
+Q1046 | The Chain Reaction | skill | Q4
+  mechanic: Props set each other off
+  (a) A prop finishing its path spawns a fresh prop from wherever it stopped, up to a chain of three
+  (b) A prop finishing its path spawns a fresh prop from where it stopped, and the chain is unlimited but halves each link
+  (c) A prop finishing its path spawns a fresh prop only if it crossed at least three cards
+Q1047 | The Collision | skill | Q4
+  mechanic: Props that meet each other
+  (a) Two props meeting on the same cell both fire at double strength and both stop there
+  (b) Two props meeting on the same cell destroy each other
+  (c) Two props meeting merge into a single prop carrying both effects
+Q1048 | The Deflection | skill | Q4
+  mechanic: Bounces one prop off another
+  (a) Cue: the next prop to meet another is deflected ninety degrees and continues on its new path
+  (b) Cue: the next prop to meet another reverses direction and travels back the way it came
+  (c) Props always deflect off one another rather than passing through, with no cue needed
+Q1049 | The Interference | skill | Q4
+  mechanic: Two of the same kind cancel out
+  (a) Two props of the same kind meeting on a cell destroy each other and pay out their remaining path as flat score
+  (b) Two props of the same kind meeting destroy each other and pay nothing; two of different kinds merge
+  (c) Two props of the same kind meeting pass through each other but each fires at half strength thereafter
+Q1050 | The Overtake | skill | Q4
+  mechanic: What happens when a fast prop catches a slow one
+  (a) A prop that catches another absorbs it, taking both effects and the faster speed
+  (b) A prop that catches another pushes it along, both firing on every card thereafter
+  (c) A prop that catches another stops behind it, forming a queue that fires as one when the leader finishes
+Q1051 | The Prop Ladder | skill | Q4
+  mechanic: Props ride each other
+  (a) A prop that meets another rides it for the rest of that prop path, both firing on every card
+  (b) A prop that meets another rides it, and only the carried prop fires
+  (c) A prop that meets another rides it, and at the end of the shared path both are relaunched perpendicular
+Q1052 | The Split | skill | Q4
+  mechanic: One prop becomes two, then four
+  (a) A prop crossing this card splits into two, each continuing on a perpendicular path at half strength
+  (b) A prop crossing this card splits into two at full strength, and neither may split again
+  (c) A prop crossing this card splits into two at half strength, and each half may split again on another such card
+Q1053 | Curtain Call | skill | Q5
+  mechanic: Props survive the line
+  (a) A prop is not cleared when its line finishes scoring; it continues into the next placement
+  (b) A prop is not cleared when its line finishes, but it fires at half strength thereafter
+  (c) Props are cleared at show end rather than line end, so they accumulate all show
+Q1054 | The Endless Round | skill | Q5
+  mechanic: A prop that does not stop
+  (a) Props this card spawns wrap at the grid edge and keep travelling until the placement finishes resolving
+  (b) Props this card spawns wrap at the edge and keep travelling for a fixed number of laps
+  (c) Props this card spawns wrap and keep travelling, weakening by one step per lap
+Q1055 | The Hopper | skill | Q5
+  mechanic: A cell that banks the props fed to it
+  (a) Props that reach this card are stored rather than resolved; the store pays out when the card scores
+  (b) Props that reach this card are stored and pay out at the end of each placement
+  (c) Props stored here pay out when the card scores, and the payout grows with how many kinds it has collected
+Q1056 | The Lap Bonus | skill | Q5
+  mechanic: Going round again is worth more each time
+  (a) Props this card spawns loop the grid; each completed lap pays a step more than the last
+  (b) Props this card spawns loop the grid for three laps, each paying double the last, then finish
+  (c) Props this card spawns loop the grid indefinitely, paying the same each lap, until a card is placed in their path
+Q1057 | The Lit Peg | skill | Q5
+  mechanic: A cell that stays lit once a prop has been through it
+  (a) A cell a prop crosses stays lit for the rest of the placement; a second prop crossing a lit cell fires at double strength
+  (b) A cell a prop crosses stays lit for the rest of the show, and lit cells score an extra step at show end
+  (c) A cell a prop crosses stays lit until a card is placed there, and placing on a lit cell scores an extra step
+Q1058 | The Orphaned Prop | skill | Q5
+  mechanic: A prop outlives the card that threw it
+  (a) A prop keeps travelling and firing after its spawning card leaves the board
+  (b) A prop keeps travelling after its spawner leaves, but at half strength
+  (c) A prop whose spawner leaves the board finishes its current path and then stops where it is, becoming a fixed hazard
+Q1059 | The Prop Between Acts | skill | Q5
+  mechanic: The board is not cleared of props when a placement finishes resolving
+  (a) Props still travelling when a placement finishes resolving carry into the next placement with their paths intact
+  (b) Props still travelling when a placement finishes resolving are frozen where they are and resume at the start of the next placement
+  (c) Props still travelling when a placement finishes resolving are cashed in for flat score equal to the path they had left
+Q1060 | The Standing Prop | skill | Q5
+  mechanic: A prop that stays where it lands
+  (a) Props this card spawns stop on their last cell and stay there, firing again each placement
+  (b) Props this card spawns stop on their last cell and stay for one further placement only
+  (c) Props this card spawns stop where they land, and a card placed on that cell inherits the prop
+Q1061 | The Blockhead | skill | Q6
+  mechanic: Absorbs one Knife prop per show, banking it as flat points instead of being hit
+  (a) Absorbs one Knife prop per show, banking it as flat points instead of taking the hit
+  (b) Absorbs one prop of any kind per show, banking it as flat points
+  (c) Absorbs every prop that would hit its row, banking each as flat points, and breaks after three
+Q1062 | The Bumper | skill | Q6
+  mechanic: Bounces a prop instead of absorbing it
+  (a) A prop that hits this card is deflected ninety degrees and continues from here
+  (b) A prop that hits this card is sent back the way it came at double strength
+  (c) A prop that hits this card is deflected toward whichever line is closest to completing
+Q1063 | The Dodge | stamp | Q6
+  mechanic: A card the prop passes over without touching
+  (a) This card negates the effect of the first prop to cross it each placement, and the prop continues on
+  (b) This card negates the effect of every prop that crosses it, and scores a step for each one dodged
+  (c) This card negates the first prop each placement and steals its effect, firing it on a card of your choice
+Q1064 | The Funnel | skill | Q6
+  mechanic: Every prop ends up in the same place
+  (a) Props drift one cell toward the centre of the grid each tick, on top of their own movement
+  (b) Props drift one cell toward the nearest incomplete line each tick
+  (c) Props drift one cell toward the last card placed each tick
+Q1065 | The Magnet | skill | Q6
+  mechanic: Props bend toward it
+  (a) Every prop on this grid alters its path to pass through this card at some point
+  (b) Every prop on this grid alters its path to pass through this card, and finishes there rather than continuing
+  (c) Every prop within two cells of this card is pulled one cell toward it each tick
+Q1066 | The Net | skill | Q6
+  mechanic: Catches a prop and throws it back
+  (a) Once per Entrance refill, catch a falling prop mid-flight and re-aim it at any card in the same column
+  (b) Once per Entrance refill, catch any prop mid-flight and re-aim it at any card on the grid
+  (c) Once per Entrance refill, catch a prop mid-flight and hold it; release it on a later placement at double strength
+Q1067 | The Ricochet Post | skill | Q6
+  mechanic: A fixed point that turns anything that touches it
+  (a) A prop entering this cell leaves it in the direction of the nearest incomplete line
+  (b) A prop entering this cell leaves it in a direction you choose at the moment it arrives
+  (c) A prop entering this cell leaves it rotated ninety degrees clockwise, always
+Q1068 | Unpierceable | stamp | Q6
+  mechanic: Knives go straight through
+  (a) Knife props pass through this card harmlessly, but still count as a miss for miss-triggered bonuses
+  (b) Every prop passes through this card harmlessly, and each pass counts as a miss for miss-triggered bonuses
+  (c) Knife props pass through this card and continue to the next card behind it, hitting that instead
+Q1069 | The Border Toll | skill | Q7
+  mechanic: Crossing between grids costs the prop something
+  (a) A prop may cross into the neighbouring grid, losing one step of strength at the boundary
+  (b) A prop may cross into the neighbouring grid by paying one cell of its remaining path
+  (c) A prop may cross into the neighbouring grid freely, but may never cross back
+Q1070 | The Ferry | suit | Q7
+  mechanic: A card that carries props over the gap
+  (a) A prop that finishes on a card of this suit is relaunched from the same coordinate in the neighbouring grid
+  (b) A prop that finishes on a card of this suit is relaunched from the neighbouring grid at full strength, once per Entrance refill
+  (c) A prop that finishes on a card of this suit is relaunched from the grid holding the fewest cards
+Q1071 | The Flying Trapeze | skill | Q7
+  mechanic: A prop that leaves its grid
+  (a) Props this card spawns cross into the next grid at the same row and continue
+  (b) Props this card spawns cross into the next grid and continue at full strength through every grid
+  (c) Props this card spawns cross into the next grid, halving in strength at each boundary
+Q1072 | The Grand Tour | skill | Q7
+  mechanic: One prop, every grid
+  (a) Props this card spawns route through every unlocked grid in turn before finishing
+  (b) Props this card spawns route through every unlocked grid, and score a step more in each grid than the last
+  (c) Props this card spawns route through every grid, and finish in whichever grid holds the most cards
+Q1073 | The Long Throw | suit | Q7
+  mechanic: A suit whose props span the board
+  (a) This suit's props travel across every grid at once rather than staying in one
+  (b) This suit's props travel across every grid, but only fire on the grid they started in
+  (c) This suit's props travel across every grid, and score for each grid boundary they cross
+Q1074 | The Relay | skill | Q7
+  mechanic: Props hand off between grids
+  (a) A prop reaching the grid edge is caught by any card in the same row of the next grid, which respawns it
+  (b) A prop reaching the grid edge is caught only by a card of the same suit in the next grid
+  (c) A prop reaching the edge is caught by the next grid and respawned one row lower, snaking down the board
+Q1075 | Sterile Field | stamp | Q8
+  mechanic: Props arrive clean
+  (a) Props spawned by this card carry no statuses at all, ignoring anything on the spawner
+  (b) Props spawned by this card carry no statuses, and strip statuses from every card they pass
+  (c) Props spawned anywhere on this grid carry no statuses
+Q1076 | The Absent Master | skill | Q8
+  mechanic: A prop keeps its spawner even after the spawner is gone
+  (a) A prop keeps reading its spawner card for its effect, even once that card has left the board
+  (b) A prop keeps reading its spawner, and if the spawner is destroyed the prop fires one last time at triple strength
+  (c) A prop that loses its spawner rebinds to the nearest card of the same suit and reads that instead
+Q1077 | The Burning Volley | status | Q8
+  mechanic: Fire on the spawner multiplies the volley
+  (a) A card carrying Burning spawns props whose effect is multiplied by the number of fire stacks on it
+  (b) A card carrying Burning spawns one extra prop per fire stack, each at normal strength
+  (c) A card carrying Burning spawns props that apply Burning to every card they cross, spreading the stacks thin
+Q1078 | The Costume Change | skill | Q8
+  mechanic: Props carry their spawner's statuses
+  (a) A prop inherits every status its spawning card carries
+  (b) A prop inherits one status from its spawner, chosen at random
+  (c) A prop inherits its spawner's statuses, and applies them to every card it passes
+Q1079 | The Costume Trunk | skill | Q8
+  mechanic: Props hand statuses on at the end of the run
+  (a) A prop finishing its path leaves every status it collected on the last card it reached
+  (b) A prop finishing its path leaves the statuses it collected on the cell it stopped in, for the next card placed there
+  (c) A prop finishing its path returns the statuses it collected to its spawner
+Q1080 | The Handoff | skill | Q8
+  mechanic: Props pick statuses up as they go
+  (a) A prop takes on any status of the first card it passes, and carries it for the rest of its path
+  (b) A prop takes on the status of every card it passes, accumulating them
+  (c) A prop takes on the status of the first card it passes and leaves that status on the last
+Q1081 | Blacklist | skill | R1
+  mechanic: Names a rank and kills it
+  (a) Names a rank: any line containing it scores nothing; this card destroys itself once that rank is gone from the deck
+  (b) Names a rank: any line containing it scores nothing, permanently
+  (c) Names a rank each show: lines containing it score nothing, and removing that rank from the deck pays a bounty
+Q1082 | Firetown's Snub | hazard | R1
+  mechanic: Town rule: Flames-suit effects score nothing here, and Burning statuses do not multiply
+  (a) Town rule: one suit chosen per town scores nothing, and its statuses do not multiply
+  (b) Town rule: one suit chosen per town scores nothing, but every other suit scores double
+  (c) Town rule: whichever suit you played most last show scores nothing this show
+Q1083 | Temperance Town | hazard | R1
+  mechanic: Town rule: Concessions-class cards are disabled and shop prices are doubled
+  (a) Town rule: Concessions-class cards are disabled and shop prices double
+  (b) Town rule: one class chosen per town is disabled and shop prices double
+  (c) Town rule: one class chosen per town is disabled, and every card of that class in your deck sells for double
+Q1084 | The Loggione | hazard | R1
+  mechanic: A crowd with expensive taste
+  (a) Town hazard: Common cards score nothing here and Legendary cards score triple
+  (b) Town hazard: cards below a named rarity score nothing here, and the rarity rises each show
+  (c) Town hazard: the rarity you own most of scores nothing here
+Q1085 | The Pillar | hazard | R1
+  mechanic: Boss: nothing works twice
+  (a) Boss: cards that scored in an earlier placement score nothing for the rest of the show
+  (b) Boss: cards that scored in an earlier placement score half for the rest of the show
+  (c) Boss: cards that scored in the previous placement score nothing this placement, but recover the placement after
+Q1086 | The Prepared Town | hazard | R1
+  mechanic: A town that has done its homework
+  (a) Boss: everything is pre-inspected, revealing and disabling every fake, masked and disguised card for the show
+  (b) Boss: everything is pre-inspected and disabled, but each disguised card disabled pays you its rank in gold
+  (c) Boss: one card per Entrance refill is inspected and disabled, chosen by the boss, in descending order of value
+Q1087 | Verdant Leaf | hazard | R1
+  mechanic: Everything is off until you sell something
+  (a) Boss: every card is debuffed until you sell one
+  (b) Boss: every card is debuffed until you destroy one of your own
+  (c) Boss: every card is debuffed until you sell one, and the debuff returns each placement
+Q1088 | Place Your Own Threats | structure | R2
+  mechanic: The hazards are cards you chose to put down
+  (a) You place the hazard cards yourself; each one raises the show's difficulty and its reward together
+  (b) You place hazard cards yourself, and may remove one per Entrance refill at a cost
+  (c) You place hazard cards yourself, and adjacent hazards combine into worse ones that pay more
+Q1089 | Robber card | skill | R2
+  mechanic: Robbers between the turns
+  (a) Between turns, robbers steal the highest-value card on the board
+  (b) Between turns, robbers steal the highest-value card unless it scored that turn
+  (c) Between turns, robbers steal a card, and catching them once ends the thefts for the show
+Q1090 | The Hook | hazard | R2
+  mechanic: Town hazard: after each placement, the lowest-ranked grid card is discarded unless it scored that placement
+  (a) Town hazard: after each placement, the lowest-ranked card on the grid is discarded unless it scored that placement
+  (b) Town hazard: after each placement, the lowest-ranked card in every grid is discarded unless it scored
+  (c) Town hazard: after each placement, the card that has been on the grid longest without scoring is discarded
+Q1091 | Vampire Survivors edge-eating | skill | R2
+  mechanic: Something is eating the edges
+  (a) Cards at the grid's edge are eaten over several turns; playing them all removes the threat
+  (b) Cards at the grid's edge are eaten one per turn until the edge is empty
+  (c) Cards at the edge are eaten over several turns, and each one eaten makes the next come faster
+Q1092 | Boss fire-breathing fight | hazard | R3
+  mechanic: A boss that breathes on the score
+  (a) Boss: appears and must be beaten with specific hands or raw points while it burns down your score each turn
+  (b) Boss: burns down your score each turn, and the burn accelerates the longer the show runs
+  (c) Boss: burns down your score each turn, and only specific hands damage it back
+Q1093 | Circus Maximus race show | hazard | R3
+  mechanic: Beat the clock, not the crowd
+  (a) Show variant: reach the goal within a fixed number of turns
+  (b) Show variant: reach the goal within a fixed number of turns, with the turn count shrinking each placement
+  (c) Show variant: reach the goal within a fixed number of turns; finishing early banks the turns you saved as fame
+Q1094 | Eldritch Invasion | skill | R3
+  mechanic: Something is arriving whether you are ready or not
+  (a) An invading force adds one hostile card to the grid each turn, from a fixed edge
+  (b) An invading force adds one hostile card each turn from an edge that changes
+  (c) An invading force adds cards at an accelerating rate, and clearing a line pushes it back a turn
+Q1095 | The Marathon | hazard | R3
+  mechanic: Three shows that never reset
+  (a) Boss gauntlet: three shows where the board does not reset between them, statuses and hazards persist, and goals stack
+  (b) Boss gauntlet: three shows where the board does not reset, but statuses clear between them
+  (c) Boss gauntlet: three shows where the board does not reset and each show adds one new hazard
+Q1096 | Cerulean Bell | skill | R4
+  mechanic: One card is always chosen for you
+  (a) One card in the Entrance is always forced: it must be the next card you place
+  (b) One card in the Entrance is always forced, and which one changes each refresh
+  (c) One cell of the grid must be filled before any other may be, chosen at random each refresh
+Q1097 | Sapphire Stamp | stamp | R4
+  mechanic: One extra, one taken away
+  (a) Place one extra card each placement, then one already placed is removed at random before scoring
+  (b) Place one extra card each placement, then one already placed is removed by your choice before scoring
+  (c) Place one extra card each placement, and the removal only happens if the line would have scored
+Q1098 | The Bring-In | skill | R4
+  mechanic: The first placement is forced
+  (a) The first card of each show must be placed in a cell the show names, not one you choose
+  (b) The first card of each Entrance refill must be placed in a named cell
+  (c) The first card of each show is placed for you, and you are shown where before you see the card
+Q1099 | The Curse In The Deck | skill | R4
+  mechanic: Something you did not choose, taking up a slot
+  (a) Some cards enter the deck unbidden and cannot be placed; they must be drawn and discarded, costing a refresh
+  (b) Some cards enter the deck unbidden and can be placed but score nothing, occupying a cell all show
+  (c) Some cards enter the deck unbidden and score negatively unless a line containing them is a made hand
+Q1100 | The Psychic | hazard | R4
+  mechanic: Boss: exactly five, every time
+  (a) Boss: no line scores until all five cards of the current Entrance refill have been placed
+  (b) Boss: each Entrance refill's five cards must all go into a single row or column
+  (c) Boss: any card still in the Entrance when it refills is destroyed
+Q1101 | Escalating Demands | hazard | R5
+  mechanic: The bar rises each refill
+  (a) Boss: each Entrance refill names a harder hand than the last, and failing one ends the show
+  (b) Boss: each Entrance refill names a harder hand; failing one voids that refill's lines but not the show
+  (c) Boss: each Entrance refill names a harder hand, and you may bank an easy hand early to spend on a hard one later
+Q1102 | The Audition | hazard | R5
+  mechanic: Prove it before you may continue
+  (a) Boss: a specific hand must be scored before the show's second Entrance refill arrives
+  (b) Boss: a specific hand must be scored within each Entrance refill before the next one arrives
+  (c) Boss: a specific hand must be scored at some point in the show, or the show is lost regardless of score
+Q1103 | The Bond | skill | R5
+  mechanic: Prove you can pay before you are allowed to continue
+  (a) A fixed sum must be banked before the show's second Entrance refill arrives, or the show ends there
+  (b) A fixed sum must be banked before the show's second Entrance refill; falling short discards that refill rather than ending the show
+  (c) A fixed sum must be banked before each Entrance refill arrives
+Q1104 | The Set List | hazard | R5
+  mechanic: You must play the named hand
+  (a) Boss: a hand type is named each Entrance refill, and that refill's lines score nothing unless that hand is among what you complete
+  (b) Boss: a hand type is named for the whole show, and only that hand scores
+  (c) Boss: a hand type is named each Entrance refill, and completing it doubles that refill's lines rather than gating them
+Q1105 | Avalanche | skill | R6
+  mechanic: After scoring, reduce the show's score goal by the number of cards currently placed on the grid
+  (a) After each line scores, the show's goal drops by the number of cards on the grid
+  (b) When a line scores, the show's goal drops by the number of cards on the grid
+  (c) Each time a grid is filled completely, the show's goal drops by 25
+Q1106 | Chindon'ya | consumable | R6
+  mechanic: Consumable: the next town's fame requirement drops 15%
+  (a) Consumable: the next show's goal drops by 15%
+  (b) Consumable: the next show's goal drops by 25% and the show after it rises by 10%
+  (c) Consumable: the next show's goal drops by 5% for each Entrance card left unplaced when you spend it
+Q1108 | Pre-show challenge dance | skill | R6
+  mechanic: Open with a display instead of a card
+  (a) Spend a turn on an opening display to lower the show's goal
+  (b) Spend a turn on an opening display to lower the show's goal by an amount scaling with the turn's lost value
+  (c) Spend a turn on an opening display to lower the goal, or spend two to lower it much further
+Q1109 | The Cliffhanger | skill | R6
+  mechanic: Cue at show end: the next town's goal drops 30%, but this card must score in that show or lose double the discount as fame
+  (a) Cue at show end: the next town's goal drops 30%, but this card must score there or you lose double the discount in fame
+  (b) Cue at show end: the next town's goal drops 30% with no condition attached
+  (c) Cue at show end: name a discount up to 50%; this card must score there or you lose double it in fame
+Q1110 | The Designated Loser | structure | R6
+  mechanic: A boss show with a trivial goal that is normally always won, but has a hidden seeded 1-in-1000 chance the goal silently triples mid-show
+  (a) A boss show with a trivial goal that is normally always won, with a hidden 1-in-1000 chance the goal silently triples mid-show
+  (b) A boss show with a trivial goal, with a hidden 1-in-100 chance the goal silently triples mid-show
+  (c) A boss show with a trivial goal; the goal silently triples the moment you are within one line of winning, once per run
+Q1111 | The Flint | hazard | R6
+  mechanic: Boss: everything scores half
+  (a) Boss: the base points of every hand, and every bonus mult, are halved
+  (b) Boss: base points are halved, but the combo counts double
+  (c) Boss: base points are halved, and every effect trigger is worth twice as much combo
+Q1113 | The Vidushaka | skill | R6
+  mechanic: Talks the goal down
+  (a) Once per tour: the current show's goal drops 20%
+  (b) Once per tour: the current show's goal drops 20%, and again by 20% if you are already past halfway
+  (c) Once per show: the goal drops 20%, but the next show's goal rises by the same amount
+Q1114 | Turquoise Tornado | hazard | R6
+  mechanic: Most hands simply do not score
+  (a) Boss: two placements in three fail to score at all, at random
+  (b) Boss: two placements in three fail to score, but the ones that do score triple
+  (c) Boss: every other placement fails to score, predictably, so you plan around it
+Q1115 | Hurricane card | skill | R7
+  mechanic: A storm that walks the grid
+  (a) Cards in a ring shape are soaked; the storm starts at a random strength, walks the grid and weakens
+  (b) Cards in a ring shape are soaked; the storm walks the grid at constant strength until the show ends
+  (c) Cards in a ring are soaked; the storm walks the grid, weakening, and its next position is telegraphed
+Q1116 | Lightning card | skill | R7
+  mechanic: Strikes the tallest thing on the board
+  (a) Lightning strikes the highest-value card on the board, applying a shock effect
+  (b) Lightning strikes the highest-value card and arcs to everything orthogonally adjacent to it
+  (c) Lightning strikes the highest-value card in each grid at once
+Q1117 | Negative weather effects | skill | R7
+  mechanic: The show must go on
+  (a) Weather events impose negative effects during a show
+  (b) Weather events impose negative effects, and are announced one town in advance
+  (c) Weather events impose negative effects that intensify the longer the show runs
+Q1118 | The Falling Wall | skill | R7
+  mechanic: Boss attack, telegraphed one turn ahead: destroys an entire column except one exact row slot
+  (a) Telegraphed one turn ahead: destroys an entire column except one exact cell
+  (b) Telegraphed one turn ahead: destroys an entire line except one exact cell, and you are told which cell before it lands
+  (c) Telegraphed one turn ahead: destroys an entire column, and you choose one card to save
+Q1119 | The Sphere (Final Venue) | hazard | R7
+  mechanic: The venue itself performs
+  (a) Final venue: board-wide effects from the town alter play every turn
+  (b) Final venue: board-wide effects alter play every turn, drawn from every hazard you faced this run
+  (c) Final venue: board-wide effects alter play every turn, and you are shown the next one in advance

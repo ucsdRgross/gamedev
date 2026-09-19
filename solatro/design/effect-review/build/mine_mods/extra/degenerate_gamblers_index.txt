@@ -1,0 +1,589 @@
+Bets
+## Place Your Bets!
+Once you beat the Hearts deck for the first time or you use the unlock all setting in the menu, you will see the screen to place your bet once you have selected your starting deck. Selecting your chosen bet will change the game play rules based off your selection as shown in the table below:
+| Bet Type | Game Rule Changes
+| Play it Safe | (None) Standard Rules
+| Double Down! | Advantage is harder to get.
+| Triple Down! | Start each encounter with a Minor Arcana 5 in your draw pile. Advantage is harder to get.
+| Quadruple Down! | Foes have better decks! Start each encounter with a Minor Arcana 5 in your draw pile. Advantage is harder to get.
+| ALL IN! | Face the Final Boss. You hit first. Foes have better decks! Start each encounter with a Minor Arcana 5 in your draw pile. Advantage is harder to get.
+
+# Card Suits
+In real-life blackjack, card suits do not matter for gameplay. However, in Dungeons and Degenerate Gamblers, the suit of a card can have a profound effect on either character's health, chips and shield. 
+Suit Effects
+| Suit | Effect | Encounter Effects | Icon
+| Hearts | Heal HP | On blackjack, recovers HP.
+| Clubs | Deal Extra Damage | On blackjack, increase damage dealt.
+| Spades | Gain Shields | On blackjack, gain shields, but only applies to current encounter.
+| Diamonds | Gain Chips | On blackjack, gain extra chips.
+| Nothings | No Effect | Cards of this suit provide no additional, or blackjack, effect.
+| All Suits | Hearts/Clubs/Spades/Diamonds | Combines the effects of all card suits on blackjack.
+## Suit Effects
+Suit effects trigger only if one of the players wins a round with their max score; on a max-score tie, neither player gets these. 
+On a winning blackjack, all suit effects happen in proportion to how many of each suit went into the blackjack, but only cards that have positive values will count. For instance, having a negative-valued heart card in play will not cause the player to lose HP when winning a round with blackjack.
+Some examples:
+Suppose you win a round with a 4 of Clubs, 8 of Diamonds, 3 of Spades and 6 of Hearts (totalling 21), while your opponent stood on 15. You will earn 8 chips, gain 3 shield, heal 6 HP, and deal 4 extra damage on top of the normal score difference. In this case, that works out to (21 - 15) + 4 = 10 damage.
+Suppose you win a round with an Ace of Nothings and a Jack of All Trades. The 11 points from the Ace do not give you any effects, but the Jack means you heal 10 HP, earn 10 chips, gain 10 shield and deal 10 extra damage.
+Cards can have negative values, and these decrease the total of their suit accordingly; however, no suit's effect will ever be reduced below 0, even if its total is. Thus, for example, playing a Negative 4 of Diamonds and some combination of Spade cards totaling 25 is a blackjack (-4 + 25 = 21) that grants you 25 shield.
+Additionally, a negative-valued card with all suits will subtract from every suit's effect. For example, playing four 7s of all main suits and a negative 7 with all suits will total to 21, but it will give no blackjack bonuses, since the negative 7 reduces all suits' effects to 0. However, no cards naturally have a negative value and all suits.
+
+# Cards
+This page details all the cards that exist in Dungeons & Degenerate Gamblers.
+Each card has a value (always an integer) and a suit (Hearts, Diamonds, Spades, Clubs, Nothings, or All Suits At Once). Most cards also have other properties that activate under certain conditions:
+On play: Activates immediately when the card is played.
+On stand: Activates when the player whose side the card is on has stood.
+On tie: Activates if both players have stood and their scores are equal.
+On discard: Activates when this card is discarded (except via a "quick discard" effect).
+On taking damage: Activates when player whose side the card is on loses health
+Other effects such as Exploit: An effect that the player can trigger manually by clicking on the card. Costs 1 Advantage.
+## Numbered Cards
+These are cards that, by and large, have no extra properties beyond their suit and value. Aces and numbers 2-10 behave exactly as standard playing cards do in real-life Blackjack. Besides these, Dungeons & Degenerate Gamblers has standard-suited cards of the following values:
+| Name | Base value | Extra effect
+| 1 | 1 | Unlike Aces, these cards never take value 11 by themselves.
+| 11 | 11 | Unlike Aces, these cards never take value 1 by themselves.
+| 12 | 12
+| 13 | 13
+| 21 | 21
+| 0 | 0
+| Negative Ace | -1 | Flexible (-1 or -11).
+| Negative n | -n | Available in values from -1 to -11 in each suit.
+| Pi | 3 | On play: Set value to 3. On stand: rounds up.
+| Half | 0 | On play: Set value to 0. On stand: rounds up.
+There are also numbered Nothings cards, but these are only available in numbers 1-11 and Aces.
+All Negative cards' art is the same as their positive counterparts, but with the colors flipped (white numbers and pips on a red or black background).
+The Counterfeiter in Jack's Tavern can modify all numbered cards except Aces, Negative Aces, Pi, Half, and 21. The following special cases occur when certain choices would make an illegal card:
+Decreasing a 1 of Nothings produces a Blank Card.
+Modifying a Blank Card in either direction produces a Glitched Card.
+Increasing a 13 of any suit, or an 11 of Nothings, produces a Glitched Card.
+Decreasing a Negative 11 of any suit produces a Glitched Card.
+Note that Glitched Cards are not eligible for the Counterfeiter.
+## Tarot Cards
+| Name | Value | Description | Notes | Image
+| I The Magician | 0 of | On play: add 2x Magic Trick Card and 1x Ace Up Your Sleeve to your draw pile. On discard: burn. | Can be obtained from VIP Area's Go Fish! event.
+| II The High Priestess | 0 of | On play or on playing another card: foresight 1.
+| III The Empress | 0 of | On play: play and lock an Ace of Hearts. On discard: burn.
+| IV The Emperor | 0 of | On play: lock. On bust and on stand: deal damage equal to amount busted by. | Can be obtained from Sandy's Casino's Crown & Anchor event.
+| V The Hierophant | 0 of | On play: lock. On bust and on stand: Heal equal to amount busted by.
+| VI The Lovers | 6 of | On play: Choose from the following to put into your draw pile: Valentines Card, Ace of Hearts, another VI The Lovers. Cards created this way burn on discard. | Signature Hearts Deck contains one of these cards.
+| VII The Chariot | 0 of | On play: lock. At the start of next round: burn this card, and force foe to stand.
+| VIII Justice | 0 of | On play: replace all of your Jacks with Jackpot, then add a Jackpot to your draw pile. On discard: burn.
+| IX The Hermit | 0 of | On play: Gain 1 chip, heal 1 HP, gain 1 Shield, deal 1 Damage, and gain 1 Advantage.
+| X Wheel of Fortune | 0 of | On play: Spin the wheel of fortune and receive a gift! | Randomly selects from gain 10 chips, gain 10 shield, deal 10 damage, or create another X Wheel of Fortune.
+| XI Strength | -11 of | Exploit while busted: hit button becomes re-enabled for one hit.
+| XII The Hanged Man | 0 of | On play: Foresight 2, then choose one to quick discard.
+| XIII Death | 0 of | On play: shred 1 of 3 cards you currently have. On discard: burn.
+| XIV Temperance | 0 of | On play: Gain 2 Chips per card you currently have. On discard: Burns.
+| XV The Devil | 0 of | While in play: On a winning blackjack multiply damage dealt by 6. Otherwise, at end of round take 6 damage.
+| XVI The Tower | 0 of | On play: Lock your other played unlocked cards. If any are already locked, unlock them.
+| XVII The Star | 0 of | On heal: Deal quick damage equal to the amount healed.
+| XVIII The Moon | 0 of | On play: Locks While in play: Opponent's played cards are shrouded and you deal 2x damage. Exploit: unlock. Unshroud cards this round.
+| XIX The Sun | 0 of | On Play: Wish for a card from your draw pile, then foresight 1. Deal damage equal to the value of the revealed card.
+| XX Judgment | 0 of | On play: add a fresh copy of one of your burned cards to your discard pile.
+| XXI The World | 0 of | On play: Lock On stand: Put a random tarot card into your draw pile. | Fortune Teller's Deck has one of these cards in it.
+| 0 The Fool | 0 of | On play: Swap played and discarded cards with foe.
+## Minor Arcana
+These cards are intentionally bad cards, meant to be downsides to specific events.
+One of cards are also created at the start of every combat encounter if the player is on Triple Down or higher stakes.
+| Name | Value | Description | Notes | Image
+| 5 of Cups | 5 of | On play: foe gains 5 shield. | Signature Spades includes one of these cards.
+| 5 of Wands | 5 of | On play: take 5 damage. | Signature Clubs includes one of these cards.
+| 5 of Pentacles | 5 of | On play: lose 5 chips. | Signature Diamonds includes one of these cards.
+| 5 of Swords | 0 of | On play: +5 Value. | Signature Hearts includes one of these cards.
+## Inverted Tarot Cards
+| Name | Value | Description | Notes | Image
+| The Magician I | 0 of | On play: Add 2x Killer Queen and 1x Misprinted Card to your draw pile. On discard: burn.
+| The High Priestess II | 0 of | On play: lock. Exploit: Shuffle your discarded cards into your draw pile.
+| The Empress III | 0 of | On play: play and lock a Negative Ace of Hearts. On discard: burn.
+| The Emperor IV | 0 of | On play: lock. On bust and on stand: Gain shield equal to amount busted by. | Can be obtained from Sandy's Casino's Crown & Anchor event.
+| The Hierophant V | 0 of | On play: lock. On bust and on stand: Gain chips equal to amount busted by.
+| The Lovers VI | -6 of | On play: Set both max scores to 21, set card values to their base value, then burn all cards created this encounter.
+| The Chariot VII | 0 of | On play: instant tie, gain 21 shield, then lock. At the start of the next round, burn this card, then stand.
+| Justice VIII | 0 of | On play: Transform all of your Jacks to random Kings. On discard: burn.
+| The Hermit IX | 9 of | On play: burn all other currently played cards, then stand.
+| Wheel of Fortune X | 0 of | On play or Exploit: burn another random played card, then play any card from your draw pile.
+| Strength XI | 11 of | On play: Deal 11 damage, then stand.
+| The Hanged Man XII | 0 of | On play or Exploit: burn a discarded card, then move a discarded card to your draw pile.
+| Death XIII | 0 of | On play: adds fresh copies of every card in your draw pile, to your draw pile. On discard: burn.
+| Temperance XIV | 0 of | On play: Lose 14 Chips. Deal 14 damage if you have fewer than 140 chips.
+| The Devil XV | 0 of | On play: lock On tie: Deal 6 damage.
+| The Tower XVI | 0 of | Lock the next card you play this round.
+| The Star XVII | 0 of | On taking damage: Heal 3 hp.
+| The Moon XVIII | 0 of | On play: lock. You play cards face down and deal 2x damage. Exploit: unlock. Unshroud your cards this round.
+| The Sun XIX | 0 of | On play: Move a card from your foe's draw pile to the top of your draw pile.
+| Judgment XX | 0 of | On play: Play a random card that has "on discard burn"".
+| The World XXI | 0 of | On play: lock. On stand: Add a random reversed Tarot card to your draw pile. | Fortune Teller's Deck has one of these cards in it.
+| The Fool 0 | 0 of | On play: Add a fresh copy of another random played card to your hand.
+## Face Cards
+| Name | Value | Description | Notes | Image
+| Jack of [Suit] | 10 of [Suit] | On a winning blackjack: Activate Suit Blackjack Effect | Suit can be Hearts , Diamonds , Clubs , Spades or Nothings .
+| Queen of [Suit] | 10 of [Suit]
+| King of [Suit] | 10 of [Suit]
+| Jack of All Trades | 10 of | Has the effect of all four suits at once.
+| Jack in a Box | 10 of | Exploit: Close the box setting value to 0. If already closed then open the box, setting this card's value to 10 of a random suit
+| Jackhammer of Clubs | 10 of | Exploit: Deal 5 damage then burn | Signature Clubs includes one of these cards.
+| Jumping Jack | 10 of | On hit or Exploit: move to opponent's side
+| Jack and the Beanstalk | 10 of | On stand: Rounds up 2 times. On bust limit exceeded: Take 5 Damage and halve the value of this card. | Signature Spades includes one of these cards.
+| Monterey Jack | 10 of | Exploit: Heal 1 HP and shred. On stand: permanent +2 . to the exploit heal.
+| Jackpot | 10 of | On Play, Exploit, or Stand: Create a random Jack to your draw pile.
+| Magic Trick Card | 10 of | On play: Choose to change this card to either a Queen of Diamonds or a 7 of Spades
+| Queen of Music | 10 of | Exploit: Add 1 token. If there are already 2 tokens, instant blackjack, then remove all tokens.
+| Queen of Chess | 10 of | Exploit: Move to opponent’s play pile, then lock. At the start of next round: Unlock. | Signature Spades includes one of these cards.
+| Queen of Wonderland | 10 of | On play: Halve the value of a played card. | Odd-value cards are rounded upwards (e.g. 5 → 3; 3 → 2).
+| Killer Queen | 10 of | On play: burn any other played card, then +2 value to this card. | Signature Clubs includes one of these cards.
+| Queen of the Stone Age | 10 of | On anyone playing a card worth 3 or 7: Deal 3 Damage.
+| Dancing Queen | 10 of | On hit or Exploit: Changes card value in the order: 10, 11, 10, 9, 10. | Signature Diamonds includes one of these cards.
+| Queen of Drag | 10 of | On play: Create a random Queen, add her to your hand and set her value to 11
+| King of Gold | 10 of | On playing another card: +1 Value to that card and change its suit to Diamonds. | Signature Diamonds includes one of these cards.
+| King of the Hill | 10 of | On play: Instant Blackjack if this is the only Face card currently in your entire deck.
+| King of Kings | 10 of | On play or Exploit: Halves the values of all other currently played Kings. | Odd-value cards are rounded upwards (e.g. 5 → 3; 3 → 2).
+| King Cobra | 10 of | On play: Take 3 damage, then deal 2 damage for every King currently in your deck.
+| King of Space and Time | 10 of | Handy. On play: Move all your other played cards to your opponent's side, then stand. Can only be played if you have a Jack in play.
+| Kingmaker | 10 of | Handy. On play: Choose another one of your played cards to turn into a random King.
+| King of the World | 10 of | On play: Burn ALL other Face cards.
+| Master of One | 10 of | On hit: Play a One of a random suit. Then play another one to your foe's side.
+## Special Cards
+| Name | Value | Description | Notes | Image
+| Rules Card | 0 of | On play: Choose to set either max score to 20 or 22 for this encounter. | Full Deck includes one of these cards.
+| Double Back Card | 0 of | Exploit: Has no effect.
+| Blank Card | 0 of | On 1st play: Set value between 1 and 11. | Full Deck includes one of these cards. Counterfeiter can turn a 1 of Nothings into this card (by lowering).
+| Joker | 0 of | On play: Copy the value and suit of one of your discarded cards. | Full Deck includes two of these cards. Red and Black Deck include one of these.
+| Ace Up Your Sleeve | 11 of | Flexible: 11 or 1. On play: Add an Ace of a random suit to your hand.
+| Ace in the Hole | 1 of | Handy. Flexible (-1 or 1). Can only be played while exactly 1 above or below max score. On stand: if this card is in your hand, take 1 damage. | Signature Diamonds Deck has one of these cards in it.
+| Heart of Threes | 3 of | On hit: If you already have a score of at least 18, heal 3 HP. | Signature Hearts Deck contains one of these cards.
+| Club of Fours | 4 of | On hit: If you already have a score of at least 17, deal 4 damage. | Signature Clubs Deck contains one of these cards.
+| Spade of Fives | 5 of | On hit: If you already have a score of at least 16, gain 5 shield. | Signature Spades Deck contains one of these cards.
+| Diamond of Sixes | 6 of | On hit: If you already have a score of at least 15, gain 6 chips. | Signature Diamonds Deck has one of these cards in it.
+| Misprinted Card | 6 of | On play: Set value to 6, then add a 7 of Spades to your hand. On stand: rounds up. | Signature Spades Deck contains one of these cards.
+| AI Generated Card | 0 of | On play: Randomly sets value and suit. Exploit: Add a fresh copy of this card to your foe's side.
+| Get Out of Jail Free Card | 0 of | Handy. On play: Instant Draw. On discard: burn.
+| +2 Card | 2 of | On play: Play foe's top two cards. On discard: Discards to foe's discard pile.
+| Reverse Card | 1 of | On play: Swap who hits first. On Discard: Burn.
+| Card Sleeve | 0 of | On play: Lock any of your played cards, then burn this card.
+| Baseball Card | 10 of | On discard: permanent -1 value. When value is 0: Shred this card, then permanently add a Card Sleeve and an Old Baseball Card to your deck and discard pile.
+| Old Baseball Card | 0 of | On play: Gain 10 advantage. On discard: burn. | This card can only be added to your deck via Baseball Card.
+| Trap Card | 6 of | On taking damage: Deal matching quick damage.
+| Dark Mage | 5 of | Handy. On play: Burn one of your played cards that has a value of 7 or higher.
+| Charred Lizard | 10 of | On play: Choose to keep in play or sell to foe's discard pile for 10 chips.
+| Dark Flower | 9 of | Exploit: Play three halves of a chosen suit, then discard this card. These halves burn on discard.
+| Booster Pack | 5 of | On play: Add five random cards to your hand. One of them will be a Foil.
+| Four Mana Seven Seven | 2 of | Start of turn: If you haven't exceeded your bust limit, play a 4 of Clubs. Then play a 7 of Clubs to your foe's side. | Signature Clubs Deck contains one of these cards.
+| Gerald from Riviera | 3 of | On play: Burn one of your foe's played cards. On discard: burn.
+| Terminate the Tower | 4 of | On play: Play one of four unique cards: Break Limits, Sweep the Leg, Scratch, or Expulsion.
+| Break Limits | 1 of | On play: Double the value of a played card for this encounter.
+| Sweep the Leg | 3 of | On play: Set foe's max score to 20 and set yours to 22 for this encounter. On discard: burn.
+| Scratch | 2 of | On play: Deal 3 damage. Increase the damage of all of your scratch cards by 2 this encounter. | The Dealer Will add 1 Scratch to each player's draw pile as a softlock prevention.
+| Expulsion | 0 of | Deal and take 2x more damage.
+| Proxy Card | 0 of | At start of encounter: transform this card into another card.
+| Jimbo | 4 of | You can play a max of 5 cards. On stand: Gain 4 chips for each of your played cards.
+| Whale Card | 10 of | On play: Lose 21 chips, then deal 5 damage.
+| Lightning of the 4th Kingdom | 11 of | On play: Foresight 1. Deal 5 damage if the revealed card has a value less than 6.
+| Treasure Vault | 5 of | On gaining chips: Add 1 token. On winning with max score: If there are 5 or more tokens, remove all tokens, and count Diamonds as Everything for this Blackjack.
+| Rain Man | 11 of | On hit: Deal damage equal to your number of played cards, then discard. On stand: Gain shield equal to your number of played cards.
+| Birthday Card | 0 of | On play: Permanently rounds up. On stand: Add 5x Booster Pack to your hand if this card's value is at least 21. On discard: Burn if this card's value is at least 21. | Birthday Deck has one of these cards valued 2 in it.
+| Get Well Soon Card | 5 of | On play: Lock. On taking damage: add 1 token. If there are already 2 tokens, Heal 10 HP and unlock, then remove all tokens.
+| Valentines Card | 14 of | On play: Heal both players 14 HP. On discard: burn.
+| Credit Card | 10 of | Handy. On discard: Play a Negative 11 of Diamonds.
+| Credit Card Knife | 10 of | Exploit: Lose 10 chips. Deal 5 damage. Increase the chip cost for this card by 10.
+| Lockpicking Card | 10 of | Exploit: Unlock every locked card in play, then quick discard them.
+| Key Card | 0 of | On play: Choose one of your foe's played cards to lock. If it is already locked, unlock it.
+| Kanban Card | 2 of | On play: Move 1 of the bottom 3 cards from your draw pile to your hand.
+| Loyalty Card | 0 of | On play or exploit: Permanently gain a stamp. On the 10th stamp: Instant blackjack, then resets stamps.
+| Trump Card | 0 of | Handy. On Stand: Instant blackjack. On discard, shred this card.
+| Official Trump Card | 0 of | Handy. On play: Set value between 1 and 11. Lose 5x that many chips.
+| Memory Card | 8 of | On 1st play: Choose a card that you currently have. On stand: Add a fresh copy of that card to your draw pile. | Wizard's Deck has one of these in it.
+| Scratchcard | 0 of | On play: Reveal 1, 2 or 3 random numbers from 1 to 9. Set value to the total and gain that many chips.
+| Time Card | 0 of | On play or Exploit: While you have a played card worth a 9 or 5: gain 10 chips.
+| Hall Pass | 1 of | On play or Exploit: Foresight 1.
+| Business Card | 0 of | On play: Swap this card with one of your foe's played cards.
+| Cue Card | 0 of | On play: Move any of your played or discarded cards to the bottom of your draw pile. | Giant Rat's Deck has two of these cards in it.
+| Blood Donor Card | 0 of | On play: lock. On playing a Heart worth 1 or more: -1 from it's value for this encounter and heal 1 HP. | Signature Hearts Deck contains one of these cards.
+| SD Card | 1 of | On play: Move top card from draw pile to your hand, then lock this card. Unlocks when the drawn card is played.
+| Social Security Card | 0 of | Handy. On play: Adds a fresh copy of your foe's currently played cards into your draw pile. On discard: burn.
+| Green Card | 13 of | On play: Move one of your played or discarded cards to the top of your foe's draw pile.
+| Yellow Card | 1 of | On play: Mark one of your foe's played cards with a Yellow Card, then add a Red Card to your draw pile.
+| Red Card | 2 of | On play: Burn any of your foe's played cards that are marked with a Yellow Card. On discard: burn. | This card is unobtainable, and can only be created mid-combat.
+| Insurance Card | 0 of | Exploit:Lose 21 chips, burn your most recently played card and this card.
+| Library Card | 0 of | On play: Lock, then move a card from your foe's draw pile to your draw pile. Every time that card is discarded, lose 5 chips.
+| Flash Card | 0 of | On play: Randomly selects a number [1-10]. Exploit:Set value to the selected number.
+| Transit Card | 3 of | Exploit: Move any card from your draw pile to your foe's draw pile, then discard this card.
+| Leaving Card | 9 of | Handy. On play or exploit: Quick discard all cards currently in your hand, then draw up to the same number of cards to your hand. On discard: burn.
+| Priceco Membership Card | 12 of | On play: add a 12 of a random suit to your hand. Exploit: -4 value.
+| Blockbreaker Card | 0 of | On stand: Lock. Add 1 token. At the start of next round: take 1 damage per token. Move to foe's side. | The Dealer creates one for each player in Quadruple Down/ALL IN as a softlock prevention.
+| Communist Party Card | 0 of | On play or exploit: Instant draw. On discard: Discards to foe's discard pile.
+| Report Card | 4 of | On play: Gain 4 shield. If you have at least 11 shield, add an Ace of Spades to your hand. If you have at least 21 shield, make it a Foil.
+| Fake ID | 0 of | Exploit: Lose 21 chips. Permanently transform into Your Fake ID.
+| Your Fake ID | 0 of | Before taking damage: Gain shield equal to incoming damage. Permanently transform into Fake ID. Burn | Can only be added to your deck via Fake ID.
+| Gold Card | 10 of | On Playing a Diamond: Steal 10 chips from your foe. Deal 3 damage.
+| Throwing Card | 11 of | Flexible [11 or 1]. On play: Deal damage equal to your shield, then move this card to your foe's side. | Signature Spades Deck contains one of these cards.
+| Fingerprint Card | 5 of | On play and exploit:exploit all of your played cards that have exploit (does not cost Advantage).
+| Rorschach Card | 0 of | On stand: your foe stands.
+| Radiation Detector | 13 of | On play: Take 2 damage, then turn a random card from foe's played cards into a Radiation Detector and unlock it.
+| Vaccination Card | 3 of | On taking damage: Add 1 token. On Stand: Gain 3 shield per token and remove all tokens.
+| RSVP Card | 8 of | On stand: Deal 8 damage if your foe has not stood.
+| The Agile Agenda | 1 of | On play: If value is 21 or more, permanently set value to 1. On exploit: Lose chips equal to value squared, deal damage equal to value, then permanently set value to next Fibonacci number
+| Bounce Card | 0 of | Handy. On play or exploit: move a random card from your played cards into your hand. On discard: burn.
+| Calamari Game Card | 0 of | On play or exploit: take 3 damage. Deal 3 damage. On foe defeated: Gain 100 chips. | Signature Diamonds Deck has one of these cards in it.
+| Bat Credit Card | 10 of | On play or exploit: steal 10 chips from your foe. If they have fewer than 10 chips, deal 5 damage instead.
+| Fight Club | 1 of | On Play: Lock. On Stand: Take 1 damage. Deal 1 damage.
+| Licence to Kill | 7 of | On Gaining Chips: Deal 3 damage.
+| Card Number 52 | 2 of | On losing Chips: Deal 5 damage.
+| Wild Card | 0 of | Handy. On play: change the value of this card to match the top card in your discard pile.
+| Cardecu | 25 of | On play: gain chips equal to the value of this card. | Signature Diamonds Deck has one of these cards in it.
+| Four of a Kind | 0 of | On play: play a card from each suit, each with the same random value from 1-3. On discard: burn.
+| Non-Fungible Card | 12 of | On hit: reduce value by a random number between 1 and 3. Cannot be reduced under 1. On Stand: Gain chips equal to value.
+| Glitched Card | 0 of | On play: copy the suit, value, and effect of a random card. On stand: unlocks. | Glitched Deck includes four of these cards. Signature Glitched Deck includes thirteen of these cards.
+| Big 2 | 12 of | Flexible [12 or 2]. On play or exploit: transform all played cards with a value of 2 into Big 2.
+| Lucky Seven | 7 of | On Play: Set value to 7. On stand: if you have at least three cards with a value of 7 in play, gain 77 chips and deal 7 damage.
+| The Victim Card | -1 of | On taking damage: +1 value to all foe's played cards.
+| Dis-Card | 0 of | On play: Quick discard any played card.
+| Gravecard | 0 of | On play: Set value to a random value from 6 to 10. Exploit: Set value to a random value from 1 to 5.
+| Cardiovascular Exercise | 0 of | On play: take 2 damage, gain 5 shield. | Signature Spades Deck contains one of these cards.
+| Carduus acanthoides | 2 of | On stand: rounds up. On taking damage: deal quick damage equal to the value of this card.
+| Plate of Escardgot | 7 of | On play: Rounds up. On hit while worth at least 1: -1 value. On Stand: gain shield equal to value.
+| Suit Yourself | 1 of | Exploit: change the suit of any card in your draw pile to any normal suit for this encounter.
+| Diamond in the Rough | 0 of | On play: remove up to 10 shield from both players, then grant 2 chips per shield removed.
+| Heart of the Cards | 8 of | On Play: Move a card to the top of your draw pile.
+| Steam Trading Card | 7 of | On Play: +1 Token. If there are at least 5 Tokens, burn, and add a Foil Booster Pack to your hand. On Discard: Steal 1 chip from your foe, then discard to your foe's draw pile.
+| Railroad Card | 10 of | On Pickup: Lose 200 chips. On taking damage: Gain 10 chips. Repeat for every Railroad Card you have.
+| Gift Card | 7 of | On Play: -3 value, then give a (Card) to your draw pile. On Discard: If value is 0 or less, lose 10 chips, set value to 10, and permanently change the gifted card to (Card). | File:Gift card.png
+
+# Decks
+Redirect to:
+Starting Decks
+
+# Effects
+In Dungeons & Degenerate Gamblers, a vast majority of cards have conditionals that manipulate gameplay in various ways. These conditionals are called "effects". Listed below is a list of all the card effects in Dungeons & Degenerate Gamblers:
+| Name | In-game description | Explanation
+| Blackjack | Score is equal to bust limit. | If a player's current score is exactly equal to their maximum score, Blackjack is achieved.
+| Burn | Card is removed for this encounter. | Burned cards automatically return to the player's deck between encounters.
+| Bust Limit | The Maximum score (usually 21). | The bust limit may be manipulated by the effects of other cards, such as the Rules Card which can increase or decrease the player or opponent's bust limit by 1.
+| Create | Put in play a card that lasts for this encounter only. | Cards created with this effect are not considered a true part of your deck and are immediately removed after the encounter is beaten.
+| Exploit | Spend 1 advantage to enact this effect. | Exploiting a card causes the opponent to hit or stand afterwards, which can be useful for seeing them play out the round before hitting yourself.
+| Flexible | Takes the highest value that does not cause a bust. | Flexible cards have two values and take their higher value (in all zones) as long as the sum of that value and the player's current score does not exceed the bust limit. The archetypal Flexible card, the ace, has a value of 11 unless the player's score is 11 or higher, which causes it to use its lower value of 1 instead (assuming the standard bust limit of 21).
+| Foil | Handy at the start of encounter, and free to play from hand. | At the start of the encounter, all Foil cards from the player's deck are immediately added to the hand. Playing a Foil card from hand never costs advantage (including if the card was added back to the hand later in the encounter). If an opponent has Foil cards in their deck, they are all played immediately at the beginning of the encounter.
+| Foresight | View certain number of cards from draw pile in draw order. | "Foresight X" reveals the next X cards that will be drawn from the deck on hit. This may change if more cards are shuffled into the draw pile (such as via the Yellow Card).
+| Handy | Moves to hand. | Handy cards cannot be played from the deck (moving directly into the player's hand instead). The player's hand can contain arbitrarily many cards, which can be played onto the table at any time at a cost of 1 Advantage per card, unless the card is Foil. Note that foes don't have hands of their own; any effects that would move cards into their hands or create cards in their hands (such as Booster Pack) cause them to play all those cards immediately.
+| Instant Blackjack | Set this card's value to whatever gives blackjack. | For example, if this effect triggers while the player's score is 10 and their bust limit is 21, the card's value is set to 11. The value of the card in question does not change when additional cards are hit, played from hand, or otherwise appear on the player's side of the table. Note that the card's value will stay the same even after being discarded and played again (except Loyalty Card).
+| Instant Tie | Set this card's value to whatever means scores will be equal. | Similar to Instant Blackjack, but the card's value is set so that the player who played the card has an equal score as their opponent. For example, if you are at 19, your opponent is at 13, a card with Instant Tie will be set to -6. Like Instant Blackjack, the value is not affected by subsequent cards played.
+| Lock | Card cannot be discarded. | Locked cards are not discarded between rounds and cannot be discarded by effects that discard or quick discard played cards, but they can still be burned.
+| Quick Damage | Damage that does not trigger "on taking damage" effects.
+| Quick Discard | Discard without enacting "on discard" effects.
+| Rounds Up | +1 value if this does not bust. | If multiple cards on the field would Round Up simultaneously, they Round Up in the order that they were played.
+| Shred | Permanently remove from deck and this encounter.
+| Wish | Has a chance to bring the wished for card to the top of your draw pile. | Wish for a card in your deck If it's the top of your deck it's 100% to succeed half way into your deck is a 50% to succeed there's a minimum 33% success rate for any card in your deck
+
+# Encounters
+(This section is still being worked on. Pardon our dust.) 
+An encounter in D&DG consists of playing blackjack against an opponent who has a deck unique to them. An encounter has two possible end states: success and failure. Once an encounter with an opponent is initiated, the player cannot disengage. When a player chooses to "Save and Exit", the encounter restarts from the state it was initiated with and all progress done during the encounter is lost. If an encounter is beaten, whereas the player successfully brings the opponent to zero health or less, the player progresses, else, the entire run is considered as failed and the player will have to restart.
+## Jack's Tavern (Act 1)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Bartender | 1 | 50 | 17 | Ace - King of Diamonds Loyalty Card | Full Deck Same as Regular Foils Ace of Diamonds
+| Drunk | 17 | 50 | 13 | 3, 11, 12, 13 of Clubs 5 of Hearts 6, 7 of Spades Rules Card | Full Deck Same as Regular Foils Rules Card
+| Gambler (Act 1) | 17 | 50 | 17 | 11 of Clubs Jack of Diamonds 5 of Hearts 6 of Spades x2 Scratchcard x4 | Full Deck Same as Regular Foils 11 of Clubs
+| Bard | 17 | 49 | 17 | Ace, 4 of Diamonds Jack of Diamonds x2 3, 4, 8, 9 of Hearts Joker Gerald from Riviera | Full Deck Same as Regular Foils Jack of Diamonds
+| Sofa Sleeper | 17 | 50 | 17 | Insurance Card 2 - 9 of Nothing Jack of Nothing Gold Card Credit Card Bat Credit Card Priceco Membership Card | Full Deck Same as Regular Foils Jack of Nothing
+| Janitor | 21 | 50 | 17 | Time Card Key Card 5 of Spades, Diamonds, Hearts 9 of Spades, Clubs, Diamonds Jack of Hearts Fingerprint card | Full Deck Same as Regular Foils Jack of Hearts
+| Poker Player (Tavern) | 21 | 50 | 17 | 6 of Spades 6, 8, Jack of Diamonds 8, Jack of Hearts Ace up your Sleeve | Full Deck Same as Regular Foils Ace up your Sleeve
+| Squire | 21 | 50 | 17 | 2, 4, 6, 8, Jack of Spades x2 Joker Cardiovascular Exercise x2 | Full Deck Same as Regular Foils Cardiovascular Exercise
+| Dwarf | 21 | 50 | 18 | 1 - 5 of Spades Jack of Spades 12 of Spades Diamond in the Rough Licence to Kill | Full Deck Same as Regular Foils Jack of Spades
+| The Manager | 30 | 100 | 17 | Credit Card Business Card x2 Ace up your Sleeve 5 - 9 of Diamonds Jack of Diamonds x2 | Full Deck Same as Regular Foils Credit Card
+## Lou's Lounge (Act 2 Up)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Card Shark | 40 | 70 | 17 | Full Deck Ace - 6 of Diamonds 9, 10, Jack of Diamonds Joker Magic Trick Card Blank Card Ace up your Sleeve Official Trump Card Cue Card Jack in a Box Half of Spades, Clubs, Diamonds, Hearts | Full Deck Ace, 3 - 6 of Diamonds 9, 10, Jack of Diamonds Joker Magic Trick Card Blank Card Official Trump Card Cue Card Jack in a Box Half of Spades, Clubs, Diamonds, Hearts Card Number 52 Foils Ace Up Your Sleeve
+| Luck Pusher | 40 | 50 | 18 | Full Deck 8, 9, Queen of Spades, Clubs, Diamonds, Hearts Joker Reverse Card Dis-Card Gravecard Scratchcard 8 of Nothing x2 | Full Deck 8, 9, Queen of Spades, Clubs, Diamonds, Hearts Joker Reverse Card 0 The Fool Terminate the Tower Gravecard Scratchcard Social Security Card Foils Dis-Card
+| Wizard | 35 | 50 | 20 | Full Deck Memory Card 1 of Nothing x2 | Full Deck 1 of Nothing x4 Foils Memory Card
+| Teacher | 40 | 50 | 17 | Full Deck Report Card Flash Card Library Card x2 Insurance Card Pi of Diamonds Cue Card Queen of Spades, Clubs, Diamonds, Hearts Ace of Diamonds 6, 7, 8, 9, 10 of Diamonds x2 11 of Diamonds | Full Deck Same as Regular Foils Report Card
+| Investigator | 35 | 50 | 12 | Full Deck Fake ID Time Card Licence to Kill Fingerprint Card Business Card | Full Deck Your Fake ID IX The Hermit Fingerprint Card Business Card Foils Licence to Kill
+| Paparazza | 45 | 50 | 17 | Full Deck SD Card Business Card Gravecard Valentines Card Ace - 10 of Diamonds | Full Deck Same as Regular Foils Ace of Diamonds
+| Gambler (Act 2) | 50 | 85 | 17 | Full Deck 11 of Clubs 5 of Hearts 9 of Spades Ace of Diamonds Scratchcard I The Magician Gravecard | Full Deck Same as Regular Foils I The Magician
+| Thief | 40 | 50 | 15 | Full Deck Library Card x2 Lockpicking Card Fingerprint Card | Full Deck Library Card Lockpicking Card Fingerprint Card The Sun XIX Foils Library Card
+| Minotaur | 45 | 50 | 17 | Full Deck Hall Pass Cardecu Diamond in the Rough Scratch Fight Club Gold Card 10 of Nothing Jack of Spades Dancing Queen King of Nothing | Full Deck Hall Pass Calamari Game Card Diamond in the Rough Scratch Fight Club Gold Card Credit Card Jack of Spades Dancing Queen Foils King of Gold
+| Cardographer | 33 | 50 | 17 | Full Deck 12 of Diamonds Negative 11 of Spades The Empress III The Star XVII The World XXI Queen of Music Queen of Drag Suit Yourself | Full Deck Same as Regular Foils The Empress III
+| Bouncer | 52 | 100 | 17 | Full Deck King of Hearts 10 of Nothing 21 of Spades Foils 21 of Spades | Full Deck 10 of Clubs x2 Foils 21 of Spades
+## VIP Area (Act 3 Up)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 3) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x2 I The Magician Gravecard Lucky Seven Wild Card | Full Deck Same as Regular Foils I The Magician
+| Rapper | 37 | 7 | 16 | Full Deck Dancing Queen x2 Lucky Seven 7 of Spades, Clubs, Diamonds, Hearts Killer Queen | Full Deck Same as Regular Foils Dancing Queen
+| Fighter | 37 | 50 | 19 | Full Deck Fight Club x3 Get Well Soon Card x2 5 of Wands x3 Cardiovascular Exercise x3 Jack of Nothing x4 Diamond of 6's Carduus acanthoides | Full Deck Fight Club x2 Get Well Soon Card x2 5 of Wands x3 Cardiovascular Exercise x3 Jack of All Trades Jack of Spades Jack of Diamonds Jack of Hearts Diamond of 6's Carduus acanthoides Foils Fight Club
+| Mr. President | 39 | 50 | 17 | Full Deck Transit Card Insurance Card Blood Donor Card 10 of Hearts x2 King of Hearts 6 of Hearts | Full Deck Transit Card Insurance Card Blood Donor Card 10 of Hearts King of Clubs 6 of Diamonds Foils 10 of Spades
+| DJ | 40 | 50 | 17 | Full Deck Master of One | Full Deck Master of One Foils Ace of Nothing
+| Racer | 33 | 50 | 21 | Full Deck 3 of Spades, Clubs, Diamonds, Hearts, Nothing Heart of Threes Queen of the Stone Age x3 | Full Deck 3 of Spades, Clubs, Diamonds, Hearts Heart of Threes Queen of the Stone Age x3 4 of a Kind Foils Queen of the Stone Age
+| Actress | 35 | 50 | 15 | Full Deck Queen of Hearts x5 Queen of Wonderland x5 | Full Deck Queen of Hearts x5 Queen of Wonderland x5 Ace of Nothing Foils Queen of Hearts
+| Actor | 50 | 50 | 17 | Full Deck Pi of Spades, Clubs, Diamonds, Hearts Memory Card x2 7, 8, 9 of Nothing | Full Deck Same as Regular Foils Memory Card
+| Rocker | 45 | 50 | 17 | Full Deck Ace of Spades x7 XV The Devil 7 of Diamonds 11 of Diamonds 0 The Fool Joker 8 of Spades 8 of Nothing Ace of Nothing | Full Deck Ace of Spades x5 XV The Devil 7 of Diamonds 11 of Diamonds King Cobra 0 The Fool Joker 8 of Spades 8 of Clubs Ace of Clubs Throwing Card Foils Ace of Spades
+| Celebutante | 43 | 100 | 17 | Full Deck SD-Card Jumping Jack x3 Queen of Chess x3 | Full Deck Jumping Jack x3 Queen of Chess x3 Ace of Diamonds 10 of Diamonds Foils Jumping Jack
+## Head Office (Act 4 Up)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 4) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x3 I The Magician Lucky Seven Wild Card Trump Card XX Judgment | Full Deck Same as Regular Foils I The Magician
+| Developer | 30 | 50 | 19 | Full Deck Club of Fours Kanban Card Time Card 0, 1 of Spades, Clubs, Diamonds, Hearts x2 Fingerprint Card Business Card Non-Fungible Card 5, 9 of Nothing x2 | Full Deck Club of Fours Kanban Card Time Card 0, 1 of Spades, Clubs, Diamonds, Hearts x2 Fingerprint Card Business Card Non-Fungible Card Lockpicking Card Foils Club of Fours
+| HR Department | 33 | 50 | 16 | Full Deck Queen of the Stone Age x2 3, 7 of Spades, Clubs, Diamonds, Hearts, Nothing Pi of Spades, Clubs, Diamonds, Hearts | Full Deck Queen of the Stone Age x2 3 of Spades, Clubs, Diamonds, Hearts, Nothing Negative 3 of Spades, Clubs, Diamonds, Hearts Pi of Spades, Clubs, Diamonds, Hearts Foils Queen of the Stone Age
+| Investors | 45 | 50 | 17 | Full Deck Non-Fungible Card Dark Flower Treasure Vault Jimbo Credit Card Knife King of the Hill Fingerprint Card Gold Card Diamond in the Rough | Full Deck Non-Fungible Card Dark Flower Treasure Vault Credit Card Knife King of the Hill Fingerprint Card Gold Card Time Card Foils Jimbo
+| Legal | 39 | 50 | 17 | Full Deck Jackpot XVI The Tower VIII Justice x2 6, 7, 8 of Nothing | Full Deck Jackpot XVI The Tower VIII Justice x2 Foils Jackpot XVI The Tower
+| Marketing | 47 | 50 | 17 | Full Deck Carduus Acanthoides x2 The Moon XVIII 11 of Nothing x2 | Full Deck Carduus Acanthoides x3 The Moon XVIII 11 of Nothing x2 Foils Carduus Acanthoides The Moon XVIII
+| Cleaner | 50 | 100 | 17 | Full Deck IX The Hermit The Hierophant V Temperance XIV King of Gold Diamond of 6's Charred Lizard Jimbo Whale Card Treasure Vault Official Trump Card Scratchcard Time Card Credit Card Credit Card Knife Bat Credit Card Insurance Card Library Card Gold Card The Agile Agenda 5 of Pentacles Calamari Game Card Licence to Kill Card Number 52 Cardecu Non-Fungible Card Diamond in the Rough Lucky 7 Fingerprint Card x3 Foils XIV Temperance | Full Deck IX The Hermit XIV Temperance Temperance XIV King of Gold Diamond of 6's Charred Lizard Whale Card Treasure Vault Official Trump Card Scratchcard Time Card Credit Card Credit Card Knife Bat Credit Card Insurance Card Library Card Gold Card The Agile Agenda 5 of Pentacles Calamari Game Card Licence to Kill Card Number 52 Non-Fungible Card Diamond in the Rough Fingerprint Card x3 Foils The Hierophant V
+| Psychologist | 45 | 50 | 17 | Full Deck Rorschach Card x2 8, 10 of Spades, Clubs, Diamonds, Hearts, Nothing Card Sleeve Zero of Spades, Clubs, Diamonds, Hearts x2 Blank Card Reverse Card | Full Deck Same as Regular Foils Rorschach Card Card Sleeve
+| Reception | 40 | 50 | 17 | Full Deck King Cobra Zero of Spades, Clubs, Diamonds, Hearts x3 Kingmaker Cue Card | Full Deck Same as Regular Foils Zero of Spades Kingmaker
+| CEO | 65 | 100 | 17 | Full Deck King of the Hill Official Trump Card x3 Bat Credit Card Diamond in the Rough Calamari Game Card Fingerprint Card Time Card XIV Temperance Cardecu Licence to Kill | Full Deck King of the Hill Official Trump Card x3 Bat Credit Card Diamond in the Rough Calamari Game Card Fingerprint Card x2 Time Card XIV Temperance Gold Card Licence to Kill Foils Time Card
+## Hope (Act 5 Up)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Cardian Angel | 77 | 77 | 15 | Full Deck Sweep the Leg Negative Ace of Spades, Clubs, Diamonds, Hearts Ace of Spades, Clubs, Diamonds, Hearts 21 of Spades, Clubs, Diamonds, Hearts 5 of Swords | Full Deck Sweep the Leg Negative Ace of Spades, Clubs, Diamonds, Hearts Ace of Spades, Clubs, Diamonds, Hearts 21 of Spades, Clubs, Diamonds, Hearts Foils Sweep the Leg Negative Ace of Spades, Clubs
+| Deity of Hope | 77 | 177 | 15 | Full Deck Valentines Card x2 The Chariot VII x2 7 of Spades, Clubs, Diamonds, Hearts, Nothing x2 Magic Trick Card x2 Lucky Seven x2 XX Judgment x2 The Hermit IX x2 Strength XI x2 RSVP Card x2 Foils Valentines Card The Chariot VII | Full Deck Valentines Card x2 The Chariot VII x2 7 of Spades, Clubs, Hearts x2 Magic Trick Card x2 Lucky Seven x4 XX Judgment x2 The Hermit IX x2 Strength XI x2 RSVP Card x2 Licence to Kill x2 Foils Valentines Card The Chariot VII
+## Laboratory (Act 4 Up Alt)
+File:Laboratory.png
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 4) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x3 I The Magician Lucky Seven Wild Card Trump Card XX Judgment | Full Deck Same as Regular Foils I The Magician
+| Enforcer | 40 | 50 | 17 | Full Deck Throwing Card 2, 3, 6, 8 - 10 of Spades Time Card Report Card Spade of 5's Misprinted Card Jack and the Beanstalk Queen of Chess Cardiovascular Exercise | Full Deck Same as Regular Foils Cardiovascular Exercise
+| Monkey | 99 | 50 | 2 | Full Deck The Victim Card x3 2 of Nothing Scratch Break Limits Jimbo | Full Deck The Victim Card x3 Scratch x2 Break Limits Jimbo Foils The Victim Card
+| Programmer | 30 | 50 | 17 | Full Deck Pi of Spades, Clubs, Diamonds, Hearts Jack and the Beanstalk Booster Pack Glitched Card Joker Time Card | Full Deck Same as Regular Foils Jack and the Beanstalk
+| Test Subject | 52 | 50 | 17 | Full Deck Fight Club Heart of the Cards Blockbreaker Card Proxy Card Licence to Kill Card Number 52 Fake ID Gold Card The Agile Agenda Treasure Vault Gift Card Railroad Card Steam Trading Card Glitched Card | Full Deck Fight Club Heart of the Cards Proxy Card Licence to Kill Card Number 52 Fake ID Gold Card The Agile Agenda Treasure Vault Gift Card Railroad Card Steam Trading Card Glitched Card Fingerprint Card Foils Blockbreaker Card
+| Scientist | 50 | 50 | 17 | Full Deck The Devil XV Master of One x2 Four Mana Seven Seven Credit Card 4 of a Kind Glitched Card x2 | Full Deck Same as Regular Foils The Devil XV
+| Failed Experiment | 40 | 50 | 17 | Full Deck Half of Spades, Clubs, Diamonds, Hearts Magic Trick Card Jack in the Box Cue Card x4 5 of Swords Victim Card x4 8 of Spades x4 21 of Diamonds x2 | Full Deck Half of Spades, Clubs, Diamonds, Hearts Magic Trick Card Jack in the Box Cue Card x4 5 of Swords Victim Card x4 8 of Spades x4 2 of Spades, Clubs, Diamonds, Hearts Foils Get Well Soon Card
+| Clone | 50 | 50 | 17 | Full Deck 11 of Spades 10 of Clubs Ace of Hearts Scratch x3 The Magician I Big 2 4 of a Kind Official Trump Card Judgment XX | Full Deck Same as Regular Foils The Magician I
+| Superhero | 35 | 50 | 12 | Full Deck Radiation Detector x5 Misprinted Card Trap Card 7, 8 of Spades Reverse Card | Full Deck Radiation Detector x5 Misprinted Card Trap Card Memory Card Foils Plate of Escardgot
+| AI | 64 | 100 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x3 I The Magician Lucky Seven Wild Card Trump Card XX Judgment AI Generated Card 11 of Spades 10 of Clubs Ace of Hearts Scratch x3 The Magician I Big 2 4 of a Kind Official Trump Card Judgment XX Glitched Card | Full Deck Same as Regular Foils I The Magician The Magician I
+## Apathy (Act 5 Up Alt)
+File:Apathy.png
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Card Player | 100 | 100 | 17 | Full Deck Ace - King of Spades, Clubs, Diamonds, Hearts Joker x2 Rules Card Blank Card | Full Deck 2 - King of Spades Ace - King of Clubs, Diamonds, Hearts Joker x2 Rules Card Blank Card The Lovers VI Foils Ace of Spades
+| Deity of Apathy | 100 | 100 | 17 | Full Deck Business Card Green Card x2 Transit Card Fingerprint Card Master of One Four Mana Seven Seven Death XIII The Victim Card Lockpicking Card Credit Card Communist Party Card Jumping Jack Ace Up Your Sleeve XVI The Tower The Tower XVI Foils Green Card | Full Deck Green Card x2 Transit Card Fingerprint Card Master of One Four Mana Seven Seven Death XIII The Victim Card Lockpicking Card Credit Card Communist Party Card Jumping Jack Ace Up Your Sleeve XVI The Tower The Tower XVI The Devil XV Foils Business Card Green Card
+## The Basement (Act 2 Down)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Giant Rat | 25 | 50 | 17 | Full Deck Cue Card x4 Loyalty Card 1, 4, 5, 8 of Spades, Clubs, Diamonds, Hearts 9 of Nothing x2 5 of Swords | Full Deck Scratch Cue Card x4 Loyalty Card 1, 4, 5, 8 of Spades, Clubs, Diamonds, Hearts 5 of Swords Foils Scratch
+| Goblin | 21 | 50 | 15 | Full Deck Carduus acanthoides 12, 13 of Clubs 12, 13 of Hearts | Full Deck Carduus acanthoides 12, 13 of Clubs 12, 13 of Hearts Foils Carduus acanthoides
+| Skeleton | 34 | 50 | 17 | Full Deck Gravecard x3 Killer Queen x2 XX Judgment Judgment XX | Full Deck Gravecard x2 Killer Queen x2 XX Judgment Judgment XX The Victim Card Foils Gravecard
+| Decromancer | 52 | 50 | 17 | Full Deck Fingerprint Card x2 Gravecard x14 1, 2, 3 of Clubs, Diamonds, Hearts 2, 3 of Spades | Full Deck Fingerprint Card x 3 Card Sleeve Gravecard x 14 1, 2, 3 of Clubs, Diamonds, Hearts 2, 3 of Spades Foils Loyalty Card
+| Witch | 45 | 50 | 13 | Full Deck 13 of Spades, Clubs, Diamonds, Hearts x2 Green Card x5 Radiation Detector Reverse Card | Full Deck 13 of Spades, Clubs, Diamonds, Hearts x2 Green Card x5 Radiation Detector Foils 13 of Spades Green Card
+| The Collector | 30 | 50 | 17 | Full Deck Baseball Card Card Sleeve Double Back Card Jack Of All Trades Charred Lizard x4 8, 9 of Spades 21 of Hearts Plus the remaining cards from the Trade Offer event | Full Deck Baseball Card Card Sleeve Double Back Card Jack Of All Trades Charred Lizard x4 8, 9 of Spades Foils Baseball Card Card Sleeve
+| Slime | 45 | 50 | 17 | Full Deck Get Well Soon Card Get out of Jail Free Card Victim Card x3 Carduus acanthoides Ace - 7 of Spades 8 of Spades x5 9 - King of Spades | Full Deck Get Well Soon Card Get out of Jail Free Card Victim Card x2 Carduus acanthoides x2 Ace - 7 of Spades 8 of Spades x3 9 - King of Spades Foils Victim Card x2
+| Gremlin | 46 | 50 | 17 | Full Deck Proxy Card x3 Glitched Card x3 Business Card Non-Fungible Card x3 | Full Deck Proxy Card x3 Glitched Card x3 0 The Fool Non-Fungible Card x2 Foils Non-Fungible Card
+| Gambler (Act 2) | 50 | 50 | 17 | Full Deck 11 of Clubs 5 of Hearts 9 of Spades Ace of Diamonds Scratchcard I The Magician Gravecard | Full Deck Same as Regular Foils I The Magician
+| Knight of Cardonia | 30 | 70 | 17 | Full Deck Ace, 3, 5, 7, 9, Jack of Spades Joker Cardiovascular Exercise x2 Throwing Card Fight Club | Full Deck Ace, 3, 7, 9 of Spades Joker Cardiovascular Exercise x2 Throwing Card Fight Club Bat Credit Card Spade of 5's Foils Bat Credit Card
+| Alucard | 52 | 100 | 17 | Full Deck Blood Donor Card Scratch VI The Lovers 1 of Hearts 2 - 4 of Hearts 5 of Swords 6 - King of Hearts 11, 12, 13, 21 of Hearts Valentine's Card Foils Blood Donor Card | Full Deck Blood Donor Card Scratch x3 VI The Lovers Ace - King of Hearts 11, 12, 13, 21 of Hearts Valentine's Card Foils Blood Donor Card 11, 12 of Hearts
+## Sandy's Casino (Act 3 Down)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 3) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x2 I The Magician Gravecard Lucky Seven Wild Card | Full Deck Same as Regular Foils I The Magician
+| Your Biggest Fan | ??? | 70 | 17 | Full Deck Copy of the player's deck | Full Deck Copy of the player's deck
+| Dog | 99 | 50 | 2 | Full Deck 21 of Diamonds x2 2 of Spades, Clubs, Diamonds, Hearts | Full Deck Same as Regular Foils 21 of Diamonds
+| Chef | 40 | 50 | 17 | Full Deck Monterey Jack Birthday Card Plate of Escardgot RSVP Card Valentine's Card | Full Deck Monterey Jack Plate of Escardgot RSVP Card Foils Birthday Card
+| Floorperson | 45 | 50 | 17 | Full Deck Get out of Jail Free Card Diamond in the Rough Five of Cups Ace - 10 of Spades Queen of Chess King of the Hill | Full Deck Get out of Jail Free Card Spade of 5's 2 - 4, 6 - 10 of Spades Queen of Chess King of the Hill Throwing Card Foils Vaccination Card
+| Hungover Guy | 54 | 50 | 17 | Full Deck 11 of Clubs 6, 7, 10 of Spades Jumping Jack Monterey Jack Rules Card Loyalty Card x2 | Full Deck Same as Regular Foils 11 of Clubs
+| The Rain Man | 65 | 50 | 19 | Full Deck 10 of Spades 8 of Clubs Queen of Spades, Hearts Queen of Clubs x2 Pi of Spades, Diamonds, Hearts Foils 10 of Spades 8 of Clubs | Full Deck Queen of Spades, Clubs, Hearts Queen of the Stone Age Pi of Spades, Hearts Foils 10 of Spades 8 of Clubs Pi of Diamonds
+| Accountant | 45 | 50 | 17 | Full Deck Ace of Diamonds 10 of Spades Charred Lizard Treasure Vault 5 of Swords | Full Deck Ace of Diamonds 10 of Spades Charred Lizard Spade of 5's Foils Treasure Vault
+| Poker Player (Casino) | 50 | 70 | 17 | Full Deck 8, Jack of Diamonds, Hearts Ace up your Sleeve x2 Joker Loyalty Card Credit Card Business Card Baseball Card Booster Pack Yellow Card Transit Card Misprinted Card Jimbo Gift Card | Full Deck Same as Regular Foils Ace up your Sleeve
+| Pit Boss | 121 | 100 | 17 | Full Deck IV The Emperor Cardecu x4 | Full Deck IV The Emperor Cardecu x4 Five of Wands Carduus acanthoides Foils Five of Wands
+## The Dungeon (Act 4 Down)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 4) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x3 I The Magician Lucky Seven Wild Card Trump Card XX Judgment | Full Deck Same as Regular Foils I The Magician
+| The Collector | 52 | 50 | 15 | Full Deck Fingerprint Card Card Sleeve Jackhammer of Clubs x3 Baseball Card Double Back Card Jack Of All Trades Charred Lizard x4 Foils Jackhammer of Clubs | Full Deck Credit Card Knife Card Sleeve Fingerprint Card Jackhammer of Clubs x2 Baseball Card Double Back Card Jack Of All Trades Charred Lizard x4 Foils Credit Card Knife Fingerprint Card
+| Cultist | 52 | 50 | 16 | Full Deck Carduus Acanthoides x2 Cardiovascular Exercise Calamari Game Card 5 of Wands King Cobra 6 of Spades, Clubs, Diamonds, Hearts, Nothing Diamond of 6's | Full Deck Same as Regular Foils Carduus Acanthoides Cardiovascular Exercise
+| Treasure Hunter | 52 | 50 | 17 | Full Deck The Tower XVI Terminate the Tower Four Mana Seven Seven Dark Flower Fingerprint Card Master of One | Full Deck The Tower XVI Terminate the Tower Four Mana Seven Seven Dark Flower Fingerprint Card Foils 4 of a Kind
+| Executioner | 50 | 50 | 17 | Full Deck Queen of Wonderland Killer Queen Gerald from Riviera VIII Justice Justice VIII RSVP Card | Full Deck Queen of Wonderland Killer Queen Gerald from Riviera Justice VIII RSVP Card Foils Jackpot VIII Justice
+| Mad Scientist | 50 | 50 | 17 | Full Deck The Devil XV Communist Party Card x2 Get out of Jail Free Card AI Generated Card Misprinted Card Glitched Card x2 | Full Deck The Devil XV Communist Party Card x2 Get out of Jail Free Card AI Generated Card Misprinted Card Glitched Card x2 Fingerprint Card Foils The Devil XV
+| Debt Collector | 45 | 50 | 17 | Full Deck Bat Credit Card x3 Gold Card x3 King of Gold Licence to Kill | Full Deck Ace of Nothing Bat Credit Card x3 Gold Card x3 Licence to Kill Foils King of Gold
+| Mimic | 32 | 50 | 17 | Full Deck Treasure Vault Cardecu Trap Card Carduus acanthoides 5 of Swords Killer Queen 21 of Diamonds | Full Deck Treasure Vault Cardecu Carduus acanthoides 5 of Swords Killer Queen 21 of Diamonds The Hierophant V Foils Trap Card
+| Speedrunner | 35 | 50 | 17 | Full Deck Four Mana Seven Seven Card Sleeve Glitched Card x2 Ace of Diamonds 5 of Wands 7 - Jack of Diamonds Negative 11 of Clubs | Full Deck Four Mana Seven Seven Card Sleeve Glitched Card x2 Ace of Clubs 5 of Wands 7 - Jack of Clubs Negative 11 of Clubs Foils Four Mana Seven Seven
+| Zombie | 50 | 50 | 17 | Full Deck I The Magician The Magician I XX Judgment Judgment XX Gravecard x4 Fingerprint Card | Full Deck I The Magician The Magician I XX Judgment Judgment XX Gravecard x4 Fingerprint Card Jackhammer of Clubs Foils I The Magician
+| Dracon | 60 | 100 | 17 | Full Deck Charred Lizard I The Magician Trump Card King of Kings XX Judgment | Full Deck Charred Lizard I The Magician Trump Card King of Kings XX Judgment Scratch Foils Charred Lizard
+## Despair (Act 5 Down)
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Cardinal Sin: Greed | 66 | 66 | 17 | Full Deck XIV Temperance Ace up your Sleeve Cardecu Negative 4 of Spades Scratchcard The Emperor IV The Hierophant V X Wheel of Fortune Bat Credit Card Diamond in the Rough | Full Deck XIV Temperance Ace up your Sleeve Cardecu Negative 4 of Spades Scratchcard The Emperor IV The Hierophant V X Wheel of Fortune Bat Credit Card Diamond in the Rough Cue Card Foils XIV Temperance
+| Deity of Despair | 66 | 166 | 17 | Full Deck Rules Card Ace of Nothing, Diamonds, Hearts 11 of Clubs Break Limits Yellow Card Sweep the Leg Gerald from Riviera XX Judgment Business Card Foils Rules Card Sweep the Leg | Full Deck Ace of Spades, Clubs, Diamonds, Hearts x2 Break Limits x2 Yellow Card x2 Sweep the Leg Gerald from Riviera XX Judgment x2 Foils Sweep the Leg Gerald from Riviera
+## Surveillance (Act 4 Down Alt)
+File:Surveillance.png
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Gambler (Act 4) | 50 | 50 | 17 | Full Deck 11 of Clubs 10 of Spades Ace of Diamonds Scratchcard x3 I The Magician Lucky Seven Wild Card Trump Card XX Judgment | Full Deck Same as Regular Foils I The Magician
+| Security Guard | 40 | 50 | 17 | Full Deck Negative Ace of Clubs 2, 3, 6 - 10 of Clubs Club of 4's 5 of Wands Jackhammer of Clubs Killer Queen Four Mana Seven Seven Time Card | Full Deck 2, 3, 6 - 9 of Clubs Club of 4's Fingerprint Card Gravecard Jackhammer of Clubs Killer Queen Four Mana Seven Seven Time Card Foils Negative Ace of Clubs
+| ??? | 42 | 50 | 12 | Full Deck The Moon XVIII Birthday Card Magic Trick Card Pi of Spades, Clubs, Diamonds, Hearts Half of Spades, Clubs, Diamonds, Hearts Misprinted Card Fake ID Fingerprint Card Double Back Card | Full Deck Same as Regular Foils The Moon XVIII
+| Illuminati | 40 | 50 | 17 | Full Deck Jack of Spades, Clubs King of Diamonds, Hearts Joker Gerald from Riviera Baseball Card Old Baseball Card Leaving Card Non-Fungible Card Rorschach Card Licence to Kill Card Number 52 Your Fake ID XX Judgment | Full Deck Jackpot Master of One King Cobra Kingmaker Joker Gerald from Riviera Baseball Card Old Baseball Card Leaving Card Non-Fungible Card Rorschach Card Licence to Kill Card Number 52 XX Judgment XI Strength Foils Your Fake ID
+| Angel | 47 | 50 | 15 | Full Deck 7 of Spades, Clubs, Diamonds, Hearts, Nothing Lucky 7 Strength XI 21 of Spades, Clubs, Diamonds, Hearts 5 of Swords XX Judgment | Full Deck 7 of Spades, Clubs, Hearts Licence to Kill Lucky 7 x2 Strength XI 21 of Spades, Clubs, Diamonds XX Judgment Foils 21 of Hearts
+| Cam Bot #21 | 52 | 50 | 17 | Full Deck Ace of Hearts Queen of Wonderland 21 of Diamonds 21 of Hearts 7 of Diamonds 7 of Hearts Negative Ace of Diamonds Negative Ace of Hearts Diamond of 6's Heart of 3's AI Generated Card +2 Card Blood Donor Card Red Card Communist Party Card Flash Card The Agile Agenda Cardiovascular Exercise | Full Deck Ace of Hearts Queen of Wonderland Ace of Diamonds Lucky 7 x2 7 of Diamonds Negative Ace of Diamonds Negative Ace of Hearts Diamond of 6's Heart of 3's AI Generated Card Blood Donor Card Yellow Card Communist Party Card Flash Card The Agile Agenda Cardiovascular Exercise Foils +2 Card
+| Update | 51 | 50 | 19 | Full Deck 0, 1 of Spades, Clubs, Diamonds, Hearts Memory Card Master of One Spade of 5's Club of 4's Diamond of 6's Heart of 3's | Full Deck 0, 1 of Spades, Clubs, Diamonds, Hearts Memory Card Master of One Spade of 5's Club of 4's Diamond of 6's Heart of 3's Rules Card Foils Death XIII
+| Magic Lantern | 45 | 50 | 17 | Full Deck II The High Priestess Card Sleeve The High Priestess II 3 of Spades, Clubs, Diamonds, Hearts Gerald from Riviera Pi of Spades, Clubs, Diamonds, Hearts XII The Hanged Man Hall Pass Lightning of the 4th Kingdom | Full Deck 3 of Spades, Clubs, Diamonds, Hearts Gerald from Riviera Pi of Spades, Clubs, Diamonds, Hearts XII The Hanged Man XIX The Sun Hall Pass Lightning of the 4th Kingdom Foils II The High Priestess Card Sleeve The High Priestess II
+| IT Guy | 37 | 50 | 17 | Full Deck AI Generated Card Four Mana Seven Seven Gerald from Riviera Terminate the Tower Break Limits Sweep the Leg Scratch Expulsion Glitched Card Jimbo Whale Card Non-Fungible Card Dark Flower | Full Deck Four Mana Seven Seven Gerald from Riviera Terminate the Tower Break Limits Sweep the Leg Scratch Expulsion Glitched Card Jimbo Whale Card Non-Fungible Card Foils AI Generated Card
+| Big Brother | 52 | 100 | 17 | Full Deck 10 of Spades x2 21 of Spades x2 Rain Man x3 10 of Clubs x2 King of Hearts 10 of Nothing Foils 21 of Spades | Full Deck 0 of Spades x2 10 of Spades x2 21 of Spades x2 Rain Man x3 0 of Clubs 10 of Clubs x2 10 of Nothing x2 Foils 21 of Spades
+## Anxiety (Act 5 Down Alt)
+File:Anxiety.png
+| Name | HP | Chips | Stand | Deck | Quadruple Down Deck | Portrait
+| Cardiac Arrest | 83 | 100 | 19 | Full Deck Blood Donor Card Cardiovascular Exercise x2 Valentine's Card The Victim Card x3 5 of Cups 5 of Wands 5 of Pentacles 5 of Swords XVII The Star Carduus acanthoides 11 of Hearts x2 21 of Hearts | Full Deck Cardiovascular Exercise x2 Valentine's Card The Victim Card x3 5 of Cups 5 of Wands 5 of Pentacles 5 of Swords XVII The Star V The Hierophant Carduus acanthoides III The Empress 11 of Hearts 21 of Hearts Vaccination Card Foils Blood Donor Card
+| Deity of Anxiety | 83 | 100 | 17 | Full Deck IX The Hermit XVI The Tower XVII The Star Temperance XIV Fingerprint Card Booster Pack Get Out of Jail Free Card Whale Card Get Well Soon Card Cue Card Double Back Card x2 Library Card Report Card Blockbreaker Card Card Number 52 Foils The Moon XVIII | Full Deck IX The Hermit XVI The Tower XVII The Star Temperance XIV Fingerprint Card Glitched Card Judgment XX Communist Party Card Whale Card Get Well Soon Card Cue Card Double Back Card x2 Library Card Report Card Blockbreaker Card Card Number 52 Fight Club Proxy Card Dis-Card Foils The Moon XVIII
+## Landlord's Office (Final Act)
+| Name | HP | Chips | Stand | Deck | Portrait
+| Billionaire | 52 | 210 | 17 | Full Deck Blood Donor Card Business Card Jumping Jack IV The Emperor King of the Hill Charred Lizard Sweep the Leg XX Judgment Yellow Card Ace of Diamonds, Hearts x2 10 of Clubs, Nothing Whale Card Foils Blood Donor Card
+| Bastard | 121 | 2100 | 17 | Blood Donor Card Business Card IV The Emperor King of the Hill Charred Lizard Sweep the Leg XX Judgment Yellow Card Ace of Diamonds Lightning of the 4th Kingdom Ace of Hearts x2 10 of Clubs Fingerprint Card x2 Key Card x3 Whale Card Big 2 Extra cards based on the tarot stolen in the Tarot Reading event (More info in Bastard page) Foils Blood Donor Card
+
+# Events
+An event in D&DG is one of the available options the player can select in a run that is not considered to be an encounter. Strategically, if a player is not fully confident in either their deck or their current health, an event can provide the possibility of boosts to a player's stats, or the manipulation of one's own deck. Each floor has their own unique events, with only a small number of events being repeated.
+## Shops
+Shops are able to appear on any floor.
+Each shop can only be used once and you can only use one per floor.
+| Name | Summary | Cost (if applicable) | Skippable
+| Shop: Four Cards | Buy cards from a given selection of 4 Special cards. | 95 per card | Y
+| Shop: Eight Cards | Buy cards from a given selection of 8 cards. | 65 per card | Y
+| Shop: Lost and Found | Buy cards from a given selection of 8 cards you did not pick previously. | 55 per card | Y
+| Shop: Card Removal | Remove cards from your deck for increasing prices: Card Removal I: (75 Chips) Remove a card from your deck. Card Removal II: (150 Chips) Remove a card from your deck. Can only be used if Card Removal I was purchased. Card Removal III: (300 Chips) Remove a card from your deck. Can only be used if Card Removal II was purchased. | Shown | Y
+| Shop: Slot Machine | Spin a slot machine and be presented with 3 random cards. The first spin is free. Buy!: (99 Chips) Buy all three cards, then spin the slot machine. Spin!: (33 Chips) Spin the slot machine. This shop cannot show up in Jack's Tavern. | None | Y
+## Jack's Tavern (Act 1)
+| Name | Summary | Cost (if applicable) | Skippable
+| Counterfeiter | Choose to increase or decrease the value and image of basic number cards. If a 13 is increased or a -11 is decreased, it always becomes a Glitched Card. This also occurs if you modify a Blank Card here. If a 1 of Nothing is decreased, it will become a Blank Card. | 33 per change | Y
+| Have a Drink | Drink alcohol and remove 1 card from deck. Can pay extra chips for a Loyalty Card. Beer: Take 3 damage. Remove a card. Beer and a Shot: (40 Chips) Take 8 damage. Remove a card. Add a Loyalty Card to your deck. House Special: (65 Chips) Take 6 damage. Remove a card. Add a Loyalty Card with 3 stamps to your deck. | 40 Chips for a Beer and a Shot and 65 Chips for the House Special | N
+| Stay a Night | Stay in a room for HP recovery: Fancy Room: (90 Chips) Heal 15. Remove a card. Cheap Room: (45 Chips) Heal 8. A random card is removed from your deck. Sleep on Floor: (0 Chips) Heal 5. | 90 Chips for the Fancy Room and 45 Chips for the Cheap Room | N
+| Tarot Reading | Flip three random tarot cards, healing 10 health per card flipped, and pick one to add to your deck. This event always happens after beating the manager. | None | N
+## Lou's Lounge (Act 2 Up)
+| Name | Summary | Cost (if applicable) | Skippable
+| Coin Flip | Wager one of your cards to the collector to earn 2 duplicates or lose the card | None | N
+| Memory Test | Play a matching minigame and win a copy of the matched cards. Choose 4 pairs of cards. If a pair matches, add the card to your deck. | None | N
+| Sofa Sleeper | Interact via doing basic actions to a sleeping man to gain cards or money. The sleeper starts with a 0% chance of waking up. Doing self-beneficial actions adds a chance for him to wake up. The man waking up will deal 5 damage to the player and prevent the chosen action from happening, ending the event. Grab a Card: Add a random card to your deck. Increase chance to wake by 20%. Grab Chips: Gain 30 chips. Increase chance to wake by 5%. Give a Card: Remove a card from your deck. Increase chance to wake by 40%. Let Them Sleep: Leave without waking them up. | None | N
+## The Basement (Act 2 Down)
+| Name | Summary | Cost (if applicable) | Skippable
+| Trade Offer | Allows exchanging certain cards in your deck for a different one. The next event is always a fight against The Collector (with your exchanged cards). | None | Y
+| Loot Box | Pay for a loot box that contains a card and 2 healing items. You can choose to add the card to your deck. | 99 per box | Y
+| Crypto Bro | Choose to spend 150 chips on Chipcoin. The value of Chipcoin will randomly rise and fall. Choose when to sell the Chipcoin and gain that many chips. | 150 chips for Chipcoin | Y (Have <150 chips)
+## VIP Area (Act 3 Up)
+| Name | Summary | Cost (if applicable) | Skippable
+| Go Fish! | Play Go Fish with a deck of 8 pairs of random cards. You and your opponent draw 4 cards from the deck. If you play a card your opponent has in their hand, you add it to your deck. If not, add a random card from the deck to your deck. | None | Y
+| Secret Passage | Choose to stay on the current floor or to go to Sandy's Casino. This event does not take up an encounter slot. | None | N
+| Trade Offer II | Allows removing up to 3 specific cards in order from your deck for healing. Starts at healing 8 and increases by 5 for each card. | None | Y
+| Cornered! | Your Biggest Fan has cornered you and is trying to push a gift into your hands. Accept: Permanently add a random special card to your deck. Distract: Throw 1 of 4 randomly selected cards from your deck to throw, permanently removing it from your deck. Reject: Swap one of your Lucky Charms for a random Lucky Charm. | None | N
+| Tarot Reading II | Pick one of two random tarot cards to add to your deck. These tarots will be the flipped versions of the ones you didn't pick previously. This event always happens after beating the 3rd act. | None | N
+## Sandy's Casino (Act 3 Down)
+| Name | Summary | Cost (if applicable) | Skippable
+| Roulette | Pay to spin the wheel. Permanently change the value of all your standard, non-face cards to the roulette result. | 21 chips (See below) | Y
+| Crown and Anchor | Bet 21 chips on symbols and get the effect of the rolled symbol. Can bet on multiple symbols each roll. Each symbol can only be won once. Hearts: Heal 10 HP. Crowns: Add a chosen face card to your deck (1 out of a selection of 3). Diamonds: Win back 100 chips! Spades: Add a chosen Spades card to your deck (1 out of a selection of 3). Anchors: Choose a card to permanently remove. Clubs: Add a chosen Clubs card to your deck (1 out of a selection of 3). | 21 chips per symbol | Y
+| Secret Passage | Choose to stay on the current floor or to go to the VIP Area. This event does not take up an encounter slot. | None | N
+| Three Card Monte | Plays a "follow the card" minigame with 3 random cards and take one of the cards as a reward. | 85 | Y (Lose 8 health)
+| Tarot Reading II | Pick one of two random tarot cards to add to your deck. These tarots will be the flipped versions of the ones you didn't pick previously. This event always happens after beating the 3rd act. | None | N
+The roulette wheel can be spun multiple times, with quadratically increasing chip costs each time. Specifically:
+The first spin costs 21 chips.
+Subsequent spins have increasing costs, with the increases themselves increasing linearly:
+The 2nd spin costs 21 more than the 1st spin.
+The 3rd spin costs 42 more than the 2nd spin.
+The 4th spin costs 63 more than the 3rd spin.
+In general, the n'th spin will cost 21(n-1) chips more than the (n-1)st spin.
+The formula for the cost of the n'th spin is C(n) = 21(1 + n(n-1)/2). The formula for the combined cost of the first n spins (i.e. how much you need to have in order to afford n spins of the wheel) is S(n) = 7n(n²+5)/2.
+| Roll No. | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
+| Per-spin cost | 21 | 42 | 84 | 147 | 231 | 336 | 462 | 609 | 777 | 966
+| Cumulative cost | 21 | 63 | 147 | 294 | 525 | 861 | 1323 | 1932 | 2709 | 3675
+## Head Office (Act 4 Up)
+| Name | Summary | Cost (if applicable) | Skippable
+| Layoffs | The CEO has narrowed it down this far, but she's expecting you to make the final decision. Keep Left: Keep the left 3 cards and remove the right 3 cards from your deck. Keep Right: Keep the right 3 cards and remove the left 3 cards from your deck. Mass Layoffs: Remove both sets of cards from your deck. | None | N
+| Card Printer | The office printer has totally lost control and is spitting out hundreds of cards! Grab and Go: Add a Misprinted Card and 3 other random cards to your deck. Try to Stop It: Add a Throwing Card to your deck and take 11 damage. | None | N
+| Overdue Taxes | The tax man has finally caught up to you. Pay Taxes: Pay 1000 chips. Permanently remove a chosen card. Declare Bankruptcy: Pay all your chips. Take 10 damage. Permanently remove a chosen card. Evade Taxes: Take 10 damage. Permanently replace a chosen card from your deck with a random Minor Arcana 5. | None | N
+## Laboratory (Act 4 Up Alt)
+File:Title laboratory.svg
+| Name | Summary | Cost (if applicable) | Skippable
+| Counterfeiter | This shady character is offering you his services. Flip a Tarot Card: Pay 500 chips to flip a Tarot card. Flip a non-Tarot Card: Pay 50 chips to flip a non-Tarot card. This choice is only available after flipping a Tarot card. | 500 to flip a Tarot card and 550 to flip a non-Tarot card | Y
+| Monty Hall | Hehehe, how well do you know your probabilities? When you select a teleporter, the Scientist reveals what is in a different teleporter, and then asks if you would like to switch your choice, and when you select a new teleporter you get the healing potion from that teleporter, with the small potion healing 1 hp, the medium potion healing 5, and the large potion healing 10. You can play the game again, but for a cost that scales per play. | None (see below) | Y
+| Lab Rats | Will your rat beat mine to the cheese?! Begin Animal Testing: The first rat to the cheese will win an Aged Monterey Jack! Upon starting the event, you are presented with 3 needles that require cards to fill, with each needle having a different requirement. The needle for the Brain requires a card with a powerful suit to make your rat smarter, the needle for the Nose requires a card with a low value to reduce your rat's sniff time, and the needle for the Legs requires a card with a high value to increase your rat's speed. If your rat loses to the Scientist's rat, you receive a Gravecard instead of the Monterey Jack. The Scientist gets whichever card you did not receive if you have not fought him this run already. | None | N
+You can participate in the Monty Hall event as many times as you want, but the cost for participating increases by 99 chips each time, with the initial play being free.
+## The Dungeon (Act 4 Down)
+| Name | Summary | Cost (if applicable) | Skippable
+| Counterfeiter | A card can be copied for 250 chips, but randomly add one of these Minor Arcana Fives to your deck.: 5 of Cups 5 of Wands 5 of Pentacles 5 of Swords | 250 chips (see below) | Y
+| Runaway Cart | A minecart is hurling towards you. Two cards in your deck are presented to you. Do Nothing: Take 10 damage. Swap Track: Lose the shown cards. | None | N
+| Trade Offer | The Collector wants a specific one of your cards. Give it up: Permanently remove this card from your deck. Keep the card: Keep the card and fight The Collector. | None | N
+The Counterfeiter can copy cards up to 4 times, doubling chip costs each time. Specifically:
+The first copy costs 250 chips.
+The second copy costs 500 chips.
+The third copy costs 1000 chips.
+The fourth copy costs 2000 chips.
+## Surveillance (Act 4 Down Alt)
+File:Title surveillance.svg
+| Name | Summary | Cost (if applicable) | Skippable
+| Interrogation | Attach these monitors to your temples, we have some questions for you. Upon starting the event, you will be asked three questions that require you to choose between two items. If you get a question right, you will heal 5 HP, and if you get a question wrong, you will take 5 damage. Attempting to cheat by using the collection will not work, as all the information in the book that could aid you is redacted. The first question is "Which card have you removed the most?", the second question is "Which Unique Chip have you won with the most?", and the third question is "Which Lucky Charm have you won with the most?". | None | N
+| Counterfeiter | This shady character is offering you his services. Buy a Sticker: Pay chips to buy a sticker, and then choose a card to stick it to the back of. The price starts at 210 chips and doubles every time, capping at 3 stickers or 840 chips. | Shown | Y
+| Pachinko | Will you launch your fate? Or will you fail as you have (number of times you have lost) times before? 1 Free Ball: It's on the house! Launch 1 ball. Buy 5 Balls: Pay 300 Chips to buy 5 balls. Buy 10 Balls: Pay 500 Chips to buy 10 balls. You launch the balls by using the lever at the bottom right of the machine and you win rewards of varying quality by landing the balls in the pockets. The pockets you can land in are "Win a Prize", which gives you the Prize card on the left side of the machine, "Lose a Limb", which gives you 150 chips in exchange for losing 10 max HP, "Lose Your Identity", which heals you to full HP but replaces your ID Card with the Gambler's ID Card and prevents you from healing for the rest of the run, "Lose Your Memory", which makes you shred 1 out of 5 random cards from your deck, and "Upgrade!", which upgrades the Prize card to be Foil. Landing a ball into a pocket makes the levers on the pocket stand upright and make it harder to land another ball in that pocket. | Shown | N
+
+# Location
+Redirect to:
+Category:Location
+
+# Rules Card
+| Rules Card
+| card art of Rules Card
+| Suit | Nothings
+| Value | 0
+| Version Added | v1.0
+Rules Card is a special card. It is obtainable through any special card loot pool. It has a value of 0 of Nothings. It is also in Full Deck.
+## In-Game Description
+On Play: Choose to change either max score to 20 or 22.
+## Where to Find
+Rules Card is a special card, so it can be found in most events, as well as end of combat rewards. It is also in Full Deck.
+## Opponent Decks
+| Enemy | Quantity | Notes
+| Drunk | 1 | Foil in QD+
+| Floorperson | 1 | Foil in QD+
+| Hungover Guy | 1
+| Deity of Despair | 1 | Foil, only in TD-
+## Card Creation
+Rules Card can be created by Booster Pack.
+## Synergies
+## Relics
+Broken Chip, as reducing your opponent's max score to 20 can make them bust easier.
+Fish and Chips, as increasing your max score not only allows you to have more cards in play, but can also guarantee winning blackjacks if your opponent's max score is lower than yours.
+Chip on Your Shoulder becomes easier to use with a higher max score.
+## Cards
++1 max score means +1 blackjack effect, which is universally good, but also rather nice for Treasure Vault.
+If you increase your max score, all cards that trigger on hitting at a certain score: Heart of Threes, Club of Fours, Spade of Fives, and Diamond of Sixes, become easier to use.
+## Media
+| Image | Description
+| Button used for setting your max score to 20, when played.
+| Button used for setting your max score to 22, when played.
+| Button used for setting your foe's min score to 22, when played.
+| Button used for setting your foe's max score to 20, when played.
+## Trivia
+A rules card is a card that is often included in both standard card decks and the decks of other card games to help explain the rules of the game.
+## History
+| Version | Sub-version | Description
+| 0.1 | 0.1 | Added Rules Card
+
+# Starting Decks
+Starting decks are the decks that can be selected at the start of the game. Some are available right from the beginning whereas others require previous decks to be beaten in order to be unlocked. When the player wins with a deck, they will earn a sticker on the bottom right of the deck on the deck selection screen that corresponds with the highest bet they've won with.
+## Normal Starting Decks
+The Hearts Deck is available from the very start of the game. Starting a run with the Hearts Deck unlocks the Clubs, Spades, and Diamonds Decks.
+| Name | Description | Cards | Image
+| Hearts Deck | Hearts heal you. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace
+| Clubs Deck | Clubs deal extra damage. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace
+| Spades Deck | Spades grant you shields. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace
+| Diamonds Deck | Diamonds grant you chips. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace
+## Special Starting Decks
+These are locked by default when the game is installed. These can be unlocked either through the settings menu by enabling "unlock all" or by unlocking them as you beat previous decks.
+| Name | Description | Unlocked by | Cards | Image
+| Nothings Deck | Starting cards have no blackjack effect. | Winning the game with any Starting Deck. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace
+| Glitched Deck | ??? | Winning the game with Nothings deck. | x4 Glitched Card, 10, 9, 8, 7, 6, 5, 4, 3, 2 (Nothings)
+| Random Deck | Roll the dice! Start with 13 random cards. | Winning the game with Glitched Deck. | 13 Non-Tarot cards, following an order of: Any Ace (can be negative), 9 standard cards (up to 2 will be negative), 3 special cards
+| Black Deck | Start with both Clubs and Spades. | Winning with Clubs and Spades Decks. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace, Joker (one set for Clubs and one set for Spades).
+| Red Deck | Start with both Hearts and Diamonds. | Winning with Hearts and Diamonds Decks. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace, Joker (one set for Hearts and one set for Diamonds).
+| Full Deck | Start with a full 52 card deck. | Winning with Red and Black Decks. | King, Queen, Jack, 10, 9, 8, 7, 6, 5, 4, 3, 2, Ace (one set each for Hearts, Clubs, Spades and Diamonds), 2x Joker, Rules Card, Blank Card.
+| Signature Hearts Deck | Hearts mean you live forever. | Winning the game with Hearts Deck. | 21 of Hearts, 13 of Hearts, 12 of Hearts, 11 of Hearts, 10, 9, 8, 7, VI The Lovers, 5 of Swords, 4, Heart of 3's, 2, Blood Donor Card.
+| Signature Clubs Deck | Top shelf Clubs. | Winning the game with Clubs Deck. | Four Mana Seven Seven, Killer Queen, Jackhammer of Clubs, 10, 9, 8, 7, 6, 5 of Wands, Club of 4's, 3, 2, Negative Ace of Clubs
+| Signature Spades Deck | Protect yourself with Spades. | Winning the game with Spades Deck. | Cardiovascular Exercise, Queen of Chess, Jack and the Beanstalk, 10, 9, 8, Misprinted Card, 6, Spade of 5's, 5 of Cups, 3, 2, Throwing Card
+| Signature Diamonds Deck | Get rich and die trying. | Winning the game with Diamonds Deck. | King of Gold, Dancing Queen, Calamari Game Card, Cardecu, 9, 8, 7, Diamond of 6's, 5 of Pentacles, Negative 4 of Diamonds, 3, 2, Ace in the Hole.
+| Signature Glitched Deck | ????????????? | Winning the game with Glitched deck. | x13 Glitched Card.
+| Wizard's Deck | Any sufficiently advanced technology is indistinguishable from magic. | Defeating the top floor boss. | 2x 1 of Nothings, Memory Card.
+| Giant Rat's Deck | Again! | Defeating the bottom floor boss. | 1 and 2 of each standard suit, x2 Cue Card
+| Fortune Teller's Deck | Impress your friends! Predict the future! | Winning the game with Wizard's Deck and Giant Rat's Deck. | The World XXI, XXI The World
+| Birthday Deck | It'll be your birthday... Soon. | Winning the game with Fortune Teller's Deck. | Birthday Card at 2 value.
+
+# Suits
+Redirect to:
+Card Suits
+
+# Unique Chips
+## Unique Chips
+After Entering Jack's Tavern, the player is granted a Blue Chip and a Lucky Charm of their choice. After 4 Encounters on the floor, including Bartender, the player will be offered an option of 3 Unique Chips, with the option to reroll all three at a price of 100 chips per reroll.
+| Name | Description | Double Down Description | Image
+| Hot Chip | Start with 1 Advantage. On burning a card: Gain 1 Advantage. | On burning a card: Gain 1 Advantage.
+| Chip and a Chair | Start with 1 Advantage. On spending Advantage: if below 30 HP, gain 1 Advantage. | Start with 1 Advantage. On spending Advantage: if below 21 HP, gain 1 Advantage.
+| Chip on Your Shoulder | On hit: If you already have a score of at least 12, gain 1 Advantage. | On hit: If you already have a score of at least 12, gain 1 Advantage. Once per round.
+| Bargaining Chip | Interact: Lose 10 chips, gain 1 Advantage. | Interact: Lose 21 chips, gain 1 Advantage.
+| Microchip | Start with 1 Advantage. On playing a card that was created during this encounter: Gain 1 Advantage. | On playing a card that was created during this encounter: Gain 1 Advantage.
+| Fish and Chips | On blackjack: Gain 1 Advantage for each of your played cards. | On winning blackjack: Gain 1 Advantage for each of your played cards.
+| Chipotle Pepper | Interact: Take 3 damage and gain 1 Advantage. | Interact: Take 5 damage and gain 1 Advantage.
+| Dealer Chip | On stand: If you have a score of at least 17, gain 1 Advantage. | On stand: If you have a score of at least 18, gain 1 Advantage.
+| Big Blind Chip | On playing a card with a value of 10 or more: Gain 1 Advantage | On playing a card with a value of 11 or more: Gain 1 Advantage
+| Chip off the Old Block | Start with 0 Advantage. Randomly selects the effect of two Unique chips at the start of each encounter. | Start with -1 Advantage. Randomly selects the effect of two Unique chips at the start of each encounter.
+| Chipmunk | Start of encounter: Gain 3 Advantage. Advantage persists between encounters. | Start of encounter: Gain 2 Advantage. Advantage persists between encounters.
+| Chip Damage | On taking damage: Gain 1 Advantage. | On taking 3 or more damage: Gain 1 Advantage.
+| Blue Chip | Start with 1 Advantage. On winning a round, gain 1 Advantage. | On winning a round, gain 1 Advantage.
+| Broken Chip | Start with 1 Advantage. On either player bust: Gain 1 Advantage. | On either player bust: Gain 1 Advantage.
+| Chip in a Bottle | On spending chips outside of battle: Gain 2 advantage. Advantage persists between battles. | On spending chips outside of battle: Gain 1 advantage. Advantage persists between battles.
+| Bag of Chips | Start with 1 advantage. On Stand: randomly gain between -1 and 2 advantage. | On Stand: randomly gain between -1 and 2 advantage.

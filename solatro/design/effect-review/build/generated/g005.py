@@ -4,7 +4,7 @@
 # Line numbers are the braindump's own.
 ROWS = [
 
-("G0132","The Ledger of Undos","K2","rule","Undo accrual has to account for its own rewinding. (line 807)",
+("G0132","The Ledger of Undos","K2","skill","Undo accrual has to account for its own rewinding. (line 807)",
  "Undos accrue every few turns; undoing rewinds the turn counter, and the game tracks what you already banked so a rewind cannot mint you a second one",
  "Undos accrue every few turns, and rewinding past the point one was earned takes it back again",
  "Undos accrue per turn and are banked permanently the moment they are earned, so rewinding never touches them",
@@ -16,13 +16,13 @@ ROWS = [
  "A card at negative rank subtracts score itself and raises the combo, but its props behave normally",
  "a"),
 
-("G0134","This Season's Trend","B9","rule","Certain abilities, not hands, pay extra this run. (line 835)",
- "Each run, a few named abilities are trending and score extra whenever they fire",
- "Each run, a few abilities are trending; the trend rotates every town",
- "Each run a few abilities trend, and using a trending ability enough times makes it trend permanently for your profile",
+("G0134","This Season's Trend","B9","skill","Certain abilities, not hands, pay extra this run. (line 835)",
+ "The first time this card is spotlit, name a few abilities as trending; they score extra whenever they fire, for the rest of the run",
+ "The first time this card is spotlit, name a few abilities as trending; the trend rotates every town",
+ "A few abilities trend at a time, and using a trending ability enough times makes it trend permanently for the rest of the run",
  "b"),
 
-("G0135","The Loose Card","K1","rule","Discard whatever is connected to nothing. (line 845)",
+("G0135","The Loose Card","K1","skill","Discard whatever is connected to nothing. (line 845)",
  "Any card with no connection to anything else in its column may be discarded freely, and the column closes up behind it",
  "Any card with no connection to anything else in its column may be discarded freely, and a replacement is drawn onto that column",
  "Any card that is part of no potential meld at all may be discarded freely, whatever its column",
@@ -34,10 +34,10 @@ ROWS = [
  "Spawns gold tokens that explode when a placement finishes resolving unless you have spent them first, so holding them is the gamble",
  "c"),
 
-("G0137","The Dead List","G10","rule","Destroyed cards get a zone of their own. (lines 905, 995)",
- "Rule: destroyed cards go to a dead list rather than vanishing, and effects may reach into it",
- "Rule: destroyed cards go to a dead list you can see but never reach into",
- "Rule: destroyed cards go to a dead list, and one card may be recovered from it per tour at a fame cost",
+("G0137","The Dead List","G10","skill","Destroyed cards get a zone of their own. (lines 905, 995)",
+ "Destroyed cards go to a dead list rather than vanishing, and effects may reach into it",
+ "Destroyed cards go to a dead list you can see but never reach into",
+ "Destroyed cards go to a dead list, and one card may be recovered from it per tour at a fame cost",
  "a"),
 
 ("G0138","Sleight of Hand","E9","skill","The card does not land where you put it. (line 937)",

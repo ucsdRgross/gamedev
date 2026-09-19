@@ -60,7 +60,7 @@ ROWS = [
  "Alternate win: end a show having dropped more total height than you built",
  "b"),
 
-("G0153","The Long Count","U2","rule","Win on the board's state, not on your own.",
+("G0153","The Long Count","U2","hazard","Win on the board's state, not on your own.",
  "Alternate win: the show is won the moment a set number of sealed cells exist anywhere, whoever made them",
  "Alternate win: the show is won when a set number of sealed cells exist, and hazards that seal cells count toward it",
  "Alternate win: the show is won when every grid holds at least one sealed cell",
