@@ -4,7 +4,7 @@
 each with three variants plus reject, and the rulings exported to a single CSV. Done = the owner has
 answered all questions and `EFFECTS.csv` carries an approved-or-rejected row for every one.
 
-**State:** the questionnaire is live: **1,591 askable questions, 83 retired in place**, 0 parser
+**State:** the questionnaire is live: **1,595 askable questions, 83 retired in place**, 0 parser
 errors, 0 warnings. The owner has answered **118**. The current work stream is **S13** (below): the
 `rule` slot is gone, the Balatro mod wiki is being mined for new effects, and a duplicate hunt is
 queued. **The S13 TODO list is the thing to read first when resuming.**
@@ -182,7 +182,7 @@ the next render silently discards the edit.
   verification_kind: manual
   status: done
   evidence: >
-    1,591 live, 83 retired, 0 errors, 0 warnings, order unchanged Q0001-Q1509. Family AA adds 165
+    1,595 live, 83 retired, 0 errors, 0 warnings, order unchanged Q0001-Q1509. Family AA adds 165
     questions (BM0001-BM0165); 11 duplicates retired in place. Slot pass landed: 0 `rule` slots remain. 477 became `skill` (prefix stripped, 40 rewritten
     where the words only made sense as a global rule), 143 hazard-shaped ones became `hazard`,
     94 map/run/meta/deck-preset ones became `structure`, 58 retired in place (rules deck as a
@@ -265,6 +265,7 @@ the batches; `chunkNN.out.tsv` are the results; sonnet, two agents at a time, ne
 - [x] candidates from chunks 01–25 judged against the questionnaire → `new_draft.tsv`
       (name, class, slot, one-line mechanic; `(variant of X)` rows fold into X's options)
 - [x] all chunk candidates judged (~940 read, ~150 new questions plus folded variants)
+- [x] rescan of the 5,790 mechanically dropped rows for grid words: 1,406 read, 4 new (`g027.py`)
 
 **The four sources the owner added** — mine each, judge, append to `new_draft.tsv`:
 

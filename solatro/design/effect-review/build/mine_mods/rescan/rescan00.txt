@@ -1,0 +1,665 @@
+==================== MOD: !BooBooBalatro! ====================
+| Kintsugi | Earn $5 when scored. Reduces by $1 each scoring. no rank or suit | Use The Tower on a Stone Card
+| 1 in 7 chance to copy each played Glass card. Chance increases by 1 in 7 per Glass card scored this round. Destroys all Glass cards held in hand.
+| Gold cards and cards with gold seals gain $1 to their bonus when triggered and are destroyed when discarded
+
+==================== MOD: 0 ERROR ====================
+| Suit Yourself Card | No rank, counts as any regular suit If scored with cards of each regular suit, earns $8 then self destructs
+| Edge of Space | 2 Joker Slots 5 Consumable Slots Tarot cards do not appear in the shop Planet cards do not appear in the shop Beat Ante 12 to win | Banned Vouchers: Omen Globe, Telescope, Observatory, Planet Merchant, Planet Tycoon, Tarot Merchant, Tarot Tycoon Banned Booster Packs: All Vanilla Booster Packs Banned Tags: Charm Tag, Meteor Tag, Buffoon Tag, Ethereal Tag | Standard | Homeworld | Lumistratos, the Vast
+| Stat Wipeout | Use this Joker to remove the Enhancement of 3 cards and gain 1 Charge, disables the effects of Boss Blinds at the cost of 1 Charge (Currently 0 Charges) | [!] O!
+| Star Sapphire | Played cards with Bright suit randomly give $1, X1.5 Mult, +50 Chips or +7 Mult when scored | +$ Xm +c +m
+| Flower of Knowledge | Removes the cap on interest earned in each round
+| Croque Madame | If a Joker is on the right of this at end of round, consume this and gain $ equal to double the sell value of both
+| Elemental Fuel | Once per ante, use this Joker to have Enhanced cards in hand spread their Enhancement onto adjacent cards
+| mods, kill this man | Gain between $-1 and $2 every hand, Gain $10 when destroyed | +$ ~$
+| Lumistratos, the Vast | Creates a Prestige card when a Joker is sold | [+] | Edge of Space
+
+==================== MOD: 7 Deadly Decks ====================
+| Gluttony | Before every other played hand, Destroy one random card held in hand and gain +3 Mult per card. Does not consume when no cards in hand. (Currently +0 Mult)
+
+==================== MOD: Abandonia ====================
+| Doubles the Planet Rank of Cotton cards held in Hand | Ricottakitten
+| Kintsugi | Gives +1 Chip, +1 Mult and $1 Money. 1 in 7 chance to create a copy when another card is destroyed. 1 in 9 chance for this card to double it values | Littleroot
+| Orange Seal | Creates the Planet card for this card's Rank if held in hand at the end round
+| Aliasing Joker | Adds Gloss, Pearlescent, or Iridescendent edition to first scoring numbered card of first and final handScoring cards with editions give $5 | +$ [!] | Comykel | Name after Aliasing a visual "staircase" or jagged edges (often called "jaggies") that appear on diagonal or curved lines
+| Ante Up! | Cards held in hand give double their ranks as Mult. Winning ante is doubled | +m #! | Pailleboy | Base on a line spoken by wild Gambler, Setzer Gabbiani from Final Fantasy VI "My life is a chip in your pile. Ante up!"
+| Destroy all Jokers with stickers, redeem 2 random Vouchers and create 2 random Negative Tarot cards
+
+==================== MOD: Absent Dealer ====================
+| Royal Deck | -2 hand size Start run with only cards ranked 10 or higher
+| Cracked Mirror Tag | Create a copy of leftmost Joker Permanently gain a X0.5 Mult scoring penalty (Must have room)
+| Hide and Seek | 1 in 4 chance to draw cards face down, face down cards held in hand retrigger 2 times | ...
+| Box of Memories | If you have at least 4 other jokers, sell this card to destroy them and create a random legendary joker | [X] [+]
+
+==================== MOD: Agarmons ====================
+| Diancie | +1 hazard layer and limitEarn $1 at end of round for every Diamond card in your full deck (Currently $0)Suitless cards are considered Diamonds | [+], +$, !!
+| Pyukumuku | Accumulates the effects of all cards playedVolatile Left[3] unleash the stored effects, then debuff self this round (Currently +0, +0, X1, $0) | +c, +m, Xm +$
+| Solgaleo | If first played hand is all Hearts, turn 3 cards held in hand to Heartsif deck is 50% Hearts Played Hearts cards give X1.5 Mult when scoredif deck is 100% Hearts Disable effect of every Boss Blind | Xm, [!], O!
+| If first played hand is all Clubs, turn 3 cards held in hand to Clubsif deck is 50% Clubs Each Clubs Cards held in hand gives X1.5 Mult if deck is 100% Clubs +5 Foresight Foreseen cards trigger held in hand effects | Xm, [!], !! | Psychic
+| Mega Meganium | First card of each suit held in hand gives $4
+| Mega Glalie | Go up to -$30 in debtVolatile Right[3] X0.2 Mult for each $ in debt, then sets money to $0 and debuffs self this round (Currently X1 Mult) | Xm, ~$, !!
+| Mega Salamence | Gain +5 hand size this round if played hand is a Straight
+| Mega Golurk | +1 hazard layer[2] Each Hazard Card held in hand gives X1.75 Mult and has a 1 in 6 chance to be destroyed | Psychic
+| Galarian Mr. Mime | Scores leftmost card held in hand as if it was played (Evolves to Mr. Rime after 5 rounds)
+| Mr. Rime | Scores leftmost 2 cards held in hand as if they were played
+
+==================== MOD: Aikoyori's Shenanigans ====================
+| Razzle Raindrop | Discard held in hand cards per unique suits played | 2X Base
+| Faraway Island | Hand must contain at least one card without suit or rank | Master Blind No Disabling No Rerolling Endless Blind | 8X Base
+| Plywood Forest | All cards held in hand are destroyed after hand scores | Master Blind No Disabling No Rerolling Endless Blind | 8X Base
+| One Random Joker destroyed after hand scores | Master Blind No Disabling No Rerolling Endless Blind | 8X Base
+| Canopy Card | Reduce the rank of this card by 1 if held in hand after scoring
+| ☆☆ | 1 discards per round, Start with $10 | Ranks 2 - 10 without any Hearts or 5s | Eternal Pinned Hibana
+| Detroit: Become Human | 20☆ | Jokers no longer appear in the shop, No Tarot Cards will spawn except Wheel of Fortune, Duplicates can spawn, Discards each cost $5, Small Blinds give no reward money, Big Blinds give no reward money, Boss Blinds give no reward money, Extra hands no longer earn money, Chips cannot exceed the current $, Ascendant Stake, 2 hands per round, 7 discards per round, -1.0e300 Joker Slots, -1.0e300 Consumable Slots, Start with $50 | Banned Consumables: Wraith, The Soul Banned Vouchers: Blank, Antimatter Banned Booster Packs: Buffoon Pack Banned Tags: Uncommon Tag, Rare Tag, Negative Tag, Foil Tag, Holographic Tag, Polychrome Tag, Buffoon Tag, Top-up Tag Banned Boss Blinds: Amber Acorn, Verdant Leaf, Crimson Heart | One Ace of each Suit
+| TL;DR Joker | /Absurdly long description In the immersive and strategic world of Balatro, a distinctive role is played by this special joker card, equipped with a potent ability known as the '+2 Mult.' This ability dramatically enhances a player's score under specific conditions, primarily centered around the presence of any High Card in the hand, which includes but is not limited to traditional high-ranking cards like Aces, Kings, Queens, and Jacks. Even then, the ability of this card goes further. But let's not get ahead of ourselves by going through with it before learning that Balatro expands the definition of scoring to include key strategic cards that heighten gameplay impact. This transformative multiplier is not just an advantage but a central aspect of strategic planning in Balatro. It compels players to consider their hand composition carefully, aiming to incorporate High Cards and maximize benefits. Delving into the history of gambling, card games have been a cornerstone of gaming culture for centuries. by activating for every card in hand and at play, this ability ensures you will gain a high score by merely playing a High Card. From the ancient 中国人 who are credited with inventing playing cards in the 9th century to the spread of card games across Europe during the Middle Ages, gambling has evolved into a sophisticated form of entertainment and strategy. The concept of multipliers, like the '+2 Mult' in Balatro, echoes innovations in probability and risk-taking found throughout gambling history, where players sharpened their skills to navigate the uncertainties of chance. These elements of chance and strategy create a rich tapestry of gameplay where players harness both their intuition and analytical abilities. The presence of the '+2 Mult' deepens Balatro's complexity, fostering a richly engaging environment where tactical decision-making is crucial. Players dynamically shift the game balance by leveraging the multiplier, turning potential deficits into commanding leads. Thus, the '+2 Mult' feature isn't merely a rule but a critical strategic tool and an exhilarating element. / In the beginning, there was Balatro - not a deity, but something more complex - an ever-shuffling embodiment of chaos wrapped in crisp, digital playing cards. The game exists in a liminal space between logic and lunacy, math and mirage, where probability becomes pliable and poker mutates into myth with each hand. In Balatro, one doesn’t merely play poker. One communes with the improbable. Here, straights stretch into the surreal, and flushes whisper forbidden geometry. The deck is alive, vibrating with potential energy and pixelated menace, as every draw feels like yanking Ceremonial Dagger from a haunted Mega Buffoon Pack. And looming large above the fray is the pantheon of the unholy: the Jokers. They are not jesters; they are gods. Mathematical spirits dressed as clowns. Each Joker bends the rules, breaks them, and sometimes eats them whole, fueling strategies built on hubris, spreadsheets, and primal instinct alike. Enter the TL;DR Joker, a Joker whispered of in halls of madness and theory: a rectangular rune inscribed with a singular prophecy: “ X3 Mult if hand contains a high card” It is simple. It is divine. It is arbitrarily brilliant. Why X3 ? Why not X1.19542 Mult? Or X638.95 ? Or Xπ Mult? Because X3 is the sacred number of drama. Because three is the number of the holy sprit, face cards, triangles in triforce, wheels on tricycles. Because to look upon a hand and see a King, and be told, “You may multiply,” is to witness design at the intersection of chaos theory and stylish arrogance. The TL;DR Joker does not beg for synergy. It demands reverence and vigilance. It turns high cards into sacred relics, their mere presence summoning power. No longer are Jacks just teenage nobility in a velvet blazer of mid-value. Now they are conduits of cosmic XMult , bridges to exponential escalation. And let us speak plainly of “high cards” - those royal specters of cardboard rank. The Jack, swaggering in adolescent cunning. The Queen, dangerous and divine. The King, a heavy-headed monarch wielding tax burdens and XMult ipliers alike. And the Ace - ambiguous, adaptable, alpha and omega, god-tier wildness incarnate. To draw one is lucky. To play one is strategy. To combine one with TL;DR Joker is to summon an equation so violent, it punches through the spreadsheet matrix. It’s not just a combo. It’s a lifestyle. A statement. A mathematical swagger. Decks warp around it. You start seeking royalty not out of vanity, but devotion. The hearts beat faster. The spades dig deeper. The diamonds glint with purpose. Even the clubs, usually so brutish, now shimmer with refined potential. Every draw becomes a prayer: please, let it be a Queen. Or a King. Or her Jack. Because even if the poker hand is garbage, a single face card sanctifies it. Balatro becomes not a game of best hands, but of best conditions for value. A trash hand with a King is not trash - it’s a X3 -fueled engine of consequence. Let us now wander backward in time - centuries before Jokers, before Balatro, before silicon and CPUs - back to 9th century 中国, where playing cards began. There, amid scrolls and shadow puppets, the cornerstone of gaming was born. The uncertainty of paper, the dance of fate inked in characters and calligraphy. In that world, luck was not an adversary - it was an elemental truth. Dice were cast not for control, but for communion with the unknown. Chance was worshipped as a muse, not solved as a math problem. And so too, in Balatro, do we feel this ancient reverence for uncertainty. The TL;DR Joker, in its modern mask, is ancestor to those ancient principles. It is the phoenix feather embedded in a digital deck, the whisper of dynasties. It reminds us that no matter how far we've come - from silk cards to OLED screens - we are still haunted and humbled by the uncertainties of chance. So when we draw a high card, and TL;DR Joker flickers into being, we do not merely multiply - we invoke the ancient. The timeless. The chaotic. We become both strategist and supplicant, mathematician and mystic. The run ends. The screen fades. The Joker remains. TL;DR Joker. High cards. High stakes. High living. It is not just a mechanic. It is a metaphor. Balatro teaches that success is built not only on full hands, but on full hearts. Sometimes, all it takes is a King - and a Joker who notices [Notes 1] / [Notes 2] | +m / Xm
+| Shimmer Bucket | After exiting the shop, Destroy and Create 2 Jokers with the same rarity as the Joker immediately to the left of this joker Self-destructs
+| Sell this Joker to destroy Joker to the right and gives x2 of its sell cost back ($??) Bypasses Eternal
+| Yamada Ryou | Go up to -$12 / 6 in debt Debt limit -$3 if hand contains a / X2 per Pair of Clubs / played
+| Skianoko Noko | Gives mult equal to 4X the combined sell value of jokers immediately to the left and right of this joker (Currently +24 mult)
+| Awesome fucking evil blue flaming skull next to a keyboard with the "g" key being highlighted | If first hand played is a word and starts with a g Destroy all cards played and enhance all cards in hand to Zap Cards | [X] [!]
+| D se Dab | When at least 3 distinct enhanced cards are played Cards with letter D in hand and in play permanently gain X0.2 Chips Cool Clothes + Attitude + New Hand Moves
+| Instant Messaging | All cards in hand will have its rank and suit shuffled
+| Weeping Angel | Flips all cards in hand +$2 per face down cards after flipping
+
+==================== MOD: Airtokers ====================
+| Log2 Joker | Applies log2 Mult On the final hand of round, Jokers to the left each give $5 for every Joker to the left of this card | ~m+$
+| Scrapbook | Gives the effect that the most recently sold card gave when it was last triggered
+| Receipt | Gains a random effect when you purchase a Voucher When played hand has exactly 3 suits: (list of effects, starts with 1) Selects from one of these 6 effects Converts Chips to Nonary Increments digits in Chips Sets Chips to the Sum of its divisors Sets Chips to the Measure of a Chips-sized Koch Snowflake +30 Chips Sets Chips to the Surface area of a Chips-volume cube Effect changes after hand is played | ~c | All of these effects increase Chips, except for Surface area of a Chips-volume cube, which will decrease Chips above 216.
+
+==================== MOD: All in Jest ====================
+| The Frost | Destroy one random card in hand after hand is played | 2X Base
+| The Pear | Randomize the suit and rank of cards held in hand after scoring | 2X Base
+| The Conflagration | If played hand defeats the Blind, destroy all cards played and held in hand | 2X Base
+| The Pair | Cards held in hand must contain a Pair | 2X Base
+| The Trio | If hand contains 3 cards of the same rank after a hand is played or discarded, debuff 3 random cards in hand | 2X Base
+| Tarnished Tile | Double your hand size Discard all cards in your deck after your first draw | 2X Base
+| Wooden Wheel | Rerolls leftmost and rightmost Jokers when Blind is selected | 2X Base
+| Melted Seal | When held in hand, transforms into first non-Melted seal scored
+| Branching Deck | Skips offer a choice between 3 Tags | Skip at least 5 blinds in a run
+| Flying Ace | Earn $2 at end of round per Ace of unique suit scored this round (Currently $0)
+| Pencil Drawing | Activated Ability Pay $2 to add 1 [rank] of [suit] to your hand (Card changes after use and after each hand) | [+]
+| Right Angle | Trigger all 10s held in hand when a 9 is scored
+| Lucignolo | Earn $5 when any playing card is destroyed
+| Blood Artist | When any Joker or card is sold or destroyed, decrease current Blind's score requirement by 20%
+| Silver Screen | When a face card is destroyed, add Silver to a random card in hand
+| Plain Packaging | +20 Mult, -5 Mult when a Joker is sold or destroyed
+| Dead President | Sell this Joker to double the sell value of adjacent Jokers (Max of $50)
+| Heidelberg Tun | Applies Negative to the first purchased consumable each shop (Active)
+| Pellucid Joker | When a Joker with an Edition is sold or destroyed, add a random playing card with the same edition to deck | [+]
+| The Jester | The first Joker sold each round creates The Fool (Active) | [+]
+| Enraging Photo | X2 Mult if any Joker, consumable, or playing card has been sold or destroyed this round (Inactive)
+| Anagraph | When any Joker or Playing card is sold or destroyed, create an exact copy and immediately destroy it again | [+] [X]
+| Animatronic | +1 hand size per consecutive hand containing a Straight (Currently +0 Hand Size) (Max of +4)
+| Corpse Paint | Removes Negative from played cards. For each, 1 in 2 chance this Joker gains +1 hand size (Currently +0 hand size) | [!] #!
+| When any Joker is sold or destroyed, this Joker gains X0.1 Mult per round that Joker has been held (Currently X1 Mult)
+| Mushroom Cloud | Activated Ability Destroy all held Jokers and earn $50 | [X] +$
+| Overdesigned Joker | Scored Hearts give X1.5 Mult, suit and effect rotates when a card is scored (Hearts->Clubs->Diamonds->Spades) Scored Clubs give +14 Mult, suit and effect rotates when a card is scored (Hearts->Clubs->Diamonds->Spades) Scored Diamonds earn $2, suit and effect rotates when a card is scored (Hearts->Clubs->Diamonds->Spades) Scored Spades give +100 Chips, suit and effect rotates when a card is scored (Hearts->Clubs->Diamonds->Spades) | Xm +m +$ +c
+| Mandrake | After 2 rounds, sell this Joker to destroy all cards held in hand (Currently 0/2)
+| Stock Broker | Multiplies interest by a random amount between X0.75 and X3
+| Sheriff | First scored Wild Card each hand earns $5
+| Sanguine Joker | Played cards with Heart suit have a 1 in 13 chance to create a random Tag card when scored | [+]
+| Skinsuit | If first hand of round is exactly one card, destroy it and patch its suit to a random card held in hand | [X] [!]
+| Rudolph | If first scored card in hand has a Red Seal, retrigger all other cards | ...
+| Stage Production | Activated Ability Once per round, temporarily reroll Joker to the right until the next Blind is selected (Active)
+| Historian | Adds Mult equal to triple the Sell Value of the last sold Joker (Currently +0 Mult)
+| Don't be a Joker! | When a Joker is destroyed or sold, this gains its sell value
+| Geoglyph | Scoring cards give +1 Mult for each card of the same suit held in hand
+| What's Left | Copies the abilities of the last 2 sold jokers (Excluding What's Left)
+| Funny Bone | When any Joker is sold or destroyed, create a random Tarot Card | [+]
+| Activated Ability Use while in a Blind to destroy Joker to the left and gain X0.1 Mult per $1 of its sell value (Currently X1 Mult) | [X] Xm
+| Tin Man | Apply Steel to all unenhanced Heart suit cards held in hand at end of round
+| Family Tree | When Boss Blind is defeated, create the Tag associated with the Rarity of Joker to the right (Currently None) | [+]
+| Flibbertigibbit | Earn $1 per unique suit in discarded poker hand
+| -1 Ante while this Joker is held (Cannot be sold or destroyed during the Win Ante)
+| Pangram | Gives X0.2 Mult per unique rank held in hand (Currently X1 Mult)
+| Pellesini | When any Joker is destroyed, create an exact copy (Must have room)Destroy rightmost Joker and earn its sell value when selecting Blind | [+] +$
+| Gains +0.25 Mult when: A card is scored or discarded A consumable is acquired or used Anything is purchased or sold A Blind is selected, skipped, or defeated A Boss Blind's effect is triggered A Booster Pack is skipped A hand is played A discard is used A playing card or Joker is destroyed Rerolling in the shop A playing card is added to the deck Interest is earned A Lucky Card or Steel Card triggers A tag is gained or activates A poker hand levels up (Currently +0 Mult)
+| Leftmost 5 cards held in hand are counted in scoring
+| Pablillos | All Skip Tags are replaced with their Gold equivalent
+| Branching Sleeve | Skips offer a choice between 3 Tags | Skips offer 2 additional Tag choices | Win a run with Branching Deck on at least Blue Stake difficulty
+| Destroys a random Joker and all cards held in hand
+| Omnichrome Tag | Apply Polychrome to the rightmost base edition Joker (Replaces any existing edition) | Polychrome Tag
+| Cinema Tag | Apply Silver to the leftmost base Edition Joker (Replaces any existing edition) | Silver Tag
+| Destroy 1 selected Joker and earn triple its sell value (Currently $0) (Max of $150)
+| The Urns | Destroy 1 selected enhanced card and apply its enhancement to 3 random cards in hand
+| The Janitor | Destroy all cards held in hand
+| Sticker Sheet | Lessens the effect of detrimental stickers (Perishable Jokers now last 6 rounds before being debuffed, Rental Jokers subtract only $2 at end of round) | Polkadot | Lessens the effect of detrimental stickers (Perishable Jokers now last 8 rounds before being debuffed, Rental Jokers subtract only $1 at end of round)
+
+==================== MOD: Archipelago Randomizer ====================
+| Archipelago Voucher (Common) | Unlocks an AP Item when redeemed | $Random (You choose upper and lower the amounts, and it rolls on a per-check basis based on check importance and Sphere (What position in the Multiworld it is), and can be anything from $1-$50)
+| Archipelago Voucher (Uncommon/Party) | Unlocks an AP Item when redeemed (This is just a cosmetic difference) | $Random (You choose the upper and lower amounts, and it rolls on a per-check basis based on check importance and Sphere (What position in the Multiworld it is), and can be anything from $1-$50)
+
+==================== MOD: ArtBox ====================
+| Box Deck | Start run with the Booster Stack voucher and a Joker Collectable
+| Stage 1Stage 2 | Clay Card | +1 permanent Mult when drawn, first time this card is held in hand when score catches fire loses abilities and doubles permanent Mult
+| Pinata Card | When this card is destroyed, Gain $10 and a random tag
+| Stained Card | No rank or suit, When this card is discarded, 1 in 3 chance to create an Art card, 1 in 10 chance to create a Creative tag
+| Button Seal | when scored, suit of a random card in hand changes to this card's suit
+| Each card in hand gives +2 Mult for its and every unique rank to the left
+| Hey Check Out This Cool Bug | ??? when scored hand contains ??? SPOILER: when obtained selects a random rank and effect, if scored hand has that rank the effect triggers, possible effects are: +15 Mult, +75 chips, earn $8, all scoring cards gain +2 bonus mult, all scoring cards gain +8 bonus chips or X2 Mult | ???
+| Collector | When Blind is selected, adds $2 of sell value to a Joker or Consumable to the right Gives X0.02 Mult times total sell value of all owned Joker and Consumable (Currently: X1 Mult) | +$ Xm
+| Gold Plating | Gains $1 of sell value at end of round Sell this Joker to give its sell value to a Joker to the right
+| When Blind is selected, steals sell value of the Joker to the right gives Mult equal to three times this Jokers sell value (Currently: +0 Mult) | [!] +m
+| Null Pointer | Fills all empty consumable slots with random rankless Collectable enhancements when obtained or sold | [+]
+| Wooden Joker | Retrigger last card held in hand 2 times | ...
+| Booster Stack | +1 Booster Pack slot in the shop | Booster Ritual | Whevener you reroll, a random Booster Pack is added in the shop
+| Pen Holder | +1 consumable slot | Used Supplies | When a card is destroyed, get a Negative collectable of its Edition, Seal and Enhancement
+
+==================== MOD: Ascēnsiō ====================
+| Played cards with Spade suit give ^1.2 Mult when scored 1 in 4 chance for scored Spades to destroy a non-Spade card held in hand and add ^0.01 Mult to this Joker at end of hand | Wrathful Joker
+| Played cards with Club suit give ^1.2 Mult when scored Cards with Club suit held in hand also score | Gluttonous Joker
+| Iocosum | Gains X8 Mult per consecutive Pair that is played (Currently X1 Mult) Levels up Pair by the highest rank in hand at end of round | Jolly Joker
+| Eccentricus | Gains X12 Mult per consecutive consecutive Three of a Kind that is played (Currently X1 Mult) Levels up Three of a Kind by the highest rank in hand at end of round | Zany Joker
+| Insanus | Gains X10 Mult per consecutive consecutive Two Pair that is played (Currently X1 Mult) Levels up Two Pair by the highest rank in hand at end of round | Mad Joker
+| Obscuritas | Gains X12 Mult per consecutive consecutive Straight that is played (Currently X1 Mult) Levels up Straight by the highest rank in hand at end of round | Crazy Joker
+| Ludibrium | Gains X10 Mult per consecutive consecutive Flush that is played (Currently X1 Mult) Levels up Flush by the highest rank in hand at end of round | Droll Joker
+| Dolosus | Gains X5 Chips per consecutive Pair that is played (Currently X1 Chips) Levels up Pair by the highest rank in hand at end of round | Sly Joker
+| Versutus | Gains X10 Chips per consecutive consecutive Three of a Kind that is played (Currently X1 Chips) Levels up Three of a Kind by the highest rank in hand at end of round | Wily Joker
+| Calliditas | Gains X8 Chips per consecutive consecutive Two Pair that is played (Currently X1 Chips) Levels up Two Pair by the highest rank in hand at end of round | Clever Joker
+| Impietas | Gains X10 Chips per consecutive consecutive Straight that is played (Currently X1 Chips) Levels up Straight by the highest rank in hand at end of round | Xc !! | Devious Joker
+| Astutia | Gains X8 Chips per consecutive consecutive Flush that is played (Currently X1 Chips) Levels up Flush by the highest rank in hand at end of round | Xc !! | Crafty Joker
+| Pugnus Populi | Gain X2 the rank of lowest ranked card held in hand as XMult (Currently X1 Mult) | Raised Fist
+| Sui Replicatio | If first hand of round has only 1 card, add 10 permanent copies to deck, draw them to hand, and destroy remaining cards in hand
+| Furor Hominis | X10 Mult Whenever a Blind is selected gains X5 Mult and destroy a random Joker Whenever a Joker is destroyed in that way Xn XMult gain with n equal to log(x) with x being the destroyed Joker's sell value | Xm [X] | Madness
+| File:Fraxinus Aureus (Ascēnsiō).png Fraxinus Aureus | If first discard of round has exactly 1 card, destroy it and apply one of the following effects: If the card is a Spades gain ^Chips based on card's rank (Currently ^1 Chips) (J = 1.1, Q = 1.2, K =, 1.3, A = 1.4) If the card is a Hearts gain ^Mult based on card's rank (Currently ^1 Mult) (J = 1.1, Q = 1.2, K = 1.3, A = 1.4) If the card is a Clubs all cards held in hand gain XChips based card's rank (J = 11, Q = 12, K = 13, A = 14) If the card is a Diamonds increase money earned at the end of round (Currently +$1 ) (J = 11, Q = 12, K = 13, A = 14) | [X] ^c ^m [!] +$ | Trading Card
+| Charta Electionis | Retrigger the first scored card for current handsize (Currently 0 retriggers) (Max 200 retriggers) +1 permanent hand size when Boss Blind is defeated | ... !! | Hanging Chad
+| Hyacintho Progressus | Retriggers Joker to the right for each copy of that Joker you own Duplicate Joker to the right at end of shop (Must have room) | ... !! | Blueprint
+| Sum Duo | If played hand contains a Pair, ^2 Mult and convert cards held in hand to the most common Rank in played hand | The Duo
+| Sum Trio | If played hand contains a Three of a Kind, ^3 Mult and convert cards held in hand to the most common Rank in played hand | The Trio
+| Sum Quattuor | If played hand contains a Four of a Kind, ^4 Mult and convert cards held in hand to the most common Rank in played hand | The Family
+| Sum Constituto | If played hand contains a Straight, ^3 Mult and convert cards held in hand to the Rank of each card in order of played hand | The Order
+| Sum Carnes Unius | If played hand contains a Flush, ^2 Mult and convert cards held in hand to the most common Suit in played hand | The Tribe
+| Magnum Opus | Retrigger leftmost Joker by number of Jokers between it and this Joker inclusively At end of shop, create a Joker of same rarity as leftmost (Cannot affect self and must have room) | ... !! | Brainstorm
+| Pictura Olei | Retrigger all Jokers to the left for every Joker (including itself) to the right of this Joker Creates a Negative Joker when exiting shop (Does not need room) | ...!!
+| Vir Inter Homines | Retrigger leftmost and rightmost Jokers 2 times once for each empty Joker slot (Currently 2 retriggers) (Max 100 retriggers) Gains +1 Joker slot at end of shop (Currently +0 Joker slots) | ...!!
+| Coccineum Progressus | Retriggers Joker to the left for each copy of that Joker you own Duplicate Joker to the left at end of shop (Must have room) | ... !! | Facsimile
+
+==================== MOD: Azazel's Jokers ====================
+| Dartboard | Retriggers middle played card 2 additional times Can only activate on odd hand sizes | ...
+| Destroys a random card held in hand and earns $1 | [X] +$
+| Shapeshifter | Copies the first scored card in a played hand onto a random card held in hand
+| Rush Service | 1 in 3 chance to destroy discarded cards, and earn $1 for each destroyed card, always destroys Glass Cards | [X] +$
+| X1 Mult per current Round, doubled if Negative -1 Ante per non-Negative Joker when a Boss Blind is defeated If this Joker is sold or destroyed, the run ends (Currently X1 Mult) | Xm !! | Cannot appear naturally, is always Negative Cannot be copied by blueprint effects Despite this Joker's description, losing this Joker does not end the run | In Stars And Time
+| Snatcher | Earn $15 if Straight Flush is played, lose $15 if hand is not played by end of round Hand changes after each round | +$ ~$ | A Hat In Time
+| U.F.O. | At the end of a round, destroys a random card held in hand, and creates a random Planet card (Must have room) | [X] [+]
+| Particle Accelerator | All cards scored or held in hand score X1.25 Mult | Guest Artist: @hatstack
+| Scored Aces earn $1 Rank changes after each round
+| +1 hand size every 4 cards destroyed (Currently +0 hand size) [0]
+
+==================== MOD: Baladrone ====================
+| Vicious Joker | Destroys scoring enhanced cards and earn $3 for each | [X] +$
+| If poker hand is a Three of a Kind, destroys every other card held in hand
+| Annihilator | Destroys 1 selected Joker for its buy price (Ignores Eternal)
+
+==================== MOD: Balatrhodes Island ====================
+| Merchant | Always spawns with a Rental Sticker. Destroys self when entering shop while in debt.
+| Gavial the Invincible Rhodes Island/Sargon Guard/Medic | Scored cards randomly give between X1 and X1.5 Mult. Wild Cards give between X1.25 and X2 Mult instead. | Chip Debt: Pay off 5% of total debt each time cards are drawn. Any chips past the blind requirement are used to pay off the debt.
+| Yato Rhodes Island Vanguard | Fast Redeploy +30 Chips during first hand of a round or during first hand after being obtained. | Yato is removed from the pool of obtainable Jokers after being sold 3 times in a run.
+| Kirin R Yato Rhodes Island Specialist/Vanguard | Fast Redeploy +30 Chips and +6 Mult during first hand of a round or during first hand after being obtained. This Effect applies 16 times if this Joker was obtained this round | Kirin R Yato can be obtained via Fast Redeploy after Yato is sold 3 times in a run.
+| Mudrock Rhodes Island Defender | Stone Cards' rank is treated as the most common rank held in hand. (Currently 0.)
+| Every 7 [0] times cards are drawn, the lowest ranked card in hand is enhanced to a Stone Card.
+| +3 hand size until first hand is played after obtaining this Joker.
+| Fartooth Pinus Sylvestris/Kazimierz Sniper | Gives + Mult equal to 0 times the difference between highest and lowest ranked card held in hand. (Factor increases based on number of Pinus Sylvestris Jokers owned.)
+| Creates a Tarot Card at end of round if all cards held in hand have different ranks.
+| Tomimi Sargon Caster | Gives +12 Chips while in the left half of all owned Joker Slots and +2 Mult while in the right half. (Counts as left if Joker is in the middle.)
+| Lemuen Laterano Sniper | Ammo [5]: If played hand's level is 3 or higher, retrigger first scored card once for each level of hand, then destroy that card, set hand's level to 1 and create 3 Negative copies of a random Planet card with $0 sell value. (Doubles the amount of retriggers if hand is Straight or better and triples them if hand is Straight Flush or better.)
+| Fiametta Laterano Sniper | Geek The card in the center of scored hand gives X1.3 AoE Mult. (Effect is doubled while this Joker has more than $3 sell value.)
+| Swire the Elegant Wit Yan Specialist | Merchant Can spend $2 to destroy 1 selected card. (Doubles cost when applied and resets at end of round)
+| Goldenglow Victoria Caster | Each card held in hand gives Chips equal to its rank.
+| When playing hand with 0 discards remaining, debuffs leftmost undebuffed Banner until End of Ante, then this Joker gives $0.5 and+20 chips each time a Joker triggers or a card is scored this hand. (except itself)
+| Removes 1 Negative Eternal Banner from Jokers when sold or destroyed.
+| Upgrade 2: Earn $5 when another Joker is destroyed.
+
+==================== MOD: Balatro Goes Kino ====================
+| Dr. Hannibal Lecter | Destroy all cards held in hand when you defeat this blind | 2X base | The Silence of the Lambs
+| Nurse Ratched | Played hands only score if you hold 3 different suits in hand | 2X base | One Flew Over the Cuckoo's Nest
+| Saruman | Cast a Villanous Spell based on rank of leftmost card in hand and suit of adjacent card | 2X base | The Lord of the Rings
+| Mystery Card | X1 Mult Increase by X0.5 Mult when scored while holding Suspect Card in hand SUSPECT: Rank: ??? Suit: ???
+| Adventure Seal | Gains value for each card scored together with this card Earn money equal to the value when this card is destroyed (Currently: $0 Value)
+| Spellslinger's Deck | First scoring card casts a Spell, based on the first three cards in hand when the hand is played | Cast 100 Spells
+| Deck That Makes You Old | When a card is scored, increase the rank of every card held in hand that shares its suit | Win a run with no 5s or lower in your deck
+| Annabelle | Each 5 or lower held in hand has a X in 5 chance to Jumpscare with X being equal to its rank
+| Captain Blood | +1 Mult for each $1 earned since last round (Currently: +0 Mult)
+| Children of the Corn | Destroy a face card held in hand to give +80 Chips | !! +c
+| Double Dragon | +50 Chips for each Pair held in hand
+| Star Wars Episode IX: The Rise of Skywalker | Gain +1 Hand size for each Planet used since last round (Currently: +0 Hand size) | Sci-fi Adventure
+| The Tree of Life | +20 Chips for each Unique Rank held in hand | Crime Comedy
+| 1 in 100 chance to destroy all other jokers after a hand is scored X1.25 Mult per scoring card and increase odds by 1 Resets when you sell a Joker | Horror Sci-fi
+| Batman & Robin | Upgrade scoring cards with +1 Mult for each empty Joker Slot if played hand is a Pair (Batman jokers count as empty) (Gaining +0 Mult) | Superhero Action
+| Bones And All | X0.25 Mult per Charge, then consume half of current Charges (Currently: x1 Mult & 0 Charges) Destroy Joker to the right to gain Charges equal to its sell value when Blind is selected | Romance FantasyHorror
+| Using Death also transforms a random card held in hand into the right card | Animation Adventure
+| The Conjuring | Cannot be sold! Destroys first card drawn each hand to gain +2 Mult (Currently: +0 Mult)
+| Demolition Man | If first discard of round has only 1 card, destroy it and upgrade every card held in hand with +2 Mult | ActionSci-fi
+| Dick Tracy | When a Crime Card is destroyed, this cains Mult equal to 1X the current Money Stolen[5] (Currently: +0 Mult & $0 stolen) | Crime Action
+| If first discard of round has only 1 card, destroy it and increase sell value of every Joker by $2
+| Frankenstein | When you destroy a Playing Card, Upgrade this Joker 1 time(s) based on its Suit (Currently: +0 Chips, +0 Mult, x1 Mult, $0) | Horror Fantasy
+| Goodfellas | Gives X1 Mult and loses $3 for each Joker to the Left of this Joker (Currently: X0 Mult & $3)
+| Hard Eight | $2 for each 8 held in hand 8s held in hand have a 1 in 4 chance to be destroyed
+| Iron Man | If first hand contains only cards a single suit upgrade every Sci-fi Card in hand | Sci-fi Superhero Action
+| La La Land | If first played hand contains only a single card, upgrade every card in hand with Chips equal to played card's rank | Musical Romance
+| Moneyball | Earn Money equal to the level of first hand played | Sports Drama
+| Moulin Rouge | Gain +1 hand size for each unique suit drawn in opening hand | RomanceMusical
+| Pirates of the Caribbean: Curse of the Black Pearl | When a Joker is destroyed adjacent cards gain $2 sell value | FantasyAdventure
+| The Tree of Life | +20 Chips for each Unique Rank held in hand
+| The Blair Witch Project | Rerolls are free When you Reroll there is a 0 in 100 chance to Destroy all other Jokers. This chance increases by 5 each Reroll
+| Retrigger first played card used in scoring an additional time for each $10 you have (Currently: 0 Times) | ...
+| Interstellar | When you use a Planet store it in this joker instead When you sell this joker level up your most played hand for each stored stack (Currently: 0 Stacks) | Sci-fi
+| Killer Klowns from Outer Space | Destroy a random Joker and create negative Planets equal to its rarity when you leave the shop | Horror Comedy Sci-fi
+| They Live | Abduct[6] every card discarded on your first discard Earn $1 for each card this joker has Abducted (Currently: $0) | !! +$ | Sci-fi Action
+| Twelve Monkeys | When you Select a Blind, 1 in 3 Chance to create a copy a card of the same type as the first one sold last blind (will create a [card type]) | Sci-fi Thriller
+| Spellslinger's Sleeve | First scoring card casts a Spell, based on the first three cards in hand when the hand is played | First scoring card casts a Spell, based on the last three cards in hand when the hand is played | Defeat Black Stake using Spellslinger's Deck
+| Sleeve That Makes You Old | When a card is scored, increase the rank of every card held in hand that shares its suit | When a card is scored, increase the rank of every card held in hand | Defeat Black Stake using Deck That Makes You Old
+| Special Treats | Confections can appear with additional treats | Snack Bag | Up to 4 Confections can stack into a Snack Bag which takes up only 1 Consumable slot
+
+==================== MOD: Balatro Hevven ====================
+| Sneaky Spirit | After 2 rounds, sell this card to add Negative to a random Joker (Currently 0/2) | NoahAmp | missingnumber | Move (Used when ending a round) Shot (Used when selling the Joker after 2 rounds)
+
+==================== MOD: Balatro Waves ====================
+| X1.5 Mult but destroy one random card in hand
+| The Doctor | On your first hand give the lowest rank card in hand Polychrome
+| Artificial Student | After 3 rounds, create 3 random vanilla tags, self destructs (Currently: 3 left)
+
+==================== MOD: Balatro+ ====================
+| Burned Card | X1.5 Mult Enhance adjacent card to Burned Card and burn this card if held in hand at the end of round
+| Shopping Bill | All numbered cards held in hand have 1 in 4 chance to earn rank value of card dollars
+| Earn Sell Value of Joker to the right at the end of the round
+| Hungry Joker | At the end of shop, destroy all food jokers and gain X1 for each destroyed joker
+| Symbolic Tag | Earn $1 for each [Suit] card you have (Currently $0) (Max of $30)
+| Recycle Tag | Create last added tag Recycle Tag Excluded none
+
+==================== MOD: Balatro: 1999 ====================
+| Cartoncle | Chooses to select either leftmost or rightmost card held in hand when using a Consumable Unreliable partner
+
+==================== MOD: Balatro: Blindside ====================
+| Recursive Tag | +15 Chips for each tag (+0 Chips) | Dental Tag | 1$ per played Blind | Collector Tag | Next opened Symbol Pack will have editioned Blinds | Mantle Tag | Each hand, destroys 1 played Blind
+| Reroll Tag | 1 free reroll in the shop | Symmetry Tag | 1 in 2 chance to retrigger each scoring Blind | Memory Tag | Create a random Keepsake (Must have room) | Awe Tag | Before each hand, debuffs your leftmost and rightmost Trinkets
+| Battery Tag | +1 Hand this round | Wave Tag | Every played Blind counts in scoring | Neon Tag | Leftover hands give $3 each Leftover discards give $5 each | Downpour Tag | After each hand, 1 in 2 chance for each played Blind to lose all Modifiers
+
+==================== MOD: Balatro: Community Update ====================
+| Hanging Chad | Retrigger first played card used in scoring 2 additional times | ... | Changed the rarity from Common to Uncommon Increased the price from $4 to $5
+| Mail-In Rebate | Earn $3 for each discarded [rank], rank changes every round | Decreased the price from $5 to $3
+| Superstition | Each played 7 becomes a Lucky card when scored Destroys all Kings in hand. | — | [!] [X] | Play a hand that contains three Lucky 7s
+
+==================== MOD: Balatrostuck ====================
+| Mail from Ly'Lac | All Jokers are destroyed at the end of the Ante All Jokers cost $2 and sell for $1
+| Cruxite Apple | After final hand of round, create a free D6 Tag and destroy this card | [+] [X] | Available from start.
+| Operation Regisurp | Played Queens of Spades give $12 when scored and are destroyed | +$ [X] | Available from start.
+| Draconian Dignitary | If played hand contains a Flush and a scoring Diamonds card, earn money equal to total sell value of adjacent jokers | Available from start.
+| Tangle Buddies | When played cards are scored, they give +Mult equal to summation the amount of times their rank has scored this hand | Beat Ante 12 with no vouchers
+| Horror Terrors | When played cards are scored, they give +Mult equal to factorial the amount of times their rank has scored this hand | Beat Ante 12 with no vouchers
+| VERTICLEMOVEMENTS | Jokers in the shop are Paradox, all Paradox cards give X1.2 Mult | Win with the Painted Deck
+| Convention Center | +1 booster pack available in shop | Win with the Painted Deck
+| GristTorrent | Every played card permanently loses -1 Chips when scored The first 5 times this happens each round, earn $1 The 6th+ time this happens each round, this Joker gains $1 of sell value (5 remaining) | [!] +$ | Unlocked by finishing Act 2
+| The Rapture | This Joker gains X0.25 Mult for each played card, all played cards are destroyed Sell this card to Game Over (Currently X1 Mult) | Xm [!] !! | Unlocked by finishing Act 2
+| Pawn Revolution | On first hand of round, create a Paradox copy of lowest ranked card held in hand | [+] | Destroy four Kings in one single run
+| Dark Carnival | Destroy all scoring ranks corresponding to consumable slot Zodiac cards | Destroy at least one card of each rank in one single run
+| Dark Scholar | +1 hand size every time a Tarot card is used, goes Grimdark at +5 (Currently +0 hand size) SPOILER: At +5 hand size, the above effect is removed, the Joker becomes Negative, and the below effect is added X3 Mult if a Tarot card has been used this round, otherwise X0.5 Mult | Unlocked by finishing Act 4
+| Impetus Comb Charging | First played Three of a Kind each ante gives a D6 tag Unleash Sepulcritude after 20 rerolls (Currently 0/20 rerolls) | [+] | Get an Aspect to level 5 or higher
+| The Plot Point | Sell this card to create a Paradox Black Hole, destroy all but leftmost Joker, and -1 ante | [+] [X] #! | Unlocked by finishing Act 6
+| Scratch Construct | Converts all cards in hand to random Ranks, Suits and Enhancements
+
+==================== MOD: Battle for Jimbo ====================
+| Lollipop | Earn $2 if played hand contains at least two different scoring suits
+| Increases the sell value of adjacent jokers by $2 and gives $3 at end of round At end of round, 1 in 6 chance to self destruct | +$ [!]
+| +3.14 Mult If played hand is a Flush of Clubs, self destructs and grants $10 | +m +$
+
+==================== MOD: Beelatro ====================
+| Buzz-Kill | When this is sold, destroys all Bee Jokers For each one destroyed this way, receive a Buffoon Tag
+
+==================== MOD: Berries and Honey ====================
+| Tamago Sando | Diamond suits held in hand give $2 each Eaten if hand is played without holding any Diamond suits
+| Grilled Cheese | Spade suits held in hand give +12 Mult each Eaten if hand is played without holding any Spade suits
+| Club Sandwich | Club suits held in hand give +50 Chips each Eaten if hand is played without holding any Club suits
+| Ruben Sandwich | Heart suits held in hand give x1.25 Mult each Eaten if hand is played without holding any Heart suits
+| File:Fire Blanket (Berries and Honey).png Fire Blanket | Gingham Cards have a 1 in 4 chance to give xMult for every unique suit in hand
+| Black Razzby | Create a Negative Berry Card when a Joker is sold or destroyed | [+]
+| Piggy Bank | Gain $15 when a Gold Card is destroyed
+| Mouse Joker | When you discard a single Gold card, remove its Enhancement and earn double its held in hand value | [!] +$
+| Gold Digger | Earn $8 when a Ace of Diamonds is scored (Rank changes every round)
+| Golden Parachute | Prevents Death if there is at least one Gold Card in hand, then destroys self and all Gold Cards in your full deck
+| File:Bee Bear (Berries and Honey).png Bee Bear | Destroys all Gold cards held in hand at end of round and gains +6 Mult for each card destroyed (Currently +0 Mult) | [X] +m
+| File:Bear Claws (Berries and Honey).png Bear Claws | When a Glazed Card is played, remove its Glaze and permanently gain $3 in sell value | [!] +$
+| ROA Samson | If hand contains one single Gold Card, destroy it and turn 2 cards in hand into Gold Cards | [X] [!]
+| Paddington Bear | X1 Mult, gains X0.05 Mult when hand is played for each card with Diamonds suit held in hand
+| Jade Penguin | When 3 or more cards are discarded at once, 1 in 2 chance to destroy a discarded card and give $4 | [X] +$
+| Destroy 1 selected card to duplicate a random card in hand with its base and bonus values doubled
+
+==================== MOD: Betmma Mods ====================
+| Hasty Joker | Earn $8 if round ends after first hand
+| Debt Burden | Shop can have Rental Jokers Rental Jokers don't cost money if you're in debt Each Rental Joker increases debt limit by -$10 | Bobby Pin | Shop can have Pinned Jokers Each Pinned Joker copies ability of Joker to the right if itself isn't triggered
+| +1 Joker Slot Leftmost Joker is debuffed if Joker Slots are full | +1 Joker Slot Rightmost Joker is debuffed if there is 1 or no empty Joker Slot
+| Undying | When a non-Phantom Joker is destroyed, create a Phantom copy | Reincarnation | When a Phantom Joker is sold, create a Joker of the same rarity
+| Bargain Aisle | First item in shop is free | Clearance Aisle | First Booster Pack in shop is free
+| Gilded Glider | When a Gold Card gives money, if the card to its right isn't enhanced, transfer the Gold Card enhancement from this card to that card (Gold Bar + Bonus+)
+| Heat Death | Eternal and Perishable can stack Eternal Jokers give +1 Joker slot when debuffed by Perishable (Eternity + Half-life)
+| Forbidden Area | When no consumable slots are left, buying or reserving a consumable card moves it to the Joker area and it acts like a Joker (Reserve Area + Undying)
+| Reroll Aisle | First item and Booster Pack in shop are free after rerolls (Reroll Surplus + Clearance Aisle)
+
+==================== MOD: BFDI ====================
+| Gives $5 when a playing card is destroyed
+| If played hand is a High Card, destroys all cards held in hand self destructs
+| Firey Jr. | If played hand contains a scoring Ace, destroys the lowest ranked card held in hand
+| Lightning | Discarding a single card will destroy it if a Gold card is held in hand | [X] [+]
+| After first reroll, creates a Tarot card After second reroll, creates a Planet card (Must have room) | [+]
+
+==================== MOD: Bloodstone ====================
+| Super Charged Blueprint | Active: 1 in 5 chance to spawn "Electric Box" (Once per shop) Passive: Retrigger up to 3 jokers in-between this joker and "Electric Box" 3 times, divided as equaly as possible (Must have both)
+
+==================== MOD: Bloonlatro ====================
+| Boomerang Monkey | Retrigger first card held in hand 2 additional times
+| Engineer Monkey | Earn $3 if poker hand contains a Straight or a Flush
+| Arcane Mastery | If first discard of round is a single enhanced card, spend $8 to add a Purple Seal to it
+| Double Gun | Each Pair held in hand gives $1
+| Necromancer | Whenever cards are destroyed, create a copy of the last card held in hand.
+| Jungle's Bounty | Earn money equal to the difference of ranks if played hand contains a Full House
+| Crushing Sentry | Played cards give +2 Mult when scored. +1 Joker Slot. Lasts 3 rounds.
+| Boom Sentry | First card held in hand gives X1.5 Mult. +1 Joker Slot. Lasts 3 rounds.
+| Cold Sentry | Freeze and retrigger first played card when scored. +1 Joker Slot. Lasts 3 rounds.
+| Energy Sentry | +30 Chips. +4 Mult. +1 Joker Slot. Lasts 3 rounds.
+| Bomb Blitz | Prevents Death if chips scored are at least 50% of required chips and destroy all cards held in hand. Self destructs.
+| Total Transformation | After 2 rounds, sell this card to Transform the Joker to the left into the Joker to the right. (Currently 0/2)
+| Golden Justice | Gold cards give X2 Mult and 1 in 4 chance to be destroyed. Glass cards give $3 if held in hand at end of round. Both give $15 when destroyed. | basically switches Gold and Glass card's abilities, as well as the bonus money when destroying either.
+| Power Tycoon | Power cards appear 2x more frequently | Changes the weight from 4 to 9.6, increasing the probabiltiy from 12.5% to about 25.53%. This is not exactly an increase of 2x due to the fact that Power cards are an addition to the regular shop weights, but was chosen to maintain equal weights between Power cards and Tarots/Planets.
+| Volcano | Destroy 1 selected card in hand. Adjacent cards become Meteor cards.
+| Banana Farmer | Earn $4 at end of round. Lasts 5 rounds.
+| Wall of Trees | Gain $1 of sell value for every 5% of chips overscored. Max capacity of $20 | Will destroy itself and give $20 once sell cost reaches the maximum
+| Siphon Funding | Benjamin | Decrease rank of up to 4 selected cards by 1 and permanently give $1 when scored
+| +40 Chips and thaws when held in hand. No rank or suit.
+
+==================== MOD: Brook ====================
+| Occultist | Swap the appearance rates of Standard Pack and Spectral Pack in the shop
+| Pulp Fiction | Discarded 2s, 3s, 4s or 5s no longer return to deck until this card is sold or destroyed
+
+==================== MOD: Buffoonery ====================
+| Royal Porcelain Card | X2 Chips, is a face card Destroyed if played hand contains more than 3 cards [Can't be found in Booster Packs or randomly generated]
+| Cashout Voucher | If winning hand triples the Blind's score requirement, earn 0.4% of it as money and destroy this Joker (Max of $50)
+| Memory Card | Memorizes the first scored card each round up to 8 times. Sell to convert a card in hand into each memorized card, in order
+| Deluxe Memory Card | Memorizes the first scored card each hand up to 16 times Sell to convert a card in hand into each memorized card, in order | Special | Start a run with JimboStation Deck and JimboStation Sleeve
+
+==================== MOD: Bunco ====================
+| The Umbrella | After Play, flip all cards in hand face down
+| The Knoll | Having more than $5 debuffs first hand drawn
+| Zero Shapiro | Scored Ks, Qs, Js, or Rankless cards have a 1 in 8 chance to create a D6 Tag | [+]
+| Nil Bill | Earn $2 when a playing card is destroyed
+| When you acquire or use a card from the shop or a Booster Pack, acquire 2 adjacent cards if possible
+| Headache | Create an Arcade Tag card for every 4 playing cards destroyed (0/4 cards destroyed) | [+]
+| Cyan Stake | Shop can have Scattering Jokers (Destroys random adjacent Joker when removed) | Orange Stake
+
+==================== MOD: Bundles Of Fun ====================
+| Backgammon Deck | Convert each scored card with Spade or Club suit into Heart or Diamond suit and vice versa No effect if Joker slots are full | Have only one suit in deck
+| Tumor Tom | +2 Joker slots, -1 consumable slots | Tumor Tom cannot be sold if Joker slots are full. It may still be destroyed.
+| Cards with Spade or Club suit give $1 when held in hand at end of round
+| Luminary | Earn $1 at end of round Increase payout by $2 for each played hand that contains a played and unscoring card with Heart or Diamond suit this round
+| Laggard Larry | Earn $3 when first or last hand of round is played
+| Hotboxer | +1 shop slot The rightmost shop slot contains only Tarot cards Decreases sell value by $1 per Tarot card purchased | #! !! | The sell value of Hotboxer can dip into the negatives.
+| Pianoman | Only Common Jokers may appear in the shop You may select unlimited cards in Booster Packs | Pianoman's first effect only affects cards in the shop (including Booster packs), meaning that items like Judgement and Wraith can still create Jokers of other rarities.
+| Notebook | Apply a sticker to a random Joker when Blind is selected Remove two stickers and earn $25 when Boss Blind is defeated | [!] +$ | Notebook can apply all stickers, including Pinned. Notebook will not apply certain stickers onto Jokers that are incompatible with them. (e.g., Eternal on Gros Michel, Perishable on Green Joker, etc.)
+| Dead Fish in a Bowl | Creates a Small Goldfish and loses $1 of sell value at end of round This card is destroyed when its sell value reaches $0 | [+] !! | Cannot appear normally; only obtainable from Fish in a Bowl's death effect. Only enabled if both the Normalities and Fish bundles are enabled.
+| Beltrame | Card held in hand at end of round create Tags dependent on their suit (Cannot create more than 10 Tags at once) Spades create Polychrome Tags Hearts create Garbage Tags Clubs create Orbital Tags Diamonds create Standard Tags | [+] | ????? | More information on Beltrame
+| Ice Bucket | Fish cards last an additional round | Buried Treasure | Fish cards give an additional consumable slot | Have 5 Fish cards expire in one run | Both Ice Bucket and Buried Treasure's effects trigger live for all Fish cards already held and all future Fish cards.
+
+==================== MOD: CardMerge ====================
+| Copper Relic | Played cards with merged suits that include a Diamond and a Heart earn $3 when scored
+| Suit Scatter | Convert cards in hand into a random suit, including merged suits
+
+==================== MOD: Cardsauce ====================
+| Vinny-centric Content | If disabled, content relating to "Vinny", "Vinesauce" and "Red Vox" gets removed which includes certain jokers, decks, consumables, tags and blinds.
+| VHS/RedLetterMedia Content | If disabled, content related to RedLetterMedia gets removed which includes certain jokers, decks, consumables, vouchers, booster packs and tags.
+| Stands/Jojo Content | If disabled, content related to Jojo's Bizarre Adventure gets removed which includes certain jokers, decks, consumables, vouchers and tags.
+| Vouchers | If disabled, all vouchers from Cardsauce are removed.
+| Booster Packs | If disabled, all booster packs from Cardsauce are removed.
+| If disabled, all tags from Cardsauce are removed.
+| Emmanuel Blast | 1 in 8 chance to create a Negative Tag at end of round | Vinesauce | Artist Gappie
+| Business Trading Card | If first hand of round contains only face cards, earn $6 and 1 in 3 chance to destroy 1 random card in played hand | Vinesauce | Artist BardVergil
+| That Fucking Koffing Again | Your first Shop Reroll each shop rerolls Booster Packs | Vinesauce | Artist BarrierTrio/Gote
+| Dripping Joker | When first hand of round is played, add a random enhancement to a card held in hand | Cardsauce | Artist Alli
+| The Dud | When sold, removes all stickers from a random Joker with stickers | Vinesauce | Artist Swizik
+| Movin' Right Along | This Joker gains X0.5 Mult for each time you leave the shop with the same amount of money you had when you entered (Currently X# Mult) | Cardsauce | Artist Jazz_Jen
+| Joey's Castle | Earn $1 per discarded [suit] card, suit changes every round | Vargskelethor | Artist Gappie
+| THE FLUSHER | 1 in 5 chance to upgrade level of played Flush Gains +1 chance for each sold consumable until the end of round | Vargskelethor | Artist BarrierTrio/Gote
+| BITCONNEEEEEEEEE... | Lose $5 per played High Card, Pair, and Two Pair Gain $5 per any other Poker Hand played | Vargskelethor | Artist plunch
+| IT'S A FEATURE | This card gains $2 per hand played 1 in 2 chance to gain accumulated money when a Straight is played (Currently $#) | Vargskelethor | Artist ABBurlap
+| UFO COMODIN | Upon purchase, removes a random Joker After 3 rounds, sell this card to return it Negative | Vargskelethor | Artist BarrierTrio/Gote elebant
+| 2 Kings 2:23-24 | Destroys 42 random cards in your deck when acquired (Cards destroyed this way are added back to your deck when this Joker is sold/destroyed) | Vargskelethor | Artist Arthur Effgus
+| Bye-Bye, Norway | This Joker gains a bonus $4 in sell value per Face Card held in hand Sell this Joker to destroy all Face Cards held in hand | Vargskelethor | Artist BarrierTrio/Gote
+
+==================== MOD: Celeste Card Collection ====================
+| Crystallic | Destroys 2 random cards in hand, then adds Mirrored to all other cards in hand
+| Huge Mess: Towels | When played hand contains a Flush, gains +7 Chips for each card held in hand that shares the same suit (Currently +0 Chips) | toneblock | toneblock
+| Huge Mess: Chests | When played hand contains a Three of a Kind, gains +3 Mult for each possible Pair held in hand (Currently +0 Mult) | toneblock | toneblock
+| Huge Mess: Books | When played hand contains a Straight, gains X0.17 Mult for each additional card held in hand that extends the played Straight (Currently X1 Mult) | toneblock | toneblock
+| Coyote Jump | If cards held in hand do not form a Pair, Straight, or Flush, gain +1 discard | goose! & Gappie | toneblock
+| Purple Spinner | When a card with a Purple Seal is held in hand at end of round, 1 in 2 chance to add a Purple Seal to each adjacent card in hand (Unaffected by retriggers) | toneblock | toneblock | sunsetquasar
+| Waterfall | If played hand contains a Flush, convert a random card held in hand to the same suit | toneblock | toneblock
+| The Crowd | If played hand contains a Five of a Kind, scoring cards give $1. Afterwards, create the played poker hand's Planet card (Must have room) [Can only be found if a Five of a Kind or Five Flush has been scored this run] | +$ [+] | toneblock | Kol_Oss
+| Berry Seeds | After scoring 8 [suit] cards, sell this card to create a random Strawberry (Currently 0/8) [Suit is chosen at random when Joker is created] | [+] | AstralightSky | toneblock
+
+==================== MOD: Ceres ====================
+| Calling the Clock | Retrigger all Aces, both played and held in hand. Rank changes every round | ...
+| Cursed Purse | +1 Joker slot, debuff Joker to the left of this Joker
+| Double Down | Retrigger all cards held in hand twice, if played hand contains a Pair | ...
+| Insurance Fraud | Debuff all Aces, earn $3 for each debuffed card in scoring hand. Rank changes every round | !! +$
+| 1 UP | Prevents Game Over! or rewards $5, lasts only one round | !! +$
+| Scratchcard | Gives $1 for each repeat rank in hand
+
+==================== MOD: Chakra Collection ====================
+| Unending Torment | Creates a copy of the first Spectral card used from any Booster Pack | [+]
+
+==================== MOD: Cheesy Jokers ====================
+| Calculator | Gives money at the end of the round equal to the first digit of the final score during round.
+| Corrugated Iron | Earn $50 if this Joker is destroyed.
+| Slingshot | Gains X0.5 Mult per hand, only activates when in the rightmost Joker slot and resets upon activation.
+| Treasure Map | Earn $10 if played hand contains a scoring Jack and 9, ranks change every round.
+
+==================== MOD: Chimes ====================
+| Literature Card | No rank or suit +20 chips when held in hand, increases by +10 chips when discarded
+| Sell this card to gain $10, decreases by -$2 and increases sell value of Joker to the right by $4 when Blind is skipped | +$ [!] | Is part of the "Sushi" pool.
+| Botton Pon | Each Club card held in hand has a 1 in 10 chance to create 1 Planet card in collection order (ex: Mercury, Venus, Earth, Mars, etc.) (Must have room) | [+]
+| Togarashi | This Joker gains +2 Mult per card with Heart or Diamond suit held in hand This Joker loses -3 Mult per card with Heart or Diamond suit played (Currently +0 Mult)
+
+==================== MOD: ColorSplashed ====================
+| Quantum Enhancement | +30 Chips +4 Mult X2 Mult X1.5 Mult when held in hand $3 when held in hand at end of round 1 in 5 chance to gain +20 Mult 1 in 15 chance to gain $20 Can be used as any suit, always scores | Only "applies" every Vanilla enhancement. Is only used while the Bowser Joker is in effect. When the Bowser Joker is removed, all cards return to their original enhancement.
+| (uses sprite of previous seal) | Quantum Seal | Retriggers once. Gain $3 when played. When discarded, gain a random Tarot Card. When held in hand at the end of the round, gain a Planet based off of your last played hand. (Must have room) | Only "applies" every Vanilla seal. Is only used while the Bowser Joker is in effect. When the Bowser Joker is removed, all cards return to their original seal.
+| (uses sprite of previous edition) | Quantum Edition | +50 Chips +10 Mult X1.5 Mult +1 Joker Slot | Only "applies" every Vanilla edition. Is only used while the Bowser Joker is in effect. When the Bowser Joker is removed, all cards return to their original edition.
+| Yellow Slurp Guy | This Joker gives $1 per scoring low enhanced card played and $3 per scoring high enhanced card played removes card enhancement Low Enhanced Card: Stone, Bonus, Mult, Lucky High Enhanced Card: Steel, Gold, Glass, Wild and modded enhanced cards | +$, !!
+| Pink Roller Guy | This joker gives $5 when you play a Straight
+| The Shy Bandit | If first hand of round has only 1 card, 1 in 2 chance to destroy that card. This gains X0.25 Mult and gain $3 | Xm, !!, +$
+| If played hand is a Straight Flush, gain a Moon card. (Must have room) Clubs give $1 when scored. | +$, !!
+| Spades give +7 Mult while held in hand If it's last hand of the round, X1.5 Mult instead | +m, Xm
+| On first hand of round, destroy a random card held in hand and gain +XMult equal to 1/10th of the card's value (Currently X1.0 Mult) | Xm, !!
+| Fire Extinguisher | Disable this if it's the leftmost Joker If a card is destroyed, make a copy of it in hand
+| Balloons | This gains a new ability at the end of 3 rounds, up to 3 abilities (Abilities stack) Red Balloon: Retrigger each played Heart card Blue Balloon: Gain a random Planet card at the end of the round (Prioritizes the last played hand) Yellow Balloon: Played Diamond cards give $2 and have a chance to get Gold Seals | ..., !!, +$
+| At the end of each round, randomize the sell value of this card (Between $1 and $20)
+| Hair Dryer | Destroying cards gives $5. If first discard has only one card, destroy it and this gains +X0.1 Mult. (Currently X1.0 Mult) | Xm, +$, !!
+| Recorder | Sell this card to make a copy of the leftmost Joker with Replica
+
+==================== MOD: Cosmos ====================
+| Pantomime | Retrigger played cards and cards held in hand that share the same rank | ...
+| Wrapping Paper | At the end of round, add this Joker's sell value to the one to the right (Max of $20)
+
+==================== MOD: Cruel Blinds ====================
+| File:The Mist (Cruel Blinds).gif | The Mist | 3 in 4 cards are drawn clouded (Clouded cards are face down in hand and in play and hide the hands chips and mult and all of their triggers)
+
+==================== MOD: Dream BBQ ====================
+| BATHROOM | When sold, destroys all jokers For every third Joker destroyed, you gain +1 Joker Slot destroyed, (Includes itself) | [X] #!
+| Fax Machine | When poker hand is played: If held cards contain all of: Ranks 3, 4, 6, 8, and three 7s All cards held in hand double their Chips | Xc [!]
+| 1 in 4 cards are drawn face down Each face down card held in hand grants X1.5 Mult
+
+==================== MOD: Entropy ====================
+| Nameless Nadir | Void subsumes you. (Debuff leftmost Joker slot(s), you must lose this blind.) | At most 3X Base
+| Dark Card | X1 Chips when held in hand Increase by X0.025 for each unique suit in scoring hand
+| (~)$ detour | Create a card, booster, or voucher with a type corresponding to the last obtained card, booster, or voucher (Currently: None) | FUNCTION://
+| Corrupted Deck | Jokers and Consumables Cycle between 3 options -1 Shop Slot
+| Malformed Deck | Created Card, Vouchers and Boosters are replaced by a random card type Rerolls scale Twice as fast
+| The Dagger | Destroy 1 selected Joker and add X2 the sell value to your most played hand's Mult | Justice
+| The Earl | Distribute your money equally between Hands and Discards (Max of $20) | The Hermit
+| The Feast | Sell and Destroy up to 2 selected cards from the shop | Temperance
+| Destroy 1 selected card and distribute their modifications between other cards held in hand
+| Inferno | Destroy all selected cards Lose $3 for every card past 2 | The Comet
+| Penumbra | Banish the Enhancement of 1 selected card in hand then destroy the selected card | The Eclipse
+| The Mallet | Destroy 1 random card in hand and create 1 random Command card (Must have room) | The Automaton
+| Solar Dagger | When Blind is selected, destroy Joker to the right and permanently add one tenth its sell value to this Joker's Ascension Power (Currently X1 Ascension Power) | [X] XA
+| Insatiable Dagger | When Blind is selected, banish rightmost Joker Joker to the left gains 15% of its sell value as xValues then decrease this value by 3 | [X] [!]
+| Sweet Tooth | +20 Chips At the end of shop destroy all Food or Candy Jokers the increase this Jokers chips by ^1.1 if any Food or Candy Jokers were destroyed | [X] +c
+| Dog Chocolate | When Dog Tags are merged instead create a Candy Joker and destroy both of the Dog Tags Dog Tags appear more frequently | [+] !!
+| Earn the last played poker hands level as money at the end of round (Currently $0)
+| Thanatophobia | Gives half of the sell value of all sold or destroyed Jokers as mult
+| Echo Chamber | Use this Joker to destroy a selected Consumable, the last three Consumables destroyed by this Joker are Triggered again when a consumable is used (None,None,None) This Joker gains 1 use after spending $30 in the shop (Currently $0, 1 use) | !! [X]
+| Force the Hand of Fate | Vouchers in the shop are replaced by Gilded Rare Jokers self-destruct when buying any other card from the shop
+| Quadrants | If scored hand has atleast 2 suits Scored Hearts give +5 Mult Scored Diamonds give +$2 Scored Spades give +20 Chips Scored Clubs give +0.5 Ascension Power | +m +$ +c
+| Anti-Asceticism | The first time you go below $5 each ante earn $25
+| Survivorship Bias | When a Joker is sold this Joker gains +15 Chips (Currently +0Chips) When a Joker is destroyed it is Banished
+| Eternal D6 | When rerolling, 1 in 3 chance to destroy a random shop card, else gain +1 Numerator Resets at the end of the ante (Currently +0) | [X] %!
+| File:Yaldabaoth (Entropy).png Yaldabaoth | Apply Marked for Death to one random card per Booster Pack When a card Marked for Death is destroyed gain +0.3 Ascension Power (Currently +0 Ascension Power)
+| File:Crooked Penny (Entropy).png Crooked Penny | Multiplies payout by X1.5 for every Hand played this round (Extra copies stack additively) Set money to $0 when leaving the shop
+| File:Nyx, Lord of Void (Entropy).png Nyx, Lord of Void | When Blind is selected create 1 Negative Temporary Inverted Joker for every other non-Inverted Joker Use this Joker for X3 this Jokers cost and the highlighted cards cost to remove Temporary from all selected cards (Currently $0)
+| First Guardian, Grahkon | -800 Blind Size Increases by X1.08 when a playing card is destroyed. Use this Joker to destroy 4 random cards in hand gains 1 use when defeating a Blind (Currently 1 use) | O! [X]
+| Stillicidium | Transform Jokers to the right and all consumables into the card that preceeds them in the collection at the end of the shop Reduce the rank of scored cards by 1 Reduce Blind sizes by 30% | [!] O!
+| (D4) Reroll all Jokers to the Right of this Joker when blind is selected
+| Burgundy Barracuda | At the end of the shop destroy a random consumable and gain X0.25 Mult (Currently X1 Mult) | Showdown | [X] Xm
+| Diamond Dawn | Strip the rank and suit from the rightmost scored card every hand and add it to this Joker's money Earn $0 at end of round | Showdown | [!] +$
+| Destroy 1 selected Editioned Joker then apply the previous Edition to 3 random cards in hand (Currently None, excludes Negative)
+| Create a copy and an Ascended variant of the last obtained Tag | Manifest
+| Cleanse | Strip the suit and rank from all cards in hand $1 for each Chip taken
+| Pact of Denial | Create a copy of the last sold card then banish that card (Must have room) | Rune of Ansuz
+| Pact of Rebirth | Playing cards are Duplicated instead of being Destroyed -1 Hand Size | Rune of Ihwaz
+
+==================== MOD: Extra Credit ====================
+| Espresso | Gain $30 and destroy this card when any Blind is skipped Reduces by $5 after each round
+| Cards with [suit] held in hand give $2 at end of round suit changes at end of round
+| Ambrosia | Fill consumable slots with Spectral Cards whenever a blind is skipped, destroyed when any Spectral Card is sold (Must have room) | [+]
+
+==================== MOD: Fabula ====================
+| Glitched Deck | +1 Joker slot. After defeating each Boss Blind randomize rank and suit of all playing cards in the deck | Séance Deck | +2 Shop slots and -2 Booster Packs in shop. Spectral cards may appear in the shop
+| Accelerator Deck | Whenever you Skip a Blind twice in a row add Negative to a random Joker. Win on ante 9 | Highway Star Deck | -1 Consumable slot and -1 Booster Pack in shop. When Skipping a Blind level up 5 random poker hands
+
+==================== MOD: Familiar ====================
+| Underworld Deck | When First Blind each Ante is selected, get a Negative Mr. Bones and set Money to $0
+| Joyful Jester | Gain $2 if played hand contains a Pair | Jolly Joker
+| Mirthful Jester | Gain $3 if played hand contains a Two Pair | Mad Joker
+| Cheerful Jester | Gain $4 if played hand contains a Straight | Crazy Joker
+| Delightful Jester | Gain $3 if played hand contains a Flush | Droll Joker
+| Sacrificial Dagger | When Blind is selected, destroy Joker to the right and permanently add its sell value to this Stockpile Gain +1 Joker slot per $15 in Stock (Currently 0 Stock (+0 Slots)) | Ceremonial Dagger
+| Bull Market | Gain $1 of interest for every $5 you have at end of round Has a 1 in 2 chance to swap to Bear Market after every shop | To the Moon
+| Bear Market | Lose $1 of interest for every $5 you have at end of round Has a 1 in 2 chance to swap to Bull Market after every shop
+
+==================== MOD: Feli's Additions Gallery ====================
+| +17 Chips, +6 Mult When Blind is selected, destroys the Joker to its left and permanently add 1% of its sell value to this card's XChips (Currently X1 Chips) | +c,+m Xc
+
+==================== MOD: Final Mix ====================
+| Lucky Emblem | When scored, convert a card held in hand into this card's rank and suit
+| Levels up most played hand by 1 every 4 (4) rerolls (Most Played: Flush)
+| Keyblade | If first hand of round is a single 7, destroy it and create a random Tag Rank changes every round
+| Munny Pouch | Gains $1-$5 of sell value at end of round 1 in 8 chance this Joker is Destroyed! Sell this Joker to create Munny
+| Munny Magnet | Steel cards are moved to the top of your full deck and give $3 when triggered
+| Tamagotchi | Destroy all held consumables at the end of the shop Gains X0.2 for each one destroyed (Currently X1 Mult)
+| Command Menu - Attack | When a Blind is selected, this Joker cycles through its modes If played hand contains at least 4 cards, destroy all cards held in hand
+| First and Last cards held in hand count in scoring
+
+==================== MOD: Finity ====================
+| Amber Acorn | Gains X0.2 Mult per owned Joker at end of round, all other Jokers are pinned to the left until this is sold or destroyed (Currently X1 Mult) | Showdown | Xm [!]
+| Caramel Coin | Gains +1 hand size if played hand contains a Straight Flush, Flush House or Flush Five | Showdown
+| Saffron Shield | +1 hand size, Joker slot and consumable slot per missing base suit in deck (Currently +0) | Showdown
+
+==================== MOD: Fish and Chips ====================
+| Milkfin | Cards with Spades suit give +6 Mult when held in hand, suit changes at end of round | Chocolate River: 100% | 1.2-4.8kg | 47-92cm | Art by GhostSalt Code by Mack | WARNING: Do NOT eat milkfin roe! It is incredibly toxic!
+| Bottled Money | Between 1 and 4 playing cards permanently gain between $1 and $2 when scored Requirements to use this Bottle are random | Cavern Aquifer: 30.19% River Styx: 22.64% Ocean Pier: 22.64% Canal District: 15.09% Garden of Hope: 7.55% The Backrooms: 1.89% | 170-280g | 16-33cm | [!] +$ | Art by Flowire Code by Flowire | This is just a rolled up $5 bill! - Gary McCready
+| SpongeBob's Corpse | Does nothing, a reminder of your negligence. (Cannot be sold or destroyed) | Transforms from SpongeBob if he dehydrates | -- | Art by EDriGO Code by cheekyrotter | What have you done?
+| Baby Loosha | Earn ⍟1 when rerolling the shop | Garden of Hope: 66.67% Calm Pond: 20% Ocean Pier: 13.33% | 1-2kg | 50-60cm | Art by GhostSalt Code by GhostSalt | The last survivor of the Golden Garden. She fought bravely to protect Misthallery and her two best friends, Arianna and Tony.
+| Trowel Trout | Select exactly 2 cards with Spades suit, earn money equal to the sum of their base Chips values | Volcano: 45.45% Garden of Hope: 36.36% The Soup: 18.18% | 0.8-1.2kg | 40-60cm | Art by GhostSalt Code by GhostSalt | Both a very slow shovel and a very bad spoon.
+| Toxic Seahorse (Mega Man X3) | Destroy up to 2 selected cards per round (Reusable)If a card destroyed by this Fish's ability had an Edition, create its respective Tag | The Wormhole: 58.82% Canal District: 29.41% River Styx: 5.88% Ocean Pier: 5.88% | 3.5m | [+] [X] | Art by J8-Bit Code by J8-Bit | President of the Water Dragons
+| Left Shark (Katy Perry) | Earn +$5 and +⍟5 if Fish is caught with unrelated Targeted Bait | The Soup: 33.33% Ocean Pier: 33.33% The Wormhole: 33.33% | 90-100kg | 1.5-2m | Art by J8-Bit Code by J8-Bit | #leftshark
+
+==================== MOD: FLYNNSANITUS ====================
+| When boss blind is defeated, -1 Ante if this is the leftmost Joker has 3 uses (Has an unique interaction if you find a certain girl.) SPOILER: Gains 1 use every 2 rounds if you have Isolda
+| White Face | If played hand contains a Straight, make a random tag
+
+==================== MOD: Foolish Dreams ====================
+| Removes your debt If blind is defeated without using all your hands"
+| Sol Card | $5 Dollars when Scoring Has no Rank. Is considered as any suit.
+| Castle Sansa | At the end of the shop give the suit's tarot of the most played suit last round (Does not need room) | [+]
+| Empty Bailey | +1 hand size for every stack of 15 cards in your deck (+0 hand size)
+| Sansa Keep | Earn the sell value of the Joker on the left and right of this Joker at the end of the round
+| Martial Prowess | Destroy 3 random cards in hand but permanantly give x0.5 mult to the selected card | The consumable still works even if there's less than 3 destroyable cards in hand.
+| Sun Greaves | Refund the first Booster Pack bought and skipped in the shop | Sunsetter | At the end of each Ante Create a random Booster Tag
+
+==================== MOD: Forager Nonessentials ====================
+| Cookie Cutter | This Joker gains +4 Chips when a card is sold or destroyed (Currently +0 Chips)
+| Milkshake | This Joker gains +20 Chips per reroll in the shop 1 in 25 chance this card is destroyed on reroll (Currently +0 Chips)
+| Bathroom Pass | Playing a Flush rerolls the Boss Blind up to 2 times per Ante (2 left)
+| Original Art Direction DisabledDefault Copied Homework Assimilation Joker | Each Wild Card held in hand after scoring converts to the card on its right
+| Spindown Dice | "-1" Selling this rerolls the ID of all visible Jokers, consumables, vouchers, and Booster Packs by -1 and decreases rank of all visible playing cards by 1
+| "REEROLLLLL!" Selling this rerolls the ID of all visible Jokers, consumables, vouchers, and Booster Packs randomly and changes rank of all visible playing cards to a random rank
+| Original Art Direction DisabledDefault Expansion Plans Expansion Plans | After spending $150 in the shop, destroy this card to add Negative to a random Joker you own Rerolls not included
+| Puzzle Swap | When Blind is selected, reroll held consumables
+| Program Advance | Playing a Straight Flush also scores cards still in hand that match the suit of played cards | >>
+| Cereal Box | When entering shop, this card destroys itself and adds a Jumbo Spectral Pack | [+]
+| Girlfriend | Scores the leftmost and rightmost cards held in hand alongside scoring hand | >>
+
+==================== MOD: Fortlatro ====================
+| Midas Touch | Select up to 3 Cards and destroy them earn $2 for each card destroyed
+| Cursed Hand | Destroy all cards in hand and draw a new hand
+
+==================== MOD: Furlatro ====================
+| Chips Maxing | All Mult related cards are banned except Planet cards | Banned Jokers: Joker, Greedy Joker, Lusty Joker, wrathful Joker, Gluttonous Joker, Jolly Joker, Zany Joker, Mad Joker, Crazy Joker, Droll Joker, Half Joker, Joker Stencil, Ceremonial Dagger, Mystic Summit, Loyalty Card, Misprint, Raised Fist, Fibonacci, Steel Joker, Abstract Joker, Gros Michel, Even Steven, Scholar, Supernova, Ride the Bus, Blackboard, Constellation, Green Joker, Cavendish, Card Sharp, Red Card, Madness, Vampire, Hologram, Baron, Obelisk, Photograph, Erosion, Fortune Teller, Lucky Cat, Baseball Card, Flash Card, Popcorn, Spare Trousers, Ancient Joker, Ramen, Walkie Talkie, Smiley Face, Campfire, Acrobat, Swashbuckler, Throwback, Bloodstone, Onyx Agate, Glass Joker, Flower Pot, The Idol, Seeing Double, Hit the Road, The Duo, The Trio, The Family, The Order, The Tribe, Shoot the Moon, Driver's License, Bootstraps, Canio, Triboulet, Yorick, Envious Joker, Anxious Joker, The Rainbow, SparklesRolf, illyADo, GhostFox, KalikHusky, The_Koneko, SparkTheBird, Luposity, CuriousAngel, Joseeee, SephiraPaws, FoxxlyDuskFur, CuriousAngel (Corrupted), SparklesRolf (Hate) Banned Consumables: The Empress, The Chariot, Justice, The Wheel of Fortune, The Magician, Aura, File:Notary Stamp (Red) (Furlatro).png Notary Stamp (Red), File:Notary Stamp (Orange) (Furlatro).png Notary Stamp (Orange) Other Bans: Holographic Tag, Polychrome Tag, HoloPawTag, PolychromePawTag | Standard
+| Joseeeeee | 1 in 3 chance to enhance non-enhanced cards to a random enhancement 1 in 5 chance to remove the enhancement from scored cards for +$1 At end of round, gives $3 | SaraCrossing02 (VGen)
+| Nemzata | When a card is eliminated by NemzsBow this Dragon gives 500 coins [$5] (Will remove Nemz's Bow when sold) | SaraCrossing02 (VGen)
+| Sourstone :3 | When this Protogen is in the leftmost slot, gain $5 When this Protogen is in the rightmost slot, spend $5 to score X3 Mult | +$ Xm | Kris Dreemurr (Kris_57) (Discord Community Member)
+| Danny (Corrupted) | This CatDragon debuffs all non-Star cards Destroys all non-Star cards in hand after playing a hand For each played hand that contains a Flush, add X0.3 Mult, Polychrome, and a Blue Paw Seal to scored cards then score X1 Mult | Corrupted | SaraCrossing02 (VGen)
+| Sourstone :3 (Talisman Variant) | When this Protogen is in the leftmost slot, gain $5 When this Protogen is in the rightmost slot, spend $5 to score ^2 Mult | Kris Dreemurr (Kris_57) (Discord Community Member)
+| Danny (Corrupted) (Talisman Variant) | This CatDragon debuffs all non-Star cards Destroys all non-Star cards in hand after playing a hand For each played hand that contains a Flush, add ^0.3 Mult, Polychrome, and a Blue Paw Seal to scored cards then score ^1 Mult | Corrupted | SaraCrossing02 (VGen)
+| SilverSentinel | Gives an extra $3 for each scored SilverCard | First scored SilverCard spawns a Treasure Chest (Works once per round) (Currently Inactive) SilverSentinel also gives double the money | Win a run with SilverSentinel on Gold Stake difficulty
+| FoxxlyDuskFur | Gives 1 free Reroll per shop | Gives 1 free Reroll per shop FoxxlyDuskFur scales twice as fast (Scaling stacks with synergy) | Win a run with FoxxlyDuskFur on Gold Stake difficulty
+| Sourstone :3 | When scoring hands, store $2.5 into the current balance Left click to withdraw all available $ Right click to spend $2.5 of available $ to score X1.5 Mult (Current balance: $0 / Mult state: Inactive) | Sourstone no longer takes money when scoring Mult | Win a run with Sourstone on Gold Stake difficulty
+| Nemzata | Left click to shoot an arrow at a random playing card Has a 1 in 5 chance to eliminate the card Each elimination stores 250 coins [$2.5] Right click to cash out all stored coins When setting blinds, restore all ammo (Ammo capacity: 3/3 / Current coins: 0 [$0]) | Nemzata gives double the coins The ammo on NemzsBow is increased by 2 | Win a run with Nemzata on Gold Stake difficulty
+
+==================== MOD: Fusion Cookbook ====================
+| Lots+90 Chips | Extra+60 Chips & +6 Mult | Water+50 Chips and can be used as any suit | Tempered GlassX2 Chips 1 in 6 chance to shatter | SapphireX2 Chips when held in hand during scoring | Cobalt+120 Chips No rank or suit | Orichalcum$5 if held in hand at end of round or if Chips scored equals to your current total $ | Scratch1 in 4 chance to give +60 Chips 1 in 8 chance to give $10
+| Extra+50 Chips & +8 Mult | Power+12 Mult | Lava+6 Mult and can be used as any suit | Colored GlassX3 Mult 1 in 3 chance to shatter | RubyX2.5 Mult when held in hand during scoring | Cinnabar+100 Chips and +6 Mult No rank or suit | Rhondite$-1 while held in hand 1 in 10 chance to give $20 | Prized1 in 5 chance to give X3 Mult 1 in 15 chance to give $30
+| Water+75 Chips and can be used as any suit | Lava+8 Mult and can be used as any suit | MonsterI keep it caged and I just can't hold it... Actual effect: Create Monster Joker when played | Stained GlassX2.5 Mult 1 in 5 chance to shatter | ClawsX3 Mult Destroyed after scored 3 times | Boulder+60 Chips Can be used as any suit and does not have rank | Piggy+$0 when scored +$5 when held in hand during scoring | Clover1 in 4 chance to give +20 Mult 1 in 8 chance to give $20
+| SapphireX2.5 Chips when held in hand during scoring | RubyX3.5 Mult when held in hand during scoring | ClawsX3 Mult Destroyed after scored 4 times | MirrorX1.5 Mult 1 in 4 chance to retrigger | TitaniumX4 Mult when held in hand during scoring | Concrete+80 Chips when held in hand during scoring Can be used as any suit and does not have rank | Electrum$3 when held in hand during scoring | Iron1 in 5 chance to give X2 Mult 1 in 10 chance to give $25
+| Cobalt+150 Chips No rank or suit | Cinnabar+80 Chips and +8 Mult No rank or suit | Boulder+80 Chips Can be used as any suit and does not have rank | ObsidianX2 Mult Does not break when scored No rank or suit | Concrete+100 Chips when held in hand during scoring Can be used as any suit and does not have rank | Granite+150 Chips Can be used as any rank and does not have suit | Fool's Gold$2 when held in hand during scoring $5 when scored No rank or suit | Dice1 in 6 chance to give X5 Mult 1 in 6 chance to give X-5 Mult
+| Orichalcum$5 if held in hand at end of round or if Chips scored equals to your current total $ | Rhondite$-1 while held in hand 1 in 10 chance to give $25 | Piggy+$0 when scored +$6 when held in hand during scoring | Diamond1 in 3 chance for $X2 1 in 8 chance to shatter | Electrum$4 when held in hand during scoring | Fool's Gold$3 when held in hand during scoring $5 when other Fool's Gold scored No rank or suit | Philosopher's Stone$8 per hand remaining at end of round | Money1 in 5 chance to earn $10 1 in 10 chance to earn $20
+
+==================== MOD: GARBSHIT ====================
+| Infected Card | 1 in 4 chance to infect adjacent cards while this card stays in hand Self-destructs after 4 rounds
+| Epoch Deck | At the start of each Ante, set money to $75 and destroy all Joker and Consumable cards | Find and use the Eternity Card
+| Midas Bomb | Sell this card to destroy all Jokers and earn 7x the sell value of all Jokers destroyed this way
+| Mercante in Fiera | Earn $6 if [rank] of [suit] hasn't been drawn this round Card changes every round
+| First Skip Tag of ante is always a Carnival Tag | Find this Joker from the Soul card
+| Jolly Jim | Fills all free joker slots with Jolly Joker when a Blind is selected. Play a Pair to Explode all Jolly Jokers and gain X0.5 per Jolly Joker Exploded (Currently X1 Mult) | Template:Rarity - Rarity "Rainbow" not found in mod "Vanilla" | SPOILER: Only available with Kaleidoscope Deck
+| Epoch Sleeve | At the start of each Ante, set money to $75 and destroy all Joker and Consumable cards | At the start of each Ante, set money to $150 and reset all poker hand levels
+
+==================== MOD: Gem's Pokermon ====================
+| Mega Sceptile | Nature:[1]([rank], [rank], [rank]) Played Nature cards earn $3, plus $3 for each other Grass or Dragon card you have when scored (Includes Jokers and Energy Cards) (Currently $3 total)
+| Manectric | Nature:[1]([rank], [rank], [rank]) All played Nature cards become Gold cards when scoredIf scoring Nature card is already Gold, give $2 plus $1 for each other Lightning card you have when scored (Includes Jokers and Energy Cards)Mega Evolution[2] | [!], +$ | Lightning
+
+==================== MOD: Gemstones ====================
+| Turquoise | If card is scored and first in hand, destroy this card and create a Negative Planet card for the played poker hand | ❌ | ✅
+| Obsidian | When this Joker is sold or destroyed, destroy this Gem Slot and create a random Joker of the same rarity | ✅ | ❌
+
+==================== MOD: Genshin HSR Jokers ====================
+| Khaslana | When in the first joker slot during a blind, debuffs all other jokers and gives X0.5 Mult times the current Ante per other joker
+
+==================== MOD: Ghostposting ====================
+| Charles | Prevents Death, gives $20, destroys an adjacent Joker and self destructs | !! +$ [X] | Charles Calvin from the Henry Stickmin series of games. His card sprite references the Charles option in some of these games. (From Cold Beans)
+| Miracle Machine | Played cards with odd rank give $1 when scored (A, 9, 7, 5, 3) | Miracle Machine, as seen in Albuquerque: THE MOVIE (From Cold Beans)
+| Zirconium Pants | If played hand contains a Two Pair, an unenhanced card held in hand becomes Steel | A lyric in Ruler of Everything by Tally Hall (From Cold Beans)
+| Signed Egg | Gains $2 of sell value at end of round When sold, Joker to the left inherits this Joker's extra sell value | +$ [!]
+| One Armed Bandit | Press SPIN to pay $1 and crank the handle! (House edge: 1.62%) Flushes pay $2: 3 red or black suits Lines pay $5: 3 of a kind Jackpots pay $100: 3 7s WILD Cards count as all symbols except 7s Bonus Reel: On payout, earn a bonus $1 if the Bonus Reel matches Reel 3 (WILD Cards excluded) | ~$ +$
+
+==================== MOD: Grab Bag ====================
+| Infinite Seal | If this card is destroyed, duplicate it and earn $5
+| When played, randomise suit and rank of a random card held in hand
+| Ravenous | When held in hand, remove Enhancement of a random played card
+| Frankendeck | Combine the first 5 Vanilla decks All shops cost X1.5 as much [ Red Deck, Blue Deck, Yellow Deck, Green Deck, and Black Deck]
+| Cheque Stub | At end of round, earn $4 and destroy leftmost card held in hand | +$ [X]
+| Floppy Disk | Sell this Joker to duplicate the last 3 played cards and add them to deck | [+]
+| Speculative Bubble | 0 in 100 chance to set money to $0 when sold or destroyed Scored cards earn $1 and increase this probability by 1 (Self destructs at 100 in 100 chance) | +$ ~$
+| Dream Emulator | Create 2 Temporary copies of the first sold Joker of the round | [+]
+| Mystery Man | If played hand contains 3 6s, 6s gain +6 Mult when scored and all cards held in hand are destroyed after scoring | +m [!] [X]
+| The Club | Club cards give $2 when scored [suit] cards are debuffed (Changes at end of round) | +$ [!]
+| The Piper | After hand scores, 1 in 2 chance to destroy the leftmost card and give a third of its base Chips as Money | [X] +$
+
+==================== MOD: Grim ====================
+| Radium Card | 226 in 1600 chance to destroy this card if held in hand at end of round Otherwise +12 XP

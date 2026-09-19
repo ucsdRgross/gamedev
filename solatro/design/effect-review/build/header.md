@@ -4,7 +4,7 @@
 candidate effect, and every answer is a ruling on whether that effect enters the game and in
 which form. Nothing here specifies how anything is built.
 
-**1,591 live questions, plus 83 retired in place.** There is no branching: every question is
+**1,595 live questions, plus 83 retired in place.** There is no branching: every question is
 independent, so the count you see is
 the count you answer. Rejecting is one keystroke.
 
@@ -68,7 +68,7 @@ difficulty shapes are **hazards**; map, deck-preset, quest and meta-progression 
 **structure**; questions about editing the rules deck itself, or about shops and gold, are retired
 in place. Eleven questions found to duplicate another are retired in place, naming their twin.
 
-**7. Family AA is new — 165 live effects across eight classes**, mined from every content mod on the
+**7. Family AA is new — 169 live effects across eight classes**, mined from every content mod on the
 Balatro mod wiki and from A Solitaire Mystery, Degenerate Gamblers, Combolands and Zoominoes.
 `build/SOURCES.md` wave 6 records what was read and what each source yielded.
 

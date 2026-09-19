@@ -111,7 +111,7 @@ numeric reskins of vanilla jokers, or duplicates of questions already here (Bott
 Order, Non Verisimile, Obelisk, The Costume Fitting and the Ceremonial Dagger were the commonest
 twins). Yield was highest from the big original mods — Entropy, Balatrhodes Island, Highest
 Priestess, Maximus, Lapsem's Mod, Ortalab, The Binding of Jimbo — and near zero from crossover
-packs. The per-mod ledger is `mine_mods/chunkNN.out.tsv`; the keep-list is `mine_mods/new_draft.tsv`.
+packs. The per-mod ledger is `mine_mods/chunkNN.out.tsv`; the keep-list is `mine_mods/new_draft.tsv`. The 5,790 mechanically dropped rows were then sieved for grid words (adjacent, position, order, first, last, swap, stack, face down…): 1,406 survived, were read the same way (`mine_mods/rescan/`), and gave four more questions — the filter was safe.
 
 | Source | Outcome |
 |---|---|

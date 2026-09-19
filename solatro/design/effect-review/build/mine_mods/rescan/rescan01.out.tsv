@@ -1,0 +1,91 @@
+MOD	Handsome Devils	12	2	currency/tag/enhancement joker pack, mostly reskinned buffs; two positional edge-card effects
+C	Handsome Devils	(unnamed)	Rightmost card held in hand converts leftmost card into its copy at end of round	At the end of the level, the spotlit card at one end of a line converts the card at the opposite end into a copy of itself.		skill
+C	Handsome Devils	Soaked and Wet / Go Beyond!	Leftmost card held in hand counts in scoring / Rightmost card held in hand counts in scoring	A skill makes the card at one end of a line count toward a second line's score even though it only completed the first.		skill
+MOD	Hanged Man	9	1	shop/money joker pack; one face-down trigger
+C	Hanged Man	Backside	Face down cards in hand each give +13 Mult; 1 in 7 chance for each card to be drawn face down	Face-down cards on the board give bonus multiplier while face-down; each placed card has a chance to be dealt face-down.		status
+MOD	Hatchet	2	0	tiny shop/money joker pack, no qualifying shapes
+MOD	High Card Mod	1	0	single destroy-and-gain-base joker, no qualifying shape
+MOD	Highest Priestess	19	1	board-composition finisher jokers (specific card sets); one order/gap-based pattern
+C	Highest Priestess	Shiny Five And Dime	A 5 and a 10, with 3 cards in between (no pairs). All special.	A line scores a bonus when it holds two specific ranks separated by exactly N cards of unmatched rank between them.		hazard
+MOD	Hot Potato	13	1	ban-list/shop joker pack; one positional kill-neighbor effect
+C	Hot Potato	Bay Harbour Joker	When Blind is selected, KILL Joker to the right and converts its sell value	When a level starts, a skill destroys the card immediately to its right in the line and converts its worth to points.		skill
+MOD	House of Hearts	1	0	single sell-to-destroy joker, no qualifying shape
+MOD	Hybrid	2	0	suit-scaling jokers, no qualifying shape
+MOD	Hyperfixation	2	0	probability/sell jokers, no qualifying shape
+MOD	I can't think of a good balatro mod name	3	2	small joker pack; a sequence-pattern check and a first/last retrigger target
+C	I can't think of a good balatro mod name	Cheat Code	This Joker gains +30 Chips if the first 4 cards held in hand follow the pattern listed below (Lamp, Oil, Rope, Bombs)	A skill scores bonus points when the first four cards placed in a line match a fixed sequence of types.		skill
+C	I can't think of a good balatro mod name	Marksman Revolver	Retriggers the first scoring card / retriggers the last scoring card	A skill retriggers specifically the first or the last card of a completed line, rather than a random or all cards.		skill
+MOD	In Stars and Time	2	0	face-down mult effect, duplicate of Backside shape
+MOD	Invalidated	2	0	suit-based deck-add jokers, no qualifying shape
+MOD	Isaactro	11	0	purchase-swap and deck-start jokers, no qualifying shape
+MOD	Jade Penguin's Adapt or Toast!	1	1	single joker; discard-pile reshuffle interaction
+C	Jade Penguin's Adapt or Toast!	Honey Hedgehog	Scored and Discarded cards have a 1 in 2 chance to be reshuffled back to your deck	Cards that leave the board into the discard pile have a chance to be reshuffled back into an Entrance stock.		hazard
+MOD	Jambatro	5	1	small joker pack; one positional first-card conversion
+C	Jambatro	Hydraulic Press	First Stone card in hand converted to Glass card	The first card of a given type placed on the board converts into a different type.		type
+MOD	Jank Jonklers	4	0	first-hand and blind-tag jokers, no qualifying shape
+MOD	Jimbo's Moon Vacation	2	0	held-card and sell jokers, no qualifying shape
+MOD	Joker-Paca	7	0	suit-scaling and destroy jokers, no qualifying shape
+MOD	JokerHub	4	1	small joker pack; one last-position trigger
+C	JokerHub	Last Hurrah	If this Joker is in the last position, retrigger last played card used in scoring 1 additional time for every $3 you have	A skill placed in the last cell of a line retriggers the line's final scoring card an extra time.		skill
+MOD	JokeyPony	9	0	held-suit and payout jokers, no qualifying shape
+MOD	Joking Around	1	0	single hand-size joker, no qualifying shape
+MOD	JoyousSpring	2	0	shop-weighting config, no qualifying shape
+MOD	KCVanilla	3	1	small joker pack; one discard-order value-transfer effect
+C	KCVanilla	Scapegoat	If first discard of round has only 1 card, destroy it and add its Chip value to a random card in hand	When a single card leaves to the discard pile, its point value transfers onto a random card still on the board.		skill
+MOD	Kranlax's DLC	21	1	challenge decks and scaling jokers; one deck-order prediction mechanic
+C	Kranlax's DLC	Philosopher	All playing cards held in hand are permanently face-down, requiring draw pile prediction mechanics to identify played cards	A hazard turns all cards face-down and the player must correctly call an Entrance stock's next card before it is revealed.		hazard
+MOD	Lapsem's Boss Rush	1	0	blind-order config, no qualifying shape
+MOD	Lapsem's Mod	28	0	suit-percentage and hand-frequency debuff jokers, no qualifying shape
+MOD	Lobotomy Corporation	8	0	narrative boss-phase blinds, no qualifying shape
+MOD	Lost Edition	8	1	joker/consumable pack; one adjacency-triggered rescore
+C	Lost Edition	Diamond Card	Rescores if played adjacent to another scoring Diamond Card	A card on the board rescores its line whenever it is adjacent to another card of the same type that just scored.		type
+MOD	Lucky Jimbos	1	0	single destroy-for-money joker, no qualifying shape
+MOD	Lucky Rabbit	2	0	destroy-count and sell jokers, no qualifying shape
+MOD	Lynverse	1	0	single destroy-and-mult joker, no qualifying shape
+MOD	M.A.Y.B.E.	2	0	hand-type payout jokers, no qualifying shape
+MOD	Madcap	6	0	deck-size and blind-clown jokers, no qualifying shape
+MOD	Magic: the Jokering	7	0	lowest-rank targeting jokers, no qualifying shape
+MOD	Maniatro	6	0	sell-tracking jokers, no qualifying shape
+MOD	Manifold	6	0	destroy-for-money and copy-last-sold jokers, no qualifying shape
+MOD	Mannlatro	1	0	shop-frequency config, no qualifying shape
+MOD	Marine Foolin'	1	0	single money-payout joker, no qualifying shape
+MOD	Maximus	7	0	held-card scaling jokers, no qualifying shape
+MOD	Mayhem	34	0	large scaling-joker chain pack, no qualifying shape
+MOD	Menthol	7	1	stone/crystal cards and scaling jokers; one positional propagation effect
+C	Menthol	Wildfire	At end of shop, spread left to gain X0.25 Mult	A skill's bonus multiplier propagates one cell to its left neighbor at the end of each level, spreading down the line over time.		skill
+MOD	Mika's Mod	3	0	hand-size and edition jokers, no qualifying shape
+MOD	MiLKY's Bullshit	3	0	pair-count and suit-convert jokers, no qualifying shape
+MOD	Mistigris	4	0	sell/destroy-chain jokers, no qualifying shape
+MOD	MmmmmJokers	2	0	destroy-count money jokers, no qualifying shape
+MOD	Mod of Theseus	2	0	straight-contains and debuff-destroy jokers, no qualifying shape
+MOD	Monarchy	9	0	deck-start and face-card-count jokers, no qualifying shape
+MOD	More Fluff	6	0	hand-size and purchase jokers, no qualifying shape
+MOD	Morne	2	0	sell/destroy-chain and deck-count jokers, no qualifying shape
+MOD	Mossed	2	0	suit-count and final-hand jokers, no qualifying shape
+MOD	My Singing Jokers	6	0	held-suit and infection-chain jokers, no qualifying shape
+MOD	Nacho's Pokermon Dip	11	0	held-card rank/suit scaling evolution jokers, no qualifying shape
+MOD	Neato Jokers	1	0	single probability payout joker, no qualifying shape
+MOD	Neonflame	7	0	rank/suit scaling and destroy-chain jokers, no qualifying shape
+MOD	Nichijoker	6	2	deck-themed joker pack; one placement-order priority effect and one positional-parity alternation
+C	Nichijoker	Sakamoto Deck	Your oldest Joker always scores first and retriggers once	The card placed earliest on the board always scores first in its line and retriggers once.		skill
+C	Nichijoker	Weboshi and Fe-chan Deck	6 Joker slots. Every hand, alternate between your even and odd Joker slots being active	Skills in even-indexed cells and odd-indexed cells of the board alternate being active from one line-completion to the next.		skill
+MOD	Oblivion	3	0	stored-joker and same-rank payout jokers, no qualifying shape
+MOD	Opalstuff	2	0	sticker and cookie-destroy jokers, no qualifying shape
+MOD	Ortalab	35	2	huge consumable/joker pack; one discard-to-board stamp transfer and one line-center target
+C	Ortalab	Collector's Edition	On the first discard of round, destroy a discarded card and give its enhancement, seal or edition to the left-most card in hand	When a single card leaves to the discard pile, its stamp transfers onto the leftmost card in a line.		stamp
+C	Ortalab	Flush Five	Turn 2 left-most cards in hand into the central scored card	A consumable turns cards into a copy of the middle card of a completed line, not just any scoring card.		consumable
+MOD	Osquo's Extensions	6	0	held-card conversion jokers, duplicate of leftmost/rightmost copy shape already captured
+MOD	Pampa Joker Pack	1	0	single destroy-chance payout joker, no qualifying shape
+MOD	Panchroma	1	1	single joker; adjacency-averaging payout
+C	Panchroma	Lavender	Gives $ at end of round equal to the average sell value of the Jokers to the left and right of this Joker	A skill's payout is the average value of its two immediate neighbors in the line.		skill
+MOD	Paperback	47	1	huge card/consumable/joker pack; one positional identity-check trigger
+C	Paperback	Leprechaun	+17 Mult when hand is played if rightmost card held in hand is a 7	A skill checks the identity of the card at a fixed edge position of the line and grants bonus points only if it matches.		skill
+MOD	Paya's Terrible Additions	6	0	discard-cost and slot-debuff jokers, no qualifying shape
+MOD	Perk-O-lating	1	0	single shop-swap joker, no qualifying shape
+MOD	Phanta	25	0	rank/suit payout and blind-selection jokers, duplicate of Leprechaun shape already captured
+MOD	Phoolish PHIGHTING Pack!	1	0	single sell/obtain-tracking joker, no qualifying shape
+MOD	Pi cubed's Jokers	23	0	sticker, deck-start and face-down draw jokers, no qualifying shape
+MOD	Plantain	4	0	pack/shop config jokers, no qualifying shape
+MOD	Pokermon	18	0	Pokemon-themed evolution joker pack, no qualifying shape
+MOD	Pokermon-Maelmc	11	0	evolution-chain retrigger jokers, no qualifying shape
+MOD	PokermonPlus	3	0	evolution/tag jokers, no qualifying shape

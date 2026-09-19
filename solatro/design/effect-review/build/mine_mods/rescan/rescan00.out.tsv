@@ -1,0 +1,92 @@
+C	0 ERROR	Croque Madame	If a Joker is on the right of this at end of round, consume this and gain $ equal to double the sell value of both	A skill checks whether a specific neighbor sits immediately to its right; if so it removes itself and pays points equal to double both cards' banked value.	C10	skill
+C	0 ERROR	Elemental Fuel	Once per ante, use this Joker to have Enhanced cards in hand spread their Enhancement onto adjacent cards	A tap-activated skill spreads a typed card's type onto its orthogonal neighbors on the grid.	C10	skill
+C	Abandonia	Aliasing Joker	Adds an edition to first scoring numbered card of first and final hand; scoring cards with editions give a bonus	A skill stamps the first scoring card of the show's first and last completed line, singling lines out by their order of completion.	A7	skill
+C	Absent Dealer	Hide and Seek	1 in 4 chance to draw cards face down, face down cards held in hand retrigger 2 times	Cards entering the Entrance have a chance to arrive face-down; once placed, a face-down card retriggers twice.	M3	skill
+C	Agarmons	Galarian Mr. Mime / Mr. Rime	Scores leftmost 1 (then 2) card(s) held in hand as if they were played	A skill scores the card(s) nearest one edge of the Entrance as though they had completed a line, without requiring placement first.	C12	skill
+C	Aikoyori's Shenanigans	Weeping Angel	Flips all cards in hand; gains bonus per face down card after flipping	A skill flips every card waiting in the Entrance face-down; each face-down card left there afterward is worth points.	M3	skill
+C	Ascēnsiō	Sum Constituto	If played hand contains a Straight, gain Mult and convert cards held in hand to the Rank of each card in order of played hand	Completing a straight overwrites the waiting cards' ranks to match the ranks of the line that just completed, read in placement order.	G5	rank
+C	Ascēnsiō	Magnum Opus	Retrigger leftmost Joker by number of Jokers between it and this Joker inclusively	Retriggers the skill card at one edge of the row a number of times equal to how many cards sit between the two of them.	C12	skill
+C	Azazel's Jokers	Dartboard	Retriggers middle played card 2 additional times, can only activate on odd hand sizes	Retriggers the center card of a completed line, but only when that line has an odd number of cards.	C13	skill
+C	Baladrone	(unnamed)	If poker hand is a Three of a Kind, destroys every other card held in hand	Completing a three-of-a-kind removes every alternate card waiting in the Entrance, skipping one between each removal.	C13	skill
+C	Balatrhodes Island	Tomimi Sargon Caster	Gives +Chips while in the left half of all owned Joker Slots and +Mult while in the right half (middle counts as left)	A skill's bonus depends on which half of the row of skill slots it currently occupies.	C13	skill
+C	Balatrhodes Island	Fiametta Laterano Sniper	The card in the center of scored hand gives an AoE Mult bonus	The card at the center of a completed line grants an area bonus that spreads across the rest of the line.	C11	skill
+C	Balatro Goes Kino	Saruman	Cast a spell based on rank of leftmost card in hand and suit of adjacent card	A skill reads the rank of the Entrance's edge card together with the suit of the card beside it, and resolves a different effect per combination.	C10	skill
+C	Balatro Goes Kino	They Live	Abduct every card discarded on your first discard; earn points for each card this joker has abducted	The first time a card leaves the board into the discard pile this show, a skill claims every card in that discard batch and banks points per card held.	F10	skill
+C	Bloodstone	Super Charged Blueprint	Retrigger up to 3 jokers in-between this joker and "Electric Box" 3 times, divided as equally as possible	Retriggers whichever skill cards sit in the row-span between this card and a named partner card, splitting the retriggers across them.	C12	skill
+C	Bloonlatro	Volcano	Destroy 1 selected card in hand. Adjacent cards become Meteor cards.	Removing a chosen card from the board transforms the cards orthogonally adjacent to its former cell into a hazardous type.	C10	type
+C	Buffoonery	Memory Card	Memorizes the first scored card each round up to 8 times; sell to convert a card in hand into each memorized card, in order	A skill banks the first scoring card from each of several past rounds in sequence, then on activation overwrites a waiting card into each banked card in the order recorded.	A9	skill
+C	Celeste Card Collection	Purple Spinner	When a card with a Purple Seal is held in hand at end of round, 1 in 2 chance to add a Purple Seal to each adjacent card in hand	A stamped card has a chance to copy its stamp onto its orthogonal neighbors waiting in the Entrance.	I11	stamp
+C	Cruel Blinds	The Mist	3 in 4 cards are drawn clouded: face down in hand and in play, hiding their chips, mult and triggers	A hazard makes most cards arrive face-down and keep their points, multiplier and triggers hidden until they are placed.	M3	hazard
+C	Dream BBQ	(unnamed)	1 in 4 cards are drawn face down; each face down card held in hand grants a Mult bonus	Cards entering the Entrance have a chance to be face-down, and each face-down card waiting there grants a multiplier.	M3	status
+C	Entropy	Stillicidium	Transform Jokers to the right and all consumables into the card that precedes them in the collection at the end of the shop	At a fixed point each show, every skill card to one side of this card is overwritten to whatever card precedes it in the game's master card list.	F4	skill
+C	Entropy	Nyx, Lord of Void	When Blind is selected create 1 Negative Temporary Inverted Joker for every other non-Inverted Joker	At the start of a show, a temporary inverted copy is created for every alternate normal skill card, skipping one between each copy.	C13	skill
+C	Final Mix	(unnamed)	First and Last cards held in hand count in scoring	The first and last cards waiting in the Entrance are scored alongside whatever line just completed, without being placed.	C12	rank
+C	Forager Nonessentials	Girlfriend	Scores the leftmost and rightmost cards held in hand alongside scoring hand	The cards at both ends of the Entrance are scored alongside whatever line just completed, without being placed.	C12	rank
+C	Furlatro	Sourstone :3	When this card is in the leftmost slot, gain points; when in the rightmost slot, spend points to score Mult instead	A skill card's ability changes entirely depending on whether it occupies the leftmost or rightmost skill slot.	C13	skill
+C	Grab Bag	Floppy Disk	Sell this Joker to duplicate the last 3 played cards and add them to deck	Activating a skill duplicates whichever three cards most recently completed lines, in the order they scored, and returns the copies to the deck.	F1	skill
+MOD	!BooBooBalatro!	3	0	small mod, money/destroy reskins only
+MOD	0 ERROR	9	2	joker set with position/adjacency triggers alongside money jokers
+MOD	7 Deadly Decks	1	0	single hand-destroy joker, no grid shape
+MOD	Abandonia	6	1	joker set, mostly money/hand-held reskins
+MOD	Absent Dealer	4	1	small joker/deck set incl. face-down draw effect
+MOD	Agarmons	10	1	Pokemon-themed joker set, mostly suit/deck-percent reskins
+MOD	Aikoyori's Shenanigans	16	1	large joker/tag set incl. a face-down flip effect; some rows are meta-config, not mechanics
+MOD	Airtokers	3	0	small joker set, chip-math reskins
+MOD	All in Jest	57	0	very large joker set, almost entirely sell/destroy/money reskins
+MOD	Archipelago Randomizer	2	0	cosmetic voucher variants tied to an external randomizer, no mechanics here
+MOD	ArtBox	13	0	joker/card set, sell-value and destroy reskins
+MOD	Ascēnsiō	28	2	large "Latin joker" set built on hand-type scaling, incl. two order/position effects
+MOD	Azazel's Jokers	10	1	joker set incl. a middle-card/parity retrigger
+MOD	Baladrone	3	1	small destroy-themed joker set incl. an alternating-card destroy effect
+MOD	Balatrhodes Island	16	2	Arknights-themed joker set incl. slot-half and hand-center effects
+MOD	Balatro Goes Kino	39	2	movie-themed joker set incl. adjacency-read and discard-pile effects
+MOD	Balatro Hevven	1	0	single sell-timer joker
+MOD	Balatro Waves	3	0	small joker set, money/destroy reskins
+MOD	Balatro+	6	0	small joker/tag set, money reskins
+MOD	Balatro: 1999	1	0	single consumable-targeting joker, no grid shape
+MOD	Balatro: Blindside	3	0	tag set, money/retrigger reskins
+MOD	Balatro: Community Update	3	0	small joker set, retrigger/money reskins
+MOD	Balatrostuck	16	0	Homestuck-themed joker/card set, mostly money and destroy reskins
+MOD	Battle for Jimbo	3	0	small joker set, money reskins
+MOD	Beelatro	1	0	single sell-effect joker
+MOD	Berries and Honey	16	0	food-themed joker set, suit-held-in-hand money/mult reskins
+MOD	Betmma Mods	9	0	shop/slot-config mod, mostly economy rules
+MOD	BFDI	5	0	small joker set, destroy/money reskins
+MOD	Bloodstone	1	1	single joker with an in-between-positions retrigger effect
+MOD	Bloonlatro	19	1	Bloons-themed joker set incl. an adjacency-transform effect
+MOD	Brook	2	0	two small utility jokers, no grid shape
+MOD	Buffoonery	4	1	joker set incl. an ordered-memory banking effect
+MOD	Bunco	7	0	small joker/stake set, mostly money and tag reskins
+MOD	Bundles Of Fun	11	0	joker/card set, held-in-hand suit money reskins
+MOD	CardMerge	2	0	two small suit-merge jokers, no new shape
+MOD	Cardsauce	19	0	crossover joker/tag set, money and reroll reskins
+MOD	Celeste Card Collection	9	1	joker set incl. an adjacency stamp-spread effect
+MOD	Ceres	6	0	small joker set, money/retrigger reskins
+MOD	Chakra Collection	1	0	single copy-effect consumable joker
+MOD	Cheesy Jokers	4	0	small joker set, money reskins
+MOD	Chimes	4	0	small joker set, held-in-hand suit reskins
+MOD	ColorSplashed	14	0	enhancement/edition/seal "quantum" reskin set
+MOD	Cosmos	2	0	two small jokers, sell-value reskins
+MOD	Cruel Blinds	1	1	single boss blind adding a face-down draw hazard
+MOD	Dream BBQ	3	1	joker/blind set incl. a face-down draw mult effect
+MOD	Entropy	37	2	large tarot/joker set incl. deck-order transform and alternating-copy effects
+MOD	Extra Credit	3	0	small joker/consumable set, money/skip reskins
+MOD	Fabula	2	0	two deck variants, deck-wide randomize/level reskins
+MOD	Familiar	8	0	joker/deck set, hand-type money reskins
+MOD	Feli's Additions Gallery	1	0	single joker, adjacent-destroy money reskin
+MOD	Final Mix	8	1	Kingdom Hearts-themed joker set incl. a first/last-scoring effect
+MOD	Finity	3	0	small joker set, hand-size/mult reskins
+MOD	Fish and Chips	7	0	fishing-themed joker set, money reskins
+MOD	FLYNNSANITUS	2	0	small joker set, ante/tag reskins
+MOD	Foolish Dreams	7	0	joker/deck set, money reskins
+MOD	Forager Nonessentials	11	1	joker set incl. a leftmost/rightmost scoring effect
+MOD	Fortlatro	2	0	two small destroy-themed jokers
+MOD	Furlatro	11	1	fan-character joker set incl. a slot-position-dependent ability
+MOD	Fusion Cookbook	6	0	fused-enhancement card set, held-in-hand chip/mult/money reskins
+MOD	GARBSHIT	7	0	joker/deck set, money and tag reskins
+MOD	Gem's Pokermon	2	0	two Pokemon-themed jokers, class-count money reskins
+MOD	Gemstones	2	0	two small gem jokers, no new shape
+MOD	Genshin HSR Jokers	1	0	single slot-position mult joker, plain reskin
+MOD	Ghostposting	5	0	joker set incl. a slot-machine minigame, money reskins otherwise
+MOD	Grab Bag	11	1	joker set incl. an ordered last-N-played duplication effect
+MOD	Grim	1	0	single card row visible in batch, plain destroy-chance reskin

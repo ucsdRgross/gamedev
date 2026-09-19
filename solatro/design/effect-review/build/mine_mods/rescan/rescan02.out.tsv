@@ -1,0 +1,71 @@
+C	POLTERWORX	Bishop of Kosmos	All cards currently in hand also contribute to scoring (Cards in played hand score in order first, then hand cards in order)	After a line completes, every other spotlit card also scores, resolving line cards first then the rest in their placement order.	H8	skill
+C	POLTERWORX	The Slayer of Bishops	All Jokers to the left of this Joker become Eternal; all Jokers to the right of this Joker lose Eternal	A skill card splits the board by placement order relative to itself, granting a status to every card placed before it and stripping it from every card placed after.	C12	skill
+MOD	POLTERWORX	16	2	Balatro mod wiki community-edition joker pack; most effects are money/hand/shop reskins of covered classes.
+MOD	Potassium	2	0	Small joker pack, both rows are hand-size/destroy-on-play reskins.
+MOD	Prism	4	0	Small joker/consumable pack, no non-covered grid or order shapes.
+MOD	Punchline	3	0	Small joker pack, hand-size and highest-card conditions only.
+MOD	Qualatro	9	0	Meme joker pack; jokes and shop/tag reskins, no grid or order shapes.
+MOD	Quilombo	1	0	Single joker, hand-level/money reskin.
+MOD	RainyDays	8	0	Held-hand and drawn-count reskins, no board-position or order shapes.
+MOD	RcBalatro	1	0	Single joker, rank-payout reskin.
+MOD	Reddit Bonanza	3	0	History-tracking payout jokers, no spatial or order shape.
+MOD	Reverie	1	0	Single sleeve, stacking/shop reskin only.
+MOD	Revo's Vault	10	0	Leftmost-Joker gambling reskins; positional targeting only, no new shape.
+C	Rift-Raft	Me'hon	Fills all empty slots with copies of owned cards at start of round	When a show starts, every empty grid cell is filled with a copy of a card already on the board.	G1	skill
+MOD	Rift-Raft	1	1	Single joker, its empty-slot-fill-at-round-start effect is the only candidate.
+C	Rofflatro	Kali's Banhammer	Sell this joker to destroy all adjacent Jokers and create a Spectral card for each Joker destroyed	Tapping a skill card destroys every card adjacent to it on the grid and creates one consumable per card destroyed this way.	C10	skill
+MOD	Rofflatro	6	1	Small joker pack, mostly money/voucher reskins besides the adjacency-destroy card.
+MOD	Rolatro	9	0	Roblox-themed joker pack, sell/tag/hand-size reskins only.
+MOD	Rolatro: Catalog Expansion Pack	2	0	Two cards, seal and identity-conversion reskins.
+MOD	Royal Family	1	0	Single joker, money-on-deck-add reskin.
+C	Royal Gallery	Pastel Card	+$1 if played adjacent to another enhanced card	A card in a completed line scores extra when it sits next to another modified card within that line.	C10	suit
+MOD	Royal Gallery	7	1	Small joker pack, held-hand and money conditions besides the adjacency card.
+MOD	Sarcpot	2	0	Two jokers, sell-triggered transform/consumable reskins.
+MOD	Sculio	4	0	Small joker pack, booster/money/sell-count reskins.
+MOD	SDM 0's Stuff	5	0	Small joker pack, money and destroyed-count reskins.
+MOD	Severed	3	0	Small joker pack, sell/suit-money reskins.
+MOD	Shenanigans's Decks	5	0	Deck/sleeve pack, shop and destroy-chance reskins.
+MOD	Shimmerberry	31	0	Challenge-deck tutorial pack; starting-condition and economy reskins, no grid/order shapes.
+MOD	Showdown	18	0	Large content pack; money, sell-value and rule-toggle reskins, no unlisted grid/order shape.
+MOD	Sigil	1	0	Single deck, starting-suit reskin.
+MOD	Slugcat	4	0	Crossover pack, mult/money and destroy-chance reskins.
+C	Smallpox	Antique Chair	This Joker gains X0.5 Mult when swapped with a card in the shop; gains $1 of buy value every SWAP	A skill card gains a multiplier each time it is swapped with another card, wherever the swap happens.	E2	skill
+MOD	Smallpox	8	1	Joker pack, mostly sell/destroy-neighbor reskins besides the swap-triggered card.
+MOD	Snow's Mods	2	0	Two jokers, sell-value and consumable-slot reskins.
+MOD	SpicyJokers	1	0	Single joker, sell-triggered status reskin.
+MOD	StarCoMod	3	0	Small joker pack; the 20-entry random table is money/status reskins, no new grid shape.
+MOD	Strange Pencil	4	0	Small joker/deck pack, reroll-cost and sell-value reskins.
+MOD	Tesseract	1	0	Single joker, pair-money reskin.
+MOD	The Binding of Jimbo	6	0	Small pack, stage/sticker and slot reskins.
+MOD	The Cracker Pack	9	0	Vanilla-restriction joker pack, shop/booster reskins.
+MOD	The Dread Jokers	3	0	Small joker pack, sell/destroy-neighbor money reskins.
+MOD	The Latro	1	0	Single joker, rank-count destroy reskin.
+MOD	The Toxic Stall	8	0	Pokemon-themed pack; held-hand rank-adjacency and sell reskins, low-signal variants of covered classes.
+MOD	Themed Jokers	1	0	Single joker, ace-mult/sell reskin.
+MOD	TOGA's Stuff	12	0	Large joker pack, money/consumable-cost reskins, no unlisted grid/order shape.
+MOD	Trifolium	3	0	Small pack, suit-convert and discard-money reskins.
+MOD	Twitch Blinds	1	0	Single chat-integration blind, money reskin.
+MOD	Undertale/Deltarune	14	0	Crossover joker pack, suit-held-hand money reskins.
+MOD	UNIK's mod	14	0	Challenge-deck pack, hand-size/slot restriction reskins.
+MOD	UnStable	10	0	Small joker pack, enhancement/money reskins.
+MOD	UP THE ANTE!	4	0	Small joker pack, sell-neighbor money reskins.
+MOD	VallKarri	3	0	Small joker pack, slot/rarity-chance reskins.
+C	Vanilla Redux	Red Card	On the last discard of the round, draw 1 card from your deck to form your best-scoring poker hand	On the last card removed from a grid this show, pull one card from the stock to complete the best available line.	F2	skill
+MOD	Vanilla Redux	10	1	Vanilla-joker rebalance pack; mostly numeric-tweak reskins besides the last-discard deck search.
+MOD	Venetian	1	0	Single joker, consumable-cleanse reskin.
+MOD	Victin's Collection	2	0	Two jokers, hand-size/reroll-money reskins.
+MOD	Visibility	9	0	Small joker pack, retrigger/money/status reskins.
+MOD	VividStasisAndOtherRhythmGames	6	0	Rhythm-game crossover pack, sell-value and money reskins.
+MOD	VtuberID Jokers	1	0	Single joker, held-rank mult reskin.
+MOD	Warp Zone Mod	11	0	Small joker pack, destroy-count and sticker reskins.
+MOD	Warp Zone!	3	0	Small joker pack, tarot-cycling and consumable-money reskins.
+MOD	Willatro	1	0	Single joker, rank-pair destroy reskin.
+MOD	WorldsCollide	1	0	Single joker, discard-chance money reskin.
+C	Wormhole	Eclipse	Use Sun, Moon, Earth for a Solar Eclipse; Sun, Earth, Moon for a Lunar Eclipse (must be in order); each eclipse then reads discard/hand parity to recolor the board	A skill card reads the ORDER three specific consumables were used in to switch between two modes, each of which recolors the whole grid based on placement parity.	E3	skill
+C	Wormhole	Goldielocks	Retriggers middle card in hand 2 times, or retriggers both middle cards in hand 1 time each	A skill card retriggers whichever card sits in the middle position of a line (or both middle cards on an even-length line).	D5	skill
+MOD	Wormhole	26	2	Large crossover joker pack; mostly sell/destroy/money reskins besides the ordered-trigger and middle-position cards.
+MOD	XDmod	1	0	Single toggle, edition-reskin joker.
+MOD	Yahimod	3	0	Small joker pack, order-by-name-length and sell-money reskins.
+MOD	Yet Another Reversed Tarot mod	2	0	Two reversed tarots, selection/destroy reskins.
+MOD	ZBSMod	4	0	Small joker pack, rarity/sell-value money reskins.
+MOD	ÞeAutumnCircus	13	0	Large joker pack, held-hand suit/rank-match and money reskins.

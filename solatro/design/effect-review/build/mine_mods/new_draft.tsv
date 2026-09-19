@@ -216,3 +216,7 @@
 #ZM-Kinship	The Kinship Rule	E8	hazard	a card may only be placed adjacent to a card sharing its suit or rank
 #DG03	The Overflow	V3	rank	a rank pushed past King (or below Ace) becomes wild instead of clamping
 #DG13	The Dead Heat	A13	skill	pays when two lines this show score exactly the same
+#R11	The Scapegoat	F10	skill	when a card leaves the board its rank is added to a random card still on it
+#R14	The Wildfire	H3	skill	this card's bonus copies onto its left neighbour each show, spreading along the row
+#R16	The Checkerboard	C13	hazard	cards on even cells are live for one line completion, odd cells for the next
+#S05+#S23+#S24	The Wings	F9	skill	the cards in the leftmost and rightmost Entrance slots score alongside every line that completes
