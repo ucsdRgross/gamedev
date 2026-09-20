@@ -1,31 +1,29 @@
 class_name CardEffectApi
 extends RefCounted
 ## THE ONE SEAM BETWEEN CARD EFFECTS AND THE GAME.
-##
-## Every card modifier implements its effect through this object and NEVER touches `Game` or
-## `GameData` directly. One instance per `Game`, created by that game and handed to modifiers
-## as `CardModifier.api`.
-##
-## ⚠ **READS GO THROUGH HERE TOO, not just writes.** The reason is resilience rather than
-## purity: when a property moves or disappears from `Game`/`GameData`, this layer still answers
-## — a wrapper returns a sensible empty value instead of every card breaking at once. That is
-## why the accessors below guard rather than assume.
-##
-## ⚠ **Effects modify the DATA layer. The visual layer is optional on top of it.** There is
-## deliberately no `view` accessor here: an effect that cannot run headless is wrong, and the
-## only code that legitimately reaches the view is the card's own visual node, which is not a
-## modifier and does not use this class.
-##
-## The surface is exactly what card effects actually use, and grows when an effect needs more —
-## nothing here is speculative.
+
+#Every card modifier implements its effect through this object and NEVER touches Game or GameData
+#directly. One instance per Game, created by that game and handed to modifiers as CardModifier.api.
+
+#⚠ READS GO THROUGH HERE TOO, not just writes. The reason is resilience rather than purity: when
+#a property moves or disappears from Game or GameData, this layer still answers with a sensible
+#empty value instead of every card breaking at once, which is why the accessors below guard.
+
+#⚠ Effects modify the DATA layer and the visual layer is optional on top of it. There is
+#deliberately no `view` accessor: an effect that cannot run headless is wrong, and the only code
+#that legitimately reaches the view is the card's own visual node, which is not a modifier.
+
+#The surface is exactly what card effects actually use, and grows when an effect needs more.
 
 var _game : Game
 
 func _init(game: Game) -> void:
 	_game = game
 
-## Is there a live game behind this layer at all? Preview contexts (deck viewers, boosters)
-## have modifiers with no game, and every accessor below must survive that.
+#Preview contexts - deck viewers, boosters - have modifiers with no game, and every accessor below
+#must survive that.
+
+## Is there a live game behind this layer at all?
 func is_live() -> bool:
 	return _game != null and _game.state != null
 
@@ -85,6 +83,19 @@ func card_at(coord: BoardCoord) -> CardData:
 func has_cell(coord: BoardCoord) -> bool:
 	return _game.state.has_cell(coord) if is_live() else false
 
+## The whole board, for the board-wide statics that take a `GameData` rather than a slice of one.
+func board_state() -> GameData:
+	return _game.state if is_live() else null
+
+## The seed this show's plan is dealt from -- the run's own seed and the node played, never 0.
+func plan_seed_for_node() -> int:
+	var material := hash(Vector2i(Main.save_info.world_seed, Main.save_info.current_node_id))
+	return material if material != 0 else 1
+
+## A cell's own zone card, mark and all -- null when the coordinate names no cell.
+func mark_at(coord: BoardCoord) -> CardData:
+	return _game.state.cell_type_at(coord) if is_live() else null
+
 # ==============================================================================
 # BOARD QUERIES — geometry and legality, all pure reads
 # ==============================================================================
@@ -101,9 +112,9 @@ func get_zone_from_vec3(vec3: Vector3i) -> Array[ArrayCardData]:
 func is_data_topmost(data: CardData) -> bool:
 	return _game.is_data_topmost(data) if is_live() else false
 
-## The legality query behind every placement: does any modifier accept `stack` landing on
-## `target`? Same dispatch `try_place` uses, so a legality SCAN reuses it instead of a second
-## "is this legal" walk.
+#The same dispatch try_place uses, so a legality SCAN reuses it instead of a second walk.
+
+## The legality query behind every placement: does any modifier accept `stack` landing on `target`?
 func can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return await _game.return_first_data_array_result(&"on_can_place_stack", stack, target)
@@ -128,16 +139,15 @@ func mancala_targets(coord: BoardCoord, count: int, eligible: Callable) -> Array
 func entity_side_for_row(coord: BoardCoord) -> bool:
 	return _game.entity_side_for_row(coord) if is_live() else false
 
-## The scoring section a ROW/COL prop write-back banks into at `coord`. One constructor resolves
-## which zone the card is in, so this does not branch on it.
+#One constructor resolves which zone the card is in, so this does not branch on it.
+
+## The scoring section a ROW or COL prop write-back banks into at `coord`.
 func line_section_at(coord: BoardCoord, kind: ScoringSection.LineKind) -> ScoringSection:
 	if not is_live(): return ScoringSection.new()
 	return ScoringSection.of_line_for(_game.state, coord, kind)
 
-# ==============================================================================
-# MUTATION — the write paths. Every one of these goes through Game/Board so the
-# mutation guidelines (consistent state first, one revision bump after) still hold.
-# ==============================================================================
+#MUTATION: the write paths. Every one of these goes through Game or Board, so the mutation
+#guidelines - consistent state first, one revision bump after - still hold.
 
 ## Move a card to a legacy board coordinate.
 func move_data_to_coord(moving: CardData, dest: Vector3i, cards_in_stack: int = 1,
@@ -159,8 +169,10 @@ func add_total_score(amount: int) -> void:
 	if not is_live(): return
 	_game.state.total_score += amount
 
-## Bump the board revision. ⚠ Only after the state is fully consistent again — the mutation
-## guidelines are not suspended by going through this layer.
+#⚠ Only after the state is fully consistent again: the mutation guidelines are not suspended by
+#going through this layer.
+
+## Bump the board revision.
 func bump_revision() -> void:
 	if not is_live(): return
 	_game.state.revision += 1
@@ -205,7 +217,7 @@ func remove_column(zone_cols: Array[ArrayCardData], zone_types: Array[CardData],
 func _rebalance_if_entrance(zone_cols: Array[ArrayCardData]) -> void:
 	if is_same(zone_cols, _game.state.upper_zone): _game.rebalance_stocks()
 
-## Append one grid to the board.
+## Append one grid to the board; `Board.add_grid` deals its marks when the show already has a plan.
 func add_grid(grid: GridData) -> void:
 	if not is_live(): return
 	Board.add_grid(_game.state, grid)
@@ -215,23 +227,88 @@ func remove_grid(index: int) -> Array[CardData]:
 	if not is_live(): return ([] as Array[CardData])
 	return Board.remove_grid(_game.state, index)
 
+## Redraw one cell's mark from the deck. The cell must be marked, on a board with a plan.
+func reroll_mark(coord: BoardCoord) -> void:
+	if not is_live(): return
+	var mark := mark_at(coord)
+	assert(mark != null, "reroll_mark needs a coordinate that names a cell")
+	var marks : Array[CardData] = [mark]
+	_redraw_marks(marks)
+
+#`source` may print a card the deck never had -- that is what a level poisoning or blessing a board
+#is -- so the mark is recorded as granted and the deck-membership invariant exempts it.
+## Put a mark of `source` on a cell, dealt by a level or a blind rather than by the deck.
+func grant_mark(coord: BoardCoord, source: CardData) -> void:
+	if not is_live(): return
+	var mark := mark_at(coord)
+	assert(mark != null, "grant_mark needs a coordinate that names a cell")
+	BoardPlan.write_mark(mark, source, true)
+	bump_revision()
+
+#`write_mark` is the one definition of copying a mark, so each cell is written from a duplicate of
+#the other -- which relinks the copied modifiers -- and each granted is read before either write.
+## Exchange two cells' marks. Both cells must be marked.
+func swap_marks(a: BoardCoord, b: BoardCoord) -> void:
+	if not is_live(): return
+	var mark_a := mark_at(a)
+	var mark_b := mark_at(b)
+	assert(mark_a != null and mark_b != null,
+			"swap_marks needs two coordinates that name cells")
+	assert(BoardPlan.is_marked(mark_a) and BoardPlan.is_marked(mark_b),
+			"swap_marks exchanges two marked cells")
+	var was_a : CardData = mark_a.duplicate()
+	var was_b : CardData = mark_b.duplicate()
+	var granted_a := (mark_a.type as TypeGridCell).granted
+	var granted_b := (mark_b.type as TypeGridCell).granted
+	BoardPlan.write_mark(mark_a, was_b, granted_b)
+	BoardPlan.write_mark(mark_b, was_a, granted_a)
+	bump_revision()
+
+## Re-deal every cell of one row, column or diagonal, the covered cells included.
+func reroll_line(section: ScoringSection) -> void:
+	if not is_live(): return
+	var marks : Array[CardData] = []
+	for cell : Vector3i in section.line_cells:
+		var mark := mark_at(BoardCoord.new(section.grid, cell.x, cell.y, cell.z))
+		assert(mark != null, "reroll_line needs a section whose cells the board has")
+		marks.append(mark)
+	_redraw_marks(marks)
+
+## Re-deal every cell of one grid, the covered cells included.
+func reroll_grid(grid: int) -> void:
+	if not is_live(): return
+	assert(grid >= 0 and grid < _game.state.grids.size(),
+			"reroll_grid needs a grid the board has")
+	_redraw_marks(_game.state.grids[grid].cell_types)
+
+#THE write path all three rerolls share. The batch is the deal run over its cells, the ones still
+#waiting counted as bare, so the deck cycles instead of handing each cleared face to the next cell.
+#ONE bump after it -- a bump per cell rebuilds the whole board once per cell for one change.
+func _redraw_marks(marks: Array[CardData]) -> void:
+	assert(_game.state.plan_seed != 0, "a reroll redraws from the plan the show was dealt")
+	for mark : CardData in marks:
+		assert(BoardPlan.is_marked(mark), "a reroll redraws a marked cell")
+	if Board.redraw_marks(_game.state, marks): bump_revision()
+
 ## The rules deck, left to right -- every persistent meta/creator card.
 func rules_deck() -> Array[CardData]:
 	return _game.state.rules_deck if is_live() else ([] as Array[CardData])
 
-## Appends a persistent rules-deck card (a meta card creating another rules card). Rules cards
-## are always spotlit (`CardModifier.is_spotlit`), so the next spotlight sweep fires its
-## `on_spotlight` -- the caller does not call it directly.
+#Rules cards are always spotlit, so the next spotlight sweep fires its on_spotlight and the caller
+#does not call it directly.
+
+## Appends a persistent rules-deck card: a meta card creating another rules card.
 func add_rules_card(card: CardData) -> void:
 	if not is_live(): return
 	card.stage = CardData.Stage.RULES
 	_game.state.rules_deck.append(card)
 	_game.state.revision += 1
 
-## Removes a persistent rules-deck card. ⚠ The card leaves the rules deck immediately, so the
-## normal spotlight sweep can no longer see the edge to fire its `on_unspotlight` -- the caller
-## must run that itself (via `on_mod_triggered` or a direct call) BEFORE removing, while the
-## card is still spotlit.
+#⚠ The card leaves the rules deck immediately, so the normal spotlight sweep can no longer see
+#the edge to fire its on_unspotlight. The caller must run that itself BEFORE removing, while the
+#card is still spotlit.
+
+## Removes a persistent rules-deck card.
 func remove_rules_card(card: CardData) -> void:
 	if not is_live(): return
 	_game.state.rules_deck.erase(card)
@@ -289,8 +366,9 @@ func act_cancelled() -> bool:
 # PACING
 # ==============================================================================
 
-## The per-step pacing delay. Animation lengths are FRACTIONS of this, never wall-clock
-## literals — and headless it compresses to nothing, which is what keeps effects runnable
-## with no view attached.
+#Animation lengths are FRACTIONS of this, never wall-clock literals, and headless it compresses to
+#nothing, which is what keeps effects runnable with no view attached.
+
+## The per-step pacing delay.
 func get_delay() -> float:
 	return _game.get_delay() if is_live() else 0.0

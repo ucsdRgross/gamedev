@@ -1,19 +1,16 @@
 class_name PropBankColScore
 extends PropModifier
-## Firework effect: when the rocket finishes its column rise (or immediately, if it started at
-## the top with an empty route), bank `points` into its column's gutter. Cards it rises past
-## still hear on_prop_passed (a free extension point) but are not scored by this mod.
+## Firework effect: the finished rocket -- at once if its rise route was empty -- banks `points` into its own column's score bucket.
 
-var col : int
+## Where the rocket launched from -- the ONE naming of its column, so nothing re-derives it.
+var origin : BoardCoord
 var points : int
 
-func _init(c := 0, p := 1) -> void:
-	col = c
+func _init(v: BoardCoord, p := 1) -> void:
+	origin = v
 	points = p
 
 func on_finish(_prop: PropData, g: Game) -> void:
-	g.register_combo(combo_key())   # §15a: prop score effects self-register at their seam
-	var section := ScoringSection.new()
-	section.kind = ScoringSection.LineKind.COL
-	section.index = col
-	g.add_line_score(section, points)
+	g.register_combo(combo_key())
+	g.add_line_score(ScoringSection.of_line_for(g.state, origin, ScoringSection.LineKind.COL),
+			points)

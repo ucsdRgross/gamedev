@@ -1,0 +1,1618 @@
+extends TestSuite
+# res://Tests/Engine/test_mark_match.gd
+
+#A mark is the cell's own zone card wearing a copied face, so the engine must never treat what it
+#copied as a card in play: a mark is never spotlit and it blocks nothing. CATEGORY MAP: BEHAVIOR --
+#a copied skill answering the board's broadcasts is an effect the player would watch fire.
+func suite_name() -> String:
+	return "MARK MATCH"
+
+## The answer a card printing both the mark's rank and its suit gives.
+const RANK_AND_SUIT : int = MarkMatch.Property.RANK | MarkMatch.Property.SUIT
+
+## A row of grid 0 left empty, so a section built over it collects no card of its own.
+const EMPTY_ROW : int = 4
+
+func _ready() -> void:
+	TestLog.line("============ MARK MATCH TEST PASS ============")
+	behavior_section("EACH PROPERTY MATCHES ON ITS OWN")
+	await test_each_property_is_detected_independently()
+	await test_an_absent_print_agrees_with_nothing()
+	await test_a_talent_match_needs_the_same_script()
+	await test_a_hat_match_needs_the_same_script()
+	behavior_section("THE MATCH IS A PROPERTY OF THE LIVE BOARD")
+	await test_a_repainted_suit_changes_the_match_at_once()
+	await test_every_card_in_a_stack_is_tested()
+	await test_an_effect_places_a_card_that_matches_the_same()
+	behavior_section("A MARK OUTLIVES WHAT LANDS ON IT")
+	await test_a_mark_survives_a_card_that_matched_nothing()
+	await test_a_mark_matches_on_every_landing()
+	behavior_section("WHAT A MATCH PAYS")
+	test_the_rank_term_reads_the_rank_and_its_knobs()
+	test_the_mult_terms_sum_their_shares()
+	behavior_section("WHAT A LINE BANKS")
+	await test_a_rank_match_is_added_to_the_line()
+	await test_a_line_with_no_mult_is_never_multiplied_to_nothing()
+	await test_mark_effects_sum_into_one_multiplier()
+	await test_a_marks_mult_is_a_question_the_composition_asks()
+	await test_a_stacked_marks_share_is_asked_once_for_the_line()
+	await test_a_cover_is_announced_and_a_match_adds_its_own_hook()
+	await test_a_marks_copied_skill_is_dispatched_the_mark_hooks()
+	await test_a_flush_keeps_its_own_score()
+	await test_a_match_outside_the_meld_pays_nothing()
+	await test_a_card_pays_into_every_line_it_completes()
+	await test_a_match_registers_no_combo_class()
+	behavior_section("A MARK'S OWN EFFECT FIRES, AND IT COUNTS")
+	await test_a_mark_fires_the_moment_a_card_lands_on_it()
+	await test_the_hit_reaches_the_mark_and_the_card()
+	await test_a_mark_effect_fires_on_every_re_score()
+	await test_a_mark_firing_charges_the_cap_and_is_bounded()
+	await test_a_nested_re_score_leaves_the_outer_line_whole()
+	await test_a_mark_firing_registers_its_copied_combo_class()
+	await test_a_nested_composition_registers_only_the_mark()
+	behavior_section("UNDO AND THE PENDING-ACTION REPLAY")
+	await test_undo_restores_the_mark_and_unbanks_the_bonus()
+	await test_a_replayed_placement_reproduces_the_marked_board()
+	behavior_section("A MATCHED SUIT FIRES ONCE PER MELD MEMBERSHIP")
+	await test_a_matched_suit_fires_once_per_meld_membership()
+	behavior_section("CONTENT MAY LOOSEN THE MATCH")
+	await test_a_leniency_rule_loosens_the_match()
+	await test_a_leniency_rule_rescues_an_absent_print()
+	await test_a_rescued_rankless_card_banks_the_flat_fallback()
+	await test_the_leniency_hooks_are_asked_before_the_prints_are_read()
+	behavior_section("A MARK IS NEVER SPOTLIT")
+	await test_a_mark_answers_no_broadcast()
+	await test_a_marks_copied_stamp_answers_no_broadcast()
+	behavior_section("A MARK ANSWERS NO DISPATCH WALK")
+	await test_a_mark_answers_no_dispatch_walk()
+	behavior_section("A MARK BLOCKS NOTHING")
+	test_a_mark_blocks_nothing()
+	finish()
+
+
+# ==============================================================================
+# FIXTURES
+# ==============================================================================
+
+## A bare Game over one empty 5x5 grid, never added to the tree and with `view` left null.
+func make_game() -> Game:
+	var g := Game.new()
+	g.state = TestGridFixtures.build_fix_grid_1()
+	CardEnvironment.CURRENT = g
+	return g
+
+func free_game(g: Game) -> void:
+	CardEnvironment.CURRENT = null
+	g.free()
+
+## A playing card built the way a deck builds one -- a type, a suit and a rank -- carrying `skill`.
+func play_card(rank: int, skill: CardModifierSkill) -> CardData:
+	var card := CardData.new().with_type(TypePaper.new()) \
+			.with_suit(PipSuitHoop.new()) \
+			.with_rank(PipRankNumeral.new().with_value(float(rank))) \
+			.with_skill(skill)
+	card.stage = CardData.Stage.PLAY
+	return card
+
+#PLAN_DECK's card of `suit` and `rank`, staged as though in play. A FRESH instance per call,
+#because a card sits in one cell at a time and several of these rows fill several cells.
+func plan_card(suit: GDScript, rank: int) -> CardData:
+	var card : CardData = TestDecks.plan_deck()[PipSuit.STANDARD.find(suit) * 5 + rank - 1]
+	assert(card.rank.value == float(rank) and is_same(card.suit.get_script(), suit),
+			"PLAN_DECK is the four standard suits in order, ranks 1 to 5")
+	card.stage = CardData.Stage.PLAY
+	return card
+
+## Grid 0's cell (x, y) as the coordinate a match is asked about; a cell names no height.
+func cell(x: int, y: int) -> BoardCoord:
+	return BoardCoord.new(0, x, y, 0)
+
+## Marks grid 0's cell (x, y) from `source` and hands back the cell's own zone card.
+func mark_cell(state: GameData, x: int, y: int, source: CardData) -> CardData:
+	var grid : GridData = state.grids[0]
+	var mark : CardData = grid.cell_types[grid.cell_index(x, y)]
+	BoardPlan.write_mark(mark, source, false)
+	return mark
+
+## Puts `card` in grid 0's cell (x, y) through the board's own placement, where nothing covers it.
+func place_in_cell(state: GameData, x: int, y: int, card: CardData) -> void:
+	Board.place_in_cell(state, card, cell(x, y))
+
+#Two lower-zone columns, which is where the coverage rule is actually observable: column 0 holds a
+#stacked pair, so its bottom card is dark and its top card lit, and column 1 is left empty so its
+#own header is lit.
+func fill_lower(g: Game) -> Array[CardData]:
+	var buried := play_card(2, SpotlightTestSkill.make("buried"))
+	var cover := play_card(3, SpotlightTestSkill.make("cover"))
+	var headers : Array[CardData] = [play_card(1, SpotlightTestSkill.make("head0")),
+			play_card(1, SpotlightTestSkill.make("head1"))]
+	for header : CardData in headers:
+		header.stage = CardData.Stage.ZONE
+	g.state.lower_zone_type = headers
+	g.state.lower_zone = [TestFactories.col([buried, cover] as Array[CardData]),
+			TestFactories.col([] as Array[CardData])] as Array[ArrayCardData]
+	g.state.revision += 1
+	return [buried, cover] as Array[CardData]
+
+#Every spotlit modifier on the board EXCEPT the mark's own: the mark's own darkness is the claim
+#next door, and a bare cell type answers differently from a marked one by design, so comparing it
+#would measure the exclusion rather than the rule around it.
+func spotlit_ids(state: GameData, mark: CardData) -> Array[int]:
+	var out : Array[int] = []
+	for card : CardData in state.all_card_datas():
+		if card == mark: continue
+		for mod : CardModifier in [card.skill, card.type, card.stamp, card.suit]:
+			if mod and mod.is_spotlit(): out.append(mod.get_instance_id())
+	out.sort()
+	return out
+
+
+#The REAL scorer in the rules deck: every row below is scored by a placement completing a line,
+#which is the path the shipped game takes -- the composition is never called directly.
+
+## High enough that no fixture row reaches it -- a met goal ends the show and locks the board.
+const GOAL_OUT_OF_REACH : int = 1000000
+
+func detector_game(state: GameData) -> Game:
+	state.goal = GOAL_OUT_OF_REACH
+	var detector := SkillLineDetector.new()
+	detector.spotlit = true
+	var rules := CardData.new().with_skill(detector)
+	rules.stage = CardData.Stage.RULES
+	state.rules_deck = [rules] as Array[CardData]
+	var g := Game.new()
+	g.state = state
+	CardEnvironment.CURRENT = g
+	return g
+
+## A card of `rank` in a suit nothing else in the run shares, so no row flushes by accident.
+func row_card(rank: int) -> CardData:
+	return TestFactories.m_card(float(rank), TestFactories.uc())
+
+#A card of `rank` printing a real KNIFE -- the only suit-effect source these boards carry, because
+#the test suit every other card prints spawns nothing whatever stands under it. A knife's props score
+#each no-skill card of its row, so what it fires is visible as points in that row's own bucket.
+func knife_card(rank: int) -> CardData:
+	return play_card(rank, null).with_suit(PipSuitKnife.new())
+
+## Five cards whose best meld is the PAIR of 7s -- the two cards a mark under cell 0 or 1 can pay.
+func pair_row() -> Array[CardData]:
+	return [row_card(7), row_card(7), row_card(3), row_card(9), row_card(11)] as Array[CardData]
+
+## Five cards whose best meld is the three 7s, leaving cells 3 and 4 outside it.
+func triple_row() -> Array[CardData]:
+	return [row_card(7), row_card(7), row_card(7), row_card(11), row_card(3)] as Array[CardData]
+
+#The same row in REAL suits, no five of them alike. ⚠ `PipSuitTest` carries its identity in a plain
+#var, so a row of test suits comes back from a SNAPSHOT as one suit and flushes -- a claim about a
+#replayed board has to be made of cards whose printed identity survives the round trip.
+func triple_row_standard() -> Array[CardData]:
+	var suits : Array[PipSuit] = [PipSuitHoop.new(), PipSuitBall.new(), PipSuitFire.new(),
+			PipSuitHoop.new(), PipSuitBall.new()]
+	var ranks : Array[int] = [7, 7, 7, 11, 3]
+	var out : Array[CardData] = []
+	for i : int in ranks.size():
+		out.append(play_card(ranks[i], null).with_suit(suits[i]))
+	return out
+
+## Five cards of ONE suit, the 9 first so a mark under cell 0 pays a meld card of the flush.
+func flush_row() -> Array[CardData]:
+	var suit := TestFactories.uc()
+	var out : Array[CardData] = []
+	for rank : int in [9, 2, 4, 6, 8] as Array[int]:
+		out.append(TestFactories.m_card(float(rank), suit))
+	return out
+
+## The same five ranks in five different suits -- the flush row's control.
+func unsuited_row() -> Array[CardData]:
+	var out : Array[CardData] = []
+	for rank : int in [9, 2, 4, 6, 8] as Array[int]:
+		out.append(row_card(rank))
+	return out
+
+#Grid 0's row 0, marked cell by cell, then filled left to right with the LAST card placed through
+#the game -- that placement is what completes the row and scores it. The game is handed back alive,
+#so a row reads the bucket it banked into rather than a number the test worked out for itself.
+func scored_row(cards: Array[CardData], marks: Dictionary[int, CardData]) -> Game:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	for x : int in marks:
+		mark_cell(g.state, x, 0, marks[x])
+	for x : int in cards.size() - 1:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[cards.size() - 1], cell(cards.size() - 1, 0))
+	return g
+
+## What grid 0's row 0 banked: the BigNumber the player's own score is built from.
+func row_banked(g: Game) -> float:
+	return g.state.line_score(g.state.scores_row, 0, 0, 0)
+
+## A mark whose effect is worth twice the line, spelled as the `+2` the sum of shares expects.
+func mult_mark() -> CardData:
+	return row_card(2).with_stamp(LineMultStamp.new())
+
+## A vertical run of one rank, tall enough to score, in FRESH instances -- a cell stacks each once.
+func height_stack(rank: int) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for _i : int in LineGeometry.HEIGHT_SCORE_INTERVAL:
+		out.append(row_card(rank))
+	return out
+
+#Grid 0's cell (0, 0) marked from `mark`, stacked with `cards` and scored as ONE vertical line. The
+#cards go straight onto the board instead of through a placement, so every mark hook the run fires
+#belongs to the composition and none of them to a landing.
+func scored_stack(cards: Array[CardData], mark: CardData) -> Game:
+	var g := make_game()
+	if mark: mark_cell(g.state, 0, 0, mark)
+	for card : CardData in cards:
+		place_in_cell(g.state, 0, 0, card)
+	var lines : Array = LineGeometry.lines_through(g.state.grids[0], 0, 0, cards.size() - 1)
+	for line : LineGeometry.Line in lines:
+		if line.kind == ScoringSection.LineKind.HEIGHT_V:
+			await g.score_line(null, g.effect_api.section_of_line(0, line))
+	return g
+
+## What the stack in grid 0's cell (0, 0) banked: the height score behind that cell's own label.
+func stack_banked(g: Game) -> float:
+	return g.state.cell_score(0, Vector2i(0, 0))
+
+#Row 0, column 0 and the main diagonal each one card short at the corner, every card of one rank so
+#all three melds hold every card of their line. Returns what the row, the column and the diagonal
+#banked, in that order.
+func banked_corner_lines(marks: Dictionary[int, CardData]) -> Array[float]:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	for x : int in marks:
+		mark_cell(g.state, x, 0, marks[x])
+	for i : int in 5:
+		for spot : Vector2i in [Vector2i(i, 0), Vector2i(0, i), Vector2i(i, i)] as Array[Vector2i]:
+			if spot == Vector2i.ZERO or g.state.card_at(cell(spot.x, spot.y)): continue
+			place_in_cell(g.state, spot.x, spot.y, row_card(7))
+	await g.place_card_in_grid(row_card(7), cell(0, 0))
+	var diagonal : float = g.state.score_special[0].to_float() \
+			if not g.state.score_special.is_empty() else 0.0
+	var banked : Array[float] = [row_banked(g), g.state.line_score(g.state.scores_col, 0, 0, 0),
+			diagonal]
+	free_game(g)
+	return banked
+
+
+#Grid 0's row 2 and column 2 of one rank, so each meld holds every card of its line, with a knife at
+#their crossing. `complete_column` leaves the column one short when the knife should belong to ONE
+#meld, and `marked` writes the SUIT-only mark that is the whole of what lets its props fire.
+func banked_knife_cross(marked: bool, complete_column: bool) -> float:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	if marked:
+		mark_cell(g.state, 2, 2, knife_card(2))
+	for i : int in 5:
+		if i == 2: continue
+		place_in_cell(g.state, i, 2, row_card(3))
+		if complete_column or i != 4:
+			place_in_cell(g.state, 2, i, row_card(3))
+	await g.place_card_in_grid(knife_card(3), cell(2, 2))
+	var banked : float = g.state.line_score(g.state.scores_row, 0, 2, 0)
+	free_game(g)
+	return banked
+
+
+#What grid 0's empty row banks for a RANKLESS card standing on a mark that prints a rank. No meld
+#ever holds a rankless card, so the line is a synthetic one handed straight to the game's own
+#`score_line` -- what it banks is read back out of that row's bucket, never worked out here.
+func banked_rankless_match(rescued: bool) -> float:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, row_card(7))
+	var rankless := row_card(7)
+	rankless.rank = null
+	if rescued: rankless.with_type(MarkRanklessAllowed.new())
+	place_in_cell(g.state, 0, 0, rankless)
+	var line := Scoring.Result.create("rankless line", [rankless] as Array[CardData], 0, 0.0,
+			[Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE])
+	await g.score_line(line, ScoringSection.of_line_at(g.state, 0,
+			ScoringSection.LineKind.ROW, EMPTY_ROW, 0))
+	var banked : float = g.state.line_score(g.state.scores_row, 0, EMPTY_ROW, 0)
+	free_game(g)
+	return banked
+
+
+#Counts the two mark hooks and remembers the level each arrived with. EVERY cover is announced and a
+#match adds its own hook on top, so the two counts are the only thing telling the cases apart.
+class MarkHookRecorder extends CardModifierStamp:
+	var covers : int = 0
+	var hits : int = 0
+	var cover_level : int = -1
+	var hit_level : int = -1
+	## Every level either hook has ever arrived with, so a third value cannot hide behind a count.
+	var levels : Array[int] = []
+	## The card's IDENTITY, never a reference: a stamp holding the card that holds IT leaks at exit.
+	var hit_card_id : int = 0
+	var hit_coord : BoardCoord = null
+	var hit_matched : int = 0
+	func get_str() -> String: return "MarkHookRecorder"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	## Named, because an inner class has no `resource_path`: the inherited key would be empty.
+	func combo_key(_hook: StringName = &"") -> String: return "MarkHookRecorderClass"
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, level: int) -> void:
+		covers += 1
+		cover_level = level
+		levels.append(level)
+	func on_mark_hit(card: CardData, coord: BoardCoord, matched: int, level: int) -> void:
+		hits += 1
+		hit_level = level
+		levels.append(level)
+		hit_card_id = card.get_instance_id()
+		hit_coord = coord
+		hit_matched = matched
+
+
+#ONE class key across two broadcasts a board card answers: `on_after_score` reaches it from inside a
+#nested composition and `on_next` from inside a real act. The same mod in both is what tells the two
+#windows apart -- a second key could differ for a reason that is not the window.
+class BoardBroadcastStamp extends CardModifierStamp:
+	var after_scores : int = 0
+	var nexts : int = 0
+	func get_str() -> String: return "BoardBroadcastStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	## Named: an inner class has no resource_path, so the inherited key is empty.
+	func combo_key(_hook: StringName = &"") -> String: return "BoardBroadcastClass"
+	func on_after_score() -> void:
+		after_scores += 1
+	func on_next() -> void:
+		nexts += 1
+
+
+#The two mark hooks on the SKILL slot, which `run_mark_mods` carries in although a mark is never
+#spotlit. A stamp double cannot fail when that carry-in is wrong, so the skill shape needs its own.
+class MarkHookSkill extends CardModifierSkill:
+	var covers : int = 0
+	var hits : int = 0
+	func get_str() -> String: return "MarkHookSkill"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_covered(_card: CardData, _coord: BoardCoord, _level: int) -> void:
+		covers += 1
+	func on_mark_hit(_card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
+		hits += 1
+
+
+#Answers two walks the broadcast gate never covered: the mark family's own leniency pass, asked
+#through the comparator, and the board's placement query. It counts its own placements, because the
+#environment counts a hook by NAME and every cell's own type answers that same name.
+
+#The placement rule answers for its OWN card only, the way a cell's does, so one card carrying this
+#stamp cannot answer a query aimed at another and hide whether that other was ever asked.
+class MarkWalkProbe extends CardModifierStamp:
+	var placements : int = 0
+	func get_str() -> String: return "MarkWalkProbe"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return is_equal_approx(absf(float(r1.value) - float(r2.value)), 1.0)
+	func on_can_place_stack(stack: Array[CardData], target: CardData) -> Array[CardData]:
+		if target != data: return []
+		placements += 1
+		return stack
+
+
+#Counts a BOARD-WIDE broadcast, on the slot that has no spotlight gate anywhere: a stamp is asked
+#whatever covers its card, which is why the mark exclusion cannot live on the spotlight flag alone.
+#`on_after_score` is the hook the shipped Double Trigger stamp implements on five deck rows.
+class AfterScoreRecorder extends CardModifierStamp:
+	var after_scores : int = 0
+	func get_str() -> String: return "AfterScoreRecorder"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_after_score() -> void:
+		after_scores += 1
+
+
+#A mark worth twice the line it sits in, on a STAMP because that is the slot the shipped effects
+#use. The share is ANSWERED rather than announced: the composition asks every mark a meld card
+#stands on, so an effect never has to know which moment it is in.
+class LineMultStamp extends CardModifierStamp:
+	func get_str() -> String: return "LineMultStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	## Named, because the key an inner class inherits would be the empty string.
+	func combo_key(_hook: StringName = &"") -> String: return "LineMultStampClass"
+	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
+		return 2.0
+
+
+#Repaints its own card's suit the way an effect would -- through the card's own setter, which
+#announces itself with `data_changed` and bumps no revision.
+class SuitRepaint extends CardModifierType:
+	func get_str() -> String: return "SuitRepaint"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func repaint(suit: PipSuit) -> void:
+		data.with_suit(suit)
+
+#A mark effect that RE-SCORES the line it just fired in, through the api's own seam: with `once`
+#it is the nested composition, and without it the unbounded loop the runaway guard is the only bound
+#on. WATCHDOG is the test's own brake, so a guard that stops tripping fails a check instead of hanging.
+class ReScoringMarkStamp extends CardModifierStamp:
+	const WATCHDOG : int = 40
+	var once : bool = false
+	var fires : int = 0
+	var game_ref : Game = null
+	func get_str() -> String: return "ReScoringMarkStamp"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	## Named, since an inner class carries no resource_path to key on.
+	func combo_key(_hook: StringName = &"") -> String: return "ReScoringMarkClass"
+	func on_mark_line_mult(_card: CardData, _coord: BoardCoord, _matched: int) -> float:
+		return 2.0
+	## Re-scores a ONE-CARD line in an EMPTY section, so nothing but this firing can charge the cap.
+	func on_mark_hit(card: CardData, _coord: BoardCoord, _matched: int, _level: int) -> void:
+		if game_ref.act_overrun or fires >= WATCHDOG: return
+		if once and fires > 0: return
+		fires += 1
+		await api.score_line(Scoring.Result.create("re-scored line",
+				[card] as Array[CardData], 1, 0.0,
+				[Scoring.MELD_TYPE.X_OF_KIND] as Array[Scoring.MELD_TYPE]), ScoringSection.new())
+
+
+## Content that counts a rank one step from the mark's as a match. A TYPE, so it is always asked.
+class MarkRankNeighbours extends CardModifierType:
+	func get_str() -> String: return "MarkRankNeighbours"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return is_equal_approx(absf(float(r1.value) - float(r2.value)), 1.0)
+
+
+## Content that counts a card printing NO rank as a match for any mark that does print one.
+class MarkRanklessAllowed extends CardModifierType:
+	func get_str() -> String: return "MarkRanklessAllowed"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_allow(r1: PipRank, r2: PipRank) -> bool:
+		return r1 == null and r2 != null
+
+
+## Content that refuses every rank pair BOTH of whose prints are there, printed sameness included.
+class MarkPrintedRanksRefused extends CardModifierType:
+	func get_str() -> String: return "MarkPrintedRanksRefused"
+	func get_description() -> String: return ""
+	func get_frame() -> int: return 0
+	func on_mark_ranks_deny(r1: PipRank, r2: PipRank) -> bool:
+		return r1 != null and r2 != null
+
+
+# ==============================================================================
+# TP-20, TP-21, TP-22 -- one answer per printed property
+# ==============================================================================
+
+#TP-20: each property is asked on its own and paid on its own, so one card printing a 5 of Hoops
+#gives three different answers on three different marks -- and an unmarked cell answers nothing at
+#all, which is what keeps an empty board silent.
+func test_each_property_is_detected_independently() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitKnife, 5))
+	mark_cell(g.state, 1, 0, plan_card(PipSuitHoop, 3))
+	mark_cell(g.state, 2, 0, plan_card(PipSuitHoop, 5))
+	var on_rank := plan_card(PipSuitHoop, 5)
+	var on_suit := plan_card(PipSuitHoop, 5)
+	var on_both := plan_card(PipSuitHoop, 5)
+	var on_bare := plan_card(PipSuitHoop, 5)
+	place_in_cell(g.state, 0, 0, on_rank)
+	place_in_cell(g.state, 1, 0, on_suit)
+	place_in_cell(g.state, 2, 0, on_both)
+	place_in_cell(g.state, 3, 0, on_bare)
+	var rank_only := await MarkMatch.matches_at(g.state, on_rank, cell(0, 0))
+	var suit_only := await MarkMatch.matches_at(g.state, on_suit, cell(1, 0))
+	var both := await MarkMatch.matches_at(g.state, on_both, cell(2, 0))
+	var bare := await MarkMatch.matches_at(g.state, on_bare, cell(3, 0))
+	check(rank_only == MarkMatch.Property.RANK,
+			"TP-20: a 5 of Hoops on a mark of 5 of Knives matches the RANK and nothing else",
+			"got %d" % rank_only)
+	check(suit_only == MarkMatch.Property.SUIT,
+			"TP-20: the same card on a mark of 3 of Hoops matches the SUIT and nothing else",
+			"got %d" % suit_only)
+	check(both == RANK_AND_SUIT,
+			"TP-20: and on a mark of 5 of Hoops it matches both",
+			"got %d" % both)
+	check(bare == 0, "TP-20: an unmarked cell matches nothing", "got %d" % bare)
+	var off_board : int = await MarkMatch.matches_at(g.state, on_both, cell(9, 9))
+	check(off_board == 0,
+			"TP-20: nor does a coordinate that names no cell of any grid", "got %d" % off_board)
+	free_game(g)
+
+#TP-20: an absent print agrees with NOTHING, so a rankless card standing on a mark that prints a
+#suit alone is a suit match only -- printed identity answers true for two nulls, and a RANK bit set
+#from two empty slots sends `flat_bonus` to read a rank that is not there.
+func test_an_absent_print_agrees_with_nothing() -> void:
+	var g := make_game()
+	var suit_source := plan_card(PipSuitHoop, 5)
+	suit_source.rank = null
+	var rank_source := plan_card(PipSuitKnife, 4)
+	rank_source.suit = null
+	mark_cell(g.state, 0, 0, suit_source)
+	mark_cell(g.state, 1, 0, rank_source)
+	var rankless := plan_card(PipSuitHoop, 3)
+	rankless.rank = null
+	var suitless := plan_card(PipSuitKnife, 4)
+	suitless.suit = null
+	place_in_cell(g.state, 0, 0, rankless)
+	place_in_cell(g.state, 1, 0, suitless)
+	var on_suit_mark := await MarkMatch.matches_at(g.state, rankless, cell(0, 0))
+	var on_rank_mark := await MarkMatch.matches_at(g.state, suitless, cell(1, 0))
+	check(on_suit_mark == MarkMatch.Property.SUIT,
+			"TP-20: a rankless card on a mark printing a suit alone matches the SUIT and nothing else",
+			"got %d" % on_suit_mark)
+	check(on_rank_mark == MarkMatch.Property.RANK,
+			"TP-20: a suitless card on a mark printing a rank alone matches the RANK and nothing else",
+			"got %d" % on_rank_mark)
+	var rankless_pay : int = MarkMatch.flat_bonus(rankless, on_suit_mark)
+	check(rankless_pay == 0,
+			"TP-20: and the rankless card pays no rank bonus, having no rank to read",
+			"got %d" % rankless_pay)
+	free_game(g)
+
+#TP-21: a mark carries its own COPY of the skill it names, so the only identity a talent match can
+#test is the script -- two skills that merely both exist are not a match.
+func test_a_talent_match_needs_the_same_script() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0,
+			plan_card(PipSuitHoop, 5).with_skill(SpotlightTestSkill.make("marked")))
+	mark_cell(g.state, 1, 0,
+			plan_card(PipSuitKnife, 4).with_skill(SpotlightTestSkill.make("marked")))
+	mark_cell(g.state, 2, 0, plan_card(PipSuitBall, 3))
+	var same := plan_card(PipSuitHoop, 5).with_skill(SpotlightTestSkill.make("placed"))
+	var different := plan_card(PipSuitKnife, 4).with_skill(SkillExtraPoint.new())
+	var unmatched := plan_card(PipSuitBall, 3).with_skill(SkillExtraPoint.new())
+	place_in_cell(g.state, 0, 0, same)
+	place_in_cell(g.state, 1, 0, different)
+	place_in_cell(g.state, 2, 0, unmatched)
+	var matched_same := await MarkMatch.matches_at(g.state, same, cell(0, 0))
+	var matched_other := await MarkMatch.matches_at(g.state, different, cell(1, 0))
+	var matched_bare := await MarkMatch.matches_at(g.state, unmatched, cell(2, 0))
+	check(matched_same & MarkMatch.Property.TALENT != 0,
+			"TP-21: two skills of one script are a talent match", "got %d" % matched_same)
+	check(matched_other == RANK_AND_SUIT,
+			"TP-21: two different skill scripts are not, and the rank and suit still are",
+			"got %d" % matched_other)
+	check(matched_bare == RANK_AND_SUIT,
+			"TP-21: nor is a skill on the card alone, with the mark carrying none",
+			"got %d" % matched_bare)
+	free_game(g)
+
+#TP-22: the hat slot answers the same question as the talent slot and answers it separately, so a
+#stamp match is script identity too.
+func test_a_hat_match_needs_the_same_script() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5).with_stamp(StampDoubleTrigger.new()))
+	mark_cell(g.state, 1, 0, plan_card(PipSuitKnife, 4).with_stamp(StampDoubleTrigger.new()))
+	var same := plan_card(PipSuitHoop, 5).with_stamp(StampDoubleTrigger.new())
+	var different := plan_card(PipSuitKnife, 4).with_stamp(StampRevealing.new())
+	place_in_cell(g.state, 0, 0, same)
+	place_in_cell(g.state, 1, 0, different)
+	var matched_same := await MarkMatch.matches_at(g.state, same, cell(0, 0))
+	var matched_other := await MarkMatch.matches_at(g.state, different, cell(1, 0))
+	check(matched_same & MarkMatch.Property.HAT != 0,
+			"TP-22: two stamps of one script are a hat match", "got %d" % matched_same)
+	check(matched_other == RANK_AND_SUIT,
+			"TP-22: two different stamp scripts are not", "got %d" % matched_other)
+	free_game(g)
+
+
+# ==============================================================================
+# TP-23, TP-24, TP-25 -- the match is a question asked of the board, every time
+# ==============================================================================
+
+#TP-23: the match is derived live, so an effect repainting a suit mid-show creates one. ⚠ THE
+#REVISION IS THE POINT: a repaint announces itself with `data_changed` and bumps nothing, so a
+#verdict remembered against the revision would still be answering about the old suit.
+func test_a_repainted_suit_changes_the_match_at_once() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5))
+	var card := plan_card(PipSuitKnife, 5)
+	var repaint := SuitRepaint.new()
+	card.with_type(repaint)
+	place_in_cell(g.state, 0, 0, card)
+	var before := await MarkMatch.matches_at(g.state, card, cell(0, 0))
+	var revision := g.state.revision
+	repaint.repaint(PipSuitHoop.new())
+	check(g.state.revision == revision,
+			"TP-23 precondition: repainting a suit bumps no revision",
+			"%d became %d" % [revision, g.state.revision])
+	var after := await MarkMatch.matches_at(g.state, card, cell(0, 0))
+	check(before == MarkMatch.Property.RANK,
+			"TP-23: the Knives card matched the Hoops mark on rank alone",
+			"got %d" % before)
+	check(after == RANK_AND_SUIT,
+			"TP-23: and the very next call sees the repainted suit match too", "got %d" % after)
+	free_game(g)
+
+#TP-24: a mark belongs to the CELL, not to the card on top of it, so every card in the stack is
+#asked -- one cell's mark can be matched as many times as cards stack on it.
+func test_every_card_in_a_stack_is_tested() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5))
+	var stack : Array[CardData] = [plan_card(PipSuitHoop, 5), plan_card(PipSuitHoop, 5),
+			plan_card(PipSuitHoop, 5)]
+	for card : CardData in stack:
+		place_in_cell(g.state, 0, 0, card)
+	var grid : GridData = g.state.grids[0]
+	check(grid.cells[grid.cell_index(0, 0)].datas.size() == 3,
+			"TP-24 precondition: the cell is three cards deep",
+			"got %d" % grid.cells[grid.cell_index(0, 0)].datas.size())
+	var matches := 0
+	for card : CardData in stack:
+		if await MarkMatch.matches_at(g.state, card, cell(0, 0)) == RANK_AND_SUIT: matches += 1
+	check(matches == 3, "TP-24: all three cards in the stack match, not only the one at height 0",
+			"%d of 3 matched" % matches)
+	free_game(g)
+
+#TP-25: a card in a cell is a card in a cell. The two placements differ only in `processing`, which
+#is what tells an effect placing mid-cascade from a player putting a card down.
+func test_an_effect_places_a_card_that_matches_the_same() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5))
+	mark_cell(g.state, 1, 0, plan_card(PipSuitHoop, 5))
+	var by_player := plan_card(PipSuitHoop, 5)
+	await g.place_card_in_grid(by_player, cell(0, 0))
+	var by_effect := plan_card(PipSuitHoop, 5)
+	g.processing = true
+	await g.place_card_in_grid(by_effect, cell(1, 0))
+	g.processing = false
+	var player_match := await MarkMatch.matches_at(g.state, by_player, cell(0, 0))
+	var effect_match := await MarkMatch.matches_at(g.state, by_effect, cell(1, 0))
+	check(g.state.card_at(cell(0, 0)) == by_player and g.state.card_at(cell(1, 0)) == by_effect,
+			"TP-25 precondition: both placements landed in their own cell")
+	check(player_match == RANK_AND_SUIT and effect_match == player_match,
+			"TP-25: a card an effect placed matches exactly as one the player placed",
+			"player %d, effect %d" % [player_match, effect_match])
+	free_game(g)
+
+
+# ==============================================================================
+# TP-26, TP-27 -- the mark is underneath, and it stays there
+# ==============================================================================
+
+#TP-26: a card that matches nothing changes nothing about the mark, which is still there to be
+#matched by whatever lands next.
+func test_a_mark_survives_a_card_that_matched_nothing() -> void:
+	var g := make_game()
+	var mark := mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5))
+	var stranger := plan_card(PipSuitKnife, 3)
+	await g.place_card_in_grid(stranger, cell(0, 0))
+	var ignored : int = await MarkMatch.matches_at(g.state, stranger, cell(0, 0))
+	check(ignored == 0,
+			"TP-26 precondition: a 3 of Knives on a mark of 5 of Hoops matches nothing",
+			"got %d" % ignored)
+	await g.remove_card_from_grid(stranger)
+	check(BoardPlan.is_marked(mark),
+			"TP-26: the mark is intact after the card that ignored it left")
+	var matcher := plan_card(PipSuitHoop, 5)
+	await g.place_card_in_grid(matcher, cell(0, 0))
+	var matched : int = await MarkMatch.matches_at(g.state, matcher, cell(0, 0))
+	check(matched == RANK_AND_SUIT,
+			"TP-26: and the next card matches it", "got %d" % matched)
+	free_game(g)
+
+#TP-27: a mark is not spent by being hit. Three cards land on it in turn and every one of them is a
+#match, which is what makes the bonus payable every time rather than once.
+func test_a_mark_matches_on_every_landing() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5))
+	var matches := 0
+	for _cycle : int in 3:
+		var card := plan_card(PipSuitHoop, 5)
+		await g.place_card_in_grid(card, cell(0, 0))
+		if await MarkMatch.matches_at(g.state, card, cell(0, 0)) == RANK_AND_SUIT: matches += 1
+		await g.remove_card_from_grid(card)
+	check(matches == 3, "TP-27: three land-remove-land cycles report three matches",
+			"%d of 3" % matches)
+	free_game(g)
+
+
+# ==============================================================================
+# TP-35 -- what the match pays
+# ==============================================================================
+
+#TP-35: the rank term is the rank the card PRINTS, scaled and rounded up, and the two ranks that
+#have no useful printed value read their own knobs instead.
+func test_the_rank_term_reads_the_rank_and_its_knobs() -> void:
+	var snapshot := snapshot_settings("plan_")
+	var settings := SettingsManager.settings
+	settings.plan_rank_match_step = 1.0
+	settings.plan_ace_value = 7
+	settings.plan_rank_flat_fallback = 3
+	var ace := plan_card(PipSuitHoop, 1)
+	check(MarkMatch.flat_bonus(ace, MarkMatch.Property.RANK) == 7,
+			"TP-35: the Ace pays its own knob rather than the 1 it prints",
+			"got %d" % MarkMatch.flat_bonus(ace, MarkMatch.Property.RANK))
+	var nameless := plan_card(PipSuitHoop, 2)
+	nameless.rank.value = NAN
+	check(MarkMatch.flat_bonus(nameless, MarkMatch.Property.RANK) == 3,
+			"TP-35: a rank with no value a whole number can hold pays the flat fallback",
+			"got %d" % MarkMatch.flat_bonus(nameless, MarkMatch.Property.RANK))
+	var half := plan_card(PipSuitHoop, 2)
+	half.rank.with_value(2.5)
+	check(MarkMatch.flat_bonus(half, MarkMatch.Property.RANK) == 3,
+			"TP-35: a rank of 2.5 rounds UP to 3",
+			"got %d" % MarkMatch.flat_bonus(half, MarkMatch.Property.RANK))
+	settings.plan_rank_match_step = 0.5
+	var five := plan_card(PipSuitHoop, 5)
+	check(MarkMatch.flat_bonus(five, MarkMatch.Property.RANK) == 3,
+			"TP-35: the step scales the printed rank, and the scaled figure rounds up as well",
+			"got %d" % MarkMatch.flat_bonus(five, MarkMatch.Property.RANK))
+	check(MarkMatch.flat_bonus(five, MarkMatch.Property.SUIT | MarkMatch.Property.HAT) == 0,
+			"TP-35: a match on any other property pays no rank bonus")
+	restore_settings_snapshot(snapshot)
+
+#The talent and hat shares SUM rather than multiply each other, and the sum is the whole
+#multiplier -- so one share of 1 is neutral and two shares of 2 make 4.
+func test_the_mult_terms_sum_their_shares() -> void:
+	var snapshot := snapshot_settings("plan_")
+	var settings := SettingsManager.settings
+	settings.plan_talent_mult = 2.0
+	settings.plan_hat_mult = 3.0
+	var card := plan_card(PipSuitHoop, 5)
+	check(is_equal_approx(MarkMatch.mult_bonus(card, MarkMatch.Property.TALENT), 2.0),
+			"a talent match contributes its own share and nothing else")
+	check(is_equal_approx(MarkMatch.mult_bonus(card, MarkMatch.Property.HAT), 3.0),
+			"a hat match contributes its own")
+	check(is_equal_approx(MarkMatch.mult_bonus(card,
+			MarkMatch.Property.TALENT | MarkMatch.Property.HAT), 5.0),
+			"and the two matched together contribute the SUM of the shares, never the product")
+	check(MarkMatch.mult_bonus(card, RANK_AND_SUIT) == 0.0,
+			"a rank or suit match contributes no multiplier at all")
+	restore_settings_snapshot(snapshot)
+
+
+# ==============================================================================
+# TP-30, TP-31, TP-32 -- (hand + flats) x the summed mults
+# ==============================================================================
+
+#TP-30: the rank bonus is ADDED to the hand the line scored, and the hand it is added to is measured
+#from the same row with nothing marked -- the number the model produces is never written down here.
+func test_a_rank_match_is_added_to_the_line() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(), {0: row_card(7)} as Dictionary[int, CardData])
+	check(row_banked(bare) > 0.0,
+			"TP-30 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare) + 7.0,
+			"TP-30: a 7 of the meld on a mark printing 7 banks the hand plus 7",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-31: nothing in this row contributes a mult, so the summed mult is 0 -- and a 0 is SKIPPED rather
+#than multiplied by, exactly as a bucket worth 0 is left out of the grid product.
+func test_a_line_with_no_mult_is_never_multiplied_to_nothing() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(),
+			{0: row_card(7), 1: row_card(7)} as Dictionary[int, CardData])
+	check(row_banked(bare) > 0.0,
+			"TP-31 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare) + 14.0,
+			"TP-31: both flat bonuses are banked and the zero mult multiplies nothing",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	check(row_banked(marked) > 0.0,
+			"TP-31: a line with no mult bonus does not bank nothing",
+			"banked %f" % row_banked(marked))
+	free_game(bare)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-32: the shares SUM and the sum IS the multiplier, so one mark worth twice gives x2 and two give
+#x4. Three of them separate the sum from `1 + the sum` (which would give x7) and from a product of
+#the shares (x8).
+func test_mark_effects_sum_into_one_multiplier() -> void:
+	var bare := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var one := await scored_row(triple_row(), {0: mult_mark()} as Dictionary[int, CardData])
+	var two := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark()} as Dictionary[int, CardData])
+	var three := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark(), 2: mult_mark()} as Dictionary[int, CardData])
+	var hand := row_banked(bare)
+	check(hand > 0.0, "TP-32 precondition: the unmarked row banked its hand at all",
+			"banked %f" % hand)
+	check(row_banked(one) == hand * 2.0,
+			"TP-32: one mark worth twice multiplies the whole line by 2",
+			"%f against a hand of %f" % [row_banked(one), hand])
+	check(row_banked(two) == hand * 4.0,
+			"TP-32: two of them make x4 -- the shares are summed, not added to a 1",
+			"%f against a hand of %f" % [row_banked(two), hand])
+	check(row_banked(three) == hand * 6.0,
+			"TP-32: and three make x6, where a product of the shares would make x8",
+			"%f against a hand of %f" % [row_banked(three), hand])
+	for g : Game in [bare, one, two, three] as Array[Game]:
+		free_game(g)
+
+#TP-87: the mult is a QUESTION the composition asks every mark a meld card stands on, so the shares
+#arrive without an effect knowing which moment it is in and two of them still make x4. Asking is not
+#firing: it charges nothing and names no class, and a mark that only ACTS contributes nothing at all.
+func test_a_marks_mult_is_a_question_the_composition_asks() -> void:
+	var plain := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var asked := await scored_row(triple_row(),
+			{0: mult_mark(), 1: mult_mark()} as Dictionary[int, CardData])
+	var acting := await scored_row(triple_row(),
+			{0: row_card(2).with_stamp(MarkHookRecorder.new())} as Dictionary[int, CardData])
+	var hand := row_banked(plain)
+	check(hand > 0.0, "TP-87 precondition: the unmarked row banked its hand at all",
+			"banked %f" % hand)
+	check(row_banked(asked) == hand * 4.0,
+			"TP-87: both marks answered the query and their shares made x4",
+			"%f against a hand of %f" % [row_banked(asked), hand])
+	var spy := acting.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers > 0 and row_banked(acting) == hand,
+			"TP-87: a mark that only ACTS adds nothing to the multiplier, and a sum of 0 still skips",
+			"%d covers banked %f against a hand of %f" % [spy.covers, row_banked(acting), hand])
+	check(not asked.state.combo_classes.has(LineMultStamp.new().combo_key()),
+			"TP-87: answering the query registered no combo class",
+			"%s in %s" % [LineMultStamp.new().combo_key(), str(asked.state.combo_classes)])
+	check(asked.act_calls == plain.act_calls,
+			"TP-87: ...and charged no processing either",
+			"%d against the unmarked %d" % [asked.act_calls, plain.act_calls])
+	for g : Game in [plain, asked, acting] as Array[Game]:
+		free_game(g)
+
+#TP-95: a cell's mark is asked and acts ONCE for the line, however many meld cards stand on it. A
+#whole stack covers one mark, so a share summed per card would turn x2 into x2-per-card and fire the
+#hooks once per card; each CARD still pays its own bonus and is answered its own hit.
+func test_a_stacked_marks_share_is_asked_once_for_the_line() -> void:
+	var bare := await scored_stack(height_stack(7), null)
+	var asked := await scored_stack(height_stack(7), mult_mark())
+	var hand := stack_banked(bare)
+	check(hand > 0.0, "TP-95 precondition: the unmarked stack banked its hand at all",
+			"banked %f" % hand)
+	check(stack_banked(asked) == hand * 2.0,
+			"TP-95: one mark under a stack multiplies the line by 2, not by 2 for every card on it",
+			"%f against a hand of %f" % [stack_banked(asked), hand])
+	var stack := height_stack(7)
+	for card : CardData in stack:
+		card.with_stamp(MarkHookRecorder.new())
+	var hooked := await scored_stack(stack, row_card(7).with_stamp(MarkHookRecorder.new()))
+	var spy := hooked.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-95: the mark under the stack is covered once and hit once for one line score",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	var matching := 0
+	var card_hits := 0
+	for card : CardData in stack:
+		if await MarkMatch.matches_at(hooked.state, card, cell(0, 0)) != 0: matching += 1
+		card_hits += (card.stamp as MarkHookRecorder).hits
+	check(matching == stack.size() and card_hits == matching,
+			"TP-95: every card of the stack matched, and each of them was answered its own hit",
+			"%d of %d matched, %d card hits" % [matching, stack.size(), card_hits])
+	for g : Game in [bare, asked, hooked] as Array[Game]:
+		free_game(g)
+
+#Every landing on a marked cell is a COVER, matching or not, so a x2 mark multiplies whatever is put
+#on it; a match adds `on_mark_hit` on top rather than replacing the cover. The levels say which is
+#which: the cover is the normal form, the match the realized one.
+func test_a_cover_is_announced_and_a_match_adds_its_own_hook() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new()),
+			1: row_card(2).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var matching := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var plain := g.state.cell_type_at(cell(1, 0)).stamp as MarkHookRecorder
+	check(matching.covers == 1 and matching.hits == 1,
+			"TP-47: a card that MATCHED its mark fires both hooks, the cover as well as the hit",
+			"%d covers, %d hits" % [matching.covers, matching.hits])
+	check(plain.covers == 1 and plain.hits == 0,
+			"TP-47: a card that matched nothing fires the cover hook alone",
+			"%d covers, %d hits" % [plain.covers, plain.hits])
+	check(matching.cover_level == 0 and matching.hit_level == 1,
+			"TP-48: the cover arrives at level 0 and the match at level 1, the realized form",
+			"cover %d, hit %d" % [matching.cover_level, matching.hit_level])
+	var levels : Array[int] = matching.levels + plain.levels
+	var only_two := true
+	for level : int in levels:
+		if level != 0 and level != 1: only_two = false
+	check(only_two and levels.size() == 3,
+			"TP-48: every call of either hook arrived at 0 or 1, and nothing else exists",
+			"levels %s" % str(levels))
+	free_game(g)
+
+#A mark's copied SKILL is dispatched the mark hooks although the spotlight rule keeps it dark --
+#the one slot whose dispatch depends on a flag, so the darkness is asserted next to the hooks that
+#arrived anyway.
+func test_a_marks_copied_skill_is_dispatched_the_mark_hooks() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_skill(MarkHookSkill.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).skill as MarkHookSkill
+	check(not spy.spotlit and not spy.is_spotlit(),
+			"precondition: the mark's copied skill is dark, flag and rule alike")
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-44b: the mark hooks reach a mark's copied skill at score time regardless",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	free_game(g)
+
+
+# ==============================================================================
+# TP-34, TP-36, TP-37 -- which cards pay, and into what
+# ==============================================================================
+
+#TP-34: the flush's double happens inside the hand's own number and knows nothing about a bonus, so
+#a rank match is simply added to it. The control row proves the five cards really did flush.
+func test_a_flush_keeps_its_own_score() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var suited := await scored_row(flush_row(), {} as Dictionary[int, CardData])
+	var unsuited := await scored_row(unsuited_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(flush_row(), {0: row_card(9)} as Dictionary[int, CardData])
+	check(row_banked(suited) > row_banked(unsuited),
+			"TP-34 precondition: the five suited cards score as a flush and the same ranks unsuited do not",
+			"%f against %f" % [row_banked(suited), row_banked(unsuited)])
+	check(row_banked(marked) == row_banked(suited) + 9.0,
+			"TP-34: the rank bonus is added to the flush's own score, never multiplied by its double",
+			"%f against %f" % [row_banked(marked), row_banked(suited)])
+	free_game(suited)
+	free_game(unsuited)
+	free_game(marked)
+	restore_settings_snapshot(snapshot)
+
+#TP-36: only a card the hand actually used pays. The marked card here matches its mark on rank and
+#sits in the line, but the best meld is the three 7s, so the line banks exactly what it banked bare.
+func test_a_match_outside_the_meld_pays_nothing() -> void:
+	var bare := await scored_row(triple_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(triple_row(), {3: row_card(11)} as Dictionary[int, CardData])
+	var outsider := marked.state.card_at(cell(3, 0))
+	var outsider_match : int = await MarkMatch.matches_at(marked.state, outsider, cell(3, 0))
+	check(outsider_match != 0,
+			"TP-36 precondition: the card outside the meld DOES match the mark under it",
+			"got %d" % outsider_match)
+	check(row_banked(bare) > 0.0, "TP-36 precondition: the unmarked row banked its hand at all",
+			"banked %f" % row_banked(bare))
+	check(row_banked(marked) == row_banked(bare),
+			"TP-36: a matching card the meld left out pays nothing at all",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
+
+#TP-37: the bonus is computed inside each line's own number, so a card completing three lines at once
+#pays into all three -- the same way its suit effect fires once per meld it belongs to.
+func test_a_card_pays_into_every_line_it_completes() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_match_step = 1.0
+	var bare := await banked_corner_lines({} as Dictionary[int, CardData])
+	var marked := await banked_corner_lines({0: row_card(7)} as Dictionary[int, CardData])
+	for i : int in 3:
+		check(bare[i] > 0.0, "TP-37 precondition: line %d banked its hand at all" % i,
+				"banked %f" % bare[i])
+		check(marked[i] == bare[i] + 7.0,
+				"TP-37: the corner's rank bonus is banked into line %d as well" % i,
+				"%f against %f" % [marked[i], bare[i]])
+	restore_settings_snapshot(snapshot)
+
+
+# ==============================================================================
+# TP-38 -- a match is not a combo class
+# ==============================================================================
+
+#TP-38: matching pays points and touches the combo not at all, so the classes the act has seen are
+#the same set with the mark there and gone -- the hand's own class and nothing else.
+func test_a_match_registers_no_combo_class() -> void:
+	var bare := await scored_row(pair_row(), {} as Dictionary[int, CardData])
+	var marked := await scored_row(pair_row(), {0: row_card(7)} as Dictionary[int, CardData])
+	check(not bare.state.combo_classes.is_empty(),
+			"TP-38 precondition: scoring the row registered the hand's own combo class",
+			"got %s" % str(bare.state.combo_classes))
+	check(marked.state.combo_classes == bare.state.combo_classes,
+			"TP-38: a match registers no class of its own",
+			"%s against %s" % [str(marked.state.combo_classes), str(bare.state.combo_classes)])
+	check(row_banked(marked) > row_banked(bare),
+			"TP-38 precondition: the match did pay, so the comparison is about a line that matched",
+			"%f against %f" % [row_banked(marked), row_banked(bare)])
+	free_game(bare)
+	free_game(marked)
+
+
+# ==============================================================================
+# TP-86, TP-46, TP-49, TP-50, TP-51 -- a mark that ACTS, and what its firing costs
+# ==============================================================================
+
+#TP-86: a mark acts the MOMENT a card lands on it, before any line through the cell scores -- this
+#board carries no scorer at all, so nothing it did could have banked and every firing counted here
+#is the landing's own. A card an effect placed lands the same way; `processing` is all that differs.
+func test_a_mark_fires_the_moment_a_card_lands_on_it() -> void:
+	var g := make_game()
+	mark_cell(g.state, 0, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	mark_cell(g.state, 1, 0, plan_card(PipSuitKnife, 3).with_stamp(MarkHookRecorder.new()))
+	mark_cell(g.state, 2, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	var matching := plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new())
+	await g.place_card_in_grid(matching, cell(0, 0))
+	await g.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(1, 0))
+	g.processing = true
+	await g.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(2, 0))
+	g.processing = false
+	var hit_mark := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var covered_mark := g.state.cell_type_at(cell(1, 0)).stamp as MarkHookRecorder
+	var by_effect := g.state.cell_type_at(cell(2, 0)).stamp as MarkHookRecorder
+	var on_card := matching.stamp as MarkHookRecorder
+	check(row_banked(g) == 0.0 and g.state.total_score == 0,
+			"TP-86 precondition: this board banked nothing, so no line score can have dispatched",
+			"row %f, total %d" % [row_banked(g), g.state.total_score])
+	check(hit_mark.covers == 1 and hit_mark.hits == 1,
+			"TP-86: the landing fired the cover once and, the card having matched, the hit once",
+			"%d covers, %d hits" % [hit_mark.covers, hit_mark.hits])
+	check(hit_mark.cover_level == 0 and hit_mark.hit_level == 1,
+			"TP-86: at the levels the score-time dispatch announces as well",
+			"cover %d, hit %d" % [hit_mark.cover_level, hit_mark.hit_level])
+	check(on_card.hits == 1 and on_card.hit_card_id == matching.get_instance_id(),
+			"TP-86: both recipients were told -- the mark's copied modifiers and the placed card's",
+			"%d hits on the card" % on_card.hits)
+	check(covered_mark.covers == 1 and covered_mark.hits == 0,
+			"TP-86: a landing that matched nothing fired the cover alone",
+			"%d covers, %d hits" % [covered_mark.covers, covered_mark.hits])
+	check(by_effect.covers == 1 and by_effect.hits == 1,
+			"TP-86: a card an effect placed fires them exactly as the player's placement did",
+			"%d covers, %d hits" % [by_effect.covers, by_effect.hits])
+	check(g.state.combo_classes.has(hit_mark.combo_key()),
+			"TP-86: the landing is an activation, so the copied modifier's class registered",
+			"%s missing from %s" % [hit_mark.combo_key(), str(g.state.combo_classes)])
+	free_game(g)
+	var bare := make_game()
+	mark_cell(bare.state, 0, 0, plan_card(PipSuitHoop, 5))
+	await bare.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(0, 0))
+	var counted := make_game()
+	mark_cell(counted.state, 0, 0, plan_card(PipSuitHoop, 5).with_stamp(MarkHookRecorder.new()))
+	await counted.place_card_in_grid(plan_card(PipSuitHoop, 5), cell(0, 0))
+	check(counted.act_calls == bare.act_calls + 2,
+			"TP-86: the landing's cover and its hit each charged one unit of processing",
+			"%d against the unanswered %d" % [counted.act_calls, bare.act_calls])
+	free_game(bare)
+	free_game(counted)
+
+#TP-46: one hook, two recipients -- the mark's own copied modifiers and the card that covered it.
+#Both are told the same thing, which is what lets an effect on a card require its own mark.
+func test_the_hit_reaches_the_mark_and_the_card() -> void:
+	var cards := triple_row()
+	var on_card := MarkHookRecorder.new()
+	cards[0] = cards[0].with_stamp(on_card)
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(cards, marks)
+	var on_mark := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(on_mark.hits == 1 and on_card.hits == 1,
+			"TP-46: on_mark_hit reached the mark's own modifier AND the placed card's",
+			"mark %d hits, card %d hits" % [on_mark.hits, on_card.hits])
+	check(on_mark.hit_card_id == cards[0].get_instance_id()
+			and on_card.hit_card_id == cards[0].get_instance_id(),
+			"TP-46: both were told about the same card")
+	check(on_mark.hit_coord.equals(cell(0, 0)) and on_card.hit_coord.equals(cell(0, 0)),
+			"TP-46: ...at the same coordinate",
+			"%s / %s" % [str(on_mark.hit_coord.pack()), str(on_card.hit_coord.pack())])
+	check(on_mark.hit_matched == on_card.hit_matched and on_mark.hit_matched != 0,
+			"TP-46: ...with the same matched properties",
+			"%d / %d" % [on_mark.hit_matched, on_card.hit_matched])
+	free_game(g)
+
+#TP-49: the effect is not spent by firing -- the mark under a line pays out again every time that
+#line scores, which is the whole archetype. Taking a card out of the row and putting it back is the
+#mutation that re-scores the SAME line: there is no line-scored memory anywhere to stop it.
+func test_a_mark_effect_fires_on_every_re_score() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	check(spy.covers == 1 and spy.hits == 1,
+			"TP-49 precondition: the first scoring fired each hook exactly once",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	var moved : CardData = g.state.card_at(cell(3, 0))
+	Board.remove_from_cell(g.state, moved)
+	await g.place_card_in_grid(moved, cell(3, 0))
+	check(spy.covers == 2 and spy.hits == 2,
+			"TP-49: the line through the marked cell scored again, and the mark fired again",
+			"%d covers, %d hits" % [spy.covers, spy.hits])
+	free_game(g)
+
+#TP-50: a firing is an ACTIVATION -- it advances the compression ramp and charges the runaway cap
+#when it repeats, which is the only thing bounding a mark effect that re-scores its own line. The
+#small cap keeps the loop short; WHICH mechanism stops it is the claim, never the number.
+func test_a_mark_firing_charges_the_cap_and_is_bounded() -> void:
+	var bare := await scored_row(triple_row(),
+			{0: row_card(7)} as Dictionary[int, CardData])
+	var counted := await scored_row(triple_row(),
+			{0: row_card(7).with_stamp(MarkHookRecorder.new())} as Dictionary[int, CardData])
+	check(counted.act_calls == bare.act_calls + 2,
+			"TP-50: the cover and the hit each charged one unit of processing",
+			"%d against the unanswered %d" % [counted.act_calls, bare.act_calls])
+	free_game(bare)
+	free_game(counted)
+
+	var snapshot := snapshot_settings("act_")
+	SettingsManager.settings.act_event_cap = 20
+	var looping := ReScoringMarkStamp.new()
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(looping))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires > 1,
+			"TP-50 precondition: the mark effect really did re-score its own line, over and over",
+			"%d firings" % spy.fires)
+	check(g.act_overrun,
+			"TP-50: THE RUNAWAY GUARD is what stopped the re-scoring loop",
+			"fires=%d act_calls=%d cap=%d" % [spy.fires, g.act_calls,
+			SettingsManager.settings.act_event_cap])
+	check(spy.fires < ReScoringMarkStamp.WATCHDOG,
+			"TP-50: ...and it was the CAP, not the test's own watchdog",
+			"%d firings of %d" % [spy.fires, ReScoringMarkStamp.WATCHDOG])
+	free_game(g)
+	restore_settings_snapshot(snapshot)
+
+#TP-50: a mark effect may score another line from inside the composition of the one it fired in, and
+#the outer line still banks its own summed mult. ⚠ The cell carries a COPY of the modifier, so every
+#field this double is driven by is set on the copy the cell is holding.
+func test_a_nested_re_score_leaves_the_outer_line_whole() -> void:
+	var control := await scored_row(triple_row(),
+			{0: row_card(7).with_stamp(LineMultStamp.new())} as Dictionary[int, CardData])
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(ReScoringMarkStamp.new()))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	spy.once = true
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires == 1,
+			"TP-50 precondition: the nested re-score happened, exactly once",
+			"%d firings" % spy.fires)
+	check(row_banked(g) > 0.0 and is_equal_approx(row_banked(g), row_banked(control)),
+			"TP-50: the outer line banked its own summed mult after the nested composition",
+			"%f against the un-nested %f" % [row_banked(g), row_banked(control)])
+	free_game(g)
+	free_game(control)
+
+#TP-51: the COPIED modifier is what counts, never the furniture it was copied onto -- the cell type
+#names no class at all, so a mark that fires nothing changes no combo.
+func test_a_mark_firing_registers_its_copied_combo_class() -> void:
+	var marks : Dictionary[int, CardData] = {0: row_card(7).with_stamp(MarkHookRecorder.new())}
+	var g := await scored_row(triple_row(), marks)
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as MarkHookRecorder
+	var key := spy.combo_key(MarkMatch.MARK_HIT)
+	check(not key.is_empty(),
+			"TP-51 precondition: the copied modifier names a combo class of its own", key)
+	check(g.state.combo_classes.has(key),
+			"TP-51: the mark firing registered its own modifier's class",
+			"%s missing from %s" % [key, str(g.state.combo_classes)])
+	check(TypeGridCell.new().combo_key() == "",
+			"TP-51: the cell type the mark is written onto names no class",
+			"got '%s'" % TypeGridCell.new().combo_key())
+	check(not g.state.combo_classes.has(""),
+			"TP-51: ...so no empty class was registered",
+			str(g.state.combo_classes))
+	free_game(g)
+
+
+#TP-79: a mark effect re-scoring a line runs a WHOLE composition inside its own hook, and the board
+#broadcasts in there are the board's, not the act's -- only the effect that fired named a class.
+func test_a_nested_composition_registers_only_the_mark() -> void:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7).with_stamp(ReScoringMarkStamp.new()))
+	var spy := g.state.cell_type_at(cell(0, 0)).stamp as ReScoringMarkStamp
+	spy.game_ref = g
+	spy.once = true
+	var cards := triple_row()
+	cards[3].with_stamp(BoardBroadcastStamp.new())
+	var listener := cards[3].stamp as BoardBroadcastStamp
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(spy.fires == 1 and listener.after_scores > 1,
+			"TP-79 precondition: the nested re-score happened, and the board card was broadcast to "
+			+ "inside it as well as outside it",
+			"fires=%d after_scores=%d" % [spy.fires, listener.after_scores])
+	check(not g.state.combo_classes.has(listener.combo_key()),
+			"TP-79: a board card answering a broadcast inside the nested composition scores no class",
+			"%s in %s" % [listener.combo_key(), str(g.state.combo_classes)])
+	check(g.state.combo_classes.has(spy.combo_key()),
+			"TP-79: ...while the mark whose effect fired registered its own class",
+			"%s missing from %s" % [spy.combo_key(), str(g.state.combo_classes)])
+	await g.next()
+	check(listener.nexts > 0 and g.state.combo_classes.has(listener.combo_key()),
+			"TP-79 control: the same board card firing inside a real act registers as it always did",
+			"nexts=%d classes=%s" % [listener.nexts, str(g.state.combo_classes)])
+	free_game(g)
+
+
+# ==============================================================================
+# TP-53, TP-54 -- against the engine: undo, and the replay of an interrupted placement
+# ==============================================================================
+
+#TP-53: undo is free -- the mark comes back and what it paid is un-banked, because every number the
+#placement moved lives on the board state the snapshot carries. ⚠ THE LIVE BOARD IS THE EXPECTATION
+#and the snapshot only the second witness: two copies agree about anything neither of them carries.
+func test_undo_restores_the_mark_and_unbanks_the_bonus() -> void:
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	g.state.plan_seed = 4242
+	mark_cell(g.state, 0, 0, row_card(7))
+	var cards := triple_row()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	g.save_state()
+	var expected := TestGridFixtures.board_digest(g.state)
+	var before : GameData = g.state.duplicate_state()
+	await g.place_card_in_grid(cards[4], cell(4, 0))
+	check(row_banked(g) > 0.0,
+			"TP-53 precondition: the placement completed the row and banked a marked line",
+			"%f" % row_banked(g))
+	g.undo()
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"TP-53: undo restored the board, every mark and every banked score, field for field",
+			"after:\n%s\n---- wanted:\n%s" % [TestGridFixtures.board_digest(g.state), expected])
+	check(TestGridFixtures.board_digest(g.state) == TestGridFixtures.board_digest(before),
+			"TP-53: ...and it agrees with the snapshot taken before the placement",
+			"after:\n%s\n---- snapshot:\n%s" % [TestGridFixtures.board_digest(g.state),
+			TestGridFixtures.board_digest(before)])
+	check(g.state.total_score == before.total_score
+			and g.state.combo_classes == before.combo_classes
+			and g.state.combo_repeats == before.combo_repeats,
+			"TP-53: the banked total and the combo set came back with it",
+			"%d/%s/%d against %d/%s/%d" % [g.state.total_score, str(g.state.combo_classes),
+			g.state.combo_repeats, before.total_score, str(before.combo_classes),
+			before.combo_repeats])
+	check(g.state.validate().is_empty(),
+			"TP-53: the rewound board still satisfies every invariant",
+			"; ".join(g.state.validate().slice(0, 3)))
+	free_game(g)
+
+#TP-54: a quit mid-cascade replays the placement from the committed pre-placement board. There is no
+#RNG in the path, so the replayed board and its marked line's score are the ones it interrupted. Only
+#a card HELD in a slot is a player's placement, and only that writes the marker a replay repeats.
+func test_a_replayed_placement_reproduces_the_marked_board() -> void:
+	var prev_run : RunState = RunManager.run
+	var prev_info : RunState = Main.save_info
+	backup_real_save(suite_tag())
+	Main.save_info = RunManager.new_run(TestDecks.minimal_deck(), [] as Array[CardData])
+	var g := detector_game(TestGridFixtures.build_fix_grid_1())
+	mark_cell(g.state, 0, 0, row_card(7))
+	var cards := triple_row_standard()
+	for x : int in 4:
+		place_in_cell(g.state, x, 0, cards[x])
+	var adder := SkillAdderInputUpper.new()
+	adder.spotlit = true
+	var adder_card := CardData.new().with_skill(adder)
+	adder_card.stage = CardData.Stage.RULES
+	g.state.rules_deck.append(adder_card)
+	await adder.on_spotlight()
+	g.state.entrance_stocks()[0].datas.assign([cards[4]] as Array[CardData])
+	await g.refill_entrance_if_due()
+	check(g.state.upper_zone[0].datas.has(cards[4]),
+			"TP-54 precondition: the card that completes the row is HELD in the Entrance")
+	g.save_state()
+	var pre_placement : GameData = g.save_history[-1]
+
+	var coord := cell(4, 0)
+	await g.place_card_in_grid(cards[4], coord)
+	var expected := TestGridFixtures.board_digest(g.state)
+	check(row_banked(g) > 0.0,
+			"TP-54 precondition: the placement scored the marked row", "%f" % row_banked(g))
+
+	g.state = g._runtime_state(pre_placement)
+	g.save_history = [pre_placement] as Array[GameData]
+	RunManager.run.pending_action = &"on_placement"
+	RunManager.run.pending_placement_slot = 0
+	RunManager.run.pending_placement_coord = coord.pack()
+	await g._replay_pending_action(&"on_placement")
+	check(TestGridFixtures.board_digest(g.state) == expected,
+			"TP-54: the replayed placement reproduced the marked board and its score",
+			"replayed:\n%s\n---- wanted:\n%s"
+			% [TestGridFixtures.board_digest(g.state), expected])
+	free_game(g)
+	RunManager._shutdown_saver()
+	RunManager.clear_save()
+	restore_real_save(suite_tag())
+	RunManager.run = prev_run
+	Main.save_info = prev_info
+
+
+# ==============================================================================
+# TP-43 -- a matched suit fires where suit effects fire, once per meld membership
+# ==============================================================================
+
+#TP-43: the mark decides WHETHER a suit fires, never how often. A knife in a row and a column banks
+#its props twice, once per meld it belongs to, which is exactly the unconditional firing this rule
+#replaced; with the mark gone neither firing happens and the row keeps only its hand.
+func test_a_matched_suit_fires_once_per_meld_membership() -> void:
+	var two_melds := await banked_knife_cross(true, true)
+	var one_meld := await banked_knife_cross(true, false)
+	var bare_two := await banked_knife_cross(false, true)
+	var bare_one := await banked_knife_cross(false, false)
+	var fired_twice := two_melds - bare_two
+	var fired_once := one_meld - bare_one
+	check(fired_once > 0.0,
+			"TP-43 precondition: a matched knife in one meld banks its props into its row",
+			"%f against the unmarked %f" % [one_meld, bare_one])
+	check(is_equal_approx(bare_two, bare_one),
+			"TP-43 precondition: without a match the second meld adds nothing to the row",
+			"%f against %f" % [bare_two, bare_one])
+	check(is_equal_approx(fired_twice, fired_once * 2.0),
+			"TP-43: the same knife in a row AND a column fires once per meld membership",
+			"%f against twice %f" % [fired_twice, fired_once])
+
+
+# ==============================================================================
+# TP-39 -- content may loosen the match, through the mark's OWN hooks
+# ==============================================================================
+
+#TP-39: the leniency family is declared as comments, so a board with no implementer dispatches
+#NOTHING and the printed values decide. ⚠ The counted hook NAME is what proves the mark asks its own
+#family: a mark falling back to the meld hooks would leave this rule unasked.
+func test_a_leniency_rule_loosens_the_match() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	mark_cell(state, 0, 0, plan_card(PipSuitKnife, 4))
+	var probe := plan_card(PipSuitKnife, 5)
+	place_in_cell(state, 0, 0, probe)
+	var strict := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(strict == MarkMatch.Property.SUIT,
+			"TP-39: with nothing implementing a mark hook, a rank one step away is no match",
+			"got %d" % strict)
+	check(env.total() == 0,
+			"TP-39: and not one hook was dispatched -- a comment-only family opts nobody in",
+			"counted %d %s" % [env.total(), str(env.dispatches)])
+	env.card_collections.append([CardData.new().with_type(MarkRankNeighbours.new())]
+			as Array[CardData])
+	var lenient := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(lenient == RANK_AND_SUIT,
+			"TP-39: a rule that allows neighbouring ranks turns the same pair into a rank match",
+			"got %d" % lenient)
+	var allow_calls : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(allow_calls >= 1,
+			"TP-39: and it was asked through the mark family's own allow hook",
+			"counted %s" % str(env.dispatches))
+	remove_child(env)
+	env.free()
+
+
+#TP-78: the leniency passes are asked BEFORE the prints are read, so a rule may rescue a card that
+#prints no rank at all -- and with nobody implementing it the same card matches nothing, which is
+#the rule an absent print obeys on its own.
+func test_a_leniency_rule_rescues_an_absent_print() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_flat_fallback = 3
+	var fallback : int = SettingsManager.settings.plan_rank_flat_fallback
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	mark_cell(state, 0, 0, row_card(7))
+	var rankless := row_card(7)
+	rankless.rank = null
+	place_in_cell(state, 0, 0, rankless)
+	var strict := await MarkMatch.matches_at(state, rankless, cell(0, 0))
+	check(strict == 0,
+			"TP-78 control: with nothing implementing a mark hook, a card printing no rank at all "
+			+ "matches a mark that prints one in nothing",
+			"got %d" % strict)
+	env.add_cards([rankless.with_type(MarkRanklessAllowed.new())] as Array[CardData])
+	var rescued := await MarkMatch.matches_at(state, rankless, cell(0, 0))
+	check(rescued == MarkMatch.Property.RANK,
+			"TP-78: a rule that allows an absent rank makes the same pair a RANK match",
+			"got %d" % rescued)
+	var allow_calls : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(allow_calls >= 1,
+			"TP-78: and it was asked through the mark family's own allow hook",
+			"counted %s" % str(env.dispatches))
+	check(MarkMatch.flat_bonus(rankless, rescued) == fallback,
+			"TP-78: a rescued card with no rank to read pays the flat fallback, as a rank with no "
+			+ "value a whole number can hold does",
+			"got %d" % MarkMatch.flat_bonus(rankless, rescued))
+	remove_child(env)
+	env.free()
+	restore_settings_snapshot(snapshot)
+
+#TP-78: what the PLAYER is shown for a rescued rankless card -- the line the game composes and
+#banks, measured against the same line with nothing implementing the rule.
+func test_a_rescued_rankless_card_banks_the_flat_fallback() -> void:
+	var snapshot := snapshot_settings("plan_")
+	SettingsManager.settings.plan_rank_flat_fallback = 3
+	var fallback : float = float(SettingsManager.settings.plan_rank_flat_fallback)
+	var strict := await banked_rankless_match(false)
+	var rescued := await banked_rankless_match(true)
+	check(strict == 0.0,
+			"TP-78 control: an unrescued rankless card banks no rank bonus at all",
+			"banked %f" % strict)
+	check(rescued == strict + fallback,
+			"TP-78: the rescued card's line banks the flat fallback the knob names",
+			"banked %f against %f" % [rescued, strict])
+	restore_settings_snapshot(snapshot)
+
+#TP-78: the deny pass is asked FIRST, which is visible in two places -- it refuses a pair whose
+#prints ARE the same, and it is REACHED at all about a card that prints no rank, which a presence
+#test standing in front of the hooks would answer before anything was dispatched.
+func test_the_leniency_hooks_are_asked_before_the_prints_are_read() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	mark_cell(state, 0, 0, row_card(7))
+	mark_cell(state, 1, 0, row_card(7))
+	var printed := row_card(7)
+	place_in_cell(state, 0, 0, printed)
+	var rankless := row_card(7)
+	rankless.rank = null
+	place_in_cell(state, 1, 0, rankless)
+	var agreed := await MarkMatch.matches_at(state, printed, cell(0, 0))
+	check(agreed == MarkMatch.Property.RANK,
+			"TP-78 precondition: the two printed 7s agree with nothing implementing a mark hook",
+			"got %d" % agreed)
+	env.add_cards([CardData.new().with_type(MarkPrintedRanksRefused.new())] as Array[CardData])
+	var refused := await MarkMatch.matches_at(state, printed, cell(0, 0))
+	check(refused == 0,
+			"TP-78: a deny rule refuses a pair whose prints are the same, printed sameness beaten",
+			"got %d" % refused)
+	var before : int = env.dispatches.get(MarkMatch.MARK_RANKS_DENY, 0)
+	var unrescued := await MarkMatch.matches_at(state, rankless, cell(1, 0))
+	var after : int = env.dispatches.get(MarkMatch.MARK_RANKS_DENY, 0)
+	check(after == before + 1,
+			"TP-78: and the deny pass is asked about a card printing no rank, not answered over "
+			+ "its head",
+			"counted %d against %d" % [after, before])
+	check(unrescued == 0,
+			"TP-78: which it refuses, leaving the absent print agreeing with nothing",
+			"got %d" % unrescued)
+	remove_child(env)
+	env.free()
+
+
+# ==============================================================================
+# TP-44 -- a mark answers no broadcast
+# ==============================================================================
+
+#⚠ THE SCORING BEAM IS THE LEVER, BECAUSE MEASURED: a card in a grid cell is not naturally spotlit
+#at all -- the legacy position index carries no grid coordinate, so the coverage walk fails closed
+#and every grid card is dark until the beam lands on it. Both cards here are forced, one control.
+
+#⚠ A COPIED GLOBAL STAMP IS THE OTHER LEVER, and it needs no beam: a global stamp lights its card
+#from anywhere, the deck included, so a mark that copied one would answer the whole board uncovered
+#and unforced. It is left unforced here for exactly that reason.
+func test_a_mark_answers_no_broadcast() -> void:
+	var g := make_game()
+	var mark := mark_cell(g.state, 0, 0, play_card(3, SpotlightTestSkill.make("mark")))
+	var extra_point := mark_cell(g.state, 1, 0, play_card(4, SkillExtraPoint.new()))
+	var global_source := play_card(6, SpotlightTestSkill.make("global"))
+	global_source.with_stamp(StampGlobal.new())
+	var global_mark := mark_cell(g.state, 2, 0, global_source)
+	var control := play_card(5, SpotlightTestSkill.make("control"))
+	place_in_cell(g.state, 2, 0, control)
+	var mark_spy := mark.skill as SpotlightTestSkill
+	var global_spy := global_mark.skill as SpotlightTestSkill
+	var control_spy := control.skill as SpotlightTestSkill
+	g.state.forced_spotlight[mark] = true
+	g.state.forced_spotlight[extra_point] = true
+	g.state.forced_spotlight[control] = true
+	await g.skill_spotlight_check()
+	check(control_spy.spotlight_calls == 1,
+			"precondition: the control card answers the engine's spotlight sweep",
+			"got %d" % control_spy.spotlight_calls)
+	check(mark_spy.spotlight_calls == 0,
+			"TP-44: the very same skill, copied onto a mark, answers nothing",
+			"got %d" % mark_spy.spotlight_calls)
+	check(global_spy.spotlight_calls == 0,
+			"TP-44: a mark that copied a global stamp answers the sweep no differently",
+			"got %d" % global_spy.spotlight_calls)
+	await g.run_all_mods(&"on_spotlight")
+	check(control_spy.spotlight_calls == 2 and mark_spy.spotlight_calls == 0,
+			"TP-44: a board-wide broadcast reaches the control and never the mark",
+			"control %d, mark %d" % [control_spy.spotlight_calls, mark_spy.spotlight_calls])
+	check(global_spy.spotlight_calls == 0,
+			"TP-44: nor does that broadcast reach the globally stamped mark",
+			"got %d" % global_spy.spotlight_calls)
+	check(control.skill.is_spotlit(),
+			"precondition: is_spotlit() is true on the control's own skill")
+	check(not extra_point.skill.is_spotlit(),
+			"TP-44: is_spotlit() is false on a mark's copied skill")
+	check(not mark.type.is_spotlit(),
+			"TP-44: and false on the marked cell's own type")
+	check(not global_mark.stamp.is_spotlit(),
+			"TP-44: is_spotlit() is false on a mark's copied global stamp")
+	check(not global_mark.skill.is_spotlit(),
+			"TP-44: a copied global stamp lights nothing else on its mark either")
+	free_game(g)
+
+#⚠ THE SKILL SLOT IS NOT THE WHOLE OF IT, BECAUSE MEASURED: a stamp answers a broadcast with no
+#spotlight gate at all, so a mark that copied one answers the board's hooks once per marked cell
+#however dark it is. The control is the same stamp on a real card, in a cell carrying no mark.
+func test_a_marks_copied_stamp_answers_no_broadcast() -> void:
+	var g := make_game()
+	var mark := mark_cell(g.state, 3, 0, play_card(3, null).with_stamp(AfterScoreRecorder.new()))
+	var control := play_card(4, null).with_stamp(AfterScoreRecorder.new())
+	place_in_cell(g.state, 4, 0, control)
+	var mark_spy := mark.stamp as AfterScoreRecorder
+	var control_spy := control.stamp as AfterScoreRecorder
+	await g.run_all_mods(&"on_after_score")
+	check(control_spy.after_scores == 1,
+			"precondition: the same stamp on a played card answers the board-wide broadcast",
+			"got %d" % control_spy.after_scores)
+	check(mark_spy.after_scores == 0,
+			"TP-44: a mark's copied stamp answers no board-wide broadcast",
+			"got %d" % mark_spy.after_scores)
+	check(mark.statuses.is_empty(),
+			"TP-44: and the mark carries no status for the same broadcast to reach",
+			"got %d" % mark.statuses.size())
+	free_game(g)
+
+
+# ==============================================================================
+# TP-77 -- a mark answers no board-wide dispatch walk
+# ==============================================================================
+
+#TP-77: both hooks here are asked through walks the broadcast gate never covered -- a comparator
+#pass and the placement query -- so a mark silenced in `run_all_mods` alone would still answer them.
+#The control is the SAME stamp on a real card, and it is what proves the walk still walks.
+func test_a_mark_answers_no_dispatch_walk() -> void:
+	var state := TestGridFixtures.build_fix_grid_1()
+	var env := CountingEnvironment.new()
+	add_child(env)
+	env.card_collections.append(state.grids[0].cell_types)
+	var mark := mark_cell(state, 0, 0, plan_card(PipSuitKnife, 4).with_stamp(MarkWalkProbe.new()))
+	var probe := plan_card(PipSuitKnife, 5)
+	place_in_cell(state, 0, 0, probe)
+	var mark_spy := mark.stamp as MarkWalkProbe
+	var held : Array[CardData] = [probe]
+	var strict := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(strict == MarkMatch.Property.SUIT,
+			"TP-77: a mark's own copied leniency rule does not loosen the match it sits under",
+			"got %d" % strict)
+	var asked : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(asked == 0,
+			"TP-77: the comparator dispatched it nothing at all",
+			"counted %s" % str(env.dispatches))
+	var on_mark := await env.return_first_data_array_result(&"on_can_place_stack", held, mark)
+	check(mark_spy.placements == 0 and on_mark.is_empty(),
+			"TP-77: nor does a mark's copied stamp answer the board's placement query",
+			"answered %d times, returned %d cards" % [mark_spy.placements, on_mark.size()])
+	check(not env.has_card_data(mark),
+			"TP-77: and the board does not report a mark as a card sitting on it")
+	var control := plan_card(PipSuitKnife, 4).with_stamp(MarkWalkProbe.new())
+	var control_spy := control.stamp as MarkWalkProbe
+	env.add_cards([control] as Array[CardData])
+	var lenient := await MarkMatch.matches_at(state, probe, cell(0, 0))
+	check(lenient == RANK_AND_SUIT,
+			"TP-77 control: the same rule on a real card turns the same pair into a rank match",
+			"got %d" % lenient)
+	var asked_control : int = env.dispatches.get(MarkMatch.MARK_RANKS_ALLOW, 0)
+	check(asked_control >= 1,
+			"TP-77 control: and the comparator dispatched it",
+			"counted %s" % str(env.dispatches))
+	var on_control := await env.return_first_data_array_result(&"on_can_place_stack", held, control)
+	check(control_spy.placements >= 1 and on_control == held,
+			"TP-77 control: the placement query reaches the same stamp on a real card",
+			"answered %d times, returned %d cards" % [control_spy.placements, on_control.size()])
+	check(env.has_card_data(control),
+			"TP-77 control: and the board reports that card as sitting on it")
+	remove_child(env)
+	env.free()
+
+
+# ==============================================================================
+# TP-45 -- a mark blocks nothing
+# ==============================================================================
+
+#TP-45: a mark is transparent to the spotlight rule -- it covers nothing, so every answer the rule
+#gives elsewhere on the board has to be the same with the mark there and gone.
+func test_a_mark_blocks_nothing() -> void:
+	var g := make_game()
+	var stacked := fill_lower(g)
+	var mark := mark_cell(g.state, 0, 0, play_card(3, SpotlightTestSkill.make("mark")))
+	for mod : CardModifier in [mark.skill, mark.type, mark.stamp, mark.suit]:
+		if mod:
+			check(not mod.blocks_spotlight(),
+					"TP-45: a mark's %s blocks nothing" % mod.get_str())
+	var with_mark := spotlit_ids(g.state, mark)
+	check(not with_mark.is_empty() and not stacked[0].skill.is_spotlit()
+			and stacked[1].skill.is_spotlit(),
+			"precondition: the coverage rule is live in this fixture, with a lit and a dark card",
+			"%d spotlit mods" % with_mark.size())
+	BoardPlan.clear_mark(mark)
+	g.state.revision += 1
+	var without_mark := spotlit_ids(g.state, mark)
+	check(with_mark == without_mark,
+			"TP-45: the board's spotlit set is the same whether the cell is marked or not",
+			"%d with the mark, %d without" % [with_mark.size(), without_mark.size()])
+	free_game(g)

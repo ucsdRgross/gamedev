@@ -1,5 +1,8 @@
 class_name TestGridFixtures
-## Board fixtures and board readers shared across every suite that needs a stocked GridData board, so two sessions never invent two datasets for one fixture id.
+## Board fixtures for the poker-patience grid model.
+
+#Shared across every suite that needs a stocked GridData board, so two sessions never invent two
+#datasets for the same fixture id.
 
 ## FIX-GRID-1: one 5x5 grid, empty.
 static func build_fix_grid_1() -> GameData:
@@ -24,7 +27,9 @@ static func build_fix_mixed_h() -> GameData:
 	state.grids = [g0, g1, g2]
 	return state
 
-## FIX-CROSS: grid 0 row 2 and column 2 both one card short, sharing cell (2,2) empty -- one placement there completes both.
+#So one placement into (2,2) completes both.
+
+## FIX-CROSS: grid 0 row 2 and column 2 both one card short, sharing empty cell (2,2).
 static func build_fix_cross() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -57,7 +62,9 @@ static func build_fix_stack_10() -> GameData:
 	state.grids = [grid]
 	return state
 
-## FIX-ROW-FLUSH: grid 0 row 0 filled with five cards of one suit, ranks 2,4,6,8,10 -- a flush, not a straight.
+#A flush, not a straight.
+
+## FIX-ROW-FLUSH: grid 0 row 0 filled with five cards of one suit, ranks 2, 4, 6, 8, 10.
 static func build_fix_row_flush() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -71,7 +78,10 @@ static func build_fix_row_flush() -> GameData:
 	state.grids = [grid]
 	return state
 
-## FIX-ROW-STRAIGHT: grid 0 row 0 filled with ranks 3,4,5,6,7 across mixed suits -- a straight, not a flush, so the evaluator is shown telling FIX-ROW-FLUSH and this apart.
+#A straight, not a flush. It pairs with FIX-ROW-FLUSH so the evaluator is shown telling the two
+#apart, not merely returning something non-null.
+
+## FIX-ROW-STRAIGHT: grid 0 row 0 filled with ranks 3, 4, 5, 6, 7 across mixed suits.
 static func build_fix_row_straight() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -84,7 +94,9 @@ static func build_fix_row_straight() -> GameData:
 	state.grids = [grid]
 	return state
 
-## FIX-TRIPLE: row 2, column 2 and both diagonals filled except their shared cell (2,2), left EMPTY so ONE placement there completes all of them -- filled, that placement lands at height 1 where none is complete.
+#Both main diagonals, row 2 and column 2 are fully filled.
+
+## FIX-TRIPLE: grid 0 arranged so cell (2,2) completes row 2, column 2 and a diagonal at once.
 static func build_fix_triple() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -96,6 +108,9 @@ static func build_fix_triple() -> GameData:
 	for i in grid.grid_width:
 		coords.append(Vector2i(i, i))
 		coords.append(Vector2i(i, grid.grid_width - 1 - i))
+#(2,2) is the cell all three lines share and is left EMPTY on purpose: the fixture's whole point is
+#that ONE placement there completes row 2, column 2 and both diagonals. Filling it would make that
+#placement land at height 1, where none of them is complete.
 	var shared := Vector2i(2, 2)
 	for coord : Vector2i in coords:
 		if coord == shared: continue
@@ -107,7 +122,9 @@ static func build_fix_triple() -> GameData:
 	state.grids = [grid]
 	return state
 
-## FIX-LEVEL-3: grid 0 with every cell of row 0 at height 3, so a horizontal line exists at levels 0, 1 and 2.
+#So a horizontal line exists at levels 0, 1 and 2.
+
+## FIX-LEVEL-3: grid 0 with every cell of row 0 at height 3.
 static func build_fix_level_3() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -139,9 +156,13 @@ static func _fill_cell(grid: GridData, x: int, y: int, height: int) -> void:
 		card.stage = CardData.Stage.PLAY
 		grid.cells[idx].datas.append(card)
 
-# ⚠ A board conjured into existence completes no lines and scores nothing, so the phase gate builds
-# this shape through the real placement path instead; use this only where the packed board is the subject.
-## FIX-FULL-15: grid 0 with all 25 cells at height 15 -- 375 cards, as a FINISHED board.
+#⚠ THIS RETURNS THE FINISHED BOARD, and the phase gate does NOT use it: that test builds the
+#same shape one card at a time through the real placement path, because a board conjured into
+#existence completes no lines and so scores nothing.
+
+#Use it only where the packed board itself is the subject: a snapshot size, a walk, a render.
+
+## FIX-FULL-15: grid 0 with all 25 cells at height 15, which is 375 cards.
 static func build_fix_full_15() -> GameData:
 	var state := GameData.new()
 	var grid := _new_grid(5, 5)
@@ -156,9 +177,17 @@ static func build_fix_full_15() -> GameData:
 	return state
 
 
-# The stocking helpers below drive a bootstrapped `Game` through `place_card_in_grid`, the engine's own
-# path, so the broadcast fires, the detector scores and the Entrance refills. Cards come from the
-# slots' stocks via `draw_card()`: lifting one out of the Entrance has no mutation path.
+#DRIVING A LIVE GAME ONTO A GRID BOARD. These take a real Game, view or headless, that has already
+#bootstrapped, and put cards on its grids through place_card_in_grid - the same path the engine
+#uses, so the mutation broadcast fires, the detector scores and the Entrance refills.
+
+#Shared so the suites that need "a board with something on it" do not each grow their own.
+
+#Cards come from the game's OWN draw deck via draw_card(), never from the Entrance: lifting a card
+#out of an Entrance slot has no mutation path yet, and placing one still in upper_zone would leave
+#it in two collections at once.
+
+#Returns the cards actually placed, fewer than `count` if the deck ran out.
 
 ## The top card of the first slot that still has one -- these fixtures do not care which slot.
 static func draw_any(game: Game) -> CardData:
@@ -166,6 +195,15 @@ static func draw_any(game: Game) -> CardData:
 		var card := game.draw_card(slot)
 		if card: return card
 	return null
+
+## The next `count` cards `draw_any` will hand out, in that order -- each slot back to front, slot 0 first.
+static func next_draws(state: GameData, count: int) -> Array[CardData]:
+	var out : Array[CardData] = []
+	for stock : ArrayCardData in state.entrance_stocks():
+		for i : int in range(stock.datas.size() - 1, -1, -1):
+			if out.size() == count: return out
+			out.append(stock.datas[i])
+	return out
 
 ## Draws `count` cards into consecutive cells of row `y`, left to right; returns those actually placed -- fewer if the deck ran out.
 static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Array[CardData]:
@@ -178,9 +216,9 @@ static func place_row_from_deck(game: Game, grid: int, y: int, count: int) -> Ar
 	return placed
 
 
-# Cards are named by VALUE (rank/suit), never by instance: a restored snapshot carries its own
-# copies, so two states that are "the same board" never share a single card object.
-## A stable text digest of a show's outcome: every cell bottom to top, the Entrance, the deck and discard IN ORDER, and every score bucket.
+#Cards are named by VALUE, never by instance: a restored snapshot carries its own copies. A CELL'S OWN
+#MARK is part of the board too -- one back without it is a different board, whatever stands on it.
+## Everything a show's outcome is made of: every cell and its mark, the Entrance, both decks in order, every score bucket, the combo set.
 static func board_digest(state: GameData) -> String:
 	var parts : Array[String] = []
 	for gi : int in state.grids.size():
@@ -190,6 +228,9 @@ static func board_digest(state: GameData) -> String:
 			for card : CardData in grid.cells[ci].datas:
 				names.append(card.log_str())
 			parts.append("g%d.c%d=[%s]" % [gi, ci, ",".join(names)])
+			var cell_type : CardData = grid.cell_types[ci]
+			parts.append("g%d.t%d=%s granted=%s" % [gi, ci, cell_type.log_str(),
+					str((cell_type.type as TypeGridCell).granted)])
 	for col : int in state.upper_zone.size():
 		var names : Array[String] = []
 		for card : CardData in state.upper_zone[col].datas:
@@ -209,11 +250,17 @@ static func board_digest(state: GameData) -> String:
 	for key : Vector3i in cell_keys:
 		parts.append("cell%s=%f" % [key, state.scores_cell[key].to_float()])
 	parts.append("committed=%d" % state.committed_grid)
+	parts.append("plan_seed=%d" % state.plan_seed)
+	parts.append("combo=[%s]+%d" % [",".join(state.combo_classes), state.combo_repeats])
+	parts.append("banked=%d" % state.total_score)
 	parts.append("total=%d" % state.live_total())
 	return "
 ".join(parts)
 
-## A coordinate-keyed bucket in KEY ORDER -- a digest that varied with insertion order would report a difference where there is none.
+#A dictionary has no order of its own, and a digest that varied with insertion order would report
+#a difference where there is none.
+
+## A coordinate-keyed bucket, in KEY ORDER.
 static func _keyed_digest(bucket: Dictionary[Vector3i, BigNumber]) -> String:
 	var keys : Array = bucket.keys()
 	keys.sort()

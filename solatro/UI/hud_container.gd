@@ -15,6 +15,7 @@ extends PanelContainer
 
 @onready var submit_button : Button = %Submit
 @onready var undo_button : Button = %Undo
+@onready var plan_layer_button : Button = %PlanLayer
 @onready var deck_ui : Control = %Deck
 @onready var discard_ui : Control = %Discard
 @onready var rules_ui : Control = %Rules

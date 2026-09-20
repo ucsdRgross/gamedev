@@ -36,8 +36,8 @@ PARSED OUT of `all_tests.gd` rather than restated, so the two gates cannot drift
 ### The two-tier loop — headless logic tier inside, full windowed run at the gate
 
 ```bash
-py solatro/Tools/run_tests.py --logic     # inner loop: 32 renderer-independent suites, ~65 s
-py solatro/Tools/run_tests.py             # the gate: all 45, windowed, ~190 s
+py solatro/Tools/run_tests.py --logic     # inner loop: 34 renderer-independent suites, ~65 s
+py solatro/Tools/run_tests.py             # the gate: all 48, windowed, ~190 s
 ```
 
 The tier is a `logic` GROUP on the suite nodes in `Tests/all_tests.tscn`, not a list in the runner —
@@ -73,8 +73,8 @@ started without finishing** plus the last line written.
 detector.
 
 ⚠ **WHY IT EXISTS, AND WHY `--timeout` ALONE IS NOT ENOUGH.** One stalled suite spends the entire
-whole-run budget, and the wrapper then prints `NO SUITE BANNER` — **discarding the verdict of all 45
-suites, including the 44 that passed.** Measured: a 27-minute stall cost a full run AND left nothing
+whole-run budget, and the wrapper then prints `NO SUITE BANNER` — **discarding the verdict of all 48
+suites, including the 47 that passed.** Measured: a 27-minute stall cost a full run AND left nothing
 to attribute it with.
 
 ⚠ **IT COPIES THE LOG DIRECTORY ASIDE BEFORE KILLING**, to `<user data>/Solatro/logs-stalled-<stamp>`.
@@ -156,7 +156,7 @@ a local copy in a suite.
 
 ⚠ **A PARSE ERROR CAN ALSO PRESENT AS A GREEN-LOOKING RUN WITH A SMALLER SUITE COUNT.** When the
 broken script is one suite rather than `test_base.gd`, that suite simply fails to LOAD, every other
-suite finishes normally, and the banner reads `ALL 44 SUITES: ... PASSED` instead of 45. **The SUITE
+suite finishes normally, and the banner reads `ALL 47 SUITES: ... PASSED` instead of 48. **The SUITE
 count is the stable number — the check total drifts run to run**, so only the suite count can catch
 this. A `Variant` typing error in one suite drops the count by one while the run still reads as a
 pass. ⚠ **Re-derive the expected count, never trust a doc for it:**

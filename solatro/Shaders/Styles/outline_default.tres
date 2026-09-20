@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="OutlineStyle" format=3 uid="uid://ph474bienjde"]
 
 [ext_resource type="Script" uid="uid://b7l088vn54xvl" path="res://Cards/outline_style.gd" id="1_outline"]
+[ext_resource type="Resource" path="res://Assets/Palette/ramp_match.tres" id="2_shimmer"]
 
 [resource]
 script = ExtResource("1_outline")
 glare_thickness = 12.0
 glare_buffer = 2.0
 throb_color = 30
+shimmer_ramp = ExtResource("2_shimmer")

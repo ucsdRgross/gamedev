@@ -1,18 +1,27 @@
 extends Control
 class_name GameView
-## The detachable UI/input layer for a show: owns every visual and holds a headless [Game] node; remove this view and the Game still runs headless, since every paced call is `if view: await view.<m>()`.
+#Communication: Game -> view reactive is state_changed / board_changed / processing_changed /
+#submit_label_changed / show_resolved; Game -> view paced is `if view: await view.<m>()`; view ->
+#Game is a command - end_show, next, undo, try_grab, try_place.
 
-## Forwarded from the held Game so Main can bind the view directly; frees with its Game child.
+#Remove this view and the Game still runs a full show headless, every paced call being `if view:`.
+
+## The detachable UI and input layer for a show: it owns every visual and holds a headless Game.
+
+#The view frees with its Game child, so Main frees just the view.
+
+## Forwarded from the held Game so Main can bind the view directly.
 signal game_ended
 signal run_lost
+#The board has no business knowing whether Info mode wants a card shown.
 
-## Relayed from `PlayArea` so `Main` can put a clicked card on the wall's info card.
+## Relayed from PlayArea so Main can put a clicked card on the wall's info card.
 signal info_requested(entry: InfoEntry)
+#The board lives inside this view's own SubViewport and has no reach to the camera outside it.
 
-## Relayed from `PlayArea` so `Main` can step its wall camera -- the board has no reach to it.
+## Relayed from PlayArea so Main can step its wall camera.
 signal overview_pan_requested(grid_index: int)
-
-## Relayed from `PlayArea` so `Main` can bounce its wall camera off the board's OVERVIEW edge.
+## Relayed from PlayArea so Main can bounce its wall camera off the board's OVERVIEW edge.
 signal overview_bounce_requested(step: int)
 
 # Continue button sizing (win/lose screen) — named, no magic numbers in logic.
@@ -39,6 +48,8 @@ var wall_picture : WallPicture = null
 ## The HUD controls, reached off `hud_container` in `_bind_hud_container()`, under the same names the scene used to own directly.
 var submit_button : Button = null
 var undo_button : Button = null
+## Opens and closes the marks layer, for the mouse, the keyboard and the controller alike.
+var plan_layer_button : Button = null
 var deck_ui : Control = null
 var discard_ui : Control = null
 var rules_ui : Control = null
@@ -64,18 +75,34 @@ func _ready() -> void:
 	game.combo_changed.connect(_on_combo_changed)
 	game.game_ended.connect(func() -> void: game_ended.emit())
 	game.run_lost.connect(func() -> void: run_lost.emit())
+#THE SPOTLIGHT WIRE. Bound after `game` is built - it IS the CardEnvironment the cue comes from -
+#and before the deal, so the first placement of the run is already lit.
 	spotlight_director = SpotlightDirector.new()
 	spotlight_director.name = "SpotlightDirector"
 	add_child(spotlight_director)
 	spotlight_director.bind(light_layer, play_area, game)
+#THE REVEAL IS THE BOARD'S HALF OF THE SAME BEAT, deliberately a second listener on the same
+#signals rather than something the director calls: the director owns LIGHTS and the play area owns
+#LAYOUT, and both derive from one signal, so they cannot disagree about which section is up.
 	game.spotlight_section_changed.connect(play_area.set_reveal_cards)
+#⚠ The rows close on the ACT's release, an empty section, not on spotlight_reveal_ended: that
+#fires per section to fade the show, and closing there would slam every row shut between sections
+#and re-open it. An empty `cards` array already routes through set_reveal_cards and closes all.
 	_build_debug_bar()
 
+#HUD and board signals are rebound whenever Game swaps its state, which undo and resume do. The
+#initial default state bypasses the setter, so it is bound by hand.
 	game.state_bound.connect(_on_state_bound)
 	_bind_state(null, game.state)
 
-	hud_container.connect_for_screen(self, submit_button.pressed, func() -> void: game.end_show())
+#⚠ THE SUBMIT BUTTON ENDS THE SHOW and carries the End label. A show is one continuous
+#performance with no act to submit and nothing that resolves one on its own, so end_show() is the
+#only thing that can finish it; bound to the retired submit act it does nothing a player can see.
+	hud_container.connect_for_screen(self, submit_button.pressed, _on_submit_pressed)
 	hud_container.connect_for_screen(self, undo_button.pressed, _on_undo_pressed)
+	plan_layer_button.text = TRANSLATION.find('PLAN_LAYER_TOGGLE')
+	plan_layer_button.tooltip_text = TRANSLATION.find('PLAN_LAYER_TOGGLE_HINT')
+	hud_container.connect_for_screen(self, plan_layer_button.pressed, _on_plan_layer_pressed)
 	var deck_button := deck_ui.get_node(^"Button") as Button
 	hud_container.connect_for_screen(self, deck_button.pressed,
 			func() -> void: _open_deck_viewer(sorted_stock_union(game.state), deck_button))
@@ -99,6 +126,8 @@ func _ready() -> void:
 
 	add_child(game)
 	_add_prop_debug_controls()
+#_refresh_hud early-returns while _ready runs, so it is refreshed deferred and a fresh goal or a
+#resumed score shows immediately.
 	_refresh_hud.call_deferred()
 	_publish_board_inset()
 
@@ -109,6 +138,7 @@ func _bind_hud_container() -> void:
 	tree_exiting.connect(hud_container.release_screen.bind(HudContainer.GAME_SCREEN))
 	submit_button = hud_container.submit_button
 	undo_button = hud_container.undo_button
+	plan_layer_button = hud_container.plan_layer_button
 	deck_ui = hud_container.deck_ui
 	discard_ui = hud_container.discard_ui
 	rules_ui = hud_container.rules_ui
@@ -152,15 +182,11 @@ func _add_prop_debug_controls() -> void:
 	box.add_child(toggle)
 	box.add_child(step)
 	add_child(box)
+#Bottom-right corner, growing up and left so the content never leaves the screen.
 	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 8)
 
-# ==============================================================================
-# STATE BINDING (disconnect old, connect new on every state swap)
-# ==============================================================================
-
-# A swapped-in state is a new board, and a swap bumps no revision of its own.
 func _on_state_bound(new_state: GameData) -> void:
 	_bind_state(_bound_state, new_state)
 	_on_board_changed()
@@ -178,18 +204,16 @@ func _bind_state(old_state: GameData, new_state: GameData) -> void:
 	new_state.board_changed.connect(_on_board_changed)
 	_refresh_hud()
 
-# ==============================================================================
-# GAME -> VIEW REACTIVE (signal-driven; no awaiting)
-# ==============================================================================
-
-# Owner ruling: the combo label hides at x1.0 rather than reading a no-op multiplier.
 func _refresh_hud() -> void:
 	if not is_node_ready() or not game: return
 	var state := game.state
 	goal_label.text = str(state.goal)
+#The show's score is DERIVED, every grid's total times the combo, and always current: there is no
+#act payout and no banking moment, so there is no stored total to show.
 	total_label.text = str(state.live_total())
 	var combo := state.combo_mult()
 	combo_label.text = TRANSLATION.find('GAME_COMBO') % combo
+#Hidden at x1.0 (owner ruling).
 	combo_label.visible = combo > 1.0
 	_mark_goal_met(state.has_met_goal())
 
@@ -208,11 +232,15 @@ func _refresh_end_reveal() -> void:
 	var state := game.state
 	submit_button.visible = state.stocks_are_empty() or state.grids_are_full()
 
+#A NEW combo class registered this act: refresh and pulse the combo label. combo_classes.append()
+#does not emit state_changed, so this signal is the live path; sync_scores() and state_changed
+#re-run _refresh_hud after apply_act_score clears the set.
 var _combo_tween : Tween = null
 
 # A new combo class registered this act: the label pulses in the same shape as `BigNumberLabel.anim_pop`.
 func _on_combo_changed(_count: int) -> void:
 	_refresh_hud()
+#The pulse has the same shape as BigNumberLabel.anim_pop.
 	var delay := game.get_delay()
 	if _combo_tween and _combo_tween.is_running():
 		_combo_tween.custom_step(INF)
@@ -284,7 +312,12 @@ func _on_processing_changed(busy: bool) -> void:
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text
 
-## The win/lose overlay covers ONLY the play area: the board is blocked while the rest of the HUD stays clickable -- Undo rewinds the outcome, the deck/discard/rules viewers open.
+#The win/lose overlay covers ONLY the play area, living inside PlayContainer: the board underneath
+#is blocked, by the overlay's STOP filter for the mouse and by dropping the card controls' focus for
+#keyboard and controller.
+
+#The rest of the HUD stays clickable - Undo rewinds the outcome and the viewers still open - while
+#Submit and Next stay disabled, processing holding true with no more card logic.
 var _continue_button : Button = null
 
 ## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
@@ -335,9 +368,8 @@ func _on_show_unresolved() -> void:
 	_continue_button = null
 	undo_button.grab_focus()
 
-# ==============================================================================
-# GAME -> VIEW PACED (injected view; Game calls `if view: await view.<m>()`)
-# ==============================================================================
+#A rebuild mid-grab strands held-card visual state, and the player's selection cannot survive a
+#round change anyway.
 
 ## Drop any live grab before the Game mutates the board underneath it.
 func release_grab() -> void:
@@ -371,19 +403,34 @@ func _arm_the_entrance() -> void:
 	if _rested_the_focus or play_area.selected_cards.is_empty(): return
 	_rested_the_focus = play_area.rest_focus_on_armed()
 
+## Deal the opening plan onto the board cell by cell (show start only).
+func reveal_plan() -> void:
+	await play_area.reveal_plan()
+
 ## Repopulate the row/col score gutters from state.scores_* (after apply_act_score clears them).
 func sync_scores() -> void:
 	play_area.update_score_controls()
 
-# A resume rebuilds EVERY board visual from the restored GameData: the revision-bump rebuild never
-# touches the gutters. They reserve their space FIRST, so the cards lay out against the final height.
+#The board is only "ready" once the cards AND the row/col gutters reflect the loaded state: the
+#normal rebuild path does not touch the gutters, so a resumed show would show empty gutters despite
+#the scores being restored in state.
+
+## Rebuild EVERY board visual from the restored GameData, which is what a resume needs.
 func load_board_visuals() -> void:
+#The gutters are created FIRST, so the containers reserve their space before the cards lay out.
+#Adding them afterwards shifts the board down after the cards are positioned, and a resumed
+#mid-submit show would then play its scoring jump from the old, higher spot.
 	play_area.update_score_controls()
 	play_area.flush_rebuild()
+#CardVisuals enter the tree via call_deferred, the deferral being what keeps board rebuilds from
+#flying in from the origin, so they are ready one frame later. The check comes first in case the
+#build already finished; otherwise board_visuals_ready fires when the deferred adds land.
 	if not play_area.visuals_ready():
 		await play_area.board_visuals_ready
 	print("[resume] cards ready: %d card visual(s), visuals_ready=%s"
 			% [play_area.data_card.size(), play_area.visuals_ready()])
+#The gutter values are refreshed now the board is fully laid out. Idempotent, and the space was
+#already reserved above, so this no longer shifts the board.
 	play_area.update_score_controls()
 	print("[resume] score gutters loaded from state: rows upper=%d lower=%d, cols=%d"
 			% [game.state.scores_row_upper.size(), game.state.scores_row_lower.size(),
@@ -405,36 +452,60 @@ func reset_meld(result: Scoring.Result) -> void:
 func update_line_score(zone: Array[BigNumber], index: int, score: BigNumber) -> void:
 	play_area.update_score(zone, index, score)
 
-## The grid board's equivalent, since the legacy zone-array path can't reach keyed grid buckets.
+#The grid buckets are keyed dictionaries rather than the legacy zone arrays, so they cannot go
+#through update_line_score - but a score the player cannot see arrive is the same defect either way.
+
+## Pop the row, column, special or height label a grid line just banked into.
 func pop_grid_line_score(section: ScoringSection) -> void:
 	play_area.pop_grid_score_label(section)
 
-## Start one prop-simulation tick's visuals and return a signal the Game awaits for completion.
+#The data is one step ahead of the view, so this returns a signal the Game awaits for completion.
+#The PropLayer animates every live prop and emits tick_done once they have all reached target.
+
+## Start one prop-simulation tick's visuals.
 func begin_prop_tick(live: Array, spawned: Array, movers: Array, relocated: Array) -> Signal:
 	return play_area.prop_layer.begin_prop_tick(live, spawned, movers, relocated)
 
-## Undo cancelled a resolving act: free every prop visual immediately, since no later tick will.
+#The prop simulation stopped mid-run, so no later tick will prune the visuals.
+
+## Undo cancelled a resolving act: free every prop visual immediately.
 func abort_props() -> void:
 	play_area.prop_layer.abort_all()
 
-## True while the started visual tick is still animating, so the Game's SYNC step knows whether awaiting `tick_done` would hang on an emission that already fired.
+#The Game's SYNC step awaits tick_done only while this holds: if the events phase outlasted the
+#animation the emission already fired, and awaiting it now would hang.
+
+## True while the started visual tick is still animating.
 func prop_tick_pending() -> bool:
 	return play_area.prop_layer.tick_pending()
 
-# ==============================================================================
-# VIEW -> GAME INPUT (selection UI here; data queries/moves are Game commands)
-# ==============================================================================
 
-# What is held is the arm, and the arm is view-only: it is dropped here and re-derived from whatever
-# board the undo restores.
+#THE LAYER VIEW IS A VIEWER: while the board draws its marks it is looked at and never played,
+#so every command that would mutate it is refused rather than queued.
+func _board_is_playable() -> bool:
+	return not play_area.plan_layer_open
+
+#THE ONE THING THAT FINISHES A SHOW, and not something a viewer does from inside the layer it
+#opened to look at the board.
+func _on_submit_pressed() -> void:
+	if not _board_is_playable(): return
+	game.end_show()
+
+#Held cards are RELEASED rather than the undo refused, because the selection state lives in
+#PlayArea and is the view's job; a board being looked at is not rewound at all.
 func _on_undo_pressed() -> void:
+	if not _board_is_playable(): return
 	play_area.ungrab_cards()
 	game.undo()
 	await _arm_the_entrance()
 
-# ONE CLICK, BOTH OUTCOMES: it locks the description to the card it landed on AND performs the
-# board action. A landed placement finishes the interaction and takes the container back to the
-# HUD; a REFUSED one leaves the description up and falls through to picking that card up instead.
+#ONE CONTROL EVERY INPUT MODE REACHES THE SAME WAY: a focusable button answers a mouse click, a
+#keyboard accept and a controller accept without any of the three being wired on its own. Refused
+#while the board resolves, the way a selection is: the rebuild that cascade ends in closes it.
+func _on_plan_layer_pressed() -> void:
+	if game.processing: return
+	play_area.plan_layer_open = not play_area.plan_layer_open
+
 func _on_data_selected(data: CardData) -> void:
 	if game.processing:
 		play_area.stop_following()
@@ -478,9 +549,16 @@ func _pick_up(data: CardData) -> void:
 	else: play_area.stop_following()
 
 
-# THE DEBUG BAR (owner tool, debug builds only): Record toggles an EventLog capture and writes it
-# on stop; Undo/Redo step the uncapped debug history so a bug's setup is always reachable and the
-# action repeatable while recording. EventLog stays off by default; Record is the only way it turns on.
+#THE DEBUG BAR - three buttons serving one workflow. Owner: *"If I see an issue during playtest, I
+#can undo, press record, then repeat the action, and then send log for debugging."* Record captures
+#an EventLog and writes it on stop, debug undo rewinds uncapped, debug redo steps forward again.
+
+#⚠ DEBUG BUILDS ONLY. The bar is not built at all in an exported game, where Game's debug
+#history does not exist either, so two of the three buttons would be dead controls.
+
+#⚠ RECORD IS DELIBERATELY THE ONLY WAY THIS TURNS ON IN A REAL SESSION. EventLog is off by
+#default and costs one static bool when off; a log that recorded every session would be a
+#performance cost paid forever to capture mostly nothing.
 
 var _debug_bar : HBoxContainer = null
 var _record_button : Button = null
@@ -491,12 +569,17 @@ func _build_debug_bar() -> void:
 	if not OS.is_debug_build(): return
 	_debug_bar = HBoxContainer.new()
 	_debug_bar.name = "DebugBar"
+#Top-right, away from the board and the HUD. MOUSE_FILTER_IGNORE on the CONTAINER so only the
+#buttons themselves take clicks - a full-width bar would otherwise eat drags across the top.
 	_debug_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_record_button = _add_debug_button(TRANSLATION.find('DEBUG_RECORD'), _on_debug_record)
 	_add_debug_button(TRANSLATION.find('DEBUG_UNDO'), _on_debug_undo)
 	_add_debug_button(TRANSLATION.find('DEBUG_REDO'), _on_debug_redo)
 	_add_debug_button(TRANSLATION.find('DEBUG_CUE'), _on_debug_cue)
 	add_child(_debug_bar)
+#TOP-right, growing left - the same shape as the bottom-right prop-debug box, which is why the two
+#do not collide. Parented to the VIEW rather than to SceneRoot, exactly as that box is, so the two
+#debug surfaces live in one place in the tree.
 	_debug_bar.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_debug_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT,
 			Control.PRESET_MODE_MINSIZE, 8)
@@ -509,8 +592,9 @@ func _add_debug_button(text: String, handler: Callable) -> Button:
 	_debug_bar.add_child(b)
 	return b
 
-# The capture records every channel, since a playtest bug can be anywhere. Stopping WRITES it and
-# prints the folder, so the owner has a path to send.
+#Stopping WRITES the capture and prints the folder, so the owner has a path to send without hunting.
+
+## Toggle the capture.
 func _on_debug_record() -> void:
 	if EventLog.enabled:
 		EventLog.end()
@@ -521,11 +605,23 @@ func _on_debug_record() -> void:
 		EventLog.begin()
 		_record_button.text = TRANSLATION.find('DEBUG_RECORD_STOP')
 
-# The cue is unreachable without a skill implementing `on_spotlight`, so this stamps `SpotlightProbe`
-# on the first skill-free card that answers it is ACTUALLY spotlit -- a covered one says no -- and
-# runs the REAL sweep, so what shows is what a real activation looks like.
+#⚠ THE CUE IS OTHERWISE UNREACHABLE IN THE RUNNING GAME, AND THAT IS A CONTENT FACT, NOT A BUG:
+#spotlight_cued is filtered to skills implementing on_spotlight, and the only other one is a RULES
+#card with no CardVisual, so the light set is always empty. See SpotlightProbe's header.
+
+#⚠ IT PICKS A CARD THAT IS NOT ALREADY SPOTLIT, WHICH IS THE WHOLE TRICK: the cue fires on the
+#EDGE, skill_spotlight_check announcing only a card that TRANSITIONED into spotlit. An uncovered
+#card is spotlit the instant the sweep runs, so pressing again lands on the next card.
+
+## Stamp SpotlightProbe onto a board card and re-run the sweep, so the cue actually fires.
 func _on_debug_cue() -> void:
 	if not game or not game.state: return
+#⚠ STAMP, THEN ASK THE CARD WHETHER IT IS ACTUALLY SPOTLIT, AND UNSTAMP IF NOT. Picking the
+#first skill-free board card is not enough: a ZONE-stage column header is reported by
+#_blocked_from_above() as covered, so is_spotlit() is false and the sweep correctly ignores it.
+
+#Only an UNCOVERED card transitions, so the choice has to be made by asking, not by guessing which
+#stage is on top.
 	var chosen : CardData = null
 	for data : CardData in play_area.data_card.keys():
 		if data.skill != null: continue
@@ -539,6 +635,7 @@ func _on_debug_cue() -> void:
 		return
 	print("[debug cue] probe -> %s; watch for the circle, the beam and the shallower casual dim"
 			% chosen.log_str())
+#The REAL sweep, not a hand-built emit, so what you see is what a real activation looks like.
 	await game.skill_spotlight_check()
 
 func _on_debug_undo() -> void:

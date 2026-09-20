@@ -63,6 +63,10 @@ Two more mechanical checks, same shape as `doc_check.py`, sharing the same `Stop
 - **`py .claude/tools/diff_shape.py`** — a change that only ADDS lines to an existing file, which is
   what bolting a new path alongside the old one looks like. `--history N` re-derives the baseline.
 
+- **`py .claude/tools/sweep_check.py <file>`** — proves a comment sweep changed no code: the
+  comment-stripped code of HEAD and of the working copy must be byte-identical. A trailing
+  comment's removal edits its code line, which a diff cannot tell from a code change; this can.
+
 **`.claude/hooks/commit-gate.ps1` blocks an agent commit whose staged diff duplicates existing
 logic**, with `[dup-ok]` in the commit message as the deliberate-duplication escape. It fires only
 on commits an agent makes, never on the owner's GitHub Desktop flow.

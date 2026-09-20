@@ -272,7 +272,7 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 
 | Rule | Node |
 |---|---|
-| an empty cell draws its mark inside the existing empty-cell frame, **grey and faded like a ghostly outline**, and need not sit exactly in the palette. `Q112` verbatim: *"all four. should be same size as a normal card."* | `Q63`=(d), `Q112` |
+| an empty cell draws its mark inside the existing empty-cell frame at full card size. ⚠ **Owner ruling during execution, superseding `Q63`'s grey:** *"i dont want grid marks to be monochromatic. try no outline to indicate it is a mark version for now, no other visual changes."* — a mark keeps a real card's colours and the ONLY visual difference is that it draws no outline. `Q112` verbatim: *"all four. should be same size as a normal card."* | `Q63`=(d) superseded, `Q112` |
 | all four printed properties are drawn, per that same `Q112` note | `Q112`, `Q4`=(b) |
 | a covered mark is available on **inspection**, and through the layer view | `Q19` |
 | the **layer view** is a **two-state toggle** — the played board, or the marks — with no notion of stack depth | `Q113`=(b) |
@@ -280,6 +280,7 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 | it works **focused AND in the overview** | `Q116`=(b) |
 | opened by a **held shoulder button AND a HUD control** every input mode reaches | `Q117`=(c) |
 | holding a card **highlights every cell it would match** | `Q66`=(a) |
+| ⚠ **Owner rulings during execution:** *"no outline on mark when not being selected and on board, then white outline when indicating it matches current card being selected to show it matches."* — at rest a mark has no outline; while a card is selected, a mark it matches takes a WHITE outline (`match_rim` is white). And: *"marks dont have specific type for now, keep using the zone type art"* — a mark draws the grid cell's own zone frame, never a type frame of its own. | owner |
 | `Q67` verbatim: *"each art in card has an outline already, selection takes over the outline to show which ones match"* | `Q67` |
 | `Q68` verbatim: *"each partial art has its own outline that highlights"* | `Q68` |
 | on landing, `Q64` verbatim: *"activated art gets special outline, pips get their outline replaced with a different version to indicate activated"* — no popup, no card-level alert | `Q64` |
@@ -289,10 +290,23 @@ I6: every mark with `granted == false` names a card printed by some card in the 
 | colour alone is acceptable for these states | `Q71`=(b) |
 | no tutorial | `Q74`=(a) |
 
-⚠ **`modulate` IS NOT AVAILABLE for the grey.** It is the focus highlight (`Cards/card_visual.gd:117`)
+⚠ **`modulate` IS NOT AVAILABLE for any mark treatment.** It is the focus highlight (`Cards/card_visual.gd:117`)
 and it propagates to direct `CanvasItem` children, so it would tint the real card stacked on the
 mark (`DESIGN.md` §1c, §1m). Use the palette and the outline shader's three override layers
 (`ARCHITECTURE_REVIEW.md` §4i, §4j).
+
+### 1.10-bis Owner rulings on the run's gaps (verbatim; the gap files carry the reading taken)
+
+| Gap | Ruling |
+|---|---|
+| GAP-001 | *"b, build the logic here for now, can merge with sidebar changes later."* — the stocks partition is built here as a read-only helper by the sidebar's own round-robin rule; TP-05/TP-06 land; the mid-show pool is the remaining stocks. |
+| GAP-002 | *"i would say instantly, effects can theoretically trigger immediately when mark is hit, with other types of effects directly checking the mark it is on top of without needing hook to figure out how its own effect is modified"* and *"checking marks during a scoring should make sense as well"* — the hooks fire at landing AND at every line score; a mark's mult is a query (`on_mark_line_mult`) the composition asks; `add_line_mult` retired. |
+| GAP-003 | *"i would consider a line to be a single row/col/diag"*, *"it should be rerolling a line ... may also need a reroll entire grid board. there shouldnt be empty cells."* — `reroll_line(section)` and `reroll_grid(grid)`, every cell. |
+| GAP-004 | *"a, gold for now but would realistically be a shader that causes color to slowly interpolate between different colors over time like a rainbow shimmer effect"*, *"i prefer blending for shimmer effect, samples would look too distracting with jumps."* — 31 / 6 stand; the activated rim shimmers, BLENDED (an exception to §4i's sample rule). |
+| GAP-005 | *"expecting an on screen button that shows the mark view so touchscreen and mouse can interact with it as well, with controller types using one of the 4 main buttons of x y a b"* — the Marks button stands; X held peeks. |
+| GAP-006 | *"a or d, we arent far to decide what actual curve should be so a placeholder is fine"* — (a): flat alpha, `goal_g0` refit, a placeholder; GAP-041 stays open. |
+| Playtest (the reveal) | *"the initial mark spawning in is way too slow, make it based off of total duration. have total duration be based off of base delay, which i believe is 1 second right now, so whole spawning in is 1 second times a tunable multiplier. make it so it doesnt have to be purely in sequence when marks come in such that marks can spawn in while animation for previous marks have not ended, right now it waits for previous one to come in. this way it looks more like a cascade."* — the whole opening deal takes `get_delay() × plan_reveal_multiplier`; cells START that far apart and their spins overlap; `plan_reveal_fraction` retired. Step S24. |
+| Playtest (the shimmer) | *"i would also prefer if shimmer effect was synced across all cards. the desynced version where each has its own timing is distracting."* — every shimmering element on every card shares ONE phase. Step S26. |
 
 ### 1.11 Naming
 
@@ -321,7 +335,7 @@ All in `Scripts/player_settings.gd`, `@export_group("Balance — board plan")`, 
 | `plan_ace_value` | `10` | the Ace's value as a rank bonus |
 | `plan_talent_mult` | `1.0` | a talent match's contribution to `M` (⚠ 1 is neutral — see §1.5) |
 | `plan_hat_mult` | `1.0` | a hat match's contribution to `M` |
-| `plan_reveal_fraction` | `0.5` | one cell's share of the opening deal, as a fraction of `get_delay()` |
+| `plan_reveal_multiplier` | `1.0` | the WHOLE opening deal's duration as a multiple of `get_delay()`; cells start `total / cells` apart and their spins overlap (playtest ruling, S24) |
 
 ⚠ **Derived, never registered:** how many marks a board carries (`grid_width × grid_height` per
 grid), and how many per stock (`cells / stocks`). A stored count is a second representation of the
@@ -357,7 +371,7 @@ drift.
 
 | Step | Files |
 |---|---|
-| S1 | `Cards/Types/type_grid_cell.gd` (add `granted`), `Scripts/grid_data.gd` (mark predicate helper) |
+| S1 | `Cards/Types/type_grid_cell.gd` (add `granted`), `Scripts/board_plan.gd` (new — `is_marked`, the predicate; `deal()` joins it at S4) |
 | S2 | `Scripts/game_data.gd` (`plan_seed`, `validate()` I6 at `:448`), `Cards/Skills/Rules/skill_board_planner.gd` (new) |
 | S3 | `Decks/deck.gd` `_build_rules1()` (add the planner card), `Locale/localization.csv` |
 | S4 | `Scripts/board_plan.gd` (new — the deal), `Scripts/card_effect_api.gd` (the accessors it needs) |

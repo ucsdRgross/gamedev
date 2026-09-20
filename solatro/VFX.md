@@ -46,7 +46,7 @@ ARCHITECTURE_REVIEW, the latter wins.
 | `Cards/Props/prop_visual.gd` + `Cards/Props/Visuals/*.gd` | Prop art: sheets, sizes, mirroring, the split halves. |
 | `Cards/Pips/pip_suit.gd` | Suit pips, and which elements get recoloured to the suit's role. |
 | `Shaders/outline.gdshader` + `Cards/card_outline.gd` + `Cards/outline_style.gd` | **THE CARD OUTLINE** — the 1-unit 8-directional rim on every element of a card, and the palette recolour it absorbed (`color_picker.gdshader` is deleted). Rules and landmines: ARCHITECTURE_REVIEW §4j. |
-| `Shaders/Styles/outline_default.tres` | **The single place outline tuning lives** — rim ink and width, and each alert kind's colour, tempo, thickness and side buffer. A card TYPE may override the whole style. |
+| `Shaders/Styles/outline_default.tres` | **The single place outline tuning lives** — rim ink and width, and each alert kind's colour, tempo, thickness and side buffer — the SHIMMER's colours being `ramp_match`, the one ramp that blends. A card TYPE may override the whole style. |
 | `tools/outline_atlas.tscn` | **Live OUTLINE tuning** — every non-empty frame in the game (126) through the real draw path, plus one assembled `CardVisual` for judging the card-space alert. Edits the style above, so tuning here moves the board. Start here for any outline or alert work. |
 | `Shaders/glow.gdshader` + `UI/Fx/fx_glow_style.gd` + `Shaders/Styles/glow_{card,circle,beam}.tres` | **The spotlight GLOW** — the halo on a lit card's silhouette (peaks ON the outline, falls both ways). Rides the same `FxAttachment` path as fire. |
 | `Shaders/light.gdshader` + `UI/light_layer.gd` + `UI/Fx/fx_spotlight_style.gd` + `Shaders/Styles/spotlight_default.tres` | **The spotlight LIGHT LAYER** — one full-screen surface: the dim, every circle and beam. `UI/spotlight_director.gd` + `UI/spotlight_origins.gd` decide who is lit and where the lamps sit. See `HANDOFF_spotlight.md`. |
@@ -565,6 +565,40 @@ Nothing here is secretly broken — each is understood, and each is either accep
    gameplay state with no visual. Fix is one line in that existing `_process` loop (or `begin_prop_tick`).
 
 ---
+
+14. **⬜ OPEN — the spotlight ignores the embedded window's stretch.** Owner, from playtest: with
+   the play scene run in the editor's embedded window and "stretch to fit" sizing, the spotlight
+   circles land where the cards WOULD be without the resize, and each circle is the size a card
+   would be unscaled — the light layer computes lamp positions and radii in the unscaled layout
+   while the cards are drawn scaled up. Reproduce: run `Levels/game_view.tscn` embedded, stretch
+   the window, score a line. Seam to read first: `UI/spotlight_origins.gd` (where the lamps sit)
+   against the SubViewport's `size_2d_override` scaling (ARCHITECTURE_REVIEW §1m row 2,
+   `WallPicture.update_wall_view_size()`).
+
+15. **⬜ OPEN — props still read the pre-grid axes.** Owner, from playtest: *"props are still
+   treating col as stacks from same row. for example, fire and juggle props do nothing when
+   triggered right now since they are still using system before grid was added, but columns should
+   now work based on grid columns, not stack columns or height as it is currently, since grid
+   system added new axis, and old col is now height based, while we added new dimension which is
+   now the column axis."* The grid added an axis: what the prop formations called a column is now
+   the stack's HEIGHT, and the grid's column is the new axis they never learned. Fire and juggle
+   spawn against the old shape and land on nothing. Seam to read first: the formations in
+   ARCHITECTURE_REVIEW §4c and `UI/prop_layer.gd`'s placement against `BoardCoord` (grid, x, y,
+   height); the suit rule (§4) already fires them per grid cell, so only the geometry is stale.
+
+16. **⬜ OPEN — a prop's two halves are layered against the wrong cards.** Owner, from playtest:
+   *"hoop has back half and front half. i noticed that back half was going behind cards not in same
+   row while front half was going in front of cards in same row, which looks wrong since it looks
+   like card is slicing through the hoop and the two halves become obvious ... ideally a card is
+   surrounded visually by the hoop, and those two halves are organized visually with the card as
+   one single object, so that hoop halves never get split as if they are on a layer within that
+   single layer component."* The draw order still sorts the prop halves by the pre-grid row/stack
+   shape, so since the grid added its row axis and cards stack UPWARD the back half sinks behind
+   cards in other rows while the front half rises over cards in the same row. The rule wanted: a
+   card and the halves of the props around it are ONE visual unit in the draw order — back half,
+   card, front half adjacent, never interleaved with another card. Seam to read first:
+   `LAYERING.md` (the draw-order contract) and `UI/prop_layer.gd`'s z-ordering against
+   `BoardCoord` (grid, x, y, height); it is the same stale geometry as item 15.
 
 ## 8. When you stop
 

@@ -1,8 +1,8 @@
 class_name MapPlayerToken
 extends Node2D
 
-## The player marker on the world map: a drawn diamond that can walk the routed curve
-## of a graph edge at constant speed (travel_along).
+#The player marker on the world map: a drawn diamond that can walk the routed curve of a graph
+#edge at constant speed.
 
 signal arrived
 
@@ -19,8 +19,9 @@ func _draw() -> void:
 	pts.append(pts[0])
 	draw_polyline(pts, OUTLINE, 2.0, true)
 
-## Walk the token along `points` (map-local, same space as this node's parent) at
-## constant speed, then emit `arrived`.
+#`points` are map-local, the same space as this node's parent.
+
+## Walk the token along `points` at constant speed, then emit `arrived`.
 func travel_along(points: PackedVector2Array) -> void:
 	if points.size() >= 2:
 		var tween := create_tween()

@@ -472,7 +472,7 @@ func test_focus_and_transition_signals_fire_during_real_navigation() -> void:
 ## is a `CardEnvironment`, so `CardEnvironment.CURRENT` is non-null for as long as it lives -- which
 ## a concurrently-running suite can see. Written first as two tests holding a `Main` across a
 ## full-length transition, that window was wide enough for `TestOutline` to build a PREVIEW
-## `CardVisual` inside it and take `card_visual.gd:573`'s no-anchor branch, failing a DIFFERENT
+## `CardVisual` inside it and take `CardVisual._ready()`'s no-anchor branch, failing a DIFFERENT
 ## suite with a Nil `global_position` ([[tests-that-prove-nothing]] trap 8).
 func test_a_real_resize_reaches_the_wall() -> void:
 	var viewport := SubViewport.new()

@@ -15,9 +15,12 @@ tableau's. Extend the simulation to the grid model, then refit `goal_g0` / `goal
   **1-13** against a start deck of **1-5**, thinning the collisions that make melds.
 - **No two constants fit that ladder.** The MINIMAX fit — the best any `(g0, alpha)` pair can do —
   is still **100% out** at some node. That is the proof, not the least-squares R².
-- Committed at the **BEATABLE** fit (the hardest curve that stays winnable everywhere):
-  `goal_g0` **5376.0**, `goal_alpha` **0.26**. Validates at 17.2 / 15.2 / 10.5% run-win for
-  skilled / par / average. ⚠ A near-flat alpha is the curve admitting it has no driver.
+- The BEATABLE fit of that ladder was `goal_g0` 5376.0, `goal_alpha` 0.26 (17.2 / 15.2 / 10.5%
+  run-win for skilled / par / average). ⚠ **SUPERSEDED by the board plan's GAP-006 (a):** the marks
+  multiply par play 3.3-5.1x and the ladder still peaks at node 3, so the SHIPPED curve is the
+  FLAT PLACEHOLDER `goal_g0` **18720.0**, `goal_alpha` **0.0** (node 12's 25th percentile at 800
+  trials, `scoring_sim.py --grid-goals`'s `FLAT:` line). A near-flat alpha is the curve admitting
+  it has no driver.
 - **`GAP-041` carries the four options and is unanswered.** Do not pick one.
 
 ⚠ **THE SIM IS NOW ASSERTED AGAINST THE ENGINE.** `Tools/scoring_parity.gd` dumps what
@@ -32,7 +35,8 @@ py solatro/Tools/scoring_sim.py --grid-goals --trials 800 --q 0.25
 ```
 
 ⚠ **TRIAL COUNT MOVES THE CONSTANTS.** 300 trials gave `5038.4 / 0.42` where 800 gave
-`5376.0 / 0.26`. The committed pair is the 800-trial run; quote the trial count with any refit.
+`5376.0 / 0.26` on the pre-plan ladder. Every committed number is an 800-trial run; quote the trial
+count with any refit.
 
 ## Design provenance and gap protocol — COPY THIS BLOCK INTO ANYTHING DERIVED FROM THIS DOCUMENT
 
@@ -72,7 +76,8 @@ goal  = goal_g0 * (n_hat / goal_n0) ^ goal_alpha * difficulty * lap_mult ^ min(l
         (* boss_mult on a boss)
 ```
 
-Shipped today: `goal_g0` **5376.0**, `goal_alpha` **0.26**. Both are `PlayerSettings` knobs.
+Shipped today: `goal_g0` **18720.0**, `goal_alpha` **0.0** — the flat placeholder GAP-006 (a) chose
+until the ladder has a driver (`design/board-plan/gaps/GAP-006.md`). Both are `PlayerSettings` knobs.
 The pair they replaced (**130.0** / **4.2**) was fitted to the tableau and asked 130 at node 0
 against a measured median score of 9,360 — every goal in the game was trivial.
 

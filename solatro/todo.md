@@ -10,7 +10,7 @@ ARCHITECTURE_REVIEW.md; done-work history lives in git.
 directory aside — to `<user data>/Solatro/logs-stalled-<stamp>` or `logs-failed-<stamp>` — before it
 kills a stalled run or reports a failing one. `--stall-timeout` (default 600 s) also watches the test
 log's SIZE as a heartbeat and NAMES the suite that started without finishing, instead of letting one
-silent suite eat the whole budget and report `NO SUITE BANNER` for all 45.
+silent suite eat the whole budget and report `NO SUITE BANNER` for all 48.
 ⚠ **SO THE RULE IS NOW: DO NOT RE-RUN BEFORE READING THE PRESERVED LOGS.** The evidence survives one
 occurrence, not two — the next run still truncates the LIVE log, and a preserved directory is only
 written when a run stalls or fails.
@@ -68,8 +68,13 @@ written when a run stalls or fails.
   52 restated · 4 line refs.** Zero errors — every reference resolves.
   ⚠ **A BACKLOG, not a regression**, and the numbers grew mostly because THE CHECKER GOT STRICTER,
   not because the code got worse: `long block` went from "over 16 lines" to "over 3", and
-  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments. Work
-  it opportunistically — clean what you edit — rather than as one sweep. `--verbose` lists them.
+  `long doc`, `indented` and `trailing` are new categories. The rules postdate the comments.
+  **Owner ruling: two halves.** (1) Every file an agent edits leaves compliant — the whole file,
+  not only the lines it wrote (`plan-implementer` says so; `doc_check.py --changed` errors on
+  the three hard rules for touched files). (2) ⬜ **A FULL PASS OVER EVERY SOURCE FILE is
+  planned by the owner**, because files nobody edits are never swept by (1): the untouched
+  majority of the count above only drains that way. `--verbose` lists them; `dated` is the
+  category to leave alone (see below).
   ⚠ **`dated` will not go to zero and should not**: many are measurements, where the date is part
   of the fact, and the checker cannot tell those from bookkeeping.
   ⚠ **`design id` is the one that matters most** — 362 citations of design documents the code's
@@ -78,11 +83,44 @@ written when a run stalls or fails.
 
 ## Waiting on the owner
 
-- ⬜ **Run `design/board-plan/`** — confirmed and handed off (`PLAN.md`, `TEST_PLAN.md`, `NAMES.md`,
-  and the `/plan-run` prompt in its handover). **Runs after `design/sidebar/`**, whose per-slot stocks
-  it deals from. It retires two shipped rules when it lands (a talented card no longer suppresses its
-  own suit effect; rank now pays into a meld) and its phase 6 refits the goal curve, which is the
-  design's answer to `GAP-041`.
+- ⚠ **`design/board-plan/` is BUILT and CLOSED, on branch `board-plan`** — every cell opens with
+  a mark, a match pays into the line it scores, a suit effect fires only where its cell's mark
+  agrees on suit, marks act at landing and at every line score, the layer view and the reveal
+  cascade ship (ARCHITECTURE_REVIEW §3a/§3e/§4). All six gap rulings are landed (`PLAN.md`
+  §1.10-bis). Waiting on the owner:
+  - ⬜ **Input during the opening reveal.** The board is live while the deal animates (a placement
+    made then is an undo step since the close); whether the deal should lock input for its ~1 s is
+    undecided by the design — today it does not.
+  - ⬜ **A row reroll on a saturated board redistributes the row's own faces** (the deck-cycling rule:
+    the given-up faces are the fewest-copies tier); only unused identities yield fresh ones. Whether
+    a line reroll should prefer faces the line did not have is the owner's call
+    (`design/board-plan/ASSUMPTIONS.md`, close F2).
+  - ⬜ **Same node, same plan holds only while the draw pile's order is the same** — `plan_seed` is per
+    node, but `Game.shuffle_deck` uses the unseeded global generator, so a node replayed shuffles
+    differently. Seeding the deck shuffle is outside the plan.
+  - ⬜ **For the owner's eye:** whether "no rim" alone reads as a mark at overview zoom; and under a
+    scoring beam at phase 0 the activated gold rim is the least tellable instant (verified at the
+    close, `TEST_PLAN.md` TP-72's beam half).
+  - ⬜ **`_check_board_fits_window` measures a stale invariant.** It compares Entrance coords against
+    the board's `SmoothScrollContainer`, but the Entrance is pinned OUTSIDE that scroll, so the check
+    fails on the shipped five-slot board ("board right edge 1156.6 vs scrollable right 1073.6") while
+    the board fits the 1576 px viewport with 419 px to spare; the surviving WIDE=12 row passes only
+    because the grid container is sized from the Entrance width. The board plan dropped the call on
+    the moved all-kinds fixture rather than assert it. What the pinned Entrance's reachability
+    invariant is (fits the window, or its own `EntranceHTrack`) is the owner's; then the helper
+    and both callers follow.
+  - ⬜ **Touchscreen:** tapping on nothing while a card is held should cancel the hold (owner,
+    from playtest); today only a real drop target or a second tap on the card releases it.
+  - ⬜ **Recorded, no producer today.** A card an EFFECT moves off a marked cell keeps its last
+    `match_rim_active` rims on the pooled visual until the next rebuild (`Game.move_card_in_grid`
+    has no shipped caller); an effect MOVING a card onto a mark fires no landing hook until a line
+    scores; a window losing focus while `M` is held may leave the layer view open until the next
+    press or board mutation (what the engine delivers on focus-out is unverified); the debug
+    undo/redo bar is not gated by `GameView._board_is_playable()` (debug builds only); a
+    `grant_mark` source printing neither rank nor suit is not `is_marked`; a grid added after the
+    draw pile is empty opens unmarked (no shipped path adds one that late); `is_ace` treats a
+    fractional rank in [1, 2) as the Ace; `_refresh_mark_matches` is not awaited, so a leniency hook
+    that suspends could land its rims after a rebuild (no shipped hook suspends).
 - ⬜ **Keep answering `design/effect-review/`** — every question was re-read against the live board
   and the confirmed designs; `build/_verdicts.tsv` has one verdict per question and `build/REVIEW.md`
   says how to change the build without renumbering recorded answers.
@@ -187,6 +225,9 @@ Everything below is unscheduled backlog.
 that whole backlog and its known bugs. Keeping the list here as well is exactly the two-places
 drift this repo's doc hygiene forbids.
 
+- ⬜ **Spotlight vs the embedded window's stretch-to-fit** (owner, from playtest): circles land and
+  size as if the window were unscaled. VFX.md §7 item 14 carries it.
+
 The current fire emitter is the **NOISE FIRE** (owner design): no tendrils, no comb, no ogee, no
 onion shells. Fire is a cover field sampled from the art's own mask and carved by scrolling noise,
 and every parameter ramps continuously with the stack count. Contract: ARCHITECTURE_REVIEW §4g;
@@ -236,16 +277,6 @@ over `state.grids`, reading ONLY `scores_row`, `scores_col`, `scores_cell` and `
 **Anything reaching `scores_row_upper`, `scores_row_lower`, `scores_col_legacy`, `row_total`,
 `col_total` or `mult_score` is lost.** Grep those six names before adding any scoring path.
 
-- ⬜ **`PropBankColScore` loses EVERY Firework column score.** `Cards/Props/Mods/prop_bank_col_score.gd:16-19`
-  hand-builds a bare `ScoringSection.new()` and never sets `grid`, so it is always `-1` and
-  `add_line_score` always takes the legacy branch. `PipSuitFirework` is shipped (deck12), so this
-  fires in a real show; `register_combo` runs first, so the multiplier moves and the points do not.
-  ⚠ **The fix is not a one-liner:** build the section from a coordinate, but `on_finish` fires when
-  `p.route.is_empty()` and a firework that starts with an EMPTY rise route never entered a slot, so
-  `p.at` is still `NOWHERE` — which is exactly the case `test_firework_banks_column` covers. Decide
-  what an empty-route firework banks into (probably `prop.source`'s grid position).
-  ⚠ That test asserts `col_total == 3`, so it **passes because the defect exists** — re-point it at
-  `line_score(scores_col, ...)` as part of the fix or it will keep certifying the loss.
 - ⬜ **No effect activation feeds the combo on a placement** — the grid game's only scoring action —
   contradicting `DESIGN.md` D11 (`Q323`=b). `game.gd:231` gates `register_combo` on
   `_act_cancellable`, written only inside `_perform_next`. See `gaps/GAP-043.md`: the design is
@@ -342,12 +373,22 @@ while `test_game_headless.gd` drives PLAN §6's six checks through a real `Game`
 
 ## Props / UI (owner has NOT re-verified)
 
+- ⬜ **Props read the pre-grid axes** (owner, from playtest): fire and juggle spawn against the old
+  column-as-stack shape and do nothing; the grid column is the new axis and the old column is now
+  height. VFX.md §7 item 15 carries it.
+- ⬜ **A prop's back and front halves split around the wrong cards** (owner, from playtest): the
+  hoop's halves sort against other rows and the same row instead of hugging their own card as one
+  unit. VFX.md §7 item 16 carries it.
+
 - Description-panel scroll-lock, knife row behavior, hoop visibility, ballistic poof,
   undo-across-a-placement feel, held-loop spin, formation system + editor end-to-end (no formation
   `.tres` authored yet).
 - Firework in-run acquisition beyond deck12 (owner decision). Per-pip tooltip granularity.
 - Win/lose screen font (226px) clips long "Fame +N" text. `game.tscn` grabs no initial focus, so
   keyboard/controller players must click first.
+- `PipRankNumeral.get_str()` prints "NumeralRank5.0" wherever a rank is described in text, which a
+  mark's description shows. A sprung grid card (`CardVisual.anim_spring_lift`) never resets
+  `floating`, so it stays false until the next rebuild.
 
 ## Universal palette (owner playtest pending)
 
@@ -407,6 +448,9 @@ Card is **40x54**; every element wears `Shaders/outline.gdshader`'s rim. Rules a
 ## Testing / infrastructure
 
 - E2E first-card fly-in in the pack preview: confirm fixed on a real run.
+- `PipSuitTest.id` is a plain `var`, so `duplicate_deep` and a save do not carry it: a row of
+  distinct test suits comes back from a snapshot as ONE suit and flushes. A fixture that must
+  survive a copy uses real suits.
 - Background-save robustness at scale unverified (large history serialize on a worker thread) —
   watch the console; the history cap bounds it.
 - **PIXELS `test_the_card_mask_is_the_card_the_player_sees` WAS GREEN but PINNED, not fixed.** The

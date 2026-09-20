@@ -78,8 +78,22 @@ but it MUST carry:
 8. ⚠ **Every field the step adds: what it belongs to, and which event ends it** (show end, New Run,
    screen leave, a refused action). A test drives that event and asserts the field is gone.
    Measured: 6 defects of state outliving its owner on one branch, each found only by a reviewer.
+9. ⚠ **Every identifier the step ADDS goes into `NAMES.md` in the same step.** Measured: a run's
+   close found fourteen public names (`cell_type_at`, `col_cells`, `printed_card_same`, a static
+   clock …) in the code and none in the registry — each added mid-step because the plan could not
+   foresee it, each recorded in a commit message nobody reads at the next step. The registry is
+   authoritative only while it is complete; tell the implementer to append, and check it.
 
 **Never accept `STATUS: done` on a component whose consumer does not exist.**
+
+⚠ **STATE THE PROPERTY, NOT THE PROCEDURE.** When a fix is an algorithm, the implementer is the
+one who can measure it; an overseer who dictates the steps dictates them blind. Measured at a
+close: the reroll brief specified "exclude every face the batch gives up, re-ask the unchanged
+board when the offer is spent" — the implementer proved the re-ask a no-op and the exclusion
+unsatisfiable on the shipped deck, and the second brief (the deal's own rule over the batch, each
+cell barred from its own face) was right only after its measurement too. Write the observable the
+test must pin and the ruling it comes from; let the implementer propose the mechanism and report
+what it measured, and expect `blocked` with a measurement to be the good outcome.
 
 ⚠ **6 and 7 are here because they were reaching nobody.** They lived in memory and in `/simplify`
 while this template carried lines about tunable literals, design ids and registry names and not
@@ -235,6 +249,14 @@ reset to the last commit and redo it.
 still holds the step's context. Reset only if that fails, and not when its last act was a completed
 full-suite run: read that run's banner instead.
 
+⚠ **A CUT-OFF IMPLEMENTER'S WORK IS IN THE TREE AND ITS RUNS ARE IN THE LOGS.** An API-limit stop
+mid-step leaves the edits, and the suite script keeps `all_<label>.log` / `errors_<label>.log` per
+run, so the red and green banners, the per-suite counts and the failure set are all readable
+without the agent. Verify from those and the diff before spending a resume; resume with
+`SendMessage` (never a fresh dispatch — its context holds the code) only when something is missing.
+Wait for a background agent by polling the lock file (`until [ $(grep -c . .claude/.subagent.lock)
+-lt N ]; do sleep 20; done` in a background shell), not by re-reading its transcript.
+
 ⚠ **Never reset the tree while a subagent is working in it.** One run did, and the agent correctly
 reported the worktree as corrupted — it had no way to know the overseer had rolled it back. Tell it
 first, and confirm it has stopped.
@@ -328,6 +350,11 @@ Run in this order. Earlier items change the diff the later ones read.
    (reuse, simplification, efficiency, altitude) inline yourself, or serially. On a small diff
    inline is strictly better anyway — four cold agents re-deriving context to read ten lines is
    the expensive path.
+   ⚠ **`/code-review` HAS THE SAME PROBLEM AS `/simplify`** — its Phase 1 wants eight finder agents
+   in parallel and its Phase 2 one verifier per candidate. Under the two-subagent cap that is one
+   Fable finder for the three correctness angles (background, beside a read-only reviewer), the
+   cleanup angles inline from your own read of the diff, and ONE verifier over the whole deduped
+   candidate list. Measured: 14 candidates verified in one pass, 10 findings reported.
 6. **`/fx-verify`** — mandatory if ANY step touched a visual, a shader or prop art. Green tests are
    not evidence about pixels. Dispatch as a subagent; it renders and LOOKS.
 7. **Fix everything 1–6 found** — one fix at a time, full suite between them ([[one-fix-at-a-time]])
@@ -337,6 +364,13 @@ Run in this order. Earlier items change the diff the later ones read.
    (a grab meant for the pad fired on every pointer pick); the re-review caught both, the suite
    neither. A fix brief for a FLAKE says "measure the quantity first; the diagnosis is a claim" —
    one diagnosed settle race was a float-ULP boundary, found by a print.
+   ⚠ **THE OWNER'S WHOLE-FILE COMMENT SWEEP IS ITS OWN STEP, AFTER THE FIXES, NOT PART OF EACH.**
+   A file an implementer edits must leave compliant, and the files a close fixes are the big ones
+   (`game.gd` ~350 legacy findings, `play_area.gd` ~640). Folding the sweep into a defect fix
+   multiplies the blast radius of both and a sweep once deleted a load-bearing note. Brief every
+   fix with "touch only the comments this fix changes; the sweep is a separate final step", then
+   dispatch the sweep once, no behaviour change, its own full gate, reviewer floor applies.
+   Test-only repairs in different suites may share one gate: a red there names its suite.
 8. **`/docs`** — fold the run's residue into the living docs.
 9. **`consolidate-memory`** — merge duplicates, fix facts the run made stale, prune the index.
 10. **Feed the run's findings back into the skills and agents.** Every trap this run hit that a

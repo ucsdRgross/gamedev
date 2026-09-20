@@ -1,23 +1,27 @@
 extends Node
-## Root of all_tests.tscn: waits for every TestSuite child suite to finish, prints a
-## grand total split by category, then QUITS with exit code = failure count (so the play
-## window closes itself when the run ends — full output is preserved in the log files).
-##
-## Output: every suite routes its section/PASS/FAIL/banner lines (and the VISUAL LAYERS dumper
-## its draw-order dumps) through TestLog, which ALWAYS tees to two log files — overwritten each
-## run — and prints to the terminal per `terminal_output` below.
+## Root of all_tests.tscn: waits for every TestSuite child to finish, totals, then QUITS.
 
-## Terminal verbosity for this run. ALL prints every routed line; ERRORS_ONLY prints only FAIL
-## lines (both log files still receive everything either way).
+#The exit code is the failure count, so the play window closes itself when the run ends and the
+#full output is preserved in the log files.
+
+#Every suite routes its section, PASS, FAIL and banner lines through TestLog, which ALWAYS tees to
+#two log files, overwritten each run, and prints to the terminal per `terminal_output` below.
+
+#ALL prints every routed line; ERRORS_ONLY prints only FAIL lines. Both log files still receive
+#everything either way.
+
+## Terminal verbosity for this run.
 enum TerminalOutput { ALL, ERRORS_ONLY }
 @export var terminal_output : TerminalOutput = TerminalOutput.ALL
-## Auto-close the run when every suite finishes (default on — the log files keep the full output).
-## Turn OFF to keep the tree alive in the editor for live inspection of nodes after a run.
+#Turn it OFF to keep the tree alive in the editor for live inspection of nodes after a run.
+
+## Auto-close the run when every suite finishes; the log files keep the full output.
 @export var close_when_done : bool = true
-## The base_delay the animated suites (UI PROPS / VISUAL LAYERS / E2E) run their awaited
-## animations at — near-instant by default so the whole run is fast. Raise it from the editor to
-## WATCH a run (e.g. 0.2). Published to TestLog.speed_base_delay in _enter_tree (before any
-## suite's _ready). Tests that sample mid-flight motion keep their own slower absolute delays.
+#Near-instant by default so the whole run is fast. Raise it from the editor to WATCH a run, at
+#0.2 say. Published to TestLog.speed_base_delay in _enter_tree, before any suite's _ready, and
+#tests that sample mid-flight motion keep their own slower absolute delays.
+
+## The base_delay the animated suites run their awaited animations at.
 @export_range(0.001, 1.0, 0.001) var speed_base_delay : float = 0.01
 
 var _run_start_msec := 0
@@ -31,16 +35,18 @@ var _total_suites := 0
 # queue_free() defers past the child's own _ready so the suite runs anyway. The child list is
 # duplicated because it is mutated mid-propagation. Removal only — never a reorder.
 
-## Configure + truncate the log files in _enter_tree — this runs BEFORE any child suite's _ready
-## (Godot calls _enter_tree parent-first), so the terminal mode is live and the files are opened
-## exactly once before the first suite writes a line. @export values are applied before _enter_tree.
-##
-## ⚠ **`SettingsManager.isolated` IS SET HERE TOO, NOT IN `_ready()`.** `_ready()` fires bottom-up
-## (every child suite's `_ready` runs first), so a suite whose own `backup_real_settings()`/
-## `use_own_settings()` call was not the very first line of its `_ready` had a real window, before
-## this ran, in which a knob write reached the player's live `user://settings.tres`. `_enter_tree`
-## fires parent-first — before ANY child suite exists — so setting it here closes that window
-## completely instead of only covering suites that remember to isolate before their first write.
+#Godot calls _enter_tree parent-first, so this runs BEFORE any child suite's _ready: the terminal
+#mode is live and the files are opened exactly once before the first suite writes a line. @export
+#values are applied before _enter_tree.
+
+#⚠ SettingsManager.isolated IS SET HERE TOO, NOT IN _ready(). _ready() fires bottom-up, so a
+#suite whose own backup_real_settings() or use_own_settings() call is not the very first line of
+#its _ready has a real window in which a knob write reaches the player's settings.tres.
+
+#_enter_tree fires parent-first, before ANY child suite exists, so setting it here closes that
+#window completely instead of only covering suites that remember to isolate before their writes.
+
+## Configure and truncate the log files.
 func _enter_tree() -> void:
 	_run_start_msec = Time.get_ticks_msec()
 	SettingsManager.isolated = true
@@ -101,10 +107,10 @@ func _ready() -> void:
 		failed_impl += suite._fail_impl
 		warned += suite._warn
 	TestLog.line("")
-	# ⚠ THE ENGINE'S OWN ERROR STREAM COUNTS AS A FAILURE — see _scan_engine_errors().
+#⚠ THE ENGINE'S OWN ERROR STREAM COUNTS AS A FAILURE - see _scan_engine_errors().
 	failed += _scan_engine_errors()
-	# Placeholder warnings are reported but never affect the verdict or the exit code — they mark
-	# surfaces still carrying hardcoded values, not breakage (TestSuite.warn).
+#Placeholder warnings are reported but never affect the verdict or the exit code: they mark
+#surfaces still carrying hardcoded values, not breakage.
 	var warn_tag := "" if warned == 0 else (" [%d placeholder warnings]" % warned)
 	var scope := "ALL %d SUITES" % suites.size()
 	if not _filter.is_empty():
@@ -125,54 +131,50 @@ func _ready() -> void:
 				float(suite.finish_msec - _run_start_msec) / 1000.0,
 				float(suite.elapsed_msec) / 1000.0, suite.suite_name()])
 	TestLog.line("full logs: %s" % TestLog.paths())
-	# Close the run when done (headless always quits for CI exit codes; in the editor this closes
-	# the play window unless close_when_done is turned off for live inspection).
+#Close the run when done. Headless always quits for CI exit codes; in the editor this closes the
+#play window unless close_when_done is turned off for live inspection.
 	if DisplayServer.get_name() == "headless" or close_when_done:
 		get_tree().quit(mini(failed, 125))
 
-## ⚠ **THE SUITE NOW FAILS ON UNEXPECTED ENGINE ERRORS, AND THIS IS THE HOLE THAT LET TWO FALSE
-## GREENS THROUGH** (owner: *"suite should fail on unexpected errors in error stream so
-## visible to an agent testing to immediately fix, instead of current behavior where I have to copy
-## paste it to agent"*).
-##
-## Before this, the verdict came only from `check()` calls. Godot's own errors — emitted from C++
-## straight to stderr — reached nobody: `test_output_errors.log` is `TestLog`'s OWN channel and holds
-## only FAIL lines. Both of this session's false greens were exactly that shape:
-##
-##   * five spotlight tests ABORTING on `Nonexistent function 'is_spotlit' in base 'Nil'` — an
-##     aborted test emits no failures, so the banner said PASSED with the checks simply never run;
-##   * an `_on_screen()` flood of `Condition "!is_inside_tree()" is true`, thousands of lines, which
-##     the owner had to paste in by hand because the run reported itself green.
-##
-## ⚠ **THE SOURCE IS GODOT'S OWN LOG FILE, NOT A HOOK.** GDScript cannot intercept the engine's error
-## stream, but the engine mirrors it to `user://logs/godot.log` (file logging is on by default in
-## debug builds) — and `godot.log` is THIS run, older sessions having been rotated to timestamped
-## siblings. So the check is: read it, subtract what is deliberate, fail on the rest.
-##
-## ⚠ **THE ALLOWLIST IS THE WHOLE DESIGN PROBLEM.** Several suites push errors ON PURPOSE — that is
-## what they assert. An allowlist that is too broad restores the blindness this exists to remove, so
-## every entry names the suite that owns it and must stay a SUBSTRING match, never a prefix wildcard.
+#⚠ THE SUITE FAILS ON UNEXPECTED ENGINE ERRORS (owner: *"suite should fail on unexpected errors
+#in error stream so visible to an agent testing to immediately fix, instead of current behavior
+#where I have to copy paste it to agent"*).
+
+#A verdict from check() calls alone reaches none of Godot's own errors, which are emitted from C++
+#straight to stderr, while test_output_errors.log is TestLog's OWN channel and holds only FAIL
+#lines. Two false greens had exactly that shape.
+
+#One was five spotlight tests ABORTING on a nonexistent function, an aborted test emitting no
+#failures so the banner said PASSED with the checks never run. The other was a flood of thousands
+#of "Condition !is_inside_tree() is true" lines the owner had to paste in by hand.
+
+#⚠ THE SOURCE IS GODOT'S OWN LOG FILE, NOT A HOOK. GDScript cannot intercept the engine's error
+#stream, but the engine mirrors it to user://logs/godot.log, which is THIS run - older sessions are
+#rotated to timestamped siblings. So the check is: read it, subtract what is deliberate, fail on the rest.
+
+#⚠ THE ALLOWLIST IS THE WHOLE DESIGN PROBLEM. Several suites push errors ON PURPOSE, that being
+#what they assert. An allowlist that is too broad restores the blindness this exists to remove, so
+#every entry names the suite that owns it and must stay a SUBSTRING match, never a prefix wildcard.
 const ENGINE_ERROR_ALLOW : Array[String] = [
-	"Palette index",              # test_palette asserts the clamp WARNS — it is the behaviour
-	"LeakSentinel:",              # test_leak_canary deliberately abandons cards and reports it
-	"Condition \"p_index",        # bounds asserts inside deliberate degenerate-input suites
-	"comparator_buckets:",        # test_comparator asserts a grouping rule's invented card is REFUSED
-	"ProfileManagerClass:",       # test_wall_profile (R6) asserts a corrupt profile file REPORTS
-	"user://profile.tres",       # test_wall_profile (R6) also triggers ResourceLoader's OWN native
-	                              # parse-failure errors (3 lines) on the deliberately corrupted
-	                              # file, on top of ProfileManagerClass's single deliberate one
+	"Palette index",
+	"LeakSentinel:",
+	"Condition \"p_index",
+	"comparator_buckets:",
+	"ProfileManagerClass:",
+	"user://profile.tres",
 ]
 
-## GAP-007 (owner option b): each `ENGINE_ERROR_ALLOW` entry is permitted up to this many lines
-## over the WHOLE run — a further occurrence still fails it. Every number below was read off an
-## ACTUAL green run, twice, and was identical both times; matching is first-fragment-wins in
-## `ENGINE_ERROR_ALLOW`'s own order, which is why the single line both "ProfileManagerClass:" and
-## "user://profile.tres" match (the deliberate push_error interpolates the path into its own text)
-## is attributed to "ProfileManagerClass:" and not double-counted here.
-## ⚠ `-1` = uncounted, kept ONLY for "comparator_buckets:" — its true count is driven by
-## `Tests/Engine/test_mod_fuzz.gd`'s randomized seed and measured genuinely unstable run to run
-## (703 vs 310 on two back-to-back green runs). Forcing a flaky entry to a number would trade a
-## known blind spot for a flaky gate, which is a worse failure mode than the one GAP-007 closes.
+#Each ENGINE_ERROR_ALLOW entry is permitted up to this many lines over the WHOLE run; a further
+#occurrence still fails it. Every number below was read off an ACTUAL green run, twice, and was
+#identical both times.
+
+#Matching is first-fragment-wins in ENGINE_ERROR_ALLOW's own order, which is why the single line
+#both "ProfileManagerClass:" and "user://profile.tres" match - the deliberate push_error
+#interpolates the path into its own text - is attributed to the first and not double-counted.
+
+#⚠ -1 means uncounted and is kept ONLY for "comparator_buckets:": its true count is driven by
+#test_mod_fuzz.gd's randomized seed and measured genuinely unstable run to run, 703 against 310 on
+#two back-to-back green runs. Forcing a flaky entry to a number trades a blind spot for a flaky gate.
 const ENGINE_ERROR_EXPECT : Dictionary[String, int] = {
 	"Palette index": 2,
 	"LeakSentinel:": 1,
@@ -182,13 +184,14 @@ const ENGINE_ERROR_EXPECT : Dictionary[String, int] = {
 	"user://profile.tres": 3,
 }
 
-## Returns the number of unexpected engine errors, and prints them so the agent reading the run has
-## the actual text rather than a count.
+#It prints them too, so the agent reading the run has the actual text rather than a count.
+
+## Returns the number of unexpected engine errors.
 func _scan_engine_errors() -> int:
 	var text := FileAccess.get_file_as_string("user://logs/godot.log")
 	if text.is_empty():
-		# Not fatal, but say so — a silent zero here would be indistinguishable from a clean run, and
-		# that is the exact failure mode this function exists to end.
+#Not fatal, but say so: a silent zero here would be indistinguishable from a clean run, and that
+#is the exact failure mode this function exists to end.
 		TestLog.line("[engine-errors] SKIPPED — user://logs/godot.log unreadable "
 				+ "(file logging off?). This run's engine stream was NOT checked.", true)
 		return 0
@@ -211,11 +214,11 @@ func _scan_engine_errors() -> int:
 	if bad.is_empty():
 		TestLog.line("[engine-errors] clean — 0 unexpected lines in the engine stream")
 		return 0
-	# ⚠ Only ever printed when there ARE errors — the owner asked for the stream in the output
-	# "basically only if error", and a clean run has nothing to say beyond the one line above.
+#⚠ Only ever printed when there ARE errors - the owner asked for the stream in the output
+#"basically only if error", and a clean run has nothing to say beyond the one line above.
 	TestLog.line("======== %d UNEXPECTED ENGINE ERRORS ========" % bad.size(), true)
-	# Deduplicated with counts: the flood that started all this was one bug repeated thousands of
-	# times, and printing it thousands of times would bury every other error under it.
+#Deduplicated with counts: the flood that started all this was one bug repeated thousands of times,
+#and printing it thousands of times would bury every other error under it.
 	var seen : Dictionary[String, int] = {}
 	var order : Array[String] = []
 	for line : String in bad:

@@ -98,7 +98,7 @@ says so and names its own variant.
 | **TP-27** ⚑gate | A mark pays **every time** a matching card lands — three land-remove-land cycles pay three times | one cell | `Q20`=(a) | S5 |
 | **TP-30** ⚑gate | **`(hand + flats) × M`.** A row scoring a pair of 5s with one rank match of 7 and no mults banks `hand + 7` | fixed 5-card row | `Q104`=(d), `Q21`=(a), `Q22`=(a) | S6 |
 | **TP-31** ⚑gate | **`M == 0` never multiplies.** The same row with zero mult bonuses banks `hand + flats`, NOT zero | same row | `Q122` | S6 |
-| **TP-32** ⚑gate | **Two ×2 marks make ×4.** Two mark effects each contributing `+2` give `M = 4` and the line banks `(hand + flats) × 4` | two marked cells in one row | `Q122`, `Q48`=(b) | S6 |
+| **TP-32** ⚑gate | **Two ×2 marks make ×4.** Two mark effects each contributing `+2` — answered through `on_mark_line_mult` — give `M = 4` and the line banks `(hand + flats) × 4` | two marked cells in one row | `Q122`, `Q48`=(b) | S6 |
 | **TP-33** ⚑gate | **`ScoreModel` is untouched.** `test_scoring.gd` SECTION 8's hand leaderboard is byte-identical to `main` | the existing suite | `Q104`=(d), `PLAN.md` §1.5 | S6 |
 | **TP-34** ⚑gate | A full flush's score is unchanged by any bonus — the flush double multiplies only the hand | a 5-card flush with one rank match | `Q104`=(d) | S6 |
 | **TP-35** | The Ace pays **10**; a rank with no integer value pays the flat fallback; a fractional rank rounds **up** | Ace, `HalfStepRank`, rank 2.5 | `Q26`, `Q27` | S6 |
@@ -106,6 +106,7 @@ says so and names its own variant.
 | **TP-37** | A card in a row, a column and a diagonal pays its rank bonus into **each** line | a corner cell completing three lines | `Q23`=(a) | S6 |
 | **TP-38** | A match registers no combo class | one match, `combo_classes` unchanged | `Q76`=(c) | S6 |
 | **TP-39** | A leniency rule loosens the match; with no implementer the dispatch count is **zero** | one modifier implementing `on_mark_ranks_allow` | `Q41`=(a), `ARCHITECTURE_REVIEW.md` §3c | S5 |
+| **TP-78** | **The leniency passes are asked BEFORE the prints are read.** An `on_mark_ranks_allow` rule rescues a card printing NO rank -- `matches_at` reports `RANK` and the line banks `plan_rank_flat_fallback` -- while with no implementer the same card matches nothing; a deny rule refuses a pair whose prints ARE the same and is REACHED about a rankless card | one modifier implementing `on_mark_ranks_allow`, one `on_mark_ranks_deny`, a rankless card | `Q41`=(a), `Q26` | S5 |
 
 ---
 
@@ -119,12 +120,14 @@ says so and names its own variant.
 | **TP-43** | A matched suit fires **once per meld membership**, as suit effects do today | a card in a row and a column | pre-authorisation 7 | S7 |
 | **TP-44** ⚑gate | **A mark is never spotlit** — an uncovered mark of a card carrying a skill answers no broadcast hook | a mark of a `SkillExtraPoint` card | `Q59`=(a) | S8 |
 | **TP-45** | A mark blocks nothing; the card under it — there is none — and the spotlight rule are unaffected | one mark | `Q60`=(a) | S8 |
+| **TP-77** ⚑gate | **A mark answers no board-wide dispatch walk** — a mark whose copied stamp implements a leniency rule and a placement rule answers neither, and `has_card_data` reports it as nowhere on the board; the same stamp on a real card still answers both | a mark and a control card carrying the same stamp | `Q59`=(a) | S8 |
 | **TP-46** ⚑gate | `on_mark_hit` reaches BOTH the mark's modifiers and the placed card's | a mark and a card each implementing it | `Q47`=(a) | S9 |
 | **TP-47** ⚑gate | `on_mark_covered` fires for a NON-matching cover; `on_mark_hit` does not | one mismatch | `Q46`, `Q51`=(a) | S9 |
 | **TP-48** | `level` is 1 on a match and 0 on a plain cover, and never any other value | both cases | `Q50`=(c) | S9 |
 | **TP-49** | A mark effect fires again on every re-score of a line through its cell | force two scorings | `Q52`=(b), `Q107`=(a) | S9 |
 | **TP-50** ⚑gate | A mark firing charges `note_processing` and is bounded by the runaway guard — a deliberately looping mark effect trips `act_overrun` and does **not** hang | a looping mark | `Q57`=(a) | S9 |
 | **TP-51** | A mark firing registers a combo class from its COPIED modifier, not from `TypeGridCell` | one firing | `Q54`=(a), pre-authorisation 16 | S9 |
+| **TP-79** | A mark effect re-scoring a line from inside its own hook registers ONLY its own class: a board card answering `on_after_score` during that nested composition scores none, while the same card's `on_next` inside a real act still does | a looping mark and one board card carrying both broadcast hooks | `Q54`=(a), `Q76`=(c) | S9 |
 | **TP-52** | `reroll_mark`, `swap_marks` and `grant_mark` each leave `validate()` clean | each API call | `QR5`=(c), `Q53`=(a) | S10 |
 | **TP-53** ⚑gate | **Undo restores the mark AND un-banks the bonus** — board and score are bit-identical to before the placement | place a matcher, undo | `Q62`=(a) | S9 |
 | **TP-54** ⚑gate | A quit mid-cascade replays the placement and reproduces the same board and score | the pending-action path | `DESIGN.md` §1k | S9 |
@@ -138,7 +141,7 @@ says so and names its own variant.
 | **TP-60** | An empty marked cell binds its mark into the slot control `_bind_stack` already creates — **no new node is added to the tree** | `PLAN.md` §2 | S11 |
 | **TP-61** ⚑gate | **`modulate` is not written by any mark code path.** Assert the cell control's `modulate` is unchanged while a mark is drawn | `PLAN.md` §1.10 | S11 |
 | **TP-62** | A covered mark still exists in the data and is reachable through inspection | `Q19` | S11 |
-| **TP-63** | Holding a card sets the match highlight on exactly the cells `matches_at` reports non-zero for | `Q66`=(a) | S12 |
+| **TP-63** | Holding a card sets the match highlight on exactly the cells `matches_at` reports non-zero for — in EVERY grid while the show is uncommitted, and in `committed_grid` alone once a real placement has committed one, because every other grid refuses silently | `Q66`=(a), `Q82`=(a) | S12 |
 | **TP-64** | The highlight writes the ELEMENT outlines, not a whole-card tint | `Q67`, `Q68` | S12 |
 | **TP-65** | A card matching nothing produces no popup and no alert | `Q65`=(a) | S12 |
 | **TP-66** ⚑gate | The layer view refuses input: a placement attempted while it is open changes nothing | `Q115`=(a) | S13 |
@@ -149,8 +152,20 @@ says so and names its own variant.
 | **TP-71** 👁 | **The mark reads as grey, faded and ghostly at full card size in the cell frame**, and all four properties are legible | `Q63`=(d), `Q112` | S11 |
 | **TP-72** 👁 | **A realized card's art and pips take their activated outlines**, distinguishable from the focus highlight and from the scoring beam on the same cell | `Q64` | S12 |
 | **TP-73** 👁 | **The match highlight is distinguishable at overview zoom** across three grids | `Q66`=(a), `Q116`=(b) | S12 |
-| **TP-74** 👁 | **The opening deal reads as a slot machine** and is skippable | `Q69`=(a) | S11 |
+| **TP-74** 👁 | **The opening deal reads as a slot machine**, dealt cell by cell (`Q69`=(a) is not the skippable option) | `Q69`=(a) | S11 |
 | **TP-75** 👁 | The palette-swap snapshot still passes with marks on the board | `ARCHITECTURE_REVIEW.md` §4i | S11 |
+| **TP-76** | A PlayArea hosted without a Game and holding a dealt plan reveals without an engine error, and the real game's reveal is unchanged | `Q69`=(a), pre-authorisation 5 | S11 |
+| **TP-83** | After a placement that matched, the placed card's agreeing elements read `match_rim_active` and its others do not; after `undo()` no element anywhere on the board does. Asserted on the outline shader's own uniform, never on a flag | `Q64` | S12 |
+| **TP-84** 👁 | **The marks layer reads as the board's plan**: a focused grid with several cells covered draws every cell's mark instead of the cards on it, one of them realized and wearing the activated rim, and the same board at overview zoom | `Q19`, `Q116`=(b), pre-authorisation 14 | S13 |
+
+**The by-eye harnesses.** `Tests/Visual/plan_reveal_shot.tscn` renders the mark and times the
+opening deal (TP-71, TP-74, TP-75); `Tests/Visual/plan_match_shot.tscn` renders the match highlight
+and the landing (TP-72, TP-73) -- `held_focused.png`, `held_overview.png` and `landed.png`;
+`Tests/Visual/plan_layer_shot.tscn` covers four cells through the real click route, opens the
+layer view through the real held action and renders `layer_focused.png` and `layer_overview.png`
+(TP-84), printing the cells drawn as marks, the realized cells rimmed and the played cards
+hidden beside each shot. All three take `OUT_DIR` from the environment, are WINDOWED, and none
+is in `all_tests.tscn`.
 
 ---
 
@@ -163,6 +178,22 @@ says so and names its own variant.
 | **TP-82** | The measured score ladder no longer PEAKS at node 3 — a bigger deck raises the ceiling | `GAP-041` | S15 |
 
 ---
+
+## Suite `BOARD PLAN` / `MARK MATCH` / `PLAN VISUALS` — the gap rulings (S18–S23)
+
+| id | Test | Fixture | Proves | Gates |
+|---|---|---|---|---|
+| **TP-05** ⚑gate | (unparked) Each of the 5 stocks contributes exactly 5 of a 25-cell board's marks | `PLAN_DECK`, 1 grid, the partition helper | `Q93`=(b), GAP-001 (b1) | S18 |
+| **TP-06** | (unparked) 26 cells over 5 stocks: stock 0 contributes 6, stocks 1–4 contribute 5 | ragged grid | `Q93`=(b), pre-authorisation 1 | S18 |
+| **TP-85** ⚑gate | The partition is the sidebar's rule: 23 cards over 5 slots split `[5,5,5,4,4]` round-robin left to right, no RNG | `deck_standard_52().slice(23)` | sidebar PLAN §1.7, GAP-001 | S18 |
+| **TP-86** ⚑gate | `on_mark_covered` fires ONCE at landing on every cover and `on_mark_hit` additionally on a match, from the real placement path, before any line scores; a landing that completes no line still fires them | one mark, one placement | GAP-002 | S19 |
+| **TP-87** ⚑gate | A ×2 mark contributes +2 through `on_mark_line_mult` asked during composition; two make ×4; a landing dispatch adds nothing to M; `add_line_mult` no longer exists | two marked cells in one row (TP-32's fixture) | GAP-002, `Q122` | S19 |
+| **TP-88** | `reroll_line(section)` re-deals every cell of one row, column or diagonal, covered included, from the fewest-copies pool; `reroll_grid(grid)` every cell of one grid; each leaves `validate()` clean and bumps `revision` once | a covered row; a 25-cell grid | GAP-003 | S20 |
+| **TP-89** | Holding the X face button (a synthesized `InputEventJoypadButton`, index 2) opens the layer view and releasing closes it, through the viewport | the TP-68 fixture | GAP-005 | S21 |
+| **TP-90** | `goal_alpha` is 0 and `goal_g0` is the beatable flat value; the goals-grow-with-boosters check reads a flat curve as non-decreasing | `RunManager.goal_for` | GAP-006 | S22 |
+| **TP-93** | The shimmer is SYNCED: two landed cards whose matching elements shimmer read the same phase at any instant, whatever frame each landed on; the phase still advances | two realized cells landed frames apart | playtest ruling (PLAN §1.10-bis) | S26 |
+| **TP-92** ⚑gate | The opening reveal is a CASCADE: the N cells start `get_delay() × plan_reveal_multiplier / N` apart, the whole deal completes within `get_delay() × plan_reveal_multiplier` plus one spin, and a later cell starts while the previous cell's spin is still in flight; TP-74's probe re-measured | the S11 probe, `plan_reveal_multiplier` 1.0 | playtest ruling (PLAN §1.10-bis) | S24 |
+| **TP-91** 👁 | The activated rim shimmers: over one loop the rim colour of a landed card's matching elements MOVES through the ramp, blended, measured over time, not a still | `plan_match_shot` landed.png plus a movement probe | GAP-004 | S23 |
 
 ## Deliberately NOT tested, and why
 

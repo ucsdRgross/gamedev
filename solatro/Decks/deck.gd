@@ -1,22 +1,23 @@
 extends Resource
 class_name Deck
-## Starter/test deck definitions, built by LOOPS over exact PipSuit classes (never suit
-## indices — PipSuit.from_index was deleted because the index hid which suit came back).
-## Every deck documents its testing + balance niche above its builder. REACTION RULE that
-## bit us: hoops JUMP talents, knives SPIN talents — a deck with NO skill
-## cards shows zero jump/spin poses, and a deck where EVERY card of a suit carries a skill
-## suppresses that suit's props entirely (talented cards skip their own suit effect).
+## Starter and test deck definitions, built by LOOPS over exact PipSuit classes.
 
-## The four standard suits in board-index order (0 hoop, 1 knife, 2 ball, 3 fire) for decks
-## that cycle all of them. Firework is deliberately absent (special 5th suit) — deck12 is
-## its only grant path today.
+#Never over suit indices: an index hides which suit came back. Every deck documents its testing and
+#balance niche above its builder.
+
+#⚠ REACTION RULE: hoops JUMP talents and knives SPIN talents, so a deck with NO skill cards shows
+#zero jump or spin poses. A suit fires only where the card's own cell mark agrees on SUIT, so no
+#deck composition suppresses props and a talent gates nothing.
+
+#For decks that cycle all of them. Firework is deliberately absent, being a special fifth suit,
+#and deck12 is its only grant path today.
+
+## The four standard suits in board-index order: 0 hoop, 1 knife, 2 ball, 3 fire.
 static var ALL_SUITS : Array[GDScript] = [PipSuitHoop, PipSuitKnife, PipSuitBall, PipSuitFire]
 
-## The active playtest deck. deck14 is the 20-card start deck the §15b goal curve is
-## calibrated against (2026-07 scoring rework). deck11 (24 cards incl. talents) stays
-## available in the picker for prop/reaction playtests.
+## The deck a show falls back to when no run supplied one: the standalone game_view.tscn boot.
 func get_deck() -> Array[CardData]:
-	return deck14
+	return deck4
 
 func get_rules() -> Array[CardData]:
 	return rules1
@@ -30,23 +31,18 @@ func get_deck_list() -> Array[Dictionary]:
 		list.append({"name": "Deck %d" % (i + 1), "cards": decks[i]})
 	return list
 
-## Shorthand: a plain paper card of `suit` at `rank` — the base every deck builds on.
-## Chain .with_skill/.with_stamp/.with_type onto the result for modified cards.
+#Chain .with_skill, .with_stamp or .with_type onto the result for modified cards.
+
+## Shorthand: a plain paper card of `suit` at `rank`, the base every deck builds on.
 func _card(suit: GDScript, rank: int) -> CardData:
 	return CardData.new().with_type(TypePaper.new()) \
 			.with_suit(suit.new() as PipSuit) \
 			.with_rank(PipRankNumeral.new().with_value(rank))
 
-## RULES 1 — the standard rules row: 5 upper adders (five of them are what make the Entrance
-## five wide), the allotment card (which sizes the grid count to the deck and adds the creator
-## cards that build the grids), and the line detector (which scores every line a placement
-## completes). Random suits/ranks: rules cards never score as melds, so their pips are cosmetic.
-## N6: every deck/rules member below is LAZY (built on first access, cached in the backing
-## var — reading the var inside its own getter bypasses the getter, no recursion). Deck.new()
-## therefore allocates nothing; a Game builds only the one deck it plays, and the picker
-## builds the rest only when it actually opens (get_deck_list touches them all).
-## Timing note: rules1/deck pips use random_standard() — WHICH global-RNG values they draw
-## now depends on first-access order. Cosmetic only (rules cards never score).
+#Every deck and rules row below is LAZY: built on first access and cached in its backing var,
+#reading it inside its getter not recursing, so random_standard() pips follow first-access order.
+
+## 5 upper adders, the Entrance's width, plus the allotment card, line detector and board planner.
 var rules1 : Array[CardData]:
 	get:
 		if rules1.is_empty(): rules1 = _build_rules1()
@@ -58,7 +54,8 @@ func _build_rules1() -> Array[CardData]:
 				.with_skill(SkillAdderInputUpper.new()) \
 				.with_suit(PipSuit.random_standard()) \
 				.with_rank(PipRankNumeral.new().with_random()))
-	var singles : Array[CardModifier] = [SkillGridAllotment.new(), SkillLineDetector.new()]
+	var singles : Array[CardModifier] = [SkillGridAllotment.new(), SkillLineDetector.new(),
+			SkillBoardPlanner.new()]
 	for skill : CardModifier in singles:
 		out.append(CardData.new().with_type(TypePaper.new()) \
 				.with_skill(skill) \
@@ -66,9 +63,9 @@ func _build_rules1() -> Array[CardData]:
 				.with_rank(PipRankNumeral.new().with_random()))
 	return out
 
-## DECK 1 — smoke deck (8): every suit at ranks 1-2, all plain.
-## Tests: the smallest all-suit board; each suit's props fire at least once with no skills
-## in the way. Balance: baseline for "what does an empty-modifier run score".
+#DECK 1, smoke deck of 8: every suit at ranks 1-2, all plain.
+#Tests the smallest all-suit board, each suit's props firing at least once with no skills in the
+#way. Balance: the baseline for what an empty-modifier run scores.
 var deck1 : Array[CardData]:
 	get:
 		if deck1.is_empty(): deck1 = _build_deck1()
@@ -80,9 +77,9 @@ func _build_deck1() -> Array[CardData]:
 			out.append(_card(suit, rank))
 	return out
 
-## DECK 2 — rank spread (8): each suit once ascending 1-4, then once descending 4-1.
-## Tests: mixed-rank melds and pip-count-driven prop volume (rank = spawn count) across
-## every suit. Balance: contrasts low- vs high-pip versions of the same suit in one run.
+#DECK 2, rank spread of 8: each suit once ascending 1-4, then once descending 4-1.
+#Tests mixed-rank melds and pip-count-driven prop volume, rank being spawn count, across every
+#suit. Balance: contrasts low- against high-pip versions of the same suit in one run.
 var deck2 : Array[CardData]:
 	get:
 		if deck2.is_empty(): deck2 = _build_deck2()
@@ -95,10 +92,9 @@ func _build_deck2() -> Array[CardData]:
 		out.append(_card(ALL_SUITS[i], 4 - i))
 	return out
 
-## DECK 3 — modifier sampler (16): 2 copies of an 8-card pattern mixing SkillExtraPoint,
-## StampRevealing, and TypeHeavy on all four suits, with two plain closers.
-## Tests: every modifier surface (skill/stamp/type) rendering + scoring together.
-## Balance: roughly half the deck modified, half plain.
+#DECK 3, modifier sampler of 16: 2 copies of an 8-card pattern mixing SkillExtraPoint,
+#StampRevealing and TypeHeavy on all four suits, with two plain closers.
+#Tests every modifier surface rendering and scoring together. Balance: half modified, half plain.
 var deck3 : Array[CardData]:
 	get:
 		if deck3.is_empty(): deck3 = _build_deck3()
@@ -116,10 +112,9 @@ func _build_deck3() -> Array[CardData]:
 		out.append(_card(PipSuitFire, 1))
 	return out
 
-## DECK 4 — full standard 52: every suit at every rank 1-13, all plain.
-## Tests: long runs, deck cycling, draw/discard volume, poker-hand evaluation with a real
-## distribution. Balance: THE reference deck; no skills means no jump/spin reactions and
-## maximum prop spawns (nothing suppressed).
+#DECK 4, the full standard 52: every suit at every rank 1-13, all plain.
+#Tests long runs, deck cycling, draw and discard volume, and poker-hand evaluation with a real
+#distribution. Balance: THE reference deck; no skills means no jump or spin reactions.
 var deck4 : Array[CardData]:
 	get:
 		if deck4.is_empty(): deck4 = _build_deck4()
@@ -131,10 +126,11 @@ func _build_deck4() -> Array[CardData]:
 			out.append(_card(suit, rank))
 	return out
 
-## DECK 5 — trigger-stacking hoops (15): 3 copies of a 5-card all-hoop-rank-1 pattern
-## (ExtraPoint, ExtraPoint+DoubleTrigger, 2x EchoingTrigger, plain).
-## Tests: on_score / re-trigger interactions on identical cards where every score delta is
-## attributable. Balance: how far double/echoing triggers snowball a flat deck.
+#DECK 5, trigger-stacking hoops of 15: 3 copies of a 5-card all-hoop-rank-1 pattern - ExtraPoint,
+#ExtraPoint plus DoubleTrigger, two EchoingTrigger, plain.
+
+#Tests on_score and re-trigger interactions on identical cards where every score delta is
+#attributable. Balance: how far double and echoing triggers snowball a flat deck.
 var deck5 : Array[CardData]:
 	get:
 		if deck5.is_empty(): deck5 = _build_deck5()
@@ -147,14 +143,13 @@ func _build_deck5() -> Array[CardData]:
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()))
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()))
 		out.append(_card(PipSuitHoop, 1))
-	#out.append(_card(PipSuitHoop, 1))   # 16th plain closer, parked while tuning 15-card draws
 	return out
 
-## DECK 6 — HungryHippo swarm (16): 3 suit-cycles at ranks 1-4 plus one rank-10 of each
-## suit, EVERY card a HungryHippo.
-## Tests: a whole deck of one board-mutating skill (eat interactions, activation order).
-## Balance: worst-case skill density; also note every suit is fully suppressed here, so
-## this deck should show ZERO props by design.
+#DECK 6, HungryHippo swarm of 16: 3 suit-cycles at ranks 1-4 plus one rank-10 of each suit, EVERY
+#card a HungryHippo.
+
+#Tests a whole deck of one board-mutating skill, its eat interactions and activation order.
+#Balance: worst-case skill density.
 var deck6 : Array[CardData]:
 	get:
 		if deck6.is_empty(): deck6 = _build_deck6()
@@ -168,10 +163,11 @@ func _build_deck6() -> Array[CardData]:
 		out.append(_card(suit, 10).with_skill(SkillHungryHippo.new()))
 	return out
 
-## DECK 7 — Revealing-stamp triggers (30): deck5's trigger pattern x3 (with a DoubleTrigger
-## closer), then the same shape x3 with StampRevealing layered on.
-## Tests: stamp + trigger-skill stacking on identical hoop-1 cards; Revealing's info flow
-## under heavy re-triggering. Balance: trigger deck with vs without a utility stamp.
+#DECK 7, Revealing-stamp triggers of 30: deck5's trigger pattern three times with a DoubleTrigger
+#closer, then the same shape three times with StampRevealing layered on.
+
+#Tests stamp and trigger-skill stacking on identical hoop-1 cards, and Revealing's info flow under
+#heavy re-triggering. Balance: a trigger deck with and without a utility stamp.
 var deck7 : Array[CardData]:
 	get:
 		if deck7.is_empty(): deck7 = _build_deck7()
@@ -189,14 +185,15 @@ func _build_deck7() -> Array[CardData]:
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillExtraPoint.new()).with_stamp(StampRevealing.new()))
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()))
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampRevealing.new()))
-		# The hand-written original left the 3rd repeat's closer fully plain — kept verbatim.
+#The 3rd repeat's closer is deliberately fully plain.
 		out.append(_card(PipSuitHoop, 1).with_stamp(StampRevealing.new()) if i < 2 else _card(PipSuitHoop, 1))
 	return out
 
-## DECK 8 — Global-stamp triggers (30): deck7's exact shape with StampGlobal in place of
-## StampRevealing on the back half.
-## Tests: Global's everywhere-active scope under double/echoing re-triggers (the loudest
-## stamp interaction). Balance: direct A/B against deck7 — same skills, different stamp.
+#DECK 8, Global-stamp triggers of 30: deck7's exact shape with StampGlobal in place of
+#StampRevealing on the back half.
+
+#Tests Global's everywhere-active scope under double and echoing re-triggers, the loudest stamp
+#interaction. Balance: a direct A/B against deck7, same skills and a different stamp.
 var deck8 : Array[CardData]:
 	get:
 		if deck8.is_empty(): deck8 = _build_deck8()
@@ -214,15 +211,13 @@ func _build_deck8() -> Array[CardData]:
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillExtraPoint.new()).with_stamp(StampGlobal.new()))
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()))
 		out.append(_card(PipSuitHoop, 1).with_skill(SkillEchoingTrigger.new()).with_stamp(StampGlobal.new()))
-		# Same verbatim quirk as deck7: the 3rd repeat closes on a fully plain card.
+#As in deck7, the 3rd repeat closes on a fully plain card.
 		out.append(_card(PipSuitHoop, 1).with_stamp(StampGlobal.new()) if i < 2 else _card(PipSuitHoop, 1))
 	return out
 
-## DECK 9 — TypeStone sampler (32): 4 copies of an 8-card all-suit pattern mixing
-## ExtraPoint, Revealing, and TypeStone.
-## Tests: Stone-type boards with mixed modifiers (the pre-2026-07-13 playtest deck).
-## KNOWN QUIRK: every HOOP card here carries a skill, so hoops never spawn props with this
-## deck (talented cards suppress their own suit) — kept as the regression example.
+#DECK 9, TypeStone sampler of 32: 4 copies of an 8-card all-suit pattern mixing ExtraPoint,
+#Revealing and TypeStone.
+#Tests Stone-type boards with mixed modifiers, and is the long-standing playtest deck.
 var deck9 : Array[CardData]:
 	get:
 		if deck9.is_empty(): deck9 = _build_deck9()
@@ -240,9 +235,9 @@ func _build_deck9() -> Array[CardData]:
 		out.append(_card(PipSuitFire, 1))
 	return out
 
-## DECK 10 — all-Stone core (12): 4 copies of deck9's three Stone cards only.
-## Tests: a board where EVERY card is Stone-typed (type-interaction edge cases with no
-## plain cards to hide behind). Balance: Stone density at its ceiling.
+#DECK 10, all-Stone core of 12: 4 copies of deck9's three Stone cards only.
+#Tests a board where EVERY card is Stone-typed, for type-interaction edge cases with no plain cards
+#to hide behind. Balance: Stone density at its ceiling.
 var deck10 : Array[CardData]:
 	get:
 		if deck10.is_empty(): deck10 = _build_deck10()
@@ -255,12 +250,13 @@ func _build_deck10() -> Array[CardData]:
 		out.append(_card(PipSuitKnife, 3).with_stamp(StampRevealing.new()).with_type(TypeStone.new()))
 	return out
 
-## DECK 11 — prop + reaction showcase (24): every suit at ranks 1-4 plain, PLUS two
-## ExtraPoint talents (ranks 2-3) per suit.
-## Tests: THE deck for prop visuals — every suit has skill-less cards (so all four kinds
-## actually spawn; nothing fully suppressed) and every row has both talents (hoops JUMP
-## them, knives SPIN them) and plain cards (knives score them). Balance: a "normal" mixed
-## board — ~1/3 talents — for tuning prop points against skill points.
+#DECK 11, prop and reaction showcase of 24: every suit at ranks 1-4 plain, plus two ExtraPoint
+#talents at ranks 2-3 per suit.
+
+#Tests prop visuals above all: every row carries both talents, which hoops jump and knives spin,
+#and plain cards, which knives score.
+
+#Balance: a normal mixed board, about a third talents, for tuning prop points against skill points.
 var deck11 : Array[CardData]:
 	get:
 		if deck11.is_empty(): deck11 = _build_deck11()
@@ -274,12 +270,14 @@ func _build_deck11() -> Array[CardData]:
 			out.append(_card(suit, rank).with_skill(SkillExtraPoint.new()))
 	return out
 
-## DECK 12 — firework access (16): two Fireworks at ranks 1-4, padded with one plain card
-## of every standard suit at ranks 1-2.
-## Tests: the ONLY way to play kind-4 fireworks today (PipSuitFirework is outside
-## PipSuit.STANDARD and has no other grant path — in-run acquisition is an open owner decision);
-## exercises column_rise_path against normal row traffic. Balance: first read on whether
-## FIREWORK_POINTS is worth a deck slot.
+#DECK 12, firework access of 16: two Fireworks at ranks 1-4, padded with one plain card of every
+#standard suit at ranks 1-2.
+
+#Tests the ONLY way to play kind-4 fireworks today, PipSuitFirework being outside PipSuit.STANDARD
+#with no other grant path, and exercises column_rise_path against normal row traffic.
+
+#In-run acquisition is an open owner decision. Balance: a first read on whether FIREWORK_POINTS is
+#worth a deck slot.
 var deck12 : Array[CardData]:
 	get:
 		if deck12.is_empty(): deck12 = _build_deck12()
@@ -294,11 +292,13 @@ func _build_deck12() -> Array[CardData]:
 			out.append(_card(suit, rank))
 	return out
 
-## DECK 13 — status stress (16): four rank-4 Fires and four rank-4 Balls (max pips = max
-## drops) plus plain hoop/knife targets at ranks 1-4.
-## Tests: Burning/Juggling stacking on repeat targets, the Burning spawn-count bonus
-## feeding back into later fires, and status FX rendering under many stacks. Balance:
-## how fast a status engine snowballs when half the deck feeds it.
+#DECK 13, status stress of 16: four rank-4 Fires and four rank-4 Balls, maximum pips being maximum
+#drops, plus plain hoop and knife targets at ranks 1-4.
+
+#Tests Burning and Juggling stacking on repeat targets, the Burning spawn-count bonus feeding back
+#into later fires, and status FX rendering under many stacks.
+
+#Balance: how fast a status engine snowballs when half the deck feeds it.
 var deck13 : Array[CardData]:
 	get:
 		if deck13.is_empty(): deck13 = _build_deck13()
@@ -313,10 +313,7 @@ func _build_deck13() -> Array[CardData]:
 		out.append(_card(PipSuitKnife, rank))
 	return out
 
-## DECK 14 — 20-card START deck (2026-07 scoring rework, SCORING_MATH_PLAN §15b): ranks
-## 1–5 × 4 standard suits, no talents — the deck the goal curve (N0=20, G0, ALPHA) is
-## calibrated against. THE new-run default via get_deck(). (Named deck14, not the plan's
-## "deck12" — that slot was already the firework-access deck.)
+## DECK 14 — ranks 1–5 × 4 standard suits, no talents: the 20-card deck the goal curve is fitted to.
 var deck14 : Array[CardData]:
 	get:
 		if deck14.is_empty(): deck14 = _build_deck14()

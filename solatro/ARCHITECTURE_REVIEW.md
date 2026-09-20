@@ -122,6 +122,10 @@ GameData.position_of ........... LAZY revision-keyed legacy index — locate/
 GameData.card_at / grid_position_of .. the grid-side pair, rebuilt on the same revision bump.
 PipComparator (static) ......... every rank/suit comparison funnels through here; mods
                                  get asked first (on_compare_ranks/suits), numeric fallback.
+BoardPlan (Scripts/board_plan.gd) .. the board plan (§3e): is this cell MARKED, what a mark
+                                 prints, and the seeded deal that puts one on every cell.
+MarkMatch (Scripts/mark_match.gd) .. which printed properties of a card agree with its own cell's
+                                 mark, and what a match pays (§3e).
 Scoring (Scripts/scoring.gd) ... poker-hand evaluation; ScoreModel = the only place hand
                                  score math lives; Scoring.class_key(Result) = combo identity.
 RunManager (autoload) .......... run lifecycle, goal curve, fame/luck, threaded save queue.
@@ -218,11 +222,34 @@ for that rebalance to pour into the survivors. `CardEffectApi.draw_deck()` is on
    both implements both, and `on_compare_ranks/suits` stay the ORDERING hooks with no grouping
    power. Spellings live once as `PipComparator` constants, and **the contracts and landmines are
    §3c** — do not restate them here.
+   **The mark surface** — `on_mark_covered(card, coord, level)` on every cover and
+   `on_mark_hit(card, coord, matched, level)` on a match, `level` 0 or 1 and nothing else.
+   Dispatched at BOTH moments — once from `place_card_in_grid` when the card lands, and again for
+   every meld card standing on a marked cell each time a line through it scores — through
+   `CardEnvironment.run_mark_mods` to the MARK's copied modifiers and the placed CARD's — never
+   through `run_all_mods`, because a mark is never spotlit. It counts as an ACTIVATION: the copied
+   modifier's combo class registers and `note_processing` is charged, so a looping mark effect is
+   bounded by the runaway cap. `on_mark_line_mult(card, coord, matched) -> float` is the third, a
+   QUERY the composition asks of the mark's copied modifiers alone through `run_mark_query`: it
+   charges nothing and registers nothing, and every answer sums into the line's mult (§3a). The
+   leniency family `on_mark_ranks_deny/allow`,
+   `on_mark_suits_deny/allow` are COMMENTS on `CardModifier` and never methods, asked through
+   `PipComparator.ask_pass` BEFORE the presence test so content can rescue a pip a card does not
+   print; every spelling lives once as a `MarkMatch.MARK_*` constant. The deal and the match: §3e.
 3. Attach to a `CardData` in `rules_deck` (always spotlit), or rely on the default rule:
    **a play card's modifiers are SPOTLIT while the card is topmost/uncovered** (renamed off
    `active`, spotlight `Q2`=b); `StampRevealing` overrides covered, `StampGlobal`
    is spotlit from anywhere (incl. decks), and `GameData.forced_spotlight` — the scoring beam —
    ORs on top of all of it.
+   ⚠ **A mark is never spotlit, covered or not.** `CardModifier.is_spotlit()` asks
+   `BoardPlan.is_marked` in its first check and `blocks_spotlight()` is false for one, so a mark's
+   copied skill and stamp answer nothing. `CardEnvironment._dispatch_mods` — the ONE walk
+   `run_all_mods`, the comparator dispatches, `active_implementers`,
+   `return_first_data_array_result` and `has_card_data` all share — drops a marked cell's COPIED
+   modifiers while the cell's OWN `TypeGridCell` stays in it, because `on_can_place_stack` rides
+   that same walk and excluding the whole card would refuse every placement onto a marked cell.
+   `has_card_data` is false for a mark; `all_card_datas` is untouched, because relinking and the
+   I6 invariant walk it.
 4. `combo_key(hook)` on the modifier controls combo participation (§3a): default = the
    script path. The FIRST activation of a class adds `combo_unique_step`, every later one adds
    `combo_repeat_step`; nothing resets for the whole show. Return `""` to opt out — every
@@ -459,7 +486,10 @@ moving stack = `ERR_DEST_INSIDE_STACK`; same-position drop = `OK_NOOP` (no event
 
 **Invariants** (`GameData.validate()`, debug builds + fuzz suites):
 I1 every card in exactly one container; I2 zone/zone_type lockstep; I3 stage matches
-container; I4 **both** position indexes agree with a full rescan; I5 no null entries.
+container; I4 **both** position indexes agree with a full rescan; I5 no null entries;
+I6 every mark prints a rank or a suit, and — unless `granted` — names a card some playing card in
+the state prints (`GameData._mark_violations`, comparing through `PipComparator.printed_card_same`;
+§3e).
 
 **MUTATION GUIDELINES (sacred — a miss = stuck UI + stale caches + stale positions):**
 - All board mutations go through `Board.*`, `Game.place_card_in_grid`/`move_card_in_grid`/
@@ -529,6 +559,31 @@ displayed   = board_total × combo          ← recomputed at DISPLAY time, alwa
 - Both counters live on **GameData**, so undo rewinds them for free. **Any per-show counter
   that undo must rewind belongs on GameData, not Game.**
 
+**What a line is worth** (`Game._compose_line_score`, one call from `score_line`, ahead of
+`add_line_score`):
+
+```
+line score = (hand score + Σ flat bonuses) × M      M = Σ bonus mults
+```
+
+- ⚠ **`M == 0` NEVER MULTIPLIES.** It is skipped exactly as a bucket worth 0 is excluded from the
+  grid product. Mults SUM and the sum IS the multiplier, not `1 + Σ` — two marks each saying "×2"
+  contribute +2 apiece and make ×4, and a mult of 1 is neutral, so the useful range starts at 2.
+- ⚠ **`ScoreModel` IS NOT TOUCHED.** The full-flush double and the copy escalation happen inside
+  `final_score()`'s one `int` and are invisible past it; editing `ScoreModel` to add a bonus is a
+  defect.
+- Flats are gathered from `result.meld` only — the meld `score_line` re-derived AFTER the
+  spotlight cascade — and pay **once per line**. A RANK match pays the printed rank rounded up,
+  with the Ace and any rank carrying no integer value paying their own knobs (§3e).
+- **A match registers no combo class; a mark EFFECT firing is one** (§1.4).
+- A mark effect reports its mult by ANSWERING `on_mark_line_mult`, asked of every mark a meld card
+  stands on while the line composes (§1.4), so an effect never has to know which moment it is in.
+  The accumulator is a local of `Game._compose_line_score`: a mark hook re-scoring a line from
+  inside it cannot touch the outer line's sum.
+- ⚠ **ONE CELL IS ONE BATCH.** A mark is asked, covered and hit ONCE per line however many meld
+  cards stand on it — a vertical stack is the case — on the UNION of what they matched. Each CARD
+  still pays its own flat and mult and is answered its own `on_mark_hit`.
+
 **Where a line banks** (`Game._add_grid_line_score`, the only place that decides):
 
 | Kind | Bucket |
@@ -570,14 +625,18 @@ N̂(node)   = N0 + BOOSTER_YIELD × boosters_on_path(node)
 
 - Goals scale with **opportunities** to grow (booster nodes on the path), not purchases —
   skipping boosters leaves you under the curve; that is the pressure.
-- Fitted against the grid economy: `N0=20, G0=5376, ALPHA=0.26, BOOSTER_YIELD=5`.
-- ⚠ **ALPHA is nearly flat ON PURPOSE, and that is not a tuning preference.** Measured, a
-  show's score PEAKS three nodes in and then falls: the board holds 25 cells for the whole run
-  (`grid_cards_per_unlock` ships at 52 and a run only reaches 40 cards, so a second grid never
-  unlocks), and booster cards are rank-uniform 1–13 against a start deck of 1–5, thinning out
-  the very collisions that make melds. Deck size is the wrong driver for this curve; a larger
-  power makes late nodes unreachable rather than harder. **`gaps/GAP-041.md` is OPEN on the
-  underlying problem** — the refit makes the curve reachable, it does not fix the sign.
+- Fitted against the grid economy: `N0=20, G0=18720, ALPHA=0, BOOSTER_YIELD=5`.
+- ⚠ **ALPHA IS FLAT (0) AS A PLACEHOLDER, on an owner ruling, not as a tuning preference.**
+  Measured with the board plan dealt and matched, a show's score PEAKS three nodes in and then
+  falls to 0.10× of that peak: the board holds 25 cells for the whole run (`grid_cards_per_unlock`
+  ships at 52 and a run only reaches 40 cards, so a second grid never unlocks), and booster cards
+  are rank-uniform 1–13 against a start deck of 1–5, thinning out the very collisions that make
+  melds. Deck size is the wrong driver for this curve, so the beatable fit returns a NEGATIVE
+  alpha — which `goal_for`'s contract forbids. `G0` is therefore the beatable value at a flat
+  alpha (the ladder's own minimum, node 12's 25th percentile) and every node is winnable and
+  non-trivial, but the curve has no growth term. **`design/poker-patience/gaps/GAP-041.md` is
+  OPEN on the underlying problem**: growing the board with the deck, or narrowing what a booster
+  adds, is what a real curve waits on. The table: `design/board-plan/gaps/GAP-006.md`.
 - **Monotone clamp** per path in `MapNodeRoles` (a spread extension can weaken par play; the
   ladder must never descend). Boss ≥ every game goal of the lap.
 - `difficulty` is THE run-win-rate dial (±15% ≈ one persona band); future per-player
@@ -705,6 +764,63 @@ that by re-checking every cell of `Line.cells` against the live board.
   placement completing four lines spent 125 activations of which 44 were repeats.
 - ⚠ **`ScoringSection.refresh()` re-reads the LIVE board and must never be cached across a
   hook.** A handler may have added a card to the section or compacted one out of it.
+- **A mark is never in a section and completes no line** — it is a cell's own zone card, not a
+  card in play (§3e), so an empty marked cell leaves its line incomplete exactly as a bare one
+  does.
+
+### 3e. The board plan — every cell opens with a mark
+
+`design/board-plan/DESIGN.md` is the authority on the rules, cited by question id; its `PLAN.md`
+§1 carries the contracts. What the engine does:
+
+- **A mark is a cell's own `TypeGridCell` zone card printing a rank, a suit, a talent and a hat
+  copied off a real card.** `BoardPlan.is_marked` is THE predicate — every rule below asks it.
+  `TypeGridCell.granted` says a level granted the mark rather than the deck dealing it, which is
+  what exempts it from I6 (§2c).
+- **The deal** — `BoardPlan.deal`, from `SkillBoardPlanner.on_game_start` (LAST in `rules1`, after
+  the allotment's grid creators, so every grid already exists) and from `Board.add_grid` via
+  `Board.deal_marks` for a grid added mid-show. A seeded Fisher-Yates over every cell — **never
+  `Array.shuffle()`, which draws on the global RNG** — taking the stock's FEWEST-COPIED identities
+  first, so no card is marked again while another is marked less often and a later deal continues
+  the cycle instead of restarting it. The seed is `GameData.plan_seed`,
+  `hash(Vector2i(world_seed, current_node_id))` forced off 0, kept apart from the shuffle so a
+  re-entered show is the same show. The stocks are `BoardPlan.stocks_of` — `draw_deck` dealt round
+  robin across the Entrance's slots until the slots own their own
+  (`design/board-plan/gaps/GAP-001.md`).
+- **The match** — `MarkMatch.matches_at(state, card, coord)` answers the `Property` bitmask of
+  what a card and its own cell's mark agree on. **Derived on every call, cached nowhere:** a
+  modifier changing a card's suit emits `data_changed` rather than bumping `revision`, so a
+  revision-keyed verdict would answer stale. What a match PAYS is §3a, what it FIRES — at the
+  landing and again at every line score through the cell — is §1.4, what it LIGHTS is §4j.
+- **Content writes marks through `CardEffectApi`**: `mark_at`, `reroll_mark`, `reroll_line`,
+  `reroll_grid`, `grant_mark`, `swap_marks`, each bumping `revision` once after the write. ⚠ A
+  reroll's offer EXCLUDES the face it replaces and the cell is cleared only once a replacement is in
+  hand — clear first and the cleared identity is the sole fewest-copies card, so the reroll returns
+  the same face forever. `reroll_line` re-deals every cell of one row, column or diagonal and
+  `reroll_grid` every cell of one grid, covered cells included; both run the one-cell redraw over
+  `CardEffectApi._redraw_marks`, which bumps ONCE for the whole batch.
+- **On screen** — a mark draws as a real card in full colour with NO rim, and the opening reveal
+  is `PlayArea.reveal_plan`, cell by cell in the deal's own walk order
+  (`GameData.plan_reveal_order`, transient and read by nothing else). The WHOLE deal takes
+  `plan_reveal_multiplier` × `get_delay()`: the cells start that span divided by their count apart,
+  on one Tween of delayed callbacks, and each cell's spin is left running as the next arrives. The marks LAYER (`PlayArea.plan_layer_open`) hides the
+  played cards and draws every cell's mark: `ui_plan_layer` (M, or the X face button) PEEKS while
+  held, the HUD Marks button toggles, `_select_data` refuses selection while it is open,
+  `GameView._board_is_playable()` gates undo and End, and `queue_rebuild()` / `setup_gui()` close
+  it, so one board mutation always ends it. ⚠ WHAT IS LOOKED AT IS WHAT IS DRAWN: while it is open
+  a covered cell's focus and its `card_info` are its MARK, because `_size_stack_slot(slot, true)`
+  collapses the cell's cards and hands the zone card the size, the hit area and the focus — no
+  reader asks a second time. The rims themselves are §4j, and the ACTIVATED one drifts along a ramp
+  instead of sitting still.
+- **Knobs**, six, declared once under `@export_group("Balance — board plan")` in
+  `Scripts/player_settings.gd`: `plan_rank_match_step`, `plan_rank_flat_fallback`,
+  `plan_ace_value`, `plan_talent_mult`, `plan_hat_mult`, `plan_reveal_multiplier`.
+- **Suites:** BOARD PLAN (`Tests/Engine/test_board_plan.gd`) and MARK MATCH
+  (`Tests/Engine/test_mark_match.gd`), both in the `--logic` tier; PLAN VISUALS
+  (`Tests/UI/test_plan_visuals.gd`), plus the shot scenes `Tests/Visual/plan_reveal_shot.tscn`,
+  `plan_match_shot.tscn` and `plan_layer_shot.tscn`. `Tools/scoring_sim.py` models the deal, the
+  match and the composition, and `Tools/scoring_parity.gd` dumps engine-dealt marked boards for
+  its `--parity` mode to assert the port against.
 
 ---
 
@@ -712,7 +828,13 @@ that by re-checking every cell of `Line.cells` against the live board.
 ## 4. SUIT PROPS & STATUSES (formerly PROPS_BUGFIX_HANDOFF / SUIT_PROPS_PLAN)
 
 Suits are prop-spawners: a scored card's suit fires **once per meld membership** (row and
-column each). A talented card (`data.skill`) suppresses its OWN suit effect. Suits are
+column each) — and **only where its own cell's mark agrees on SUIT** (§3e). One gate,
+`PipSuit._spawn_origin`, which every `spawn_props()` opens with; both are coroutines now because
+the match is one, and `Game._run_score_effects` awaits them. ⚠ **RETIRED: "a talented card
+suppresses its own suit effect".** Talent gates nothing — a talented card on an agreeing mark
+fires normally, and an untalented card on a disagreeing one fires nothing. An **Entrance card can
+no longer fire a suit effect at all**, because the Entrance carries no marks (nothing in the
+product loses a firing: no detected line runs through the Entrance row). Suits are
 **nominal** — construct the exact class (`PipSuitHoop.new()`, …) or index
 `PipSuit.STANDARD = [Hoop, Knife, Ball, Fire]`; Firework is special/excluded (never
 rolled randomly; `deck12` is its only grant path). There is no suit ordering and no
@@ -787,8 +909,10 @@ never serialized); a quit mid-act replays the act from the pre-act board.
 7. Props with `ticks_per_slot > 1` move CONTINUOUSLY via `span_ticks`/`t_goal` ratchet.
 8. The spin reaction is an INFINITE tween — never `custom_step(INF)` it; its revolution
    time floors get_delay() at 0.2s (zero-duration looping tweens trip Godot's guard).
-9. Only talents jump/spin (reaction hooks key on `card.skill`); an all-talent suit
-   spawns nothing (suppression) — deck9/deck10 show zero hoops BY CONSTRUCTION.
+9. Only talents jump/spin (reaction hooks key on `card.skill`). ⚠ **An all-talent deck no
+   longer spawns nothing:** talent stopped gating suit effects (§4 opening) and the cell's mark
+   decides, so a fixture that wants a suit to fire stands its card on a mark agreeing on suit,
+   and one that wants silence denies it.
 10. **The hoop rides ONE CARD-JUMP above its slot centre** (`PropVisual.rides_card_jump` →
     `CardVisual.card_jump_rise_play`, applied through the live lane offset), so a card that
     jumps lands its centre exactly in the ring — the card jumps INTO the hoop (owner
@@ -1419,7 +1543,7 @@ reassign to different colors especially if the palette changes."*
 | `PaletteRoles` | `Scripts/palette_roles.gd` | The resource of pointers: one named `@export` int per role. |
 | `PaletteRamp` | `Scripts/palette_ramp.gd` | An ORDERED list of entries. The only way a gradient is expressed. |
 | `PaletteDB` | `Scripts/palette_db.gd` | Statics that name the live palette, roles and ramps. |
-| Data | `Assets/Palette/*.tres` | `circus_crayon`, `roles`, `ramp_fire`, `ramp_ball`, `ramp_ember`. |
+| Data | `Assets/Palette/*.tres` | `circus_crayon`, `roles`, `ramp_fire`, `ramp_ball`, `ramp_ember`, `ramp_match`. |
 
 **Rules that prevent regressions:**
 
@@ -1437,6 +1561,8 @@ reassign to different colors especially if the palette changes."*
   had **64 colours, zero of them palette entries**; the 3-band ball `mix()` put its middle tone 49
   away from any entry even though both endpoints were hand-picked. Palette-valid ENDPOINTS are not
   enough — the in-between is where the drift lives.
+  ⚠ **ONE exception, owner-ruled: the match shimmer BLENDS `ramp_match`** (§4j) — sampled steps read
+  as distracting jumps on a rim meant to glow. Every other ramp samples.
 - **A ramp is longer than any one effect needs and effects take a sliding WINDOW of it** (owner:
   *"ramp could have 10 colors, and fire ramp can focus on window of 3 and move through the ramp when
   intensity increases"*). The window slides toward the hot end as the stack level rises, so more
@@ -1455,6 +1581,11 @@ reassign to different colors especially if the palette changes."*
   move while the rank pip and card art do.
 - **Colour is presentation: nothing here is saved.** `run.tres` stores no colour; never add a
   migration for a palette change.
+- **The match rims are ROLES, not colours.** `match_rim` is what a mark's agreeing elements wear
+  while a card is held, `match_rim_active` what a landed card's agreeing elements wear (§3e, §4j).
+  ⚠ The owner's ruling says WHITE and this palette has no white entry, so they are 31 (cream) and
+  6 (gold); every test asserts the ROLE, so re-pointing one moves one number in `roles.tres` and
+  nothing else. The activated one additionally SHIMMERS along `ramp_match`, which opens on entry 6.
 
 **Editing roles in the inspector.** `PaletteRoles` is `@tool`: `_validate_property()` rebuilds each
 role's dropdown from the live palette (`0 #1a0319`, `1 #700031`, …) and `_get_property_list()` adds a
@@ -1489,9 +1620,31 @@ grew `38x50 -> 40x54` to make room. Design record: `design/card_size_outline/`.
 `CardModifier.update_polygon_uv_frame` (unpadded) stays for PROPS, which get no outline at all.
 
 **Tuning** is `Shaders/Styles/outline_default.tres` (`OutlineStyle`, instance `CardOutline.STYLE`):
-rim ink + width, and each alert kind's colour, tempo, thickness, side buffer. `tools/outline_atlas.tscn`
+rim ink + width, and each alert kind's colour, tempo, thickness, side buffer — the shimmer's colours
+being a whole `PaletteRamp` (`shimmer_ramp`) rather than one entry. `tools/outline_atlas.tscn`
 edits it, so tuning there moves the board. Three override layers, resolved LATE: shipped style → the
 TYPE's own (`CardModifierType.outline_style()`) → an individual `CardAlert`'s fields.
+
+**The STYLE layer is resolved PER ELEMENT, not per card.** `CardVisual._push_outline_ink` pairs each
+polygon with the property it draws (rank, suit, art = talent, stamp = hat) and hands `set_rim` a
+duplicate of the shipped style in the match ink for the ones agreeing with the cell's mark — one
+derivation, `PlayArea._refresh_mark_matches`, run from `set_card_zones_visuals`, storing nothing, so
+an undo has nothing to un-set. Never `modulate`, and no fourth override layer. A MARK's own TYPE
+layer returns the shipped style at `width = 0`: that one number is the whole of "a mark draws as a
+real card with no rim", and the match style takes the shipped width back, because an element that
+lights has to have a rim.
+
+**THE ALERT IS PER ELEMENT TOO, and only for the SHIMMER.** The three kinds are GLARE (a band
+sweeping the card), THROB (the whole rim toggling) and SHIMMER (the rim drifting along
+`ramp_match`, BLENDED — §4i's one exception). A status declares the first two and every element of
+the card shows them; nothing declares the shimmer — `CardVisual._alert_of` gives it to exactly the
+elements wearing `match_rim_active`, and it yields to any status that is alerting, because a polygon
+carries one kind and one clock at a time. A glare or a throb runs on the CARD's clock, one for its
+five polygons; **every SHIMMER on the board shares ONE** (owner, from playtest: a per-card phase
+reads as distracting) -- a `CardVisual` static advanced once a frame by the first shimmering card,
+paced by the SHIPPED style because a board-wide clock can take no one card's type override, and
+stopped by a paused tree exactly as the per-card clocks are. ⚠ Its phase 0 IS the flat activated ink (the ramp opens
+on that entry), so no still picture can tell a live shimmer from a dead one: assert mid-phase.
 
 ### The landmines
 
@@ -1504,6 +1657,7 @@ TYPE's own (`CardModifierType.outline_style()`) → an individual `CardAlert`'s 
 | **Never pass `TEXTURE` to a shader function** | Compiles on GLES3, REJECTED by the editor's compiler. The suite went green while every `@tool` host threw. Tap inline in `fragment()`. |
 | **Sheets are NOT padded; the shader clamps to `u_frame_uv`** | Padding would forbid bleed by construction but pin the rim at 1px forever. Bleed is therefore introducible, and is tested against a CPU oracle. |
 | **`_bind_rig`'s `per_texel` divides by the INNER rect** | `CARD_SIZE / frame_px` was 1.0 only while the type frame WAS the card; it now inflates every corner notch 4-5 %. Nothing about the line looks size-dependent. |
+| **`CardOutline.set_rim` is the ONE writer of the rim width** | `material_of` runs AFTER `set_rim` on every refresh (`set_alert`, `set_clock`), so it must never seed `u_outline_width`: a seed there overwrites every per-type `OutlineStyle.width` override and the TYPE layer cannot change a rim's thickness. The shader's own default is the shipped value, so a polygon that never reaches `set_rim` is unchanged. |
 | **`OutlineStyle.width` cannot exceed `CardOutline.WIDTH`** | The const is geometry (polygons baked at `frame + 2*WIDTH`). Above it the rim clips; 0 turns it off. Wider = re-bake. Deliberately not clamped, so the cost is visible. |
 | **The alert is DECLARED by statuses, never pushed** | An imperative on/off leaks when a status is freed, merged or rewound mid-alert. `CardVisual` re-derives every refresh. There is no "stop" method; adding one reintroduces the leak. |
 | **Its clock is a fraction of `get_delay()` — and NOT also `pacing()`** | `pacing()` IS `base_delay / get_delay()`; both would compress twice and the cue would race its own cascade. |
@@ -1648,7 +1802,7 @@ compile a shader — headless it FAILS with an explanation rather than skipping,
 rule that tests must run properly rather than be skipped). Exit code = failure count; the bar is
 ALL suites green. ⚠ **Read the per-suite banners, never the aggregate count.** Check TOTALS vary
 run to run (fuzz suites) — **compare failure SETS, not counts.** ⚠ **The SUITE count is the
-stable number and it is 45**; a drop means a suite failed to LOAD (a parse error in one suite
+stable number and it is 48**; a drop means a suite failed to LOAD (a parse error in one suite
 still lets the others report "PASSED"). ⚠ **Re-derive it rather than trusting this line** — it is
 the count of `PackedScene` entries in `Tests/all_tests.tscn`:
 `grep -c 'ext_resource type="PackedScene"' solatro/Tests/all_tests.tscn`. A doc that hardcodes a
@@ -1684,7 +1838,7 @@ which is definitionally what the in-run gate could not see, and parses the allow
 ⚠ **A FOCUSED RUN IS A DEBUGGING AID, NEVER A VERDICT.** `run_tests.py --filter <NodeName>...`
 prunes every suite matching no pattern, in `all_tests.gd::_enter_tree` — removal only, never a
 reorder, because suite order is a dependency graph. `--logic` runs the `logic` GROUP declared on the
-suite nodes in `all_tests.tscn`, HEADLESS: 33 of 48 suites, faster than the full windowed
+suite nodes in `all_tests.tscn`, HEADLESS: 35 of 51 suites, faster than the full windowed
 run. The tier is a group rather than a list in the runner so the scene stays the registry it already
 is. Both forms print `FILTERED n of <total>` at both ends and the wrapper refuses a clean verdict — the
 suite count is the load-failure detector and a subset voids it. `--keep-output` keeps that run's

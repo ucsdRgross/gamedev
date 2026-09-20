@@ -11,6 +11,8 @@ GAME_LAWS_TEXT,"Game Laws:
 ,,
 NEXT_BUTTON,>,
 ATTACK_BUTTON,O,
+PLAN_LAYER_TOGGLE,Marks,
+PLAN_LAYER_TOGGLE_HINT,"Show every cell's mark, even under the cards covering it",
 DEBUG_PROP_STEP_MODE,Prop Step,
 DEBUG_PROP_STEP_TICK,Tick +1,
 DEBUG_RECORD,Rec,start an EventLog capture (debug builds only)
@@ -62,10 +64,13 @@ Next: If in Upper Zone, drop card to open space in Lower Zone. Then Draw a Card.
 Removed: Stacked cards are Discarded",revealed
 GRID_CELL_CARD,Grid Cell,
 GRID_CELL_CARD_DESCRIPTION,"One cell of a Grid. Cards may be stacked here.",
+GRID_CELL_CARD_MARKED_DESCRIPTION,"One cell of a Grid, marked %s %s. Cards may be stacked here.",
 GRID_ALLOTMENT_CARD,Grid Allotment,
 GRID_ALLOTMENT_CARD_DESCRIPTION,"On game start, matches the number of grids to the deck size.",
 GRID_CREATOR_CARD,Grid Creator,
 GRID_CREATOR_CARD_DESCRIPTION,"Spotlit: builds a grid. Unspotlit: removes it and discards its cards.",
+BOARD_PLANNER_CARD,Board Planner,
+BOARD_PLANNER_CARD_DESCRIPTION,"On game start, deals a mark from the deck onto every cell of every grid.",
 LINE_DETECTOR_CARD,Line Detector,
 LINE_DETECTOR_CARD_DESCRIPTION,"Whenever the board changes, scores every completed row, column and diagonal.",
 ,,
