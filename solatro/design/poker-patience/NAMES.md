@@ -193,9 +193,8 @@ wall. Do **not** rebind them.
 | `Tests/Engine/test_grid_economy.gd` / `.tscn` | Phase 3 |
 | `Tests/Engine/test_grid_cards.gd` / `.tscn` | Phase 4 |
 | `Tests/UI/test_grid_layout.gd` / `.tscn` | Phase 5 |
-| `Tests/UI/test_grid_view.gd` / `.tscn` | Phase 6 |
-| `Tests/Wall/test_wall_saved_pan.gd` / `.tscn` | Phase 7 |
-| `Tests/Engine/test_grid_fuzz.gd` / `.tscn` | Fuzz |
+| `Tests/UI/test_grid_view.gd` / `.tscn` | Phase 6, and the saved pan (Phase 7) |
+| `Tests/Engine/test_fuzz.gd` / `.tscn` | Fuzz — the walk runs on a board that has grids |
 | `TestGridFixtures.board_digest(state)` | The board as comparable text: every cell, the Entrance, deck and discard in order, every bucket. Backs the headless/viewed parity gate and the save round-trip. |
 | `TestDecks.deck_standard_52` | `FIX-DECK-52`. **Frozen.** Never `Deck.deck4`. |
 | `TestDecks.deck_20` | `FIX-DECK-20` |

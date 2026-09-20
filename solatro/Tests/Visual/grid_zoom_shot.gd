@@ -1,23 +1,22 @@
 extends Control
 
-## Photographs and MEASURES the board inside the REAL game picture, in both view modes.
-##
-## ⚠ **THE INSTRUMENT `grid_layer_shot` IS NOT.** That one renders the board straight into a
-## 1152x648 window, so for a multi-grid board its framing is a harness artefact: the real board
-## lives in a SubViewport sized `PlayArea.game_picture_design_size` and occupies only the
-## `PlayContainer` rect inside it. Every "is the grid cut off" question is about THAT rectangle,
-## and only this scene puts it on screen.
-##
-## Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
-##     OUT_DIR=<absolute dir> <console exe> --path solatro res://Tests/Visual/grid_zoom_shot.tscn
-##
-## Deliberately NOT in all_tests.tscn: needs a real renderer and is by-eye material.
+#Photographs and MEASURES the board inside the REAL game picture, in both view modes. The board
+#lives in a SubViewport sized PlayArea.game_picture_design_size and occupies only the PlayContainer
+#rect inside it, and every "is the grid cut off" question is about THAT rectangle.
+
+#⚠ grid_layer_shot renders the board straight into a 1152x648 window, so for a multi-grid board its
+#framing is a harness artefact. Only this scene puts the real rectangle on screen.
+
+#Run windowed, WITH AN EXTERNAL KILLING TIMEOUT:
+#    OUT_DIR=<absolute dir> <console exe> --path solatro res://Tests/Visual/grid_zoom_shot.tscn
+
+#Needs a real renderer and is by-eye material, so it stays out of all_tests.tscn.
 
 const OUT_DIR_FALLBACK := "user://reveal_shots"
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
 const SAVE_TAG := "grid_zoom_shot"
-## How many grids the board is stood up with. `GRID_COUNT` in the environment overrides it, so the
-## same instrument answers the centring rule at one, two and three grids.
+#How many grids the board is stood up with. GRID_COUNT in the environment overrides it, so the same
+#instrument answers the centring rule at one, two and three grids.
 const GRID_COUNT_DEFAULT := 3
 ## How long past the pan clock nothing may move before the board counts as at rest.
 const STILL_MARGIN := 0.2
@@ -44,9 +43,9 @@ func _ready() -> void:
 	DisplayServer.window_set_size(design)
 	await get_tree().process_frame
 
-	# The picture IS a SubViewport at the design size; the wall camera only displays it. Standing
-	# the real GameView up in one of exactly that size reproduces the product's board geometry
-	# without the wall's own transform in the way.
+#The picture IS a SubViewport at the design size; the wall camera only displays it. Standing the
+#real GameView up in one of exactly that size reproduces the product's board geometry without the
+#wall's own transform in the way.
 	var holder := SubViewportContainer.new()
 	holder.stretch = false
 	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -100,7 +99,7 @@ func _ready() -> void:
 	if not await _shoot(pa, vp, "pickup"): return
 	pa.ungrab_cards()
 
-	# Cards on the board, so the shot shows what a player sees rather than an empty lattice.
+#Cards on the board, so the shot shows what a player sees rather than an empty lattice.
 	for gi : int in _grid_count:
 		var grid : GridData = g.state.grids[gi]
 		for x : int in mini(5, grid.grid_width):
@@ -141,9 +140,9 @@ func _ready() -> void:
 #Control the root viewport scales, so a picture wider than the project's authored window is CROPPED
 #there -- 1152 of 1576 design px, and the grid at the right-hand end never appeared.
 
-## One shot plus the numbers behind it: the board window inside the picture, and every grid's
-## CELL BLOCK against it. Off-screen is reported per grid because the "no cut-off" rule speaks
-## only about the focused one.
+#One shot plus the numbers behind it: the board window inside the picture, and every grid's CELL
+#BLOCK against it. Off-screen is reported per grid because the "no cut-off" rule speaks only about
+#the focused one.
 func _shoot(pa: PlayArea, picture: SubViewport, tag: String) -> bool:
 	await RenderingServer.frame_post_draw
 	var drawn := _probe(pa)

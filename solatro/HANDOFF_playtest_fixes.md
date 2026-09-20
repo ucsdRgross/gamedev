@@ -2,10 +2,10 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1-P11, P14, P16-P18, P20-P22 are done, each red-then-green and by eye where it draws,
-one verified step per commit. Last gate: `ALL 51 SUITES: 6129 CHECKS PASSED`, 21 placeholder
-warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P19
-(a sweep), P12, P13, P15; each carries its site map in `notes:`. Gate at the stream's start:
+**State:** P1-P11, P14, P16-P22 are done, each red-then-green and by eye where it draws,
+one verified step per commit. Last gate: `ALL 51 SUITES: 6131 CHECKS PASSED`, 21 placeholder
+warnings (P6 returned one slot of 22), the fingerprint exit profile, 0 SCRIPT ERROR. Pending: P12, P13,
+P15; each carries its site map in `notes:`. Gate at the stream's start:
 `ALL 51 SUITES: 5839 CHECKS PASSED`.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -250,9 +250,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Tests/UI/test_grid_view.gd, solatro/Tests/Visual/grid_zoom_shot.gd, solatro/design/poker-patience/DESIGN.md, solatro/design/poker-patience/NAMES.md]
   verification_command: 'py .claude/tools/sweep_check.py <each .gd>; doc_check --changed silent; run_tests.py --filter GridView; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'Best run AFTER P11, which edits test_grid_view.gd again. Same rules as P14, P17, P18.'
+  status: done
+  evidence: 'Findings 236/7/9 -> 0/0/0 (test_grid_view, grid_zoom_shot, test_grid_layout) and 5 dead doc references -> 0; sweep_check CODE IDENTICAL x3 (1982, 226, 1266 code lines), re-run by the overseer; doc_check --changed silent; dup_check 82, no new pair. FILTERED 2 of 51 [GridView GridLayout]: 485 CHECKS PASSED (346 + 139); --logic 3006; grid_zoom_shot.tscn quit by itself, 0 SCRIPT ERROR. Overseer gate: ALL 51 SUITES: 6131 CHECKS PASSED, 21 placeholder warnings, the fingerprint exit profile, 0 SCRIPT ERROR.'
+  notes: 'Dropped restatements are quoted in the P19 commit message. doc_check FILEREF clips a file name out of a path with spaces (curated effects pre grid.csv read as grid.csv) - the two were reworded, the tool is unchanged. Design ids stay in check() strings (144 and 18). The grid_zoom_shot CUT OFF caption fires on every off-window neighbour by design of the print; misleading, a string, untouched.'
 - id: P18
   description: The comment sweep P6 owes - test_pixels.gd, fx_snapshot.gd, player_settings.gd and (owed by P16) Tests/Support/pip_suit_test.gd leave compliant, code byte-identical.
   files_touched: [solatro/Tests/Visual/test_pixels.gd, solatro/Tests/Visual/fx_snapshot.gd, solatro/Scripts/player_settings.gd]
@@ -281,9 +281,8 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P19 (the sweep P10 and P11 owe; test_grid_layout.gd joins it).
-2. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
-3. After the last step: `/docs` folds this file away; the owner merges the branch.
+1. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+2. After the last step: the rest_focus_on_board assert check and the owner's three open P22 questions (Open bugs / P22 notes), then `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
 

@@ -22,14 +22,15 @@ func suite_name() -> String:
 	return "GRID LAYOUT"
 
 func _ready() -> void:
-	# ⚠ **THIS SUITE MEASURES THROUGH `CardEnvironment.CURRENT`, AND IT AWAITS FRAMES.**
-	# `PlayArea._own_grid_row_height` resolves its grid through `get_current_game()`, so any check
-	# that samples across an `await` reads whatever board is CURRENT at that moment. Running
-	# concurrently, another suite takes CURRENT mid-await and the measurement silently answers
-	# about a different, grid-less game -- returning a bare card height that reads exactly like a
-	# row that never grew. Measured: TP-85 failed 10 runs in 11 that way, reporting
-	# "CURRENT is mine false, CURRENT depth -1" while its own board sat two cards deep.
-	# See TestSuite.await_siblings_except and its DEADLOCK RULE.
+# ⚠ THIS SUITE MEASURES THROUGH CardEnvironment.CURRENT, AND IT AWAITS FRAMES.
+# PlayArea._own_grid_row_height resolves its grid through get_current_game(), so any check that
+# samples across an await reads whatever board is CURRENT at that moment.
+
+# A suite running concurrently takes CURRENT mid-await and the measurement silently answers about a
+# different, grid-less game, returning a bare card height that reads exactly like a row that never
+# grew. Measured: the mid-growth check failed 10 runs in 11 that way.
+
+# TestSuite.await_siblings_except carries the DEADLOCK RULE this list has to obey.
 	await await_siblings_except(["GRID VIEW", "SIDEBAR", "SETTINGS RANGE", "E2E RUN",
 			"DRAG PLACE", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ GRID LAYOUT TEST PASS ============")

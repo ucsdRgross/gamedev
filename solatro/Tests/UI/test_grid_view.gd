@@ -1,21 +1,19 @@
 extends TestSuite
-# res://Tests/UI/test_grid_view.gd
-# ==============================================================================
-# S26 — THE TWO VIEW MODES. The board is either showing every grid (orientation) or focused on
-# one grid (where placement happens). Nothing sits between them.
-#
-# CATEGORY MAP: BEHAVIOR — what the player sees when a show opens, and what a click on a grid
-# does before they have chosen one. There is no IMPLEMENTATION pin here: the mode is only worth
-# anything through the input path, so every check drives the REAL handler on a REAL control.
-#
-# ⚠ NONE OF THIS IS EVIDENCE ABOUT PIXELS (repo rule 4).
-# ==============================================================================
+# THE TWO VIEW MODES. The board is either showing every grid (orientation) or focused on one grid
+# (where placement happens). Nothing sits between them.
+
+# CATEGORY MAP: BEHAVIOR — what the player sees when a show opens, and what a click on a grid does
+# before they have chosen one. There is no IMPLEMENTATION pin here: the mode is only worth anything
+# through the input path, so every check drives the REAL handler on a REAL control.
+
+# ⚠ NONE OF THIS IS EVIDENCE ABOUT PIXELS. It proves numbers and the tree; a rendered snapshot
+# signed off by eye is what proves the board LOOKS right.
 
 const GAME_VIEW_SCENE := preload("res://Levels/game_view.tscn")
-## The real wall picture, for the render-target checks: the game screen is a picture on the wall,
-## so its render target is only meaningful through the node that owns one.
+#The real wall picture, for the render-target checks: the game screen is a picture on the wall, so
+#its render target is only meaningful through the node that owns one.
 const WALL_PICTURE_SCENE := preload("res://UI/Wall/wall_picture.tscn")
-## The real app root, for the camera-dependent checks (`GAP-026`=(a)) — see `_stand_up_main_grids`.
+## The real app root, for the camera-dependent checks — see _stand_up_main_grids.
 const MAIN_SCENE := preload("res://Levels/main.tscn")
 const KEY_COMMA := 44
 const KEY_PERIOD := 46
@@ -27,8 +25,8 @@ func suite_name() -> String:
 	return "GRID VIEW"
 
 func _ready() -> void:
-	# This suite hosts a real GameView and writes the shared `CardEnvironment.CURRENT`, so it waits
-	# for every sibling that hosts one too. See TestSuite's DEADLOCK RULE and its ordering chain.
+# This suite hosts a real GameView and writes the shared CardEnvironment.CURRENT, so it waits for
+# every sibling that hosts one too. TestSuite carries the DEADLOCK RULE this list has to obey.
 	await await_siblings_except(["SIDEBAR", "SETTINGS RANGE", "E2E RUN", "LEAK CANARY",
 			"DRAG PLACE", "WALL PAUSE"])
 	TestLog.line("============ GRID VIEW TEST PASS ============")
@@ -55,7 +53,7 @@ func _ready() -> void:
 	await run_removing_the_focused_grid_refocuses_left_test()
 	await run_the_board_recentres_after_any_removal_test()
 	await run_the_overview_view_and_cursor_agree_after_a_removal_test()
-	# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
+# ⚠ THE TOUCH TESTS GO LAST: a touch leaves no hover behind, and the mouse paths above need one.
 	await run_a_swipe_fires_once_test()
 	await run_a_drag_on_a_card_places_and_on_the_board_pans_test()
 	await run_the_game_picture_fits_exactly_three_grids_test()
@@ -68,15 +66,14 @@ func _ready() -> void:
 	await run_a_resize_re_derives_the_pose_from_the_saved_pan_test()
 	finish()
 
-## FIX-GRID-3 standing in a real GameView: the show's own board grown to three empty 5x5 grids.
-## Mirrors `test_grid_layout._stand_up` — same goal-out-of-reach and same CardEnvironment
-## re-assertion, for the same reasons its comments give.
+#Three empty 5x5 grids standing in a real GameView. Mirrors test_grid_layout._stand_up -- same
+#goal-out-of-reach and same CardEnvironment re-assertion, for the same reasons its comments give.
 func _stand_up() -> GameView:
 	return await _stand_up_grids(3)
 
 # A live GameView is always a picture's FOCUSED screen root, which keeps running under the wall's
-# session-long pause; a bare one runs the same way. `host` is where it mounts (the suite by default),
-# and a pixel check passes a SubViewport of the picture's own size.
+# session-long pause; a bare one runs the same way. `host` is where it mounts (the suite by
+# default), and a pixel check passes a SubViewport of the picture's own size.
 func _stand_up_grids(n: int, host: Node = null) -> GameView:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -117,11 +114,12 @@ func _tear_down(view: GameView) -> void:
 	RunManager.run = _prev_run
 	Main.save_info = _prev_save_info
 
-## THE `Main`-HOSTED FIXTURE (`GAP-026`=(a)): OVERVIEW stepping now lives on the wall camera, so any
-## check that reads it needs a REAL `Main`/`Wall`/`%Camera2D`, not the bare `GameView` above — a
-## hand-wired stand-in is exactly what hard rule 6 forbids. Modelled on
-## `Tests/Visual/overview_pan_route_probe.gd`, proven to produce a camera that really steps: same
-## `Levels/main.tscn` instantiation, same `enter_game()` entry, same real-save park/restore.
+#THE Main-HOSTED FIXTURE: OVERVIEW stepping lives on the wall camera, so any check that reads it
+#needs a REAL Main/Wall/%Camera2D, not the bare GameView above -- a hand-wired stand-in is a mock,
+#which this repo forbids in a harness.
+
+#Modelled on Tests/Visual/overview_pan_route_probe.gd, which produces a camera that really steps:
+#same Levels/main.tscn instantiation, same enter_game() entry, same real-save park and restore.
 func _stand_up_main_grids(n: int) -> Main:
 	backup_real_save(suite_tag())
 	_prev_run = RunManager.run
@@ -147,13 +145,13 @@ func _stand_up_main_grids(n: int) -> Main:
 	await get_tree().process_frame
 	return main
 
-## The live `GameView` `Main.enter_game()` mounted, reached through the wall picture it is a screen
-## of — the same lookup the route probe uses.
+#The live GameView Main.enter_game() mounted, reached through the wall picture it is a screen of --
+#the same lookup overview_pan_route_probe.gd uses.
 func _main_game_view(main: Main) -> GameView:
 	var game_wp : WallPicture = main._pictures[&"game"]
 	return game_wp.screen_root as GameView
 
-## The one `%Camera2D` the whole app shares, owned by `Main`'s `Wall`.
+## The one %Camera2D the whole app shares, owned by Main's Wall.
 func _main_camera(main: Main) -> Camera2D:
 	return main.wall.get_node(^"%Camera2D") as Camera2D
 
@@ -168,8 +166,8 @@ func _tear_down_main(main: Main) -> void:
 	Main.save_info = _prev_save_info
 	await TestMainHost.unmount(self, main)
 
-## Fires the `pressed` half of a real `InputEventKey` through the engine's own pipeline — the same
-## route a physical key press takes, never a direct call to the handler it drives.
+#Fires the pressed half of a real InputEventKey through the engine's own pipeline -- the same route
+#a physical key press takes, never a direct call to the handler it drives.
 func _fire_key(keycode: int) -> void:
 	var ev := InputEventKey.new()
 	ev.keycode = keycode
@@ -177,8 +175,8 @@ func _fire_key(keycode: int) -> void:
 	ev.pressed = true
 	Input.parse_input_event(ev)
 
-## The matching release — a real key press is press-then-release, and leaving it held could confuse
-## the next simulated key.
+#The matching release -- a real key press is press-then-release, and leaving it held would confuse
+#the next simulated key.
 func _fire_key_release(keycode: int) -> void:
 	var ev := InputEventKey.new()
 	ev.keycode = keycode
@@ -186,9 +184,9 @@ func _fire_key_release(keycode: int) -> void:
 	ev.pressed = false
 	Input.parse_input_event(ev)
 
-## Wait for the CAMERA to stop moving, mirroring `_settle_scroll` for the fixture whose horizontal
-## authority is the camera rather than the scroll container (`GAP-024`=(b)). The step is tweened
-## over ~18 frames, so a frame count is the wrong instrument here too.
+#Wait for the CAMERA to stop moving, mirroring _settle_scroll for the fixture whose horizontal
+#authority is the camera rather than the scroll container. The step is tweened over ~18 frames, so a
+#frame count is the wrong instrument here too.
 func _settle_camera(camera: Camera2D) -> void:
 	var last := INF
 	var waited := 0.0
@@ -198,17 +196,17 @@ func _settle_camera(camera: Camera2D) -> void:
 		if is_equal_approx(camera.position.x, last): return
 		last = camera.position.x
 
-## Grid `gi`'s cut-off, in px, against the CAMERA's OWN `visible_rect()` — never reconstructed from
-## `resting_state()`/`grid_state()` (`GAP-026`). 0 when the grid's cell block sits wholly inside it.
-## Reuses `_grid_world_rect` (`TP-105`), the world-space rect through the real `WallPicture.rect`.
+#Grid gi's cut-off, in px, against the CAMERA's OWN visible_rect() -- never reconstructed from
+#resting_state()/grid_state(). 0 when the grid's cell block sits wholly inside it. Measured through
+#_grid_world_rect, the world-space rect taken through the real WallPicture.rect.
 func _camera_cut_off_px(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> float:
 	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
 	return maxf(maxf(visible.position.x - r.position.x, 0.0), maxf(r.end.x - visible.end.x, 0.0))
 
 # Does grid `gi`'s cell block put any pixel inside the board view? ⚠ A TOUCHING EDGE IS NOT A PIXEL
-# INSIDE: `isolating_grid_buffer_px` lands the neighbour's edge EXACTLY on the view's edge, and a
-# strict compare there flips on the last float ULP (measured: -393.9999 red vs -394.0000 green).
+# INSIDE: isolating_grid_buffer_px lands the neighbour's edge EXACTLY on the view's edge, so the
+# compare is is_equal_approx -- a strict one flips on the last ULP (-393.9999 vs -394.0000).
 func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bool:
 	var visible := _board_view_rect(main, camera)
 	var r := _grid_world_rect(main, pa, gi)
@@ -216,14 +214,16 @@ func _camera_overlaps(main: Main, pa: PlayArea, camera: Camera2D, gi: int) -> bo
 	var short_of_right := r.position.x < visible.end.x and not is_equal_approx(r.position.x, visible.end.x)
 	return past_left and short_of_right
 
-## What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
-## the left.
-##
-## ⚠ **ISOLATION IS MEASURED IN THE BOARD'S AREA, NOT THE CAMERA'S WHOLE RECT** (owner: *"the center
-## should be on halfway through the 0.75 section... pretend 0.75 area is the entire camera view, so
-## its truly centered"*). The board centres in its own area, so measuring "out of view" against the
-## whole picture asked the LEFT neighbour to clear a boundary the right one did not -- the two
-## become symmetric the moment the board's area is the frame of reference.
+#What the camera shows OF THE BOARD'S OWN AREA -- its visible rect with the HUD's share taken off
+#the left.
+
+#⚠ ISOLATION IS MEASURED IN THE BOARD'S AREA, NOT THE CAMERA'S WHOLE RECT. Owner: "the center
+#should be on halfway through the 0.75 section... pretend 0.75 area is the entire camera view, so
+#its truly centered".
+
+#The board centres in its own area, so measuring "out of view" against the whole picture asks the
+#LEFT neighbour to clear a boundary the right one does not; the two are symmetric only with the
+#board's area as the frame of reference.
 func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
@@ -232,9 +232,9 @@ func _board_view_rect(main: Main, camera: Camera2D) -> Rect2:
 	return visible.intersection(Rect2(Vector2(left, visible.position.y),
 			Vector2(maxf(visible.end.x - left, 1.0), visible.size.y)))
 
-## Does the board's real span, first grid to last, exceed the CAMERA's OWN `visible_rect()`? The
-## OVERVIEW pan is the camera (`GAP-024`=(b)), so this is the overview's version of
-## `_board_overflows()`, which measures the scroller instead.
+#Does the board's real span, first grid to last, exceed the CAMERA's OWN visible_rect()? The
+#OVERVIEW pan is the camera, so this is the overview's version of _board_overflows(), which
+#measures the scroller instead.
 func _camera_board_overflows(main: Main, pa: PlayArea, camera: Camera2D) -> bool:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
@@ -242,9 +242,9 @@ func _camera_board_overflows(main: Main, pa: PlayArea, camera: Camera2D) -> bool
 	var last := _grid_world_rect(main, pa, pa.grid_container.get_child_count() - 1)
 	return last.end.x - first.position.x > visible.size.x
 
-## Wait for the geometry to STOP MOVING, never for a fixed frame count — a container sorts its
-## children a frame after the rebuild that changed them. Same shape as the Phase 5 suite's helper,
-## including its re-assertion of the shared `CardEnvironment.CURRENT` on every frame it waits.
+#Wait for the geometry to STOP MOVING, never for a fixed frame count -- a container sorts its
+#children a frame after the rebuild that changed them. It re-asserts the shared
+#CardEnvironment.CURRENT on every frame it waits, as test_grid_layout._settle_layout does.
 func _settle_layout(view: GameView) -> void:
 	var pa := view.play_area
 	CardEnvironment.CURRENT = view.game
@@ -259,7 +259,7 @@ func _settle_layout(view: GameView) -> void:
 		if is_equal_approx(now, last): return
 		last = now
 
-## The zone-card control of cell (0,0) in grid `gi` — a real board control the player can click.
+## The zone-card control of cell (0,0) in grid gi -- a real board control the player can click.
 func _cell_control(pa: PlayArea, gi: int) -> Control:
 	var panel : Control = pa.grid_container.get_child(gi)
 	var row : Control = pa._cells_root(panel).get_child(0) as Control
@@ -276,9 +276,7 @@ func _click(pa: PlayArea, control: Control) -> void:
 	release.button_index = MOUSE_BUTTON_LEFT
 	pa._on_gui_input(release)
 
-# ==============================================================================
-# TP-97 — FIX-GRID-3: the show opens zoomed out.
-# ==============================================================================
+# A show opens on the all-grids view, with three grids on the board.
 func run_the_show_opens_zoomed_out_test() -> void:
 	behavior_section("THE SHOW OPENS ZOOMED OUT")
 	var view := await _stand_up()
@@ -295,17 +293,14 @@ func run_the_show_opens_zoomed_out_test() -> void:
 			"focused_grid %d" % pa.focused_grid)
 	await _tear_down(view)
 
-# ==============================================================================
-# FIX-GRID-1: with exactly one grid the show opens FOCUSED, so no click is needed to zoom in
-# (owner ruling: "clicking to zoom in when there is only 1 grid should not be necessary").
-#
-# ⚠ NOT AN EDGE CASE. Q4=(d) and Q5 make one grid the answer for any deck of 52 or fewer, so this
-# is the DEFAULT starting configuration.
-#
-# ⚠ THE BOARD ZOOM IS ASSERTED, NOT ONLY THE MODE. A mode flag that never reached the zoom is
-# exactly the defect TP-139 exists for; a view that claims to be focused at OVERVIEW_BOARD_ZOOM
-# shows the player the overview.
-# ==============================================================================
+# With exactly one grid the show opens FOCUSED, so no click is needed to zoom in. Owner: "clicking
+# to zoom in when there is only 1 grid should not be necessary".
+
+# ⚠ NOT AN EDGE CASE. One grid is the answer for any deck of 52 or fewer, so this is the DEFAULT
+# starting configuration.
+
+# ⚠ THE BOARD ZOOM IS ASSERTED, NOT ONLY THE MODE: a view that claims to be focused while it sits
+# at OVERVIEW_BOARD_ZOOM shows the player the overview.
 func run_one_grid_opens_focused_test() -> void:
 	behavior_section("ONE GRID OPENS FOCUSED")
 	var view := await _stand_up_grids(1)
@@ -323,8 +318,8 @@ func run_one_grid_opens_focused_test() -> void:
 	check(pa.board_zoom > PlayArea.OVERVIEW_BOARD_ZOOM,
 			"...and the ZOOM went with the mode, not just the flag",
 			"board_zoom %.4f vs overview %.4f" % [pa.board_zoom, PlayArea.OVERVIEW_BOARD_ZOOM])
-	# The Back level stack is untouched: the overview is still reachable from a focused one-grid
-	# board, so nothing the player could do before is gone.
+# The Back level stack is untouched: the overview is still reachable from a focused one-grid board,
+# so nothing the player could do before is gone.
 	pa.open_zoomed_out()
 	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
 			"the all-grids view is still reachable with one grid -- Back loses nothing",
@@ -332,10 +327,8 @@ func run_one_grid_opens_focused_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-98 — FIX-GRID-3: clicking a grid zooms in on it, and that click places NOTHING. The same
-# click, once focused, is a placement again — that is the pair that separates the two modes.
-# ==============================================================================
+# Clicking a grid zooms in on it, and that click places NOTHING. The same click, once focused, is a
+# placement again -- that is the pair that separates the two modes.
 func run_clicking_a_grid_zooms_in_on_it_test() -> void:
 	behavior_section("CLICKING A GRID ZOOMS IN ON IT")
 	var view := await _stand_up()
@@ -368,20 +361,16 @@ func run_clicking_a_grid_zooms_in_on_it_test() -> void:
 			"a click inside the focused grid does not re-focus anything")
 	await _tear_down(view)
 
-# ==============================================================================
-# The rest of Phase 6's view: the level stack, the pan actions, the snap, the bounce.
-# ==============================================================================
-
-## An action press as the real input path sees it. Built as an action rather than a key so these
-## checks assert the READER; the bindings get their own check in TP-100.
+#An action press as the real input path sees it. Built as an action rather than a key so these
+#checks assert the READER; the bindings themselves are checked by the pan-actions test.
 func _action(name: StringName) -> InputEventAction:
 	var e := InputEventAction.new()
 	e.action = name
 	e.pressed = true
 	return e
 
-## Clear the viewport's "input handled" flag, so the next drive can be read honestly. A dispatch
-## resets the flag on entry, so pushing an event nothing is bound to is what clears it.
+#Clear the viewport's "input handled" flag, so the next drive can be read honestly. A dispatch
+#resets the flag on entry, so pushing an event nothing is bound to is what clears it.
 func _reset_input_handled() -> void:
 	var e := InputEventKey.new()
 	e.keycode = KEY_F13
@@ -392,10 +381,9 @@ func _reset_input_handled() -> void:
 func _scroller(pa: PlayArea) -> SmoothScrollContainer:
 	return pa.scroll_container as SmoothScrollContainer
 
-## Wait for the BOARD to stop moving horizontally. A pan and a bounce both have a DURATION, so a
-## still frame taken right after the press is the wrong instrument for either.
-## Returns how long that took, in seconds: a move with a DURATION is the only thing that can take
-## longer than one frame to come to rest.
+#Wait for the BOARD to stop moving horizontally. A pan and a bounce both have a DURATION, so a
+#still frame taken right after the press is the wrong instrument for either. It returns how long
+#that took in seconds: only a move with a DURATION takes longer than one frame to come to rest.
 func _settle_scroll(view: GameView) -> float:
 	var smooth := _scroller(view.play_area)
 	var last := INF
@@ -409,29 +397,27 @@ func _settle_scroll(view: GameView) -> float:
 		last = now
 	return waited
 
-## The board's VISIBLE window in global x: the scroll container's own rect less whatever a visible
-## vertical scrollbar takes off its right edge. ⚠ Not the rect itself — a shown v-scrollbar narrows
-## the content area, and the board is laid out inside what is left, so the rect's own centre is off
-## by half the bar (measured: 4 px).
+#The board's VISIBLE window in global x: the scroll container's own rect less whatever a visible
+#vertical scrollbar takes off its right edge. ⚠ Not the rect itself -- a shown v-scrollbar narrows
+#the content area the board lays out in, so the rect's own centre is off by half the bar, 4 px.
 func _window_x(pa: PlayArea) -> Vector2:
 	var bar := pa.scroll_container.get_v_scroll_bar()
 	var taken : float = bar.size.x if bar and bar.visible else 0.0
 	var win := _screen_rect(pa.scroll_container)
 	return Vector2(win.position.x, win.end.x - taken * win.size.x / maxf(pa.scroll_container.size.x, 1.0))
 
-## A control's rect AS DRAWN, in the picture's own pixels.
-##
-## ⚠ **`global_position` CARRIES EVERY SCALE ABOVE IT AND `size` CARRIES NONE**, so the two cannot
-## be added together on a board that zooms. Read through the engine's own transform instead of a
-## named scale: that keeps this instrument true of ANY implementation that makes a grid bigger on
-## screen, rather than only of the one the product happens to use.
+#A control's rect AS DRAWN, in the picture's own pixels.
+
+#⚠ global_position CARRIES EVERY SCALE ABOVE IT AND size CARRIES NONE, so the two cannot be added
+#together on a board that zooms. Reading through the engine's own transform instead of a named
+#scale keeps this instrument true of ANY implementation that makes a grid bigger on screen.
 func _screen_rect(c: Control) -> Rect2:
 	var t := c.get_global_transform()
 	return Rect2(t.origin, t.get_scale() * c.size)
 
-## How far grid `gi`'s CELL BLOCK hangs outside that window, in pixels; 0 when it is wholly on
-## screen. The instrument for "no cut-off grid at rest" — a rule scoped to the grid the view is ON:
-## ⚠ ask it about that grid, never about every grid on the board (owner ruling).
+#How far grid gi's CELL BLOCK hangs outside that window, in pixels; 0 when it is wholly on screen.
+#The instrument for "no cut-off grid at rest", a rule scoped to the grid the view is ON: ⚠ ask it
+#about that grid, never about every grid on the board.
 func _cut_off_px(pa: PlayArea, gi: int) -> float:
 	var cells := pa._cells_root(pa.grid_container.get_child(gi) as Control)
 	var r := _screen_rect(cells)
@@ -442,9 +428,7 @@ func _cut_off_px(pa: PlayArea, gi: int) -> float:
 func _board_overflows(pa: PlayArea) -> bool:
 	return _scroller(pa).should_scroll_horizontal()
 
-# ==============================================================================
-# TP-99 - FIX-GRID-3: Back zooms out a level, Forward returns to the view it left.
-# ==============================================================================
+# Back zooms out a level and Forward returns to the view it left.
 func run_back_zooms_out_and_forward_returns_test() -> void:
 	behavior_section("BACK ZOOMS OUT AND FORWARD RETURNS")
 	var view := await _stand_up()
@@ -473,8 +457,8 @@ func run_back_zooms_out_and_forward_returns_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-	# A GRID CAN GO WHILE THE VIEW IS ZOOMED OUT, and Forward's memory is an INDEX: every index
-	# right of the hole names a different grid afterwards. Checked on IDENTITY, never on the index.
+# A GRID CAN GO WHILE THE VIEW IS ZOOMED OUT, and Forward's memory is an INDEX: every index right
+# of the hole names a different grid afterwards. Checked on IDENTITY, never on the index.
 	view = await _stand_up_grids(5)
 	pa = view.play_area
 	await _settle_layout(view)
@@ -494,9 +478,9 @@ func run_back_zooms_out_and_forward_returns_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-	# AND WHEN THE REMEMBERED GRID ITSELF GOES there is no view to return to, so Forward has
-	# nothing left to give and FALLS THROUGH to the wall — it must not be swallowed and do nothing,
-	# and it must not land on whichever grid slid into that index.
+# AND WHEN THE REMEMBERED GRID ITSELF GOES there is no view to return to, so Forward FALLS THROUGH
+# to the wall -- it must not be swallowed and do nothing, and it must not land on whichever grid
+# slid into that index.
 	view = await _stand_up_grids(5)
 	pa = view.play_area
 	await _settle_layout(view)
@@ -517,16 +501,15 @@ func run_back_zooms_out_and_forward_returns_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-100 - FIX-GRID-3: panning uses the NEW actions, and the wall's shoulder buttons still reach
-# the wall.
-#
+# Panning uses its OWN actions, and the wall's shoulder buttons still reach the wall.
+
 # THE DISCRIMINATING CASE IS BACK WHILE ALREADY IN THE ALL-GRIDS VIEW. Zoom intercepting Back and
-# the wall keeping Back are only compatible because the board hands the event back once it has no
-# level left to step out of. Delete that fall-through and the wall is unreachable from inside a
-# show while every other check in this suite still passes - so it is checked on the REAL handler,
-# through the REAL "was this consumed" flag.
-# ==============================================================================
+# the wall keeping Back are compatible only because the board hands the event back once it has no
+# level left to step out of.
+
+# Delete that fall-through and the wall is unreachable from inside a show while every other check
+# in this suite still passes, so it is checked on the REAL handler through the REAL "was this
+# consumed" flag.
 func run_panning_has_its_own_actions_test() -> void:
 	behavior_section("PANNING HAS ITS OWN ACTIONS AND THE WALL KEEPS ITS SHOULDERS")
 	for action : StringName in [&"grid_pan_left", &"grid_pan_right"]:
@@ -541,8 +524,8 @@ func run_panning_has_its_own_actions_test() -> void:
 				"%s is bound on keyboard AND joypad" % action,
 				"key %s pad %s" % [has_key, has_pad])
 
-	# The pan bindings and the wall's shoulder bindings are disjoint: that is what "new actions on
-	# different bindings" means, and a shared event would make the two fight.
+# The pan bindings and the wall's shoulder bindings are disjoint: that is what "new actions on
+# different bindings" means, and a shared event would make the two fight.
 	var wall_codes : Array[int] = []
 	for a : StringName in [&"wall_back", &"wall_forward"]:
 		for e : InputEvent in InputMap.action_get_events(a):
@@ -563,7 +546,7 @@ func run_panning_has_its_own_actions_test() -> void:
 	var pa := view.play_area
 	await _settle_layout(view)
 
-	# THE FALL-THROUGH. In the all-grids view there is no level left, so Back must NOT be consumed.
+# THE FALL-THROUGH. In the all-grids view there is no level left, so Back must NOT be consumed.
 	pa.open_zoomed_out()
 	_reset_input_handled()
 	check(not get_viewport().is_input_handled(),
@@ -575,15 +558,15 @@ func run_panning_has_its_own_actions_test() -> void:
 			"...and the board stayed where it was",
 			"mode %d" % pa.view_mode)
 
-	# The same press one level deeper IS the board's, which is what makes the check above a
-	# distinction rather than a dead handler.
+# The same press one level deeper IS the board's, which is what makes the check above a
+# distinction rather than a dead handler.
 	pa.focus_grid(1)
 	_reset_input_handled()
 	pa._unhandled_input(_action(&"wall_back"))
 	check(get_viewport().is_input_handled(),
 			"Back on a focused grid IS intercepted by the board (TP-100)")
 
-	# Forward with nothing to return to falls through for the same reason.
+# Forward with nothing to return to falls through for the same reason.
 	pa._zoom_out_grid = PlayArea.NO_GRID
 	_reset_input_handled()
 	pa._unhandled_input(_action(&"wall_forward"))
@@ -592,16 +575,13 @@ func run_panning_has_its_own_actions_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-101 - FIX-GRID-3: every pan lands the grid the view is on centred, and that grid is never cut
-# off.
-#
-# ⚠ THE CUT-OFF RULE IS ABOUT THE GRID THE VIEW IS ON, NOT ITS NEIGHBOURS (owner ruling): a
-# neighbouring grid sliced by the window edge is not a defect, so nothing here asserts over every
-# grid on the board.
-# ⚠ NOTHING IS PANNED BEFORE THE FIRST MEASUREMENT. This test used to call `pan_to_grid(0)` first —
-# the very call a resting board never makes — and so could not see a board that rests unpositioned.
-# ==============================================================================
+# Every pan lands the grid the view is on centred, and that grid is never cut off.
+
+# ⚠ THE CUT-OFF RULE IS ABOUT THE GRID THE VIEW IS ON, NOT ITS NEIGHBOURS: a neighbouring grid
+# sliced by the window edge is not a defect, so nothing here asserts over every grid on the board.
+
+# ⚠ NOTHING IS PANNED BEFORE THE FIRST MEASUREMENT. A pan_to_grid(0) first is a call a resting
+# board never makes, and it hides a board that rests unpositioned.
 func run_every_pan_lands_a_grid_centred_test() -> void:
 	behavior_section("EVERY PAN LANDS A GRID CENTRED")
 	var main := await _stand_up_main_grids(3)
@@ -611,9 +591,9 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
-	# Re-pointed to FOCUSED (owner ruling): the picture now fits whole in the OVERVIEW, so
-	# nothing there overflows the camera frame any more -- H9's pan-lands-centred claim moves to
-	# the FOCUSED scroll-stepping mechanism, which still has a board wider than its window.
+# ⚠ ASSERTED FOCUSED, NOT IN THE OVERVIEW: the picture fits whole in the OVERVIEW, so nothing
+# there overflows the camera frame. The pan-lands-centred claim belongs to the FOCUSED
+# scroll-stepping mechanism, which still has a board wider than its window.
 	pa.focus_grid(1)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
@@ -654,26 +634,23 @@ func run_every_pan_lands_a_grid_centred_test() -> void:
 			"%f px off screen" % _camera_cut_off_px(main, pa, camera, pa.pan_grid))
 	await _tear_down_main(main)
 
-# ==============================================================================
-# TP-138 — THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an
-# explicit pan to the grid the view is on puts it.
-#
-# ⚠ OVERVIEW-FIXTURE SECTION: THREE GRIDS, MATCHING THE CANVAS BUDGET, CHECKED FOCUSED. At
-# <=3 grids the picture fits whole in the OVERVIEW by design, so nothing overflows there any more --
-# the resting-position claim is exercised through a focus onto this same three-grid fixture instead
-# (the same repoint TP-101 took). `game_picture_design_size()` is authored for `grid_max_count`
-# grids (currently 3, unlocked in production), so the fixture needs to be the canvas budget itself --
-# more grids than the budget shift the middle grid's cell-block position off a canvas that was never
-# resized to match.
-#
+# THE BOARD RESTS POSITIONED: at rest, with nothing panned, the board sits where an explicit pan to
+# the grid the view is on puts it.
+
+# ⚠ OVERVIEW-FIXTURE SECTION: THREE GRIDS, MATCHING THE CANVAS BUDGET, CHECKED FOCUSED. At <=3
+# grids the picture fits whole in the OVERVIEW, so the resting-position claim is exercised through
+# a focus onto this same three-grid fixture instead.
+
+# game_picture_design_size() is authored for grid_max_count grids, currently 3, so the fixture has
+# to be the canvas budget itself: more grids than the budget shift the middle grid's cell-block
+# position off a canvas that was never resized to match.
+
 # ⚠ FOCUSED SECTION: FIVE GRIDS, NOT THREE. With the view on grid 0 the scroll container's own
 # clamp parks the board hard left anyway, so an unpositioned board and a correctly positioned one
-# are the SAME number and the check passes with the wiring cut. The resting grid has to be one the
-# clamp cannot supply.
-#
+# are the SAME number and the check passes with the wiring cut.
+
 # ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE: where a grid comes to rest is the layout's business,
-# so the reference is the player's own pan to that same grid — the same reference TP-112 uses.
-# ==============================================================================
+# so the reference is the player's own pan to that same grid.
 func run_the_board_rests_positioned_test() -> void:
 	behavior_section("THE BOARD RESTS POSITIONED ON THE GRID THE VIEW IS ON")
 	var overview_main := await _stand_up_main_grids(3)
@@ -684,9 +661,9 @@ func run_the_board_rests_positioned_test() -> void:
 	await _settle_layout(overview_view)
 	await _settle_scroll(overview_view)
 	await _settle_camera(overview_camera)
-	# Re-pointed to FOCUSED (owner ruling): the picture now fits whole in the OVERVIEW, so nothing
-	# there overflows the camera frame any more -- the "resting position is the camera's job"
-	# precondition moves to the FOCUSED scroll-stepping mechanism, the same repoint TP-101 took.
+# ⚠ ASSERTED FOCUSED: the picture fits whole in the OVERVIEW, so nothing there overflows the
+# camera frame. The resting-position claim belongs to the FOCUSED scroll-stepping mechanism, which
+# still has a board wider than its window.
 	overview_pa.focus_grid(1)
 	await _settle_scroll(overview_view)
 	await _settle_camera(overview_camera)
@@ -709,9 +686,8 @@ func run_the_board_rests_positioned_test() -> void:
 			"rest %.1f vs explicit pan %.1f" % [overview_rest, overview_smooth.pos.x])
 	await _tear_down_main(overview_main)
 
-	# FOCUSED: the scroller is still the view (`GAP-024`=(b)), so the resting-grid cut-off stays the
-	# scroller-based instrument — its neighbours may be sliced by the window edge and that is not a
-	# defect.
+# FOCUSED: the scroller is still the view, so the resting-grid cut-off stays the scroller-based
+# instrument -- its neighbours may be sliced by the window edge and that is not a defect.
 	var main := await _stand_up_main_grids(5)
 	var view := _main_game_view(main)
 	var pa := view.play_area
@@ -735,19 +711,16 @@ func run_the_board_rests_positioned_test() -> void:
 			"rest %.1f vs explicit pan %.1f" % [focused_rest, smooth.pos.x])
 	await _tear_down_main(main)
 
-# ==============================================================================
-# TP-139 — THE FOCUSED GRID IS AS TALL AS ITS WINDOW. The two view modes differ ON SCREEN and not
-# only in a bookkeeping int: focusing a grid makes that grid's CELL BLOCK exactly as tall as the
-# board's window, and zooming back out gives it its overview size back.
-#
-# ⚠ THIS IS THE WIRING CHECK. `view_mode` and `focused_grid` are values the code assigns itself and
+# THE FOCUSED GRID IS AS TALL AS ITS WINDOW. The two view modes differ ON SCREEN and not only in a
+# bookkeeping int: focusing a grid grows that grid's CELL BLOCK to the board's window, and zooming
+# back out gives it its overview size back.
+
+# ⚠ THIS IS THE WIRING CHECK. view_mode and focused_grid are values the code assigns itself and
 # assert nothing about pixels; a click that reached the mode but not the zoom passes every check on
-# them and fails this one. Cut `focus_grid`'s call to the zoom and the block stays at its overview
-# height against a window twice that (measured: 286 against 555).
-#
-# ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE — "as tall as the window" is a number the layout owes
-# exactly, so it is asserted against the window and never against a remembered constant.
-# ==============================================================================
+# them and fails this one. With focus_grid's zoom call cut: a block of 286 in a window of 555.
+
+# ⚠ THE CLAIM IS AN IDENTITY, NOT A TOLERANCE. The height is a number the layout owes exactly, so
+# it is asserted against the window and never against a remembered constant.
 func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 	behavior_section("THE FOCUSED GRID IS AS TALL AS ITS WINDOW")
 	var view := await _stand_up()
@@ -770,19 +743,12 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	var focused_h := _screen_rect(pa._cells_root(pa.grid_container.get_child(1) as Control)).size.y
-	# ⚠ **THE BLOCK FILLS WHAT THE FIT LEAVES IT, NOT THE WHOLE WINDOW.** `focused_board_zoom()`
-	# divides the window by the block PLUS everything else the board must hold -- the Entrance
-	# strip, the two edge pads, and the panel/scroller furniture. Asserting the block equals the
-	# whole window was true only while those terms were missing from the fit, and closing them
-	# (`GAP-039`) is what finally made a focused grid isolate its neighbours. The block is now
-	# exactly the window's share of the fit that belongs to it.
-	# ⚠ **THE BLOCK FILLS ITS WINDOW LESS THE PANEL FURNITURE.** The window already carries the
-	# Entrance strip and the edge pads; what it does NOT carry is the column-label row and the
-	# scroller's reserved band, which `focused_content_height_px()` reserves out of the same fit
-	# (`GAP-039`). Asserting the block equals the WHOLE window was true only while those terms were
-	# missing from the fit -- and closing them is what finally made a focused grid isolate its
-	# neighbours. MEASURED: window 407.9, block 363.4, and the 44.5 between them is exactly the
-	# 35 board units of furniture at the live zoom of 1.27.
+# ⚠ THE BLOCK FILLS ITS WINDOW LESS THE PANEL FURNITURE, never the WHOLE window. The window carries
+# the Entrance strip and the edge pads; what it does not carry is the column-label row and the
+# scroller's reserved band, which focused_content_height_px() takes out of the same fit.
+
+# MEASURED: window 407.9, block 363.4, and the 44.5 between them is exactly the 35 board units of
+# furniture at the live zoom of 1.27.
 	var window_h2 := _screen_rect(pa.scroll_container).size.y
 	var furniture_screen : float = PlayArea.board_furniture_height_px(PlayArea.settings()) 			* pa.board_zoom
 	check(absf(focused_h - (window_h2 - furniture_screen)) <= 2.0,
@@ -794,9 +760,9 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 			+ "and not a state flag (TP-139)",
 			"focused %.1f vs overview %.1f" % [focused_h, overview_h])
 
-	# ⚠ FOCUS A SECOND GRID WITHOUT ZOOMING OUT FIRST. The zoom is derived from the window, and a
-	# window read while already zoomed answers in the zoomed board's own units -- which reads as
-	# "already the right size" and drops the board back to overview scale on the step.
+# ⚠ FOCUS A SECOND GRID WITHOUT ZOOMING OUT FIRST. The zoom is derived from the window, and a
+# window read while already zoomed answers in the zoomed board's own units -- which reads as
+# "already the right size" and drops the board back to overview scale on the step.
 	pa.focus_grid(2)
 	await _settle_layout(view)
 	await _settle_scroll(view)
@@ -815,21 +781,19 @@ func run_the_focused_grid_is_as_tall_as_its_window_test() -> void:
 			"back %.1f vs overview %.1f" % [back_h, overview_h])
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-140 — FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW (owner ruling). In the overview a neighbour
-# overlaps the board's window; focused, every grid but the focused one is wholly outside it.
-#
-# ⚠ THE FIXTURE IS WHAT GIVES THIS TEETH: focusing the MIDDLE of three grids asks the pan for
-# nothing -- the board is already centred there -- so an unzoomed board does not move at all and
-# both neighbours stay in frame (measured with the zoom cut: grid 0 at 238.5 against a window
-# starting at 423). Focus an OUTER grid instead and the pan alone carries the neighbours out, and
-# this check passes while the zoom is missing.
-# ==============================================================================
+# FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW. In the overview a neighbour overlaps the board's
+# window; focused, every grid but the focused one is wholly outside it.
+
+# ⚠ THE FIXTURE IS WHAT GIVES THIS TEETH: it focuses the MIDDLE of three grids, which asks the pan
+# for nothing, so an unzoomed board does not move at all and both neighbours stay in frame
+# (measured with the zoom cut: grid 0 at 238.5 against a window starting at 423).
+
+# ⚠ Focus an OUTER grid instead and the pan alone carries the neighbours out, so the check passes
+# while the zoom is missing.
 func run_focusing_takes_the_other_grids_out_of_view_test() -> void:
 	behavior_section("FOCUSING TAKES THE OTHER GRIDS OUT OF VIEW")
-	# `Main`-hosted (`GAP-026`=(a)): "out of view" here means outside the CAMERA's `visible_rect()`
-	# (`GAP-024`=(b), confirmed by that gap's own measurement for this exact check), which only a
-	# real `%Camera2D` under a real `Main`/`Wall` can answer.
+# Main-hosted: "out of view" here means outside the CAMERA's visible_rect(), which only a real
+# %Camera2D under a real Main/Wall can answer.
 	var main := await _stand_up_main_grids(3)
 	var view := _main_game_view(main)
 	var pa := view.play_area
@@ -918,15 +882,15 @@ func run_every_focused_grid_centres_alone_test() -> void:
 			_check_grid_alone(main, pa, camera, count, count - 1, "a pickup on a panned board")
 		await _tear_down_main(main)
 
-## The board at rest in the `Main`-hosted fixture: the panels sort, the scroller eases, the camera steps.
+## The board at rest in the Main-hosted fixture: panels sort, the scroller eases, the camera steps.
 func _settle_board(view: GameView, camera: Camera2D) -> void:
 	await _settle_layout(view)
 	await _settle_scroll(view)
 	await _settle_camera(camera)
 
-#The owner ruling in one place: the grid the view is on centred, every other grid clear, all still
-#drawn. ⚠ TWO SPACES, NAMED — centring in the PICTURE's own pixels against the board's window, the
-#space "within a pixel" means something in; isolation in WALL WORLD space, what the camera shows.
+#The rule in one place: the grid the view is on centred, every other grid clear, all still drawn.
+#⚠ TWO SPACES, NAMED -- centring in the PICTURE's own pixels against the board's window, the space
+#"within a pixel" means something in; isolation in WALL WORLD space, what the camera shows.
 func _check_grid_alone(main: Main, pa: PlayArea, camera: Camera2D, count: int, gi: int,
 		route: String) -> void:
 	var win := _window_x(pa)
@@ -946,11 +910,11 @@ func _check_grid_alone(main: Main, pa: PlayArea, camera: Camera2D, count: int, g
 		check((pa.grid_container.get_child(other) as Control).visible,
 				"...while grid %d is still drawn (%d grids, %s)" % [other, count, route])
 
-#⚠ MEASURED FROM THE CELL BLOCKS' OWN RECTS, never from the container separation the fix writes:
+#⚠ MEASURED FROM THE CELL BLOCKS' OWN RECTS, never from the container separation the layout writes:
 #asserting that constant would re-prove an assignment and nothing about the board. Divided by the
 #live scale, since the focused view zooms the board and both gap quantities are unscaled.
 
-## The gap a player sees between grid `gi` and the next, in the board's own unzoomed pixels.
+## The gap a player sees between grid gi and the next, in the board's own unzoomed pixels.
 func _drawn_grid_gap(pa: PlayArea, gi: int) -> float:
 	var z := maxf(pa.scroll_container.scale.x, 0.0001)
 	var left := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
@@ -968,8 +932,8 @@ func _set_leftovers(pa: PlayArea) -> Vector2:
 	var last := _screen_rect(pa.grid_container.get_child(last_index) as Control)
 	return Vector2(first.position.x - win.x, win.y - last.end.x)
 
-#The gap is written from `_physics_process` and the container sorts a frame later, so a reading
-#taken straight after a view switch still shows the gap the other view drew.
+#The gap is written from _physics_process and the container sorts a frame later, so a reading taken
+#straight after a view switch still shows the gap the other view drew.
 
 ## Wait until the gap between the first two grids stops changing.
 func _settle_grid_gap(view: GameView) -> void:
@@ -986,8 +950,8 @@ func _settle_grid_gap(view: GameView) -> void:
 		last = now
 
 #The overview draws neighbouring grids one small fixed gap apart with the set centred; focusing puts
-#the isolating buffer back (owner ruling). Every switch is made the way a player makes it, and the
-#multi-grid part mounts in the picture's own SubViewport -- the suite's root window is narrower.
+#the isolating buffer back. Every switch is made the way a player makes it, and the multi-grid part
+#mounts in the picture's own SubViewport -- the suite's root window is narrower.
 func run_the_overview_draws_the_grids_close_test() -> void:
 	behavior_section("THE OVERVIEW DRAWS THE GRIDS CLOSE")
 	var st := SettingsManager.settings
@@ -1100,11 +1064,11 @@ func _entrance_row_rect(pa: PlayArea) -> Rect2:
 		out = r if i == 0 else out.merge(r)
 	return out
 
-## Grid `gi`'s cell block centre in the same drawn pixels `_entrance_row_rect` reports.
+## Grid gi's cell block centre in the same drawn pixels _entrance_row_rect reports.
 func _grid_centre_x(pa: PlayArea, gi: int) -> float:
 	return _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control)).get_center().x
 
-## How far `at` is from the nearest grid's centre: the instrument for "aligned to NO grid".
+## How far `at` is from the nearest grid centre: the instrument for "aligned to NO grid".
 func _nearest_grid_dx(pa: PlayArea, at: float) -> float:
 	var best := INF
 	for gi : int in pa.grid_container.get_child_count():
@@ -1128,9 +1092,7 @@ func _settle_entrance(view: GameView) -> void:
 		if is_equal_approx(now, last): return
 		last = now
 
-# ==============================================================================
-# THE ENTRANCE BELONGS TO A GRID ONLY ONCE ONE IS FOCUSED OR COMMITTED; before that it is centred.
-# ==============================================================================
+#THE ENTRANCE BELONGS TO A GRID ONLY ONCE ONE IS FOCUSED OR COMMITTED; before that it is centred.
 
 #⚠ THE MULTI-GRID PARTS MOUNT IN THE PICTURE'S OWN SubViewport: "centred in the window" is a claim
 #about the real board window, and this suite's own root window is narrower than the picture. No
@@ -1251,27 +1213,21 @@ func run_the_entrance_is_centred_until_a_grid_owns_it_test() -> void:
 	picture_vp.queue_free()
 	await get_tree().process_frame
 
-# ==============================================================================
-# TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,
-# the other grids are OUT OF VIEW).
-#
-# ⚠ **THIS ASKS WHAT WAS PAINTED, NOT WHERE ANYTHING SITS, AND THAT IS THE WHOLE POINT.** TP-140
-# already proves the neighbours are positioned outside the window, and that was TRUE while a whole
-# grid still drew across the side panels — the board's scroll container did not clip, so a grid
-# outside its window was painted over the Deck button and the score column all the same. A check
-# built on `_screen_rect` alone passes either way and proves nothing.
-#
-# So this one RENDERS the board and asks whether HIDING a non-focused grid changes any pixel
-# outside the window. A grid whose paint is contained changes none; a grid that paints there
-# changes many.
-#
-# ⚠ IT NEEDS THE PICTURE'S OWN VIEWPORT. The board's geometry is only the product's inside a
-# viewport of `game_picture_design_size` (grid_zoom_shot records why), and the suite's own root
-# viewport holds every other suite's nodes at once.
-# ==============================================================================
+#WHAT THE BOARD PAINTS OUTSIDE ITS OWN WINDOW.
 
-## The renderer guard. A dummy renderer rasterizes nothing, so every claim below would be vacuous —
-## reported as a FAILURE with the fix in the message, never as a skip.
+#⚠ THIS ASKS WHAT WAS PAINTED, NOT WHERE ANYTHING SITS, AND THAT IS THE WHOLE POINT. A grid
+#positioned outside the window can still be painted over the Deck button and the score column, so a
+#check built on _screen_rect alone passes either way and proves nothing.
+
+#So this one RENDERS the board and asks whether HIDING a non-focused grid changes any pixel outside
+#the window. A grid whose paint is contained changes none; a grid that paints there changes many.
+
+#⚠ IT NEEDS THE PICTURE'S OWN VIEWPORT. The board's geometry is only the product's inside a
+#viewport of game_picture_design_size (grid_zoom_shot.gd records why), and the suite's own root
+#viewport holds every other suite's nodes at once.
+
+#The renderer guard. A dummy renderer rasterizes nothing, so every claim below would be vacuous --
+#reported as a FAILURE with the fix in the message, never as a skip.
 func _check_renderer() -> bool:
 	var display := DisplayServer.get_name()
 	var live := display != "headless"
@@ -1279,9 +1235,9 @@ func _check_renderer() -> bool:
 			"DisplayServer is '%s' — re-run all_tests.tscn WITHOUT --headless" % display)
 	return live
 
-# A standalone fixture has no `Main`, so `GameView` builds its OWN opaque `HudContainer` as a
-# child of this same picture viewport -- an artifact of the fixture, since the real one lives
-# outside every picture, and left visible it sits over the reserved band the paint probes sample.
+# A standalone fixture has no Main, so GameView builds its OWN opaque HudContainer as a child of
+# this same picture viewport -- an artifact of the fixture, since the real one lives outside every
+# picture, and left visible it sits over the reserved band the paint probes sample.
 func _hide_fixtures_own_hud_container(view: GameView) -> void:
 	view.hud_container.visible = false
 
@@ -1297,9 +1253,9 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	_hide_fixtures_own_hud_container(view)
 	await _settle_layout(view)
 
-	# THE INSTRUMENT CHECK, taken where a grid is SUPPOSED to paint: in the overview, hiding a grid
-	# has to change the picture. An assertion that counts zero changed pixels passes trivially on a
-	# probe that can see nothing at all.
+# THE INSTRUMENT CHECK, taken where a grid is SUPPOSED to paint: in the overview, hiding a grid has
+# to change the picture. An assertion that counts zero changed pixels passes trivially on a probe
+# that can see nothing at all.
 	pa.open_zoomed_out()
 	await _settle_layout(view)
 	await _settle_scroll(view)
@@ -1316,11 +1272,9 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	check(_cut_off_px(pa, 1) <= 1.0,
 			"precondition: the focused grid is wholly in frame, so the window is where it belongs",
 			"%.1f px off screen" % _cut_off_px(pa, 1))
-	# ⚠ **TP-141's ORIGINAL CLAIM IS RETIRED BY OWNER RULING (`GAP-040`=(a)).** It asserted that a
-	# non-focused grid paints NOTHING outside the board's window, which was true only because the
-	# scroller clipped -- and that clip also cut props and animations authored to leave the board's
-	# edges. Isolation is now wholly the CAMERA's, which is what `TP-140` asserts. What is checked
-	# here instead is the ruling itself: the board DOES paint through its own window now.
+# ⚠ THE BOARD IS EXPECTED TO PAINT THROUGH ITS OWN WINDOW: the scroller does NOT clip, because a
+# clip there also cuts props and animations authored to leave the board's edges. Isolation is the
+# CAMERA's alone, asserted by the takes-the-other-grids-out-of-view test.
 	var painted_outside := 0
 	for gi : int in [0, 2]:
 		painted_outside += await _paint_delta(view, vp, gi, _outside_window_band(pa, vp, gi == 0))
@@ -1332,18 +1286,18 @@ func run_a_non_focused_grid_paints_nothing_outside_the_window_test() -> void:
 	await _tear_down(view)
 	vp.queue_free()
 
-## The strip of the picture on one side of the board's window: everything the clip must keep the
-## board out of. ⚠ Measured off the scroll container's OWN rect, not `_window_x` — the clip is to
-## that rect, and `_window_x` steps in off the right edge by the scrollbar, which is inside it.
+#The strip of the picture on one side of the board's window. ⚠ Measured off the scroll container's
+#OWN rect, not _window_x: the window is that rect, and _window_x steps in off the right edge by the
+#scrollbar, which is inside it.
 func _outside_window_band(pa: PlayArea, vp: SubViewport, left: bool) -> Rect2i:
 	var r := _screen_rect(pa.scroll_container)
 	if left: return Rect2i(0, 0, maxi(int(floorf(r.position.x)), 0), vp.size.y)
 	var from := mini(int(ceilf(r.end.x)), vp.size.x)
 	return Rect2i(from, 0, vp.size.x - from, vp.size.y)
 
-## How many pixels of `area` CHANGE when grid `gi`'s panel is hidden — the render's own answer to
-## "does this grid paint here". Outside the window nothing else moves when a grid goes: the side
-## panels are laid out beside the scroll container, not inside it.
+#How many pixels of `area` CHANGE when grid gi's panel is hidden -- the render's own answer to "does
+#this grid paint here". Outside the window nothing else moves when a grid goes: the side panels are
+#laid out beside the scroll container, not inside it.
 func _paint_delta(view: GameView, vp: SubViewport, gi: int, area: Rect2i) -> int:
 	var panel := view.play_area.grid_container.get_child(gi) as Control
 	panel.visible = false
@@ -1354,8 +1308,8 @@ func _paint_delta(view: GameView, vp: SubViewport, gi: int, area: Rect2i) -> int
 	var shown := await _shot(view, vp)
 	return _differing_px(shown, without, area)
 
-## One rendered frame of `vp`, read back. Two waits: the first carries the layout change into a
-## drawn frame, the second is the frame that is read.
+#One rendered frame of `vp`, read back. Two waits: the first carries the layout change into a drawn
+#frame, the second is the frame that is read.
 func _shot(view: GameView, vp: SubViewport) -> Image:
 	await await_drawn_frames(1)
 	CardEnvironment.CURRENT = view.game
@@ -1363,8 +1317,8 @@ func _shot(view: GameView, vp: SubViewport) -> Image:
 	CardEnvironment.CURRENT = view.game
 	return vp.get_texture().get_image()
 
-## A small tolerance, not an equality: the render target is 8 bit and a channel can land a step
-## either side. Same reasoning as `PixelProbe.COLOUR_EPS`, which is where it is written down.
+#A small tolerance, not an equality: the render target is 8 bit and a channel can land a step either
+#side. Same reasoning as PixelProbe.COLOUR_EPS, which is where it is written down.
 const PAINT_EPS := 2.5 / 255.0
 
 ## How many pixels of `area` differ between two frames.
@@ -1380,16 +1334,11 @@ func _differing_px(a: Image, b: Image, area: Rect2i) -> int:
 				n += 1
 	return n
 
-# ==============================================================================
-# TP-102 - FIX-GRID-3: the board edge bounces.
-#
 # A BOUNCE IS A MOTION, NOT A POSE. Sampled over frames: the board must MOVE past its resting edge
 # and then come back to it. A still frame either side proves nothing.
-# ==============================================================================
-## THE OVERVIEW's HALF (`GAP-025`=(a)): a show opens on the all-grids view (`PlayArea._ready()` calls
-## `open_zoomed_out()`), so this is where `H10`'s edge lives by default -- and OVERVIEW's pan is the
-## wall camera (`GAP-024`=(b)), so the bounce needs the real `Main`/`Wall`/`%Camera2D`, same reason
-## `GAP-026` moved the other camera-dependent checks onto `_stand_up_main_grids`.
+
+# A show opens on the all-grids view, so that is where the edge is by default, and the OVERVIEW pan
+# is the wall camera -- which is why the bounce needs the real Main/Wall/%Camera2D.
 func run_the_board_edge_bounces_test() -> void:
 	behavior_section("THE BOARD EDGE BOUNCES")
 	var main := await _stand_up_main_grids(3)
@@ -1406,10 +1355,9 @@ func run_the_board_edge_bounces_test() -> void:
 	var rest := camera.position.x
 
 	pa._unhandled_input(_action(&"grid_pan_right"))
-	# ⚠ **SIGNED, NOT ABSOLUTE.** An `absf()` here is satisfied by a swing in EITHER direction, and
-	# a bounce that threw the camera a whole grid INWARD before springing back passed it for as
-	# long as it existed. What a bounce means is that the board is pushed FURTHER OUT and comes
-	# back, so both extremes are tracked and each is asserted on its own side of rest.
+# ⚠ SIGNED, NOT ABSOLUTE. An absf() here is satisfied by a swing in EITHER direction, and a bounce
+# that throws the camera a whole grid INWARD before springing back passes it. A bounce means the
+# board is pushed FURTHER OUT and comes back, so each extreme is asserted on its own side of rest.
 	var farthest := 0.0
 	var deepest_inward := 0.0
 	var waited := 0.0
@@ -1440,9 +1388,7 @@ func run_the_board_edge_bounces_test() -> void:
 			"%f px off screen" % _camera_cut_off_px(main, pa, camera, 2))
 	await _tear_down_main(main)
 
-# ==============================================================================
-# TP-103 - FIX-GRID-1: the clamp collapses to centre on an axis that already fits.
-# ==============================================================================
+# The clamp collapses to centre on an axis that already fits.
 func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 	behavior_section("THE CLAMP COLLAPSES TO CENTRE WHEN EVERYTHING FITS")
 	var view := await _stand_up_grids(1)
@@ -1455,14 +1401,13 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 			"precondition: one grid already fits the window, so the pan range is nothing",
 			"content %f window %f" % [pa.grid_container.size.x, pa.scroll_container.size.x])
 
-	# ⚠ Measured on the PANEL, not on its cell block: the panel is the whole grid, score gutters
-	# included, and it is the panel's edges that "no bare background beside the board" is about.
-	# The cell block sits a few px off the panel's own centre because the row-label gutter on the
-	# left and the column-label gutter below are not the same width -- that is S24's layout, not a
-	# centring error.
-	# ⚠ A GLOBAL ORIGIN PLUS A LOCAL SIZE IS NOT A GLOBAL CENTRE once the board is zoomed:
-	# `global_position` carries the zoom and `size` never does. Harmless while a one-grid board
-	# opened at OVERVIEW_BOARD_ZOOM; it reads 157 px off now that one grid opens focused.
+# ⚠ Measured on the PANEL, not on its cell block: the panel is the whole grid, score gutters
+# included, and it is the panel's edges that "no bare background beside the board" is about. The
+# cell block sits a few px off the panel's centre because the two label gutters differ in width.
+
+# ⚠ A GLOBAL ORIGIN PLUS A LOCAL SIZE IS NOT A GLOBAL CENTRE once the board is zoomed:
+# global_position carries the zoom and size never does. On a one-grid board, which opens focused,
+# the unscaled form reads 157 px off.
 	var panel := pa.grid_container.get_child(0) as Control
 	var win := _window_x(pa)
 	var window_centre := (win.x + win.y) * 0.5
@@ -1484,18 +1429,15 @@ func run_the_clamp_collapses_to_centre_when_it_fits_test() -> void:
 			"pan_grid %d" % pa.pan_grid)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-104 - FIX-FULL-15: ONE scroll container inside the picture. The board pans between grids and
-# the SAME container reveals more of a tall stack or an oversized grid; a second scroller nested in
-# the board would make two things that scroll the same content.
-#
+# ONE scroll container inside the picture. The board pans between grids and the SAME container
+# reveals more of a tall stack or an oversized grid; a second scroller nested in the board would
+# make two things that scroll the same content.
+
 # ⚠ THIS IS A RATCHET, and its whole value is failing the day someone nests another scroller in the
 # board. So it PROVES IT CAN SEE scrollers first -- an assertion that counts zero things passes
-# trivially. Same shape as TP-93, which proves it can see labels before asserting none is a
-# subtotal.
-# ==============================================================================
+# trivially.
 
-## Every ScrollContainer at or under `root`, in tree order. The instrument TP-104 is built on.
+## Every ScrollContainer at or under `root`, in tree order.
 func _scrollers_under(root: Node) -> Array[ScrollContainer]:
 	var found : Array[ScrollContainer] = []
 	var sc := root as ScrollContainer
@@ -1510,9 +1452,9 @@ func run_one_scroll_container_on_the_board_test() -> void:
 	var pa := view.play_area
 	await _settle_layout(view)
 
-	# THE INSTRUMENT CHECK. The play area as a whole holds more than one scroller (the board's, and
-	# the pinned Entrance's own vertical one, which is NOT on the board), so a finder that returned
-	# nothing would be caught here rather than passing the count below by default.
+# THE INSTRUMENT CHECK. The play area as a whole holds more than one scroller -- the board's, and
+# the pinned Entrance's own vertical one, which is NOT on the board -- so a finder that returned
+# nothing is caught here rather than passing the count below by default.
 	var everywhere := _scrollers_under(pa)
 	check(everywhere.size() >= 2,
 			"instrument check: the finder SEES scrollers -- the play area holds more than one (TP-104)",
@@ -1531,41 +1473,36 @@ func run_one_scroll_container_on_the_board_test() -> void:
 			"%s" % [names])
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-106 - with MORE THAN 3 grids, panning shifts WHICH grids are in frame.
-#
-# ⚠ `grid_max_count` caps a real run at 3, so this case cannot arise in a show -- which is exactly
-# why it is the untested region and why the fixture builds past the cap DIRECTLY (the cap governs
-# unlocking, not `Board.add_grid`). At three grids every claim below is vacuous: nothing is ever
-# out of frame to shift into it. So the fixture is five, and the test asserts the framing MOVED --
-# direction and ordering, never an exact delta, because the scroll content's own origin shifts as
-# the region around it resizes.
-#
-# It drives the REAL input path, so deleting the pan wiring out of `_consume_as_view_action` fails
-# it even though every part still exists.
-#
-# ⚠ RE-POINTED TO FOCUSED (owner ruling): the overview now draws the grids a small fixed gap apart,
-# so four of the five fit the board's window at once and panning stops shifting which ones are in
-# frame. The claim moves to the view where the board is still far wider than its window — the same
-# repoint the pan-lands-centred and rests-positioned rows took.
-# ==============================================================================
+# With MORE THAN 3 grids, panning shifts WHICH grids are in frame.
 
-## The grids wholly on screen right now, by index, ascending. "In frame" is `_cut_off_px` at zero.
+# ⚠ grid_max_count caps a real run at 3, so the fixture builds past the cap DIRECTLY -- the cap
+# governs unlocking, not Board.add_grid. At three grids every claim below is vacuous: nothing is
+# ever out of frame to shift into it, so the fixture is five.
+
+# The assertion is that the framing MOVED -- direction and ordering, never an exact delta, because
+# the scroll content's own origin shifts as the region around it resizes. It drives the REAL input
+# path, so deleting the pan wiring out of _consume_as_view_action fails it.
+
+# ⚠ ASSERTED FOCUSED: the overview draws the grids a small fixed gap apart, so four of the five fit
+# the board's window at once and panning stops shifting which ones are in frame. Focused, the board
+# is still far wider than its window.
+
+## The grids wholly on screen right now, by index, ascending. "In frame" is _cut_off_px at zero.
 func _grids_in_frame(pa: PlayArea) -> Array[int]:
 	var seen : Array[int] = []
 	for gi : int in range(pa.grid_container.get_child_count()):
 		if _cut_off_px(pa, gi) <= 1.0: seen.append(gi)
 	return seen
 
-## The grids wholly on screen right now against the CAMERA's OWN `visible_rect()`, by index,
-## ascending -- the OVERVIEW instrument (`GAP-024`=(b), `GAP-026`=(a)).
+#The grids wholly on screen right now against the CAMERA's OWN visible_rect(), by index, ascending
+#-- the OVERVIEW instrument, since the overview pan is the camera.
 func _camera_grids_in_frame(main: Main, pa: PlayArea, camera: Camera2D) -> Array[int]:
 	var seen : Array[int] = []
 	for gi : int in range(pa.grid_container.get_child_count()):
 		if _camera_cut_off_px(main, pa, camera, gi) <= 1.0: seen.append(gi)
 	return seen
 
-## The lowest index in frame, or -1 when nothing is. Written out because `Array.min()` is a Variant.
+## The lowest index in frame, or -1 when nothing is. Written out because Array.min() is a Variant.
 func _lowest(seen: Array[int]) -> int:
 	var best := -1
 	for gi : int in seen:
@@ -1581,8 +1518,8 @@ func _highest(seen: Array[int]) -> int:
 
 func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	behavior_section("PANNING SHIFTS WHICH GRIDS ARE IN FRAME")
-	# `Main`-hosted (`GAP-026`=(a)): this is the OVERVIEW instrument, where "in frame" means inside
-	# the CAMERA's own `visible_rect()` (`GAP-024`=(b)).
+# Main-hosted: this is the OVERVIEW instrument, where "in frame" means inside the CAMERA's own
+# visible_rect().
 	var main := await _stand_up_main_grids(5)
 	var view := _main_game_view(main)
 	var pa := view.play_area
@@ -1605,13 +1542,12 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	check(before.size() < 5,
 			"precondition: five grids do NOT all fit -- there is something to shift into frame",
 			"%s in frame" % [before])
-	# ⚠ **THE GRID THE VIEW IS ON, NOT ITS NEIGHBOUR.** This asked for grid 0 while the view sat on
-	# grid 1, which held only while grids were spaced 4 px apart and two of them fitted the window
-	# at once. The DERIVED isolating buffer puts a real gap between cell blocks, so at this window size the
-	# grid in the middle is the only one WHOLLY in frame -- and a neighbour sliced by the window
-	# edge is explicitly not a defect (the no-cut-off rule is scoped to the focused grid). What the
-	# layout owes, and what the "near edge moves along" check below rests on, is that the grid at
-	# rest is itself uncut.
+# ⚠ ASK ABOUT THE GRID THE VIEW IS ON, NOT ITS NEIGHBOUR. The isolating buffer puts a real gap
+# between cell blocks, so at this window size the grid in the middle is the only one WHOLLY in
+# frame, and a neighbour sliced by the window edge is not a defect.
+
+# What the layout owes, and what the "near edge moves along" check below rests on, is that the grid
+# at rest is itself uncut.
 	check(before.has(pa.pan_grid),
 			"the grid the view rests on is wholly in frame before panning",
 			"%s in frame, resting on %d" % [before, pa.pan_grid])
@@ -1645,8 +1581,8 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 	check(pa.pan_grid == 1,
 			"panning back left returns to the grid it started on",
 			"pan_grid %d" % pa.pan_grid)
-	# ⚠ Direction and ordering, never set identity: whether the grid at the far edge counts as
-	# wholly on screen turns on a pixel or two of settle, so the near edge is the honest instrument.
+# ⚠ Direction and ordering, never set identity: whether the grid at the far edge counts as wholly
+# on screen turns on a pixel or two of settle, so the near edge is the honest instrument.
 	check(_lowest(back) == _lowest(before),
 			"...and the frame is back where it started: the window shifted, it did not resize",
 			"%s vs %s" % [back, before])
@@ -1655,23 +1591,20 @@ func run_panning_shifts_which_three_are_in_frame_test() -> void:
 			"%s vs %s" % [back, after])
 	await _tear_down_main(main)
 
-# ==============================================================================
-# S29 — MOVING THE SELECTION. Arrows across grids, the overview's grid cursor, and the one-finger
-# swipe.
-#
-# ⚠ THE TOUCH TESTS RUN LAST, AFTER EVERY MOUSE TEST ABOVE: a touch leaves no HOVER behind, and
-# the mouse selection path those tests drive needs one.
-# ==============================================================================
+# MOVING THE SELECTION: arrows across grids, the overview's grid cursor, and the one-finger swipe.
 
-## A real key press, so these checks assert the `ui_*` BINDINGS as well as the reader.
+# ⚠ THE TOUCH TESTS RUN LAST, AFTER EVERY MOUSE TEST ABOVE: a touch leaves no HOVER behind, and the
+# mouse selection path those tests drive needs one.
+
+## A real key press, so these checks assert the ui_* BINDINGS as well as the reader.
 func _key(code: Key) -> InputEventKey:
 	var e := InputEventKey.new()
 	e.keycode = code
 	e.pressed = true
 	return e
 
-## The board coordinate a control names, printed. Written out because `BoardCoord` has no
-## `_to_string` and a failure message that says "moved to the wrong cell" must say WHICH.
+#The board coordinate a control names, printed. Written out because BoardCoord has no _to_string
+#and a failure message that says "moved to the wrong cell" must say WHICH.
 func _where(pa: PlayArea, c: Control) -> String:
 	if not is_instance_valid(c): return "<none>"
 	var coord := pa._coord_of_control(c)
@@ -1682,18 +1615,14 @@ func _is_cell(pa: PlayArea, c: Control, gi: int, x: int, y: int) -> bool:
 	if not is_instance_valid(c): return false
 	return pa._coord_of_control(c).equals(BoardCoord.new(gi, x, y, 0))
 
-# ==============================================================================
-# TP-107 — FIX-GRID-3: arrow keys cross a grid boundary, and the view follows.
-#
-# ⚠ DRIVEN THROUGH THE CELL CONTROL'S OWN `gui_input`, which is where the board can first hear an
-# arrow — the viewport's focus-neighbour search consumes arrows in the GUI pass, so a reader in
-# `_unhandled_input` would never run. Cutting the connect in `create_card_control` therefore fails
-# this test even though every part still exists.
-#
-# ⚠ "THE CAMERA FOLLOWS" IS NOT A CAMERA: there is none in this phase. What follows is the board's
-# own scroll, so the observable asserted here is which grid the view is centred on and which grids
-# are in frame — never a camera transform.
-# ==============================================================================
+# Arrow keys cross a grid boundary, and the view follows.
+
+# ⚠ DRIVEN THROUGH THE CELL CONTROL'S OWN gui_input, which is where the board can first hear an
+# arrow: the viewport's focus-neighbour search consumes arrows in the GUI pass, so a reader in
+# _unhandled_input never runs. Cutting the connect in create_card_control fails this test.
+
+# ⚠ WHAT FOLLOWS HERE IS THE BOARD'S OWN SCROLL, not a camera, so the observable is which grid the
+# view is centred on and which grids are in frame.
 func run_arrows_cross_a_grid_boundary_test() -> void:
 	behavior_section("ARROW KEYS CROSS A GRID BOUNDARY AND THE VIEW FOLLOWS")
 	var view := await _stand_up()
@@ -1705,7 +1634,7 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 			"precondition: focused on grid 0 (TP-107 fixture FIX-GRID-3)",
 			"mode %d pan %d" % [pa.view_mode, pa.pan_grid])
 
-	# WITHIN a grid first: the same key, one column along, nothing about the view changes.
+# WITHIN a grid first: the same key, one column along, nothing about the view changes.
 	var start := pa._cell_focus_control(BoardCoord.new(0, 0, 2, 0))
 	check(start != null and _is_cell(pa, start, 0, 0, 2),
 			"instrument check: the selection starts on a real cell of grid 0 (TP-107)",
@@ -1718,7 +1647,7 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 	check(pa.pan_grid == 0,
 			"...and the view has no reason to move", "pan_grid %d" % pa.pan_grid)
 
-	# THE BOUNDARY. Grid 0's rightmost column: one more press has to land in grid 1.
+# THE BOUNDARY. Grid 0's rightmost column: one more press has to land in grid 1.
 	var edge := pa._cell_focus_control(BoardCoord.new(0, 4, 2, 0))
 	check(edge != null and _is_cell(pa, edge, 0, 4, 2),
 			"precondition: the selection is on grid 0's RIGHTMOST column",
@@ -1736,7 +1665,7 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 			"...so the grid the selection crossed into is actually in frame (TP-107)",
 			"%s in frame" % [_grids_in_frame(pa)])
 
-	# Back the other way, to prove the crossing is not a one-directional accident.
+# Back the other way, to prove the crossing is not a one-directional accident.
 	pa.focused_control.gui_input.emit(_key(KEY_LEFT))
 	check(_is_cell(pa, pa.focused_control, 0, 4, 2),
 			"a left press at grid 1's first column crosses back into grid 0's last",
@@ -1745,7 +1674,7 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 			"...and the view comes back with it", "pan_grid %d" % pa.pan_grid)
 	await _settle_scroll(view)
 
-	# THE OUTER EDGE OF THE BOARD. There is no grid past the last one, so nothing moves.
+# THE OUTER EDGE OF THE BOARD. There is no grid past the last one, so nothing moves.
 	var far := pa._cell_focus_control(BoardCoord.new(2, 4, 2, 0))
 	far.grab_focus()
 	far.gui_input.emit(_key(KEY_RIGHT))
@@ -1753,7 +1682,7 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 			"at the board's outer edge the selection stays put — it does not wrap (TP-107)",
 			_where(pa, pa.focused_control))
 
-	# The vertical axis is the same lattice: row 0 is the TOP row, so Down increases y.
+# The vertical axis is the same lattice: row 0 is the TOP row, so Down increases y.
 	var mid := pa._cell_focus_control(BoardCoord.new(1, 2, 2, 0))
 	mid.grab_focus()
 	mid.gui_input.emit(_key(KEY_DOWN))
@@ -1763,17 +1692,15 @@ func run_arrows_cross_a_grid_boundary_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-108 — FIX-GRID-3: in the overview the arrows select a GRID, and Enter focuses it.
-#
+# In the overview the arrows select a GRID, and Enter focuses it.
+
 # ⚠ THE DISCRIMINATING CASE IS THAT THE SAME KEY DOES TWO DIFFERENT THINGS. A selection model that
 # was simply "the same cells at a smaller scale" would pass a test that only checked the overview,
 # so both modes are driven here with the same press.
-# ==============================================================================
 func run_overview_arrows_select_a_grid_test() -> void:
 	behavior_section("IN THE OVERVIEW THE ARROWS SELECT A GRID")
-	# ⚠ FIVE GRIDS, NOT THREE: three fit the window, so the layout centres them and the centring
-	# claim below is true whatever the arrows do.
+# ⚠ FIVE GRIDS, NOT THREE: three fit the window, so the layout centres them and the centring claim
+# below is true whatever the arrows do.
 	var view := await _stand_up_grids(5)
 	var pa := view.play_area
 	await _settle_layout(view)
@@ -1806,7 +1733,7 @@ func run_overview_arrows_select_a_grid_test() -> void:
 			"focused_grid %d" % pa.focused_grid)
 	await _settle_scroll(view)
 
-	# THE OTHER GRANULARITY, from the same key. Now that a grid is focused, right moves a CELL.
+# THE OTHER GRANULARITY, from the same key. Now that a grid is focused, right moves a CELL.
 	var cell := pa._cell_focus_control(BoardCoord.new(1, 0, 2, 0))
 	cell.grab_focus()
 	var was_focused_grid := pa.focused_grid
@@ -1817,7 +1744,7 @@ func run_overview_arrows_select_a_grid_test() -> void:
 	check(pa.focused_grid == was_focused_grid,
 			"...and it selects no new grid", "focused_grid %d" % pa.focused_grid)
 
-	# Back in the overview, the leftmost grid has nothing to its left.
+# Back in the overview, the leftmost grid has nothing to its left.
 	pa.open_zoomed_out()
 	pa.selected_grid = 0
 	pa._unhandled_input(_key(KEY_LEFT))
@@ -1826,17 +1753,20 @@ func run_overview_arrows_select_a_grid_test() -> void:
 			"selected_grid %d" % pa.selected_grid)
 	await _settle_scroll(view)
 
-	# ⚠ IN FRAME IS NOT CENTRED, AND THE ARROW ALSO MOVES THE BOARD FOCUS. The scroll container's
-	# `follow_focus` answers a focus change by KILLING the in-flight pan and parking the control
-	# `follow_focus_margin` inside the window edge — still "in frame", not centred. So the pan has
-	# to be the last writer, and the claim is that the arrow lands the board exactly where an
-	# explicit pan to that grid does.
-	# ⚠ THE STEP MUST LAND ON A CELL THAT IS CURRENTLY OUTSIDE THAT MARGIN BAND, or follow-focus
-	# has nothing to correct and leaves the pan alone whichever order they run in — measured: a
-	# rightward step onto an already-visible column passes with the orders swapped. Stepping LEFT
-	# from the middle grid of five lands on a column off the left edge.
-	# ⚠ MIDDLE GRID, never an outer one: centring an edge grid hits the scroll container's own
-	# clamp, which puts a stolen pan and an honest one in the same place.
+# ⚠ IN FRAME IS NOT CENTRED, AND THE ARROW ALSO MOVES THE BOARD FOCUS. The scroll container's
+# follow_focus answers a focus change by KILLING the in-flight pan and parking the control
+# follow_focus_margin inside the window edge -- still "in frame", not centred.
+
+# So the pan has to be the last writer, and the claim is that the arrow lands the board exactly
+# where an explicit pan to that grid does.
+
+# ⚠ THE STEP MUST LAND ON A CELL CURRENTLY OUTSIDE THAT MARGIN BAND, or follow-focus has nothing to
+# correct and leaves the pan alone whichever order they run in: measured, a rightward step onto an
+# already-visible column passes with the orders swapped.
+
+# ⚠ MIDDLE GRID, never an outer one: centring an edge grid hits the scroll container's own clamp,
+# which puts a stolen pan and an honest one in the same place. Stepping LEFT from the middle grid
+# of five lands on a column off the left edge.
 	pa.selected_grid = 3
 	pa.pan_to_grid(3)
 	await _settle_scroll(view)
@@ -1857,23 +1787,19 @@ func run_overview_arrows_select_a_grid_test() -> void:
 			"arrow %.1f px off centre vs pan %.1f" % [arrowed, _centre_offset(pa, 2)])
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-109 — A SWIPE FIRES ONCE.
-#
-# ⚠ WITH `emulate_mouse_from_touch` AT ITS DEFAULT, ONE FINGER ARRIVES TWICE: as an
-# `InputEventScreenDrag` and as a synthesised `InputEventMouseMotion`. A test that delivered only
-# the screen drag would pass on a reader that doubles, because the partner never arrives. So this
-# delivers BOTH FORMS, interleaved, the way the engine does.
-#
-# ⚠ AND IT DRIVES THEM THROUGH `Viewport.push_input`, NEVER THE HANDLER DIRECTLY. Calling the
-# reader proves the reader and says nothing about whether a finger can REACH it: measured, it could
-# not — touch goes through the GUI pass and the board's scroll container marked it handled long
-# before unhandled input ran, so the whole swipe was dead in the product while these were green.
-#
+# A SWIPE FIRES ONCE.
+
+# ⚠ WITH emulate_mouse_from_touch AT ITS DEFAULT, ONE FINGER ARRIVES TWICE: as an
+# InputEventScreenDrag and as a synthesised InputEventMouseMotion. Delivering only the screen drag
+# passes on a reader that doubles, so this delivers BOTH FORMS, interleaved, the way the engine does.
+
+# ⚠ AND IT DRIVES THEM THROUGH Viewport.push_input, NEVER THE HANDLER DIRECTLY. Touch goes through
+# the GUI pass and the board's scroll container can mark it handled long before unhandled input
+# runs -- measured: the whole swipe was dead in the product while direct-call checks were green.
+
 # ⚠ AND IT NEEDS FIVE GRIDS. Starting on grid 1 of three, a doubling reader's second step runs off
-# the end and bounces, leaving `pan_grid` at the same value a correct reader produces — the fixture
-# would hide the very defect the test exists for. From grid 0 of five, one step is 1 and two is 2.
-# ==============================================================================
+# the end and bounces, leaving pan_grid at the value a correct reader produces. From grid 0 of
+# five, one step is 1 and two is 2.
 
 ## A finger going down or coming up. `device` 0: a REAL touch, not the engine's own synthesis.
 func _touch(at: Vector2, pressed: bool) -> InputEventScreenTouch:
@@ -1897,13 +1823,13 @@ func _emulated_motion(at: Vector2, relative: Vector2) -> InputEventMouseMotion:
 	e.relative = relative
 	return e
 
-## A point on BARE BOARD — inside the scrolling window, over no card control. The board is
-## bottom-aligned, so its top strip is empty; the caller checks this is really bare.
+#A point on BARE BOARD -- inside the scrolling window, over no card control. The board is
+#bottom-aligned, so its top strip is empty; the caller checks this is really bare.
 func _bare_point(pa: PlayArea) -> Vector2:
 	return pa.scroll_container.global_position + Vector2(6.0, 6.0)
 
-## One finger swiping `by` pixels horizontally from `from`, delivered in `steps` moves — each of
-## them in BOTH the forms the engine produces. What it proves is read off the board afterwards.
+#One finger swiping `by` pixels horizontally from `from`, delivered in `steps` moves -- each of them
+#in BOTH the forms the engine produces. What it proves is read off the board afterwards.
 func _swipe(pa: PlayArea, from: Vector2, by: float, steps: int) -> void:
 	var vp := pa.get_viewport()
 	vp.push_input(_touch(from, true))
@@ -1917,9 +1843,9 @@ func _swipe(pa: PlayArea, from: Vector2, by: float, steps: int) -> void:
 
 func run_a_swipe_fires_once_test() -> void:
 	behavior_section("A SWIPE FIRES ONCE")
-	# ⚠ MOUNTED INSIDE THE PICTURE'S OWN SUBVIEWPORT, sized `game_picture_design_size` -- same reason
-	# TP-140/TP-141 need it: "in frame" is measured against the board's real scroll window, which the
-	# suite's own default 1152x648 root window is narrower than.
+# ⚠ MOUNTED INSIDE THE PICTURE'S OWN SUBVIEWPORT, sized game_picture_design_size: "in frame" is
+# measured against the board's real scroll window, which the suite's own default 1152x648 root
+# window is narrower than.
 	var picture_vp := SubViewport.new()
 	picture_vp.size = PlayArea.game_picture_design_size(SettingsManager.settings)
 	add_child(picture_vp)
@@ -1932,8 +1858,8 @@ func run_a_swipe_fires_once_test() -> void:
 	check(threshold > 0.0,
 			"instrument check: the swipe threshold is a real distance in px (TP-109)",
 			"%f px" % threshold)
-	# ⚠ A LIVE KNOB, NOT A CONSTANT: a threshold that ignores the setting entirely would still be
-	# "a real distance in px". Doubled and halved about the default, the px must follow.
+# ⚠ A LIVE KNOB, NOT A CONSTANT: a threshold that ignores the setting entirely would still be "a
+# real distance in px". Doubled and halved about the default, the px must follow.
 	var knob := SettingsManager.settings.card_drag_threshold
 	SettingsManager.settings.card_drag_threshold = knob * 2.0
 	var wider := pa._swipe_threshold_px()
@@ -1956,7 +1882,7 @@ func run_a_swipe_fires_once_test() -> void:
 			"instrument check: the swipe starts on BARE BOARD, over no card",
 			"%s" % [from])
 
-	# A leftward swipe drags the board's content left, which brings the NEXT grid into view.
+# A leftward swipe drags the board's content left, which brings the NEXT grid into view.
 	_swipe(pa, from, -threshold * 4.0, 6)
 	await _settle_scroll(view)
 	check(pa.pan_grid == 1,
@@ -1965,10 +1891,11 @@ func run_a_swipe_fires_once_test() -> void:
 	check(_grids_in_frame(pa).has(1),
 			"...and that grid is in frame", "%s" % [_grids_in_frame(pa)])
 
-	# The mouse form ALONE must move nothing: it is the partner, never the signal.
-	# ⚠ RE-ANCHORED AT GRID 0 FIRST, and before every negative check below. Left where the swipe
-	# above put it, a board that has run out of grids to step onto cannot move whatever the reader
-	# does — so these checks would pass on a reader that reads every form, proving nothing.
+# The mouse form ALONE must move nothing: it is the partner, never the signal.
+
+# ⚠ RE-ANCHORED AT GRID 0 FIRST, and before every negative check below. A board that has run out of
+# grids to step onto cannot move whatever the reader does, so these checks would pass on a reader
+# that reads every form.
 	pa.pan_to_grid(0)
 	await _settle_scroll(view)
 	var before := pa.pan_grid
@@ -1986,8 +1913,8 @@ func run_a_swipe_fires_once_test() -> void:
 			"the emulated mouse motion on its own pans NOTHING (TP-109)",
 			"pan_grid %d -> %d" % [before, pa.pan_grid])
 
-	# An emulated SCREEN DRAG — the form a real mouse produces — is filtered by device -1, so a
-	# mouse drag across the board never pans it.
+# An emulated SCREEN DRAG, the form a real mouse produces, is filtered by device -1, so a mouse
+# drag across the board never pans it.
 	pa.pan_to_grid(0)
 	await _settle_scroll(view)
 	vp.push_input(_touch(from, true))
@@ -1999,7 +1926,7 @@ func run_a_swipe_fires_once_test() -> void:
 			"a drag marked device -1 is the engine's own synthesis and is ignored (TP-109)",
 			"pan_grid %d" % pa.pan_grid)
 
-	# A finger that never travels far enough is a tap, not a swipe.
+# A finger that never travels far enough is a tap, not a swipe.
 	pa.pan_to_grid(0)
 	await _settle_scroll(view)
 	_swipe(pa, from, -threshold * 0.4, 4)
@@ -2008,7 +1935,7 @@ func run_a_swipe_fires_once_test() -> void:
 			"a drag shorter than the threshold is a tap and pans nothing",
 			"pan_grid %d" % pa.pan_grid)
 
-	# And the other way, one grid back.
+# And the other way, one grid back.
 	pa.pan_to_grid(1)
 	await _settle_scroll(view)
 	_swipe(pa, from, threshold * 4.0, 6)
@@ -2019,13 +1946,9 @@ func run_a_swipe_fires_once_test() -> void:
 	await _tear_down(view)
 	picture_vp.queue_free()
 
-# ==============================================================================
-# TP-110 — FIX-GRID-1: a drag that STARTS ON A CARD places; one starting on empty board pans.
-#
-# The two are the same one-finger drag, so the discrimination is the whole behaviour: it is read
-# from where the finger WENT DOWN, exactly as the wall reads a press on a picture as "enter" and a
-# press on bare wall as "arm the pan".
-# ==============================================================================
+# A drag that STARTS ON A CARD places; one starting on empty board pans. The two are the same
+# one-finger drag, so the discrimination is the whole behaviour: it is read from where the finger
+# WENT DOWN, as the wall reads a press on a picture as "enter" and one on bare wall as "arm".
 func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 	behavior_section("A DRAG ON A CARD PLACES, ON EMPTY BOARD IT PANS")
 	var view := await _stand_up_grids(1)
@@ -2042,7 +1965,7 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 			"instrument check: that point really is on the card control",
 			"%s" % [on_card])
 
-	# STARTING ON A CARD: never a pan, and the event is left for the placement path.
+# STARTING ON A CARD: never a pan, and the event is left for the placement path.
 	var vp := pa.get_viewport()
 	vp.push_input(_touch(on_card, true))
 	check(not pa._swipe_armed,
@@ -2053,7 +1976,7 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 			+ "fired (TP-110)")
 	vp.push_input(_touch(on_card, false))
 
-	# ...and the placement itself still works, through the real press path.
+# ...and the placement itself still works, through the real press path.
 	var selected : Array[CardData] = []
 	pa.data_selected.connect(func(d: CardData) -> void: selected.append(d))
 	_click(pa, control)
@@ -2061,7 +1984,7 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 			"a press on that same card still reaches the placement path (TP-110)",
 			"%d selections" % selected.size())
 
-	# STARTING ON EMPTY BOARD: armed, and the swipe is the board's.
+# STARTING ON EMPTY BOARD: armed, and the swipe is the board's.
 	var bare := _bare_point(pa)
 	check(pa._card_control_at(bare) == null,
 			"instrument check: the second start point is bare board",
@@ -2079,18 +2002,16 @@ func run_a_drag_on_a_card_places_and_on_the_board_pans_test() -> void:
 	await _settle_scroll(view)
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-111 — FIX-GRID-3: removing the grid the view is focused on refocuses the NEAREST survivor,
-# and the LEFT one when two are equally near.
-#
-# The middle grid of three is removed, so both its neighbours survive and both are exactly one
-# grid away: the tie the left-preference exists to break. ⚠ The check is on the surviving grid's
-# IDENTITY, not its index — after the removal the RIGHT neighbour occupies the index a clamp would
-# leave the focus on, so an index-only claim cannot tell the preference from a clamp.
-#
-# It removes the grid through `Board.remove_grid`, the real removal the grid creator's
-# `on_unspotlight` calls, and never touches the refocus itself.
-# ==============================================================================
+# Removing the grid the view is focused on refocuses the NEAREST survivor, and the LEFT one when
+# two are equally near. The middle grid of three is removed, so both neighbours are exactly one
+# grid away: the tie the left-preference exists to break.
+
+# ⚠ The check is on the surviving grid's IDENTITY, not its index: after the removal the RIGHT
+# neighbour occupies the index a clamp would leave the focus on, so an index-only claim cannot tell
+# the preference from a clamp.
+
+# It removes the grid through Board.remove_grid, the real removal the grid creator's on_unspotlight
+# calls, and never touches the refocus itself.
 func run_removing_the_focused_grid_refocuses_left_test() -> void:
 	behavior_section("REMOVING THE FOCUSED GRID REFOCUSES THE NEAREST SURVIVOR")
 	var view := await _stand_up()
@@ -2130,16 +2051,15 @@ func run_removing_the_focused_grid_refocuses_left_test() -> void:
 			"%d vs %d" % [view.game.state.live_total(), banked])
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-111 OVERVIEW CASE — losing the grid the OVERVIEW is on leaves the view and the arrow cursor
-# naming the SAME grid: the nearest survivor, preferring the one to the left (owner ruling).
-#
+# Losing the grid the OVERVIEW is on leaves the view and the arrow cursor naming the SAME grid: the
+# nearest survivor, preferring the one to the left.
+
 # ⚠ THE OVERVIEW IS THE DISCRIMINATING MODE. Focused, the refocus re-drives the pan and hides any
 # disagreement between the two indices; in the overview nothing does, so the board can re-centre on
-# the RIGHT survivor while the cursor sits on the LEFT one — and the next arrow then jumps two.
+# the RIGHT survivor while the cursor sits on the LEFT one, and the next arrow jumps two.
+
 # ⚠ CHECKED ON THE SURVIVING GRID'S IDENTITY, never its index: the right neighbour slides into the
 # index the removed grid had, so an index-only claim cannot tell a survivor from a leftover number.
-# ==============================================================================
 func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 	behavior_section("AFTER A REMOVAL THE OVERVIEW AND ITS CURSOR AGREE")
 	var view := await _stand_up_grids(5)
@@ -2176,7 +2096,7 @@ func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 			"%.1f px vs %.1f" % [_centre_offset(pa, pa.pan_grid),
 					_centre_offset(pa, pa.pan_grid + 1)])
 
-	# ONE ARROW, ONE GRID: a cursor and a view that disagree make the next press look like a jump.
+# ONE ARROW, ONE GRID: a cursor and a view that disagree make the next press look like a jump.
 	var before := pa.pan_grid
 	pa._unhandled_input(_key(KEY_RIGHT))
 	await _settle_scroll(view)
@@ -2185,31 +2105,30 @@ func run_the_overview_view_and_cursor_agree_after_a_removal_test() -> void:
 			"pan_grid %d -> %d" % [before, pa.pan_grid])
 	await _tear_down(view)
 
-#Read through `_screen_rect`, so it stays true of a board the focused view has zoomed: a global
-#origin plus a local size is not a global centre.
+#Read through _screen_rect, so it stays true of a board the focused view has zoomed: a global origin
+#plus a local size is not a global centre.
 
-## How far grid `gi`'s cell block sits from the middle of the board's window, in pixels.
+## How far grid gi's cell block sits from the middle of the board's window, in pixels.
 func _centre_offset(pa: PlayArea, gi: int) -> float:
 	var r := _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control))
 	var win := _window_x(pa)
 	return absf(r.position.x + r.size.x * 0.5 - (win.x + win.y) * 0.5)
 
-# ==============================================================================
-# TP-112 — the surviving grids re-centre, ANIMATED, on a removal the view was NOT focused on.
-#
+# The surviving grids re-centre, ANIMATED, on a removal the view was NOT focused on.
+
 # ⚠ THAT IS THE DISCRIMINATING CASE: the re-centre is unconditional while the refocus is not, so a
 # test that only ever removes the focused grid cannot tell a correct board from one that re-centres
 # solely on the refocus path.
-#
-# ⚠ FIVE GRIDS, NOT THREE, AND THE VIEW ON THE MIDDLE ONE. Two weaker fixtures were measured and
-# rejected: with three grids a removal leaves a board that FITS its window, so the layout centres
-# it and the scroll never runs; and with the view near an edge the scroll container's own clamp
-# drags the board to the same place a re-centre would, which passes with the wiring cut. The middle
-# grid of five has slack on both sides, so only a re-centre can put it back in the middle.
-#
+
+# ⚠ FIVE GRIDS, NOT THREE, AND THE VIEW ON THE MIDDLE ONE. With three grids a removal leaves a
+# board that FITS its window, so the layout centres it and the scroll never runs; with the view
+# near an edge the clamp drags the board where a re-centre would, passing with the wiring cut.
+
+# The middle grid of five has slack on both sides, so only a re-centre can put it back in the
+# middle.
+
 # ⚠ A still frame is the wrong instrument for a move with a duration: the offset is sampled while
 # the pan is still running and again at rest, and the settle must take longer than a single frame.
-# ==============================================================================
 func run_the_board_recentres_after_any_removal_test() -> void:
 	behavior_section("THE SURVIVING GRIDS RE-CENTRE AFTER ANY REMOVAL")
 	var view := await _stand_up_grids(5)
@@ -2224,24 +2143,23 @@ func run_the_board_recentres_after_any_removal_test() -> void:
 			"precondition: focused on a grid that is NOT the one about to be removed (TP-112)",
 			"focused_grid %d" % pa.focused_grid)
 
-	# ⚠ The clock starts at the removal, not at the pan: what is being timed is how long the board
-	# takes to come to rest after losing a grid, and a snap would be done inside a few frames.
+# ⚠ The clock starts at the removal, not at the pan: what is being timed is how long the board
+# takes to come to rest after losing a grid, and a snap would be done inside a few frames.
 	var started := Time.get_ticks_msec()
 	Board.remove_grid(view.game.state, 0)
 	pa.flush_rebuild()
 	await _settle_layout(view)
-	# Sampled with the layout at rest and the board still travelling: the re-centre waits for the
-	# panels to stop before it aims, so this is the board on its way, not before it started.
+# Sampled with the layout at rest and the board still travelling: the re-centre waits for the
+# panels to stop before it aims, so this is the board on its way, not before it started.
 	var moving := _centre_offset(pa, view.game.state.grids.find(kept))
 	await _settle_scroll(view)
 	var elapsed := float(Time.get_ticks_msec() - started) / 1000.0
 	var kept_index := view.game.state.grids.find(kept)
 	var at_rest := _centre_offset(pa, kept_index)
 	var grid_px : float = pa._cells_root(pa.grid_container.get_child(0) as Control).size.x
-	# ⚠ THE REFERENCE IS AN EXPLICIT PAN TO THE SAME GRID, NOT THE WINDOW'S MIDDLE: where a grid
-	# comes to rest is the layout's business — a board whose content is wider than its grid block
-	# rests off the window's own centre — so the claim is that the removal put the board where the
-	# player's own pan key would have put it, and that identity the layout does owe.
+# ⚠ THE REFERENCE IS AN EXPLICIT PAN TO THE SAME GRID, NOT THE WINDOW'S MIDDLE: a board whose
+# content is wider than its grid block rests off the window's own centre, so the claim is that the
+# removal put the board where the player's own pan key would have, which is an identity it owes.
 	pa.pan_to_grid(kept_index)
 	await _settle_scroll(view)
 	var reference := _centre_offset(pa, kept_index)
@@ -2270,16 +2188,12 @@ func run_the_board_recentres_after_any_removal_test() -> void:
 			% [elapsed, SettingsManager.settings.grid_pan_duration])
 	await _tear_down(view)
 
-# ==============================================================================
-# TP-113 - the game picture IS one grid position: wide enough for exactly `grid_max_count` grids
-# plus the buffers and margins between them, at the height the zoomed-out view needs. The size is
-# read through `Wall.load_layout()` - the one seam every real wall build goes through - so a
-# picture that stopped being sized fails here.
-#
-# The picture and the position are the SAME rect (owner ruling, superseding the earlier picture of
-# `grid_max_count` positions each holding `grid_max_count` grids): the camera fills the picture
-# whole at rest, which is what lets zooming out show every grid at once.
-# ==============================================================================
+# The game picture IS one grid position: wide enough for grid_max_count grids plus the buffers and
+# margins between them, at the height the zoomed-out view needs. The size is read through
+# Wall.load_layout(), the one seam every real wall build goes through.
+
+# The picture and the position are the SAME rect: the camera fills the picture whole at rest, which
+# is what lets zooming out show every grid at once.
 func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 	behavior_section("THE GAME PICTURE FITS EXACTLY THREE GRIDS")
 	var st := SettingsManager.settings
@@ -2306,11 +2220,9 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"one grid position is wide enough for three grid blocks and the two buffers between "
 			+ "them (TP-113)",
 			"position %.1f px, three grids span %.1f px" % [position_size.x, span_3])
-	# ⚠ **"EXACTLY THREE" WAS RELAXED TO "HOLDS THREE" BY OWNER RULING (`GAP-039`=(b)).** Three
-	# contracts were mutually unsatisfiable -- isolation, exactly-three, and no clipping -- and the
-	# owner chose to keep isolation and the framing and give up the upper bound. The picture is now
-	# the width that genuinely isolates a focused grid's neighbours, and that width happens to have
-	# room for a fourth block; nothing places one, because `grid_max_count` is the cap.
+# ⚠ THE RULE IS "HOLDS THREE", NOT "EXACTLY THREE": isolation, an exact upper bound and no
+# clipping cannot all hold, and isolation and the framing win. The picture is the width that
+# isolates a focused grid's neighbours; nothing places a fourth block, because grid_max_count caps.
 	check(position_size.x >= span_3,
 			"...and holds three with room to spare rather than being cut to exactly three -- the "
 			+ "upper bound was what isolation cost (TP-113, GAP-039=(b))",
@@ -2320,9 +2232,9 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"...with the leftover width being exactly the isolating buffer again on each side "
 			+ "(TP-113)",
 			"leftover %.1f px, buffer %.1f px" % [position_size.x - span_3, buffer])
-	# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION,
-	# whichever is LARGER. Measured on the position, never the whole picture: a picture at the
-	# window's own aspect is framed whole at rest and leaves the camera nothing to step across.
+# The height rule: the natural board height or the aspect minimum of ONE GRID POSITION, whichever
+# is LARGER. Measured on the position, never the whole picture: a picture at the window's own
+# aspect is framed whole at rest and leaves the camera nothing to step across.
 	var window_size := PlayArea.reference_window_size()
 	var aspect_minimum := position_size.x * window_size.y / window_size.x
 	check(float(design.y) >= block.y - 1.0,
@@ -2336,8 +2248,8 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"...and no taller than the LARGER of the two - whichever is larger, not their sum "
 			+ "(TP-113)",
 			"design %d px, larger of %.1f / %.1f" % [design.y, block.y, aspect_minimum])
-	# The camera's step, in the picture's own units: what `resting_state` frames against what
-	# exists. This is the property `H22` names and the reason the picture was widened at all.
+# The camera's step, in the picture's own units: what resting_state frames against what exists.
+# This is the property the picture's width exists for.
 	var rest_zoom := WallPicture.focused_scale(Vector2(design), window_size,
 			st.wall_overfill_margin)
 	var visible_w := window_size.x / maxf(rest_zoom, 0.0001)
@@ -2347,31 +2259,27 @@ func run_the_game_picture_fits_exactly_three_grids_test() -> void:
 			"sees %.1f px of %d px, slack %.1f px, block %.1f px" % [visible_w, design.x,
 			float(design.x) - visible_w, block.x])
 
-# ==============================================================================
-# TP-114 - FIX-FULL-15: the focused game picture's render target never exceeds
-# `game_picture_max_render_px`.
-#
-# WARNING: `SubViewport.size` LIES WHEN IT IS OVERSIZED - the framebuffer is destroyed and the
-# size set to 0 internally while the property keeps reporting the number that broke it. So no
-# assertion here treats a read-back as proof the GPU accepted it. What is asserted instead is
-# what the code WROTE and the clamp it passed through: the pure clamp, that the tallest legal
-# board does not grow the picture, and - with an entry deliberately past the cap - that the real
-# `focus()` path writes the clamped size AND engages the canvas override. A regression that
-# deleted the clamp would write the oversized number, and the last group catches that whether or
-# not the property tells the truth afterwards.
-# ==============================================================================
+# The focused game picture's render target never exceeds game_picture_max_render_px.
+
+# ⚠ SubViewport.size LIES WHEN IT IS OVERSIZED: the framebuffer is destroyed and the size set to 0
+# internally while the property keeps reporting the number that broke it, so no assertion here
+# treats a read-back as proof the GPU accepted it.
+
+# What is asserted instead is what the code WROTE and the clamp it passed through: the pure clamp,
+# that the tallest legal board does not grow the picture, and -- with an entry deliberately past
+# the cap -- that the real focus() path writes the clamped size AND engages the canvas override.
 func run_the_render_target_never_exceeds_the_clamp_test() -> void:
 	behavior_section("THE RENDER TARGET NEVER EXCEEDS THE CLAMP")
 	var st := SettingsManager.settings
 	var cap := st.game_picture_max_render_px
 	var empty_design := _game_entry().design_size
 
-	# FIX-FULL-15 standing in the real view: grid 0, all 25 cells at height 15.
+# The tallest legal board standing in the real view: grid 0, all 25 cells at height 15.
 	var view := await _stand_up_grids(1)
 	var pa := view.play_area
 	view.game.state.grids.assign(TestGridFixtures.build_fix_full_15().grids)
-	# ⚠ Assigning the state directly fires no mutation broadcast, so the rebuild has to be ASKED
-	# for -- `flush_rebuild()` alone only services a rebuild something else queued.
+# ⚠ Assigning the state directly fires no mutation broadcast, so the rebuild has to be ASKED for:
+# flush_rebuild() alone only services a rebuild something else queued.
 	pa.queue_rebuild()
 	pa.flush_rebuild()
 	await _settle_layout(view)
@@ -2385,13 +2293,13 @@ func run_the_render_target_never_exceeds_the_clamp_test() -> void:
 			"%s with the board at %.0f px" % [_game_entry().design_size, board_h])
 	await _tear_down(view)
 
-	# The pure clamp, at and past the cap.
+# The pure clamp, at and past the cap.
 	check(WallPicture.clamped_render_size(Vector2i(cap, cap), cap) == Vector2i(cap, cap),
 			"the clamp leaves a size exactly at the cap alone (TP-114)")
 	check(WallPicture.clamped_render_size(Vector2i(cap * 3, cap + 1), cap) == Vector2i(cap, cap),
 			"...and caps EVERY axis, not just the wide one (TP-114)")
 
-	# The product path: the real game entry, built and focused the way `Main` does it.
+# The product path: the real game entry, built and focused the way Main does it.
 	var host := Node2D.new()
 	var viewports := Node.new()
 	add_child(host)
@@ -2413,8 +2321,8 @@ func run_the_render_target_never_exceeds_the_clamp_test() -> void:
 			str(wp.viewport.size_2d_override))
 	wp.teardown()
 
-	# The wiring, proved with an entry deliberately past the cap: this fails if the clamp stops
-	# being CALLED, not merely if it stops existing.
+# The wiring, proved with an entry deliberately past the cap: this fails if the clamp stops being
+# CALLED, not merely if it stops existing.
 	var huge := PictureEntry.new()
 	huge.id = &"oversized"
 	huge.design_size = Vector2i(cap * 2, cap + 1)
@@ -2441,37 +2349,33 @@ func run_the_render_target_never_exceeds_the_clamp_test() -> void:
 	viewports.queue_free()
 	await get_tree().process_frame
 
-## The `game` entry as the real wall reads it -- through `Wall.load_layout()`, never a fresh
-## `PictureEntry`, so anything that stopped sizing it shows up here.
+#The `game` entry as the real wall reads it -- through Wall.load_layout(), never a fresh
+#PictureEntry, so anything that stopped sizing it shows up here.
 func _game_entry() -> PictureEntry:
 	for e : PictureEntry in Wall.load_layout().pictures:
 		if e.id == Wall.GAME_PICTURE_ID: return e
 	return null
 
-## The board width `n` grid blocks of `block_x` px span, spaced by the DERIVED isolating buffer,
-## matching `PlayArea.grid_position_size_px()`.
+#The board width `n` grid blocks of `block_x` px span, spaced by the isolating buffer, matching
+#PlayArea.grid_position_size_px().
 func _grid_span(block_x: float, n: int) -> float:
 	var st := SettingsManager.settings
 	return float(n) * block_x + float(n - 1) * PlayArea.isolating_grid_buffer_px(st)
 
-# ==============================================================================
-# TP-105 — THE CAMERA STEPS BETWEEN THE 3 GRID POSITIONS THE FRAME HOLDS (`H22`), through the
-# `Main`-hosted fixture (`GAP-026`=(a)).
-#
-# ⚠ DRIVES REAL INPUT THROUGH `PlayArea`, THE SAME ROUTE A PLAYER TAKES — never a direct call to
-# `Main._on_overview_pan_requested()`, which is exactly the shape the dead touch-swipe shipped in
-# while its own tests stayed green.
-# ==============================================================================
+# THE CAMERA STEPS BETWEEN THE GRID POSITIONS THE FRAME HOLDS, through the Main-hosted fixture.
 
-## The grid's own cell block, in the SAME world space as `%Camera2D.position` — the picture's
-## design-pixel layout scaled by the WallPicture's real packed rect, never assumed 1:1.
+# ⚠ DRIVES REAL INPUT THROUGH PlayArea, THE SAME ROUTE A PLAYER TAKES -- never a direct call to
+# Main._on_overview_pan_requested(), which is the shape a dead input path hides in while its own
+# tests stay green.
+
+#The grid's own cell block, in the SAME world space as %Camera2D.position -- the picture's
+#design-pixel layout scaled by the WallPicture's real packed rect, never assumed 1:1.
 func _grid_world_rect(main: Main, pa: PlayArea, gi: int) -> Rect2:
 	return _control_world_rect(main, pa._cells_root(pa.grid_container.get_child(gi) as Control))
 
-## Any control inside the game screen, in WALL WORLD space -- what the camera actually frames.
-## ⚠ The screen draws at `rect.size / design_size`, so a control's own rect has to cross that
-## scale before it can be compared with a camera rect. `_screen_rect` already carries the board
-## zoom; this carries the picture's.
+#Any control inside the game screen, in WALL WORLD space -- what the camera frames. ⚠ The screen
+#draws at rect.size / design_size, so a control's rect has to cross that scale before a camera rect
+#can be compared with it. _screen_rect carries the board zoom; this one carries the picture's.
 func _control_world_rect(main: Main, c: Control) -> Rect2:
 	var wp : WallPicture = main._pictures[&"game"]
 	var design := Vector2(PlayArea.game_picture_design_size(SettingsManager.settings))
@@ -2480,9 +2384,9 @@ func _control_world_rect(main: Main, c: Control) -> Rect2:
 	var top_left := wp.rect.centre - wp.rect.size * 0.5
 	return Rect2(top_left + local.position * scale, local.size * scale)
 
-## How far `r` hangs outside `visible`, per edge, as "left, top, right, bottom" -- positive means
-## OUTSIDE. ⚠ A single worst-case number cannot tell a cut top row from a cut Entrance, and those
-## are different defects with different causes.
+#How far `r` hangs outside `visible`, per edge, as "left, top, right, bottom" -- positive means
+#OUTSIDE. ⚠ A single worst-case number cannot tell a cut top row from a cut Entrance, and those are
+#different defects with different causes.
 func _outside_px(r: Rect2, visible: Rect2) -> Array[float]:
 	return [visible.position.x - r.position.x, visible.position.y - r.position.y,
 			r.end.x - visible.end.x, r.end.y - visible.end.y] as Array[float]
@@ -2501,9 +2405,9 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 			"mode %d" % pa.view_mode)
 	var rest_grid := pa.pan_grid
 	var rest_x := camera.position.x
-	# OBSERVED, not recomputed: the world-space distance between two adjacent grid panels' own
-	# cell blocks, read the same way `stepped_rect` below is -- never the production formula that
-	# lays them out, so this cannot agree with a wrong pitch the way a copy of it would.
+# OBSERVED, not recomputed: the world-space distance between two adjacent grid panels' own cell
+# blocks, read the same way stepped_rect below is -- never the production formula that lays them
+# out, so this cannot agree with a wrong pitch the way a copy of it would.
 	var pitch := _grid_world_rect(main, pa, rest_grid + 1).get_center().x 			- _grid_world_rect(main, pa, rest_grid).get_center().x
 
 	_fire_key(KEY_PERIOD)
@@ -2541,22 +2445,21 @@ func run_the_camera_steps_between_grid_positions_test() -> void:
 			"edge %.3f vs after %.3f" % [edge_x, camera.position.x])
 	await _tear_down_main(main)
 
-# ==============================================================================
 # THE FOCUSED VIEW'S MINIMUM FRAMING: the whole 5x5 cell block PLUS the Entrance row, inside what
 # the CAMERA shows. Owner: "clicking on grid zooms in but everything is clipped instead of fitting
 # in 5x5 grid + entrance row as minimum size."
-#
-# ⚠ **THE TARGET IS THE CAMERA'S RECT, NOT THE PLAY AREA'S.** Two scales stack: the board fits its
-# content into the play area (`focused_board_zoom`), and then the wall camera fits the PICTURE into
-# the WINDOW. A fit that exactly fills an 841 px picture still clips once the camera crops that
-# picture into the window, and only a real `Main`/`Wall`/`%Camera2D` can answer the second half.
-#
-# ⚠ **ONE GRID, WHICH IS THE DEFAULT.** A deck of 52 or fewer unlocks exactly one, and a one-grid
-# show opens focused, so this is the pose a player sees first.
-#
-# ⚠ **THE EDGES ARE NAMED SEPARATELY ON PURPOSE.** A cut top row and a cut Entrance have different
-# causes; a single worst-case number cannot tell them apart, and the owner reported both at once.
-# ==============================================================================
+
+# ⚠ THE TARGET IS THE CAMERA'S RECT, NOT THE PLAY AREA'S. Two scales stack: the board fits its
+# content into the play area, then the wall camera fits the PICTURE into the WINDOW. A fit that
+# exactly fills an 841 px picture still clips once the camera crops that picture into the window.
+
+# Only a real Main/Wall/%Camera2D can answer the second half.
+
+# ⚠ ONE GRID, WHICH IS THE DEFAULT. A deck of 52 or fewer unlocks exactly one, and a one-grid show
+# opens focused, so this is the pose a player sees first.
+
+# ⚠ THE EDGES ARE NAMED SEPARATELY ON PURPOSE. A cut top row and a cut Entrance have different
+# causes, and a single worst-case number cannot tell them apart.
 func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 	behavior_section("THE FOCUSED VIEW FRAMES THE CELL BLOCK AND THE ENTRANCE")
 	var main := await _stand_up_main_grids(1)
@@ -2574,11 +2477,12 @@ func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 	var window_size := main.get_viewport().get_visible_rect().size
 	var visible := WallTransition.visible_rect(camera.position, camera.zoom.x, window_size)
 	var block := _grid_world_rect(main, pa, 0)
-	# ⚠ **THE ENTRANCE'S CARDS, NOT THE STRIP THEY SIT IN.** `entrance_strip` is a full-width
-	# background container spanning the whole play area; whether IT fits the camera is a question
-	# about a backdrop, not about whether the player can see the Entrance. The same distinction
-	# `_publish_cell_rects()` documents for a grid panel against its cells -- and reading the wrong
-	# one here reported the Entrance 15.45 px out of frame while every card in it was visible.
+# ⚠ THE ENTRANCE'S CARDS, NOT THE STRIP THEY SIT IN. entrance_strip is a full-width background
+# container spanning the whole play area, so whether IT fits the camera is a question about a
+# backdrop. The same distinction _publish_cell_rects() documents for a panel against its cells.
+
+# Reading the strip here reports the Entrance 15.45 px out of frame while every card in it is
+# visible.
 	var strip := _control_world_rect(main, pa.upper_zone_right)
 
 	var b := _outside_px(block, visible)
@@ -2592,21 +2496,16 @@ func run_the_focused_view_frames_the_block_and_the_entrance_test() -> void:
 	await _tear_down_main(main)
 
 
-# ==============================================================================
-# A CARD MOVING BETWEEN GRIDS IS NEVER CLIPPED AWAY (owner: *"if an effect makes a card move
-# between grids it should not disappear"*).
-#
-# ⚠ **THE CLIP AND THE CAMERA ARE DIFFERENT MECHANISMS AND ONLY ONE OF THEM MAY ISOLATE.** The
-# owner ruled that "out of view" means OFF CAMERA. `%CardLayer` is a child of
-# `SmoothScrollContainer/TopLevelVBox`, so a clip on that scroller CULLS card visuals outright --
-# a neighbour hidden by the clip takes any card flying to it with it. The camera may hide a grid;
-# the clip may not.
-#
-# ⚠ **THE BOARD THEREFORE DOES NOT CLIP AT ALL, and the owner's reason is not tall stacks:** props
-# and animations are authored to leave the board's edges on purpose, and the clip was cutting those
-# too. So this no longer asks whether a neighbour's cells happen to fall inside a window -- it asks
-# the stronger question directly, that there IS no window to fall outside of.
-# ==============================================================================
+# A CARD MOVING BETWEEN GRIDS IS NEVER CLIPPED AWAY. Owner: "if an effect makes a card move between
+# grids it should not disappear".
+
+# ⚠ THE CLIP AND THE CAMERA ARE DIFFERENT MECHANISMS AND ONLY THE CAMERA MAY ISOLATE. %CardLayer is
+# a child of SmoothScrollContainer/TopLevelVBox, so a clip on that scroller CULLS card visuals
+# outright: a neighbour hidden by the clip takes any card flying to it with it.
+
+# ⚠ THE BOARD THEREFORE DOES NOT CLIP AT ALL, and the reason is not tall stacks: props and
+# animations are authored to leave the board's edges on purpose. So this asks the stronger question
+# directly, that there IS no window to fall outside of.
 func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 	behavior_section("A CARD BETWEEN GRIDS IS NEVER CLIPPED AWAY")
 	var view := await _stand_up_grids(3)
@@ -2633,8 +2532,8 @@ func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 			"...and nothing ELSE between the card layer and the play area clips either -- the "
 			+ "whole chain is checked, so a clip re-appearing one level up cannot hide here",
 			"clipping: %s" % [clippers])
-	# The endpoints a cross-grid move runs between still have to EXIST off the focused window --
-	# that is what makes the check above load-bearing rather than vacuous.
+# The endpoints a cross-grid move runs between still have to EXIST off the focused window -- that
+# is what makes the check above load-bearing rather than vacuous.
 	var win := _screen_rect(pa.scroll_container)
 	var outside_any := false
 	for gi : int in 3:
@@ -2645,36 +2544,31 @@ func run_a_card_between_grids_is_never_clipped_away_test() -> void:
 			+ "window, so 'never culled' is a claim about something that would otherwise be cut")
 	await _tear_down(view)
 
-# ==============================================================================
-# S32 — THE SAVED PAN (`H18`, `H19`): TP-115, TP-116, TP-117.
-#
-# The picture is three grids wide, so the camera finally has somewhere to rest that is NOT the
-# picture's centre, and `GAP-020`'s answer (b) — "resize the picture first, then implement H18
-# literally" — is what these three rows prove landed.
-#
-# ⚠ **THE LOAD-BEARING CHECK IN EACH IS THE ONE THAT NAMES THE CENTRE.** A pose that happens to be
-# one pitch from where the camera was is satisfied by any offset; only "and it is NOT the picture's
-# centre" fails when the saved pan is dropped and `resting_state()` answers again.
-#
-# ⚠ The pitch here is OBSERVED between two real grid panels, the same way `TP-105` reads it, never
-# recomputed from the production formula that placed them.
-#
-# ⚠ **SOME CHECKS HERE ARE REGRESSION GUARDS, NOT DISCRIMINATORS, AND THE RED RUN NAMED THEM.**
-# While a board is mounted the camera ALREADY rested on the pan, by re-deriving it from `PlayArea`
-# every settle — so "the camera is not at the centre", "the board comes back on the grid it was
-# left on" and "the grid survives a resize" all pass with the saved pan deleted. They stay because
-# each is a property a future change can break; what proves THIS step are the checks naming
-# `saved_pan_x` itself, and the one that asks with no live board to read.
-# ==============================================================================
+# THE SAVED PAN. The picture is three grids wide, so the camera has somewhere to rest that is NOT
+# the picture's centre.
 
-## The world-space distance between two adjacent grids' cell blocks — `TP-105`'s own measurement,
-## reused so a wrong pitch cannot agree with itself.
+# ⚠ THE LOAD-BEARING CHECK IN EACH IS THE ONE THAT NAMES THE CENTRE. A pose that happens to be one
+# pitch from where the camera was is satisfied by any offset; only "and it is NOT the picture's
+# centre" fails when the saved pan is dropped and resting_state() answers again.
+
+# ⚠ The pitch here is OBSERVED between two real grid panels, never recomputed from the production
+# formula that placed them.
+
+# ⚠ SOME CHECKS HERE ARE REGRESSION GUARDS, NOT DISCRIMINATORS. While a board is mounted the camera
+# already rests on the pan, re-derived from PlayArea every settle, so the not-at-the-centre, the
+# comes-back-on-its-grid and the survives-a-resize checks all pass with the saved pan deleted.
+
+# What discriminates are the checks naming saved_pan_x itself, and the one that asks with no live
+# board to read.
+
+#The world-space distance between two adjacent grids' cell blocks, reused from the camera-stepping
+#measurement so a wrong pitch cannot agree with itself.
 func _observed_pitch(main: Main, pa: PlayArea, gi: int) -> float:
 	return _grid_world_rect(main, pa, gi + 1).get_center().x \
 			- _grid_world_rect(main, pa, gi).get_center().x
 
-## The camera pose the game picture would rest at with NO saved pan — `WallPicture.resting_state()`
-## on the real packed rect. The thing every check below must differ from.
+#The camera pose the game picture would rest at with NO saved pan -- WallPicture.resting_state() on
+#the real packed rect. The thing every check below must differ from.
 func _unpanned_rest_x(main: Main) -> float:
 	var wp : WallPicture = main._pictures[&"game"]
 	var window := main.get_viewport().get_visible_rect().size
@@ -2719,11 +2613,11 @@ func run_the_camera_rests_at_the_saved_pan_test() -> void:
 			"...it is the centre plus exactly the saved pan (TP-115)",
 			"offset %.3f vs saved %.3f" % [camera.position.x - centre_x, wp.saved_pan_x])
 
-	# ⚠ THE CASE A BARE `resting_state()` GOT WRONG. `Main._camera_resting_state()` reads the live
-	# board back into the saved pan whenever there is one — so the only way to see the SAVED value
-	# answering on its own is to ask while there is no board to read, which is the state every
-	# frame of a transition and every detached show is in. The real field is set aside and put
-	# back, never a stand-in board.
+# ⚠ Main._camera_resting_state() reads the live board back into the saved pan whenever there is
+# one, so the only way to see the SAVED value answering on its own is to ask while there is no
+# board to read -- the state every frame of a transition and every detached show is in.
+
+# The real field is set aside and put back, never a stand-in board.
 	var real_screen := wp.screen_root
 	wp.screen_root = null
 	var state := main._camera_resting_state(&"game", wp.rect, SettingsManager.settings)
@@ -2763,10 +2657,9 @@ func run_leaving_and_re_entering_restores_the_pan_test() -> void:
 	check(main._current_focus == &"map",
 			"sanity: the player really left the show for another picture (TP-116)",
 			str(main._current_focus))
-	# A saved pan predates any grid-count change, so `Q173`=(b) restores it SNAPPED rather than
-	# replayed. Nothing a player does produces a pan between two grids, so the value is set here
-	# to one — 0.6 of a pitch past the grid it was left on, which rounds up onto the next grid and
-	# then clamps back to the last grid the board has.
+# A saved pan predates any grid-count change, so it is restored SNAPPED rather than replayed.
+# Nothing a player does produces a pan between two grids, so the value is set here to one: 0.6 of a
+# pitch past the grid it was left on, which rounds up and then clamps back to the last grid.
 	wp.saved_pan_x = pitch * 1.6
 	await main.enter_game()
 	await _settle_camera(camera)
@@ -2806,10 +2699,9 @@ func run_a_resize_re_derives_the_pose_from_the_saved_pan_test() -> void:
 			"sanity: the camera is one grid off centre before the resize (TP-117)",
 			"offset %.3f vs pitch %.3f" % [camera.position.x - centre_x, pitch])
 
-	# ⚠ `DisplayServer.window_set_size()` CANNOT go below the project minimum, so a suite cannot
-	# drive a real resize to an arbitrary size. What a resize actually IS, to this code, is
-	# `Main._window_size` disagreeing with the viewport — so that disagreement is created and the
-	# real handler is run against the real window, rather than a size being faked into it.
+# ⚠ DisplayServer.window_set_size() CANNOT go below the project minimum, so a suite cannot drive a
+# real resize to an arbitrary size. What a resize IS, to this code, is Main._window_size
+# disagreeing with the viewport, so that disagreement is created and the real handler run.
 	main._window_size = Vector2(1.0, 1.0)
 	main._on_window_resized()
 	await _settle_camera(camera)
