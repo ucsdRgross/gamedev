@@ -347,13 +347,16 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
   also demos); kill them after the PASS lines.
 - `--filter` patterns are suite NODE-name substrings, case-insensitive: `WallRender`, `Pixels`
   (`Tests/all_tests.tscn`); a pattern with a space matches nothing.
-- The full windowed gate on the sidebar work: `ALL 48 SUITES ... CHECKS PASSED`, at most 22
-  placeholder warnings (the gate is AT its cap; the next off-palette colour breaches it), 0
-  `SCRIPT ERROR` in `godot.log`, exit profile exactly `PagedAllocator ... WorkerThreadPool` +
-  `15 resources still in use` + the `135 ObjectDB` note (wrapper exit 2 on a green run).
+- The full windowed gate: `ALL 51 SUITES ... CHECKS PASSED`, at most 22 placeholder warnings
+  (the gate is AT its cap; the next off-palette colour breaches it), 0 `SCRIPT ERROR` in
+  `godot.log`, exit profile exactly `PagedAllocator ... WorkerThreadPool` + `24 resources still
+  in use` + the `1150 ObjectDB` note (wrapper exit 2 on a green run). The counts are a
+  FINGERPRINT, not a budget: a change to either is a new leak to explain, not a number to edit.
 - Known flakes, each seen once or twice and never twice in a row — rerun once: a TEARDOWN crash
   (0xC0000005) after a passing banner (wrapper exit 3); a map Deck-button click failure right after
-  a viewport resize; `PIXELS: card_scale 1.5`.
+  a viewport resize; `PIXELS: card_scale 1.5` (1 of 6 full runs, passes 2 of 2 filtered); a GRID
+  VIEW pan-right real-key-press check (1 of 12). Every one of them passes when its suite runs
+  alone, which is what tells a flake from a defect.
 - ⚠ **A windowed suite on Box B runs at ~660 fps.** A wait of N process frames is a frame-rate
   dependent TIME: 30 frames measured 45 ms there, under the 50 ms a delta-integrated stick scroll
   needs for its first whole pixel. Wait on the moved value or on summed delta, never on a count.
