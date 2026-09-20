@@ -516,8 +516,7 @@ enum SeparationMode {
 	set(value):
 		wall_shadow_opacity = value
 		settings_changed.emit()
-## Multiplier on the transition clock for the one-off opening reveal, so it runs slower and
-## longer than an ordinary wall move.
+## Multiplier on the transition clock for the one-off opening reveal, which runs slower than an ordinary wall move.
 @export var wall_reveal_delay_scale : float = 1.8:
 	set(value):
 		wall_reveal_delay_scale = value
@@ -568,11 +567,13 @@ enum SeparationMode {
 	set(value):
 		grid_bounce_velocity_px = maxf(value, 0.0)
 		settings_changed.emit()
-## **Cross-grid row alignment** (§1.14, `Q245`=b). OFF by default: each grid sizes its own rows, so
-## a deep stack in one grid does not stretch the same row in every other. ON, row `r` takes a
-## SHARED maximum across every grid, and the boards read as one ruled sheet.
-## ⚠ **PURELY VISUAL — it must never affect scoring**, and a test asserts the same board scores
-## identically with it on and off (`Q251`=b).
+#⚠ PURELY VISUAL — it must never affect scoring, and a test asserts that the same board scores
+#identically with it on and off.
+
+#OFF, each grid sizes its own rows, so a deep stack in one grid does not stretch the same row in
+#every other. ON, the boards read as one ruled sheet.
+
+## Cross-grid row alignment: row r takes a SHARED maximum height across every grid. OFF by default.
 @export var grid_align_rows_globally : bool = false:
 	set(value):
 		grid_align_rows_globally = value

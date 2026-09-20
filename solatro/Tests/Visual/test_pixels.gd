@@ -1,51 +1,46 @@
 extends TestSuite
 # res://Tests/Visual/test_pixels.gd
-# ==============================================================================
-# PIXELS — the suite that actually looks at what was drawn.
-#
-# Every other suite in all_tests.tscn is renderer-INDEPENDENT: they assert node order, uniform
-# values, data invariants. None of them can see a pixel, and under `--headless` (the dummy renderer)
-# a shader is never even compiled — so a GLSL error, an inverted sign, a flame hanging off the
-# BOTTOM edge or an effect that draws nothing at all used to pass the whole suite silently. Four such
-# bugs shipped past a green run before the snapshot harness caught them by eye.
-#
-# So this suite renders the real effects into a SubViewport and ASSERTS on the resulting image. It is
-# the reason all_tests.tscn now needs a real renderer.
-#
-# ⚠ IT FAILS, LOUDLY, UNDER A DUMMY RENDERER — it does not skip (owner: "prioritize
-# running all tests properly over skipping them, even if that means all tests never run headless
-# anymore"). A skipped pixel check is indistinguishable from a passing one in a log, which is exactly
-# how the four bugs above survived. Run the suite WINDOWED:
+
+# PIXELS — the suite that actually looks at what was drawn. Every other suite in all_tests.tscn is
+# renderer-INDEPENDENT and cannot see a pixel; under `--headless` a shader is never even compiled, so
+# a GLSL error or an effect that draws nothing passes silently. This one asserts on the image.
+
+# ⚠ IT FAILS, LOUDLY, UNDER A DUMMY RENDERER — it does not skip. A skipped pixel check is
+# indistinguishable from a passing one in a log. Run the suite WINDOWED:
 #     Godot --path solatro res://Tests/all_tests.tscn        (no --headless)
-#
+
 # Its reviewable twin is Tests/Visual/fx_snapshot.tscn, which writes PNGs a human judges. This suite
 # is for the claims that can be stated as a number; that one is for "does it look right".
-#
-# CATEGORY MAP: every check here is BEHAVIOR — they are the owner's own visual rulings (flames point
-# up, balls are spherical, fire is a bounded cover field, one pixel size for all art), not
-# internal pins.
-# ==============================================================================
 
-## The offscreen stage. Small and zoomed: the checks are about geometry, and a 320px viewport at 4
-## pixels per art unit renders an 80-art-unit-wide field, which covers a card plus its flames.
+# CATEGORY MAP: every check here is BEHAVIOR — the owner's own visual rulings (flames point up, balls
+# are spherical, fire is a bounded cover field, one pixel size for all art), not internal pins.
+
+# Small and zoomed: the checks are about geometry, and a 320 px viewport at 4 pixels per art unit
+# renders an 80-art-unit-wide field, which covers a card plus its flames.
+
+## The offscreen stage.
 const VP_SIZE := 320
 const ZOOM := 4.0
 
-## Pixels per art unit for the CURRENT shot. Not the constant: an 8-ball pattern throws its arc 65 art
-## units up and a 50-ball one 89, so a fixed zoom pushed most of the pattern off the stage and the
-## first run of this suite reported 20 "missing" balls that were simply outside the viewport. Each
-## shot fits itself with _zoom_to_fit.
+# Not the constant: an 8-ball pattern throws its arc 65 art units up and a 50-ball one 89, so a fixed
+# zoom pushes most of the pattern off the stage and reads as missing balls. Each shot fits itself
+# with `_zoom_to_fit`.
+
+## Pixels per art unit for the CURRENT shot.
 var _zoom := ZOOM
 
-## The per-host random seed every shot pins, so the images are REPRODUCIBLE. `_seed` drives flame
-## flicker, the whole-effect pulse and the ball spin — and the spin rotates the shading frame the
-## highlight sits in, so an unpinned seed makes "the highlight is off-centre" a coin flip. Any value
-## works; this one is simply a value that is the same every run.
+# `_seed` drives flame flicker, the whole-effect pulse and the ball spin — and the spin rotates the
+# shading frame the highlight sits in, so an unpinned seed makes "the highlight is off-centre" a coin
+# flip. Any value works; this one is simply the same every run.
+
+## The per-host random seed every shot pins, so the images are REPRODUCIBLE.
 const SEED := 12.5
 
-## Ball agreement tolerance in ART UNITS. `nearest` finds a ball's EDGE pixel, so anything under the
-## ball's own radius is agreement; 2.0 is comfortably inside that at every count and still catches
-## the ~5-unit-and-up disagreements a real path bug produces.
+# `nearest` finds a ball's EDGE pixel, so anything under the ball's own radius is agreement; 2.0 is
+# comfortably inside that at every count and still catches the ~5-unit-and-up disagreements a real
+# path bug produces.
+
+## Ball agreement tolerance in ART UNITS.
 const BALL_TOLERANCE := 2.0
 
 # How far a mean channel may sit from its prediction, in colour units: every source is 8-bit exact,
@@ -79,8 +74,8 @@ func _ready() -> void:
 	check_all_tests_registered()
 	finish()
 
-## The guard. A dummy renderer cannot compile a shader or rasterize a triangle, so every check below
-## would be meaningless — it is reported as a FAILURE with the fix in the message, never as a skip.
+# A dummy renderer cannot compile a shader or rasterize a triangle, so every check below would be
+# meaningless — reported as a FAILURE with the fix in the message, never as a skip.
 func _check_renderer() -> bool:
 	var display := DisplayServer.get_name()
 	var live := display != "headless"
@@ -90,28 +85,23 @@ func _check_renderer() -> bool:
 			+ "it exists to catch)")
 	return live
 
+# TRANSPARENT, not the project clear colour: every check asks "was this pixel DRAWN", and an opaque
+# backdrop answers yes for all 102400 of them. UPDATE_ALWAYS, not UPDATE_ONCE: each shot re-populates
+# the stage and waits for a fresh frame, and an update-once mode hands every later shot the first's.
+
+# ⚠ NEAREST, BECAUSE A `SubViewport` CARRIES ITS OWN FILTER AND IT DEFAULTS TO LINEAR — it does NOT
+# inherit `textures/canvas_textures/default_texture_filter`, which this project sets to nearest for
+# the whole game. The card the PLAYER sees is rendered nearest-filtered.
+
+# ⚠ Nearest is NOT what decides `test_the_card_mask_is_the_card_the_player_sees`: it took t=0.00 from
+# 2 undecidable cells to 0 and left t=0.30's 887 exactly where it was. The soft boundary is the ART's
+# own alpha under deformation — do not re-open the filter as an explanation.
 func _build_stage() -> void:
 	_vp = SubViewport.new()
 	_vp.size = Vector2i(VP_SIZE, VP_SIZE)
 	_vp.disable_3d = true
-	# TRANSPARENT, not the project clear colour: every check below asks "was this pixel DRAWN", and an
-	# opaque backdrop answers yes for all 102400 of them — which made the first run of this suite
-	# report 19200 phantom pixels under the card and pass its "something was drawn" check trivially.
 	_vp.transparent_bg = true
-	# ALWAYS, not UPDATE_ONCE: each shot re-populates the stage and waits for a fresh frame, and an
-	# update mode that fires once would hand every later shot the FIRST shot's image.
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	# ⚠ **NEAREST, BECAUSE A `SubViewport` CARRIES ITS OWN FILTER AND IT DEFAULTS TO LINEAR** — it does
-	# NOT inherit `textures/canvas_textures/default_texture_filter`, which this project sets to 0
-	# (nearest) for the whole game. `Tools/spotlight_tool.gd` already had to do exactly this.
-	# The card the PLAYER sees is rendered nearest-filtered, so a linear-filtered reference was never
-	# the thing this suite claims to compare against.
-	# ⚠ **MEASURED 2026-08-05: THIS IS NOT THE CAUSE OF `test_the_card_mask_is_the_card_the_player_sees`
-	# FAILING, AND THAT RULING-OUT IS THE POINT OF SAYING SO HERE.** The suspicion was that bilinear
-	# smear inflated the undecidable-cell count; it did not. Nearest took t=0.00 from 2 undecidable
-	# cells to 0 and left t=0.30's **887** exactly where it was, with the three failures unmoved to the
-	# cell. So the soft boundary is the ART's own alpha under deformation, not a filtering artefact —
-	# do not re-open the filter as an explanation.
 	_vp.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(_vp)
 	_stage = Node2D.new()
@@ -119,18 +109,18 @@ func _build_stage() -> void:
 	_vp.add_child(_stage)
 	_zoom_to_fit(0.0)
 
-## Blow the stage up as far as `half_extent` art units still fitting inside it allows, capped at ZOOM.
-## Everything a shot measures must be ON the stage: a clipped effect reads as a missing one.
+# Everything a shot measures must be ON the stage: a clipped effect reads as a missing one.
+
+## Blow the stage up as far as `half_extent` art units fitting inside it allows, capped at ZOOM.
 func _zoom_to_fit(half_extent: float) -> void:
 	_zoom = ZOOM if half_extent <= 0.0 else minf(ZOOM, float(VP_SIZE) * 0.47 / half_extent)
 	_stage.scale = Vector2.ONE * _zoom
 
 # ------------------------------------------------------------------ the checks
 
-## The bug class this suite exists for: an effect that compiles to nothing, or renders MIRRORED.
-## QuadMesh's +Y is up, so a raw (UV - 0.5) * extent puts the flames under the card — which is what
-## the very first GPU run actually showed. Assert both ends: fire above the top edge, nothing at all
-## below the bottom one (at wrap 0 the flame is on top by construction).
+# The bug class this suite exists for: an effect that compiles to nothing, or renders MIRRORED.
+# QuadMesh's +Y is up, so a raw `(UV - 0.5) * extent` puts the flames UNDER the card. Both ends are
+# asserted: fire above the top edge, nothing at all below the bottom one.
 func test_fire_draws_upright() -> void:
 	behavior_section("FIRE RENDERS, AND IT RENDERS UPWARD")
 	var body := CardVisual.CARD_SIZE
@@ -149,38 +139,32 @@ func test_fire_draws_upright() -> void:
 			"nothing is drawn below the host's bottom edge (the QuadMesh y-flip)",
 			"%d pixels under the card" % PixelProbe.count(img, below, PixelProbe.is_opaque))
 
-## THE COVER FIELD IS THE MODEL, AND THIS IS WHAT MAKES IT A MODEL RATHER THAN A GRADIENT (owner
-## 2026-07-29, replacing the onion shells with generic noise fire). Heat is
-## `cover * (((cover + aperture) * n - aperture) * gain)` where `cover` is how far above the nearest
-## surface BELOW this fragment it sits — 1 at the surface, falling one tap at a time to 0 at exactly
-## `height` above it.
-##
-## ⚠ THE ONION SECTION THIS REPLACES DIED WHOLE, and deliberately so: "the hottest band is a narrow
-## core" and "the base row crosses several shells" were claims about a per-flame arch with shells
-## wrapped around its spine, and there is no arch. Porting them would have been asserting the old
-## model against the new one. What is asserted instead are the three properties of the NEW model that
-## a bug can actually break, none of which depend on a single art knob:
-##
-##  1. **THE FLAME IS BOUNDED AT `height`.** No tap reaches further, so nothing may be drawn above it.
-##     This is the invariant that makes "no flame leaps the hole" and "the quad cannot clip its own
-##     flames" both free, and it is the one an off-by-one in the tap ladder breaks.
-##  2. **HEAT FALLS OFF WITH HEIGHT.** The band against the body must be hotter than the band near the
-##     top of the reach. A `cover` that came back constant — the failure mode of a broken mask lookup,
-##     which still draws a perfectly plausible-looking slab — passes every "did it render" check and
-##     fails this one.
-##  3. **IT IS FORM-FITTING**: with `skew = 0` the flame is exactly as wide as the body under it and no
-##     wider. Fire that spread past the silhouette would mean the taps are not stepping straight down.
-##
-## Noise is held flat (`_plain_fire_style`), because the noise exists precisely to hide 1 and 2.
+# Heat is `cover * (((cover + aperture) * n - aperture) * gain)`, where `cover` is how far above the
+# nearest surface BELOW a fragment it sits — 1 at the surface, falling one tap at a time to 0 at
+# exactly `height` above it. Noise is held flat, because noise exists to hide 1 and 2 below.
+
+# 1. BOUNDED AT `height + sink` — the ladder is measured from `p.y - sink`, so no fragment can light
+# higher, plus one pixel of slack for the FX grid's quantization. That bound is what makes "no flame
+# leaps the hole" and "the quad cannot clip its own flames" free; a tap-ladder off-by-one breaks it.
+
+# 2. HEAT FALLS OFF WITH HEIGHT. A constant `cover` — a broken mask lookup — still draws a plausible
+# slab and fails only here. Two ROWS, not single pixels: the ramp is `filter_nearest` and one pixel
+# can sit on a band edge.
+
+# ⚠ The rows are taken from the FLAME'S OWN EXTENT, never from `height`: heat goes NEGATIVE at low
+# cover, so with noise flat the flame legitimately fills only the lower half of its reach and a row
+# pinned at 60 % of `height` reads EMPTY against a correct shader.
+
+# 3. FORM-FITTING: with `skew = 0` the flame is exactly as wide as the body under it. Fire spreading
+# past the silhouette means the taps are not stepping straight down.
+
+# ⚠ EIGHT STACKS, NOT ONE, AND THE RAMP IS WHY: at one stack `u_level` is 0, the ramp's darkest row,
+# so the whole flame lands inside ~0.01 of luminance and "the base is hotter than the tip" is
+# unmeasurable however correct the shader is.
 func test_fire_is_a_bounded_falling_cover_field() -> void:
 	behavior_section("FIRE IS A COVER FIELD: BOUNDED AT `height`, COOLING UPWARD, FORM-FITTING")
 	var body := CardVisual.CARD_SIZE
 	var style := _plain_fire_style()
-	# ⚠ EIGHT STACKS, NOT ONE, AND THE RAMP IS WHY. At one stack `u_level` is 0, which is the ramp's
-	# darkest row — entry 0 makes a 1-stack flame near-black, a known art item — so the WHOLE flame
-	# lands inside ~0.01 of luminance and "the base is hotter than the tip" is unmeasurable however
-	# correct the shader is. It failed exactly that way once. Eight is where the game lives and where
-	# the ramp has range to read.
 	var stacks := 8
 	_host_fire(body, stacks, style)
 	var img := await _shoot()
@@ -190,9 +174,6 @@ func test_fire_is_a_bounded_falling_cover_field() -> void:
 	if flame.size.y <= 0: return
 	var centre := Vector2(VP_SIZE, VP_SIZE) * 0.5
 	var top_edge := centre.y - body.y * 0.5 * _zoom
-	# 1. THE HARD BOUND: `height + sink`, because the cover ladder is measured from `p.y - sink` — so
-	# the topmost fragment that can light sits that far above the surface and none can sit higher.
-	# One pixel of slack for the quantization of the FX grid.
 	var live : Dictionary[StringName, float] = FxFire.stacks_live(stacks, style)
 	var reach_px := (live[&"u_height"] + maxf(style.sink, 0.0)) * _zoom
 	var overshoot := top_edge - float(flame.position.y)
@@ -201,23 +182,12 @@ func test_fire_is_a_bounded_falling_cover_field() -> void:
 			"flame reaches %.1f px above the top edge, but %d taps over %.1f art units plus %.1f of "
 			% [overshoot, style.cover_taps, live[&"u_height"], style.sink]
 			+ "sink bound it at %.1f px" % reach_px)
-	# 2. COOLING UPWARD. Two rows near the two ends OF WHAT WAS DRAWN, compared on mean luminance over
-	# the lit pixels of each. Rows rather than single pixels because the ramp is `filter_nearest` and a
-	# single pixel can sit on a band edge.
-	#
-	# ⚠ MEASURED AGAINST THE FLAME'S OWN EXTENT, NOT AGAINST `height`, and that is not laziness — it
-	# is the aperture. `heat = cover * (((cover + ap) * n - ap) * gain)` goes NEGATIVE at low cover:
-	# at the shipped card tuning with the noise held flat, cover 0.5 lands under `ramp_cut` and cover
-	# 0.25 is already below zero, so the flame legitimately fills only the lower half of its reach and
-	# the noise is what pushes it higher. A row pinned at 60 % of `height` reads EMPTY and fails a
-	# correct shader — which it did, on the first run of this check.
 	var low := _row_luminance(img, flame, flame.end.y - 2)
 	var high := _row_luminance(img, flame, flame.position.y + maxi(flame.size.y / 6, 1))
 	check(low > 0.0 and high > 0.0 and low > high + 0.02,
 			"heat FALLS OFF with height above the surface, rather than sitting in one flat slab",
 			"mean luminance %.3f at the flame's base vs %.3f near its top — a constant `cover` "
 			% [low, high] + "(a broken mask lookup) still draws a plausible slab and fails only here")
-	# 3. FORM-FITTING. With skew off, the flame may not reach past the body it stands on.
 	var body_left := centre.x - body.x * 0.5 * _zoom
 	var body_right := centre.x + body.x * 0.5 * _zoom
 	check(float(flame.position.x) >= body_left - 1.0 and float(flame.end.x) <= body_right + 1.0,
@@ -225,8 +195,7 @@ func test_fire_is_a_bounded_falling_cover_field() -> void:
 			"flame spans x %d..%d against a body of %.0f..%.0f"
 			% [flame.position.x, flame.end.x, body_left, body_right])
 
-## Mean luminance of the lit pixels of one row, inside `box`. -1 when the row is empty, so a caller
-## can tell "cold" from "not drawn".
+## Mean luminance of one row's lit pixels; -1 when empty, so a caller can tell cold from not drawn.
 func _row_luminance(img: Image, box: Rect2i, y: int) -> float:
 	if y < 0 or y >= img.get_height(): return -1.0
 	var total := 0.0
@@ -238,19 +207,20 @@ func _row_luminance(img: Image, box: Rect2i, y: int) -> float:
 		n += 1
 	return total / float(n) if n > 0 else -1.0
 
-## THE CLAIM §1 EXISTS FOR: fire finds EVERY upward-facing surface in the art, not just the topmost
-## one in each column (FX_HANDOFF §1.1). The hoop is the counterexample the owner named — its ring
-## has TWO upward-facing surfaces in the same column, the outer top arc and the inner arc at the
-## BOTTOM of the hole, and a per-column contour can only ever return the first.
-##
-## Stated as pixels: inside the ring's HOLE, sitting on its lower inner arc, there must be flame. The
-## old model could not put a single lit pixel there, by construction — its skirt's `a < PI/2` cut
-## discarded that surface and `contour_y` never saw it. So this check is the discriminator, and it is
-## a real one: it fails against everything that shipped before 2026-07-30.
-##
-## AND THE INVARIANT THAT BOUNDS IT: no flame may LEAP the hole. A flame reaching from the outer arc
-## down to the inner one would fill the ring solid — the "enormous flame" the owner
-## forbade — so the hole's MIDDLE, a flame-length clear of both surfaces, must stay empty.
+# Fire finds EVERY upward-facing surface in the art, not just the topmost one per column. The hoop is
+# the counterexample: its ring has TWO upward surfaces in the same column, the outer top arc and the
+# inner arc at the BOTTOM of the hole, and a per-column contour can only ever return the first.
+
+# Stated as pixels: inside the ring's HOLE, on its lower inner arc, there must be flame — a contour
+# model cannot put a lit pixel there by construction, which is what makes this the discriminator.
+
+# AND THE INVARIANT THAT BOUNDS IT: no flame may LEAP the hole. A flame reaching from the outer arc
+# to the inner one would fill the ring solid, so the hole's MIDDLE — a flame-length clear of both
+# surfaces — must stay empty.
+
+# The hole is the ring minus its wall, measured off the art rather than typed in: the wall is a
+# uniform inset of the outer ellipse, so the hole's half-height is the body's minus that inset, and
+# the band just above the hole's floor is where the inner flames live.
 func test_every_upward_surface_burns() -> void:
 	behavior_section("EVERY UPWARD-FACING SURFACE BURNS, AND NO FLAME LEAPS THE HOLE")
 	var body := PropVisual.art_size_for(HoopVisual.SHEET, HoopVisual.FRAMES)
@@ -266,9 +236,6 @@ func test_every_upward_surface_burns() -> void:
 	_park(att, 0.0)
 	var img := await _shoot()
 	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
-	# The hole is the ring minus its wall. Measured off the art itself rather than typed in: the wall
-	# is a uniform inset of the outer ellipse (see the sheet), so the hole's half-height is the body's
-	# minus that inset, and the band just above the hole's floor is where the inner flames live.
 	var wall := body.x * 0.5 - _hole_half_width(body)
 	var hole_bottom := body.y * 0.5 - wall
 	var inner := Rect2i(
@@ -278,7 +245,6 @@ func test_every_upward_surface_burns() -> void:
 			"the ring's INNER-BOTTOM arc — an upward surface no contour can reach — is alight",
 			"0 lit pixels in the hole's floor band %s; this is the exact bug §1 replaced the contour "
 			% inner + "model to fix, so a zero here means the mask is not being marched")
-	# The hole's middle: further than a flame is long from either surface, so nothing may reach it.
 	var clear := Rect2i(Vector2i(int(mid.x - body.x * 0.1), int(mid.y - body.y * 0.1)),
 			Vector2i(int(body.x * 0.2 * _zoom), int(body.y * 0.2 * _zoom)))
 	check(PixelProbe.count(img, clear, PixelProbe.is_opaque) == 0,
@@ -287,8 +253,9 @@ func test_every_upward_surface_burns() -> void:
 			% PixelProbe.count(img, clear, PixelProbe.is_opaque)
 			+ "is the ENORMOUS FLAME a bounded flame length makes impossible")
 
-## Half the width of the hoop's HOLE, in art units, read off the sheet's alpha — never typed in, so
-## this cannot drift from the drawing the mask is sampled out of.
+# Read off the sheet's alpha, never typed in, so it cannot drift from the drawing the mask samples.
+
+## Half the width of the hoop's HOLE, in art units.
 func _hole_half_width(body: Vector2) -> float:
 	var img := HoopVisual.SHEET.get_image()
 	var src := CardModifier.frame_rect(HoopVisual.SHEET, HoopVisual.FRAMES, 1, 0)
@@ -302,14 +269,16 @@ func _hole_half_width(body: Vector2) -> float:
 	if first < 0: return 0.0
 	return float(last - first + 1) * 0.5 * (body.x / src.size.x)
 
-## Every ball, at every count, sits where the INDEPENDENT oracle says. This is the check that would
-## have caught a real path bug — and the one whose earlier disagreement turned out to be the harness
-## re-enabling the clock it had parked, so the tolerance is in art units and stated.
+# The oracle is INDEPENDENT of the shader, and the tolerance is stated in art units so a
+# disagreement can be told from a harness that re-enabled the clock it had parked.
+
+# BOTH directions: a host's base direction is a coin flip and the whole pattern mirrors with it, so
+# checking only +1 would leave half the possible boards unverified.
+
+## Every ball, at every count, sits where the oracle says.
 func test_balls_sit_on_their_oracle() -> void:
 	behavior_section("BALLS SIT ON THEIR SPEC POSITIONS")
 	var style := StatusJuggling.JUGGLE_STYLE
-	# BOTH directions: a host's base direction is a coin flip, and the whole pattern mirrors with it,
-	# so checking only +1 would leave half the possible boards unverified.
 	for dir : float in [1.0, -1.0] as Array[float]:
 		for n : int in [1, 3, 8, 50]:
 			var geo := FxJuggle.geometry(n, style)
@@ -335,9 +304,9 @@ func test_balls_sit_on_their_oracle() -> void:
 					% [n, BALL_TOLERANCE, dir],
 					"%d missing, worst offset %.2f art units" % [missing, worst])
 
-## A ball must read as a SPHERE, not a disc (owner): banded curvature plus a highlight
-## sitting ON the surface. Measurable form: at least three distinct tones inside one ball (a flat
-## two-tone split has two), and the brightest tone is OFF CENTRE — a centred dot is a disc's gloss.
+# A ball must read as a SPHERE, not a disc: banded curvature plus a highlight sitting ON the
+# surface. Measurable form — at least three distinct tones inside one ball (a flat two-tone split
+# has two), and the brightest tone OFF CENTRE, because a centred dot is a disc's gloss.
 func test_ball_reads_as_a_sphere() -> void:
 	behavior_section("BALLS ARE SPHERICAL")
 	var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
@@ -362,9 +331,9 @@ func test_ball_reads_as_a_sphere() -> void:
 			"the highlight sits OFF-CENTRE, on the surface (a centred dot reads flat)",
 			"brightest pixel %.1f px from the centre of a %d px ball" % [off, box.size.x])
 
-## The hoop's two halves are the FULL frame cut down its middle, so drawing them side by side must
-## reproduce the whole ring EXACTLY — no seam, no doubled column, nothing missing. Pixel-for-pixel:
-## this is the one claim about the art that a human eye cannot actually confirm.
+# The halves are the FULL frame cut down its middle, so drawing them side by side must reproduce the
+# whole ring EXACTLY — no seam, no doubled column, nothing missing. Pixel-for-pixel, because this is
+# the one claim about the art a human eye cannot confirm.
 func test_hoop_halves_reassemble() -> void:
 	behavior_section("THE HOOP'S HALVES ARE THE WHOLE RING")
 	var whole := HoopVisual.new()
@@ -384,43 +353,32 @@ func test_hoop_halves_reassemble() -> void:
 	check(diff == 0, "back half + front half == the whole ring, pixel for pixel",
 			"%d pixels differ" % diff)
 
-## ONE PIXEL SIZE FOR ALL ART (owner). The ball prop and the card's Ball pip are the SAME
-## source frame, so at any card_scale one source texel must come out the same size on both — that is
-## the whole claim behind PropVisual.ART_PIXEL_SCALE, and it is only true if the prop scales WITH the
-## cards.
-##
-## ⚠ **THE CHECK IS NO LONGER `box_pip == box_prop`, AND WHAT REPLACES IT IS STRONGER, NOT WEAKER.**
-## The card's pip is an outline client and the prop deliberately is NOT (design D3 — props are
-## temporary, so they do not need the same readability). Sharing a sheet with an outlined element and
-## not being outlined is exactly the asymmetry that reads as a bug later, so it is asserted rather than
-## excused: the pip's footprint must be the prop's plus EXACTLY one art unit on every side.
-##
-##     box_pip.size == box_prop.size + Vector2(2, 2) * card_scale
-##
-## That still pins pixel-size parity at every `card_scale` — the thing the equality was ever a proxy
-## for — and it additionally pins the rim at exactly one art unit, catching a 2-px or a half-px outline
-## that the old equality could not have seen either. Do NOT replace it with a tolerance.
-##
-## ⚠ **AND THE PIP IS NOW DRAWN THROUGH THE REAL PATH.** It used to be a `draw_texture_rect_region`
-## stand-in, which is why the equality kept passing after the pip grew a rim: the stand-in had no
-## material and could not disagree with the card. It is a real `Polygon2D` framed by the real
-## `CardOutline.frame_polygon` and wearing the real shader, so this check now measures what the card
-## actually draws (CLAUDE.md rule 5).
+# ONE PIXEL SIZE FOR ALL ART. The ball prop and the card's Ball pip are the SAME source frame, so at
+# any `card_scale` one source texel must come out the same size on both — the whole claim behind
+# `PropVisual.ART_PIXEL_SCALE`, true only if the prop scales WITH the cards.
+
+# The card's pip is an outline client and the prop deliberately is NOT, so the bar is
+# `box_pip.size == box_prop.size + Vector2(2, 2) * card_scale`: pixel-size parity at every
+# `card_scale` AND the rim pinned at exactly one art unit. Do NOT replace it with a tolerance.
+
+# ⚠ THE PIP IS DRAWN THROUGH THE REAL PATH — a real `Polygon2D` framed by `CardOutline.frame_polygon`
+# wearing the real shader. A `draw_texture_rect_region` stand-in has no material, so it cannot
+# disagree with the card and kept the old equality passing after the pip grew a rim.
+
+# ⚠ PIN THE ZOOM: the pip is 2 units bigger than the prop, so a fractional zoom rounds the two
+# footprints by different amounts and the difference stops being a whole number of art units. `ZOOM`
+# is 4 and integral, which keeps every expected figure exact.
+
+# The BALL frame's art touches none of its four frame edges, so its rim is a complete ring and the
+# growth is the full 2 units on both axes — a frame whose art ran to an edge would grow by less on
+# that side, which is why this test names the ball rather than "a pip".
 func test_one_pixel_size_for_all_art() -> void:
 	behavior_section("A PROP TEXEL IS A CARD TEXEL, AT EVERY CARD SCALE")
 	var pip_frames := Vector2i(PipSuit.SUIT_TEXTURE_H_FRAMES, PipSuit.SUIT_TEXTURE_V_FRAMES)
 	var frame := CardModifier.frame_rect(PipSuit.SUIT_TEXTURE, pip_frames.x, pip_frames.y,
 			BallVisual.FRAME)
-	# ⚠ **PIN THE ZOOM, because the two subjects are no longer the same size and rounding no longer
-	# cancels.** While this compared two 8-unit draws of one frame, whatever zoom the previous shot
-	# happened to leave behind applied to both identically and dropped out of the equality. The pip is
-	# now 2 units bigger, so a fractional zoom rounds the two footprints by different amounts and the
-	# difference stops being a whole number of art units. `ZOOM` is 4 and integral, which keeps every
-	# expected figure below exact.
 	_zoom_to_fit(0.0)
 	for card_scale : float in [1.5, 2.5, 4.0]:
-		# The card's pip, exactly as the card builds it: a polygon one outline wider than its frame on
-		# every side, UV'd by the padded mapping, drawing the sheet's own colours.
 		var pip := Polygon2D.new()
 		var h := frame.size * 0.5 + Vector2.ONE * CardOutline.WIDTH
 		pip.polygon = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y),
@@ -433,16 +391,11 @@ func test_one_pixel_size_for_all_art() -> void:
 		var img_pip := await _shoot()
 		var box_pip := PixelProbe.bounds(img_pip, Rect2i(Vector2i.ZERO, img_pip.get_size()),
 				PixelProbe.is_opaque)
-		# The prop, scaled the way PropLayer scales it every frame.
 		var prop := BallVisual.new()
 		_place(prop, card_scale / PropVisual.AUTHORED_CARD_SCALE)
 		var img_prop := await _shoot()
 		var box_prop := PixelProbe.bounds(img_prop, Rect2i(Vector2i.ZERO, img_prop.get_size()),
 				PixelProbe.is_opaque)
-		# The ball frame's art touches NONE of its four frame edges (measured 2026-08-06), so its rim is
-		# a complete ring and the growth is the full 2 units on both axes. A frame whose art ran to an
-		# edge would grow by less on that side — which is why this test names the ball rather than
-		# "a pip".
 		var per_unit := card_scale * _zoom
 		var rim := Vector2i(Vector2.ONE * 2.0 * CardOutline.WIDTH * per_unit)
 		check(box_pip.size == box_prop.size + rim and box_prop.size.x > 0,
@@ -451,61 +404,47 @@ func test_one_pixel_size_for_all_art() -> void:
 				"pip %s vs prop %s + rim %s (%.1f px per art unit)"
 				% [box_pip.size, box_prop.size, rim, per_unit])
 
-## THE GAP THIS SUITE EXISTED WITH FOR ITS WHOLE LIFE (owner: *"has this issue this whole
-## time been that fx editor doesnt use real card visual... because the card outline was never accurate
-## to real cards and therefore tests nothing?"*). FX_HANDOFF §0c.2.
-##
-## ⚠ EVERY OTHER CARD PANEL IN THIS PROJECT IS `CardVisual.star_outline`, A HAND MODEL OF THE RIG —
-## `fx_editor.gd`, `fx_snapshot.gd`, `fx_cost.gd`, `fx_behind.gd` all stand up a bare Node2D and feed
-## it that static, and the FX EDITOR THEN DRAWS THE SAME ARRAY AS THE CARD'S FACE, so it cannot show a
-## face-versus-mask disagreement at all. The props were always tested against their real art
-## (`Shape.SPRITE` samples the sheet); the card never was. This check is the one place a REAL
-## `CardVisual` is instantiated — its rig, its autoplay animation, its skinned face — and the claim is
-## the one nothing else could state: **the mask the fire stands on is the silhouette the player sees.**
-##
-## HOW, and each choice is load-bearing:
-##  * A REAL card needs the autoloads an `@tool` editor deliberately lacks (`SettingsManager`,
-##    `CardEnvironment`), which is *why* the editor fakes it — a test scene has them, so this belongs
-##    here and could not be a snapshot panel of the editor.
-##  * The animation is SEEKED to fixed times and PAUSED, so the shot is reproducible; the rig is on
-##    autoplay and would otherwise have moved between the outline read and the render.
-##  * The face is measured with its TEXTURE OFF (a solid `Polygon2D`), because the claim is about the
-##    skinned GEOMETRY the mask describes. Frame padding inside the art is a separate, art-level
-##    question and it would otherwise be indistinguishable from a mask error.
-##  * Compared COLUMN BY COLUMN against the shader's own mask arithmetic
-##    (`PixelProbe.mask_contains`), not by eye: §0g's standing lesson is that a picture of a card at 2x
-##    zoom hides exactly this, and the number is the whole point.
-##
-## WHAT IT FOUND, AND WHY IT NOW ASSERTS **ZERO**. Against the 32-ray radial-scale table this replaced,
-## the card's stretched corner stood ~27 art units of a column outside its own mask at one point of the
-## rig's own animation — a whole spike with no flame on it. The silhouette's own vertices fixed that, and
-## then this check found the last one: the mask was the RIG, the full rectangle, while every card type's
-## art BITES a corner out of its frame — four flame pixels standing on nothing, which is what the owner
-## saw the moment the FX editor started drawing the real face. With the bite in the outline
-## (`CardVisual._rig_outline`) the two agree in **every decidable cell at every pose**, so the bar is
-## exact agreement rather than a tolerance.
+# ⚠ EVERY OTHER CARD PANEL IN THIS PROJECT IS `CardVisual.star_outline`, A HAND MODEL OF THE RIG, and
+# the FX editor draws that same array as the card's FACE, so it cannot show a face-versus-mask
+# disagreement at all. This is the one place a REAL `CardVisual` is instantiated.
+
+# The claim nothing else can state: THE MASK THE FIRE STANDS ON IS THE SILHOUETTE THE PLAYER SEES.
+# A real card needs the autoloads an `@tool` editor lacks (`SettingsManager`, `CardEnvironment`),
+# which is why the editor fakes it and why this cannot be a snapshot panel.
+
+# ONE CLAIM, CELL BY CELL, BOTH SIDES SAMPLED AT THE SAME POINT: a flame pixel occupies one FX cell
+# and is decided by the mask at that cell's CENTRE, and the art is pixel art on the same grid.
+# Anything finer measures the rasterizer; anything coarser punishes a diagonal edge in one direction.
+
+# Two ways to disagree, unalike on screen: MASK WITHOUT ART is a flame pixel standing on nothing,
+# ART WITHOUT MASK is the card's own edge left unlit. WHERE they sit is the diagnosis — clustered in
+# the four corner cells means `corner_points`'s parallelogram, spread along the edges means not.
+
+# ⚠ REST POSE ONLY, BECAUSE THE SHIPPED CARD NO LONGER DEFORMS. `card_visual.tscn` holds only `RESET`
+# and the idle, no code writes a `Bone2D` position, and the idle does not autoplay — so the 16-arm
+# rig is always at rest in game and a deformed pose tests a shape the player cannot be shown.
+
+# ⚠ If the idle is ever re-enabled, restore the pose list `[0.0, 0.15, 0.30, 0.45]` on the loop
+# below: the deformed branches are deliberately left intact and their measured bounds still stand
+# (worst edge 1.50 and corner 2.45 at t=0.30). DO NOT DELETE THEM.
+
+# ⚠ THE COUNT IS ASSERTED TOO: the distance bars alone cannot see a SHALLOW, UNIFORM shift, which
+# keeps every miss under them while the count explodes. At rest both approximations are EXACT (0
+# cells, 0.00 units) so rest keeps the exact bar; the deformed poses measured 58/104/60.
+
+# ⚠ EDGE_WEDGE_DRIFT 1.7 cells: the mask is RADIAL, 32 wedge slots of 11.25°, so its quantization is
+# ANGULAR and near a slot boundary the miss is a chord, not a pixel. Measured worst 1.50 at t=0.30,
+# 0.00 at rest; it scales with the card's radius, so 38x50's 1.34 became 1.50 at 40x54.
+
+# ⚠ SPLIT BY REGION: along the edges the mask is the skinned boundary vertex-for-vertex, so the bar
+# can be tight; the four CORNER cells run `corner_points()`, a parallelogram exact only while the
+# cell is a rectangle. CORNER_BITE_DRIFT 2.6 cells: worst 2.45 at t=0.30, 1.21 at t=0.15, 0 at rest.
+
+# Both bars are in CELLS, so tuning `pixel` cannot invert their relative strictness, and the worst
+# distances print on EVERY run: they are pinned with ~5 % and ~12 % headroom, and a bound you only
+# see when it fails is one you cannot check for drift. ⚠ DO NOT RAISE EITHER TO GO GREEN.
 func test_the_card_mask_is_the_card_the_player_sees() -> void:
 	behavior_section("A REAL CardVisual: THE MASK IS THE SILHOUETTE THE PLAYER SEES")
-	# ⚠ **REST POSE ONLY, BECAUSE THE SHIPPED CARD NO LONGER DEFORMS** (owner: *"tests
-	# should work without animation playing, dont understand point of pointing tests at an animated
-	# version"* — and they are right). This used to run `[0.0, 0.15, 0.30, 0.45]` across the idle's
-	# 0.6 s loop.
-	#
-	# ⚠ **VERIFIED, NOT ASSUMED: NOTHING ELSE POSES THE RIG.** `card_visual.tscn` holds exactly two
-	# animations — `RESET` and the idle `new_animation_2` — and no code anywhere writes a `Bone2D`
-	# position (the only `Bone_*` references in GDScript are `_bind_rig` READING them). With the idle
-	# no longer autoplaying (`CardVisual.RIG_ANIM`), the 16-arm rig is always at rest in game, so the
-	# deformed poses were testing a shape the player can no longer be shown. An earlier comment here
-	# claiming jumps/spins/warps also pose it was WRONG: those move the card's own transform, not its
-	# bones.
-	#
-	# ⚠ **WHAT THIS GIVES UP, AND HOW TO GET IT BACK.** The deformed poses were the only exercise of
-	# `corner_points()`'s parallelogram approximation and the 32-slot radial wedge mask — the two
-	# unfixed model approximations behind the pinned tolerance band. At REST both are EXACT (measured:
-	# 0 disagreeing cells, 0.00 art units), which is why the rest branch asserts exact agreement and
-	# needs no tolerance at all. **If the idle is ever re-enabled, restore the pose list on this line**
-	# — the deformed branches below are deliberately left intact and their measured bounds still stand
-	# (worst edge 1.50 and corner 2.45 at t=0.30). ⚠ Do not delete them.
 	for t : float in [0.0] as Array[float]:
 		var card := await _real_card(t)
 		if not card: return
@@ -523,17 +462,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				% [shape, poly.size(), rig.size()]
 				+ "was resampled, so every warp claim in FX_HANDOFF would be about a rectangle")
 		if poly.size() < 3: continue
-		# ONE CLAIM, CELL BY CELL, AND BOTH SIDES SAMPLED AT THE SAME POINT — which is the only
-		# comparison that is fair to either. A flame pixel occupies one FX cell and is decided by the
-		# mask at that cell's CENTRE (`fx_local` quantizes every fragment before the mask sees it), and
-		# the card's art is pixel art on the same grid, so "is there art under this flame pixel" is a
-		# question about that same centre. Anything finer measures the rasterizer; anything coarser (an
-		# earlier draft compared the cell's highest art against a centre-sampled mask) punishes a
-		# diagonal edge for the quantization every pixel-art flame has, in one direction only.
-		#
-		# Two ways to disagree, and they look nothing alike on screen: **mask without art** is a flame
-		# pixel standing on nothing — the corner bite, the spike's shoulder — and **art without mask** is
-		# the card's own edge left unlit.
 		var _bad_cells : Array[Vector2] = []
 		var no_art := 0
 		var no_mask := 0
@@ -548,8 +476,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 			for kx : int in range(-cells, cells + 1):
 				var p := (Vector2(float(kx), float(ky)) + Vector2(0.5, 0.5)) * cell
 				var art := _art_at(img, p, centre)
-				# A cell centre sitting ON the art's boundary is decided by the rasterizer, not by
-				# either side of this claim.
 				if art < 0:
 					skipped += 1
 					continue
@@ -563,11 +489,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 					no_mask += 1
 					worst_no_mask = p
 					_bad_cells.append(p)
-		# ⚠ WHERE the disagreements sit is the whole diagnosis, and the totals hide it. `corner_points`
-		# models each corner bite as a PARALLELOGRAM (`corner + along_prev + along_next`), which is exact
-		# only while the corner cell is a rectangle — i.e. at rest. Under skinning the cell's fourth
-		# point moves independently, so if the parallelogram is the fault the misses cluster in the four
-		# corner cells. If they are spread along the edges instead, it is not.
 		var near_corner := 0
 		var on_edge := 0
 		for p : Vector2 in _bad_cells:
@@ -575,11 +496,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 			var cell_y : bool = absf(p.y) > half.y * 0.5
 			if cell_x and cell_y: near_corner += 1
 			else: on_edge += 1
-		# ⚠ **THE WORST DISTANCES ARE PRINTED ON EVERY RUN, PASS OR FAIL, AND THAT IS DELIBERATE.** The
-		# two bounds below are PINNED from a measurement with only ~5% and ~12% headroom, so the one
-		# thing that would make them a flaky test is run-to-run drift — and a bound you can only see
-		# when it fails is one you cannot check for drift. Compare these across runs before trusting
-		# either number.
 		var _we := 0.0
 		var _wc := 0.0
 		for p : Vector2 in _bad_cells:
@@ -595,12 +511,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				% [no_art, worst_no_art, no_mask, worst_no_mask])
 		check(checked > 100, "t=%.2f: the real card's face rendered at all" % t,
 				"only %d cells were decidable — the card did not draw" % checked)
-		# ⚠ **THE COUNT IS STILL ASSERTED — the distance bars alone cannot see a SHALLOW, UNIFORM
-		# shift.** A boundary moved one unit along the whole silhouette keeps every miss under the
-		# distance bars while the disagreement count explodes; the old exact-zero bar caught that and
-		# its replacement must too. At REST the mask and face agreed exactly when this was pinned
-		# (2026-08-05), so rest keeps the exact bar; the deformed poses' measured totals were 58/104/60
-		# and get a pinned ceiling. ⚠ DO NOT RAISE IT TO GO GREEN.
 		if is_equal_approx(t, 0.0):
 			check(no_art == 0 and no_mask == 0,
 					"t=0.00: at rest the mask and the drawn face agree exactly",
@@ -611,29 +521,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 					"t=%.2f: the disagreement count stays at its measured scale" % t,
 					("%d cells disagree (measured worst was 104) — a shallow uniform boundary shift "
 					+ "the distance bars cannot see") % (no_art + no_mask))
-		# ⚠ **THE BAR IS A ONE-CELL BAND, NOT EXACT AGREEMENT, AND THE OLD BAR WAS UNACHIEVABLE.**
-		# This asserted `no_art == 0 and no_mask == 0`. That demands a 24-gon reproduce the alpha
-		# boundary of a BILINEARLY SKINNED TEXTURE to sub-cell precision, which no polygon can do:
-		# `corner_points()` models each corner bite as a parallelogram (exact only while the cell is a
-		# rectangle) and the wedge index resolves direction in 32 slots. Measured 2026-08-05 — the
-		# check passed at t=0.00 and failed at every deformed pose, and the misses were **two
-		# structural approximations**, not a defect: 22/62/60 cells inside the four corner cells and
-		# 36/42/0 along the edges. Exact zero was passing by ALIGNMENT at rest, not by correctness.
-		#
-		# ⚠ **WHAT REPLACES IT IS STRONGER THAN A COUNT, WHICH IS THE POINT — A TOLERANCE ON HOW MANY
-		# CELLS MAY DISAGREE WOULD BE A MAGIC NUMBER THAT SAYS NOTHING ABOUT THE SHAPE.** Every
-		# disagreeing cell must sit within ONE FX cell of the silhouette's own boundary — i.e. the mask
-		# may be off by less than the grid the flame is drawn on, and nowhere else. That still catches
-		# every bug this check was built for, because all of them were DEEP: the stretched corner arm
-		# stood ~27 art units of a column outside its mask, and the un-bitten corner left flame pixels
-		# several units clear of the art. A disagreement one cell from the edge is quantization; a
-		# disagreement four cells from it is a mask that models the wrong shape.
-		# ⚠ **SPLIT BY REGION, BECAUSE ONE OF THE TWO MODELS IS EXACT AND THE OTHER IS NOT, AND A
-		# SINGLE BOUND WOULD HAVE TO BE THE WEAKER OF THEM EVERYWHERE.** Along the edges the mask is
-		# the skinned boundary vertex-for-vertex (each bone's `rest` IS its polygon vertex, weighted
-		# ~0.99997 to its own arm), so one cell is the honest bar and it holds. Inside the four CORNER
-		# cells the mask runs `corner_points()`, which models the art's bite as a parallelogram and is
-		# exact only while that cell is a rectangle — i.e. at rest.
 		var worst_edge := 0.0
 		var worst_edge_at := Vector2.ZERO
 		var worst_corner := 0.0
@@ -647,22 +534,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 			elif d > worst_edge:
 				worst_edge = d
 				worst_edge_at = p
-		# ⚠ **ONE AND A HALF CELLS, AND THE HALF IS THE WEDGE INDEX — NOT HEADROOM.** The mask is
-		# radial: `WEDGES = 32` slots (11.25° each) decide which polygon segment a fragment tests
-		# against, so its quantization is ANGULAR, not linear, and near a slot boundary the miss is a
-		# chord across the slot rather than a pixel. A flat one-cell bar is the wrong SHAPE for that
-		# error, not merely too tight. Measured worst across the loop: **1.50 art units at t=0.30, and
-		# exactly 0.00 at rest**, ~0.48 at t=0.15.
-		#
-		# ⚠ **RE-MEASURED WHEN THE CARD GREW TO 40x54 (was 1.34 on the 38x50 card), AND THE INCREASE IS
-		# THE MODEL, NOT A REGRESSION.** The error is a chord across an angular slot, so it is
-		# proportional to the RADIUS at which it is taken: a wider card puts the same 11.25° of
-		# quantization across more art units. 1.34 -> 1.50 is +12 % against a card that grew +5 % in x
-		# and +8 % in y with a pinch pose that scales with it. A bar that stayed at 1.5 would have been
-		# a bar that got tighter every time the card changed size, for no reason anyone chose.
-		# ⚠ DO NOT RAISE IT TO GO GREEN — if this fails, either the outline walk or the wedge table
-		# changed. Re-measure deliberately (raise it, read the reported worst, put it back) as was done
-		# here, and say what moved.
 		const EDGE_WEDGE_DRIFT := 1.7
 		check(worst_edge <= cell * EDGE_WEDGE_DRIFT,
 				"t=%.2f: along the EDGES the mask tracks the drawn face to within the wedge index" % t,
@@ -670,20 +541,6 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				+ "skinned boundary and should be exact to quantization, so this is a real defect. "
 				+ "%d mask-without-art, %d art-without-mask")
 				% [worst_edge, worst_edge_at, cell, no_art, no_mask])
-		# ⚠ **A PINNED, MEASURED ALLOWANCE — NOT A TOLERANCE PICKED TO GO GREEN.** The corner bite is a
-		# KNOWN approximation (see `solatro/todo.md`), and the number below is the measured worst drift
-		# across the rig's whole loop plus nothing: **2.45 at t=0.30, 2.39 at t=0.45, 1.21 at t=0.15 and
-		# exactly 0 at rest** — re-measured on the 40x54 card (it was 2.38 / 2.18 / 0 at 38x50). The
-		# parallelogram is a fraction OF THE CORNER CELL, so like the edge bar above it grows with the
-		# card rather than staying put; +3 % against a card that grew +5 %.
-		# It is deliberately tight so that any WORSENING of the corner model fails here, and it is
-		# stated rather than hidden so the next reader knows the bite is modelled and not exact.
-		# ⚠ **DO NOT RAISE IT TO GO GREEN.** If this fails, `corner_points()` changed; fix the model or
-		# re-measure deliberately. The real fix needs the corner cell's fourth (interior) vertex, which
-		# means re-doing the skinning from `Polygon2D.bones` weights.
-		# In CELLS, like EDGE_WEDGE_DRIFT above (`cell` is 1.0 today, so the numbers read the same) —
-		# two bounds in different units would silently invert their relative strictness the first
-		# time someone tunes `pixel` on fire_card.tres.
 		const CORNER_BITE_DRIFT := 2.6
 		check(worst_corner <= cell * CORNER_BITE_DRIFT,
 				"t=%.2f: and the CORNER bite stays within its measured %.1f-unit approximation"
@@ -693,10 +550,11 @@ func test_the_card_mask_is_the_card_the_player_sees() -> void:
 				% [worst_corner, worst_corner_at])
 		_report_stand_in_fidelity(t, rig)
 
-## How far `p` is from the silhouette's OUTLINE — the polygon's edges, not its interior. Zero on the
-## boundary and growing in BOTH directions, which is what makes it the right measure for a
-## disagreement: a cell that should have been masked and one that should not are equally wrong, and
-## both are only forgivable while they hug the edge.
+# Zero on the boundary and growing in BOTH directions, which is what makes it the right measure: a
+# cell that should have been masked and one that should not are equally wrong, and both are only
+# forgivable while they hug the edge.
+
+## How far `p` is from the silhouette's OUTLINE — the polygon's edges, not its interior.
 func _distance_to_outline(p: Vector2, poly: PackedVector2Array) -> float:
 	if poly.size() < 2: return 0.0
 	var best := INF
@@ -706,9 +564,9 @@ func _distance_to_outline(p: Vector2, poly: PackedVector2Array) -> float:
 		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, a, b)))
 	return best
 
-## Whether the drawn face covers the art point `p`: 1 yes, 0 no, -1 undecidable because `p` sits on the
-## boundary, where the answer belongs to the rasterizer. Read as a 3x3 screen-pixel neighbourhood, which
-## at this zoom is well under half an FX cell.
+# Read as a 3x3 screen-pixel neighbourhood, which at this zoom is well under half an FX cell.
+
+## Whether the drawn face covers art point `p`: 1 yes, 0 no, -1 undecidable (the rasterizer's call).
 func _art_at(img: Image, p: Vector2, centre: Vector2) -> int:
 	var at := centre + p * _zoom
 	var opaque := 0
@@ -724,17 +582,16 @@ func _art_at(img: Image, p: Vector2, centre: Vector2) -> int:
 	if opaque == seen: return 1
 	return -1
 
-## Whether `CardVisual.star_outline` — the shape EVERY other FX harness draws — is a shape this rig
-## actually makes. Reported, never asserted: it is a statement about the harnesses, not about the game,
-## and the number is what tells a reader how far to trust a warp panel.
-##
-## The best-fit warp is read off the CORNERS, since that is the only thing `star_outline` moves; the
-## deviation is then the largest distance from a real arm tip to the stand-in's matching point.
+# Reported, never asserted: a statement about the harnesses, not about the game, and the number tells
+# a reader how far to trust a warp panel. The deviation is the largest distance from a real arm tip
+# to the stand-in's matching point.
+
+# The warp is FIT by scanning rather than derived from the corners: the outline carries the art's
+# corner BITE, so a corner is three points and none sits at the corner's own radius. The scan makes
+# the number mean the closest this stand-in can get, whatever `warp` would have to be.
+
+## Whether `star_outline`, the shape every other FX harness draws, is a shape this rig makes.
 func _report_stand_in_fidelity(t: float, rig: PackedVector2Array) -> void:
-	# FIT the warp rather than deriving it from the corners: the outline carries the art's corner BITE
-	# now, so a corner is three points and none of them sits at the corner's own radius. A scan is a few
-	# hundred vector subtractions and it makes the number mean what it says — the closest this stand-in
-	# can get, whatever `warp` would have to be.
 	var best_warp := 0.0
 	var worst := INF
 	var at := 0
@@ -756,35 +613,35 @@ func _report_stand_in_fidelity(t: float, rig: PackedVector2Array) -> void:
 	TestLog.line("    [stand-in] t=%.2f  star_outline(warp=%.2f) is the closest hand model of this "
 			% [t, best_warp] + "rig; it is off by %.2f art units at point %d" % [worst, at])
 
-## A REAL `CardVisual`, its animation parked at `secs`, its face reduced to solid geometry, its rig
-## already handed to the mask. Null when the scene has no rig to read (which would make the whole
-## check meaningless, and is itself worth failing on).
-##
-## ⚠ CONTEXT IS **NOT** `PLAY_AREA`: `delta_self_moving_logic` queue_frees a play-area card the moment
-## it cannot find its data in a running game's play area, so a card built that way deletes itself on
-## its first frame in a test.
+# Null when the scene has no rig to read, which would make the whole check meaningless and is itself
+# worth failing on.
+
+# ⚠ CONTEXT IS NOT `PLAY_AREA`: `delta_self_moving_logic` queue_frees a play-area card the moment it
+# cannot find its data in a running game's play area, so a card built that way deletes itself on its
+# first frame in a test.
+
+# ⚠ The animation is named, NOT taken from `ap.autoplay` — the idle is no longer autoplayed, so
+# reading that flag would make the loop measure the REST pose at every t and still pass.
+
+# ⚠ THE FACE KEEPS ITS TEXTURE: the mask carries the art's clipped corners (`_rig_outline`), so a
+# geometry-only face has SQUARE corners and reports the fix as four disagreements. The reference has
+# to be the drawing whenever the mask models the drawing.
+
+# Everything else on the face is hidden only to keep the comparison to one layer, and one frame is
+# awaited for the seek to reach the skinned polygons before the rig is re-read into the mask — the
+# same call `_process` makes every frame on a board card.
+
+## A REAL `CardVisual`, its animation parked at `secs`, its rig already handed to the mask.
 func _real_card(secs: float) -> CardVisual:
 	var card := await _host_card()
 	var ap := card.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	# ⚠ NOT `ap.autoplay` — the idle is no longer autoplayed (CardVisual.RIG_ANIM says why). Reading
-	# the flag here would make this whole loop measure the REST pose at every t and still pass.
 	if ap and ap.has_animation(CardVisual.RIG_ANIM):
 		ap.play(CardVisual.RIG_ANIM)
 		ap.seek(secs, true)
 		ap.pause()
-	# THE FACE AS THE PLAYER SEES IT — its own TypePaper texture on its own skinned grid, so the drawn
-	# silhouette is the art's ALPHA, corner bite included.
-	#
-	# ⚠ AN EARLIER DRAFT NULLED THE TEXTURE to measure the skinned geometry alone, and that was right
-	# only while the mask was the bare rig: now that the mask carries the art's clipped corners
-	# (`CardVisual._rig_outline`), a geometry-only face has SQUARE corners and reports the fix as four
-	# disagreements. The reference has to be the drawing whenever the mask models the drawing.
-	# Everything else on the face sits inside it and is hidden only to keep the comparison to one layer.
 	card.type.show()
 	for poly : Polygon2D in [card.rank, card.suit, card.stamp, card.art] as Array[Polygon2D]:
 		poly.hide()
-	# One frame for the seek to reach the skinned polygons, then re-read the rig into the mask — the
-	# same call `_process` makes every frame on a board card.
 	await await_drawn_frames(1)
 	card._track_fx_outline()
 	check(not card._rig_arms.is_empty(),
@@ -793,9 +650,9 @@ func _real_card(secs: float) -> CardVisual:
 			+ "say anything about a deforming card")
 	return card if card.fx else null
 
-# A real CardVisual on the stage, parked and still. `_process` is off because `delta_self_moving_logic`
-# queue_frees any non-PLAY_AREA card without a `control_anchor` on its first frame; `floating` off
-# stops the bob and the basis3d flip; scale is reset AFTER `_ready` wrote card_scale into it.
+# A real CardVisual on the stage, parked and still. `_process` is off because
+# `delta_self_moving_logic` queue_frees any non-PLAY_AREA card without a `control_anchor` on its
+# first frame; `floating` off stops the bob; scale is reset AFTER `_ready` wrote card_scale into it.
 func _host_card() -> CardVisual:
 	_zoom_to_fit(CardVisual.CARD_SIZE.length() * 0.5 + 6.0)
 	var card := CardVisual.CARD_VISUAL.instantiate() as CardVisual
@@ -820,13 +677,18 @@ func _host_fire(body: Vector2, stacks: int, style: FxFireStyle) -> void:
 	att.sync([FxFire.request(&"fire", stacks, style)] as Array[FxRequest])
 	_park(att, 0.0)
 
-## The juggling pattern at a fixed phase, with no ball on fire (this suite is about the balls).
-##
-## `deg` turns the HOST the attachment hangs under, which is the only way to exercise the
-## counter-rotation: `_push_live` reads `get_parent().global_rotation`, so a rotation put on the
-## attachment itself would be overwritten on the first push. A turned host also declares
-## `rotates`, exactly as a spinning card does, so the quad takes the diagonal bound it would
-## really get.
+# `deg` turns the HOST the attachment hangs under, the only way to exercise the counter-rotation:
+# `_push_live` reads `get_parent().global_rotation`, so a rotation on the attachment itself is
+# overwritten on the first push. A turned host also declares `rotates`, as a spinning card does.
+
+# ⚠ The seed and direction are pinned BEFORE `sync` — the quads read them as they are BUILT, unlike
+# the clock, which is pushed afterwards. The seed drives the ball's SPIN, the spin rotates the
+# shading frame, and that frame decides where the highlight sits.
+
+# Leaving the seed random made `test_ball_reads_as_a_sphere` fail intermittently, at 4.5 px against
+# an 8 px bound, through no fault of the shader. A rendering test with a random input is not a test.
+
+## The juggling pattern at a fixed phase, with no ball on fire.
 func _host_balls(n: int, style: FxJuggleStyle, phase: float, dir: float = 1.0,
 		deg: float = 0.0) -> void:
 	var geo := FxJuggle.geometry(n, style)
@@ -843,37 +705,27 @@ func _host_balls(n: int, style: FxJuggleStyle, phase: float, dir: float = 1.0,
 		host.add_child(att)
 	else:
 		_place(att, 1.0)
-	# Pin the host's randomness BEFORE sync: the quads read `_seed` and `_ball_dir` as they are BUILT,
-	# unlike the clock, which is pushed afterwards (VFX.md §4.4).
-	#
-	# ⚠ THE SEED MATTERS AS MUCH AS THE DIRECTION, and leaving it random is what made
-	# `test_ball_reads_as_a_sphere` fail intermittently. The seed drives the ball's SPIN, the spin
-	# rotates the shading frame, and that frame decides where the highlight sits — so a seed that
-	# happened to roll the highlight near the ball's centre failed the "highlight is off-centre"
-	# assertion through no fault of the shader (measured 4.5 px against an 8 px bound, 2026-07-30).
-	# A rendering test with a random input is not a test.
 	att._seed = SEED
 	att._ball_dir = dir
 	att.sync(FxJuggle.requests(n, PackedInt32Array(), style, StatusJuggling.BALL_FIRE_STYLE))
 	_park(att, phase)
 
+# ⚠ ORDER: `_push_live` ends with `set_process(not _fx.is_empty())`, so disabling the process before
+# pushing re-enables it and the awaited frames then advance the phase — which is exactly the false
+# "ball positions are wrong" this suite would otherwise report. Disable it LAST.
+
 ## Park an attachment's clock at a FIXED time and phase so the image is reproducible.
-## ⚠ ORDER: `_push_live` ends with `set_process(not _fx.is_empty())`, so disabling the process before
-## pushing silently re-enables it and the awaited frames then advance the phase — which is exactly
-## the false "ball positions are wrong" this suite would otherwise report. Disable it LAST.
 func _park(att: FxAttachment, phase: float) -> void:
 	att._time = 3.7
 	att._phase = phase
 	att._push_live(0.0)
 	att.set_process(false)
 
-## Fire with every source of raggedness off: this suite measures GEOMETRY, and the noise exists
-## precisely to hide geometry.
-##
-## ⚠ `noise_amp = 0` IS NOT "NOISE DISABLED", IT IS NOISE HELD FLAT AT 0.5 (see `fire_noise` in
-## `fire.gdshader`). That matters for reading the numbers below: the shaped value is
-## `cover * (((cover + aperture) * 0.5 - aperture) * gain)`, a clean monotone function of cover
-## alone, which is exactly what makes the cover field measurable at all.
+# ⚠ `noise_amp = 0` IS NOT "NOISE DISABLED", IT IS NOISE HELD FLAT AT 0.5 (see `fire_noise` in
+# `fire.gdshader`), leaving `cover * (((cover + aperture) * 0.5 - aperture) * gain)` — a clean
+# monotone function of cover alone, which is what makes the cover field measurable at all.
+
+## Fire with every source of raggedness off: this suite measures GEOMETRY.
 func _plain_fire_style() -> FxFireStyle:
 	var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
 	style.noise_amp = 0.0
@@ -881,18 +733,24 @@ func _plain_fire_style() -> FxFireStyle:
 	style.skew = 0.0
 	return style
 
-## Crossing comes from the ARC LADDER, not from a per-ball mirror (fixed 2026-07-28). Three
-## statements, because the oracle check above cannot prove this on its own — an oracle that mirrored
-## the same balls as the shader would agree with it:
-##
-## 1. Ball 1 sits where the LADDER puts it, and NOT at the reflection of that spot. Before the fix
-##    the odd balls were mirrored, so this is exactly the assertion that flipped.
-## 2. Flipping the host's coin reflects the WHOLE pattern, not one ball.
-## 3. THE REGRESSION GUARD: at a count where the ball count equals the arc count, the balls must not
-##    all travel the same way. That is the bug the mirror caused — the arc ladder alternates sweep
-##    per arc, consecutive balls sit in consecutive arcs, and the per-ball mirror cancelled it, so
-##    at 2, 4 and 6 balls every one of them ran in one direction and half the pattern sat empty
-##    (owner report). Checked on the oracle, which is what the render is pinned to above.
+# Crossing comes from the ARC LADDER, not from a per-ball mirror. Three statements, because the
+# oracle check above cannot prove this alone: an oracle that mirrored the same balls as the shader
+# would agree with it.
+
+# 1. Ball 1 sits where the LADDER puts it, NOT at the reflection of that spot. 2. Flipping the host's
+# coin reflects the WHOLE pattern, not one ball. 3. The regression guard below: where the ball count
+# equals the arc count, the balls must not all travel the same way.
+
+# The arc ladder alternates sweep per arc and consecutive balls sit in consecutive arcs, so a
+# per-ball mirror cancels it and at 2, 4 and 6 balls every one runs the same way with half the
+# pattern empty. Checked on the oracle, which is what the render is pinned to above.
+
+# ⚠ The search radius is read AFTER `_host_balls`, which is what sets `_zoom`. Read before it, it
+# comes off whatever the PREVIOUS shot fitted itself to, and a retune of `ball_span` or
+# `ball_arc_max` silently makes the window too tight (a ball missing) or too loose (the mirror hit).
+
+# The flip is compared as a MIDPOINT (position + end), whose reflection about the stage centre is
+# `2 * VP_SIZE` minus it.
 func test_balls_alternate_directions() -> void:
 	behavior_section("BALLS CROSS VIA THE ARC LADDER, AND THE HOST PICKS A SIDE")
 	var style : FxJuggleStyle = StatusJuggling.JUGGLE_STYLE
@@ -900,10 +758,6 @@ func test_balls_alternate_directions() -> void:
 	var phase := 0.15
 	var mid := Vector2(VP_SIZE, VP_SIZE) * 0.5
 	_host_balls(2, style, phase, 1.0)
-	# ⚠ AFTER `_host_balls`, WHICH IS WHAT SETS `_zoom`. Read before it, this search radius came off
-	# whatever the PREVIOUS shot had fitted itself to — the two happen to clamp to the same ZOOM today,
-	# so it was right by luck, and a retune of `ball_span` or `ball_arc_max` would silently make the
-	# window too tight (a ball reported missing) or too loose (the mirrored spot found).
 	var reach := int(ceilf(BALL_TOLERANCE * _zoom)) + 2
 	var is_ball := PixelProbe.ball_pixel(style)
 	var img := await _shoot()
@@ -913,15 +767,12 @@ func test_balls_alternate_directions() -> void:
 	var here := PixelProbe.nearest(img, mid + expected[1] * _zoom, reach, is_ball)
 	var reflection := Vector2(-expected[1].x, expected[1].y)
 	var there := PixelProbe.nearest(img, mid + reflection * _zoom, reach, is_ball)
-	# Through typed locals: a Dictionary lookup is a Variant, and `check()` takes a bool.
 	var found_here : bool = here[&"found"]
 	var found_there : bool = there[&"found"]
 	check(found_here and not found_there,
 			"ball 1 sits where the ARC LADDER puts it, not at the mirror of it",
 			"at its ladder spot: %s; at the mirrored spot: %s" % [found_here, found_there])
 	_check_directions_split()
-	# Reflect the whole pattern by flipping the host's coin. Compared as a MIDPOINT (position + end),
-	# whose reflection about the stage centre is 2*VP_SIZE - it.
 	var plus := PixelProbe.bounds(img, Rect2i(Vector2i.ZERO, img.get_size()), is_ball)
 	_host_balls(2, style, phase, -1.0)
 	var flipped_img := await _shoot()
@@ -934,26 +785,26 @@ func test_balls_alternate_directions() -> void:
 			% [plus.position.x, plus.end.x, minus.position.x, minus.end.x, want_sum,
 			minus.position.x + minus.end.x])
 
-## THE REGRESSION GUARD (see the docstring above). Sample every ball's x a hair apart in the cycle at
-## the counts where the ball count EQUALS the arc count — 2, 4 and 6, which is where the cancellation
-## was total — and require both directions to be present. A per-ball mirror makes every one of these
-## unanimous, which is what left half the pattern empty.
+# Sample every ball's x a hair apart in the cycle at the counts where the ball count EQUALS the arc
+# count — 2, 4 and 6, where the cancellation is total — and require both directions to be present.
+
+# ⚠ THAT PRECONDITION IS CHECKED, NOT `continue`-D PAST: retune `ball_arcs_per_count` and none of
+# these counts matches any more, so a silent skip leaves the regression guard testing nothing while
+# the suite stays green.
+
+# Two samples a hair apart for every ball at once — the walk is over `i`, not the oracle, which was
+# otherwise rebuilt identically once per ball.
+
+## THE REGRESSION GUARD: a per-ball mirror makes every one of these counts unanimous.
 func _check_directions_split() -> void:
 	var style : FxJuggleStyle = StatusJuggling.JUGGLE_STYLE
 	for count : int in [2, 4, 6]:
 		var geo := FxJuggle.geometry(count, style)
-		# ⚠ THE PRECONDITION IS CHECKED, NOT `continue`-D PAST. This was a silent skip, and it guarded
-		# the one condition that makes the guard mean anything: the cancellation was total only where
-		# the ball count EQUALS the arc count. Retune `ball_arcs_per_count` and every one of these
-		# counts stops matching, so the regression check would quietly test nothing while the suite
-		# stayed green — which is the exact failure this file's own header refuses to allow.
 		var arcs := int(geo[&"u_ball_arcs"])
 		check(arcs == count,
 				"%d balls still ride %d arcs, which is what makes this the cancelling case" % [count, count],
 				"arcs = %d — a retune moved this off the interesting counts, so pick new ones" % arcs)
 		if arcs != count: continue
-		# Two samples a hair apart in the cycle, for every ball at once — the walk is over `i`, not the
-		# oracle, which was being rebuilt identically once per ball.
 		var a := PixelProbe.ball_positions(float(count), 0.30, geo[&"u_span"],
 				geo[&"u_arc_height"], geo[&"u_return_height"], style.ball_top_fraction,
 				style.ball_gravity, 1.0, geo[&"u_ball_arcs"])
@@ -968,14 +819,16 @@ func _check_directions_split() -> void:
 				% [count, int(geo[&"u_ball_arcs"])],
 				"%d of %d moving +x" % [right, count])
 
-## Ruling 10 — a host's `modulate` reaches the EFFECTS it carries, not just its own art. The renderer
-## folds it into COLOR before the fragment function; both FX shaders used to OVERWRITE COLOR, so
-## anything a host did to its colour stopped at the art (owner report). That multiply is what makes a
-## prop's exit fade carry its flames, which is the shipped driver of it.
-##
-## Stated as pixels: render each effect twice, once plain and once under the card's own highlight
-## modulate, and require the highlighted one to come out BRIGHTER. Alpha is checked the same way
-## (halved modulate → less coverage), which is the fade half of the same mechanism.
+# A host's `modulate` reaches the EFFECTS it carries, not just its own art. The renderer folds it
+# into COLOR before the fragment function, so an FX shader that OVERWRITES COLOR stops anything the
+# host did to its colour at the art. That multiply is what makes a prop's exit fade carry its flames.
+
+# Stated as pixels: each effect twice, once plain and once under the card's own highlight modulate,
+# with the highlighted one required to come out BRIGHTER. Alpha the same way — a halved modulate
+# means less coverage, the fade half of the same mechanism.
+
+# MEAN, not peak: both effects already reach near-white at their hottest and an 8-bit target clamps
+# there, so the peak barely moves under a highlight even when everything else does.
 func test_effects_take_their_host_modulate() -> void:
 	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
 	var highlight := Color(CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW)
@@ -983,8 +836,6 @@ func test_effects_take_their_host_modulate() -> void:
 		var plain := await _shoot_modulated(kind, Color.WHITE)
 		var lit := await _shoot_modulated(kind, highlight)
 		var area := Rect2i(Vector2i.ZERO, plain.get_size())
-		# MEAN, not peak: both effects already reach near-white at their hottest, and an 8-bit target
-		# clamps there — so the peak barely moves under a highlight even when everything else does.
 		var plain_lum := _mean_luminance(plain, area)
 		var lit_lum := _mean_luminance(lit, area)
 		check(plain_lum > 0.0 and lit_lum > plain_lum * 1.05,
@@ -1087,8 +938,9 @@ func _place(node: Node2D, node_scale: float) -> void:
 	node.scale = Vector2.ONE * node_scale
 	_stage.add_child(node)
 
-## Draw the current stage and hand back its image, then clear the stage for the next shot.
-## Two frames: one to apply what was just written, one to be sure it reached the render target.
+# Two frames: one to apply what was just written, one to be sure it reached the render target.
+
+## Draw the current stage, hand back its image, then clear the stage for the next shot.
 func _shoot() -> Image:
 	await await_drawn_frames(2)
 	var img := _vp.get_texture().get_image()
@@ -1131,8 +983,9 @@ func _brightest_pixel(img: Image, area: Rect2i) -> Vector2i:
 				best = Vector2i(x, y)
 	return best
 
-## A bare textured quad, for drawing a card's pip the way CardVisual does — one frame across a
-## frame-sized shape, with card_scale applied by the node's own scale.
+# One frame across a frame-sized shape, with card_scale applied by the node's own scale.
+
+## A bare textured quad, for drawing a card's pip the way CardVisual does.
 class _Sprite extends Node2D:
 	var sheet : Texture2D
 	var src : Rect2

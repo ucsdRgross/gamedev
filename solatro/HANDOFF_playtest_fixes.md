@@ -4,7 +4,7 @@
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1–P5, P7–P9 and the P14 sweep landed, each red-then-green and by eye, committed one
 step per commit. Last gate, on the P9 commit: `ALL 51 SUITES: 5867 CHECKS PASSED`, 22 placeholder
-warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; last gate `5914`, 21 placeholder warnings. Next is the P18 sweep, then P10; every
+warnings, 1150 ObjectDB (the fingerprint). P17 (the sweep P9 owed), P6 and P16 landed too; then the P18 sweep; last gate `5897`, 21 placeholder warnings. Next is P10, then P11; every
 later step has its site map in its `notes:`. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -216,9 +216,9 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/Tests/Visual/test_pixels.gd, solatro/Tests/Visual/fx_snapshot.gd, solatro/Scripts/player_settings.gd]
   verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter Pixels; overseer full gate'
   verification_kind: suite
-  status: pending
-  evidence: ''
-  notes: 'doc_check --changed after P6: 444 findings, all legacy, all in these three. Same rules as P14 and P17.'
+  status: done
+  evidence: 'Findings 254/207/4/5 -> 0/0/0/0 (test_pixels, fx_snapshot, player_settings, pip_suit_test); sweep_check CODE IDENTICAL x4 (655, 555, 383, 13 code lines), re-run by the overseer; doc_check --changed silent, exit 0; dup_check 83, no new pair. FILTERED 1 of 51 [Pixels]: 55 CHECKS PASSED; --logic 3003; fx_snapshot.tscn ran to its last panel, exit 0, 0 SCRIPT ERROR. Overseer gate: ALL 51 SUITES: 5897 CHECKS PASSED, 21 placeholder warnings, the fingerprint exit profile, 0 SCRIPT ERROR.'
+  notes: 'Kept above their methods: every measured tolerance with its derivation (EDGE_WEDGE_DRIFT 1.7, CORNER_BITE_DRIFT 2.6), the ordering constraints, the renderer traps, what each still is for. Four restatements dropped, their text in the P18 commit message. OPEN: fx_snapshot.gd header says rotated panels are not reproducible while _settle_poses claims the cause fixed - both kept; reconciling them is a measurement (snapshot_diff.py NOISY, HEADLESS_TESTING.md section 0b). Two capture() captions in fx_snapshot.gd carry design ids (burned into the PNG header) - code, so not swept.'
 - id: P17
   description: The comment sweep P9 owes - game.gd and test_interaction.gd leave compliant, code byte-identical; sidebar DESIGN.md loses its three dead file references (~220, ~225, ~485).
   files_touched: [solatro/Levels/game.gd, solatro/Tests/Interaction/test_interaction.gd, solatro/design/sidebar/DESIGN.md]
@@ -234,14 +234,13 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   file:line cited in their reports; not re-read by the overseer.
 
 ## Open bugs
-- The SIDEBAR map Deck-button click flake (HEADLESS_TESTING.md section 4) failed 2 of the 6 runs that included SIDEBAR after P6 landed (one full gate, one filtered run), each green on the single rerun; 0 of 3 gates before P6. Not yet measured whether the rate moved - run `--filter Sidebar` N times at 30143594 and at HEAD before naming a cause.
+- The SIDEBAR map Deck-button click flake (HEADLESS_TESTING.md section 4) failed twice after P6 landed - 1 of the overseer's 3 full gates since, and 1 of an implementer's filtered Sidebar runs (its total not counted) - each green on the single rerun; 0 of the 3 overseer gates before P6. Not yet measured whether the rate moved - run `--filter Sidebar` N times at 30143594 and at HEAD before naming a cause.
 - none else beyond the tasks. OWNER, R5 reading to confirm: a drag released off a legal cell puts the card back over its slot but it stays IN HAND (lifted, drop map lit) until placed or cancelled - 'release anywhere else returns it' was read as returns-to-slot, not drops-the-hold. From the bloat review of the P9 commit (opus, read-only): `PlayArea.rest_focus_on_board()` keeps a fallback for a held card with no control, whose only named producer was the deleted auto-arm - settle by `assert` plus a suite run, back it out if a fixture fires it; `_release_places` and `follow_cards` each have one call site (both predate P9).
 
 ## Next up
-1. P18 (the sweep P6 and P16 owe).
-2. P10 before P11: both re-derive geometry in _physics_process; P11 also depends on P9.
-3. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
-4. After the last step: `/docs` folds this file away; the owner merges the branch.
+1. P10 before P11: both re-derive geometry in _physics_process; P11 also depends on P9.
+2. P12 before P13: both edit hud_container.gd and map.gd and re-point the same inset gates (test_sidebar ~846/854, ~1087, ~1172); P13 inherits P12's rewritten set. P15 is small.
+3. After the last step: `/docs` folds this file away; the owner merges the branch.
 
 ### Opening prompt for the next session (paste as is)
 

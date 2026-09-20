@@ -1,62 +1,49 @@
 extends SnapshotScene
 # res://Tests/Visual/fx_snapshot.gd
-# ==============================================================================
-# FX SNAPSHOTS — the visual half of the FX test plan.
-#
-# The headless suite cannot see a single pixel: --headless uses the dummy renderer, which never
-# compiles a shader program, so a GLSL syntax error, an inverted sign, a flame growing DOWNWARD or
-# an effect that draws nothing at all all pass it silently. This scene is the same code path run
-# WINDOWED, where the GPU compiles and rasterizes for real: it lays out a grid of cases, captures
-# the viewport, writes PNGs, and quits. A human (or an agent) reviews the images.
-#
-# Run it after ANY shader edit:
+
+# FX SNAPSHOTS — the visual half of the FX test plan. --headless uses the dummy renderer, which
+# never compiles a shader program, so a GLSL error, an inverted sign or an effect that draws nothing
+# at all pass the suite silently. Run this WINDOWED after ANY shader edit; a human reviews the PNGs.
+
 #     Godot --path solatro res://Tests/Visual/fx_snapshot.tscn
 # Output: user://fx_snapshots/*.png — on Windows,
 #     %APPDATA%\Godot\app_userdata\Solatro\fx_snapshots\
-#
-# Deliberately NOT in all_tests.tscn: it needs a window and a GPU, so it stays a separate,
-# explicit run rather than something that breaks CI-style headless invocations.
-#
+
+# Deliberately NOT in all_tests.tscn: it needs a window and a GPU.
+
 # Determinism: the RNG is seeded and each attachment's clock is DRIVEN BY HAND to a fixed time
 # rather than left to accumulate from real frame deltas, so two runs of an unchanged shader produce
 # identical images and a diff means a real change.
-#
-# ⚠ EVERY PANEL WITH A **ROTATED** HOST IS NOT REPRODUCIBLE, and that is a property of rotated hosts
-# rather than of any one shot. Re-measured 2026-07-30 across all three harnesses, two consecutive runs
-# of an unchanged build with the per-host seed pinned: `02_fire_rotation` 12392 px, `05f_ball_rotation`
-# 1035 px and `fx_behind`'s `behind_prop_turned` 15506 px, while every UPRIGHT panel in all three sets
-# came back byte-identical. So the rotated shots are for EYE review ("are the flames upright, are the
-# pixels square") and a pixel diff of one means nothing; `snapshot_diff.py` lists them in NOISY.
-#
-# ⚠ THE CAUSE IS STILL UNKNOWN AND THE OLD ONE IS RETIRED. This used to blame screen-space
-# `fx_bayer(FRAGCOORD.xy)` — a fair hypothesis, but the dither moved onto the FX pixel grid in the
-# simplify pass and the flakiness did not go with it. Pinning `_seed` (which this scene was NOT doing
-# for fire, see `_attach_for`) does not remove it either. `test_pixels.gd` carries the standing warning
-# about what that costs: a real optimisation was reverted on the evidence of one flaky rotated shot.
-# ==============================================================================
+
+# ⚠ A PANEL WITH A ROTATED HOST IS FOR EYE REVIEW ONLY — are the flames upright, are the pixels
+# square. Two runs of one unchanged build differed by 12392 px (`02_fire_rotation`), 1035 px
+# (`05f_ball_rotation`) and 15506 px (`behind_prop_turned`); every UPRIGHT panel was identical.
+
+# `snapshot_diff.py` lists those panels in NOISY: a pixel diff of one means nothing.
 
 const OUT_DIR := "user://fx_snapshots"
 
-## Where each shot's clock is parked. Not zero: at t = 0 every noise term is at its starting
-## value and the flames look artificially uniform.
+## Where each shot's clock is parked. Not zero: at t = 0 every noise term is at its starting value.
 const SHOT_TIME := 3.7
 
-## The per-host random every shot pins. `FxAttachment._seed` is otherwise `randf() * 100.0` drawn in
-## the constructor, and it drives the fire's noise offset — so leaving it free makes a panel's
-## raggedness an artefact of where the global RNG happened to be, which is precisely the input
-## `snapshot_diff.py` cannot tolerate. Any value works; this is simply one that is the same every run.
+# `FxAttachment._seed` is otherwise `randf() * 100.0` drawn in the constructor and it drives the
+# fire's noise offset, so leaving it free makes a panel's raggedness an artefact of where the global
+# RNG landed. Any value works; this one is simply the same every run.
+
+## The per-host random every shot pins.
 const SHOT_SEED := 12.5
 
-## The light layer's shader and the size of its uniform arrays. ⚠ `LIGHT_MAX` must equal
-## `MAX_LIGHTS` in `light.gdshader`: Godot matches an array uniform by DECLARED SIZE, and a shorter
-## array is rejected whole rather than partially filled — the same trap `FxGlowStyle` pads around.
+# ⚠ `LIGHT_MAX` must equal `MAX_LIGHTS` in `light.gdshader`: Godot matches an array uniform by
+# DECLARED SIZE, and a shorter array is rejected whole rather than partially filled — the same trap
+# `FxGlowStyle` pads around.
+
+## The light layer's shader and the size of its uniform arrays.
 const LIGHT_SHADER := preload("res://Shaders/light.gdshader")
 const LIGHT_MAX := 64
 
-## The suits the light-layer board is dealt from — several, because a real board is mixed and the
-## dim has to be judged over more than one art square. A function rather than an array of classes:
-## a class name is not a constant expression in GDScript, so `const [PipSuitKnife, …]` will not
-## parse.
+# Several suits, because a real board is mixed and the dim has to be judged over more than one art
+# square. A function rather than an array of classes: a class name is not a constant expression in
+# GDScript, so `const [PipSuitKnife, …]` will not parse.
 func _shot_suit(i: int) -> PipSuit:
 	match i % 4:
 		0: return PipSuitKnife.new()
@@ -64,8 +51,10 @@ func _shot_suit(i: int) -> PipSuit:
 		2: return PipSuitHoop.new()
 		_: return PipSuitFire.new()
 
-## Largest art-unit-to-pixel blow-up. Cards are 38x50 art units; at 1:1 a whole flame is a few pixels
-## and nothing is reviewable. Each shot may use LESS than this — see _zoom_for.
+# Cards are 38x50 art units; at 1:1 a whole flame is a few pixels and nothing is reviewable. Each
+# shot may use LESS than this — see `_zoom_for`.
+
+## Largest art-unit-to-pixel blow-up.
 const ZOOM_MAX := 5.0
 
 func _ready() -> void:
@@ -117,18 +106,18 @@ func _run() -> void:
 
 # ------------------------------------------------------------------ the shots
 
-## THE COVER FIELD, NAKED — `noise_amp = 0` and no dither, so what is on screen is the tap ladder
-## and nothing else. Cover is read off the FIRST tap that lands inside the mask, so it steps once per
-## tap: at `n` taps the flame is `n` visible horizontal bands, the lowest flush with the card's top
-## edge and the highest at exactly `height` above it.
-##
-## ⚠ THIS SHOT IS THE COST KNOB, NOT A LOOK KNOB. The shader is `mask_level` call count times cost
-## per call and nothing else (FX_HANDOFF §9), so these panels are 2x to 4x apart in price. **4 is
-## what ships.** What to look for: whether the banding at 4 is still visible once `noise_amp` is
-## turned back up — if it is not, 6 and 8 are pure waste, which is the whole bet the noise model
-## makes.
-##
-## The replacement for `00_tendril_count`, which counted a comb that no longer exists.
+# Cover is read off the FIRST tap that lands inside the mask, so it steps once per tap: at `n` taps
+# the flame is `n` horizontal bands, the lowest flush with the card's top edge and the highest at
+# exactly `height` above it.
+
+# ⚠ THIS SHOT IS THE COST KNOB, NOT A LOOK KNOB: the shader costs `mask_level` call count times cost
+# per call and nothing else, so the panels are 2x to 4x apart in price. 4 is what ships. Look at
+# whether the banding at 4 is still visible once `noise_amp` is back up; if not, 6 and 8 are waste.
+
+# `cover_dither` is zeroed here and ONLY here: the phase dither every shipped style carries is what
+# hides the raw ladder this shot exists to show.
+
+## THE COVER FIELD, NAKED — `noise_amp = 0` and no dither, so on screen is the tap ladder alone.
 func _cover_field() -> Array[Case]:
 	var out : Array[Case] = []
 	for taps : int in [2, 3, 4, 6, 8]:
@@ -136,8 +125,6 @@ func _cover_field() -> Array[Case]:
 		style.cover_taps = taps
 		style.noise_amp = 0.0
 		style.dither = 0.0
-		# The RAW ladder is the whole point of this shot, so the phase dither that hides it in every
-		# shipped style is off here — and only here.
 		style.cover_dither = 0.0
 		style.height = 20.0
 		var live : Dictionary[StringName, float] = FxFire.stacks_live(6, style)
@@ -146,25 +133,17 @@ func _cover_field() -> Array[Case]:
 		out.append(_card_case("%d taps" % taps, [req]))
 	return out
 
-## THE TWO SHAPE KNOBS, at full noise — because that is the only state they mean anything in. The
-## flame is `cover * (((cover + aperture) * noise - aperture) * gain)`, so:
-##  * **aperture** is a CUT: at average noise the value is zero at `cover = aperture`, so it is the
-##    cover threshold below which nothing burns. LOW leaves a solid body of fire filling its whole
-##    reach; HIGH eats the flame back toward its base.
-##  * **gain** is contrast on what survives. Low is a soft gradient over the whole flame; high slams
-##    it to the hot end and leaves a thin cool rim.
-## They are not interchangeable and the panels have to show that: **0.10/4.0 is a solid bright
-## block, 0.35/2.2 is the shipped ragged flame, 0.90/1.2 is a few flecks at the base.** If every
-## panel looks the same, the noise is not reaching the shaping term.
-##
-## ⚠ THE APERTURE'S DIRECTION WAS DOCUMENTED BACKWARDS in the first build of this shot, and this
-## panel is what caught it — which is the entire reason it exists.
-##
-## The replacement for `00b_ogee_profile`, which isolated an arch that no longer exists.
+# The flame is `cover * (((cover + aperture) * noise - aperture) * gain)`. APERTURE is a CUT — the
+# cover threshold below which nothing burns, so HIGH eats the flame back toward its base. GAIN is
+# contrast on what survives: low is a soft gradient, high slams it to the hot end over a cool rim.
+
+# The panels must not look alike, or the noise is not reaching the shaping term: 0.10/4.0 a solid
+# bright block, 0.35/2.2 the shipped ragged flame, 0.90/1.2 a few flecks at the base. Three panels,
+# not five — the quad is sized to the flame HEIGHT, so more panels zoom out past legible.
+
+## THE TWO SHAPE KNOBS, at full noise — the only state they mean anything in.
 func _aperture_profile() -> Array[Case]:
 	var out : Array[Case] = []
-	# Three, not five: the quad is sized to the flame HEIGHT, so more panels means a smaller zoom
-	# and the texture — the only thing this shot is about — stops being legible.
 	var pairs : Array[Vector2] = [Vector2(0.1, 4.0), Vector2(0.35, 2.2), Vector2(0.9, 1.2)]
 	for pair : Vector2 in pairs:
 		var style := StatusBurning.CARD_FIRE_STYLE.duplicate() as FxFireStyle
@@ -177,15 +156,14 @@ func _aperture_profile() -> Array[Case]:
 		out.append(_card_case("aperture %.2f / gain %.1f" % [pair.x, pair.y], [req]))
 	return out
 
-## THE STACK RATIOS, WHICH ARE THE HEADLINE OF THE NOISE BUILD (owner: *"make sure all
-## params have scaling ratios as stacks increase"*). Every knob with a ratio in `FxFireStyle`'s
-## "Stack scaling" group is driven from this one slider, in `FxFire.stacks_live`.
-##
-## What must be true across the five panels, and each is a separate way for the ramps to be wrong:
-##  * the flame gets TALLER, HOTTER (further up the ramp) and MORE SOLID as the count rises;
-##  * the grain gets COARSER rather than merely denser — `noise_scale_ratio` is negative for that;
-##  * **nothing jumps.** At 1 stack every ratio is inert by construction (`log(1) = 0`), so panel one
-##    is the base style exactly, and the rest must read as one continuous progression.
+# Every knob in `FxFireStyle`'s "Stack scaling" group is driven from this one slider, in
+# `FxFire.stacks_live`.
+
+# Three ways the ramps can be wrong: the flame must get TALLER, HOTTER and MORE SOLID as the count
+# rises; the grain must get COARSER rather than merely denser (`noise_scale_ratio` is negative for
+# that); NOTHING JUMPS — at 1 stack every ratio is inert (`log(1) = 0`), so panel one is the base.
+
+## THE STACK RATIOS: every param scales as stacks increase.
 func _fire_ladder() -> Array[Case]:
 	var out : Array[Case] = []
 	for stacks : int in [1, 3, 12, 40, 200]:
@@ -193,8 +171,9 @@ func _fire_ladder() -> Array[Case]:
 				[FxFire.request(&"fire", stacks, StatusBurning.CARD_FIRE_STYLE)]))
 	return out
 
-## Flames are gravity-aligned: the SILHOUETTE turns inside a still quad. Every one of these must
-## show upright flames on a tilted card, with square (never diagonal) pixels.
+# Every one of these must show upright flames on a tilted card, with square (never diagonal) pixels.
+
+## Flames are gravity-aligned: the SILHOUETTE turns inside a still quad.
 func _fire_rotation() -> Array[Case]:
 	var out : Array[Case] = []
 	for deg : int in [0, 30, 45, 90]:
@@ -204,18 +183,15 @@ func _fire_rotation() -> Array[Case]:
 		out.append(case)
 	return out
 
-## THE DEFORMING CARD (owner: *"I don't see fire effect warping with the card during
-## playtesting"*). A card is skinned to a star rig whose animation is on AUTOPLAY, so its top edge is
-## never where the authored 38x50 rectangle says it is — and a silhouette baked once at rest left the
-## flames standing on a shape the card no longer had.
-##
-## Each panel stretches the four CORNERS further out, exactly as the rig does, and the outline drawn
-## under the flames is the SAME one the attachment was handed. So the check is one glance and needs
-## no measuring: **every flame base must sit on the drawn outline**, including out on the corners that
-## moved. A flame hanging in the air off a stretched corner, or a corner left bare, is the bug.
-##
-## The last panel is deliberately past what the rig can reach: the failure it guards against is the
-## quad clipping its own flames, and that shows up first at the extreme.
+# A card is skinned to a star rig, so its top edge is never where the authored 38x50 rectangle says
+# it is, and a silhouette baked once at rest leaves the flames standing on a shape the card does not
+# have. Each panel stretches the four CORNERS as the rig does.
+
+# The outline drawn under the flames is the SAME one the attachment was handed, so the check needs no
+# measuring: EVERY FLAME BASE MUST SIT ON THE DRAWN OUTLINE, stretched corners included. The last
+# panel is past what the rig can reach — a quad clipping its own flames shows up first at the extreme.
+
+## THE DEFORMING CARD: the fire effect warps with the card.
 func _card_warp() -> Array[Case]:
 	var out : Array[Case] = []
 	for warp : float in [0.0, 0.1, 0.25, 0.45]:
@@ -225,22 +201,15 @@ func _card_warp() -> Array[Case]:
 		out.append(case)
 	return out
 
-## MULTIPLE SURFACES IN ONE COLUMN — the behaviour that replaced the deleted `03_fire_wrap`
-## (FX_HANDOFF §1.3), on the shape that has it: the ring holds its outer top arc high up and the
-## upward-facing inner arc at the bottom of its hole far below, in the SAME columns.
-##
-## ⚠ IT STOPPED BEING A SPECIAL CASE. The retired build had to argue that a comb cell
-## spanning the ring grew one tendril on each arc; the cover field simply asks "how far above the
-## nearest surface BELOW me am I", which every fragment in the hole answers with the inner arc and
-## every fragment above the ring answers with the outer one. The stack sweep is kept because it is
-## still the state space that matters — the ratios now change the flame's height and grain, and the
-## ring is where a too-tall flame would first bridge something it must not.
-##
-## What to look for, by EYE:
-##  * every panel lights BOTH surfaces — the outer arc and the floor of the hole;
-##  * the hole's MIDDLE stays empty at every count, at 200 included. A flame bridging the two arcs
-##    would be the ENORMOUS FLAME the owner forbade, and it is impossible by construction: no tap
-##    reaches further than `height`, and the two arcs are 170 art units apart.
+# The ring holds its outer top arc high up and the upward-facing inner arc at the bottom of its hole
+# far below, in the SAME columns. The cover field asks only "how far above the nearest surface BELOW
+# me am I", which the hole answers with the inner arc and everything above the ring with the outer.
+
+# By EYE: every panel lights BOTH surfaces, and the hole's MIDDLE stays empty at every count, 200
+# included. A flame bridging the two arcs is impossible by construction — no tap reaches further
+# than `height`, and the two arcs are 170 art units apart.
+
+## MULTIPLE SURFACES IN ONE COLUMN, on the one shape that has them.
 func _surfaces() -> Array[Case]:
 	var out : Array[Case] = []
 	for n : int in [1, 4, 40, 200]:
@@ -252,12 +221,11 @@ func _surfaces() -> Array[Case]:
 				FxAttachment.Half.WHOLE, [req]))
 	return out
 
-## THE SHOT §1 IS ABOUT. Every panel is the REAL art with the REAL mask read out of its alpha, so
-## what is on screen is exactly what a prop shows.
-##
-## What to look for, by EYE (never by counting columns — that is what reported two rejected builds as
-## successes): flames on EVERY upward-facing surface, the hoop's inner-bottom arc included, with no
-## bare arc anywhere along the ring; every tip vertical; and no flame bridging the hole.
+# By EYE, never by counting columns — counting reported two rejected builds as successes. Flames on
+# EVERY upward-facing surface, the hoop's inner-bottom arc included, no bare arc anywhere along the
+# ring, every tip vertical, and no flame bridging the hole.
+
+## Every panel is the REAL art with the REAL mask read out of its alpha: what a prop actually shows.
 func _shapes() -> Array[Case]:
 	var out : Array[Case] = []
 	out.append(_sprite_case("ring", HoopVisual.SHEET, HoopVisual.FRAMES, FxAttachment.Half.WHOLE,
@@ -270,24 +238,27 @@ func _shapes() -> Array[Case]:
 			FxAttachment.Half.FRONT, [FxFire.request(&"fire", 4, PropVisual.PROP_FIRE_STYLE)]))
 	return out
 
-## The pattern must read as a CLOSED LOOP: a tall arc peaking above the card's top edge and a
-## shallow return across the card's centre, roughly half the balls travelling each way.
+# The pattern must read as a CLOSED LOOP: a tall arc peaking above the card's top edge and a shallow
+# return across the card's centre, roughly half the balls travelling each way. The flipped panel is
+# the host's coin landing the other way — every ball mirrors, and a board shows both.
+
+## The juggling pattern at 1 / 3 / 8 / 50 balls.
 func _balls() -> Array[Case]:
 	var out : Array[Case] = []
 	for n : int in [1, 3, 8, 50]:
 		out.append(_card_case("%d balls" % n, FxJuggle.requests(n, PackedInt32Array(),
 				StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE)))
-	# The same count with the host's coin landing the other way: every ball mirrors, so this is the
-	# other half of what a board actually shows.
 	var flipped := _card_case("8 balls, host flipped", FxJuggle.requests(8, PackedInt32Array(),
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 	flipped.ball_dir = -1.0
 	out.append(flipped)
 	return out
 
-## One ball, stepped around the whole cycle. Laying the loop out phase by phase is the only way to
-## see what path the shader ACTUALLY draws: a single frame shows where the balls are, never
-## whether the tall arc and the shallow return are the ones the spec asks for.
+# Laying the loop out phase by phase is the only way to see what path the shader ACTUALLY draws: a
+# single frame shows where the balls are, never whether the tall arc and the shallow return are the
+# ones the spec asks for.
+
+## One ball, stepped around the whole cycle.
 func _ball_path() -> Array[Case]:
 	var out : Array[Case] = []
 	for step : int in 8:
@@ -298,19 +269,21 @@ func _ball_path() -> Array[Case]:
 		out.append(case)
 	return out
 
-## Is a ball a SPHERE? Only a BIG one can answer: at the shipped radius a ball is 6 art units across
-## and any shading reads as "a warm blob". So the pattern is collapsed to almost nothing (the quad is
-## sized by the arc height, which is what holds the zoom down) and the radius swept from huge to the
-## 1-pixel floor. What to look for: bands that CURVE around the light with a bent terminator, a
-## highlight sitting on the surface rather than centred, and a ball that is still legible at r = 1.
+# Only a BIG ball can answer: at the shipped radius a ball is 6 art units across and any shading
+# reads as a warm blob. The pattern is collapsed to almost nothing — the quad is sized by the arc
+# height, which is what holds the zoom down — and the radius swept to the 1-pixel floor.
+
+# Look for bands that CURVE around the light with a bent terminator, a highlight sitting on the
+# surface rather than centred, and a ball still legible at r = 1. Flattening the loop is geometry
+# only: none of it touches the shading under test.
+
+## Is a ball a SPHERE?
 func _ball_sphere() -> Array[Case]:
 	var out : Array[Case] = []
 	for radius : float in [14.0, 7.0, 3.0, 1.0]:
 		var style := StatusJuggling.JUGGLE_STYLE.duplicate() as FxJuggleStyle
 		style.ball_radius = radius
 		style.ball_radius_min = radius
-		# Park the ball at the top of the throw and flatten the loop, so the quad is small and the
-		# zoom can be large. Geometry only — none of it touches the shading under test.
 		style.ball_span = 1.0
 		style.ball_arc_height = 1.0
 		style.ball_return_height = 1.0
@@ -320,10 +293,11 @@ func _ball_sphere() -> Array[Case]:
 		out.append(case)
 	return out
 
-## GRAVITY on the throw. Eight balls are spaced evenly in TIME around the loop, so where they end up
-## in SPACE is a direct read of the easing: at 1.0 they are evenly spread along the arc, and as it
-## rises they bunch toward the apex (slow there) and thin out at the ends (fast there). The oracle
-## crosses come from the same spec, so the balls must stay on them at every value.
+# Eight balls are spaced evenly in TIME around the loop, so where they end up in SPACE is a direct
+# read of the easing: at 1.0 evenly spread along the arc, and as it rises bunched toward the apex.
+# The oracle crosses come from the same spec, so the balls must stay on them at every value.
+
+## GRAVITY on the throw.
 func _ball_gravity() -> Array[Case]:
 	var out : Array[Case] = []
 	for g : float in [1.0, 1.6, 2.4]:
@@ -335,33 +309,32 @@ func _ball_gravity() -> Array[Case]:
 		out.append(case)
 	return out
 
-## THE ARC LADDER. The ball count is held FIXED and the arc count forced, so the only variable is the
-## ladder itself: at 2 it is the original throw-and-carry, and each step adds lanes at evenly spaced
-## heights between them. Balls are spread around the whole loop, so a taller ladder spreads them over
-## more of the space instead of stacking them on one arc. The oracle crosses come from the same spec,
-## so they must stay on the balls at every rung.
+# At 2 arcs it is the original throw-and-carry, and each step adds lanes at evenly spaced heights
+# between them, so a taller ladder spreads the balls over more space instead of stacking them on one
+# arc. The oracle crosses come from the same spec and must stay on the balls at every rung.
+
+# The arc count is FORCED rather than reached by ball count: the count also changes radius, span and
+# speed, and this shot is about the ladder alone.
+
+## THE ARC LADDER, at one fixed ball count.
 func _ball_arcs() -> Array[Case]:
 	var out : Array[Case] = []
 	for arcs : int in [2, 4, 6, 8]:
 		var reqs := FxJuggle.requests(12, PackedInt32Array(), StatusJuggling.JUGGLE_STYLE,
 				StatusJuggling.BALL_FIRE_STYLE)
-		# Forced rather than reached by ball count: the count also changes radius, span and speed,
-		# and this shot is about the ladder alone.
 		for req : FxRequest in reqs: req.live[&"u_ball_arcs"] = float(arcs)
 		out.append(_card_case("%d arcs" % arcs, reqs))
 	return out
 
-## THE JUGGLING HALF OF `02_fire_rotation`, and the gap that let §4 go unverified: there was no
-## rotated juggling shot anywhere. Fire and juggling answer a turning host DIFFERENTLY, and both
-## answers are on purpose:
-##  * fire follows its host's silhouette (the mask is the art) while keeping its flames upright;
-##  * the juggling pattern does not turn at all — *"juggle effect doesn't rotate with card"* (owner
-## 2026-07-30). `juggle.gdshader` never reads `u_shape_rot` and `FxAttachment._push_live`
-##    counter-rotates the quad, so the loop holds still in world space, centred on the card.
-##
-## The oracle crosses are drawn WORLD-UPRIGHT here (`_Ghost.ball_rot`), which is what makes the shot
-## self-verifying: the balls must sit on their crosses at every angle, on a card outline that is
-## visibly tilted underneath them. A ball following its card would leave every cross behind.
+# Fire and juggling answer a turning host DIFFERENTLY, both on purpose: fire follows its host's
+# silhouette while keeping its flames upright, and the juggling pattern does not turn at all —
+# `juggle.gdshader` never reads `u_shape_rot` and `FxAttachment._push_live` counter-rotates the quad.
+
+# The oracle crosses are drawn WORLD-UPRIGHT (`_Ghost.ball_rot`), which makes the shot
+# self-verifying: the balls must sit on their crosses at every angle, over a visibly tilted card
+# outline. A ball following its card would leave every cross behind.
+
+## THE JUGGLING HALF OF `02_fire_rotation`: the pattern must NOT turn with the card.
 func _ball_rotation() -> Array[Case]:
 	var out : Array[Case] = []
 	for deg : int in [0, 30, 45, 90]:
@@ -391,8 +364,10 @@ func _focus_highlight() -> Array[Case]:
 		out.append(balls)
 	return out
 
-## Fire is PER BALL, at the ball's OWN level. Exactly two plumes here, welded to balls 0 and 3,
-## and the all-dark case beside them is the negative that matters.
+# Exactly two plumes here, welded to balls 0 and 3; the all-dark case beside them is the negative
+# that matters.
+
+## Fire is PER BALL, at the ball's OWN level.
 func _ball_fire() -> Array[Case]:
 	var out : Array[Case] = []
 	out.append(_card_case("none lit", FxJuggle.requests(5, PackedInt32Array([0, 0, 0, 0, 0]),
@@ -403,14 +378,14 @@ func _ball_fire() -> Array[Case]:
 	out.append(_card_case("card fire + lit balls", _stacked_case()))
 	return out
 
-## THE REGRESSION GUARD FOR "a lit ball's plume disappears and comes back" (owner report,
-## FX_HANDOFF §2). The bug was PHASE-DEPENDENT — an unlit ball drifting into the column above a lit
-## one won the one-ball-per-fragment lookup and forced the fragment dark — so a single frame could
-## never have caught it, which is exactly how it got past `06_ball_fire`.
-##
-## The owner's own repro: six balls, two of them alight, watched across the cycle. What to look for,
-## by EYE: **exactly two plumes in every panel**, on the same two balls (0 and 3), with the other four
-## balls bare. A panel showing one plume, or none, is the bug back.
+# The failure is PHASE-DEPENDENT: an unlit ball drifting into the column above a lit one wins the
+# one-ball-per-fragment lookup and forces the fragment dark, which no single frame can catch. Six
+# balls, two alight, watched across the cycle.
+
+# By EYE: EXACTLY TWO PLUMES IN EVERY PANEL, on the same two balls (0 and 3), the other four bare.
+# A panel showing one plume, or none, is the bug.
+
+## THE REGRESSION GUARD FOR a lit ball's plume disappearing and coming back.
 func _ball_fire_cycle() -> Array[Case]:
 	var out : Array[Case] = []
 	var levels := PackedInt32Array([6, 0, 0, 6, 0, 0])
@@ -430,18 +405,15 @@ func _stacked_case() -> Array[FxRequest]:
 			StatusJuggling.JUGGLE_STYLE, StatusJuggling.BALL_FIRE_STYLE))
 	return reqs
 
-## Mid-ease frames — owner ruling 16, "a stack change eases, it never jumps".
-##
-## ⚠ WHAT IS IN FLIGHT CHANGED WITH THE MODEL. It used to be ONE number: a fractional
-## `u_count` grew the newest tendril out of the surface while the established ones shuffled. There
-## are no tendrils and the shader does not read `u_count` at all; what eases now is the whole
-## "Stack scaling" group at once — reach, aperture, gain, intensity, grain and scroll — so this shot
-## pins every one of them between two whole counts, exactly as `FxAttachment._eased` holds them
-## mid-tween.
-##
-## The RING panels are still the ones to read hardest: a curved host puts each column's surface at a
-## different height, so a knob that moved discontinuously shows up there first as a flame jumping
-## rather than sliding. A flat card can hide it — its top edge is the same height everywhere.
+# What eases is the whole "Stack scaling" group at once — reach, aperture, gain, intensity, grain
+# and scroll — so this shot pins every one of them between two whole counts, exactly as
+# `FxAttachment._eased` holds them mid-tween.
+
+# Read the RING panels hardest: a curved host puts each column's surface at a different height, so a
+# knob that moved discontinuously shows up there first as a flame jumping rather than sliding. A
+# flat card hides it — its top edge is the same height everywhere.
+
+## Mid-ease frames: a stack change eases, it never jumps.
 func _transition() -> Array[Case]:
 	var out : Array[Case] = []
 	for n : float in [1.6, 2.5, 3.4] as Array[float]:
@@ -452,21 +424,21 @@ func _transition() -> Array[Case]:
 				FxAttachment.Half.WHOLE, [_counted(PropVisual.PROP_FIRE_STYLE, n)]))
 	return out
 
-## A fire request pinned BETWEEN two whole stack counts — the state an easing stack change is in,
-## and the only state a jump can hide in.
-##
-## Every live uniform is lerped, not just one, because every one of them now carries a stack ratio.
-## That is the same interpolation `FxAttachment._eased` runs; doing it here is what makes the panel
-## a picture of a real mid-tween frame rather than of a state the game never reaches.
+# Every live uniform is lerped, not just one, because each carries a stack ratio. That is the same
+# interpolation `FxAttachment._eased` runs, which is what makes the panel a picture of a real
+# mid-tween frame rather than of a state the game never reaches.
+
+# ⚠ Typed locals, not a `hi.get(...)` inline: a Dictionary lookup is a Variant and `lerpf` refuses
+# one under this project's warnings-as-errors — which fails at PARSE time, so the scene loads
+# without its script and the run hangs with an empty log.
+
+## A fire request pinned BETWEEN two whole stack counts — the only state a jump can hide in.
 func _counted(style: FxFireStyle, count: float) -> FxRequest:
 	var lo : Dictionary[StringName, float] = FxFire.stacks_live(int(floorf(count)), style)
 	var hi : Dictionary[StringName, float] = FxFire.stacks_live(int(ceilf(count)), style)
 	var t := count - floorf(count)
 	var live : Dictionary[StringName, float] = {}
 	for key : StringName in lo:
-		# Typed locals, not a `hi.get(...)` inline: a Dictionary lookup is a Variant, and `lerpf`
-		# refuses one under this project's warnings-as-errors — which fails at PARSE time, so the scene
-		# loads without its script and the run hangs with an empty log (FX_HANDOFF §11's first trap).
 		var a : float = lo[key]
 		var b : float = hi[key] if hi.has(key) else a
 		live[key] = lerpf(a, b, t)
@@ -474,26 +446,26 @@ func _counted(style: FxFireStyle, count: float) -> FxRequest:
 	req.live = live
 	return req
 
-## EMBERS, from every fire that throws them (owner: *"all fire effects should leave embers
-## like card is currently. dont see embers on props or balls"*). A burning card, a burning hoop, a
-## burning knife and a pair of lit balls, side by side.
-##
-## ⚠ THE ONE SHOT THAT RUNS LIVE, and the second one that is NOT REPRODUCIBLE. Embers are particles:
-## they are spawned at random points at random times and then simulated forward, so there is nothing
-## to park a clock at — a single frame of a fresh attachment has emitted nothing at all. Every other
-## shot drives its clock by hand for exactly the reason this one cannot.
-##
-## What to look for, by EYE: embers over ALL FOUR hosts, each sized to its own host (the card's are
-## the big ones — `ember.tres`; the prop and ball ones are `ember_prop.tres`), and the ball embers
-## leaving the BALLS rather than pouring off the card's top edge, which is where a host-relative
-## spawn would have put them.
+## How long the ember row is left to burn, in seconds.
 const EMBER_SECS := 1.4
 
+# ⚠ THE ONE SHOT THAT RUNS LIVE, and the second one that is NOT REPRODUCIBLE. Embers are particles,
+# spawned at random points at random times and simulated forward, so there is no clock to park — a
+# single frame of a fresh attachment has emitted nothing at all.
+
+# By EYE: embers over ALL FOUR hosts, each sized to its own host (the card's are the big ones,
+# `ember.tres`; the prop and ball ones are `ember_prop.tres`), and the ball embers leaving the BALLS
+# rather than pouring off the card's top edge, where a host-relative spawn would put them.
+
+# ONE engine, scaled with the cases: a spec's sizes are in the ENGINE's units, so unscaled it draws
+# sub-pixel specks against blown-up hosts. `ambient` is TRUE here alone — `_emit_embers` early-outs
+# on it — and the loop runs on real frame deltas, which drive the emitters and the simulation pass.
+
+## EMBERS from every fire that throws them: a burning card, hoop and knife, and a pair of lit balls.
 func _shot_embers() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
 	var size := canvas()
-	# label, body, shape, requests — the four ember sources the owner named, in one row.
 	var cases : Array[Case] = [
 		_card_case("card fire", [FxFire.request(&"fire", 8, StatusBurning.CARD_FIRE_STYLE)]),
 		_sprite_case("burning hoop", HoopVisual.SHEET, HoopVisual.FRAMES, FxAttachment.Half.WHOLE,
@@ -505,9 +477,6 @@ func _shot_embers() -> void:
 	]
 	var step := size.x / float(cases.size())
 	var zoom := _zoom_for(cases, step)
-	# ONE engine for the whole row, scaled with the cases: a spec's sizes are in the ENGINE's units,
-	# so an unscaled engine would draw every ember at a sub-pixel speck against blown-up hosts.
-	# Positions still land correctly wherever it sits — emit() converts through to_local.
 	var engine := ParticleEngine.new()
 	engine.scale = Vector2.ONE * zoom
 	holder.add_child(engine)
@@ -520,12 +489,8 @@ func _shot_embers() -> void:
 		holder.add_child(slot)
 		var ghost := _ghost_for(case, zoom)
 		slot.add_child(ghost)
-		# ambient TRUE — the one place it is, and the whole point: `_emit_embers` early-outs on it,
-		# because the motion effects are for a board, not for a viewer full of static cards.
 		atts.append(_attach_for(case, slot, true))
 		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
-	# Let it actually burn. Real frame deltas, because that is what drives both the emitters and the
-	# engine's own simulation pass.
 	var elapsed := 0.0
 	while elapsed < EMBER_SECS:
 		elapsed += await _tick()
@@ -535,97 +500,69 @@ func _shot_embers() -> void:
 	holder.queue_free()
 	await get_tree().process_frame
 
-## THE LIGHT LAYER (S13), OVER A STAND-IN BOARD. Not a `Case` row: chart H's surface is ONE
-## screen-space quad over everything, so it has no host, no silhouette and no per-panel zoom — it is
-## staged directly instead.
-##
-## ⚠ **WHERE THE REAL SURFACE SITS IS NOT DECIDED (GAP-004)** — four round-1 answers exempt the
-## props, the popups and the focus panel from the dim while dimming the HUD, and one surface has one
-## depth. **This shot does not answer that and must not be read as answering it.** It shows what a
-## light fragment COMPUTES, which is identical under every option on the table.
-##
-## What must be true, by EYE:
-##  * the board is visibly DARKER outside the light and at full brightness inside it — the beam
-##    punches its own hole in the dim, which is H7 and H8 being one equation;
-##  * **the two crossing beams are brighter where they cross** than either is alone (`Q100`=a), and
-##    the crossing does not blow out to white (`Q101`=a clamps);
-##  * each circle opens the dim COMPLETELY where the beam only thins it (chart H5's "brighter",
-##    once the circle's light itself comes from the glow shader — see ASSUMPTIONS.md), and the beam
-##    is WIDER at the card than at its origin;
-##  * **the beam STOPS on its circle's FAR ARC and its mouth is exactly the circle's width** —
-## owner, 2026-08-04. ⚠ Two earlier builds cut it at `t = 1`, which is the circle's CENTRE, so the
-##    cone ended on a straight chord halfway across the pool. **A straight edge anywhere near a beam
-##    end is that bug back.** Crop and magnify before judging: at full-shot scale it is easy to miss.
-##  * **the circle READS as its own pool inside the beam** (chart H5) — brighter than the shaft that
-##    feeds it, at every one of the three radii, while the card under it keeps its rank and pips.
-##  * the beams carry visible grain that is not screen static (`Q98`=b, volumetric from the start);
-##  * the dim is a dark palette colour, NOT black (`Q79`=a), and uniform rather than a vignette.
-## Take the CLOCK out of a staged board of real cards, so the shot is reproducible.
-##
-## ⚠ **THIS IS THE `_shot()` DISCIPLINE APPLIED TO CARDS.** `_shot` parks every effect clock it
-## builds because "driving it from real frame deltas would make every run differ, and a snapshot that
-## changes on its own cannot be diffed" — the same sentence is true of a `CardVisual`, and until
-## 2026-08-07 nothing applied it, which is why `10_light_layer` moved by up to 78834 px between runs
-## of one unchanged build.
-##
-## ⚠ **ORDER MATTERS, exactly as it does in `_shot`.** `floating` must go FIRST: it is the wall-clock
-## term (`Time.get_ticks_msec()`), and leaving it on means the pose keeps moving under everything
-## else set here. `set_process(false)` must go LAST, or the next frame re-advances what was just
-## pinned.
-##
-## ⚠ It pins a REST pose rather than freezing whatever the cards drifted into — a frozen arbitrary
-## pose is reproducible only if the freeze happens at a reproducible moment, which is the thing that
-## does not hold here. `basis3d`'s rest is `delta_floating_anim`'s own target with x = y = 0.
+# `_shot()`'s clock discipline applied to CARDS: leaving the card clocks running moved
+# `10_light_layer` by up to 78834 px between runs of one unchanged build. ⚠ ORDER — `floating` (the
+# `Time.get_ticks_msec()` term) FIRST, `set_process(false)` LAST or the next frame re-advances it.
+
+# ⚠ A REST POSE, not a freeze of whatever the cards drifted into: a frozen arbitrary pose is
+# reproducible only if the freeze is. Snap to the anchor rather than ease toward it — `exp(-10 *
+# delta)` is frame dependent, and two frames leave a card visibly short of its slot.
+
+# ⚠ THE BONE RIG HAS ITS OWN CLOCK AND `set_process(false)` DOES NOT REACH IT, so it is seeked and
+# paused too (`update = true` applies the pose). Kept though `CardVisual.RIG_ANIM` no longer
+# autoplays: if it is turned back on, the skinned pose stays pinned instead of drifting.
 func _park_cards(root: Node) -> void:
 	for node : Node in root.get_children():
 		if not (node is ControlCard): continue
-		# `ControlCard.child` rather than a tree walk: the visual is add_child'ed DEFERRED onto the
-		# control, so the tree shape is a timing detail while this reference is the contract.
 		var card : CardVisual = (node as ControlCard).child
 		if not card or not is_instance_valid(card): continue
 		card.floating = false
-		# The drift target with no bob: face the viewer, front side out.
 		card.basis3d = Basis.looking_at(Vector3(0.0, 0.0, -3.5))
 		if card.visual: card.visual.position.y = 0.0
-		# Snap to the anchor instead of easing toward it (`exp(-10 * delta)` is frame dependent, and
-		# two frames leave it visibly short of its slot).
 		if card.control_anchor and is_instance_valid(card.control_anchor):
 			card.global_position = card.get_card_control_center(card.control_anchor)
 		card.rotation_degrees = 0.0
-		# ⚠ **THE BONE RIG HAS ITS OWN CLOCK AND `set_process(false)` DOES NOT REACH IT.** When this was
-		# written `card_visual.tscn` autoplayed its idle, so the AnimationPlayer advanced independently
-		# and parking only the script left the SKINNED POSE drifting — that was the entire residual
-		# after `floating` was handled (78834 px -> ~6-31 px -> 0).
- # ⚠ **KEPT DELIBERATELY THOUGH THE IDLE NO LONGER AUTOPLAYS** (owner cleared it 2026-08-07 —
-		# `CardVisual.RIG_ANIM`). It is now belt-and-braces rather than load-bearing, and it is what
-		# makes this shot's determinism independent of that flag: if the idle is ever turned back on,
-		# or any caller poses the rig before staging, the pose is still pinned here rather than
-		# silently reintroducing the 78k-px drift. Seek with `update = true` so the pose is applied.
 		var rig := card.get_node_or_null(^"AnimationPlayer") as AnimationPlayer
 		if rig:
 			rig.seek(0.0, true)
 			rig.pause()
 		card.set_process(false)
 
+# Not a `Case` row: the light surface is ONE screen-space quad over everything, so it has no host,
+# no silhouette and no per-panel zoom, and is staged directly. The card visuals are added DEFERRED,
+# so two frames are awaited before the capture or the board would be empty.
+
+# ⚠ WHERE THE REAL SURFACE SITS IS NOT DECIDED, and this shot does not answer it. It shows what a
+# light fragment COMPUTES, which is identical under every option on the table.
+
+# ⚠ REAL CARDS, NOT RECTANGLES (project rule 9). A flat stand-in has no rank glyph to lose, no art
+# square and no dark ink beside light paper, so it can never show the one thing a dim can get wrong,
+# which is legibility. The TYPE is what draws the paper: without it there is no body to judge.
+
+# By EYE: the board visibly DARKER outside the light and at full brightness inside it; the two
+# crossing beams brighter where they cross without blowing out to white; each circle opening the dim
+# COMPLETELY where the beam only thins it, and the beam WIDER at the card than at its origin.
+
+# ⚠ THE BEAM STOPS ON ITS CIRCLE'S FAR ARC and its mouth is exactly the circle's width. Two earlier
+# builds cut it at `t = 1`, the circle's CENTRE, ending the cone on a straight chord halfway across
+# the pool — A STRAIGHT EDGE NEAR A BEAM END IS THAT BUG. Crop and magnify before judging.
+
+# Also by EYE: the circle reads as its own pool inside the beam, brighter than the shaft feeding it,
+# at all three radii, with the card under it keeping its rank and pips; the beams carry visible
+# grain that is not screen static; the dim is a dark palette colour, NOT black, and not a vignette.
+
+# Three lights, TWO CROSSING on purpose, at circle radii 46 / 70 / 100 px (the shipped 16 art units
+# is ~46 px here), so the mouth and end cap, both derived from the radius, are looked at over three
+# sizes. A beam's `.w` is FLARE past the circle; 0 means the mouth is exactly the circle it serves.
+
+## THE LIGHT LAYER over a stand-in board.
 func _shot_light_layer() -> void:
 	var holder := Node2D.new()
 	add_child(holder)
 	var size := canvas()
-	# ⚠ **REAL CARDS, NOT RECTANGLES** — project rule 5, and the first build of this shot broke it:
-	# three rows of `ColorRect`s in card colours. The owner's objection was exactly the rule
-	# (2026-08-04: *"the demo scene doesnt look like a real board using existing art and logic"*),
-	# and it is not cosmetic. **A stand-in cannot disagree with what it models**: a flat rectangle
-	# has no rank glyph to lose, no art square, no suit pip and no dark ink beside light paper — so
-	# it can never show the one thing the dim is capable of getting wrong, which is legibility.
-	# These are `ControlCard`s built by the game's own factory, with the game's own art.
 	var ranks : Array[int] = [5, 11, 2, 9, 13, 7]
 	for row : int in 3:
 		for col : int in 6:
-			# ⚠ THE TYPE IS WHAT DRAWS THE CARD'S PAPER. Without it `CardVisual` hides the `type`
-			# polygon and the card is rank and pips floating on the background — which is what the
-			# first real-art build of this shot showed, and it is worse than useless for a dim: the
-			# thing a dim acts on is the paper, and the thing it threatens is the dark ink ON that
-			# paper. No body, no contrast, nothing to judge.
 			var data := CardData.new() \
 					.with_rank(PipRankNumeral.new().with_value(ranks[(col + row) % ranks.size()])) \
 					.with_suit(_shot_suit(col + row * 2)) \
@@ -633,29 +570,6 @@ func _shot_light_layer() -> void:
 			var control := ControlCard.add_child_control_card(holder, data,
 					CardVisual.DisplayContext.PLAY_AREA)
 			control.position = Vector2(70.0 + float(col) * 190.0, 130.0 + float(row) * 180.0)
-	# The visuals are added with `call_deferred`, so they do not exist until the next frame — and a
-	# capture taken before that would be the empty board this shot exists to stop being.
-	#
-	# ⚠⚠ **THIS IS WHY `10_light_layer` IS NONDETERMINISTIC, MEASURED 2026-08-07: THE CARD CLOCKS ARE
-	# NEVER PARKED.** Everything about the LIGHT here is pinned — fixed centres, fixed radii,
-	# `u_time = SHOT_TIME` — so the shader cannot vary. The 18 `ControlCard`s under it can, and do:
-	# `CardVisual._process` -> `delta_self_moving_logic` eases with `lerpf(..., 15 * delta)` (its own
-	# comment says "lerp is bad, frame dependent") and `delta_floating_anim` bobs at `6.5 * delta`.
-	# Awaiting exactly two frames captures 18 cards mid-settle at whatever pose two RUN-DEPENDENT
-	# deltas happened to reach — three runs of this unchanged build differed by up to 78834 px, 8.1%
-	# of the frame, with the diff bbox over the CARD GRID and not the beams. `_shot()` above does not
-	# have this problem because it parks every clock it builds (`att.set_process(false)`) for exactly
-	# this reason, and says so.
-	# ⚠ **AND THE REAL TERM IS WALL-CLOCK, NOT DELTA — `delta_floating_anim` READS
-	# `Time.get_ticks_msec()`.** `floating` defaults to TRUE, so all 18 cards drift and bob on
-	# `sin(num + Time.get_ticks_msec() / 2000)`: their `basis3d` and `visual.position.y` are a
-	# function of ABSOLUTE time since engine start. Two runs reach this line at different wall-clock
-	# times (startup, shader compiles), so no amount of parking or fixed-delta stepping can reproduce
-	# the pose — the clock has to be taken out of the shot. That is also exactly WHY this is the only
-	# panel with the problem: it is the one shot staging real `ControlCard`s (owner rule 5, above)
-	# instead of `_ghost_for` stand-ins.
-	# Background, and the still-unexplained `02_fire_rotation` case: the NOISY comment in
-	# `Tools/snapshot_diff.py`, FX_HANDOFF §1b, todo.md.
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_park_cards(holder)
@@ -666,8 +580,6 @@ func _shot_light_layer() -> void:
 	rect.material = mat
 	holder.add_child(rect)
 
-	# Three lights. TWO OF THEM CROSS on purpose — that crossing is what `Q100`/`Q101` are about and
-	# it is the one thing this shot exists to show.
 	var centres : Array[Vector2] = [Vector2(318.0, 395.0), Vector2(678.0, 395.0),
 			Vector2(1128.0, 220.0)]
 	var origins : Array[Vector2] = [Vector2(760.0, -240.0), Vector2(300.0, -190.0),
@@ -678,15 +590,7 @@ func _shot_light_layer() -> void:
 	lights.resize(LIGHT_MAX)
 	beams.resize(LIGHT_MAX)
 	for i : int in centres.size():
-		# ⚠ **THREE DIFFERENT RADII, AND THAT IS THE POINT OF THE SHOT'S SECOND HALF.** `Q85`'s 16
-		# art units is ~46 px at this card scale (a card is 38 art units wide and draws ~110 px), and
-		# the owner asked whether the shape stays consistent if the circle is enlarged later. It is
-		# not enough to answer that from the code: the panels carry 46 / 70 / 100 so the scaling is
-		# LOOKED AT. The beam's mouth and its end cap are both derived from this number, so all three
-		# must show the same shape at different sizes and none may show a straight edge.
 		lights[i] = Vector4(centres[i].x, centres[i].y, radii[i], 1.0)
-		# .w is FLARE — extra half-width beyond the circle, and 0 is the owner's answer: the cone's
-		# mouth is exactly the circle it serves, and it stops there.
 		beams[i] = Vector4(origins[i].x, origins[i].y, 26.0, 0.0)
 	mat.set_shader_parameter(&"u_lights", lights)
 	mat.set_shader_parameter(&"u_beams", beams)
@@ -706,8 +610,16 @@ func _tick() -> float:
 
 # ----------------------------------------------------------------- the harness
 
-## One case: a host body drawn for reference with an FxAttachment on top of it. A class, not a
-## Dictionary, so every field is typed — warnings are errors in this project.
+# A class, not a Dictionary, so every field is typed — warnings are errors in this project.
+
+# `outline` set makes the attachment take the radius-table mask and the ghost draw the star rather
+# than the box; `sheet` set hands the attachment its real art AND draws that art as the reference,
+# because an outline cannot show a HOLE.
+
+# `ball_dir` is pinned because a pattern that mirrors at random cannot be diffed, and the oracle has
+# to be told the same value.
+
+## One case: a host body drawn for reference with an FxAttachment on top of it.
 class Case:
 	var label : String = ""
 	var body : Vector2 = Vector2.ZERO
@@ -716,32 +628,25 @@ class Case:
 	var requests : Array[FxRequest] = []
 	var rotation : float = 0.0
 	## The host's DEFORMED outline, walked once around the shape, or empty for an undeformed host.
-	## Set means the attachment takes the radius-table mask and the ghost draws the star rather than
-	## the box — so the panel shows whether the flames stand on the shape the card actually has.
 	var outline : PackedVector2Array = PackedVector2Array()
-	## SPRITE cases: the sheet the mask is read out of, and how many frames it holds. Set means the
-	## harness both hands the attachment its real art AND draws that art as the reference — an
-	## outline cannot show a HOLE, and the hole is the whole point of §1.
+	## SPRITE cases: the sheet the mask is read out of, and how many frames it holds.
 	var sheet : Texture2D = null
 	var frames : int = 1
 	## Phase override for the path trace, or -1 to use the shot's shared phase.
 	var phase : float = -1.0
-	## The style's ball_top_fraction and ball_gravity, carried so the oracle reads the same split and
-	## the same throw easing the shader was handed.
+	## Carried so the oracle reads the split and throw easing the shader was handed.
 	var style_top_fraction : float = 0.6
 	var style_gravity : float = 1.0
-	## The host's base ball direction, PINNED rather than left to its per-host coin flip — a snapshot
-	## whose pattern mirrors at random cannot be diffed, and the oracle has to be told the same value.
+	## The host's base ball direction, PINNED rather than left to its per-host coin flip.
 	var ball_dir : float = 1.0
-	## Host modulate, for the focus-highlight case (ruling 10): the effects must brighten with their
-	## host, which they cannot do if a shader overwrites the modulate the renderer folded into COLOR.
+	## Host modulate: the effects must brighten with their host.
 	var modulate : Color = Color.WHITE
 
+# The style parameters are read off the LIVE style, never retyped: the oracle has to be told the
+# same path parameters the shader was handed, and a stale copy here would read as a shader bug.
 func _case(label: String, body: Vector2, shape: FxAttachment.Shape, half: FxAttachment.Half,
 		requests: Array[FxRequest]) -> Case:
 	var c := Case.new()
-	# Read off the live style, never retyped: the oracle has to be told the same path parameters the
-	# shader was handed, and a stale copy here would read as a shader bug.
 	c.style_top_fraction = StatusJuggling.JUGGLE_STYLE.ball_top_fraction
 	c.style_gravity = StatusJuggling.JUGGLE_STYLE.ball_gravity
 	c.label = label
@@ -751,20 +656,18 @@ func _case(label: String, body: Vector2, shape: FxAttachment.Shape, half: FxAtta
 	c.requests = requests
 	return c
 
-## THE GLOW'S FIELD, ISOLATED. `inverse_square` is the one knob that decides whether the light reads
-## as A LAMP or as A SMUDGE (`Q208`), so the first three panels are that knob alone and nothing else
-## moves. The last two are `Q207`'s layer count: one falloff against the shipped tight-core-plus-wide-
-## halo pair.
-##
-## What must be true across the panels, and each is a separate way for the field to be wrong:
-##  * **no rectangle.** The halo must fade to nothing before the quad's edge — an inverse-square that
-##    is not normalized to zero at its limit leaves a visible box around every glowing card, which is
-##    exactly what `falloff()`'s FLOOR constant exists to remove.
-##  * **no seam at the card's edge.** `sink` starts the field inside the silhouette, so the light is
-##    already at full strength where it crosses the outline (`Q209`=a). A bright line along the edge
-##    means the sink is not being applied.
-##  * **the pure-inverse-square panel has a visibly HOTTER, TIGHTER core** than the smooth one. If the
-##    three panels look alike the knob is not reaching the shader.
+# `inverse_square` is the one knob that decides whether the light reads as A LAMP or as A SMUDGE, so
+# the first three panels are that knob alone and nothing else moves. The last two are the layer
+# count: one falloff against the shipped tight-core-plus-wide-halo pair.
+
+# Three ways the field can be wrong. NO RECTANGLE: the halo must fade to nothing before the quad's
+# edge, which is what `falloff()`'s FLOOR constant exists to force. NO SEAM at the card's edge:
+# `sink` starts the field inside the silhouette, so a bright line there means it is not applied.
+
+# THE PURE-INVERSE-SQUARE PANEL HAS A VISIBLY HOTTER, TIGHTER CORE than the smooth one. If the three
+# panels look alike, the knob is not reaching the shader.
+
+## THE GLOW'S FIELD, ISOLATED.
 func _glow_falloff() -> Array[Case]:
 	var out : Array[Case] = []
 	for k : float in [0.0, 0.6, 1.0]:
@@ -773,34 +676,35 @@ func _glow_falloff() -> Array[Case]:
 	out.append(_card_case("2 layers", [_glow_request(0.35, 0.6, 2)]))
 	return out
 
-## ⚠ **THE `Q216` CALL, AND IT CANNOT BE MADE FROM A DESCRIPTION** (gate G2.2, project rule 4). The
-## knob is the alpha the light draws at where it covers the host's own art: light ADDS, and adding
-## the same amount to a card's dark ink and its light paper moves both toward the light colour, so
-## the first thing to disappear is the rank glyph — the smallest dark feature on the card.
-##
-## `Q216`=(d) is *start low (~0.35) and tune it against the S15 scenario*, so these panels exist to
-## be tuned against, not to confirm a number. **0 is the honest floor** — pure addition outside the
-## silhouette and nothing at all over the art — and 0.9 is what "the card is genuinely lit" costs.
-##
-## ⚠ The card here is a plain BOX host, which is the LENIENT case. The real S15 shot is the spotlight
-## CIRCLE at full intensity over the busiest card face the game can build, and it needs the light
-## layer (S13) to exist before it can be staged.
+# ⚠ A READABILITY CALL THAT CANNOT BE MADE FROM A DESCRIPTION (project rule 5). The knob is the
+# alpha the light draws at where it covers the host's own art: light ADDS, so the first thing to go
+# is the rank glyph, the smallest dark feature on the card.
+
+# The panels exist to be tuned against, not to confirm a number. 0 is the honest floor — pure
+# addition outside the silhouette and nothing over the art — and 0.9 is what "the card is genuinely
+# lit" costs. The shipped value is 0.35.
+
+# ⚠ A plain BOX host is the LENIENT case. The real scenario is the spotlight CIRCLE at full
+# intensity over the busiest card face the game can build, and it needs the light layer to exist
+# before it can be staged.
 func _glow_over_art() -> Array[Case]:
 	var out : Array[Case] = []
 	for a : float in [0.0, 0.35, 0.6, 0.9]:
 		out.append(_card_case("inner_alpha %.2f" % a, [_glow_request(a, 0.6, 2)]))
 	return out
 
+# ⚠ The reach is `reach + sink`, the same budget `FxFire.request` uses and for the same reason: the
+# field starts `sink` units INSIDE the silhouette, so a quad sized for `reach` alone clips the halo.
+
+# `reach` is widened to 12.0 to READ at snapshot zoom. The shipped 4 is a rim, which is right on a
+# board and wrong for judging a falloff curve in a still.
+
 ## One glow request off the shipped card style, with the two knobs a panel varies overridden.
-## ⚠ The reach is `reach + sink`, the same budget `FxFire.request` uses and for the same reason: the
-## field starts `sink` units INSIDE the silhouette, so a quad sized for `reach` alone clips the halo.
 func _glow_request(inner_alpha: float, inverse_square: float, layers: int) -> FxRequest:
 	var style := load("res://Shaders/Styles/glow_card.tres").duplicate() as FxGlowStyle
 	style.inner_alpha = inner_alpha
 	style.inverse_square = inverse_square
 	style.layers = layers
-	# Wide enough to READ at snapshot zoom. The shipped 4 is a rim, which is the right look on a
-	# board and the wrong one for judging a falloff curve in a still.
 	style.reach = 12.0
 	return FxRequest.make(&"glow", FxGlowStyle.GLOW_SHADER, style,
 			style.reach + maxf(style.sink, 0.0))
@@ -809,9 +713,10 @@ func _card_case(label: String, requests: Array[FxRequest]) -> Case:
 	return _case(label, CardVisual.CARD_SIZE, FxAttachment.Shape.BOX, FxAttachment.Half.WHOLE,
 			requests)
 
-## A case whose mask is a real sheet's ALPHA — every prop kind. The body is derived from the same
-## art the kind derives its own from rather than retyped, so a panel here cannot disagree with what
-## the game draws.
+# The body is derived from the same art the kind derives its own from rather than retyped, so a
+# panel here cannot disagree with what the game draws.
+
+## A case whose mask is a real sheet's ALPHA — every prop kind.
 func _sprite_case(label: String, sheet: Texture2D, frames: int, half: FxAttachment.Half,
 		requests: Array[FxRequest]) -> Case:
 	var c := _case(label, PropVisual.art_size_for(sheet, frames), FxAttachment.Shape.SPRITE, half,
@@ -820,8 +725,7 @@ func _sprite_case(label: String, sheet: Texture2D, frames: int, half: FxAttachme
 	c.frames = frames
 	return c
 
-## The host's reference drawing for one case — its real art for a sprite kind, a plain outline
-## otherwise, so the effect can be judged against the shape it is supposed to be decorating.
+## The host's reference drawing — its real art for a sprite kind, a plain outline otherwise.
 func _ghost_for(case: Case, zoom: float) -> _Ghost:
 	var ghost := _Ghost.new()
 	ghost.body = case.body
@@ -832,8 +736,14 @@ func _ghost_for(case: Case, zoom: float) -> _Ghost:
 	ghost.px = 1.0 / maxf(zoom, 0.01)
 	return ghost
 
-## Build one case's attachment, including handing a sprite kind its REAL sheet — the mask is that
-## art's alpha now, so a panel that skipped this would be decorating a plain box.
+# A sprite kind is handed its REAL sheet: the mask is that art's alpha, so a panel that skipped this
+# would be decorating a plain box.
+
+# The seed and ball direction are pinned BEFORE `sync`, unlike the clock which is pushed afterwards,
+# because the quads read the host's randomness as they are built. An unpinned per-host random
+# reduces `snapshot_diff.py`'s claim to "the RNG happened to land in the same place".
+
+## Build one case's attachment.
 func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
 	var att := FxAttachment.new()
 	att.configure(case.body, true, case.shape, case.half, ambient)
@@ -844,52 +754,31 @@ func _attach_for(case: Case, host: Node2D, ambient: bool) -> FxAttachment:
 				PropVisual.art_size_for(case.sheet, case.frames))
 	elif not case.outline.is_empty():
 		att.measure_outline(case.outline)
-	# BEFORE sync: the quads read the host's randomness as they are built, unlike the clock, which is
-	# pushed afterwards.
-	#
-	# ⚠ THE SEED BELONGS HERE TOO, and only `_ball_dir` was pinned — so every fire panel in this scene
-	# rendered on whatever `randf()` the attachment's constructor happened to draw. That is exactly the
-	# input `snapshot_diff.py` cannot tolerate: its claim is "these two RUNS are byte-identical", and an
-	# unpinned per-host random reduces it to "the RNG happened to land in the same place".
 	att._seed = SHOT_SEED
 	att._ball_dir = case.ball_dir
 	att.sync(case.requests)
 	return att
 
-## ⚠⚠ **THE CAUSE OF THE ROTATED-PANEL NONDETERMINISM, OPEN SINCE 2026-07-27 — FOUND 2026-08-08.**
-##
-## `FxAttachment._rot_tight` defaults to **true** and is re-evaluated in exactly one place, guarded by
-## `if moved and on_screen:`. `_on_screen()` reads `get_global_transform_with_canvas()` and
-## `get_viewport_rect()`. `_shot` poses a card and calls `_push_live(0.0)` **in the same frame it is
-## added**, before this SubViewport's canvas transform has settled — so `_on_screen()` can be FALSE at
-## that instant, and then `_rot_tight` never flips.
-##
-## For a ROTATED host that is the whole ballgame: `_size_quad`'s lever B only widens the quad to the
-## diagonal bound `if rotates and req.rotates_with_host and not _rot_tight`. Left tight, a turned
-## card's flames render against a quad sized for an upright one. And because the harness PARKS each
-## attachment (`set_process(false)`) immediately afterwards, that single call is the only chance the
-## flag ever gets — nothing re-evaluates it before the capture.
-##
-## That accounts for every symptom the docs recorded and could not explain:
-##   * only ROTATED hosts (an upright host is legitimately `_rot_tight`, so the branch is a no-op) —
-##     which is exactly the historic noisy set, `02_fire_rotation` / `05f_ball_rotation` /
-##     `behind_prop_turned`;
-##   * BISTABLE rather than drifting, with the two runs differing by the SAME count every time (8248
-##     px for `02_fire_rotation`), because it is one boolean and not a continuum;
-##   * upright panels byte-identical in every run.
-##
-## ⚠ **IT IS A HARNESS BUG, NOT A GAME BUG.** In play the attachment is never parked, so the frame the
-## host comes back on screen re-evaluates the flag (`_sent_rot` is only recorded when it really was
-## sent, so `moved` is still true on return). Do not "fix" `fx_attachment.gd` for this.
-##
-## The fix: settle one frame so the canvas transform is real, then re-push and re-park.
-## ⚠ ORDER IS THE SAME RULE AS THE BUILD LOOP'S — push FIRST, disable the process LAST, or
-## `_push_live`'s trailing `set_process(not _fx.is_empty())` silently re-enables it and the awaited
-## frames advance the clocks off `SHOT_TIME`.
+# ⚠ THE ROTATED-PANEL NONDETERMINISM. `FxAttachment._rot_tight` defaults to true and is re-evaluated
+# in one place, guarded by `if moved and on_screen:`. A first `_push_live` in the frame the
+# attachment is added can see `_on_screen()` FALSE, and then `_rot_tight` never flips.
+
+# For a ROTATED host that is the whole bug: `_size_quad` only widens the quad to the diagonal bound
+# when `not _rot_tight`, so a turned card's flames render against a quad sized for an upright one.
+# Bistable, never drifting — 8248 px apart every time for `02_fire_rotation`, because it is a bool.
+
+# ⚠ A HARNESS BUG, NOT A GAME BUG: in play the attachment is never parked, so the frame the host
+# comes back on screen re-evaluates the flag. Do not "fix" `fx_attachment.gd` for it. The fix is
+# here — settle, then re-push and re-park.
+
+# ⚠ TWO frames, not one: `_push_live` SKIPS ITS UPLOADS ENTIRELY when `_on_screen()` is false, and
+# one frame was not always enough for the canvas transform to settle — measured on
+# `behind_prop_turned`, which stayed bistable at one frame.
+
+# ⚠ ORDER, the same rule as the build loop's: push FIRST, disable the process LAST, or
+# `_push_live`'s trailing `set_process(not _fx.is_empty())` silently re-enables it and the awaited
+# frames advance the clocks off `SHOT_TIME`.
 func _settle_poses(atts: Array[FxAttachment]) -> void:
-	# ⚠ TWO frames, not one. `_push_live` SKIPS ITS UPLOADS ENTIRELY when `_on_screen()` is
-	# false, and one frame was not always enough for the canvas transform to settle —
-	# measured on `behind_prop_turned`, which stayed bistable at one frame.
 	await get_tree().process_frame
 	await get_tree().process_frame
 	for att : FxAttachment in atts:
@@ -897,8 +786,23 @@ func _settle_poses(atts: Array[FxAttachment]) -> void:
 		att._push_live(0.0)
 		att.set_process(false)
 
-## Lay the cases out across the viewport, drive every clock to the SAME fixed time, wait for the
-## frame to actually reach the screen, then capture it.
+# ⚠ ORDER MATTERS, and getting it wrong was mistaken for a shader bug: `_push_live` ENDS with
+# `set_process(not _fx.is_empty())`, so disabling the process BEFORE pushing re-enables it, the
+# awaited frames advance `_phase` by real deltas, and every ball lands ~0.15 of a cycle off.
+
+# The ghost is added UNDER the effects and the modulate goes on a PARENT of the attachment, so it
+# reaches them down the tree as a card's does. Ghost last would paint the oracle crosses over the
+# very balls they exist to be compared against, which reads as the balls having vanished.
+
+# The crosses are pinned to WORLD up, not to the tilted host: the pattern does not turn with its
+# card, so an oracle drawn in the slot's rotated frame would sit where the balls are NOT — and the
+# probe reads the same unrotated positions.
+
+# The first `_push_live` seeds `_time`/`_phase`; `_settle_poses` re-pushes after a settle frame. The
+# counter-rotation is printed before AND after the capture — `_push_live` sets `rotation =
+# -parent.global_rotation`, and right-when-written but wrong-in-the-frame is its own bug.
+
+## Lay the cases out, drive every clock to the SAME fixed time, wait for the frame, then capture.
 func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var holder := Node2D.new()
 	add_child(holder)
@@ -906,8 +810,6 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	var step := size.x / float(cases.size())
 	var zoom := _zoom_for(cases, step)
 	var probes : Array[_Probe] = []
-	## Kept so the counter-rotation can be re-read AFTER the capture: a value that is right when it is
-	## written and wrong in the captured frame is a different bug from one that was never right.
 	var atts : Array[FxAttachment] = []
 	for i : int in cases.size():
 		var case : Case = cases[i]
@@ -916,14 +818,9 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 		slot.scale = Vector2.ONE * zoom
 		slot.rotation = case.rotation
 		holder.add_child(slot)
-		# The host's own silhouette, so "flush with the top edge" and "behind the card" are
-		# judgeable rather than guesses about empty space.
 		var ghost := _ghost_for(case, zoom)
 		slot.add_child(ghost)
 		ghost.balls = _oracle(case)
-		# The crosses are pinned to WORLD up, not to the tilted host: the pattern does not turn with
-		# its card, so an oracle drawn in the slot's rotated frame would sit where the balls are
-		# NOT — and the probe below reads the same unrotated positions.
 		ghost.ball_rot = -case.rotation
 		if not ghost.balls.is_empty():
 			var probe := _Probe.new()
@@ -933,37 +830,15 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 			probe.expected = ghost.balls
 			probe.tint = case.modulate
 			probes.append(probe)
-		# The modulate goes on a PARENT of the attachment, so it reaches the effects the way a card's
-		# does — down the tree, not through a uniform. Added AFTER the ghost: the reference geometry
-		# has to stay UNDER the effects, or the oracle crosses paint over the very balls they are
-		# there to be compared against (which is exactly what happened the first time this node was
-		# inserted, and it read as the balls having vanished).
 		var host := Node2D.new()
 		host.modulate = case.modulate
 		slot.add_child(host)
 		var att := _attach_for(case, host, false)
-		# Park the clock by hand: driving it from real frame deltas would make every run differ,
-		# and a snapshot that changes on its own cannot be diffed.
-		#
-		# ⚠ ORDER MATTERS, and getting it wrong is what a whole debugging pass mistook for a shader
-		# bug: `_push_live` ENDS with `set_process(not _fx.is_empty())`, so disabling the process
-		# BEFORE pushing silently re-enables it, the two frames awaited below then advance `_phase`
-		# and `_time` by real deltas, and every ball ends up ~0.15 of a cycle past the phase the
-		# oracle (and the print below) were told about. Disable the process LAST.
 		att._time = SHOT_TIME
 		att._phase = case.phase if case.phase >= 0.0 else 0.13
 		att._push_live(0.0)
 		att.set_process(false)
-		# ⚠ Re-pushed after a settle frame below — see `_settle_poses()`. This first push is kept
-		# because it seeds `_time`/`_phase` before anything can read them.
 		label(holder, case.label, Vector2(step * (i + 0.5), size.y * 0.9))
-		# THE COUNTER-ROTATION, PRINTED — because the rotated panels of this shot have a standing
-		# "not reproducible" warning and it was never run to ground. Two consecutive runs of ONE
- # unchanged build put the 05f_ball_rotation probes at 1.0 / 2.0 / 5.8 art units for
-		# 30 / 45 / 90 degrees in the first and 0.1 in the second — the SAME grows-with-the-angle
-		# displacement along +x that got FX_HANDOFF §1b's quad-extent lever reverted. So the pattern
-		# rotated with its host in one run and not the other, and these two numbers are the only place
-		# that can happen: `_push_live` sets `rotation = -parent.global_rotation`.
 		print("  [", file_name, "/", case.label, "] ROT host=", host.global_rotation,
 				" att=", att.rotation, " slot=", slot.rotation)
 		atts.append(att)
@@ -987,12 +862,11 @@ func _shot(file_name: String, caption: String, cases: Array[Case]) -> void:
 	holder.queue_free()
 	await get_tree().process_frame
 
+# Not a constant: a ball quad is ~152 art units across (the pattern's arc height dominates the
+# extent) against a card's ~90, so a fixed zoom overlaps neighbouring slots and one case's balls draw
+# on top of the next one's — a measurement trap, read once as a phase offset in the panel next door.
+
 ## The blow-up that keeps every case INSIDE its own slot.
-##
-## Not a constant: a ball quad is ~152 art units across (the pattern's arc height dominates the
-## extent) against a card's ~90, so a fixed zoom made neighbouring slots overlap and one case's
-## balls drew on top of the next one's. That is a measurement trap as much as an ugly image — it
-## sent a whole debugging pass chasing a phase offset that was really the panel next door.
 func _zoom_for(cases: Array[Case], step: float) -> float:
 	var widest := 1.0
 	for case : Case in cases:
@@ -1001,12 +875,10 @@ func _zoom_for(cases: Array[Case], step: float) -> float:
 	return minf(ZOOM_MAX, step * 0.98 / widest)
 
 # ------------------------------------------------------ measuring the capture, not eyeballing it
-# The oracle CROSSES are drawn at 0.5 art units of width, which at the zooms a ball quad forces
-# (~1.0) rounds to half a pixel — Godot drops those lines, so half of every cross is missing from
-# the PNG and "does the ball sit on its cross" cannot be judged by eye at all. Two sessions of
-# ball-position debugging were spent measuring the images by hand instead. So the harness now
-# measures ITSELF: it converts each expected position into image pixels, finds the rendered ball
-# nearest to it, and prints the disagreement in ART UNITS. That is the number to read.
+
+# A line narrower than a pixel is DROPPED by Godot, so at the zoom a ball quad forces (~1.0) half of
+# every oracle cross is missing from the PNG and "does the ball sit on its cross" cannot be judged by
+# eye. The harness measures itself instead, printing the disagreement in ART UNITS.
 
 ## One case's expectation, kept until the frame has been captured.
 class _Probe:
@@ -1015,25 +887,26 @@ class _Probe:
 	var origin : Vector2 = Vector2.ZERO
 	var zoom : float = 1.0
 	var expected : PackedVector2Array = PackedVector2Array()
-	## The host's modulate for this case — a ball's rendered colour is its palette entry times this
-	## (ruling 10), so the colour predicate has to be built with it or a FOCUSED panel reads as empty.
+	## The host's modulate: a ball's rendered colour is its palette entry times this.
 	var tint : Color = Color.WHITE
 
 ## How far out, in ART UNITS, the probe is willing to look for a ball before calling it missing.
 const PROBE_REACH := 24.0
 
-## Print, per expected ball, how far the nearest RENDERED ball pixel actually is — in art units, the
-## units the spec is written in. Sub-unit offsets are agreement (the search finds the nearest EDGE
-## pixel of a ball, not its centre, so it reads a whole radius pessimistically).
+# Sub-unit offsets are agreement: the search finds the nearest EDGE pixel of a ball, not its centre,
+# so it reads a whole radius pessimistically.
+
+# ⚠ THE BALL'S OWN COLOURS, NEVER A HUE GUESS. A "a ball is orange" predicate goes blind the moment
+# `ramp_ball` is retuned, and it collides with the ORACLE CROSSES, which are green — a probe that
+# cannot tell a ball from its cross is worse than none, and this one only PRINTS, so it fails quiet.
+
+# The colour predicate is built WITH the host's modulate, or a FOCUSED panel reads as empty.
+
+## Print, per expected ball, how far the nearest RENDERED ball pixel is, in ART UNITS.
 func _report(img: Image, probe: _Probe) -> void:
 	var to_img := to_image_scale(img)
 	var art_to_img := probe.zoom * to_img
 	var reach := int(ceilf(PROBE_REACH * art_to_img))
-	# ⚠ THE BALL'S OWN COLOURS, NEVER A HUE GUESS. This read `PixelProbe.is_warm`, which encoded "a
-	# ball is orange" and went blind the moment `ramp_ball` was retuned to greens (see that function).
-	# Here it also collided with the ORACLE CROSSES, which are green — and a probe that cannot tell a
-	# ball from the cross marking where the ball should be is worse than none. This one only PRINTS,
-	# so it would have gone on reporting "NO BALL within 24 art units" indefinitely.
 	var is_ball := PixelProbe.ball_pixel(StatusJuggling.JUGGLE_STYLE, probe.tint)
 	for i : int in probe.expected.size():
 		var want : Vector2 = (probe.origin + probe.expected[i] * probe.zoom) * to_img
@@ -1044,9 +917,10 @@ func _report(img: Image, probe: _Probe) -> void:
 		print("  PROBE [", probe.label, "] ball ", i, " expected art ", probe.expected[i],
 				" -> ", found)
 
-## The expected ball positions for every juggling request in this case, from the SHARED spec oracle
-## (PixelProbe.ball_positions — one transcription, also used by the asserting PIXELS suite, and
-## deliberately NOT derived from the shader).
+# `PixelProbe.ball_positions` is ONE transcription of the spec, shared with the asserting PIXELS
+# suite and deliberately NOT derived from the shader.
+
+## The expected ball positions for every juggling request in this case.
 func _oracle(case: Case) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for req : FxRequest in case.requests:
@@ -1057,30 +931,32 @@ func _oracle(case: Case) -> PackedVector2Array:
 				case.style_gravity, case.ball_dir, req.live[&"u_ball_arcs"]))
 	return out
 
-## The host's silhouette, drawn as a plain outline so the effect can be judged against the shape
-## it is supposed to be decorating.
+# A SPRITE case draws its real art instead of an outline (an outline cannot show a HOLE), and a
+# DEFORMED host draws its real outline, or the panel shows flames standing off a box the card is not
+# — the exact class of tool lie this harness exists to avoid.
+
+# ⚠ EVERY LINE WIDTH IS A MULTIPLE OF `px`, so the outline and the crosses stay ~2 px thick on
+# screen. Fixed 0.5-unit widths were sub-pixel at the zoom a ball quad forces (~1.0) and Godot
+# DROPPED them, leaving half of every cross and both horizontal card edges out of the PNG.
+
+## The host's silhouette, drawn so the effect can be judged against the shape it decorates.
 class _Ghost extends Node2D:
 	var body : Vector2 = Vector2.ZERO
-	## A SPRITE case draws its real art instead of an outline: the mask is that art's alpha now, and
-	## an outline cannot show the HOLE whose inner-bottom arc §1 exists to light.
+	## A SPRITE case's sheet and frame count; the mask is that art's alpha.
 	var sheet : Texture2D = null
 	var frames : int = 1
 	var art_size : Vector2 = Vector2.ZERO
-	## A DEFORMED host draws its real outline, or the panel would show flames standing off a box the
-	## card is not — which is the exact class of tool lie this harness exists to avoid.
+	## A DEFORMED host's real outline.
 	var outline : PackedVector2Array = PackedVector2Array()
 	## Independent expected ball positions, drawn as crosses.
 	var balls : PackedVector2Array = PackedVector2Array()
-	## Rotation applied to the CROSSES only, cancelling the slot's — the juggling pattern holds
-	## still in world space while its host turns, so its oracle has to as well.
+	## Rotation applied to the CROSSES only, cancelling the slot's.
 	var ball_rot : float = 0.0
-	## ART UNITS PER SCREEN PIXEL for this slot (1 / the shot's zoom). Every line width below is a
-	## multiple of it, so the outline and the crosses are always ~2 px thick on screen. Fixed 0.5-unit
-	## widths were sub-pixel at the zoom a ball quad forces (~1.0) and Godot DROPPED them: half of
-	## every cross and both horizontal edges of the outline were simply missing from the PNG, which
-	## is what made "does the ball sit on its cross" unjudgeable and sent the last pass measuring
-	## pixels by hand.
+	## ART UNITS PER SCREEN PIXEL for this slot (1 / the shot's zoom).
 	var px : float = 1.0
+# The centre line exists because the juggling loop's shallow return arc is specified to ride the
+# card's CENTRE, which is impossible to eyeball without it. The crosses are the oracle: one that
+# does not sit on a ball is a disagreement between the shader and the spec, readable at a glance.
 	func _draw() -> void:
 		var col := Color(0.45, 0.5, 0.6)
 		if sheet:
@@ -1092,17 +968,8 @@ class _Ghost extends Node2D:
 			draw_polyline(loop, col, 2.0 * px)
 		else:
 			draw_rect(Rect2(-body * 0.5, body), col, false, 2.0 * px)
-		# A centre line: the juggling loop's shallow return arc is specified to ride the card's
-		# CENTRE, and that is impossible to eyeball without it.
 		draw_line(Vector2(-body.x * 0.5, 0.0), Vector2(body.x * 0.5, 0.0),
 				Color(0.35, 0.4, 0.5, 0.7), 1.5 * px)
-		# The oracle: where the balls are SUPPOSED to be. A cross that does not sit on a ball is a
-		# disagreement between the shader and the spec, readable at a glance and with no pixel
-		# measuring — which is what this harness could not do before and cost a long debugging
-		# detour.
-		# Pinned to WORLD up, cancelling the slot's rotation: the pattern does not turn with its
-		# host, so on a tilted card the crosses belong upright — which is what makes the rotation
-		# shot self-verifying rather than merely pretty.
 		draw_set_transform(Vector2.ZERO, ball_rot, Vector2.ONE)
 		for b : Vector2 in balls:
 			var c := Color(0.4, 1.0, 0.6)
