@@ -267,16 +267,25 @@ static func _bucket_digest(bucket: Array[BigNumber]) -> String:
 		out.append("%f" % n.to_float())
 	return "[%s]" % ",".join(out)
 
-# How many of the board's cells are DRAWN wearing the drop map: read off each zone card's
-# `modulate`, the value the player sees, never the `tint` field it is derived from. A focused
-# cell wears the tint under the focus glow, and still counts.
-static func tinted_cell_count(play_area: PlayArea) -> int:
+# The brightening this polygon is DRAWN with, read off the live material rather than off any field
+# a test wrote. An uniform nothing ever set reads back as null and the shader uses its own default,
+# which is 1.0 -- unlit, and the state every polygon but a lit card's face stays in.
+static func brightness_of(poly: Polygon2D) -> float:
+	var set_to : Variant = CardOutline.material_of(poly).get_shader_parameter(&"u_brighten")
+	if set_to == null: return 1.0
+	var shown : float = set_to
+	return shown
+
+# How many of the board's cells are DRAWN wearing the drop map, never the `on_drop_map` field it is
+# derived from. A focused cell is lit under the focus glow as well, and still counts.
+static func lit_cell_count(play_area: PlayArea) -> int:
 	var state := CardEnvironment.get_current_game().state
-	var tint : Color = PlayArea.settings().legal_cell_tint
+	var glow : float = PlayArea.settings().legal_cell_glow
 	var marked := 0
 	for data : CardData in play_area.data_card:
 		if state.cell_type_coord(data).is_nowhere(): continue
-		var shown : Color = play_area.data_card[data].modulate
-		if shown == tint or shown == tint * CardVisual.FOCUS_GLOW: marked += 1
+		var shown := brightness_of(play_area.data_card[data].type)
+		if is_equal_approx(shown, glow) or is_equal_approx(shown, glow * CardVisual.FOCUS_GLOW):
+			marked += 1
 	return marked
 

@@ -348,7 +348,7 @@ helper in `Tests/UI/test_interaction.gd`; reuse that pattern for any future synt
 - `--filter` patterns are suite NODE-name substrings, case-insensitive: `WallRender`, `Pixels`
   (`Tests/all_tests.tscn`); a pattern with a space matches nothing.
 - The full windowed gate: `ALL 51 SUITES ... CHECKS PASSED`, at most 22 placeholder warnings
-  (the gate is AT its cap; the next off-palette colour breaches it), 0 `SCRIPT ERROR` in
+  (the run emits 21, so there is one slot left), 0 `SCRIPT ERROR` in
   `godot.log`, exit profile exactly `PagedAllocator ... WorkerThreadPool` + `24 resources still
   in use` + the `1150 ObjectDB` note (wrapper exit 2 on a green run). The counts are a
   FINGERPRINT, not a budget: a change to either is a new leak to explain, not a number to edit.

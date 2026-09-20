@@ -232,10 +232,10 @@ const ALLOW_FILES : Array[String] = [
 
 ## Line fragments that are not colour CHOICES.
 const ALLOW_LINES : Array[String] = [
-	"FOCUS_GLOW := Color(1.825", "var tint : Color = Color.WHITE", "modulate = Color(2, 2, 2, 1)",
+	"modulate = Color(2, 2, 2, 1)",
 	"quad.modulate = Color(1.0, 1.0, 1.0, 0.0)", "img.set_pixel(",
 	"\"modulate\", Color.WHITE",
-	"else Color.WHITE", "return Color.WHITE",
+	"return Color.WHITE",
 	"@export var color : Color = Color.WHITE",
 	"color = Color(0, 0, 0, 0)",
 	"var dim_color : Color", "dim_color = Color(",

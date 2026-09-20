@@ -73,7 +73,7 @@ func _ready() -> void:
 	await test_hoop_halves_reassemble()
 	await test_one_pixel_size_for_all_art()
 	await test_effects_take_their_host_modulate()
-	await test_the_card_takes_its_own_modulate()
+	await test_the_marks_brighten_the_face_and_not_the_pips()
 	await test_balls_alternate_directions()
 	await test_the_card_mask_is_the_card_the_player_sees()
 	check_all_tests_registered()
@@ -968,17 +968,17 @@ func _check_directions_split() -> void:
 				% [count, int(geo[&"u_ball_arcs"])],
 				"%d of %d moving +x" % [right, count])
 
-## Ruling 10 — the focus highlight reaches the EFFECTS, not just the card art. A card is highlighted
-## by its `modulate`, which the renderer folds into COLOR before the fragment function; both FX
-## shaders used to OVERWRITE COLOR, so a selected card lit up while its fire and balls did not
-## (owner report). The same multiply is what makes a prop's exit fade carry its flames.
+## Ruling 10 — a host's `modulate` reaches the EFFECTS it carries, not just its own art. The renderer
+## folds it into COLOR before the fragment function; both FX shaders used to OVERWRITE COLOR, so
+## anything a host did to its colour stopped at the art (owner report). That multiply is what makes a
+## prop's exit fade carry its flames, which is the shipped driver of it.
 ##
 ## Stated as pixels: render each effect twice, once plain and once under the card's own highlight
 ## modulate, and require the highlighted one to come out BRIGHTER. Alpha is checked the same way
 ## (halved modulate → less coverage), which is the fade half of the same mechanism.
 func test_effects_take_their_host_modulate() -> void:
 	behavior_section("EFFECTS FOLLOW THEIR HOST'S MODULATE (focus highlight, fade)")
-	var highlight := CardVisual.FOCUS_GLOW
+	var highlight := Color(CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW)
 	for kind : String in ["fire", "balls"] as Array[String]:
 		var plain := await _shoot_modulated(kind, Color.WHITE)
 		var lit := await _shoot_modulated(kind, highlight)
@@ -997,8 +997,10 @@ func test_effects_take_their_host_modulate() -> void:
 				"%s fades with its host's alpha (a leaving prop takes its effects with it)" % kind,
 				"%d opaque pixels at alpha 1.0 vs %d at 0.35" % [solid_px, faded_px])
 
-## One effect on a host carrying `tint`, for the modulate check. The modulate goes on a PARENT of the
-## attachment, exactly as a card's does (CardVisual sets it on the root, FX hangs off Offset).
+#The modulate goes on a PARENT of the attachment, exactly as a fading prop's does: FX hangs off the
+#host, never beside it.
+
+## One effect on a host carrying `tint`, for the modulate check.
 func _shoot_modulated(kind: String, tint: Color) -> Image:
 	var host := Node2D.new()
 	host.modulate = tint
@@ -1019,44 +1021,57 @@ func _shoot_modulated(kind: String, tint: Color) -> Image:
 	_park(att, 0.13)
 	return await _shoot()
 
-# The card's OWN art follows `modulate` (the legal-cell tint and the focus glow), the way its effects
-# do. The outline shader once overwrote the vertex colour carrying it, so both marks passed every
-# node-level test and reached no pixel. The 8-bit clamp is applied per pixel before the ratio.
-func test_the_card_takes_its_own_modulate() -> void:
-	behavior_section("THE CARD'S OWN ART FOLLOWS ITS MODULATE (legal-cell tint, focus glow)")
-	var plain := await _shoot_card(Color.WHITE, false)
-	var area := Rect2i(Vector2i.ZERO, plain.get_size())
-	var plain_mean := _mean_colour(plain, area)
-	check(plain_mean.a > 0.0, "the plain card drew something to compare against",
+# The two board marks -- the legal cell and the focus -- brighten the card's FACE and nothing else.
+# Measured as pixels because the face and the pips share one node: every node-level reading of the
+# exclusion reads what was written, not what was drawn. The 8-bit clamp is applied per pixel first.
+func test_the_marks_brighten_the_face_and_not_the_pips() -> void:
+	behavior_section("THE BOARD'S MARKS LIGHT THE CARD'S FACE ALONE (legal cell, focus glow)")
+	var plain_face := await _shoot_card(false, false, true)
+	var area := Rect2i(Vector2i.ZERO, plain_face.get_size())
+	var plain_mean := _mean_colour(plain_face, area)
+	check(plain_mean.a > 0.0, "the plain face drew something to compare against",
 			"no opaque pixel on the stage")
-	var legal_tint : Color = PlayArea.settings().legal_cell_tint
-	var tinted_mean := _mean_colour(await _shoot_card(legal_tint, false), area)
-	check(tinted_mean.g > plain_mean.g and tinted_mean.r < plain_mean.r,
-			"a tinted card's mean colour moves in the tint's own direction (green up, red down)",
-			"plain %s vs tinted %s under %s" % [plain_mean, tinted_mean, legal_tint])
-	var expected_tint := _mean_colour(plain, area, legal_tint)
-	check(_channels_within(tinted_mean, expected_tint, PIXEL_TOLERANCE),
-			"the tinted card is the plain card times the tint, channel by channel",
-			"tinted %s, predicted from plain %s" % [tinted_mean, expected_tint])
-	var focused_mean := _mean_colour(await _shoot_card(Color.WHITE, true), area)
-	var expected_glow := _mean_colour(plain, area, CardVisual.FOCUS_GLOW)
-	check(focused_mean.get_luminance() > plain_mean.get_luminance()
-			and absf(focused_mean.get_luminance() - expected_glow.get_luminance()) <= PIXEL_TOLERANCE,
-			"the focused card is brighter than the plain one by FOCUS_GLOW",
-			"luminance plain %.4f, focused %.4f, predicted %.4f" % [plain_mean.get_luminance(),
-					focused_mean.get_luminance(), expected_glow.get_luminance()])
-	var white := await _shoot_card(Color.WHITE, false)
-	check(white.get_data() == plain.get_data(),
-			"a WHITE tint is byte-identical to no tint",
-			"%d bytes differ" % _bytes_differing(white.get_data(), plain.get_data()))
+	var again := await _shoot_card(false, false, true)
+	check(again.get_data() == plain_face.get_data(),
+			"an unmarked card is drawn identically every time, so a byte comparison below means "
+			+ "something", "%d bytes differ" % _bytes_differing(again.get_data(),
+			plain_face.get_data()))
+	var plain_pips := await _shoot_card(false, false, false)
+	check(_mean_colour(plain_pips, area).a > 0.0,
+			"the rank, suit, stamp and art drew something of their own to compare against",
+			"no opaque pixel on the stage")
+	for legal : bool in [true, false] as Array[bool]:
+		var mark := "the legal-cell highlight" if legal else "the focus glow"
+		var glow : float = PlayArea.settings().legal_cell_glow if legal else CardVisual.FOCUS_GLOW
+		var lit_mean := _mean_colour(await _shoot_card(legal, not legal, true), area)
+		check(lit_mean.r > plain_mean.r and lit_mean.g > plain_mean.g and lit_mean.b > plain_mean.b,
+				"%s lifts the card's face in EVERY channel -- no channel goes down" % mark,
+				"plain %s vs lit %s" % [plain_mean, lit_mean])
+		var predicted := _mean_colour(plain_face, area, Color(glow, glow, glow))
+		check(_channels_within(lit_mean, predicted, PIXEL_TOLERANCE),
+				"...by an EQUAL-CHANNEL multiplier, channel by channel, so %s casts no colour" % mark,
+				"lit %s, predicted from plain %s at x%.3f" % [lit_mean, predicted, glow])
+		var lit_pips := await _shoot_card(legal, not legal, false)
+		check(lit_pips.get_data() == plain_pips.get_data(),
+				"...and the rank, suit, stamp and art are byte-identical under %s" % mark,
+				"%d bytes differ" % _bytes_differing(lit_pips.get_data(), plain_pips.get_data()))
 
-# The card as CardVisual draws it for the player, under one mark. `show_front` is what makes
-# `update_visual` put the face, rank pip and stamp on screen.
-func _shoot_card(tint: Color, focused: bool) -> Image:
+# The card as CardVisual draws it for the player, under one mark, with either its FACE or the rank,
+# suit, stamp and art printed over it left showing -- they share one node, so the exclusion is only
+# measurable a layer at a time. A real printed card, so all five polygons have something to draw.
+func _shoot_card(on_drop_map: bool, focused: bool, face: bool) -> Image:
 	var card := await _host_card()
+	card.data = CardData.new().with_type(TypePaper.new()) \
+			.with_suit(PipSuitKnife.new()) \
+			.with_rank(PipRankNumeral.new().with_value(5)) \
+			.with_stamp(StampRevealing.new())
 	card.show_front = true
-	card.tint = tint
+	await card.update_visual()
+	card.on_drop_map = on_drop_map
 	card.focused = focused
+	card.type.visible = face
+	for poly : Polygon2D in [card.rank, card.suit, card.stamp, card.art] as Array[Polygon2D]:
+		poly.visible = not face
 	return await _shoot()
 
 func _channels_within(a: Color, b: Color, tol: float) -> bool:

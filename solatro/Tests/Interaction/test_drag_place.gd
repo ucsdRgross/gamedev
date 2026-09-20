@@ -615,6 +615,9 @@ func test_a_release_over_the_container_returns_the_card() -> void:
 				"...still held and still lifted (5.4, Q288=a)", _hand_str())
 		check(_placed_cards().is_empty() and _game.save_history.size() == committed,
 				"...and nothing was placed (5.4)", _hand_str())
+		check(TestGridFixtures.lit_cell_count(_pa) > 0,
+				"...and the drop map stays lit, the card still being in hand (5.4)",
+				str(TestGridFixtures.lit_cell_count(_pa)))
 	await _end_fixture()
 
 # The second mouse button mid-drag: the release that closes the cancelled gesture must reach the

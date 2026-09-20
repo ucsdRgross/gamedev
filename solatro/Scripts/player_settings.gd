@@ -591,10 +591,10 @@ enum SeparationMode {
 		entrance_flip_stagger = maxf(value, 0.0)
 		settings_changed.emit()
 
-## Multiplied into the zone card of every cell the held card may land in; WHITE marks nothing.
-@export var legal_cell_tint : Color = Color(0.72, 1.35, 0.86):
+## How far toward white the face of every cell the held card may land in is lifted; 1.0 marks nothing.
+@export var legal_cell_glow : float = 1.45:
 	set(value):
-		legal_cell_tint = value
+		legal_cell_glow = maxf(value, 1.0)
 		settings_changed.emit()
 
 ## Share of the window's near axis (width on the side, height on top) the HUD container claims.

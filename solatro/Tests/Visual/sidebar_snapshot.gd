@@ -731,15 +731,15 @@ func _release_off_a_cell(main: Main, view: GameView, data: CardData) -> void:
 	_push_click(viewport, BARE_BOARD_POINT, false)
 	await get_tree().process_frame
 
-# The drop map is a colour, so the still is checked against a COUNT: how many of the board's cells
-# the sweep marked legal for the card in hand, read back off the visuals that are drawing it.
+# The drop map is a brightening, so the still is checked against a COUNT: how many of the board's
+# cells the sweep marked legal for the card in hand, read back off the visuals that are drawing it.
 func _report_the_drop_map(view: GameView, shot: String) -> void:
 	var cells := 0
 	for grid : GridData in view.game.state.grids:
 		cells += grid.cells.size()
-	print("SIDEBAR_SNAPSHOT %s legal_cells=%d of=%d tint=%s held=%d" % [
-			shot, TestGridFixtures.tinted_cell_count(view.play_area), cells,
-			PlayArea.settings().legal_cell_tint, view.play_area.selected_cards.size()])
+	print("SIDEBAR_SNAPSHOT %s legal_cells=%d of=%d glow=%.3f held=%d" % [
+			shot, TestGridFixtures.lit_cell_count(view.play_area), cells,
+			PlayArea.settings().legal_cell_glow, view.play_area.selected_cards.size()])
 
 # A held card EASES toward its target rather than snapping, so a still taken on the next frame
 # catches it mid-flight. The grab's own rebuild can hand the card a DIFFERENT visual, so the live

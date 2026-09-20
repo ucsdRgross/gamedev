@@ -115,23 +115,29 @@ static var card_jump_rise_play : float:
 	get():
 		return CARD_JUMP_RISE * settings().card_scale
 
-## The focus glow's brightness, as a multiplier on whatever colour the card already wears.
-const FOCUS_GLOW := Color(1.825, 1.825, 1.825)
+## The focus glow's brightness, as an equal-channel multiplier on the card's face.
+const FOCUS_GLOW : float = 1.825
 
 var focused : bool = false:
 	set(value):
 		focused = value
 		_apply_marks()
-## A board mark multiplied into this card's colour — WHITE is unmarked.
-var tint : Color = Color.WHITE:
+## This card's cell is one the held card may land in — the drop map, drawn as a brightening.
+var on_drop_map : bool = false:
 	set(value):
-		tint = value
+		on_drop_map = value
 		_apply_marks()
 
-# ⚠ THE ONE PLACE `modulate` IS WRITTEN. The glow and the tint are two marks on one colour, so it
-# is derived from both; assigning it from either setter alone makes whichever ran last the winner.
+# ⚠ THE ONE PLACE THE HIGHLIGHT IS WRITTEN, and it lands on the FACE ALONE: the rank, suit, stamp and
+# art printed over it keep their own colours, so a lit cell still reads as the mark it carries. Both
+# marks brighten one face, so it is derived from both -- either setter alone makes the last one win.
 func _apply_marks() -> void:
-	modulate = tint * FOCUS_GLOW if focused else tint
+	if not is_node_ready():
+		await ready
+	var glow := 1.0
+	if on_drop_map: glow *= settings().legal_cell_glow
+	if focused: glow *= FOCUS_GLOW
+	CardOutline.set_brightness(type, glow)
 
 @export var data : CardData:
 	set(value):
@@ -287,6 +293,8 @@ func _push_outline_ink() -> void:
 	CardOutline.set_rim(suit, _rim_of(MarkMatch.Property.SUIT, style), CARD_SIZE)
 	CardOutline.set_rim(art, _rim_of(MarkMatch.Property.TALENT, style), CARD_SIZE)
 	CardOutline.set_rim(stamp, _rim_of(MarkMatch.Property.HAT, style), CARD_SIZE)
+#The polygons are POOLED, so a rebind inherits whatever brightening the last card left on them.
+	_apply_marks()
 	_push_alert()
 
 # SET TOGETHER: a mask with no ink draws nothing and an ink with no mask has nothing to draw. The

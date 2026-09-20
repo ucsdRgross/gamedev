@@ -371,13 +371,14 @@ func _ball_rotation() -> Array[Case]:
 		out.append(case)
 	return out
 
-## Ruling 10 — a highlighted card highlights its effects too. Both shaders overwrite COLOR, so the
-## modulate the renderer folds into it has to be captured and multiplied back or the highlight stops
-## at the card's own art. The right-hand panels are the same effects under CardVisual's own focus
-## modulate; they must be visibly brighter, not identical.
+#Both shaders overwrite COLOR, so the modulate the renderer folds into it has to be captured and
+#multiplied back or it stops at the host's own art. The right-hand panels are the same effects under
+#a brightening modulate, and they must be visibly brighter, not identical.
+
+## A host's modulate reaches the effects it carries, not just its own art.
 func _focus_highlight() -> Array[Case]:
 	var out : Array[Case] = []
-	var highlight := CardVisual.FOCUS_GLOW
+	var highlight := Color(CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW, CardVisual.FOCUS_GLOW)
 	for lit : bool in [false, true]:
 		var fire := _card_case("fire, %s" % ("FOCUSED" if lit else "plain"),
 				[FxFire.request(&"fire", 6, StatusBurning.CARD_FIRE_STYLE)] as Array[FxRequest])

@@ -166,7 +166,7 @@ func _ready() -> void:
 	await test_a_click_on_a_card_no_rule_grabs_leaves_the_hand_empty()
 	await test_the_disarm_leaves_nothing_held()
 	await test_an_empty_entrance_lifts_nothing()
-	await test_the_legal_cell_tint_follows_what_a_placement_accepts()
+	await test_the_legal_cell_highlight_follows_what_a_placement_accepts()
 	await test_a_direct_rebuild_re_sweeps_the_drop_map()
 	behavior_section("S18: CANCEL")
 	await test_the_second_button_dismisses_a_description_with_nothing_held()
@@ -2488,7 +2488,7 @@ func test_a_press_on_bare_board_reverts_to_the_hud() -> void:
 func _board_accepts(held: Array[CardData], control: Control) -> bool:
 	return _zone_card_of(_play_area.ui_data[control]) in await _drop_map(held)
 
-## The zone cards the board lets `held` land on, asked the way the tint asks.
+## The zone cards the board lets `held` land on, asked the way the highlight asks.
 func _drop_map(held: Array[CardData]) -> Array[CardData]:
 	var game := CardEnvironment.get_current_game()
 	return await game.legal_cells_for(held, game.state.grids)
@@ -4409,8 +4409,8 @@ func test_an_empty_entrance_lifts_nothing() -> void:
 				"...and a click on a cell with nothing held picks nothing up (Q119=a)")
 	await _end_main_fixture()
 
-## 6.11/G12/`GAP-005`=a: the tint IS the drop map -- it marks what the board accepts, nothing it refuses, and it follows the answer when a placement changes it.
-func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
+## 6.11/G12/`GAP-005`=a: the highlight IS the drop map -- it lights what the board accepts, nothing it refuses, and it follows the answer when a placement changes it.
+func test_the_legal_cell_highlight_follows_what_a_placement_accepts() -> void:
 	await _start_game_fixture()
 	var filler := await _fill_a_cell_from_the_entrance(0)
 	check(filler != null, "the deal offered a second Entrance card to fill a cell with")
@@ -4426,27 +4426,31 @@ func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 			var refused_cell := _zone_card_of(_play_area.ui_data[refused])
 			var accepted := await _board_accepts(held, cell)
 			check(accepted, "the board takes the held card onto that cell (6.11)")
-			check(_tint_of(zone_card) == _drawn(_legal_cell_tint(), zone_card),
-					"...and the cell's zone card is DRAWN in the legal-cell tint (6.11, G12)",
-					str(_tint_of(zone_card)))
-			check(_tint_of(refused_cell) == _drawn(Color.WHITE, refused_cell),
-					"a cell the board refuses is drawn with no tint (6.11, G12)",
-					str(_tint_of(refused_cell)))
-			var marked_before := TestGridFixtures.tinted_cell_count(_play_area)
+			check(is_equal_approx(_glow_of(zone_card),
+					_drawn(_legal_cell_glow(), zone_card)),
+					"...and the cell's zone card is DRAWN with the legal-cell brightening (6.11, G12)",
+					str(_glow_of(zone_card)))
+			check(is_equal_approx(_glow_of(refused_cell), _drawn(1.0, refused_cell)),
+					"a cell the board refuses is drawn unlit (6.11, G12)",
+					str(_glow_of(refused_cell)))
+			var marked_before := TestGridFixtures.lit_cell_count(_play_area)
 			await _click_card(cell)
 			await _hoverable_card_controls()
 			check(_play_area.selected_cards.is_empty(),
 					"the click placed the held card and emptied the hand (6.11)",
 					str(_play_area.selected_cards.size()))
+			check(TestGridFixtures.lit_cell_count(_play_area) == 0,
+					"...so the placement left no cell lit (6.11, G12)",
+					str(TestGridFixtures.lit_cell_count(_play_area)))
 			var now_held := await _grab_a_card_to_place()
 			var still_accepted := await _board_accepts(now_held, _play_area.data_ui[held[0]])
 			check(not still_accepted, "the filled cell takes nothing more (6.11)")
-			check(_tint_of(zone_card) == _drawn(Color.WHITE, zone_card),
-					"...so the cell that was legal has lost the tint (6.11, G12)",
-					str(_tint_of(zone_card)))
-			var marked_after := TestGridFixtures.tinted_cell_count(_play_area)
+			check(is_equal_approx(_glow_of(zone_card), _drawn(1.0, zone_card)),
+					"...so the cell that was legal has lost the highlight (6.11, G12)",
+					str(_glow_of(zone_card)))
+			var marked_after := TestGridFixtures.lit_cell_count(_play_area)
 			check(marked_after == marked_before - 1,
-					"...and every cell still legal kept it (6.11, G12)",
+					"...and every cell still legal kept the highlight (6.11, G12)",
 					"%d marked, was %d" % [marked_after, marked_before])
 	await _end_main_fixture()
 
@@ -4467,8 +4471,8 @@ func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 			swept = swept and legal in _play_area._legal_cells
 		check(swept, "a direct rebuild re-swept the drop map to what the board accepts (6.11, G12)",
 				"%d mapped, %d legal" % [_play_area._legal_cells.size(), expected.size()])
-		check(_tint_of(zone_card) == _drawn(Color.WHITE, zone_card),
-				"...so the filled cell is drawn with no tint (6.11, G12)", str(_tint_of(zone_card)))
+		check(is_equal_approx(_glow_of(zone_card), _drawn(1.0, zone_card)),
+				"...so the filled cell is drawn unlit (6.11, G12)", str(_glow_of(zone_card)))
 	await _end_main_fixture()
 
 # A fresh deal refuses NO cell -- every cell is empty and an empty cell takes anything -- so the
@@ -4486,17 +4490,17 @@ func _fill_a_cell_from_the_entrance(cell: int) -> CardData:
 	await get_tree().process_frame
 	return filler
 
-## The colour this card is DRAWN with -- `modulate`, what the player sees, never the `tint` field.
-func _tint_of(data: CardData) -> Color:
-	return _play_area.data_card[data].modulate
+## The brightening this card's face is DRAWN with -- the uniform the shader gets, never the field.
+func _glow_of(data: CardData) -> float:
+	return TestGridFixtures.brightness_of(_play_area.data_card[data].type)
 
 ## What `mark` looks like drawn on this card: under the focus glow if the card holds the focus.
-func _drawn(mark: Color, data: CardData) -> Color:
+func _drawn(mark: float, data: CardData) -> float:
 	var visual : CardVisual = _play_area.data_card[data]
 	return mark * CardVisual.FOCUS_GLOW if visual.focused else mark
 
-func _legal_cell_tint() -> Color:
-	return PlayArea.settings().legal_cell_tint
+func _legal_cell_glow() -> float:
+	return PlayArea.settings().legal_cell_glow
 
 ## An EMPTY cell's own zone control -- what a release onto that cell lands on.
 func _an_empty_cells_control(controls: Array[Control]) -> Control:
@@ -4559,6 +4563,9 @@ func test_the_second_button_over_the_panel_still_cancels() -> void:
 		check(not _play_area.selected_cards.is_empty() and _panel.visible,
 				"the click left a card held with the description panel up",
 				"%d held, panel %s" % [_play_area.selected_cards.size(), str(_panel.visible)])
+		check(TestGridFixtures.lit_cell_count(_play_area) > 0,
+				"precondition: the held card lit a drop map to put out",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
 		var at := _panel.get_global_rect().get_center()
 		check(_container.get_global_rect().has_point(at),
 				"the aim point is inside the container's own rect, where a click is eaten (S18.2)",
@@ -4574,6 +4581,9 @@ func test_the_second_button_over_the_panel_still_cancels() -> void:
 		check(_play_area.selected_cards.is_empty(),
 				"a second-button press over the sidebar still released the held card (S18.2, B15)",
 				str(_play_area.selected_cards.size()))
+		check(TestGridFixtures.lit_cell_count(_play_area) == 0,
+				"...and the drop map it lit went out with it (6.11, G12)",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
 	await _end_main_fixture()
 
 ## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and zooms out to the wall.
@@ -4586,6 +4596,9 @@ func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 		await _click_card(entrance[0])
 		check(not _play_area.selected_cards.is_empty() and _container.showing_description(),
 				"the click left a card held with its description locked")
+		check(TestGridFixtures.lit_cell_count(_play_area) > 0,
+				"precondition: the held card lit a drop map to put out",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
 		var left_the_screen : Array[bool] = [false]
 		_main.wall.wall_view_entered.connect(func() -> void: left_the_screen[0] = true)
 		_booted_viewport.push_input(_cancel_event())
@@ -4594,6 +4607,9 @@ func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 		check(_play_area.selected_cards.is_empty(),
 				"one Escape released the held card (S18.3, E22)",
 				str(_play_area.selected_cards.size()))
+		check(TestGridFixtures.lit_cell_count(_play_area) == 0,
+				"...and the drop map it lit went out with it (6.11, G12)",
+				str(TestGridFixtures.lit_cell_count(_play_area)))
 		check(not _container.showing_description(),
 				"...dismissed the description in the SAME press (S18.3, Q100=c)")
 		check(left_the_screen[0],

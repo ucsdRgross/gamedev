@@ -177,6 +177,13 @@ static func set_rim(poly : Polygon2D, style : OutlineStyle, card_extent : Vector
 	mat.set_shader_parameter(&"u_outline_width", style.width)
 	mat.set_shader_parameter(&"u_card_extent", card_extent)
 
+#A per-element channel rather than the host's modulate, which reaches all five polygons at once: the
+#board lights a card's FACE and the pips printed over it must keep their own colours.
+
+## Light this polygon by an equal-channel multiplier on its drawn colour. 1.0 is unlit.
+static func set_brightness(poly : Polygon2D, brightness : float) -> void:
+	material_of(poly).set_shader_parameter(&"u_brighten", brightness)
+
 #It takes the whole CardAlert rather than its fields one by one: the alert has four knobs and a
 #fifth is plausible, and a widening argument list is a widening list of call sites to update.
 

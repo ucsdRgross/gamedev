@@ -54,6 +54,12 @@ uniform int u_outline_index : hint_range(0, 255) = 28;
 uniform int u_fill_mode : hint_range(0, 1) = 0;
 uniform int u_fill_index : hint_range(0, 255) = 0;
 
+// ── THE HIGHLIGHT ─────────────────────────────────────────────────────────────────────────────────
+// An EQUAL-CHANNEL multiplier on this element's drawn colour, so a lit element goes toward white and
+// never takes a colour cast. 1.0 is unlit. It is per-element rather than a host modulate because the
+// board lights a card's FACE and leaves the rank, suit, stamp and art printed over it alone.
+uniform float u_brighten = 1.0;
+
 // ── CARD SPACE ────────────────────────────────────────────────────────────────────────────────────
 // This polygon's centre in CARD coordinates, and the card's extent. Together they let all five polygons
 // evaluate the alert against ONE coordinate, so a card shows a single band rather than five local
@@ -224,5 +230,5 @@ void fragment() {
 		}
 		if (hit > 0.5) out_col = vec4(alert_ink(card_pos), 1.0);
 	}
-	COLOR = out_col * v_modulate;
+	COLOR = vec4(out_col.rgb * u_brighten, out_col.a) * v_modulate;
 }

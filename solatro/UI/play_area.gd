@@ -3238,13 +3238,12 @@ var locked_data : CardData = null:
 #it, so what is being read stays marked once the focus moves on. A rebuild re-applies it, and the
 #drop map from the last sweep with it, because it hands the same cell a different visual.
 func _refresh_card_marking() -> void:
-	var tint : Color = PlayArea.settings().legal_cell_tint
 	for data : CardData in data_card:
 		var visual : CardVisual = data_card[data]
 		visual.focused = visual == focused_visual or data == locked_data
-		visual.tint = tint if data in _legal_cells else Color.WHITE
+		visual.on_drop_map = data in _legal_cells
 
-## The zone card of every cell the held card may land in — the drop map the tint draws.
+## The zone card of every cell the held card may land in — the drop map the highlight draws.
 var _legal_cells : Dictionary[CardData, bool] = {}
 
 # THE DROP MAP, read from the Game's one legality walk so no placement rule is restated here.

@@ -972,8 +972,9 @@ func test_a_committed_show_lights_only_the_grid_it_can_place_in() -> void:
 # A tint would be `modulate`, which reaches every child -- so it would also tint whatever is
 # stacked on the mark. Each agreeing element takes its own rim instead.
 
-# The drop map and the focus glow DO write modulate, through CardVisual.tint/focused, and a held
-# card makes this cell legal; the claim is that the MATCH added nothing on top of those two.
+# The drop map and the focus glow DO brighten the cell's face, through CardVisual.on_drop_map and
+# focused, and a held card makes this cell legal; the claim is that the MATCH added nothing on top
+# of those two -- no tint on the control, no modulate anywhere, no brightening the two do not explain.
 func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 	var visual := mark_visual(rank_cell)
 	var control : Control = pa.data_ui[game.state.cell_type_at(rank_cell)]
@@ -995,13 +996,24 @@ func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 			uniform_of(visual.suit, &"u_outline_width")])
 	check(uniform_of(visual.type, &"u_outline_width") == 0,
 			"TP-64: the cell frame under them stays rimless, so the mark still reads as a mark")
-	var explained : Color = visual.tint * CardVisual.FOCUS_GLOW if visual.focused else visual.tint
+	var explained : float = PlayArea.settings().legal_cell_glow
+	if visual.focused: explained *= CardVisual.FOCUS_GLOW
+	var face := TestGridFixtures.brightness_of(visual.type)
 	check(control.modulate == control_was
-			and visual.modulate == explained
-			and visual.tint == PlayArea.settings().legal_cell_tint,
-			"TP-64: the match tinted nothing -- the control is untouched and the visual's modulate is "
-			+ "the drop map and the focus glow, nothing else",
-			"%s / %s" % [str(control.modulate), str(visual.modulate)])
+			and visual.modulate == Color.WHITE
+			and visual.on_drop_map
+			and is_equal_approx(face, explained),
+			"TP-64: the match lit nothing -- the control is untouched, no modulate is written, and "
+			+ "the face's brightening is the drop map and the focus glow, nothing else",
+			"%s / %s / %f" % [str(control.modulate), str(visual.modulate), face])
+	var pips : Array[float] = []
+	var pip_lit := 0
+	for poly : Polygon2D in [visual.rank, visual.suit, visual.stamp,
+			visual.art] as Array[Polygon2D]:
+		pips.append(TestGridFixtures.brightness_of(poly))
+		if not is_equal_approx(pips[-1], 1.0): pip_lit += 1
+	check(pip_lit == 0, "TP-64: and the mark's own pips are excluded from it",
+			"rank %f, suit %f, stamp %f, art %f" % pips)
 	await input.click(centre_of(held_card), MOUSE_BUTTON_RIGHT)
 
 # ==============================================================================
