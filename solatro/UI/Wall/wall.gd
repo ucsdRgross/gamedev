@@ -11,6 +11,7 @@ extends Node2D
 #individually through its own process mode.
 func _ready() -> void:
 	get_tree().paused = true
+	(%HudContainer as HudContainer).second_button_pressed.connect(_route_second_button)
 
 const LAYOUT_PATH := "res://Assets/Wall/layout_default.tres"
 
@@ -130,8 +131,8 @@ signal back_requested
 ## Forward was pressed.
 signal forward_requested
 
-## ⚠ Emitted BY `Main`, not by this class: `Wall` does not orchestrate focus or transitions, so
-## only `Main` knows the exact moment each of these occurs.
+#⚠ Emitted BY `Main`, not by this class: `Wall` does not orchestrate focus or transitions, so only
+#`Main` knows the exact moment each of these occurs.
 signal focus_changed(picture_id: StringName)
 signal transition_started(from_id: StringName, to_id: StringName)
 signal transition_landed(picture_id: StringName)
@@ -236,10 +237,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				pan_by((event as InputEventMouseMotion).relative)
 				return
-	# Pinch reaches here only if the focused screen did not consume the touch first, like every
-	# other wall-level action. Pinch-OUT mirrors ui_accept (wall view only, commits the current
-	# selection); pinch-IN goes to wall view, which is why it emits `wall_view_entered` while
-	# `ui_cancel` below is Back.
+#Pinch reaches here only if the focused screen did not consume the touch first, like every other
+#wall-level action. Pinch-OUT mirrors ui_accept (wall view only, commits the current selection);
+#pinch-IN goes to wall view, which is where `ui_cancel` below ends too.
 	var gesture := _pinch.feed(event, WallPicture.settings().wall_pinch_threshold_px)
 	if gesture == WallInput.PinchTracker.Gesture.PINCH_OUT:
 		if not focused and selected_id != &"":
@@ -250,10 +250,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		wall_view_entered.emit()
 		return
-#Keyboard Back, after the focused screen's first refusal above. Announces Back, never wall view.
+#Escape zooms out to WALL VIEW, after the focused screen's first refusal has cancelled whatever it
+#was holding. Back is `wall_back`'s alone, so the two are separately reachable (owner ruling).
 	if event.is_action_pressed(&"ui_cancel"):
 		get_viewport().set_input_as_handled()
-		back_requested.emit()
+		wall_view_entered.emit()
 		return
 #The four wall_* actions are ordinary rebindable actions, bound for BOTH keyboard and joypad. They
 #are read here alongside ui_cancel and wall_jump_N because only the SELECTION keys are scoped to
@@ -275,6 +276,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			_jump_to_index(n - 1)
 			get_viewport().set_input_as_handled()
 			return
+
+#CANCEL IS REACHABLE FROM ANYWHERE ON SCREEN: the overlay panel is marked handled by the GUI pass
+#before `_unhandled_input` runs, so it announces the second button instead and the press takes the
+#same route to the focused picture every other wall-level event takes.
+func _route_second_button(event: InputEventMouseButton) -> void:
+	if input_locked: return
+	var focused := _focused_picture()
+	if focused: WallInput.route(event, focused)
 
 #A fresh press always restarts the hold clock, so tapping never inherits the previous key's
 #part-elapsed delay.

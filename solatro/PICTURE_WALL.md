@@ -73,7 +73,9 @@ shipped with readers missing *and* empty event lists. `TestWallInput` asserts bo
 
 - **`Main` decides, `Wall` announces.** `Wall` holds no `FocusStack` and must not grow one. Back is
   `back_requested`, not "go to wall view" — only the stack knows whether Back bottoms out (`Q65`=a).
-  `wall_view_entered` means the overview specifically: the Wall button and pinch-in (`Q119`=a).
+  `wall_view_entered` means the overview specifically: the Wall button, pinch-in (`Q119`=a) and
+  `ui_cancel`. **Escape is NOT Back** — the owner reversed `Q100` for the keyboard: Escape cancels
+  what the focused screen holds and then zooms out to wall view, while Back keeps `wall_back`.
 - **Never detect a timed geometric event by sampling frames.** Both latches that do this —
   `_source_pause_time` and `_input_unlock_time` — precompute the crossing analytically from the pure
   `sample_at()`. The windows they look for OPEN AND CLOSE mid-transition (a focused picture overfills

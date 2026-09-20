@@ -58,8 +58,8 @@ func _ready() -> void:
 	implementation_section("THE THREE wall_* ACTIONS ARE ACTUALLY BOUND (M3)")
 	_test_every_wall_action_has_at_least_one_binding()
 	behavior_section("KEYBOARD (I3, I4, I7, I14, S21)")
-	_test_screen_that_consumes_escape_wall_does_not_go_back()
-	_test_screen_that_ignores_escape_wall_goes_back()
+	_test_screen_that_consumes_escape_leaves_the_wall_alone()
+	_test_screen_that_ignores_escape_reaches_wall_view()
 	_test_wall_jump_3_enters_the_third_picture_in_placement_order()
 	_test_wall_is_deaf_to_arrows_while_a_screen_is_focused()
 	behavior_section("ENTER (Q88, Q99 -- S31 wire-up)")
@@ -573,45 +573,42 @@ func _test_wheel_reaches_the_focused_screen_but_never_the_wall() -> void:
 
 # ------------------------------------------------------------------ I3, I4, I7, I14 (S21 keyboard)
 
-## I3 (Q100=a): a screen that consumes Escape gets FIRST REFUSAL -- the wall does NOT go back.
-## M2: watches `back_requested`, the signal `ui_cancel` actually emits now. Watching
-## `wall_view_entered` here is what let keyboard Back mean WALL for the whole run.
-func _test_screen_that_consumes_escape_wall_does_not_go_back() -> void:
+#ONE ESCAPE FED TO A FOCUSED PICTURE, and what the wall announced about it: [wall view, back]. The
+#two rows below differ only in whether that picture consumes the press, so the press itself is fed
+#in one place.
+func _escape_past(wall: Wall, wp: WallPicture) -> Array[bool]:
+	wp.focus()
+	var announced : Array[bool] = [false, false]
+	wall.wall_view_entered.connect(func() -> void: announced[0] = true)
+	wall.back_requested.connect(func() -> void: announced[1] = true)
+	var event := InputEventAction.new()
+	event.action = &"ui_cancel"
+	event.pressed = true
+	wall._unhandled_input(event)
+	return announced
+
+## I3 (Q100=a): a screen that consumes Escape gets FIRST REFUSAL -- the wall announces nothing.
+func _test_screen_that_consumes_escape_leaves_the_wall_alone() -> void:
 	var wall := _build_wall()
 	var wp := _add_scripted_picture(wall, &"consumer", Vector2.ZERO, _CONSUMES_CANCEL_SOURCE)
-	wp.focus()
-	var went_back : Array[bool] = [false]
-	wall.back_requested.connect(func() -> void: went_back[0] = true)
-
-	var event := InputEventAction.new()
-	event.action = &"ui_cancel"
-	event.pressed = true
-	wall._unhandled_input(event)
-
-	check(not went_back[0],
-			"a screen that consumes Escape gets FIRST REFUSAL -- the wall does NOT go back (Q100=a)")
+	var announced := _escape_past(wall, wp)
+	check(not announced[0] and not announced[1],
+			"a screen that consumes Escape gets FIRST REFUSAL -- the wall stays where it is (Q100=a)",
+			"wall view %s, back %s" % [str(announced[0]), str(announced[1])])
 	_teardown(wall, [wp])
 
-## I4 (Q100=a): a screen that ignores Escape (no scene at all -- nothing inside consumes anything)
-## lets it through -- the wall DOES go back.
-func _test_screen_that_ignores_escape_wall_goes_back() -> void:
+#A screen that ignores Escape (no scene at all) lets it through, and the owner reversed Q100 for the
+#keyboard: it zooms out to WALL VIEW, never to the previous picture, which is `wall_back`'s alone.
+
+## I4 (Q100=a, owner ruling): Escape past a screen that ignores it reaches wall view.
+func _test_screen_that_ignores_escape_reaches_wall_view() -> void:
 	var wall := _build_wall()
 	var wp := _add_picture(wall, &"ignorer", Vector2.ZERO)
-	wp.focus()
-	var went_back : Array[bool] = [false]
-	var went_to_wall_view : Array[bool] = [false]
-	wall.back_requested.connect(func() -> void: went_back[0] = true)
-	wall.wall_view_entered.connect(func() -> void: went_to_wall_view[0] = true)
-
-	var event := InputEventAction.new()
-	event.action = &"ui_cancel"
-	event.pressed = true
-	wall._unhandled_input(event)
-
-	check(went_back[0], "a screen that ignores Escape lets it through -- the wall DOES go back")
-	check(not went_to_wall_view[0],
-			"M2/Q65=a: and asks for BACK, not for wall view -- only the FocusStack decides whether "
-			+ "Back bottoms out into the overview, and `Wall` does not hold it")
+	var announced := _escape_past(wall, wp)
+	check(announced[0],
+			"a screen that ignores Escape lets it through -- the wall zooms out to WALL VIEW")
+	check(not announced[1],
+			"...and never asks for Back, which keeps its own key in `wall_back`", str(announced[1]))
 	_teardown(wall, [wp])
 
 ## I7 (Q104=a): wall_jump_3 enters the THIRD picture in PLACEMENT order -- GAP-009 deleted "ring",

@@ -87,7 +87,7 @@ func _ready() -> void:
 	await test_the_description_follows_the_hover_while_locked()
 	await test_leaving_everything_returns_to_the_locked_card()
 	await test_focus_leaving_the_board_returns_to_the_locked_card()
-	await test_cancel_reverts_to_the_hud_and_still_reaches_back()
+	await test_cancel_reverts_to_the_hud_and_still_reaches_the_wall()
 	await test_the_second_button_releases_the_held_card_then_dismisses()
 	await test_a_press_on_bare_board_reverts_to_the_hud()
 	await test_placing_a_card_closes_the_description()
@@ -173,6 +173,7 @@ func _ready() -> void:
 	behavior_section("S18: CANCEL")
 	await test_the_second_button_dismisses_a_description_with_nothing_held()
 	await test_the_second_button_with_nothing_to_cancel_does_nothing()
+	await test_the_second_button_over_the_panel_still_cancels()
 	await test_escape_cancels_everything_and_steps_back_in_one_press()
 	await test_releasing_the_held_card_leaves_the_locked_description_up()
 	await test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm()
@@ -2337,8 +2338,8 @@ func test_focus_leaving_the_board_returns_to_the_locked_card() -> void:
 					"...so the description returns to the locked card (B7, Q60=c)", title.text)
 	await _end_main_fixture()
 
-## 1.7/B9/B10/Q64=a/Q100=c: cancel with nothing held reverts to the HUD, and the SAME press reaches the wall's own Back -- the transition then locks input, so there is no second press to make.
-func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
+## 1.7/B9/B10/Q64=a/Q100=c: cancel with nothing held reverts to the HUD, and the SAME press reaches the wall -- the transition then locks input, so there is no second press to make.
+func test_cancel_reverts_to_the_hud_and_still_reaches_the_wall() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
 	var entrance := await _entrance_card_controls()
@@ -2348,8 +2349,8 @@ func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
 		await _lock_without_holding(entrance[0])
 		var dismissals : Array[int] = []
 		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
-		var went_back : Array[bool] = [false]
-		_main.wall.back_requested.connect(func() -> void: went_back[0] = true)
+		var left_the_screen : Array[bool] = [false]
+		_main.wall.wall_view_entered.connect(func() -> void: left_the_screen[0] = true)
 		check(_container.showing_description() and _play_area.selected_cards.is_empty(),
 				"the description is up and nothing is held before the cancel")
 
@@ -2359,8 +2360,8 @@ func test_cancel_reverts_to_the_hud_and_still_reaches_back() -> void:
 				"cancel with nothing held reverts the container to the HUD (B9, B10)")
 		check(not _container.is_locked(), "...and the lock is gone with it")
 		check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
-		check(went_back[0],
-				"...and that ONE press also reaches the wall's own Back, rather than a second one doing it (Q100=c)")
+		check(left_the_screen[0],
+				"...and that ONE press also reaches the wall's own zoom out, rather than a second one doing it (Q100=c)")
 	await _end_main_fixture()
 
 ## S18.1/Q99=b: the second mouse button cancels ONE thing per press -- the held card first, the description on the next press.
@@ -4531,7 +4532,35 @@ func test_the_second_button_with_nothing_to_cancel_does_nothing() -> void:
 			"...and never reaches the wall's own Back (S18.2, F9)")
 	await _end_main_fixture()
 
-## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and steps out of the screen.
+## S18.2/B15: the second button cancels from ANYWHERE on screen -- the overlay panel covers part of the board and must not swallow it.
+func test_the_second_button_over_the_panel_still_cancels() -> void:
+	await _start_game_fixture()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		await _click_card(entrance[0])
+		check(not _play_area.selected_cards.is_empty() and _panel.visible,
+				"the click left a card held with the description panel up",
+				"%d held, panel %s" % [_play_area.selected_cards.size(), str(_panel.visible)])
+		var at := _panel.get_global_rect().get_center()
+		check(_container.get_global_rect().has_point(at),
+				"the aim point is inside the container's own rect, where a click is eaten (S18.2)",
+				"%s in %s" % [str(at), str(_container.get_global_rect())])
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_RIGHT
+		event.pressed = true
+		event.position = at
+		event.global_position = at
+		_booted_viewport.push_input(event)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		check(_play_area.selected_cards.is_empty(),
+				"a second-button press over the sidebar still released the held card (S18.2, B15)",
+				str(_play_area.selected_cards.size()))
+	await _end_main_fixture()
+
+## S18.3/Q100=c/E22: ONE Escape releases the held card, dismisses the description and zooms out to the wall.
 func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
@@ -4541,8 +4570,8 @@ func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 		await _click_card(entrance[0])
 		check(not _play_area.selected_cards.is_empty() and _container.showing_description(),
 				"the click left a card held with its description locked")
-		var went_back : Array[bool] = [false]
-		_main.wall.back_requested.connect(func() -> void: went_back[0] = true)
+		var left_the_screen : Array[bool] = [false]
+		_main.wall.wall_view_entered.connect(func() -> void: left_the_screen[0] = true)
 		_booted_viewport.push_input(_cancel_event())
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -4551,7 +4580,8 @@ func test_escape_cancels_everything_and_steps_back_in_one_press() -> void:
 				str(_play_area.selected_cards.size()))
 		check(not _container.showing_description(),
 				"...dismissed the description in the SAME press (S18.3, Q100=c)")
-		check(went_back[0], "...and still showed the menu/wall (S18.3, Q100=c)")
+		check(left_the_screen[0],
+				"...and still left the screen, for WALL VIEW (S18.3, owner ruling)")
 	await _end_main_fixture()
 
 ## S18.4/E20: releasing the held card is not a dismissal -- a locked description outlives it.
