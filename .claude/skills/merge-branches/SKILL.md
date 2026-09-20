@@ -164,7 +164,20 @@ EOF
    Measured: five `EFFECTS.*.translation` rode in this way. Where regeneration IS the policy,
    `--headless --import` writes them; `importer="keep"` in a `.import` is a deliberate freeze and
    must survive.
-5. **Duplication the MERGE created.** Two branches writing the same helper never conflict.
+
+5. **A RULE ONE BRANCH ENFORCED AT ONE SEAM, where the other branch added more seams.** This is the
+   merge defect no test on either branch can fail on, and the most expensive one here. Branch A
+   wrote "no signal that grabs a card fires while the viewer is open" and guarded the one signal
+   it had; branch B added three more signals it never saw. Take every rule stated as a
+   quantifier -- *no*, *every*, *always*, *the one place* -- and re-derive the set it ranges over
+   on the MERGED tree:
+   ```bash
+   grep -rn 'signal ' <the file that states the rule>   # then grep each name's emit sites
+   ```
+   If the rule now has more members than the guard covers, give it ONE home and route them all
+   through it. Then prove it red-then-green: neutralise the guard and watch the new row fail.
+
+6. **Duplication the MERGE created.** Two branches writing the same helper never conflict.
    `dup_check.py` over each branch tip (`git archive <branch> | tar -x -C <dir>`, then run **that
    copy** of the tool — it resolves its root from its own path) and over the combine branch: pairs
    on neither input are the merge's own.
@@ -205,6 +218,11 @@ the combine branch — never merge it to `main` yourself (hard rule 1).
   not compile.
 - **A hang with an EMPTY errors log is an ordering deadlock, not a crash.** The suites that never
   printed a banner name the blocker — not the last line written.
+- **A doc can be false without `doc_check` seeing it.** It resolves file references, not function
+  names: four docs still described a helper this merge deleted. Grep the docs for every name you
+  retired in step 8.
+- **A gap file's ruling stays verbatim; its DERIVATION can go stale.** "Only X is unbound" stopped
+  being true when the other branch took X. Append the correction, never edit the owner's words.
 - **Two branches' features can both be right and still contradict one test.** A branch asserting
   "nothing tints" fails once the other makes a tint reach the pixels. Narrow the claim to what that
   branch owns and name the other's feature as what explains the rest. Deleting the test is a silent

@@ -83,7 +83,7 @@ written when a run stalls or fails.
 
 ## Waiting on the owner
 
-- ⚠ **`design/board-plan/` is BUILT and CLOSED, on branch `board-plan`** — every cell opens with
+- ⚠ **`design/board-plan/` is BUILT and CLOSED** — every cell opens with
   a mark, a match pays into the line it scores, a suit effect fires only where its cell's mark
   agrees on suit, marks act at landing and at every line score, the layer view and the reveal
   cascade ship (ARCHITECTURE_REVIEW §3a/§3e/§4). All six gap rulings are landed (`PLAN.md`
