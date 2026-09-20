@@ -365,12 +365,13 @@ history stored in forward orientation).
     fit, and re-fit on `container_rect_changed`. It republishes only while a description shows — a
     dismissal is the player's act, a resize is not.
 - **Held versus following** are two flags on `CardVisual`: `held` lifts the card in its slot,
-  `following` rides the pointer. Any mouse motion, including one emulated from a finger, latches
-  `following` (`PlayArea.follow_cards`).
-- **Arming is a pickup.** `PlayArea.arm_leftmost` makes the same `try_grab` → `grab_cards` calls a
-  click makes; nothing stores the arm (`armed_slot` re-derives it). `GameView.arm_after_placement()`
-  is the one re-arm site, called at the end of `Game.place_card_in_grid`, so the live and replay
-  routes share it.
+  `following` rides the pointer. Only a LIVE DRAG follows — motion while the press that started it
+  is still down (`PlayArea.follow_cards`, gated on `_drag_began` and `_press_data`); every release
+  ends it.
+- **Nothing is held until the player acts.** A CLICK on a card lifts it, held and raised in its own
+  slot, not following. A DRAG carries it while the button is down. The board picks nothing up for
+  the player: not at the deal, not after a placement, not on undo or resume. `armed_slot()` is a
+  state query — the leftmost Entrance slot holding a card — and nothing stores a selection.
 - **Click versus drag** is decided at the RELEASE: travel past `card_drag_threshold` × the pressed
   card's width as drawn at the board's zoom is a drag. A drag places only when its card is in
   `selected_cards`; one from a card no rule picked up places nothing (`_consume_as_card_release`).
@@ -383,11 +384,12 @@ history stored in forward orientation).
   consumed, so the wall's Back runs on the same press. Both end the press through `_end_the_gesture`.
 - **Pad focus.** Godot's focus search never crosses a viewport. A key/pad accept on the exit X,
   read at its `gui_input` because a mouse click focuses the X too, emits `exit_accepted`, and
-  `PlayArea.return_focus_to_board` rests focus on the described card (the armed card if that
-  control is gone) without re-publishing. The outcome row's own Undo rests through
-  `PlayArea.rest_focus_on_board` instead: the armed card, or — End reached with the Entrance empty,
-  so the undo re-arms nothing — the selected grid's origin cell. The HUD's Undo is a root-viewport
-  press and rests nothing.
+  `PlayArea.return_focus_to_board` rests focus on the described card, or on the board if that
+  control is gone, without re-publishing. `PlayArea.rest_focus_on_board` is that board rest: the
+  card in hand if there is one, otherwise the selected grid's origin cell. `GameView` calls it
+  whenever the board settles with NOTHING in the picture holding the focus, which is what gives a
+  pad player somewhere to start and what heals a rebuild that freed the focused control. The HUD's
+  Undo is a root-viewport press and rests nothing.
   - ⚠ **`Control.grab_focus()` clears the focus owner of EVERY viewport in the window** (measured:
     a grab in the root viewport nulled the map SubViewport's owner). So `HudContainer` grabs
     `%Back` only when the pick took the focus — the root owner is read BEFORE `detach_entry()`
@@ -1715,8 +1717,8 @@ commitment lift and its own `save_state()`), then `_end_show_on_goal` holds for
 second placement inside an unlocked hold rewound the very win about to resolve. Resume re-fires the
 check (`_end_show_if_goal_met`) when the goal is met and no outcome was saved, after any replay.
 ⚠ **`Game.undo()` releases `processing` as its LAST statement**, after the history pop: the false
-edge arms the Entrance, and before the pop it armed a card of the discarded state that the next
-placement duplicated into the run deck. End starts hidden; `GameView._refresh_end_reveal` shows it
+edge is what the view reacts to, and before the pop it reacted to the discarded state. End starts
+hidden; `GameView._refresh_end_reveal` shows it
 when every stock is empty OR no cell is empty (`stocks_are_empty`, `grids_are_full`).
 
 **Pending-action replay:** `_begin_action` marks the run with the action about to resolve, so a

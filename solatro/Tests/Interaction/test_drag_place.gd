@@ -42,6 +42,11 @@ func _ready() -> void:
 	await await_siblings_except(["SETTINGS RANGE", "E2E RUN", "LEAK CANARY", "WALL PAUSE"])
 	TestLog.line("============ DRAG PLACE TEST PASS ============")
 	check_all_tests_registered()
+	behavior_section("NOTHING IS HELD UNTIL THE PLAYER ACTS")
+	await test_the_show_opens_with_nothing_held()
+	await test_a_placement_leaves_nothing_held()
+	await test_a_click_lifts_the_card_without_following()
+	await test_a_click_on_a_legal_cell_places_the_lifted_card()
 	behavior_section("A CLICK AND A DRAG ARE ONE GESTURE")
 	await test_a_sub_threshold_release_is_a_click()
 	await test_an_over_threshold_release_on_a_legal_cell_places()
@@ -53,7 +58,7 @@ func _ready() -> void:
 	await test_an_escape_mid_drag_leaves_nothing_for_the_release()
 	await test_a_touch_tap_selects_and_lifts_without_placing()
 	behavior_section("THE DRAG CHOOSES WHICH CARD IS MOVING")
-	await test_a_drag_from_a_board_card_cancels_the_arm()
+	await test_a_drag_from_a_board_card_drops_the_lifted_card()
 	await test_a_click_on_a_board_card_tries_to_place_first()
 	await test_a_refused_drag_from_an_empty_cell_places_nothing()
 	await test_a_refused_drag_from_a_grid_card_places_nothing()
@@ -62,7 +67,6 @@ func _ready() -> void:
 	await test_a_tap_after_a_placement_is_refused()
 	await test_a_refused_pairs_release_places_nothing()
 	await test_a_touch_tap_after_a_placement_is_refused()
-	await test_a_double_click_on_the_armed_card_leaves_the_arm_standing()
 	await test_a_double_click_on_an_empty_cells_zone_card_taps()
 	await test_a_finger_pairs_its_own_taps()
 	await test_a_key_or_pad_reaches_the_tap_two_ways()
@@ -151,14 +155,14 @@ func _end_fixture() -> void:
 func _zoom_into_a_grid() -> void:
 	_pa.focus_grid(0)
 
-# The deal spawns its card controls frames behind `enter_game()`, and arms one of them, so the
-# board is waited FOR rather than slept on. Bounded: a real hang is a bug to surface.
+# The deal spawns its card controls frames behind `enter_game()`, so the board is waited FOR rather
+# than slept on. Bounded: a real hang is a bug to surface.
 func _await_the_deal() -> void:
 	var waited := 0.0
 	while waited < DEAL_TIMEOUT_SECS:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		if not _entrance_controls().is_empty() and not _pa.selected_cards.is_empty(): return
+		if not _entrance_controls().is_empty() and not _game.processing: return
 
 # Waits for the Entrance to STOP MOVING: it follows the camera, and a press landing mid-ease races
 # the hovered control sliding out from under the cursor.
@@ -193,7 +197,7 @@ func _entrance_controls() -> Array[Control]:
 			return a.get_global_rect().position.x < b.get_global_rect().position.x)
 	return out
 
-func _armed_card() -> CardData:
+func _held_card() -> CardData:
 	return _pa.selected_cards[0] if _pa.selected_cards else null
 
 func _control_centre(control: Control) -> Vector2:
@@ -218,8 +222,8 @@ func _is_lifted(data: CardData) -> bool:
 
 ## Why a release did what it did: the whole hand state one line, for a failure's detail.
 func _hand_str() -> String:
-	var held := _armed_card()
-	return "held %d, following %s, lifted %s, armed slot %d, placed %d, undo steps %d" % [
+	var held := _held_card()
+	return "held %d, following %s, lifted %s, leftmost slot %d, placed %d, undo steps %d" % [
 			_pa.selected_cards.size(), _is_following(held) if held else false,
 			_is_lifted(held) if held else false, _pa.armed_slot(),
 			_placed_cards().size(), _game.save_history.size()]
@@ -248,13 +252,24 @@ func _is_reachable(control: Control, on_screen: Rect2) -> bool:
 	var drawn := control.get_global_rect()
 	return drawn.has_area() and on_screen.encloses(drawn)
 
-# One placement made the way a player makes one -- the armed card dragged onto a cell that accepts
-# it -- so the rows that need a card already on the board start from a real one.
-func _drag_the_arm_into_the_grid() -> void:
-	var held := _armed_card()
-	var cell := await _legal_cell_control(held)
+# One placement made the way a player makes one -- the leftmost Entrance card dragged onto a cell
+# that accepts it -- so the rows that need a card already on the board start from a real one.
+func _drag_a_card_into_the_grid() -> void:
+	var entrance := _entrance_controls()
+	if entrance.is_empty(): return
+	var data : CardData = _pa.ui_data[entrance[0]]
+	var cell := await _legal_cell_control(data)
 	if not cell: return
-	await _drag(_card_centre(held), _control_centre(cell))
+	await _drag(_control_centre(entrance[0]), _control_centre(cell))
+
+# One card lifted the way a player lifts one: a click -- a press and a release inside the card's
+# own drag threshold -- on the leftmost Entrance card. Hands back the card now in hand.
+func _lift_the_leftmost() -> CardData:
+	var entrance := _entrance_controls()
+	if entrance.is_empty(): return null
+	var at := _control_centre(entrance[0])
+	await _drag(at, at)
+	return _held_card()
 
 # INPUT SYNTHESIS -- pushed into the picture's own SubViewport, whose local
 # coordinates are the ones every control rect is measured in.
@@ -364,6 +379,76 @@ func _right_click(at: Vector2, paired: bool) -> void:
 	await _frames(4)
 
 # ==============================================================================
+# NOTHING IS HELD UNTIL THE PLAYER ACTS
+# ==============================================================================
+
+# The deal settles with an Entrance full of cards and the player's hand empty: no card is held, no
+# card is lifted, and the board's opening focus rests on a grid cell a pad can move from.
+func test_the_show_opens_with_nothing_held() -> void:
+	await _start_fixture()
+	check(not _entrance_controls().is_empty() and _pa.armed_slot() != -1,
+			"the deal filled the Entrance", _hand_str())
+	check(_pa.selected_cards.is_empty(), "...and left nothing in the player's hand", _hand_str())
+	var lifted : Array[CardData] = []
+	for data : CardData in _pa.data_card:
+		if _is_lifted(data): lifted.append(data)
+	check(lifted.is_empty(), "...and no card on the board is lifted", str(lifted.size()))
+	var owner := _picture_viewport.gui_get_focus_owner()
+	check(owner != null and _pa.ui_data.has(owner)
+			and not _game.state.cell_type_coord(_pa.ui_data[owner]).is_nowhere(),
+			"...with the picture viewport's opening focus on a grid cell's own control",
+			"picture=%s root=%s" % [owner, _viewport.gui_get_focus_owner()])
+	await _end_fixture()
+
+# A placement empties the hand and puts nothing back into it: the next card is picked up by the
+# player or not at all.
+func test_a_placement_leaves_nothing_held() -> void:
+	await _start_fixture()
+	await _drag_a_card_into_the_grid()
+	check(_placed_cards().size() == 1, "the drag placed one card into the grid", _hand_str())
+	check(_pa.selected_cards.is_empty(), "...and the hand is empty behind it", _hand_str())
+	var refill : Array[Control] = _entrance_controls()
+	check(not refill.is_empty() and _pa.selected_cards.is_empty(),
+			"...even once the Entrance has refilled", _hand_str())
+	await _end_fixture()
+
+# A CLICK LIFTS, IT DOES NOT CARRY: the card is held and raised in its own slot, and pointer motion
+# with no button down leaves it there.
+func test_a_click_lifts_the_card_without_following() -> void:
+	await _start_fixture()
+	var held := await _lift_the_leftmost()
+	check(held != null and _is_lifted(held), "a click lifted the card it landed on", _hand_str())
+	if held:
+		check(not _is_following(held), "...and it is NOT following the cursor", _hand_str())
+		var visual : CardVisual = _pa.data_card[held]
+		check(visual.held_lift_px() > 0.0, "...by the held card's own lift, a real height",
+				"%.1f px" % visual.held_lift_px())
+		await _nudge(_card_centre(held))
+		await _nudge(_control_centre(_entrance_controls()[-1]))
+		check(not _is_following(held),
+				"...and mouse motion with the button UP never starts it following", _hand_str())
+		check(_pa.selected_cards.has(held) and _is_lifted(held),
+				"...it just waits in its slot, still lifted", _hand_str())
+	await _end_fixture()
+
+# The second half of the click model: with a card lifted, a click on a cell the board accepts
+# places it there, as one ordinary undo step.
+func test_a_click_on_a_legal_cell_places_the_lifted_card() -> void:
+	await _start_fixture()
+	var held := await _lift_the_leftmost()
+	var cell := await _legal_cell_control(held) if held else null
+	check(held != null and cell != null, "a card is lifted and a cell accepts it",
+			"held %s, cell %s" % [held != null, cell != null])
+	if held and cell:
+		var committed := _game.save_history.size()
+		var at := _control_centre(cell)
+		await _drag(at, at)
+		check(_placed_cards().has(held), "a click on that cell placed the lifted card", _hand_str())
+		check(_game.save_history.size() == committed + 1, "...as exactly one undo step",
+				"%d -> %d" % [committed, _game.save_history.size()])
+	await _end_fixture()
+
+# ==============================================================================
 # 5.1 – 5.3: THE THRESHOLD, AND WHAT A RELEASE LANDS ON
 # ==============================================================================
 
@@ -372,7 +457,7 @@ func _right_click(at: Vector2, paired: bool) -> void:
 func test_a_sub_threshold_release_is_a_click() -> void:
 	await _start_fixture()
 	var entrance := _entrance_controls()
-	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+	check(entrance.size() >= 2, "the dealt Entrance offers cards to press",
 			"%d control(s)" % entrance.size())
 	if entrance.size() >= 2:
 		var target := entrance[1]
@@ -399,10 +484,10 @@ func test_a_sub_threshold_release_is_a_click() -> void:
 # held card there as one ordinary undo step — the same route a click-place takes.
 func test_an_over_threshold_release_on_a_legal_cell_places() -> void:
 	await _start_fixture()
-	var held := _armed_card()
+	var held := await _lift_the_leftmost()
 	var cell := await _legal_cell_control(held) if held else null
 	check(held != null and cell != null,
-			"the show opens with a card armed and a cell that accepts it",
+			"a card is lifted and a cell accepts it",
 			"held %s, cell %s" % [held != null, cell != null])
 	if held and cell:
 		var committed := _game.save_history.size()
@@ -422,7 +507,7 @@ func test_the_drag_threshold_follows_the_boards_zoom() -> void:
 	var entrance := _entrance_controls()
 	check(not is_equal_approx(_pa.board_zoom, 1.0), "the focused board sits at a zoom other than 1.0 (2.7)",
 			str(_pa.board_zoom))
-	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+	check(entrance.size() >= 2, "the dealt Entrance offers cards to press",
 			"%d control(s)" % entrance.size())
 	if entrance.size() >= 2:
 		await _check_a_release_just_under_the_threshold_clicks(entrance[1])
@@ -446,7 +531,7 @@ func _check_a_release_just_under_the_threshold_clicks(target: Control) -> void:
 # No legal cell lies within a threshold of any Entrance card -- the grid sits a gap wider than one
 # away -- so the release that proves "over" lands back on the held card, where it is a drop.
 func _check_a_release_just_over_the_threshold_drops() -> void:
-	var held := _armed_card()
+	var held := _held_card()
 	var card : Control = _pa.data_ui[held]
 	var travel := _drawn_threshold_px(card) + THRESHOLD_MARGIN_PX
 	var at := _control_centre(card)
@@ -462,15 +547,15 @@ func _spy_on_drops() -> Array[CardData]:
 	return drops
 
 # 5.3 (E17, Q280=a, Q281=a, GAP-007=a): a release over a cell the board refuses returns the card —
-# back in its slot, still armed, still lifted, no longer following. The return survives mouse motion
-# and ends only on a new press. A failed drag costs nothing.
+# back in its slot, still lifted, no longer following. The return survives mouse motion and ends
+# only on a new press that travels past the threshold again. A failed drag costs nothing.
 func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
 	await _start_fixture()
-	await _drag_the_arm_into_the_grid()
+	await _drag_a_card_into_the_grid()
 	var occupied := _placed_cards()
-	var held := _armed_card()
+	var held := await _lift_the_leftmost()
 	check(occupied.size() == 1 and held != null,
-			"the board offers an occupied cell, with the next Entrance card armed",
+			"the board offers an occupied cell, with a second Entrance card lifted",
 			"%d placed, %s" % [occupied.size(), _hand_str()])
 	if occupied.size() == 1 and held:
 		var committed := _game.save_history.size()
@@ -481,16 +566,22 @@ func test_a_release_on_an_illegal_cell_returns_the_card() -> void:
 		check(_pa.selected_cards.has(held) and _is_lifted(held),
 				"...and a refused release leaves it held and lifted (5.3, Q281=a)", _hand_str())
 		check(not _is_following(held), "...and no longer following (5.3, Q281=a)", _hand_str())
-		check(_pa.armed_slot() != -1 and _game.save_history.size() == committed,
-				"...still armed, with nothing committed (5.3)", _hand_str())
+		check(_pa.selected_cards.has(held) and _game.save_history.size() == committed,
+				"...still in hand, with nothing committed (5.3)", _hand_str())
 		await _nudge(_card_centre(occupied[0]))
-		check(not _is_following(held) and _pa.armed_slot() != -1 and _placed_cards().size() == 1,
+		check(not _is_following(held) and _placed_cards().size() == 1,
 				"...and a mouse motion afterwards leaves it resting in its slot (5.3, GAP-007=a)",
 				_hand_str())
-		await _push(_mouse_button(_card_centre(held), true), _picture_viewport)
-		await _nudge(_card_centre(held))
-		check(_is_following(held), "...until a NEW press restarts the follow (5.3, GAP-007=a)",
-				_hand_str())
+		var from := _card_centre(held)
+		await _push(_mouse_button(from, true), _picture_viewport)
+		await _nudge(from)
+		check(not _is_following(held),
+				"...a new press alone does not restart the follow (5.3, GAP-007=a)", _hand_str())
+		await _push(_motion(from + Vector2(
+				_drawn_threshold_px(_pa.data_ui[held]) + THRESHOLD_MARGIN_PX, 0.0)),
+				_picture_viewport)
+		check(_is_following(held),
+				"...it takes a press AND travel past the threshold (5.3, GAP-007=a)", _hand_str())
 	await _end_fixture()
 
 # A motion the card cannot read as a drag: short of every threshold, so what it proves is the
@@ -507,9 +598,9 @@ func _nudge(from: Vector2) -> void:
 # the card.
 func test_a_release_over_the_container_returns_the_card() -> void:
 	await _start_fixture()
-	var held := _armed_card()
+	var held := await _lift_the_leftmost()
 	var cell := await _legal_cell_control(held) if held else null
-	check(held != null and cell != null, "the show opens with a card armed and a cell to drag over",
+	check(held != null and cell != null, "a card is lifted and a cell offers somewhere to drag over",
 			"held %s, cell %s" % [held != null, cell != null])
 	if held and cell:
 		var committed := _game.save_history.size()
@@ -541,9 +632,9 @@ func test_an_escape_mid_drag_leaves_nothing_for_the_release() -> void:
 # could still place a card nobody is holding.
 func _check_a_cancelled_drag_places_nothing(by_escape: bool) -> void:
 	await _start_fixture()
-	var held := _armed_card()
+	var held := await _lift_the_leftmost()
 	var cell := await _legal_cell_control(held) if held else null
-	check(held != null and cell != null, "the show opens with a card armed and a cell that accepts it",
+	check(held != null and cell != null, "a card is lifted and a cell accepts it",
 			"held %s, cell %s" % [held != null, cell != null])
 	if held and cell:
 		var drops := _spy_on_drops()
@@ -576,7 +667,7 @@ func _escape_press() -> void:
 func test_a_touch_tap_selects_and_lifts_without_placing() -> void:
 	await _start_fixture()
 	var entrance := _entrance_controls()
-	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+	check(entrance.size() >= 2, "the dealt Entrance offers cards to tap",
 			"%d control(s)" % entrance.size())
 	if entrance.size() >= 2:
 		var data : CardData = _pa.ui_data[entrance[1]]
@@ -592,53 +683,54 @@ func test_a_touch_tap_selects_and_lifts_without_placing() -> void:
 	await _end_fixture()
 
 # ==============================================================================
-# 5.6 – 5.7: A BOARD CARD, WITH THE ENTRANCE ARMED
+# 5.6 – 5.7: A BOARD CARD, WITH AN ENTRANCE CARD IN HAND
 # ==============================================================================
 
-# Both board-card rows start from the same board: one card placed the way a player places it, the
-# next Entrance card armed, and the placed card wearing a rule the shipped deck has none of.
+# Both board-card rows start from the same board: one card placed the way a player places it, a
+# second Entrance card lifted, and the placed card wearing a rule the shipped deck has none of.
 func _a_board_card_wearing(rule: BoardCardRule) -> CardData:
 	await _start_fixture()
-	await _drag_the_arm_into_the_grid()
+	await _drag_a_card_into_the_grid()
 	var placed := _placed_cards()
-	check(placed.size() == 1 and _armed_card() != null,
-			"a board card is on the grid, with the next Entrance card armed",
+	var lifted := await _lift_the_leftmost()
+	check(placed.size() == 1 and lifted != null,
+			"a board card is on the grid, with another Entrance card lifted",
 			"%d placed, %s" % [placed.size(), _hand_str()])
 	if placed.size() != 1: return null
 	return placed[0].with_stamp(rule)
 
 # 5.6 (E10, E11, Q286=b): a drag is unambiguous about which card is being moved, so dragging a
-# board card cancels the arm implicitly — the board card is the one held, and the one following.
-func test_a_drag_from_a_board_card_cancels_the_arm() -> void:
+# board card drops the lifted one implicitly — the board card is the one held, and the one following.
+func test_a_drag_from_a_board_card_drops_the_lifted_card() -> void:
 	var board_card := await _a_board_card_wearing(BoardCardRule.new())
-	var armed := _armed_card()
-	if board_card and armed:
-		var cell := await _legal_cell_control(armed)
+	var lifted := _held_card()
+	if board_card and lifted:
+		var cell := await _legal_cell_control(lifted)
 		await _begin_drag(_card_centre(board_card), _control_centre(cell))
 		check(_pa.selected_cards.has(board_card),
 				"the drag picked the board card up (5.6, E10)", _hand_str())
-		check(not _pa.selected_cards.has(armed),
-				"...and the Entrance card it was holding is disarmed (5.6, Q286=b)", _hand_str())
+		check(not _pa.selected_cards.has(lifted),
+				"...and the Entrance card it was holding is let go (5.6, Q286=b)", _hand_str())
 		check(_is_following(board_card),
 				"...and the board card is the one tracking the cursor (5.6, Q287=a)", _hand_str())
 		await _end_drag(_control_centre(cell))
 	await _end_fixture()
 
-# 5.7 (E8, the Q122 note): a CLICK on a board card still tries to place the armed card onto it
+# 5.7 (E8, the Q122 note): a CLICK on a board card still tries to place the lifted card onto it
 # first; because it does not stack, the only action left is the grab, and that happens straight
 # away (E9).
 func test_a_click_on_a_board_card_tries_to_place_first() -> void:
 	var rule := BoardCardRule.new()
 	var board_card := await _a_board_card_wearing(rule)
-	var armed := _armed_card()
-	if board_card and armed:
+	var lifted := _held_card()
+	if board_card and lifted:
 		var committed := _game.save_history.size()
 		var at := _card_centre(board_card)
 		await _drag(at, at)
 		check(rule.place_attempts >= 1,
-				"the click asked the board card to take the armed card first (5.7, E8)",
+				"the click asked the board card to take the lifted card first (5.7, E8)",
 				"%d attempt(s)" % rule.place_attempts)
-		check(_pa.selected_cards.has(board_card) and not _pa.selected_cards.has(armed),
+		check(_pa.selected_cards.has(board_card) and not _pa.selected_cards.has(lifted),
 				"...and since it does not stack, the grab happens straight away (5.7, E9)",
 				_hand_str())
 		check(_placed_cards().size() == 1 and _game.save_history.size() == committed,
@@ -646,30 +738,30 @@ func test_a_click_on_a_board_card_tries_to_place_first() -> void:
 	await _end_fixture()
 
 # Only the card a drag carries can be placed by its release. One that starts on an empty cell's
-# zone card, which no rule picks up, carries nothing, so the armed card must not land instead.
+# zone card, which no rule picks up, carries nothing, so the lifted card must not land instead.
 func test_a_refused_drag_from_an_empty_cell_places_nothing() -> void:
 	await _start_fixture()
-	var armed := _armed_card()
-	var cell := await _legal_cell_control(armed) if armed else null
+	var lifted := await _lift_the_leftmost()
+	var cell := await _legal_cell_control(lifted) if lifted else null
 	var source := _an_empty_cell_other_than(cell)
-	check(cell != null and source != null, "the board offers two empty cells with a card armed",
+	check(cell != null and source != null, "the board offers two empty cells with a card lifted",
 			"cell %s, source %s, %s" % [cell != null, source != null, _hand_str()])
 	if cell and source:
-		await _check_a_refused_drag_places_nothing(_control_centre(source), armed, cell)
+		await _check_a_refused_drag_places_nothing(_control_centre(source), lifted, cell)
 	await _end_fixture()
 
 # The same drag from a card already in the grid, which no shipped rule picks up.
 func test_a_refused_drag_from_a_grid_card_places_nothing() -> void:
 	await _start_fixture()
-	await _drag_the_arm_into_the_grid()
+	await _drag_a_card_into_the_grid()
 	var placed := _placed_cards()
-	var armed := _armed_card()
-	var cell := await _legal_cell_control(armed) if armed else null
+	var lifted := await _lift_the_leftmost()
+	var cell := await _legal_cell_control(lifted) if lifted else null
 	check(placed.size() == 1 and cell != null,
-			"a card is on the grid, the next Entrance card armed, and a cell accepts it",
+			"a card is on the grid, a second Entrance card lifted, and a cell accepts it",
 			"%d placed, cell %s, %s" % [placed.size(), cell != null, _hand_str()])
 	if placed.size() == 1 and cell:
-		await _check_a_refused_drag_places_nothing(_card_centre(placed[0]), armed, cell)
+		await _check_a_refused_drag_places_nothing(_card_centre(placed[0]), lifted, cell)
 	await _end_fixture()
 
 # A fully on-screen empty cell a drag can start from, which is not the one it is released on.
@@ -680,8 +772,8 @@ func _an_empty_cell_other_than(excluded: Control) -> Control:
 	return null
 
 # A card that does not place goes back: the release of a drag whose pickup the board refused drops
-# nothing, commits nothing, and leaves the armed card held in its Entrance slot.
-func _check_a_refused_drag_places_nothing(from: Vector2, armed: CardData, cell: Control) -> void:
+# nothing, commits nothing, and leaves the lifted card held in its Entrance slot.
+func _check_a_refused_drag_places_nothing(from: Vector2, lifted: CardData, cell: Control) -> void:
 	var drops := _spy_on_drops()
 	var committed := _game.save_history.size()
 	var placed := _placed_cards().size()
@@ -690,8 +782,8 @@ func _check_a_refused_drag_places_nothing(from: Vector2, armed: CardData, cell: 
 			"%d drop(s)" % drops.size())
 	check(_game.save_history.size() == committed and _placed_cards().size() == placed,
 			"...so the board commits no step (Q280=a)", _hand_str())
-	check(_pa.selected_cards.has(armed) and _is_in_the_entrance(armed),
-			"...and the armed card is still held in its slot (Q281=a)", _hand_str())
+	check(_pa.selected_cards.has(lifted) and _is_in_the_entrance(lifted),
+			"...and the lifted card is still held in its slot (Q281=a)", _hand_str())
 
 func _is_in_the_entrance(data: CardData) -> bool:
 	for slot : ArrayCardData in _game.state.upper_zone:
@@ -707,7 +799,7 @@ func _is_in_the_entrance(data: CardData) -> bool:
 func test_a_double_click_undoes_the_grab_the_first_click_made() -> void:
 	await _start_fixture()
 	var entrance := _entrance_controls()
-	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+	check(entrance.size() >= 2, "the dealt Entrance offers cards to click",
 			"%d control(s)" % entrance.size())
 	if entrance.size() >= 2:
 		var data : CardData = _pa.ui_data[entrance[1]]
@@ -727,13 +819,13 @@ func test_a_double_click_undoes_the_grab_the_first_click_made() -> void:
 func test_a_tap_after_a_placement_is_refused() -> void:
 	await _start_fixture()
 	var spy := TapSpy.new()
-	var held := _armed_card()
-	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
+	var held := await _lift_the_leftmost()
+	var cell := await _cell_the_lifted_card_can_be_placed_on(held, spy)
 	if held and cell:
 		var at := _control_centre(cell)
 		await _drag(at, at)
 		var committed := _game.save_history.size()
-		check(_placed_cards().has(held), "the pair's first click placed the armed card", _hand_str())
+		check(_placed_cards().has(held), "the pair's first click placed the lifted card", _hand_str())
 		var selections := _spy_on_selections()
 		await _double_click(at)
 		_check_the_placement_stands_untapped(spy, held, committed, selections)
@@ -741,42 +833,41 @@ func test_a_tap_after_a_placement_is_refused() -> void:
 
 # A REFUSED pair must give its closing release back to nobody: a real mouse puts a motion between
 # the two clicks, which refreshes the hover the GUI pass reads, and the release would otherwise
-# land as an ordinary click and place the card the placement just armed.
+# land as an ordinary click on the cell the placement just filled.
 func test_a_refused_pairs_release_places_nothing() -> void:
 	await _start_fixture()
 	var spy := TapSpy.new()
-	var held := _armed_card()
-	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
+	var held := await _lift_the_leftmost()
+	var cell := await _cell_the_lifted_card_can_be_placed_on(held, spy)
 	if held and cell:
 		var at := _control_centre(cell)
 		await _drag(at, at)
 		var committed := _game.save_history.size()
-		var next_arm := _armed_card()
-		check(_placed_cards().has(held) and next_arm != held,
-				"the pair's first click placed the armed card and the next one armed", _hand_str())
+		check(_placed_cards().has(held) and _pa.selected_cards.is_empty(),
+				"the pair's first click placed the lifted card and left the hand empty", _hand_str())
 		await _push(_motion(at + Vector2.RIGHT), _picture_viewport)
 		var selections := _spy_on_selections()
 		await _double_click(at)
 		_check_the_placement_stands_untapped(spy, held, committed, selections)
-		check(next_arm != null and not _placed_cards().has(next_arm),
-				"...and the card it armed is still in the Entrance", _hand_str())
+		check(_pa.selected_cards.is_empty(),
+				"...and lifted nothing in its place", _hand_str())
 	await _end_fixture()
 
-# Q93a=a REACHED BY A FINGER: the pair's first finger press placed the armed card, so the second is
+# Q93a=a REACHED BY A FINGER: the pair's first finger press placed the lifted card, so the second is
 # refused exactly as the mouse's is — the emulated mouse form of that second press, which the
 # engine dispatches BEFORE the touch, must not move the depth the refusal reads.
 func test_a_touch_tap_after_a_placement_is_refused() -> void:
 	await _start_fixture()
 	var spy := TapSpy.new()
-	var held := _armed_card()
-	var cell := await _cell_the_arm_can_be_placed_on(held, spy)
+	var held := await _lift_the_leftmost()
+	var cell := await _cell_the_lifted_card_can_be_placed_on(held, spy)
 	if held and cell:
 		var at := _control_centre(cell)
 		var window := PlayArea.settings().card_tap_window_ms
 		PlayArea.settings().card_tap_window_ms = PUSHED_PAIR_WINDOW_MS
 		await _touch_tap(at)
 		var committed := _game.save_history.size()
-		check(_placed_cards().has(held), "the pair's first finger press placed the armed card",
+		check(_placed_cards().has(held), "the pair's first finger press placed the lifted card",
 				_hand_str())
 		var selections := _spy_on_selections()
 		await _touch_tap(at)
@@ -784,12 +875,12 @@ func test_a_touch_tap_after_a_placement_is_refused() -> void:
 		PlayArea.settings().card_tap_window_ms = window
 	await _end_fixture()
 
-# The board a refusal row starts from: an armed card wearing the hook spy, and a cell that accepts
+# The board a refusal row starts from: a lifted card wearing the hook spy, and a cell that accepts
 # it, so the pair's first press has a real placement to make.
-func _cell_the_arm_can_be_placed_on(held: CardData, spy: TapSpy) -> Control:
+func _cell_the_lifted_card_can_be_placed_on(held: CardData, spy: TapSpy) -> Control:
 	var cell := await _legal_cell_control(held) if held else null
 	check(held != null and cell != null,
-			"the show opens with a card armed and a cell that accepts it",
+			"a card is lifted and a cell accepts it",
 			"held %s, cell %s" % [held != null, cell != null])
 	if held and cell: held.with_stamp(spy)
 	return cell
@@ -814,38 +905,17 @@ func _check_the_placement_stands_untapped(spy: TapSpy, held: CardData, committed
 	check(_placed_cards().has(held) and _game.save_history.size() == committed,
 			"...and the placement stands, unrewound (Q93a=a)", _hand_str())
 
-# Q94=a: double-clicking the card the Entrance armed taps it and the arm STANDS — the same slot is
-# armed, its card lifted in place, following nothing.
-func test_a_double_click_on_the_armed_card_leaves_the_arm_standing() -> void:
-	await _start_fixture()
-	var armed := _armed_card()
-	var slot := _pa.armed_slot()
-	check(armed != null and slot != -1, "the show opens with the leftmost Entrance card armed",
-			_hand_str())
-	if armed:
-		var at := _card_centre(armed)
-		await _drag(at, at)
-		await _double_click(at)
-		check(_taps.size() == 1 and _taps.has(armed), "the pair taps the armed card (Q94=a)",
-				"%d tap(s)" % _taps.size())
-		check(_pa.armed_slot() == slot and _pa.selected_cards.has(armed),
-				"...and the arm stands on the same slot (Q94=a)", _hand_str())
-		check(_is_lifted(armed) and not _is_following(armed),
-				"...lifted, and following nothing (Q94=a)", _hand_str())
-	await _end_fixture()
-
 # Q97=b: an empty cell's zone card taps like any other card, because a cell can carry modifiers
-# too. The hand is emptied first, so the pair's first click has nothing to place.
+# too. Nothing is picked up first, so the pair's first click has nothing to place.
 func test_a_double_click_on_an_empty_cells_zone_card_taps() -> void:
 	await _start_fixture()
-	var held := _armed_card()
-	var cell := await _legal_cell_control(held) if held else null
-	check(cell != null, "the board offers an empty cell the armed card could have gone into",
+	var entrance := _entrance_controls()
+	var cell := await _legal_cell_control(_pa.ui_data[entrance[0]]) if entrance else null
+	check(cell != null, "the board offers an empty cell an Entrance card could have gone into",
 			"cell %s" % [cell != null])
 	if cell:
 		var zone_card : CardData = _pa.ui_data[cell]
 		var at := _control_centre(cell)
-		await _right_click(at, false)
 		check(_pa.selected_cards.is_empty(), "the hand is empty before the pair", _hand_str())
 		await _drag(at, at)
 		await _double_click(at)
@@ -889,7 +959,7 @@ func test_a_finger_pairs_its_own_taps() -> void:
 func test_a_key_or_pad_reaches_the_tap_two_ways() -> void:
 	await _start_fixture()
 	var entrance := _entrance_controls()
-	check(entrance.size() >= 2, "the dealt Entrance offers a card the arm is not already holding",
+	check(entrance.size() >= 2, "the dealt Entrance offers cards to focus",
 			"%d control(s)" % entrance.size())
 	if entrance.size() >= 2:
 		var data : CardData = _pa.ui_data[entrance[1]]

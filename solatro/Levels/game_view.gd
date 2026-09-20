@@ -307,7 +307,7 @@ func _open_deck_viewer(cards: Array[CardData], opener: Button) -> void:
 func _on_processing_changed(busy: bool) -> void:
 	submit_button.disabled = busy
 	hud_container.set_processing(busy)
-	if not busy: await _arm_the_entrance()
+	if not busy: _rest_the_board_focus()
 
 func _on_submit_label_changed(text: String) -> void:
 	submit_button.text = text
@@ -323,7 +323,7 @@ var _continue_button : Button = null
 ## The row those two buttons sit in, kept so the outcome's own controls are freed as one.
 var _outcome_buttons : HBoxContainer = null
 
-# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the arm is let go so the held card stops following
+# REACHING THE GOAL ENDS THE SHOW, FULL STOP: the hand is let go so the held card stops following
 # the cursor. Undo sits BESIDE Continue because focus navigation never leaves the picture's
 # SubViewport. ⚠ The row is centred on its OWN MINIMUM SIZE: anchoring alone leaves it top-left.
 func _on_show_resolved(won: bool, score: int, _goal: int) -> void:
@@ -354,7 +354,7 @@ func _add_outcome_button(row: HBoxContainer, key: StringName, handler: Callable)
 # viewport with no focus owner: the HUD's Undo the rewind hands the focus to lives in the root,
 # where a pad's navigation cannot reach it, so the pad player is rested back on the board.
 func _on_outcome_undo_pressed() -> void:
-	await _on_undo_pressed()
+	_on_undo_pressed()
 	play_area.rest_focus_on_board()
 
 ## Undo at the win/lose screen: drop the overlay, and hand the freed buttons' focus to the HUD's Undo.
@@ -382,26 +382,16 @@ func await_card_settled(card: CardData) -> void:
 ## Force a synchronous board rebuild (undo: the state reverted, no revision bump to ride).
 func rebuild() -> void:
 	play_area.setup_gui()
-	await _arm_the_entrance()
+	_rest_the_board_focus()
 
-# A placement arms once, AFTER its refill, whether a click or a resume's replay drove it: the
-# cascade's own unlock can arm a card the refill then leaves out of place, so the hand is re-derived.
-func arm_after_placement() -> void:
-	play_area.ungrab_cards()
-	await _arm_the_entrance()
-
-## True once the show has rested the focus on its first armed card; it never rests it again.
-var _rested_the_focus : bool = false
-
-# THE ENTRANCE IS ALWAYS ARMED: every time the board settles with nothing held, the leftmost card
-# is picked up for the player through the very pickup a click makes. A card's LIFT lives on its
-# visual, so the arm waits for the deal's visuals the way a resume does.
-func _arm_the_entrance() -> void:
-	play_area.flush_rebuild()
+# A key or pad player needs a control to move from, so a board that settles with NOTHING in the
+# picture holding the focus takes it back -- the opening deal, and any rebuild that freed the
+# control that had it. It waits for the visuals, and never takes the focus off the player.
+func _rest_the_board_focus() -> void:
+	if get_viewport().gui_get_focus_owner(): return
 	if not play_area.visuals_ready(): await play_area.board_visuals_ready
-	await play_area.arm_leftmost()
-	if _rested_the_focus or play_area.selected_cards.is_empty(): return
-	_rested_the_focus = play_area.rest_focus_on_armed()
+	if get_viewport().gui_get_focus_owner(): return
+	play_area.rest_focus_on_board()
 
 ## Deal the opening plan onto the board cell by cell (show start only).
 func reveal_plan() -> void:
@@ -497,7 +487,6 @@ func _on_undo_pressed() -> void:
 	if not _board_is_playable(): return
 	play_area.ungrab_cards()
 	game.undo()
-	await _arm_the_entrance()
 
 #ONE CONTROL EVERY INPUT MODE REACHES THE SAME WAY: a focusable button answers a mouse click, a
 #keyboard accept and a controller accept without any of the three being wired on its own. Refused
@@ -523,27 +512,23 @@ func _on_data_selected(data: CardData) -> void:
 # leaves the player where they started.
 func _on_card_dropped(data: CardData) -> void:
 	if game.processing: return
-	if not await _place_held_onto(data): play_area.stop_following()
+	await _place_held_onto(data)
 
-# A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back and the Entrance re-derives
-# its arm, so a tap on the armed card leaves that card armed. Then the board hears the tap, which
-# is all it does in v1 -- no shipped card listens for it.
+# A TAP UNDOES THE GRAB THE PRESS BEFORE IT MADE: the card goes back to its slot. Then the board
+# hears the tap, which is all it does in v1 -- no shipped card listens for it.
 func _on_card_tapped(data: CardData) -> void:
-	if play_area.selected_cards:
-		play_area.ungrab_cards()
-		await _arm_the_entrance()
+	play_area.ungrab_cards()
 	await game.run_all_mods(&"on_card_tapped", data)
 
-# A landed placement finishes the interaction: the container goes back to the HUD. The placement
-# itself has already armed the Entrance's next card.
+# A landed placement finishes the interaction: the container goes back to the HUD.
 func _place_held_onto(data: CardData) -> bool:
 	if not await game.try_place(play_area.selected_cards, data): return false
 	hud_container.dismiss_description()
 	return true
 
 # THE ONE PICKUP ROUTE: a click's last resort and a drag's first act. A card no rule grabs leaves
-# the hand exactly as it was, and drops the click's promise that the grab it asked for would
-# follow the cursor -- otherwise the next auto-armed card is born following.
+# the hand exactly as it was, and drops the drag's promise that the grab it asked for would follow
+# the cursor -- otherwise the next card taken up is born following.
 func _pick_up(data: CardData) -> void:
 	var grabbed := await game.try_grab(data)
 	if grabbed: play_area.grab_cards(grabbed)

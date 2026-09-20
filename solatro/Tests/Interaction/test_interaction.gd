@@ -479,14 +479,18 @@ func test_game_over_interactivity() -> void:
 	var entrance_cards : Array[CardData] = []
 	for col : ArrayCardData in game.state.upper_zone:
 		entrance_cards.append_array(col.datas)
-	var armed := pa.selected_cards
-	check(armed.size() == 1 and entrance_cards.has(armed[0]),
-			"the card armed after the outcome undo is a card of the RESTORED Entrance (Q117=a)",
-			"armed %d, entrance %d" % [armed.size(), entrance_cards.size()])
+	check(pa.selected_cards.is_empty() and not entrance_cards.is_empty(),
+			"the outcome undo restores the Entrance and leaves nothing in hand (Q117=a)",
+			"held %d, entrance %d" % [pa.selected_cards.size(), entrance_cards.size()])
 	var cards_before := game.state.all_card_datas().size()
 	var cell := an_empty_cell_control()
 	check(cell != null, "the restored board offers an empty cell to place into")
 	if cell:
+		await mouse_click(center_of(pa.data_ui[entrance_cards[0]]))
+		await frames(2)
+		check(pa.selected_cards.has(entrance_cards[0]),
+				"a click lifts a card off the restored Entrance (Q117=a)",
+				str(pa.selected_cards.size()))
 		await mouse_click(center_of(cell))
 		await frames(2)
 		check(game.state.all_card_datas().size() == cards_before,

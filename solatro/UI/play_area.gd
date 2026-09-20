@@ -1504,7 +1504,6 @@ var _accept_press_msec : int = 0
 # form, which is why one gesture model needs no reader of its own for the touch forms.
 func _arm_card_gesture(at: Vector2) -> void:
 	flush_rebuild()
-	_motion_may_start_following = true
 	_press_origin = at
 	_drag_began = false
 	_depth_when_pressed = _committed_depth()
@@ -1575,7 +1574,7 @@ func _accept_press_pairs() -> bool:
 	return paired
 
 # THE DRAG DECIDES WHICH CARD IS MOVING, so one that starts on a card the player is not already
-# holding takes that card up, and lets go of whatever was armed.
+# holding takes that card up, and lets go of whatever was held.
 func _take_up_the_dragged_card(at: Vector2) -> void:
 	if _drag_began or not _press_data: return
 	if _press_origin.distance_to(at) <= _gesture_threshold_px(): return
@@ -1591,12 +1590,13 @@ func _end_the_gesture() -> void:
 	_press_data = null
 
 # A gesture that TRAVELLED is never a click, and the GUI pass below never sees it. It places only
-# when the dragged card IS the held one: a card no rule picked up carries nothing, so the armed card
-# must not land in its place. The press is forgotten here whichever branch the release takes.
+# when the dragged card IS the held one: a card no rule picked up carries nothing, so a card
+# already lifted must not land in its place. EVERY release ends the chase, whichever branch it takes.
 func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 	if button.button_index != MOUSE_BUTTON_LEFT or button.pressed: return false
 	var dragged := _press_data
 	_end_the_gesture()
+	stop_following()
 	if _tapped_this_gesture:
 		_tapped_this_gesture = false
 		return true
@@ -1608,12 +1608,11 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 # is legal. Over bare board, over the container or off the window nothing is under it at all.
 func _release_places(at: Vector2) -> void:
 	var target := _card_control_at(at)
-	if not (target and _emit_if_played(card_dropped, ui_data[target])): stop_following()
+	if target: _emit_if_played(card_dropped, ui_data[target])
 
-## Nothing tracks the cursor until the next PRESS: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
+## Nothing tracks the cursor until the next drag: a held card stays held and lifted, and a drag still waiting on its grab no longer promises one.
 func stop_following() -> void:
 	_next_grab_follows = false
-	_motion_may_start_following = false
 	for data : CardData in selected_cards:
 		if data in data_card: data_card[data].following = false
 
@@ -1636,7 +1635,6 @@ func _on_gui_input(event: InputEvent) -> void:
 #and not focused_control.is_in_group("CardVisualZoneControl")):
 				if (not _consume_as_focus_click(focused_control)
 						and not _consume_as_stock_press(focused_control)):
-					_next_grab_follows = true
 					_emit_if_played(data_selected, ui_data[focused_control])
 			elif _card_control_at(get_global_mouse_position()) == null:
 				description_dismiss_requested.emit()
@@ -1711,9 +1709,9 @@ func _input(event: InputEvent) -> void:
 		if _consume_as_card_release(mouse_event):
 			get_viewport().set_input_as_handled()
 
-# ANY mouse motion starts a held card following -- the one Godot emulates from a finger included, a
-# key or pad focus never -- once a press has allowed it. Crossing OUT of the held card's own cell
-# closes the description, read before that latch, and NEVER for the card that same click locked.
+# ONLY A LIVE DRAG CARRIES A CARD: motion with no button down leaves a lifted card resting in its
+# slot. Crossing OUT of the held card's own cell closes the description, read before that, and
+# NEVER for the card that same click locked.
 func _on_pointer_moved(at: Vector2) -> void:
 	if selected_cards.is_empty(): return
 	var carried : CardVisual = data_card.get(selected_cards[0])
@@ -1723,13 +1721,10 @@ func _on_pointer_moved(at: Vector2) -> void:
 	if crossed_out_of_its_cell and locked_data != selected_cards[0]:
 		description_dismiss_requested.emit()
 	_pointer_was_in_the_origin_cell = inside
-	if _motion_may_start_following: follow_cards()
+	if _drag_began and _press_data: follow_cards()
 
-## Where the pointer was last seen relative to the held card's own cell: a dismissal needs a real crossing OUT of it, and a card armed with the cursor elsewhere was never inside it to cross.
+## Where the pointer was last seen relative to the held card's own cell: a dismissal needs a real crossing OUT of it, and a card lifted with the cursor elsewhere was never inside it to cross.
 var _pointer_was_in_the_origin_cell : bool = false
-
-## False once a gesture has ended without placing: a failed drag costs the player nothing, so the returned card waits in its slot for a NEW press rather than resuming the chase on the next twitch.
-var _motion_may_start_following : bool = true
 
 # The cell a held card came from: its own control stays put — only the visual rides the cursor —
 # and a card control's parent IS its cell slot.
@@ -1741,9 +1736,9 @@ func follow_cards() -> void:
 	for data : CardData in selected_cards:
 		if data in data_card: data_card[data].following = true
 
-# A card the player CLICKED follows at once — the mouse has moved by definition — but the pickup
-# lands behind `try_grab`'s own await, after the click has already returned. The click leaves this
-# for the grab it asked for; any other way the selection resolves drops it.
+# A card a DRAG took up follows at once, but the pickup lands behind `try_grab`'s own await, after
+# the motion that started the drag has returned. The drag leaves this for the grab it asked for;
+# any other way the selection resolves drops it.
 var _next_grab_follows : bool = false
 
 #THE LAYER VIEW IS A VIEWER AND INPUT IS LOCKED TO LOOKING: no signal that grabs, places or drops
@@ -1756,11 +1751,9 @@ func _emit_if_played(sig: Signal, data: CardData) -> bool:
 	sig.emit(data)
 	return true
 
-# A CARD JUST TAKEN UP WAS NEVER CARRIED BY THE GESTURE THAT FAILED, so motion starts it following
-# even when the last release returned one -- an auto-arm reaches here with no press of its own.
+# A card a CLICK took up is lifted in its slot; only a card a DRAG took up is born following.
 func grab_cards(datas:Array[CardData]) -> void:
 	var follows_at_once := _next_grab_follows
-	_motion_may_start_following = true
 #reads data_card / data_ui
 	flush_rebuild()
 	ungrab_cards()
@@ -1817,7 +1810,7 @@ func ungrab_cards() -> void:
 	_sweep_legal_cells()
 
 # The leftmost Entrance slot holding a card, or -1. Re-derived on every read and never stored, so
-# an undo that restores the board carries the arm with it.
+# an undo that restores the board carries it.
 func armed_slot() -> int:
 	var game := CardEnvironment.get_current_game()
 	if not game: return -1
@@ -1825,47 +1818,23 @@ func armed_slot() -> int:
 		if not game.state.upper_zone[slot].datas.is_empty(): return slot
 	return -1
 
-# ARMING IS A PICKUP: the same two calls, in the same order, that a player's click makes, so the
-# product keeps ONE grab path. A card already held -- the arm itself, or one the player picked up
-# -- is left alone, and a board still resolving an act is not armed until it stops.
-func arm_leftmost() -> void:
-	var game := CardEnvironment.get_current_game()
-	if not game or game.processing or selected_cards: return
-	var slot := armed_slot()
-	if slot == -1: return
-	var top : CardData = game.state.upper_zone[slot].datas.back()
-	grab_cards(await game.try_grab(top))
-
-# The show opens with the board focus resting on the armed card, once: a key/pad player has to
-# start somewhere. It is NOT a highlight -- it publishes no description.
-# False when a board rebuilt behind the arm has no control for it, so the next arm rests instead.
-func rest_focus_on_armed() -> bool:
-	assert(not selected_cards.is_empty())
-	flush_rebuild()
-	var control : Control = data_ui.get(selected_cards[0])
-	if not control: return false
-	_rest_focus_on(control)
-	return true
-
 # THE EXIT X TAKES THE FOCUS OUT OF THE BOARD'S VIEWPORT, and hiding it leaves nothing focused, so a
-# key/pad player is put back on the card they were reading, or on the armed card once that control
+# key/pad player is put back on the card they were reading, or rested on the board once that control
 # is gone. A rest, not a highlight: it must not re-open the description that was just dismissed.
 func return_focus_to_board() -> void:
 	flush_rebuild()
 	if is_instance_valid(focused_control) and focused_control in ui_data:
 		_rest_focus_on(focused_control)
 	else:
-		rest_focus_on_armed()
+		rest_focus_on_board()
 
-# AN UNDONE END CAN PUT BACK A BOARD WITH NOTHING TO ARM -- the last dealt card placed after the
-# stocks ran dry -- and a pad player still needs a control to move from: the selected grid's origin
-# cell, the cell the overview's arrow selection lands on.
+# A pad player needs a control to move from with nothing in hand: the selected grid's origin cell,
+# the cell the overview's arrow selection lands on. A card the player is holding takes it instead.
+# It is a rest, not a highlight -- it publishes no description.
 func rest_focus_on_board() -> void:
-	if not selected_cards.is_empty():
-		rest_focus_on_armed()
-		return
 	flush_rebuild()
-	_rest_focus_on(_cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0)))
+	var held : Control = data_ui.get(selected_cards[0]) if selected_cards else null
+	_rest_focus_on(held if held else _cell_focus_control(BoardCoord.new(selected_grid, 0, 0, 0)))
 
 func _rest_focus_on(control: Control) -> void:
 	_focus_is_resting = true

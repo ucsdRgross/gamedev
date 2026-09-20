@@ -1586,6 +1586,10 @@ func test_a_mutation_closes_the_layer_and_leaves_its_rebuild_queued() -> void:
 # THE SAME TWO INPUTS, OPPOSITE OUTCOMES: refused while the board is still resolving and taken the
 # moment it is idle, which is the only way to tell a gate from an input that missed its control.
 func test_the_layer_toggle_is_refused_while_the_board_is_busy() -> void:
+#A click on a card locks a description over the HUD, and the HUD's own controls are off screen
+#while it shows. Reverting to the HUD is what a player does before pressing one.
+	view.hud_container.show_hud()
+	await get_tree().process_frame
 	check(not pa.plan_layer_open and not game.processing,
 			"TP-98: precondition: the layer is closed on an idle board",
 			"open %s, busy %s" % [str(pa.plan_layer_open), str(game.processing)])

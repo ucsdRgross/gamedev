@@ -143,32 +143,29 @@ func _ready() -> void:
 	await test_the_start_menus_inspect_viewer_publishes_on_hover()
 	await test_closing_the_picker_drops_the_menus_description()
 	await test_the_deck_builder_tool_loads_and_stands_up()
-	behavior_section("S14: HELD, THEN FOLLOWING")
+	behavior_section("S14: LIFTED, AND CARRIED")
 	await test_a_held_card_lifts_and_does_not_follow()
-	await test_any_mouse_motion_starts_the_card_following()
-	await test_a_key_focus_leaves_the_card_resting_until_a_motion()
-	await test_following_is_a_one_way_latch()
+	await test_mouse_motion_with_no_button_down_never_follows()
+	await test_a_key_focus_leaves_the_card_resting_in_its_slot()
+	await test_the_release_ends_the_follow()
 	await test_the_lift_is_the_same_height_in_both_states()
-	await test_a_clicked_card_follows_immediately()
+	await test_a_dragged_card_follows_the_cursor()
 	await test_a_click_locked_card_keeps_its_description_until_it_is_placed()
 	await test_a_following_card_leaving_its_cell_reverts_to_the_hud()
 	await test_a_lifted_card_that_is_not_following_keeps_the_description()
 	test_the_choice_viewer_owns_no_inspector_panel()
-	behavior_section("S15: THE ARM")
-	await test_arming_moves_no_focus()
-	await test_arming_leaves_the_container_on_the_hud()
-	await test_arming_produces_a_pickups_own_state()
-	await test_the_show_rests_the_focus_on_the_armed_card()
-	await test_a_placement_arms_the_new_leftmost()
-	await test_a_refill_arms_the_new_leftmost()
-	await test_a_resumed_placement_arms_the_card_its_refill_drew()
-	await test_the_arm_survives_undo_by_re_derivation()
-	await test_clicking_another_entrance_card_re_arms_onto_it()
-	await test_arming_again_leaves_the_held_card_alone()
-	await test_a_click_during_processing_does_not_make_the_next_arm_follow()
-	await test_a_refused_pickup_does_not_make_the_next_arm_follow()
-	await test_the_disarm_leaves_nothing_armed()
-	await test_an_empty_entrance_arms_nothing()
+	behavior_section("S15: NOTHING IS HELD UNTIL THE PLAYER ACTS")
+	await test_a_fresh_show_holds_nothing_and_shows_the_hud()
+	await test_the_show_rests_the_opening_focus_on_a_board_cell()
+	await test_a_placement_leaves_nothing_held()
+	await test_a_refill_fills_the_leftmost_slot_and_holds_nothing()
+	await test_a_resumed_placement_leaves_nothing_held()
+	await test_an_undo_leaves_nothing_held()
+	await test_clicking_another_entrance_card_moves_the_hold_onto_it()
+	await test_a_click_during_processing_grabs_nothing()
+	await test_a_click_on_a_card_no_rule_grabs_leaves_the_hand_empty()
+	await test_the_disarm_leaves_nothing_held()
+	await test_an_empty_entrance_lifts_nothing()
 	await test_the_legal_cell_tint_follows_what_a_placement_accepts()
 	await test_a_direct_rebuild_re_sweeps_the_drop_map()
 	behavior_section("S18: CANCEL")
@@ -177,7 +174,7 @@ func _ready() -> void:
 	await test_the_second_button_over_the_panel_still_cancels()
 	await test_escape_cancels_everything_and_steps_back_in_one_press()
 	await test_releasing_the_held_card_leaves_the_locked_description_up()
-	await test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm()
+	await test_a_cancel_needs_a_click_on_an_entrance_card_to_lift_again()
 	behavior_section("PHASE 5: THE ARROW OFF AN ENTRANCE CARD")
 	await test_an_arrow_from_an_entrance_card_leaves_the_focus_on_the_board()
 	await test_motion_over_the_container_reaches_the_following_card()
@@ -188,7 +185,7 @@ func _ready() -> void:
 	await test_a_slot_shows_one_face_down_card_whatever_its_depth()
 	await test_the_face_down_card_becomes_the_revealed_one()
 	await test_hovering_a_stock_says_how_many_it_has_left()
-	await test_one_drained_stock_disarms_nothing()
+	await test_one_drained_stock_drops_nothing()
 	await test_clicking_a_stock_describes_the_slot_and_locks_nothing()
 	await test_accepting_a_stock_describes_the_slot_and_locks_nothing()
 	await test_the_deck_viewer_lists_every_stock_as_one_sorted_pile()
@@ -198,7 +195,7 @@ func _ready() -> void:
 	await test_end_is_revealed_when_no_action_remains()
 	await test_end_stays_hidden_through_the_shows_first_frames()
 	behavior_section("THE RESOLVED SHOW LEAVES NOTHING ARMED")
-	await test_the_outcome_screen_leaves_no_card_armed()
+	await test_the_outcome_screen_leaves_no_card_held()
 	behavior_section("THE OUTCOME'S UNDO IS REACHED BY PAD FROM CONTINUE")
 	await test_the_outcomes_undo_is_reachable_from_continue_by_pad()
 	await test_undo_from_an_end_reached_outcome_with_an_empty_entrance()
@@ -282,15 +279,22 @@ func test_end_stays_hidden_through_the_shows_first_frames() -> void:
 	check(not seen[1], "End is never on screen while a fresh show starts up")
 	await _end_main_fixture()
 
-## The show ends full stop, so nothing on the board is still armed under the outcome screen.
-func test_the_outcome_screen_leaves_no_card_armed() -> void:
+## The show ends full stop, so nothing on the board is still held under the outcome screen.
+func test_the_outcome_screen_leaves_no_card_held() -> void:
 	await _start_game_fixture()
 	var view := _main._pictures[&"game"].screen_root as GameView
-	check(not _play_area.selected_cards.is_empty(), "the deal arms an Entrance card")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to pick up",
+			str(entrance.size()))
+	if not entrance.is_empty(): await _lift_by_a_returned_drag(entrance[0])
+	check(not _play_area.selected_cards.is_empty(), "a drag left a card in hand")
+	if _container.showing_description():
+		await _click(_exit_button().get_global_rect().get_center(), _booted_viewport)
+	check(_hud_is_up(), "...and the X put the HUD back, where End is drawn")
 	await _end_the_show_by_its_button(view)
 	await get_tree().process_frame
 	check(view.win_screen.visible or view.lose_screen.visible, "the outcome screen is up")
-	check(_play_area.selected_cards.is_empty(), "the resolved show holds no armed card")
+	check(_play_area.selected_cards.is_empty(), "the resolved show holds no card")
 	await _end_main_fixture()
 
 # Row 7.6: the outcome's two buttons live in the game picture's own SubViewport. The step is pushed
@@ -335,19 +339,20 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 			"7.6: the walk reaches the outcome's Undo again, so the accept lands on it",
 			str(back_on_undo))
 	var row : HBoxContainer = view._outcome_buttons
-	await _accept_the_focused_outcome_button(func() -> bool: return _armed_card() != null)
+	await _accept_the_focused_outcome_button(
+			func() -> bool: return _game_viewport.gui_get_focus_owner() != null)
 	check(not view.win_screen.visible and not view.lose_screen.visible,
 			"7.6: the pad's accept on that Undo takes the outcome screen away")
 	check(not view.game.state.show_ended and not view.game.processing,
 			"7.6: ...leaving the show live again",
 			"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
-	var armed := _armed_card()
-	check(armed != null, "7.6: ...on a board that is armed and playable")
-	check(armed != null and _game_viewport.gui_get_focus_owner() == _play_area.data_ui[armed],
-			"7.6: ...with the picture viewport's focus on the armed card's control, not parked on "
+	check(_play_area.selected_cards.is_empty(),
+			"7.6: ...on a playable board holding nothing", str(_play_area.selected_cards.size()))
+	var owner := _game_viewport.gui_get_focus_owner()
+	check(owner != null and _play_area.ui_data.has(owner),
+			"7.6: ...with the picture viewport's focus on a board control, not parked on "
 			+ "the HUD's Undo in the root viewport (a pad player is back on the live board)",
-			"picture=%s root=%s" % [_game_viewport.gui_get_focus_owner(),
-					_booted_viewport.gui_get_focus_owner()])
+			"picture=%s root=%s" % [owner, _booted_viewport.gui_get_focus_owner()])
 	check(view._outcome_buttons == null and not is_instance_valid(row),
 			"7.6: ...and the outcome's button row is freed with the screen, its field cleared",
 			"field=%s row_valid=%s" % [view._outcome_buttons, is_instance_valid(row)])
@@ -357,7 +362,7 @@ func test_the_outcomes_undo_is_reachable_from_continue_by_pad() -> void:
 
 # The accept lands on a button that rewinds the show, so the rebuild it starts is waited out before
 # anything is read: the outcome is dropped on the press and the board is rested on frames later,
-# and what "rested" means is the row's to say -- an armed card, or a bare cell when there is none.
+# and what "rested" means is the row's to say.
 func _accept_the_focused_outcome_button(rested: Callable) -> void:
 	_push_key(_booted_viewport, KEY_ENTER, true)
 	_push_key(_booted_viewport, KEY_ENTER, false)
@@ -365,6 +370,10 @@ func _accept_the_focused_outcome_button(rested: Callable) -> void:
 	while waited < CARD_CONTROL_TIMEOUT_SEC and (_fixture_game().processing or not rested.call()):
 		await get_tree().process_frame
 		waited += get_process_delta_time()
+#The outcome's own row is queue_free()d, which lands at the end of a frame, so a row reading
+#whether it is gone waits one out.
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 # Row 7.7: the producer of an outcome with NOTHING to arm behind it -- the last dealt card placed
 # after the stocks ran dry -- committed as history's top, so undoing the End lands on it.
@@ -404,14 +413,14 @@ func test_undo_from_an_end_reached_outcome_with_an_empty_entrance() -> void:
 			"7.7: ...leaving the show live again",
 			"ended=%s busy=%s" % [view.game.state.show_ended, view.game.processing])
 	check(_play_area.selected_cards.is_empty() and _play_area.armed_slot() == -1,
-			"7.7: sanity: the undone End put back an Entrance with nothing to arm",
+			"7.7: sanity: the undone End put back an empty Entrance",
 			str(_play_area.selected_cards.size()))
 	var owner := _game_viewport.gui_get_focus_owner()
 	var on_a_cell := owner != null and _play_area.ui_data.has(owner) \
 			and _zone_card_of(_play_area.ui_data[owner]) != null
 	check(on_a_cell,
 			"7.7: the picture viewport's focus owner is a grid cell's control inside the board, "
-			+ "so a pad can move from it with nothing armed",
+			+ "so a pad can move from it with nothing in hand",
 			"picture=%s root=%s" % [owner, _booted_viewport.gui_get_focus_owner()])
 	await _end_main_fixture()
 
@@ -1361,6 +1370,8 @@ func test_menus_title_and_button_row_centre_on_the_remaining_space() -> void:
 # The deal spawns its card controls a frame behind `enter_game()`, so the board is waited FOR
 # rather than slept on. Bounded: a real hang is a bug to surface, not one to spin on.
 const CARD_CONTROL_TIMEOUT_SEC := 5.0
+## How far past a card's drag threshold a press travels to become a drag: past float noise, and still well inside the card's own rect.
+const DRAG_THRESHOLD_MARGIN_PX := 2.0
 
 var _prev_run : RunState = null
 var _prev_save_info : RunState = null
@@ -1473,9 +1484,15 @@ func _hover_in(viewport: Viewport, at: Vector2) -> void:
 func _hover_another_card(controls: Array[Control], avoid: Control) -> Control:
 	for control : Control in controls:
 		if control == avoid: continue
+#A control that ALREADY holds the focus publishes nothing when the pointer lands on it: the hover
+#is what MOVES the focus, and moving it where it already is is not an event.
+		if control == _game_viewport.gui_get_focus_owner(): continue
 		_hover(control.get_global_rect().get_center())
 		await get_tree().process_frame
 		var hovered : Control = _play_area.moused_hovered_control
+#THE FOCUS IS WHAT PUBLISHES, so a hover the board registered but that moved no focus has not
+#reached the description route at all, and the walk carries on to the next card.
+		if _game_viewport.gui_get_focus_owner() != hovered: continue
 		if hovered != null and hovered != avoid and _play_area.ui_data.has(hovered):
 			return hovered
 	return null
@@ -1878,7 +1895,7 @@ func test_a_description_dismissed_with_the_x_stays_dismissed_on_return() -> void
 ## Q64=a/B11: a description a placement took down stays down -- leaving the game and coming back does not re-open it.
 func test_a_description_a_placement_took_down_stays_down_on_return() -> void:
 	await _start_game_fixture()
-	await _await_the_board_armed()
+	await _await_the_board_idle()
 	var controls := await _hoverable_card_controls()
 	check(not controls.is_empty(), "the dealt board offers a card control to hover",
 			str(controls.size()))
@@ -1886,8 +1903,8 @@ func test_a_description_a_placement_took_down_stays_down_on_return() -> void:
 		_hover(controls[0].get_global_rect().get_center())
 		await get_tree().process_frame
 		check(_container.showing_description(), "sanity: a description is up before the placement")
-		var placed := await _place_the_arm()
-		check(placed != null, "sanity: the armed card landed on a cell")
+		var placed := await _lift_and_place_a_card()
+		check(placed != null, "sanity: a lifted card landed on a cell")
 		check(_hud_is_up(), "sanity: the placement reverted the container to the HUD")
 		await _leave_the_game_and_return_by_the_wall()
 		check(_hud_is_up(),
@@ -2421,7 +2438,7 @@ func test_the_second_button_releases_the_held_card_then_dismisses() -> void:
 	if not entrance.is_empty():
 		var at := entrance[0].get_global_rect().get_center()
 		await _click_card(entrance[0])
-		var held := _armed_card()
+		var held := _held_card()
 		check(held != null, "the click left the card held", str(_play_area.selected_cards.size()))
 		check(_container.showing_description(), "...with its description up")
 		var dismissals : Array[int] = []
@@ -3017,12 +3034,15 @@ func test_accepting_the_exit_x_hands_the_focus_back_to_the_board() -> void:
 			str(_booted_viewport.gui_get_focus_owner()))
 	await _tap_key(KEY_ENTER)
 	check(_hud_is_up(), "accept on the X dismissed the description")
-	var expected : Control = described
-	if not (is_instance_valid(described) and _play_area.ui_data.has(described)):
-		expected = _play_area.data_ui.get(_armed_card())
-	check(expected != null and _game_viewport.gui_get_focus_owner() == expected,
-			"...and the focus is back on the board card it was opened from (Q68=b, multi-modal)",
-			"%s vs %s" % [_game_viewport.gui_get_focus_owner(), expected])
+	var owner := _game_viewport.gui_get_focus_owner()
+	if is_instance_valid(described) and _play_area.ui_data.has(described):
+		check(owner == described,
+				"...and the focus is back on the board card it was opened from (Q68=b, multi-modal)",
+				"%s vs %s" % [owner, described])
+	else:
+		check(owner != null and _play_area.ui_data.has(owner),
+				"...and the focus is back on a board control, the one it was opened from having been "
+				+ "rebuilt away (Q68=b, multi-modal)", str(owner))
 	check(_hud_is_up(), "...without that focus re-opening what was just dismissed")
 	await await_the_tap_window()
 	await _tap_key(KEY_ENTER)
@@ -3834,15 +3854,55 @@ func _check_the_rank_option_redraws_the_preview(tool_root: Control, preview: Con
 	check(preview.child.rank.uv != drawn,
 			"...and the preview re-draws the pip the new rank frames (S12.6)")
 
-# ------------------------------------------------------------------ S14: HELD, THEN FOLLOWING
+# ------------------------------------------------------------------ S14: LIFTED, AND CARRIED
 
-# The state an arm produces: `grab_cards` called from somewhere that is NOT a click, so the card is
-# held and lifted with nothing having yet told it to follow.
-func _arm_without_touching(control: Control) -> CardVisual:
+## How far a press on this control must travel before its gesture becomes a drag.
+func _threshold_px(control: Control) -> float:
+	return GestureMetrics.drag_threshold_px(control.get_global_rect().size, PlayArea.settings())
+
+# A card LIFTED the way a player lifts one: a click, which leaves it held and raised in its own
+# slot with nothing having told it to follow.
+func _lift_by_click(control: Control) -> CardVisual:
 	var data : CardData = _play_area.ui_data[control]
-	_play_area.grab_cards([data] as Array[CardData])
+	await _click_card(control)
+	return _play_area.data_card.get(data)
+
+# A card CARRIED the way a player carries one: a press on it, then travel past its own drag
+# threshold with the button still down. A quarter of a card's width is well inside its own rect, so
+# the pointer ends in the cell the card came from.
+func _drag_past_the_threshold(control: Control) -> CardVisual:
+	var data : CardData = _play_area.ui_data[control]
+	var from := control.get_global_rect().get_center()
+	_hover(from)
 	await get_tree().process_frame
-	return _play_area.data_card[data]
+	_push_mouse_button(from, _game_viewport, true)
+	await get_tree().process_frame
+	_hover(from + Vector2(_threshold_px(control) + DRAG_THRESHOLD_MARGIN_PX, 0.0))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return _play_area.data_card.get(data)
+
+## The release that closes a live gesture, pushed where the pointer already is.
+func _release_at(at: Vector2) -> void:
+	_push_mouse_button(at, _game_viewport, false)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+# A card left LIFTED with NO description locked over the HUD: a drag released where no cell takes
+# it returns the card to its slot, still held. It is the one pickup route that locks nothing, so
+# it is how a row holds a card and still reaches the HUD's own buttons.
+func _lift_by_a_returned_drag(control: Control) -> CardData:
+	var data : CardData = _play_area.ui_data[control]
+	var from := control.get_global_rect().get_center()
+	var at := _bare_board_point(await _hoverable_card_controls())
+	_hover(from)
+	await get_tree().process_frame
+	_push_mouse_button(from, _game_viewport, true)
+	await get_tree().process_frame
+	_hover(at)
+	await get_tree().process_frame
+	await _release_at(at)
+	return data
 
 # A board card EASES toward its target rather than snapping, so a position read on the next frame
 # is mid-flight. Bounded, and it returns the instant the card is actually still.
@@ -3864,16 +3924,16 @@ func _lift_above_aim(visual: CardVisual, aim: Vector2) -> float:
 func _slot_centre_of(visual: CardVisual) -> Vector2:
 	return visual.get_card_control_center(visual.control_anchor)
 
-## 6.4/G4/G5/Q254=d: an armed card LIFTS at once and does not follow -- it rests on its own slot, raised.
+## 6.4/G4/G5: a CLICKED card LIFTS at once and does not follow -- it rests on its own slot, raised.
 func test_a_held_card_lifts_and_does_not_follow() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		var visual := await _arm_without_touching(entrance[0])
-		check(visual.held != 0, "the card is HELD by the grab (6.4)", str(visual.held))
-		check(not visual.following, "...and is NOT following the cursor (6.4, Q254=d)")
+		var visual := await _lift_by_click(entrance[0])
+		check(visual.held != 0, "the card is HELD by the click (6.4)", str(visual.held))
+		check(not visual.following, "...and is NOT following the cursor (6.4)")
 		await _await_card_settled(visual)
 		var lift := _lift_above_aim(visual, _slot_centre_of(visual))
 		check(absf(lift - visual.held_lift_px()) < 2.0,
@@ -3881,30 +3941,33 @@ func test_a_held_card_lifts_and_does_not_follow() -> void:
 				"%.1f vs %.1f" % [lift, visual.held_lift_px()])
 	await _end_main_fixture()
 
-## 6.5/G7/Q262=a: one mouse motion -- no threshold, no focus -- starts a held card following.
-func test_any_mouse_motion_starts_the_card_following() -> void:
+## 6.5: motion with NO button down never carries a lifted card -- it waits in its slot.
+func test_mouse_motion_with_no_button_down_never_follows() -> void:
 	await _start_game_fixture()
 	var controls := await _hoverable_card_controls()
 	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		var visual := await _arm_without_touching(entrance[0])
-		check(not visual.following, "the armed card starts out not following")
+		var visual := await _lift_by_click(entrance[0])
+		check(not visual.following, "the clicked card starts out not following")
 		_hover(_bare_board_point(controls))
 		await get_tree().process_frame
-		check(visual.following, "ONE mouse motion starts it following (6.5, Q262=a)")
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		check(not visual.following,
+				"mouse motion with the button UP leaves it resting in its slot (6.5)")
+		check(visual.held != 0, "...and still held", str(visual.held))
 	await _end_main_fixture()
 
-## 6.6/G7/GAP-006: a key or pad focus does NOT start the follow -- the card waits in its slot until the mouse moves.
-func test_a_key_focus_leaves_the_card_resting_until_a_motion() -> void:
+## 6.6/G7/GAP-006: a key or pad focus does NOT start the follow -- the card waits in its slot.
+func test_a_key_focus_leaves_the_card_resting_in_its_slot() -> void:
 	await _start_game_fixture()
-	var controls := await _hoverable_card_controls()
 	var entrance := await _entrance_card_controls()
 	check(entrance.size() >= 2, "the dealt board offers two Entrance cards", str(entrance.size()))
 	if entrance.size() >= 2:
-		var visual := await _arm_without_touching(entrance[0])
-		check(not visual.following, "the armed card starts out not following")
+		var visual := await _lift_by_click(entrance[0])
+		check(not visual.following, "the clicked card starts out not following")
 		entrance[1].grab_focus()
 		await get_tree().process_frame
 		check(not visual.following,
@@ -3914,46 +3977,48 @@ func test_a_key_focus_leaves_the_card_resting_until_a_motion() -> void:
 		check(visual.global_position.distance_to(rest) < 2.0,
 				"...still resting at its slot centre raised by the lift (6.6, GAP-006)",
 				"%s vs %s" % [visual.global_position, rest])
-		_hover(_bare_board_point(controls))
-		await get_tree().process_frame
-		check(visual.following, "...and a LATER mouse motion starts it (6.6, GAP-006)")
 	await _end_main_fixture()
 
-## 6.7/G8/Q263=a: following is a ONE-WAY latch -- a key event after it started does not stop it.
-func test_following_is_a_one_way_latch() -> void:
+## 6.7/G8/GAP-007: the follow ends with its gesture -- the release leaves the card in its slot, lifted, chasing nothing.
+func test_the_release_ends_the_follow() -> void:
 	await _start_game_fixture()
 	var controls := await _hoverable_card_controls()
 	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to drag",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		var visual := await _arm_without_touching(entrance[0])
-		_hover(_bare_board_point(controls))
+		var visual := await _drag_past_the_threshold(entrance[0])
+		check(visual != null and visual.following,
+				"the press and its travel started the card following (6.7)")
+		var at := _bare_board_point(controls)
+		_hover(at)
 		await get_tree().process_frame
-		check(visual.following, "the motion started it following")
-		var key := InputEventKey.new()
-		key.keycode = KEY_RIGHT
-		key.pressed = true
-		_game_viewport.push_input(key)
+		await _release_at(at)
+		check(visual != null and not visual.following, "the release ends the follow (6.7)")
+		check(visual != null and visual.held != 0, "...and the card is still held and lifted",
+				str(visual.held))
+		_hover(_off_the_board_point())
 		await get_tree().process_frame
-		check(visual.following, "a key event after it started leaves it following (6.7, Q263=a)")
-		check(visual.held != 0, "...and the card is still held", str(visual.held))
+		check(visual != null and not visual.following,
+				"...and later motion does not resume it (6.7, GAP-007)")
 	await _end_main_fixture()
 
 ## 6.8/G8/Q265=a: the lift is the SAME height in both states, so following only makes the card move.
 func test_the_lift_is_the_same_height_in_both_states() -> void:
 	await _start_game_fixture()
-	var controls := await _hoverable_card_controls()
 	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to pick up",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		var visual := await _arm_without_touching(entrance[0])
+		var visual := await _lift_by_click(entrance[0])
 		await _await_card_settled(visual)
 		var before := _lift_above_aim(visual, _slot_centre_of(visual))
 		check(before > 2.0, "the card at rest is lifted by a REAL height, not zero (6.8)",
 				"%.1f" % before)
-		var at := _bare_board_point(controls)
+		var from := entrance[0].get_global_rect().get_center()
+		var at := from + Vector2(_threshold_px(entrance[0]) + DRAG_THRESHOLD_MARGIN_PX, 0.0)
+		_push_mouse_button(from, _game_viewport, true)
+		await get_tree().process_frame
 		_hover(at)
 		await get_tree().process_frame
 		await _await_card_settled(visual)
@@ -3962,22 +4027,22 @@ func test_the_lift_is_the_same_height_in_both_states() -> void:
 				"...and it rides the cursor at exactly that same lift (6.8, Q265=a)",
 				"%.1f vs %.1f" % [after, before])
 		check(visual.following, "...while following")
+		await _release_at(at)
 	await _end_main_fixture()
 
-## 6.9/G11/Q267=a: a card the player CLICKED follows at once -- the mouse has moved by definition.
-func test_a_clicked_card_follows_immediately() -> void:
+## 6.9/G11: a card a DRAG took up follows the cursor from the moment it is held.
+func test_a_dragged_card_follows_the_cursor() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
-	check(not entrance.is_empty(), "the dealt board offers a clickable Entrance card",
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to drag",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		await _click_card(entrance[0])
-		check(not _play_area.selected_cards.is_empty(), "the click grabbed a card",
+		var visual := await _drag_past_the_threshold(entrance[0])
+		check(not _play_area.selected_cards.is_empty(), "the drag picked a card up",
 				str(_play_area.selected_cards.size()))
-		if not _play_area.selected_cards.is_empty():
-			var visual : CardVisual = _play_area.data_card[_play_area.selected_cards[0]]
+		if visual != null:
 			check(visual.held != 0 and visual.following,
-					"a CLICKED card is following as soon as it is held (6.9, Q267=a)",
+					"a DRAGGED card is following as soon as it is held (6.9)",
 					"held %d following %s" % [visual.held, visual.following])
 	await _end_main_fixture()
 
@@ -3993,13 +4058,13 @@ func test_a_click_locked_card_keeps_its_description_until_it_is_placed() -> void
 		var dismissals : Array[int] = []
 		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
 		check(_container.showing_description() and not _play_area.selected_cards.is_empty(),
-				"the click locked a description and grabbed the card it landed on")
+				"the click locked a description and lifted the card it landed on")
 		_hover(_off_the_board_point())
 		await get_tree().process_frame
 		check(_panel.visible and not hud_stack.visible and dismissals.is_empty(),
-				"the motion a placement needs does NOT dismiss the card the click locked (1.7, GAP-008=a)",
+				"pointer motion does NOT dismiss the card the click locked (1.7, GAP-008=a)",
 				str(dismissals.size()))
-		var placed := await _place_the_arm()
+		var placed := await _place_the_held_card()
 		check(placed != null, "the board offers that card a cell it may land on")
 		if placed != null:
 			check(hud_stack.visible and not _panel.visible,
@@ -4022,13 +4087,12 @@ func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
 				break
 		check(carried != null, "the board offers an Entrance card OTHER than the locked one to hold")
 		if carried != null:
-			var visual := await _arm_without_touching(carried)
+			var visual := await _drag_past_the_threshold(carried)
 			var dismissals : Array[int] = []
 			_container.description_dismissed.connect(func() -> void: dismissals.append(1))
-			_hover(_play_area._origin_cell_rect(visual).get_center())
-			await get_tree().process_frame
-			check(visual.following and _container.showing_description() and dismissals.is_empty(),
-					"the pointer inside the held card's own cell starts the follow and dismisses nothing",
+			check(visual != null and visual.following and _container.showing_description()
+					and dismissals.is_empty(),
+					"a drag INSIDE the held card's own cell carries it and dismisses nothing",
 					str(dismissals.size()))
 			_hover(_off_the_board_point())
 			await get_tree().process_frame
@@ -4037,187 +4101,124 @@ func test_a_following_card_leaving_its_cell_reverts_to_the_hud() -> void:
 			check(dismissals.size() == 1, "...announced exactly once", str(dismissals.size()))
 	await _end_main_fixture()
 
-## 1.8/B11/Q268=a: a card that is NOT following dismisses nothing -- the motion that arms it closes no description.
+## 1.8/B11/Q268=a: a card that is NOT following dismisses nothing -- a click lifts it and the pointer may leave.
 func test_a_lifted_card_that_is_not_following_keeps_the_description() -> void:
 	await _start_game_fixture()
-	var controls := await _hoverable_card_controls()
-	check(not controls.is_empty(), "the dealt board offers a card control to read",
-			str(controls.size()))
-	if not controls.is_empty():
-		await _lock_without_holding(controls[0])
-		var entrance := await _entrance_card_controls()
-		check(not entrance.is_empty(), "the dealt board offers an Entrance card to arm",
-				str(entrance.size()))
-		if not entrance.is_empty():
-			var visual := await _arm_without_touching(entrance[0])
-			var dismissals : Array[int] = []
-			_container.description_dismissed.connect(func() -> void: dismissals.append(1))
-			check(_container.showing_description() and not visual.following,
-					"a description is up and the armed card is not following")
-			_hover(_off_the_board_point())
-			await get_tree().process_frame
-			check(_container.showing_description() and dismissals.is_empty(),
-					"a card that was NOT following dismisses nothing when the pointer leaves (1.8)",
-					str(dismissals.size()))
-			check(visual.following, "...that motion armed the following instead (Q262=a)")
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
+			str(entrance.size()))
+	if not entrance.is_empty():
+		var visual := await _lift_by_click(entrance[0])
+		var dismissals : Array[int] = []
+		_container.description_dismissed.connect(func() -> void: dismissals.append(1))
+		check(_container.showing_description() and not visual.following,
+				"the click locked a description and the lifted card is not following")
+		_hover(_off_the_board_point())
+		await get_tree().process_frame
+		check(_container.showing_description() and dismissals.is_empty(),
+				"a card that was NOT following dismisses nothing when the pointer leaves (1.8)",
+				str(dismissals.size()))
+		check(not visual.following, "...and that motion started no following either")
 	await _end_main_fixture()
 
-# ------------------------------------------------------------------ S15: THE ARM
+# ------------------------------------------------ S15: NOTHING IS HELD UNTIL THE PLAYER ACTS
 
 # How many placements the Entrance is emptied in before a refill is called a no-show: five slots,
 # plus room for a placement the committed grid refuses.
 const ENTRANCE_REFILL_PLACEMENTS := 8
 
-## The card the board has armed right now, read from the live selection -- never stored by the test.
-func _armed_card() -> CardData:
+## The card in the player's hand right now, read from the live selection -- never stored by the test.
+func _held_card() -> CardData:
 	return _play_area.selected_cards[0] if _play_area.selected_cards else null
 
-## The leftmost Entrance card the STATE holds, which is what the arm must always be.
+## The leftmost Entrance card the STATE holds.
 func _leftmost_present_card() -> CardData:
 	var slot := _play_area.armed_slot()
 	if slot == -1: return null
 	return CardEnvironment.get_current_game().state.upper_zone[slot].datas.back()
 
-# A placement can start a scoring cascade, and the next arm only lands once that cascade ends.
-# Bounded, and it returns the instant the board is idle with its next card armed.
-func _await_the_board_armed() -> void:
+# A placement can start a scoring cascade, and nothing the board does afterwards lands until that
+# cascade ends. Bounded, and it returns the instant the board is idle.
+func _await_the_board_idle() -> void:
 	var game := CardEnvironment.get_current_game()
 	var waited := 0.0
 	while waited < CARD_CONTROL_TIMEOUT_SEC:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-		if game.processing: continue
-		if _play_area.armed_slot() == -1 or not _play_area.selected_cards.is_empty(): return
+		if not game.processing: return
 
-# Places whatever is armed the way a player does -- one click on a cell that accepts it -- and
+# Places whatever is in hand the way a player does -- one click on a cell that accepts it -- and
 # hands back the card that landed, or null when nowhere takes it. A board COMMITTED to one grid
 # refuses a legal-looking cell in every other, so cells are tried until the card really moves.
-func _place_the_arm() -> CardData:
-	var armed := _armed_card()
-	if armed == null: return null
+func _place_the_held_card() -> CardData:
+	var held := _held_card()
+	if held == null: return null
 	var candidates := await _hoverable_card_controls()
 	while true:
-		var target := await _placement_target(candidates, [armed] as Array[CardData], true)
+		var target := await _placement_target(candidates, [held] as Array[CardData], true)
 		if target == null: return null
 		await _click_card(target)
-		await _await_the_board_armed()
-		if _armed_card() != armed: return armed
+		await _await_the_board_idle()
+		if _held_card() != held: return held
 		candidates.erase(target)
 	return null
 
-# Everything a pickup leaves on the card except `following`, which a click sets and an arm does not,
-# so an arm and a player's own pickup can be compared as one reading.
-func _pickup_state(data: CardData) -> String:
-	var visual : CardVisual = _play_area.data_card[data]
-	return "only held card %s, held %d, mouse filter %d, top of its layer %s" % [
-			_play_area.selected_cards.size() == 1 and _play_area.selected_cards[0] == data,
-			visual.held, _play_area.data_ui[data].mouse_filter,
-			visual.get_parent().get_child(-1) == visual]
+# The whole interaction a player makes to move one card: a click on the leftmost Entrance card to
+# lift it, then a click on a cell that takes it.
+func _lift_and_place_a_card() -> CardData:
+	var entrance := await _entrance_card_controls()
+	if entrance.is_empty(): return null
+	await _click_card(entrance[0])
+	return await _place_the_held_card()
 
 # Undo is pressed by hand here: a real click in the window's viewport, on Undo or on the exit X,
 # empties the game picture's focus owner (measured), which is the one reading this row makes.
-## 6.1/G3/Q250=a: arming is a pickup, not a highlight -- a re-arm leaves the focus where the player put it.
-func test_arming_moves_no_focus() -> void:
-	await _start_game_fixture()
-	var armed := _armed_card()
-	var armed_control : Control = _play_area.data_ui.get(armed)
-	check(armed != null and _game_viewport.gui_get_focus_owner() == armed_control,
-			"sanity: the dealt show armed a card and rested its one focus on it (G10)",
-			str(_game_viewport.gui_get_focus_owner()))
-	_push_key(_game_viewport, KEY_RIGHT, true)
-	_push_key(_game_viewport, KEY_RIGHT, false)
-	await get_tree().process_frame
-	var owner := _game_viewport.gui_get_focus_owner()
-	var focused := _play_area.focused_control
-	check(owner != null and owner != armed_control,
-			"sanity: an arrow moved the focus off the armed card", str(owner))
-	_container.undo_button.pressed.emit()
-	await _await_the_board_armed()
-	check(_armed_card() == armed, "sanity: Undo re-armed the same leftmost card",
-			str(_armed_card()))
-	check(_play_area.focused_control == focused, "re-arming moved no board focus (6.1, G3)",
-			"%s vs %s" % [_play_area.focused_control, focused])
-	check(_game_viewport.gui_get_focus_owner() == owner,
-			"...and left the viewport's focus owner where the player put it (6.1, Q250=a)",
-			"%s vs %s" % [_game_viewport.gui_get_focus_owner(), owner])
-	await _end_main_fixture()
-
-## 6.2/B3/Q240=a: the armed card's description does not open on its own -- a fresh show is the HUD.
-func test_arming_leaves_the_container_on_the_hud() -> void:
+## 6.2/B3/Q240=a: a freshly dealt show holds nothing and opens no description -- it is the HUD.
+func test_a_fresh_show_holds_nothing_and_shows_the_hud() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
-	check(not _play_area.selected_cards.is_empty(),
-			"the deal armed a card with no input at all (QR6=a)")
+	check(_play_area.armed_slot() != -1, "the deal filled the Entrance",
+			str(_play_area.armed_slot()))
+	check(_play_area.selected_cards.is_empty(),
+			"...and left nothing in the player's hand", str(_play_area.selected_cards.size()))
+	var lifted : Array[CardData] = []
+	for data : CardData in _play_area.data_card:
+		if _play_area.data_card[data].held != 0: lifted.append(data)
+	check(lifted.is_empty(), "...and no card on the board is lifted", str(lifted.size()))
 	check(hud_stack.visible and not _panel.visible,
 			"a freshly dealt show still shows the HUD (6.2, Q240=a)")
-	_play_area.ungrab_cards()
-	await _play_area.arm_leftmost()
-	await get_tree().process_frame
-	check(hud_stack.visible and not _panel.visible,
-			"...and arming again opens no description (6.2, B3)")
 	await _end_main_fixture()
 
-## 6.3/G1/G2/Q252=b: the arm IS a pickup -- it leaves its card exactly as a player's own click does, bar following.
-func test_arming_produces_a_pickups_own_state() -> void:
-	await _start_game_fixture()
-	var armed := _armed_card()
-	check(armed != null and armed == _leftmost_present_card(),
-			"the leftmost present Entrance card is the one armed (6.3, G1)")
-	if armed != null:
-		var visual : CardVisual = _play_area.data_card[armed]
-		check(not visual.following,
-				"...and not following, which is the one thing a click does differently (Q254=d)")
-		check(_play_area.armed_slot()
-						== CardEnvironment.get_current_game().entrance_slot_of(armed),
-				"...armed from the slot the game itself holds it in (6.3)")
-		await _await_card_settled(visual)
-		var armed_state := _pickup_state(armed)
-		var armed_lift := _lift_above_aim(visual, _slot_centre_of(visual))
-		_play_area.ungrab_cards()
-		var at := _play_area.data_ui[armed].get_global_rect().get_center()
-		await _click_card(_play_area.data_ui[armed])
-		visual = _play_area.data_card[armed]
-		check(visual.following, "sanity: a player's click picked the same card up, following")
-		await _await_card_settled(visual)
-		check(_pickup_state(armed) == armed_state,
-				"the arm leaves the card in a player's own pickup state (6.3, G2, Q252=b)",
-				"arm: %s / click: %s" % [armed_state, _pickup_state(armed)])
-		var click_lift := _lift_above_aim(visual, at + visual.cursor_ride_offset())
-		check(absf(click_lift - armed_lift) < 2.0 and armed_lift > 2.0,
-				"...lifted by the same real height as the click's pickup (6.3, G2)",
-				"%.1f vs %.1f" % [armed_lift, click_lift])
-	await _end_main_fixture()
-
-## G10/Q251=b: the show rests the focus on its first armed card ONCE, and silently.
-func test_the_show_rests_the_focus_on_the_armed_card() -> void:
+## G10/Q251=b: the show rests the opening focus on a grid cell a pad can move from, ONCE, and silently.
+func test_the_show_rests_the_opening_focus_on_a_board_cell() -> void:
 	await _start_game_fixture()
 	var hud_stack : Control = _container.get_node(^"%HudStack")
-	var armed := _armed_card()
-	check(armed != null, "the deal armed a card")
-	if armed != null:
-		check(_game_viewport.gui_get_focus_owner() == _play_area.data_ui[armed],
-				"the show's opening focus rests on the armed card (G10, Q251=b)",
-				str(_game_viewport.gui_get_focus_owner()))
-		check(hud_stack.visible and not _panel.visible,
-				"...silently: the container still shows the HUD (Q240=a)")
-		check(not _play_area.data_card[armed].following,
-				"...and the rest focus started no following (Q254=d)")
+	var owner := _game_viewport.gui_get_focus_owner()
+	check(owner != null and _play_area.ui_data.has(owner),
+			"the show's opening focus rests on a board control (G10, Q251=b)",
+			"picture=%s root=%s" % [owner, _booted_viewport.gui_get_focus_owner()])
+	check(owner != null and _play_area.ui_data.has(owner)
+			and _zone_card_of(_play_area.ui_data[owner]) != null,
+			"...a grid cell's own control, which is what a pad steps from with nothing in hand",
+			str(owner))
+	check(hud_stack.visible and not _panel.visible,
+			"...silently: the container still shows the HUD (Q240=a)")
 	await _end_main_fixture()
 
-## Q116/G14: after a placement the NEW leftmost present card is what arms.
-func test_a_placement_arms_the_new_leftmost() -> void:
+## Q116/G14: a placement empties the hand and puts nothing back into it.
+func test_a_placement_leaves_nothing_held() -> void:
 	await _start_game_fixture()
-	var placed := await _place_the_arm()
-	check(placed != null, "the board offered the armed card a cell to land on")
+	var placed := await _lift_and_place_a_card()
+	check(placed != null, "a lifted card found a cell to land on")
 	if placed != null:
-		check(_armed_card() != null, "something is armed again after the placement (Q116)")
-		check(_armed_card() != placed, "...and it is not the card that was just placed")
-		check(_armed_card() == _leftmost_present_card(),
-				"...it is the new leftmost present card (Q116, G14)")
+		check(_play_area.selected_cards.is_empty(),
+				"the placement left nothing in hand (Q116)", str(_play_area.selected_cards.size()))
+		check(_leftmost_present_card() != null and _leftmost_present_card() != placed,
+				"...with a card still waiting in the Entrance for the player to take (G14)")
 	await _end_main_fixture()
 
-## Q118/G14: the Entrance refills left to right, and the refill's new leftmost is what arms next.
-func test_a_refill_arms_the_new_leftmost() -> void:
+## Q118/G14: the Entrance refills left to right, and the refill still leaves the hand empty.
+func test_a_refill_fills_the_leftmost_slot_and_holds_nothing() -> void:
 	await _start_game_fixture()
 	## A real deck clears the default goal inside these few placements and the show would end before its next refill, so the goal goes out of reach and this stays a test about refills.
 	CardEnvironment.get_current_game().state.goal = GOAL_OUT_OF_REACH
@@ -4226,21 +4227,22 @@ func test_a_refill_arms_the_new_leftmost() -> void:
 		dealt.append_array(column.datas)
 	var refilled := false
 	for attempt : int in ENTRANCE_REFILL_PLACEMENTS:
-		if await _place_the_arm() == null: break
-		var armed := _armed_card()
-		if armed != null and armed not in dealt:
+		if await _lift_and_place_a_card() == null: break
+		var leftmost := _leftmost_present_card()
+		if leftmost != null and leftmost not in dealt:
 			refilled = true
 			break
 	check(refilled, "placing the Entrance out refills it", str(dealt.size()))
 	if refilled:
-		check(_armed_card() == _leftmost_present_card(),
-				"...and the refill's new leftmost card is the one armed (Q118)")
-		check(_play_area.armed_slot() == 0, "...which is the leftmost slot",
+		check(_play_area.armed_slot() == 0, "the refill lands in the leftmost slot (Q118)",
 				str(_play_area.armed_slot()))
+		check(_play_area.selected_cards.is_empty(),
+				"...and nothing picks the refilled card up for the player (Q118, G14)",
+				str(_play_area.selected_cards.size()))
 	await _end_main_fixture()
 
-## A show resumed mid-cascade must stand where the live show would have: its refill's card armed.
-func test_a_resumed_placement_arms_the_card_its_refill_drew() -> void:
+## A show resumed mid-cascade must stand where the live show would have: refilled, and holding nothing.
+func test_a_resumed_placement_leaves_nothing_held() -> void:
 	await _start_game_fixture()
 	var game := CardEnvironment.get_current_game()
 	game.state.goal = GOAL_OUT_OF_REACH
@@ -4266,80 +4268,72 @@ func test_a_resumed_placement_arms_the_card_its_refill_drew() -> void:
 			and waited < CARD_CONTROL_TIMEOUT_SEC:
 		await get_tree().process_frame
 		waited += get_process_delta_time()
-	await _await_the_board_armed()
+	await _await_the_board_idle()
 	var resumed_grid : GridData = resumed.state.grids[0]
 	check(not resumed.processing and RunManager.run.pending_action == &""
 			and not resumed_grid.cells[resumed_grid.cell_index(0, 0)].datas.is_empty(),
 			"sanity: the resume replayed the placement and handed the board back (Q233=b)")
 	check(_play_area.armed_slot() != -1,
 			"sanity: the refill drew into the Entrance the placement emptied")
-	var armed := _armed_card()
-	check(armed != null and armed == _leftmost_present_card(),
-			"the resumed show arms the leftmost card its refill drew (Q116/Q118, Q233=b)",
+	check(_play_area.selected_cards.is_empty(),
+			"the resumed show hands the board back holding nothing (Q116/Q118, Q233=b)",
 			str(_play_area.selected_cards.size()))
-	if armed != null:
-		check(_play_area.data_card[armed].held == 1, "...lifted in its slot as a pickup",
-				str(_play_area.data_card[armed].held))
+	var lifted : Array[CardData] = []
+	for data : CardData in _play_area.data_card:
+		if _play_area.data_card[data].held != 0: lifted.append(data)
+	check(lifted.is_empty(), "...and no card of its refill is lifted", str(lifted.size()))
 	await _end_main_fixture()
 
-## 6.10/G16/Q117=a: the arm is view-only -- undo restores the board and the arm is re-derived.
-func test_the_arm_survives_undo_by_re_derivation() -> void:
+## 6.10/G16/Q117=a: an undo restores the board and leaves the hand empty -- nothing picks a card back up.
+func test_an_undo_leaves_nothing_held() -> void:
 	await _start_game_fixture()
-	var placed := await _place_the_arm()
-	check(placed != null, "the board offered the armed card a cell to land on")
+	var placed := await _lift_and_place_a_card()
+	check(placed != null, "a lifted card found a cell to land on")
 	if placed != null:
-		check(_armed_card() != placed, "the placement moved the arm on")
 		check(await _click_button(_container.undo_button, _booted_viewport),
 				"a real click on Undo pressed it (6.10)")
-		await _await_the_board_armed()
-		check(_armed_card() == _leftmost_present_card(),
-				"after an undo the arm is the leftmost present card again (6.10, Q117=a)")
-		check(_armed_card() != null
-						and _expected_text(_armed_card())[0] == _expected_text(placed)[0],
-				"...which is the card the undo put back -- an undo rebuilds the board's own card objects, so it is the same card by name (6.10, G16)")
-		if _armed_card() != null:
-			check(_play_area.data_card[_armed_card()].held != 0,
-					"...held and lifted again, not merely present (6.10)")
+		await _await_the_board_idle()
+		check(_play_area.selected_cards.is_empty(),
+				"the undo left nothing in hand (6.10, Q117=a)",
+				str(_play_area.selected_cards.size()))
+		var restored := _leftmost_present_card()
+		check(restored != null
+						and _expected_text(restored)[0] == _expected_text(placed)[0],
+				"...with the card it put back waiting in the Entrance -- an undo rebuilds the board's own card objects, so it is the same card by name (6.10, G16)")
+		var lifted : Array[CardData] = []
+		for data : CardData in _play_area.data_card:
+			if _play_area.data_card[data].held != 0: lifted.append(data)
+		check(lifted.is_empty(), "...and nothing on the restored board is lifted (6.10)",
+				str(lifted.size()))
 	await _end_main_fixture()
 
-## Q114=a/QR6=a: clicking a different Entrance card re-arms onto it AND locks its description.
-func test_clicking_another_entrance_card_re_arms_onto_it() -> void:
+## Q114=a: clicking an Entrance card lifts it AND locks its description; clicking another moves the hold.
+func test_clicking_another_entrance_card_moves_the_hold_onto_it() -> void:
 	await _start_game_fixture()
 	var entrance := await _entrance_card_controls()
-	var armed := _armed_card()
-	var other := _another_card_control(entrance, armed)
-	check(other != null, "the dealt Entrance offers a second card to click")
-	if other != null:
-		var wanted : CardData = _play_area.ui_data[other]
-		await _click_card(other)
-		check(_armed_card() == wanted, "the click re-arms onto the card it landed on (Q114=a)")
-		check(_container.is_locked() and _play_area.locked_data == wanted,
-				"...and the same click locks that card's description (Q114=a)")
+	check(entrance.size() >= 2, "the dealt Entrance offers two cards to click",
+			str(entrance.size()))
+	if entrance.size() >= 2:
+		var first : CardData = _play_area.ui_data[entrance[0]]
+		await _click_card(entrance[0])
+		check(_held_card() == first, "the first click lifted the card it landed on (Q114=a)")
+		var other := _another_card_control(await _entrance_card_controls(), first)
+		check(other != null, "the dealt Entrance offers a second card to click")
+		if other != null:
+			var wanted : CardData = _play_area.ui_data[other]
+			await _click_card(other)
+			check(_held_card() == wanted,
+					"a click on another Entrance card moves the hold onto it (Q114=a)")
+			check(_play_area.selected_cards.size() == 1,
+					"...and lets the first one go", str(_play_area.selected_cards.size()))
+			check(_container.is_locked() and _play_area.locked_data == wanted,
+					"...and the same click locks that card's description (Q114=a)")
 	await _end_main_fixture()
 
-## G1: a re-arm never steals a card that is already held, nor resets what the player started.
-func test_arming_again_leaves_the_held_card_alone() -> void:
-	await _start_game_fixture()
-	var armed := _armed_card()
-	check(armed != null, "the deal armed a card")
-	if armed != null:
-		_hover(_bare_board_point(await _hoverable_card_controls()))
-		await get_tree().process_frame
-		check(_play_area.data_card[armed].following,
-				"the pointer moved, so the armed card is following")
-		await _play_area.arm_leftmost()
-		await get_tree().process_frame
-		check(_armed_card() == armed, "a second arm leaves the held card where it is (G1)")
-		check(_play_area.data_card[armed].following,
-				"...and does not reset what the player already started (Q263=a)")
-	await _end_main_fixture()
-
-## Q267=a/Q254=d: a click the board never acted on cannot make the NEXT arm follow -- an auto-armed card is one the player did not touch.
-func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
+## 1.9: a click while the board resolves an act picks nothing up.
+func test_a_click_during_processing_grabs_nothing() -> void:
 	await _start_game_fixture()
 	var game := CardEnvironment.get_current_game()
-	_play_area.ungrab_cards()
-	await get_tree().process_frame
 	var entrance := await _entrance_card_controls()
 	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
 			str(entrance.size()))
@@ -4350,29 +4344,16 @@ func test_a_click_during_processing_does_not_make_the_next_arm_follow() -> void:
 				"the click during a cascade grabbed nothing (1.9)",
 				str(_play_area.selected_cards.size()))
 		game.processing = false
-		await _play_area.arm_leftmost()
-		await get_tree().process_frame
-		var armed := _armed_card()
-		check(armed != null, "the cascade ended and the board armed its leftmost card")
-		if armed != null:
-			var visual : CardVisual = _play_area.data_card[armed]
-			check(not visual.following,
-					"a card the player never touched rests in its slot (Q267=a, Q254=d)")
-			await _await_card_settled(visual)
-			var lift := _lift_above_aim(visual, _slot_centre_of(visual))
-			check(absf(lift - visual.held_lift_px()) < 2.0,
-					"...at its slot centre raised by the lift, not at the cursor (G4)",
-					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+		await _await_the_board_idle()
+		check(_play_area.selected_cards.is_empty(),
+				"...and the cascade ending picks nothing up for the player either (1.9)",
+				str(_play_area.selected_cards.size()))
 	await _end_main_fixture()
 
-## Q267=a/Q262=a: a pickup the board REFUSED cannot make the next auto-arm follow -- an auto-armed card is one the player did not touch.
-func test_a_refused_pickup_does_not_make_the_next_arm_follow() -> void:
+## 1.9: a click on a card no rule grabs leaves the hand exactly as empty as it was.
+func test_a_click_on_a_card_no_rule_grabs_leaves_the_hand_empty() -> void:
 	await _start_game_fixture()
-	var game := CardEnvironment.get_current_game()
 	var hoverable := await _hoverable_card_controls()
-	await _second_button_press(_bare_board_point(hoverable))
-	check(_play_area.selected_cards.is_empty(), "the second button let the armed card go (1.8)",
-			str(_play_area.selected_cards.size()))
 	var refused : Control = null
 	for control : Control in hoverable:
 		if not _play_area.upper_zone_right.is_ancestor_of(control) and _is_selectable(control):
@@ -4383,37 +4364,25 @@ func test_a_refused_pickup_does_not_make_the_next_arm_follow() -> void:
 		await _click_card(refused)
 		check(_play_area.selected_cards.is_empty(), "the click on that card grabbed nothing (1.9)",
 				str(_play_area.selected_cards.size()))
-		game.processing = true
-		game.processing = false
-		await _await_the_board_armed()
-		var armed := _armed_card()
-		check(armed != null, "the processing edge armed the leftmost Entrance card")
-		if armed != null:
-			var visual : CardVisual = _play_area.data_card[armed]
-			check(not visual.following,
-					"a card the player never touched rests in its slot (Q267=a, Q262=a)")
-			await _await_card_settled(visual)
-			var lift := _lift_above_aim(visual, _slot_centre_of(visual))
-			check(absf(lift - visual.held_lift_px()) < 2.0,
-					"...at its slot centre raised by the lift, not at the cursor (G4)",
-					"%.1f vs %.1f" % [lift, visual.held_lift_px()])
+		var lifted : Array[CardData] = []
+		for data : CardData in _play_area.data_card:
+			if _play_area.data_card[data].held != 0: lifted.append(data)
+		check(lifted.is_empty(), "...and lifted nothing anywhere else (1.9)", str(lifted.size()))
 	await _end_main_fixture()
 
-## Q115=a: the disarm leaves nothing armed, "and the next click on a cell does nothing".
-func test_the_disarm_leaves_nothing_armed() -> void:
+## Q115=a: letting the held card go leaves nothing held, "and the next click on a cell does nothing".
+func test_the_disarm_leaves_nothing_held() -> void:
 	await _start_game_fixture()
 	var game := CardEnvironment.get_current_game()
-	var armed := _armed_card()
-	check(armed != null, "the deal armed a card to disarm")
-	if armed != null:
-		var cell := await _placement_target(await _hoverable_card_controls(),
-				[armed] as Array[CardData], true)
+	var held := await _grab_a_card_to_place()
+	if not held.is_empty():
+		var cell := await _placement_target(await _hoverable_card_controls(), held, true)
 		check(cell != null, "the board offers a cell that card could have landed on")
 		_play_area.ungrab_cards()
 		await get_tree().process_frame
 		await get_tree().process_frame
 		check(_play_area.selected_cards.is_empty(),
-				"the disarm left nothing armed, and nothing re-armed behind it (Q115=a)",
+				"the release left nothing held, and nothing picked one back up (Q115=a)",
 				str(_play_area.selected_cards.size()))
 		if cell != null:
 			var before := game.state.revision
@@ -4423,30 +4392,27 @@ func test_the_disarm_leaves_nothing_armed() -> void:
 					"%d vs %d" % [game.state.revision, before])
 	await _end_main_fixture()
 
-## Q119=a: an empty Entrance arms nothing, and a click on a cell then does nothing at all.
-func test_an_empty_entrance_arms_nothing() -> void:
+## Q119=a: an empty Entrance has nothing to lift, and a click on a cell then does nothing at all.
+func test_an_empty_entrance_lifts_nothing() -> void:
 	await _start_game_fixture()
-	_play_area.ungrab_cards()
 	for column : ArrayCardData in CardEnvironment.get_current_game().state.upper_zone:
 		column.datas.clear()
 	_play_area.setup_gui()
 	await get_tree().process_frame
-	check(_play_area.armed_slot() == -1, "an emptied Entrance has no slot to arm (Q119=a)")
-	await _play_area.arm_leftmost()
-	await get_tree().process_frame
-	check(_play_area.selected_cards.is_empty(), "...so nothing is armed (Q119=a)",
+	check(_play_area.armed_slot() == -1, "an emptied Entrance holds no card to lift (Q119=a)")
+	check(_play_area.selected_cards.is_empty(), "...and nothing is held (Q119=a)",
 			str(_play_area.selected_cards.size()))
 	var cells := await _hoverable_card_controls()
 	if not cells.is_empty():
 		await _click_card(cells[0])
 		check(_play_area.selected_cards.is_empty(),
-				"...and a click on a cell with nothing armed picks nothing up (Q119=a)")
+				"...and a click on a cell with nothing held picks nothing up (Q119=a)")
 	await _end_main_fixture()
 
 ## 6.11/G12/`GAP-005`=a: the tint IS the drop map -- it marks what the board accepts, nothing it refuses, and it follows the answer when a placement changes it.
 func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 	await _start_game_fixture()
-	var filler := await _fill_a_cell_behind_the_arm(0)
+	var filler := await _fill_a_cell_from_the_entrance(0)
 	check(filler != null, "the deal offered a second Entrance card to fill a cell with")
 	var held := await _grab_a_card_to_place()
 	if filler != null and not held.is_empty():
@@ -4469,7 +4435,10 @@ func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 			var marked_before := TestGridFixtures.tinted_cell_count(_play_area)
 			await _click_card(cell)
 			await _hoverable_card_controls()
-			var now_held : Array[CardData] = _play_area.selected_cards.duplicate()
+			check(_play_area.selected_cards.is_empty(),
+					"the click placed the held card and emptied the hand (6.11)",
+					str(_play_area.selected_cards.size()))
+			var now_held := await _grab_a_card_to_place()
 			var still_accepted := await _board_accepts(now_held, _play_area.data_ui[held[0]])
 			check(not still_accepted, "the filled cell takes nothing more (6.11)")
 			check(_tint_of(zone_card) == _drawn(Color.WHITE, zone_card),
@@ -4485,13 +4454,12 @@ func test_the_legal_cell_tint_follows_what_a_placement_accepts() -> void:
 func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 	await _start_game_fixture()
 	var state := CardEnvironment.get_current_game().state
-	var armed := _armed_card()
-	check(armed != null, "the deal armed a card")
+	var held := await _grab_a_card_to_place()
 	var zone_card : CardData = state.grids[0].cell_types[0]
 	check(zone_card in _play_area._legal_cells, "the empty cell is on the drop map before the fill")
-	var filler := await _fill_a_cell_behind_the_arm(0)
+	var filler := await _fill_a_cell_from_the_entrance(0)
 	check(filler != null, "...and dealt a second Entrance card to fill a cell with")
-	if armed != null and filler != null:
+	if not held.is_empty() and filler != null:
 		var expected := await _drop_map(_play_area.selected_cards)
 		check(zone_card not in expected, "the board refuses the filled cell")
 		var swept := _play_area._legal_cells.size() == expected.size()
@@ -4504,9 +4472,9 @@ func test_a_direct_rebuild_re_sweeps_the_drop_map() -> void:
 	await _end_main_fixture()
 
 # A fresh deal refuses NO cell -- every cell is empty and an empty cell takes anything -- so the
-# fixture fills one BEHIND the arm, through the state and a direct rebuild: its top then refuses
-# every card, because the standard rules carry no stacking placer. The filler, or null if undealt.
-func _fill_a_cell_behind_the_arm(cell: int) -> CardData:
+# fixture fills one behind the player's back, through the state and a direct rebuild: its top then
+# refuses every card, because the standard rules carry no stacking placer. The filler, or null.
+func _fill_a_cell_from_the_entrance(cell: int) -> CardData:
 	var state := CardEnvironment.get_current_game().state
 	if state.upper_zone.size() < 2 or state.upper_zone[1].datas.is_empty(): return null
 	var filler : CardData = state.upper_zone[1].datas.back()
@@ -4651,19 +4619,18 @@ func test_releasing_the_held_card_leaves_the_locked_description_up() -> void:
 				"...still on the same card (S18.4)")
 	await _end_main_fixture()
 
-## S18.5/Q115=a/Q114=a: a cancel disarms, the next click on a cell does nothing, and only a click on an Entrance card re-arms.
-func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
+## S18.5/Q115=a/Q114=a: a cancel empties the hand, the next click on a cell does nothing, and only a click on an Entrance card lifts again.
+func test_a_cancel_needs_a_click_on_an_entrance_card_to_lift_again() -> void:
 	await _start_game_fixture()
 	var game := CardEnvironment.get_current_game()
-	var armed := _armed_card()
-	check(armed != null, "the deal armed a card to cancel")
-	if armed != null:
+	var held := await _grab_a_card_to_place()
+	if not held.is_empty():
 		var controls := await _hoverable_card_controls()
-		var cell := await _placement_target(controls, [armed] as Array[CardData], true)
+		var cell := await _placement_target(controls, held, true)
 		check(cell != null, "the board offers a cell that card could have landed on")
 		await _second_button_press(_bare_board_point(controls))
 		check(_play_area.selected_cards.is_empty(),
-				"the cancel disarmed, and nothing re-armed behind it (S18.5, Q115=a)",
+				"the cancel emptied the hand, and nothing picked a card back up (S18.5, Q115=a)",
 				str(_play_area.selected_cards.size()))
 		if cell != null:
 			var before := game.state.revision
@@ -4675,8 +4642,8 @@ func test_a_cancel_disarm_needs_a_click_on_an_entrance_card_to_re_arm() -> void:
 		if not entrance.is_empty():
 			var wanted : CardData = _play_area.ui_data[entrance[0]]
 			await _click_card(entrance[0])
-			check(_armed_card() == wanted,
-					"...and a click on an Entrance card re-arms onto it (S18.5, Q114=a)")
+			check(_held_card() == wanted,
+					"...and a click on an Entrance card lifts it (S18.5, Q114=a)")
 	await _end_main_fixture()
 
 # The board's arrows must stay on the board's own cards: focus parked on the scroll container
@@ -4707,11 +4674,9 @@ func test_motion_over_the_container_reaches_the_following_card() -> void:
 	check(not entrance.is_empty(), "the dealt board offers a card to pick up",
 			str(entrance.size()))
 	if not entrance.is_empty():
-		var visual := await _arm_without_touching(entrance[0])
-		_hover(_play_area._origin_cell_rect(visual).get_center())
-		await get_tree().process_frame
-		check(visual.following,
-				"a motion inside its own cell left the card following the pointer",
+		var visual := await _drag_past_the_threshold(entrance[0])
+		check(visual != null and visual.following,
+				"a drag inside its own cell left the card following the pointer",
 				str(_play_area.selected_cards.size()))
 		var reached : Array[bool] = [false]
 		_play_area.description_dismiss_requested.connect(func() -> void: reached[0] = true)
@@ -5022,37 +4987,44 @@ func test_hovering_a_stock_says_how_many_it_has_left() -> void:
 			"%s vs %d" % [body.text, before - 1])
 	await _end_main_fixture()
 
-## 4.7: one slot running out of stock is not an empty deck, and it disarms nothing -- not even the card still sitting on that very slot.
-func test_one_drained_stock_disarms_nothing() -> void:
+## 4.7: one slot running out of stock is not an empty deck, and it drops nothing -- not even the card the player is holding off that very slot.
+func test_one_drained_stock_drops_nothing() -> void:
 	await _start_game_fixture()
 	var state := _fixture_game().state
 	state.goal = GOAL_OUT_OF_REACH
-	var armed := _armed_card()
+	var entrance := await _entrance_card_controls()
+	check(not entrance.is_empty(), "the dealt board offers an Entrance card to click",
+			str(entrance.size()))
+	if entrance.is_empty():
+		await _end_main_fixture()
+		return
+	await _click_card(entrance[0])
+	var held := _held_card()
 	var slot := _play_area.armed_slot()
-	check(armed != null, "the fixture's board starts with a card armed", str(slot))
+	check(held != null, "the click left that slot's card in hand", str(slot))
 	state.discard_deck.append_array(state.entrance_stocks()[slot].datas)
 	state.entrance_stocks()[slot].datas.clear()
 	state.revision += 1
 	_play_area.set_card_zones()
 	await get_tree().process_frame
-	check(not state.stocks_are_empty(), "the armed slot's drained stock is not an empty deck (4.7)",
+	check(not state.stocks_are_empty(), "that slot's drained stock is not an empty deck (4.7)",
 			str(_stock_controls(slot).size()))
-	check(_armed_card() == armed and _play_area.armed_slot() == slot,
-			"...and nothing disarms: the same card is still held on its own drained slot (4.7)",
-			"%s in %d" % [_armed_card(), _play_area.armed_slot()])
-	check(armed != null and _play_area.data_card[armed].held > 0,
+	check(_held_card() == held and _play_area.armed_slot() == slot,
+			"...and nothing drops it: the same card is still held off its own drained slot (4.7)",
+			"%s in %d" % [_held_card(), _play_area.armed_slot()])
+	check(held != null and _play_area.data_card[held].held > 0,
 			"...still lifted as a held card (4.7)")
 	check(not (_main._pictures[&"game"].screen_root as GameView).submit_button.visible,
 			"...and End is not revealed (4.7)")
-	var placed := await _place_the_arm()
-	check(placed != null and placed == armed, "the card on the drained slot still places (4.7)",
+	var placed := await _place_the_held_card()
+	check(placed != null and placed == held, "the card off the drained slot still places (4.7)",
 			str(placed))
 	check(state.entrance_stocks()[slot].datas.is_empty(),
 			"...its slot's refill had nothing to draw (4.7)",
 			str(state.entrance_stocks()[slot].datas.size()))
-	check(_armed_card() != null and _armed_card() == _leftmost_present_card(),
-			"...and the next leftmost card arms after the refill (4.7)",
-			"%s vs %s" % [_armed_card(), _leftmost_present_card()])
+	check(_play_area.selected_cards.is_empty(),
+			"...and the placement left nothing in hand (4.7)",
+			str(_play_area.selected_cards.size()))
 	await _end_main_fixture()
 
 ## S21.5b: a CLICK on the face-down card describes the slot too -- it never hands the hidden card to the view, so nothing locks to a card the player cannot see.
@@ -5127,7 +5099,7 @@ func test_an_arrow_never_stops_on_a_face_down_card() -> void:
 	state.goal = GOAL_OUT_OF_REACH
 	check(state.upper_zone.size() >= 4, "sanity: four slots to leave gaps between",
 			str(state.upper_zone.size()))
-	var placed := await _place_the_arm()
+	var placed := await _lift_and_place_a_card()
 	check(placed != null and state.upper_zone[0].datas.is_empty(),
 			"a placement empties the leftmost slot while its neighbours still hold cards (S21.7)",
 			str(state.upper_zone[0].datas.size()))

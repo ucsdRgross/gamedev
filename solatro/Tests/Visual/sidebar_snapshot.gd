@@ -132,9 +132,6 @@ func _ready() -> void:
 	await _await_deal_settled(view)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
-
-	await _await_held_card_settled(view, view.play_area.selected_cards[0])
-	await RenderingServer.frame_post_draw
 	_capture(_resolve_out_path())
 
 	await _report_the_entrance_depth(view)
@@ -160,7 +157,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	await _move_the_focus_off_the_armed_card(main, view)
+	await _move_the_focus_off_the_lifted_card(main, view)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(ARMED_FOCUS_ELSEWHERE_OUT_PATH)
@@ -202,27 +199,27 @@ func _ready() -> void:
 	print("SIDEBAR_SNAPSHOT description_follow locked=%s showing=%s" % [
 			view.hud_container.is_locked(), follow_title.text])
 
-	var armed := _arm_an_entrance_card(main, view)
-	await _await_held_card_settled(view, armed)
+	var lifted := await _lift_an_entrance_card(main, view)
+	await _await_held_card_settled(view, lifted)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(CARD_LIFTED_OUT_PATH)
-	_report_held_lift(view, armed, "lifted")
+	_report_held_lift(view, lifted, "lifted")
 	_report_the_drop_map(view, "card_lifted")
 
-	var pointer := _point_over_the_board(main, view)
-	await _await_held_card_settled(view, armed)
+	var pointer := await _drag_over_the_board(main, view, lifted)
+	await _await_held_card_settled(view, lifted)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(CARD_FOLLOWING_OUT_PATH)
-	_report_held_lift(view, armed, "following", pointer)
+	_report_held_lift(view, lifted, "following", pointer)
 
-	await _release_off_a_cell(main, view, armed)
-	await _await_held_card_settled(view, armed)
+	await _release_off_a_cell(main, view, lifted)
+	await _await_held_card_settled(view, lifted)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	_capture(DRAG_RELEASE_RETURNED_OUT_PATH)
-	_report_held_lift(view, armed, "drag_release_returned")
+	_report_held_lift(view, lifted, "drag_release_returned")
 	view.play_area.ungrab_cards()
 	await get_tree().process_frame
 
@@ -680,37 +677,43 @@ func _listed_cards(container: Node) -> Array[ControlCard]:
 		if card: cards.append(card)
 	return cards
 
-# The LIFTED still: a pickup from somewhere that is NOT a click, so the card is held with nothing
-# yet having told it to follow -- it rests on its own slot, raised by the lift.
-func _arm_an_entrance_card(main: Main, view: GameView) -> CardData:
+# The LIFTED still: a real CLICK on an Entrance card, which holds it raised in its own slot with
+# nothing having told it to follow. The hand is emptied first so the click really lands.
+func _lift_an_entrance_card(main: Main, view: GameView) -> CardData:
+	view.play_area.ungrab_cards()
+	await _click_an_entrance_card(main, view)
+	return view.play_area.selected_cards[0]
+
+# The FOCUS-ELSEWHERE still: a card RESTING in its slot at its lift, taken up by a drag that was
+# released where nothing takes it, so no description is locked over the shot. The focus then moves
+# by ARROW ALONE, and what actually happened is printed beside the still.
+func _move_the_focus_off_the_lifted_card(main: Main, view: GameView) -> void:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
 	var data : CardData = view.play_area.ui_data[_entrance_controls(view, viewport)[0]]
-	view.play_area.grab_cards([data] as Array[CardData])
-	return data
-
-# The FOCUS-ELSEWHERE still: the armed card RESTING in its slot at its lift. The focus moves by
-# ARROW ALONE -- a pointer motion would start the follow and carry the card out of its slot -- and
-# what actually happened is printed beside the still.
-func _move_the_focus_off_the_armed_card(main: Main, view: GameView) -> void:
-	var viewport : SubViewport = main._pictures[&"game"].viewport
-	await _await_held_card_settled(view, view.play_area.selected_cards[0])
+	await _release_off_a_cell(main, view, data)
+	await _await_held_card_settled(view, data)
 	var key := InputEventKey.new()
 	key.keycode = KEY_UP
 	key.pressed = true
 	viewport.push_input(key)
 	await get_tree().process_frame
-	var armed : CardData = view.play_area.selected_cards[0]
-	var visual : CardVisual = view.play_area.data_card[armed]
-	print("SIDEBAR_SNAPSHOT armed_focus_elsewhere focus_is_the_arm=%s held=%d glow=%s following=%s"
-			% [viewport.gui_get_focus_owner() == view.play_area.data_ui[armed], visual.held,
+	var visual : CardVisual = view.play_area.data_card[data]
+	print("SIDEBAR_SNAPSHOT armed_focus_elsewhere focus_is_the_card=%s held=%d glow=%s following=%s"
+			% [viewport.gui_get_focus_owner() == view.play_area.data_ui[data], visual.held,
 					visual.focused, visual.following])
 
-# The FOLLOWING still: the pointer is put over the middle of the board, which both starts the
-# following and is where the card is then carried to.
-func _point_over_the_board(main: Main, view: GameView) -> Vector2:
+# The FOLLOWING still: a real press on the lifted card, carried out to the middle of the board with
+# the button still down, which is both what starts the chase and where the card is carried to.
+func _drag_over_the_board(main: Main, view: GameView, data: CardData) -> Vector2:
 	var viewport : SubViewport = main._pictures[&"game"].viewport
+	var from : Vector2 = view.play_area.data_ui[data].get_global_rect().get_center()
+	_push_pointer(viewport, from)
+	await get_tree().process_frame
+	_push_click(viewport, from, true)
+	await get_tree().process_frame
 	var at := Vector2(viewport.size) * 0.5
 	_push_pointer(viewport, at)
+	await get_tree().process_frame
 	return at
 
 # THE FAILED DRAG's still: a real press on the armed card, carried out over the board and released

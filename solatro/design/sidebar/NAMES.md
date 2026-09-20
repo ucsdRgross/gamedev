@@ -78,8 +78,7 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `GestureMetrics` | `static func drag_threshold_px(card_size: Vector2, settings: PlayerSettings) -> float` | Card-relative (M3, M4) |
 | `GestureMetrics` | `static func touch_target_px(window: Vector2, settings: PlayerSettings) -> float` | Window-relative (M7, M8) |
 | `WallInput` | `static func touch_target_px(window: Vector2, settings: PlayerSettings) -> float` | ⚠ **KEEPS ITS NAME, NEW BODY AND NEW SIGNATURE** — delegates to `GestureMetrics`. Every caller keeps its seam (M9, `Q305`=b) |
-| `PlayArea` | `func armed_slot() -> int` | Leftmost present, re-derived, never stored (G1, `Q117`=a) |
-| `PlayArea` | `func arm_leftmost() -> void` | Calls the SAME `try_grab`/`grab_cards` a player pickup calls (G2, `Q252`=b) |
+| `PlayArea` | `func armed_slot() -> int` | Leftmost Entrance slot holding a card, re-derived, never stored (G1, `Q117`=a) |
 | `CardVisual` | `var following : bool` | NEW. `held` keeps its meaning; only `CardVisual`'s target reads this (G5, G8, `Q261`=a) |
 | `Game` | `func stock_for_slot(slot: int) -> Array[CardData]` | One slot's ordered stock (H1) |
 | `Game` | `func rebalance_stocks() -> void` | Add/remove rebalance, pure rule, no RNG (H7, H8) |
@@ -100,10 +99,10 @@ screen already uses, and nothing about it is Info-mode-specific.
 | `HudContainer` | `func _hosting_a_viewer() -> bool` | Whether a Deck/Choice viewer is up, read off `host_viewer`'s own connections: the map's up-into-the-panel route yields to a viewer's focus chain (K10, `GAP-012`=a) |
 | `HudContainer` | `func host_viewer(viewer: Node, picture: WallPicture, relay: Signal) -> void` | Wires a `DeckViewer`/`ChoiceViewer` on any screen: relay, return to the lock, focus fallback, fit and re-fit (republishing only while a description shows) |
 | `GameView` | `func pile_center(pile: Control) -> Vector2` | Where a card leaving the board aims: the window pile's centre, in the game picture |
-| `GameView` | `func arm_after_placement() -> void` | Drop the hand and re-arm after a placement's refill; the live and replay routes share it |
-| `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or the armed card |
-| `PlayArea` | `func rest_focus_on_board() -> void` | After the outcome's own Undo: the focus rests on the armed card, or — End reached with the Entrance empty, so the undo re-arms nothing — on the selected grid's origin cell, the control the overview's arrow selection lands on (J13, `GAP-009`=b) |
-| `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: awaits the shared `_on_undo_pressed` and then rests the picture viewport's focus on the board, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
+| `PlayArea` | `func return_focus_to_board() -> void` | After a key/pad accept on the X: focus on the described card, or a board rest when that control is gone |
+| `PlayArea` | `func rest_focus_on_board() -> void` | The board rest: the card in hand, or the selected grid's origin cell — the control the overview's arrow selection lands on, and what a pad player steps from with nothing in hand (J13, `GAP-009`=b) |
+| `GameView` | `func _rest_the_board_focus() -> void` | Called wherever the board settles (`rebuild()`, the processing-false edge): rests the board focus only while NOTHING in the picture holds it, so it never takes the focus off the player |
+| `GameView` | `func _on_outcome_undo_pressed() -> void` | The outcome row's Undo: the shared `_on_undo_pressed`, then a board rest of the picture viewport's focus, which the HUD's Undo (a root-viewport press) must not do (J13, `GAP-009`=b) |
 | `TestGridFixtures` | `static func tinted_cell_count(...) -> int` | Test support: the cells whose `modulate` wears `legal_cell_tint` (focused or not) — the one counter `TestSidebar` and the snapshot share |
 | `WorldMapController` | `static func node_screen_rect(node: WorldGraphNode) -> Rect2` | A map node's marker rect in the map viewport's coordinates |
 | `TestMainHost` | `static func mount(parent: TestSuite, host: Node, scene: PackedScene) -> Node`, `static func unmount(parent: TestSuite, node: Node) -> void` | Test support: record the tree's `paused` before a Wall mounts, write it back after it is freed |
