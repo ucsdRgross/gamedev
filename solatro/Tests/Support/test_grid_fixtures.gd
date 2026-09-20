@@ -177,17 +177,9 @@ static func build_fix_full_15() -> GameData:
 	return state
 
 
-#DRIVING A LIVE GAME ONTO A GRID BOARD. These take a real Game, view or headless, that has already
-#bootstrapped, and put cards on its grids through place_card_in_grid - the same path the engine
-#uses, so the mutation broadcast fires, the detector scores and the Entrance refills.
-
-#Shared so the suites that need "a board with something on it" do not each grow their own.
-
-#Cards come from the game's OWN draw deck via draw_card(), never from the Entrance: lifting a card
-#out of an Entrance slot has no mutation path yet, and placing one still in upper_zone would leave
-#it in two collections at once.
-
-#Returns the cards actually placed, fewer than `count` if the deck ran out.
+#THE STOCKING HELPERS BELOW drive a bootstrapped Game through place_card_in_grid, the engine's own
+#path, so the broadcast fires, the detector scores and the Entrance refills. Cards come from the
+#slots' stocks via draw_card(): lifting one out of the Entrance has no mutation path.
 
 ## The top card of the first slot that still has one -- these fixtures do not care which slot.
 static func draw_any(game: Game) -> CardData:

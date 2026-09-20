@@ -51,7 +51,7 @@ mark (didnt know hitting the mark was official term, so am okay with mark termin
 
 | Name | File | What |
 |---|---|---|
-| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()`, `write_mark()`, `clear_mark()`, `is_marked()` and, until the sidebar's stocks land, `stocks_of(state) -> Array[Array]` (GAP-001 (b1): `draw_deck` split round-robin by the sidebar's rule) |
+| `BoardPlan` | `Scripts/board_plan.gd` | static; owns `deal()`, `write_mark()`, `clear_mark()` and `is_marked()`. GAP-001 (b1)'s `stocks_of` stand-in is gone: the deal reads `GameData.entrance_stocks()` |
 | `MarkMatch` | `Scripts/mark_match.gd` | static; owns `matches_at()` and the property enum |
 | `SkillBoardPlanner` | `Cards/Skills/Rules/skill_board_planner.gd` | the rules-deck card whose `on_game_start` calls `BoardPlan.deal()` |
 | `TestBoardPlan` | `Tests/Engine/test_board_plan.gd` | suite name `BOARD PLAN` |
@@ -68,7 +68,6 @@ static func write_mark(type_card: CardData, source: CardData, granted: bool) -> 
 static func clear_mark(type_card: CardData) -> void
 static func is_marked(type_card: CardData) -> bool      # THE predicate; validate() and is_spotlit() both call it
 static func redraw(state: GameData, cells: Array[CardData], rng: RandomNumberGenerator) -> bool   # one batch re-dealt AS ONE DEAL: the offer is read before any cell is cleared, the batch's own faces excluded; a reroll of one cell is a batch of one. Registered at the close
-static func stocks_of(state: GameData) -> Array[Array]
 
 # Scripts/board.gd - registered at the close
 static func deal_marks(state: GameData) -> void                       # every unmarked cell, from the stored seed; called by add_grid

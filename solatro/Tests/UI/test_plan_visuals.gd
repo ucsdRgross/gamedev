@@ -989,7 +989,7 @@ func test_the_highlight_lights_elements_rather_than_tinting_the_cell() -> void:
 	var explained : Color = visual.tint * CardVisual.FOCUS_GLOW if visual.focused else visual.tint
 	check(control.modulate == control_was
 			and visual.modulate == explained
-			and visual.tint in [Color.WHITE, PlayArea.settings().legal_cell_tint],
+			and visual.tint == PlayArea.settings().legal_cell_tint,
 			"TP-64: the match tinted nothing -- the control is untouched and the visual's modulate is "
 			+ "the drop map and the focus glow, nothing else",
 			"%s / %s" % [str(control.modulate), str(visual.modulate)])
@@ -1225,6 +1225,23 @@ func test_the_layer_view_refuses_a_placement() -> void:
 	check(pa.plan_layer_open, "TP-66: a refused input does not close the view either")
 	check(pa.selected_cards.has(held_card),
 			"TP-66: the card that could not be placed is still held")
+
+#A DRAG IS THE OTHER ROUTE TO THE SAME PLACEMENT and does not go through the click at all, so the
+#refusal is asked of it separately: a press on the held card, motion past the gesture threshold
+#onto the cell, and a release over it.
+	var from := centre_of(held_card)
+	var onto := centre_of(game.state.cell_type_at(both_cell))
+	await input.move_to(from)
+	await input.send(input._mouse_button(from, MOUSE_BUTTON_LEFT, true))
+	await input.move_to(onto)
+	await input.send(input._mouse_button(onto, MOUSE_BUTTON_LEFT, false))
+	await get_tree().process_frame
+	check(TestGridFixtures.board_digest(game.state) == digest
+			and game.state.revision == revision,
+			"TP-66: a DRAG onto the same cell is refused by the layer view too",
+			"%d then %d" % [revision, game.state.revision])
+	check(pa.selected_cards.has(held_card),
+			"TP-66: and the dragged card is still held")
 
 	await input.key_release(plan_layer_key())
 	check(not pa.plan_layer_open, "TP-66: precondition: letting the key go returned to play")

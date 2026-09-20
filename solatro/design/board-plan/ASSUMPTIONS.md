@@ -9,10 +9,11 @@ gap under `gaps/`.
 - S23 / GAP-004: the shimmer's tempo is `OutlineStyle.shimmer_period_fraction` = 2.0, one full
   there-and-back along the ramp per two `get_delay()`s — the slowest of the three alert kinds, which
   is what "slowly interpolate" asked for. It is a knob on the shipped style, not a literal.
-- S18 / A3, Q93: `BoardPlan.stocks_of(state)` deals `state.draw_deck` round robin across the
-  Entrance's slots, in the pile's own order and with no roll of its own, so the earlier slots take
-  the extras; a board with no Entrance slots is one pile. The deal and a redraw both read it, and it
-  is deleted when the slots own their own stocks. See `gaps/GAP-001.md`.
+- S18 / A3, Q93: the marks are drawn round robin across the Entrance's slots, in the pile's own
+  order and with no roll of its own, so the earlier slots take the extras; a board with no Entrance
+  slots is one pile. The `stocks_of` stand-in this step built is gone since the sidebar merge: the
+  deal and a redraw read `GameData.entrance_stocks()`, which `Game.deal_stocks()` fills by that
+  same rule. See `gaps/GAP-001.md`.
 - S18 / Q108, Q109: an identity the deal takes leaves EVERY stock's offer and not only the stock it
   came out of, because two stocks can hold the same print — the pool is "every card in every stock,
   still unmarked this show" per PLAN §1.2.

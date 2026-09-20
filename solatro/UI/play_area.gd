@@ -1532,8 +1532,7 @@ func _tapped_card_at(at: Vector2) -> CardData:
 # committed a step it placed a card, and a placement is never rewound by a tap.
 func _pair_taps(data: CardData, depth_at_the_opening_press: int) -> bool:
 	if not data or _committed_depth() != depth_at_the_opening_press: return false
-	card_tapped.emit(data)
-	return true
+	return _emit_if_played(card_tapped, data)
 
 # THE ENGINE PAIRS THE MOUSE'S OWN PRESSES: `double_click` arrives on the second one, at the OS
 # interval. A finger's mouse form (device -1) is left to the touch reader below, so one pair of
@@ -1583,7 +1582,7 @@ func _take_up_the_dragged_card(at: Vector2) -> void:
 	_drag_began = true
 	if _press_data in selected_cards: return
 	_next_grab_follows = true
-	card_dragged.emit(_press_data)
+	_emit_if_played(card_dragged, _press_data)
 
 # ⚠ THE ONE PLACE A GESTURE ENDS -- a release, or a cancel that let the card go. Motion once no
 # press is live is not a drag, a remembered press turned the next hover into one, and a cancelled
@@ -1609,8 +1608,7 @@ func _consume_as_card_release(button: InputEventMouseButton) -> bool:
 # is legal. Over bare board, over the container or off the window nothing is under it at all.
 func _release_places(at: Vector2) -> void:
 	var target := _card_control_at(at)
-	if target: card_dropped.emit(ui_data[target])
-	else: stop_following()
+	if not (target and _emit_if_played(card_dropped, ui_data[target])): stop_following()
 
 ## Nothing tracks the cursor until the next PRESS: a held card stays held and lifted, and a click still waiting on its grab no longer promises one.
 func stop_following() -> void:
@@ -1639,7 +1637,7 @@ func _on_gui_input(event: InputEvent) -> void:
 				if (not _consume_as_focus_click(focused_control)
 						and not _consume_as_stock_press(focused_control)):
 					_next_grab_follows = true
-					_select_data(ui_data[focused_control])
+					_emit_if_played(data_selected, ui_data[focused_control])
 			elif _card_control_at(get_global_mouse_position()) == null:
 				description_dismiss_requested.emit()
 
@@ -1655,7 +1653,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("card_tap"):
 		flush_rebuild()
 		if _board_control_has_focus():
-			card_tapped.emit(ui_data[focused_control])
+			_emit_if_played(card_tapped, ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
 #IN THE OVERVIEW, ENTER FOCUSES THE SELECTED GRID even when nothing on the board holds focus:
@@ -1674,7 +1672,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_pair_taps(ui_data[focused_control], _depth_when_pressed)
 			elif (not _consume_as_focus_click(focused_control)
 					and not _consume_as_stock_press(focused_control)):
-				_select_data(ui_data[focused_control])
+				_emit_if_played(data_selected, ui_data[focused_control])
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		_cancel_everything()
@@ -1748,12 +1746,15 @@ func follow_cards() -> void:
 # for the grab it asked for; any other way the selection resolves drops it.
 var _next_grab_follows : bool = false
 
-#THE LAYER VIEW IS A VIEWER AND INPUT IS LOCKED TO LOOKING: the one signal that grabs, places
-#or drops a card is not emitted while it is open, whichever route asked. Camera navigation and
-#inspection reach the board through other paths and stay live.
-func _select_data(data: CardData) -> void:
-	if plan_layer_open: return
-	data_selected.emit(data)
+#THE LAYER VIEW IS A VIEWER AND INPUT IS LOCKED TO LOOKING: no signal that grabs, places or drops
+#a card is emitted while it is open, whichever route asked -- click, pad, tap or drag. Camera
+#navigation and inspection reach the board through other paths and stay live.
+
+## False when the layer view refused it, which is the caller's cue to rest the card it was carrying.
+func _emit_if_played(sig: Signal, data: CardData) -> bool:
+	if plan_layer_open: return false
+	sig.emit(data)
+	return true
 
 # A CARD JUST TAKEN UP WAS NEVER CARRIED BY THE GESTURE THAT FAILED, so motion starts it following
 # even when the last release returned one -- an auto-arm reaches here with no press of its own.

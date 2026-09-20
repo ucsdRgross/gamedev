@@ -377,8 +377,9 @@ of their `_ready()` via `await_siblings_except()`.
   transitively — or both hang and the run never quits (the log tail just stops). Measured once, when
   VISUAL LAYERS waited for INTERACTION while INTERACTION still waited for it.
 - The canonical linear order; each waiter excludes every suite AFTER it, plus itself:
-  `<engine/map suites: no wait>` → INTERACTION → UI PROPS → VISUAL LAYERS → GRID LAYOUT → GRID VIEW →
-  SIDEBAR → DRAG PLACE → SETTINGS RANGE → E2E RUN → LEAK CANARY → WALL PAUSE.
+  `<engine/map suites: no wait>` → PLAN VISUALS → INTERACTION → UI PROPS → VISUAL LAYERS →
+  GRID LAYOUT → GRID VIEW → SIDEBAR → DRAG PLACE → SETTINGS RANGE → E2E RUN → LEAK CANARY →
+  WALL PAUSE.
 - GRID LAYOUT is in the chain because it measures through `CardEnvironment.CURRENT` across awaits
   (`PlayArea._own_grid_row_height` resolves its grid from `get_current_game()`): concurrently, another
   suite took CURRENT and a two-deep row measured as a bare card height, 10 runs in 11.
