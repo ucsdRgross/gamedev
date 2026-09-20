@@ -2,8 +2,8 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** rulings taken; the four small fixes P1–P4 are dispatched to one implementer; a read-only
-investigation is measuring the overlay-sidebar and second-sidebar geometry for P12/P13. Gate at the
+**State:** P1–P4 landed, each red-then-green, committed; their full windowed gate is running. Every
+later step has its site map in its notes. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
@@ -84,33 +84,33 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/play_area.gd, solatro/Tests/Interaction/test_drag_place.gd]
   verification_command: 'run_tests.py --filter DragPlace Sidebar; overseer full gate'
   verification_kind: suite
-  status: in_progress
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'commit 3fcbea90 (files rode in with the rulings commit). Red: PLAN VISUALS 181 passed, 1 FAILED (TP-63 drop map: 25 of 25 cells of grid 1 still mapped); green FILTERED 3 of 51 [PlanVisuals DragPlace Sidebar]: 1577 CHECKS PASSED; --logic 2990.'
+  notes: 'The one call site (_sweep_legal_cells) narrows the grids; legal_cells_for and TypeGridCell untouched. TP-63 already owned the two-grid commitment fixture.'
 - id: P2
   description: B15 - a right-click over the sidebar container still cancels; the container passes the second button through to the wall's routing.
   files_touched: [solatro/UI/hud_container.gd, solatro/Tests/Wall/test_sidebar.gd]
   verification_command: 'run_tests.py --filter Sidebar'
   verification_kind: suite
-  status: in_progress
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'commit 7795568f. Red: SIDEBAR 1230 passed, 1 FAILED (a second-button press over the sidebar still released the held card); green 1231; FILTERED 4 of 51: 1502; --logic 2999.'
+  notes: '_gui_input on the container cannot work: the description ScrollContainer and every Button are MOUSE_FILTER_STOP, so the container never receives gui_input, and mouse_filter = PASS still marks the event handled at the viewport. The announce is in _input, ahead of the GUI pass, gated on the container rect. Open: right-clicks over the WallOverlay button band (outside the container) are still eaten by those buttons.'
 - id: P3
   description: R2 - ui_cancel zooms out to wall view after the focused screen's first refusal; wall_back stays Back; PICTURE_WALL.md and picture-wall Q100 annotated.
   files_touched: [solatro/UI/Wall/wall.gd, solatro/Tests/Wall/test_wall_input.gd, solatro/PICTURE_WALL.md, solatro/design/picture-wall/DESIGN.md]
   verification_command: 'run_tests.py --filter WallInput'
   verification_kind: suite
-  status: in_progress
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'commit 7795568f. Red: FILTERED 3 of 51 [WallInput WallFocus Sidebar]: 1441 passed, 5 FAILED (each re-pointed row); green FILTERED 5 of 51: 1602; --logic 3000.'
+  notes: 'Five rows asserted Escape = Back, not two: WALL INPUT I3/I4, WALL FOCUS M2 and its transition-lock watcher (moved from back_requested to wall_view_entered or it went vacuous), two SIDEBAR rows. wall_back is asserted at the signal level and end-to-end already.'
 - id: P4
   description: R3 - after the wall reveal, Main focuses the map picture through the existing focus route; Continue with nothing pending does the same.
   files_touched: [solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_transition.gd]
   verification_command: 'run_tests.py --filter WallTransition'
   verification_kind: suite
-  status: in_progress
-  evidence: ''
-  notes: ''
+  status: done
+  evidence: 'commit af9d4f8e. Red: WALL PAUSE 66 passed, 1 FAILED (the reveal carries on into the MAP picture); green 67; FILTERED 9 of 51: 2056; --logic 3004 and 2992.'
+  notes: 'map_scene.start_run generates the world un-awaited and entering the map unpauses it; the WALL PAUSE fixture freed Main mid-generation (0xC0000005 at exit, 3/3 with, 0/4 without) and now latches map_ready first. The timing row stops at wall view, the length the knob scales. A solo windowed --filter WallPause ends in a teardown 0xC0000005 with or without the change - pre-existing.'
 - id: P5
   description: B11 - the face-down stock card no longer displaces the Entrance cards one depth pitch up; only a held card is lifted (CardVisual.held_lift_px), and it must read against a flat row.
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd]
@@ -183,6 +183,22 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   status: pending
   evidence: ''
   notes: 'Investigation done. ALREADY SHIPPED: MapHud has MapDeckButton (hud_container.tscn ~142-166, opens DeckViewer over the run deck, map.gd ~55); the pack is taken by ChoiceViewer %ConfirmButton -> _on_confirm_pressed (choice_viewer.gd ~158) - so "Take" exists and a click on a viewer card does NOTHING today (hover/focus previews only). NEW: a click selects + highlights a viewer card (no viewer card has a selected visual; the board has locked_data); the second panel is a second DescriptionPanel added to WallOverlay beside the one HudContainer - NOT a second HudContainer, which would re-emit container_rect_changed and duplicate the screen-keyed lock machinery; it must never emit a rect change. MAP: one click on a reachable dot travels today (world_map_controller.gd ~255-271 _travel_to on release); keyboard has _kb_index as the only selection state; hover -> node_hovered -> MapHoverPanel.get_info -> the sidebar. Travel button belongs in MapHud beside MapDeckButton, wired through connect_for_screen in Map._bind_hud_container, calling controller.move_to(selected). No TAKE/TRAVEL localisation keys exist; Confirm and the map HUD labels are hard-coded in scene/script. Tests that pin the old model: test_sidebar.gd test_one_click_travels_and_leaving_keeps_the_last_nodes_description (~5166, the assertion ~5180: one click enters the node) - contradicts R4; the two-tap assertions ~5192-5201; ~1086 MapHud-holds-exactly-four (a Travel button breaks it), ~1171 camera-offset-beside-container (breaks under R1), ~845/853 the 394/262.7 inset gates; test_ui_viewers.gd ~137 calls _on_confirm_pressed directly. test_map_traversal.gd pins NOTHING here: its rows call controller.move_to directly, which is the API the Travel button calls.'
+- id: P14
+  description: The comment sweep the fixes owe - main.gd, test_wall_input.gd, test_wall_focus.gd, test_wall_pause.gd leave compliant (whole-file on touch), code byte-identical.
+  files_touched: [solatro/Levels/main.gd, solatro/Tests/Wall/test_wall_input.gd, solatro/Tests/Wall/test_wall_focus.gd, solatro/Tests/Wall/test_wall_pause.gd]
+  verification_command: 'py .claude/tools/sweep_check.py <each file>; doc_check --changed silent; run_tests.py --filter WallInput WallFocus WallPause'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Its own step, after the fixes, never folded into one (plan-run: a sweep once deleted a load-bearing note). ~400 findings across the four; every later step that touches a legacy file owes the same.'
+- id: P15
+  description: B15 remainder - a right-click over the WallOverlay button band (Back/Forward/Wall, outside the container) still cancels; the owner ruled cancel works from anywhere.
+  files_touched: [solatro/UI/Wall/wall_overlay.gd, solatro/UI/Wall/wall.gd, solatro/Tests/Wall/test_sidebar.gd]
+  verification_command: 'run_tests.py --filter Sidebar WallInput'
+  verification_kind: suite
+  status: pending
+  evidence: ''
+  notes: 'Same announce-ahead-of-the-GUI-pass shape P2 used on the container; the band buttons are MOUSE_FILTER_STOP too.'
 ```
 
 ## Verified vs assumed
