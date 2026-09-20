@@ -2,8 +2,9 @@
 
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
-**State:** P1–P4 landed, each red-then-green, committed; their full windowed gate is running. Every
-later step has its site map in its notes. Gate at the
+**State:** P1–P4 landed and gated: `ALL 51 SUITES: 5862 CHECKS PASSED`, 22 placeholder warnings,
+1150 ObjectDB (the fingerprint). P5/P7/P8 and the P14 sweep are dispatched. Every later step has
+its site map in its notes. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
 solatro/design/poker-patience/DESIGN.md, solatro/design/grid-view/DESIGN.md,
