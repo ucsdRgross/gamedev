@@ -72,6 +72,10 @@ func _ready() -> void:
 	await test_a_key_or_pad_reaches_the_tap_two_ways()
 	await test_the_second_mouse_button_never_taps()
 	await test_the_tap_hook_runs_once_per_tap()
+	behavior_section("A PICKUP TAKES THE ENTRANCE UNDER THE GRID IN VIEW")
+	await test_a_click_pickup_slides_the_entrance_under_the_grid_in_view()
+	await test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre()
+	await test_the_entrance_slide_survives_the_picture_being_left()
 	finish()
 
 # ==============================================================================
@@ -164,8 +168,9 @@ func _await_the_deal() -> void:
 		waited += get_process_delta_time()
 		if not _entrance_controls().is_empty() and not _game.processing: return
 
-# Waits for the Entrance to STOP MOVING: it follows the camera, and a press landing mid-ease races
-# the hovered control sliding out from under the cursor.
+# Waits for the Entrance to STOP MOVING: it slides between the centre of the board's window and the
+# grid it belongs to, and a press landing mid-slide races the hovered control sliding out from under
+# the cursor. Never a frame count -- the slide is a DURATION.
 func _settle_layout() -> void:
 	var last := INF
 	var waited := 0.0
@@ -180,6 +185,43 @@ func _settle_layout() -> void:
 func _frames(count: int) -> void:
 	for _i : int in count:
 		await get_tree().process_frame
+
+# The one-grid fixture grown to `n` grids and re-opened on the view a show of that size opens on.
+# The shipped one-deal show never grows mid-board, so the opening view is re-run by its own entry
+# point rather than left latched on the count the deal had.
+func _start_fixture_grids(n: int) -> void:
+	await _start_fixture()
+	while _game.state.grids.size() < n:
+		Board.add_grid(_game.state, GridData.new())
+	_pa.flush_rebuild()
+	_pa.open_show_view()
+	await _settle_layout()
+
+#⚠ `global_position` CARRIES EVERY SCALE ABOVE IT AND `size` CARRIES NONE, so a zoomed board needs
+#the transform's own scale rather than the control's size.
+
+## A control's centre AS DRAWN, in the picture's own pixels.
+func _drawn_centre_x(c: Control) -> float:
+	var t := c.get_global_transform()
+	return t.origin.x + t.get_scale().x * c.size.x * 0.5
+
+## The grid nearest the middle of the board's window, off the DRAWN rects: the test's own answer.
+func _nearest_drawn_grid() -> int:
+	var centre := _drawn_centre_x(_pa.scroll_container)
+	var best := -1
+	var best_dx := INF
+	for gi : int in _pa.grid_container.get_child_count():
+		var dx := absf(_drawn_centre_x(_pa._cells_root(
+				_pa.grid_container.get_child(gi) as Control)) - centre)
+		if dx >= best_dx: continue
+		best_dx = dx
+		best = gi
+	return best
+
+## How far the Entrance's row is from grid `gi`'s columns, drawn; 0 means it sits under that grid.
+func _entrance_off_grid_px(gi: int) -> float:
+	return absf(_drawn_centre_x(_pa.upper_zone_right) - _drawn_centre_x(_pa._cells_root(
+			_pa.grid_container.get_child(gi) as Control)))
 
 # ==============================================================================
 # THE BOARD, READ BACK — what the player can see and where it is.
@@ -416,7 +458,17 @@ func test_a_placement_leaves_nothing_held() -> void:
 # with no button down leaves it there.
 func test_a_click_lifts_the_card_without_following() -> void:
 	await _start_fixture()
+#ONE GRID IS THE DEFAULT BOARD, and it is centred: the position the Entrance takes under its grid
+#and the centre of the window are the same place, so a pickup must move it nowhere at all.
+	check(_game.state.grids.size() == 1,
+			"precondition: the dealt board is the one-grid default", "%d grid(s)"
+			% _game.state.grids.size())
+	var before := _pa.entrance_h_track.position.x
 	var held := await _lift_the_leftmost()
+	await _settle_layout()
+	check(absf(_pa.entrance_h_track.position.x - before) <= 0.5,
+			"a pickup on a one-grid board moves the Entrance nowhere: nothing jumps",
+			"x %.2f -> %.2f" % [before, _pa.entrance_h_track.position.x])
 	check(held != null and _is_lifted(held), "a click lifted the card it landed on", _hand_str())
 	if held:
 		check(not _is_following(held), "...and it is NOT following the cursor", _hand_str())
@@ -1019,4 +1071,208 @@ func test_the_tap_hook_runs_once_per_tap() -> void:
 		check(spy.taps.size() == 1 and spy.taps.has(data.get_instance_id()),
 				"...and its hook ran once, with the tapped card (Q222=b)",
 				"%d hook call(s)" % spy.taps.size())
+	await _end_fixture()
+
+# ==============================================================================
+# A PICKUP AIMS THE BOARD. ⚠ THE GRID COUNT IS THE POINT: a one-grid board centres its only grid.
+# ==============================================================================
+
+#A CLICK is a pickup, so a click aims the board: the Entrance leaves the centre of the window and
+#comes to rest under the grid the player was looking at, passing through the positions between.
+func test_a_click_pickup_slides_the_entrance_under_the_grid_in_view() -> void:
+	await _start_fixture_grids(3)
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW and _game.state.committed_grid == -1
+			and _game.state.grids.size() == 3,
+			"precondition: three grids, looked at whole, nothing committed",
+			"mode %d, committed %d, %d grid(s)"
+			% [_pa.view_mode, _game.state.committed_grid, _game.state.grids.size()])
+#THE KEYBOARD RIDES THE SLIDE. A card the player has focused is a card they can still act on once
+#the Entrance has moved, so the slide must not take the focus out of the picture with it.
+	var resting : CardData = _pa.ui_data[_entrance_controls()[0]]
+	await _focus_the_card(resting)
+	var owner := _picture_viewport.gui_get_focus_owner()
+	check(owner != null and owner == _pa.data_ui[resting],
+			"precondition: keyboard focus can reach an Entrance card at all", str(owner))
+	_pa.focus_grid(2)
+	await _settle_layout()
+	check(_entrance_off_grid_px(2) <= 1.0,
+			"precondition: focusing a grid slid the Entrance under it", "%.2f px off grid 2"
+			% _entrance_off_grid_px(2))
+	check(_picture_viewport.gui_get_focus_owner() == owner
+			and (owner as Control).get_viewport() == _picture_viewport,
+			"the slide leaves the keyboard focus on the same control, in the picture's own viewport",
+			str(_picture_viewport.gui_get_focus_owner()))
+	_pa.open_zoomed_out()
+	await _settle_layout()
+
+	await _press_key(KEY_PERIOD)
+	await _settle_layout()
+	check(_pa.pan_grid == 2,
+			"precondition: a real pan key stepped the overview onto the last grid",
+			"pan_grid %d" % _pa.pan_grid)
+	check(absf(_drawn_centre_x(_pa.upper_zone_right)
+			- _drawn_centre_x(_pa.scroll_container)) <= 1.0,
+			"precondition: the uncommitted Entrance starts centred in the board's window",
+			"row %.2f vs window %.2f" % [_drawn_centre_x(_pa.upper_zone_right),
+			_drawn_centre_x(_pa.scroll_container)])
+	check(_entrance_off_grid_px(2) > 1.0,
+			"precondition: and it is NOT already under the grid the pickup will aim at",
+			"%.2f px off grid 2" % _entrance_off_grid_px(2))
+
+	var entrance := _entrance_controls()
+	check(not entrance.is_empty(), "precondition: the deal left a card in the Entrance to lift",
+			"%d control(s)" % entrance.size())
+	var aimed_at : CardData = _pa.ui_data[entrance[0]]
+	var started := _pa.entrance_h_track.position.x
+	var held := await _lift_the_leftmost()
+	check(held == aimed_at,
+			"a click at a card's DRAWN position picks up THAT card: hit-testing follows the "
+			+ "Entrance wherever it is drawn", _hand_str())
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.focused_grid == 2,
+			"...and the pickup focuses the grid nearest the middle of the board's window",
+			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
+
+#THE SLIDE, SAMPLED PER PHYSICS FRAME: a still frame cannot tell a slide from a jump. The position
+#under the grid is itself moving while the board zooms in, so the travelled fraction is read from
+#the product's own clock and the x from what the player would see.
+	var travel : Array[float] = []
+	var drawn : Array[float] = []
+	var waited := 0.0
+	var landed := -1.0
+	while waited < PlayArea.settings().grid_pan_duration * 3.0:
+		await get_tree().physics_frame
+		waited += get_physics_process_delta_time()
+		travel.append(_pa._entrance_slide)
+		drawn.append(_pa.entrance_h_track.position.x)
+		if landed < 0.0 and is_equal_approx(_pa._entrance_slide, 1.0): landed = waited
+	check(travel.size() > 2, "precondition: the slide was sampled over several physics frames",
+			"%d sample(s)" % travel.size())
+	var monotonic := true
+	for i : int in range(1, travel.size()):
+		if travel[i] + 0.0001 < travel[i - 1]: monotonic = false
+	check(monotonic, "the Entrance travels one way across, never back",
+			"%d sample(s), first %.3f last %.3f" % [travel.size(), travel[0], travel[-1]])
+	var between := 0
+	for x : float in drawn:
+		if minf(started, drawn[-1]) + 1.0 < x and x < maxf(started, drawn[-1]) - 1.0: between += 1
+	check(between > 0,
+			"...and it PASSES THROUGH the positions in between rather than jumping",
+			"%d of %d samples strictly between %.1f and %.1f"
+			% [between, drawn.size(), started, drawn[-1]])
+	check(landed >= 0.0 and landed <= PlayArea.settings().grid_pan_duration
+			+ get_physics_process_delta_time() * 2.0,
+			"...and it is all the way across within the pan clock",
+			"landed %.3f s in, clock %.3f s" % [landed, PlayArea.settings().grid_pan_duration])
+
+	await _settle_layout()
+	check(_entrance_off_grid_px(2) <= 1.0,
+			"the Entrance comes to rest sharing a centre with the grid it was taken to",
+			"%.2f px off grid 2" % _entrance_off_grid_px(2))
+	check(_held_card() == aimed_at and _is_lifted(aimed_at) and _pa.locked_data == aimed_at,
+			"...and the card is still the one in hand, still lifted, still the one described",
+			_hand_str())
+
+#A CANCELLED pickup takes nothing back: the board stays where the pickup aimed it and the Entrance
+#stays under that grid until the player looks at the whole board again.
+	await _right_click(_control_centre(_entrance_controls()[-1]), false)
+	await _settle_layout()
+	check(_pa.selected_cards.is_empty(), "precondition: the second button let the card go",
+			_hand_str())
+	check(_pa.focused_grid == 2 and _entrance_off_grid_px(2) <= 1.0,
+			"a cancelled pickup leaves the board focused and the Entrance under that grid",
+			"focused %d, %.2f px off" % [_pa.focused_grid, _entrance_off_grid_px(2)])
+	await _end_fixture()
+
+# The DRAG half of the same gesture aims the board exactly as the click does, and "nearest" is
+# geometry: it is neither the grid a pan is heading for nor the grid that was focused.
+func test_a_drag_pickup_aims_at_the_grid_nearest_the_window_centre() -> void:
+	await _start_fixture_grids(3)
+	check(_pa.view_mode == PlayArea.ViewMode.OVERVIEW and _pa.pan_grid == 1,
+			"precondition: a three-grid show opens looking at the middle grid",
+			"mode %d, pan_grid %d" % [_pa.view_mode, _pa.pan_grid])
+	var entrance := _entrance_controls()
+	check(not entrance.is_empty(), "precondition: a card to drag out of the Entrance",
+			"%d control(s)" % entrance.size())
+	var from := _control_centre(entrance[0])
+	await _begin_drag(from, from + Vector2(_pa._swipe_threshold_px() * 3.0, 0.0))
+	check(_held_card() != null and _is_following(_held_card()),
+			"precondition: a press dragged past the threshold has the card following the cursor",
+			_hand_str())
+	check(_pa.view_mode == PlayArea.ViewMode.FOCUSED and _pa.focused_grid == 1,
+			"a DRAG pickup focuses the grid in view exactly as a click does",
+			"mode %d, focused %d" % [_pa.view_mode, _pa.focused_grid])
+	await _end_drag(from)
+	await _settle_layout()
+	check(_entrance_off_grid_px(1) <= 1.0,
+			"...and the Entrance is under that grid once the slide is over",
+			"%.2f px off grid 1" % _entrance_off_grid_px(1))
+	await _right_click(from, false)
+
+#MID-PAN: the board is heading for grid 1 while grid 0 is still the one in front of the player.
+	_pa.focus_grid(0)
+	await _settle_layout()
+	check(_pa.focused_grid == 0 and _nearest_drawn_grid() == 0,
+			"precondition: the board is focused on grid 0 and grid 0 is the grid in view",
+			"focused %d, nearest %d" % [_pa.focused_grid, _nearest_drawn_grid()])
+#⚠ ASKED ON THE FRAME THE PAN STARTS, BEFORE ANYTHING HAS MOVED. The board eases out, so it is past
+#the halfway point between the two grids within a handful of frames (measured: a pan key's own
+#press-and-release is already enough) and this is the only honest way to catch the state.
+	_pa.pan_by_grids(1)
+	check(_pa.pan_grid == 1 and _nearest_drawn_grid() == 0
+			and _pa._grid_nearest_the_window_centre() == 0,
+			"the grid nearest the window's centre is read off where the board IS, not off the grid "
+			+ "a pan is heading for",
+			"pan_grid %d, drawn nearest %d, product says %d"
+			% [_pa.pan_grid, _nearest_drawn_grid(), _pa._grid_nearest_the_window_centre()])
+
+#THE PAN LANDED: grid 1 is now the grid in front of the player while grid 0 is still focused.
+	var waited := 0.0
+	while waited < 3.0 and _nearest_drawn_grid() != 1:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	check(_nearest_drawn_grid() == 1 and _pa.focused_grid == 0,
+			"precondition: the pan carried grid 1 nearest the centre while the board is still "
+			+ "FOCUSED on grid 0",
+			"nearest %d, focused %d" % [_nearest_drawn_grid(), _pa.focused_grid])
+	var late : CardData = _pa.ui_data[_entrance_controls()[0]]
+	await _select_the_card_in_hand(late)
+	check(_pa.focused_grid == 1,
+			"...and a pickup now takes grid 1: nearest is geometry, not the grid that was focused",
+			"focused %d, %s" % [_pa.focused_grid, _hand_str()])
+	await _settle_layout()
+	check(_entrance_off_grid_px(1) <= 1.0,
+			"...with the Entrance carried across to it",
+			"%.2f px off grid 1" % _entrance_off_grid_px(1))
+	await _end_fixture()
+
+# The picture the player is not looking at does not process, so a slide caught by leaving the game
+# screen freezes where it is — and finishes, never abandoned half way, when the picture comes back.
+func test_the_entrance_slide_survives_the_picture_being_left() -> void:
+	await _start_fixture_grids(3)
+	var entrance := _entrance_controls()
+	check(not entrance.is_empty(), "precondition: a card to lift", "%d control(s)" % entrance.size())
+	await _lift_the_leftmost()
+	check(_pa.focused_grid == 1, "precondition: the pickup aimed the board at the middle grid",
+			"focused %d" % _pa.focused_grid)
+	check(_pa._entrance_slide < 1.0,
+			"precondition: the slide was caught part way across",
+			"travelled %.3f" % _pa._entrance_slide)
+
+	check(get_tree().paused,
+			"precondition: the wall holds the tree paused for the whole session, so the screen's own "
+			+ "process mode is what decides whether it runs", str(get_tree().paused))
+	var prev_mode := _view.process_mode
+	_view.process_mode = Node.PROCESS_MODE_PAUSABLE
+	var frozen := _pa._entrance_slide
+	await _frames(8)
+	check(is_equal_approx(_pa._entrance_slide, frozen) and frozen < 1.0,
+			"leaving the picture stops the slide exactly where it stood",
+			"travelled %.3f -> %.3f, x %.2f"
+			% [frozen, _pa._entrance_slide, _pa.entrance_h_track.position.x])
+	_view.process_mode = prev_mode
+	await _settle_layout()
+	check(is_equal_approx(_pa._entrance_slide, 1.0) and _entrance_off_grid_px(1) <= 1.0,
+			"...and coming back finishes it under the grid, never abandoned half way",
+			"travelled %.3f, %.2f px off grid 1"
+			% [_pa._entrance_slide, _entrance_off_grid_px(1)])
 	await _end_fixture()

@@ -531,8 +531,13 @@ func _place_held_onto(data: CardData) -> bool:
 # the cursor -- otherwise the next card taken up is born following.
 func _pick_up(data: CardData) -> void:
 	var grabbed := await game.try_grab(data)
-	if grabbed: play_area.grab_cards(grabbed)
-	else: play_area.stop_following()
+	if not grabbed:
+		play_area.stop_following()
+		return
+	play_area.grab_cards(grabbed)
+#AFTER the grab, never before: the grab measures the pointer against the cell the card came out of,
+#and aiming the board first would move that cell out from under the cursor.
+	play_area.focus_the_grid_in_view()
 
 
 #THE DEBUG BAR - three buttons serving one workflow. Owner: *"If I see an issue during playtest, I

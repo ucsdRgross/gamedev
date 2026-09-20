@@ -96,8 +96,9 @@ func _setup_view() -> void:
 	pa.focus_grid(0)
 	await _settle_layout()
 
-#Never for a fixed frame count: the Entrance follows the camera, and a click landing mid-ease
-#races a native mouse_exited the moment the hovered control slides out from under the cursor.
+#Never for a fixed frame count: the Entrance slides between the centre of the board's window and
+#the grid it belongs to, and a click landing mid-slide races a native mouse_exited the moment the
+#hovered control slides out from under the cursor.
 
 ## Wait for the Entrance to STOP MOVING.
 func _settle_layout() -> void:

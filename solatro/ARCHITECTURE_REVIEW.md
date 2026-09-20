@@ -22,7 +22,9 @@ engine itself (`game.gd`) contains almost no rules — even scoring and drawing 
 because a rule-card in `rules_deck` implements `on_board_mutated` / `on_next`.
 
 **The board is one to three grids, 5×5 by default, side by side, each cell holding a stack.**
-Cards arrive in the **Entrance**, a row attached above the grid it is committed to. The player
+Cards arrive in the **Entrance**, a row attached below the grid it belongs to — the committed grid
+once one is committed, the focused grid before that, and no grid at all while the board is being
+looked at whole, where it sits centred in the board's window instead. The player
 places one card per action into a cell, and every placement that completes a line scores it on
 the spot. **There is no Submit, no act count and no end-of-show payout** — the number on screen
 is derived live from the score buckets (§3). A show ends when a placement meets the goal, or when the player presses End.

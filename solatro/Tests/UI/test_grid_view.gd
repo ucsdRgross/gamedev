@@ -43,6 +43,7 @@ func _ready() -> void:
 	await run_the_focused_grid_is_as_tall_as_its_window_test()
 	await run_focusing_takes_the_other_grids_out_of_view_test()
 	await run_the_overview_draws_the_grids_close_test()
+	await run_the_entrance_is_centred_until_a_grid_owns_it_test()
 	await run_a_non_focused_grid_paints_nothing_outside_the_window_test()
 	await run_the_board_edge_bounces_test()
 	await run_the_clamp_collapses_to_centre_when_it_fits_test()
@@ -1000,6 +1001,169 @@ func run_the_overview_draws_the_grids_close_test() -> void:
 			+ "the gap has nothing to space",
 			"focused %.1f px off centre, overview %.1f px" % [focused_offset, overview_offset])
 	await _tear_down(one)
+
+#THE CARDS, NEVER THE FULL-WIDTH STRIP THEY SIT IN, which spans the whole play area and says
+#nothing at all about where the Entrance is.
+
+## The Entrance's own row of slots AS DRAWN.
+func _entrance_row_rect(pa: PlayArea) -> Rect2:
+	var row := pa.upper_zone_right
+	var out := Rect2()
+	for i : int in row.get_child_count():
+		var r := _screen_rect(row.get_child(i) as Control)
+		out = r if i == 0 else out.merge(r)
+	return out
+
+## Grid `gi`'s cell block centre in the same drawn pixels `_entrance_row_rect` reports.
+func _grid_centre_x(pa: PlayArea, gi: int) -> float:
+	return _screen_rect(pa._cells_root(pa.grid_container.get_child(gi) as Control)).get_center().x
+
+## How far `at` is from the nearest grid's centre: the instrument for "aligned to NO grid".
+func _nearest_grid_dx(pa: PlayArea, at: float) -> float:
+	var best := INF
+	for gi : int in pa.grid_container.get_child_count():
+		best = minf(best, absf(_grid_centre_x(pa, gi) - at))
+	return best
+
+#THE TRAVEL BETWEEN THE CENTRE OF THE WINDOW AND A GRID HAS A DURATION, so a reading taken straight
+#after a focus is a reading taken mid-slide.
+
+## Wait for the Entrance's own x to come to REST.
+func _settle_entrance(view: GameView) -> void:
+	var pa := view.play_area
+	var last := INF
+	var waited := 0.0
+	while waited < 3.0:
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+		CardEnvironment.CURRENT = view.game
+		var now := pa.entrance_h_track.position.x
+		if is_equal_approx(now, last): return
+		last = now
+
+# ==============================================================================
+# THE ENTRANCE BELONGS TO A GRID ONLY ONCE ONE IS FOCUSED OR COMMITTED; before that it is centred.
+# ==============================================================================
+
+#⚠ THE MULTI-GRID PARTS MOUNT IN THE PICTURE'S OWN SubViewport: "centred in the window" is a claim
+#about the real board window, and this suite's own root window is narrower than the picture. No
+#pickup is synthesised here -- DRAG PLACE drives that through a real viewport.
+func run_the_entrance_is_centred_until_a_grid_owns_it_test() -> void:
+	behavior_section("THE ENTRANCE IS CENTRED UNTIL A GRID OWNS IT")
+	var design := PlayArea.game_picture_design_size(SettingsManager.settings)
+	for count : int in [2, 3]:
+		var picture_vp := SubViewport.new()
+		picture_vp.size = design
+		add_child(picture_vp)
+		var many := await _stand_up_grids(count, picture_vp)
+		var mpa := many.play_area
+		await _settle_layout(many)
+		await _settle_entrance(many)
+		check(mpa.view_mode == PlayArea.ViewMode.OVERVIEW
+				and many.game.state.committed_grid == -1,
+				"precondition: a %d-grid show opens on the all-grids view with nothing committed"
+				% count,
+				"mode %d, committed %d" % [mpa.view_mode, many.game.state.committed_grid])
+		var row := _entrance_row_rect(mpa)
+		check(row.has_area(), "precondition: the Entrance drew slots with extent to measure",
+				str(row))
+		var win := _window_x(mpa)
+		var win_centre := (win.x + win.y) * 0.5
+		check(absf(row.get_center().x - win_centre) <= 1.0,
+				"on a %d-grid board the uncommitted Entrance is centred in the board's window"
+				% count,
+				"row centre %.2f vs window centre %.2f" % [row.get_center().x, win_centre])
+		if count == 2:
+			check(_nearest_grid_dx(mpa, row.get_center().x) > 1.0,
+					"...and it is aligned to NO grid: with two grids the window's centre falls "
+					+ "between them, so nothing coincides by geometry",
+					"nearest grid centre %.2f px away"
+					% _nearest_grid_dx(mpa, row.get_center().x))
+
+		var before := row
+		var rested_on := mpa.pan_grid
+		mpa._unhandled_input(_action(&"grid_pan_right"))
+		await _settle_layout(many)
+		await _settle_entrance(many)
+		check(mpa.pan_grid == rested_on + 1,
+				"precondition: a real pan action stepped the %d-grid overview onto another grid"
+				% count,
+				"pan_grid %d -> %d" % [rested_on, mpa.pan_grid])
+		var after := _entrance_row_rect(mpa)
+		check(absf(after.get_center().x - before.get_center().x) <= 0.5,
+				"...and the Entrance stayed exactly where it was while the view panned",
+				"row centre %.2f -> %.2f" % [before.get_center().x, after.get_center().x])
+		check(absf(_grid_centre_x(mpa, mpa.pan_grid) - after.get_center().x) > 1.0,
+				"...so it is NOT under the grid the view has stepped onto",
+				"grid %d centre %.2f vs row centre %.2f"
+				% [mpa.pan_grid, _grid_centre_x(mpa, mpa.pan_grid), after.get_center().x])
+		await _tear_down(many)
+		picture_vp.queue_free()
+		await get_tree().process_frame
+
+	var picture_vp := SubViewport.new()
+	picture_vp.size = design
+	add_child(picture_vp)
+	var view := await _stand_up_grids(3, picture_vp)
+	var pa := view.play_area
+	await _settle_layout(view)
+	_click(pa, _cell_control(pa, 1))
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_entrance(view)
+	check(pa.view_mode == PlayArea.ViewMode.FOCUSED and pa.focused_grid == 1,
+			"precondition: a click focused the middle grid of three", "focused %d" % pa.focused_grid)
+	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, 1)) <= 1.0,
+			"a focused grid takes the Entrance: the two share a centre",
+			"row %.2f vs grid %.2f"
+			% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, 1)])
+
+#THE COMMITMENT, set on the state the way an undo or a resume restores it. That the first PLACEMENT
+#is what writes it is driven end to end in DRAG PLACE.
+	view.game.state.committed_grid = 2
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await _settle_entrance(view)
+	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, 2)) <= 1.0,
+			"a committed grid takes it off the focused one: the Entrance sits under the grid it is "
+			+ "committed to, not the grid being looked at",
+			"row %.2f vs grid 2 %.2f"
+			% [_entrance_row_rect(pa).get_center().x, _grid_centre_x(pa, 2)])
+	var committed_row := _entrance_row_rect(pa)
+	var window := _window_x(pa)
+	check(committed_row.position.x > window.y or committed_row.end.x < window.x,
+			"...and with the view still on another grid the whole Entrance is OUTSIDE the board's "
+			+ "window",
+			"row x [%.1f .. %.1f] vs window [%.1f .. %.1f]"
+			% [committed_row.position.x, committed_row.end.x, window.x, window.y])
+
+	Board.remove_grid(view.game.state, 2)
+	pa.queue_rebuild()
+	await _settle_layout(view)
+	await _settle_scroll(view)
+	await _settle_entrance(view)
+	check(view.game.state.committed_grid == -1,
+			"precondition: losing the committed grid cleared the commitment",
+			"committed %d" % view.game.state.committed_grid)
+	check(absf(_entrance_row_rect(pa).get_center().x - _grid_centre_x(pa, pa.focused_grid)) <= 1.0,
+			"an Entrance whose commitment lifts goes back to the grid the board is focused on",
+			"row %.2f vs grid %d %.2f" % [_entrance_row_rect(pa).get_center().x, pa.focused_grid,
+			_grid_centre_x(pa, pa.focused_grid)])
+
+	pa._unhandled_input(_action(&"wall_back"))
+	await _settle_layout(view)
+	await _settle_entrance(view)
+	check(pa.view_mode == PlayArea.ViewMode.OVERVIEW,
+			"precondition: Back zoomed out to the all-grids view", "mode %d" % pa.view_mode)
+	var win_back := _window_x(pa)
+	check(absf(_entrance_row_rect(pa).get_center().x - (win_back.x + win_back.y) * 0.5) <= 1.0,
+			"...and an uncommitted Entrance is centred in the window again",
+			"row %.2f vs window centre %.2f"
+			% [_entrance_row_rect(pa).get_center().x, (win_back.x + win_back.y) * 0.5])
+	await _tear_down(view)
+	picture_vp.queue_free()
+	await get_tree().process_frame
 
 # ==============================================================================
 # TP-141 — A NON-FOCUSED GRID PAINTS NOTHING OUTSIDE THE BOARD WINDOW (owner ruling: while focused,

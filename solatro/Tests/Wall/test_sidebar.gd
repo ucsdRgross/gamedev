@@ -1068,6 +1068,10 @@ func test_a_top_case_resize_fits_the_board_under_the_band() -> void:
 	check(strip_rect.position.y >= band.end.y,
 			"the Entrance strip's top edge sits below the band",
 			"%s vs band bottom %.3f" % [strip_rect, band.end.y])
+	check(pa.entrance_home_grid() == 0,
+			"precondition: the Entrance belongs to grid 0 -- a one-grid show opens focused on it, so "
+			+ "it is drawn under that grid's columns rather than centred under no grid",
+			"home grid %d, committed %d" % [pa.entrance_home_grid(), view.game.state.committed_grid])
 	check(absf(grid_rect.get_center().x - strip_rect.get_center().x) <= 2.0,
 			"the grid and the Entrance share a centre in the top case",
 			"grid %.3f vs strip %.3f" % [grid_rect.get_center().x, strip_rect.get_center().x])

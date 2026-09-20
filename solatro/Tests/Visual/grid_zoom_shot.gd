@@ -73,7 +73,32 @@ func _ready() -> void:
 	while g.state.grids.size() > _grid_count:
 		Board.remove_grid(g.state, g.state.grids.size() - 1)
 	pa.flush_rebuild()
+#THE BOARD GREW AFTER THE SHOW OPENED, which the one-deal product never does, so the opening view
+#is re-run by its own entry point for the count the shots are about.
+	pa.open_show_view()
 	await get_tree().process_frame
+
+#THE UNCOMMITTED ENTRANCE, BEFORE ANY PLACEMENT COMMITS A GRID: centred in the board's window,
+#under no grid, and still there after the view has panned to another grid.
+	if not await _await_still(view, "uncommitted"): return
+	if not await _shoot(pa, vp, "uncommitted"): return
+	pa.pan_by_grids(1)
+	if not await _await_still(view, "uncommitted_panned"): return
+	if not await _shoot(pa, vp, "uncommitted_panned"): return
+
+#THE PICKUP, through the product's one pickup route. The Entrance's x is printed beside every frame
+#of the slide it starts, because a still frame cannot tell a slide from a jump.
+	var lift := _leftmost_entrance_control(pa)
+	if lift:
+		view._pick_up(pa.ui_data[lift])
+		for i : int in 3:
+			for _f : int in 5:
+				await get_tree().physics_frame
+			await RenderingServer.frame_post_draw
+			_shoot_frame(pa, vp, "slide_%d" % i)
+	if not await _await_still(view, "pickup"): return
+	if not await _shoot(pa, vp, "pickup"): return
+	pa.ungrab_cards()
 
 	# Cards on the board, so the shot shows what a player sees rather than an empty lattice.
 	for gi : int in _grid_count:
@@ -91,6 +116,12 @@ func _ready() -> void:
 	pa.focus_grid(_grid_count / 2)
 	if not await _await_still(view, "focused"): return
 	if not await _shoot(pa, vp, "focused"): return
+
+#THE COMMITTED ENTRANCE SEEN FROM ANOTHER GRID: it belongs to the grid the first placement
+#committed to, so looking elsewhere leaves it off the board's window entirely.
+	pa.focus_grid(0 if g.state.committed_grid != 0 else _grid_count - 1)
+	if not await _await_still(view, "committed_elsewhere"): return
+	if not await _shoot(pa, vp, "committed_elsewhere"): return
 
 	view.queue_free()
 	await get_tree().process_frame
@@ -121,6 +152,11 @@ func _shoot(pa: PlayArea, picture: SubViewport, tag: String) -> bool:
 	var block := PlayArea.grid_block_size_px(SettingsManager.settings, GridData.new())
 	print("[grid_zoom_shot] %s unscaled grid block %.1f x %.1f, board_zoom %.4f, live scale %.4f"
 			% [tag, block.x, block.y, pa.board_zoom, pa.scroll_container.scale.x])
+	var row := pa.upper_zone_right.get_global_transform()
+	print("[grid_zoom_shot] %s entrance x %.1f, travelled %.3f, home grid %d, pan_grid %d, "
+			% [tag, pa.entrance_h_track.position.x, pa._entrance_slide, pa.entrance_home_grid(),
+			pa.pan_grid] + "row x [%.1f .. %.1f]"
+			% [row.origin.x, row.origin.x + row.get_scale().x * pa.upper_zone_right.size.x])
 	var gutters := pa._grid_gutters()
 	print("[grid_zoom_shot] %s drawn gap: separation %d + gutters %.1f/%.1f, pitch %.1f"
 			% [tag, pa.grid_container.get_theme_constant(&"separation"), gutters.x, gutters.y,
@@ -143,6 +179,29 @@ func _shoot(pa: PlayArea, picture: SubViewport, tag: String) -> bool:
 			% [tag, _what_moved(pa, drawn, after)] + "the frame that was saved.")
 	get_tree().quit(1)
 	return false
+
+#A DELIBERATELY MOVING FRAME, so it carries no stillness guard: what the Entrance is doing between
+#its two resting positions is the thing being photographed, and a still of a slide that never
+#started looks exactly like a still of one that did.
+func _shoot_frame(pa: PlayArea, picture: SubViewport, tag: String) -> void:
+	print("[grid_zoom_shot] %s entrance x %.1f, travelled %.3f, row centre %.1f"
+			% [tag, pa.entrance_h_track.position.x, pa._entrance_slide,
+			pa.upper_zone_right.get_global_transform().origin.x
+			+ pa.upper_zone_right.get_global_transform().get_scale().x
+			* pa.upper_zone_right.size.x * 0.5])
+	picture.get_texture().get_image().save_png("%s/grid_zoom_%d_%s.png"
+			% [_out_dir, _grid_count, tag])
+
+## The Entrance's leftmost card control: what a click has to land on to lift a card.
+func _leftmost_entrance_control(pa: PlayArea) -> Control:
+	var found : Control = null
+	for control : Control in pa.ui_data:
+		if control.focus_mode == Control.FOCUS_NONE: continue
+		if pa.is_stock_control(control): continue
+		if not pa.upper_zone_right.is_ancestor_of(control): continue
+		if not found or control.get_global_rect().position.x < found.get_global_rect().position.x:
+			found = control
+	return found
 
 #Float-tolerant, because the question is whether the BOARD moved, not whether a transform's last
 #bit did. One comparison for both the settle and the grab guard, so they cannot disagree.

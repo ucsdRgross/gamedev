@@ -82,7 +82,8 @@ Symphony*, Neon Nightlife (Disconauts).
    are all gone, and a suite gate fails any product file that mentions them.
 3. **v3 — Poker patience on a grid (LATEST, ✅ implemented):** the board is **one to three
    grids, 5×5 by default**, laid out side by side and centred in the picture. Cards wait in
-   the **Entrance**, a row attached above whichever grid it is currently committed to. Each
+   the **Entrance**, a row below whichever grid it belongs to — centred in the board's window
+   while it belongs to none, which is how every show starts. Each
    action the player takes one card from the Entrance and places it **into a cell**, on top of
    whatever that cell already holds. **Every placement scores the lines it completes, on the
    spot.** The show runs until the player presses **End**; there is nothing that ends it for
@@ -145,10 +146,13 @@ further.
   still chosen so a full row is a five-card poker hand.
 - **Each cell holds a STACK**, not a single card. Height is the third axis, and it is the old
   column depth re-read: `y` (row) counts downward while `h` (height) counts upward. ✅
-- **The Entrance** (upper, where drawn cards wait) is a row **attached above one grid**, not a
-  zone of its own — row `-1` of whichever grid it is committed to, moving with the
-  commitment. ✅ Its width is five because five `SkillAdderInputUpper` rule cards say so; there
-  is deliberately **no Entrance width property**. ✅
+- **The Entrance** (where drawn cards wait) is a row **attached to one grid**, not a zone of its
+  own — row `-1` of whichever grid it belongs to, moving with it and leaving the screen with it. ✅
+  It belongs to the committed grid once a placement commits one, to the focused grid before that,
+  and to no grid at all on a board being looked at whole, where it sits centred in the board's
+  window; a pickup focuses the grid nearest that centre and the Entrance slides under it. ✅ Its
+  width is five because five `SkillAdderInputUpper` rule cards say so; there is deliberately
+  **no Entrance width property**. ✅
 - **"The Ring"** now names the grid the player is acting on, not a lower zone. The lower zone
   still exists in `GameData` but no shipped rules card fills it. 📋 (code still says
   `upper_zone`/`lower_zone`).

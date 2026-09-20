@@ -489,8 +489,8 @@ const META_ROW_OFFSET := &"row_offset"
 @onready var overlay_layer: Node2D = %OverlayLayer
 
 #THE PINNED ENTRANCE. A sibling of `SmoothScrollContainer`, outside the board's scroll, so it never
-#scrolls away vertically. `EntranceStrip` is the fixed visible window; `EntranceHTrack` is the wide
-#track slid in X to mirror the board's own horizontal scroll (`_sync_entrance_x`).
+#scrolls away vertically. `EntranceStrip` is the fixed visible window; `EntranceHTrack` is the track
+#slid in X onto the grid the Entrance belongs to, or centred in the window (`_sync_entrance_x`).
 
 #`EntranceVScroll` does not resize or clip, so a stack deeper than the configured strip simply
 #draws past the window. Resizing the strip itself was tried and rejected: it re-lays out everything
@@ -587,11 +587,12 @@ func setup_gui() -> void:
 # RUNS EVERY PHYSICS FRAME, UNCONDITIONALLY (never toggled off the way `_process` is): a board
 # scroll can happen at any time, and a ScrollContainer's `scroll_horizontal` can be written
 # directly without reliably firing `value_changed` -- recompute live, never trust a signal alone.
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_apply_grid_buffer()
 	_follow_board_growth()
 	_sync_row_label_heights()
 	_sync_score_label_font()
+	_advance_the_entrance_slide(delta)
 	_sync_entrance_x()
 #⚠ ONE control's rect, on the tick `_sync_entrance_x` already reads on. `resized` alone left this
 #8 px stale (562 against a real 554) because the content's POSITION can settle without its size
@@ -657,13 +658,13 @@ func _sync_cell_score_labels() -> void:
 ## One height-score label per cell that has scored, keyed the same way `scores_cell` is.
 var _cell_score_labels : Dictionary[Vector3i, BigNumberLabel] = {}
 
-#X SLAVED TO THE COLUMNS OF THE GRID THE VIEW IS ON (owner spec): the Entrance never scrolls on its
-#own in X, it sits under the grid the player is looking at, so its slots stay under that grid's
-#columns.
+#X SLAVED TO THE COLUMNS OF THE GRID THE ENTRANCE BELONGS TO, and centred in the board's own window
+#while it belongs to none (owner spec). Its slots then stay under that grid's columns wherever the
+#view goes, which is what makes a committed Entrance leave the screen when the player looks away.
 
-#⚠ THERE IS EXACTLY ONE ENTRANCE, AND IT FOLLOWS THE VIEW — the owner's rule is that it behaves
-#like a player's hand. The grids stand a whole grid position apart, so an Entrance parked on the
-#first grid would sit a position away from the grid being played.
+#⚠ THE ONE WRITER of `entrance_h_track.position.x`. The travel between the two positions is the
+#slide `_advance_the_entrance_slide` integrates; both ends are recomputed live here, so a slide
+#that starts while the board is still panning still lands under the grid.
 
 #⚠ THE TRACK TAKES THE GRID'S OWN CELL BLOCK, NOT A WIDTH SHARED WITH THE WHOLE BOARD. Both halves
 #are read off the cells' live rect: the scrolled content carries a constant margin of its own
@@ -679,13 +680,37 @@ func _sync_entrance_x() -> void:
 	grid_container.custom_minimum_size.x = upper_zone_right.get_combined_minimum_size().x
 	var columns_x := grid_container.global_position.x
 	var columns_w := grid_container.size.x
-	var cells := _view_grid_cells()
+	var home := entrance_home_grid()
+	var cells := _grid_cells(pan_grid if home == NO_GRID else home)
 	if cells:
 		columns_x = cells.global_position.x
 		columns_w = cells.size.x * maxf(board_zoom, 0.0001)
-	entrance_h_track.position.x = columns_x - entrance_strip.global_position.x
+#The strip already starts at the board window's left edge, so the centred position is the spare
+#width either side of the row, halved.
+	var under_the_grid := columns_x - entrance_strip.global_position.x
+	var centred := (_board_width_left() - columns_w) * 0.5
+	entrance_h_track.position.x = lerpf(centred, under_the_grid, _entrance_slide)
 	entrance_h_track.size.x = columns_w
 	_apply_entrance_zoom_rect()
+
+#THE GRID THE ENTRANCE BELONGS TO, or `NO_GRID` while it belongs to none and sits centred in the
+#board's window. The first placement commits it to one grid for the rest of the show; before that
+#it belongs to whichever grid is focused, so a board being looked at whole has it under no grid.
+func entrance_home_grid() -> int:
+	var game := CardEnvironment.get_current_game()
+	if game and game.state.committed_grid != -1: return game.state.committed_grid
+	if view_mode == ViewMode.FOCUSED: return focused_grid
+	return NO_GRID
+
+## How far the Entrance has travelled from the centre of the window to its grid: 0 centred, 1 there.
+var _entrance_slide : float = 0.0
+
+#THE ENTRANCE TAKES THE SAME CLOCK AS A GRID PAN to cross between the centre of the window and the
+#grid it belongs to, so the two moves a pickup starts read as one. Integrated against the live aim
+#rather than tweened: nothing has to be cancelled when the aim changes part way across.
+func _advance_the_entrance_slide(delta: float) -> void:
+	var aim := 0.0 if entrance_home_grid() == NO_GRID else 1.0
+	_entrance_slide = move_toward(_entrance_slide, aim, delta / PlayArea.settings().grid_pan_duration)
 
 #THE SCALE MUST LIVE ON THE SCROLL CONTAINER, NOT ITS CONTENT — the same rule
 #`_apply_board_zoom_rect` follows. `%EntranceVScroll` carries `board_zoom` so the Entrance's cards
@@ -710,12 +735,12 @@ func _apply_entrance_zoom_rect() -> void:
 func _entrance_strip_full_height() -> float:
 	return maxf(entrance_strip_height_px(PlayArea.settings(), board_zoom), _entrance_row_height())
 
-## The cell block of the grid the view is centred on, or null when the board has no grids.
-func _view_grid_cells() -> Control:
+## The cell block of grid `gi`, clamped to the board, or null when the board has no grids.
+func _grid_cells(gi: int) -> Control:
 	if not is_instance_valid(grid_container): return null
 	var last := grid_container.get_child_count() - 1
 	if last < 0: return null
-	return _cells_root(grid_container.get_child(clampi(pan_grid, 0, last)) as Control)
+	return _cells_root(grid_container.get_child(clampi(gi, 0, last)) as Control)
 
 #The strip's FIXED visible height, and the matching reservation carved out of the board's own
 #scroll so the two never overlap on screen. A multiple of one card's height, re-applied on every
@@ -966,8 +991,16 @@ func update_gui() -> void:
 func open_show_view() -> void:
 	if grid_container.get_child_count() == 1:
 		focus_grid(0)
+		_snap_the_entrance_home()
 		return
 	open_zoomed_out()
+	_snap_the_entrance_home()
+
+#The Entrance is WHERE IT BELONGS the moment the show opens, never sliding into place: a one-grid
+#show opens on its grid and a resumed show opens on the grid it was already committed to, and
+#neither is a move the player made.
+func _snap_the_entrance_home() -> void:
+	_entrance_slide = 0.0 if entrance_home_grid() == NO_GRID else 1.0
 
 #True once the opening view has been settled against the grids that actually EXIST.
 
@@ -1021,6 +1054,38 @@ func focus_grid(gi: int) -> void:
 #content's own columns do not move when the board zooms -- but the FLOOR does, and a grid's
 #vertical position is measured from it. The same re-aim a removal uses, for the same reason.
 	_recentre_board()
+
+#A PICKUP AIMS THE BOARD AT THE GRID THE PLAYER IS LOOKING AT: the Entrance is about to come under
+#that grid, and a placement only ever lands focused. A committed grid already owns the board, and
+#the grid already focused is where the aim would land anyway, so neither of those re-aims.
+func focus_the_grid_in_view() -> void:
+	var game := CardEnvironment.get_current_game()
+	if game and game.state.committed_grid != -1: return
+	var gi := _grid_nearest_the_window_centre()
+	if gi == NO_GRID: return
+	if view_mode == ViewMode.FOCUSED and gi == focused_grid: return
+	focus_grid(gi)
+
+#WHICH GRID SITS NEAREST THE MIDDLE OF THE BOARD'S WINDOW. In the overview the camera is the only
+#thing that moves the view and it is always aimed at `pan_grid`, so that IS the answer there.
+#Focused, the scroller's live position decides, so a pickup mid-pan lands on the grid still in view.
+func _grid_nearest_the_window_centre() -> int:
+	var count := grid_container.get_child_count()
+	if count == 0: return NO_GRID
+	if view_mode == ViewMode.OVERVIEW: return clampi(pan_grid, 0, count - 1)
+	var z := maxf(scroll_container.scale.x, 0.0001)
+	var centre := _board_window_local().x * 0.5
+	var best := NO_GRID
+	var best_dx := INF
+	for gi : int in count:
+		var cells := _cells_root(grid_container.get_child(gi) as Control)
+		if not cells: continue
+		var at := (cells.global_position.x - scroll_container.global_position.x) / z \
+				+ cells.size.x * 0.5
+		if absf(at - centre) >= best_dx: continue
+		best_dx = absf(at - centre)
+		best = gi
+	return best
 
 # ------------------------------------------------------------------------------
 # THE ZOOM — what makes the two modes different on screen and not merely in state

@@ -230,6 +230,11 @@ that shipped.
 | `PlayArea.view_mode_changed(mode, grid)` | signal | |
 | `PlayArea.open_zoomed_out()` | method | Called from `_ready()`, **not** `setup_gui()` — that is also the undo-rebuild path and would zoom out on every undo. |
 | `PlayArea.focus_grid(gi)` | method | |
+| `PlayArea.focus_the_grid_in_view()` | method | What a PICKUP does to the board: aims it at the grid nearest the middle of the board's window. One production call site, `GameView._pick_up`, after the grab. Does nothing while a grid is committed or already focused. |
+| `PlayArea._grid_nearest_the_window_centre()` | method | `pan_grid` in the overview, where the camera is the only thing that moves the view; focused, the argmin of the grids' live drawn centres against the window's. |
+| `PlayArea.entrance_home_grid()` | method | The grid the Entrance BELONGS to: the committed grid, else the focused one, else `NO_GRID` for "centred in the window, under no grid". Not `GameData.entrance_grid()`, which answers which grid the Entrance BANKS into. |
+| `PlayArea._entrance_slide` | `float` | 0 centred, 1 under its grid; integrated toward `entrance_home_grid()`'s answer over `grid_pan_duration` and snapped by `_snap_the_entrance_home()` when a show opens. |
+| `PlayArea._grid_cells(gi)` | method | Grid `gi`'s cell block, clamped to the board. Was `_view_grid_cells()`, which could only ever answer for `pan_grid`. |
 | `PlayArea._consume_as_focus_click()` | method | The overview's interception: a press on a grid focuses instead of placing. Covers `ui_accept` as well as the mouse. |
 | `"GRID VIEW"` | suite name | `Tests/UI/test_grid_view.gd`, between VISUAL LAYERS and SETTINGS RANGE in the ordering chain. |
 | `PlayArea.pan_grid` | `int` | The grid the view is centred on. `focus_grid` also centres, so it cannot disagree with `focused_grid`. |

@@ -230,12 +230,20 @@ func run_a_panel_per_grid_and_a_slot_per_cell_test() -> void:
 	check(cells.get_child_count() == grid.grid_width,
 			"a row is as wide as the DATA says, not a hard-coded 5",
 			"%d cells vs grid_width %d" % [cells.get_child_count(), grid.grid_width])
-# The Entrance's slots line up with the grid's columns. It is what makes the Entrance read as the
-# row BELOW the board rather than a separate strip near it, and it is easy to lose: a leftover
-# row-score gutter, or a left-aligned row against a centred grid, each put it 25-50 px out.
+# The Entrance's slots line up with the grid's columns WHILE THAT GRID OWNS THE ENTRANCE. It is
+# what makes the Entrance read as the row BELOW the board rather than a separate strip near it, and
+# it is easy to lose: a leftover row-score gutter, or a left-aligned row against a centred grid.
+
+# ⚠ FOCUS FIRST: on a board being looked at whole an uncommitted Entrance belongs to no grid and is
+# centred in the window instead, which is a different rule and GRID VIEW's to assert.
 
 # That looks like a rounding artefact and is not one. The Entrance has its own pinned
 # %EntranceStrip, so read it through the unique-named accessor, not a path under TopLevelVBox.
+	pa.focus_grid(0)
+	await _settle_layout(view)
+	check(pa.entrance_home_grid() == 0,
+			"precondition: the focused grid owns the Entrance, so its slots are drawn under that "
+			+ "grid's columns", "home grid %d" % pa.entrance_home_grid())
 	var entrance_row : Control = pa.upper_zone_right
 	var worst_dx := 0.0
 	for col : int in mini(entrance_row.get_child_count(), grid.grid_width):
