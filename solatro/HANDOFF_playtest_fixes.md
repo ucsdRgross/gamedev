@@ -3,7 +3,7 @@
 **Goal:** the sixteen findings of the owner's first playtest on `combine-sidebar-boardplan` fixed
 and gated, each against the ruling below, on this branch, ready for the owner to merge.
 **State:** P1–P4 landed and gated: `ALL 51 SUITES: 5862 CHECKS PASSED`, 22 placeholder warnings,
-1150 ObjectDB (the fingerprint). P5/P7/P8 and the P14 sweep are dispatched. Every later step has
+1150 ObjectDB (the fingerprint). P5/P7/P8 and P14 landed; the P5-P8 gate is running. Every later step has
 its site map in its notes. Gate at the
 stream's start: `ALL 51 SUITES: 5839 CHECKS PASSED`, errors log empty.
 **Entry docs:** solatro/START_HERE.md, solatro/design/sidebar/DESIGN.md,
@@ -117,8 +117,8 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/play_area.gd, solatro/Cards/card_visual.gd]
   verification_command: 'run_tests.py --filter Sidebar EntranceStocks DragPlace; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'commit c5c554f0. Red: SIDEBAR 1237 passed, 2 FAILED (699.3 vs 733.3 - a stocked slot's card one pitch above an exhausted one's); green FILTERED 3 of 51: 1440; --logic 3006. By eye entrance_stocks.png: four unheld cards flat and edge-aligned, the held one alone raised, its slot's card back visible beneath. Consequence: the face-down card is unreachable by pointer while its slot holds a card; S21.5b clicks it on an emptied slot.'
   notes: 'B14 is already built (held_lift_px); it does not read because of this. Verify by eye after.'
 - id: P6
   description: R6 - the legal-cell highlight brightens the zone card back toward white with the mark pips excluded; legal_cell_tint becomes that brightening, no green.
@@ -133,16 +133,16 @@ at a time; overseer Fable 5.1, writes no source; research `Explore` on `opus`.
   files_touched: [solatro/UI/control_card.gd, solatro/UI/play_area.gd, solatro/UI/description_panel.gd, solatro/UI/description_panel.tscn, solatro/Cards/Pips/pip_rank_numeral.gd, solatro/Cards/card_data.gd, solatro/UI/map_hover_panel.gd]
   verification_command: 'run_tests.py --filter Sidebar UiViewers; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'commit c5c554f0. Red: 1270 passed, 3 FAILED (NumeralRank5.0 of Knife); green 1273. By eye description.png: 5 of Hoop, then Hoop and Grid Cell large with small descriptions. Interpretations flagged to the owner: the suit keeps a block; suit names are singular (King of Knife).'
   notes: 'todo.md records the wart (NumeralRank5.0) and its wrapping fallout; both close with this. The ONLY consumers of PipRankNumeral.get_str are Cards/card_data.gd ~133 (rank.get_str().trim_suffix(".0") - the workaround itself) and ~146; control_card.gd does not call it. map_hover_panel.gd ~130 also publishes describe_card.'
 - id: P8
   description: R9 - every description preview draws at the deck viewer's card size.
   files_touched: [solatro/Levels/game_view.gd, solatro/UI/hud_container.gd, solatro/UI/play_area.gd, solatro/UI/deck_viewer.gd, solatro/UI/choice_viewer.gd, solatro/UI/map_hover_panel.gd, solatro/Tools/wall_editor.gd, solatro/design/sidebar/gaps/GAP-004.md]
   verification_command: 'run_tests.py --filter Sidebar; by eye'
   verification_kind: snapshot
-  status: pending
-  evidence: ''
+  status: done
+  evidence: 'commit c5c554f0. Red: 1247 passed, 2 FAILED (57.6 vs 66.3 px); green 1275. By eye: board- and viewer-published previews occupy identical rectangles. CardVisual.preview_window_px is the one home; cards_viewer.card_window_px deleted.'
   notes: 'Preview publish sites: play_area.gd ~3244, deck_viewer.gd ~68, choice_viewer.gd ~154, map_hover_panel.gd ~130, wall_editor.gd ~513, game_view.gd ~271 and ~513. GAP-004 cites SIDEBAR Q34 (the card-visual size), not grid-view Q34.'
 - id: P9
   description: R5 - the pickup model. Auto-arm removed; click lifts; drag follows while held; release places or returns; click on a legal cell places a lifted card.
